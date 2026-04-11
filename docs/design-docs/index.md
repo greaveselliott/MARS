@@ -30,3 +30,6 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-010 | repo_id column in schema from day one. Multi-repo ready even if v1 is single-repo. | pipeline-engine.md | M5 |
 | AD-011 | htmx + Chart.js embedded in Go binary for dashboard. No React, no npm, no external dependencies. | dashboard.md | M9 |
 | AD-012 | Hard guardrails limited to syntactic checks in v1 (regex, file pattern, file existence). AST analysis is v2. | guardrails.md | M7 |
+| AD-013 | `log/slog` from stdlib for all structured logging. JSON in production, text in development. | AGENTS.md | M0 |
+| AD-014 | Domain-grouped packages under `internal/` (agent, llm, tools, github, etc.). Public types in `pkg/` if needed. | AGENTS.md | M0 |
+| AD-015 | YAML config file (`~/.mars-harness/config.yaml`) merged with environment variable overrides (`MARS_HARNESS_` prefix). | AGENTS.md | M0 |

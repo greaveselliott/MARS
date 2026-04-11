@@ -20,7 +20,7 @@ When jobs fail, a dedicated meta-role should turn execution traces into concrete
 - Open PRs only under `.harness/` (manifest, prompts, guardrails, knowledge routes) with clear description template
 - Model policy: strongest configured model + highest context budget for this role only
 - Safety: Reviewer cannot modify its own system prompt files; changes go through normal PR review by humans
-- Rate limit: at most one evolution PR per calendar day per repo; auto-disable if MH-017 rolling score drops after Reviewer merges (configurable window)
+- Rate limit: at most one evolution PR per role per day; auto-disable if MH-017 rolling score drops after Reviewer merges (configurable window)
 
 ## Acceptance Criteria
 

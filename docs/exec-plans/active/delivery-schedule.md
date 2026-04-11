@@ -27,7 +27,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
   - **0.2.5** `.cursor/rules/` — agent rules for the harness repo
   - **0.2.6** `testdata/` — shared fixtures
 - **0.3** `AGENTS.md` — package graph, directory map, key constraints, build/test commands
-- **0.4** Tenets document (`docs/tenets.md`) — local-first, accuracy over speed, safety by default, observable, self-improving
+- **0.4** Tenets document (`docs/design-docs/tenets.md`) — the nine tenets (plug and play, self-improving, accuracy scoring, guardrails, roadmap from init, blast radius, execution truth, progressive autonomy, context efficiency)
 - **0.5** Cursor rules
   - **0.5.1** Go conventions rule (error handling, naming, test style)
   - **0.5.2** Documentation discipline rule (mirrors Mars pattern)
@@ -57,7 +57,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 - [ ] `golangci-lint run` reports zero issues
 - [ ] CI workflow runs green on push and PR
 - [ ] `AGENTS.md` exists and documents directory structure, build commands, constraints
-- [ ] `docs/tenets.md` exists with all five tenets
+- [ ] `docs/design-docs/tenets.md` exists with all nine tenets
 - [ ] `docs/design-docs/index.md` exists and lists all AD stubs
 
 ### Architecture Decisions
@@ -86,7 +86,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 - **1.2** Tool system
   - **1.2.1** Tool registry — register tools by name with JSON Schema parameter definitions
   - **1.2.2** Tool executor — dispatch tool calls, capture stdout/stderr/exit code, enforce per-tool timeout
-  - **1.2.3** Core tools: `read_file`, `write_file`, `list_directory`, `search_text` (ripgrep), `run_command`, `patch_file`
+  - **1.2.3** Core tools: `file_read`, `file_write`, `file_search` (glob), `grep` (regex), `shell_exec`, `git_status`, `git_diff`, `git_commit`, `git_branch`, `git_push`
   - **1.2.4** Tool result formatting — truncation for large outputs, binary detection
   - **1.2.5** Tool permission model — allow/deny lists per role
 - **1.3** Conversation loop
@@ -186,7 +186,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
   - **3.1.3** `run` subcommand: `mars-harness run <role> --repo <path> [--model <name>] [--budget <tokens>] [--dry-run]`
   - **3.1.4** Version command sourced from build-time ldflags
 - **3.2** Bundle reader
-  - **3.2.1** Bundle manifest format (`bundle.yaml`): role name, model tier, system prompt path, guardrails refs, knowledge routes, tool permissions
+  - **3.2.1** Bundle manifest format (`manifest.yaml`): role name, model tier, system prompt path, guardrails refs, knowledge routes, tool permissions
   - **3.2.2** Load and validate manifest — required fields, file references resolve, schema version check
   - **3.2.3** Parse guardrails references (inline + file refs)
   - **3.2.4** Parse knowledge routes (glob patterns → file lists, priority weights)
@@ -362,9 +362,9 @@ None new — safety is an enforcement layer atop existing AD-004 and AD-010 deci
   - **6.2.3** Per-role, per-repo scores stored in `scores` table
   - **6.2.4** Minimum sample size: require 5 outcomes before score is considered valid
 - **6.3** Progressive autonomy
-  - **6.3.1** Trust levels: `observer` (read-only, no PRs), `trial` (create draft PRs, require human approval), `autonomous` (create PRs, auto-merge if checks pass)
-  - **6.3.2** Promotion rules: observer → trial after 3 successful read-only runs; trial → autonomous after score ≥ 0.8 over 10+ outcomes
-  - **6.3.3** Demotion rules: autonomous → trial if score drops below 0.6; trial → observer if score drops below 0.4
+  - **6.3.1** Trust levels: `observer` (read-only, no PRs), `contributor` (create PRs, require human approval), `autonomous` (create PRs, auto-merge if checks pass)
+  - **6.3.2** Promotion rules: observer → contributor after N trial runs (configurable, default 5); contributor → autonomous after score ≥ threshold over 20+ outcomes
+  - **6.3.3** Demotion rules: autonomous → contributor if score drops below threshold for 5 consecutive jobs; contributor → observer if score drops below contributor threshold for 5 consecutive jobs
   - **6.3.4** Enforcement: trust level checked before GitHub write operations; observer cannot call `github_create_pr`
   - **6.3.5** Override: `--trust-level` flag on `mars-harness run` for manual override (logged)
 - **6.4** CLI commands
@@ -376,7 +376,7 @@ None new — safety is an enforcement layer atop existing AD-004 and AD-010 deci
 
 - [ ] Each outcome type (merged, closed, passed, failed, noop) scored correctly with unit tests
 - [ ] Rolling 30-day score computed accurately across window boundaries
-- [ ] Role promotes from observer → trial → autonomous as scores improve (integration test with synthetic outcomes)
+- [ ] Role promotes from observer → contributor → autonomous as scores improve (integration test with synthetic outcomes)
 - [ ] Role demotes when score drops below threshold
 - [ ] Observer trust level cannot create PRs (enforcement test)
 - [ ] Trial mode creates draft PRs only

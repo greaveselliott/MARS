@@ -54,7 +54,7 @@ Implement `internal/llm/client.go`:
 
 ### Non-goals
 - [ ] This ticket does NOT implement the conversation loop (that's MH-003)
-- [ ] This ticket does NOT implement the router (that's MH-006 in M2)
+- [ ] This ticket does NOT implement the router (that's part of MH-008 in M2)
 - [ ] This ticket does NOT handle model-specific quirks (that's MH-004)
 
 ### Observability, docs, and regressions
