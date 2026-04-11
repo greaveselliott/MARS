@@ -23,7 +23,10 @@ jobs:
         run: go build ./cmd/mars-harness
 
       - name: Test
-        run: go test ./...
+        run: go test ./... -race -count=1 -coverprofile=coverage.out -covermode=atomic
+
+      - name: Coverage summary
+        run: go tool cover -func=coverage.out | tail -n 5
 
       - name: Lint
         uses: golangci/golangci-lint-action@v6

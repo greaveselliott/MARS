@@ -38,4 +38,4 @@ Document default budgets in `.harness/` examples so new repos inherit sensible c
 
 ## Discoveries
 
-_(None yet.)_
+- **2026-04-11 — MH-004 assembler:** `internal/context.Assemble` builds fixed-order sections (`## ROLE`, `## GUARDRAILS`, `## KNOWLEDGE ROUTES`, `## TRIGGER CONTEXT`, `## REPO SUMMARY`), omits optional blocks when empty, filters guardrails by `Scope` (empty/`all` = global), formats knowledge as bullet lines `When working on X, read Y`, and applies a token **budget** using `llm.EstimateTokens` by iteratively shrinking lowest-priority bodies first (`repo` < `trigger` < `knowledge`; `role` is never truncated; shrinking stops if the budget still cannot be met without editing the role text).

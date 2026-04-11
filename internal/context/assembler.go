@@ -1,0 +1,187 @@
+package context
+
+import (
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/greaveselliott/mars-harness/internal/llm"
+)
+
+const (
+	headerRole     = "## ROLE"
+	headerGuards   = "## GUARDRAILS"
+	headerKnowledge = "## KNOWLEDGE ROUTES"
+	headerTrigger  = "## TRIGGER CONTEXT"
+	headerRepo     = "## REPO SUMMARY"
+)
+
+// block is an internal mutable slice used for budget trimming (lower truncPri drops first).
+type block struct {
+	name     string
+	header   string
+	body     string
+	truncPri int // smaller = truncated earlier under budget pressure
+}
+
+// Assemble builds the additive system prompt with section headers (AD-006).
+// Truncation order when over TokenBudget: repo summary → trigger → knowledge routes; role and guardrails are kept until those are exhausted, then guardrails body may shrink; role text is never truncated.
+func Assemble(in Input) (system string, stats []SectionStat, err error) {
+	role, err := loadRolePrompt(in)
+	if err != nil {
+		return "", nil, err
+	}
+	scope := strings.TrimSpace(in.RoleScope)
+
+	var parts []block
+
+	parts = append(parts, block{name: "role", header: headerRole, body: strings.TrimSpace(role), truncPri: 100})
+
+	guardBodies := filterGuardrails(in.Guardrails, scope)
+	if len(guardBodies) > 0 {
+		var b strings.Builder
+		for _, g := range guardBodies {
+			title := strings.TrimSpace(g.Title)
+			if title != "" {
+				fmt.Fprintf(&b, "### %s\n%s\n\n", title, strings.TrimSpace(g.Body))
+			} else {
+				fmt.Fprintf(&b, "%s\n\n", strings.TrimSpace(g.Body))
+			}
+		}
+		parts = append(parts, block{name: "guardrails", header: headerGuards, body: strings.TrimSpace(b.String()), truncPri: 80})
+	}
+
+	if len(in.KnowledgeRoutes) > 0 {
+		var b strings.Builder
+		for _, kr := range in.KnowledgeRoutes {
+			when := strings.TrimSpace(kr.When)
+			paths := strings.TrimSpace(kr.Paths)
+			if when == "" && paths == "" {
+				continue
+			}
+			if when == "" {
+				when = "this repository"
+			}
+			if paths == "" {
+				continue
+			}
+			fmt.Fprintf(&b, "- When working on %s, read %s\n", when, paths)
+		}
+		if b.Len() > 0 {
+			parts = append(parts, block{name: "knowledge", header: headerKnowledge, body: strings.TrimSpace(b.String()), truncPri: 40})
+		}
+	}
+
+	if strings.TrimSpace(in.Trigger) != "" {
+		parts = append(parts, block{name: "trigger", header: headerTrigger, body: strings.TrimSpace(in.Trigger), truncPri: 20})
+	}
+	if strings.TrimSpace(in.RepoSummary) != "" {
+		parts = append(parts, block{name: "repo", header: headerRepo, body: strings.TrimSpace(in.RepoSummary), truncPri: 10})
+	}
+
+	if in.TokenBudget > 0 {
+		shrinkToBudget(&parts, in.TokenBudget)
+	}
+
+	var out strings.Builder
+	for _, p := range parts {
+		if strings.TrimSpace(p.body) == "" {
+			continue
+		}
+		fmt.Fprintf(&out, "%s\n\n%s\n\n", p.header, p.body)
+		n := llm.EstimateTokens([]llm.Message{{Role: "system", Content: p.header + "\n\n" + p.body}}, nil)
+		stats = append(stats, SectionStat{Name: p.name, Tokens: n})
+	}
+	return strings.TrimSpace(out.String()), stats, nil
+}
+
+func loadRolePrompt(in Input) (string, error) {
+	path := strings.TrimSpace(in.RolePromptPath)
+	if path != "" {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("context: read role prompt file %q: %w", path, err)
+		}
+		s := strings.TrimSpace(string(b))
+		if s == "" {
+			return "", fmt.Errorf("context: role prompt file %q is empty", path)
+		}
+		return s, nil
+	}
+	s := strings.TrimSpace(in.RolePrompt)
+	if s == "" {
+		return "", fmt.Errorf("context: role prompt is empty; set RolePrompt or RolePromptPath")
+	}
+	return in.RolePrompt, nil
+}
+
+func filterGuardrails(guards []Guardrail, roleScope string) []Guardrail {
+	roleScope = strings.TrimSpace(strings.ToLower(roleScope))
+	var out []Guardrail
+	for _, g := range guards {
+		sc := strings.TrimSpace(strings.ToLower(g.Scope))
+		if sc == "" || sc == "all" || sc == roleScope {
+			out = append(out, g)
+		}
+	}
+	return out
+}
+
+func shrinkToBudget(parts *[]block, budget int) {
+	for iter := 0; iter < 2000; iter++ {
+		s := renderBlocks(*parts)
+		if s == "" {
+			return
+		}
+		got := llm.EstimateTokens([]llm.Message{{Role: "system", Content: s}}, nil)
+		if got <= budget {
+			return
+		}
+		// Find lowest truncPri with non-empty body (excluding role).
+		idx := -1
+		bestPri := int(^uint(0) >> 1)
+		for i := range *parts {
+			p := &(*parts)[i]
+			if p.name == "role" {
+				continue
+			}
+			if strings.TrimSpace(p.body) == "" {
+				continue
+			}
+			if p.truncPri < bestPri {
+				bestPri = p.truncPri
+				idx = i
+			}
+		}
+		if idx < 0 {
+			// Cannot shrink further without touching the role prompt (forbidden by MH-004).
+			return
+		}
+		b := &(*parts)[idx]
+		newLen := len(b.body) * 3 / 4
+		if newLen < 1 {
+			b.body = ""
+			continue
+		}
+		b.body = trimEndPreserveNewline(b.body, newLen)
+		b.body += "\n\n(context: section truncated for token budget)"
+	}
+}
+
+func trimEndPreserveNewline(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+	return s[:maxBytes]
+}
+
+func renderBlocks(parts []block) string {
+	var out strings.Builder
+	for _, p := range parts {
+		if strings.TrimSpace(p.body) == "" {
+			continue
+		}
+		fmt.Fprintf(&out, "%s\n\n%s\n\n", p.header, p.body)
+	}
+	return out.String()
+}
