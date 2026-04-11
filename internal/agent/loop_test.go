@@ -3,12 +3,14 @@ package agent
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/llm"
 	"github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/greaveselliott/mars-harness/internal/trace"
 
 	"github.com/stretchr/testify/require"
 )
@@ -58,6 +60,47 @@ func textResp(content string) llm.ChatCompletionResponse {
 			Message: llm.Message{Role: "assistant", Content: content},
 		}},
 	}
+}
+
+func TestRun_persistsTraceToSQLite(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	dbPath := "file:" + filepath.Join(dir, "tr.sqlite") + "?mode=rwc"
+	st, err := trace.OpenStore(dbPath)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = st.Close() })
+
+	rec := trace.NewRecorder(nil)
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_write", "w1", `{"path":"t.txt","content":"x"}`),
+		textResp("ok"),
+	}}
+	res, err := Run(context.Background(), Params{
+		Completer:    mock,
+		Registry:     reg,
+		Executor:     ex,
+		Root:         root,
+		Allowlist:    []string{"file_write"},
+		SystemPrompt: "s",
+		UserMessage:  "u",
+		Config:       LoopConfig{Model: "m", MaxTurns: 10},
+		JobID:        "job-sql",
+		Trace:        rec,
+		TraceStore:   st,
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+
+	got, err := st.GetLatestByJobID(context.Background(), "job-sql")
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Contains(t, got.TurnsJSONL, `"type":"header"`)
+	require.Contains(t, got.SummaryJSON, `"outcome":"completed"`)
 }
 
 func TestRun_multiToolThenComplete(t *testing.T) {

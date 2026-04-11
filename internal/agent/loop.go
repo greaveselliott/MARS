@@ -2,12 +2,14 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/llm"
 	"github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/greaveselliott/mars-harness/internal/trace"
 )
 
 // Completer is satisfied by *llm.Client for production use.
@@ -25,6 +27,11 @@ type Params struct {
 	SystemPrompt string
 	UserMessage  string
 	Config       LoopConfig
+
+	// Optional execution trace (MH-005). When Trace is set, each message is logged as JSONL.
+	JobID      string
+	Trace      *trace.Recorder
+	TraceStore *trace.Store
 }
 
 func (p Params) modelName() string {
@@ -34,8 +41,24 @@ func (p Params) modelName() string {
 	return "mars-harness"
 }
 
+func (p Params) jobID() string {
+	if strings.TrimSpace(p.JobID) != "" {
+		return strings.TrimSpace(p.JobID)
+	}
+	return "job"
+}
+
+func traceAppend(p Params, messages *[]llm.Message, defs []llm.ToolDefinition, msg llm.Message) error {
+	*messages = append(*messages, msg)
+	if p.Trace == nil {
+		return nil
+	}
+	est := llm.EstimateTokens(*messages, defs)
+	return p.Trace.WriteTurn(msg, est)
+}
+
 // Run executes the synchronous tool loop until completion or a terminal condition.
-func Run(ctx context.Context, p Params) (LoopResult, error) {
+func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 	if p.Completer == nil {
 		return LoopResult{}, fmt.Errorf("agent: Completer is nil")
 	}
@@ -55,6 +78,33 @@ func Run(ctx context.Context, p Params) (LoopResult, error) {
 		{Role: "user", Content: p.UserMessage},
 	}
 
+	traceStarted := false
+	if p.Trace != nil {
+		tid := trace.NewID()
+		if err := p.Trace.WriteHeader(p.jobID(), tid, p.modelName()); err != nil {
+			return LoopResult{}, fmt.Errorf("agent: %w", err)
+		}
+		traceStarted = true
+		for i := range messages {
+			est := llm.EstimateTokens(messages[:i+1], defs)
+			if err := p.Trace.WriteTurn(messages[i], est); err != nil {
+				return LoopResult{}, fmt.Errorf("agent: %w", err)
+			}
+		}
+	}
+
+	defer func() {
+		if p.Trace == nil || !traceStarted {
+			return
+		}
+		summ := p.Trace.Finalize(p.jobID(), string(res.EndReason), res.WallTime, res.LLMCalls, res.ToolInvocations, res.Err)
+		sj, jErr := json.Marshal(summ)
+		if jErr != nil || p.TraceStore == nil {
+			return
+		}
+		_ = p.TraceStore.Save(context.Background(), summ.JobID, p.Trace.TraceID(), p.Trace.JSONL(), string(sj))
+	}()
+
 	start := time.Now()
 	maxTurns := p.Config.effectiveMaxTurns()
 	retries := p.Config.effectiveLLMRetries()
@@ -66,18 +116,22 @@ func Run(ctx context.Context, p Params) (LoopResult, error) {
 
 	for {
 		if p.Config.WallTime > 0 && time.Since(start) >= p.Config.WallTime {
-			return finish(messages, defs, EndTimeout, llmCalls, toolInvocations, start, ""), nil
+			res = finish(messages, defs, EndTimeout, llmCalls, toolInvocations, start, "")
+			return res, nil
 		}
 		if llmCalls >= maxTurns {
-			return finish(messages, defs, EndMaxTurns, llmCalls, toolInvocations, start, ""), nil
+			res = finish(messages, defs, EndMaxTurns, llmCalls, toolInvocations, start, "")
+			return res, nil
 		}
 		if p.Config.TokenBudget > 0 {
 			if llm.EstimateTokens(messages, defs) >= p.Config.TokenBudget {
-				return finish(messages, defs, EndBudgetExceeded, llmCalls, toolInvocations, start, ""), nil
+				res = finish(messages, defs, EndBudgetExceeded, llmCalls, toolInvocations, start, "")
+				return res, nil
 			}
 		}
 		if p.Config.MaxToolCalls > 0 && toolInvocations >= p.Config.MaxToolCalls {
-			return finish(messages, defs, EndMaxToolCalls, llmCalls, toolInvocations, start, ""), nil
+			res = finish(messages, defs, EndMaxToolCalls, llmCalls, toolInvocations, start, "")
+			return res, nil
 		}
 
 		req := llm.ChatCompletionRequest{
@@ -87,45 +141,56 @@ func Run(ctx context.Context, p Params) (LoopResult, error) {
 		}
 		resp, err := chatWithRetries(ctx, p.Completer, req, retries)
 		if err != nil {
-			return LoopResult{
+			res = LoopResult{
 				Messages:        messages,
 				EndReason:       EndLLMUnreachable,
 				LLMCalls:        llmCalls,
 				ToolInvocations: toolInvocations,
 				WallTime:        time.Since(start),
 				Err:             err,
-			}, nil
+			}
+			return res, nil
 		}
 		llmCalls++
 		if p.Config.WallTime > 0 && time.Since(start) >= p.Config.WallTime {
-			return finish(messages, defs, EndTimeout, llmCalls, toolInvocations, start, ""), nil
+			res = finish(messages, defs, EndTimeout, llmCalls, toolInvocations, start, "")
+			return res, nil
 		}
 
 		if len(resp.Choices) == 0 {
-			return finish(messages, defs, EndEmptyResponse, llmCalls, toolInvocations, start, ""), nil
+			res = finish(messages, defs, EndEmptyResponse, llmCalls, toolInvocations, start, "")
+			return res, nil
 		}
 
 		am := resp.Choices[0].Message
 		calls, parseErr := ToolCallsFromAssistantMessage(am)
 		if parseErr != nil {
-			messages = append(messages, llm.Message{
+			if err := traceAppend(p, &messages, defs, llm.Message{
 				Role:    "assistant",
 				Content: fmt.Sprintf("(tool parse error: %v)", parseErr),
-			})
-			messages = append(messages, llm.Message{
+			}); err != nil {
+				return LoopResult{}, err
+			}
+			if err := traceAppend(p, &messages, defs, llm.Message{
 				Role:    "user",
 				Content: "Your previous reply did not contain valid tool calls. Reply with valid tool JSON in a markdown code block, or answer without tools.",
-			})
+			}); err != nil {
+				return LoopResult{}, err
+			}
 			continue
 		}
 
 		content := strings.TrimSpace(am.Content)
 		if len(calls) == 0 {
 			if content == "" {
-				return finish(messages, defs, EndEmptyResponse, llmCalls, toolInvocations, start, ""), nil
+				res = finish(messages, defs, EndEmptyResponse, llmCalls, toolInvocations, start, "")
+				return res, nil
 			}
-			messages = append(messages, llm.Message{Role: "assistant", Content: am.Content})
-			return finish(messages, defs, EndCompleted, llmCalls, toolInvocations, start, ""), nil
+			if err := traceAppend(p, &messages, defs, llm.Message{Role: "assistant", Content: am.Content}); err != nil {
+				return LoopResult{}, err
+			}
+			res = finish(messages, defs, EndCompleted, llmCalls, toolInvocations, start, "")
+			return res, nil
 		}
 
 		fp := fingerprintToolCalls(calls)
@@ -141,18 +206,21 @@ func Run(ctx context.Context, p Params) (LoopResult, error) {
 			Content:   am.Content,
 			ToolCalls: calls,
 		}
-		messages = append(messages, assistantMsg)
+		if err := traceAppend(p, &messages, defs, assistantMsg); err != nil {
+			return LoopResult{}, err
+		}
 
 		if identicalStreak >= 3 {
-			return LoopResult{
-				Messages:           messages,
-				EndReason:          EndCircleDetected,
-				LLMCalls:           llmCalls,
-				ToolInvocations:    toolInvocations,
-				TokenEstimate:      llm.EstimateTokens(messages, defs),
-				WallTime:           time.Since(start),
-				CircleDiagnostic:   fp,
-			}, nil
+			res = LoopResult{
+				Messages:         messages,
+				EndReason:        EndCircleDetected,
+				LLMCalls:         llmCalls,
+				ToolInvocations:  toolInvocations,
+				TokenEstimate:    llm.EstimateTokens(messages, defs),
+				WallTime:         time.Since(start),
+				CircleDiagnostic: fp,
+			}
+			return res, nil
 		}
 
 		for _, tc := range calls {
@@ -162,24 +230,26 @@ func Run(ctx context.Context, p Params) (LoopResult, error) {
 			if execErr != nil {
 				body = fmt.Sprintf("error: %v\n%s", execErr, body)
 			}
-			messages = append(messages, llm.Message{
+			if err := traceAppend(p, &messages, defs, llm.Message{
 				Role:       "tool",
 				ToolCallID: tc.ID,
 				Content:    body,
-			})
+			}); err != nil {
+				return LoopResult{}, err
+			}
 		}
 	}
 }
 
 func finish(msgs []llm.Message, defs []llm.ToolDefinition, reason EndReason, llmCalls, tools int, start time.Time, circle string) LoopResult {
 	return LoopResult{
-		Messages:           msgs,
-		EndReason:          reason,
-		LLMCalls:           llmCalls,
-		ToolInvocations:    tools,
+		Messages:         msgs,
+		EndReason:        reason,
+		LLMCalls:         llmCalls,
+		ToolInvocations:  tools,
 		TokenEstimate:      llm.EstimateTokens(msgs, defs),
 		WallTime:           time.Since(start),
-		CircleDiagnostic:   circle,
+		CircleDiagnostic: circle,
 	}
 }
 
