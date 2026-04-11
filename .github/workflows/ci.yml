@@ -28,6 +28,13 @@ jobs:
       - name: Coverage summary
         run: go tool cover -func=coverage.out | tail -n 5
 
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+
       - name: Lint
         uses: golangci/golangci-lint-action@v6
         with:

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -59,6 +60,22 @@ func traceAppend(p Params, messages *[]llm.Message, defs []llm.ToolDefinition, m
 
 // Run executes the synchronous tool loop until completion or a terminal condition.
 func Run(ctx context.Context, p Params) (res LoopResult, err error) {
+	slog.Info("agent loop starting",
+		"job_id", p.JobID,
+		"model", p.modelName(),
+		"max_turns", p.Config.effectiveMaxTurns(),
+	)
+	defer func() {
+		slog.Info("agent loop finished",
+			"job_id", p.JobID,
+			"end_reason", string(res.EndReason),
+			"llm_calls", res.LLMCalls,
+			"tool_invocations", res.ToolInvocations,
+			"tokens", res.TokenEstimate,
+			"wall_ms", res.WallTime.Milliseconds(),
+		)
+	}()
+
 	if p.Completer == nil {
 		return LoopResult{}, fmt.Errorf("agent: Completer is nil")
 	}
