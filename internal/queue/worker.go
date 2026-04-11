@@ -1,0 +1,97 @@
+package queue
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"sync"
+	"time"
+)
+
+// WorkerConfig configures a WorkerPool.
+type WorkerConfig struct {
+	Concurrency  int
+	PollInterval time.Duration
+	OnJob        func(ctx context.Context, job *Job) error
+}
+
+// WorkerPool manages concurrent job workers.
+type WorkerPool struct {
+	q      *Queue
+	cfg    WorkerConfig
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
+}
+
+// NewWorkerPool creates a worker pool that pulls jobs from q.
+func NewWorkerPool(q *Queue, cfg WorkerConfig) *WorkerPool {
+	if cfg.Concurrency <= 0 {
+		cfg.Concurrency = 1
+	}
+	if cfg.PollInterval <= 0 {
+		cfg.PollInterval = 2 * time.Second
+	}
+	return &WorkerPool{q: q, cfg: cfg}
+}
+
+// Start launches cfg.Concurrency goroutines that poll for jobs.
+func (wp *WorkerPool) Start(ctx context.Context) {
+	ctx, wp.cancel = context.WithCancel(ctx)
+	for i := range wp.cfg.Concurrency {
+		wp.wg.Add(1)
+		go wp.run(ctx, fmt.Sprintf("worker-%d", i))
+	}
+	slog.Info("queue: worker pool started", "concurrency", wp.cfg.Concurrency)
+}
+
+// Stop cancels all workers and blocks until they drain.
+func (wp *WorkerPool) Stop() {
+	if wp.cancel != nil {
+		wp.cancel()
+	}
+	wp.wg.Wait()
+	slog.Info("queue: worker pool stopped")
+}
+
+func (wp *WorkerPool) run(ctx context.Context, workerID string) {
+	defer wp.wg.Done()
+	ticker := time.NewTicker(wp.cfg.PollInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			wp.poll(ctx, workerID)
+		}
+	}
+}
+
+func (wp *WorkerPool) poll(ctx context.Context, workerID string) {
+	job, err := wp.q.Claim(ctx, workerID)
+	if err != nil {
+		slog.Error("queue: claim failed", "worker", workerID, "error", err)
+		return
+	}
+	if job == nil {
+		return
+	}
+
+	slog.Info("queue: job claimed", "worker", workerID, "job", job.ID, "role", job.Role)
+
+	if err := wp.q.MarkRunning(ctx, job.ID); err != nil {
+		slog.Error("queue: mark running failed", "job", job.ID, "error", err)
+		return
+	}
+
+	if err := wp.cfg.OnJob(ctx, job); err != nil {
+		slog.Error("queue: job failed", "job", job.ID, "error", err)
+		_ = wp.q.Fail(ctx, job.ID, err.Error())
+		return
+	}
+
+	if err := wp.q.Complete(ctx, job.ID); err != nil {
+		slog.Error("queue: complete failed", "job", job.ID, "error", err)
+	}
+}
