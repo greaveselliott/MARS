@@ -134,6 +134,47 @@ func TestRun_multiToolThenComplete(t *testing.T) {
 	require.Equal(t, 2, res.LLMCalls)
 }
 
+func TestRun_threeToolCallsHappyPath(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	allow := []string{"file_write", "file_read", "shell_exec"}
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_write", "w1", `{"path":"main.go","content":"package main\nfunc main() {}\n"}`),
+		toolResp("file_read", "r1", `{"path":"main.go"}`),
+		toolResp("shell_exec", "s1", `{"command":"echo build-ok"}`),
+		textResp("All three steps completed successfully."),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:    mock,
+		Registry:     reg,
+		Executor:     ex,
+		Root:         root,
+		Allowlist:    allow,
+		SystemPrompt: "You are a coding agent.",
+		UserMessage:  "Create main.go, read it back, then verify with echo.",
+		Config:       LoopConfig{Model: "test", MaxTurns: 10},
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 4, res.LLMCalls)
+	require.Equal(t, 3, res.ToolInvocations)
+
+	hasAssistant := false
+	for _, m := range res.Messages {
+		if m.Role == "assistant" && strings.Contains(m.Content, "completed") {
+			hasAssistant = true
+		}
+	}
+	require.True(t, hasAssistant, "final assistant text response should be in messages")
+}
+
 func TestRun_circleDetected(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

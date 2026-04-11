@@ -119,7 +119,12 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 		if jErr != nil || p.TraceStore == nil {
 			return
 		}
-		_ = p.TraceStore.Save(context.Background(), summ.JobID, p.Trace.TraceID(), p.Trace.JSONL(), string(sj))
+		if saveErr := p.TraceStore.Save(context.Background(), summ.JobID, p.Trace.TraceID(), p.Trace.JSONL(), string(sj)); saveErr != nil {
+			slog.Error("failed to persist trace", "job_id", p.JobID, "error", saveErr)
+			if err == nil {
+				err = fmt.Errorf("agent: trace store: %w", saveErr)
+			}
+		}
 	}()
 
 	start := time.Now()

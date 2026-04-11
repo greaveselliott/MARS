@@ -38,17 +38,31 @@ func TestRecorder_truncatesLargeContent(t *testing.T) {
 func TestRecorder_finalizeFiveTurns(t *testing.T) {
 	t.Parallel()
 	rec := NewRecorder(nil)
-	require.NoError(t, rec.WriteHeader("job", "tid", ""))
-	for i := 0; i < 5; i++ {
-		require.NoError(t, rec.WriteTurn(llm.Message{Role: "user", Content: strings.Repeat("a", i+1)}, i+1))
-	}
-	s := rec.Finalize("job", "completed", 12*time.Millisecond, 3, 2, nil)
+	require.NoError(t, rec.WriteHeader("job", "tid", "model-x"))
+
+	require.NoError(t, rec.WriteTurn(llm.Message{Role: "system", Content: "You are a coding agent."}, 10))
+	require.NoError(t, rec.WriteTurn(llm.Message{Role: "user", Content: "Fix the bug in main.go."}, 8))
+	require.NoError(t, rec.WriteTurn(llm.Message{
+		Role: "assistant",
+		ToolCalls: []llm.ToolCall{{
+			ID: "c1", Type: "function",
+			Function: llm.FunctionCall{Name: "file_read", Arguments: `{"path":"main.go"}`},
+		}},
+	}, 15))
+	require.NoError(t, rec.WriteTurn(llm.Message{
+		Role: "tool", ToolCallID: "c1", Content: "package main\nfunc main() { x := 1 }\n",
+	}, 20))
+	require.NoError(t, rec.WriteTurn(llm.Message{
+		Role: "assistant", Content: "The variable x is declared but not used. I'll fix it.",
+	}, 12))
+
+	s := rec.Finalize("job", "completed", 12*time.Millisecond, 3, 1, nil)
 	require.Equal(t, 5, s.TurnCount)
 	require.Equal(t, int64(12), s.WallMs)
 	require.Equal(t, "completed", s.Outcome)
-	require.Equal(t, 15, s.TotalTokens) // 1+2+3+4+5
+	require.Equal(t, 65, s.TotalTokens) // 10+8+15+20+12
 	require.Equal(t, 3, s.LLMCalls)
-	require.Equal(t, 2, s.ToolInvocations)
+	require.Equal(t, 1, s.ToolInvocations)
 }
 
 func TestRecorder_toolNamesInSummary(t *testing.T) {
