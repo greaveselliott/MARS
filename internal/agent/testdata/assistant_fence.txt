@@ -1,0 +1,5 @@
+Here is the tool call:
+
+```json
+[{"name":"file_read","arguments":"{\"path\":\"README.md\"}","id":"c1","type":"function"}]
+```

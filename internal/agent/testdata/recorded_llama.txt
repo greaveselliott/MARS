@@ -1,0 +1,3 @@
+```json
+[{"name":"file_read","arguments":"{\"path\":\"go.mod\"}","id":"rec-1","type":"function"}]
+```
