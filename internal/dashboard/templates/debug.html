@@ -1,0 +1,59 @@
+{{template "base" .}}
+{{define "page-content"}}
+<section class="page-section">
+    <p class="section-desc">Execution traces, webhook events, and error log.</p>
+
+    <div class="card">
+        <div class="card-header"><h3>Execution Traces</h3></div>
+        <div class="card-body">
+            <div id="trace-viewer">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Trace ID</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="empty-state">No traces recorded yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Webhook Log</h3></div>
+        <div class="card-body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Event</th>
+                        <th>Source</th>
+                        <th>Payload</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" class="empty-state">No webhooks received yet.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Error Log</h3></div>
+        <div class="card-body">
+            <pre class="log-output" id="error-log">No errors recorded.</pre>
+        </div>
+    </div>
+</section>
+{{end}}

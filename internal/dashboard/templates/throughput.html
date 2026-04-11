@@ -1,0 +1,45 @@
+{{template "base" .}}
+{{define "page-content"}}
+<section class="page-section">
+    <p class="section-desc">Job throughput, inference metrics, and resource usage.</p>
+
+    <div class="chart-row">
+        <div class="card">
+            <div class="card-header"><h3>Jobs / Hour</h3></div>
+            <div class="card-body chart-container">
+                <canvas id="chart-jobs-hour"></canvas>
+                <noscript><p>Chart requires JavaScript and Chart.js.</p></noscript>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><h3>Inference Latency (ms)</h3></div>
+            <div class="card-body chart-container">
+                <canvas id="chart-latency"></canvas>
+                <noscript><p>Chart requires JavaScript and Chart.js.</p></noscript>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Resource Usage</h3></div>
+        <div class="card-body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Current</th>
+                        <th>Peak</th>
+                        <th>Avg (1h)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>GPU Utilization</td><td>—</td><td>—</td><td>—</td></tr>
+                    <tr><td>VRAM</td><td>—</td><td>—</td><td>—</td></tr>
+                    <tr><td>RAM</td><td>—</td><td>—</td><td>—</td></tr>
+                    <tr><td>Tokens / sec</td><td>—</td><td>—</td><td>—</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{{end}}

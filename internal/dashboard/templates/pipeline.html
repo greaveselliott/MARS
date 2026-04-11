@@ -1,0 +1,25 @@
+{{template "base" .}}
+{{define "page-content"}}
+<section class="page-section">
+    <p class="section-desc">Job pipeline stages from intake through delivery.</p>
+    <div id="job-table">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Job ID</th>
+                    <th>Role</th>
+                    <th>Stage</th>
+                    <th>Status</th>
+                    <th>Started</th>
+                    <th>Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="6" class="empty-state">No active jobs. The pipeline is idle.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{{end}}
