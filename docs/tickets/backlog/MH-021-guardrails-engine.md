@@ -19,7 +19,7 @@ Guardrails translate org policy into mechanical checks. M7 separates “nudge th
 - Advisory: inject compact reminder into prompt context when matcher hits pre-tool-call
 - Hard: reject tool I/O or file edits when matcher hits; return structured violation to agent loop
 - Override mechanism: manifest-declared break-glass tokens or operator CLI flag with mandatory audit log line (who/when/rule_id)
-- Staleness: rules unused for 30 days flagged in `doctor` / status output; optional warn-only mode
+- Staleness: rules unused for 90 days flagged in `doctor` / status output; optional warn-only mode
 
 ## Acceptance Criteria
 

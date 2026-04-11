@@ -15,7 +15,7 @@ Roles like nightly QA need manifest-declared schedules without an external cron 
 
 ## Requirements
 
-- Parse cron expressions and timezone (IANA name, e.g. `Europe/London`) from bundle manifest section
+- Schedule sources: config file entries and per-repo `.harness/schedules.yaml`. Parse cron expressions and timezone (IANA name, e.g. `Europe/London`) from those sources
 - Evaluate next run times using a well-vetted cron library or documented subset (minute/hour/day/month/dow)
 - On startup, detect missed windows since last persisted `last_fire_at`; configurable policy: `fire_once` catch-up vs `skip_missed`
 - Emit enqueue calls to MH-013 with stable idempotency keys derived from `(repo_id, schedule_name, window_start)`

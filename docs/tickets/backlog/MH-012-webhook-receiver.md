@@ -18,8 +18,8 @@ The harness must react to GitHub asynchronously. A small HTTP server validates a
 - HTTP server with configurable bind address; health route separate from webhook path
 - HMAC-SHA256 validation using `X-Hub-Signature-256` (constant-time compare); reject missing/invalid signature before body parse on large payloads
 - Normalize to internal envelope: `event_type`, `action`, `repo`, `installation_id`, `delivery_id`, `payload` subset needed by dispatcher
-- Supported GitHub types: `pull_request`, `check_suite`, `workflow_run`, `merge_group`, `issue_comment`
-- Deduplication: key `(X-GitHub-Delivery, app_id)` persisted (SQLite or in-memory LRU with SQLite backing for restart safety); duplicates return 200 without enqueue
+- Supported GitHub types: `push`, `pull_request`, `check_suite`, `workflow_run`, `merge_group`, `issue_comment`
+- Deduplication: key `(X-GitHub-Delivery, app_id)` persisted (SQLite or in-memory LRU with SQLite backing for restart safety); duplicates return 200 without enqueue; reject replays within 1-hour window
 
 ## Acceptance Criteria
 

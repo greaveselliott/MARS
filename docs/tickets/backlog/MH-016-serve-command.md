@@ -7,7 +7,7 @@ source: delivery-schedule M5b
 created: 2026-04-11
 ---
 
-# MH-016: `mars-harness serve` — startup sequence, graceful shutdown, `/api/status`
+# MH-016: `mars-harness serve` — startup sequence, graceful shutdown, `/healthz`
 
 ## Context
 
@@ -18,13 +18,13 @@ Operators need one command that brings inference, GitHub integration, webhooks, 
 - `serve` subcommand: flags for bind addresses, bundle path, database path, concurrency, shutdown timeout
 - Startup sequence: hardware/model inference check → internal health → webhook listener (MH-012) → scheduler (MH-014) → worker dispatcher (MH-013)
 - Graceful shutdown on SIGINT/SIGTERM: stop accepting webhooks, drain queue to configured depth or timeout, close DB
-- HTTP `/api/status` JSON: versions, uptime, inference OK, GitHub auth mode, webhook last delivery time, queue depth per repo, scheduler next fires
+- HTTP `/healthz` JSON: versions, uptime, inference OK, GitHub auth mode, webhook last delivery time, queue depth per repo, scheduler next fires
 
 ## Acceptance Criteria
 
 ### Functional (happy path)
 - [ ] Cold start completes with all green checks when dependencies configured
-- [ ] `/api/status` reflects live metrics after synthetic webhook in dev
+- [ ] `/healthz` reflects live metrics after synthetic webhook in dev
 - [ ] SIGTERM triggers shutdown sequence logged step-by-step; in-flight job finishes or times out per flag
 
 ### Edge cases and negative paths
@@ -37,6 +37,6 @@ Operators need one command that brings inference, GitHub integration, webhooks, 
 - [ ] TLS certificate management
 
 ### Observability, docs, and regressions
-- [ ] Smoke test script: curl `/api/status` in CI with mocked GitHub
+- [ ] Smoke test script: curl `/healthz` in CI with mocked GitHub
 - [ ] Structured startup logs with correlation id per subsystem init
 - [ ] README “day 2 operations” section updated

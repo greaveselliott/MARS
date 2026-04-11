@@ -22,6 +22,7 @@ M5a introduces durable work: webhook- and scheduler-driven jobs must not lose st
 - Idempotency: unique index on `(repo_id, idempotency_key)`; second enqueue returns existing job id
 - Worker pool: configurable concurrency; graceful shutdown waits for in-flight jobs or respects timeout
 - Dispatcher integrates with normalized events from MH-012 (interface only if needed to avoid circular deps)
+- Job TTL — failed/completed jobs retained for 30 days, then pruned
 
 ## Acceptance Criteria
 
@@ -34,6 +35,7 @@ M5a introduces durable work: webhook- and scheduler-driven jobs must not lose st
 - [ ] Worker death mid-job: lease expires, job becomes reclaimable or moves to `failed` per policy (documented)
 - [ ] Cancel transitions a `pending` job to `cancelled`; `running` cancel requests cooperative stop flag
 - [ ] SQLite busy: retry with backoff; no indefinite spin
+- [ ] Completed/failed jobs older than 30 days are pruned automatically
 
 ### Non-goals
 - [ ] Distributed multi-node queue (single process / single DB file)
@@ -43,3 +45,5 @@ M5a introduces durable work: webhook- and scheduler-driven jobs must not lose st
 - [ ] Stress test: N workers, M repos, verifies serialization invariant
 - [ ] Migration test from empty DB to v1 schema
 - [ ] Metrics: queue depth per repo, claim latency, job duration histogram
+
+> Note: Schedule uses queued/running/completed/failed; implementation uses pending/claimed/running/completed/failed/cancelled for lease pattern precision.

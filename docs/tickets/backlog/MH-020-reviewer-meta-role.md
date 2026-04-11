@@ -20,7 +20,7 @@ When jobs fail, a dedicated meta-role should turn execution traces into concrete
 - Open PRs only under `.harness/` (manifest, prompts, guardrails, knowledge routes) with clear description template
 - Model policy: strongest configured model + highest context budget for this role only
 - Safety: Reviewer cannot modify its own system prompt files; changes go through normal PR review by humans
-- Rate limit: at most one evolution PR per role per day; auto-disable if MH-017 rolling score drops after Reviewer merges (configurable window)
+- Rate limit: at most one evolution PR per role per day; **auto-disable if the last 3 Reviewer evolutions each worsened MH-017 rolling score** (thresholds configurable)
 
 ## Acceptance Criteria
 
@@ -31,7 +31,7 @@ When jobs fail, a dedicated meta-role should turn execution traces into concrete
 ### Edge cases and negative paths
 - [ ] Attempt to edit Reviewer prompt path is rejected at tool layer with explicit reason
 - [ ] Second Reviewer run same day returns no-op with “budget exhausted” audit entry
-- [ ] If score worsens post-merge, Reviewer auto-disable flag prevents new runs until CLI clear
+- [ ] If the **last 3 evolutions each worsened** MH-017 rolling score, Reviewer auto-disable flag prevents new runs until CLI clear
 
 ### Non-goals
 - [ ] Auto-merge of Reviewer PRs

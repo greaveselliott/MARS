@@ -16,29 +16,30 @@ Trust and autonomy (M6) need grounded metrics, not vibes. Scores must derive fro
 ## Requirements
 
 - Ingest GitHub events (merged, closed without merge, CI success/failure, required review approvals) keyed by `job_id` / PR number
-- Scoring formula versioned in code (e.g. `v1`: merge +CI green +approval weights; penalties for CI red, closed, manual revert flags from MH-019 when available)
-- Rolling window over last 20 completed harness jobs per repo (configurable)
-- Noop detection: PR with zero non-comment events or only whitespace → score neutral bucket, not positive
-- Value scoring: optional weight when user merges with edits (signals real value) vs straight merge
-- Alert hooks: log + optional webhook when rolling score drops below threshold for N consecutive jobs
+- Scoring formula versioned in code: **`v1`** is a simple ratio (each terminal outcome in exactly one bucket); **`v2` (deferred):** weighted scoring (CI/review/value weights, explicit penalties, MH-019 revert flags when available) — not in v1.
+  - **v1 accuracy** = `(merged + passed) / (merged + passed + closed + failed + noop)`
+- **30-day rolling window** per repo (configurable anchor, e.g. calendar UTC); only completed harness outcomes whose terminal timestamp falls in the window count toward the ratio
+- Noop detection: PR with zero non-comment events or only whitespace → **noop** bucket in the denominator; does not count as merged/passed positive signal
+- Value signals (e.g. user merge with edits vs straight merge): tracked for analytics only in v1; **weighted value scoring is deferred to v2** alongside the weighted accuracy formula
+- Alert hooks: log + optional webhook when rolling score drops below threshold for N consecutive evaluations in-window (configurable)
 
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Synthetic fixture of 20 jobs produces expected numeric score for known outcomes
-- [ ] Noop PR does not increase accuracy metric
+- [ ] Synthetic fixture spanning the **30-day rolling window** produces the expected v1 ratio for known outcome mix
+- [ ] Noop PR lands in **noop** and does not increase the numerator; denominator reflects noop correctly
 - [ ] Alert fires when scripted drop crosses threshold
 
 ### Edge cases and negative paths
 - [ ] Events arriving out-of-order reconcile to stable final state (merge after close ignored correctly)
 - [ ] Missing optional signals (no reviews configured) do not NaN the score; documented defaults
-- [ ] Fewer than 20 jobs: score computed on available sample with `sample_size` exposed in status
+- [ ] Sparse data in window: score computed on available terminal outcomes with `sample_size` and window bounds exposed in status
 
 ### Non-goals
 - [ ] LLM-as-judge for code quality
 - [ ] Cross-repo normalization across unrelated languages
 
 ### Observability, docs, and regressions
-- [ ] Golden-file tests for scorer `v1`
-- [ ] `/api/status` or dedicated `/api/metrics` exposes rolling score, window, formula version
-- [ ] Design note: formula tuning process and backwards compatibility
+- [ ] Golden-file tests for scorer `v1` (ratio + window boundaries)
+- [ ] `/api/metrics` exposes rolling score, window, formula version (see MH-016 `/healthz` for process health)
+- [ ] Design note: formula tuning process and backwards compatibility (v2 weighted scoring when promoted from backlog)

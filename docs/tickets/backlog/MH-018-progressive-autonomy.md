@@ -16,8 +16,9 @@ Roles should gain capability only when evidence supports it. Trust levels gate P
 ## Requirements
 
 - Trust enum per role: `observer`, `contributor`, `autonomous` with manifest defaults
-- Configurable numeric thresholds tying to MH-017 (e.g. promote to `contributor` after score ≥ X for Y jobs)
-- Trial mode: allow exactly N runs at `contributor` before auto-revert to `observer` unless promoted by metrics
+- **Runs-to-promote (schedule):** trust advances by accumulated successful evidence, not by a time-boxed trial that **expires and reverts**.
+  - **`observer` → `contributor`:** after **N trial runs** (default **5**); each trial run is an audited job toward the promotion counter (runs-to-promote, not time-boxed expiry)
+  - **`contributor` → `autonomous`:** after MH-017 accuracy **score ≥ configured threshold** sustained over **20+ terminal outcomes** in the scoring window
 - Automatic promotion/demotion evaluated after each completed job; persisted in SQLite
 - Enforcement: `observer` cannot open or update PRs (read-only tools + comments allowed); violations blocked in tool layer with clear error
 - CLI override: `mars-harness trust set <role> <level> --reason` audited
@@ -26,8 +27,8 @@ Roles should gain capability only when evidence supports it. Trust levels gate P
 
 ### Functional (happy path)
 - [ ] Role at `observer` completes a diagnostic job without creating a PR
-- [ ] Scripted high scores promote `contributor` → `autonomous` per thresholds
-- [ ] Trial mode expires and downgrades unless criteria met
+- [ ] Scripted high scores promote `contributor` → `autonomous` per threshold **over 20+ outcomes** (MH-017)
+- [ ] **Runs-to-promote:** default **5** trial runs advance `observer` → `contributor`; no automatic downgrade solely because a trial “expired”
 
 ### Edge cases and negative paths
 - [ ] Manual CLI override immediately affects enforcement without waiting for next job

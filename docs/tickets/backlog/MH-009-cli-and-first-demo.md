@@ -19,7 +19,7 @@ Reference: delivery schedule M3
 
 ### CLI framework (`cmd/mars-harness/main.go`)
 - Replace placeholder with cobra (or equivalent) CLI framework
-- `run` subcommand: `--role`, `--repo`, `--model-endpoint` (optional override), `--trace` (verbosity)
+- `run` subcommand: positional `<role>` with `mars-harness run <role> --repo <path>`; flags `--model-endpoint` (optional override), `--trace` (verbosity), `--dry-run`
 - `version` subcommand
 
 ### Bundle reader (`internal/bundle/reader.go`)
@@ -44,8 +44,9 @@ Reference: delivery schedule M3
 
 ## Acceptance Criteria
 
-### Functional
+### Functional (happy path)
 - [ ] `mars-harness run pipeline-fixer --repo /path` executes and produces visible output
+- [ ] `--dry-run` shows what would execute without calling LLM
 - [ ] Trace streams to terminal in real-time with colour coding
 - [ ] Tool calls execute against real files in the repo
 - [ ] Budget limit terminates the run cleanly with clear message
@@ -68,3 +69,5 @@ Reference: delivery schedule M3
 ## Notes
 
 This is the "wow" moment. If this doesn't look impressive, nothing else matters. Prioritise the terminal trace UX.
+
+> Note: Schedule references `bundles/pipeline-fixer/` but repo uses `examples/sample-bundle/` per existing directory structure.

@@ -15,7 +15,7 @@ First-run friction blocks adoption. M8 needs one guided command that sequences h
 
 ## Requirements
 
-- Subcommand `setup` with `--dry-run` and per-step flags to skip (`--skip-github`, etc.)
+- Subcommand `setup` with `--dry-run` and per-step flags to skip (`--skip-github`, etc.); `--test-mode` is an alias for `--skip-download --skip-github`
 - Ordered steps: hardware detect → ensure model artifacts → GitHub App manifest flow (MH-011) → `init` bundle scaffold (MH-023 subset or call) → verify (inference ping, GitHub ping, DB migrate) → optional `serve` launch
 - Idempotency: persisted state file records completed steps with hashes; re-run skips unless `--force-step`
 - Clear TTY UX: progress, estimated time, copy-paste URLs; non-TTY JSON summary mode
@@ -23,6 +23,7 @@ First-run friction blocks adoption. M8 needs one guided command that sequences h
 ## Acceptance Criteria
 
 ### Functional (happy path)
+- [ ] `--test-mode` works as alias for `--skip-download --skip-github`
 - [ ] Fresh machine completes setup to “ready” with all checkmarks on supported OS
 - [ ] Second run completes in under N seconds with “skipped” lines for each satisfied step
 - [ ] `--dry-run` prints intended mutations without writing secrets

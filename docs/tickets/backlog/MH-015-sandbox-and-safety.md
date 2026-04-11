@@ -16,7 +16,7 @@ Autonomous roles mutate repos and open PRs. M5b must limit filesystem and proces
 ## Requirements
 
 - Linux: optional namespace isolation for child processes (mount/pid/user where permitted); macOS documented fallback (cwd + ulimit-style limits only)
-- Blast radius caps: max files touched, max lines changed, max open PRs per repo; default deny `git rm` / destructive deletes unless explicitly allowed by manifest flag
+- Blast radius caps: max files changed per job, max lines changed per file, max total lines changed per job, max open PRs per repo; default deny `git rm` / destructive deletes unless explicitly allowed by manifest flag
 - Secret scanner pre-commit hook equivalent: block known high-entropy patterns and `.env` keys before push stage (configurable severity)
 - Emergency stop: halt workers, cancel in-flight jobs cooperatively, then GitHub cleanup sequence: revert draft PRs to closed or mark draft, delete harness-owned branches matching prefix, cancel outstanding check runs created by harness
 
@@ -31,6 +31,7 @@ Autonomous roles mutate repos and open PRs. M5b must limit filesystem and proces
 - [ ] Insufficient privileges for namespaces → degrade with loud warning and stricter caps
 - [ ] Partial GitHub cleanup failure → aggregated error report with per-resource status; idempotent retry
 - [ ] Secret scanner false positive → override token in manifest with audit log entry
+- [ ] Per-file and total line limits enforced separately
 
 ### Non-goals
 - [ ] eBPF syscall filtering
@@ -40,3 +41,5 @@ Autonomous roles mutate repos and open PRs. M5b must limit filesystem and proces
 - [ ] Integration tests on Linux runner; macOS unit tests for fallback path only
 - [ ] Audit log table entries for cap hits, overrides, emergency stop invocations
 - [ ] Operator runbook: when to hit emergency stop, expected GitHub end state
+
+> Note: Schedule references sandbox-exec but it is deprecated on modern macOS. Implementation uses cwd restriction + ulimit as fallback.
