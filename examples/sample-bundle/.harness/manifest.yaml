@@ -1,0 +1,12 @@
+name: sample-bundle
+description: Demo bundle with a Pipeline Fixer role
+roles:
+  pipeline-fixer:
+    prompt: roles/pipeline-fixer.md
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+    triggers:
+      - workflow_run.conclusion == "failure"
