@@ -3,7 +3,7 @@
 ## Getting Started
 
 ```bash
-git clone https://github.com/<owner>/mars-harness.git
+git clone https://github.com/greaveselliott/mars-harness.git
 cd mars-harness
 go build ./cmd/mars-harness
 go test ./...

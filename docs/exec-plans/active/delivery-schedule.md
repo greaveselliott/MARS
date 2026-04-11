@@ -18,7 +18,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 
 ### Tasks
 
-- **0.1** Go module init (`github.com/mars-stack/mars-harness`), set Go version floor (1.22+), configure `CGO_ENABLED=0`
+- **0.1** Go module init (`github.com/greaveselliott/mars-harness`), set Go version floor (1.22+), configure `CGO_ENABLED=0`
 - **0.2** Directory structure
   - **0.2.1** `cmd/mars-harness/` — entrypoint
   - **0.2.2** `internal/` — domain-grouped packages (`agent/`, `llm/`, `tools/`, `github/`, `pipeline/`, `safety/`, `scoring/`, `dashboard/`, `config/`, `scanner/`)
