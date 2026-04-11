@@ -1,0 +1,295 @@
+package scanner
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestScan_emptyRepo(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	hasType := func(typ string) bool {
+		for _, f := range result.Findings {
+			if f.Type == typ {
+				return true
+			}
+		}
+		return false
+	}
+	assert.True(t, hasType("no_ci"), "expected no_ci finding")
+	assert.True(t, hasType("no_readme"), "expected no_readme finding")
+	assert.True(t, hasType("no_license"), "expected no_license finding")
+	assert.False(t, result.HasCI)
+	assert.False(t, result.HasReadme)
+	assert.False(t, result.HasLicense)
+}
+
+func TestScan_detectsGoLanguage(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+	assert.Equal(t, "Go", result.Language)
+}
+
+func TestScan_detectsCI(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	wfDir := filepath.Join(dir, ".github", "workflows")
+	os.MkdirAll(wfDir, 0o755)
+	os.WriteFile(filepath.Join(wfDir, "ci.yml"), []byte("name: CI\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+	assert.True(t, result.HasCI)
+}
+
+func TestScan_detectsMissingTests(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	pkgDir := filepath.Join(dir, "pkg", "foo")
+	os.MkdirAll(pkgDir, 0o755)
+	os.WriteFile(filepath.Join(pkgDir, "foo.go"), []byte("package foo\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	found := false
+	for _, f := range result.Findings {
+		if f.Type == "missing_tests" && f.Path == filepath.Join("pkg", "foo") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected missing_tests finding for pkg/foo")
+}
+
+func TestScan_noMissingTestsWhenTestExists(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	pkgDir := filepath.Join(dir, "pkg", "bar")
+	os.MkdirAll(pkgDir, 0o755)
+	os.WriteFile(filepath.Join(pkgDir, "bar.go"), []byte("package bar\n"), 0o644)
+	os.WriteFile(filepath.Join(pkgDir, "bar_test.go"), []byte("package bar\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	for _, f := range result.Findings {
+		if f.Type == "missing_tests" && f.Path == filepath.Join("pkg", "bar") {
+			t.Fatal("should not report missing_tests for pkg with test files")
+		}
+	}
+}
+
+func TestScan_detectsTodos(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n// TODO: fix this\n// FIXME: broken\n// HACK: workaround\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	todoCount := 0
+	for _, f := range result.Findings {
+		if f.Type == "todo" {
+			todoCount++
+		}
+	}
+	assert.Equal(t, 3, todoCount, "expected 3 todo findings (TODO, FIXME, HACK)")
+}
+
+func TestScan_detectsLargeFunction(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+
+	var src string
+	src += "package main\n\n"
+	src += "func bigFunc() {\n"
+	for i := 0; i < 55; i++ {
+		src += "\t_ = 0\n"
+	}
+	src += "}\n"
+	os.WriteFile(filepath.Join(dir, "big.go"), []byte(src), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	found := false
+	for _, f := range result.Findings {
+		if f.Type == "large_function" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected large_function finding")
+}
+
+func TestScan_skipsDefaultDirs(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	nmDir := filepath.Join(dir, "node_modules", "pkg")
+	os.MkdirAll(nmDir, 0o755)
+	os.WriteFile(filepath.Join(nmDir, "index.js"), []byte("// TODO: never see this\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	for _, f := range result.Findings {
+		if f.Type == "todo" {
+			t.Fatal("should not find TODOs in node_modules")
+		}
+	}
+}
+
+func TestScan_detectsLicense(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "LICENSE"), []byte("MIT\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+	assert.True(t, result.HasLicense)
+}
+
+func TestScan_invalidRoot(t *testing.T) {
+	t.Parallel()
+	_, err := Scan(context.Background(), Config{RepoRoot: "/nonexistent/path"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot access")
+}
+
+func TestScan_emptyRoot(t *testing.T) {
+	t.Parallel()
+	_, err := Scan(context.Background(), Config{RepoRoot: ""})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+}
+
+func TestScan_contextCancellation(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := Scan(ctx, Config{RepoRoot: dir})
+	require.Error(t, err)
+}
+
+func TestGenerateTickets(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	outputDir := filepath.Join(dir, "tickets")
+
+	findings := []Finding{
+		{Type: "no_ci", Description: "No CI found", Severity: "high"},
+		{Type: "missing_tests", Path: "pkg/foo", Description: "No tests", Severity: "medium"},
+		{Type: "todo", Path: "main.go:5", Description: "// TODO: fix", Severity: "low"},
+	}
+
+	err := GenerateTickets(findings, outputDir)
+	require.NoError(t, err)
+
+	entries, err := os.ReadDir(outputDir)
+	require.NoError(t, err)
+	assert.Equal(t, 2, len(entries), "expected 2 tickets (todo findings are skipped)")
+
+	data, err := os.ReadFile(filepath.Join(outputDir, entries[0].Name()))
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "priority:")
+	assert.Contains(t, string(data), "source: scanner")
+}
+
+func TestInit_success(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+
+	err := Init(dir, false)
+	require.NoError(t, err)
+
+	assert.DirExists(t, filepath.Join(dir, ".harness"))
+	assert.DirExists(t, filepath.Join(dir, ".harness", "roles"))
+	assert.DirExists(t, filepath.Join(dir, ".harness", "guardrails"))
+	assert.DirExists(t, filepath.Join(dir, ".harness", "knowledge"))
+	assert.DirExists(t, filepath.Join(dir, ".harness", "tickets"))
+	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
+}
+
+func TestInit_alreadyExists(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.MkdirAll(filepath.Join(dir, ".harness"), 0o755)
+
+	err := Init(dir, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already exists")
+}
+
+func TestInit_forceOverwrite(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.MkdirAll(filepath.Join(dir, ".harness"), 0o755)
+
+	err := Init(dir, true)
+	require.NoError(t, err)
+	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
+}
+
+func TestInit_notGitRepo(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	err := Init(dir, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not a git repository")
+}
+
+func TestInit_emptyRoot(t *testing.T) {
+	t.Parallel()
+	err := Init("", false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+}
+
+func TestDetectFramework_goMod(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example\n"), 0o644)
+
+	fw := detectFramework(dir, []string{"go.mod"})
+	assert.Equal(t, "Go Module", fw)
+}
+
+func TestDetectFramework_cargoToml(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "Cargo.toml"), []byte("[package]\n"), 0o644)
+
+	fw := detectFramework(dir, []string{"Cargo.toml"})
+	assert.Equal(t, "Rust/Cargo", fw)
+}

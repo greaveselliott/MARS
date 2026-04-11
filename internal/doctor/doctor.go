@@ -1,0 +1,375 @@
+package doctor
+
+import (
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
+)
+
+// CheckResult represents the outcome of a single health check.
+type CheckResult struct {
+	Name     string        `json:"name"`
+	Status   string        `json:"status"` // "ok", "warn", "fail"
+	Message  string        `json:"message"`
+	Duration time.Duration `json:"duration"`
+	Fix      string        `json:"fix,omitempty"`
+}
+
+// Config controls doctor behaviour.
+type Config struct {
+	ConfigPath string
+	DBPath     string
+	SkipRemote bool
+	JSONOutput bool
+}
+
+const (
+	statusOK   = "ok"
+	statusWarn = "warn"
+	statusFail = "fail"
+
+	minGoMajor      = 1
+	minGoMinor      = 22
+	minDiskSpaceMiB = 5120 // 5 GiB
+)
+
+// Run executes all health checks and returns results.
+func Run(cfg Config) []CheckResult {
+	checks := []func(Config) CheckResult{
+		checkGoVersion,
+		checkConfigFile,
+		checkModelsDir,
+		checkDBAccessible,
+		checkLlamaServer,
+		checkDiskSpace,
+	}
+
+	results := make([]CheckResult, 0, len(checks))
+	for _, check := range checks {
+		result := check(cfg)
+		slog.Info("doctor check",
+			"name", result.Name,
+			"status", result.Status,
+			"message", result.Message,
+			"duration", result.Duration,
+		)
+		results = append(results, result)
+	}
+	return results
+}
+
+// FormatText renders results as human-readable coloured output.
+func FormatText(results []CheckResult) string {
+	var b strings.Builder
+	for _, r := range results {
+		icon := statusIcon(r.Status)
+		b.WriteString(fmt.Sprintf("  %s %s: %s (%s)\n", icon, r.Name, r.Message, r.Duration.Truncate(time.Millisecond)))
+		if r.Fix != "" {
+			b.WriteString(fmt.Sprintf("    fix: %s\n", r.Fix))
+		}
+	}
+	return b.String()
+}
+
+// FormatJSON renders results as a JSON array.
+func FormatJSON(results []CheckResult) (string, error) {
+	data, err := json.MarshalIndent(results, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("doctor: marshal JSON: %w", err)
+	}
+	return string(data), nil
+}
+
+// HasFailures returns true if any check has status "fail".
+func HasFailures(results []CheckResult) bool {
+	for _, r := range results {
+		if r.Status == statusFail {
+			return true
+		}
+	}
+	return false
+}
+
+func statusIcon(status string) string {
+	switch status {
+	case statusOK:
+		return "ok"
+	case statusWarn:
+		return "!!"
+	case statusFail:
+		return "FAIL"
+	default:
+		return "??"
+	}
+}
+
+func checkGoVersion(_ Config) CheckResult {
+	start := time.Now()
+	name := "go-version"
+
+	out, err := exec.Command("go", "version").Output()
+	if err != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusFail,
+			Message:  "go not found in PATH",
+			Duration: time.Since(start),
+			Fix:      "install Go >= 1.22 from https://go.dev/dl/",
+		}
+	}
+
+	version := string(out)
+	major, minor, parseErr := parseGoVersion(version)
+	if parseErr != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  fmt.Sprintf("could not parse version from: %s", strings.TrimSpace(version)),
+			Duration: time.Since(start),
+		}
+	}
+
+	if major < minGoMajor || (major == minGoMajor && minor < minGoMinor) {
+		return CheckResult{
+			Name:     name,
+			Status:   statusFail,
+			Message:  fmt.Sprintf("go %d.%d found, need >= %d.%d", major, minor, minGoMajor, minGoMinor),
+			Duration: time.Since(start),
+			Fix:      fmt.Sprintf("upgrade Go to >= %d.%d from https://go.dev/dl/", minGoMajor, minGoMinor),
+		}
+	}
+
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  fmt.Sprintf("go %d.%d", major, minor),
+		Duration: time.Since(start),
+	}
+}
+
+func parseGoVersion(output string) (major, minor int, err error) {
+	// "go version go1.22.4 darwin/arm64"
+	fields := strings.Fields(output)
+	for _, f := range fields {
+		if strings.HasPrefix(f, "go") && strings.Contains(f, ".") {
+			ver := strings.TrimPrefix(f, "go")
+			parts := strings.SplitN(ver, ".", 3)
+			if len(parts) < 2 {
+				continue
+			}
+			maj, e1 := strconv.Atoi(parts[0])
+			min, e2 := strconv.Atoi(parts[1])
+			if e1 == nil && e2 == nil {
+				return maj, min, nil
+			}
+		}
+	}
+	return 0, 0, fmt.Errorf("no version found in %q", output)
+}
+
+func checkConfigFile(cfg Config) CheckResult {
+	start := time.Now()
+	name := "config-file"
+
+	path := cfg.ConfigPath
+	if path == "" {
+		home, _ := os.UserHomeDir()
+		path = filepath.Join(home, ".mars-harness", "config.yaml")
+	}
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  fmt.Sprintf("%s not found", path),
+			Duration: time.Since(start),
+			Fix:      "run 'mars-harness setup' to create default configuration",
+		}
+	}
+
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  path,
+		Duration: time.Since(start),
+	}
+}
+
+func checkModelsDir(cfg Config) CheckResult {
+	start := time.Now()
+	name := "models-dir"
+
+	home, _ := os.UserHomeDir()
+	modelsDir := filepath.Join(home, ".mars-harness", "models")
+
+	info, err := os.Stat(modelsDir)
+	if os.IsNotExist(err) {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  fmt.Sprintf("%s not found", modelsDir),
+			Duration: time.Since(start),
+			Fix:      "run 'mars-harness setup' to create the models directory",
+		}
+	}
+	if !info.IsDir() {
+		return CheckResult{
+			Name:     name,
+			Status:   statusFail,
+			Message:  fmt.Sprintf("%s exists but is not a directory", modelsDir),
+			Duration: time.Since(start),
+			Fix:      fmt.Sprintf("remove %s and run 'mars-harness setup'", modelsDir),
+		}
+	}
+
+	entries, _ := os.ReadDir(modelsDir)
+	ggufCount := 0
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), ".gguf") {
+			ggufCount++
+		}
+	}
+
+	if ggufCount == 0 {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  fmt.Sprintf("%s exists but contains no .gguf files", modelsDir),
+			Duration: time.Since(start),
+			Fix:      "download models with 'mars-harness setup' or place .gguf files in " + modelsDir,
+		}
+	}
+
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  fmt.Sprintf("%d model(s) in %s", ggufCount, modelsDir),
+		Duration: time.Since(start),
+	}
+}
+
+func checkDBAccessible(cfg Config) CheckResult {
+	start := time.Now()
+	name := "database"
+
+	path := cfg.DBPath
+	if path == "" {
+		home, _ := os.UserHomeDir()
+		path = filepath.Join(home, ".mars-harness", "db", "mars.db")
+	}
+
+	dir := filepath.Dir(path)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  fmt.Sprintf("database directory %s not found", dir),
+			Duration: time.Since(start),
+			Fix:      "run 'mars-harness setup' to create the database directory",
+		}
+	}
+
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  fmt.Sprintf("database directory exists: %s", dir),
+		Duration: time.Since(start),
+	}
+}
+
+func checkLlamaServer(_ Config) CheckResult {
+	start := time.Now()
+	name := "llama-server"
+
+	path, err := exec.LookPath("llama-server")
+	if err != nil {
+		home, _ := os.UserHomeDir()
+		binPath := filepath.Join(home, ".mars-harness", "bin", "llama-server")
+		if _, statErr := os.Stat(binPath); statErr == nil {
+			return CheckResult{
+				Name:     name,
+				Status:   statusOK,
+				Message:  binPath,
+				Duration: time.Since(start),
+			}
+		}
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  "llama-server not found in PATH or ~/.mars-harness/bin/",
+			Duration: time.Since(start),
+			Fix:      "install llama.cpp: https://github.com/ggml-org/llama.cpp#build",
+		}
+	}
+
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  path,
+		Duration: time.Since(start),
+	}
+}
+
+func checkDiskSpace(_ Config) CheckResult {
+	start := time.Now()
+	name := "disk-space"
+
+	home, _ := os.UserHomeDir()
+	target := filepath.Join(home, ".mars-harness")
+	if _, err := os.Stat(target); os.IsNotExist(err) {
+		target = home
+	}
+
+	freeMiB, err := freeDiskMiB(target)
+	if err != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  fmt.Sprintf("could not determine free disk space: %v", err),
+			Duration: time.Since(start),
+		}
+	}
+
+	if freeMiB < minDiskSpaceMiB {
+		return CheckResult{
+			Name:     name,
+			Status:   statusFail,
+			Message:  fmt.Sprintf("%d MiB free (need >= %d MiB)", freeMiB, minDiskSpaceMiB),
+			Duration: time.Since(start),
+			Fix:      "free up disk space — models alone require several GiB",
+		}
+	}
+
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  fmt.Sprintf("%d MiB free", freeMiB),
+		Duration: time.Since(start),
+	}
+}
+
+func freeDiskMiB(path string) (int, error) {
+	switch runtime.GOOS {
+	case "linux", "darwin":
+		return freeDiskUnix(path)
+	default:
+		return 0, fmt.Errorf("unsupported OS %q for disk space check", runtime.GOOS)
+	}
+}
+
+func freeDiskUnix(path string) (int, error) {
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(path, &stat); err != nil {
+		return 0, err
+	}
+	freeBytes := uint64(stat.Bavail) * uint64(stat.Bsize)
+	return int(freeBytes / (1024 * 1024)), nil
+}
