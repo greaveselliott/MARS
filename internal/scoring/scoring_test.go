@@ -1,0 +1,172 @@
+package scoring
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func tempStore(t *testing.T) *Store {
+	t.Helper()
+	dir := t.TempDir()
+	s, err := OpenStore(filepath.Join(dir, "scoring.db"))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = s.Close() })
+	return s
+}
+
+func TestComputeScore_emptyReturnsZero(t *testing.T) {
+	s := tempStore(t)
+	ctx := context.Background()
+
+	sc, err := s.ComputeScore(ctx, "ci-fix", "repo-1", 30)
+	require.NoError(t, err)
+	assert.Equal(t, 0.0, sc.Value)
+	assert.Equal(t, 0, sc.SampleSize)
+	assert.Equal(t, "v1", sc.Formula)
+}
+
+func TestComputeScore_allMergedReturnsOne(t *testing.T) {
+	s := tempStore(t)
+	ctx := context.Background()
+
+	for i := range 10 {
+		require.NoError(t, s.RecordOutcome(ctx, Outcome{
+			JobID:      fmt.Sprintf("job-%d", i),
+			RepoID:     "repo-1",
+			Role:       "pr-gen",
+			Type:       OutcomeMerged,
+			RecordedAt: time.Now().UTC(),
+		}))
+	}
+
+	sc, err := s.ComputeScore(ctx, "pr-gen", "repo-1", 30)
+	require.NoError(t, err)
+	assert.Equal(t, 1.0, sc.Value)
+	assert.Equal(t, 10, sc.SampleSize)
+}
+
+func TestComputeScore_mixedOutcomes(t *testing.T) {
+	s := tempStore(t)
+	ctx := context.Background()
+
+	outcomes := []OutcomeType{
+		OutcomeMerged, OutcomeMerged, OutcomeMerged, OutcomeMerged, OutcomeMerged,
+		OutcomePassed, OutcomePassed, OutcomePassed,
+		OutcomeClosed, OutcomeClosed,
+		OutcomeFailed, OutcomeFailed, OutcomeFailed,
+		OutcomeNoop, OutcomeNoop,
+		OutcomeTimeout, OutcomeTimeout, OutcomeTimeout, OutcomeTimeout, OutcomeTimeout,
+	}
+
+	for i, ot := range outcomes {
+		require.NoError(t, s.RecordOutcome(ctx, Outcome{
+			JobID:      fmt.Sprintf("job-%d", i),
+			RepoID:     "repo-1",
+			Role:       "ci-fix",
+			Type:       ot,
+			RecordedAt: time.Now().UTC(),
+		}))
+	}
+
+	// positive = 5 merged + 3 passed = 8
+	// denominator = 8 + 2 closed + 3 failed + 2 noop = 15 (timeouts excluded)
+	// expected = 8/15 ≈ 0.5333
+	sc, err := s.ComputeScore(ctx, "ci-fix", "repo-1", 30)
+	require.NoError(t, err)
+	assert.InDelta(t, 8.0/15.0, sc.Value, 0.001)
+	assert.Equal(t, 15, sc.SampleSize)
+}
+
+func TestComputeScore_timeoutExcluded(t *testing.T) {
+	s := tempStore(t)
+	ctx := context.Background()
+
+	require.NoError(t, s.RecordOutcome(ctx, Outcome{
+		JobID: "j-1", RepoID: "repo-1", Role: "deploy",
+		Type: OutcomeMerged, RecordedAt: time.Now().UTC(),
+	}))
+	require.NoError(t, s.RecordOutcome(ctx, Outcome{
+		JobID: "j-2", RepoID: "repo-1", Role: "deploy",
+		Type: OutcomeTimeout, RecordedAt: time.Now().UTC(),
+	}))
+
+	sc, err := s.ComputeScore(ctx, "deploy", "repo-1", 30)
+	require.NoError(t, err)
+	assert.Equal(t, 1.0, sc.Value, "timeout should not affect denominator")
+	assert.Equal(t, 1, sc.SampleSize)
+}
+
+func TestComputeScore_windowRespected(t *testing.T) {
+	s := tempStore(t)
+	ctx := context.Background()
+
+	oldTime := time.Now().UTC().AddDate(0, 0, -60)
+	require.NoError(t, s.RecordOutcome(ctx, Outcome{
+		JobID: "old-1", RepoID: "repo-1", Role: "ci-fix",
+		Type: OutcomeFailed, RecordedAt: oldTime,
+	}))
+
+	require.NoError(t, s.RecordOutcome(ctx, Outcome{
+		JobID: "new-1", RepoID: "repo-1", Role: "ci-fix",
+		Type: OutcomeMerged, RecordedAt: time.Now().UTC(),
+	}))
+
+	sc, err := s.ComputeScore(ctx, "ci-fix", "repo-1", 30)
+	require.NoError(t, err)
+	assert.Equal(t, 1.0, sc.Value, "old outcome outside window should be excluded")
+	assert.Equal(t, 1, sc.SampleSize)
+}
+
+func TestRecordOutcome_roundTrip(t *testing.T) {
+	s := tempStore(t)
+	ctx := context.Background()
+
+	o := Outcome{
+		JobID:      "job-abc",
+		RepoID:     "repo-1",
+		Role:       "pr-gen",
+		Type:       OutcomePassed,
+		Details:    `{"pr":42}`,
+		RecordedAt: time.Now().UTC(),
+	}
+	require.NoError(t, s.RecordOutcome(ctx, o))
+
+	sc, err := s.ComputeScore(ctx, "pr-gen", "repo-1", 30)
+	require.NoError(t, err)
+	assert.Equal(t, 1.0, sc.Value)
+	assert.Equal(t, 1, sc.SampleSize)
+
+	cached, err := s.GetScore(ctx, "pr-gen", "repo-1")
+	require.NoError(t, err)
+	require.NotNil(t, cached)
+	assert.Equal(t, sc.Value, cached.Value)
+	assert.Equal(t, sc.SampleSize, cached.SampleSize)
+
+	missing, err := s.GetScore(ctx, "unknown-role", "repo-1")
+	require.NoError(t, err)
+	assert.Nil(t, missing)
+}
+
+func TestComputeScore_minimumSampleSize(t *testing.T) {
+	s := tempStore(t)
+	ctx := context.Background()
+
+	for i := range 3 {
+		require.NoError(t, s.RecordOutcome(ctx, Outcome{
+			JobID: fmt.Sprintf("job-%d", i), RepoID: "repo-1", Role: "ci-fix",
+			Type: OutcomeMerged, RecordedAt: time.Now().UTC(),
+		}))
+	}
+
+	sc, err := s.ComputeScore(ctx, "ci-fix", "repo-1", 30)
+	require.NoError(t, err)
+	assert.Equal(t, 1.0, sc.Value)
+	assert.Equal(t, 3, sc.SampleSize, "SampleSize should reflect actual count even below minimum threshold")
+	assert.Less(t, sc.SampleSize, 5, "below minimum threshold of 5 outcomes")
+}
