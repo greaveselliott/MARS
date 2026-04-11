@@ -1,0 +1,30 @@
+# Documentation Discipline
+
+Every task that changes behaviour, fixes bugs, or adds infrastructure MUST update the relevant documentation before the final commit. Documentation is not a follow-up — it is part of "done".
+
+## When finishing a task, check each of these:
+
+### 1. Execution plans
+
+- If the work was driven by the delivery schedule, update it: mark tasks complete, record discoveries.
+- If the work was driven by a ticket, move the ticket to `done/` in the same PR.
+
+### 2. Design docs
+
+- If the work introduced or changed an architectural decision, update the relevant doc in `docs/design-docs/`.
+- Discoveries found during implementation go in the design doc's Discoveries section.
+- Add a row to `docs/design-docs/index.md` if a new decision was made.
+
+### 3. AGENTS.md
+
+- If the work changed project constraints, conventions, or key workflows, update `AGENTS.md`.
+
+## What NOT to document
+
+- Trivial single-file edits (typo fixes, dependency bumps) that don't change behaviour.
+- Work the user explicitly says is experimental or throwaway.
+
+## Anti-patterns
+
+- Committing code without updating the execution plan that drove it.
+- Recording discoveries only in commit messages or chat — they must land in a design doc or execution plan.

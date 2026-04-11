@@ -1,0 +1,120 @@
+# Mars Harness — Agent Guide
+
+> First file any agent reads. Fits in a single context window by design.
+
+## What is Mars Harness?
+
+A self-hosted autonomous AI delivery system written in Go. You provide a machine with a GPU, run `mars-harness setup`, and it autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, PR review, release management, documentation maintenance. All inference runs locally on open models (Gemma 4, Qwen3-Coder-Next). No cloud API costs, no data exfiltration, no vendor lock-in.
+
+**Lineage:** Mars Harness is an evolution of the [Mars](https://github.com/elliottgreaves/mars) monorepo's Cursor Automations pipeline. Mars proved the model works (11 autonomous roles). This product extracts that into a standalone, self-hosted system.
+
+**Tech stack:** Go, SQLite, llama.cpp (managed as subprocess), htmx + Chart.js (embedded dashboard).
+
+## The Nine Tenets
+
+Every decision in this project is filtered through these tenets (priority order):
+
+1. **Plug and Play** — zero to running in one command; extends to full lifecycle
+2. **Self-Improving System** — evolves from human interventions and its own failures
+3. **Accuracy and Value Scoring** — per-role health scores from real outcomes
+4. **Customisable Guardrails** — user-defined rules enforced during execution
+5. **Roadmap from Init** — tickets and backlog deployed on day one
+6. **Blast Radius Containment** — never cause irreversible damage
+7. **Execution Truth and Transparency** — auditable, attributable, everything in git
+8. **Progressive Autonomy** — earn trust, graduate from observer to autonomous
+9. **Context Efficiency** — minimal context assembly, retrieval over stuffing
+
+Full text: [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
+
+## Directory Structure
+
+```
+mars-harness/
+├── cmd/mars-harness/          CLI entry point (main.go)
+├── internal/                   All internal packages
+│   ├── agent/                  Agent runtime (conversation loop)
+│   ├── bundle/                 Bundle reader and resolver
+│   ├── context/                Context assembly engine
+│   ├── dashboard/              Built-in web dashboard
+│   ├── evolution/              Self-improvement (intervention detector, Reviewer)
+│   ├── github/                 GitHub App client and webhook receiver
+│   ├── guardrails/             Guardrails engine
+│   ├── hardware/               GPU detection and hardware profiles
+│   ├── inference/              llama.cpp server management
+│   ├── llm/                    LLM client (OpenAI-compatible) and router
+│   ├── models/                 Model registry and download
+│   ├── queue/                  SQLite job queue
+│   ├── safety/                 Blast radius, emergency stop
+│   ├── sandbox/                Process sandbox
+│   ├── scanner/                Repo scanner for starter backlog
+│   ├── scheduler/              Cron scheduler
+│   ├── scoring/                Accuracy and value scoring
+│   ├── tools/                  Tool registry and core tools
+│   ├── trace/                  Execution trace recorder
+│   ├── trust/                  Progressive autonomy manager
+│   └── ui/                     Terminal trace output
+├── docs/
+│   ├── design-docs/            Architectural decisions (see index.md)
+│   ├── exec-plans/             Active and completed plans, trackers
+│   ├── tickets/                Work items (backlog, in-progress, done)
+│   ├── product-specs/          Product vision and specifications
+│   ├── references/             Research findings and external sources
+│   └── generated/              Auto-generated docs
+├── examples/
+│   └── sample-bundle/          Example .harness/ bundle
+├── .cursor/rules/              Agent governance rules
+├── .github/workflows/          CI workflows
+├── AGENTS.md                   This file
+├── ARCHITECTURE.md             System architecture
+├── CONTRIBUTING.md             Contributor guide
+├── README.md                   Project overview
+└── LICENSE                     Apache 2.0
+```
+
+## Key Constraints
+
+1. **Single binary distribution.** The Go binary must cross-compile without CGO. llama.cpp is managed as a subprocess, not embedded.
+2. **No external dependencies at runtime.** SQLite is embedded. The dashboard is server-rendered HTML with embedded static assets. No Postgres, no Redis, no npm, no Grafana.
+3. **Errors must be actionable.** Every error message states what went wrong and provides a concrete remediation command. No cryptic codes.
+4. **Tests alongside code.** Every new function gets a test in the same PR. Minimum 70% coverage for non-trivial packages.
+5. **Architecture decisions are recorded.** Any non-trivial decision goes in `docs/design-docs/` and is indexed in `docs/design-docs/index.md`.
+6. **Commit after every step.** When executing the delivery schedule, commit after each completed task referencing the milestone and step number.
+7. **Never push to main.** All changes go through a branch and PR.
+8. **The repo is the system of record.** Decisions, discoveries, and plans live in docs, not in chat threads.
+
+## How to Build
+
+```bash
+go build ./cmd/mars-harness
+```
+
+## How to Test
+
+```bash
+go test ./...                    # All tests
+go test ./internal/agent/...     # Specific package
+go test -cover ./...             # With coverage
+```
+
+## How to Lint
+
+```bash
+golangci-lint run
+```
+
+## Working Discipline
+
+1. **Commit after every step.** Each completed task gets a commit referencing the milestone and step (e.g., `feat(agent): implement conversation loop (M1.3.1)`).
+2. **Document every decision.** Architecture decisions go in `docs/design-docs/`. Discoveries go in the relevant design doc's Discoveries section.
+3. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
+4. **Feed conversations back.** Decisions that exist only in chat threads are invisible to future agents. See the delivery schedule for what to build next.
+
+## Pointers
+
+- **Delivery schedule:** [docs/exec-plans/active/delivery-schedule.md](docs/exec-plans/active/delivery-schedule.md)
+- **Tenets:** [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
+- **Architecture decisions:** [docs/design-docs/index.md](docs/design-docs/index.md)
+- **Product vision:** [docs/product-specs/vision.md](docs/product-specs/vision.md)
+- **Model research:** [docs/references/model-landscape-april-2026.md](docs/references/model-landscape-april-2026.md)
+- **Tech debt:** [docs/exec-plans/tech-debt.md](docs/exec-plans/tech-debt.md)
+- **Tickets:** [docs/tickets/](docs/tickets/)
