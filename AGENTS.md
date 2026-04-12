@@ -83,10 +83,10 @@ mars-harness/
 1. **Single binary distribution.** The Go binary must cross-compile without CGO. llama.cpp is managed as a subprocess, not embedded.
 2. **No external dependencies at runtime.** SQLite is embedded. The dashboard is server-rendered HTML with embedded static assets. No Postgres, no Redis, no npm, no Grafana.
 3. **Errors must be actionable.** Every error message states what went wrong and provides a concrete remediation command. No cryptic codes.
-4. **Tests alongside code.** Every new function gets a test in the same PR. Minimum 70% coverage for non-trivial packages.
+4. **Tests alongside code.** Every new function gets a test in the same commit. Minimum 70% coverage for non-trivial packages.
 5. **Architecture decisions are recorded.** Any non-trivial decision goes in `docs/design-docs/` and is indexed in `docs/design-docs/index.md`.
 6. **Commit after every step.** When executing the delivery schedule, commit after each completed task referencing the milestone and step number.
-7. **Never push to main.** All changes go through a branch and PR.
+7. **Trunk-based development.** All commits go directly to `main`. No feature branches, no PRs. This keeps flows simple for autonomous agents. Use semantic (conventional) commit messages: `feat(scope): ...`, `fix(scope): ...`, `docs: ...`, `chore: ...`, `test: ...`, `refactor: ...`.
 8. **The repo is the system of record.** Decisions, discoveries, and plans live in docs, not in chat threads.
 9. **Always commit and push both repos.** When making changes to the harness and/or the target project, document, commit, and push changes in both. The harness and target project are separate git repositories — neither should have dangling uncommitted work at the end of a task.
 
