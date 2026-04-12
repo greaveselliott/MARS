@@ -13,7 +13,7 @@ import (
 
 // Finding represents a detected gap in the repo.
 type Finding struct {
-	Type        string // "missing_tests", "todo", "no_ci", "no_readme", "no_license", "large_function", "missing_dev_script", "missing_root_layout", "conflicting_app_pages", "missing_tailwind_config", "deprecated_next_config"
+	Type        string // "missing_tests", "todo", "no_ci", "no_readme", "no_license", "large_function", "missing_dev_script", "missing_root_layout", "conflicting_app_pages", "missing_tailwind_config", "deprecated_next_config", "misconfigured_path_alias"
 	Path        string
 	Description string
 	Severity    string // "high", "medium", "low"
@@ -355,7 +355,63 @@ func checkNextJSBootability(root string, files []string) []Finding {
 		}
 	}
 
+	findings = append(findings, checkTSConfigPathAlias(root, files)...)
+
 	return findings
+}
+
+// checkTSConfigPathAlias verifies that @/* path aliases in tsconfig.json
+// actually resolve to where source files live. A common agent error is
+// setting @/* → ./* when source lives in src/, causing module-not-found errors.
+func checkTSConfigPathAlias(root string, files []string) []Finding {
+	tsconfig, err := os.ReadFile(filepath.Join(root, "tsconfig.json"))
+	if err != nil {
+		return nil
+	}
+	content := string(tsconfig)
+
+	if !strings.Contains(content, `"@/*"`) {
+		return nil
+	}
+
+	aliasPointsToRoot := strings.Contains(content, `"./*"`) && !strings.Contains(content, `"./src/*"`)
+	if !aliasPointsToRoot {
+		return nil
+	}
+
+	hasSrcDir := false
+	for _, f := range files {
+		if strings.HasPrefix(filepath.ToSlash(f), "src/") {
+			hasSrcDir = true
+			break
+		}
+	}
+	if !hasSrcDir {
+		return nil
+	}
+
+	hasRootSrcFiles := false
+	for _, f := range files {
+		parts := strings.Split(filepath.ToSlash(f), "/")
+		if len(parts) >= 2 && parts[0] != "src" && parts[0] != "node_modules" && parts[0] != ".next" && parts[0] != "docs" && parts[0] != ".harness" && parts[0] != ".git" {
+			ext := filepath.Ext(f)
+			if ext == ".ts" || ext == ".tsx" || ext == ".js" || ext == ".jsx" {
+				hasRootSrcFiles = true
+				break
+			}
+		}
+	}
+
+	if !hasRootSrcFiles {
+		return []Finding{{
+			Type:        "misconfigured_path_alias",
+			Path:        "tsconfig.json",
+			Description: "tsconfig.json maps @/* to ./* but all source files are under src/ — imports like @/components/Foo will resolve to ./components/Foo (project root) instead of ./src/components/Foo. Change paths to: \"@/*\": [\"./src/*\"]",
+			Severity:    "high",
+		}}
+	}
+
+	return nil
 }
 
 func checkNodeBootability(root string) []Finding {
@@ -772,6 +828,8 @@ func titleFromType(t string) string {
 		return "Add Missing Tailwind CSS Configuration"
 	case "deprecated_next_config":
 		return "Remove Deprecated Next.js Config Options"
+	case "misconfigured_path_alias":
+		return "Fix Misconfigured TypeScript Path Alias"
 	default:
 		return strings.ReplaceAll(t, "_", " ")
 	}

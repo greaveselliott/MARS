@@ -644,3 +644,67 @@ func TestBootability_deprecatedNextConfig(t *testing.T) {
 	}
 	assert.True(t, found, "expected deprecated_next_config when next.config.js has appDir")
 }
+
+func TestBootability_misconfiguredPathAlias(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+		"name": "test",
+		"dependencies": {"next": "^16.0.0"},
+		"scripts": {"dev": "next dev", "build": "next build"}
+	}`), 0o644)
+	os.WriteFile(filepath.Join(dir, "tsconfig.json"), []byte(`{
+		"compilerOptions": {
+			"baseUrl": ".",
+			"paths": { "@/*": ["./*"] }
+		}
+	}`), 0o644)
+
+	srcApp := filepath.Join(dir, "src", "app")
+	os.MkdirAll(srcApp, 0o755)
+	os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+	os.WriteFile(filepath.Join(srcApp, "page.tsx"), []byte("export default function P() { return <div/>; }"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	found := false
+	for _, f := range result.Findings {
+		if f.Type == "misconfigured_path_alias" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected misconfigured_path_alias when @/* maps to ./* but source is in src/")
+}
+
+func TestBootability_correctPathAlias(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+		"name": "test",
+		"dependencies": {"next": "^16.0.0"},
+		"scripts": {"dev": "next dev", "build": "next build"}
+	}`), 0o644)
+	os.WriteFile(filepath.Join(dir, "tsconfig.json"), []byte(`{
+		"compilerOptions": {
+			"baseUrl": ".",
+			"paths": { "@/*": ["./src/*"] }
+		}
+	}`), 0o644)
+
+	srcApp := filepath.Join(dir, "src", "app")
+	os.MkdirAll(srcApp, 0o755)
+	os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	for _, f := range result.Findings {
+		if f.Type == "misconfigured_path_alias" {
+			t.Fatal("should not report misconfigured_path_alias when @/* correctly maps to ./src/*")
+		}
+	}
+}

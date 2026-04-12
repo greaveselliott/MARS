@@ -15,10 +15,17 @@ import (
 //go:embed templates/*.html static/*
 var content embed.FS
 
+// ChainNode represents a single role in the pipeline visualization.
+type ChainNode struct {
+	Name   string
+	Active bool
+}
+
 // Config controls the dashboard.
 type Config struct {
 	Addr          string       // default ":9090"
 	EmergencyStop func() []error
+	ChainProvider func() []ChainNode // returns the live pipeline chain from manifest
 }
 
 const eventBufferSize = 200
@@ -92,9 +99,10 @@ func (d *Dashboard) handleIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 type pageData struct {
-	Title     string
-	ActiveNav string
-	Now       string
+	Title      string
+	ActiveNav  string
+	Now        string
+	ChainNodes []ChainNode
 }
 
 func (d *Dashboard) handlePage(name, title string) http.HandlerFunc {
@@ -103,6 +111,10 @@ func (d *Dashboard) handlePage(name, title string) http.HandlerFunc {
 			Title:     title,
 			ActiveNav: name,
 			Now:       time.Now().Format(time.RFC3339),
+		}
+
+		if name == "pipeline" && d.cfg.ChainProvider != nil {
+			data.ChainNodes = d.cfg.ChainProvider()
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

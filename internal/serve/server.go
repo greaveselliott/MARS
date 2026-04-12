@@ -211,6 +211,7 @@ func New(cfg Config) (*Server, error) {
 	dash, err := dashboard.New(dashboard.Config{
 		Addr:          dashAddr,
 		EmergencyStop: func() []error { return s.estop.Execute(context.Background()) },
+		ChainProvider: s.buildPipelineChain,
 	})
 	if err != nil {
 		db.Close()
@@ -889,6 +890,77 @@ func (s *Server) enqueueRetry(evt telemetry.Event, reason string) {
 		})
 		s.dash.BroadcastEvent("telemetry_retry", string(payload))
 	}
+}
+
+// buildPipelineChain walks the manifest's `then` chains starting from CEO
+// and returns an ordered list of chain nodes for the dashboard.
+func (s *Server) buildPipelineChain() []dashboard.ChainNode {
+	repos, err := s.repos.List(context.Background())
+	if err != nil || len(repos) == 0 {
+		return nil
+	}
+
+	manifest, err := bundle.Load(repos[0].Path)
+	if err != nil {
+		return nil
+	}
+
+	var nodes []dashboard.ChainNode
+	visited := map[string]bool{}
+
+	// Walk the chain starting from "ceo" (the pipeline entry point).
+	current := "ceo"
+	for current != "" && !visited[current] {
+		visited[current] = true
+		role, ok := manifest.Roles[current]
+		if !ok {
+			break
+		}
+
+		nodes = append(nodes, dashboard.ChainNode{Name: current})
+
+		next := ""
+		for _, t := range role.Then {
+			if !visited[t] {
+				next = t
+				break
+			}
+		}
+		current = next
+	}
+
+	// Append idle_then targets from the last node that has them.
+	for i := len(nodes) - 1; i >= 0; i-- {
+		role, ok := manifest.Roles[nodes[i].Name]
+		if !ok {
+			continue
+		}
+		for _, t := range role.IdleThen {
+			if !visited[t] {
+				nodes = append(nodes, dashboard.ChainNode{Name: t})
+				visited[t] = true
+			}
+		}
+		if len(role.IdleThen) > 0 {
+			break
+		}
+	}
+
+	// Add any roles with `then` branches not yet visited (parallel chains like dogfood).
+	for _, node := range nodes {
+		role, ok := manifest.Roles[node.Name]
+		if !ok {
+			continue
+		}
+		for _, t := range role.Then {
+			if !visited[t] {
+				nodes = append(nodes, dashboard.ChainNode{Name: t})
+				visited[t] = true
+			}
+		}
+	}
+
+	return nodes
 }
 
 func (s *Server) registerCronSchedules(repos []RepoRecord) {

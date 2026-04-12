@@ -33,19 +33,8 @@
     <div class="card">
       <h2>Pipeline Chain</h2>
       <div class="pipeline-chain">
-        <span class="chain-node">CEO</span>
-        <span class="chain-arrow">&rarr;</span>
-        <span class="chain-node">CTO</span>
-        <span class="chain-arrow">&rarr;</span>
-        <span class="chain-node">COO</span>
-        <span class="chain-arrow">&rarr;</span>
-        <span class="chain-node">Engineer</span>
-        <span class="chain-arrow">&rarr;</span>
-        <span class="chain-node">QA</span>
-        <span class="chain-arrow">&rarr;</span>
-        <span class="chain-node">Security</span>
-        <span class="chain-arrow">&rarr;</span>
-        <span class="chain-node">Deps</span>
+        {{range $i, $node := .ChainNodes}}{{if $i}}<span class="chain-arrow">&rarr;</span>{{end}}<span class="chain-node{{if $node.Active}} active{{end}}">{{$node.Name}}</span>{{end}}
+        {{if not .ChainNodes}}<span class="chain-node">No roles configured</span>{{end}}
       </div>
     </div>
   </main>
