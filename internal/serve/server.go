@@ -20,6 +20,7 @@ import (
 	gh "github.com/greaveselliott/mars-harness/internal/github"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
+	"github.com/greaveselliott/mars-harness/internal/power"
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/scheduler"
@@ -61,6 +62,8 @@ type Server struct {
 	executor  *Executor
 	dash      *dashboard.Dashboard
 	dashHTTP  *http.Server
+
+	cancelSleep func()
 
 	mu      sync.Mutex
 	started bool
@@ -159,6 +162,7 @@ func New(cfg Config) (*Server, error) {
 		Concurrency: cfg.concurrency(),
 		OnJob:       executor.Execute,
 		OnComplete:  s.handleJobComplete,
+		OnFail:      s.handleJobFailed,
 	})
 
 	dashAddr := cfg.DashboardAddr
@@ -212,6 +216,12 @@ func (s *Server) Start(ctx context.Context) error {
 	s.started = true
 	s.mu.Unlock()
 
+	if cancelSleep, err := power.PreventSleep(); err != nil {
+		slog.Warn("serve: could not prevent system sleep — long jobs may be interrupted if the machine idles", "err", err)
+	} else {
+		s.cancelSleep = cancelSleep
+	}
+
 	if n, err := s.queue.ResetOrphans(ctx); err != nil {
 		slog.Warn("serve: failed to reset orphaned jobs", "err", err)
 	} else if n > 0 {
@@ -231,6 +241,8 @@ func (s *Server) Start(ctx context.Context) error {
 
 	s.workers.Start(ctx)
 	s.scheduler.Start(ctx)
+
+	power.StartWatchdog(ctx, s.handleWake)
 
 	ln, err := net.Listen("tcp", s.cfg.WebhookAddr)
 	if err != nil {
@@ -305,8 +317,33 @@ func (s *Server) Stop(ctx context.Context) error {
 		firstErr = fmt.Errorf("serve: db close: %w", err)
 	}
 
+	if s.cancelSleep != nil {
+		s.cancelSleep()
+	}
+
 	slog.Info("serve: orchestrator stopped")
 	return firstErr
+}
+
+// handleWake is called by the sleep watchdog when the machine resumes
+// from suspension. It restarts inference servers (stale connections) and
+// resets any jobs stuck in running state so they get retried.
+func (s *Server) handleWake(gap time.Duration) {
+	slog.Warn("serve: recovering from system sleep", "gap", gap.Round(time.Second))
+
+	s.router.RestartAll()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if n, err := s.queue.ResetOrphans(ctx); err != nil {
+		slog.Error("serve: wake recovery — failed to reset orphaned jobs", "err", err)
+	} else if n > 0 {
+		slog.Info("serve: wake recovery — reset stuck jobs", "count", n)
+	}
+
+	if s.dash != nil {
+		s.dash.BroadcastEvent("wake_recovery", fmt.Sprintf("resumed after %s sleep", gap.Round(time.Second)))
+	}
 }
 
 // Healthy reports whether the server is accepting traffic.
@@ -397,7 +434,10 @@ func (s *Server) handleEvent(event gh.Event) {
 
 // handleJobComplete is the OnComplete callback for the worker pool.
 // It resolves the `then` field from the completed role's manifest and
-// enqueues follow-up jobs for each chained role.
+// enqueues follow-up jobs for each chained role. If a self-chain is
+// skipped (role finished too fast, meaning no work was found), the
+// `idle_then` roles are triggered instead — this is the bridge between
+// the delivery loop and the strategy chain.
 func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
 
@@ -414,12 +454,13 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 	}
 
 	role, ok := manifest.Roles[job.Role]
-	if !ok || len(role.Then) == 0 {
+	if !ok || (len(role.Then) == 0 && len(role.IdleThen) == 0) {
 		return
 	}
 
 	runDuration := time.Since(job.UpdatedAt)
 	selfChainMinDuration := 60 * time.Second
+	idle := false
 
 	chainJSON, _ := json.Marshal(map[string]string{
 		"type":        "chain",
@@ -433,6 +474,7 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 				"duration", runDuration.Round(time.Second),
 				"threshold", selfChainMinDuration,
 			)
+			idle = true
 			continue
 		}
 
@@ -444,11 +486,11 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 			IdempotencyKey: idempotencyKey,
 		}
 
-		jobID, err := s.queue.Enqueue(ctx, chainJob)
-		if err != nil {
+		jobID, enqErr := s.queue.Enqueue(ctx, chainJob)
+		if enqErr != nil {
 			log.Error("serve: failed to enqueue chained job",
 				"target_role", target,
-				"err", err,
+				"err", enqErr,
 			)
 			continue
 		}
@@ -457,6 +499,104 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 			"chained_job_id", jobID,
 		)
 	}
+
+	if !idle || len(role.IdleThen) == 0 {
+		return
+	}
+
+	idleJSON, _ := json.Marshal(map[string]string{
+		"type":        "idle_trigger",
+		"source_role": job.Role,
+		"source_job":  job.ID,
+		"reason":      "self-chain skipped — no work found in backlog",
+	})
+
+	log.Info("serve: role idle — triggering strategy chain", "idle_then", role.IdleThen)
+	if s.dash != nil {
+		s.dash.BroadcastEvent("idle_trigger", fmt.Sprintf("%s idle — seeding %v", job.Role, role.IdleThen))
+	}
+
+	for _, target := range role.IdleThen {
+		idempotencyKey := fmt.Sprintf("idle:%s:%s:%s", job.RepoID, target, job.ID)
+		idleJob := queue.Job{
+			RepoID:         job.RepoID,
+			Role:           target,
+			Trigger:        string(idleJSON),
+			IdempotencyKey: idempotencyKey,
+		}
+
+		jobID, enqErr := s.queue.Enqueue(ctx, idleJob)
+		if enqErr != nil {
+			log.Error("serve: failed to enqueue idle_then job",
+				"target_role", target,
+				"err", enqErr,
+			)
+			continue
+		}
+		log.Info("serve: idle_then job enqueued",
+			"target_role", target,
+			"idle_job_id", jobID,
+		)
+	}
+}
+
+// handleJobFailed is the OnFail callback for the worker pool.
+// For self-chaining roles it re-enqueues the role so the pipeline recovers
+// automatically from transient failures (e.g. inference timeout, OOM).
+func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr error) {
+	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+
+	rec, err := s.repos.FindByID(ctx, job.RepoID)
+	if err != nil || rec == nil {
+		return
+	}
+
+	manifest, err := bundle.Load(rec.Path)
+	if err != nil {
+		return
+	}
+
+	role, ok := manifest.Roles[job.Role]
+	if !ok {
+		return
+	}
+
+	selfChains := false
+	for _, target := range role.Then {
+		if target == job.Role {
+			selfChains = true
+			break
+		}
+	}
+
+	if !selfChains {
+		return
+	}
+
+	log.Info("serve: auto-recovering self-chaining role after failure",
+		"error", jobErr,
+	)
+
+	retryJSON, _ := json.Marshal(map[string]string{
+		"type":       "auto_recover",
+		"source_job": job.ID,
+		"reason":     jobErr.Error(),
+	})
+
+	idempotencyKey := fmt.Sprintf("recover:%s:%s:%d", job.RepoID, job.Role, time.Now().UnixNano())
+	recoverJob := queue.Job{
+		RepoID:         job.RepoID,
+		Role:           job.Role,
+		Trigger:        string(retryJSON),
+		IdempotencyKey: idempotencyKey,
+	}
+
+	jobID, enqErr := s.queue.Enqueue(ctx, recoverJob)
+	if enqErr != nil {
+		log.Error("serve: failed to enqueue recovery job", "err", enqErr)
+		return
+	}
+	log.Info("serve: recovery job enqueued", "recovery_job_id", jobID)
 }
 
 func (s *Server) registerCronSchedules(repos []RepoRecord) {

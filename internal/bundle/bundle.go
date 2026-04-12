@@ -28,6 +28,7 @@ type RoleConfig struct {
 	Knowledge  []string `yaml:"knowledge"`
 	Triggers   []string `yaml:"triggers"`
 	Then       []string `yaml:"then"`
+	IdleThen   []string `yaml:"idle_then"`
 	Schedule   string   `yaml:"schedule"`
 	MaxTurns   int      `yaml:"max_turns"`
 }
@@ -79,6 +80,11 @@ func Load(repoRoot string) (*Manifest, error) {
 		for _, target := range role.Then {
 			if _, ok := m.Roles[target]; !ok {
 				return nil, fmt.Errorf("bundle: role %q chains to %q via 'then' but %q is not defined in the manifest", name, target, target)
+			}
+		}
+		for _, target := range role.IdleThen {
+			if _, ok := m.Roles[target]; !ok {
+				return nil, fmt.Errorf("bundle: role %q chains to %q via 'idle_then' but %q is not defined in the manifest", name, target, target)
 			}
 		}
 		if s := strings.TrimSpace(role.Schedule); s != "" {

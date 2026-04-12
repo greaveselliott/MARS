@@ -97,7 +97,6 @@ roles:
     model: reasoning
     triggers:
       - pull_request.merged
-    then: [engineer]
     tools: [file_read, file_write, shell_exec, grep]
 
   # ── Architecture (dual mode) ─────────────────────────────
@@ -121,6 +120,7 @@ roles:
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
     then: [qa, engineer]
+    idle_then: [ceo]
     tools: [file_read, file_write, shell_exec, grep]
 
   # ── Review ───────────────────────────────────────────────

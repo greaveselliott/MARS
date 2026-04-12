@@ -181,3 +181,25 @@ func (r *Router) StopAll() {
 	}
 	slog.Info("inference router: stopped managed servers", "count", len(list))
 }
+
+// RestartAll kills every running inference server and clears the
+// server map so they are re-launched on the next request. Use after
+// the machine wakes from sleep when connections are stale.
+func (r *Router) RestartAll() {
+	r.mu.Lock()
+	list := make([]*Server, 0, len(r.servers))
+	for _, srv := range r.servers {
+		if srv != nil {
+			list = append(list, srv)
+		}
+	}
+	r.servers = make(map[hardware.Tier]*Server, len(r.servers))
+	r.mu.Unlock()
+
+	for _, srv := range list {
+		if err := srv.Stop(); err != nil {
+			slog.Warn("inference router: restart stop failed", "err", err)
+		}
+	}
+	slog.Info("inference router: restarted — servers will re-launch on next request", "stopped", len(list))
+}

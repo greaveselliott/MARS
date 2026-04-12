@@ -14,6 +14,7 @@ type WorkerConfig struct {
 	PollInterval time.Duration
 	OnJob        func(ctx context.Context, job *Job) error
 	OnComplete   func(ctx context.Context, job *Job)
+	OnFail       func(ctx context.Context, job *Job, jobErr error)
 }
 
 // WorkerPool manages concurrent job workers.
@@ -45,13 +46,26 @@ func (wp *WorkerPool) Start(ctx context.Context) {
 	slog.Info("queue: worker pool started", "concurrency", wp.cfg.Concurrency)
 }
 
-// Stop cancels all workers and blocks until they drain.
+// Stop cancels all workers and blocks until they drain or the timeout
+// expires. A hard ceiling prevents hung jobs from blocking shutdown
+// indefinitely (e.g. after a system sleep kills inference).
 func (wp *WorkerPool) Stop() {
 	if wp.cancel != nil {
 		wp.cancel()
 	}
-	wp.wg.Wait()
-	slog.Info("queue: worker pool stopped")
+
+	done := make(chan struct{})
+	go func() {
+		wp.wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		slog.Info("queue: worker pool stopped gracefully")
+	case <-time.After(30 * time.Second):
+		slog.Warn("queue: worker pool drain timed out after 30s — forcing shutdown")
+	}
 }
 
 func (wp *WorkerPool) run(ctx context.Context, workerID string) {
@@ -89,6 +103,9 @@ func (wp *WorkerPool) poll(ctx context.Context, workerID string) {
 	if err := wp.cfg.OnJob(ctx, job); err != nil {
 		slog.Error("queue: job failed", "job", job.ID, "error", err)
 		_ = wp.q.Fail(ctx, job.ID, err.Error())
+		if wp.cfg.OnFail != nil {
+			wp.cfg.OnFail(ctx, job, err)
+		}
 		return
 	}
 
