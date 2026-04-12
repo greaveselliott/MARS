@@ -348,16 +348,18 @@ func chatWithRetries(ctx context.Context, c Completer, req llm.ChatCompletionReq
 			return resp, nil
 		}
 		lastErr = err
+		slog.Warn("agent: LLM call failed, will retry",
+			"attempt", attempt+1, "max", maxRetries, "err", err)
 		if attempt == maxRetries-1 {
 			break
 		}
-		ms := 100
-		for i := 0; i < attempt && ms < 2000; i++ {
+		ms := 2000
+		for i := 0; i < attempt && ms < 15000; i++ {
 			ms *= 2
 		}
 		d := time.Duration(ms) * time.Millisecond
-		if d > 2*time.Second {
-			d = 2 * time.Second
+		if d > 15*time.Second {
+			d = 15 * time.Second
 		}
 		t := time.NewTimer(d)
 		select {

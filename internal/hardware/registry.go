@@ -55,15 +55,15 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 				RAMMinMiB:  8192,
 				ContextLen: 65536,
 			},
-			TierFast: {
-				Name:       "Gemma 4 E4B",
-				Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
-				File:       "google_gemma-4-E4B-it-Q4_K_M.gguf",
-				Params:     "4B",
-				Quant:      "Q4_K_M",
-				RAMMinMiB:  3072,
-				ContextLen: 8192,
-			},
+		TierFast: {
+			Name:       "Gemma 4 E4B",
+			Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
+			File:       "google_gemma-4-E4B-it-Q4_K_M.gguf",
+			Params:     "4B",
+			Quant:      "Q4_K_M",
+			RAMMinMiB:  3072,
+			ContextLen: 16384,
+		},
 		}
 	case ProfileMedium:
 		return map[Tier]ModelSpec{
@@ -85,15 +85,15 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 				RAMMinMiB:  12288,
 				ContextLen: 131072,
 			},
-			TierFast: {
-				Name:       "Gemma 4 E4B",
-				Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
-				File:       "google_gemma-4-E4B-it-Q5_K_M.gguf",
-				Params:     "4B",
-				Quant:      "Q5_K_M",
-				RAMMinMiB:  4096,
-				ContextLen: 8192,
-			},
+		TierFast: {
+			Name:       "Gemma 4 E4B",
+			Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
+			File:       "google_gemma-4-E4B-it-Q5_K_M.gguf",
+			Params:     "4B",
+			Quant:      "Q5_K_M",
+			RAMMinMiB:  4096,
+			ContextLen: 16384,
+		},
 		}
 	case ProfileHigh, ProfileMulti:
 		return map[Tier]ModelSpec{
@@ -115,15 +115,15 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 				RAMMinMiB:  24576,
 				ContextLen: 131072,
 			},
-			TierFast: {
-				Name:       "Gemma 4 E4B",
-				Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
-				File:       "google_gemma-4-E4B-it-Q8_0.gguf",
-				Params:     "4B",
-				Quant:      "Q8_0",
-				RAMMinMiB:  8192,
-				ContextLen: 8192,
-			},
+		TierFast: {
+			Name:       "Gemma 4 E4B",
+			Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
+			File:       "google_gemma-4-E4B-it-Q8_0.gguf",
+			Params:     "4B",
+			Quant:      "Q8_0",
+			RAMMinMiB:  8192,
+			ContextLen: 16384,
+		},
 		}
 	default:
 		return DefaultModels(ProfileCPU)

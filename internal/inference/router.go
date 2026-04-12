@@ -109,7 +109,8 @@ func (r *Router) fallbackBase() string {
 }
 
 // ServerForRole returns the base URL for the server handling this role.
-// Starts the server if not already running.
+// Starts the server if not already running. Verifies the server is actually
+// responsive before returning — catches stale "healthy" state from crashed servers.
 func (r *Router) ServerForRole(ctx context.Context, role string) (string, error) {
 	tier := r.tierForRole(role)
 
@@ -160,6 +161,17 @@ func (r *Router) ServerForRole(ctx context.Context, role string) (string, error)
 		}
 		return "", err
 	}
+
+	if !srv.Healthy() {
+		slog.Warn("inference router: server reports healthy but failed spot check; restarting",
+			"tier", string(tier), "role", role, "port", r.tierPort(tier))
+		r.mu.Lock()
+		delete(r.servers, tier)
+		r.mu.Unlock()
+		_ = srv.Stop()
+		return r.ServerForRole(ctx, role)
+	}
+
 	return srv.BaseURL(), nil
 }
 

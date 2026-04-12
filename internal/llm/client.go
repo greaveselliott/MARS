@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const defaultMaxRetries = 3
+const defaultMaxRetries = 5
 
 // Config configures the HTTP client and retry behaviour.
 type Config struct {
@@ -47,7 +47,7 @@ func NewClient(cfg Config) (*Client, error) {
 	if cfg.HTTPClient == nil {
 		timeout := cfg.Timeout
 		if timeout <= 0 {
-			timeout = 60 * time.Second
+			timeout = 5 * time.Minute
 		}
 		cfg.HTTPClient = &http.Client{Timeout: timeout}
 	}
@@ -200,7 +200,11 @@ func (c *Client) postJSON(ctx context.Context, path string, payload any, out any
 			if errRead != nil {
 				return fmt.Errorf("llm: read error body: %w", errRead)
 			}
-			return fmt.Errorf("llm: unexpected status %s: %s", resp.Status, strings.TrimSpace(string(b)))
+			bodyStr := strings.TrimSpace(string(b))
+			if resp.StatusCode == 400 && strings.Contains(bodyStr, "exceed") && strings.Contains(bodyStr, "context") {
+				return fmt.Errorf("llm: context size exceeded (non-retryable): %s", bodyStr)
+			}
+			return fmt.Errorf("llm: unexpected status %s: %s", resp.Status, bodyStr)
 		}
 
 		dec := json.NewDecoder(resp.Body)
@@ -292,11 +296,11 @@ func backoffDuration(attempt int, retryAfter time.Duration) (time.Duration, bool
 	if retryAfter > 0 {
 		return retryAfter, true
 	}
-	ms := 100
-	for i := 0; i < attempt && ms < 5000; i++ {
+	ms := 500
+	for i := 0; i < attempt && ms < 15000; i++ {
 		ms *= 2
-		if ms > 5000 {
-			ms = 5000
+		if ms > 15000 {
+			ms = 15000
 		}
 	}
 	return time.Duration(ms) * time.Millisecond, true
