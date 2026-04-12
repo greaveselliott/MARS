@@ -259,6 +259,17 @@ func TestInit_success(t *testing.T) {
 	} {
 		assert.Contains(t, manifestStr, key, "manifest missing role %s", key)
 	}
+
+	for _, chain := range []string{
+		"then: [cto-weekly]",
+		"then: [coo]",
+		"then: [engineer]",
+		"then: [qa]",
+		"then: [security-pr]",
+		"then: [dependency-manager]",
+	} {
+		assert.Contains(t, manifestStr, chain, "manifest missing chain %s", chain)
+	}
 }
 
 func TestInit_alreadyExists(t *testing.T) {

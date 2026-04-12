@@ -285,6 +285,19 @@ func (s *Server) HealthHandler() http.Handler {
 // Repos returns the registry for external use (e.g. CLI register command).
 func (s *Server) Repos() *RepoRegistry { return s.repos }
 
+// SeedJob enqueues a job directly. Used by the `start` command to inject the
+// first agent (typically CEO) before the server loop begins.
+func (s *Server) SeedJob(ctx context.Context, repoID, role, trigger string) (string, error) {
+	idempotencyKey := fmt.Sprintf("seed:%s:%s:%d", repoID, role, time.Now().UnixNano())
+	job := queue.Job{
+		RepoID:         repoID,
+		Role:           role,
+		Trigger:        trigger,
+		IdempotencyKey: idempotencyKey,
+	}
+	return s.queue.Enqueue(ctx, job)
+}
+
 // handleEvent is invoked by the webhook handler for each valid GitHub event.
 // It matches the event against registered triggers and enqueues jobs.
 func (s *Server) handleEvent(event gh.Event) {

@@ -46,6 +46,7 @@ func main() {
 	}
 
 	root.AddCommand(versionCmd())
+	root.AddCommand(startCmd())
 	root.AddCommand(runCmd())
 	root.AddCommand(setupCmd())
 	root.AddCommand(initCmd())
@@ -621,6 +622,105 @@ func openDB(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("open database at %s: %w — check path and permissions", path, err)
 	}
 	return db, nil
+}
+
+func startCmd() *cobra.Command {
+	var (
+		repoPath    string
+		concurrency int
+		dbPath      string
+		force       bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "start",
+		Short: "Bootstrap and run the full autonomous pipeline",
+		Long: `Initialise .harness/ if needed, register the repo, seed the CEO agent,
+and start the orchestrator. The CEO plans strategy, hands off to CTO,
+then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			tw := ui.NewTraceWriter(os.Stdout, false, false)
+
+			if repoPath == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("start: cannot determine working directory: %w", err)
+				}
+			}
+			absPath, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("start: resolve path: %w", err)
+			}
+
+			if _, err := os.Stat(filepath.Join(absPath, ".harness", "manifest.yaml")); os.IsNotExist(err) {
+				tw.WriteAssistant("No .harness/ found — initialising with default pipeline...")
+				if initErr := scanner.Init(absPath, force); initErr != nil {
+					tw.WriteError(fmt.Sprintf("init failed: %v", initErr))
+					return initErr
+				}
+			}
+
+			if _, err := bundle.Load(absPath); err != nil {
+				tw.WriteError(fmt.Sprintf("manifest invalid: %v", err))
+				return err
+			}
+
+			cfg, err := config.Load(config.DefaultPath())
+			if err != nil {
+				slog.Warn("config load failed, using defaults", "err", err)
+			}
+
+			if dbPath == "" {
+				home, _ := os.UserHomeDir()
+				dbPath = filepath.Join(home, ".mars-harness", "db", "mars.db")
+			}
+			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+				return fmt.Errorf("start: create db directory: %w", err)
+			}
+
+			webhookAddr := fmt.Sprintf(":%d", cfg.WebhookPort)
+
+			srv, err := serve.New(serve.Config{
+				WebhookAddr: webhookAddr,
+				DBPath:      dbPath,
+				Concurrency: concurrency,
+				ModelsDir:   cfg.ModelsDir,
+				BinDir:      cfg.BinDir,
+			})
+			if err != nil {
+				tw.WriteError(fmt.Sprintf("orchestrator init: %v", err))
+				return err
+			}
+
+			sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+			defer stop()
+
+			repoID, err := srv.Repos().Register(sigCtx, absPath, "", "main")
+			if err != nil {
+				tw.WriteError(fmt.Sprintf("register: %v", err))
+				return err
+			}
+			tw.WriteAssistant(fmt.Sprintf("Registered repo %s (ID: %s)", filepath.Base(absPath), repoID))
+
+			triggerJSON := `{"type":"bootstrap","source":"mars-harness start"}`
+			jobID, err := srv.SeedJob(sigCtx, repoID, "ceo", triggerJSON)
+			if err != nil {
+				tw.WriteError(fmt.Sprintf("seed CEO: %v", err))
+				return err
+			}
+			tw.WriteAssistant(fmt.Sprintf("Seeded CEO agent (job %s) — pipeline will cascade: CEO → CTO → COO → Engineer → QA → Security → Deps", jobID))
+
+			return srv.Start(sigCtx)
+		},
+	}
+
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
+	cmd.Flags().IntVar(&concurrency, "concurrency", 1, "Number of concurrent agent workers (1 = sequential pipeline)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/mars.db)")
+	cmd.Flags().BoolVar(&force, "force", false, "Force re-init .harness/ even if it exists")
+
+	return cmd
 }
 
 func placeholderCmd(name, description string) *cobra.Command {

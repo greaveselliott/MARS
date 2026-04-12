@@ -77,6 +77,7 @@ roles:
     prompt: roles/ceo.md
     model: reasoning
     schedule: "0 20 * * 0"
+    then: [cto-weekly]
     tools: [file_read, file_write, shell_exec, grep]
 
   coo:
@@ -84,6 +85,7 @@ roles:
     model: reasoning
     triggers:
       - pull_request.merged
+    then: [engineer]
     tools: [file_read, file_write, shell_exec, grep]
 
   # ── Architecture (dual mode) ─────────────────────────────
@@ -98,6 +100,7 @@ roles:
     prompt: roles/cto.md
     model: reasoning
     schedule: "0 21 * * 0"
+    then: [coo]
     tools: [file_read, file_write, shell_exec, grep]
 
   # ── Delivery ─────────────────────────────────────────────
@@ -105,6 +108,7 @@ roles:
     prompt: roles/engineer.md
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
+    then: [qa]
     tools: [file_read, file_write, shell_exec, grep]
 
   # ── Review ───────────────────────────────────────────────
@@ -114,6 +118,7 @@ roles:
     triggers:
       - pull_request.opened
       - pull_request.synchronize
+    then: [security-pr]
     tools: [file_read, grep]
 
   security-pr:
@@ -121,6 +126,7 @@ roles:
     model: reasoning
     triggers:
       - pull_request.opened
+    then: [dependency-manager]
     tools: [file_read, grep]
 
   security-weekly:

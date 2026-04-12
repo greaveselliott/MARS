@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/greaveselliott/mars-harness/internal/agent"
 	"github.com/greaveselliott/mars-harness/internal/bundle"
@@ -13,6 +14,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/tools"
 	"github.com/greaveselliott/mars-harness/internal/trace"
+	"github.com/greaveselliott/mars-harness/internal/ui"
 )
 
 const userMessage = "A trigger event has fired. Inspect the repository and execute your role. Trigger context is in the system prompt."
@@ -41,15 +43,17 @@ func NewExecutor(lookupRepo RepoLookup, router *inference.Router, traceStore *tr
 // It loads the bundle, assembles context, starts inference, and runs the agent loop.
 func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	log := slog.With("job_id", job.ID, "repo_id", job.RepoID, "role", job.Role)
-	log.Info("executor: starting job")
+	tw := ui.NewTraceWriter(os.Stdout, false, false)
 
 	repoPath, err := e.lookupRepo(ctx, job.RepoID)
 	if err != nil {
-		return fmt.Errorf("executor: resolve repo %q: %w — ensure the repo is registered via `mars-harness repo add`", job.RepoID, err)
+		tw.WriteError(fmt.Sprintf("resolve repo %q: %v", job.RepoID, err))
+		return fmt.Errorf("executor: resolve repo %q: %w — ensure the repo is registered via `mars-harness register`", job.RepoID, err)
 	}
 
 	manifest, err := bundle.Load(repoPath)
 	if err != nil {
+		tw.WriteError(fmt.Sprintf("load bundle: %v", err))
 		return fmt.Errorf("executor: load bundle for repo %q: %w", job.RepoID, err)
 	}
 
@@ -59,11 +63,15 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		for name := range manifest.Roles {
 			available = append(available, name)
 		}
+		tw.WriteError(fmt.Sprintf("role %q not found; available: %v", job.Role, available))
 		return fmt.Errorf("executor: role %q not found in manifest for repo %q; available: %v", job.Role, job.RepoID, available)
 	}
 
+	tw.WriteHeader(job.Role, role.Model, role.Tools, role.Then)
+
 	rolePrompt, err := manifest.RolePrompt(repoPath, job.Role)
 	if err != nil {
+		tw.WriteError(fmt.Sprintf("load role prompt: %v", err))
 		return fmt.Errorf("executor: load role prompt: %w", err)
 	}
 
@@ -83,6 +91,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		Trigger:    job.Trigger,
 	})
 	if err != nil {
+		tw.WriteError(fmt.Sprintf("context assembly: %v", err))
 		return fmt.Errorf("executor: assemble context: %w", err)
 	}
 	for _, s := range stats {
@@ -91,20 +100,23 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 
 	endpoint, err := e.router.ServerForRole(ctx, job.Role)
 	if err != nil {
+		tw.WriteError(fmt.Sprintf("inference for %q: %v", job.Role, err))
 		return fmt.Errorf("executor: get inference endpoint for role %q: %w — check GPU availability or configure a remote fallback", job.Role, err)
 	}
-	log.Info("executor: inference endpoint resolved", "endpoint", endpoint, "model", role.Model)
+	tw.WriteReady()
 
 	client, err := llm.NewClient(llm.Config{
 		BaseURL: endpoint,
 		Model:   role.Model,
 	})
 	if err != nil {
+		tw.WriteError(fmt.Sprintf("LLM client: %v", err))
 		return fmt.Errorf("executor: create LLM client: %w", err)
 	}
 
 	reg, err := tools.DefaultRegistry()
 	if err != nil {
+		tw.WriteError(fmt.Sprintf("tool registry: %v", err))
 		return fmt.Errorf("executor: init tool registry: %w", err)
 	}
 
@@ -112,6 +124,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 
 	root, err := tools.NewRoot(repoPath)
 	if err != nil {
+		tw.WriteError(fmt.Sprintf("sandbox root: %v", err))
 		return fmt.Errorf("executor: create sandbox root for %q: %w", repoPath, err)
 	}
 
@@ -136,24 +149,30 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		JobID:      job.ID,
 		Trace:      rec,
 		TraceStore: e.traceStore,
+		UI:         tw,
 	}
 
 	res, err := agent.Run(ctx, params)
 	if err != nil {
+		tw.WriteError(fmt.Sprintf("agent run: %v", err))
 		return fmt.Errorf("executor: agent run failed: %w", err)
 	}
 
-	log.Info("executor: job finished",
-		"end_reason", string(res.EndReason),
-		"llm_calls", res.LLMCalls,
-		"tool_invocations", res.ToolInvocations,
-		"tokens", res.TokenEstimate,
-		"wall_ms", res.WallTime.Milliseconds(),
+	tw.WriteSummary(
+		job.Role,
+		string(res.EndReason),
+		res.LLMCalls,
+		res.ToolInvocations,
+		res.WallTime,
+		res.TokenEstimate,
 	)
 
 	if res.Err != nil {
+		tw.WriteError(fmt.Sprintf("agent loop error (%s): %v", res.EndReason, res.Err))
 		return fmt.Errorf("executor: agent loop error (%s): %w", res.EndReason, res.Err)
 	}
+
+	tw.WriteHandoff(job.Role, role.Then)
 
 	return nil
 }
