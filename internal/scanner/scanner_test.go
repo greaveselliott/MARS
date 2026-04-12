@@ -405,3 +405,242 @@ func TestDetectFramework_cargoToml(t *testing.T) {
 	fw := detectFramework(dir, []string{"Cargo.toml"})
 	assert.Equal(t, "Rust/Cargo", fw)
 }
+
+// --- Bootability check tests ---
+
+func TestBootability_missingDevScript(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+		"name": "test",
+		"dependencies": {"next": "^16.0.0"},
+		"scripts": {"test": "jest"}
+	}`), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	found := false
+	for _, f := range result.Findings {
+		if f.Type == "missing_dev_script" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected missing_dev_script finding when package.json has no dev/start script")
+}
+
+func TestBootability_hasDevScript(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+		"name": "test",
+		"dependencies": {"next": "^16.0.0"},
+		"scripts": {"dev": "next dev", "build": "next build", "test": "jest"}
+	}`), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	for _, f := range result.Findings {
+		if f.Type == "missing_dev_script" {
+			t.Fatal("should not report missing_dev_script when dev script exists")
+		}
+	}
+}
+
+func TestBootability_missingRootLayout(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+		"name": "test",
+		"dependencies": {"next": "^16.0.0"},
+		"scripts": {"dev": "next dev", "build": "next build"}
+	}`), 0o644)
+	appDir := filepath.Join(dir, "src", "app", "(dashboard)")
+	os.MkdirAll(appDir, 0o755)
+	os.WriteFile(filepath.Join(appDir, "page.tsx"), []byte("export default function Page() { return <div/>; }"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	found := false
+	for _, f := range result.Findings {
+		if f.Type == "missing_root_layout" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected missing_root_layout when src/app/layout.tsx doesn't exist")
+}
+
+func TestBootability_hasRootLayout(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+		"name": "test",
+		"dependencies": {"next": "^16.0.0"},
+		"scripts": {"dev": "next dev", "build": "next build"}
+	}`), 0o644)
+	appDir := filepath.Join(dir, "src", "app")
+	os.MkdirAll(appDir, 0o755)
+	os.WriteFile(filepath.Join(appDir, "layout.tsx"), []byte("export default function Layout({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	for _, f := range result.Findings {
+		if f.Type == "missing_root_layout" {
+			t.Fatal("should not report missing_root_layout when src/app/layout.tsx exists")
+		}
+	}
+}
+
+func TestBootability_conflictingAppAndPages(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+		"name": "test",
+		"dependencies": {"next": "^16.0.0"},
+		"scripts": {"dev": "next dev", "build": "next build"}
+	}`), 0o644)
+
+	// app/ at root, pages/ under src/ — conflict
+	rootApp := filepath.Join(dir, "app")
+	os.MkdirAll(rootApp, 0o755)
+	os.WriteFile(filepath.Join(rootApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+	os.WriteFile(filepath.Join(rootApp, "page.tsx"), []byte("export default function P() { return <div/>; }"), 0o644)
+
+	srcPages := filepath.Join(dir, "src", "pages", "auth")
+	os.MkdirAll(srcPages, 0o755)
+	os.WriteFile(filepath.Join(srcPages, "login.tsx"), []byte("export default function Login() { return <div/>; }"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	found := false
+	for _, f := range result.Findings {
+		if f.Type == "conflicting_app_pages" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected conflicting_app_pages when app/ is at root and pages/ is under src/")
+}
+
+func TestBootability_noConflictWhenSameRoot(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+		"name": "test",
+		"dependencies": {"next": "^16.0.0"},
+		"scripts": {"dev": "next dev", "build": "next build"}
+	}`), 0o644)
+
+	srcApp := filepath.Join(dir, "src", "app")
+	os.MkdirAll(srcApp, 0o755)
+	os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+
+	srcPages := filepath.Join(dir, "src", "pages", "api")
+	os.MkdirAll(srcPages, 0o755)
+	os.WriteFile(filepath.Join(srcPages, "health.ts"), []byte("export default function handler() {}"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	for _, f := range result.Findings {
+		if f.Type == "conflicting_app_pages" {
+			t.Fatal("should not report conflict when app/ and pages/ are both under src/")
+		}
+	}
+}
+
+func TestBootability_missingTailwindConfig(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+		"name": "test",
+		"dependencies": {"next": "^16.0.0"},
+		"scripts": {"dev": "next dev", "build": "next build"}
+	}`), 0o644)
+
+	srcApp := filepath.Join(dir, "src", "app")
+	os.MkdirAll(srcApp, 0o755)
+	os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+
+	stylesDir := filepath.Join(dir, "src", "styles")
+	os.MkdirAll(stylesDir, 0o755)
+	os.WriteFile(filepath.Join(stylesDir, "globals.css"), []byte("@tailwind base;\n@tailwind components;\n@tailwind utilities;\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	foundTailwind := false
+	foundPostCSS := false
+	for _, f := range result.Findings {
+		if f.Type == "missing_tailwind_config" && f.Path == "" {
+			foundTailwind = true
+		}
+		if f.Type == "missing_tailwind_config" && f.Path == "postcss.config.js" {
+			foundPostCSS = true
+		}
+	}
+	assert.True(t, foundTailwind, "expected missing_tailwind_config when CSS uses @tailwind directives")
+	assert.True(t, foundPostCSS, "expected missing postcss.config finding when CSS uses @tailwind directives")
+}
+
+func TestBootability_tailwindConfigPresent(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+
+	stylesDir := filepath.Join(dir, "src", "styles")
+	os.MkdirAll(stylesDir, 0o755)
+	os.WriteFile(filepath.Join(stylesDir, "globals.css"), []byte("@tailwind base;\n@tailwind components;\n@tailwind utilities;\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "tailwind.config.js"), []byte("module.exports = {};\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "postcss.config.js"), []byte("module.exports = {};\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	for _, f := range result.Findings {
+		if f.Type == "missing_tailwind_config" {
+			t.Fatal("should not report missing_tailwind_config when config files exist")
+		}
+	}
+}
+
+func TestBootability_deprecatedNextConfig(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+		"name": "test",
+		"dependencies": {"next": "^16.0.0"},
+		"scripts": {"dev": "next dev", "build": "next build"}
+	}`), 0o644)
+	os.WriteFile(filepath.Join(dir, "next.config.js"), []byte(`const nextConfig = { experimental: { appDir: true } }; module.exports = nextConfig;`), 0o644)
+
+	srcApp := filepath.Join(dir, "src", "app")
+	os.MkdirAll(srcApp, 0o755)
+	os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	found := false
+	for _, f := range result.Findings {
+		if f.Type == "deprecated_next_config" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected deprecated_next_config when next.config.js has appDir")
+}

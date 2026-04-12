@@ -57,9 +57,35 @@ The dormant roles (security, dependency-manager, release-manager, pipeline-fixer
 
 The dogfood tester was originally schedule-only (`0 10 * * 1-5`), which never fires when the harness is not running continuously. It now chains from the Engineer (`then: [qa, engineer, dogfood]`) so every completed feature triggers a build validation. The schedule is retained as a safety net for always-on deployments.
 
+### AD-026: Bootability checks in scanner and role prompts
+
+The scanner's static analysis previously detected structural gaps (missing CI, README, license, tests) but not whether a project could actually build and start. This led to agents producing code that passed tests but was unbootable — missing `dev`/`build` scripts in `package.json`, missing root `layout.tsx` for Next.js App Router, missing Tailwind/PostCSS config files, conflicting `app/` and `pages/` directories.
+
+Three changes close this gap:
+
+1. **Scanner bootability checks** (`checkBootability` in `scanner.go`): framework-specific validation that runs during `mars-harness scan` and generates tickets for structural issues. Checks for:
+   - Missing `dev`/`start`/`build` scripts in `package.json`
+   - Missing root `layout.tsx` for Next.js App Router projects
+   - Conflicting `app/` and `pages/` directories at different levels
+   - CSS files using Tailwind directives without `tailwind.config.*` or `postcss.config.*`
+   - Deprecated `next.config.js` options (e.g. `experimental.appDir`)
+
+2. **Engineer build verification** (step 5 in engineer prompt): mandatory build + dev server boot check before any ticket can be moved to done. The engineer must run the build command and briefly start the dev server to verify it doesn't crash. Failures must be fixed in the same run.
+
+3. **Dogfood pre-flight checks** (Phase 0 in dogfood prompt): structural validation that runs before attempting to build, catching issues like missing scripts or config files that would cause the build to fail. Pre-flight failures produce high-priority `[Dogfood][Pre-flight]` tickets.
+
+4. **QA structural integrity** (checklist item 3 in QA prompt): bootability review added to the QA checklist so code review also validates that the project structure is sound.
+
+### Discoveries
+
+- The recruiter-workflow-portal ran through the full CEO → CTO → COO → Engineer pipeline and accumulated 14+ tickets of implemented code, but the app could not start because `package.json` had no `dev` script, no root `layout.tsx` existed, Tailwind CSS was referenced in CSS but not installed or configured, and a conflicting root `app/` directory clashed with `src/pages/`. All of these were structural issues that no role caught.
+- The Dogfood role was designed to catch exactly these issues but never ran successfully (zero dogfood commits in git history).
+- Test suites (jest) can pass while the app is completely unbootable, because unit tests don't exercise the build/start pipeline.
+
 ## Consequences
 
 - Local pipeline is fast and focused: 7 roles, no dead triggers
 - Decisions accumulate across runs, making agents progressively smarter about the repo
 - Moving to a PR/CI model later requires only uncommenting manifest entries
 - Container-based testing catches environment-specific bugs that native runs miss
+- Bootability checks catch structural issues at scan time (before agents even start) and at every stage of the pipeline (engineer, QA, dogfood)

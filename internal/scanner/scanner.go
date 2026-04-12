@@ -13,7 +13,7 @@ import (
 
 // Finding represents a detected gap in the repo.
 type Finding struct {
-	Type        string // "missing_tests", "todo", "no_ci", "no_readme", "no_license", "large_function"
+	Type        string // "missing_tests", "todo", "no_ci", "no_readme", "no_license", "large_function", "missing_dev_script", "missing_root_layout", "conflicting_app_pages", "missing_tailwind_config", "deprecated_next_config"
 	Path        string
 	Description string
 	Severity    string // "high", "medium", "low"
@@ -143,6 +143,7 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 		})
 	}
 
+	result.Findings = append(result.Findings, checkBootability(cfg.RepoRoot, allFiles, result.Framework)...)
 	result.Findings = append(result.Findings, findUntestedPackages(cfg.RepoRoot, allFiles)...)
 	result.Findings = append(result.Findings, findLargeFunctions(ctx, cfg.RepoRoot, allFiles, cfg.MaxPackages)...)
 	result.Findings = append(result.Findings, findTodos(ctx, cfg.RepoRoot, allFiles, cfg.MaxPackages)...)
@@ -274,6 +275,236 @@ func detectLicense(files []string) bool {
 		}
 	}
 	return false
+}
+
+// checkBootability runs framework-specific validation to ensure the project
+// can actually build and start. Returns findings for structural issues that
+// would prevent the app from running.
+func checkBootability(root string, files []string, framework string) []Finding {
+	var findings []Finding
+
+	switch framework {
+	case "Next.js":
+		findings = append(findings, checkNextJSBootability(root, files)...)
+	case "React", "Vue", "Express", "Node.js":
+		findings = append(findings, checkNodeBootability(root)...)
+	}
+
+	findings = append(findings, checkTailwindConsistency(root, files)...)
+
+	return findings
+}
+
+func checkNextJSBootability(root string, files []string) []Finding {
+	var findings []Finding
+
+	findings = append(findings, checkNodeBootability(root)...)
+
+	hasRootLayout := false
+	appDirs := map[string]bool{}
+	pagesDirs := map[string]bool{}
+
+	for _, f := range files {
+		base := filepath.Base(f)
+		dir := filepath.Dir(f)
+
+		if base == "layout.tsx" || base == "layout.jsx" || base == "layout.ts" || base == "layout.js" {
+			if isRootAppLayout(f) {
+				hasRootLayout = true
+			}
+		}
+
+		if isAppRouterDir(dir) {
+			appDirs[appRouterRoot(f)] = true
+		}
+		if isPagesRouterDir(dir) {
+			pagesDirs[pagesRouterRoot(f)] = true
+		}
+	}
+
+	if !hasRootLayout {
+		findings = append(findings, Finding{
+			Type:        "missing_root_layout",
+			Description: "Next.js App Router requires a root layout.tsx in src/app/ or app/ — create src/app/layout.tsx with <html> and <body> tags",
+			Severity:    "high",
+		})
+	}
+
+	for appRoot := range appDirs {
+		for pagesRoot := range pagesDirs {
+			if appRoot != pagesRoot {
+				findings = append(findings, Finding{
+					Type:        "conflicting_app_pages",
+					Path:        fmt.Sprintf("app=%s, pages=%s", appRoot, pagesRoot),
+					Description: fmt.Sprintf("'app' dir under %s/ and 'pages' dir under %s/ are not siblings — Next.js requires both under the same root (both in src/ or both at project root)", appRoot, pagesRoot),
+					Severity:    "high",
+				})
+			}
+		}
+	}
+
+	nextConfigPath := filepath.Join(root, "next.config.js")
+	if data, err := os.ReadFile(nextConfigPath); err == nil {
+		if strings.Contains(string(data), "appDir") {
+			findings = append(findings, Finding{
+				Type:        "deprecated_next_config",
+				Path:        "next.config.js",
+				Description: "next.config.js contains deprecated 'appDir' experimental option — remove it (App Router is stable since Next.js 13.4)",
+				Severity:    "medium",
+			})
+		}
+	}
+
+	return findings
+}
+
+func checkNodeBootability(root string) []Finding {
+	var findings []Finding
+
+	pkgPath := filepath.Join(root, "package.json")
+	data, err := os.ReadFile(pkgPath)
+	if err != nil {
+		return nil
+	}
+	content := string(data)
+
+	hasScript := func(name string) bool {
+		return strings.Contains(content, fmt.Sprintf(`"%s"`, name))
+	}
+
+	if !hasScript("dev") && !hasScript("start") {
+		findings = append(findings, Finding{
+			Type:        "missing_dev_script",
+			Path:        "package.json",
+			Description: "package.json has no 'dev' or 'start' script — the app cannot be started. Add a dev script (e.g. \"dev\": \"next dev\" for Next.js)",
+			Severity:    "high",
+		})
+	}
+
+	if strings.Contains(content, `"next"`) && !hasScript("build") {
+		findings = append(findings, Finding{
+			Type:        "missing_dev_script",
+			Path:        "package.json",
+			Description: "Next.js project has no 'build' script — add \"build\": \"next build\" to package.json scripts",
+			Severity:    "high",
+		})
+	}
+
+	return findings
+}
+
+func checkTailwindConsistency(root string, files []string) []Finding {
+	hasTailwindDirectives := false
+	for _, f := range files {
+		ext := filepath.Ext(f)
+		if ext != ".css" {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(root, f))
+		if err != nil {
+			continue
+		}
+		if strings.Contains(string(data), "@tailwind") || strings.Contains(string(data), "@import \"tailwindcss\"") {
+			hasTailwindDirectives = true
+			break
+		}
+	}
+	if !hasTailwindDirectives {
+		return nil
+	}
+
+	hasTailwindConfig := false
+	for _, f := range files {
+		base := filepath.Base(f)
+		if strings.HasPrefix(base, "tailwind.config") {
+			hasTailwindConfig = true
+			break
+		}
+	}
+
+	var findings []Finding
+	if !hasTailwindConfig {
+		findings = append(findings, Finding{
+			Type:        "missing_tailwind_config",
+			Description: "CSS files use Tailwind directives (@tailwind or @import \"tailwindcss\") but no tailwind.config.* file exists — create tailwind.config.js with content paths",
+			Severity:    "high",
+		})
+	}
+
+	hasPostCSSConfig := false
+	for _, f := range files {
+		base := filepath.Base(f)
+		if strings.HasPrefix(base, "postcss.config") {
+			hasPostCSSConfig = true
+			break
+		}
+	}
+	if !hasPostCSSConfig {
+		findings = append(findings, Finding{
+			Type:        "missing_tailwind_config",
+			Path:        "postcss.config.js",
+			Description: "Tailwind CSS requires a PostCSS config — create postcss.config.js with tailwindcss and autoprefixer plugins",
+			Severity:    "high",
+		})
+	}
+
+	return findings
+}
+
+// isRootAppLayout checks if a layout file is directly inside app/ or src/app/ (root level).
+func isRootAppLayout(relPath string) bool {
+	dir := filepath.Dir(relPath)
+	return dir == "app" || dir == filepath.Join("src", "app")
+}
+
+// isAppRouterDir returns true if the path is under an app/ directory.
+func isAppRouterDir(dir string) bool {
+	parts := strings.Split(filepath.ToSlash(dir), "/")
+	for _, p := range parts {
+		if p == "app" {
+			return true
+		}
+	}
+	return false
+}
+
+// isPagesRouterDir returns true if the path is under a pages/ directory.
+func isPagesRouterDir(dir string) bool {
+	parts := strings.Split(filepath.ToSlash(dir), "/")
+	for _, p := range parts {
+		if p == "pages" {
+			return true
+		}
+	}
+	return false
+}
+
+// appRouterRoot returns "src" if the app dir is under src/, or "." if at root.
+func appRouterRoot(relPath string) string {
+	parts := strings.Split(filepath.ToSlash(relPath), "/")
+	for i, p := range parts {
+		if p == "app" {
+			if i == 0 {
+				return "."
+			}
+			return strings.Join(parts[:i], "/")
+		}
+	}
+	return "."
+}
+
+// pagesRouterRoot returns "src" if the pages dir is under src/, or "." if at root.
+func pagesRouterRoot(relPath string) string {
+	parts := strings.Split(filepath.ToSlash(relPath), "/")
+	for i, p := range parts {
+		if p == "pages" {
+			if i == 0 {
+				return "."
+			}
+			return strings.Join(parts[:i], "/")
+		}
+	}
+	return "."
 }
 
 func findUntestedPackages(_ string, files []string) []Finding {
@@ -531,6 +762,16 @@ func titleFromType(t string) string {
 		return "Add Missing Tests"
 	case "large_function":
 		return "Refactor Large Function"
+	case "missing_dev_script":
+		return "Add Missing Package Scripts"
+	case "missing_root_layout":
+		return "Add Root Layout for Next.js App Router"
+	case "conflicting_app_pages":
+		return "Fix Conflicting App and Pages Directories"
+	case "missing_tailwind_config":
+		return "Add Missing Tailwind CSS Configuration"
+	case "deprecated_next_config":
+		return "Remove Deprecated Next.js Config Options"
 	default:
 		return strings.ReplaceAll(t, "_", " ")
 	}

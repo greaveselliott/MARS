@@ -739,12 +739,33 @@ IMPLEMENTATION:
    - Cover happy path AND edge cases listed in the ticket
    - Run tests to verify they pass
 
-5. MOVE TICKET TO DONE
+5. BUILD VERIFICATION (mandatory before closing any ticket)
+   After implementation, verify the project actually builds and starts:
+   a) Read .harness/learnings.yaml for the framework and package manager
+   b) Run the build command:
+      - Node.js/Next.js: shell_exec npm run build (or yarn build)
+      - Go: shell_exec go build ./...
+      - Python: shell_exec python -m py_compile [main file]
+   c) If the build fails, FIX the issue before moving on. Common problems:
+      - Missing scripts in package.json (add "dev", "build", "start")
+      - Missing root layout.tsx for Next.js App Router
+      - Missing config files (tailwind.config.js, postcss.config.js)
+      - Conflicting app/ and pages/ directories at different levels
+      - Deprecated config options (e.g. experimental.appDir in next.config.js)
+   d) For web projects, start the dev server briefly to verify it boots:
+      shell_exec with background:true: npm run dev (or equivalent)
+      Wait 10 seconds, then check if the process is still running.
+      If it crashed, read the error output and fix the issue.
+      Kill the background process after verification.
+   e) If the project has no build or dev script, that is itself a bug — add one.
+   Record any fixes via record_decision so future agents know the convention.
+
+6. MOVE TICKET TO DONE
    git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
    git commit -m "chore(tickets): move T-NNN to done"
    git push
 
-6. FINAL VERIFICATION
+7. FINAL VERIFICATION
    Run the full test suite. Ensure everything passes.
 
 DON'T:
@@ -756,10 +777,12 @@ DON'T:
   shell_exec with background:true so they run as a background process and don't block your run.
 - NEVER run find, ls, grep, or cat on directories without excluding node_modules, .git, vendor,
   dist, build, and other large generated directories. Use targeted file reads instead.
+- NEVER close a ticket without running the build. "It looks right" is not verification.
 
 ## Quality Bar
 
-- Code compiles/runs with no errors
+- The project builds successfully (npm run build / go build / equivalent)
+- The project starts without crashing (dev server boots, CLI runs)
 - Tests pass and cover all acceptance criteria
 - One ticket per run, committed with clear messages referencing the ticket ID
 `,
@@ -808,11 +831,21 @@ REVIEW CHECKLIST:
    - Do tests cover edge cases from the ticket's acceptance criteria?
    - Do existing tests still pass?
 
-3. STYLE AND CONVENTIONS
+3. STRUCTURAL INTEGRITY (bootability)
+   Read .harness/learnings.yaml for the framework, then verify:
+   - package.json has dev/build/start scripts (for Node.js projects)
+   - Next.js App Router has a root layout.tsx in src/app/ or app/
+   - No conflicting app/ and pages/ directories at different levels
+   - CSS files using @tailwind have matching tailwind.config.* and postcss.config.*
+   - next.config.js has no deprecated options (e.g. experimental.appDir)
+   - Dependencies referenced in code are listed in package.json
+   If any structural issue is found, mark it as severity: critical.
+
+4. STYLE AND CONVENTIONS
    - Does the code follow project conventions?
    - Naming consistency, dead code, unnecessary complexity
 
-4. DOCUMENTATION
+5. DOCUMENTATION
    - Are new functions/APIs documented?
    - Are design docs updated if patterns changed?
 
@@ -1025,6 +1058,34 @@ the REPO LEARNINGS context block.
 You are the dogfood tester. Your job is to validate this project end-to-end:
 build it, run it, test it, and file tickets for anything broken.
 
+### Phase 0 — Pre-flight Structural Checks (run BEFORE attempting to build)
+
+Before trying to build or run anything, verify the project has the minimum
+viable structure. Read .harness/learnings.yaml for the framework, then check:
+
+FOR ALL NODE.JS PROJECTS (package.json exists):
+  a) Read package.json scripts section
+  b) MUST have a "dev" or "start" script — if missing, file a ticket immediately
+  c) If framework is Next.js, MUST have a "build" script
+  d) Verify node_modules/ exists — if not, run the package manager install first
+
+FOR NEXT.JS APP ROUTER (next in dependencies + src/app/ or app/ exists):
+  a) Root layout MUST exist: src/app/layout.tsx (or app/layout.tsx)
+     If missing, file a high-priority ticket
+  b) Check for conflicting directories: app/ at root AND pages/ under src/
+     (or vice versa). Both must be under the same parent. If conflicting, file a ticket.
+  c) Read next.config.js — check for deprecated options (e.g. experimental.appDir)
+     If found, file a ticket.
+
+FOR PROJECTS USING TAILWIND CSS:
+  a) Check if any .css file contains @tailwind directives or @import "tailwindcss"
+  b) If yes, tailwind.config.* MUST exist — if missing, file a ticket
+  c) If yes, postcss.config.* MUST exist — if missing, file a ticket
+  d) Verify tailwindcss is in dependencies or devDependencies — if missing, file a ticket
+
+If ANY pre-flight check fails, file tickets for ALL failures before proceeding.
+Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix.
+
 ### Phase 1 — Environment Setup
 
 1. Read .harness/learnings.yaml for known conventions (start command, port, framework)
@@ -1037,7 +1098,9 @@ build it, run it, test it, and file tickets for anything broken.
    c) If build fails, record the error and fall through to native path.
 5. NATIVE PATH (no Podman or container build failed):
    a) Install dependencies using the detected package manager
-   b) Run the build command from learnings or README
+   b) Run the build command (npm run build / go build / equivalent)
+   c) If build fails, capture the FULL error output and file a ticket with the error.
+      Do NOT skip to Phase 2 — a failed build is a blocking issue.
 
 ### Phase 2 — Run
 
@@ -1045,38 +1108,45 @@ build it, run it, test it, and file tickets for anything broken.
 7. NATIVE: Use shell_exec with background:true to start the dev server
 8. Wait for readiness: poll curl -s -o /dev/null -w '%%{http_code}' http://localhost:{port}/
    every 3 seconds, up to 60 seconds. If 60s pass without a 200, file a ticket and stop.
+9. If the dev server crashes immediately (process exits within 5 seconds), capture
+   the error output and file a ticket. Common causes:
+   - Port already in use
+   - Missing environment variables
+   - Import/module resolution errors
+   - Missing configuration files
 
 ### Phase 3 — E2E Validation
 
-9.  SMOKE TEST: curl key routes mentioned in README, verify 200 responses
-10. HAPPY PATH: Walk through primary user flows described in README
+10. SMOKE TEST: curl key routes mentioned in README, verify 200 responses
+11. HAPPY PATH: Walk through primary user flows described in README
     (e.g. signup, login, create resource, view listing)
-11. EDGE CASES: Test with invalid inputs, missing auth, non-existent routes
-12. BUILD OUTPUT: Check for warnings or errors in the build/start output
+12. EDGE CASES: Test with invalid inputs, missing auth, non-existent routes
+13. BUILD OUTPUT: Check for warnings or errors in the build/start output
 
 ### Phase 4 — Report
 
-13. For each failure, create a ticket in docs/tickets/backlog/ with [Dogfood] prefix:
+14. For each failure, create a ticket in docs/tickets/backlog/ with [Dogfood] prefix:
     ---
     id: T-NNN
     title: "[Dogfood] [issue description]"
-    priority: medium
+    priority: high | medium
     complexity: small
     source: dogfood test [date]
     created: [date]
     depends_on: []
     ---
-    Include: what was tested, expected vs actual, reproduction steps.
+    Include: what was tested, expected vs actual, reproduction steps, and the
+    exact error output. Pre-flight failures get priority: high.
 
-14. Record any decisions made during testing via record_decision tool
+15. Record any decisions made during testing via record_decision tool
     (e.g. "App requires Node 22", "Port 3001 conflicts, used 3002")
 
-15. Commit and push all findings:
+16. Commit and push all findings:
     git add docs/tickets/backlog/
     git commit -m "dogfood: E2E validation findings [date]"
     git push
 
-16. CLEANUP (critical):
+17. CLEANUP (critical):
     - Container: podman stop dogfood-{project} && podman rm dogfood-{project}
     - Native: background processes are cleaned up automatically by the harness
 
@@ -1087,6 +1157,7 @@ DON'T:
 - For long-running processes, ALWAYS use shell_exec with background:true
 - NEVER run find, ls, grep, or cat on directories without excluding node_modules,
   .git, vendor, dist, build, and other large generated directories
+- NEVER report "all checks passed" without actually running the build and dev server
 `,
 
 	"pipeline-fixer": `# Pipeline Fixer — CI/CD Specialist

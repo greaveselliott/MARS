@@ -45,3 +45,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-023 | Agents push after every semantic commit. Work must never be trapped locally. | dogfood-and-decisions.md | Dogfood |
 | AD-024 | Lean 7-role pipeline for local use (CEO, CTO, COO, Engineer, QA, Dogfood, Janitor). Event-driven roles are dormant until GitHub webhooks are connected. | dogfood-and-decisions.md | Dogfood |
 | AD-025 | Dogfood chains from Engineer (not schedule-only) so builds are validated after every feature when harness isn't always-on. | dogfood-and-decisions.md | Dogfood |
+| AD-026 | Bootability checks: scanner detects unbootable projects (missing scripts, root layout, Tailwind config, conflicting dirs); Engineer must build-verify before closing tickets; Dogfood runs pre-flight structural checks; QA validates structural integrity. | dogfood-and-decisions.md | Bootability |
