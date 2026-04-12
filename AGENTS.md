@@ -82,6 +82,62 @@ mars-harness/
 7. **Never push to main.** All changes go through a branch and PR.
 8. **The repo is the system of record.** Decisions, discoveries, and plans live in docs, not in chat threads.
 
+## Operations
+
+Mars Harness is controllable by any AI agent via CLI commands. These are the five core operations.
+
+### 1. Setup
+
+First-time install: hardware detection, llama-server binary, model download.
+
+```bash
+mars-harness setup
+```
+
+Flags: `--skip-download`, `--skip-github`, `--test-mode`, `--dry-run`
+
+### 2. Serve
+
+Start the autonomous orchestrator (webhooks, cron, queue, workers).
+
+```bash
+mars-harness serve
+```
+
+Flags: `--addr :9091`, `--concurrency 2`, `--db ~/.mars-harness/db/mars.db`
+
+Health check: `curl http://localhost:9091/healthz` → `{"status":"healthy"}`
+
+### 3. Register
+
+Register a repository for autonomous management.
+
+```bash
+mars-harness register --repo /path/to/repo --remote owner/repo
+```
+
+Requires `.harness/manifest.yaml` in the repo. Run `mars-harness init` first if needed.
+
+### 4. Status
+
+Health check for GPU, models, config, and database.
+
+```bash
+mars-harness doctor
+mars-harness doctor --json
+```
+
+### 5. Run
+
+Manually execute a single agent role against a repository.
+
+```bash
+mars-harness run <role> --repo /path/to/repo
+mars-harness run engineer --repo . --dry-run   # preview system prompt
+```
+
+Flags: `--model-endpoint`, `--trace`, `--dry-run`, `--budget`, `--max-turns`
+
 ## How to Build
 
 ```bash

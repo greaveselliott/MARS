@@ -13,6 +13,13 @@ type KnowledgeRoute struct {
 	Paths string // e.g. "docs/ci.md, scripts/check.ts"
 }
 
+// Skill is a structured instruction loaded from .harness/skills/.
+type Skill struct {
+	Name  string // skill name from YAML frontmatter
+	Scope string // role scope filter (empty = all roles)
+	Body  string // markdown body with instructions
+}
+
 // Input is everything needed to build the additive system prompt (MH-004 / AD-006).
 type Input struct {
 	RoleScope string // current role id for guardrail filtering, e.g. "engineer"
@@ -23,8 +30,9 @@ type Input struct {
 
 	Guardrails      []Guardrail
 	KnowledgeRoutes []KnowledgeRoute
-	Trigger         string // ticket body, CI excerpt, etc.
-	RepoSummary     string // directory tree or short manifest
+	Skills          []Skill // from .harness/skills/, filtered by role scope
+	Trigger         string  // ticket body, CI excerpt, etc.
+	RepoSummary     string  // directory tree or short manifest
 
 	// TokenBudget is estimated tokens for the full system string; 0 = unlimited (MH-004).
 	TokenBudget int

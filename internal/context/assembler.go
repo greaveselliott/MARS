@@ -12,6 +12,7 @@ const (
 	headerRole     = "## ROLE"
 	headerGuards   = "## GUARDRAILS"
 	headerKnowledge = "## KNOWLEDGE ROUTES"
+	headerSkills   = "## SKILLS"
 	headerTrigger  = "## TRIGGER CONTEXT"
 	headerRepo     = "## REPO SUMMARY"
 )
@@ -69,6 +70,25 @@ func Assemble(in Input) (system string, stats []SectionStat, err error) {
 		}
 		if b.Len() > 0 {
 			parts = append(parts, block{name: "knowledge", header: headerKnowledge, body: strings.TrimSpace(b.String()), truncPri: 40})
+		}
+	}
+
+	if len(in.Skills) > 0 {
+		var b strings.Builder
+		for _, sk := range in.Skills {
+			title := strings.TrimSpace(sk.Name)
+			body := strings.TrimSpace(sk.Body)
+			if body == "" {
+				continue
+			}
+			if title != "" {
+				fmt.Fprintf(&b, "### %s\n%s\n\n", title, body)
+			} else {
+				fmt.Fprintf(&b, "%s\n\n", body)
+			}
+		}
+		if b.Len() > 0 {
+			parts = append(parts, block{name: "skills", header: headerSkills, body: strings.TrimSpace(b.String()), truncPri: 50})
 		}
 	}
 

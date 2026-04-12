@@ -67,9 +67,19 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		return fmt.Errorf("executor: load role prompt: %w", err)
 	}
 
+	var skills []harctx.Skill
+	if skillDefs, sErr := bundle.LoadSkills(repoPath, job.Role); sErr != nil {
+		log.Warn("executor: failed to load skills, continuing without", "err", sErr)
+	} else {
+		for _, sd := range skillDefs {
+			skills = append(skills, harctx.Skill{Name: sd.Name, Scope: sd.Scope, Body: sd.Body})
+		}
+	}
+
 	system, stats, err := harctx.Assemble(harctx.Input{
 		RoleScope:  job.Role,
 		RolePrompt: rolePrompt,
+		Skills:     skills,
 		Trigger:    job.Trigger,
 	})
 	if err != nil {
