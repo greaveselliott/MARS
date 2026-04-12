@@ -517,6 +517,8 @@ func serveCmd() *cobra.Command {
 
 			webhookSecret := os.Getenv("MARS_HARNESS_WEBHOOK_SECRET")
 
+			serve.Cleanup(cfg.WebhookPort, dbPath)
+
 			srv, err := serve.New(serve.Config{
 				WebhookAddr:   webhookAddr,
 				WebhookSecret: webhookSecret,
@@ -680,6 +682,8 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 			}
 
 			webhookAddr := fmt.Sprintf(":%d", cfg.WebhookPort)
+
+			serve.Cleanup(cfg.WebhookPort, dbPath)
 
 			srv, err := serve.New(serve.Config{
 				WebhookAddr: webhookAddr,
