@@ -14,6 +14,11 @@ const harnessDir = ".harness"
 
 // Init scaffolds the .harness/ directory and docs/ structure for a repository.
 // If .harness/ exists and force is false, returns an error.
+//
+// IMPORTANT: --force only overwrites the manifest.yaml configuration file.
+// It never deletes or overwrites user content (tickets, exec-plans, design-docs,
+// role prompts, or scaffold docs like tickets/README.md). Existing files are
+// always preserved; only missing scaffolding is created.
 func Init(repoRoot string, force bool) error {
 	if repoRoot == "" {
 		return fmt.Errorf("init: repo root is empty — pass the path to the repository")
@@ -69,6 +74,10 @@ func Init(repoRoot string, force bool) error {
 
 	for name, content := range defaultRolePrompts {
 		promptPath := filepath.Join(harnessPath, "roles", name+".md")
+		if _, err := os.Stat(promptPath); err == nil {
+			slog.Debug("init: preserving existing role prompt", "role", name)
+			continue
+		}
 		if err := os.WriteFile(promptPath, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("init: write %s: %w", promptPath, err)
 		}
@@ -77,6 +86,10 @@ func Init(repoRoot string, force bool) error {
 
 	for name, content := range defaultDocs {
 		docPath := filepath.Join(repoRoot, name)
+		if _, err := os.Stat(docPath); err == nil {
+			slog.Debug("init: preserving existing doc", "path", name)
+			continue
+		}
 		if err := os.WriteFile(docPath, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("init: write %s: %w", docPath, err)
 		}

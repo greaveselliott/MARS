@@ -305,6 +305,41 @@ func TestInit_forceOverwrite(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
 }
 
+func TestInit_forcePreservesExistingContent(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+
+	require.NoError(t, Init(dir, false))
+
+	ticketDir := filepath.Join(dir, "docs", "tickets", "in-progress")
+	ticketPath := filepath.Join(ticketDir, "T-001-user-work.md")
+	os.MkdirAll(ticketDir, 0o755)
+	require.NoError(t, os.WriteFile(ticketPath, []byte("# T-001: User created ticket\nThis is real work."), 0o644))
+
+	customPrompt := filepath.Join(dir, ".harness", "roles", "engineer.md")
+	require.NoError(t, os.WriteFile(customPrompt, []byte("# Custom Engineer Prompt"), 0o644))
+
+	readmePath := filepath.Join(dir, "docs", "tickets", "README.md")
+	require.NoError(t, os.WriteFile(readmePath, []byte("# Custom README"), 0o644))
+
+	require.NoError(t, Init(dir, true))
+
+	ticketContent, err := os.ReadFile(ticketPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(ticketContent), "User created ticket", "ticket content must be preserved on --force")
+
+	promptContent, err := os.ReadFile(customPrompt)
+	require.NoError(t, err)
+	assert.Equal(t, "# Custom Engineer Prompt", string(promptContent), "custom role prompt must be preserved on --force")
+
+	readmeContent, err := os.ReadFile(readmePath)
+	require.NoError(t, err)
+	assert.Equal(t, "# Custom README", string(readmeContent), "custom docs must be preserved on --force")
+
+	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"), "manifest must still be created")
+}
+
 func TestInit_autoGitInit(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
