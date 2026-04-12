@@ -18,6 +18,15 @@ type Completer interface {
 	ChatCompletion(ctx context.Context, req llm.ChatCompletionRequest) (llm.ChatCompletionResponse, error)
 }
 
+// LoopUI receives progress callbacks during the agent loop.
+// All methods are optional (nil-safe).
+type LoopUI interface {
+	WriteToolCall(name, args string)
+	WriteToolResult(name, output string)
+	WriteAssistant(content string)
+	WriteTurn(turn, maxTurns int)
+}
+
 // Params drives one agent loop run (MH-003).
 type Params struct {
 	Completer    Completer
@@ -28,6 +37,7 @@ type Params struct {
 	SystemPrompt string
 	UserMessage  string
 	Config       LoopConfig
+	UI           LoopUI
 
 	// Optional execution trace (MH-005). When Trace is set, each message is logged as JSONL.
 	JobID      string
@@ -156,6 +166,10 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			return res, nil
 		}
 
+		if p.UI != nil {
+			p.UI.WriteTurn(llmCalls+1, maxTurns)
+		}
+
 		req := llm.ChatCompletionRequest{
 			Model:    p.modelName(),
 			Messages: messages,
@@ -208,6 +222,9 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 				res = finish(messages, defs, EndEmptyResponse, llmCalls, toolInvocations, start, "")
 				return res, nil
 			}
+			if p.UI != nil {
+				p.UI.WriteAssistant(content)
+			}
 			if err := traceAppend(p, &messages, defs, llm.Message{Role: "assistant", Content: am.Content}); err != nil {
 				return LoopResult{}, err
 			}
@@ -246,11 +263,17 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 		}
 
 		for _, tc := range calls {
+			if p.UI != nil {
+				p.UI.WriteToolCall(tc.Function.Name, tc.Function.Arguments)
+			}
 			tres, execErr := p.Executor.Execute(ctx, p.Root, p.Allowlist, tc.Function.Name, tc.Function.Arguments)
 			toolInvocations++
 			body := tres.FormatForModel()
 			if execErr != nil {
 				body = fmt.Sprintf("error: %v\n%s", execErr, body)
+			}
+			if p.UI != nil {
+				p.UI.WriteToolResult(tc.Function.Name, body)
 			}
 			if err := traceAppend(p, &messages, defs, llm.Message{
 				Role:       "tool",

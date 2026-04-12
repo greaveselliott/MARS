@@ -73,10 +73,11 @@ func TestWriteError_NotSuppressedByQuiet(t *testing.T) {
 func TestWriteSummary_IncludesAllFields(t *testing.T) {
 	var buf bytes.Buffer
 	tw := NewTraceWriter(&buf, false, true)
-	tw.WriteSummary("completed", 5, 12, 3*time.Second, 8000)
+	tw.WriteSummary("engineer", "completed", 5, 12, 3*time.Second, 8000)
 
 	out := buf.String()
-	assert.Contains(t, out, "completed")
+	assert.Contains(t, out, "engineer")
+	assert.Contains(t, out, "ompleted")
 	assert.Contains(t, out, "5")
 	assert.Contains(t, out, "12")
 	assert.Contains(t, out, "3s")
@@ -86,7 +87,7 @@ func TestWriteSummary_IncludesAllFields(t *testing.T) {
 func TestWriteSummary_HidesTokensWhenZero(t *testing.T) {
 	var buf bytes.Buffer
 	tw := NewTraceWriter(&buf, false, true)
-	tw.WriteSummary("completed", 1, 1, time.Second, 0)
+	tw.WriteSummary("engineer", "completed", 1, 1, time.Second, 0)
 
 	assert.NotContains(t, buf.String(), "tokens")
 }
@@ -94,9 +95,51 @@ func TestWriteSummary_HidesTokensWhenZero(t *testing.T) {
 func TestWriteSummary_VisibleInQuietMode(t *testing.T) {
 	var buf bytes.Buffer
 	tw := NewTraceWriter(&buf, true, true)
-	tw.WriteSummary("completed", 1, 1, time.Second, 100)
+	tw.WriteSummary("engineer", "completed", 1, 1, time.Second, 100)
 
-	assert.Contains(t, buf.String(), "completed")
+	assert.Contains(t, buf.String(), "ompleted")
+}
+
+func TestWriteHeader_ShowsRoleAndHandoff(t *testing.T) {
+	var buf bytes.Buffer
+	tw := NewTraceWriter(&buf, false, true)
+	tw.WriteHeader("engineer", "gemma-4", []string{"file_read", "shell_exec"}, []string{"qa", "release-manager"})
+
+	out := buf.String()
+	assert.Contains(t, out, "engineer")
+	assert.Contains(t, out, "gemma-4")
+	assert.Contains(t, out, "file_read, shell_exec")
+	assert.Contains(t, out, "qa")
+	assert.Contains(t, out, "release-manager")
+}
+
+func TestWriteHeader_NoHandoff(t *testing.T) {
+	var buf bytes.Buffer
+	tw := NewTraceWriter(&buf, false, true)
+	tw.WriteHeader("qa", "qwen3", []string{"shell_exec"}, nil)
+
+	out := buf.String()
+	assert.Contains(t, out, "qa")
+	assert.NotContains(t, out, "handoff")
+}
+
+func TestWriteHandoff_PrintsTargets(t *testing.T) {
+	var buf bytes.Buffer
+	tw := NewTraceWriter(&buf, false, true)
+	tw.WriteHandoff("pipeline-fixer", []string{"qa", "engineer"})
+
+	out := buf.String()
+	assert.Contains(t, out, "handing off")
+	assert.Contains(t, out, "qa")
+	assert.Contains(t, out, "engineer")
+}
+
+func TestWriteHandoff_NoopWhenEmpty(t *testing.T) {
+	var buf bytes.Buffer
+	tw := NewTraceWriter(&buf, false, true)
+	tw.WriteHandoff("engineer", nil)
+
+	assert.Empty(t, buf.String())
 }
 
 func TestNoColor_StripsANSI(t *testing.T) {

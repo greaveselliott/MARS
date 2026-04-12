@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
@@ -394,8 +396,22 @@ func (s *Server) pollHealth(ctx context.Context, url string) error {
 func (s *Server) startCmdLocked() (*exec.Cmd, error) {
 	args := llamaServerArgs(s.cfg)
 	cmd := exec.Command(s.cfg.BinaryPath, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+
+	logPath := s.logFilePath()
+	if logPath != "" {
+		if err := os.MkdirAll(filepath.Dir(logPath), 0o755); err == nil {
+			f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+			if err == nil {
+				cmd.Stdout = f
+				cmd.Stderr = f
+				slog.Debug("inference server logs", "path", logPath)
+			}
+		}
+	}
+	if cmd.Stdout == nil {
+		cmd.Stdout = io.Discard
+		cmd.Stderr = io.Discard
+	}
 
 	s.mu.Lock()
 	s.cmd = cmd
@@ -408,6 +424,15 @@ func (s *Server) startCmdLocked() (*exec.Cmd, error) {
 		return nil, err
 	}
 	return cmd, nil
+}
+
+func (s *Server) logFilePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".mars-harness", "logs",
+		fmt.Sprintf("llama-server-%d.log", s.cfg.Port))
 }
 
 func effectiveContextLength(n int) int {

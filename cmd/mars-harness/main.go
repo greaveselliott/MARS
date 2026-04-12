@@ -138,6 +138,8 @@ func executeRun(opts runOpts) error {
 		return fmt.Errorf(msg)
 	}
 
+	tw.WriteHeader(opts.roleName, role.Model, role.Tools, role.Then)
+
 	rolePrompt, err := manifest.RolePrompt(opts.repoPath, opts.roleName)
 	if err != nil {
 		tw.WriteError(err.Error())
@@ -191,6 +193,8 @@ func executeRun(opts runOpts) error {
 		defer router.StopAll()
 	}
 
+	tw.WriteReady()
+
 	client, err := llm.NewClient(llm.Config{
 		BaseURL: endpoint,
 		Model:   role.Model,
@@ -230,6 +234,7 @@ func executeRun(opts runOpts) error {
 		},
 		JobID: fmt.Sprintf("%s-%s", manifest.Name, opts.roleName),
 		Trace: recorder,
+		UI:    tw,
 	})
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("agent error: %v", err))
@@ -237,6 +242,7 @@ func executeRun(opts runOpts) error {
 	}
 
 	tw.WriteSummary(
+		opts.roleName,
 		string(result.EndReason),
 		result.LLMCalls,
 		result.ToolInvocations,
@@ -247,6 +253,8 @@ func executeRun(opts runOpts) error {
 	if result.Err != nil {
 		tw.WriteError(fmt.Sprintf("run ended with error: %v", result.Err))
 	}
+
+	tw.WriteHandoff(opts.roleName, role.Then)
 
 	return nil
 }
