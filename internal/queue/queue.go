@@ -324,6 +324,78 @@ func (q *Queue) CountByStatus(ctx context.Context, status string) (int, error) {
 	return count, nil
 }
 
+// RecentJobs returns the most recent jobs (newest first), limited to maxRows.
+func (q *Queue) RecentJobs(ctx context.Context, maxRows int) ([]Job, error) {
+	rows, err := q.db.QueryContext(ctx, `
+SELECT id, repo_id, role, trigger_payload, idempotency_key, status,
+       claimed_by, created_at, updated_at, completed_at, error_msg
+FROM jobs ORDER BY created_at DESC LIMIT ?`, maxRows)
+	if err != nil {
+		return nil, fmt.Errorf("queue: recent jobs: %w", err)
+	}
+	defer rows.Close()
+
+	var jobs []Job
+	for rows.Next() {
+		var j Job
+		var status string
+		var createdAt, updatedAt int64
+		var completedAt sql.NullInt64
+		if err := rows.Scan(
+			&j.ID, &j.RepoID, &j.Role, &j.Trigger, &j.IdempotencyKey,
+			&status, &j.ClaimedBy, &createdAt, &updatedAt, &completedAt, &j.Error,
+		); err != nil {
+			return jobs, fmt.Errorf("queue: scan recent job: %w", err)
+		}
+		j.Status = JobStatus(status)
+		j.CreatedAt = time.Unix(createdAt, 0).UTC()
+		j.UpdatedAt = time.Unix(updatedAt, 0).UTC()
+		if completedAt.Valid {
+			t := time.Unix(completedAt.Int64, 0).UTC()
+			j.CompletedAt = &t
+		}
+		jobs = append(jobs, j)
+	}
+	return jobs, rows.Err()
+}
+
+// JobCountsByHour returns job counts grouped by hour for the last N hours.
+// Each entry has the hour timestamp, completed count, and failed count.
+type HourlyCount struct {
+	Hour      string `json:"hour"`
+	Completed int    `json:"completed"`
+	Failed    int    `json:"failed"`
+	Total     int    `json:"total"`
+}
+
+func (q *Queue) JobCountsByHour(ctx context.Context, hours int) ([]HourlyCount, error) {
+	cutoff := time.Now().Add(-time.Duration(hours) * time.Hour).Unix()
+	rows, err := q.db.QueryContext(ctx, `
+SELECT
+  strftime('%Y-%m-%dT%H:00:00Z', created_at, 'unixepoch') AS hour,
+  SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed,
+  SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed,
+  COUNT(*) AS total
+FROM jobs
+WHERE created_at >= ?
+GROUP BY hour
+ORDER BY hour`, cutoff)
+	if err != nil {
+		return nil, fmt.Errorf("queue: job counts by hour: %w", err)
+	}
+	defer rows.Close()
+
+	var counts []HourlyCount
+	for rows.Next() {
+		var hc HourlyCount
+		if err := rows.Scan(&hc.Hour, &hc.Completed, &hc.Failed, &hc.Total); err != nil {
+			return counts, fmt.Errorf("queue: scan hourly count: %w", err)
+		}
+		counts = append(counts, hc)
+	}
+	return counts, rows.Err()
+}
+
 func scanJob(row *sql.Row) (*Job, error) {
 	var j Job
 	var status string

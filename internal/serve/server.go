@@ -256,6 +256,7 @@ func New(cfg Config) (*Server, error) {
 	dash.HandleFunc("/api/telemetry", s.handleTelemetryAPI)
 	dash.HandleFunc("/api/evolution", s.handleEvolutionAPI)
 	dash.HandleFunc("/api/roles", s.handleRolesAPI)
+	dash.HandleFunc("/api/throughput", s.handleThroughputAPI)
 
 	webhookHandler := gh.WebhookHandler(
 		gh.WebhookConfig{Secret: cfg.WebhookSecret},
@@ -781,6 +782,75 @@ func (s *Server) handleRolesAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error("serve: roles API encode error", "err", err)
+	}
+}
+
+func (s *Server) handleThroughputAPI(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	type jobEntry struct {
+		ID        string  `json:"id"`
+		Role      string  `json:"role"`
+		Status    string  `json:"status"`
+		CreatedAt string  `json:"created_at"`
+		Duration  *string `json:"duration,omitempty"`
+		Error     string  `json:"error,omitempty"`
+	}
+
+	type apiResponse struct {
+		Hourly    []queue.HourlyCount `json:"hourly"`
+		RecentJobs []jobEntry         `json:"recent_jobs"`
+		Summary    struct {
+			Total     int `json:"total"`
+			Completed int `json:"completed"`
+			Failed    int `json:"failed"`
+			Running   int `json:"running"`
+			Pending   int `json:"pending"`
+		} `json:"summary"`
+	}
+
+	var resp apiResponse
+
+	hourly, err := s.queue.JobCountsByHour(ctx, 48)
+	if err != nil {
+		slog.Error("serve: throughput hourly query error", "err", err)
+	}
+	resp.Hourly = hourly
+
+	recent, err := s.queue.RecentJobs(ctx, 50)
+	if err != nil {
+		slog.Error("serve: throughput recent jobs error", "err", err)
+	}
+	for _, j := range recent {
+		entry := jobEntry{
+			ID:        j.ID[:8],
+			Role:      j.Role,
+			Status:    string(j.Status),
+			CreatedAt: j.CreatedAt.Format(time.RFC3339),
+			Error:     j.Error,
+		}
+		if j.CompletedAt != nil {
+			d := j.CompletedAt.Sub(j.CreatedAt).Round(time.Second).String()
+			entry.Duration = &d
+		}
+		resp.RecentJobs = append(resp.RecentJobs, entry)
+
+		resp.Summary.Total++
+		switch j.Status {
+		case queue.StatusCompleted:
+			resp.Summary.Completed++
+		case queue.StatusFailed:
+			resp.Summary.Failed++
+		case queue.StatusRunning:
+			resp.Summary.Running++
+		case queue.StatusPending, queue.StatusClaimed:
+			resp.Summary.Pending++
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("serve: throughput API encode error", "err", err)
 	}
 }
 

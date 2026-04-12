@@ -273,6 +273,73 @@ func TestQueue_stressTest(t *testing.T) {
 	assert.Equal(t, totalJobs, completed.Load())
 }
 
+func TestRecentJobs(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	for i := 0; i < 5; i++ {
+		id, err := q.Enqueue(ctx, Job{
+			RepoID: "repo-1",
+			Role:   fmt.Sprintf("role-%d", i),
+		})
+		require.NoError(t, err)
+		if i%2 == 0 {
+			_ = q.Complete(ctx, id)
+		}
+	}
+
+	jobs, err := q.RecentJobs(ctx, 10)
+	require.NoError(t, err)
+	assert.Len(t, jobs, 5)
+	assert.True(t, jobs[0].CreatedAt.After(jobs[len(jobs)-1].CreatedAt) ||
+		jobs[0].CreatedAt.Equal(jobs[len(jobs)-1].CreatedAt),
+		"jobs should be newest first")
+}
+
+func TestRecentJobs_empty(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	jobs, err := q.RecentJobs(ctx, 10)
+	require.NoError(t, err)
+	assert.Empty(t, jobs)
+}
+
+func TestJobCountsByHour(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	claimAndComplete := func(repoID, role string) {
+		id, err := q.Enqueue(ctx, Job{RepoID: repoID, Role: role})
+		require.NoError(t, err)
+		job, err := q.Claim(ctx, "w-test")
+		require.NoError(t, err)
+		require.NoError(t, q.MarkRunning(ctx, job.ID))
+		require.NoError(t, q.Complete(ctx, id))
+	}
+
+	claimAndFail := func(repoID, role, errMsg string) {
+		id, err := q.Enqueue(ctx, Job{RepoID: repoID, Role: role})
+		require.NoError(t, err)
+		_, err = q.Claim(ctx, "w-test")
+		require.NoError(t, err)
+		require.NoError(t, q.MarkRunning(ctx, id))
+		require.NoError(t, q.Fail(ctx, id, errMsg))
+	}
+
+	claimAndComplete("repo-1", "engineer")
+	claimAndComplete("repo-1", "engineer")
+	claimAndComplete("repo-1", "engineer")
+	claimAndFail("repo-1", "qa", "test error")
+
+	counts, err := q.JobCountsByHour(ctx, 1)
+	require.NoError(t, err)
+	require.Len(t, counts, 1, "all jobs created in the same hour")
+	assert.Equal(t, 3, counts[0].Completed)
+	assert.Equal(t, 1, counts[0].Failed)
+	assert.Equal(t, 4, counts[0].Total)
+}
+
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }

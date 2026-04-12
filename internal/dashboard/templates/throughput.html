@@ -6,7 +6,7 @@
   <title>{{.Title}} — Mars Harness</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <nav class="sidebar">
@@ -26,12 +26,209 @@
       <span class="timestamp">{{.Now}}</span>
     </header>
 
+    <div class="card-row">
+      <div class="card summary-card">
+        <div class="summary-number" id="summary-total">-</div>
+        <div class="summary-label">Total Jobs</div>
+      </div>
+      <div class="card summary-card">
+        <div class="summary-number success" id="summary-completed">-</div>
+        <div class="summary-label">Completed</div>
+      </div>
+      <div class="card summary-card">
+        <div class="summary-number danger" id="summary-failed">-</div>
+        <div class="summary-label">Failed</div>
+      </div>
+      <div class="card summary-card">
+        <div class="summary-number primary" id="summary-running">-</div>
+        <div class="summary-label">Running</div>
+      </div>
+    </div>
+
     <div class="card">
-      <h2>Jobs Over Time</h2>
-      <canvas id="throughput-chart" height="300"></canvas>
+      <h2>Jobs Over Time (Last 48h)</h2>
+      <canvas id="throughput-chart" height="280"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Recent Jobs</h2>
+      <div class="job-table-wrap">
+        <table class="job-table" id="job-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Duration</th>
+              <th>Error</th>
+            </tr>
+          </thead>
+          <tbody id="job-tbody">
+            <tr><td colspan="6" class="muted">Loading&hellip;</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </main>
 
   <script src="/static/app.js"></script>
+  <script>
+  (function() {
+    var throughputChart = null;
+
+    function loadThroughputData() {
+      fetch("/api/throughput")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          renderSummary(data.summary || {});
+          renderChart(data.hourly || []);
+          renderJobTable(data.recent_jobs || []);
+        })
+        .catch(function(err) {
+          console.error("Failed to load throughput data:", err);
+        });
+    }
+
+    function renderSummary(s) {
+      setText("summary-total", s.total || 0);
+      setText("summary-completed", s.completed || 0);
+      setText("summary-failed", s.failed || 0);
+      setText("summary-running", s.running || 0);
+    }
+
+    function setText(id, val) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = val;
+    }
+
+    function renderChart(hourly) {
+      var ctx = document.getElementById("throughput-chart");
+      if (!ctx) return;
+
+      var labels = hourly.map(function(h) {
+        var d = new Date(h.hour);
+        return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      });
+      var completedData = hourly.map(function(h) { return h.completed; });
+      var failedData = hourly.map(function(h) { return h.failed; });
+
+      if (throughputChart) throughputChart.destroy();
+
+      if (hourly.length === 0) {
+        ctx.parentElement.insertAdjacentHTML(
+          "beforeend",
+          '<p class="muted chart-empty">No job data yet — run some agents first</p>'
+        );
+        return;
+      }
+
+      var existing = ctx.parentElement.querySelector(".chart-empty");
+      if (existing) existing.remove();
+
+      throughputChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Completed",
+              data: completedData,
+              backgroundColor: "rgba(34, 197, 94, 0.7)",
+              borderColor: "rgba(34, 197, 94, 1)",
+              borderWidth: 1,
+              borderRadius: 3
+            },
+            {
+              label: "Failed",
+              data: failedData,
+              backgroundColor: "rgba(239, 68, 68, 0.7)",
+              borderColor: "rgba(239, 68, 68, 1)",
+              borderWidth: 1,
+              borderRadius: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: "index" },
+          scales: {
+            x: {
+              stacked: true,
+              ticks: { color: "#94a3b8", maxRotation: 45, font: { size: 11 } },
+              grid: { color: "rgba(51, 65, 85, 0.5)" }
+            },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              ticks: { color: "#94a3b8", stepSize: 1, font: { size: 11 } },
+              grid: { color: "rgba(51, 65, 85, 0.5)" }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: "#e2e8f0", usePointStyle: true, pointStyle: "rectRounded" }
+            },
+            tooltip: {
+              backgroundColor: "#1e293b",
+              titleColor: "#e2e8f0",
+              bodyColor: "#94a3b8",
+              borderColor: "#334155",
+              borderWidth: 1
+            }
+          }
+        }
+      });
+    }
+
+    function renderJobTable(jobs) {
+      var tbody = document.getElementById("job-tbody");
+      if (!tbody) return;
+
+      if (jobs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">No jobs recorded yet</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = "";
+      jobs.forEach(function(job) {
+        var tr = document.createElement("tr");
+        var statusClass = job.status === "completed" ? "success"
+                        : job.status === "failed" ? "danger"
+                        : job.status === "running" ? "primary"
+                        : "";
+
+        var createdDate = new Date(job.created_at);
+        var created = createdDate.toLocaleString(undefined, {
+          month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit"
+        });
+
+        tr.innerHTML =
+          '<td class="mono">' + esc(job.id) + '</td>' +
+          '<td><span class="badge">' + esc(job.role) + '</span></td>' +
+          '<td><span class="status-pill ' + statusClass + '">' + esc(job.status) + '</span></td>' +
+          '<td>' + esc(created) + '</td>' +
+          '<td>' + esc(job.duration || "—") + '</td>' +
+          '<td class="error-cell">' + esc(truncate(job.error || "", 60)) + '</td>';
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function truncate(s, n) {
+      return s.length > n ? s.substring(0, n) + "…" : s;
+    }
+
+    function esc(str) {
+      var div = document.createElement("div");
+      div.textContent = str || "";
+      return div.innerHTML;
+    }
+
+    loadThroughputData();
+    setInterval(loadThroughputData, 15000);
+  })();
+  </script>
 </body>
 </html>

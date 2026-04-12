@@ -746,10 +746,16 @@ START by reading:
 5. docs/design-docs/ (relevant design docs linked in the ticket)
 
 TICKET SELECTION:
-1. Select the highest-priority ticket from backlog/ where all dependencies
-   are satisfied (depends_on tickets must be in done/)
-2. If multiple tickets share the same priority, pick the lowest number
-3. If no eligible tickets exist, report "no eligible tickets" and finish
+1. FIRST check docs/tickets/in-progress/ — if a ticket is already claimed
+   there (by a previous run that didn't finish), resume that ticket instead
+   of claiming a new one. Read its AC and verify if the work is already done
+   in the codebase. If done: move it to done/ immediately. If not: continue
+   implementing it.
+2. If no in-progress tickets exist, select the highest-priority ticket from
+   backlog/ where all dependencies are satisfied (depends_on tickets must be
+   in done/)
+3. If multiple tickets share the same priority, pick the lowest number
+4. If no eligible tickets exist, report "no eligible tickets" and finish
 
 Read the selected ticket fully: requirements, acceptance criteria, design docs.
 
@@ -806,16 +812,23 @@ IMPLEMENTATION:
 7. FINAL VERIFICATION
    Run the full test suite. Ensure everything passes.
 
-COMMIT GATE — run before finishing:
-   git_status to verify the working tree is clean. If there are ANY uncommitted
-   changes, commit them now. An agent run that leaves uncommitted changes is a
-   failed run — the next agent cannot see your work.
+COMMIT GATE — MANDATORY before finishing (every run, no exceptions):
+   a) If you implemented code for a ticket, move it to done/ FIRST:
+      shell_exec: git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
+      git_commit: message "chore(tickets): move T-NNN to done"
+      git_push
+   b) git_status to verify the working tree is clean. If there are ANY
+      uncommitted changes, commit them now.
+   c) A run that leaves tickets stuck in in-progress/ is a FAILED run.
+      The next engineer run will waste turns re-evaluating that ticket.
 
 DON'T:
 - Guess when acceptance criteria are ambiguous — note the gap and skip
 - Skip or disable tests to make things pass
 - Introduce new patterns not already documented in design docs
 - Work on more than one ticket per run
+- NEVER finish a run with a ticket still in in-progress/. Move it to done/ or
+  leave a note explaining why it's incomplete.
 - NEVER finish a run with uncommitted changes. Always check git_status at the end.
 - For long-running processes (dev servers, watchers, next dev, npm start), ALWAYS use
   shell_exec with background:true so they run as a background process and don't block your run.

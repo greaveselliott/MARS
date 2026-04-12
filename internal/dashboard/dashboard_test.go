@@ -263,7 +263,7 @@ func TestDashboard_staticAssets(t *testing.T) {
 		path        string
 		contentType string
 	}{
-		{"/static/app.css", "text/css"},
+		{"/static/style.css", "text/css"},
 		{"/static/app.js", "text/javascript"},
 	}
 
