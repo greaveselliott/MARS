@@ -5,13 +5,20 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 	"time"
 )
 
+func testDBPath(t *testing.T) string {
+	t.Helper()
+	return filepath.Join(t.TempDir(), "test.db")
+}
+
 func TestServer_healthHandler_healthy(t *testing.T) {
 	srv, err := New(Config{
 		WebhookAddr: ":0",
+		DBPath:      testDBPath(t),
 	})
 	if err != nil {
 		t.Fatalf("New returned error: %v", err)
@@ -38,6 +45,7 @@ func TestServer_healthHandler_healthy(t *testing.T) {
 func TestServer_healthHandler_unhealthy(t *testing.T) {
 	srv, err := New(Config{
 		WebhookAddr: ":0",
+		DBPath:      testDBPath(t),
 	})
 	if err != nil {
 		t.Fatalf("New returned error: %v", err)
@@ -71,6 +79,7 @@ func TestNew_missingAddr(t *testing.T) {
 func TestServer_startStop(t *testing.T) {
 	srv, err := New(Config{
 		WebhookAddr: "127.0.0.1:0",
+		DBPath:      testDBPath(t),
 	})
 	if err != nil {
 		t.Fatalf("New returned error: %v", err)
@@ -108,6 +117,7 @@ func TestServer_startStop(t *testing.T) {
 func TestServer_doubleStart(t *testing.T) {
 	srv, err := New(Config{
 		WebhookAddr: "127.0.0.1:0",
+		DBPath:      testDBPath(t),
 	})
 	if err != nil {
 		t.Fatalf("New returned error: %v", err)

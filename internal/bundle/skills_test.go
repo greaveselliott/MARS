@@ -1,0 +1,105 @@
+package bundle
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestLoadSkills_noDirectory(t *testing.T) {
+	t.Parallel()
+	skills, err := LoadSkills(t.TempDir(), "engineer")
+	require.NoError(t, err)
+	assert.Nil(t, skills)
+}
+
+func TestLoadSkills_happyPath(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	skillsDir := filepath.Join(root, ".harness", "skills", "deploy")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+
+	content := `---
+name: deploy
+description: How to deploy.
+scope: all
+---
+
+# Deploy
+
+Run: npm run deploy
+`
+	require.NoError(t, os.WriteFile(filepath.Join(skillsDir, "SKILL.md"), []byte(content), 0o644))
+
+	skills, err := LoadSkills(root, "engineer")
+	require.NoError(t, err)
+	require.Len(t, skills, 1)
+	assert.Equal(t, "deploy", skills[0].Name)
+	assert.Equal(t, "all", skills[0].Scope)
+	assert.Contains(t, skills[0].Body, "npm run deploy")
+}
+
+func TestLoadSkills_scopeFilter(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+
+	qaDir := filepath.Join(root, ".harness", "skills", "test-setup")
+	require.NoError(t, os.MkdirAll(qaDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(qaDir, "SKILL.md"), []byte(`---
+name: test-setup
+scope: qa
+---
+Run tests.
+`), 0o644))
+
+	allDir := filepath.Join(root, ".harness", "skills", "deploy")
+	require.NoError(t, os.MkdirAll(allDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(allDir, "SKILL.md"), []byte(`---
+name: deploy
+scope: all
+---
+Deploy it.
+`), 0o644))
+
+	skills, err := LoadSkills(root, "engineer")
+	require.NoError(t, err)
+	require.Len(t, skills, 1)
+	assert.Equal(t, "deploy", skills[0].Name)
+
+	skills, err = LoadSkills(root, "qa")
+	require.NoError(t, err)
+	require.Len(t, skills, 2)
+}
+
+func TestLoadSkills_noFrontmatter(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	skillsDir := filepath.Join(root, ".harness", "skills", "simple")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(skillsDir, "SKILL.md"), []byte("Just some instructions."), 0o644))
+
+	skills, err := LoadSkills(root, "engineer")
+	require.NoError(t, err)
+	require.Len(t, skills, 1)
+	assert.Equal(t, "simple", skills[0].Name)
+	assert.Equal(t, "Just some instructions.", skills[0].Body)
+}
+
+func TestLoadSkills_emptyScope(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	skillsDir := filepath.Join(root, ".harness", "skills", "generic")
+	require.NoError(t, os.MkdirAll(skillsDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(skillsDir, "SKILL.md"), []byte(`---
+name: generic
+---
+Available to all.
+`), 0o644))
+
+	skills, err := LoadSkills(root, "any-role")
+	require.NoError(t, err)
+	require.Len(t, skills, 1)
+}
