@@ -237,17 +237,28 @@ func TestInit_success(t *testing.T) {
 	assert.DirExists(t, filepath.Join(dir, ".harness", "tickets"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
 
-	for _, role := range []string{"engineer", "qa", "pipeline-fixer", "security", "pr-comment-fixer"} {
+	expectedPrompts := []string{
+		"ceo", "coo", "cto", "engineer", "qa", "security",
+		"dependency-manager", "release-manager", "dogfood",
+		"pipeline-fixer", "pr-comment-fixer",
+	}
+	for _, role := range expectedPrompts {
 		assert.FileExists(t, filepath.Join(dir, ".harness", "roles", role+".md"),
 			"expected default prompt for role %s", role)
 	}
 
 	manifest, err := os.ReadFile(filepath.Join(dir, ".harness", "manifest.yaml"))
 	require.NoError(t, err)
-	assert.Contains(t, string(manifest), "engineer:")
-	assert.Contains(t, string(manifest), "qa:")
-	assert.Contains(t, string(manifest), "pipeline-fixer:")
-	assert.Contains(t, string(manifest), filepath.Base(dir))
+	manifestStr := string(manifest)
+	assert.Contains(t, manifestStr, filepath.Base(dir))
+	for _, key := range []string{
+		"ceo:", "coo:", "cto-pr-merge:", "cto-weekly:",
+		"engineer:", "qa:", "security-pr:", "security-weekly:",
+		"dependency-manager:", "release-pr:", "release-weekly:",
+		"dogfood:", "pipeline-fixer:", "pr-comment-fixer:",
+	} {
+		assert.Contains(t, manifestStr, key, "manifest missing role %s", key)
+	}
 }
 
 func TestInit_alreadyExists(t *testing.T) {
