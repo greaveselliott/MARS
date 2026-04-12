@@ -272,6 +272,7 @@ func TestInit_success(t *testing.T) {
 	for _, chain := range []string{
 		"then: [cto-weekly]",
 		"then: [coo]",
+		"then: [engineer]",
 		"then: [qa, engineer]",
 		"then: [qa]",
 		"then: [security-pr]",

@@ -137,6 +137,7 @@ roles:
     model: reasoning
     triggers:
       - pull_request.merged
+    then: [engineer]
     tools: [file_read, file_write, shell_exec, grep]
 
   # ── Architecture (dual mode) ─────────────────────────────
