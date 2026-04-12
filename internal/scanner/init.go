@@ -454,9 +454,10 @@ ORDERING RUBRIC:
 - P2 — Quality improvement, test coverage, documentation
 - P3 — Nice-to-have, polish, future-proofing
 
-After writing priorities, commit your changes:
+After writing priorities, commit and push your changes:
   git add docs/exec-plans/active/weekly-priorities.md
   git commit -m "vision: weekly priorities [date]"
+  git push
 
 ## Quality Bar
 
@@ -561,9 +562,10 @@ CONSTRAINTS:
 - Do NOT create tickets for work already tracked in existing tickets
 - Do NOT create more than 10 tickets per priority
 
-After creating tickets, commit:
+After creating tickets, commit and push:
   git add docs/tickets/backlog/
   git commit -m "tickets: create tickets for weekly priorities [date]"
+  git push
 
 ## Quality Bar
 
@@ -641,9 +643,10 @@ TASKS:
    If structural improvements are needed, note them in the weekly priorities
    feedback or create design docs that the COO can reference when creating tickets.
 
-After making changes, commit:
+After making changes, commit and push:
   git add docs/design-docs/
   git commit -m "arch: update design docs [date]"
+  git push
 
 DON'T:
 - NEVER run find, ls, grep, or cat on directories without excluding node_modules, .git, vendor,
@@ -719,6 +722,7 @@ IMPLEMENTATION:
    Move the ticket from docs/tickets/backlog/ to docs/tickets/in-progress/
    git mv docs/tickets/backlog/T-NNN-*.md docs/tickets/in-progress/
    git commit -m "chore(tickets): claim T-NNN"
+   git push
 
 2. PLAN BEFORE CODING
    - Which files will be created or modified?
@@ -726,8 +730,9 @@ IMPLEMENTATION:
    - Are there architectural decisions to make? Check design docs first.
 
 3. IMPLEMENT IN STEPS
-   Follow working discipline: commit after every completed step.
+   Follow working discipline: commit and push after every completed step.
    Format: "feat(scope): description (T-NNN step N)"
+   Always run git push after each commit so work is never lost.
 
 4. WRITE TESTS
    - Map each acceptance criterion to at least one test
@@ -737,6 +742,7 @@ IMPLEMENTATION:
 5. MOVE TICKET TO DONE
    git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
    git commit -m "chore(tickets): move T-NNN to done"
+   git push
 
 6. FINAL VERIFICATION
    Run the full test suite. Ensure everything passes.
@@ -831,9 +837,10 @@ Format:
 - Findings: N critical, N warning, N suggestion
 - Verdict: PASS | NEEDS_FIXES
 
-Commit your review:
+Commit and push your review:
   git add docs/exec-plans/active/qa-review-*.md
   git commit -m "qa: review [date]"
+  git push
 `,
 
 	"security": `# Security — Audit
@@ -899,9 +906,10 @@ Format:
 - Findings: N critical, N high, N medium, N low
 - Verdict: PASS | NEEDS_REMEDIATION
 
-Commit:
+Commit and push:
   git add docs/exec-plans/active/security-audit-*.md
   git commit -m "security: audit [date]"
+  git push
 `,
 
 	"dependency-manager": `# Dependency Manager
@@ -943,7 +951,10 @@ If a manifest exists:
 
 OUTPUT:
 If issues are found, write: docs/exec-plans/active/dep-review-[date].md
-with findings and recommended actions. Commit your review.
+with findings and recommended actions. Commit and push your review:
+  git add docs/exec-plans/active/dep-review-*.md
+  git commit -m "deps: review [date]"
+  git push
 `,
 
 	"release-manager": `# Release Manager
@@ -984,9 +995,10 @@ During weekly releases:
 2. If yes: update version numbers, finalise changelog, tag the release
 3. Verify tests pass before cutting
 
-Commit:
+Commit and push:
   git add CHANGELOG.md
   git commit -m "release: update changelog [date]"
+  git push
 `,
 
 	"dogfood": `# Dogfood Tester — E2E Validation
@@ -1059,9 +1071,10 @@ build it, run it, test it, and file tickets for anything broken.
 14. Record any decisions made during testing via record_decision tool
     (e.g. "App requires Node 22", "Port 3001 conflicts, used 3002")
 
-15. Commit all findings:
+15. Commit and push all findings:
     git add docs/tickets/backlog/
     git commit -m "dogfood: E2E validation findings [date]"
+    git push
 
 16. CLEANUP (critical):
     - Container: podman stop dogfood-{project} && podman rm dogfood-{project}
@@ -1110,8 +1123,9 @@ APPROACH:
 4. VERIFY LOCALLY — Run the failing command locally before committing
 5. COMMIT — Single, focused commit
 
-Commit format:
+Commit and push:
   git commit -m "fix(ci): [description of what was fixed]"
+  git push
 `,
 
 	"pr-comment-fixer": `# PR Comment Fixer
@@ -1146,8 +1160,9 @@ APPROACH:
 3. RUN TESTS — Ensure changes don't break anything
 4. COMMIT — Reference the review feedback
 
-Commit format:
+Commit and push:
   git commit -m "fix: address review feedback [description]"
+  git push
 `,
 
 	"janitor": `# Backlog Janitor
@@ -1180,7 +1195,7 @@ STEP 1 — MOVE COMPLETED WORK TO DONE:
   c) If the acceptance criteria appear met based on commits and codebase state,
      move the file to done/ and add a completion note at the bottom:
      "Completed: [date] — AC verified by janitor based on [evidence]"
-  d) Commit: git commit -m "chore(janitor): move [ticket-id] to done — AC met"
+  d) Commit and push: git commit -m "chore(janitor): move [ticket-id] to done — AC met" && git push
 
 STEP 2 — DETECT AND REMOVE DUPLICATES:
   Compare ticket titles and topics across ALL directories (backlog/, in-progress/, done/).
@@ -1188,20 +1203,20 @@ STEP 2 — DETECT AND REMOVE DUPLICATES:
   a) Keep the one furthest along in the pipeline (done > in-progress > backlog)
   b) If both are in the same directory, keep the one with the lower number
   c) Delete the duplicate
-  d) Commit: git commit -m "chore(janitor): remove duplicate [ticket-id] (same as [kept-id])"
+  d) Commit and push: git commit -m "chore(janitor): remove duplicate [ticket-id] (same as [kept-id])" && git push
 
 STEP 3 — DELETE ITEMS THAT DON'T BELONG:
   Compare each ticket's content against the README.md to verify it belongs to this project.
   If a ticket clearly doesn't match the project scope (e.g. game-related ticket in a
   recruiter portal):
   a) Delete the file
-  b) Commit: git commit -m "chore(janitor): remove [ticket-id] — does not belong to project"
+  b) Commit and push: git commit -m "chore(janitor): remove [ticket-id] — does not belong to project" && git push
 
 STEP 4 — RE-PRIORITIZE STALE ITEMS:
   For tickets in in-progress/ with no related git activity in the last 7 days:
   a) Move the file back to backlog/
   b) Add a note: "Moved to backlog: [date] — no activity for 7+ days"
-  c) Commit: git commit -m "chore(janitor): move stale [ticket-id] back to backlog"
+  c) Commit and push: git commit -m "chore(janitor): move stale [ticket-id] back to backlog" && git push
 
 DON'T:
 - Create new tickets (that's the COO's job)
