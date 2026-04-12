@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -71,6 +72,10 @@ func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 		cmd = exec.CommandContext(runCtx, "/bin/sh", "-c", args.ShellCommand)
 	}
 	cmd.Dir = root.Abs()
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error {
+		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+	}
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -84,7 +89,7 @@ func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 				Stderr:   stderr.String(),
 				Output:   stdout.String(),
 				ExitCode: -1,
-			}, fmt.Errorf("shell_exec: command timed out after %ds", ts)
+			}, fmt.Errorf("shell_exec: command timed out after %ds — long-running servers (e.g. dev servers) should not be started by agents", ts)
 		}
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
