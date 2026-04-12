@@ -261,6 +261,101 @@ body {
   color: var(--text-muted);
 }
 
+.card-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.card.half {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--primary);
+}
+
+.badge.success {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--success);
+}
+
+.pattern-item {
+  padding: 8px 12px;
+  border-left: 3px solid var(--warning);
+  margin-bottom: 6px;
+  font-size: 13px;
+  border-radius: 0 4px 4px 0;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.event-entry.telemetry {
+  border-left-color: var(--warning);
+}
+
+.event-entry.telemetry_pattern {
+  border-left-color: var(--danger);
+}
+
+.event-entry.evolution {
+  border-left-color: #8b5cf6;
+}
+
+.event-entry.remedied {
+  border-left-color: var(--success);
+}
+
+.event-entry.unremedied {
+  border-left-color: var(--danger);
+}
+
+.role-card .role-score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.score-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.score-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.score-fill.success { background: var(--success); }
+.score-fill.warning { background: var(--warning); }
+.score-fill.error { background: var(--danger); }
+
+.role-card .role-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.stat-success { color: var(--success); }
+.stat-fail { color: var(--danger); }
+
+.role-card.warning {
+  border-color: var(--warning);
+}
+
 canvas {
   width: 100% !important;
 }

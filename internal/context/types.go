@@ -34,6 +34,9 @@ type Input struct {
 	Trigger         string  // ticket body, CI excerpt, etc.
 	RepoSummary     string  // directory tree or short manifest
 
+	// Learnings is a pre-formatted text block of per-repo conventions, lessons, and excludes.
+	Learnings string
+
 	// TokenBudget is estimated tokens for the full system string; 0 = unlimited (MH-004).
 	TokenBudget int
 }

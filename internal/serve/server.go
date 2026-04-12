@@ -17,6 +17,7 @@ import (
 
 	"github.com/greaveselliott/mars-harness/internal/bundle"
 	"github.com/greaveselliott/mars-harness/internal/dashboard"
+	"github.com/greaveselliott/mars-harness/internal/evolution"
 	gh "github.com/greaveselliott/mars-harness/internal/github"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
@@ -24,7 +25,9 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/scheduler"
+	"github.com/greaveselliott/mars-harness/internal/scoring"
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
+	"github.com/greaveselliott/mars-harness/internal/trace"
 )
 
 // Config controls the serve command.
@@ -66,6 +69,10 @@ type Server struct {
 
 	cancelSleep func()
 	telemetry   *telemetry.Collector
+	telemStore  *telemetry.Store
+	traceStore  *trace.Store
+	scoreStore  *scoring.Store
+	evoStore    *evolution.Store
 
 	mu      sync.Mutex
 	started bool
@@ -115,6 +122,7 @@ func New(cfg Config) (*Server, error) {
 		"auditor":        hardware.TierReasoning,
 		"security-auditor": hardware.TierReasoning,
 		"backlog":        hardware.TierFast,
+		"janitor":        hardware.TierFast,
 		"evolution":      hardware.TierReasoning,
 		"dependency-updater": hardware.TierFast,
 		"performance-optimizer": hardware.TierCoding,
@@ -143,11 +151,31 @@ func New(cfg Config) (*Server, error) {
 		return rec.Path, nil
 	}
 
-	executor := NewExecutor(repoLookup, router, nil)
+	traceStore, err := trace.OpenStore(cfg.DBPath)
+	if err != nil {
+		slog.Warn("serve: trace store unavailable — traces will not be persisted", "err", err)
+	}
+
+	scoreStore, err := scoring.OpenStore(cfg.DBPath)
+	if err != nil {
+		slog.Warn("serve: scoring store unavailable — outcomes will not be recorded", "err", err)
+	}
+
+	evoStore, err := evolution.OpenStore(cfg.DBPath)
+	if err != nil {
+		slog.Warn("serve: evolution store unavailable — evolution tracking disabled", "err", err)
+	}
+
+	executor := NewExecutor(repoLookup, router, traceStore)
 
 	sched := scheduler.New(jobQueue)
 
-	telem := telemetry.NewCollector(nil)
+	telemStore, err := telemetry.OpenStore(cfg.DBPath)
+	if err != nil {
+		slog.Warn("serve: telemetry store unavailable — events will not persist", "err", err)
+	}
+
+	telem := telemetry.NewCollector(nil, telemStore)
 
 	s := &Server{
 		cfg:       cfg,
@@ -159,8 +187,12 @@ func New(cfg Config) (*Server, error) {
 		queue:     jobQueue,
 		scheduler: sched,
 		router:    router,
-		executor:  executor,
-		telemetry: telem,
+		executor:   executor,
+		telemetry:  telem,
+		telemStore: telemStore,
+		traceStore: traceStore,
+		scoreStore: scoreStore,
+		evoStore:   evoStore,
 	}
 
 	telem.SetRemediator(s.handleRemediation)
@@ -195,6 +227,8 @@ func New(cfg Config) (*Server, error) {
 	telem.SetDashboard(dash)
 
 	dash.HandleFunc("/api/telemetry", s.handleTelemetryAPI)
+	dash.HandleFunc("/api/evolution", s.handleEvolutionAPI)
+	dash.HandleFunc("/api/roles", s.handleRolesAPI)
 
 	webhookHandler := gh.WebhookHandler(
 		gh.WebhookConfig{Secret: cfg.WebhookSecret},
@@ -323,6 +357,19 @@ func (s *Server) Stop(ctx context.Context) error {
 		firstErr = fmt.Errorf("serve: queue close: %w", err)
 	}
 
+	if s.telemStore != nil {
+		_ = s.telemStore.Close()
+	}
+	if s.traceStore != nil {
+		_ = s.traceStore.Close()
+	}
+	if s.scoreStore != nil {
+		_ = s.scoreStore.Close()
+	}
+	if s.evoStore != nil {
+		_ = s.evoStore.Close()
+	}
+
 	if err := s.db.Close(); err != nil && firstErr == nil {
 		firstErr = fmt.Errorf("serve: db close: %w", err)
 	}
@@ -389,6 +436,119 @@ func (s *Server) handleTelemetryAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error("serve: telemetry API encode error", "err", err)
+	}
+}
+
+func (s *Server) handleEvolutionAPI(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	type evoEvent struct {
+		ID             string  `json:"id"`
+		Role           string  `json:"role"`
+		RepoID         string  `json:"repo_id"`
+		Classification string  `json:"classification"`
+		Suggestion     string  `json:"suggestion"`
+		ScoreBefore    float64 `json:"score_before"`
+		ScoreAfter     float64 `json:"score_after"`
+		CreatedAt      string  `json:"created_at"`
+	}
+
+	type apiResponse struct {
+		Evolutions []evoEvent          `json:"evolutions"`
+		Telemetry  []telemetry.Event   `json:"telemetry"`
+		Patterns   []telemetry.Pattern `json:"patterns"`
+	}
+
+	resp := apiResponse{
+		Telemetry: s.telemetry.Events(),
+		Patterns:  s.telemetry.DetectPatterns(),
+	}
+
+	if s.evoStore != nil {
+		roles := []string{"ceo", "cto-weekly", "coo", "engineer", "qa", "janitor"}
+		for _, role := range roles {
+			evos, err := s.evoStore.GetEvolutions(ctx, role, 10)
+			if err != nil {
+				continue
+			}
+			for _, ev := range evos {
+				var result evolution.ReviewResult
+				_ = json.Unmarshal([]byte(ev.Result), &result)
+				resp.Evolutions = append(resp.Evolutions, evoEvent{
+					ID:             ev.ID,
+					Role:           ev.Role,
+					RepoID:         ev.RepoID,
+					Classification: result.Classification,
+					Suggestion:     result.Suggestion,
+					ScoreBefore:    ev.ScoreBefore,
+					ScoreAfter:     ev.ScoreAfter,
+					CreatedAt:      ev.CreatedAt.Format(time.RFC3339),
+				})
+			}
+		}
+	}
+
+	if len(resp.Telemetry) > 50 {
+		resp.Telemetry = resp.Telemetry[len(resp.Telemetry)-50:]
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("serve: evolution API encode error", "err", err)
+	}
+}
+
+func (s *Server) handleRolesAPI(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	type roleInfo struct {
+		Role         string  `json:"role"`
+		Score        float64 `json:"score"`
+		SampleSize   int     `json:"sample_size"`
+		SuccessCount int     `json:"success_count"`
+		FailCount    int     `json:"fail_count"`
+	}
+
+	type apiResponse struct {
+		Roles []roleInfo `json:"roles"`
+	}
+
+	roles := []string{"ceo", "cto-weekly", "cto-pr-merge", "coo", "engineer", "qa",
+		"security-pr", "security-weekly", "dependency-manager", "release-pr",
+		"release-weekly", "dogfood", "pipeline-fixer", "pr-comment-fixer", "janitor"}
+
+	var resp apiResponse
+
+	for _, role := range roles {
+		info := roleInfo{Role: role}
+
+		if s.scoreStore != nil {
+			sc, err := s.scoreStore.GetScore(ctx, role, "")
+			if err == nil && sc != nil {
+				info.Score = sc.Value
+				info.SampleSize = sc.SampleSize
+			}
+		}
+
+		telemEvents := s.telemetry.Events()
+		for _, evt := range telemEvents {
+			if evt.Role == role {
+				info.FailCount++
+			}
+		}
+		info.SuccessCount = info.SampleSize - info.FailCount
+		if info.SuccessCount < 0 {
+			info.SuccessCount = 0
+		}
+
+		if info.SampleSize > 0 || info.FailCount > 0 {
+			resp.Roles = append(resp.Roles, info)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("serve: roles API encode error", "err", err)
 	}
 }
 
@@ -466,6 +626,15 @@ func (s *Server) handleEvent(event gh.Event) {
 // the delivery loop and the strategy chain.
 func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+
+	if s.scoreStore != nil {
+		_ = s.scoreStore.RecordOutcome(ctx, scoring.Outcome{
+			JobID:  job.ID,
+			RepoID: job.RepoID,
+			Role:   job.Role,
+			Type:   scoring.OutcomePassed,
+		})
+	}
 
 	rec, err := s.repos.FindByID(ctx, job.RepoID)
 	if err != nil || rec == nil {
@@ -564,6 +733,8 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 			"idle_job_id", jobID,
 		)
 	}
+
+	go s.checkEvolution(context.Background(), job.Role, job.RepoID)
 }
 
 // handleJobFailed is the OnFail callback for the worker pool.
@@ -572,6 +743,26 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 // for roles that don't match a specific remediation action.
 func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr error) {
 	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+
+	if s.scoreStore != nil {
+		cat := telemetry.Classify(jobErr.Error())
+		outcomeType := scoring.OutcomeFailed
+		switch cat {
+		case telemetry.CategoryMaxTurns:
+			outcomeType = scoring.OutcomeNoop
+		case telemetry.CategoryCircleDetected:
+			outcomeType = scoring.OutcomeNoop
+		case telemetry.CategoryToolTimeout, telemetry.CategoryContextOverflow:
+			outcomeType = scoring.OutcomeTimeout
+		}
+		_ = s.scoreStore.RecordOutcome(ctx, scoring.Outcome{
+			JobID:   job.ID,
+			RepoID:  job.RepoID,
+			Role:    job.Role,
+			Type:    outcomeType,
+			Details: jobErr.Error(),
+		})
+	}
 
 	s.telemetry.Record(job.ID, job.RepoID, job.Role, jobErr.Error())
 
@@ -637,6 +828,8 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 		return
 	}
 	log.Info("serve: recovery job enqueued", "recovery_job_id", jobID)
+
+	go s.checkEvolution(context.Background(), job.Role, job.RepoID)
 }
 
 // handleRemediation is the telemetry remediation callback. It executes
@@ -772,4 +965,81 @@ func cronFromTrigger(trigger string) string {
 		return c
 	}
 	return ""
+}
+
+// jobCount tracks how many jobs have completed since the last evolution check.
+var jobCount int32
+
+// checkEvolution runs pattern detection and triggers evolution reviews
+// when recurring failures are detected or after enough jobs accumulate.
+func (s *Server) checkEvolution(ctx context.Context, role, repoID string) {
+	if s.evoStore == nil || s.scoreStore == nil {
+		return
+	}
+
+	atomic.AddInt32(&jobCount, 1)
+
+	patterns := s.telemetry.DetectPatterns()
+
+	for _, p := range patterns {
+		if s.dash != nil {
+			data, _ := json.Marshal(p)
+			s.dash.BroadcastEvent("telemetry_pattern", string(data))
+		}
+
+		ok, reason := evolution.CanReview(s.evoStore, p.Role, evolution.DefaultReviewerConfig())
+		if !ok {
+			slog.Info("serve: evolution review skipped", "role", p.Role, "reason", reason)
+			continue
+		}
+
+		result := evolution.ReviewResult{
+			Classification: fmt.Sprintf("recurring_%s", p.Category),
+			Suggestion:     fmt.Sprintf("Role %q has %d %s failures in 24h — investigate prompt or tool configuration", p.Role, p.Count, p.Category),
+			Confidence:     0.7,
+		}
+		if err := evolution.RecordEvolution(ctx, s.evoStore, p.Role, repoID, result); err != nil {
+			slog.Error("serve: failed to record evolution", "role", p.Role, "err", err)
+		}
+	}
+
+	if count := atomic.LoadInt32(&jobCount); count >= 10 {
+		atomic.StoreInt32(&jobCount, 0)
+		s.runScoreReview(ctx, role, repoID)
+	}
+}
+
+const scoreDropThreshold = 0.5
+
+// runScoreReview checks if the role's score has dropped below the threshold
+// and triggers an evolution review if so.
+func (s *Server) runScoreReview(ctx context.Context, role, repoID string) {
+	if s.evoStore == nil || s.scoreStore == nil {
+		return
+	}
+
+	sc, err := s.scoreStore.ComputeScore(ctx, role, repoID, 30)
+	if err != nil {
+		slog.Warn("serve: score computation failed", "role", role, "err", err)
+		return
+	}
+
+	if sc.SampleSize < 5 || sc.Value >= scoreDropThreshold {
+		return
+	}
+
+	ok, reason := evolution.CanReview(s.evoStore, role, evolution.DefaultReviewerConfig())
+	if !ok {
+		slog.Info("serve: evolution review skipped (score drop)", "role", role, "reason", reason)
+		return
+	}
+
+	result := evolution.ReviewResult{
+		Classification: "score_drop",
+		Suggestion:     fmt.Sprintf("Role %q score dropped to %.2f (%d samples) — review prompt effectiveness", role, sc.Value, sc.SampleSize),
+		Confidence:     0.8,
+	}
+	if err := evolution.RecordEvolution(ctx, s.evoStore, role, repoID, result); err != nil {
+		slog.Error("serve: failed to record score-drop evolution", "role", role, "err", err)
+	}
 }

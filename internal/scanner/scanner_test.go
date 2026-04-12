@@ -277,7 +277,7 @@ func TestInit_success(t *testing.T) {
 		"then: [qa]",
 		"then: [security-pr]",
 		"then: [dependency-manager]",
-		"idle_then: [ceo]",
+		"idle_then: [ceo, janitor]",
 	} {
 		assert.Contains(t, manifestStr, chain, "manifest missing chain %s", chain)
 	}

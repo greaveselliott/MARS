@@ -14,6 +14,7 @@ import (
 	harctx "github.com/greaveselliott/mars-harness/internal/context"
 	"github.com/greaveselliott/mars-harness/internal/dashboard"
 	"github.com/greaveselliott/mars-harness/internal/inference"
+	"github.com/greaveselliott/mars-harness/internal/learnings"
 	"github.com/greaveselliott/mars-harness/internal/llm"
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/tools"
@@ -103,11 +104,30 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		}
 	}
 
+	learnStore := learnings.NewStore(repoPath)
+	learnData, lErr := learnStore.Load()
+	if lErr != nil {
+		log.Warn("executor: failed to load learnings, continuing without", "err", lErr)
+		learnData = &learnings.Learnings{}
+	}
+
+	if learnData.Conventions.PackageManager == "" {
+		conv := learnings.DetectConventions(repoPath)
+		learnData.Conventions = conv
+		if len(learnData.Excludes) == 0 {
+			learnData.Excludes = learnings.DetectExcludes(repoPath)
+		}
+		if err := learnStore.Save(learnData); err != nil {
+			log.Warn("executor: failed to save detected conventions", "err", err)
+		}
+	}
+
 	system, stats, err := harctx.Assemble(harctx.Input{
 		RoleScope:  job.Role,
 		RolePrompt: rolePrompt,
 		Skills:     skills,
 		Trigger:    job.Trigger,
+		Learnings:  learnData.FormatForContext(),
 	})
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("context assembly: %v", err))
@@ -203,8 +223,11 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	})
 
 	if res.Err != nil {
+		learnings.RecordJobLessons(learnStore, job.Role, res.Err.Error(), "", nil)
 		return fmt.Errorf("executor: agent loop error (%s): %w", res.EndReason, res.Err)
 	}
+
+	learnings.RecordJobLessons(learnStore, job.Role, "", "", nil)
 
 	if len(role.Then) > 0 {
 		e.broadcastEvent("chain", map[string]string{

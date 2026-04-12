@@ -9,12 +9,13 @@ import (
 )
 
 const (
-	headerRole     = "## ROLE"
-	headerGuards   = "## GUARDRAILS"
+	headerRole      = "## ROLE"
+	headerGuards    = "## GUARDRAILS"
+	headerLearnings = "## REPO LEARNINGS"
 	headerKnowledge = "## KNOWLEDGE ROUTES"
-	headerSkills   = "## SKILLS"
-	headerTrigger  = "## TRIGGER CONTEXT"
-	headerRepo     = "## REPO SUMMARY"
+	headerSkills    = "## SKILLS"
+	headerTrigger   = "## TRIGGER CONTEXT"
+	headerRepo      = "## REPO SUMMARY"
 )
 
 // block is an internal mutable slice used for budget trimming (lower truncPri drops first).
@@ -50,6 +51,10 @@ func Assemble(in Input) (system string, stats []SectionStat, err error) {
 			}
 		}
 		parts = append(parts, block{name: "guardrails", header: headerGuards, body: strings.TrimSpace(b.String()), truncPri: 80})
+	}
+
+	if strings.TrimSpace(in.Learnings) != "" {
+		parts = append(parts, block{name: "learnings", header: headerLearnings, body: strings.TrimSpace(in.Learnings), truncPri: 60})
 	}
 
 	if len(in.KnowledgeRoutes) > 0 {

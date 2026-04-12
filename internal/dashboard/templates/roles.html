@@ -28,11 +28,62 @@
     <div class="card">
       <h2>Active Roles</h2>
       <div id="role-grid" class="role-grid">
-        <p class="muted">Waiting for agent events&hellip;</p>
+        <p class="muted">Loading&hellip;</p>
       </div>
     </div>
   </main>
 
   <script src="/static/app.js"></script>
+  <script>
+  (function() {
+    function loadRolesData() {
+      fetch("/api/roles")
+        .then(function(r) { return r.json(); })
+        .then(function(data) { renderRoles(data.roles || []); })
+        .catch(function(err) { console.error("Failed to load roles:", err); });
+    }
+
+    function renderRoles(roles) {
+      var grid = document.getElementById("role-grid");
+      if (roles.length === 0) {
+        grid.innerHTML = '<p class="muted">No role data yet — run some jobs first</p>';
+        return;
+      }
+
+      grid.innerHTML = "";
+      roles.forEach(function(role) {
+        var card = document.createElement("div");
+        card.id = "role-" + role.role;
+        var scoreClass = role.score >= 0.8 ? "success" : role.score >= 0.5 ? "warning" : "error";
+        var scorePercent = Math.round(role.score * 100);
+
+        card.className = "role-card " + scoreClass;
+        card.innerHTML =
+          '<div class="role-name">' + esc(role.role) + '</div>' +
+          '<div class="role-score">' +
+            '<div class="score-bar"><div class="score-fill ' + scoreClass + '" style="width:' + scorePercent + '%"></div></div>' +
+            '<span>' + scorePercent + '%</span>' +
+          '</div>' +
+          '<div class="role-stats">' +
+            '<span class="stat-success">' + role.success_count + ' passed</span>' +
+            '<span class="stat-fail">' + role.fail_count + ' failed</span>' +
+            '<span class="stat-total">' + role.sample_size + ' total</span>' +
+          '</div>' +
+          '<div class="role-status">idle</div>';
+
+        grid.appendChild(card);
+      });
+    }
+
+    function esc(str) {
+      var div = document.createElement("div");
+      div.textContent = str || "";
+      return div.innerHTML;
+    }
+
+    loadRolesData();
+    setInterval(loadRolesData, 30000);
+  })();
+  </script>
 </body>
 </html>

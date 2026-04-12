@@ -128,7 +128,7 @@ func (m *mockBroadcaster) BroadcastEvent(eventType, data string) {
 func TestCollector_RecordAndBroadcast(t *testing.T) {
 	t.Parallel()
 	dash := &mockBroadcaster{}
-	c := NewCollector(dash)
+	c := NewCollector(dash, nil)
 
 	evt := c.Record("job-1", "repo-1", "cto", "request (134706 tokens) exceeds the available context size (32768 tokens)")
 
@@ -145,7 +145,7 @@ func TestCollector_RecordAndBroadcast(t *testing.T) {
 
 func TestCollector_RemediationCallback(t *testing.T) {
 	t.Parallel()
-	c := NewCollector(nil)
+	c := NewCollector(nil, nil)
 
 	var called Event
 	c.SetRemediator(func(evt Event) {
@@ -161,7 +161,7 @@ func TestCollector_RemediationCallback(t *testing.T) {
 
 func TestCollector_NonRetryableSkipsRemediation(t *testing.T) {
 	t.Parallel()
-	c := NewCollector(nil)
+	c := NewCollector(nil, nil)
 
 	remediated := false
 	c.SetRemediator(func(evt Event) {
@@ -176,7 +176,7 @@ func TestCollector_NonRetryableSkipsRemediation(t *testing.T) {
 
 func TestCollector_RingBufferCap(t *testing.T) {
 	t.Parallel()
-	c := NewCollector(nil)
+	c := NewCollector(nil, nil)
 
 	for i := 0; i < maxEvents+50; i++ {
 		c.Record("job", "repo", "role", "timeout error")

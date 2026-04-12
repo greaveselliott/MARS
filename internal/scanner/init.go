@@ -121,7 +121,7 @@ func EnsureHarness(repoRoot string, force bool) (didInit bool, err error) {
 
 func defaultManifest(projectName string) string {
 	return fmt.Sprintf(`name: %s
-description: Full autonomous AI pipeline for %s — 11 roles, 14 trigger entries
+description: Full autonomous AI pipeline for %s — 12 roles, 14 trigger entries
 
 roles:
   # ── Strategy ─────────────────────────────────────────────
@@ -161,7 +161,7 @@ roles:
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
     then: [qa, engineer]
-    idle_then: [ceo]
+    idle_then: [ceo, janitor]
     tools: [file_read, file_write, shell_exec, grep]
 
   # ── Review ───────────────────────────────────────────────
@@ -234,6 +234,14 @@ roles:
     model: fast
     triggers:
       - pull_request_review_comment.created
+    tools: [file_read, file_write, shell_exec, grep]
+
+  # ── Backlog entropy management ─────────────────────────
+  janitor:
+    prompt: roles/janitor.md
+    model: fast
+    schedule: "0 7 * * *"
+    max_turns: 30
     tools: [file_read, file_write, shell_exec, grep]
 `, projectName, projectName)
 }
@@ -467,16 +475,24 @@ STEP 1 — Read docs/exec-plans/active/weekly-priorities.md.
 
 STEP 2 — Read docs/tickets/README.md (ticket format and conventions).
 
-STEP 3 — Check docs/tickets/backlog/ for existing tickets to avoid duplicates.
-
-Determine the next available ticket number by checking existing tickets.
+STEP 3 — DEDUPLICATION (critical, do this before creating ANY ticket):
+  List ALL existing tickets across ALL directories:
+    - docs/tickets/backlog/
+    - docs/tickets/in-progress/
+    - docs/tickets/done/
+  Read the title of every existing ticket file. Build a mental list of:
+    a) All existing ticket numbers (to find the next available number)
+    b) All existing ticket titles/topics (to avoid duplicates)
+  The next ticket number is MAX(existing numbers) + 1.
 
 SCOPE: Create tickets ONLY for "This week" priorities (or, on a new project,
 the first logical batch of work from the README). Do not create tickets for
 future work beyond the first batch.
 
-For each priority, if a ticket already exists (check backlog/ and in-progress/),
-skip it or update it if the priority adds scope.
+For each priority, if a ticket with the SAME topic already exists in ANY
+directory (backlog/, in-progress/, or done/), SKIP it entirely. Do NOT
+create a duplicate under a new number. Only update an existing ticket if
+the priority materially adds scope that isn't already covered.
 
 TICKET CREATION — for each "This week" priority:
 
@@ -1000,5 +1016,64 @@ APPROACH:
 
 Commit format:
   git commit -m "fix: address review feedback [description]"
+`,
+
+	"janitor": `# Backlog Janitor
+
+## Role
+
+You are the backlog janitor — an entropy management agent. Your job is to keep
+the ticket backlog clean, accurate, and actionable. You run daily and when the
+engineer is idle. Every action you take MUST be committed to git with a
+structured message so the harness can consume the context.
+
+## Prompt
+
+START by reading:
+1. README.md — understand the project scope and purpose
+2. docs/tickets/README.md — understand ticket conventions
+3. List ALL tickets in docs/tickets/backlog/, docs/tickets/in-progress/, docs/tickets/done/
+
+STEP 1 — MOVE COMPLETED WORK TO DONE:
+  For each ticket in in-progress/:
+  a) Read the ticket's acceptance criteria
+  b) Check recent git history (git log --oneline -20) for related commits
+  c) If the acceptance criteria appear met based on commits and codebase state,
+     move the file to done/ and add a completion note at the bottom:
+     "Completed: [date] — AC verified by janitor based on [evidence]"
+  d) Commit: git commit -m "chore(janitor): move [ticket-id] to done — AC met"
+
+STEP 2 — DETECT AND REMOVE DUPLICATES:
+  Compare ticket titles and topics across ALL directories (backlog/, in-progress/, done/).
+  If two tickets cover the same topic:
+  a) Keep the one furthest along in the pipeline (done > in-progress > backlog)
+  b) If both are in the same directory, keep the one with the lower number
+  c) Delete the duplicate
+  d) Commit: git commit -m "chore(janitor): remove duplicate [ticket-id] (same as [kept-id])"
+
+STEP 3 — DELETE ITEMS THAT DON'T BELONG:
+  Compare each ticket's content against the README.md to verify it belongs to this project.
+  If a ticket clearly doesn't match the project scope (e.g. game-related ticket in a
+  recruiter portal):
+  a) Delete the file
+  b) Commit: git commit -m "chore(janitor): remove [ticket-id] — does not belong to project"
+
+STEP 4 — RE-PRIORITIZE STALE ITEMS:
+  For tickets in in-progress/ with no related git activity in the last 7 days:
+  a) Move the file back to backlog/
+  b) Add a note: "Moved to backlog: [date] — no activity for 7+ days"
+  c) Commit: git commit -m "chore(janitor): move stale [ticket-id] back to backlog"
+
+DON'T:
+- Create new tickets (that's the COO's job)
+- Modify ticket content beyond adding status notes
+- Delete tickets that are valid but low priority — those stay in backlog
+- NEVER run find, ls, grep, or cat on directories without excluding node_modules,
+  .git, vendor, dist, build, and other large generated directories
+
+## Quality Bar
+- Every file move/delete is a separate commit with a structured message
+- No orphaned tickets left in wrong directories
+- Duplicate detection compares by topic, not just title
 `,
 }

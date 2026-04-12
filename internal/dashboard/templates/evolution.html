@@ -6,6 +6,7 @@
   <title>{{.Title}} — Mars Harness</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <nav class="sidebar">
@@ -25,14 +26,158 @@
       <span class="timestamp">{{.Now}}</span>
     </header>
 
+    <div class="card-row">
+      <div class="card half">
+        <h2>Failure Breakdown</h2>
+        <canvas id="failure-chart" width="300" height="300"></canvas>
+      </div>
+      <div class="card half">
+        <h2>Recurring Patterns</h2>
+        <div id="patterns-list">
+          <p class="muted">Loading&hellip;</p>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>Self-Improvement Log</h2>
       <div id="evolution-log" class="event-log">
-        <p class="muted">No evolution events recorded yet&hellip;</p>
+        <p class="muted">Loading&hellip;</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Recent Telemetry</h2>
+      <div id="telemetry-log" class="event-log">
+        <p class="muted">Loading&hellip;</p>
       </div>
     </div>
   </main>
 
   <script src="/static/app.js"></script>
+  <script>
+  (function() {
+    var failureChart = null;
+
+    function loadEvolutionData() {
+      fetch("/api/evolution")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          renderEvolutions(data.evolutions || []);
+          renderPatterns(data.patterns || []);
+          renderTelemetryLog(data.telemetry || []);
+          renderFailureChart(data.telemetry || []);
+        })
+        .catch(function(err) {
+          console.error("Failed to load evolution data:", err);
+        });
+    }
+
+    function renderEvolutions(evolutions) {
+      var log = document.getElementById("evolution-log");
+      if (evolutions.length === 0) {
+        log.innerHTML = '<p class="muted">No evolution events recorded yet&hellip;</p>';
+        return;
+      }
+      log.innerHTML = "";
+      evolutions.forEach(function(ev) {
+        var entry = document.createElement("div");
+        entry.className = "event-entry evolution";
+        entry.innerHTML =
+          '<span class="event-time">' + (ev.created_at || "").substring(0, 19) + '</span>' +
+          '<span class="event-type">' + esc(ev.classification) + '</span>' +
+          '<span><strong>' + esc(ev.role) + '</strong>: ' + esc(ev.suggestion) + '</span>';
+        log.appendChild(entry);
+      });
+    }
+
+    function renderPatterns(patterns) {
+      var list = document.getElementById("patterns-list");
+      if (patterns.length === 0) {
+        list.innerHTML = '<p class="muted">No recurring patterns detected</p>';
+        return;
+      }
+      list.innerHTML = "";
+      patterns.forEach(function(p) {
+        var item = document.createElement("div");
+        item.className = "pattern-item";
+        item.innerHTML =
+          '<strong>' + esc(p.role) + '</strong> &mdash; ' +
+          '<span class="badge">' + esc(p.category) + '</span> ' +
+          p.count + 'x in ' + esc(p.window);
+        list.appendChild(item);
+      });
+    }
+
+    function renderTelemetryLog(events) {
+      var log = document.getElementById("telemetry-log");
+      if (events.length === 0) {
+        log.innerHTML = '<p class="muted">No telemetry events yet&hellip;</p>';
+        return;
+      }
+      log.innerHTML = "";
+      var recent = events.slice(-30).reverse();
+      recent.forEach(function(evt) {
+        var entry = document.createElement("div");
+        entry.className = "event-entry " + (evt.remedied ? "remedied" : "unremedied");
+        entry.innerHTML =
+          '<span class="event-time">' + (evt.timestamp || "").substring(11, 19) + '</span>' +
+          '<span class="badge">' + esc(evt.category) + '</span>' +
+          '<span><strong>' + esc(evt.role) + '</strong>: ' + esc(truncate(evt.message, 120)) + '</span>' +
+          (evt.remedied ? '<span class="badge success">remedied: ' + esc(evt.action) + '</span>' : '');
+        log.appendChild(entry);
+      });
+    }
+
+    function renderFailureChart(events) {
+      var counts = {};
+      events.forEach(function(evt) {
+        counts[evt.category] = (counts[evt.category] || 0) + 1;
+      });
+
+      var labels = Object.keys(counts);
+      var values = labels.map(function(k) { return counts[k]; });
+      var colors = [
+        "#ef4444", "#f97316", "#eab308", "#22c55e",
+        "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280"
+      ];
+
+      var ctx = document.getElementById("failure-chart");
+      if (!ctx) return;
+
+      if (failureChart) failureChart.destroy();
+
+      if (labels.length === 0) {
+        ctx.parentElement.innerHTML += '<p class="muted" style="text-align:center">No failures yet</p>';
+        return;
+      }
+
+      failureChart = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: labels,
+          datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length) }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: "right" } }
+        }
+      });
+    }
+
+    function truncate(s, n) {
+      return s.length > n ? s.substring(0, n) + "…" : s;
+    }
+
+    function esc(str) {
+      var div = document.createElement("div");
+      div.textContent = str || "";
+      return div.innerHTML;
+    }
+
+    loadEvolutionData();
+    setInterval(loadEvolutionData, 30000);
+  })();
+  </script>
 </body>
 </html>

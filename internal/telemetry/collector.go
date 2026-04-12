@@ -17,21 +17,40 @@ type Broadcaster interface {
 }
 
 // Collector records telemetry events, maintains a ring buffer of recent
-// history, and broadcasts failures to the dashboard.
+// history, persists to SQLite, and broadcasts failures to the dashboard.
 type Collector struct {
 	mu     sync.RWMutex
 	events []Event
 	dash   Broadcaster
+	store  *Store
 
 	onRemediate func(Event) // called when a remediation action is taken
 }
 
-// NewCollector creates a collector. dash may be nil (events are still recorded).
-func NewCollector(dash Broadcaster) *Collector {
-	return &Collector{
+// NewCollector creates a collector. dash and store may be nil.
+func NewCollector(dash Broadcaster, store *Store) *Collector {
+	c := &Collector{
 		events: make([]Event, 0, maxEvents),
 		dash:   dash,
+		store:  store,
 	}
+	if store != nil {
+		c.loadFromStore()
+	}
+	return c
+}
+
+// loadFromStore seeds the in-memory ring buffer with persisted events on startup.
+func (c *Collector) loadFromStore() {
+	recent, err := c.store.Recent(maxEvents)
+	if err != nil {
+		slog.Warn("telemetry: failed to load persisted events", "err", err)
+		return
+	}
+	for i := len(recent) - 1; i >= 0; i-- {
+		c.events = append(c.events, recent[i])
+	}
+	slog.Info("telemetry: loaded persisted events", "count", len(recent))
 }
 
 // SetDashboard wires the broadcaster after construction (the dashboard
@@ -77,8 +96,15 @@ func (c *Collector) Record(jobID, repoID, role, errMsg string) Event {
 	}
 	c.events = append(c.events, evt)
 	dash := c.dash
+	store := c.store
 	onRemediate := c.onRemediate
 	c.mu.Unlock()
+
+	if store != nil {
+		if err := store.Save(evt); err != nil {
+			slog.Warn("telemetry: persist event failed", "err", err)
+		}
+	}
 
 	slog.Info("telemetry: event recorded",
 		"event_id", evt.ID,

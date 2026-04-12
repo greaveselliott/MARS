@@ -32,6 +32,7 @@
     appendDebugLog(type, data);
     updateRoleGrid(type, data);
     updatePipelineChain(type, data);
+    appendEvolutionLog(type, data);
   }
 
   function appendEventLog(type, data) {
@@ -129,6 +130,39 @@
         }
       }
     });
+  }
+
+  function appendEvolutionLog(type, data) {
+    if (type !== "telemetry" && type !== "telemetry_pattern" && type !== "job_failed") return;
+    var log = document.getElementById("evolution-log");
+    if (!log) return;
+
+    var placeholder = log.querySelector(".muted");
+    if (placeholder) placeholder.remove();
+
+    var entry = document.createElement("div");
+    entry.className = "event-entry " + type;
+    var now = new Date().toLocaleTimeString();
+    var detail = "";
+
+    if (type === "telemetry") {
+      detail = '<strong>' + esc(data.role || "") + '</strong> ' +
+        '<span class="badge">' + esc(data.category || "") + '</span> ' +
+        (data.remedied ? '<span class="badge success">remedied</span>' : '');
+    } else if (type === "telemetry_pattern") {
+      detail = 'Recurring: <strong>' + esc(data.role || "") + '</strong> ' +
+        esc(data.category || "") + ' (' + (data.count || 0) + 'x)';
+    } else {
+      detail = '<strong>' + esc(data.role || "") + '</strong> failed: ' + esc(data.error || "");
+    }
+
+    entry.innerHTML =
+      '<span class="event-time">' + now + '</span>' +
+      '<span class="event-type">' + type + '</span>' +
+      '<span>' + detail + '</span>';
+
+    log.prepend(entry);
+    while (log.children.length > 100) log.removeChild(log.lastChild);
   }
 
   function esc(str) {

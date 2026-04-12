@@ -37,7 +37,7 @@ roles:
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
     then: [qa, engineer]
-    idle_then: [ceo]
+    idle_then: [ceo, janitor]
     tools: [file_read, file_write, shell_exec, grep]
 
   # ── Review (event-driven) ────────────────────────────────
@@ -105,4 +105,12 @@ roles:
     model: fast
     triggers:
       - pull_request_review_comment.created
+    tools: [file_read, file_write, shell_exec, grep]
+
+  # ── Backlog entropy management ─────────────────────────
+  janitor:
+    prompt: roles/janitor.md
+    model: fast
+    schedule: "0 7 * * *"
+    max_turns: 30
     tools: [file_read, file_write, shell_exec, grep]
