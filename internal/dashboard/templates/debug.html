@@ -1,59 +1,36 @@
-{{template "base" .}}
-{{define "page-content"}}
-<section class="page-section">
-    <p class="section-desc">Execution traces, webhook events, and error log.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} — Mars Harness</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="logo">Mars Harness</div>
+    <a href="/pipeline" class="nav-item{{if eq .ActiveNav "pipeline"}} active{{end}}">Pipeline</a>
+    <a href="/roles" class="nav-item{{if eq .ActiveNav "roles"}} active{{end}}">Roles</a>
+    <a href="/throughput" class="nav-item{{if eq .ActiveNav "throughput"}} active{{end}}">Throughput</a>
+    <a href="/debug" class="nav-item{{if eq .ActiveNav "debug"}} active{{end}}">Debug</a>
+    <a href="/evolution" class="nav-item{{if eq .ActiveNav "evolution"}} active{{end}}">Evolution</a>
+    <div class="nav-spacer"></div>
+    <button id="estop-btn" class="estop-btn" onclick="emergencyStop()">Emergency Stop</button>
+  </nav>
+
+  <main class="content">
+    <header class="page-header">
+      <h1>Debug</h1>
+      <span class="timestamp">{{.Now}}</span>
+    </header>
 
     <div class="card">
-        <div class="card-header"><h3>Execution Traces</h3></div>
-        <div class="card-body">
-            <div id="trace-viewer">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Trace ID</th>
-                            <th>Role</th>
-                            <th>Action</th>
-                            <th>Duration</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="5" class="empty-state">No traces recorded yet.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+      <h2>Raw Event Stream</h2>
+      <pre id="debug-log" class="debug-log"></pre>
     </div>
+  </main>
 
-    <div class="card">
-        <div class="card-header"><h3>Webhook Log</h3></div>
-        <div class="card-body">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Event</th>
-                        <th>Source</th>
-                        <th>Payload</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="5" class="empty-state">No webhooks received yet.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header"><h3>Error Log</h3></div>
-        <div class="card-body">
-            <pre class="log-output" id="error-log">No errors recorded.</pre>
-        </div>
-    </div>
-</section>
-{{end}}
+  <script src="/static/app.js"></script>
+</body>
+</html>

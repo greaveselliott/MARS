@@ -1,25 +1,55 @@
-{{template "base" .}}
-{{define "page-content"}}
-<section class="page-section">
-    <p class="section-desc">Job pipeline stages from intake through delivery.</p>
-    <div id="job-table">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Job ID</th>
-                    <th>Role</th>
-                    <th>Stage</th>
-                    <th>Status</th>
-                    <th>Started</th>
-                    <th>Duration</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="6" class="empty-state">No active jobs. The pipeline is idle.</td>
-                </tr>
-            </tbody>
-        </table>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} — Mars Harness</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="logo">Mars Harness</div>
+    <a href="/pipeline" class="nav-item{{if eq .ActiveNav "pipeline"}} active{{end}}">Pipeline</a>
+    <a href="/roles" class="nav-item{{if eq .ActiveNav "roles"}} active{{end}}">Roles</a>
+    <a href="/throughput" class="nav-item{{if eq .ActiveNav "throughput"}} active{{end}}">Throughput</a>
+    <a href="/debug" class="nav-item{{if eq .ActiveNav "debug"}} active{{end}}">Debug</a>
+    <a href="/evolution" class="nav-item{{if eq .ActiveNav "evolution"}} active{{end}}">Evolution</a>
+    <div class="nav-spacer"></div>
+    <button id="estop-btn" class="estop-btn" onclick="emergencyStop()">Emergency Stop</button>
+  </nav>
+
+  <main class="content">
+    <header class="page-header">
+      <h1>Pipeline Flow</h1>
+      <span class="timestamp">{{.Now}}</span>
+    </header>
+
+    <div class="card">
+      <h2>Live Agent Events</h2>
+      <div id="event-log" class="event-log"></div>
     </div>
-</section>
-{{end}}
+
+    <div class="card">
+      <h2>Pipeline Chain</h2>
+      <div class="pipeline-chain">
+        <span class="chain-node">CEO</span>
+        <span class="chain-arrow">&rarr;</span>
+        <span class="chain-node">CTO</span>
+        <span class="chain-arrow">&rarr;</span>
+        <span class="chain-node">COO</span>
+        <span class="chain-arrow">&rarr;</span>
+        <span class="chain-node">Engineer</span>
+        <span class="chain-arrow">&rarr;</span>
+        <span class="chain-node">QA</span>
+        <span class="chain-arrow">&rarr;</span>
+        <span class="chain-node">Security</span>
+        <span class="chain-arrow">&rarr;</span>
+        <span class="chain-node">Deps</span>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

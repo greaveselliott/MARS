@@ -12,8 +12,12 @@ import (
 
 // Cleanup kills stale processes from previous runs and removes corrupt
 // SQLite WAL/SHM files. Called automatically by `start` and `serve`.
-func Cleanup(webhookPort int, dbPath string) {
+// extraPorts are additional ports to check (e.g. the dashboard port).
+func Cleanup(webhookPort int, dbPath string, extraPorts ...int) {
 	killStalePort(webhookPort)
+	for _, p := range extraPorts {
+		killStalePort(p)
+	}
 	killStaleLlamaServers()
 	cleanStaleSQLite(dbPath)
 }

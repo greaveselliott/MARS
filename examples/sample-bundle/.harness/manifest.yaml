@@ -31,11 +31,12 @@ roles:
     schedule: "0 21 * * 0"
     tools: [file_read, file_write, shell_exec, grep]
 
-  # ── Delivery (4x/day) ────────────────────────────────────
+  # ── Delivery (continuous) ────────────────────────────────
   engineer:
     prompt: roles/engineer-delivery.md
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
+    then: [qa, engineer]
     tools: [file_read, file_write, shell_exec, grep]
 
   # ── Review (event-driven) ────────────────────────────────

@@ -120,13 +120,14 @@ roles:
     prompt: roles/engineer.md
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
-    then: [qa]
+    then: [qa, engineer]
     tools: [file_read, file_write, shell_exec, grep]
 
   # ── Review ───────────────────────────────────────────────
   qa:
     prompt: roles/qa.md
     model: fast
+    max_turns: 20
     triggers:
       - pull_request.opened
       - pull_request.synchronize
@@ -136,6 +137,7 @@ roles:
   security-pr:
     prompt: roles/security.md
     model: reasoning
+    max_turns: 20
     triggers:
       - pull_request.opened
     then: [dependency-manager]
@@ -150,6 +152,7 @@ roles:
   dependency-manager:
     prompt: roles/dependency-manager.md
     model: fast
+    max_turns: 10
     triggers:
       - pull_request.opened
     tools: [file_read, grep]
@@ -553,17 +556,22 @@ implement features, write tests, and commit working code.
 ## Trigger
 
 - **Chain:** Runs after COO creates tickets (COO → Engineer chain)
+- **Self-chain:** After completing a ticket, the orchestrator re-enqueues you
+  to process the next one. You will keep running until the backlog is empty.
 - **Schedule:** 4x daily on weekdays (00:00, 06:00, 12:00, 18:00 UTC)
 
 ## QA handoff
 
-When your run completes, the orchestrator triggers QA to review your changes.
+When your run completes, the orchestrator triggers both QA (to review your
+changes) and another engineer run (to pick up the next ticket). This creates
+a continuous delivery loop: Engineer → QA + Engineer → QA + Engineer → ...
 
 ## Prompt
 
 You are a staff-level engineer. Your job is to pick up ONE ticket from the
 backlog, implement it fully, and commit. Each run produces working code for
-one ticket.
+exactly one ticket. The orchestrator handles re-queuing — do not try to
+process multiple tickets in a single run.
 
 STANDARD:
 - Write complete tests that validate every feature you build
@@ -583,7 +591,7 @@ TICKET SELECTION:
 1. Select the highest-priority ticket from backlog/ where all dependencies
    are satisfied (depends_on tickets must be in done/)
 2. If multiple tickets share the same priority, pick the lowest number
-3. If no eligible tickets exist, your run is complete
+3. If no eligible tickets exist, report "no eligible tickets" and finish
 
 Read the selected ticket fully: requirements, acceptance criteria, design docs.
 
@@ -775,16 +783,20 @@ You review dependency updates and ensure compatibility.
 
 You are the dependency manager. Review the project's dependencies.
 
-START by reading:
-1. Package manifest (package.json, go.mod, Cargo.toml, requirements.txt, etc.)
-2. Lock file if present
-3. Recent dependency-related commits
+FIRST: Check if the project has a package manifest. Use file_read to check
+for ONE of: package.json, go.mod, Cargo.toml, requirements.txt, pyproject.toml,
+Gemfile, mix.exs, pubspec.yaml, composer.json, build.sbt, pom.xml.
 
-TASKS:
-1. Check for outdated dependencies
-2. Review any new dependencies added in recent commits
-3. Flag dependencies with known security issues
-4. Verify compatibility between dependency versions
+If NONE of these files exist, the project has no managed dependencies.
+Report "No package manifest found — no dependencies to review" and finish
+immediately. Do NOT search for every possible manifest format.
+
+If a manifest exists:
+1. Read it and the lock file if present
+2. Check for outdated dependencies
+3. Review any new dependencies added in recent commits
+4. Flag dependencies with known security issues
+5. Verify compatibility between dependency versions
 
 OUTPUT:
 If issues are found, write: docs/exec-plans/active/dep-review-[date].md

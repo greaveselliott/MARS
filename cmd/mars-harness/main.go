@@ -516,8 +516,9 @@ func serveCmd() *cobra.Command {
 			}
 
 			webhookSecret := os.Getenv("MARS_HARNESS_WEBHOOK_SECRET")
+			dashboardAddr := fmt.Sprintf(":%d", cfg.DashboardPort)
 
-			serve.Cleanup(cfg.WebhookPort, dbPath)
+			serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
 
 			srv, err := serve.New(serve.Config{
 				WebhookAddr:   webhookAddr,
@@ -526,6 +527,7 @@ func serveCmd() *cobra.Command {
 				Concurrency:   concurrency,
 				ModelsDir:     cfg.ModelsDir,
 				BinDir:        cfg.BinDir,
+				DashboardAddr: dashboardAddr,
 			})
 			if err != nil {
 				return err
@@ -682,15 +684,17 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 			}
 
 			webhookAddr := fmt.Sprintf(":%d", cfg.WebhookPort)
+			dashboardAddr := fmt.Sprintf(":%d", cfg.DashboardPort)
 
-			serve.Cleanup(cfg.WebhookPort, dbPath)
+			serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
 
 			srv, err := serve.New(serve.Config{
-				WebhookAddr: webhookAddr,
-				DBPath:      dbPath,
-				Concurrency: concurrency,
-				ModelsDir:   cfg.ModelsDir,
-				BinDir:      cfg.BinDir,
+				WebhookAddr:   webhookAddr,
+				DBPath:        dbPath,
+				Concurrency:   concurrency,
+				ModelsDir:     cfg.ModelsDir,
+				BinDir:        cfg.BinDir,
+				DashboardAddr: dashboardAddr,
 			})
 			if err != nil {
 				tw.WriteError(fmt.Sprintf("orchestrator init: %v", err))

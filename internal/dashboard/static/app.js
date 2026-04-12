@@ -1,111 +1,165 @@
-// app.js — Mars Harness dashboard: SSE handlers, Chart.js init, emergency stop.
-
 (function () {
   "use strict";
 
-  // SSE event handlers — trigger htmx refreshes when server pushes updates.
-  document.body.addEventListener("sse:job_update", function () {
-    var table = document.getElementById("job-table");
-    if (table && typeof htmx !== "undefined") {
-      htmx.trigger(table, "refresh");
-    }
-  });
+  var eventSource = null;
 
-  document.body.addEventListener("sse:score_update", function () {
-    var grid = document.getElementById("role-grid");
-    if (grid && typeof htmx !== "undefined") {
-      htmx.trigger(grid, "refresh");
-    }
-  });
+  function connect() {
+    eventSource = new EventSource("/api/events");
 
-  document.body.addEventListener("sse:trace_event", function () {
-    var viewer = document.getElementById("trace-viewer");
-    if (viewer && typeof htmx !== "undefined") {
-      htmx.trigger(viewer, "refresh");
-    }
-  });
-
-  // Chart.js — initialise placeholder charts on the throughput page.
-  function initCharts() {
-    if (typeof Chart === "undefined") return;
-
-    var placeholderLabels = ["—", "—", "—", "—", "—"];
-    var placeholderData = [0, 0, 0, 0, 0];
-
-    var jobsCanvas = document.getElementById("chart-jobs-hour");
-    if (jobsCanvas) {
-      new Chart(jobsCanvas.getContext("2d"), {
-        type: "bar",
-        data: {
-          labels: placeholderLabels,
-          datasets: [{
-            label: "Jobs",
-            data: placeholderData,
-            backgroundColor: "rgba(99,102,241,0.6)"
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: "#8b8fa3" }, grid: { color: "#2a2d3a" } },
-            y: { ticks: { color: "#8b8fa3" }, grid: { color: "#2a2d3a" }, beginAtZero: true }
-          }
+    eventSource.onmessage = function (e) {
+      try {
+        var msg = JSON.parse(e.data);
+        var inner = {};
+        try {
+          inner = JSON.parse(msg.data);
+        } catch (_) {
+          inner = { raw: msg.data };
         }
-      });
-    }
-
-    var latencyCanvas = document.getElementById("chart-latency");
-    if (latencyCanvas) {
-      new Chart(latencyCanvas.getContext("2d"), {
-        type: "line",
-        data: {
-          labels: placeholderLabels,
-          datasets: [{
-            label: "Latency (ms)",
-            data: placeholderData,
-            borderColor: "#6366f1",
-            backgroundColor: "rgba(99,102,241,0.1)",
-            fill: true,
-            tension: 0.3
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: "#8b8fa3" }, grid: { color: "#2a2d3a" } },
-            y: { ticks: { color: "#8b8fa3" }, grid: { color: "#2a2d3a" }, beginAtZero: true }
-          }
-        }
-      });
-    }
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initCharts);
-  } else {
-    initCharts();
-  }
-})();
-
-// Emergency stop — called from base template button onclick.
-function confirmEmergencyStop() {
-  if (!confirm("EMERGENCY STOP: This will halt all running agents and jobs. Continue?")) {
-    return;
-  }
-  fetch("/api/emergency-stop", { method: "POST" })
-    .then(function (resp) { return resp.json(); })
-    .then(function (data) {
-      if (data.ok) {
-        alert("Emergency stop executed successfully.");
-      } else {
-        alert("Emergency stop completed with errors:\n" + (data.errors || []).join("\n"));
+        handleEvent(msg.type, inner);
+      } catch (err) {
+        console.error("SSE parse error:", err);
       }
-    })
-    .catch(function (err) {
-      alert("Emergency stop request failed: " + err.message);
+    };
+
+    eventSource.onerror = function () {
+      eventSource.close();
+      setTimeout(connect, 3000);
+    };
+  }
+
+  function handleEvent(type, data) {
+    appendEventLog(type, data);
+    appendDebugLog(type, data);
+    updateRoleGrid(type, data);
+    updatePipelineChain(type, data);
+  }
+
+  function appendEventLog(type, data) {
+    var log = document.getElementById("event-log");
+    if (!log) return;
+
+    var placeholder = log.querySelector(".muted");
+    if (placeholder) placeholder.remove();
+
+    var entry = document.createElement("div");
+    entry.className = "event-entry " + type;
+    if (data.outcome === "error") entry.className += " error";
+
+    var now = new Date().toLocaleTimeString();
+    var detail = formatDetail(type, data);
+    entry.innerHTML =
+      '<span class="event-time">' + now + "</span>" +
+      '<span class="event-type">' + type + "</span>" +
+      "<span>" + detail + "</span>";
+
+    log.prepend(entry);
+
+    while (log.children.length > 200) {
+      log.removeChild(log.lastChild);
+    }
+  }
+
+  function appendDebugLog(type, data) {
+    var log = document.getElementById("debug-log");
+    if (!log) return;
+    var line = new Date().toISOString() + " [" + type + "] " + JSON.stringify(data) + "\n";
+    log.textContent = line + log.textContent;
+  }
+
+  function formatDetail(type, data) {
+    switch (type) {
+      case "job_start":
+        return '<strong>' + esc(data.role) + '</strong> started (job ' + esc(data.job_id || "") + ')';
+      case "job_complete":
+        return '<strong>' + esc(data.role) + '</strong> ' + esc(data.outcome || "done") + ' in ' + esc(data.duration || "?");
+      case "chain":
+        return esc(data.from) + ' &rarr; ' + esc(data.to);
+      default:
+        return JSON.stringify(data);
+    }
+  }
+
+  function updateRoleGrid(type, data) {
+    var grid = document.getElementById("role-grid");
+    if (!grid) return;
+
+    var placeholder = grid.querySelector(".muted");
+    if (placeholder) placeholder.remove();
+
+    var role = data.role || data.from;
+    if (!role) return;
+
+    var cardId = "role-" + role;
+    var card = document.getElementById(cardId);
+    if (!card) {
+      card = document.createElement("div");
+      card.id = cardId;
+      card.className = "role-card";
+      card.innerHTML = '<div class="role-name">' + esc(role) + '</div><div class="role-status">idle</div>';
+      grid.appendChild(card);
+    }
+
+    var status = card.querySelector(".role-status");
+    card.className = "role-card";
+
+    if (type === "job_start") {
+      card.className += " running";
+      status.textContent = "running…";
+    } else if (type === "job_complete") {
+      card.className += " " + (data.outcome === "error" ? "error" : "success");
+      status.textContent = (data.outcome || "done") + " (" + (data.duration || "?") + ")";
+    }
+  }
+
+  function updatePipelineChain(type, data) {
+    if (type !== "job_start" && type !== "job_complete") return;
+    var role = data.role;
+    if (!role) return;
+
+    var nodes = document.querySelectorAll(".chain-node");
+    nodes.forEach(function (node) {
+      if (node.textContent.toLowerCase() === role.toLowerCase() ||
+          role.toLowerCase().indexOf(node.textContent.toLowerCase()) === 0) {
+        if (type === "job_start") {
+          node.classList.add("active");
+          node.classList.remove("done");
+        } else if (type === "job_complete" && data.outcome !== "error") {
+          node.classList.remove("active");
+          node.classList.add("done");
+        }
+      }
     });
-}
+  }
+
+  function esc(str) {
+    var div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  window.emergencyStop = function () {
+    if (!confirm("This will stop ALL running agents. Continue?")) return;
+
+    var btn = document.getElementById("estop-btn");
+    btn.textContent = "Stopping…";
+    btn.disabled = true;
+
+    fetch("/api/emergency-stop", { method: "POST" })
+      .then(function (r) { return r.json(); })
+      .then(function (resp) {
+        if (resp.ok) {
+          btn.textContent = "Stopped";
+          btn.style.background = "#16a34a";
+        } else {
+          btn.textContent = "Failed";
+          alert("Errors: " + (resp.errors || []).join(", "));
+        }
+      })
+      .catch(function (err) {
+        btn.textContent = "Error";
+        alert("Emergency stop request failed: " + err);
+      });
+  };
+
+  connect();
+})();

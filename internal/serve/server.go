@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"github.com/greaveselliott/mars-harness/internal/dashboard"
 	gh "github.com/greaveselliott/mars-harness/internal/github"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
@@ -58,6 +59,8 @@ type Server struct {
 	scheduler *scheduler.Scheduler
 	router    *inference.Router
 	executor  *Executor
+	dash      *dashboard.Dashboard
+	dashHTTP  *http.Server
 
 	mu      sync.Mutex
 	started bool
@@ -158,6 +161,27 @@ func New(cfg Config) (*Server, error) {
 		OnComplete:  s.handleJobComplete,
 	})
 
+	dashAddr := cfg.DashboardAddr
+	if dashAddr == "" {
+		dashAddr = ":9090"
+	}
+	dash, err := dashboard.New(dashboard.Config{
+		Addr:          dashAddr,
+		EmergencyStop: func() []error { return s.estop.Execute(context.Background()) },
+	})
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("serve: init dashboard: %w", err)
+	}
+	s.dash = dash
+	s.dashHTTP = &http.Server{
+		Addr:              dashAddr,
+		Handler:           dash.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	executor.SetDashboard(dash)
+
 	webhookHandler := gh.WebhookHandler(
 		gh.WebhookConfig{Secret: cfg.WebhookSecret},
 		s.handleEvent,
@@ -188,6 +212,12 @@ func (s *Server) Start(ctx context.Context) error {
 	s.started = true
 	s.mu.Unlock()
 
+	if n, err := s.queue.ResetOrphans(ctx); err != nil {
+		slog.Warn("serve: failed to reset orphaned jobs", "err", err)
+	} else if n > 0 {
+		slog.Info("serve: reset orphaned jobs from previous run", "count", n)
+	}
+
 	repos, err := s.repos.List(ctx)
 	if err != nil {
 		return fmt.Errorf("serve: load repos: %w", err)
@@ -208,19 +238,30 @@ func (s *Server) Start(ctx context.Context) error {
 			s.cfg.WebhookAddr, err)
 	}
 
+	dashLn, err := net.Listen("tcp", s.dashHTTP.Addr)
+	if err != nil {
+		return fmt.Errorf("serve: failed to bind dashboard %s — check if the port is already in use: %w",
+			s.dashHTTP.Addr, err)
+	}
+
 	s.health.Store(true)
 	slog.Info("serve: orchestrator ready",
 		"addr", ln.Addr().String(),
+		"dashboard", "http://localhost"+s.dashHTTP.Addr,
 		"concurrency", s.cfg.concurrency(),
 		"repos", len(repos),
 	)
 
-	errCh := make(chan error, 1)
+	errCh := make(chan error, 2)
 	go func() {
 		if serveErr := s.http.Serve(ln); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
 			errCh <- serveErr
 		}
-		close(errCh)
+	}()
+	go func() {
+		if serveErr := s.dashHTTP.Serve(dashLn); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			errCh <- serveErr
+		}
 	}()
 
 	select {
@@ -248,6 +289,12 @@ func (s *Server) Stop(ctx context.Context) error {
 	var firstErr error
 	if err := s.http.Shutdown(shutdownCtx); err != nil {
 		firstErr = fmt.Errorf("serve: HTTP shutdown: %w", err)
+	}
+
+	if s.dashHTTP != nil {
+		if err := s.dashHTTP.Shutdown(shutdownCtx); err != nil && firstErr == nil {
+			firstErr = fmt.Errorf("serve: dashboard shutdown: %w", err)
+		}
 	}
 
 	if err := s.queue.Close(); err != nil && firstErr == nil {
@@ -371,6 +418,9 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 		return
 	}
 
+	runDuration := time.Since(job.UpdatedAt)
+	selfChainMinDuration := 60 * time.Second
+
 	chainJSON, _ := json.Marshal(map[string]string{
 		"type":        "chain",
 		"source_role": job.Role,
@@ -378,6 +428,14 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 	})
 
 	for _, target := range role.Then {
+		if target == job.Role && runDuration < selfChainMinDuration {
+			log.Info("serve: skipping self-chain — run too short, likely no work available",
+				"duration", runDuration.Round(time.Second),
+				"threshold", selfChainMinDuration,
+			)
+			continue
+		}
+
 		idempotencyKey := fmt.Sprintf("chain:%s:%s:%s", job.ID, job.RepoID, target)
 		chainJob := queue.Job{
 			RepoID:         job.RepoID,

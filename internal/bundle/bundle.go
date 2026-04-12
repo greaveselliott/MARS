@@ -29,6 +29,7 @@ type RoleConfig struct {
 	Triggers   []string `yaml:"triggers"`
 	Then       []string `yaml:"then"`
 	Schedule   string   `yaml:"schedule"`
+	MaxTurns   int      `yaml:"max_turns"`
 }
 
 // Load reads .harness/manifest.yaml from repoRoot.

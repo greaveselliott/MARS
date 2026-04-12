@@ -143,12 +143,17 @@ func (q *Queue) Claim(ctx context.Context, workerID string) (*Job, error) {
 	now := time.Now().UTC()
 	expiry := now.Add(-leaseTimeout).Unix()
 
-	// Reset stale claimed jobs so they can be re-claimed.
-	_, err := q.db.ExecContext(ctx, `
+	// Reset stale claimed/running jobs so they can be re-claimed.
+	// Jobs stuck in these states beyond the lease timeout are orphans from
+	// crashed processes.
+	res, err := q.db.ExecContext(ctx, `
 UPDATE jobs SET status = 'pending', claimed_by = '', updated_at = ?
-WHERE status = 'claimed' AND updated_at < ?`, now.Unix(), expiry)
+WHERE status IN ('claimed','running') AND updated_at < ?`, now.Unix(), expiry)
 	if err != nil {
 		return nil, fmt.Errorf("queue: reset stale leases: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		slog.Info("queue: reset stale jobs", "count", n)
 	}
 
 	// Find the oldest pending job whose repo has no claimed or running job.
@@ -257,6 +262,23 @@ WHERE id = ? AND status = 'pending'`, now.Unix(), jobID)
 		return fmt.Errorf("queue: cancel: job %q not in pending state", jobID)
 	}
 	return nil
+}
+
+// ResetOrphans marks all claimed/running jobs as failed. Call at startup
+// to clear jobs orphaned by a previous crash.
+func (q *Queue) ResetOrphans(ctx context.Context) (int, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	now := time.Now().UTC()
+	res, err := q.db.ExecContext(ctx, `
+UPDATE jobs SET status = 'failed', error_msg = 'orphaned by process restart', updated_at = ?, completed_at = ?
+WHERE status IN ('claimed','running')`, now.Unix(), now.Unix())
+	if err != nil {
+		return 0, fmt.Errorf("queue: reset orphans: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
 }
 
 // PruneTTL deletes completed and failed jobs older than maxAge. Returns

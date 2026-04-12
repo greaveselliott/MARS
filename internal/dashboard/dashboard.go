@@ -21,12 +21,15 @@ type Config struct {
 	EmergencyStop func() []error
 }
 
+const eventBufferSize = 200
+
 // Dashboard serves the embedded web UI.
 type Dashboard struct {
 	cfg        Config
 	mux        *http.ServeMux
 	tmpl       *template.Template
 	sseClients map[chan string]struct{}
+	eventBuf   []string
 	mu         sync.RWMutex
 }
 
@@ -122,6 +125,8 @@ func (d *Dashboard) handleSSE(w http.ResponseWriter, r *http.Request) {
 
 	d.mu.Lock()
 	d.sseClients[ch] = struct{}{}
+	replay := make([]string, len(d.eventBuf))
+	copy(replay, d.eventBuf)
 	d.mu.Unlock()
 
 	defer func() {
@@ -133,6 +138,14 @@ func (d *Dashboard) handleSSE(w http.ResponseWriter, r *http.Request) {
 	// Send initial keepalive so the client knows the connection is alive.
 	fmt.Fprintf(w, ": keepalive\n\n")
 	flusher.Flush()
+
+	// Replay recent events so late-joining clients see current state.
+	for _, msg := range replay {
+		fmt.Fprintf(w, "data: %s\n\n", msg)
+	}
+	if len(replay) > 0 {
+		flusher.Flush()
+	}
 
 	ctx := r.Context()
 	for {
@@ -163,10 +176,18 @@ func (d *Dashboard) BroadcastEvent(eventType, data string) {
 
 	msg := string(payload)
 
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
+	d.mu.Lock()
+	d.eventBuf = append(d.eventBuf, msg)
+	if len(d.eventBuf) > eventBufferSize {
+		d.eventBuf = d.eventBuf[len(d.eventBuf)-eventBufferSize:]
+	}
+	clients := make([]chan string, 0, len(d.sseClients))
 	for ch := range d.sseClients {
+		clients = append(clients, ch)
+	}
+	d.mu.Unlock()
+
+	for _, ch := range clients {
 		select {
 		case ch <- msg:
 		default:

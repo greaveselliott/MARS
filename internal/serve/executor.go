@@ -2,13 +2,17 @@ package serve
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/agent"
 	"github.com/greaveselliott/mars-harness/internal/bundle"
 	harctx "github.com/greaveselliott/mars-harness/internal/context"
+	"github.com/greaveselliott/mars-harness/internal/dashboard"
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/llm"
 	"github.com/greaveselliott/mars-harness/internal/queue"
@@ -27,6 +31,7 @@ type Executor struct {
 	lookupRepo RepoLookup
 	router     *inference.Router
 	traceStore *trace.Store
+	dash       *dashboard.Dashboard
 }
 
 // NewExecutor creates an executor bound to a repo lookup function and inference router.
@@ -37,6 +42,11 @@ func NewExecutor(lookupRepo RepoLookup, router *inference.Router, traceStore *tr
 		router:     router,
 		traceStore: traceStore,
 	}
+}
+
+// SetDashboard wires the dashboard for SSE event broadcasting.
+func (e *Executor) SetDashboard(d *dashboard.Dashboard) {
+	e.dash = d
 }
 
 // Execute is the OnJob callback for the worker pool.
@@ -68,6 +78,13 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	}
 
 	tw.WriteHeader(job.Role, role.Model, role.Tools, role.Then)
+
+	started := time.Now()
+	e.broadcastEvent("job_start", map[string]string{
+		"job_id": job.ID,
+		"role":   job.Role,
+		"repo":   job.RepoID,
+	})
 
 	rolePrompt, err := manifest.RolePrompt(repoPath, job.Role)
 	if err != nil {
@@ -144,7 +161,8 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		SystemPrompt: system,
 		UserMessage:  userMessage,
 		Config: agent.LoopConfig{
-			Model: role.Model,
+			Model:    role.Model,
+			MaxTurns: role.MaxTurns,
 		},
 		JobID:      job.ID,
 		Trace:      rec,
@@ -167,12 +185,45 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		res.TokenEstimate,
 	)
 
+	outcome := "success"
 	if res.Err != nil {
+		outcome = "error"
 		tw.WriteError(fmt.Sprintf("agent loop error (%s): %v", res.EndReason, res.Err))
+	}
+
+	e.broadcastEvent("job_complete", map[string]string{
+		"job_id":   job.ID,
+		"role":     job.Role,
+		"repo":     job.RepoID,
+		"outcome":  outcome,
+		"duration": time.Since(started).Round(time.Millisecond).String(),
+	})
+
+	if res.Err != nil {
 		return fmt.Errorf("executor: agent loop error (%s): %w", res.EndReason, res.Err)
+	}
+
+	if len(role.Then) > 0 {
+		e.broadcastEvent("chain", map[string]string{
+			"from": job.Role,
+			"to":   strings.Join(role.Then, ","),
+			"repo": job.RepoID,
+		})
 	}
 
 	tw.WriteHandoff(job.Role, role.Then)
 
 	return nil
+}
+
+func (e *Executor) broadcastEvent(eventType string, payload map[string]string) {
+	if e.dash == nil {
+		return
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		slog.Error("executor: marshal SSE payload", "error", err)
+		return
+	}
+	e.dash.BroadcastEvent(eventType, string(data))
 }

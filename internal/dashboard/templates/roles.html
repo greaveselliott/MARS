@@ -1,52 +1,38 @@
-{{template "base" .}}
-{{define "page-content"}}
-<section class="page-section">
-    <p class="section-desc">Per-role accuracy trends, context usage, and recent outcomes.</p>
-    <div id="role-grid" class="card-grid">
-        <div class="card">
-            <div class="card-header">
-                <h3>CI Diagnoser</h3>
-                <span class="badge badge-idle">idle</span>
-            </div>
-            <div class="card-body">
-                <div class="stat-row"><span>Accuracy</span><span>—</span></div>
-                <div class="stat-row"><span>Jobs completed</span><span>0</span></div>
-                <div class="stat-row"><span>Context tokens</span><span>—</span></div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <h3>Code Generator</h3>
-                <span class="badge badge-idle">idle</span>
-            </div>
-            <div class="card-body">
-                <div class="stat-row"><span>Accuracy</span><span>—</span></div>
-                <div class="stat-row"><span>Jobs completed</span><span>0</span></div>
-                <div class="stat-row"><span>Context tokens</span><span>—</span></div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <h3>PR Reviewer</h3>
-                <span class="badge badge-idle">idle</span>
-            </div>
-            <div class="card-body">
-                <div class="stat-row"><span>Accuracy</span><span>—</span></div>
-                <div class="stat-row"><span>Jobs completed</span><span>0</span></div>
-                <div class="stat-row"><span>Context tokens</span><span>—</span></div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <h3>Release Manager</h3>
-                <span class="badge badge-idle">idle</span>
-            </div>
-            <div class="card-body">
-                <div class="stat-row"><span>Accuracy</span><span>—</span></div>
-                <div class="stat-row"><span>Jobs completed</span><span>0</span></div>
-                <div class="stat-row"><span>Context tokens</span><span>—</span></div>
-            </div>
-        </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} — Mars Harness</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="logo">Mars Harness</div>
+    <a href="/pipeline" class="nav-item{{if eq .ActiveNav "pipeline"}} active{{end}}">Pipeline</a>
+    <a href="/roles" class="nav-item{{if eq .ActiveNav "roles"}} active{{end}}">Roles</a>
+    <a href="/throughput" class="nav-item{{if eq .ActiveNav "throughput"}} active{{end}}">Throughput</a>
+    <a href="/debug" class="nav-item{{if eq .ActiveNav "debug"}} active{{end}}">Debug</a>
+    <a href="/evolution" class="nav-item{{if eq .ActiveNav "evolution"}} active{{end}}">Evolution</a>
+    <div class="nav-spacer"></div>
+    <button id="estop-btn" class="estop-btn" onclick="emergencyStop()">Emergency Stop</button>
+  </nav>
+
+  <main class="content">
+    <header class="page-header">
+      <h1>Role Health</h1>
+      <span class="timestamp">{{.Now}}</span>
+    </header>
+
+    <div class="card">
+      <h2>Active Roles</h2>
+      <div id="role-grid" class="role-grid">
+        <p class="muted">Waiting for agent events&hellip;</p>
+      </div>
     </div>
-</section>
-{{end}}
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

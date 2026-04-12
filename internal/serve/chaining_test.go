@@ -49,8 +49,9 @@ func TestHandleJobComplete_enqueuesChainedJobs(t *testing.T) {
 	repoRoot, dbPath := setupChainingFixture(t)
 
 	srv, err := New(Config{
-		WebhookAddr: "127.0.0.1:0",
-		DBPath:      dbPath,
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
 	})
 	if err != nil {
 		t.Fatalf("New: %v", err)
@@ -105,8 +106,9 @@ func TestHandleJobComplete_noChainWhenThenEmpty(t *testing.T) {
 	repoRoot, dbPath := setupChainingFixture(t)
 
 	srv, err := New(Config{
-		WebhookAddr: "127.0.0.1:0",
-		DBPath:      dbPath,
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
 	})
 	if err != nil {
 		t.Fatalf("New: %v", err)
