@@ -682,8 +682,8 @@ DON'T:
 - Skip or disable tests to make things pass
 - Introduce new patterns not already documented in design docs
 - Work on more than one ticket per run
-- NEVER start long-running processes (dev servers, watchers, next dev, npm start).
-  They block forever and kill your run. Use build commands only (next build, npm test).
+- For long-running processes (dev servers, watchers, next dev, npm start), ALWAYS use
+  shell_exec with background:true so they run as a background process and don't block your run.
 
 ## Quality Bar
 

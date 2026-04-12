@@ -52,6 +52,8 @@ func (e *Executor) SetDashboard(d *dashboard.Dashboard) {
 // Execute is the OnJob callback for the worker pool.
 // It loads the bundle, assembles context, starts inference, and runs the agent loop.
 func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
+	defer tools.KillBackgroundProcs()
+
 	log := slog.With("job_id", job.ID, "repo_id", job.RepoID, "role", job.Role)
 	tw := ui.NewTraceWriter(os.Stdout, false, false)
 
