@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build binary
+        env:
+          CGO_ENABLED: '0'
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          COMMIT="${GITHUB_SHA::8}"
+          DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          go build \
+            -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
+            -o mars-harness-${GOOS}-${GOARCH} \
+            ./cmd/mars-harness
+
+      - name: Generate checksum
+        run: |
+          sha256sum mars-harness-${{ matrix.goos }}-${{ matrix.goarch }} \
+            > mars-harness-${{ matrix.goos }}-${{ matrix.goarch }}.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mars-harness-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            mars-harness-${{ matrix.goos }}-${{ matrix.goarch }}
+            mars-harness-${{ matrix.goos }}-${{ matrix.goarch }}.sha256
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect release assets
+        run: |
+          mkdir -p release
+          find artifacts -type f -name 'mars-harness-*' -exec cp {} release/ \;
+          cd release
+          cat *.sha256 > checksums.txt
+          ls -la
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          generate_release_notes: true
+          files: |
+            release/mars-harness-linux-amd64
+            release/mars-harness-linux-arm64
+            release/mars-harness-darwin-amd64
+            release/mars-harness-darwin-arm64
+            release/checksums.txt

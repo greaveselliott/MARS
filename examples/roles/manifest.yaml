@@ -1,0 +1,136 @@
+name: mars-harness-roles
+description: All 11 ported Mars automation roles for use with mars-harness
+
+roles:
+  engineer:
+    prompt: roles/engineer.md
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+    triggers:
+      - ticket.assigned
+    tier: autonomous
+    model: ""
+
+  pipeline-fixer:
+    prompt: roles/pipeline-fixer.md
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+    triggers:
+      - workflow_run.conclusion == "failure"
+    tier: autonomous
+    model: ""
+
+  qa:
+    prompt: roles/qa.md
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+    triggers:
+      - schedule.weekly
+      - workflow_dispatch
+    tier: autonomous
+    model: ""
+
+  code-reviewer:
+    prompt: roles/code-reviewer.md
+    tools:
+      - file_read
+      - grep
+    triggers:
+      - pull_request.opened
+      - pull_request.synchronize
+    tier: supervised
+    model: ""
+
+  release-manager:
+    prompt: roles/release-manager.md
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+    triggers:
+      - workflow_dispatch
+    tier: supervised
+    model: ""
+
+  docs-writer:
+    prompt: roles/docs-writer.md
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+    triggers:
+      - pull_request.merged
+      - schedule.weekly
+    tier: autonomous
+    model: ""
+
+  security-auditor:
+    prompt: roles/security-auditor.md
+    tools:
+      - file_read
+      - shell_exec
+      - grep
+    triggers:
+      - schedule.weekly
+      - workflow_dispatch
+    tier: supervised
+    model: ""
+
+  dependency-updater:
+    prompt: roles/dependency-updater.md
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+    triggers:
+      - schedule.weekly
+    tier: supervised
+    model: ""
+
+  performance-optimizer:
+    prompt: roles/performance-optimizer.md
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+    triggers:
+      - workflow_dispatch
+    tier: supervised
+    model: ""
+
+  refactorer:
+    prompt: roles/refactorer.md
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+    triggers:
+      - workflow_dispatch
+    tier: supervised
+    model: ""
+
+  incident-responder:
+    prompt: roles/incident-responder.md
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+    triggers:
+      - alert.fired
+    tier: autonomous
+    model: ""

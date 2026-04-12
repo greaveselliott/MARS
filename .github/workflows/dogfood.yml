@@ -1,0 +1,116 @@
+name: Dogfood
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build CLI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build mars-harness
+        run: go build -ldflags "-X main.version=dogfood-${{ github.sha }}" ./cmd/mars-harness
+
+      - name: Verify version output
+        run: ./mars-harness version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mars-harness-binary
+          path: mars-harness
+
+  pipeline-fixer:
+    name: Dogfood — Pipeline Fixer (dry-run)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mars-harness-binary
+
+      - name: Make binary executable
+        run: chmod +x ./mars-harness
+
+      - name: Run Pipeline Fixer role (dry-run)
+        run: |
+          ./mars-harness run pipeline-fixer \
+            --repo . \
+            --dry-run \
+            --trace
+
+      - name: Verify exit code
+        run: echo "Pipeline Fixer dry-run completed successfully"
+
+  qa:
+    name: Dogfood — QA (dry-run)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mars-harness-binary
+
+      - name: Make binary executable
+        run: chmod +x ./mars-harness
+
+      - name: Run QA role (dry-run)
+        run: |
+          ./mars-harness run qa \
+            --repo . \
+            --dry-run \
+            --trace
+
+      - name: Verify exit code
+        run: echo "QA dry-run completed successfully"
+
+  engineer:
+    name: Dogfood — Engineer (dry-run)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mars-harness-binary
+
+      - name: Make binary executable
+        run: chmod +x ./mars-harness
+
+      - name: Run Engineer role (dry-run)
+        run: |
+          ./mars-harness run engineer \
+            --repo . \
+            --dry-run \
+            --trace
+
+      - name: Verify exit code
+        run: echo "Engineer dry-run completed successfully"
+
+  summary:
+    name: Dogfood Summary
+    needs: [pipeline-fixer, qa, engineer]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Report results
+        run: |
+          echo "## Dogfood Results"
+          echo "Pipeline Fixer: ${{ needs.pipeline-fixer.result }}"
+          echo "QA: ${{ needs.qa.result }}"
+          echo "Engineer: ${{ needs.engineer.result }}"
