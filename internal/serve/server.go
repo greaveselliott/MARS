@@ -2,17 +2,24 @@ package serve
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	gh "github.com/greaveselliott/mars-harness/internal/github"
+	"github.com/greaveselliott/mars-harness/internal/hardware"
+	"github.com/greaveselliott/mars-harness/internal/inference"
+	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/safety"
+	"github.com/greaveselliott/mars-harness/internal/scheduler"
 )
 
 // Config controls the serve command.
@@ -21,6 +28,9 @@ type Config struct {
 	WebhookSecret string
 	DBPath        string
 	Concurrency   int
+	ModelsDir     string
+	BinDir        string
+	DashboardAddr string
 }
 
 func (c Config) concurrency() int {
@@ -30,7 +40,7 @@ func (c Config) concurrency() int {
 	return 2
 }
 
-// Server composes all subsystems for the serve command.
+// Server composes all subsystems for the autonomous pipeline.
 type Server struct {
 	cfg    Config
 	http   *http.Server
@@ -38,20 +48,112 @@ type Server struct {
 	estop  *safety.EmergencyStop
 	health atomic.Bool
 
+	db        *sql.DB
+	repos     *RepoRegistry
+	triggers  *TriggerRouter
+	queue     *queue.Queue
+	workers   *queue.WorkerPool
+	scheduler *scheduler.Scheduler
+	router    *inference.Router
+	executor  *Executor
+
 	mu      sync.Mutex
 	started bool
 }
 
-// New creates a Server wired with webhook, health, and safety subsystems.
+// New creates a Server wired with all subsystems.
 func New(cfg Config) (*Server, error) {
 	if cfg.WebhookAddr == "" {
-		return nil, fmt.Errorf("serve: WebhookAddr is required — set it to e.g. \":8080\"")
+		return nil, fmt.Errorf("serve: WebhookAddr is required — set it to e.g. \":9091\"")
+	}
+	if cfg.DBPath == "" {
+		return nil, fmt.Errorf("serve: DBPath is required — set it to e.g. \"~/.mars-harness/db/mars.db\"")
 	}
 
+	db, err := sql.Open("sqlite", cfg.DBPath+"?_journal=WAL&_busy_timeout=5000")
+	if err != nil {
+		return nil, fmt.Errorf("serve: open database at %s: %w — check path and permissions", cfg.DBPath, err)
+	}
+
+	repos, err := NewRepoRegistry(db)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	jobQueue, err := queue.Open(cfg.DBPath)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("serve: open job queue: %w", err)
+	}
+
+	hw := hardware.Detect()
+	modelSet := hardware.DefaultModels(hw.Profile)
+
+	roleMapping := map[string]hardware.Tier{
+		"engineer":       hardware.TierCoding,
+		"pipeline-fixer": hardware.TierCoding,
+		"reviewer":       hardware.TierReasoning,
+		"code-reviewer":  hardware.TierReasoning,
+		"qa":             hardware.TierCoding,
+		"documenter":     hardware.TierFast,
+		"docs-writer":    hardware.TierFast,
+		"release":        hardware.TierFast,
+		"release-manager": hardware.TierFast,
+		"triager":        hardware.TierFast,
+		"onboarder":      hardware.TierFast,
+		"auditor":        hardware.TierReasoning,
+		"security-auditor": hardware.TierReasoning,
+		"backlog":        hardware.TierFast,
+		"evolution":      hardware.TierReasoning,
+		"dependency-updater": hardware.TierFast,
+		"performance-optimizer": hardware.TierCoding,
+		"refactorer":     hardware.TierCoding,
+		"incident-responder": hardware.TierCoding,
+	}
+
+	binaryPath := filepath.Join(cfg.BinDir, "llama-server")
+	router := inference.NewRouter(inference.RouterConfig{
+		BinaryPath:  binaryPath,
+		Models:      modelSet,
+		RoleMapping: roleMapping,
+		ModelsDir:   cfg.ModelsDir,
+	})
+
+	triggerRouter := NewTriggerRouter()
+
+	repoLookup := func(ctx context.Context, repoID string) (string, error) {
+		rec, err := repos.FindByID(ctx, repoID)
+		if err != nil {
+			return "", err
+		}
+		if rec == nil {
+			return "", fmt.Errorf("repo %s not found in registry", repoID)
+		}
+		return rec.Path, nil
+	}
+
+	executor := NewExecutor(repoLookup, router, nil)
+
+	workers := queue.NewWorkerPool(jobQueue, queue.WorkerConfig{
+		Concurrency: cfg.concurrency(),
+		OnJob:       executor.Execute,
+	})
+
+	sched := scheduler.New(jobQueue)
+
 	s := &Server{
-		cfg:   cfg,
-		mux:   http.NewServeMux(),
-		estop: safety.NewEmergencyStop(),
+		cfg:       cfg,
+		mux:       http.NewServeMux(),
+		estop:     safety.NewEmergencyStop(),
+		db:        db,
+		repos:     repos,
+		triggers:  triggerRouter,
+		queue:     jobQueue,
+		workers:   workers,
+		scheduler: sched,
+		router:    router,
+		executor:  executor,
 	}
 
 	webhookHandler := gh.WebhookHandler(
@@ -74,7 +176,7 @@ func New(cfg Config) (*Server, error) {
 	return s, nil
 }
 
-// Start begins serving. Blocks until the context is cancelled or the server fails.
+// Start begins all subsystems. Blocks until the context is cancelled.
 func (s *Server) Start(ctx context.Context) error {
 	s.mu.Lock()
 	if s.started {
@@ -84,6 +186,20 @@ func (s *Server) Start(ctx context.Context) error {
 	s.started = true
 	s.mu.Unlock()
 
+	repos, err := s.repos.List(ctx)
+	if err != nil {
+		return fmt.Errorf("serve: load repos: %w", err)
+	}
+	if err := s.triggers.Rebuild(repos); err != nil {
+		slog.Warn("serve: trigger index rebuild had errors", "err", err)
+	}
+	slog.Info("serve: trigger index built", "repos", len(repos), "entries", s.triggers.Len())
+
+	s.registerCronSchedules(repos)
+
+	s.workers.Start(ctx)
+	s.scheduler.Start(ctx)
+
 	ln, err := net.Listen("tcp", s.cfg.WebhookAddr)
 	if err != nil {
 		return fmt.Errorf("serve: failed to bind %s — check if the port is already in use: %w",
@@ -91,9 +207,11 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	s.health.Store(true)
-	slog.Info("serve: listening",
+	slog.Info("serve: orchestrator ready",
 		"addr", ln.Addr().String(),
-		"concurrency", s.cfg.concurrency())
+		"concurrency", s.cfg.concurrency(),
+		"repos", len(repos),
+	)
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -113,18 +231,33 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 }
 
-// Stop gracefully shuts down the server with a 10-second deadline.
+// Stop gracefully shuts down all subsystems.
 func (s *Server) Stop(ctx context.Context) error {
 	s.health.Store(false)
+	slog.Info("serve: stopping orchestrator")
+
+	s.workers.Stop()
+	s.scheduler.Stop()
+	s.router.StopAll()
 
 	shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	slog.Info("serve: shutting down HTTP server")
+	var firstErr error
 	if err := s.http.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("serve: shutdown error — %w", err)
+		firstErr = fmt.Errorf("serve: HTTP shutdown: %w", err)
 	}
-	return nil
+
+	if err := s.queue.Close(); err != nil && firstErr == nil {
+		firstErr = fmt.Errorf("serve: queue close: %w", err)
+	}
+
+	if err := s.db.Close(); err != nil && firstErr == nil {
+		firstErr = fmt.Errorf("serve: db close: %w", err)
+	}
+
+	slog.Info("serve: orchestrator stopped")
+	return firstErr
 }
 
 // Healthy reports whether the server is accepting traffic.
@@ -147,12 +280,111 @@ func (s *Server) HealthHandler() http.Handler {
 	})
 }
 
+// Repos returns the registry for external use (e.g. CLI register command).
+func (s *Server) Repos() *RepoRegistry { return s.repos }
+
 // handleEvent is invoked by the webhook handler for each valid GitHub event.
-// Currently logs the event; queue integration will be wired in later milestones.
+// It matches the event against registered triggers and enqueues jobs.
 func (s *Server) handleEvent(event gh.Event) {
 	slog.Info("serve: received event",
 		"type", event.Type,
 		"action", event.Action,
 		"repo", event.Repo,
 		"delivery_id", event.ID)
+
+	matches := s.triggers.Match(event)
+	if len(matches) == 0 {
+		slog.Debug("serve: no trigger matches for event", "type", event.Type, "action", event.Action)
+		return
+	}
+
+	triggerJSON, _ := json.Marshal(map[string]string{
+		"event_id": event.ID,
+		"type":     event.Type,
+		"action":   event.Action,
+		"repo":     event.Repo,
+	})
+
+	for _, m := range matches {
+		idempotencyKey := fmt.Sprintf("webhook:%s:%s:%s", event.ID, m.RepoID, m.Role)
+		job := queue.Job{
+			RepoID:         m.RepoID,
+			Role:           m.Role,
+			Trigger:        string(triggerJSON),
+			IdempotencyKey: idempotencyKey,
+		}
+
+		jobID, err := s.queue.Enqueue(context.Background(), job)
+		if err != nil {
+			slog.Error("serve: failed to enqueue job",
+				"role", m.Role,
+				"repo", m.RepoID,
+				"trigger", m.Trigger,
+				"err", err,
+			)
+			continue
+		}
+		slog.Info("serve: job enqueued",
+			"job_id", jobID,
+			"role", m.Role,
+			"repo_id", m.RepoID,
+			"trigger", m.Trigger,
+		)
+	}
+}
+
+func (s *Server) registerCronSchedules(repos []RepoRecord) {
+	for _, repo := range repos {
+		s.triggers.mu.RLock()
+		entries := make([]triggerEntry, len(s.triggers.index))
+		copy(entries, s.triggers.index)
+		s.triggers.mu.RUnlock()
+
+		for _, entry := range entries {
+			if entry.repoID != repo.ID {
+				continue
+			}
+			cron := cronFromTrigger(entry.trigger)
+			if cron == "" {
+				continue
+			}
+			sched := scheduler.Schedule{
+				Name:     fmt.Sprintf("%s:%s", repo.ID, entry.role),
+				RepoID:   repo.ID,
+				Role:     entry.role,
+				Cron:     cron,
+				Timezone: "UTC",
+				Trigger:  fmt.Sprintf(`{"type":"schedule","rule":"%s"}`, entry.trigger),
+			}
+			if err := s.scheduler.Register(sched); err != nil {
+				slog.Warn("serve: failed to register cron schedule",
+					"repo", repo.ID,
+					"role", entry.role,
+					"trigger", entry.trigger,
+					"err", err,
+				)
+			} else {
+				slog.Info("serve: cron schedule registered",
+					"repo", repo.ID,
+					"role", entry.role,
+					"cron", cron,
+				)
+			}
+		}
+	}
+}
+
+func cronFromTrigger(trigger string) string {
+	switch trigger {
+	case "schedule.hourly":
+		return "0 * * * *"
+	case "schedule.daily":
+		return "0 6 * * *"
+	case "schedule.weekly":
+		return "0 6 * * 1"
+	case "schedule.monthly":
+		return "0 6 1 * *"
+	default:
+		return ""
+	}
 }

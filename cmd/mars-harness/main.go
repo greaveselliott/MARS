@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
+	_ "modernc.org/sqlite"
 
 	"github.com/greaveselliott/mars-harness/internal/agent"
 	"github.com/greaveselliott/mars-harness/internal/bundle"
@@ -20,6 +22,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/llm"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
+	"github.com/greaveselliott/mars-harness/internal/serve"
 	"github.com/greaveselliott/mars-harness/internal/setup"
 	"github.com/greaveselliott/mars-harness/internal/tools"
 	"github.com/greaveselliott/mars-harness/internal/trace"
@@ -47,7 +50,8 @@ func main() {
 	root.AddCommand(setupCmd())
 	root.AddCommand(initCmd())
 	root.AddCommand(scanCmd())
-	root.AddCommand(placeholderCmd("serve", "Start the autonomous pipeline server"))
+	root.AddCommand(serveCmd())
+	root.AddCommand(registerCmd())
 	root.AddCommand(doctorCmd())
 	root.AddCommand(placeholderCmd("scores", "Accuracy and value scoring dashboard"))
 	root.AddCommand(placeholderCmd("trust", "Progressive autonomy level management"))
@@ -471,6 +475,144 @@ func doctorCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON")
 
 	return cmd
+}
+
+func serveCmd() *cobra.Command {
+	var (
+		webhookAddr string
+		concurrency int
+		dbPath      string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "serve",
+		Short: "Start the autonomous pipeline server",
+		Long:  "Run the orchestrator: receive webhooks, fire cron schedules, and execute agent roles.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Load(config.DefaultPath())
+			if err != nil {
+				slog.Warn("config load failed, using defaults", "err", err)
+			}
+
+			if webhookAddr == "" {
+				webhookAddr = fmt.Sprintf(":%d", cfg.WebhookPort)
+			}
+
+			if dbPath == "" {
+				home, _ := os.UserHomeDir()
+				dbPath = filepath.Join(home, ".mars-harness", "db", "mars.db")
+			}
+			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+				return fmt.Errorf("serve: create db directory: %w", err)
+			}
+
+			webhookSecret := os.Getenv("MARS_HARNESS_WEBHOOK_SECRET")
+
+			srv, err := serve.New(serve.Config{
+				WebhookAddr:   webhookAddr,
+				WebhookSecret: webhookSecret,
+				DBPath:        dbPath,
+				Concurrency:   concurrency,
+				ModelsDir:     cfg.ModelsDir,
+				BinDir:        cfg.BinDir,
+			})
+			if err != nil {
+				return err
+			}
+
+			sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+			defer stop()
+
+			return srv.Start(sigCtx)
+		},
+	}
+
+	cmd.Flags().StringVar(&webhookAddr, "addr", "", "Address to listen on (default from config webhook_port)")
+	cmd.Flags().IntVar(&concurrency, "concurrency", 2, "Number of concurrent agent workers")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/mars.db)")
+
+	return cmd
+}
+
+func registerCmd() *cobra.Command {
+	var (
+		repoPath string
+		remote   string
+		branch   string
+		dbPath   string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "register",
+		Short: "Register a repository for autonomous management",
+		Long:  "Register a local repository that has a .harness/manifest.yaml so the orchestrator can manage it.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repoPath == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("register: cannot determine working directory: %w", err)
+				}
+			}
+
+			absPath, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("register: resolve path: %w", err)
+			}
+
+			if _, err := bundle.Load(absPath); err != nil {
+				return fmt.Errorf("register: %s does not contain a valid .harness/manifest.yaml — run `mars-harness init` first: %w",
+					absPath, err)
+			}
+
+			if dbPath == "" {
+				home, _ := os.UserHomeDir()
+				dbPath = filepath.Join(home, ".mars-harness", "db", "mars.db")
+			}
+			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+				return fmt.Errorf("register: create db directory: %w", err)
+			}
+
+			db, err := openDB(dbPath)
+			if err != nil {
+				return err
+			}
+			defer db.Close()
+
+			registry, err := serve.NewRepoRegistry(db)
+			if err != nil {
+				return err
+			}
+
+			if branch == "" {
+				branch = "main"
+			}
+
+			id, err := registry.Register(context.Background(), absPath, remote, branch)
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("Registered repo %s\n  ID: %s\n  Path: %s\n  Remote: %s\n  Branch: %s\n",
+				filepath.Base(absPath), id, absPath, remote, branch)
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
+	cmd.Flags().StringVar(&remote, "remote", "", "GitHub owner/repo (e.g. myorg/myrepo)")
+	cmd.Flags().StringVar(&branch, "branch", "main", "Default branch name")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/mars.db)")
+
+	return cmd
+}
+
+func openDB(path string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", path+"?_journal=WAL&_busy_timeout=5000")
+	if err != nil {
+		return nil, fmt.Errorf("open database at %s: %w — check path and permissions", path, err)
+	}
+	return db, nil
 }
 
 func placeholderCmd(name, description string) *cobra.Command {
