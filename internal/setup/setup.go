@@ -1,14 +1,17 @@
 package setup
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/config"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
+	"github.com/greaveselliott/mars-harness/internal/models"
 	"gopkg.in/yaml.v3"
 )
 
@@ -86,7 +89,7 @@ func buildSteps(baseDir string, cfg Config) []Step {
 	}
 
 	if !cfg.SkipDownload && !cfg.TestMode {
-		steps = append(steps, createModelsDirStep(baseDir))
+		steps = append(steps, downloadModelsStep(baseDir))
 	}
 
 	if !cfg.SkipGitHub && !cfg.TestMode {
@@ -188,21 +191,86 @@ type hardwareSnapshot struct {
 	Arch     string `yaml:"arch"`
 }
 
-func createModelsDirStep(baseDir string) Step {
+// downloadModelsStep detects hardware, selects models for the profile, and downloads
+// each unique GGUF from HuggingFace with resume support. Idempotent: re-running
+// skips models whose files already exist in the models directory.
+func downloadModelsStep(baseDir string) Step {
 	modelsDir := filepath.Join(baseDir, "models")
-	readmePath := filepath.Join(modelsDir, "README.md")
+	markerPath := filepath.Join(modelsDir, ".download-complete")
+
 	return Step{
-		Name: "prepare-models",
+		Name: "download-models",
 		Check: func() (bool, error) {
-			_, err := os.Stat(readmePath)
+			_, err := os.Stat(markerPath)
 			return err == nil, nil
 		},
 		Execute: func() error {
 			if err := os.MkdirAll(modelsDir, 0o755); err != nil {
 				return fmt.Errorf("create models dir: %w — check directory permissions", err)
 			}
-			readme := "# Models\n\nModel GGUF files are downloaded here by `mars-harness setup`.\n"
-			return os.WriteFile(readmePath, []byte(readme), 0o644)
+
+			hw := hardware.Detect()
+			modelSet := hardware.DefaultModels(hw.Profile)
+			unique := hardware.UniqueModels(modelSet)
+
+			slog.Info("model download plan",
+				"profile", string(hw.Profile),
+				"models_to_download", len(unique),
+			)
+
+			for i, spec := range unique {
+				destPath := filepath.Join(modelsDir, spec.File)
+				if _, err := os.Stat(destPath); err == nil {
+					slog.Info("model already present, skipping",
+						"file", spec.File,
+						"index", fmt.Sprintf("%d/%d", i+1, len(unique)),
+					)
+					continue
+				}
+
+				url := spec.DownloadURL()
+				if url == "" {
+					return fmt.Errorf("no download URL for model %s — check registry configuration", spec.Name)
+				}
+
+				slog.Info("downloading model",
+					"name", spec.Name,
+					"quant", spec.Quant,
+					"file", spec.File,
+					"url", url,
+					"index", fmt.Sprintf("%d/%d", i+1, len(unique)),
+				)
+
+				started := time.Now()
+				_, err := models.Download(context.Background(), models.DownloadConfig{
+					URL:      url,
+					DestDir:  modelsDir,
+					Filename: spec.File,
+					SHA256:   spec.SHA256,
+					OnProgress: func(downloaded, total int64) {
+						if total > 0 {
+							pct := float64(downloaded) / float64(total) * 100
+							slog.Info("download progress",
+								"file", spec.File,
+								"percent", fmt.Sprintf("%.1f%%", pct),
+								"downloaded_mb", downloaded/(1024*1024),
+								"total_mb", total/(1024*1024),
+							)
+						}
+					},
+				})
+				if err != nil {
+					return fmt.Errorf("download %s: %w — check network connectivity and disk space", spec.File, err)
+				}
+
+				elapsed := time.Since(started)
+				slog.Info("model downloaded",
+					"file", spec.File,
+					"elapsed", elapsed.Round(time.Second).String(),
+				)
+			}
+
+			return os.WriteFile(markerPath, []byte("ok\n"), 0o644)
 		},
 	}
 }

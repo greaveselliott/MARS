@@ -71,7 +71,7 @@ func TestBuildSteps_testModeSkipsDownloadAndGitHub(t *testing.T) {
 	for i, s := range steps {
 		names[i] = s.Name
 	}
-	assert.NotContains(t, names, "prepare-models")
+	assert.NotContains(t, names, "download-models")
 	assert.NotContains(t, names, "github-setup")
 }
 
@@ -86,7 +86,7 @@ func TestBuildSteps_fullMode(t *testing.T) {
 	assert.Contains(t, names, "create-directories")
 	assert.Contains(t, names, "write-config")
 	assert.Contains(t, names, "detect-hardware")
-	assert.Contains(t, names, "prepare-models")
+	assert.Contains(t, names, "download-models")
 	assert.Contains(t, names, "github-setup")
 }
 

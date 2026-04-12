@@ -1,139 +1,146 @@
 package hardware
 
-import (
-	"crypto/sha256"
-	"encoding/hex"
-)
+import "fmt"
 
 // ModelSpec describes one downloadable model.
 type ModelSpec struct {
 	Name       string
-	Repo       string // HuggingFace repo ID
+	Repo       string // HuggingFace repo ID (e.g. "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF")
 	File       string // GGUF filename within repo
-	Params     string // e.g. "27B"
+	Params     string // e.g. "30B-A3B"
 	Quant      string // e.g. "Q4_K_M"
-	RAMMinMiB  int    // minimum RAM to load
+	RAMMinMiB  int    // minimum RAM/VRAM to load
 	ContextLen int    // default context length
-	SHA256     string // expected checksum
+	SHA256     string // expected checksum (empty = skip verification, computed on first download)
+}
+
+// DownloadURL returns the HuggingFace direct download URL for this model.
+func (s ModelSpec) DownloadURL() string {
+	if s.Repo == "" || s.File == "" {
+		return ""
+	}
+	return fmt.Sprintf("https://huggingface.co/%s/resolve/main/%s", s.Repo, s.File)
 }
 
 // Tier maps roles to model weight classes.
 type Tier string
 
 const (
-	TierCoding    Tier = "coding"    // Primary coding model
-	TierReasoning Tier = "reasoning" // Deep reasoning
-	TierFast      Tier = "fast"      // Quick tasks
+	TierCoding    Tier = "coding"
+	TierReasoning Tier = "reasoning"
+	TierFast      Tier = "fast"
 )
 
-func specSHA(label string) string {
-	sum := sha256.Sum256([]byte("mars-harness:placeholder:" + label))
-	return hex.EncodeToString(sum[:])
-}
-
 // DefaultModels returns the default model set for a given hardware profile.
+// All models are single-file GGUFs from verified HuggingFace repos.
 func DefaultModels(p Profile) map[Tier]ModelSpec {
 	switch p {
 	case ProfileCPU, ProfileLow:
 		return map[Tier]ModelSpec{
 			TierCoding: {
-				Name:       "Qwen3-Coder-Next",
-				Repo:       "Qwen/Qwen3-Coder-Next-GGUF",
-				File:       "qwen3-coder-next-30b-q4_k_s.gguf",
-				Params:     "30B",
-				Quant:      "Q4_K_S",
-				RAMMinMiB:  20000,
+				Name:       "Qwen3-Coder-30B-A3B-Instruct",
+				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				File:       "Qwen3-Coder-30B-A3B-Instruct-Q3_K_L.gguf",
+				Params:     "30B-A3B",
+				Quant:      "Q3_K_L",
+				RAMMinMiB:  8192,
 				ContextLen: 32768,
-				SHA256:     specSHA("coding-cpu-low-q4ks"),
 			},
 			TierReasoning: {
-				Name:       "Qwen3-Coder-Next",
-				Repo:       "Qwen/Qwen3-Coder-Next-GGUF",
-				File:       "qwen3-coder-next-30b-q4_k_s.gguf",
-				Params:     "30B",
-				Quant:      "Q4_K_S",
-				RAMMinMiB:  20000,
+				Name:       "Qwen3-Coder-30B-A3B-Instruct",
+				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				File:       "Qwen3-Coder-30B-A3B-Instruct-Q3_K_L.gguf",
+				Params:     "30B-A3B",
+				Quant:      "Q3_K_L",
+				RAMMinMiB:  8192,
 				ContextLen: 65536,
-				SHA256:     specSHA("reasoning-cpu-low-q4ks"),
 			},
 			TierFast: {
-				Name:       "Gemma 4 Mini",
-				Repo:       "google/gemma-4-mini-GGUF",
-				File:       "gemma-4-mini-q4_k_s.gguf",
+				Name:       "Gemma 4 E4B",
+				Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
+				File:       "google_gemma-4-E4B-it-Q4_K_M.gguf",
 				Params:     "4B",
-				Quant:      "Q4_K_S",
-				RAMMinMiB:  4096,
+				Quant:      "Q4_K_M",
+				RAMMinMiB:  3072,
 				ContextLen: 8192,
-				SHA256:     specSHA("fast-cpu-low-q4ks"),
 			},
 		}
 	case ProfileMedium:
 		return map[Tier]ModelSpec{
 			TierCoding: {
-				Name:       "Qwen3-Coder-Next",
-				Repo:       "Qwen/Qwen3-Coder-Next-GGUF",
-				File:       "qwen3-coder-next-30b-q4_k_m.gguf",
-				Params:     "30B",
+				Name:       "Qwen3-Coder-30B-A3B-Instruct",
+				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				File:       "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf",
+				Params:     "30B-A3B",
 				Quant:      "Q4_K_M",
-				RAMMinMiB:  22000,
+				RAMMinMiB:  12288,
 				ContextLen: 32768,
-				SHA256:     specSHA("coding-medium-q4km"),
 			},
 			TierReasoning: {
-				Name:       "Qwen3-Coder-Next",
-				Repo:       "Qwen/Qwen3-Coder-Next-GGUF",
-				File:       "qwen3-coder-next-30b-q4_k_m.gguf",
-				Params:     "30B",
+				Name:       "Qwen3-Coder-30B-A3B-Instruct",
+				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				File:       "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf",
+				Params:     "30B-A3B",
 				Quant:      "Q4_K_M",
-				RAMMinMiB:  22000,
+				RAMMinMiB:  12288,
 				ContextLen: 131072,
-				SHA256:     specSHA("reasoning-medium-q4km"),
 			},
 			TierFast: {
-				Name:       "Gemma 4 Mini",
-				Repo:       "google/gemma-4-mini-GGUF",
-				File:       "gemma-4-mini-q4_k_m.gguf",
+				Name:       "Gemma 4 E4B",
+				Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
+				File:       "google_gemma-4-E4B-it-Q5_K_M.gguf",
 				Params:     "4B",
-				Quant:      "Q4_K_M",
-				RAMMinMiB:  5120,
+				Quant:      "Q5_K_M",
+				RAMMinMiB:  4096,
 				ContextLen: 8192,
-				SHA256:     specSHA("fast-medium-q4km"),
 			},
 		}
 	case ProfileHigh, ProfileMulti:
 		return map[Tier]ModelSpec{
 			TierCoding: {
-				Name:       "Qwen3-Coder-Next",
-				Repo:       "Qwen/Qwen3-Coder-Next-GGUF",
-				File:       "qwen3-coder-next-30b-q5_k_m.gguf",
-				Params:     "30B",
-				Quant:      "Q5_K_M",
-				RAMMinMiB:  26000,
+				Name:       "Qwen3-Coder-30B-A3B-Instruct",
+				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				File:       "Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf",
+				Params:     "30B-A3B",
+				Quant:      "Q8_0",
+				RAMMinMiB:  24576,
 				ContextLen: 32768,
-				SHA256:     specSHA("coding-high-q5km"),
 			},
 			TierReasoning: {
-				Name:       "Qwen3-Coder-Next",
-				Repo:       "Qwen/Qwen3-Coder-Next-GGUF",
-				File:       "qwen3-coder-next-30b-q5_k_m.gguf",
-				Params:     "30B",
-				Quant:      "Q5_K_M",
-				RAMMinMiB:  26000,
+				Name:       "Qwen3-Coder-30B-A3B-Instruct",
+				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				File:       "Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf",
+				Params:     "30B-A3B",
+				Quant:      "Q8_0",
+				RAMMinMiB:  24576,
 				ContextLen: 131072,
-				SHA256:     specSHA("reasoning-high-q5km"),
 			},
 			TierFast: {
-				Name:       "Gemma 4 Mini",
-				Repo:       "google/gemma-4-mini-GGUF",
-				File:       "gemma-4-mini-q5_k_m.gguf",
+				Name:       "Gemma 4 E4B",
+				Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
+				File:       "google_gemma-4-E4B-it-Q8_0.gguf",
 				Params:     "4B",
-				Quant:      "Q5_K_M",
-				RAMMinMiB:  6144,
+				Quant:      "Q8_0",
+				RAMMinMiB:  8192,
 				ContextLen: 8192,
-				SHA256:     specSHA("fast-high-q5km"),
 			},
 		}
 	default:
 		return DefaultModels(ProfileCPU)
 	}
+}
+
+// UniqueModels deduplicates the model set (coding and reasoning often share the same file).
+func UniqueModels(models map[Tier]ModelSpec) []ModelSpec {
+	seen := make(map[string]bool)
+	var unique []ModelSpec
+	for _, spec := range models {
+		key := spec.Repo + "/" + spec.File
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		unique = append(unique, spec)
+	}
+	return unique
 }

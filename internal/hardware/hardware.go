@@ -215,42 +215,44 @@ func tryMacOSMetal() []GPU {
 		slog.Debug("no Metal support reported in SPDisplaysDataType")
 		return nil
 	}
+
 	matches := vramLineRE.FindAllStringSubmatch(text, -1)
-	if len(matches) == 0 {
-		slog.Info("Metal GPU detected without explicit VRAM; assuming unified 8192 MiB")
-		return []GPU{{
-			Index:   0,
-			Name:    "Metal",
-			VRAMMiB: 8192,
-			Driver:  "Metal",
-		}}
-	}
-	var gpus []GPU
-	for i, m := range matches {
-		n, err := strconv.Atoi(m[1])
-		if err != nil {
-			continue
+	if len(matches) > 0 {
+		var gpus []GPU
+		for i, m := range matches {
+			n, err := strconv.Atoi(m[1])
+			if err != nil {
+				continue
+			}
+			unit := strings.ToLower(m[2])
+			vramMiB := n
+			if unit == "gb" {
+				vramMiB = n * 1024
+			}
+			gpus = append(gpus, GPU{
+				Index:   i,
+				Name:    "Metal",
+				VRAMMiB: vramMiB,
+				Driver:  "Metal",
+			})
 		}
-		unit := strings.ToLower(m[2])
-		vramMiB := n
-		if unit == "gb" {
-			vramMiB = n * 1024
+		if len(gpus) > 0 {
+			slog.Info("parsed Metal display VRAM", "gpu_count", len(gpus))
+			return gpus
 		}
-		gpus = append(gpus, GPU{
-			Index:   i,
-			Name:    "Metal",
-			VRAMMiB: vramMiB,
-			Driver:  "Metal",
-		})
 	}
-	if len(gpus) == 0 {
-		return []GPU{{
-			Index:   0,
-			Name:    "Metal",
-			VRAMMiB: 8192,
-			Driver:  "Metal",
-		}}
+
+	// Apple Silicon uses unified memory — the GPU can access all system RAM.
+	// Use sysctl hw.memsize to report accurate VRAM for profile selection.
+	unifiedMiB := memTotalDarwin()
+	if unifiedMiB <= 0 {
+		unifiedMiB = 8192
 	}
-	slog.Info("parsed Metal display VRAM", "gpu_count", len(gpus))
-	return gpus
+	slog.Info("Apple Silicon Metal: using unified memory as VRAM", "mib", unifiedMiB)
+	return []GPU{{
+		Index:   0,
+		Name:    "Apple Silicon",
+		VRAMMiB: unifiedMiB,
+		Driver:  "Metal",
+	}}
 }
