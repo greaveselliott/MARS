@@ -10,6 +10,13 @@ A self-hosted autonomous AI delivery system written in Go. You provide a machine
 
 **Tech stack:** Go, SQLite, llama.cpp (managed as subprocess), htmx + Chart.js (embedded dashboard).
 
+## Terminology
+
+- **Harness** — the agent orchestration platform (`mars-harness` itself). This is the system that schedules, executes, and monitors autonomous agent roles.
+- **Target project** — the repository that the harness is building, testing, and managing. When you run `mars-harness start --repo /path/to/wave-shooter`, the harness is `mars-harness` and the target project is `wave-shooter`.
+
+Agents always operate on a target project. The harness is never the target of its own agents (no self-modification during runs).
+
 ## The Nine Tenets
 
 Every decision in this project is filtered through these tenets (priority order):
@@ -81,6 +88,7 @@ mars-harness/
 6. **Commit after every step.** When executing the delivery schedule, commit after each completed task referencing the milestone and step number.
 7. **Never push to main.** All changes go through a branch and PR.
 8. **The repo is the system of record.** Decisions, discoveries, and plans live in docs, not in chat threads.
+9. **Always commit and push both repos.** When making changes to the harness and/or the target project, document, commit, and push changes in both. The harness and target project are separate git repositories — neither should have dangling uncommitted work at the end of a task.
 
 ## Database Isolation
 
