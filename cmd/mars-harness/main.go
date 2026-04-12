@@ -471,6 +471,7 @@ func doctorCmd() *cobra.Command {
 	var (
 		configPath string
 		dbPath     string
+		repoPath   string
 		skipRemote bool
 		jsonOutput bool
 	)
@@ -480,6 +481,12 @@ func doctorCmd() *cobra.Command {
 		Short: "Health check for GPU, models, and config",
 		Long:  "Run diagnostic checks on Go version, config, models, database, llama-server, and disk space.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if dbPath == "" && repoPath != "" {
+				absPath, err := filepath.Abs(repoPath)
+				if err == nil {
+					dbPath = defaultDBPath(absPath)
+				}
+			}
 			results := doctor.Run(doctor.Config{
 				ConfigPath: configPath,
 				DBPath:     dbPath,
@@ -507,7 +514,8 @@ func doctorCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars-harness/config.yaml)")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to database file (default: ~/.mars-harness/db/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to database file (default: ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Target repository — used to locate the per-repo database")
 	cmd.Flags().BoolVar(&skipRemote, "skip-remote", false, "Skip remote connectivity checks")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON")
 
@@ -536,8 +544,8 @@ func serveCmd() *cobra.Command {
 			}
 
 			if dbPath == "" {
-				home, _ := os.UserHomeDir()
-				dbPath = filepath.Join(home, ".mars-harness", "db", "mars.db")
+				dbPath = legacyDBPath()
+				slog.Info("serve: using shared DB — for per-repo isolation, use 'start --repo' or pass --db explicitly")
 			}
 			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 				return fmt.Errorf("serve: create db directory: %w", err)
@@ -621,8 +629,12 @@ If .harness/manifest.yaml is missing, mars-harness runs the same scaffold as
 			}
 
 			if dbPath == "" {
-				home, _ := os.UserHomeDir()
-				dbPath = filepath.Join(home, ".mars-harness", "db", "mars.db")
+				dbPath = defaultDBPath(absPath)
+				if _, err := os.Stat(legacyDBPath()); err == nil {
+					if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+						slog.Warn("register: legacy shared database exists at "+legacyDBPath()+" but per-repo DB does not yet exist — starting fresh. Copy the legacy DB to "+dbPath+" if you want to preserve history.")
+					}
+				}
 			}
 			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 				return fmt.Errorf("register: create db directory: %w", err)
@@ -657,7 +669,7 @@ If .harness/manifest.yaml is missing, mars-harness runs the same scaffold as
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
 	cmd.Flags().StringVar(&remote, "remote", "", "GitHub owner/repo (e.g. myorg/myrepo)")
 	cmd.Flags().StringVar(&branch, "branch", "main", "Default branch name")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
 
 	return cmd
 }
@@ -668,6 +680,20 @@ func openDB(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("open database at %s: %w — check path and permissions", path, err)
 	}
 	return db, nil
+}
+
+// defaultDBPath returns the per-repo database path: ~/.mars-harness/db/{repo-slug}/mars.db.
+// Each repo gets its own SQLite file so queue, telemetry, and scheduling are isolated.
+func defaultDBPath(repoAbsPath string) string {
+	home, _ := os.UserHomeDir()
+	repoSlug := filepath.Base(repoAbsPath)
+	return filepath.Join(home, ".mars-harness", "db", repoSlug, "mars.db")
+}
+
+// legacyDBPath returns the old shared database path: ~/.mars-harness/db/mars.db.
+func legacyDBPath() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".mars-harness", "db", "mars.db")
 }
 
 func startCmd() *cobra.Command {
@@ -714,8 +740,12 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 			}
 
 			if dbPath == "" {
-				home, _ := os.UserHomeDir()
-				dbPath = filepath.Join(home, ".mars-harness", "db", "mars.db")
+				dbPath = defaultDBPath(absPath)
+				if _, err := os.Stat(legacyDBPath()); err == nil {
+					if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+						slog.Warn("start: legacy shared database exists at "+legacyDBPath()+" but per-repo DB does not yet exist — starting fresh. Copy the legacy DB to "+dbPath+" if you want to preserve history.")
+					}
+				}
 			}
 			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 				return fmt.Errorf("start: create db directory: %w", err)
@@ -733,6 +763,7 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 				ModelsDir:     cfg.ModelsDir,
 				BinDir:        cfg.BinDir,
 				DashboardAddr: dashboardAddr,
+				RepoScope:     absPath,
 			})
 			if err != nil {
 				tw.WriteError(fmt.Sprintf("orchestrator init: %v", err))
@@ -771,7 +802,7 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 1, "Number of concurrent agent workers (1 = sequential pipeline)")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
 	cmd.Flags().BoolVar(&force, "force", false, "Force re-init .harness/ even if it exists")
 
 	return cmd

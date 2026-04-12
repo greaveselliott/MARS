@@ -40,6 +40,7 @@ type Config struct {
 	ModelsDir     string
 	BinDir        string
 	DashboardAddr string
+	RepoScope     string // if set, only operate on repos whose path matches this absolute path
 }
 
 func (c Config) concurrency() int {
@@ -303,6 +304,10 @@ func (s *Server) Start(ctx context.Context) error {
 	repos, err := s.repos.List(ctx)
 	if err != nil {
 		return fmt.Errorf("serve: load repos: %w", err)
+	}
+	if s.cfg.RepoScope != "" {
+		repos = filterReposByPath(repos, s.cfg.RepoScope)
+		slog.Info("serve: scoped to repo", "path", s.cfg.RepoScope, "matched", len(repos))
 	}
 	if err := s.triggers.Rebuild(repos); err != nil {
 		slog.Warn("serve: trigger index rebuild had errors", "err", err)
@@ -1340,4 +1345,14 @@ func (s *Server) runScoreReview(ctx context.Context, role, repoID string) {
 	if err := evolution.RecordEvolution(ctx, s.evoStore, role, repoID, result); err != nil {
 		slog.Error("serve: failed to record score-drop evolution", "role", role, "err", err)
 	}
+}
+
+func filterReposByPath(repos []RepoRecord, scopePath string) []RepoRecord {
+	var filtered []RepoRecord
+	for _, r := range repos {
+		if r.Path == scopePath {
+			filtered = append(filtered, r)
+		}
+	}
+	return filtered
 }

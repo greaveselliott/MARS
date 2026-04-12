@@ -82,6 +82,17 @@ mars-harness/
 7. **Never push to main.** All changes go through a branch and PR.
 8. **The repo is the system of record.** Decisions, discoveries, and plans live in docs, not in chat threads.
 
+## Database Isolation
+
+Each repo gets its own SQLite database to prevent cross-project contamination:
+
+- **`start` and `register`**: default DB path is `~/.mars-harness/db/{repo-name}/mars.db`
+- **`serve`**: uses the shared legacy path `~/.mars-harness/db/mars.db` (designed for multi-repo orchestration)
+- **`doctor --repo`**: checks the per-repo database for the specified repository
+- **`--db` flag**: explicit override on any command, takes precedence over defaults
+
+This ensures queue, telemetry, scheduling, and repo registry are physically isolated per project. See AD-029 in `docs/design-docs/dogfood-and-decisions.md`.
+
 ## Operations
 
 Mars Harness is controllable by any AI agent via CLI commands. These are the five core operations.
@@ -104,7 +115,7 @@ Start the autonomous orchestrator (webhooks, cron, queue, workers).
 mars-harness serve
 ```
 
-Flags: `--addr :9091`, `--concurrency 2`, `--db ~/.mars-harness/db/mars.db`
+Flags: `--addr :9091`, `--concurrency 2`, `--db <path>`
 
 Health check: `curl http://localhost:9091/healthz` → `{"status":"healthy"}`
 
@@ -124,6 +135,7 @@ Health check for GPU, models, config, and database.
 
 ```bash
 mars-harness doctor
+mars-harness doctor --repo /path/to/repo   # check per-repo database
 mars-harness doctor --json
 ```
 

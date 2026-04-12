@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -151,5 +152,102 @@ func TestServer_defaultConcurrency(t *testing.T) {
 	cfg.Concurrency = 5
 	if cfg.concurrency() != 5 {
 		t.Errorf("expected concurrency=5, got %d", cfg.concurrency())
+	}
+}
+
+func TestFilterReposByPath(t *testing.T) {
+	repos := []RepoRecord{
+		{ID: "aaa", Path: "<home-path>"},
+		{ID: "bbb", Path: "<home-path>"},
+		{ID: "ccc", Path: "<home-path>"},
+	}
+
+	filtered := filterReposByPath(repos, "<home-path>")
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 repo, got %d", len(filtered))
+	}
+	if filtered[0].ID != "aaa" {
+		t.Errorf("expected repo aaa, got %s", filtered[0].ID)
+	}
+}
+
+func TestFilterReposByPath_noMatch(t *testing.T) {
+	repos := []RepoRecord{
+		{ID: "aaa", Path: "<home-path>"},
+	}
+	filtered := filterReposByPath(repos, "<home-path>")
+	if len(filtered) != 0 {
+		t.Fatalf("expected 0 repos, got %d", len(filtered))
+	}
+}
+
+func TestFilterReposByPath_empty(t *testing.T) {
+	filtered := filterReposByPath(nil, "/any/path")
+	if len(filtered) != 0 {
+		t.Fatalf("expected 0 repos for nil input, got %d", len(filtered))
+	}
+}
+
+func TestRepoScope_isolatesStartup(t *testing.T) {
+	dbPath := testDBPath(t)
+
+	repoA := filepath.Join(t.TempDir(), "repo-a")
+	repoB := filepath.Join(t.TempDir(), "repo-b")
+	for _, p := range []string{repoA, repoB} {
+		harnessDir := filepath.Join(p, ".harness")
+		if err := os.MkdirAll(harnessDir, 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+		manifest := "name: test\nroles:\n  ceo:\n    prompt: roles/ceo.md\n    model: fast\n    tools: [file_read]\n"
+		if err := os.WriteFile(filepath.Join(harnessDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
+			t.Fatalf("write manifest: %v", err)
+		}
+	}
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	bgCtx := context.Background()
+
+	_, err = srv.Repos().Register(bgCtx, repoA, "", "main")
+	if err != nil {
+		t.Fatalf("register repo-a: %v", err)
+	}
+	_, err = srv.Repos().Register(bgCtx, repoB, "", "main")
+	if err != nil {
+		t.Fatalf("register repo-b: %v", err)
+	}
+
+	repos, err := srv.Repos().List(bgCtx)
+	if err != nil {
+		t.Fatalf("list repos: %v", err)
+	}
+	if len(repos) != 2 {
+		t.Fatalf("expected 2 repos in unscoped DB, got %d", len(repos))
+	}
+
+	scopedSrv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+		RepoScope:     repoA,
+	})
+	if err != nil {
+		t.Fatalf("New scoped: %v", err)
+	}
+
+	allRepos, _ := scopedSrv.Repos().List(bgCtx)
+	scoped := filterReposByPath(allRepos, scopedSrv.cfg.RepoScope)
+	if len(scoped) != 1 {
+		t.Fatalf("expected 1 repo in scoped view, got %d", len(scoped))
+	}
+	if scoped[0].Path != repoA {
+		t.Errorf("expected repo-a path, got %s", scoped[0].Path)
 	}
 }
