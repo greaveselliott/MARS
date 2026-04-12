@@ -100,6 +100,42 @@ func Init(repoRoot string, force bool) error {
 	return nil
 }
 
+// Upgrade updates manifest.yaml and role prompts in an existing .harness/ to
+// match the current harness defaults. This is for target projects that were
+// initialised with an older version of mars-harness. Docs and user content
+// (tickets, exec-plans, design-docs) are never touched.
+func Upgrade(repoRoot string) (updated []string, err error) {
+	repoRoot = filepath.Clean(repoRoot)
+	harnessPath := filepath.Join(repoRoot, harnessDir)
+	if _, err := os.Stat(harnessPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("upgrade: %s does not exist — run 'mars-harness init' first", harnessPath)
+	}
+
+	projectName := filepath.Base(repoRoot)
+
+	manifestPath := filepath.Join(harnessPath, "manifest.yaml")
+	if err := os.WriteFile(manifestPath, []byte(defaultManifest(projectName)), 0o644); err != nil {
+		return nil, fmt.Errorf("upgrade: write %s: %w", manifestPath, err)
+	}
+	updated = append(updated, "manifest.yaml")
+	slog.Info("upgrade: wrote manifest.yaml", "path", manifestPath)
+
+	for name, content := range defaultRolePrompts {
+		promptPath := filepath.Join(harnessPath, "roles", name+".md")
+		if err := os.MkdirAll(filepath.Dir(promptPath), 0o755); err != nil {
+			return updated, fmt.Errorf("upgrade: create roles dir: %w", err)
+		}
+		if err := os.WriteFile(promptPath, []byte(content), 0o644); err != nil {
+			return updated, fmt.Errorf("upgrade: write %s: %w", promptPath, err)
+		}
+		updated = append(updated, "roles/"+name+".md")
+		slog.Debug("upgrade: wrote role prompt", "role", name)
+	}
+
+	slog.Info("upgrade: complete", "files_updated", len(updated))
+	return updated, nil
+}
+
 // EnsureHarness scaffolds .harness/ when manifest.yaml is missing. If the
 // manifest exists but fails validation, it returns that error and does not
 // overwrite. If .harness/ exists without a manifest, Init runs with force.

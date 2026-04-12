@@ -746,3 +746,33 @@ func TestScan_hasGitignore(t *testing.T) {
 		}
 	}
 }
+
+func TestUpgrade_updatesManifestAndPrompts(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+
+	require.NoError(t, Init(dir, false))
+
+	oldPrompt := filepath.Join(dir, ".harness", "roles", "coo.md")
+	os.WriteFile(oldPrompt, []byte("old outdated prompt"), 0o644)
+
+	updated, err := Upgrade(dir)
+	require.NoError(t, err)
+	assert.Contains(t, updated, "manifest.yaml")
+	assert.Contains(t, updated, "roles/coo.md")
+
+	content, err := os.ReadFile(oldPrompt)
+	require.NoError(t, err)
+	assert.Contains(t, string(content), "ticket_create", "upgraded prompt should reference ticket_create tool")
+	assert.NotContains(t, string(content), "old outdated prompt")
+}
+
+func TestUpgrade_failsWithoutHarness(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	_, err := Upgrade(dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "does not exist")
+}

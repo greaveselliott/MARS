@@ -147,7 +147,17 @@ mars-harness doctor --repo /path/to/repo   # check per-repo database
 mars-harness doctor --json
 ```
 
-### 5. Run
+### 5. Upgrade
+
+Sync a target project's `.harness/` manifest and role prompts to the latest harness defaults. Run this after upgrading `mars-harness` to pick up new tools, prompt improvements, and pipeline changes.
+
+```bash
+mars-harness upgrade --repo /path/to/repo
+```
+
+This overwrites `manifest.yaml` and all role prompts. User content (tickets, exec-plans, design-docs) is never touched.
+
+### 6. Run
 
 Manually execute a single agent role against a repository.
 

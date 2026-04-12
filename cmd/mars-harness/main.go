@@ -50,6 +50,7 @@ func main() {
 	root.AddCommand(runCmd())
 	root.AddCommand(setupCmd())
 	root.AddCommand(initCmd())
+	root.AddCommand(upgradeCmd())
 	root.AddCommand(scanCmd())
 	root.AddCommand(serveCmd())
 	root.AddCommand(registerCmd())
@@ -400,6 +401,45 @@ func initCmd() *cobra.Command {
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
 	cmd.Flags().BoolVar(&force, "force", false, "Overwrite existing .harness/ directory")
 
+	return cmd
+}
+
+func upgradeCmd() *cobra.Command {
+	var repoPath string
+
+	cmd := &cobra.Command{
+		Use:   "upgrade",
+		Short: "Sync .harness/ manifest and role prompts to latest defaults",
+		Long: `Update an existing target project's .harness/ to match the current
+mars-harness defaults. Overwrites manifest.yaml and all role prompts.
+Does not touch user content (tickets, exec-plans, design-docs).`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repoPath == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("upgrade: cannot determine working directory: %w", err)
+				}
+			}
+			absPath, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("upgrade: resolve path: %w", err)
+			}
+
+			updated, err := scanner.Upgrade(absPath)
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("Upgraded .harness/ in %s (%d files updated)\n", absPath, len(updated))
+			for _, f := range updated {
+				fmt.Printf("  %s\n", f)
+			}
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
 	return cmd
 }
 
