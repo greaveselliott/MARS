@@ -151,7 +151,7 @@ roles:
     triggers:
       - pull_request.merged
     then: [engineer]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
+    tools: [file_read, file_write, file_search, shell_exec, grep, record_decision, ticket_create, git_status, git_commit, git_push]
 
   # ── Architecture (dual mode) ─────────────────────────────
   cto-pr-merge:
@@ -276,30 +276,30 @@ docs/tickets/
 
 ## Ticket Format
 
-Each ticket is a markdown file with YAML frontmatter:
+Tickets are created by the ticket_create tool, which handles numbering and
+deduplication automatically. The tool generates this format:
 
 ` + "```" + `markdown
 ---
 id: T-001
-title: Wire dynamic route params into generated pages
+title: Implement player movement and controls
 priority: high
 complexity: medium
-source: docs/exec-plans/active/weekly-priorities.md — This week item 1
+source: weekly-priorities.md — This week item 1
 created: 2026-04-12
 depends_on: []
 ---
 
-# T-001: Wire dynamic route params into generated pages
+# T-001: Implement player movement and controls
 
 ## Context
-[Link to the weekly priority and its source; include the CEO's North star
-link (tier + pillar) so execution stays traceable to strategy.]
+Source: weekly-priorities.md — core gameplay mechanics (Week 1).
 
 ## Requirements
 [Specific implementation requirements]
 
 ## Affected Files
-[File paths or packages]
+[File paths or directories]
 
 ## Design Guidance
 [Link to relevant design doc]
@@ -316,18 +316,19 @@ link (tier + pillar) so execution stays traceable to strategy.]
 - [ ] What this ticket does NOT do
 
 ### Observability, docs, and regressions
-- [ ] Docs, changelog, or harness updates required
+- [ ] Docs or regressions to watch for
 ` + "```" + `
 
 ## Naming Convention
 
 T-NNN-short-description.md where NNN is a zero-padded sequential number.
+The ticket_create tool assigns the next available number automatically.
 
 ## Lifecycle
 
-1. **COO creates** a ticket in backlog/ with frontmatter and acceptance criteria
-2. **Engineer picks up** the highest-priority ticket, moves to in-progress/
-3. **On completion**, ticket moves to done/
+1. A ticket is created in backlog/ with frontmatter and acceptance criteria
+2. The highest-priority ticket is picked up and moved to in-progress/
+3. On completion, the ticket moves to done/
 `,
 
 	"docs/exec-plans/README.md": `# Execution Plans
@@ -502,70 +503,67 @@ STEP 1 — Read docs/exec-plans/active/weekly-priorities.md.
     from the project spec / build order in the README. This happens on brand
     new projects where the CEO has not yet produced priorities.
 
-STEP 2 — Read docs/tickets/README.md (ticket format and conventions).
+STEP 2 — Check the TICKET INDEX in your system prompt. It lists every
+  existing ticket across backlog/, in-progress/, and done/. If the TICKET
+  INDEX is empty or absent, use file_search with pattern "docs/tickets/**/*.md"
+  to discover existing tickets.
 
-STEP 3 — DEDUPLICATION (critical, do this before creating ANY ticket):
-  List ALL existing tickets across ALL directories:
-    - docs/tickets/backlog/
-    - docs/tickets/in-progress/
-    - docs/tickets/done/
-  Read the title of every existing ticket file. Build a mental list of:
-    a) All existing ticket numbers (to find the next available number)
-    b) All existing ticket titles/topics (to avoid duplicates)
-  The next ticket number is MAX(existing numbers) + 1.
+STEP 3 — For each "This week" priority, check the TICKET INDEX. If a ticket
+  covering the same topic already exists in ANY status, SKIP it. Do NOT
+  create a duplicate. Only update an existing ticket if the priority
+  materially adds scope not already covered.
 
 SCOPE: Create tickets ONLY for "This week" priorities (or, on a new project,
 the first logical batch of work from the README). Do not create tickets for
 future work beyond the first batch.
 
-For each priority, if a ticket with the SAME topic already exists in ANY
-directory (backlog/, in-progress/, or done/), SKIP it entirely. Do NOT
-create a duplicate under a new number. Only update an existing ticket if
-the priority materially adds scope that isn't already covered.
+TICKET CREATION — use the ticket_create tool (NOT file_write):
 
-TICKET CREATION — for each "This week" priority:
+For each "This week" priority that has no existing ticket:
 
 1. Break the priority into discrete tasks (each completable in a single session)
-2. Create a markdown file in docs/tickets/backlog/ following docs/tickets/README.md:
+2. Call the ticket_create tool with:
+   - title: concise, action-oriented (e.g. "Implement wave progression system")
+   - priority: high | medium | low
+   - complexity: small | medium | large
+   - source: "weekly-priorities.md — This week item N"
+   - depends_on: array of ticket IDs if applicable
+   - body: full ticket content with these sections:
+     - Context: link to the weekly priority and its rationale
+     - Requirements: specific implementation details
+     - Affected Files: file paths or directories
+     - Design Guidance: link to relevant design doc (or note one is needed)
+     - Acceptance criteria with subsections:
+       - Functional (happy path)
+       - Edge cases, boundaries, and negative paths
+       - Non-goals and out of scope
+       - Observability, docs, and regressions
 
-   Filename: T-NNN-short-description.md
-
-   Frontmatter:
-   ---
-   id: T-NNN
-   title: [concise, action-oriented title]
-   priority: high | medium | low
-   complexity: small | medium | large
-   source: docs/exec-plans/active/weekly-priorities.md — This week item N
-   created: [today's date]
-   depends_on: []
-   ---
-
-   Body sections:
-   - Context: link to the weekly priority; include the CEO's rationale
-   - Requirements: specific implementation details
-   - Affected Files: file paths or directories
-   - Design Guidance: link to relevant design doc (or note one is needed)
-   - Acceptance criteria: structured checklist with subsections:
-     - Functional (happy path)
-     - Edge cases, boundaries, and negative paths
-     - Non-goals and out of scope
-     - Observability, docs, and regressions
+   The tool automatically:
+   - Assigns the next available ticket number (T-NNN)
+   - Generates the filename and frontmatter
+   - REJECTS the ticket if a duplicate topic already exists (returns the
+     existing ticket path so you can skip it gracefully)
 
 3. Set priority field to reflect importance. Record dependencies.
 
 CONSTRAINTS:
-- CRITICAL: Every file_write MUST include the FULL ticket content. Do NOT
-  create empty files. Each ticket must have frontmatter AND all body sections.
+- ALWAYS use ticket_create for new tickets — it enforces deduplication
+  mechanically. Do NOT use file_write for ticket files.
 - Every ticket MUST have structured acceptance criteria (not flat two-line AC)
 - Every ticket MUST link to a design doc or note that one is needed first
-- Do NOT create tickets for work already tracked in existing tickets
 - Do NOT create more than 10 tickets per priority
 
-After creating tickets, commit and push:
-  git add docs/tickets/backlog/
-  git commit -m "tickets: create tickets for weekly priorities [date]"
-  git push
+COMMIT GATE — before finishing:
+  Use git_status to verify your working tree. If there are uncommitted
+  changes, use git_commit and git_push:
+  git_commit with message "tickets: create tickets for weekly priorities [date]"
+  git_push
+
+DON'T:
+- Do NOT use file_write for ticket creation — use ticket_create instead
+- Do NOT ignore the TICKET INDEX — it is your source of truth for existing tickets
+- Do NOT finish with uncommitted changes — run git_status to verify
 
 ## Quality Bar
 

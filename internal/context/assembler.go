@@ -16,6 +16,7 @@ const (
 	headerSkills    = "## SKILLS"
 	headerTrigger   = "## TRIGGER CONTEXT"
 	headerRepo      = "## REPO SUMMARY"
+	headerTickets   = "## TICKET INDEX"
 )
 
 // block is an internal mutable slice used for budget trimming (lower truncPri drops first).
@@ -99,6 +100,9 @@ func Assemble(in Input) (system string, stats []SectionStat, err error) {
 
 	if strings.TrimSpace(in.Trigger) != "" {
 		parts = append(parts, block{name: "trigger", header: headerTrigger, body: strings.TrimSpace(in.Trigger), truncPri: 20})
+	}
+	if strings.TrimSpace(in.TicketIndex) != "" {
+		parts = append(parts, block{name: "tickets", header: headerTickets, body: strings.TrimSpace(in.TicketIndex), truncPri: 75})
 	}
 	if strings.TrimSpace(in.RepoSummary) != "" {
 		parts = append(parts, block{name: "repo", header: headerRepo, body: strings.TrimSpace(in.RepoSummary), truncPri: 10})

@@ -166,3 +166,45 @@ Users managing multiple repos from a single orchestrator use `mars-harness serve
 
 - The shared DB was the original design for `serve` (multi-repo orchestrator), but `start` (single-repo convenience command) reused the same default without scoping. This is a common pattern when a convenience wrapper inherits infrastructure assumptions from the full-featured command.
 - Queue `Claim()` intentionally lacks repo filtering — it's designed for a multi-repo orchestrator where any worker handles any repo. Per-repo DBs are a simpler isolation boundary than adding repo-aware claim logic.
+
+---
+
+### AD-030: Mechanical ticket deduplication enforcement
+
+**Status:** Accepted
+**Date:** 2026-04-12
+**Author:** Agent (self-improvement — ticket duplication prevention)
+
+### Context
+
+After running agents against `wave-shooter` and `recruiter-workflow-portal`, both repos had massive ticket duplication: wave-shooter had 30+ tickets for 7 unique topics, recruiter-portal had similar overlap. The COO prompt (STEP 3) already instructed agents to deduplicate, but local models consistently ignored it across runs. Root causes:
+
+1. No ticket state in context — agents started blind every run
+2. No write gate — `file_write` always succeeds with no duplicate check
+3. Context pruning could discard ticket enumeration results mid-run
+4. `file_search` was missing from the COO's tool list
+5. Repeat triggers (every PR merge + CTO chain) re-processed unchanged weekly priorities
+
+### Changes
+
+1. **`ticket_create` tool** (`internal/tools/ticket_create.go`) — purpose-built tool that mechanically prevents duplicates. Before writing, it scans `docs/tickets/{backlog,in-progress,done}/*.md`, reads YAML frontmatter, normalizes titles to keyword sets, and uses subset matching to detect duplicate topics. If a match is found, returns the existing ticket path and skips creation. Auto-assigns the next ticket number (MAX + 1).
+
+2. **Ticket index in context assembly** (`internal/context/assembler.go`) — new `## TICKET INDEX` block (`truncPri: 75`) injected into the system prompt for ticket-aware roles (COO, engineer, janitor, QA, dogfood). Built by `BuildTicketIndex()` in `internal/serve/executor.go`, which globs existing tickets and formats a compact inventory. Agents start every run knowing what already exists.
+
+3. **COO manifest updated** — `ticket_create` and `file_search` added to tool allowlist in `internal/scanner/init.go`.
+
+4. **COO prompt rewritten** — STEP 3 now references the TICKET INDEX and instructs the agent to use `ticket_create` instead of `file_write`. "Build a mental list" language removed (the tool handles this mechanically). Commit gate added.
+
+5. **Scaffold template cleaned** — `docs/tickets/README.md` template in `init.go` no longer contains "CEO's North star / tier + pillar" boilerplate or "COO creates" lifecycle language. Replaced with project-neutral wording.
+
+### Design decisions
+
+- **Informational duplicate response, not Go error** — matches `record_decision` pattern. The agent sees "DUPLICATE: ticket X exists at path Y" and gracefully skips rather than treating it as a tool failure that could derail the run.
+- **Subset matching for titles** — "implement wave progression" matches "implement wave progression system" and vice versa. Uses normalized keyword sets with stop-word removal. Threshold: all words must match for short titles, 80% for titles with 5+ words.
+- **`truncPri: 75` for ticket index** — higher than learnings (60), knowledge routes (40), trigger (20), and repo summary (10). Ticket awareness survives budget pressure for roles that need it.
+
+### Discoveries
+
+- Prompt-only enforcement is fundamentally unreliable with local models for invariants that span multiple tool calls. Any rule that says "check X before doing Y" will eventually be ignored, especially when context pruning discards early results.
+- The `record_decision` tool already demonstrated the right pattern: dedup at the tool level, not the prompt level. This should have been applied to ticket creation from the start.
+- Ticket duplication was not a cross-project contamination issue (as initially suspected) but a single-project, multi-run accumulation bug. Each COO run independently recreated all "This week" items because it couldn't see what previous runs had already created.

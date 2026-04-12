@@ -111,3 +111,37 @@ func TestAssemble_roleFromFile(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, out, "from file")
 }
+
+func TestAssemble_ticketIndex(t *testing.T) {
+	t.Parallel()
+	in := Input{
+		RoleScope:  "coo",
+		RolePrompt: "You are the COO.",
+		TicketIndex: "Existing tickets (3 total):\n- [done] T-001-player-movement.md\n- [in-progress] T-002-shooting.md\n- [backlog] T-003-scoring.md",
+	}
+	out, stats, err := Assemble(in)
+	require.NoError(t, err)
+	require.Contains(t, out, "## TICKET INDEX")
+	require.Contains(t, out, "T-001-player-movement.md")
+	require.Contains(t, out, "T-003-scoring.md")
+
+	var found bool
+	for _, s := range stats {
+		if s.Name == "tickets" {
+			found = true
+			require.Greater(t, s.Tokens, 0)
+		}
+	}
+	require.True(t, found, "expected 'tickets' section in stats")
+}
+
+func TestAssemble_ticketIndexOmittedWhenEmpty(t *testing.T) {
+	t.Parallel()
+	in := Input{
+		RoleScope:  "coo",
+		RolePrompt: "You are the COO.",
+	}
+	out, _, err := Assemble(in)
+	require.NoError(t, err)
+	require.NotContains(t, out, "## TICKET INDEX")
+}

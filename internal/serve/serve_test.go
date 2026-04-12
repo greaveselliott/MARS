@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -249,5 +250,37 @@ func TestRepoScope_isolatesStartup(t *testing.T) {
 	}
 	if scoped[0].Path != repoA {
 		t.Errorf("expected repo-a path, got %s", scoped[0].Path)
+	}
+}
+
+func TestBuildTicketIndex_empty(t *testing.T) {
+	dir := t.TempDir()
+	idx := BuildTicketIndex(dir)
+	if idx != "No existing tickets found in docs/tickets/." {
+		t.Errorf("unexpected index for empty dir: %s", idx)
+	}
+}
+
+func TestBuildTicketIndex_findsTickets(t *testing.T) {
+	dir := t.TempDir()
+	for _, sub := range []string{"docs/tickets/backlog", "docs/tickets/in-progress", "docs/tickets/done"} {
+		os.MkdirAll(filepath.Join(dir, sub), 0o755)
+	}
+	os.WriteFile(filepath.Join(dir, "docs/tickets/done/T-001-alpha.md"), []byte("# Alpha\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "docs/tickets/backlog/T-002-beta.md"), []byte("# Beta\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "docs/tickets/done/README.md"), []byte("# Tickets\n"), 0o644)
+
+	idx := BuildTicketIndex(dir)
+	if !strings.Contains(idx, "2 total") {
+		t.Errorf("expected 2 total, got: %s", idx)
+	}
+	if !strings.Contains(idx, "[backlog] T-002-beta.md") {
+		t.Errorf("expected backlog ticket, got: %s", idx)
+	}
+	if !strings.Contains(idx, "[done] T-001-alpha.md") {
+		t.Errorf("expected done ticket, got: %s", idx)
+	}
+	if strings.Contains(idx, "README.md") {
+		t.Errorf("README.md should be excluded")
 	}
 }

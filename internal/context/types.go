@@ -37,6 +37,11 @@ type Input struct {
 	// Learnings is a pre-formatted text block of per-repo conventions, lessons, and excludes.
 	Learnings string
 
+	// TicketIndex is a pre-formatted summary of existing tickets (backlog/in-progress/done).
+	// Injected for ticket-aware roles (COO, engineer, janitor) so agents start with full
+	// awareness of what already exists and never create duplicates.
+	TicketIndex string
+
 	// TokenBudget is estimated tokens for the full system string; 0 = unlimited (MH-004).
 	TokenBudget int
 }

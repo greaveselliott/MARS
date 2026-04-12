@@ -19,6 +19,7 @@ func RegisterBuiltinTools(r *Registry) error {
 		registerGitTools,
 		registerGitHubStubs,
 		registerRecordDecision,
+		registerTicketCreate,
 	}
 	for _, fn := range registrations {
 		if err := fn(r); err != nil {

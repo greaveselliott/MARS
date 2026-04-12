@@ -127,12 +127,19 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		}
 	}
 
+	var ticketIndex string
+	switch job.Role {
+	case "coo", "engineer", "janitor", "qa", "dogfood":
+		ticketIndex = BuildTicketIndex(repoPath)
+	}
+
 	system, stats, err := harctx.Assemble(harctx.Input{
-		RoleScope:  job.Role,
-		RolePrompt: rolePrompt,
-		Skills:     skills,
-		Trigger:    job.Trigger,
-		Learnings:  learnData.FormatForContext(),
+		RoleScope:   job.Role,
+		RolePrompt:  rolePrompt,
+		Skills:      skills,
+		Trigger:     job.Trigger,
+		Learnings:   learnData.FormatForContext(),
+		TicketIndex: ticketIndex,
 	})
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("context assembly: %v", err))
@@ -259,6 +266,34 @@ func (e *Executor) broadcastEvent(eventType string, payload map[string]string) {
 		return
 	}
 	e.dash.BroadcastEvent(eventType, string(data))
+}
+
+// BuildTicketIndex scans docs/tickets/ and returns a compact inventory for context injection.
+func BuildTicketIndex(repoPath string) string {
+	ticketsDir := filepath.Join(repoPath, "docs", "tickets")
+	statuses := []string{"backlog", "in-progress", "done"}
+
+	var lines []string
+	var total int
+	for _, status := range statuses {
+		dir := filepath.Join(ticketsDir, status)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "README.md" {
+				continue
+			}
+			lines = append(lines, fmt.Sprintf("- [%s] %s", status, e.Name()))
+			total++
+		}
+	}
+	if total == 0 {
+		return "No existing tickets found in docs/tickets/."
+	}
+	header := fmt.Sprintf("Existing tickets (%d total):\n", total)
+	return header + strings.Join(lines, "\n")
 }
 
 // cleanupDogfoodContainers removes any orphaned Podman containers from dogfood runs.
