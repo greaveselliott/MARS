@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/greaveselliott/mars-harness/internal/bundle"
@@ -27,7 +28,12 @@ func Init(repoRoot string, force bool) error {
 
 	gitDir := filepath.Join(repoRoot, ".git")
 	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
-		return fmt.Errorf("init: %s is not a git repository — run 'git init' first", repoRoot)
+		slog.Info("init: no .git found — running git init", "repo", repoRoot)
+		cmd := exec.Command("git", "init")
+		cmd.Dir = repoRoot
+		if out, gitErr := cmd.CombinedOutput(); gitErr != nil {
+			return fmt.Errorf("init: git init failed in %s: %w\n%s", repoRoot, gitErr, out)
+		}
 	}
 
 	harnessPath := filepath.Join(repoRoot, harnessDir)

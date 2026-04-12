@@ -304,13 +304,14 @@ func TestInit_forceOverwrite(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
 }
 
-func TestInit_notGitRepo(t *testing.T) {
+func TestInit_autoGitInit(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 
 	err := Init(dir, false)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not a git repository")
+	require.NoError(t, err)
+	assert.DirExists(t, filepath.Join(dir, ".git"), "git should be auto-initialised")
+	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
 }
 
 func TestInit_emptyRoot(t *testing.T) {
