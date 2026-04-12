@@ -11,7 +11,7 @@ description: >-
 ## Prerequisites
 
 1. Setup complete: `mars-harness doctor`
-2. Repo has `.harness/` bundle: `mars-harness init --repo /path` (if needed)
+2. Git repo at `--repo`. If `.harness/manifest.yaml` is missing, `run` scaffolds it automatically (same as `init`).
 
 ## Run
 

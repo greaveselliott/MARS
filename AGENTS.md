@@ -116,7 +116,7 @@ Register a repository for autonomous management.
 mars-harness register --repo /path/to/repo --remote owner/repo
 ```
 
-Requires `.harness/manifest.yaml` in the repo. Run `mars-harness init` first if needed.
+If `.harness/manifest.yaml` is missing, `register`, `run`, `scan`, and `start` run the same scaffold as `mars-harness init` automatically (the repo must be a git checkout).
 
 ### 4. Status
 

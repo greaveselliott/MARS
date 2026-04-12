@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+
+	"github.com/greaveselliott/mars-harness/internal/bundle"
 )
 
 const harnessDir = ".harness"
@@ -77,6 +79,38 @@ func Init(repoRoot string, force bool) error {
 
 	slog.Info("initialized .harness/", "path", harnessPath)
 	return nil
+}
+
+// EnsureHarness scaffolds .harness/ when manifest.yaml is missing. If the
+// manifest exists but fails validation, it returns that error and does not
+// overwrite. If .harness/ exists without a manifest, Init runs with force.
+// Returns didInit=true when this call created or repaired the scaffold.
+func EnsureHarness(repoRoot string, force bool) (didInit bool, err error) {
+	repoRoot = filepath.Clean(repoRoot)
+	manifestPath := filepath.Join(repoRoot, ".harness", "manifest.yaml")
+	_, statErr := os.Stat(manifestPath)
+	if statErr == nil {
+		_, err := bundle.Load(repoRoot)
+		return false, err
+	}
+	if !os.IsNotExist(statErr) {
+		return false, fmt.Errorf("harness: stat manifest: %w", statErr)
+	}
+
+	slog.Info("harness: auto-initialising — no manifest found", "repo", repoRoot)
+	harnessPath := filepath.Join(repoRoot, ".harness")
+	initForce := force
+	if _, err := os.Stat(harnessPath); err == nil {
+		initForce = true
+	} else if !os.IsNotExist(err) {
+		return false, fmt.Errorf("harness: stat .harness: %w", err)
+	}
+
+	if err := Init(repoRoot, initForce); err != nil {
+		return false, fmt.Errorf("harness: auto-init failed: %w", err)
+	}
+	_, err = bundle.Load(repoRoot)
+	return true, err
 }
 
 func defaultManifest(projectName string) string {

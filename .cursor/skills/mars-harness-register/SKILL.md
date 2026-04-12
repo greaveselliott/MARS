@@ -10,11 +10,7 @@ description: >-
 
 ## Prerequisites
 
-The repo must have a `.harness/` bundle. If not, scaffold one first:
-
-```bash
-mars-harness init --repo /path/to/repo
-```
+The repo must be a git repository. If `.harness/manifest.yaml` is missing, `register` runs the same scaffold as `mars-harness init` automatically. To overwrite an existing bundle, run `init --force` first.
 
 ## Register
 
@@ -33,7 +29,7 @@ mars-harness register --repo /path/to/repo --remote owner/repo-name
 
 ## What Happens
 
-1. Validates `.harness/manifest.yaml` exists and is parseable
+1. Ensures `.harness/manifest.yaml` exists (auto-init if missing), then validates it
 2. Registers the repo in the SQLite database with a unique ID
 3. If the orchestrator is running, it picks up the new repo on next trigger index rebuild
 

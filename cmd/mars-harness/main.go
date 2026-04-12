@@ -86,7 +86,10 @@ func runCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run <role>",
 		Short: "Run an agent role against a repository",
-		Long:  "Load the .harness/ bundle from --repo and execute the named role.",
+		Long: `Load the .harness/ bundle from --repo and execute the named role.
+
+If .harness/manifest.yaml is missing, the same scaffold as 'mars-harness init'
+is applied automatically (requires a git repository).`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			roleName := args[0]
@@ -126,7 +129,22 @@ type runOpts struct {
 func executeRun(opts runOpts) error {
 	tw := ui.NewTraceWriter(os.Stdout, false, false)
 
-	manifest, err := bundle.Load(opts.repoPath)
+	absRepo, err := filepath.Abs(opts.repoPath)
+	if err != nil {
+		tw.WriteError(err.Error())
+		return fmt.Errorf("run: resolve repo path: %w", err)
+	}
+
+	didInit, err := scanner.EnsureHarness(absRepo, false)
+	if err != nil {
+		tw.WriteError(err.Error())
+		return err
+	}
+	if didInit {
+		tw.WriteAssistant("Auto-initialised .harness/ with default pipeline — continuing.")
+	}
+
+	manifest, err := bundle.Load(absRepo)
 	if err != nil {
 		tw.WriteError(err.Error())
 		return err
@@ -141,7 +159,7 @@ func executeRun(opts runOpts) error {
 
 	tw.WriteHeader(opts.roleName, role.Model, role.Tools, role.Then)
 
-	rolePrompt, err := manifest.RolePrompt(opts.repoPath, opts.roleName)
+	rolePrompt, err := manifest.RolePrompt(absRepo, opts.roleName)
 	if err != nil {
 		tw.WriteError(err.Error())
 		return err
@@ -212,7 +230,7 @@ func executeRun(opts runOpts) error {
 	}
 	executor := tools.NewExecutor(registry)
 
-	root, err := tools.NewRoot(opts.repoPath)
+	root, err := tools.NewRoot(absRepo)
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("invalid repo root: %v", err))
 		return err
@@ -394,7 +412,9 @@ func scanCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Scan a repository for gaps and generate starter tickets",
-		Long:  "Walk the file tree to find missing tests, TODOs, missing CI, and large functions. Optionally generate .harness/tickets/.",
+		Long: `Walk the file tree to find missing tests, TODOs, missing CI, and large functions. Optionally generate .harness/tickets/.
+
+If .harness/manifest.yaml is missing, mars-harness scaffolds it first (same as init; requires git).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if repoPath == "" {
 				var err error
@@ -404,10 +424,18 @@ func scanCmd() *cobra.Command {
 				}
 			}
 
+			absPath, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("scan: resolve path: %w", err)
+			}
+			if _, err := scanner.EnsureHarness(absPath, false); err != nil {
+				return fmt.Errorf("scan: %w", err)
+			}
+
 			sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 			defer stop()
 
-			result, err := scanner.Scan(sigCtx, scanner.Config{RepoRoot: repoPath})
+			result, err := scanner.Scan(sigCtx, scanner.Config{RepoRoot: absPath})
 			if err != nil {
 				return err
 			}
@@ -422,7 +450,7 @@ func scanCmd() *cobra.Command {
 			}
 
 			if genTickets && len(result.Findings) > 0 {
-				ticketDir := filepath.Join(repoPath, ".harness", "tickets")
+				ticketDir := filepath.Join(absPath, ".harness", "tickets")
 				if err := scanner.GenerateTickets(result.Findings, ticketDir); err != nil {
 					return err
 				}
@@ -558,7 +586,10 @@ func registerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register",
 		Short: "Register a repository for autonomous management",
-		Long:  "Register a local repository that has a .harness/manifest.yaml so the orchestrator can manage it.",
+		Long: `Register a local repository so the orchestrator can manage it.
+
+If .harness/manifest.yaml is missing, mars-harness runs the same scaffold as
+'mars-harness init' automatically (requires a git repository).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if repoPath == "" {
 				var err error
@@ -573,9 +604,12 @@ func registerCmd() *cobra.Command {
 				return fmt.Errorf("register: resolve path: %w", err)
 			}
 
-			if _, err := bundle.Load(absPath); err != nil {
-				return fmt.Errorf("register: %s does not contain a valid .harness/manifest.yaml — run `mars-harness init` first: %w",
-					absPath, err)
+			didInit, err := scanner.EnsureHarness(absPath, false)
+			if err != nil {
+				return fmt.Errorf("register: %w", err)
+			}
+			if didInit {
+				fmt.Fprintf(os.Stderr, "Auto-initialised .harness/ in %s\n", absPath)
 			}
 
 			if dbPath == "" {
@@ -657,17 +691,13 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 				return fmt.Errorf("start: resolve path: %w", err)
 			}
 
-			if _, err := os.Stat(filepath.Join(absPath, ".harness", "manifest.yaml")); os.IsNotExist(err) {
-				tw.WriteAssistant("No .harness/ found — initialising with default pipeline...")
-				if initErr := scanner.Init(absPath, force); initErr != nil {
-					tw.WriteError(fmt.Sprintf("init failed: %v", initErr))
-					return initErr
-				}
-			}
-
-			if _, err := bundle.Load(absPath); err != nil {
-				tw.WriteError(fmt.Sprintf("manifest invalid: %v", err))
+			didInit, err := scanner.EnsureHarness(absPath, force)
+			if err != nil {
+				tw.WriteError(fmt.Sprintf("init failed: %v", err))
 				return err
+			}
+			if didInit {
+				tw.WriteAssistant("No .harness/ found — initialised with default pipeline...")
 			}
 
 			cfg, err := config.Load(config.DefaultPath())

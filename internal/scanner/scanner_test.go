@@ -320,6 +320,34 @@ func TestInit_emptyRoot(t *testing.T) {
 	assert.Contains(t, err.Error(), "empty")
 }
 
+func TestEnsureHarness_noManifest(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+
+	did, err := EnsureHarness(dir, false)
+	require.NoError(t, err)
+	assert.True(t, did)
+	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
+
+	did2, err := EnsureHarness(dir, false)
+	require.NoError(t, err)
+	assert.False(t, did2)
+}
+
+func TestEnsureHarness_invalidManifest(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.MkdirAll(filepath.Join(dir, ".harness"), 0o755)
+	err := os.WriteFile(filepath.Join(dir, ".harness", "manifest.yaml"),
+		[]byte("name: bad\n"), 0o644)
+	require.NoError(t, err)
+
+	_, err = EnsureHarness(dir, false)
+	require.Error(t, err)
+}
+
 func TestDetectFramework_goMod(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
