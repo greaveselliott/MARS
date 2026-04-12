@@ -1,12 +1,106 @@
-name: sample-bundle
-description: Demo bundle with a Pipeline Fixer role
+name: mars
+description: Full Mars pipeline — 11 roles, 14 trigger entries
+
 roles:
+  # ── Strategy (weekly) ─────────────────────────────────────
+  ceo:
+    prompt: roles/ceo-vision.md
+    model: reasoning
+    schedule: "0 20 * * 0"
+    tools: [file_read, file_write, shell_exec, grep]
+
+  # ── Ticket creation (chain from CEO vision PR merge) ──────
+  coo:
+    prompt: roles/coo-tickets.md
+    model: reasoning
+    triggers:
+      - pull_request.merged
+    tools: [file_read, file_write, shell_exec, grep]
+
+  # ── Architecture (dual mode) ──────────────────────────────
+  cto-pr-merge:
+    prompt: roles/cto-harness.md
+    model: coding
+    triggers:
+      - pull_request.merged
+    tools: [file_read, file_write, shell_exec, grep]
+
+  cto-weekly:
+    prompt: roles/cto-harness.md
+    model: reasoning
+    schedule: "0 21 * * 0"
+    tools: [file_read, file_write, shell_exec, grep]
+
+  # ── Delivery (4x/day) ────────────────────────────────────
+  engineer:
+    prompt: roles/engineer-delivery.md
+    model: coding
+    schedule: "0 0,6,12,18 * * 1-5"
+    tools: [file_read, file_write, shell_exec, grep]
+
+  # ── Review (event-driven) ────────────────────────────────
+  qa:
+    prompt: roles/qa-health.md
+    model: fast
+    triggers:
+      - pull_request.opened
+      - pull_request.synchronize
+    tools: [file_read, grep]
+
+  security-pr:
+    prompt: roles/security-officer.md
+    model: reasoning
+    triggers:
+      - pull_request.opened
+    tools: [file_read, grep]
+
+  security-weekly:
+    prompt: roles/security-officer.md
+    model: reasoning
+    schedule: "0 22 * * 0"
+    tools: [file_read, file_write, shell_exec, grep]
+
+  dependency-manager:
+    prompt: roles/dependency-manager.md
+    model: fast
+    triggers:
+      - pull_request.opened
+    tools: [file_read, grep]
+
+  # ── Release (dual mode) ──────────────────────────────────
+  release-pr:
+    prompt: roles/release-manager.md
+    model: coding
+    triggers:
+      - pull_request.merged
+    tools: [file_read, file_write, shell_exec, grep]
+
+  release-weekly:
+    prompt: roles/release-manager.md
+    model: reasoning
+    schedule: "0 8 * * 1"
+    tools: [file_read, file_write, shell_exec, grep]
+
+  # ── Testing (daily) ──────────────────────────────────────
+  dogfood:
+    prompt: roles/dogfood-tester.md
+    model: coding
+    schedule: "0 10 * * 1-5"
+    tools: [file_read, file_write, shell_exec, grep]
+
+  # ── CI repair (event-driven + chain) ─────────────────────
   pipeline-fixer:
     prompt: roles/pipeline-fixer.md
-    tools:
-      - file_read
-      - file_write
-      - shell_exec
-      - grep
+    model: coding
     triggers:
       - workflow_run.conclusion == "failure"
+    then: [qa]
+    tools: [file_read, file_write, shell_exec, grep]
+
+  # ── PR comment resolution (event-driven) ─────────────────
+  pr-comment-fixer:
+    prompt: roles/pr-comment-fixer.md
+    model: fast
+    triggers:
+      - pull_request_review_comment.created
+    tools: [file_read, file_write, shell_exec, grep]

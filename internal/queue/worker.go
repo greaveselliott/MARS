@@ -13,6 +13,7 @@ type WorkerConfig struct {
 	Concurrency  int
 	PollInterval time.Duration
 	OnJob        func(ctx context.Context, job *Job) error
+	OnComplete   func(ctx context.Context, job *Job)
 }
 
 // WorkerPool manages concurrent job workers.
@@ -93,5 +94,10 @@ func (wp *WorkerPool) poll(ctx context.Context, workerID string) {
 
 	if err := wp.q.Complete(ctx, job.ID); err != nil {
 		slog.Error("queue: complete failed", "job", job.ID, "error", err)
+		return
+	}
+
+	if wp.cfg.OnComplete != nil {
+		wp.cfg.OnComplete(ctx, job)
 	}
 }

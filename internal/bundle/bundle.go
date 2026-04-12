@@ -27,6 +27,8 @@ type RoleConfig struct {
 	Guardrails []string `yaml:"guardrails"`
 	Knowledge  []string `yaml:"knowledge"`
 	Triggers   []string `yaml:"triggers"`
+	Then       []string `yaml:"then"`
+	Schedule   string   `yaml:"schedule"`
 }
 
 // Load reads .harness/manifest.yaml from repoRoot.
@@ -73,9 +75,34 @@ func Load(repoRoot string) (*Manifest, error) {
 		if strings.TrimSpace(role.Prompt) == "" {
 			return nil, fmt.Errorf("bundle: role %q has no prompt path — set 'prompt' to a file relative to %s/", name, harnessDir)
 		}
+		for _, target := range role.Then {
+			if _, ok := m.Roles[target]; !ok {
+				return nil, fmt.Errorf("bundle: role %q chains to %q via 'then' but %q is not defined in the manifest", name, target, target)
+			}
+		}
+		if s := strings.TrimSpace(role.Schedule); s != "" {
+			if !isValidSchedule(s) {
+				return nil, fmt.Errorf("bundle: role %q has invalid schedule %q — use a named preset (hourly, daily, weekly, monthly) or a 5-field cron expression", name, s)
+			}
+		}
 	}
 
 	return &m, nil
+}
+
+var schedulePresets = map[string]bool{
+	"hourly":  true,
+	"daily":   true,
+	"weekly":  true,
+	"monthly": true,
+}
+
+func isValidSchedule(s string) bool {
+	if schedulePresets[s] {
+		return true
+	}
+	fields := strings.Fields(s)
+	return len(fields) == 5
 }
 
 // RolePrompt reads the prompt file for a named role.

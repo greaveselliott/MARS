@@ -206,3 +206,143 @@ func TestLoad_HarnessDirIsFile(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not a directory")
 }
+
+func TestLoad_ThenField(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `
+name: chain-test
+roles:
+  fixer:
+    prompt: roles/fixer.md
+    triggers:
+      - workflow_run.conclusion == "failure"
+    then: [qa]
+  qa:
+    prompt: roles/qa.md
+    triggers:
+      - pull_request.opened
+`)
+
+	m, err := Load(root)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"qa"}, m.Roles["fixer"].Then)
+	assert.Empty(t, m.Roles["qa"].Then)
+}
+
+func TestLoad_ThenBadReference(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `
+name: bad-chain
+roles:
+  fixer:
+    prompt: roles/fixer.md
+    then: [nonexistent]
+`)
+
+	_, err := Load(root)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "chains to \"nonexistent\"")
+	assert.Contains(t, err.Error(), "not defined in the manifest")
+}
+
+func TestLoad_SchedulePreset(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `
+name: sched-test
+roles:
+  daily-check:
+    prompt: roles/check.md
+    schedule: daily
+`)
+
+	m, err := Load(root)
+	require.NoError(t, err)
+	assert.Equal(t, "daily", m.Roles["daily-check"].Schedule)
+}
+
+func TestLoad_ScheduleCustomCron(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `
+name: cron-test
+roles:
+  engineer:
+    prompt: roles/engineer.md
+    schedule: "0 0,6,12,18 * * 1-5"
+`)
+
+	m, err := Load(root)
+	require.NoError(t, err)
+	assert.Equal(t, "0 0,6,12,18 * * 1-5", m.Roles["engineer"].Schedule)
+}
+
+func TestLoad_ScheduleInvalid(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `
+name: bad-cron
+roles:
+  broken:
+    prompt: roles/broken.md
+    schedule: "not a cron"
+`)
+
+	_, err := Load(root)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid schedule")
+}
+
+func TestLoad_DualModeRoles(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `
+name: dual-mode
+roles:
+  cto-pr-merge:
+    prompt: roles/cto.md
+    model: coding
+    triggers:
+      - pull_request.merged
+  cto-weekly:
+    prompt: roles/cto.md
+    model: reasoning
+    schedule: "0 21 * * 0"
+`)
+
+	m, err := Load(root)
+	require.NoError(t, err)
+	assert.Len(t, m.Roles, 2)
+	assert.Equal(t, "coding", m.Roles["cto-pr-merge"].Model)
+	assert.Equal(t, "reasoning", m.Roles["cto-weekly"].Model)
+	assert.Equal(t, "0 21 * * 0", m.Roles["cto-weekly"].Schedule)
+}
+
+func TestLoad_AllMarsSchedules(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `
+name: mars-schedules
+roles:
+  ceo:
+    prompt: roles/ceo.md
+    schedule: "0 20 * * 0"
+  cto-weekly:
+    prompt: roles/cto.md
+    schedule: "0 21 * * 0"
+  engineer:
+    prompt: roles/eng.md
+    schedule: "0 0,6,12,18 * * 1-5"
+  security-weekly:
+    prompt: roles/sec.md
+    schedule: "0 22 * * 0"
+  release-weekly:
+    prompt: roles/rel.md
+    schedule: "0 8 * * 1"
+  dogfood:
+    prompt: roles/dog.md
+    schedule: "0 10 * * 1-5"
+  preset-test:
+    prompt: roles/preset.md
+    schedule: weekly
+`)
+
+	m, err := Load(root)
+	require.NoError(t, err)
+	assert.Len(t, m.Roles, 7)
+}

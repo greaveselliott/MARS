@@ -13,6 +13,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [pipeline-engine.md](pipeline-engine.md) | Draft | Job queue (SQLite), worker dispatcher, cron scheduler, sandbox. AD-009 (SQLite), AD-010 (repo_id from day one) |
 | [dashboard.md](dashboard.md) | Draft | 5-page dashboard: pipeline flow, role health, throughput, debug, evolution history. AD-011 (htmx + Chart.js embedded) |
 | [context-efficiency.md](context-efficiency.md) | Draft | Context assembly, budgets, knowledge routing, guardrail scoping |
+| [trigger-orchestration.md](trigger-orchestration.md) | Draft | Trigger sources (webhook, schedule, chain), upstream chaining via `then`, custom cron, dual-mode roles. Complete Mars pipeline role registry. AD-016 through AD-020. |
 
 ## Architecture Decision Log
 
@@ -33,3 +34,8 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-013 | `log/slog` from stdlib for all structured logging. JSON in production, text in development. | AGENTS.md | M0 |
 | AD-014 | Domain-grouped packages under `internal/` (agent, llm, tools, github, etc.). Public types in `pkg/` if needed. | AGENTS.md | M0 |
 | AD-015 | YAML config file (`~/.mars-harness/config.yaml`) merged with environment variable overrides (`MARS_HARNESS_` prefix). | AGENTS.md | M0 |
+| AD-016 | Three trigger source types: webhook, schedule, chain. No expression parser in v1. | trigger-orchestration.md | Orchestrator |
+| AD-017 | Upstream chaining via `then` field. Direct chains vs event-mediated chains. | trigger-orchestration.md | Orchestrator |
+| AD-018 | Fire-and-forget `OnComplete` hook, not a full event bus. Extension point for v2. | trigger-orchestration.md | Orchestrator |
+| AD-019 | Custom cron with named presets (`hourly`, `daily`, `weekly`, `monthly`) as aliases. Standard 5-field only. | trigger-orchestration.md | Orchestrator |
+| AD-020 | Dual-mode roles (e.g., CTO PR merge vs CTO weekly) are separate manifest entries sharing a prompt file. | trigger-orchestration.md | Orchestrator |

@@ -10,10 +10,12 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/internal/bundle"
 	gh "github.com/greaveselliott/mars-harness/internal/github"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
@@ -135,11 +137,6 @@ func New(cfg Config) (*Server, error) {
 
 	executor := NewExecutor(repoLookup, router, nil)
 
-	workers := queue.NewWorkerPool(jobQueue, queue.WorkerConfig{
-		Concurrency: cfg.concurrency(),
-		OnJob:       executor.Execute,
-	})
-
 	sched := scheduler.New(jobQueue)
 
 	s := &Server{
@@ -150,11 +147,16 @@ func New(cfg Config) (*Server, error) {
 		repos:     repos,
 		triggers:  triggerRouter,
 		queue:     jobQueue,
-		workers:   workers,
 		scheduler: sched,
 		router:    router,
 		executor:  executor,
 	}
+
+	s.workers = queue.NewWorkerPool(jobQueue, queue.WorkerConfig{
+		Concurrency: cfg.concurrency(),
+		OnJob:       executor.Execute,
+		OnComplete:  s.handleJobComplete,
+	})
 
 	webhookHandler := gh.WebhookHandler(
 		gh.WebhookConfig{Secret: cfg.WebhookSecret},
@@ -333,40 +335,103 @@ func (s *Server) handleEvent(event gh.Event) {
 	}
 }
 
+// handleJobComplete is the OnComplete callback for the worker pool.
+// It resolves the `then` field from the completed role's manifest and
+// enqueues follow-up jobs for each chained role.
+func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
+	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+
+	rec, err := s.repos.FindByID(ctx, job.RepoID)
+	if err != nil || rec == nil {
+		log.Warn("serve: chain lookup failed — repo not found", "err", err)
+		return
+	}
+
+	manifest, err := bundle.Load(rec.Path)
+	if err != nil {
+		log.Warn("serve: chain lookup failed — manifest load error", "err", err)
+		return
+	}
+
+	role, ok := manifest.Roles[job.Role]
+	if !ok || len(role.Then) == 0 {
+		return
+	}
+
+	chainJSON, _ := json.Marshal(map[string]string{
+		"type":        "chain",
+		"source_role": job.Role,
+		"source_job":  job.ID,
+	})
+
+	for _, target := range role.Then {
+		idempotencyKey := fmt.Sprintf("chain:%s:%s:%s", job.ID, job.RepoID, target)
+		chainJob := queue.Job{
+			RepoID:         job.RepoID,
+			Role:           target,
+			Trigger:        string(chainJSON),
+			IdempotencyKey: idempotencyKey,
+		}
+
+		jobID, err := s.queue.Enqueue(ctx, chainJob)
+		if err != nil {
+			log.Error("serve: failed to enqueue chained job",
+				"target_role", target,
+				"err", err,
+			)
+			continue
+		}
+		log.Info("serve: chained job enqueued",
+			"target_role", target,
+			"chained_job_id", jobID,
+		)
+	}
+}
+
 func (s *Server) registerCronSchedules(repos []RepoRecord) {
 	for _, repo := range repos {
-		s.triggers.mu.RLock()
-		entries := make([]triggerEntry, len(s.triggers.index))
-		copy(entries, s.triggers.index)
-		s.triggers.mu.RUnlock()
+		manifest, err := bundle.Load(repo.Path)
+		if err != nil {
+			slog.Warn("serve: skipping schedules for repo — manifest load failed",
+				"repo_id", repo.ID, "err", err)
+			continue
+		}
 
-		for _, entry := range entries {
-			if entry.repoID != repo.ID {
-				continue
+		for roleName, roleCfg := range manifest.Roles {
+			cron := resolveSchedule(roleCfg.Schedule)
+
+			if cron == "" {
+				for _, trig := range roleCfg.Triggers {
+					if c := cronFromTrigger(trig); c != "" {
+						cron = c
+						break
+					}
+				}
 			}
-			cron := cronFromTrigger(entry.trigger)
+
 			if cron == "" {
 				continue
 			}
+
 			sched := scheduler.Schedule{
-				Name:     fmt.Sprintf("%s:%s", repo.ID, entry.role),
+				Name:     fmt.Sprintf("%s:%s", repo.ID, roleName),
 				RepoID:   repo.ID,
-				Role:     entry.role,
+				Role:     roleName,
 				Cron:     cron,
 				Timezone: "UTC",
-				Trigger:  fmt.Sprintf(`{"type":"schedule","rule":"%s"}`, entry.trigger),
+				Trigger:  fmt.Sprintf(`{"type":"schedule","role":"%s"}`, roleName),
 			}
 			if err := s.scheduler.Register(sched); err != nil {
 				slog.Warn("serve: failed to register cron schedule",
 					"repo", repo.ID,
-					"role", entry.role,
-					"trigger", entry.trigger,
+					"role", roleName,
+					"cron", cron,
 					"err", err,
 				)
 			} else {
 				slog.Info("serve: cron schedule registered",
 					"repo", repo.ID,
-					"role", entry.role,
+					"role", roleName,
 					"cron", cron,
 				)
 			}
@@ -374,17 +439,27 @@ func (s *Server) registerCronSchedules(repos []RepoRecord) {
 	}
 }
 
-func cronFromTrigger(trigger string) string {
-	switch trigger {
-	case "schedule.hourly":
-		return "0 * * * *"
-	case "schedule.daily":
-		return "0 6 * * *"
-	case "schedule.weekly":
-		return "0 6 * * 1"
-	case "schedule.monthly":
-		return "0 6 1 * *"
-	default:
+var presetCron = map[string]string{
+	"hourly":  "0 * * * *",
+	"daily":   "0 6 * * *",
+	"weekly":  "0 6 * * 1",
+	"monthly": "0 6 1 * *",
+}
+
+func resolveSchedule(schedule string) string {
+	s := strings.TrimSpace(schedule)
+	if s == "" {
 		return ""
 	}
+	if c, ok := presetCron[s]; ok {
+		return c
+	}
+	return s
+}
+
+func cronFromTrigger(trigger string) string {
+	if c, ok := presetCron[strings.TrimPrefix(trigger, "schedule.")]; ok && strings.HasPrefix(trigger, "schedule.") {
+		return c
+	}
+	return ""
 }
