@@ -1,9 +1,11 @@
 package llm
 
 // Message is one chat completion message in OpenAI-compatible form.
+// Content is always serialized (no omitempty) because llama.cpp requires
+// the field to be present on all messages, even when empty.
 type Message struct {
 	Role       string      `json:"role"`
-	Content    string      `json:"content,omitempty"`
+	Content    string      `json:"content"`
 	Name       string      `json:"name,omitempty"`
 	ToolCalls  []ToolCall  `json:"tool_calls,omitempty"`
 	ToolCallID string      `json:"tool_call_id,omitempty"`

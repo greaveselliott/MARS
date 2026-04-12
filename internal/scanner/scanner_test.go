@@ -236,6 +236,18 @@ func TestInit_success(t *testing.T) {
 	assert.DirExists(t, filepath.Join(dir, ".harness", "knowledge"))
 	assert.DirExists(t, filepath.Join(dir, ".harness", "tickets"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
+
+	for _, role := range []string{"engineer", "qa", "pipeline-fixer", "security", "pr-comment-fixer"} {
+		assert.FileExists(t, filepath.Join(dir, ".harness", "roles", role+".md"),
+			"expected default prompt for role %s", role)
+	}
+
+	manifest, err := os.ReadFile(filepath.Join(dir, ".harness", "manifest.yaml"))
+	require.NoError(t, err)
+	assert.Contains(t, string(manifest), "engineer:")
+	assert.Contains(t, string(manifest), "qa:")
+	assert.Contains(t, string(manifest), "pipeline-fixer:")
+	assert.Contains(t, string(manifest), filepath.Base(dir))
 }
 
 func TestInit_alreadyExists(t *testing.T) {
