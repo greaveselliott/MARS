@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -54,6 +56,9 @@ func (e *Executor) SetDashboard(d *dashboard.Dashboard) {
 // It loads the bundle, assembles context, starts inference, and runs the agent loop.
 func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	defer tools.KillBackgroundProcs()
+	if job.Role == "dogfood" {
+		defer cleanupDogfoodContainers(filepath.Base(job.RepoID))
+	}
 
 	log := slog.With("job_id", job.ID, "repo_id", job.RepoID, "role", job.Role)
 	tw := ui.NewTraceWriter(os.Stdout, false, false)
@@ -159,6 +164,8 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		return fmt.Errorf("executor: init tool registry: %w", err)
 	}
 
+	tools.RecordDecisionRole = job.Role
+
 	toolExec := tools.NewExecutor(reg)
 
 	root, err := tools.NewRoot(repoPath)
@@ -252,4 +259,18 @@ func (e *Executor) broadcastEvent(eventType string, payload map[string]string) {
 		return
 	}
 	e.dash.BroadcastEvent(eventType, string(data))
+}
+
+// cleanupDogfoodContainers removes any orphaned Podman containers from dogfood runs.
+func cleanupDogfoodContainers(projectName string) {
+	name := "dogfood-" + projectName
+	if _, err := exec.LookPath("podman"); err != nil {
+		return
+	}
+	out, err := exec.Command("podman", "rm", "-f", name).CombinedOutput()
+	if err != nil {
+		slog.Debug("executor: dogfood container cleanup (may not exist)", "name", name, "output", string(out))
+		return
+	}
+	slog.Info("executor: cleaned up dogfood container", "name", name)
 }

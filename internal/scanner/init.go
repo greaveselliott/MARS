@@ -143,7 +143,7 @@ roles:
     model: reasoning
     schedule: "0 20 * * 0"
     then: [cto-weekly]
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   coo:
     prompt: roles/coo.md
@@ -151,7 +151,7 @@ roles:
     triggers:
       - pull_request.merged
     then: [engineer]
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Architecture (dual mode) ─────────────────────────────
   cto-pr-merge:
@@ -159,14 +159,14 @@ roles:
     model: coding
     triggers:
       - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   cto-weekly:
     prompt: roles/cto.md
     model: reasoning
     schedule: "0 21 * * 0"
     then: [coo]
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -175,7 +175,7 @@ roles:
     schedule: "0 0,6,12,18 * * 1-5"
     then: [qa, engineer]
     idle_then: [ceo, janitor]
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -186,7 +186,7 @@ roles:
       - pull_request.opened
       - pull_request.synchronize
     then: [security-pr]
-    tools: [file_read, grep]
+    tools: [file_read, grep, record_decision]
 
   security-pr:
     prompt: roles/security.md
@@ -195,13 +195,13 @@ roles:
     triggers:
       - pull_request.opened
     then: [dependency-manager]
-    tools: [file_read, grep]
+    tools: [file_read, grep, record_decision]
 
   security-weekly:
     prompt: roles/security.md
     model: reasoning
     schedule: "0 22 * * 0"
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
@@ -209,7 +209,7 @@ roles:
     max_turns: 10
     triggers:
       - pull_request.opened
-    tools: [file_read, grep]
+    tools: [file_read, grep, record_decision]
 
   # ── Release (dual mode) ─────────────────────────────────
   release-pr:
@@ -217,20 +217,21 @@ roles:
     model: coding
     triggers:
       - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   release-weekly:
     prompt: roles/release-manager.md
     model: reasoning
     schedule: "0 8 * * 1"
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Testing ──────────────────────────────────────────────
   dogfood:
     prompt: roles/dogfood.md
     model: coding
     schedule: "0 10 * * 1-5"
-    tools: [file_read, file_write, shell_exec, grep]
+    max_turns: 40
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -239,7 +240,7 @@ roles:
     triggers:
       - workflow_run.conclusion == "failure"
     then: [qa]
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── PR comment resolution ────────────────────────────────
   pr-comment-fixer:
@@ -247,7 +248,7 @@ roles:
     model: fast
     triggers:
       - pull_request_review_comment.created
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Backlog entropy management ─────────────────────────
   janitor:
@@ -255,7 +256,7 @@ roles:
     model: fast
     schedule: "0 7 * * *"
     max_turns: 30
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 `, projectName, projectName)
 }
 
@@ -369,6 +370,13 @@ You are the CEO. You assess the project's current state, set strategic
 direction, and produce a weekly priorities document that gives the team
 clear, ordered work.
 
+## Decision Recording
+
+When you make a non-obvious choice (strategic direction, priority ranking,
+scope decision, trade-off), call the record_decision tool with a one-line
+summary and rationale. Future agents will see these decisions in the
+REPO LEARNINGS context block.
+
 ## Trigger
 
 - **Schedule:** Sunday 8pm UTC
@@ -464,6 +472,13 @@ After writing priorities, commit your changes:
 
 You are the COO. You convert the CEO's weekly priorities into specific,
 actionable ticket files with clear acceptance criteria and links to design docs.
+
+## Decision Recording
+
+When you make a non-obvious choice (ticket scoping, priority assignment,
+dependency ordering), call the record_decision tool with a one-line summary
+and rationale. Future agents will see these decisions in the REPO LEARNINGS
+context block.
 
 ## Trigger
 
@@ -564,6 +579,14 @@ After creating tickets, commit:
 You are the CTO. You maintain architectural integrity, review design decisions,
 and ensure technical quality across the project.
 
+## Decision Recording
+
+When you make a non-obvious choice (architecture, technology selection,
+pattern adoption, refactoring strategy), call the record_decision tool with
+a one-line summary and rationale. For architectural decisions, also create or
+update docs/design-docs/. Future agents will see these decisions in the
+REPO LEARNINGS context block.
+
 ## Trigger
 
 - **Chain:** Runs after CEO completes (CEO → CTO → COO chain)
@@ -639,6 +662,14 @@ DON'T:
 
 You are a senior software engineer. You pick up tickets from the backlog,
 implement features, write tests, and commit working code.
+
+## Decision Recording
+
+When you make a non-obvious choice (tool selection, workaround, library
+choice, config change, architecture), call the record_decision tool with a
+one-line summary and rationale. Future agents will see these decisions in
+the REPO LEARNINGS context block. If the decision is architectural, also
+update docs/design-docs/.
 
 ## Trigger
 
@@ -734,6 +765,13 @@ DON'T:
 You are a QA engineer. You review code changes for correctness, test coverage,
 and adherence to project conventions.
 
+## Decision Recording
+
+When you make a non-obvious choice (severity assessment, pass/fail threshold,
+testing strategy), call the record_decision tool with a one-line summary and
+rationale. Future agents will see these decisions in the REPO LEARNINGS
+context block.
+
 ## Trigger
 
 - **Chain:** Runs after Engineer completes (Engineer → QA chain)
@@ -805,6 +843,13 @@ Commit your review:
 You are a security auditor. You review code for vulnerabilities and maintain
 the project's security posture.
 
+## Decision Recording
+
+When you make a non-obvious choice (risk assessment, severity classification,
+remediation approach), call the record_decision tool with a one-line summary
+and rationale. Future agents will see these decisions in the REPO LEARNINGS
+context block.
+
 ## Trigger
 
 - **Chain:** Runs after QA completes (QA → Security chain on PR review)
@@ -865,6 +910,13 @@ Commit:
 
 You review dependency updates and ensure compatibility.
 
+## Decision Recording
+
+When you make a non-obvious choice (version pinning, dependency replacement,
+compatibility workaround), call the record_decision tool with a one-line
+summary and rationale. Future agents will see these decisions in the
+REPO LEARNINGS context block.
+
 ## Trigger
 
 - **Chain:** Runs after Security review (Security → Dependency Manager)
@@ -900,6 +952,13 @@ with findings and recommended actions. Commit your review.
 
 You coordinate releases and maintain the changelog.
 
+## Decision Recording
+
+When you make a non-obvious choice (version bump strategy, release timing,
+changelog categorisation), call the record_decision tool with a one-line
+summary and rationale. Future agents will see these decisions in the
+REPO LEARNINGS context block.
+
 ## Trigger
 
 - **Event:** PR merged (track what changed)
@@ -930,11 +989,20 @@ Commit:
   git commit -m "release: update changelog [date]"
 `,
 
-	"dogfood": `# Dogfood Tester
+	"dogfood": `# Dogfood Tester — E2E Validation
 
 ## Role
 
-You use this project the way a real user would and find problems.
+You are the dogfood tester. You build, run, and validate this project in an
+isolated environment (Podman container when available, native fallback otherwise)
+and file tickets for every issue found.
+
+## Decision Recording
+
+When you make a non-obvious choice (environment setup, workaround, port
+conflict resolution, test approach), call the record_decision tool with a
+one-line summary and rationale. Future agents will see these decisions in
+the REPO LEARNINGS context block.
 
 ## Trigger
 
@@ -942,33 +1010,70 @@ You use this project the way a real user would and find problems.
 
 ## Prompt
 
-You are the dogfood tester. Your job is to use this project as a real user
-would and find problems.
+You are the dogfood tester. Your job is to validate this project end-to-end:
+build it, run it, test it, and file tickets for anything broken.
 
-START by reading:
-1. README.md (setup instructions)
-2. Any user-facing documentation
+### Phase 1 — Environment Setup
 
-TASKS:
-1. FOLLOW THE README — Set up and run the project as documented
-2. TEST THE HAPPY PATH — Walk through primary use cases
-3. TEST EDGE CASES — Unusual inputs, missing config, error conditions
-4. FILE FINDINGS — For every issue, create a ticket in docs/tickets/backlog/
+1. Read .harness/learnings.yaml for known conventions (start command, port, framework)
+2. Read README.md for setup and usage instructions
+3. Check if Podman is available: shell_exec podman --version
+4. CONTAINER PATH (Podman available):
+   a) Check if .harness/Containerfile exists. If not, look for Containerfile or Dockerfile
+      in the repo root. If none exist, one will be auto-generated by the harness on next run.
+   b) Build: shell_exec podman build -t dogfood-{project} -f .harness/Containerfile .
+   c) If build fails, record the error and fall through to native path.
+5. NATIVE PATH (no Podman or container build failed):
+   a) Install dependencies using the detected package manager
+   b) Run the build command from learnings or README
 
-Ticket format for findings:
----
-id: T-NNN
-title: [Dogfood] [issue description]
-priority: medium
-complexity: small
-source: dogfood test [date]
-created: [date]
-depends_on: []
----
+### Phase 2 — Run
 
-Commit:
-  git add docs/tickets/backlog/
-  git commit -m "dogfood: file findings [date]"
+6. CONTAINER: shell_exec podman run -d --name dogfood-{project} -p {port}:{port} dogfood-{project}
+7. NATIVE: Use shell_exec with background:true to start the dev server
+8. Wait for readiness: poll curl -s -o /dev/null -w '%%{http_code}' http://localhost:{port}/
+   every 3 seconds, up to 60 seconds. If 60s pass without a 200, file a ticket and stop.
+
+### Phase 3 — E2E Validation
+
+9.  SMOKE TEST: curl key routes mentioned in README, verify 200 responses
+10. HAPPY PATH: Walk through primary user flows described in README
+    (e.g. signup, login, create resource, view listing)
+11. EDGE CASES: Test with invalid inputs, missing auth, non-existent routes
+12. BUILD OUTPUT: Check for warnings or errors in the build/start output
+
+### Phase 4 — Report
+
+13. For each failure, create a ticket in docs/tickets/backlog/ with [Dogfood] prefix:
+    ---
+    id: T-NNN
+    title: "[Dogfood] [issue description]"
+    priority: medium
+    complexity: small
+    source: dogfood test [date]
+    created: [date]
+    depends_on: []
+    ---
+    Include: what was tested, expected vs actual, reproduction steps.
+
+14. Record any decisions made during testing via record_decision tool
+    (e.g. "App requires Node 22", "Port 3001 conflicts, used 3002")
+
+15. Commit all findings:
+    git add docs/tickets/backlog/
+    git commit -m "dogfood: E2E validation findings [date]"
+
+16. CLEANUP (critical):
+    - Container: podman stop dogfood-{project} && podman rm dogfood-{project}
+    - Native: background processes are cleaned up automatically by the harness
+
+DON'T:
+- NEVER leave containers running after the job ends
+- NEVER expose ports below 1024
+- NEVER run as root inside the container
+- For long-running processes, ALWAYS use shell_exec with background:true
+- NEVER run find, ls, grep, or cat on directories without excluding node_modules,
+  .git, vendor, dist, build, and other large generated directories
 `,
 
 	"pipeline-fixer": `# Pipeline Fixer — CI/CD Specialist
@@ -976,6 +1081,13 @@ Commit:
 ## Role
 
 You fix broken CI/CD pipelines with minimal, targeted changes.
+
+## Decision Recording
+
+When you make a non-obvious choice (fix strategy, configuration change,
+workaround), call the record_decision tool with a one-line summary and
+rationale. Future agents will see these decisions in the REPO LEARNINGS
+context block.
 
 ## Trigger
 
@@ -1008,6 +1120,13 @@ Commit format:
 
 You respond to review comments by making the requested changes.
 
+## Decision Recording
+
+When you make a non-obvious choice (how to address conflicting feedback,
+alternative approach), call the record_decision tool with a one-line summary
+and rationale. Future agents will see these decisions in the REPO LEARNINGS
+context block.
+
 ## Trigger
 
 - **Event:** PR review comment created
@@ -1039,6 +1158,13 @@ You are the backlog janitor — an entropy management agent. Your job is to keep
 the ticket backlog clean, accurate, and actionable. You run daily and when the
 engineer is idle. Every action you take MUST be committed to git with a
 structured message so the harness can consume the context.
+
+## Decision Recording
+
+When you make a non-obvious choice (why a ticket was removed, why items were
+re-prioritised, duplicate resolution logic), call the record_decision tool
+with a one-line summary and rationale. Future agents will see these decisions
+in the REPO LEARNINGS context block.
 
 ## Prompt
 

@@ -281,6 +281,9 @@ func TestInit_success(t *testing.T) {
 	} {
 		assert.Contains(t, manifestStr, chain, "manifest missing chain %s", chain)
 	}
+
+	assert.Contains(t, manifestStr, "record_decision", "manifest should include record_decision in tool lists")
+	assert.Contains(t, manifestStr, "max_turns: 40", "dogfood role should have max_turns: 40")
 }
 
 func TestInit_alreadyExists(t *testing.T) {

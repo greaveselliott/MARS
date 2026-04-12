@@ -17,6 +17,7 @@ const fileName = "learnings.yaml"
 type Learnings struct {
 	Conventions Conventions `yaml:"conventions"`
 	Lessons     []Lesson    `yaml:"lessons,omitempty"`
+	Decisions   []Decision  `yaml:"decisions,omitempty"`
 	Excludes    []string    `yaml:"excludes,omitempty"`
 }
 
@@ -26,6 +27,8 @@ type Conventions struct {
 	TestCommand    string `yaml:"test_command,omitempty"`
 	LintCommand    string `yaml:"lint_command,omitempty"`
 	BuildCommand   string `yaml:"build_command,omitempty"`
+	StartCommand   string `yaml:"start_command,omitempty"`
+	DevPort        string `yaml:"dev_port,omitempty"`
 	Framework      string `yaml:"framework,omitempty"`
 	Language       string `yaml:"language,omitempty"`
 }
@@ -37,6 +40,15 @@ type Lesson struct {
 	Created string `yaml:"created"`
 	Type    string `yaml:"type"`
 	Content string `yaml:"content"`
+}
+
+// Decision records an architectural or operational decision made during an agent run.
+type Decision struct {
+	ID        string `yaml:"id"`
+	Role      string `yaml:"role"`
+	Created   string `yaml:"created"`
+	Summary   string `yaml:"summary"`
+	Rationale string `yaml:"rationale,omitempty"`
 }
 
 // Store manages reading and writing the per-repo learnings file.
@@ -141,6 +153,37 @@ func (s *Store) AddLesson(role, lessonType, content string) (bool, error) {
 	return true, nil
 }
 
+// AddDecision appends a decision if no duplicate summary exists. Returns true if added.
+func (s *Store) AddDecision(role, summary, rationale string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	l, err := s.loadUnsafe()
+	if err != nil {
+		return false, err
+	}
+
+	for _, existing := range l.Decisions {
+		if existing.Summary == summary {
+			return false, nil
+		}
+	}
+
+	nextID := fmt.Sprintf("decision-%03d", len(l.Decisions)+1)
+	l.Decisions = append(l.Decisions, Decision{
+		ID:        nextID,
+		Role:      role,
+		Created:   time.Now().UTC().Format("2006-01-02"),
+		Summary:   summary,
+		Rationale: rationale,
+	})
+
+	if err := s.saveUnsafe(l); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // FormatForContext renders the learnings as a text block suitable for
 // injection into the agent's system prompt.
 func (l *Learnings) FormatForContext() string {
@@ -170,6 +213,12 @@ func (l *Learnings) FormatForContext() string {
 		if c.BuildCommand != "" {
 			fmt.Fprintf(&b, "- Build command: %s\n", c.BuildCommand)
 		}
+		if c.StartCommand != "" {
+			fmt.Fprintf(&b, "- Start command: %s\n", c.StartCommand)
+		}
+		if c.DevPort != "" {
+			fmt.Fprintf(&b, "- Dev port: %s\n", c.DevPort)
+		}
 		b.WriteString("\n")
 	}
 
@@ -177,6 +226,18 @@ func (l *Learnings) FormatForContext() string {
 		b.WriteString("### Lessons from past runs\n")
 		for _, lesson := range l.Lessons {
 			fmt.Fprintf(&b, "- (%s) %s\n", lesson.Role, lesson.Content)
+		}
+		b.WriteString("\n")
+	}
+
+	if len(l.Decisions) > 0 {
+		b.WriteString("### Decisions from past runs\n")
+		for _, d := range l.Decisions {
+			fmt.Fprintf(&b, "- (%s) %s", d.Role, d.Summary)
+			if d.Rationale != "" {
+				fmt.Fprintf(&b, " — %s", d.Rationale)
+			}
+			b.WriteString("\n")
 		}
 		b.WriteString("\n")
 	}

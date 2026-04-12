@@ -1,5 +1,5 @@
 name: mars
-description: Full Mars pipeline — 11 roles, 14 trigger entries
+description: Full Mars pipeline — 12 roles, 14 trigger entries
 
 roles:
   # ── Strategy (weekly) ─────────────────────────────────────
@@ -7,7 +7,7 @@ roles:
     prompt: roles/ceo-vision.md
     model: reasoning
     schedule: "0 20 * * 0"
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Ticket creation (chain from CEO vision PR merge) ──────
   coo:
@@ -15,7 +15,7 @@ roles:
     model: reasoning
     triggers:
       - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Architecture (dual mode) ──────────────────────────────
   cto-pr-merge:
@@ -23,13 +23,13 @@ roles:
     model: coding
     triggers:
       - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   cto-weekly:
     prompt: roles/cto-harness.md
     model: reasoning
     schedule: "0 21 * * 0"
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Delivery (continuous) ────────────────────────────────
   engineer:
@@ -38,7 +38,7 @@ roles:
     schedule: "0 0,6,12,18 * * 1-5"
     then: [qa, engineer]
     idle_then: [ceo, janitor]
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Review (event-driven) ────────────────────────────────
   qa:
@@ -47,27 +47,27 @@ roles:
     triggers:
       - pull_request.opened
       - pull_request.synchronize
-    tools: [file_read, grep]
+    tools: [file_read, grep, record_decision]
 
   security-pr:
     prompt: roles/security-officer.md
     model: reasoning
     triggers:
       - pull_request.opened
-    tools: [file_read, grep]
+    tools: [file_read, grep, record_decision]
 
   security-weekly:
     prompt: roles/security-officer.md
     model: reasoning
     schedule: "0 22 * * 0"
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
     model: fast
     triggers:
       - pull_request.opened
-    tools: [file_read, grep]
+    tools: [file_read, grep, record_decision]
 
   # ── Release (dual mode) ──────────────────────────────────
   release-pr:
@@ -75,20 +75,21 @@ roles:
     model: coding
     triggers:
       - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   release-weekly:
     prompt: roles/release-manager.md
     model: reasoning
     schedule: "0 8 * * 1"
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Testing (daily) ──────────────────────────────────────
   dogfood:
     prompt: roles/dogfood-tester.md
     model: coding
     schedule: "0 10 * * 1-5"
-    tools: [file_read, file_write, shell_exec, grep]
+    max_turns: 40
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── CI repair (event-driven + chain) ─────────────────────
   pipeline-fixer:
@@ -97,7 +98,7 @@ roles:
     triggers:
       - workflow_run.conclusion == "failure"
     then: [qa]
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── PR comment resolution (event-driven) ─────────────────
   pr-comment-fixer:
@@ -105,7 +106,7 @@ roles:
     model: fast
     triggers:
       - pull_request_review_comment.created
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   # ── Backlog entropy management ─────────────────────────
   janitor:
@@ -113,4 +114,4 @@ roles:
     model: fast
     schedule: "0 7 * * *"
     max_turns: 30
-    tools: [file_read, file_write, shell_exec, grep]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
