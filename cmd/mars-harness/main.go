@@ -564,6 +564,14 @@ func serveCmd() *cobra.Command {
 			sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 			defer stop()
 
+			sb := ui.NewStatusBar(os.Stderr, srv)
+			sb.Start()
+			defer sb.Stop()
+
+			kl := ui.NewKeyListener(srv, stop, sb)
+			kl.Start(sigCtx)
+			defer kl.Stop()
+
 			return srv.Start(sigCtx)
 		},
 	}
@@ -748,6 +756,14 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 				return err
 			}
 			tw.WriteAssistant(fmt.Sprintf("Seeded CEO agent (job %s) — pipeline will cascade: CEO → CTO → COO → Engineer → QA → Security → Deps", jobID))
+
+			sb := ui.NewStatusBar(os.Stderr, srv)
+			sb.Start()
+			defer sb.Stop()
+
+			kl := ui.NewKeyListener(srv, stop, sb)
+			kl.Start(sigCtx)
+			defer kl.Stop()
 
 			return srv.Start(sigCtx)
 		},

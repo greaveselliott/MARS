@@ -143,7 +143,7 @@ roles:
     model: reasoning
     schedule: "0 20 * * 0"
     then: [cto-weekly]
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
 
   coo:
     prompt: roles/coo.md
@@ -151,7 +151,7 @@ roles:
     triggers:
       - pull_request.merged
     then: [engineer]
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
 
   # ── Architecture (dual mode) ─────────────────────────────
   cto-pr-merge:
@@ -159,14 +159,14 @@ roles:
     model: coding
     triggers:
       - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   cto-weekly:
     prompt: roles/cto.md
     model: reasoning
     schedule: "0 21 * * 0"
     then: [coo]
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -175,7 +175,7 @@ roles:
     schedule: "0 0,6,12,18 * * 1-5"
     then: [qa, engineer, dogfood]
     idle_then: [ceo, janitor]
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -201,7 +201,7 @@ roles:
     prompt: roles/security.md
     model: reasoning
     schedule: "0 22 * * 0"
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
@@ -217,13 +217,13 @@ roles:
     model: coding
     triggers:
       - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   release-weekly:
     prompt: roles/release-manager.md
     model: reasoning
     schedule: "0 8 * * 1"
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
   dogfood:
@@ -231,7 +231,7 @@ roles:
     model: coding
     schedule: "0 10 * * 1-5"
     max_turns: 40
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -240,7 +240,7 @@ roles:
     triggers:
       - workflow_run.conclusion == "failure"
     then: [qa]
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── PR comment resolution ────────────────────────────────
   pr-comment-fixer:
@@ -248,7 +248,7 @@ roles:
     model: fast
     triggers:
       - pull_request_review_comment.created
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Backlog entropy management ─────────────────────────
   janitor:
@@ -256,7 +256,7 @@ roles:
     model: fast
     schedule: "0 7 * * *"
     max_turns: 30
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 `, projectName, projectName)
 }
 
@@ -699,7 +699,10 @@ STANDARD:
 - Every acceptance criterion is covered by at least one test
 - Follow the project's existing code style and conventions
 - Handle errors explicitly, no magic numbers, use named constants
-- Commit after each meaningful milestone
+- COMMIT AFTER EVERY SEMANTIC CHANGE — this is non-negotiable. Use the
+  git_commit tool (not shell_exec) after every meaningful milestone. A change
+  that exists only in the working tree is invisible to every other agent and
+  will be lost if the job is interrupted. If in doubt, commit.
 
 START by reading:
 1. docs/tickets/backlog/ (tickets waiting to be picked up)
@@ -720,9 +723,9 @@ IMPLEMENTATION:
 
 1. CLAIM THE TICKET
    Move the ticket from docs/tickets/backlog/ to docs/tickets/in-progress/
-   git mv docs/tickets/backlog/T-NNN-*.md docs/tickets/in-progress/
-   git commit -m "chore(tickets): claim T-NNN"
-   git push
+   shell_exec: git mv docs/tickets/backlog/T-NNN-*.md docs/tickets/in-progress/
+   git_commit: message "chore(tickets): claim T-NNN"
+   git_push
 
 2. PLAN BEFORE CODING
    - Which files will be created or modified?
@@ -730,9 +733,10 @@ IMPLEMENTATION:
    - Are there architectural decisions to make? Check design docs first.
 
 3. IMPLEMENT IN STEPS
-   Follow working discipline: commit and push after every completed step.
+   Follow working discipline: use git_commit and git_push after every completed
+   step. Never leave changes uncommitted between steps.
    Format: "feat(scope): description (T-NNN step N)"
-   Always run git push after each commit so work is never lost.
+   Always call git_push after each git_commit so work is never lost.
 
 4. WRITE TESTS
    - Map each acceptance criterion to at least one test
@@ -761,18 +765,24 @@ IMPLEMENTATION:
    Record any fixes via record_decision so future agents know the convention.
 
 6. MOVE TICKET TO DONE
-   git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
-   git commit -m "chore(tickets): move T-NNN to done"
-   git push
+   shell_exec: git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
+   git_commit: message "chore(tickets): move T-NNN to done"
+   git_push
 
 7. FINAL VERIFICATION
    Run the full test suite. Ensure everything passes.
+
+COMMIT GATE — run before finishing:
+   git_status to verify the working tree is clean. If there are ANY uncommitted
+   changes, commit them now. An agent run that leaves uncommitted changes is a
+   failed run — the next agent cannot see your work.
 
 DON'T:
 - Guess when acceptance criteria are ambiguous — note the gap and skip
 - Skip or disable tests to make things pass
 - Introduce new patterns not already documented in design docs
 - Work on more than one ticket per run
+- NEVER finish a run with uncommitted changes. Always check git_status at the end.
 - For long-running processes (dev servers, watchers, next dev, npm start), ALWAYS use
   shell_exec with background:true so they run as a background process and don't block your run.
 - NEVER run find, ls, grep, or cat on directories without excluding node_modules, .git, vendor,
@@ -1141,16 +1151,22 @@ Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix.
 15. Record any decisions made during testing via record_decision tool
     (e.g. "App requires Node 22", "Port 3001 conflicts, used 3002")
 
-16. Commit and push all findings:
-    git add docs/tickets/backlog/
-    git commit -m "dogfood: E2E validation findings [date]"
-    git push
+16. COMMIT AND PUSH all findings (non-negotiable):
+    Use git_commit with message "dogfood: E2E validation findings [date]"
+    Then call git_push.
+    An agent run that leaves uncommitted changes is a failed run.
 
 17. CLEANUP (critical):
     - Container: podman stop dogfood-{project} && podman rm dogfood-{project}
     - Native: background processes are cleaned up automatically by the harness
 
+COMMIT GATE — run before finishing:
+   git_status to verify the working tree is clean. If there are ANY uncommitted
+   changes (tickets, learnings, config fixes), commit them now with git_commit
+   and git_push. An agent run that leaves uncommitted changes is a failed run.
+
 DON'T:
+- NEVER finish a run with uncommitted changes. Always check git_status at the end.
 - NEVER leave containers running after the job ends
 - NEVER expose ports below 1024
 - NEVER run as root inside the container
@@ -1192,11 +1208,13 @@ APPROACH:
 2. TRACE ROOT CAUSE — Don't fix symptoms. Understand why it failed.
 3. MINIMAL FIX — Change only what's necessary to make the pipeline green
 4. VERIFY LOCALLY — Run the failing command locally before committing
-5. COMMIT — Single, focused commit
+5. COMMIT — Single, focused commit using git_commit and git_push tools
 
-Commit and push:
-  git commit -m "fix(ci): [description of what was fixed]"
-  git push
+git_commit: message "fix(ci): [description of what was fixed]"
+git_push
+
+COMMIT GATE — before finishing, run git_status. If there are ANY uncommitted
+changes, commit and push them. An agent run that leaves dirty state is a failed run.
 `,
 
 	"pr-comment-fixer": `# PR Comment Fixer
@@ -1229,11 +1247,13 @@ APPROACH:
 1. READ ALL COMMENTS — Understand what reviewers are asking across the entire review
 2. ADDRESS EACH COMMENT — Make requested changes or explain why current approach is correct
 3. RUN TESTS — Ensure changes don't break anything
-4. COMMIT — Reference the review feedback
+4. COMMIT — Use git_commit and git_push tools
 
-Commit and push:
-  git commit -m "fix: address review feedback [description]"
-  git push
+git_commit: message "fix: address review feedback [description]"
+git_push
+
+COMMIT GATE — before finishing, run git_status. If there are ANY uncommitted
+changes, commit and push them. An agent run that leaves dirty state is a failed run.
 `,
 
 	"janitor": `# Backlog Janitor
@@ -1266,7 +1286,8 @@ STEP 1 — MOVE COMPLETED WORK TO DONE:
   c) If the acceptance criteria appear met based on commits and codebase state,
      move the file to done/ and add a completion note at the bottom:
      "Completed: [date] — AC verified by janitor based on [evidence]"
-  d) Commit and push: git commit -m "chore(janitor): move [ticket-id] to done — AC met" && git push
+  d) git_commit: message "chore(janitor): move [ticket-id] to done — AC met"
+     git_push
 
 STEP 2 — DETECT AND REMOVE DUPLICATES:
   Compare ticket titles and topics across ALL directories (backlog/, in-progress/, done/).
@@ -1274,25 +1295,33 @@ STEP 2 — DETECT AND REMOVE DUPLICATES:
   a) Keep the one furthest along in the pipeline (done > in-progress > backlog)
   b) If both are in the same directory, keep the one with the lower number
   c) Delete the duplicate
-  d) Commit and push: git commit -m "chore(janitor): remove duplicate [ticket-id] (same as [kept-id])" && git push
+  d) git_commit: message "chore(janitor): remove duplicate [ticket-id] (same as [kept-id])"
+     git_push
 
 STEP 3 — DELETE ITEMS THAT DON'T BELONG:
   Compare each ticket's content against the README.md to verify it belongs to this project.
   If a ticket clearly doesn't match the project scope (e.g. game-related ticket in a
   recruiter portal):
   a) Delete the file
-  b) Commit and push: git commit -m "chore(janitor): remove [ticket-id] — does not belong to project" && git push
+  b) git_commit: message "chore(janitor): remove [ticket-id] — does not belong to project"
+     git_push
 
 STEP 4 — RE-PRIORITIZE STALE ITEMS:
   For tickets in in-progress/ with no related git activity in the last 7 days:
   a) Move the file back to backlog/
   b) Add a note: "Moved to backlog: [date] — no activity for 7+ days"
-  c) Commit and push: git commit -m "chore(janitor): move stale [ticket-id] back to backlog" && git push
+  c) git_commit: message "chore(janitor): move stale [ticket-id] back to backlog"
+     git_push
+
+COMMIT GATE — run before finishing:
+  git_status to verify the working tree is clean. If there are ANY uncommitted
+  changes, commit them now with git_commit and git_push.
 
 DON'T:
 - Create new tickets (that's the COO's job)
 - Modify ticket content beyond adding status notes
 - Delete tickets that are valid but low priority — those stay in backlog
+- NEVER finish a run with uncommitted changes. Always check git_status at the end.
 - NEVER run find, ls, grep, or cat on directories without excluding node_modules,
   .git, vendor, dist, build, and other large generated directories
 

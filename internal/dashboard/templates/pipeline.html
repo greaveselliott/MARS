@@ -16,6 +16,43 @@
     <a href="/debug" class="nav-item{{if eq .ActiveNav "debug"}} active{{end}}">Debug</a>
     <a href="/evolution" class="nav-item{{if eq .ActiveNav "evolution"}} active{{end}}">Evolution</a>
     <div class="nav-spacer"></div>
+
+    <div class="control-bar" id="control-bar">
+      <div class="status-indicator">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-label">Running</span>
+        <span id="active-jobs" style="margin-left:auto"></span>
+      </div>
+
+      <button class="ctrl-btn" id="btn-pause" onclick="togglePause()">
+        <span class="key-hint">P</span><span id="pause-label">Pause</span>
+      </button>
+
+      <button class="ctrl-btn warn" id="btn-restart" onclick="confirmRestart()">
+        <span class="key-hint">R</span>Restart
+      </button>
+
+      <div class="ctrl-group">
+        <select class="ctrl-select" id="select-repo" onchange="loadRoles()">
+          <option value="">Repo...</option>
+        </select>
+        <button class="ctrl-btn" id="btn-scan" onclick="triggerScan()">
+          <span class="key-hint">S</span>Scan
+        </button>
+      </div>
+
+      <div class="ctrl-group">
+        <select class="ctrl-select" id="select-role">
+          <option value="">Role...</option>
+        </select>
+        <button class="ctrl-btn" id="btn-run" onclick="triggerRunRole()">Run</button>
+      </div>
+
+      <button class="ctrl-btn danger" id="btn-stop" onclick="confirmStop()">
+        <span class="key-hint">Q</span>Stop
+      </button>
+    </div>
+
     <button id="estop-btn" class="estop-btn" onclick="emergencyStop()">Emergency Stop</button>
   </nav>
 

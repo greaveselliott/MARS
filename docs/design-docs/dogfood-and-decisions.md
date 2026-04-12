@@ -89,3 +89,34 @@ Three changes close this gap:
 - Moving to a PR/CI model later requires only uncommenting manifest entries
 - Container-based testing catches environment-specific bugs that native runs miss
 - Bootability checks catch structural issues at scan time (before agents even start) and at every stage of the pipeline (engineer, QA, dogfood)
+
+---
+
+### AD-028: Git tools in default manifest and commit gates in role prompts
+
+**Status:** Accepted
+**Date:** 2026-04-12
+**Author:** Agent (intervention recovery)
+
+### Context
+
+After running the dogfood agent against `recruiter-workflow-portal`, the repository had significant uncommitted changes. Investigation revealed two root causes:
+
+1. **No `.gitignore`** — build artifacts (`.next/`, `node_modules/`) appeared in `git status`, making it look like a sea of changes.
+2. **Agents never committed** — the `git_commit`, `git_status`, `git_diff`, and `git_push` tools existed in the registry (`internal/tools/git.go`) but were not included in any role's tool allowlist in the default manifest. Agents could only commit via `shell_exec` with raw git commands, and prompts did not enforce committing strongly enough.
+
+### Changes
+
+1. **Default manifest tool lists** — added `git_status`, `git_diff`, `git_commit`, `git_push` to all write-capable roles (engineer, dogfood, janitor, pipeline-fixer, pr-comment-fixer, CEO, COO, CTO, release-manager, security-weekly).
+
+2. **Commit gates in role prompts** — every write-capable role prompt now includes a "COMMIT GATE" section that requires the agent to run `git_status` before finishing and commit any uncommitted changes. The Engineer, Dogfood, Janitor, Pipeline Fixer, and PR Comment Fixer prompts all enforce this.
+
+3. **Prompt language updated** — all prompts now reference `git_commit` and `git_push` tools instead of raw `git commit`/`git push` shell commands, making it clear these are first-class tools.
+
+4. **Scanner `.gitignore` check** — `no_gitignore` finding (severity: high) is now emitted when a repository lacks a root `.gitignore`, since missing gitignore causes agent confusion from noisy `git status` output.
+
+### Discoveries
+
+- Git tools were fully implemented since M2 but never wired into any role's tool list — a classic "built but not deployed" gap.
+- The `shell_exec` fallback for git operations is fragile: agents may format git commands incorrectly, and shell piping/quoting issues can silently fail.
+- Without a `.gitignore`, `git status` output for a Node.js project can be thousands of lines of `node_modules/` entries, overwhelming the agent's context window and masking real changes.

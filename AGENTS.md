@@ -138,6 +138,30 @@ mars-harness run engineer --repo . --dry-run   # preview system prompt
 
 Flags: `--model-endpoint`, `--trace`, `--dry-run`, `--budget`, `--max-turns`
 
+### Interactive Controls
+
+When `serve` or `start` is running, the terminal provides interactive key bindings and a status bar:
+
+| Key | Action |
+|-----|--------|
+| `p` | Pause / Resume (toggle). Paused pool finishes running jobs but claims no new ones. |
+| `r` | Warm restart — stops workers, reloads manifests and triggers, restarts workers. HTTP stays up. |
+| `s` | Re-scan all registered repos for findings (generates tickets). |
+| `q` | Graceful stop (same as Ctrl+C). |
+| `h` | Print key binding help. |
+
+The same controls are available via the web dashboard at `http://localhost:9090` (control bar in the sidebar) and as HTTP API endpoints:
+
+```
+POST /api/pause          POST /api/resume
+POST /api/restart        POST /api/stop
+POST /api/scan           POST /api/run-role
+GET  /api/status         GET  /api/repos
+GET  /api/repo-roles
+```
+
+See [docs/design-docs/dashboard.md](docs/design-docs/dashboard.md) AD-027 for full details.
+
 ## How to Build
 
 ```bash

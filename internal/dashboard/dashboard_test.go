@@ -281,6 +281,278 @@ func TestDashboard_staticAssets(t *testing.T) {
 	}
 }
 
+func newTestDashboardWithControls(t *testing.T) (*Dashboard, *controlState) {
+	t.Helper()
+	state := &controlState{}
+	d, err := New(Config{
+		Controls: ControlCallbacks{
+			Pause:   func() { state.paused = true },
+			Resume:  func() { state.paused = false },
+			Restart: func(_ context.Context) error { state.restarted = true; return nil },
+			Stop:    func(_ context.Context) error { state.stopped = true; return nil },
+			Scan: func(_ context.Context, repoID string) error {
+				state.scannedRepo = repoID
+				return nil
+			},
+			RunRole: func(_ context.Context, repoID, role string) error {
+				state.runRepo = repoID
+				state.runRole = role
+				return nil
+			},
+			Status: func() interface{} {
+				return map[string]interface{}{
+					"healthy":     true,
+					"paused":      state.paused,
+					"active_jobs": 0,
+					"uptime_secs": 42.0,
+				}
+			},
+			IsPaused: func() bool { return state.paused },
+			ListRepos: func() []RepoInfoDTO {
+				return []RepoInfoDTO{{ID: "r1", Path: "/tmp/repo"}}
+			},
+			ListRoles: func(_ string) []string {
+				return []string{"ceo", "engineer"}
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return d, state
+}
+
+type controlState struct {
+	paused      bool
+	restarted   bool
+	stopped     bool
+	scannedRepo string
+	runRepo     string
+	runRole     string
+}
+
+func TestDashboard_pauseEndpoint(t *testing.T) {
+	d, state := newTestDashboardWithControls(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL+"/api/pause", "application/json", nil)
+	if err != nil {
+		t.Fatalf("POST /api/pause: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("got status %d, want 200", resp.StatusCode)
+	}
+	if !state.paused {
+		t.Error("Pause callback was not invoked")
+	}
+}
+
+func TestDashboard_resumeEndpoint(t *testing.T) {
+	d, state := newTestDashboardWithControls(t)
+	state.paused = true
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL+"/api/resume", "application/json", nil)
+	if err != nil {
+		t.Fatalf("POST /api/resume: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("got status %d, want 200", resp.StatusCode)
+	}
+	if state.paused {
+		t.Error("Resume callback did not clear paused state")
+	}
+}
+
+func TestDashboard_restartEndpoint(t *testing.T) {
+	d, state := newTestDashboardWithControls(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL+"/api/restart", "application/json", nil)
+	if err != nil {
+		t.Fatalf("POST /api/restart: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("got status %d, want 200", resp.StatusCode)
+	}
+	if !state.restarted {
+		t.Error("Restart callback was not invoked")
+	}
+}
+
+func TestDashboard_stopEndpoint(t *testing.T) {
+	d, state := newTestDashboardWithControls(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL+"/api/stop", "application/json", nil)
+	if err != nil {
+		t.Fatalf("POST /api/stop: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("got status %d, want 200", resp.StatusCode)
+	}
+	if !state.stopped {
+		t.Error("Stop callback was not invoked")
+	}
+}
+
+func TestDashboard_scanEndpoint(t *testing.T) {
+	d, state := newTestDashboardWithControls(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL+"/api/scan", "application/json",
+		strings.NewReader(`{"repo_id":"r1"}`))
+	if err != nil {
+		t.Fatalf("POST /api/scan: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("got status %d, want 200", resp.StatusCode)
+	}
+	if state.scannedRepo != "r1" {
+		t.Errorf("expected scanned repo r1, got %q", state.scannedRepo)
+	}
+}
+
+func TestDashboard_scanEndpoint_missingRepoID(t *testing.T) {
+	d, _ := newTestDashboardWithControls(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL+"/api/scan", "application/json",
+		strings.NewReader(`{}`))
+	if err != nil {
+		t.Fatalf("POST /api/scan: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("got status %d, want 400", resp.StatusCode)
+	}
+}
+
+func TestDashboard_runRoleEndpoint(t *testing.T) {
+	d, state := newTestDashboardWithControls(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	resp, err := http.Post(srv.URL+"/api/run-role", "application/json",
+		strings.NewReader(`{"repo_id":"r1","role":"engineer"}`))
+	if err != nil {
+		t.Fatalf("POST /api/run-role: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("got status %d, want 200", resp.StatusCode)
+	}
+	if state.runRepo != "r1" || state.runRole != "engineer" {
+		t.Errorf("expected r1/engineer, got %s/%s", state.runRepo, state.runRole)
+	}
+}
+
+func TestDashboard_statusEndpoint(t *testing.T) {
+	d, _ := newTestDashboardWithControls(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/status")
+	if err != nil {
+		t.Fatalf("GET /api/status: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("got status %d, want 200", resp.StatusCode)
+	}
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if result["healthy"] != true {
+		t.Errorf("expected healthy=true, got %v", result["healthy"])
+	}
+}
+
+func TestDashboard_reposEndpoint(t *testing.T) {
+	d, _ := newTestDashboardWithControls(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/repos")
+	if err != nil {
+		t.Fatalf("GET /api/repos: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("got status %d, want 200", resp.StatusCode)
+	}
+
+	var repos []RepoInfoDTO
+	if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(repos) != 1 || repos[0].ID != "r1" {
+		t.Errorf("unexpected repos: %+v", repos)
+	}
+}
+
+func TestDashboard_controlEndpoints_methodNotAllowed(t *testing.T) {
+	d, _ := newTestDashboardWithControls(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	postOnlyEndpoints := []string{"/api/pause", "/api/resume", "/api/stop", "/api/restart", "/api/scan", "/api/run-role"}
+	for _, ep := range postOnlyEndpoints {
+		t.Run(ep, func(t *testing.T) {
+			resp, err := http.Get(srv.URL + ep)
+			if err != nil {
+				t.Fatalf("GET %s: %v", ep, err)
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusMethodNotAllowed {
+				t.Errorf("GET %s: got status %d, want 405", ep, resp.StatusCode)
+			}
+		})
+	}
+}
+
+func TestDashboard_controlEndpoints_nilCallbacks(t *testing.T) {
+	d := newTestDashboard(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	endpoints := []string{"/api/pause", "/api/resume", "/api/stop", "/api/restart"}
+	for _, ep := range endpoints {
+		t.Run(ep, func(t *testing.T) {
+			resp, err := http.Post(srv.URL+ep, "application/json", nil)
+			if err != nil {
+				t.Fatalf("POST %s: %v", ep, err)
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusNotImplemented {
+				t.Errorf("POST %s: got status %d, want 501", ep, resp.StatusCode)
+			}
+		})
+	}
+}
+
 func TestDashboard_missingModuleEmptyState(t *testing.T) {
 	d := newTestDashboard(t)
 	srv := httptest.NewServer(d.Handler())

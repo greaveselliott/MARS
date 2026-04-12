@@ -32,6 +32,34 @@ Full auto-layout (dagre or similar) is a v2 improvement if custom role topologie
 4. **Debug:** Job timeline (segmented bars), execution trace viewer (live and replay), webhook delivery log, error log.
 5. **Evolution History:** Self-improvement timeline with before/after score analysis, guardrail inventory with staleness flags.
 
+### AD-027: Interactive control surface (CLI + dashboard)
+
+Operators need to pause, restart, scan, stop, and force-run individual roles without killing the process. Two control surfaces share identical backend methods on `Server`:
+
+**CLI (terminal):** Raw terminal mode key listener (`internal/ui/keylistener.go`) plus a persistent ANSI status bar (`internal/ui/statusbar.go`). Keys: `p` (pause/resume), `r` (warm restart), `s` (re-scan), `q` (graceful stop), `h` (help). Activated automatically during `mars-harness serve` and `mars-harness start`.
+
+**Dashboard (localhost:9090):** Control bar in the sidebar with buttons for pause/resume, restart, stop, scan, and run-role. Repo and role selectors populated from `/api/repos` and `/api/repo-roles`. State updates flow via SSE `status_change` events.
+
+**API endpoints:**
+
+| Method | Path | Action |
+|--------|------|--------|
+| POST | `/api/pause` | Pause worker pool (no new claims) |
+| POST | `/api/resume` | Resume worker pool |
+| POST | `/api/stop` | Graceful shutdown |
+| POST | `/api/restart` | Warm restart (reload config, keep HTTP) |
+| POST | `/api/scan` | Scan repo for findings |
+| POST | `/api/run-role` | Enqueue a specific role |
+| GET | `/api/status` | JSON status snapshot |
+| GET | `/api/repos` | List registered repos |
+| GET | `/api/repo-roles` | List roles for a repo |
+
+**Design choices:**
+- Pause stops claiming, not killing. Running jobs complete. Prevents data loss.
+- Warm restart reloads manifests and triggers within the same process. Does not rebuild the binary.
+- `q` key cancels the signal context, triggering the same graceful shutdown path as Ctrl+C.
+
 ## Discoveries
 
-(Record during implementation.)
+- The `pipeline.html` template uses its own full HTML structure (not `base.html`), so the control bar had to be added directly to the template sidebar rather than relying on template inheritance. Both templates should be reconciled eventually (tech debt).
+- Raw terminal mode on macOS uses `TIOCGETA`/`TIOCSETA` from `golang.org/x/sys/unix`. The key listener gracefully degrades (logs a warning and disables itself) if the process is not attached to a TTY.

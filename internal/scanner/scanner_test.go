@@ -29,6 +29,7 @@ func TestScan_emptyRepo(t *testing.T) {
 	assert.True(t, hasType("no_ci"), "expected no_ci finding")
 	assert.True(t, hasType("no_readme"), "expected no_readme finding")
 	assert.True(t, hasType("no_license"), "expected no_license finding")
+	assert.True(t, hasType("no_gitignore"), "expected no_gitignore finding")
 	assert.False(t, result.HasCI)
 	assert.False(t, result.HasReadme)
 	assert.False(t, result.HasLicense)
@@ -705,6 +706,43 @@ func TestBootability_correctPathAlias(t *testing.T) {
 	for _, f := range result.Findings {
 		if f.Type == "misconfigured_path_alias" {
 			t.Fatal("should not report misconfigured_path_alias when @/* correctly maps to ./src/*")
+		}
+	}
+}
+
+func TestScan_missingGitignore(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	hasType := func(typ string) bool {
+		for _, f := range result.Findings {
+			if f.Type == typ {
+				return true
+			}
+		}
+		return false
+	}
+	assert.True(t, hasType("no_gitignore"), "expected no_gitignore finding when .gitignore is missing")
+}
+
+func TestScan_hasGitignore(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules/\n.next/\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644)
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	for _, f := range result.Findings {
+		if f.Type == "no_gitignore" {
+			t.Fatal("should not report no_gitignore when .gitignore exists at root")
 		}
 	}
 }

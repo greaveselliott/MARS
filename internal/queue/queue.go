@@ -314,6 +314,16 @@ FROM jobs WHERE id = ?`, jobID)
 	return job, nil
 }
 
+// CountByStatus returns the number of jobs with the given status.
+func (q *Queue) CountByStatus(ctx context.Context, status string) (int, error) {
+	var count int
+	err := q.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM jobs WHERE status = ?`, status).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("queue: count by status %q: %w", status, err)
+	}
+	return count, nil
+}
+
 func scanJob(row *sql.Row) (*Job, error) {
 	var j Job
 	var status string

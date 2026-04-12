@@ -13,7 +13,7 @@ import (
 
 // Finding represents a detected gap in the repo.
 type Finding struct {
-	Type        string // "missing_tests", "todo", "no_ci", "no_readme", "no_license", "large_function", "missing_dev_script", "missing_root_layout", "conflicting_app_pages", "missing_tailwind_config", "deprecated_next_config", "misconfigured_path_alias"
+	Type        string // "missing_tests", "todo", "no_ci", "no_readme", "no_license", "no_gitignore", "large_function", "missing_dev_script", "missing_root_layout", "conflicting_app_pages", "missing_tailwind_config", "deprecated_next_config", "misconfigured_path_alias"
 	Path        string
 	Description string
 	Severity    string // "high", "medium", "low"
@@ -140,6 +140,15 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 			Type:        "no_license",
 			Description: "No LICENSE file found — add a LICENSE to clarify usage rights",
 			Severity:    "medium",
+		})
+	}
+
+	if !hasGitignore(allFiles) {
+		result.Findings = append(result.Findings, Finding{
+			Type:        "no_gitignore",
+			Path:        ".gitignore",
+			Description: "No .gitignore found — build artifacts and dependencies (node_modules/, .next/, dist/) will pollute git status and confuse agents",
+			Severity:    "high",
 		})
 	}
 
@@ -271,6 +280,15 @@ func detectLicense(files []string) bool {
 	for _, f := range files {
 		base := strings.ToLower(filepath.Base(f))
 		if base == "license" || base == "license.md" || base == "license.txt" || base == "licence" || base == "licence.md" {
+			return true
+		}
+	}
+	return false
+}
+
+func hasGitignore(files []string) bool {
+	for _, f := range files {
+		if filepath.Base(f) == ".gitignore" && filepath.Dir(f) == "." {
 			return true
 		}
 	}

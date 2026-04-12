@@ -121,3 +121,98 @@ func TestWorkerPool_OnComplete_does_not_fire_on_failure(t *testing.T) {
 	cancel()
 	wp.Stop()
 }
+
+func TestWorkerPool_Pause_blocks_new_claims(t *testing.T) {
+	q := testQueue(t)
+
+	var claimed atomic.Int32
+
+	wp := NewWorkerPool(q, WorkerConfig{
+		Concurrency:  1,
+		PollInterval: 50 * time.Millisecond,
+		OnJob: func(_ context.Context, _ *Job) error {
+			claimed.Add(1)
+			return nil
+		},
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wp.Start(ctx)
+
+	wp.Pause()
+	if !wp.IsPaused() {
+		t.Error("expected IsPaused() to return true after Pause()")
+	}
+
+	_, err := q.Enqueue(context.Background(), Job{
+		RepoID:         "repo-1",
+		Role:           "engineer",
+		Trigger:        `{"type":"test"}`,
+		IdempotencyKey: "pause-test",
+	})
+	if err != nil {
+		t.Fatalf("Enqueue: %v", err)
+	}
+
+	time.Sleep(300 * time.Millisecond)
+
+	if claimed.Load() != 0 {
+		t.Errorf("expected 0 claims while paused, got %d", claimed.Load())
+	}
+
+	cancel()
+	wp.Stop()
+}
+
+func TestWorkerPool_Resume_after_pause_claims_jobs(t *testing.T) {
+	q := testQueue(t)
+
+	var claimed atomic.Int32
+
+	wp := NewWorkerPool(q, WorkerConfig{
+		Concurrency:  1,
+		PollInterval: 50 * time.Millisecond,
+		OnJob: func(_ context.Context, _ *Job) error {
+			claimed.Add(1)
+			return nil
+		},
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wp.Start(ctx)
+
+	wp.Pause()
+
+	_, err := q.Enqueue(context.Background(), Job{
+		RepoID:         "repo-1",
+		Role:           "engineer",
+		Trigger:        `{"type":"test"}`,
+		IdempotencyKey: "resume-test",
+	})
+	if err != nil {
+		t.Fatalf("Enqueue: %v", err)
+	}
+
+	time.Sleep(200 * time.Millisecond)
+	if claimed.Load() != 0 {
+		t.Fatal("job was claimed while paused")
+	}
+
+	wp.Resume()
+	if wp.IsPaused() {
+		t.Error("expected IsPaused() to return false after Resume()")
+	}
+
+	deadline := time.After(3 * time.Second)
+	for claimed.Load() == 0 {
+		select {
+		case <-deadline:
+			t.Fatal("job was not claimed within 3 seconds after resume")
+		default:
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+
+	cancel()
+	wp.Stop()
+}

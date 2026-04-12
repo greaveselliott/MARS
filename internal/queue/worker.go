@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -23,6 +24,7 @@ type WorkerPool struct {
 	cfg    WorkerConfig
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
+	paused atomic.Bool
 }
 
 // NewWorkerPool creates a worker pool that pulls jobs from q.
@@ -68,6 +70,24 @@ func (wp *WorkerPool) Stop() {
 	}
 }
 
+// Pause stops workers from claiming new jobs. Already-running jobs
+// continue to completion.
+func (wp *WorkerPool) Pause() {
+	wp.paused.Store(true)
+	slog.Info("queue: worker pool paused")
+}
+
+// Resume allows workers to claim jobs again after a Pause.
+func (wp *WorkerPool) Resume() {
+	wp.paused.Store(false)
+	slog.Info("queue: worker pool resumed")
+}
+
+// IsPaused reports whether the pool is currently paused.
+func (wp *WorkerPool) IsPaused() bool {
+	return wp.paused.Load()
+}
+
 func (wp *WorkerPool) run(ctx context.Context, workerID string) {
 	defer wp.wg.Done()
 	ticker := time.NewTicker(wp.cfg.PollInterval)
@@ -84,6 +104,10 @@ func (wp *WorkerPool) run(ctx context.Context, workerID string) {
 }
 
 func (wp *WorkerPool) poll(ctx context.Context, workerID string) {
+	if wp.paused.Load() {
+		return
+	}
+
 	job, err := wp.q.Claim(ctx, workerID)
 	if err != nil {
 		slog.Error("queue: claim failed", "worker", workerID, "error", err)

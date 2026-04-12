@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -21,11 +22,34 @@ type ChainNode struct {
 	Active bool
 }
 
+// ControlCallbacks groups the server methods exposed through the
+// dashboard's control API. Each field is optional — nil disables the
+// corresponding endpoint.
+type ControlCallbacks struct {
+	Pause     func()
+	Resume    func()
+	Restart   func(ctx context.Context) error
+	Stop      func(ctx context.Context) error
+	Scan      func(ctx context.Context, repoID string) error
+	RunRole   func(ctx context.Context, repoID, role string) error
+	Status    func() interface{}
+	ListRepos func() []RepoInfoDTO
+	ListRoles func(repoID string) []string
+	IsPaused  func() bool
+}
+
+// RepoInfoDTO is a lightweight repo descriptor for API responses.
+type RepoInfoDTO struct {
+	ID   string `json:"id"`
+	Path string `json:"path"`
+}
+
 // Config controls the dashboard.
 type Config struct {
 	Addr          string       // default ":9090"
 	EmergencyStop func() []error
 	ChainProvider func() []ChainNode // returns the live pipeline chain from manifest
+	Controls      ControlCallbacks
 }
 
 const eventBufferSize = 200
@@ -81,6 +105,15 @@ func (d *Dashboard) routes() {
 	d.mux.HandleFunc("/evolution", d.handlePage("evolution", "Evolution History"))
 	d.mux.HandleFunc("/api/events", d.handleSSE)
 	d.mux.HandleFunc("/api/emergency-stop", d.handleEmergencyStop)
+	d.mux.HandleFunc("/api/pause", d.handlePause)
+	d.mux.HandleFunc("/api/resume", d.handleResume)
+	d.mux.HandleFunc("/api/stop", d.handleStop)
+	d.mux.HandleFunc("/api/restart", d.handleRestart)
+	d.mux.HandleFunc("/api/scan", d.handleScan)
+	d.mux.HandleFunc("/api/run-role", d.handleRunRole)
+	d.mux.HandleFunc("/api/status", d.handleStatus)
+	d.mux.HandleFunc("/api/repos", d.handleListRepos)
+	d.mux.HandleFunc("/api/repo-roles", d.handleListRolesForRepo)
 
 	staticFS, err := fs.Sub(content, "static")
 	if err != nil {
@@ -241,4 +274,167 @@ func (d *Dashboard) handleEmergencyStop(w http.ResponseWriter, r *http.Request) 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error("dashboard: encode emergency stop response", "error", err)
 	}
+}
+
+// --- Control API handlers ---
+
+type controlResponse struct {
+	OK    bool   `json:"ok"`
+	Error string `json:"error,omitempty"`
+}
+
+func writeJSON(w http.ResponseWriter, status int, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		slog.Error("dashboard: encode response", "error", err)
+	}
+}
+
+func (d *Dashboard) requirePost(w http.ResponseWriter, r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return false
+	}
+	return true
+}
+
+func (d *Dashboard) handlePause(w http.ResponseWriter, r *http.Request) {
+	if !d.requirePost(w, r) {
+		return
+	}
+	if d.cfg.Controls.Pause == nil {
+		writeJSON(w, http.StatusNotImplemented, controlResponse{Error: "pause not available"})
+		return
+	}
+	d.cfg.Controls.Pause()
+	writeJSON(w, http.StatusOK, controlResponse{OK: true})
+}
+
+func (d *Dashboard) handleResume(w http.ResponseWriter, r *http.Request) {
+	if !d.requirePost(w, r) {
+		return
+	}
+	if d.cfg.Controls.Resume == nil {
+		writeJSON(w, http.StatusNotImplemented, controlResponse{Error: "resume not available"})
+		return
+	}
+	d.cfg.Controls.Resume()
+	writeJSON(w, http.StatusOK, controlResponse{OK: true})
+}
+
+func (d *Dashboard) handleStop(w http.ResponseWriter, r *http.Request) {
+	if !d.requirePost(w, r) {
+		return
+	}
+	if d.cfg.Controls.Stop == nil {
+		writeJSON(w, http.StatusNotImplemented, controlResponse{Error: "stop not available"})
+		return
+	}
+	if err := d.cfg.Controls.Stop(r.Context()); err != nil {
+		writeJSON(w, http.StatusInternalServerError, controlResponse{Error: err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, controlResponse{OK: true})
+}
+
+func (d *Dashboard) handleRestart(w http.ResponseWriter, r *http.Request) {
+	if !d.requirePost(w, r) {
+		return
+	}
+	if d.cfg.Controls.Restart == nil {
+		writeJSON(w, http.StatusNotImplemented, controlResponse{Error: "restart not available"})
+		return
+	}
+	if err := d.cfg.Controls.Restart(r.Context()); err != nil {
+		writeJSON(w, http.StatusInternalServerError, controlResponse{Error: err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, controlResponse{OK: true})
+}
+
+func (d *Dashboard) handleScan(w http.ResponseWriter, r *http.Request) {
+	if !d.requirePost(w, r) {
+		return
+	}
+	if d.cfg.Controls.Scan == nil {
+		writeJSON(w, http.StatusNotImplemented, controlResponse{Error: "scan not available"})
+		return
+	}
+	var body struct {
+		RepoID string `json:"repo_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.RepoID == "" {
+		writeJSON(w, http.StatusBadRequest, controlResponse{Error: "repo_id is required"})
+		return
+	}
+	if err := d.cfg.Controls.Scan(r.Context(), body.RepoID); err != nil {
+		writeJSON(w, http.StatusInternalServerError, controlResponse{Error: err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, controlResponse{OK: true})
+}
+
+func (d *Dashboard) handleRunRole(w http.ResponseWriter, r *http.Request) {
+	if !d.requirePost(w, r) {
+		return
+	}
+	if d.cfg.Controls.RunRole == nil {
+		writeJSON(w, http.StatusNotImplemented, controlResponse{Error: "run-role not available"})
+		return
+	}
+	var body struct {
+		RepoID string `json:"repo_id"`
+		Role   string `json:"role"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.RepoID == "" || body.Role == "" {
+		writeJSON(w, http.StatusBadRequest, controlResponse{Error: "repo_id and role are required"})
+		return
+	}
+	if err := d.cfg.Controls.RunRole(r.Context(), body.RepoID, body.Role); err != nil {
+		writeJSON(w, http.StatusInternalServerError, controlResponse{Error: err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, controlResponse{OK: true})
+}
+
+func (d *Dashboard) handleStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if d.cfg.Controls.Status == nil {
+		writeJSON(w, http.StatusNotImplemented, controlResponse{Error: "status not available"})
+		return
+	}
+	writeJSON(w, http.StatusOK, d.cfg.Controls.Status())
+}
+
+func (d *Dashboard) handleListRepos(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if d.cfg.Controls.ListRepos == nil {
+		writeJSON(w, http.StatusOK, []interface{}{})
+		return
+	}
+	writeJSON(w, http.StatusOK, d.cfg.Controls.ListRepos())
+}
+
+func (d *Dashboard) handleListRolesForRepo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if d.cfg.Controls.ListRoles == nil {
+		writeJSON(w, http.StatusOK, []string{})
+		return
+	}
+	repoID := r.URL.Query().Get("repo_id")
+	if repoID == "" {
+		writeJSON(w, http.StatusBadRequest, controlResponse{Error: "repo_id query param is required"})
+		return
+	}
+	writeJSON(w, http.StatusOK, d.cfg.Controls.ListRoles(repoID))
 }

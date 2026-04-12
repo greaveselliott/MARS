@@ -24,6 +24,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/power"
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/safety"
+	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scheduler"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
@@ -74,8 +75,11 @@ type Server struct {
 	scoreStore  *scoring.Store
 	evoStore    *evolution.Store
 
-	mu      sync.Mutex
-	started bool
+	mu        sync.Mutex
+	started   bool
+	startedAt time.Time
+	startCtx  context.Context
+	stopFunc  context.CancelFunc
 }
 
 // New creates a Server wired with all subsystems.
@@ -212,6 +216,27 @@ func New(cfg Config) (*Server, error) {
 		Addr:          dashAddr,
 		EmergencyStop: func() []error { return s.estop.Execute(context.Background()) },
 		ChainProvider: s.buildPipelineChain,
+		Controls: dashboard.ControlCallbacks{
+			Pause:   func() { s.Pause() },
+			Resume:  func() { s.Resume() },
+			Restart: s.Restart,
+			Stop:    s.Stop,
+			Scan:    s.ScanRepo,
+			RunRole: s.RunRole,
+			Status:  func() interface{} { return s.Status() },
+			IsPaused: s.IsPaused,
+			ListRepos: func() []dashboard.RepoInfoDTO {
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				defer cancel()
+				repos, _ := s.repos.List(ctx)
+				out := make([]dashboard.RepoInfoDTO, len(repos))
+				for i, r := range repos {
+					out[i] = dashboard.RepoInfoDTO{ID: r.ID, Path: r.Path}
+				}
+				return out
+			},
+			ListRoles: s.ListRoles,
+		},
 	})
 	if err != nil {
 		db.Close()
@@ -259,6 +284,8 @@ func (s *Server) Start(ctx context.Context) error {
 		return fmt.Errorf("serve: server already started")
 	}
 	s.started = true
+	s.startedAt = time.Now()
+	s.startCtx = ctx
 	s.mu.Unlock()
 
 	if cancelSleep, err := power.PreventSleep(); err != nil {
@@ -422,6 +449,205 @@ func (s *Server) HealthHandler() http.Handler {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		fmt.Fprint(w, `{"status":"unhealthy"}`)
 	})
+}
+
+// --- Control surface methods (used by CLI key-listener and dashboard API) ---
+
+// StatusResponse is the JSON shape returned by the status endpoint and
+// consumed by the CLI status bar.
+type StatusResponse struct {
+	Healthy    bool       `json:"healthy"`
+	Paused     bool       `json:"paused"`
+	ActiveJobs int        `json:"active_jobs"`
+	UptimeSecs float64    `json:"uptime_secs"`
+	Repos      []RepoInfo `json:"repos"`
+}
+
+// RepoInfo is a lightweight repo descriptor for control-surface responses.
+type RepoInfo struct {
+	ID   string `json:"id"`
+	Path string `json:"path"`
+}
+
+// Pause stops the worker pool from claiming new jobs.
+func (s *Server) Pause() {
+	s.workers.Pause()
+	if s.dash != nil {
+		s.dash.BroadcastEvent("status_change", `{"state":"paused"}`)
+	}
+}
+
+// Resume allows the worker pool to claim jobs again after a Pause.
+func (s *Server) Resume() {
+	s.workers.Resume()
+	if s.dash != nil {
+		s.dash.BroadcastEvent("status_change", `{"state":"running"}`)
+	}
+}
+
+// IsPaused reports whether the worker pool is paused.
+func (s *Server) IsPaused() bool {
+	return s.workers.IsPaused()
+}
+
+// Restart performs a warm restart: stops workers, reloads manifests and
+// triggers, then starts workers again. HTTP servers stay up.
+func (s *Server) Restart(ctx context.Context) error {
+	slog.Info("serve: warm restart initiated")
+	if s.dash != nil {
+		s.dash.BroadcastEvent("status_change", `{"state":"restarting"}`)
+	}
+
+	s.workers.Stop()
+	s.scheduler.Stop()
+
+	s.router.RestartAll()
+
+	repos, err := s.repos.List(ctx)
+	if err != nil {
+		return fmt.Errorf("serve: restart — reload repos: %w", err)
+	}
+	if err := s.triggers.Rebuild(repos); err != nil {
+		slog.Warn("serve: restart — trigger rebuild had errors", "err", err)
+	}
+
+	s.registerCronSchedules(repos)
+
+	s.workers = queue.NewWorkerPool(s.queue, queue.WorkerConfig{
+		Concurrency: s.cfg.concurrency(),
+		OnJob:       s.executor.Execute,
+		OnComplete:  s.handleJobComplete,
+		OnFail:      s.handleJobFailed,
+	})
+	s.workers.Start(s.startCtx)
+	s.scheduler.Start(s.startCtx)
+
+	if s.dash != nil {
+		s.dash.BroadcastEvent("status_change", `{"state":"running"}`)
+	}
+	slog.Info("serve: warm restart complete")
+	return nil
+}
+
+// ScanRepo runs the scanner against a registered repo and enqueues
+// findings as tickets.
+func (s *Server) ScanRepo(ctx context.Context, repoID string) error {
+	rec, err := s.repos.FindByID(ctx, repoID)
+	if err != nil {
+		return fmt.Errorf("scan: lookup repo %s: %w", repoID, err)
+	}
+	if rec == nil {
+		return fmt.Errorf("scan: repo %s not found in registry", repoID)
+	}
+
+	result, err := scanner.Scan(ctx, scanner.Config{RepoRoot: rec.Path})
+	if err != nil {
+		return fmt.Errorf("scan: %w", err)
+	}
+
+	ticketDir := filepath.Join(rec.Path, ".harness", "tickets", "backlog")
+	if err := scanner.GenerateTickets(result.Findings, ticketDir); err != nil {
+		return fmt.Errorf("scan: generate tickets: %w", err)
+	}
+
+	slog.Info("serve: scan complete", "repo", repoID, "findings", len(result.Findings))
+	if s.dash != nil {
+		s.dash.BroadcastEvent("scan_complete", fmt.Sprintf(
+			`{"repo_id":"%s","findings":%d}`, repoID, len(result.Findings)))
+	}
+	return nil
+}
+
+// ScanAllRepos runs the scanner on every registered repo sequentially.
+func (s *Server) ScanAllRepos(ctx context.Context) error {
+	repos, err := s.repos.List(ctx)
+	if err != nil {
+		return fmt.Errorf("scan-all: list repos: %w", err)
+	}
+	var firstErr error
+	for _, repo := range repos {
+		if err := s.ScanRepo(ctx, repo.ID); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	return firstErr
+}
+
+// RunRole validates that a role exists in the manifest and enqueues it.
+func (s *Server) RunRole(ctx context.Context, repoID, role string) error {
+	manifest, err := s.loadManifest(ctx, repoID)
+	if err != nil {
+		return err
+	}
+	if _, ok := manifest.Roles[role]; !ok {
+		available := make([]string, 0, len(manifest.Roles))
+		for name := range manifest.Roles {
+			available = append(available, name)
+		}
+		return fmt.Errorf("run-role: role %q not found in manifest — available: %v", role, available)
+	}
+
+	trigger := fmt.Sprintf(`{"type":"manual","source":"control-surface","role":"%s"}`, role)
+	jobID, err := s.SeedJob(ctx, repoID, role, trigger)
+	if err != nil {
+		return fmt.Errorf("run-role: enqueue %s: %w", role, err)
+	}
+	slog.Info("serve: manual role run enqueued", "role", role, "job", jobID)
+	return nil
+}
+
+// Status returns a snapshot of the orchestrator's state.
+func (s *Server) Status() StatusResponse {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	repos, _ := s.repos.List(ctx)
+	repoInfos := make([]RepoInfo, len(repos))
+	for i, r := range repos {
+		repoInfos[i] = RepoInfo{ID: r.ID, Path: r.Path}
+	}
+
+	active, _ := s.queue.CountByStatus(ctx, "running")
+
+	return StatusResponse{
+		Healthy:    s.health.Load(),
+		Paused:     s.workers.IsPaused(),
+		ActiveJobs: active,
+		UptimeSecs: time.Since(s.startedAt).Seconds(),
+		Repos:      repoInfos,
+	}
+}
+
+// ListRoles returns role names from the manifest of a registered repo.
+func (s *Server) ListRoles(repoID string) []string {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	manifest, err := s.loadManifest(ctx, repoID)
+	if err != nil {
+		return nil
+	}
+	roles := make([]string, 0, len(manifest.Roles))
+	for name := range manifest.Roles {
+		roles = append(roles, name)
+	}
+	return roles
+}
+
+// loadManifest fetches the manifest for a repo by ID.
+func (s *Server) loadManifest(ctx context.Context, repoID string) (*bundle.Manifest, error) {
+	rec, err := s.repos.FindByID(ctx, repoID)
+	if err != nil {
+		return nil, fmt.Errorf("load manifest: lookup repo %s: %w", repoID, err)
+	}
+	if rec == nil {
+		return nil, fmt.Errorf("load manifest: repo %s not found", repoID)
+	}
+	manifest, err := bundle.Load(rec.Path)
+	if err != nil {
+		return nil, fmt.Errorf("load manifest: parse %s: %w", rec.Path, err)
+	}
+	return manifest, nil
 }
 
 // handleTelemetryAPI serves the telemetry event history as JSON.

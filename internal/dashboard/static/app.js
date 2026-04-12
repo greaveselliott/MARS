@@ -171,6 +171,165 @@
     return div.innerHTML;
   }
 
+  // --- Control surface ---
+
+  var isPaused = false;
+
+  function updateStatusUI(state, activeJobs) {
+    var dot = document.getElementById("status-dot");
+    var label = document.getElementById("status-label");
+    var jobsEl = document.getElementById("active-jobs");
+    var pauseLabel = document.getElementById("pause-label");
+
+    if (!dot) return;
+
+    dot.className = "status-dot";
+    if (state === "paused") {
+      dot.classList.add("paused");
+      label.textContent = "Paused";
+      isPaused = true;
+      if (pauseLabel) pauseLabel.textContent = "Resume";
+    } else if (state === "restarting") {
+      dot.classList.add("restarting");
+      label.textContent = "Restarting…";
+    } else if (state === "stopped") {
+      dot.classList.add("stopped");
+      label.textContent = "Stopped";
+    } else {
+      label.textContent = "Running";
+      isPaused = false;
+      if (pauseLabel) pauseLabel.textContent = "Pause";
+    }
+
+    if (jobsEl && activeJobs !== undefined) {
+      jobsEl.textContent = activeJobs > 0 ? activeJobs + " active" : "";
+    }
+  }
+
+  function fetchStatus() {
+    fetch("/api/status")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var state = data.paused ? "paused" : (data.healthy ? "running" : "stopped");
+        updateStatusUI(state, data.active_jobs);
+      })
+      .catch(function () {});
+  }
+
+  function loadRepos() {
+    fetch("/api/repos")
+      .then(function (r) { return r.json(); })
+      .then(function (repos) {
+        var sel = document.getElementById("select-repo");
+        if (!sel) return;
+        sel.innerHTML = '<option value="">Repo...</option>';
+        (repos || []).forEach(function (repo) {
+          var opt = document.createElement("option");
+          opt.value = repo.id;
+          opt.textContent = repo.path.split("/").pop();
+          sel.appendChild(opt);
+        });
+        if (repos && repos.length === 1) {
+          sel.value = repos[0].id;
+          loadRoles();
+        }
+      })
+      .catch(function () {});
+  }
+
+  window.loadRoles = function () {
+    var repoID = (document.getElementById("select-repo") || {}).value;
+    var sel = document.getElementById("select-role");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Role...</option>';
+    if (!repoID) return;
+
+    fetch("/api/repo-roles?repo_id=" + encodeURIComponent(repoID))
+      .then(function (r) { return r.json(); })
+      .then(function (roles) {
+        (roles || []).forEach(function (role) {
+          var opt = document.createElement("option");
+          opt.value = role;
+          opt.textContent = role;
+          sel.appendChild(opt);
+        });
+      })
+      .catch(function () {});
+  };
+
+  window.togglePause = function () {
+    var endpoint = isPaused ? "/api/resume" : "/api/pause";
+    fetch(endpoint, { method: "POST" })
+      .then(function (r) { return r.json(); })
+      .then(function () { fetchStatus(); })
+      .catch(function (err) { alert("Error: " + err); });
+  };
+
+  window.confirmRestart = function () {
+    if (!confirm("Warm restart: workers will stop, config reloads, workers restart. Continue?")) return;
+    var btn = document.getElementById("btn-restart");
+    btn.disabled = true;
+    btn.textContent = "Restarting…";
+    fetch("/api/restart", { method: "POST" })
+      .then(function (r) { return r.json(); })
+      .then(function (resp) {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="key-hint">R</span>Restart';
+        if (!resp.ok && resp.error) alert("Restart failed: " + resp.error);
+        fetchStatus();
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="key-hint">R</span>Restart';
+        alert("Restart failed: " + err);
+      });
+  };
+
+  window.confirmStop = function () {
+    if (!confirm("Gracefully stop the orchestrator?")) return;
+    fetch("/api/stop", { method: "POST" })
+      .then(function (r) { return r.json(); })
+      .then(function () { updateStatusUI("stopped"); })
+      .catch(function (err) { alert("Stop failed: " + err); });
+  };
+
+  window.triggerScan = function () {
+    var repoID = (document.getElementById("select-repo") || {}).value;
+    if (!repoID) { alert("Select a repo first"); return; }
+    var btn = document.getElementById("btn-scan");
+    btn.disabled = true;
+    fetch("/api/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repo_id: repoID })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (resp) {
+      btn.disabled = false;
+      if (!resp.ok && resp.error) alert("Scan error: " + resp.error);
+    })
+    .catch(function (err) {
+      btn.disabled = false;
+      alert("Scan failed: " + err);
+    });
+  };
+
+  window.triggerRunRole = function () {
+    var repoID = (document.getElementById("select-repo") || {}).value;
+    var role = (document.getElementById("select-role") || {}).value;
+    if (!repoID || !role) { alert("Select both a repo and a role"); return; }
+    fetch("/api/run-role", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repo_id: repoID, role: role })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (resp) {
+      if (!resp.ok && resp.error) alert("Run role error: " + resp.error);
+    })
+    .catch(function (err) { alert("Run role failed: " + err); });
+  };
+
   window.emergencyStop = function () {
     if (!confirm("This will stop ALL running agents. Continue?")) return;
 
@@ -184,6 +343,7 @@
         if (resp.ok) {
           btn.textContent = "Stopped";
           btn.style.background = "#16a34a";
+          updateStatusUI("stopped");
         } else {
           btn.textContent = "Failed";
           alert("Errors: " + (resp.errors || []).join(", "));
@@ -194,6 +354,23 @@
         alert("Emergency stop request failed: " + err);
       });
   };
+
+  // Handle status_change SSE events
+  var origHandleEvent = handleEvent;
+  handleEvent = function (type, data) {
+    origHandleEvent(type, data);
+    if (type === "status_change" && data.state) {
+      updateStatusUI(data.state, data.active_jobs);
+    }
+    if (type === "scan_complete") {
+      appendEventLog("scan_complete", data);
+    }
+  };
+
+  // Bootstrap
+  fetchStatus();
+  loadRepos();
+  setInterval(fetchStatus, 15000);
 
   connect();
 })();
