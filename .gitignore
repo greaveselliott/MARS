@@ -1,5 +1,5 @@
 # Binaries
-mars-harness
+/mars-harness
 *.exe
 *.exe~
 *.dll

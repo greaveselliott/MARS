@@ -15,6 +15,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	httpTimeout     = 30 * time.Second
+	downloadTimeout = 30 * time.Minute
+)
+
 // Step represents a single idempotent setup action.
 type Step struct {
 	Name    string
@@ -89,6 +94,7 @@ func buildSteps(baseDir string, cfg Config) []Step {
 	}
 
 	if !cfg.SkipDownload && !cfg.TestMode {
+		steps = append(steps, installLlamaServerStep(baseDir))
 		steps = append(steps, downloadModelsStep(baseDir))
 	}
 
