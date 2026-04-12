@@ -28,6 +28,7 @@ type LoopConfig struct {
 	WallTime      time.Duration // 0 = unlimited
 	MaxToolCalls  int           // total tool executions; 0 = unlimited
 	LLMMaxRetries int           // retries per completion on transport errors; default 3 when zero
+	ContextSize   int           // context window in tokens; default 32768 when zero
 }
 
 // LoopResult is the final transcript and why the loop stopped.
@@ -54,4 +55,11 @@ func (c LoopConfig) effectiveLLMRetries() int {
 		return 3
 	}
 	return c.LLMMaxRetries
+}
+
+func (c LoopConfig) effectiveContextSize() int {
+	if c.ContextSize <= 0 {
+		return 32768
+	}
+	return c.ContextSize
 }

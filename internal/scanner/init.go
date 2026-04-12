@@ -593,6 +593,10 @@ After making changes, commit:
   git add docs/design-docs/
   git commit -m "arch: update design docs [date]"
 
+DON'T:
+- NEVER run find, ls, grep, or cat on directories without excluding node_modules, .git, vendor,
+  dist, build, and other large generated directories. Use targeted file reads instead.
+
 ## Quality Bar
 
 - Every non-trivial architectural decision is recorded in docs/design-docs/.
@@ -684,6 +688,8 @@ DON'T:
 - Work on more than one ticket per run
 - For long-running processes (dev servers, watchers, next dev, npm start), ALWAYS use
   shell_exec with background:true so they run as a background process and don't block your run.
+- NEVER run find, ls, grep, or cat on directories without excluding node_modules, .git, vendor,
+  dist, build, and other large generated directories. Use targeted file reads instead.
 
 ## Quality Bar
 

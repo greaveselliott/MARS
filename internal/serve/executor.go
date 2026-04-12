@@ -163,8 +163,9 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		SystemPrompt: system,
 		UserMessage:  userMessage,
 		Config: agent.LoopConfig{
-			Model:    role.Model,
-			MaxTurns: role.MaxTurns,
+			Model:       role.Model,
+			MaxTurns:    role.MaxTurns,
+			ContextSize: role.ContextSize,
 		},
 		JobID:      job.ID,
 		Trace:      rec,

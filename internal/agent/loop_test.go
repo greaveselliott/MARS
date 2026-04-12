@@ -372,3 +372,46 @@ func TestRun_llmUnreachable(t *testing.T) {
 	require.Equal(t, EndLLMUnreachable, res.EndReason)
 	require.Error(t, res.Err)
 }
+
+func TestPruneContext_replacesOldToolMessages(t *testing.T) {
+	t.Parallel()
+	bigContent := strings.Repeat("x", 4000) // ~1000 tokens each
+	msgs := []llm.Message{
+		{Role: "system", Content: "system prompt"},
+		{Role: "user", Content: "go"},
+		{Role: "assistant", Content: "calling tool", ToolCalls: []llm.ToolCall{{ID: "1", Function: llm.FunctionCall{Name: "shell_exec"}}}},
+		{Role: "tool", ToolCallID: "1", Content: bigContent},
+		{Role: "assistant", Content: "calling tool", ToolCalls: []llm.ToolCall{{ID: "2", Function: llm.FunctionCall{Name: "shell_exec"}}}},
+		{Role: "tool", ToolCallID: "2", Content: bigContent},
+		{Role: "assistant", Content: "calling tool", ToolCalls: []llm.ToolCall{{ID: "3", Function: llm.FunctionCall{Name: "file_read"}}}},
+		{Role: "tool", ToolCallID: "3", Content: bigContent},
+		{Role: "assistant", Content: "calling tool", ToolCalls: []llm.ToolCall{{ID: "4", Function: llm.FunctionCall{Name: "file_read"}}}},
+		{Role: "tool", ToolCallID: "4", Content: bigContent},
+	}
+
+	// Context size that forces pruning of at least the oldest tool results.
+	pruneContext(msgs, nil, 2500)
+
+	// Oldest tool messages (indices 3, 5) should be pruned.
+	require.Equal(t, prunedPlaceholder, msgs[3].Content)
+	require.Equal(t, prunedPlaceholder, msgs[5].Content)
+	// System and user are never touched.
+	require.Equal(t, "system prompt", msgs[0].Content)
+	require.Equal(t, "go", msgs[1].Content)
+	// Recent tail (last 4: indices 6-9) protected — tool results at 7 and 9 kept.
+	require.Equal(t, bigContent, msgs[7].Content)
+	require.Equal(t, bigContent, msgs[9].Content)
+}
+
+func TestPruneContext_noOpWhenUnderLimit(t *testing.T) {
+	t.Parallel()
+	msgs := []llm.Message{
+		{Role: "system", Content: "sys"},
+		{Role: "user", Content: "hello"},
+		{Role: "assistant", Content: "done"},
+	}
+	pruneContext(msgs, nil, 100000)
+	require.Equal(t, "sys", msgs[0].Content)
+	require.Equal(t, "hello", msgs[1].Content)
+	require.Equal(t, "done", msgs[2].Content)
+}

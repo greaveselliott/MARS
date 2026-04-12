@@ -13,6 +13,46 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/trace"
 )
 
+const prunedPlaceholder = "[pruned — context limit]"
+
+// pruneContext replaces old tool-result message content with a short placeholder
+// when the estimated token count exceeds the context window. It never touches
+// the system prompt (index 0), the initial user message (index 1), or the most
+// recent 4 messages (the active working set).
+func pruneContext(messages []llm.Message, defs []llm.ToolDefinition, contextSize int) {
+	est := llm.EstimateTokens(messages, defs)
+	if est <= contextSize {
+		return
+	}
+
+	protectedTail := 4
+	if len(messages) < protectedTail+2 {
+		return
+	}
+	pruneEnd := len(messages) - protectedTail
+
+	pruned := 0
+	for i := 2; i < pruneEnd && llm.EstimateTokens(messages, defs) > contextSize; i++ {
+		if messages[i].Role != "tool" {
+			continue
+		}
+		if messages[i].Content == prunedPlaceholder {
+			continue
+		}
+		messages[i].Content = prunedPlaceholder
+		pruned++
+	}
+
+	if pruned > 0 {
+		slog.Info("agent: pruned context to fit window",
+			"pruned_messages", pruned,
+			"before_tokens", est,
+			"after_tokens", llm.EstimateTokens(messages, defs),
+			"context_size", contextSize,
+		)
+	}
+}
+
 // Completer is satisfied by *llm.Client for production use.
 type Completer interface {
 	ChatCompletion(ctx context.Context, req llm.ChatCompletionRequest) (llm.ChatCompletionResponse, error)
@@ -169,6 +209,8 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 		if p.UI != nil {
 			p.UI.WriteTurn(llmCalls+1, maxTurns)
 		}
+
+		pruneContext(messages, defs, p.Config.effectiveContextSize())
 
 		req := llm.ChatCompletionRequest{
 			Model:    p.modelName(),

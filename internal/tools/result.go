@@ -9,7 +9,8 @@ import (
 )
 
 // DefaultMaxToolOutputBytes is the maximum combined output kept for shell-like tools (MH-002).
-const DefaultMaxToolOutputBytes = 1 << 20
+// 32KB keeps a single tool result under ~8K tokens, preventing context window blowouts.
+const DefaultMaxToolOutputBytes = 32 * 1024
 
 // ToolResult is the structured outcome of a tool invocation for the LLM and future tracing.
 type ToolResult struct {

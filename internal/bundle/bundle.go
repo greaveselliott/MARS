@@ -21,16 +21,17 @@ type Manifest struct {
 
 // RoleConfig defines a single role's configuration within a bundle.
 type RoleConfig struct {
-	Prompt     string   `yaml:"prompt"`
-	Model      string   `yaml:"model"`
-	Tools      []string `yaml:"tools"`
-	Guardrails []string `yaml:"guardrails"`
-	Knowledge  []string `yaml:"knowledge"`
-	Triggers   []string `yaml:"triggers"`
-	Then       []string `yaml:"then"`
-	IdleThen   []string `yaml:"idle_then"`
-	Schedule   string   `yaml:"schedule"`
-	MaxTurns   int      `yaml:"max_turns"`
+	Prompt      string   `yaml:"prompt"`
+	Model       string   `yaml:"model"`
+	Tools       []string `yaml:"tools"`
+	Guardrails  []string `yaml:"guardrails"`
+	Knowledge   []string `yaml:"knowledge"`
+	Triggers    []string `yaml:"triggers"`
+	Then        []string `yaml:"then"`
+	IdleThen    []string `yaml:"idle_then"`
+	Schedule    string   `yaml:"schedule"`
+	MaxTurns    int      `yaml:"max_turns"`
+	ContextSize int      `yaml:"context_size"`
 }
 
 // Load reads .harness/manifest.yaml from repoRoot.
