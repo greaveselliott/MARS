@@ -234,8 +234,17 @@ func TestInit_success(t *testing.T) {
 	assert.DirExists(t, filepath.Join(dir, ".harness", "roles"))
 	assert.DirExists(t, filepath.Join(dir, ".harness", "guardrails"))
 	assert.DirExists(t, filepath.Join(dir, ".harness", "knowledge"))
-	assert.DirExists(t, filepath.Join(dir, ".harness", "tickets"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
+
+	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "backlog"))
+	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "in-progress"))
+	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "done"))
+	assert.DirExists(t, filepath.Join(dir, "docs", "exec-plans", "active"))
+	assert.DirExists(t, filepath.Join(dir, "docs", "exec-plans", "completed"))
+	assert.DirExists(t, filepath.Join(dir, "docs", "design-docs"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "tickets", "README.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "exec-plans", "README.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "index.md"))
 
 	expectedPrompts := []string{
 		"ceo", "coo", "cto", "engineer", "qa", "security",
