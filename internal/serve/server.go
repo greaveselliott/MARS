@@ -24,6 +24,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/scheduler"
+	"github.com/greaveselliott/mars-harness/internal/telemetry"
 )
 
 // Config controls the serve command.
@@ -64,6 +65,7 @@ type Server struct {
 	dashHTTP  *http.Server
 
 	cancelSleep func()
+	telemetry   *telemetry.Collector
 
 	mu      sync.Mutex
 	started bool
@@ -145,6 +147,8 @@ func New(cfg Config) (*Server, error) {
 
 	sched := scheduler.New(jobQueue)
 
+	telem := telemetry.NewCollector(nil)
+
 	s := &Server{
 		cfg:       cfg,
 		mux:       http.NewServeMux(),
@@ -156,7 +160,10 @@ func New(cfg Config) (*Server, error) {
 		scheduler: sched,
 		router:    router,
 		executor:  executor,
+		telemetry: telem,
 	}
+
+	telem.SetRemediator(s.handleRemediation)
 
 	s.workers = queue.NewWorkerPool(jobQueue, queue.WorkerConfig{
 		Concurrency: cfg.concurrency(),
@@ -185,6 +192,9 @@ func New(cfg Config) (*Server, error) {
 	}
 
 	executor.SetDashboard(dash)
+	telem.SetDashboard(dash)
+
+	dash.HandleFunc("/api/telemetry", s.handleTelemetryAPI)
 
 	webhookHandler := gh.WebhookHandler(
 		gh.WebhookConfig{Secret: cfg.WebhookSecret},
@@ -366,6 +376,22 @@ func (s *Server) HealthHandler() http.Handler {
 	})
 }
 
+// handleTelemetryAPI serves the telemetry event history as JSON.
+func (s *Server) handleTelemetryAPI(w http.ResponseWriter, r *http.Request) {
+	type apiResponse struct {
+		Events []telemetry.Event          `json:"events"`
+		Stats  map[telemetry.FailureCategory]int `json:"stats"`
+	}
+	resp := apiResponse{
+		Events: s.telemetry.Events(),
+		Stats:  s.telemetry.Stats(),
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("serve: telemetry API encode error", "err", err)
+	}
+}
+
 // Repos returns the registry for external use (e.g. CLI register command).
 func (s *Server) Repos() *RepoRegistry { return s.repos }
 
@@ -541,10 +567,24 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 }
 
 // handleJobFailed is the OnFail callback for the worker pool.
-// For self-chaining roles it re-enqueues the role so the pipeline recovers
-// automatically from transient failures (e.g. inference timeout, OOM).
+// It records a telemetry event (which triggers classification and
+// remediation), then falls back to the existing self-chain recovery
+// for roles that don't match a specific remediation action.
 func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr error) {
 	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+
+	s.telemetry.Record(job.ID, job.RepoID, job.Role, jobErr.Error())
+
+	if s.dash != nil {
+		payload, _ := json.Marshal(map[string]string{
+			"job_id":   job.ID,
+			"role":     job.Role,
+			"repo":     job.RepoID,
+			"error":    jobErr.Error(),
+			"category": string(telemetry.Classify(jobErr.Error())),
+		})
+		s.dash.BroadcastEvent("job_failed", string(payload))
+	}
 
 	rec, err := s.repos.FindByID(ctx, job.RepoID)
 	if err != nil || rec == nil {
@@ -597,6 +637,65 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 		return
 	}
 	log.Info("serve: recovery job enqueued", "recovery_job_id", jobID)
+}
+
+// handleRemediation is the telemetry remediation callback. It executes
+// the auto-fix action determined by the classifier.
+func (s *Server) handleRemediation(evt telemetry.Event) {
+	log := slog.With("event_id", evt.ID, "job_id", evt.JobID, "role", evt.Role, "action", evt.Action)
+
+	switch telemetry.RemediationAction(evt.Action) {
+	case telemetry.ActionRestartInference:
+		log.Info("telemetry: restarting inference servers")
+		s.router.RestartAll()
+
+	case telemetry.ActionRetryHalfContext:
+		log.Info("telemetry: retrying job with halved context")
+		s.enqueueRetry(evt, "half_context")
+
+	case telemetry.ActionRetryLonger:
+		log.Info("telemetry: retrying job with longer timeout")
+		s.enqueueRetry(evt, "longer_timeout")
+
+	case telemetry.ActionRetryPlain:
+		log.Info("telemetry: retrying job")
+		s.enqueueRetry(evt, "retry")
+	}
+}
+
+func (s *Server) enqueueRetry(evt telemetry.Event, reason string) {
+	triggerJSON, _ := json.Marshal(map[string]string{
+		"type":       "telemetry_retry",
+		"source_job": evt.JobID,
+		"reason":     reason,
+		"category":   string(evt.Category),
+	})
+
+	idempotencyKey := fmt.Sprintf("telem:%s:%s:%s", evt.RepoID, evt.Role, evt.ID)
+	retryJob := queue.Job{
+		RepoID:         evt.RepoID,
+		Role:           evt.Role,
+		Trigger:        string(triggerJSON),
+		IdempotencyKey: idempotencyKey,
+	}
+
+	ctx := context.Background()
+	jobID, err := s.queue.Enqueue(ctx, retryJob)
+	if err != nil {
+		slog.Error("telemetry: failed to enqueue retry job", "event_id", evt.ID, "err", err)
+		return
+	}
+	slog.Info("telemetry: retry job enqueued", "event_id", evt.ID, "retry_job_id", jobID)
+
+	if s.dash != nil {
+		payload, _ := json.Marshal(map[string]string{
+			"event_id":     evt.ID,
+			"retry_job_id": jobID,
+			"role":         evt.Role,
+			"action":       reason,
+		})
+		s.dash.BroadcastEvent("telemetry_retry", string(payload))
+	}
 }
 
 func (s *Server) registerCronSchedules(repos []RepoRecord) {

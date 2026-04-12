@@ -60,6 +60,11 @@ func (d *Dashboard) Handler() http.Handler {
 	return d.mux
 }
 
+// HandleFunc registers an additional route on the dashboard mux.
+func (d *Dashboard) HandleFunc(pattern string, handler http.HandlerFunc) {
+	d.mux.HandleFunc(pattern, handler)
+}
+
 func (d *Dashboard) routes() {
 	d.mux.HandleFunc("/", d.handleIndex)
 	d.mux.HandleFunc("/pipeline", d.handlePage("pipeline", "Pipeline Flow"))
