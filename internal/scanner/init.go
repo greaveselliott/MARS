@@ -173,7 +173,7 @@ roles:
     prompt: roles/engineer.md
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
-    then: [qa, engineer]
+    then: [qa, engineer, dogfood]
     idle_then: [ceo, janitor]
     tools: [file_read, file_write, shell_exec, grep, record_decision]
 

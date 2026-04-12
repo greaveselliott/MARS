@@ -273,7 +273,7 @@ func TestInit_success(t *testing.T) {
 		"then: [cto-weekly]",
 		"then: [coo]",
 		"then: [engineer]",
-		"then: [qa, engineer]",
+		"then: [qa, engineer, dogfood]",
 		"then: [qa]",
 		"then: [security-pr]",
 		"then: [dependency-manager]",
