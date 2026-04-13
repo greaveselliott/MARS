@@ -356,8 +356,14 @@ body {
   border-color: var(--warning);
 }
 
-canvas {
+.chart-wrap {
+  position: relative;
+  height: 280px;
+}
+
+.chart-wrap canvas {
   width: 100% !important;
+  height: 100% !important;
 }
 
 /* --- Summary cards --- */
