@@ -28,20 +28,30 @@ const ticketCreateSchema = `{
 }`
 
 type ticketCreateArgs struct {
-	Title     string   `json:"title"`
-	Priority  string   `json:"priority"`
-	Complexity string  `json:"complexity"`
-	Source    string   `json:"source"`
-	DependsOn []string `json:"depends_on"`
-	Body      string   `json:"body"`
+	Title      string   `json:"title"`
+	Priority   string   `json:"priority"`
+	Complexity string   `json:"complexity"`
+	Source     string   `json:"source"`
+	DependsOn  []string `json:"depends_on"`
+	Body       string   `json:"body"`
+}
+
+// TicketInput is the shared ticket creation shape used by agents and scanner-generated backlog items.
+type TicketInput struct {
+	Title      string
+	Priority   string
+	Complexity string
+	Source     string
+	DependsOn  []string
+	Body       string
 }
 
 type existingTicket struct {
-	ID       string
-	Title    string
-	Number   int
-	Path     string // relative to repo root, e.g. "docs/tickets/done/T-001-foo.md"
-	Status   string // "backlog", "in-progress", or "done"
+	ID     string
+	Title  string
+	Number int
+	Path   string // relative to repo root, e.g. "docs/tickets/done/T-001-foo.md"
+	Status string // "backlog", "in-progress", or "done"
 }
 
 var ticketNumberRe = regexp.MustCompile(`T-(\d+)`)
@@ -62,11 +72,23 @@ func handleTicketCreate(_ context.Context, root Root, raw json.RawMessage) (Tool
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return ToolResult{}, fmt.Errorf("ticket_create: parse arguments: %w", err)
 	}
-	title := strings.TrimSpace(args.Title)
+	return CreateTicket(root, TicketInput{
+		Title:      args.Title,
+		Priority:   args.Priority,
+		Complexity: args.Complexity,
+		Source:     args.Source,
+		DependsOn:  args.DependsOn,
+		Body:       args.Body,
+	})
+}
+
+// CreateTicket creates a backlog ticket under docs/tickets/backlog with automatic dedupe.
+func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
+	title := strings.TrimSpace(input.Title)
 	if title == "" {
 		return ToolResult{}, fmt.Errorf("ticket_create: title is required")
 	}
-	if strings.TrimSpace(args.Body) == "" {
+	if strings.TrimSpace(input.Body) == "" {
 		return ToolResult{}, fmt.Errorf("ticket_create: body is required — include Context, Requirements, and Acceptance criteria sections")
 	}
 
@@ -93,18 +115,18 @@ func handleTicketCreate(_ context.Context, root Root, raw json.RawMessage) (Tool
 	filename := fmt.Sprintf("%s-%s.md", id, slug)
 	relPath := filepath.Join("docs", "tickets", "backlog", filename)
 
-	complexity := args.Complexity
+	complexity := input.Complexity
 	if complexity == "" {
 		complexity = "medium"
 	}
-	source := args.Source
+	source := input.Source
 	if source == "" {
 		source = "weekly-priorities.md"
 	}
 
 	var deps string
-	if len(args.DependsOn) > 0 {
-		deps = "[" + strings.Join(args.DependsOn, ", ") + "]"
+	if len(input.DependsOn) > 0 {
+		deps = "[" + strings.Join(input.DependsOn, ", ") + "]"
 	} else {
 		deps = "[]"
 	}
@@ -115,14 +137,14 @@ func handleTicketCreate(_ context.Context, root Root, raw json.RawMessage) (Tool
 	fmt.Fprintf(&content, "---\n")
 	fmt.Fprintf(&content, "id: %s\n", id)
 	fmt.Fprintf(&content, "title: %s\n", title)
-	fmt.Fprintf(&content, "priority: %s\n", args.Priority)
+	fmt.Fprintf(&content, "priority: %s\n", input.Priority)
 	fmt.Fprintf(&content, "complexity: %s\n", complexity)
 	fmt.Fprintf(&content, "source: %s\n", source)
 	fmt.Fprintf(&content, "created: %s\n", today)
 	fmt.Fprintf(&content, "depends_on: %s\n", deps)
 	fmt.Fprintf(&content, "---\n\n")
 	fmt.Fprintf(&content, "# %s: %s\n\n", id, title)
-	fmt.Fprintf(&content, "%s\n", strings.TrimSpace(args.Body))
+	fmt.Fprintf(&content, "%s\n", strings.TrimSpace(input.Body))
 
 	absPath, err := root.ResolvePath(relPath)
 	if err != nil {

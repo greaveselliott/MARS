@@ -89,9 +89,6 @@ func registerGitTools(r *Registry) error {
 	if err := r.Register("git_commit", "Stage files and create a commit.", json.RawMessage(gitCommitSchema), handleGitCommit); err != nil {
 		return err
 	}
-	if err := r.Register("git_branch", "Create or switch branches.", json.RawMessage(gitBranchSchema), handleGitBranch); err != nil {
-		return err
-	}
 	return r.Register("git_push", "Push the current (or named) branch to a remote.", json.RawMessage(gitPushSchema), handleGitPush)
 }
 

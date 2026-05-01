@@ -13,6 +13,7 @@ type Executor struct {
 	Registry   *Registry
 	MaxOutput  int // defaults to DefaultMaxToolOutputBytes when zero
 	DefaultTTL time.Duration
+	Session    *Session
 }
 
 // NewExecutor returns an executor backed by reg.
@@ -40,6 +41,9 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 	if name == "" {
 		return ToolResult{Duration: time.Since(start)}, fmt.Errorf("tools: tool name is empty")
 	}
+	if len(allowlist) == 0 {
+		return ToolResult{Duration: time.Since(start)}, fmt.Errorf("tools: no tools are allowed for this role; configure an explicit tools list in .harness/manifest.yaml")
+	}
 	if !Allowlisted(name, allowlist) {
 		return ToolResult{Duration: time.Since(start)}, fmt.Errorf("tools: tool %q is not allowed for this role; allowlist: %s", name, strings.Join(allowlist, ", "))
 	}
@@ -62,9 +66,18 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 		return ToolResult{Duration: time.Since(start)}, fmt.Errorf("tools: arguments for %q are not valid JSON", name)
 	}
 
+	if e.Session != nil {
+		runCtx = WithSession(runCtx, *e.Session)
+	}
+	if err := preToolPolicy(runCtx, root, name, raw); err != nil {
+		return ToolResult{Duration: time.Since(start)}, err
+	}
 	res, err := h(runCtx, root, raw)
 	res.Duration = time.Since(start)
 	if err != nil {
+		return res, err
+	}
+	if err := postToolPolicy(runCtx, root, name); err != nil {
 		return res, err
 	}
 	if res.Output != "" || res.Stderr != "" {

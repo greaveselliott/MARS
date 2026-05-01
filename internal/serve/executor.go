@@ -15,12 +15,15 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/bundle"
 	harctx "github.com/greaveselliott/mars-harness/internal/context"
 	"github.com/greaveselliott/mars-harness/internal/dashboard"
+	"github.com/greaveselliott/mars-harness/internal/guardrails"
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/learnings"
 	"github.com/greaveselliott/mars-harness/internal/llm"
 	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/tools"
 	"github.com/greaveselliott/mars-harness/internal/trace"
+	"github.com/greaveselliott/mars-harness/internal/trust"
 	"github.com/greaveselliott/mars-harness/internal/ui"
 )
 
@@ -34,16 +37,18 @@ type Executor struct {
 	lookupRepo RepoLookup
 	router     *inference.Router
 	traceStore *trace.Store
+	trustStore *trust.Store
 	dash       *dashboard.Dashboard
 }
 
 // NewExecutor creates an executor bound to a repo lookup function and inference router.
 // traceStore is optional; pass nil to disable trace persistence.
-func NewExecutor(lookupRepo RepoLookup, router *inference.Router, traceStore *trace.Store) *Executor {
+func NewExecutor(lookupRepo RepoLookup, router *inference.Router, traceStore *trace.Store, trustStore *trust.Store) *Executor {
 	return &Executor{
 		lookupRepo: lookupRepo,
 		router:     router,
 		traceStore: traceStore,
+		trustStore: trustStore,
 	}
 }
 
@@ -100,6 +105,34 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		return fmt.Errorf("executor: load role prompt: %w", err)
 	}
 
+	guardRules, err := manifest.LoadGuardrails(repoPath, job.Role)
+	if err != nil {
+		tw.WriteError(fmt.Sprintf("load guardrails: %v", err))
+		return fmt.Errorf("executor: load guardrails: %w", err)
+	}
+	guardEngine, err := guardrails.New(guardRules)
+	if err != nil {
+		tw.WriteError(fmt.Sprintf("compile guardrails: %v", err))
+		return fmt.Errorf("executor: compile guardrails: %w", err)
+	}
+	knowledgeDefs, err := manifest.LoadKnowledgeRoutes(repoPath, job.Role)
+	if err != nil {
+		tw.WriteError(fmt.Sprintf("load knowledge routes: %v", err))
+		return fmt.Errorf("executor: load knowledge routes: %w", err)
+	}
+	var knowledgeRoutes []harctx.KnowledgeRoute
+	for _, kr := range knowledgeDefs {
+		knowledgeRoutes = append(knowledgeRoutes, harctx.KnowledgeRoute{When: kr.When, Paths: kr.Paths})
+	}
+	var promptGuardrails []harctx.Guardrail
+	for _, r := range guardRules {
+		body := r.Message
+		if body == "" {
+			body = r.Pattern
+		}
+		promptGuardrails = append(promptGuardrails, harctx.Guardrail{Scope: r.Scope, Title: r.Name, Body: body})
+	}
+
 	var skills []harctx.Skill
 	if skillDefs, sErr := bundle.LoadSkills(repoPath, job.Role); sErr != nil {
 		log.Warn("executor: failed to load skills, continuing without", "err", sErr)
@@ -134,12 +167,14 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	}
 
 	system, stats, err := harctx.Assemble(harctx.Input{
-		RoleScope:   job.Role,
-		RolePrompt:  rolePrompt,
-		Skills:      skills,
-		Trigger:     job.Trigger,
-		Learnings:   learnData.FormatForContext(),
-		TicketIndex: ticketIndex,
+		RoleScope:       job.Role,
+		RolePrompt:      rolePrompt,
+		Guardrails:      promptGuardrails,
+		KnowledgeRoutes: knowledgeRoutes,
+		Skills:          skills,
+		Trigger:         job.Trigger,
+		Learnings:       learnData.FormatForContext(),
+		TicketIndex:     ticketIndex,
 	})
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("context assembly: %v", err))
@@ -173,7 +208,26 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 
 	tools.RecordDecisionRole = job.Role
 
+	trustLevel := string(trust.LevelObserver)
+	if e.trustStore != nil {
+		entry, tErr := e.trustStore.Get(ctx, job.Role, job.RepoID)
+		if tErr != nil {
+			return fmt.Errorf("executor: load trust for %s/%s: %w", job.Role, job.RepoID, tErr)
+		}
+		if entry != nil {
+			trustLevel = string(entry.Level)
+		}
+	}
+
 	toolExec := tools.NewExecutor(reg)
+	toolExec.Session = &tools.Session{
+		Role:         job.Role,
+		JobID:        job.ID,
+		RepoID:       job.RepoID,
+		TrustLevel:   trustLevel,
+		Guardrails:   guardEngine,
+		SafetyLimits: safety.DefaultLimits(),
+	}
 
 	root, err := tools.NewRoot(repoPath)
 	if err != nil {
@@ -183,7 +237,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 
 	allowlist := role.Tools
 	if len(allowlist) == 0 {
-		allowlist = reg.Names()
+		return fmt.Errorf("executor: role %q has no tools configured; strict trunk requires an explicit tools allowlist in .harness/manifest.yaml", job.Role)
 	}
 
 	rec := trace.NewRecorder(nil)
@@ -227,6 +281,10 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		outcome = "error"
 		tw.WriteError(fmt.Sprintf("agent loop error (%s): %v", res.EndReason, res.Err))
 	}
+	if !agent.SuccessfulEnd(res.EndReason) {
+		outcome = "error"
+		tw.WriteError(fmt.Sprintf("agent loop ended without success: %s", res.EndReason))
+	}
 
 	e.broadcastEvent("job_complete", map[string]string{
 		"job_id":   job.ID,
@@ -239,6 +297,10 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	if res.Err != nil {
 		learnings.RecordJobLessons(learnStore, job.Role, res.Err.Error(), "", nil)
 		return fmt.Errorf("executor: agent loop error (%s): %w", res.EndReason, res.Err)
+	}
+	if err := agent.NonSuccessError(res); err != nil {
+		learnings.RecordJobLessons(learnStore, job.Role, err.Error(), "", nil)
+		return fmt.Errorf("executor: %w", err)
 	}
 
 	learnings.RecordJobLessons(learnStore, job.Role, "", "", nil)

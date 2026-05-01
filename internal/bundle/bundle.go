@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/greaveselliott/mars-harness/internal/guardrails"
 	"gopkg.in/yaml.v3"
 )
 
@@ -139,4 +141,113 @@ func (m *Manifest) RolePrompt(repoRoot, roleName string) (string, error) {
 	}
 
 	return content, nil
+}
+
+type guardrailFile struct {
+	Rules []guardrails.Rule `yaml:"rules"`
+}
+
+// LoadGuardrails reads the guardrail YAML files referenced by a role.
+func (m *Manifest) LoadGuardrails(repoRoot, roleName string) ([]guardrails.Rule, error) {
+	role, ok := m.Roles[roleName]
+	if !ok {
+		return nil, fmt.Errorf("bundle: role %q not found in manifest", roleName)
+	}
+	var rules []guardrails.Rule
+	for _, ref := range role.Guardrails {
+		ref = strings.TrimSpace(ref)
+		if ref == "" {
+			continue
+		}
+		path, err := resolveHarnessPath(repoRoot, ref)
+		if err != nil {
+			return nil, err
+		}
+		data, err := os.ReadFile(path)
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("bundle: guardrail file %q for role %q not found — create %s", ref, roleName, path)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("bundle: read guardrail file %q: %w", ref, err)
+		}
+		var gf guardrailFile
+		if err := yaml.Unmarshal(data, &gf); err != nil {
+			return nil, fmt.Errorf("bundle: parse guardrail file %q: %w", ref, err)
+		}
+		for _, r := range gf.Rules {
+			if strings.TrimSpace(r.Scope) == "" {
+				r.Scope = "global"
+			}
+			if r.Severity == "" {
+				r.Severity = guardrails.SeverityAdvisory
+			}
+			if r.CreatedAt.IsZero() {
+				r.CreatedAt = time.Now().UTC()
+			}
+			rules = append(rules, r)
+		}
+	}
+	return rules, nil
+}
+
+// KnowledgeRoute is the manifest-level route format read from knowledge files.
+type KnowledgeRoute struct {
+	When  string `yaml:"when"`
+	Paths string `yaml:"paths"`
+}
+
+type knowledgeFile struct {
+	Routes []KnowledgeRoute `yaml:"routes"`
+}
+
+// LoadKnowledgeRoutes reads knowledge-route files referenced by a role.
+func (m *Manifest) LoadKnowledgeRoutes(repoRoot, roleName string) ([]KnowledgeRoute, error) {
+	role, ok := m.Roles[roleName]
+	if !ok {
+		return nil, fmt.Errorf("bundle: role %q not found in manifest", roleName)
+	}
+	var routes []KnowledgeRoute
+	for _, ref := range role.Knowledge {
+		ref = strings.TrimSpace(ref)
+		if ref == "" {
+			continue
+		}
+		path, err := resolveHarnessPath(repoRoot, ref)
+		if err != nil {
+			return nil, err
+		}
+		data, err := os.ReadFile(path)
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("bundle: knowledge file %q for role %q not found — create %s", ref, roleName, path)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("bundle: read knowledge file %q: %w", ref, err)
+		}
+		var kf knowledgeFile
+		if err := yaml.Unmarshal(data, &kf); err == nil && len(kf.Routes) > 0 {
+			routes = append(routes, kf.Routes...)
+			continue
+		}
+		for _, line := range strings.Split(string(data), "\n") {
+			line = strings.TrimSpace(strings.TrimPrefix(line, "-"))
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			routes = append(routes, KnowledgeRoute{When: filepath.Base(ref), Paths: line})
+		}
+	}
+	return routes, nil
+}
+
+func resolveHarnessPath(repoRoot, ref string) (string, error) {
+	clean := filepath.Clean(ref)
+	if filepath.IsAbs(clean) {
+		return "", fmt.Errorf("bundle: reference %q must be relative to .harness/", ref)
+	}
+	path := filepath.Join(repoRoot, harnessDir, clean)
+	rel, err := filepath.Rel(filepath.Join(repoRoot, harnessDir), path)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("bundle: reference %q escapes .harness/", ref)
+	}
+	return path, nil
 }

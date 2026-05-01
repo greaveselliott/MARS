@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,10 +22,10 @@ const (
 )
 
 const (
-	observerTrialThreshold    = 5
-	autonomousScoreThreshold  = 0.8
-	autonomousCountThreshold  = 20
-	demoteAutonomousThreshold = 0.6
+	observerTrialThreshold     = 5
+	autonomousScoreThreshold   = 0.8
+	autonomousCountThreshold   = 20
+	demoteAutonomousThreshold  = 0.6
 	demoteContributorThreshold = 0.3
 )
 
@@ -32,11 +33,11 @@ const (
 func Capabilities(l Level) []string {
 	switch l {
 	case LevelObserver:
-		return []string{"file_read", "grep", "shell_exec_readonly"}
+		return []string{"repo_read", "file_read", "file_search", "grep", "git_status", "git_diff"}
 	case LevelContributor:
-		return []string{"file_read", "grep", "shell_exec_readonly", "file_write", "git_commit", "git_branch"}
+		return []string{"repo_read", "repo_write", "file_read", "file_search", "grep", "shell_exec", "file_write", "ticket_create", "record_decision", "git_status", "git_diff", "git_commit", "git_push_main"}
 	case LevelAutonomous:
-		return []string{"file_read", "grep", "shell_exec_readonly", "file_write", "git_commit", "git_branch", "create_pr", "merge"}
+		return []string{"repo_read", "repo_write", "file_read", "file_search", "grep", "shell_exec", "file_write", "ticket_create", "record_decision", "git_status", "git_diff", "git_commit", "git_push_main", "self_schedule", "evolve_policy"}
 	default:
 		return nil
 	}
@@ -116,11 +117,46 @@ CREATE TABLE IF NOT EXISTS trust_entries (
   updated_at INTEGER NOT NULL,
   PRIMARY KEY (role, repo_id)
 );
-`)
+CREATE TABLE IF NOT EXISTS trust_events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  role       TEXT NOT NULL,
+  repo_id    TEXT NOT NULL,
+  level      TEXT NOT NULL,
+  reason     TEXT NOT NULL,
+  recorded_at INTEGER NOT NULL
+);
+	`)
 	if err != nil {
 		return fmt.Errorf("trust: init schema: %w", err)
 	}
 	return nil
+}
+
+// List returns all trust entries ordered by repo and role.
+func (s *Store) List(ctx context.Context) ([]Entry, error) {
+	rows, err := s.db.QueryContext(ctx, `
+SELECT role, repo_id, level, trial_runs, updated_at
+FROM trust_entries
+ORDER BY repo_id, role`)
+	if err != nil {
+		return nil, fmt.Errorf("trust: list: %w", err)
+	}
+	defer rows.Close()
+
+	var entries []Entry
+	for rows.Next() {
+		var e Entry
+		var updatedAt int64
+		if err := rows.Scan(&e.Role, &e.RepoID, (*string)(&e.Level), &e.TrialRuns, &updatedAt); err != nil {
+			return nil, fmt.Errorf("trust: list scan: %w", err)
+		}
+		e.UpdatedAt = time.Unix(updatedAt, 0).UTC()
+		entries = append(entries, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("trust: list rows: %w", err)
+	}
+	return entries, nil
 }
 
 // Close releases the database handle.
@@ -153,6 +189,11 @@ FROM trust_entries WHERE role = ? AND repo_id = ?`, role, repoID)
 // Set creates or updates the trust level for a role+repo. Resets trial runs
 // when the level changes.
 func (s *Store) Set(ctx context.Context, role, repoID string, level Level) error {
+	return s.SetWithReason(ctx, role, repoID, level, "")
+}
+
+// SetWithReason creates or updates the trust level and records an audit event when reason is provided.
+func (s *Store) SetWithReason(ctx context.Context, role, repoID string, level Level, reason string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -176,6 +217,13 @@ ON CONFLICT(role, repo_id) DO UPDATE SET
 		role, repoID, string(level), trialRuns, now.Unix())
 	if err != nil {
 		return fmt.Errorf("trust: set %q/%q: %w", role, repoID, err)
+	}
+	if strings.TrimSpace(reason) != "" {
+		if _, err := s.db.ExecContext(ctx, `
+INSERT INTO trust_events(role, repo_id, level, reason, recorded_at)
+VALUES(?,?,?,?,?)`, role, repoID, string(level), strings.TrimSpace(reason), now.Unix()); err != nil {
+			return fmt.Errorf("trust: record event %q/%q: %w", role, repoID, err)
+		}
 	}
 	slog.Debug("trust: set level", "role", role, "repo", repoID, "level", level)
 	return nil

@@ -202,7 +202,9 @@ func TestScan_contextCancellation(t *testing.T) {
 func TestGenerateTickets(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	outputDir := filepath.Join(dir, "tickets")
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "backlog"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "in-progress"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "done"), 0o755))
 
 	findings := []Finding{
 		{Type: "no_ci", Description: "No CI found", Severity: "high"},
@@ -210,12 +212,13 @@ func TestGenerateTickets(t *testing.T) {
 		{Type: "todo", Path: "main.go:5", Description: "// TODO: fix", Severity: "low"},
 	}
 
-	err := GenerateTickets(findings, outputDir)
+	err := GenerateTickets(findings, dir)
 	require.NoError(t, err)
 
+	outputDir := filepath.Join(dir, "docs", "tickets", "backlog")
 	entries, err := os.ReadDir(outputDir)
 	require.NoError(t, err)
-	assert.Equal(t, 2, len(entries), "expected 2 tickets (todo findings are skipped)")
+	assert.Equal(t, 3, len(entries), "expected TODO findings to become backlog tickets")
 
 	data, err := os.ReadFile(filepath.Join(outputDir, entries[0].Name()))
 	require.NoError(t, err)

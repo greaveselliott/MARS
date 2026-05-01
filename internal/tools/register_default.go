@@ -17,7 +17,6 @@ func RegisterBuiltinTools(r *Registry) error {
 		registerGrep,
 		registerShellExec,
 		registerGitTools,
-		registerGitHubStubs,
 		registerRecordDecision,
 		registerTicketCreate,
 	}

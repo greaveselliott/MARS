@@ -29,6 +29,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/scoring"
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
 	"github.com/greaveselliott/mars-harness/internal/trace"
+	"github.com/greaveselliott/mars-harness/internal/trust"
 )
 
 // Config controls the serve command.
@@ -75,6 +76,7 @@ type Server struct {
 	traceStore  *trace.Store
 	scoreStore  *scoring.Store
 	evoStore    *evolution.Store
+	trustStore  *trust.Store
 
 	mu        sync.Mutex
 	started   bool
@@ -113,26 +115,26 @@ func New(cfg Config) (*Server, error) {
 	modelSet := hardware.DefaultModels(hw.Profile)
 
 	roleMapping := map[string]hardware.Tier{
-		"engineer":       hardware.TierCoding,
-		"pipeline-fixer": hardware.TierCoding,
-		"reviewer":       hardware.TierReasoning,
-		"code-reviewer":  hardware.TierReasoning,
-		"qa":             hardware.TierCoding,
-		"documenter":     hardware.TierFast,
-		"docs-writer":    hardware.TierFast,
-		"release":        hardware.TierFast,
-		"release-manager": hardware.TierFast,
-		"triager":        hardware.TierFast,
-		"onboarder":      hardware.TierFast,
-		"auditor":        hardware.TierReasoning,
-		"security-auditor": hardware.TierReasoning,
-		"backlog":        hardware.TierFast,
-		"janitor":        hardware.TierFast,
-		"evolution":      hardware.TierReasoning,
-		"dependency-updater": hardware.TierFast,
+		"engineer":              hardware.TierCoding,
+		"pipeline-fixer":        hardware.TierCoding,
+		"reviewer":              hardware.TierReasoning,
+		"code-reviewer":         hardware.TierReasoning,
+		"qa":                    hardware.TierCoding,
+		"documenter":            hardware.TierFast,
+		"docs-writer":           hardware.TierFast,
+		"release":               hardware.TierFast,
+		"release-manager":       hardware.TierFast,
+		"triager":               hardware.TierFast,
+		"onboarder":             hardware.TierFast,
+		"auditor":               hardware.TierReasoning,
+		"security-auditor":      hardware.TierReasoning,
+		"backlog":               hardware.TierFast,
+		"janitor":               hardware.TierFast,
+		"evolution":             hardware.TierReasoning,
+		"dependency-updater":    hardware.TierFast,
 		"performance-optimizer": hardware.TierCoding,
-		"refactorer":     hardware.TierCoding,
-		"incident-responder": hardware.TierCoding,
+		"refactorer":            hardware.TierCoding,
+		"incident-responder":    hardware.TierCoding,
 	}
 
 	binaryPath := filepath.Join(cfg.BinDir, "llama-server")
@@ -171,7 +173,12 @@ func New(cfg Config) (*Server, error) {
 		slog.Warn("serve: evolution store unavailable — evolution tracking disabled", "err", err)
 	}
 
-	executor := NewExecutor(repoLookup, router, traceStore)
+	trustStore, err := trust.OpenStore(cfg.DBPath)
+	if err != nil {
+		slog.Warn("serve: trust store unavailable — mutating tools default to observer restrictions", "err", err)
+	}
+
+	executor := NewExecutor(repoLookup, router, traceStore, trustStore)
 
 	sched := scheduler.New(jobQueue)
 
@@ -183,21 +190,22 @@ func New(cfg Config) (*Server, error) {
 	telem := telemetry.NewCollector(nil, telemStore)
 
 	s := &Server{
-		cfg:       cfg,
-		mux:       http.NewServeMux(),
-		estop:     safety.NewEmergencyStop(),
-		db:        db,
-		repos:     repos,
-		triggers:  triggerRouter,
-		queue:     jobQueue,
-		scheduler: sched,
-		router:    router,
+		cfg:        cfg,
+		mux:        http.NewServeMux(),
+		estop:      safety.NewEmergencyStop(),
+		db:         db,
+		repos:      repos,
+		triggers:   triggerRouter,
+		queue:      jobQueue,
+		scheduler:  sched,
+		router:     router,
 		executor:   executor,
 		telemetry:  telem,
 		telemStore: telemStore,
 		traceStore: traceStore,
 		scoreStore: scoreStore,
 		evoStore:   evoStore,
+		trustStore: trustStore,
 	}
 
 	telem.SetRemediator(s.handleRemediation)
@@ -218,13 +226,13 @@ func New(cfg Config) (*Server, error) {
 		EmergencyStop: func() []error { return s.estop.Execute(context.Background()) },
 		ChainProvider: s.buildPipelineChain,
 		Controls: dashboard.ControlCallbacks{
-			Pause:   func() { s.Pause() },
-			Resume:  func() { s.Resume() },
-			Restart: s.Restart,
-			Stop:    s.Stop,
-			Scan:    s.ScanRepo,
-			RunRole: s.RunRole,
-			Status:  func() interface{} { return s.Status() },
+			Pause:    func() { s.Pause() },
+			Resume:   func() { s.Resume() },
+			Restart:  s.Restart,
+			Stop:     s.Stop,
+			Scan:     s.ScanRepo,
+			RunRole:  s.RunRole,
+			Status:   func() interface{} { return s.Status() },
 			IsPaused: s.IsPaused,
 			ListRepos: func() []dashboard.RepoInfoDTO {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -403,6 +411,9 @@ func (s *Server) Stop(ctx context.Context) error {
 	if s.evoStore != nil {
 		_ = s.evoStore.Close()
 	}
+	if s.trustStore != nil {
+		_ = s.trustStore.Close()
+	}
 
 	if err := s.db.Close(); err != nil && firstErr == nil {
 		firstErr = fmt.Errorf("serve: db close: %w", err)
@@ -551,8 +562,7 @@ func (s *Server) ScanRepo(ctx context.Context, repoID string) error {
 		return fmt.Errorf("scan: %w", err)
 	}
 
-	ticketDir := filepath.Join(rec.Path, ".harness", "tickets", "backlog")
-	if err := scanner.GenerateTickets(result.Findings, ticketDir); err != nil {
+	if err := scanner.GenerateTickets(result.Findings, rec.Path); err != nil {
 		return fmt.Errorf("scan: generate tickets: %w", err)
 	}
 
@@ -659,7 +669,7 @@ func (s *Server) loadManifest(ctx context.Context, repoID string) (*bundle.Manif
 // handleTelemetryAPI serves the telemetry event history as JSON.
 func (s *Server) handleTelemetryAPI(w http.ResponseWriter, r *http.Request) {
 	type apiResponse struct {
-		Events []telemetry.Event          `json:"events"`
+		Events []telemetry.Event                 `json:"events"`
 		Stats  map[telemetry.FailureCategory]int `json:"stats"`
 	}
 	resp := apiResponse{
@@ -798,8 +808,8 @@ func (s *Server) handleThroughputAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type apiResponse struct {
-		Hourly    []queue.HourlyCount `json:"hourly"`
-		RecentJobs []jobEntry         `json:"recent_jobs"`
+		Hourly     []queue.HourlyCount `json:"hourly"`
+		RecentJobs []jobEntry          `json:"recent_jobs"`
 		Summary    struct {
 			Total     int `json:"total"`
 			Completed int `json:"completed"`
@@ -1050,10 +1060,6 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 		cat := telemetry.Classify(jobErr.Error())
 		outcomeType := scoring.OutcomeFailed
 		switch cat {
-		case telemetry.CategoryMaxTurns:
-			outcomeType = scoring.OutcomeNoop
-		case telemetry.CategoryCircleDetected:
-			outcomeType = scoring.OutcomeNoop
 		case telemetry.CategoryToolTimeout, telemetry.CategoryContextOverflow:
 			outcomeType = scoring.OutcomeTimeout
 		}

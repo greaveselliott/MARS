@@ -75,15 +75,14 @@ func TestComputeScore_mixedOutcomes(t *testing.T) {
 	}
 
 	// positive = 5 merged + 3 passed = 8
-	// denominator = 8 + 2 closed + 3 failed + 2 noop = 15 (timeouts excluded)
-	// expected = 8/15 ≈ 0.5333
+	// denominator = all 20 outcomes; timeouts are trunk-native failures
 	sc, err := s.ComputeScore(ctx, "ci-fix", "repo-1", 30)
 	require.NoError(t, err)
-	assert.InDelta(t, 8.0/15.0, sc.Value, 0.001)
-	assert.Equal(t, 15, sc.SampleSize)
+	assert.InDelta(t, 8.0/20.0, sc.Value, 0.001)
+	assert.Equal(t, 20, sc.SampleSize)
 }
 
-func TestComputeScore_timeoutExcluded(t *testing.T) {
+func TestComputeScore_timeoutCountsAsNegative(t *testing.T) {
 	s := tempStore(t)
 	ctx := context.Background()
 
@@ -98,8 +97,8 @@ func TestComputeScore_timeoutExcluded(t *testing.T) {
 
 	sc, err := s.ComputeScore(ctx, "deploy", "repo-1", 30)
 	require.NoError(t, err)
-	assert.Equal(t, 1.0, sc.Value, "timeout should not affect denominator")
-	assert.Equal(t, 1, sc.SampleSize)
+	assert.Equal(t, 0.5, sc.Value)
+	assert.Equal(t, 2, sc.SampleSize)
 }
 
 func TestComputeScore_windowRespected(t *testing.T) {

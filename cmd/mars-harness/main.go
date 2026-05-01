@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/spf13/cobra"
 	_ "modernc.org/sqlite"
@@ -18,14 +19,18 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/config"
 	ctx "github.com/greaveselliott/mars-harness/internal/context"
 	"github.com/greaveselliott/mars-harness/internal/doctor"
+	"github.com/greaveselliott/mars-harness/internal/guardrails"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
+	"github.com/greaveselliott/mars-harness/internal/scoring"
 	"github.com/greaveselliott/mars-harness/internal/serve"
 	"github.com/greaveselliott/mars-harness/internal/setup"
 	"github.com/greaveselliott/mars-harness/internal/tools"
 	"github.com/greaveselliott/mars-harness/internal/trace"
+	"github.com/greaveselliott/mars-harness/internal/trust"
 	"github.com/greaveselliott/mars-harness/internal/ui"
 )
 
@@ -38,9 +43,9 @@ var (
 
 func main() {
 	root := &cobra.Command{
-		Use:   "mars-harness",
-		Short: "Autonomous AI delivery system",
-		Long:  "Mars Harness — self-hosted autonomous AI delivery. Run setup to get started.",
+		Use:           "mars-harness",
+		Short:         "Autonomous AI delivery system",
+		Long:          "Mars Harness — self-hosted autonomous AI delivery. Run setup to get started.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -55,8 +60,8 @@ func main() {
 	root.AddCommand(serveCmd())
 	root.AddCommand(registerCmd())
 	root.AddCommand(doctorCmd())
-	root.AddCommand(placeholderCmd("scores", "Accuracy and value scoring dashboard"))
-	root.AddCommand(placeholderCmd("trust", "Progressive autonomy level management"))
+	root.AddCommand(scoresCmd())
+	root.AddCommand(trustCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -91,7 +96,7 @@ func runCmd() *cobra.Command {
 
 If .harness/manifest.yaml is missing, the same scaffold as 'mars-harness init'
 is applied automatically (requires a git repository).`,
-		Args:  cobra.ExactArgs(1),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			roleName := args[0]
 			return executeRun(runOpts{
@@ -166,9 +171,39 @@ func executeRun(opts runOpts) error {
 		return err
 	}
 
+	guardRules, err := manifest.LoadGuardrails(absRepo, opts.roleName)
+	if err != nil {
+		tw.WriteError(err.Error())
+		return err
+	}
+	guardEngine, err := guardrails.New(guardRules)
+	if err != nil {
+		tw.WriteError(err.Error())
+		return err
+	}
+	var promptGuardrails []ctx.Guardrail
+	for _, r := range guardRules {
+		body := r.Message
+		if body == "" {
+			body = r.Pattern
+		}
+		promptGuardrails = append(promptGuardrails, ctx.Guardrail{Scope: r.Scope, Title: r.Name, Body: body})
+	}
+	knowledgeDefs, err := manifest.LoadKnowledgeRoutes(absRepo, opts.roleName)
+	if err != nil {
+		tw.WriteError(err.Error())
+		return err
+	}
+	var knowledgeRoutes []ctx.KnowledgeRoute
+	for _, kr := range knowledgeDefs {
+		knowledgeRoutes = append(knowledgeRoutes, ctx.KnowledgeRoute{When: kr.When, Paths: kr.Paths})
+	}
+
 	assemblyInput := ctx.Input{
-		RoleScope:  opts.roleName,
-		RolePrompt: rolePrompt,
+		RoleScope:       opts.roleName,
+		RolePrompt:      rolePrompt,
+		Guardrails:      promptGuardrails,
+		KnowledgeRoutes: knowledgeRoutes,
 	}
 	if opts.budget > 0 {
 		assemblyInput.TokenBudget = opts.budget
@@ -230,6 +265,14 @@ func executeRun(opts runOpts) error {
 		return err
 	}
 	executor := tools.NewExecutor(registry)
+	executor.Session = &tools.Session{
+		Role:         opts.roleName,
+		JobID:        fmt.Sprintf("%s-%s", manifest.Name, opts.roleName),
+		RepoID:       absRepo,
+		TrustLevel:   string(trust.LevelContributor),
+		Guardrails:   guardEngine,
+		SafetyLimits: safety.DefaultLimits(),
+	}
 
 	root, err := tools.NewRoot(absRepo)
 	if err != nil {
@@ -272,6 +315,10 @@ func executeRun(opts runOpts) error {
 
 	if result.Err != nil {
 		tw.WriteError(fmt.Sprintf("run ended with error: %v", result.Err))
+	}
+	if err := agent.NonSuccessError(result); err != nil {
+		tw.WriteError(err.Error())
+		return fmt.Errorf("run: %w", err)
 	}
 
 	tw.WriteHandoff(opts.roleName, role.Then)
@@ -452,7 +499,7 @@ func scanCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Scan a repository for gaps and generate starter tickets",
-		Long: `Walk the file tree to find missing tests, TODOs, missing CI, and large functions. Optionally generate .harness/tickets/.
+		Long: `Walk the file tree to find missing tests, TODOs, missing CI, and large functions. Optionally generate docs/tickets/backlog entries.
 
 If .harness/manifest.yaml is missing, mars-harness scaffolds it first (same as init; requires git).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -490,11 +537,10 @@ If .harness/manifest.yaml is missing, mars-harness scaffolds it first (same as i
 			}
 
 			if genTickets && len(result.Findings) > 0 {
-				ticketDir := filepath.Join(absPath, ".harness", "tickets")
-				if err := scanner.GenerateTickets(result.Findings, ticketDir); err != nil {
+				if err := scanner.GenerateTickets(result.Findings, absPath); err != nil {
 					return err
 				}
-				fmt.Printf("Tickets written to %s\n", ticketDir)
+				fmt.Printf("Tickets written to %s\n", filepath.Join(absPath, "docs", "tickets", "backlog"))
 			}
 
 			return nil
@@ -502,7 +548,7 @@ If .harness/manifest.yaml is missing, mars-harness scaffolds it first (same as i
 	}
 
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
-	cmd.Flags().BoolVar(&genTickets, "tickets", false, "Generate ticket files in .harness/tickets/")
+	cmd.Flags().BoolVar(&genTickets, "tickets", false, "Generate ticket files in docs/tickets/backlog/")
 
 	return cmd
 }
@@ -559,6 +605,120 @@ func doctorCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&skipRemote, "skip-remote", false, "Skip remote connectivity checks")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON")
 
+	return cmd
+}
+
+func scoresCmd() *cobra.Command {
+	var repoPath string
+	var dbPath string
+	cmd := &cobra.Command{
+		Use:   "scores",
+		Short: "Show trunk-native accuracy scores",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path, _, err := resolveRepoDBAndID(repoPath, dbPath)
+			if err != nil {
+				return err
+			}
+			store, err := scoring.OpenStore(path)
+			if err != nil {
+				return err
+			}
+			defer store.Close()
+			scores, err := store.ListScores(cmd.Context())
+			if err != nil {
+				return err
+			}
+			if len(scores) == 0 {
+				fmt.Println("No scores recorded yet.")
+				return nil
+			}
+			fmt.Printf("%-36s %-18s %-8s %-7s %-8s %s\n", "REPO", "ROLE", "SCORE", "SAMPLES", "WINDOW", "COMPUTED")
+			for _, sc := range scores {
+				fmt.Printf("%-36s %-18s %-8.2f %-7d %-8dd %s\n",
+					sc.RepoID, sc.Role, sc.Value, sc.SampleSize, sc.WindowDays, sc.ComputedAt.Format("2006-01-02 15:04"))
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Target repository path (default: shared legacy database)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database")
+	return cmd
+}
+
+func trustCmd() *cobra.Command {
+	var repoPath string
+	var dbPath string
+	cmd := &cobra.Command{
+		Use:   "trust",
+		Short: "Show and set progressive autonomy levels",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path, _, err := resolveRepoDBAndID(repoPath, dbPath)
+			if err != nil {
+				return err
+			}
+			store, err := trust.OpenStore(path)
+			if err != nil {
+				return err
+			}
+			defer store.Close()
+			entries, err := store.List(cmd.Context())
+			if err != nil {
+				return err
+			}
+			if len(entries) == 0 {
+				fmt.Println("No trust entries recorded yet.")
+				return nil
+			}
+			fmt.Printf("%-36s %-18s %-12s %-7s %s\n", "REPO", "ROLE", "LEVEL", "TRIALS", "UPDATED")
+			for _, e := range entries {
+				fmt.Printf("%-36s %-18s %-12s %-7d %s\n",
+					e.RepoID, e.Role, e.Level, e.TrialRuns, e.UpdatedAt.Format("2006-01-02 15:04"))
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Target repository path (default: shared legacy database)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database")
+	cmd.AddCommand(trustSetCmd())
+	return cmd
+}
+
+func trustSetCmd() *cobra.Command {
+	var reason string
+	var dbPath string
+	cmd := &cobra.Command{
+		Use:   "set <role> <repo> <observer|contributor|autonomous>",
+		Short: "Set a role's trust level for a repository",
+		Args:  cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			roleName := args[0]
+			level := trust.Level(strings.TrimSpace(args[2]))
+			switch level {
+			case trust.LevelObserver, trust.LevelContributor, trust.LevelAutonomous:
+			default:
+				return fmt.Errorf("trust set: invalid level %q", args[2])
+			}
+			if strings.TrimSpace(reason) == "" {
+				return fmt.Errorf("trust set: --reason is required for auditability")
+			}
+			path, repoID, err := resolveRepoDBAndID(args[1], dbPath)
+			if err != nil {
+				return err
+			}
+			store, err := trust.OpenStore(path)
+			if err != nil {
+				return err
+			}
+			defer store.Close()
+			if err := store.SetWithReason(cmd.Context(), roleName, repoID, level, reason); err != nil {
+				return err
+			}
+			fmt.Printf("Set %s/%s to %s\n", repoID, roleName, level)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&reason, "reason", "", "Reason for the trust override (required)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database")
 	return cmd
 }
 
@@ -672,7 +832,7 @@ If .harness/manifest.yaml is missing, mars-harness runs the same scaffold as
 				dbPath = defaultDBPath(absPath)
 				if _, err := os.Stat(legacyDBPath()); err == nil {
 					if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-						slog.Warn("register: legacy shared database exists at "+legacyDBPath()+" but per-repo DB does not yet exist — starting fresh. Copy the legacy DB to "+dbPath+" if you want to preserve history.")
+						slog.Warn("register: legacy shared database exists at " + legacyDBPath() + " but per-repo DB does not yet exist — starting fresh. Copy the legacy DB to " + dbPath + " if you want to preserve history.")
 					}
 				}
 			}
@@ -730,6 +890,41 @@ func defaultDBPath(repoAbsPath string) string {
 	return filepath.Join(home, ".mars-harness", "db", repoSlug, "mars.db")
 }
 
+func resolveRepoDBAndID(repoArg, dbPath string) (string, string, error) {
+	repoArg = strings.TrimSpace(repoArg)
+	if dbPath != "" && repoArg == "" {
+		return dbPath, "", nil
+	}
+	if repoArg == "" {
+		return legacyDBPath(), "", nil
+	}
+	abs, err := filepath.Abs(repoArg)
+	if err != nil {
+		return "", "", fmt.Errorf("resolve repo path: %w", err)
+	}
+	if dbPath == "" {
+		dbPath = defaultDBPath(abs)
+	}
+	repoID := repoArg
+	db, err := openDB(dbPath)
+	if err == nil {
+		defer db.Close()
+		reg, regErr := serve.NewRepoRegistry(db)
+		if regErr == nil {
+			repos, listErr := reg.List(context.Background())
+			if listErr == nil {
+				for _, rec := range repos {
+					if rec.Path == abs {
+						repoID = rec.ID
+						break
+					}
+				}
+			}
+		}
+	}
+	return dbPath, repoID, nil
+}
+
 // legacyDBPath returns the old shared database path: ~/.mars-harness/db/mars.db.
 func legacyDBPath() string {
 	home, _ := os.UserHomeDir()
@@ -783,7 +978,7 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 				dbPath = defaultDBPath(absPath)
 				if _, err := os.Stat(legacyDBPath()); err == nil {
 					if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-						slog.Warn("start: legacy shared database exists at "+legacyDBPath()+" but per-repo DB does not yet exist — starting fresh. Copy the legacy DB to "+dbPath+" if you want to preserve history.")
+						slog.Warn("start: legacy shared database exists at " + legacyDBPath() + " but per-repo DB does not yet exist — starting fresh. Copy the legacy DB to " + dbPath + " if you want to preserve history.")
 					}
 				}
 			}

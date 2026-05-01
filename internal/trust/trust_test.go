@@ -78,23 +78,29 @@ func TestEvaluate_staysAtLevel(t *testing.T) {
 
 func TestCapabilities_observer(t *testing.T) {
 	caps := Capabilities(LevelObserver)
-	assert.ElementsMatch(t, []string{"file_read", "grep", "shell_exec_readonly"}, caps)
+	assert.Contains(t, caps, "repo_read")
+	assert.Contains(t, caps, "file_read")
+	assert.NotContains(t, caps, "repo_write")
+	assert.NotContains(t, caps, "git_push_main")
 }
 
 func TestCapabilities_contributor(t *testing.T) {
 	caps := Capabilities(LevelContributor)
 	assert.Contains(t, caps, "file_write")
 	assert.Contains(t, caps, "git_commit")
-	assert.Contains(t, caps, "git_branch")
+	assert.Contains(t, caps, "git_push_main")
+	assert.NotContains(t, caps, "git_branch")
 	assert.NotContains(t, caps, "create_pr")
 	assert.NotContains(t, caps, "merge")
 }
 
 func TestCapabilities_autonomous(t *testing.T) {
 	caps := Capabilities(LevelAutonomous)
-	assert.Contains(t, caps, "create_pr")
-	assert.Contains(t, caps, "merge")
 	assert.Contains(t, caps, "file_write")
+	assert.Contains(t, caps, "self_schedule")
+	assert.Contains(t, caps, "evolve_policy")
+	assert.NotContains(t, caps, "create_pr")
+	assert.NotContains(t, caps, "merge")
 }
 
 func TestStore_roundTrip(t *testing.T) {

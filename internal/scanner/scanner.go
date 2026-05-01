@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/greaveselliott/mars-harness/internal/tools"
 )
 
 // Finding represents a detected gap in the repo.
@@ -780,48 +782,58 @@ func scanFileForTodos(root, relPath string) []Finding {
 	return findings
 }
 
-// GenerateTickets creates markdown ticket files from scan findings.
-func GenerateTickets(findings []Finding, outputDir string) error {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		return fmt.Errorf("scanner: create ticket directory %s: %w — check directory permissions", outputDir, err)
+// GenerateTickets creates deduplicated backlog tickets from scan findings.
+func GenerateTickets(findings []Finding, repoRoot string) error {
+	root, err := tools.NewRoot(repoRoot)
+	if err != nil {
+		return err
 	}
-
 	count := 0
 	for _, f := range findings {
-		if f.Type == "todo" {
-			continue
-		}
 		count++
-		filename := fmt.Sprintf("scan-%03d-%s.md", count, f.Type)
-		path := filepath.Join(outputDir, filename)
-		content := formatTicket(f, count)
-		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-			return fmt.Errorf("scanner: write ticket %s: %w — check directory permissions", path, err)
+		res, err := tools.CreateTicket(root, tools.TicketInput{
+			Title:      titleFromFinding(f),
+			Priority:   f.Severity,
+			Complexity: "small",
+			Source:     "scanner",
+			Body:       formatTicketBody(f),
+		})
+		if err != nil {
+			return err
 		}
-		slog.Info("ticket created", "path", path, "type", f.Type)
+		slog.Info("ticket generation result", "result", strings.TrimSpace(res.Output), "type", f.Type)
 	}
-	slog.Info("ticket generation complete", "tickets", count, "output_dir", outputDir)
+	slog.Info("ticket generation complete", "findings", count, "repo", repoRoot)
 	return nil
 }
 
-func formatTicket(f Finding, seq int) string {
+func formatTicketBody(f Finding) string {
 	var b strings.Builder
-	b.WriteString("---\n")
-	b.WriteString(fmt.Sprintf("id: SCAN-%03d\n", seq))
-	b.WriteString(fmt.Sprintf("title: %s\n", titleFromType(f.Type)))
-	b.WriteString(fmt.Sprintf("priority: %s\n", f.Severity))
-	b.WriteString("complexity: small\n")
-	b.WriteString("source: scanner\n")
-	if f.Path != "" {
-		b.WriteString(fmt.Sprintf("path: %s\n", f.Path))
-	}
-	b.WriteString("---\n\n")
-	b.WriteString(fmt.Sprintf("# SCAN-%03d: %s\n\n", seq, titleFromType(f.Type)))
 	b.WriteString("## Context\n\n")
 	b.WriteString("Detected by `mars-harness scan` static analysis.\n\n")
-	b.WriteString("## Description\n\n")
+	if f.Path != "" {
+		b.WriteString(fmt.Sprintf("Path: `%s`\n\n", f.Path))
+	}
+	b.WriteString("## Requirements\n\n")
 	b.WriteString(f.Description + "\n")
+	b.WriteString("\n## Acceptance criteria\n\n")
+	b.WriteString("### Functional (happy path)\n")
+	b.WriteString("- [ ] The scanner finding is resolved.\n\n")
+	b.WriteString("### Edge cases, boundaries, and negative paths\n")
+	b.WriteString("- [ ] The fix does not introduce a regression in adjacent behavior.\n\n")
+	b.WriteString("### Non-goals and out of scope\n")
+	b.WriteString("- Follow-on refactors outside this finding are out of scope.\n\n")
+	b.WriteString("### Observability, docs, and regressions\n")
+	b.WriteString("- [ ] Tests or docs are updated when behavior changes.\n")
 	return b.String()
+}
+
+func titleFromFinding(f Finding) string {
+	title := titleFromType(f.Type)
+	if f.Type == "todo" && f.Path != "" {
+		return "Resolve TODO in " + strings.Split(f.Path, ":")[0]
+	}
+	return title
 }
 
 func titleFromType(t string) string {
@@ -836,6 +848,8 @@ func titleFromType(t string) string {
 		return "Add Missing Tests"
 	case "large_function":
 		return "Refactor Large Function"
+	case "todo":
+		return "Resolve TODO/FIXME Finding"
 	case "missing_dev_script":
 		return "Add Missing Package Scripts"
 	case "missing_root_layout":

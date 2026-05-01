@@ -16,12 +16,20 @@ import (
 type OutcomeType string
 
 const (
-	OutcomeMerged  OutcomeType = "merged"
-	OutcomePassed  OutcomeType = "passed"
-	OutcomeClosed  OutcomeType = "closed"
-	OutcomeFailed  OutcomeType = "failed"
-	OutcomeNoop    OutcomeType = "noop"
-	OutcomeTimeout OutcomeType = "timeout"
+	OutcomePassed           OutcomeType = "passed"
+	OutcomeCommitted        OutcomeType = "committed"
+	OutcomeChecksPassed     OutcomeType = "checks_passed"
+	OutcomeChecksFailed     OutcomeType = "checks_failed"
+	OutcomeGuardrailBlocked OutcomeType = "guardrail_blocked"
+	OutcomeReverted         OutcomeType = "reverted"
+	OutcomeHumanFollowup    OutcomeType = "human_followup"
+	OutcomeFailed           OutcomeType = "failed"
+	OutcomeNoop             OutcomeType = "noop"
+	OutcomeTimeout          OutcomeType = "timeout"
+
+	// Legacy outcome names are kept for reading older databases.
+	OutcomeMerged OutcomeType = "merged"
+	OutcomeClosed OutcomeType = "closed"
 )
 
 const defaultWindowDays = 30
@@ -133,9 +141,11 @@ VALUES(?,?,?,?,?,?,?)`,
 // ComputeScore calculates and caches the accuracy score for a role+repo pair
 // using outcomes within the given window. Formula v1:
 //
-//	(merged + passed) / (merged + passed + closed + failed + noop)
+//	positive / (positive + negative)
 //
-// Timeout outcomes are excluded from the denominator.
+// Positive outcomes are completed work and passing trunk checks. Negative
+// outcomes include failed checks, guardrail blocks, reverts, human follow-ups,
+// noops, timeouts, and failed runs. Legacy PR outcomes are still understood.
 func (s *Store) ComputeScore(ctx context.Context, role, repoID string, windowDays int) (Score, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -168,8 +178,16 @@ GROUP BY type`, role, repoID, cutoff)
 		return Score{}, fmt.Errorf("scoring: compute rows: %w", err)
 	}
 
-	positive := counts[OutcomeMerged] + counts[OutcomePassed]
-	denominator := positive + counts[OutcomeClosed] + counts[OutcomeFailed] + counts[OutcomeNoop]
+	positive := counts[OutcomePassed] + counts[OutcomeCommitted] + counts[OutcomeChecksPassed] + counts[OutcomeMerged]
+	negative := counts[OutcomeChecksFailed] +
+		counts[OutcomeGuardrailBlocked] +
+		counts[OutcomeReverted] +
+		counts[OutcomeHumanFollowup] +
+		counts[OutcomeClosed] +
+		counts[OutcomeFailed] +
+		counts[OutcomeNoop] +
+		counts[OutcomeTimeout]
+	denominator := positive + negative
 
 	var value float64
 	if denominator > 0 {
@@ -220,6 +238,33 @@ FROM scores WHERE role = ? AND repo_id = ?`, role, repoID)
 	}
 	sc.ComputedAt = time.Unix(computedAt, 0).UTC()
 	return &sc, nil
+}
+
+// ListScores returns cached scores ordered by repo and role.
+func (s *Store) ListScores(ctx context.Context) ([]Score, error) {
+	rows, err := s.db.QueryContext(ctx, `
+SELECT role, repo_id, value, sample_size, window_days, formula, computed_at
+FROM scores
+ORDER BY repo_id, role`)
+	if err != nil {
+		return nil, fmt.Errorf("scoring: list scores: %w", err)
+	}
+	defer rows.Close()
+
+	var scores []Score
+	for rows.Next() {
+		var sc Score
+		var computedAt int64
+		if err := rows.Scan(&sc.Role, &sc.RepoID, &sc.Value, &sc.SampleSize, &sc.WindowDays, &sc.Formula, &computedAt); err != nil {
+			return nil, fmt.Errorf("scoring: list scores scan: %w", err)
+		}
+		sc.ComputedAt = time.Unix(computedAt, 0).UTC()
+		scores = append(scores, sc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("scoring: list scores rows: %w", err)
+	}
+	return scores, nil
 }
 
 func newUUID() string {
