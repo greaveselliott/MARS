@@ -387,7 +387,7 @@ func autoStartInference(ctx context.Context, roleName string) (*inference.Router
 func setupCmd() *cobra.Command {
 	var (
 		skipDownload bool
-		skipGitHub   bool
+		enableGitHub bool
 		testMode     bool
 		dryRun       bool
 	)
@@ -395,11 +395,11 @@ func setupCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup",
 		Short: "First-time setup wizard",
-		Long:  "Create ~/.mars-harness/, detect hardware, download models, and configure GitHub integration.",
+		Long:  "Create ~/.mars-harness/, detect hardware, install local inference, and download pinned models. GitHub integration is optional.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			result, err := setup.Run(setup.Config{
 				SkipDownload: skipDownload,
-				SkipGitHub:   skipGitHub,
+				EnableGitHub: enableGitHub,
 				TestMode:     testMode,
 				DryRun:       dryRun,
 			})
@@ -412,7 +412,7 @@ func setupCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&skipDownload, "skip-download", false, "Skip model download")
-	cmd.Flags().BoolVar(&skipGitHub, "skip-github", false, "Skip GitHub App configuration")
+	cmd.Flags().BoolVar(&enableGitHub, "github", false, "Configure optional GitHub status/check integration")
 	cmd.Flags().BoolVar(&testMode, "test-mode", false, "Skip downloads and external services")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print steps without executing")
 

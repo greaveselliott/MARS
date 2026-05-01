@@ -31,6 +31,7 @@ type Step struct {
 type Config struct {
 	SkipDownload bool
 	SkipGitHub   bool
+	EnableGitHub bool
 	TestMode     bool
 	DryRun       bool
 }
@@ -98,7 +99,7 @@ func buildSteps(baseDir string, cfg Config) []Step {
 		steps = append(steps, downloadModelsStep(baseDir))
 	}
 
-	if !cfg.SkipGitHub && !cfg.TestMode {
+	if cfg.EnableGitHub && !cfg.SkipGitHub && !cfg.TestMode {
 		steps = append(steps, githubPlaceholderStep(baseDir))
 	}
 
@@ -225,6 +226,9 @@ func downloadModelsStep(baseDir string) Step {
 			)
 
 			for i, spec := range unique {
+				if spec.Revision == "" || spec.SHA256 == "" {
+					return fmt.Errorf("model %s is not pinned with both revision and SHA256 — update the model registry or run setup with --skip-download for local-only configuration", spec.Name)
+				}
 				destPath := filepath.Join(modelsDir, spec.File)
 				if _, err := os.Stat(destPath); err == nil {
 					slog.Info("model already present, skipping",

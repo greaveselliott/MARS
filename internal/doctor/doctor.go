@@ -12,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/greaveselliott/mars-harness/internal/hardware"
 )
 
 // CheckResult represents the outcome of a single health check.
@@ -46,6 +48,7 @@ func Run(cfg Config) []CheckResult {
 	checks := []func(Config) CheckResult{
 		checkGoVersion,
 		checkConfigFile,
+		checkModelRegistry,
 		checkModelsDir,
 		checkDBAccessible,
 		checkLlamaServer,
@@ -64,6 +67,39 @@ func Run(cfg Config) []CheckResult {
 		results = append(results, result)
 	}
 	return results
+}
+
+func checkModelRegistry(_ Config) CheckResult {
+	start := time.Now()
+	name := "model-registry"
+	for _, profile := range []hardware.Profile{hardware.ProfileCPU, hardware.ProfileLow, hardware.ProfileMedium, hardware.ProfileHigh, hardware.ProfileMulti} {
+		for tier, spec := range hardware.DefaultModels(profile) {
+			if strings.TrimSpace(spec.Revision) == "" || spec.Revision == "main" || strings.TrimSpace(spec.SHA256) == "" {
+				return CheckResult{
+					Name:     name,
+					Status:   statusFail,
+					Message:  fmt.Sprintf("%s/%s is not pinned with immutable revision and SHA256", profile, tier),
+					Duration: time.Since(start),
+					Fix:      "update internal/hardware/registry.go with a non-main revision and SHA256 for every default model",
+				}
+			}
+			if strings.Contains(spec.DownloadURL(), "/resolve/main/") {
+				return CheckResult{
+					Name:     name,
+					Status:   statusFail,
+					Message:  fmt.Sprintf("%s/%s still downloads from resolve/main", profile, tier),
+					Duration: time.Since(start),
+					Fix:      "pin the model revision before running setup",
+				}
+			}
+		}
+	}
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  "default models pinned by revision and SHA256",
+		Duration: time.Since(start),
+	}
 }
 
 // FormatText renders results as human-readable coloured output.

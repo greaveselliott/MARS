@@ -89,6 +89,17 @@ func TestBuildSteps_fullMode(t *testing.T) {
 	assert.Contains(t, names, "detect-hardware")
 	assert.Contains(t, names, "install-llama-server")
 	assert.Contains(t, names, "download-models")
+	assert.NotContains(t, names, "github-setup")
+}
+
+func TestBuildSteps_githubOptIn(t *testing.T) {
+	t.Parallel()
+	steps := buildSteps("/tmp/test-mars", Config{EnableGitHub: true})
+
+	names := make([]string, len(steps))
+	for i, s := range steps {
+		names[i] = s.Name
+	}
 	assert.Contains(t, names, "github-setup")
 }
 

@@ -56,6 +56,9 @@ func TestDefaultModels_allTiersCovered(t *testing.T) {
 		for tier, spec := range m {
 			require.NotEmpty(t, spec.Name, "profile=%s tier=%s", p, tier)
 			require.NotEmpty(t, spec.File, "profile=%s tier=%s", p, tier)
+			require.NotEmpty(t, spec.Revision, "profile=%s tier=%s", p, tier)
+			require.NotEmpty(t, spec.SHA256, "profile=%s tier=%s", p, tier)
+			require.NotContains(t, spec.DownloadURL(), "/resolve/main/")
 		}
 	}
 }

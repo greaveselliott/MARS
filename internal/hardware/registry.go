@@ -6,6 +6,7 @@ import "fmt"
 type ModelSpec struct {
 	Name       string
 	Repo       string // HuggingFace repo ID (e.g. "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF")
+	Revision   string // immutable HuggingFace commit or tag
 	File       string // GGUF filename within repo
 	Params     string // e.g. "30B-A3B"
 	Quant      string // e.g. "Q4_K_M"
@@ -16,10 +17,10 @@ type ModelSpec struct {
 
 // DownloadURL returns the HuggingFace direct download URL for this model.
 func (s ModelSpec) DownloadURL() string {
-	if s.Repo == "" || s.File == "" {
+	if s.Repo == "" || s.File == "" || s.Revision == "" {
 		return ""
 	}
-	return fmt.Sprintf("https://huggingface.co/%s/resolve/main/%s", s.Repo, s.File)
+	return fmt.Sprintf("https://huggingface.co/%s/resolve/%s/%s", s.Repo, s.Revision, s.File)
 }
 
 // Tier maps roles to model weight classes.
@@ -40,90 +41,108 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 			TierCoding: {
 				Name:       "Qwen3-Coder-30B-A3B-Instruct",
 				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				Revision:   "b48fadd07cca9112bc27123e669b8bf55823013c",
 				File:       "Qwen3-Coder-30B-A3B-Instruct-Q3_K_L.gguf",
 				Params:     "30B-A3B",
 				Quant:      "Q3_K_L",
 				RAMMinMiB:  8192,
 				ContextLen: 32768,
+				SHA256:     "ddad34d487a85c5a5872b422a15b1f3db196c7912ecd939e7e1ef373cbc7ef29",
 			},
 			TierReasoning: {
 				Name:       "Qwen3-Coder-30B-A3B-Instruct",
 				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				Revision:   "b48fadd07cca9112bc27123e669b8bf55823013c",
 				File:       "Qwen3-Coder-30B-A3B-Instruct-Q3_K_L.gguf",
 				Params:     "30B-A3B",
 				Quant:      "Q3_K_L",
 				RAMMinMiB:  8192,
 				ContextLen: 65536,
+				SHA256:     "ddad34d487a85c5a5872b422a15b1f3db196c7912ecd939e7e1ef373cbc7ef29",
 			},
-		TierFast: {
-			Name:       "Gemma 4 E4B",
-			Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
-			File:       "google_gemma-4-E4B-it-Q4_K_M.gguf",
-			Params:     "4B",
-			Quant:      "Q4_K_M",
-			RAMMinMiB:  3072,
-			ContextLen: 16384,
-		},
+			TierFast: {
+				Name:       "Gemma 4 E4B",
+				Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
+				Revision:   "ada4143251234f041e9577f8415eb21c9b620885",
+				File:       "google_gemma-4-E4B-it-Q4_K_M.gguf",
+				Params:     "4B",
+				Quant:      "Q4_K_M",
+				RAMMinMiB:  3072,
+				ContextLen: 16384,
+				SHA256:     "b937a48e96379116137c50acbe39fd1b46eb101d2df4e560f47f5e2171b6451e",
+			},
 		}
 	case ProfileMedium:
 		return map[Tier]ModelSpec{
 			TierCoding: {
 				Name:       "Qwen3-Coder-30B-A3B-Instruct",
 				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				Revision:   "a000510ef6de0a66dafa731c2d8d712a96fa7009",
 				File:       "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf",
 				Params:     "30B-A3B",
 				Quant:      "Q4_K_M",
 				RAMMinMiB:  12288,
 				ContextLen: 32768,
+				SHA256:     "79ad15a5ee3caddc3f4ff0db33a14454a5a3eb503d7fa1c1e35feafc579de486",
 			},
 			TierReasoning: {
 				Name:       "Qwen3-Coder-30B-A3B-Instruct",
 				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				Revision:   "a000510ef6de0a66dafa731c2d8d712a96fa7009",
 				File:       "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf",
 				Params:     "30B-A3B",
 				Quant:      "Q4_K_M",
 				RAMMinMiB:  12288,
 				ContextLen: 131072,
+				SHA256:     "79ad15a5ee3caddc3f4ff0db33a14454a5a3eb503d7fa1c1e35feafc579de486",
 			},
-		TierFast: {
-			Name:       "Gemma 4 E4B",
-			Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
-			File:       "google_gemma-4-E4B-it-Q5_K_M.gguf",
-			Params:     "4B",
-			Quant:      "Q5_K_M",
-			RAMMinMiB:  4096,
-			ContextLen: 16384,
-		},
+			TierFast: {
+				Name:       "Gemma 4 E4B",
+				Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
+				Revision:   "e4aa9542a0831b455713909211f97454c5812c5d",
+				File:       "google_gemma-4-E4B-it-Q5_K_M.gguf",
+				Params:     "4B",
+				Quant:      "Q5_K_M",
+				RAMMinMiB:  4096,
+				ContextLen: 16384,
+				SHA256:     "8c2686257c840a1dcd4e6a3794a7e25c335cc5490a188d7f222b792bb5e82b4d",
+			},
 		}
 	case ProfileHigh, ProfileMulti:
 		return map[Tier]ModelSpec{
 			TierCoding: {
 				Name:       "Qwen3-Coder-30B-A3B-Instruct",
 				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				Revision:   "e9eb3e6",
 				File:       "Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf",
 				Params:     "30B-A3B",
 				Quant:      "Q8_0",
 				RAMMinMiB:  24576,
 				ContextLen: 32768,
+				SHA256:     "a4a0207f4653bfece73d9818c83acf714f5593525fe3aab7026347fd73090fcc",
 			},
 			TierReasoning: {
 				Name:       "Qwen3-Coder-30B-A3B-Instruct",
 				Repo:       "lmstudio-community/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+				Revision:   "e9eb3e6",
 				File:       "Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf",
 				Params:     "30B-A3B",
 				Quant:      "Q8_0",
 				RAMMinMiB:  24576,
 				ContextLen: 131072,
+				SHA256:     "a4a0207f4653bfece73d9818c83acf714f5593525fe3aab7026347fd73090fcc",
 			},
-		TierFast: {
-			Name:       "Gemma 4 E4B",
-			Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
-			File:       "google_gemma-4-E4B-it-Q8_0.gguf",
-			Params:     "4B",
-			Quant:      "Q8_0",
-			RAMMinMiB:  8192,
-			ContextLen: 16384,
-		},
+			TierFast: {
+				Name:       "Gemma 4 E4B",
+				Repo:       "bartowski/google_gemma-4-E4B-it-GGUF",
+				Revision:   "62c51d90ba0d5499436edbf24b5247bf3aa9d509",
+				File:       "google_gemma-4-E4B-it-Q8_0.gguf",
+				Params:     "4B",
+				Quant:      "Q8_0",
+				RAMMinMiB:  8192,
+				ContextLen: 16384,
+				SHA256:     "9c536ba17e55f3cf4d45aaa985bea7637f7b9034240b1377aca88d873aa6cb5c",
+			},
 		}
 	default:
 		return DefaultModels(ProfileCPU)
@@ -135,7 +154,7 @@ func UniqueModels(models map[Tier]ModelSpec) []ModelSpec {
 	seen := make(map[string]bool)
 	var unique []ModelSpec
 	for _, spec := range models {
-		key := spec.Repo + "/" + spec.File
+		key := spec.Repo + "@" + spec.Revision + "/" + spec.File
 		if seen[key] {
 			continue
 		}
