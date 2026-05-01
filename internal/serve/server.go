@@ -34,14 +34,16 @@ import (
 
 // Config controls the serve command.
 type Config struct {
-	WebhookAddr   string
-	WebhookSecret string
-	DBPath        string
-	Concurrency   int
-	ModelsDir     string
-	BinDir        string
-	DashboardAddr string
-	RepoScope     string // if set, only operate on repos whose path matches this absolute path
+	WebhookAddr        string
+	WebhookSecret      string
+	DBPath             string
+	Concurrency        int
+	ModelsDir          string
+	BinDir             string
+	DashboardAddr      string
+	RepoScope          string // if set, only operate on repos whose path matches this absolute path
+	PerformanceProfile string
+	InferenceTuning    inference.ServerTuning
 }
 
 func (c Config) concurrency() int {
@@ -112,7 +114,7 @@ func New(cfg Config) (*Server, error) {
 	}
 
 	hw := hardware.Detect()
-	modelSet := hardware.DefaultModels(hw.Profile)
+	modelSet := hardware.DefaultModelsForPerformance(hw.Profile, cfg.PerformanceProfile)
 
 	roleMapping := map[string]hardware.Tier{
 		"engineer":              hardware.TierCoding,
@@ -143,6 +145,7 @@ func New(cfg Config) (*Server, error) {
 		Models:      modelSet,
 		RoleMapping: roleMapping,
 		ModelsDir:   cfg.ModelsDir,
+		Tuning:      cfg.InferenceTuning,
 	})
 
 	triggerRouter := NewTriggerRouter()

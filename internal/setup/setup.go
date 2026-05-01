@@ -146,12 +146,15 @@ func writeDefaultConfigStep(baseDir string) Step {
 		},
 		Execute: func() error {
 			cfg := config.Config{
-				ModelsDir:     filepath.Join(baseDir, "models"),
-				BinDir:        filepath.Join(baseDir, "bin"),
-				TracesDir:     filepath.Join(baseDir, "traces"),
-				LogFormat:     "text",
-				WebhookPort:   9091,
-				DashboardPort: 9090,
+				ModelsDir:           filepath.Join(baseDir, "models"),
+				BinDir:              filepath.Join(baseDir, "bin"),
+				TracesDir:           filepath.Join(baseDir, "traces"),
+				LogFormat:           "text",
+				WebhookPort:         9091,
+				DashboardPort:       9090,
+				PerformanceProfile:  "quality",
+				LlamaParallel:       1,
+				LlamaFlashAttention: "auto",
 			}
 			data, err := yaml.Marshal(&cfg)
 			if err != nil {
@@ -208,8 +211,20 @@ func downloadModelsStep(baseDir string) Step {
 	return Step{
 		Name: "download-models",
 		Check: func() (bool, error) {
-			_, err := os.Stat(markerPath)
-			return err == nil, nil
+			if _, err := os.Stat(markerPath); err != nil {
+				return false, nil
+			}
+			cfg, err := config.Load(filepath.Join(baseDir, "config.yaml"))
+			if err != nil {
+				return false, err
+			}
+			hw := hardware.Detect()
+			for _, spec := range hardware.UniqueModels(hardware.DefaultModelsForPerformance(hw.Profile, cfg.PerformanceProfile)) {
+				if _, err := os.Stat(filepath.Join(modelsDir, spec.File)); err != nil {
+					return false, nil
+				}
+			}
+			return true, nil
 		},
 		Execute: func() error {
 			if err := os.MkdirAll(modelsDir, 0o755); err != nil {
@@ -217,11 +232,16 @@ func downloadModelsStep(baseDir string) Step {
 			}
 
 			hw := hardware.Detect()
-			modelSet := hardware.DefaultModels(hw.Profile)
+			cfg, err := config.Load(filepath.Join(baseDir, "config.yaml"))
+			if err != nil {
+				slog.Warn("setup: config load failed while selecting models; using quality profile", "err", err)
+			}
+			modelSet := hardware.DefaultModelsForPerformance(hw.Profile, cfg.PerformanceProfile)
 			unique := hardware.UniqueModels(modelSet)
 
 			slog.Info("model download plan",
 				"profile", string(hw.Profile),
+				"performance_profile", hardware.NormalizePerformanceProfile(cfg.PerformanceProfile),
 				"models_to_download", len(unique),
 			)
 

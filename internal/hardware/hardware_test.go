@@ -62,3 +62,27 @@ func TestDefaultModels_allTiersCovered(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultModelsForPerformance_capsHighProfiles(t *testing.T) {
+	t.Parallel()
+
+	quality := DefaultModelsForPerformance(ProfileHigh, PerformanceQuality)
+	require.Equal(t, "Q8_0", quality[TierCoding].Quant)
+
+	balanced := DefaultModelsForPerformance(ProfileHigh, PerformanceBalanced)
+	require.Equal(t, "Q4_K_M", balanced[TierCoding].Quant)
+	require.Equal(t, "Q5_K_M", balanced[TierFast].Quant)
+
+	speed := DefaultModelsForPerformance(ProfileHigh, PerformanceSpeed)
+	require.Equal(t, "Q3_K_L", speed[TierCoding].Quant)
+	require.Equal(t, "Q4_K_M", speed[TierFast].Quant)
+}
+
+func TestNormalizePerformanceProfile(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, PerformanceBalanced, NormalizePerformanceProfile(" balanced "))
+	require.Equal(t, PerformanceSpeed, NormalizePerformanceProfile("SPEED"))
+	require.Equal(t, PerformanceQuality, NormalizePerformanceProfile("unknown"))
+	require.Equal(t, PerformanceQuality, NormalizePerformanceProfile(""))
+}

@@ -21,6 +21,7 @@ type Router struct {
 	models        map[hardware.Tier]hardware.ModelSpec
 	modelsDir     string
 	binaryPath    string
+	tuning        ServerTuning
 	fallback      *llm.Client // optional remote API fallback
 	remoteBaseURL string      // normalized base URL (no trailing /v1)
 }
@@ -33,6 +34,7 @@ type RouterConfig struct {
 	ModelsDir   string                   // where model files live
 	FallbackURL string                   // optional remote API
 	FallbackKey string
+	Tuning      ServerTuning
 }
 
 // NewRouter creates a router (does not start servers).
@@ -66,6 +68,7 @@ func NewRouter(cfg RouterConfig) *Router {
 		models:        models,
 		modelsDir:     cfg.ModelsDir,
 		binaryPath:    cfg.BinaryPath,
+		tuning:        cfg.Tuning,
 		fallback:      fb,
 		remoteBaseURL: fbBase,
 	}
@@ -144,7 +147,7 @@ func (r *Router) ServerForRole(ctx context.Context, role string) (string, error)
 			Port:          r.tierPort(tier),
 			ContextLength: ctxLen,
 			GPULayers:     -1,
-			Threads:       0,
+			ServerTuning:  r.tuning,
 		})
 		r.servers[tier] = srv
 	}

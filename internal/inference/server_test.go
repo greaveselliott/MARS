@@ -21,7 +21,15 @@ func TestServer_configBuildsCorrectArgs(t *testing.T) {
 		Port:          9000,
 		ContextLength: 8192,
 		GPULayers:     -1,
-		Threads:       8,
+		ServerTuning: ServerTuning{
+			Threads:        8,
+			ThreadsBatch:   6,
+			Parallel:       1,
+			BatchSize:      1024,
+			UBatchSize:     256,
+			FlashAttention: "auto",
+			MLock:          true,
+		},
 	}
 	require.Equal(t, []string{
 		"--model", "/models/model.gguf",
@@ -29,9 +37,15 @@ func TestServer_configBuildsCorrectArgs(t *testing.T) {
 		"--ctx-size", "8192",
 		"--n-gpu-layers", "-1",
 		"-t", "8",
+		"--threads-batch", "6",
+		"--parallel", "1",
+		"--batch-size", "1024",
+		"--ubatch-size", "256",
+		"--flash-attn", "auto",
+		"--mlock",
 	}, llamaServerArgs(cfg))
 
-	cfg.Threads = 0
+	cfg.ServerTuning = ServerTuning{}
 	require.Equal(t, []string{
 		"--model", "/models/model.gguf",
 		"--port", "9000",
@@ -46,6 +60,9 @@ func TestServer_configBuildsCorrectArgs(t *testing.T) {
 		"--ctx-size", "4096",
 		"--n-gpu-layers", "-1",
 	}, llamaServerArgs(cfg))
+
+	cfg.FlashAttention = "not-valid"
+	require.NotContains(t, llamaServerArgs(cfg), "--flash-attn")
 }
 
 func TestServer_baseURL(t *testing.T) {

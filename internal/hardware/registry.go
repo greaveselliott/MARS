@@ -1,6 +1,15 @@
 package hardware
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
+
+const (
+	PerformanceQuality  = "quality"
+	PerformanceBalanced = "balanced"
+	PerformanceSpeed    = "speed"
+)
 
 // ModelSpec describes one downloadable model.
 type ModelSpec struct {
@@ -146,6 +155,41 @@ func DefaultModels(p Profile) map[Tier]ModelSpec {
 		}
 	default:
 		return DefaultModels(ProfileCPU)
+	}
+}
+
+// DefaultModelsForPerformance returns models for the detected hardware profile
+// adjusted by an operator-selected performance profile.
+func DefaultModelsForPerformance(p Profile, performance string) map[Tier]ModelSpec {
+	return DefaultModels(EffectiveModelProfile(p, performance))
+}
+
+// EffectiveModelProfile maps quality/speed preferences to an existing model
+// registry profile without changing the detected hardware record.
+func EffectiveModelProfile(p Profile, performance string) Profile {
+	switch NormalizePerformanceProfile(performance) {
+	case PerformanceSpeed:
+		if p == ProfileCPU {
+			return ProfileCPU
+		}
+		return ProfileLow
+	case PerformanceBalanced:
+		if p == ProfileHigh || p == ProfileMulti {
+			return ProfileMedium
+		}
+		return p
+	default:
+		return p
+	}
+}
+
+// NormalizePerformanceProfile returns the supported performance profile name.
+func NormalizePerformanceProfile(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case PerformanceBalanced, PerformanceSpeed, PerformanceQuality:
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return PerformanceQuality
 	}
 }
 

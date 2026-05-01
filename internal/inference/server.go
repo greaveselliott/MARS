@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -30,7 +31,19 @@ type ServerConfig struct {
 	Port          int
 	ContextLength int
 	GPULayers     int // -1 = auto, 0 = CPU only
-	Threads       int // 0 = auto (omit -t)
+	ServerTuning
+}
+
+// ServerTuning exposes llama-server performance flags that materially affect
+// memory pressure and throughput on local machines.
+type ServerTuning struct {
+	Threads        int    // 0 = auto (omit -t)
+	ThreadsBatch   int    // 0 = llama.cpp default
+	Parallel       int    // 0 = llama.cpp default; harness config defaults to 1
+	BatchSize      int    // 0 = llama.cpp default
+	UBatchSize     int    // 0 = llama.cpp default
+	FlashAttention string // "auto", "on", "off", or empty to omit
+	MLock          bool
 }
 
 // Server manages a single llama-server subprocess.
@@ -99,6 +112,7 @@ func (s *Server) Start(ctx context.Context) error {
 		"port", s.cfg.Port,
 		"ctx_size", effectiveContextLength(s.cfg.ContextLength),
 		"gpu_layers", s.cfg.GPULayers,
+		"parallel", s.cfg.Parallel,
 	)
 
 	cmd, err := s.startCmdLocked()
@@ -453,5 +467,32 @@ func llamaServerArgs(cfg ServerConfig) []string {
 	if cfg.Threads > 0 {
 		args = append(args, "-t", strconv.Itoa(cfg.Threads))
 	}
+	if cfg.ThreadsBatch > 0 {
+		args = append(args, "--threads-batch", strconv.Itoa(cfg.ThreadsBatch))
+	}
+	if cfg.Parallel > 0 {
+		args = append(args, "--parallel", strconv.Itoa(cfg.Parallel))
+	}
+	if cfg.BatchSize > 0 {
+		args = append(args, "--batch-size", strconv.Itoa(cfg.BatchSize))
+	}
+	if cfg.UBatchSize > 0 {
+		args = append(args, "--ubatch-size", strconv.Itoa(cfg.UBatchSize))
+	}
+	if fa := normalizedFlashAttention(cfg.FlashAttention); fa != "" {
+		args = append(args, "--flash-attn", fa)
+	}
+	if cfg.MLock {
+		args = append(args, "--mlock")
+	}
 	return args
+}
+
+func normalizedFlashAttention(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "auto", "on", "off":
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return ""
+	}
 }

@@ -345,14 +345,18 @@ func autoStartInference(ctx context.Context, roleName string) (*inference.Router
 	if cfg.ModelsDir != "" {
 		modelsDir = cfg.ModelsDir
 	}
+	binDir := filepath.Join(baseDir, "bin")
+	if cfg.BinDir != "" {
+		binDir = cfg.BinDir
+	}
 
-	binaryPath := filepath.Join(baseDir, "bin", "llama-server")
+	binaryPath := filepath.Join(binDir, "llama-server")
 	if _, err := os.Stat(binaryPath); err != nil {
 		return nil, "", fmt.Errorf("llama-server not found at %s — run 'mars-harness setup' first", binaryPath)
 	}
 
 	hw := hardware.Detect()
-	modelSet := hardware.DefaultModels(hw.Profile)
+	modelSet := hardware.DefaultModelsForPerformance(hw.Profile, cfg.PerformanceProfile)
 
 	roleMapping := map[string]hardware.Tier{
 		"engineer":       hardware.TierCoding,
@@ -373,6 +377,7 @@ func autoStartInference(ctx context.Context, roleName string) (*inference.Router
 		Models:      modelSet,
 		RoleMapping: roleMapping,
 		ModelsDir:   modelsDir,
+		Tuning:      inferenceTuningFromConfig(cfg),
 	})
 
 	endpoint, err := router.ServerForRole(ctx, roleName)
@@ -382,6 +387,18 @@ func autoStartInference(ctx context.Context, roleName string) (*inference.Router
 
 	slog.Info("inference ready", "role", roleName, "endpoint", endpoint)
 	return router, endpoint, nil
+}
+
+func inferenceTuningFromConfig(cfg config.Config) inference.ServerTuning {
+	return inference.ServerTuning{
+		Threads:        cfg.LlamaThreads,
+		ThreadsBatch:   cfg.LlamaThreadsBatch,
+		Parallel:       cfg.LlamaParallel,
+		BatchSize:      cfg.LlamaBatchSize,
+		UBatchSize:     cfg.LlamaUBatchSize,
+		FlashAttention: cfg.LlamaFlashAttention,
+		MLock:          cfg.LlamaMLock,
+	}
 }
 
 func setupCmd() *cobra.Command {
@@ -757,13 +774,15 @@ func serveCmd() *cobra.Command {
 			serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
 
 			srv, err := serve.New(serve.Config{
-				WebhookAddr:   webhookAddr,
-				WebhookSecret: webhookSecret,
-				DBPath:        dbPath,
-				Concurrency:   concurrency,
-				ModelsDir:     cfg.ModelsDir,
-				BinDir:        cfg.BinDir,
-				DashboardAddr: dashboardAddr,
+				WebhookAddr:        webhookAddr,
+				WebhookSecret:      webhookSecret,
+				DBPath:             dbPath,
+				Concurrency:        concurrency,
+				ModelsDir:          cfg.ModelsDir,
+				BinDir:             cfg.BinDir,
+				DashboardAddr:      dashboardAddr,
+				PerformanceProfile: cfg.PerformanceProfile,
+				InferenceTuning:    inferenceTuningFromConfig(cfg),
 			})
 			if err != nil {
 				return err
@@ -992,13 +1011,15 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 			serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
 
 			srv, err := serve.New(serve.Config{
-				WebhookAddr:   webhookAddr,
-				DBPath:        dbPath,
-				Concurrency:   concurrency,
-				ModelsDir:     cfg.ModelsDir,
-				BinDir:        cfg.BinDir,
-				DashboardAddr: dashboardAddr,
-				RepoScope:     absPath,
+				WebhookAddr:        webhookAddr,
+				DBPath:             dbPath,
+				Concurrency:        concurrency,
+				ModelsDir:          cfg.ModelsDir,
+				BinDir:             cfg.BinDir,
+				DashboardAddr:      dashboardAddr,
+				RepoScope:          absPath,
+				PerformanceProfile: cfg.PerformanceProfile,
+				InferenceTuning:    inferenceTuningFromConfig(cfg),
 			})
 			if err != nil {
 				tw.WriteError(fmt.Sprintf("orchestrator init: %v", err))

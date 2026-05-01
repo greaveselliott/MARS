@@ -48,6 +48,18 @@ mars-harness setup
 
 Use `--skip-download` to skip model download if you already have a compatible GGUF model. Use `--skip-github` to skip GitHub App configuration.
 
+### Local inference speed
+
+If token generation is slow and RAM pressure is high, edit `~/.mars-harness/config.yaml`:
+
+```yaml
+performance_profile: balanced   # quality | balanced | speed
+llama_parallel: 1               # default strict-trunk single-agent setting
+llama_flash_attention: auto
+```
+
+`balanced` uses smaller Q4/Q5 model files on high-memory machines; `speed` uses the smallest default model set. After changing `performance_profile`, run `mars-harness setup` once so any newly required model files are downloaded.
+
 ## Initialise a Repository
 
 Navigate to your project and scaffold the `.harness/` bundle:
