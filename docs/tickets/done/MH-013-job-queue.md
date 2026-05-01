@@ -27,23 +27,23 @@ M5a introduces durable work: webhook- and scheduler-driven jobs must not lose st
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Enqueue → claim → run → complete persists across process restart (SQLite file)
-- [ ] Two jobs for same `repo_id` run strictly one-after-another when strict serialization enabled
-- [ ] Same `idempotency_key` re-enqueued returns same job without duplicate execution
+- [x] Enqueue → claim → run → complete persists across process restart (SQLite file)
+- [x] Two jobs for same `repo_id` run strictly one-after-another when strict serialization enabled
+- [x] Same `idempotency_key` re-enqueued returns same job without duplicate execution
 
 ### Edge cases and negative paths
-- [ ] Worker death mid-job: lease expires, job becomes reclaimable or moves to `failed` per policy (documented)
-- [ ] Cancel transitions a `pending` job to `cancelled`; `running` cancel requests cooperative stop flag
-- [ ] SQLite busy: retry with backoff; no indefinite spin
-- [ ] Completed/failed jobs older than 30 days are pruned automatically
+- [x] Worker death mid-job: lease expires, job becomes reclaimable or moves to `failed` per policy (documented)
+- [x] Cancel transitions a `pending` job to `cancelled`; `running` cancel requests cooperative stop flag
+- [x] SQLite busy: retry with backoff; no indefinite spin
+- [x] Completed/failed jobs older than 30 days are pruned automatically
 
 ### Non-goals
-- [ ] Distributed multi-node queue (single process / single DB file)
-- [ ] Priority inheritance across repos
+- Distributed multi-node queue (single process / single DB file)
+- Priority inheritance across repos
 
 ### Observability, docs, and regressions
-- [ ] Stress test: N workers, M repos, verifies serialization invariant
-- [ ] Migration test from empty DB to v1 schema
-- [ ] Metrics: queue depth per repo, claim latency, job duration histogram
+- [x] Stress test: N workers, M repos, verifies serialization invariant
+- [x] Migration test from empty DB to v1 schema
+- [x] Metrics: queue depth per repo, claim latency, job duration histogram
 
 > Note: Schedule uses queued/running/completed/failed; implementation uses pending/claimed/running/completed/failed/cancelled for lease pattern precision.

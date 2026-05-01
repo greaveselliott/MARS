@@ -16,14 +16,14 @@ Mars's 11 automation prompts and operational experience are the seed content:
 - **Pipeline learnings** (`docs/exec-plans/pipeline-learnings.md`): CI failure patterns and fix recipes inform the Pipeline Fixer role's prompt and the knowledge routing system.
 - **BOTS.md** (`docs/automations/BOTS.md`): Model-per-role assignment and cost awareness inform the hardware profiles and model routing in the harness manifest.
 - **Knowledge base** (`.cursor/rules/knowledge-base.mdc`): The routing pattern ("when working on X, read Y") directly becomes `.harness/knowledge-routes.yaml`.
-- **Deep research report** (`docs/future-state/deep-research-report.md`): Architecture A's GitHub App specification, job protocol, webhook handling, and threat model provide the engineering foundation.
+- **Deep research report** (`docs/future-state/deep-research-report.md`): Architecture A's optional GitHub integration, job protocol, webhook handling, and threat model provide the engineering foundation.
 
 ## Migration path
 
 Mars continues on Cursor Cloud Automations. When Mars Harness reaches parity, Mars migrates by:
 
 1. Adding `.harness/` to the Mars monorepo with all 11 roles ported
-2. Creating a GitHub App for Mars via `mars-harness setup`
+2. Enabling optional GitHub integration for Mars only after credentials, checks, and webhooks validate
 3. Running `mars-harness serve` on a GPU machine
 4. Validating each role produces equivalent output to Cursor Automations
 5. Turning off Cursor webhooks in `.github/workflows/automations.yml`

@@ -1,11 +1,13 @@
-# Clean branch before commit
+# Clean main before commit
 
-Before making commits, confirm you are on a non-`main` branch created from current `origin/main`.
+Before making commits, confirm you are on `main` and understand the delta you
+are about to add to trunk.
 
 ## Before the first commit on new work
 
 1. `git fetch origin main`
-2. Create the branch from the updated tip: `git checkout origin/main -b <type>/<short-description>`
+2. `git status --short`
+3. `git log --oneline origin/main..HEAD`
 
 ## Before pushing
 

@@ -36,8 +36,8 @@ This is the **agent-operable source of truth** for the Mars Harness build. It cr
 | MH-007 | Model download | M2.3 | `internal/models` | Not started |
 | MH-008 | llama-server + router | M2.4, M2.5 | `internal/inference` | Not started |
 | MH-009 | CLI + bundle + demo | M3 | `cmd/mars-harness`, `internal/bundle`, `internal/ui` | Not started |
-| MH-010 | GitHub API client | M4.1 | `internal/github` | Not started |
-| MH-011 | GitHub App setup | M4.2 | `internal/github` | Not started |
+| MH-010 | Optional GitHub API client | M4.1 | `internal/github` | Not started |
+| MH-011 | Optional GitHub setup | M4.2 | `internal/github` | Not started |
 | MH-012 | Webhook receiver | M4.3 | `internal/github` | Not started |
 | MH-013 | Job queue | M5a.1, M5a.2 | `internal/queue` | Not started |
 | MH-014 | Scheduler | M5a.3 | `internal/scheduler` | Not started |
@@ -78,7 +78,7 @@ This is the **agent-operable source of truth** for the Mars Harness build. It cr
 | C14 | MH-018 trial: runs-to-promote vs expires-and-reverts | Schedule | Update ticket |
 | C15 | MH-020 auto-disable: 3 worsening vs score-post-merge | Schedule | Update ticket |
 | C16 | MH-021 staleness: 90 days vs 30 days | Schedule | Update ticket |
-| C17 | MH-022 test mode: --test-mode vs --dry-run+--skip-* | Ticket | --test-mode aliases --skip-download --skip-github |
+| C17 | MH-022 test mode: --test-mode vs --dry-run+--skip-* | Ticket | --test-mode aliases --skip-download and skips optional GitHub checks |
 | C18 | MH-023 ticket output: .harness/tickets/ vs docs/tickets/ | Schedule | Update ticket |
 | C19 | MH-023 roles.yaml vs manifest.yaml | Schedule | Ticket references both |
 
@@ -120,7 +120,7 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 - [x] 0.2 Directory structure (cmd/, internal/, pkg/, docs/, .cursor/rules/, testdata/)
 - [x] 0.3 AGENTS.md
 - [x] 0.4 Tenets document
-- [x] 0.5 Cursor rules (Go conventions, docs discipline, no-push-to-main)
+- [x] 0.5 Cursor rules (Go conventions, docs discipline, strict trunk commits)
 - [~] 0.6 CI setup
   - [x] 0.6.1 golangci-lint
   - [x] 0.6.2 go test with race detector
@@ -142,7 +142,7 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 - [x] `go build ./cmd/mars-harness` produces a binary
 - [x] `go test ./...` passes
 - [ ] `golangci-lint run` reports zero issues (not verified recently)
-- [x] CI workflow runs on push and PR
+- [x] CI workflow runs on push to `main`
 - [x] AGENTS.md exists
 - [x] tenets.md exists
 - [x] design-docs/index.md exists
@@ -287,14 +287,14 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 
 ---
 
-## Milestone 4: GitHub Integration — MH-010 through MH-012
+## Milestone 4: Optional GitHub Integration — MH-010 through MH-012
 
-**Objective:** GitHub API client, App manifest flow, webhook receiver, wire into agent tools.
+**Objective:** Optional GitHub API client, App manifest flow, webhook receiver, and status/check/comment tools. GitHub is telemetry and integration infrastructure, not the delivery path.
 
 ### Tasks
 
-- [ ] 4.1 GitHub API client (JWT auth, PAT fallback, PR/check/repo ops, rate limiting, pagination)
-- [ ] 4.2 GitHub App manifest flow (setup command, callback, credential storage, installation discovery)
+- [ ] 4.1 GitHub API client (JWT auth, PAT fallback, status/check/comment/repo ops, rate limiting, pagination)
+- [ ] 4.2 Optional GitHub App manifest flow (setup command, callback, credential storage, installation discovery)
 - [ ] 4.3 Webhook receiver (HTTP server, HMAC validation, event normalization, dedup, routing)
 - [ ] 4.4 PAT fallback mode (polling when no App configured)
 - [ ] 4.5 Wire GitHub tools into agent (replace stubs)
@@ -305,7 +305,7 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 - [ ] Webhook signature rejects tampered payloads
 - [ ] Events normalized (table-driven with real payloads)
 - [ ] Dedup rejects replayed delivery IDs
-- [ ] Agent creates PR on test repo [SKIP: needs credentials]
+- [ ] Agent posts check/status/comment on test repo [SKIP: needs credentials]
 - [ ] PAT fallback works
 - [ ] Rate limiting sleeps on 403
 
@@ -338,8 +338,8 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 ### Tasks
 
 - [ ] 5b.1 Process sandbox (Linux namespaces, macOS cwd+ulimit fallback)
-- [ ] 5b.2 Blast radius controls (max files, max lines per file, max total lines, PR rate limit, no-delete, secret scanner)
-- [ ] 5b.3 Emergency stop (stop command, GitHub cleanup, audit)
+- [ ] 5b.2 Blast radius controls (max files, max lines per file, max total lines, commit rate limit, no-delete, secret scanner)
+- [ ] 5b.3 Emergency stop (stop command, queue/tool halt, audit)
 - [ ] 5b.4 `mars-harness serve` (wire webhook + queue + worker + scheduler + safety, /healthz)
 
 ### Quality gate
@@ -347,7 +347,7 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 - [ ] Sandbox isolates writes
 - [ ] Blast radius blocks excessive diffs
 - [ ] Secret scanner catches patterns
-- [ ] Emergency stop halts and cleans up [SKIP: needs credentials for GitHub cleanup]
+- [ ] Emergency stop halts running jobs and blocks new mutations
 - [ ] `serve` starts and accepts webhooks
 - [ ] /healthz returns status
 
@@ -370,20 +370,20 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 - [ ] Rolling 30-day score accurate
 - [ ] Promotion observer → contributor → autonomous
 - [ ] Demotion on score drop
-- [ ] Observer cannot create PRs
+- [ ] Observer cannot mutate repo
 - [ ] CLI displays correct data
 
 ---
 
 ## Milestone 7: Self-Improvement and Guardrails — MH-019 through MH-021
 
-**Objective:** Intervention detection, Reviewer meta-role, guardrails engine, evolution PRs.
+**Objective:** Intervention detection, Reviewer meta-role, guardrails engine, bounded evolution commits.
 
 ### Tasks
 
 - [ ] 7.1 Intervention detector (detect, classify, store)
 - [ ] 7.2 Reviewer meta-role (trace analysis, root cause, prompt evolution proposals, rate limit, auto-disable)
-- [ ] 7.3 Evolution PR creation (branch naming, PR body, outcome tracking)
+- [ ] 7.3 Bounded evolution commits (scoped files, trace-linked message, outcome tracking)
 - [ ] 7.4 Guardrails engine (advisory/hard, override, staleness 90-day, inheritance)
 - [ ] 7.5 CLI commands (interventions, interventions show)
 
@@ -391,7 +391,7 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 
 - [ ] Clear interventions classified correctly
 - [ ] Reviewer produces plausible analysis
-- [ ] Evolution PR created with correct format
+- [ ] Evolution commit created with correct format
 - [ ] Reviewer cannot modify its own prompt
 - [ ] Max 1 evolution per role per day
 - [ ] Auto-disable after 3 worsening evolutions
@@ -478,14 +478,14 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 
 ## Execution protocol
 
-1. **Branch:** `feat/m{major}-{slug}` or `feat/mh-NNN-short`; never commit to main.
+1. **Trunk:** Work directly on `main`; do not create a separate delivery branch by default.
 2. **Ticket state:** backlog/ → in-progress/ on start; → done/ on AC completion.
-3. **Conflict resolution:** Check Conflict Register; apply resolution; update ticket in same PR.
+3. **Conflict resolution:** Check Conflict Register; apply resolution; update ticket in the same direct commit.
 4. **Implement:** Smallest vertical slice; code + table-driven tests.
 5. **Quality:** `go test ./... -race`, `go vet ./...`, `golangci-lint run`; ≥70% coverage.
 6. **Docs:** Update Discoveries in relevant design doc; update index.md if new AD.
 7. **Commit:** Conventional Commit referencing milestone + ticket.
-8. **PR:** Merge order follows dependency graph.
+8. **Push:** Push `main` after each completed step so the repo remains the system of record.
 
 **Failure recovery:**
 - Test failure requiring redesign → WIP commit, document blocker, continue to next task.

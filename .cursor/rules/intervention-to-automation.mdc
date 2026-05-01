@@ -4,7 +4,7 @@ Mars Harness's founding principle is to remove humans from the routine delivery 
 
 ## Rule for agents
 
-Whenever work implies that a human must do something (merge by hand, re-run a job, fix a configuration, resolve a stuck PR):
+Whenever work implies that a human must do something (commit by hand, re-run a job, fix a configuration, resolve stuck feedback):
 
 1. Ask: what change to the harness, a role prompt, a guardrail, or a policy would remove or reduce that dependency next time?
 2. If the answer is non-trivial, capture it in the relevant design doc or `docs/exec-plans/tech-debt.md`.

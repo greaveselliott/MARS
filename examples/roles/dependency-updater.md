@@ -63,4 +63,4 @@ Your job is to keep dependencies current, resolve version conflicts, and ensure 
 - Do not remove `go.sum` and regenerate it — this hides breaking changes.
 - Do not downgrade dependencies unless resolving a specific vulnerability.
 - Do not add `replace` directives in go.mod for upstream issues — file an issue instead.
-- Do not update dev/test tooling in the same PR as runtime dependencies.
+- Do not update dev/test tooling in the same commit as runtime dependencies.

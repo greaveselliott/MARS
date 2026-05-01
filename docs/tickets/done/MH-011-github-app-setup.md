@@ -24,20 +24,20 @@ Operators must install the harness GitHub App without hand-editing PEMs and webh
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Fresh setup completes: manifest URL → browser → callback → credentials on disk → printed next steps (webhook URL, events)
-- [ ] Stored credentials load into MH-010 client without manual path edits
-- [ ] PAT-only env is detected and documented in CLI output (no false “App ready” state)
+- [x] Fresh setup completes: manifest URL → browser → callback → credentials on disk → printed next steps (webhook URL, events)
+- [x] Stored credentials load into MH-010 client without manual path edits
+- [x] PAT-only env is detected and documented in CLI output (no false “App ready” state)
 
 ### Edge cases and negative paths
-- [ ] User cancels browser flow: callback timeout with clear “run again” message; no partial secrets written
-- [ ] Port already in use: automatic fallback port or explicit `--listen` flag with validation
-- [ ] Exchange fails (invalid code): error includes GitHub error JSON message when present
+- [x] User cancels browser flow: callback timeout with clear “run again” message; no partial secrets written
+- [x] Port already in use: automatic fallback port or explicit `--listen` flag with validation
+- [x] Exchange fails (invalid code): error includes GitHub error JSON message when present
 
 ### Non-goals
-- [ ] Org-wide bulk installation across many orgs from one wizard
-- [ ] Rotating webhook secret via API (manual rotate documented only)
+- Org-wide bulk installation across many orgs from one wizard
+- Rotating webhook secret via API (manual rotate documented only)
 
 ### Observability, docs, and regressions
-- [ ] Integration test using `httptest` simulating manifest callback and exchange
-- [ ] Docs: prerequisites (org admin vs repo admin), required events list, troubleshooting TLS/localhost
-- [ ] `doctor` (MH-028) hooks referenced as follow-up, not blocking this ticket
+- [x] Integration test using `httptest` simulating manifest callback and exchange
+- [x] Docs: prerequisites (org admin vs repo admin), required events list, troubleshooting TLS/localhost
+- [x] `doctor` (MH-028) hooks referenced as follow-up, not blocking this ticket

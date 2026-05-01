@@ -23,23 +23,23 @@ Autonomous roles mutate repos and open PRs. M5b must limit filesystem and proces
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Tooling subprocess runs under sandbox profile on Linux CI image used by project
-- [ ] Caps trigger clean abort with user-visible summary (which cap, current vs limit)
-- [ ] Emergency stop completes remote cleanup in fixture org using test tokens (recorded steps)
+- [x] Tooling subprocess runs under sandbox profile on Linux CI image used by project
+- [x] Caps trigger clean abort with user-visible summary (which cap, current vs limit)
+- [x] Emergency stop completes remote cleanup in fixture org using test tokens (recorded steps)
 
 ### Edge cases and negative paths
-- [ ] Insufficient privileges for namespaces → degrade with loud warning and stricter caps
-- [ ] Partial GitHub cleanup failure → aggregated error report with per-resource status; idempotent retry
-- [ ] Secret scanner false positive → override token in manifest with audit log entry
-- [ ] Per-file and total line limits enforced separately
+- [x] Insufficient privileges for namespaces → degrade with loud warning and stricter caps
+- [x] Partial GitHub cleanup failure → aggregated error report with per-resource status; idempotent retry
+- [x] Secret scanner false positive → override token in manifest with audit log entry
+- [x] Per-file and total line limits enforced separately
 
 ### Non-goals
-- [ ] eBPF syscall filtering
-- [ ] Full code review of third-party dependency source
+- eBPF syscall filtering
+- Full code review of third-party dependency source
 
 ### Observability, docs, and regressions
-- [ ] Integration tests on Linux runner; macOS unit tests for fallback path only
-- [ ] Audit log table entries for cap hits, overrides, emergency stop invocations
-- [ ] Operator runbook: when to hit emergency stop, expected GitHub end state
+- [x] Integration tests on Linux runner; macOS unit tests for fallback path only
+- [x] Audit log table entries for cap hits, overrides, emergency stop invocations
+- [x] Operator runbook: when to hit emergency stop, expected GitHub end state
 
 > Note: Schedule references sandbox-exec but it is deprecated on modern macOS. Implementation uses cwd restriction + ulimit as fallback.

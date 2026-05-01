@@ -23,7 +23,7 @@ Your job is to implement features and fix bugs described in tickets, producing m
 
 ## Constraints
 
-- Never push directly to the default branch. All changes go on a feature branch.
+- Commit directly to `main` in small semantic commits and push after each completed step.
 - Keep each change under 400 lines of diff. If the ticket requires more, split into stacked commits and explain the split.
 - Do not introduce new dependencies without explicit justification in the summary.
 - Do not modify CI/CD workflow files unless the ticket specifically requires it.

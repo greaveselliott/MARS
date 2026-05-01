@@ -16,7 +16,7 @@ Read the index at `docs/design-docs/index.md` to find relevant decisions. Key ro
 | Agent runtime, conversation loop, tool calling | `agent-runtime.md` |
 | Local models, GPU detection, llama.cpp, model download | `local-inference.md` |
 | Accuracy scores, outcome tracking, progressive autonomy | `scoring-system.md` |
-| Self-improvement, intervention detection, evolution PRs | `self-improvement.md` |
+| Self-improvement, intervention detection, trunk evolution commits | `self-improvement.md` |
 | Guardrails, validation, overrides | `guardrails.md` |
 | Job queue, scheduler, sandbox, blast radius | `pipeline-engine.md` |
 | Dashboard, htmx, Chart.js, SSE | `dashboard.md` |

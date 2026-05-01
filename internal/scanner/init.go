@@ -170,7 +170,7 @@ func EnsureHarness(repoRoot string, force bool) (didInit bool, err error) {
 
 func defaultManifest(projectName string) string {
 	return fmt.Sprintf(`name: %s
-description: Full autonomous AI pipeline for %s — 12 roles, 14 trigger entries
+description: Full autonomous AI pipeline for %s — strict trunk, 11 roles
 
 roles:
   # ── Strategy ─────────────────────────────────────────────
@@ -184,19 +184,10 @@ roles:
   coo:
     prompt: roles/coo.md
     model: reasoning
-    triggers:
-      - pull_request.merged
     then: [engineer]
     tools: [file_read, file_write, file_search, shell_exec, grep, record_decision, ticket_create, git_status, git_commit, git_push]
 
-  # ── Architecture (dual mode) ─────────────────────────────
-  cto-pr-merge:
-    prompt: roles/cto.md
-    model: coding
-    triggers:
-      - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
-
+  # ── Architecture ─────────────────────────────────────────
   cto-weekly:
     prompt: roles/cto.md
     model: reasoning
@@ -218,44 +209,26 @@ roles:
     prompt: roles/qa.md
     model: fast
     max_turns: 20
-    triggers:
-      - pull_request.opened
-      - pull_request.synchronize
-    then: [security-pr]
+    then: [security]
     tools: [file_read, grep, record_decision]
 
-  security-pr:
+  security:
     prompt: roles/security.md
     model: reasoning
     max_turns: 20
-    triggers:
-      - pull_request.opened
-    then: [dependency-manager]
-    tools: [file_read, grep, record_decision]
-
-  security-weekly:
-    prompt: roles/security.md
-    model: reasoning
     schedule: "0 22 * * 0"
+    then: [dependency-manager]
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
     model: fast
     max_turns: 10
-    triggers:
-      - pull_request.opened
-    tools: [file_read, grep, record_decision]
+    schedule: "0 23 * * 0"
+    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
 
-  # ── Release (dual mode) ─────────────────────────────────
-  release-pr:
-    prompt: roles/release-manager.md
-    model: coding
-    triggers:
-      - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
-
-  release-weekly:
+  # ── Release ──────────────────────────────────────────────
+  release-manager:
     prompt: roles/release-manager.md
     model: reasoning
     schedule: "0 8 * * 1"
@@ -276,14 +249,6 @@ roles:
     triggers:
       - workflow_run.conclusion == "failure"
     then: [qa]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
-
-  # ── PR comment resolution ────────────────────────────────
-  pr-comment-fixer:
-    prompt: roles/pr-comment-fixer.md
-    model: fast
-    triggers:
-      - pull_request_review_comment.created
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Backlog entropy management ─────────────────────────
@@ -307,7 +272,7 @@ Work items live as markdown files in this directory. The repo is the source of t
 docs/tickets/
   backlog/       Tickets waiting to be picked up
   in-progress/   Tickets actively being worked on
-  done/          Completed tickets (moved here on merge)
+  done/          Completed tickets committed directly to main
 ` + "```" + `
 
 ## Ticket Format
@@ -349,7 +314,7 @@ Source: weekly-priorities.md — core gameplay mechanics (Week 1).
 - [ ] Each known failure mode has an explicit line
 
 ### Non-goals and out of scope
-- [ ] What this ticket does NOT do
+- What this ticket does NOT do
 
 ### Observability, docs, and regressions
 - [ ] Docs or regressions to watch for
@@ -521,7 +486,7 @@ context block.
 ## Trigger
 
 - **Chain:** Runs after CTO completes (CTO → COO → Engineer chain)
-- **Event:** CEO Vision PR merged
+- **Event:** CEO priorities committed to main
 
 ## Engineer handoff
 
@@ -626,7 +591,6 @@ REPO LEARNINGS context block.
 ## Trigger
 
 - **Chain:** Runs after CEO completes (CEO → CTO → COO chain)
-- **Event:** PR merged (reviews architectural impact)
 - **Schedule:** Weekly audit (Sunday 9pm UTC)
 
 ## COO handoff
@@ -861,7 +825,6 @@ context block.
 ## Trigger
 
 - **Chain:** Runs after Engineer completes (Engineer → QA chain)
-- **Event:** PR opened or updated
 
 ## Security handoff
 
@@ -949,13 +912,12 @@ context block.
 
 ## Trigger
 
-- **Chain:** Runs after QA completes (QA → Security chain on PR review)
-- **Event:** PR opened
+- **Chain:** Runs after QA completes (QA → Security → Dependency Manager chain)
 - **Schedule:** Weekly full audit (Sunday 10pm UTC)
 
 ## Dependency Manager handoff
 
-When your PR review completes, the orchestrator triggers the Dependency Manager.
+When your review completes, the orchestrator triggers the Dependency Manager.
 
 ## Prompt
 
@@ -1018,7 +980,7 @@ REPO LEARNINGS context block.
 ## Trigger
 
 - **Chain:** Runs after Security review (Security → Dependency Manager)
-- **Event:** PR opened (dependency update PRs)
+- **Schedule:** Weekly dependency review (Sunday 11pm UTC)
 
 ## Prompt
 
@@ -1062,7 +1024,6 @@ REPO LEARNINGS context block.
 
 ## Trigger
 
-- **Event:** PR merged (track what changed)
 - **Schedule:** Weekly release check (Monday 8am UTC)
 
 ## Prompt
@@ -1076,9 +1037,9 @@ START by reading:
 
 TASKS:
 
-When PRs are merged:
-1. Track changes — note what was merged and categorise (feature, fix, refactor, docs)
-2. Update CHANGELOG.md with entries for merged changes not already documented
+For direct commits to main:
+1. Track changes — note what landed and categorise (feature, fix, refactor, docs)
+2. Update CHANGELOG.md with entries for committed changes not already documented
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
@@ -1258,45 +1219,6 @@ APPROACH:
 5. COMMIT — Single, focused commit using git_commit and git_push tools
 
 git_commit: message "fix(ci): [description of what was fixed]"
-git_push
-
-COMMIT GATE — before finishing, run git_status. If there are ANY uncommitted
-changes, commit and push them. An agent run that leaves dirty state is a failed run.
-`,
-
-	"pr-comment-fixer": `# PR Comment Fixer
-
-## Role
-
-You respond to review comments by making the requested changes.
-
-## Decision Recording
-
-When you make a non-obvious choice (how to address conflicting feedback,
-alternative approach), call the record_decision tool with a one-line summary
-and rationale. Future agents will see these decisions in the REPO LEARNINGS
-context block.
-
-## Trigger
-
-- **Event:** PR review comment created
-
-## Prompt
-
-You are a developer responding to PR review comments.
-
-START by reading:
-1. All review comments on the current PR
-2. The files mentioned in the comments
-3. The original ticket linked in the PR description
-
-APPROACH:
-1. READ ALL COMMENTS — Understand what reviewers are asking across the entire review
-2. ADDRESS EACH COMMENT — Make requested changes or explain why current approach is correct
-3. RUN TESTS — Ensure changes don't break anything
-4. COMMIT — Use git_commit and git_push tools
-
-git_commit: message "fix: address review feedback [description]"
 git_push
 
 COMMIT GATE — before finishing, run git_status. If there are ANY uncommitted

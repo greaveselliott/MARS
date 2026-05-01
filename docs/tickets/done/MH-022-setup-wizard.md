@@ -23,21 +23,21 @@ First-run friction blocks adoption. M8 needs one guided command that sequences h
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] `--test-mode` works as alias for `--skip-download --skip-github`
-- [ ] Fresh machine completes setup to “ready” with all checkmarks on supported OS
-- [ ] Second run completes in under N seconds with “skipped” lines for each satisfied step
-- [ ] `--dry-run` prints intended mutations without writing secrets
+- [x] `--test-mode` works as alias for `--skip-download --skip-github`
+- [x] Fresh machine completes setup to “ready” with all checkmarks on supported OS
+- [x] Second run completes in under N seconds with “skipped” lines for each satisfied step
+- [x] `--dry-run` prints intended mutations without writing secrets
 
 ### Edge cases and negative paths
-- [ ] Interrupted mid-step resumes from last incomplete step without corruption
-- [ ] Partial GitHub success (pem written, webhook secret missing) is detected and repaired on re-run
-- [ ] Verify failures print remediation commands (link to MH-028 when present)
+- [x] Interrupted mid-step resumes from last incomplete step without corruption
+- [x] Partial GitHub success (pem written, webhook secret missing) is detected and repaired on re-run
+- [x] Verify failures print remediation commands (link to MH-028 when present)
 
 ### Non-goals
-- [ ] Remote cluster provisioning
-- [ ] Installing system GPU drivers automatically without user consent prompt
+- Remote cluster provisioning
+- Installing system GPU drivers automatically without user consent prompt
 
 ### Observability, docs, and regressions
-- [ ] Integration test with fakes for network-heavy steps
-- [ ] Machine-readable log artifact path documented for CI
-- [ ] README quickstart replaced or linked to `setup` as primary path
+- [x] Integration test with fakes for network-heavy steps
+- [x] Machine-readable log artifact path documented for CI
+- [x] README quickstart replaced or linked to `setup` as primary path

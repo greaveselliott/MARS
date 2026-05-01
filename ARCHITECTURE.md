@@ -66,7 +66,7 @@ flowchart TB
 
   CTX -.->|"reads scoped context"| HARNESS
   AGENT -.->|"reads tickets as work queue"| TICKETS
-  REVIEWER -.->|"proposes evolution PRs"| HARNESS
+  REVIEWER -.->|"proposes evolution commits"| HARNESS
 ```
 
 ## Component Responsibilities
@@ -89,7 +89,7 @@ Manages llama.cpp as a subprocess. Auto-detects GPU hardware, downloads appropri
 
 ### Tool System (`internal/tools/`)
 
-Typed tool registry with JSON Schema definitions. Core tools: `file_read`, `file_write`, `file_search`, `grep`, `shell_exec`, `git_*`, `github_pr_*`, `github_check_*`. Per-role tool allowlists enforced from the bundle.
+Typed tool registry with JSON Schema definitions. Core tools: `file_read`, `file_write`, `file_search`, `grep`, `shell_exec`, and bounded `git_*` operations for direct commits to `main`. Optional GitHub helpers cover status, check-run, comment, and webhook telemetry. Per-role tool allowlists are enforced from the bundle and fail closed when empty.
 
 ### Context Assembly (`internal/context/`)
 
@@ -109,15 +109,15 @@ Process-level isolation. Linux: PID, mount, network namespaces. macOS: process g
 
 ### Scoring (`internal/scoring/`)
 
-Tracks real outcomes via GitHub events (PR merged/closed, CI status, review approvals). Computes per-role rolling accuracy score. Detects noops-when-work-available (value scoring).
+Tracks real outcomes via trunk-native signals: commit produced, checks passed or failed, guardrail blocks, reverts, human follow-up commits touching the same files, noops when actionable work existed, and terminal failures. Computes per-role rolling accuracy score.
 
 ### Progressive Autonomy (`internal/trust/`)
 
-Three trust levels: observer (comment only), contributor (PR with human approval), autonomous (auto-merge). Driven by accuracy scores with configurable thresholds per role. Trial mode for cold start.
+Three trust levels: observer (read/report only), contributor (human-triggered or ticket-bound edit/test/commit/push to `main`), and autonomous (self-schedule, chain jobs, edit/test/commit/push to `main`). Driven by accuracy scores with configurable thresholds per role. Trial mode for cold start.
 
 ### Self-Improvement (`internal/evolution/`)
 
-Intervention detector monitors GitHub for human actions on harness PRs. Reviewer meta-role analyses failures, classifies root causes, and proposes evolution PRs to `.harness/`. Before/after tracking validates improvements.
+Intervention detector monitors git history, traces, scoring events, and optional integration events for human follow-up work on harness output. Reviewer meta-role analyses failures, classifies root causes, and proposes bounded evolution commits to `.harness/`. Before/after tracking validates improvements.
 
 ### Guardrails (`internal/guardrails/`)
 
@@ -129,7 +129,7 @@ Server-rendered HTML at `localhost:9090`. htmx for live updates, Chart.js for gr
 
 ### Safety (`internal/safety/`)
 
-Blast radius containment: max changed files/lines per PR, file deletion allowlist, rate limiting, secret scanning. Emergency stop: halt jobs, cancel queue, clean up GitHub state.
+Blast radius containment: max changed files and lines per job, file deletion allowlist, rate limiting, secret scanning, and blocked destructive operations. Emergency stop halts jobs, cancels the queue, and stops new mutations.
 
 ## Bundle Format (`.harness/`)
 
@@ -148,7 +148,7 @@ Blast radius containment: max changed files/lines per PR, file deletion allowlis
   policies/
     file-allowlist.yaml     # Per-role write restrictions
     egress-policy.yaml      # Network rules
-    merge-policy.yaml       # Auto-merge rules
+    trunk-policy.yaml       # Direct main commit/push rules
     blast-radius.yaml       # Max files, max lines, rate limits
   knowledge-routes.yaml     # "When working on X, read Y"
   lock/
@@ -166,6 +166,6 @@ Blast radius containment: max changed files/lines per PR, file deletion allowlis
 7. **Context assembled** (role prompt + scoped guardrails + trigger context)
 8. **Agent loop runs** in a sandbox with tools available
 9. **Output validated** against hard guardrails and blast radius limits
-10. **GitHub operations** executed (PR, comment, check run) gated by trust level
-11. **Outcome tracked** and scored when observable (PR merged/closed, CI status)
+10. **Git operations** executed as bounded commits and pushes to `main`, gated by trust level
+11. **Outcome tracked** and scored when observable (commit, checks, guardrails, reverts, human follow-up)
 12. **Self-improvement triggered** if score below threshold or intervention detected

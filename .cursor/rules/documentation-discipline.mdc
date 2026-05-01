@@ -7,7 +7,7 @@ Every task that changes behaviour, fixes bugs, or adds infrastructure MUST updat
 ### 1. Execution plans
 
 - If the work was driven by the delivery schedule, update it: mark tasks complete, record discoveries.
-- If the work was driven by a ticket, move the ticket to `done/` in the same PR.
+- If the work was driven by a ticket, move the ticket to `done/` in the same direct commit to `main`.
 
 ### 2. Design docs
 

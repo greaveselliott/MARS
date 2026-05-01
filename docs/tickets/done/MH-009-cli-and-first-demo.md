@@ -45,26 +45,26 @@ Reference: delivery schedule M3
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] `mars-harness run pipeline-fixer --repo /path` executes and produces visible output
-- [ ] `--dry-run` shows what would execute without calling LLM
-- [ ] Trace streams to terminal in real-time with colour coding
-- [ ] Tool calls execute against real files in the repo
-- [ ] Budget limit terminates the run cleanly with clear message
-- [ ] Sample bundle works: agent diagnoses the type error and proposes a fix
+- [x] `mars-harness run pipeline-fixer --repo /path` executes and produces visible output
+- [x] `--dry-run` shows what would execute without calling LLM
+- [x] Trace streams to terminal in real-time with colour coding
+- [x] Tool calls execute against real files in the repo
+- [x] Budget limit terminates the run cleanly with clear message
+- [x] Sample bundle works: agent diagnoses the type error and proposes a fix
 
 ### Edge cases
-- [ ] Missing `.harness/` directory → actionable error ("Run mars-harness init to create one")
-- [ ] Invalid manifest YAML → actionable error with line number
-- [ ] Role not found in bundle → actionable error listing available roles
-- [ ] Repo path doesn't exist → actionable error
+- [x] Missing `.harness/` directory → actionable error ("Run mars-harness init to create one")
+- [x] Invalid manifest YAML → actionable error with line number
+- [x] Role not found in bundle → actionable error listing available roles
+- [x] Repo path doesn't exist → actionable error
 
 ### Non-goals
-- [ ] GitHub operations (stubs only, real in M4)
-- [ ] Webhook receiving (M4)
-- [ ] Persistent job queue (M5)
+- GitHub operations (stubs only, real in M4)
+- Webhook receiving (M4)
+- Persistent job queue (M5)
 
 ### Observability
-- [ ] Demo recorded: terminal session showing mars-harness run against a repo
+- [x] Demo recorded: terminal session showing mars-harness run against a repo
 
 ## Notes
 

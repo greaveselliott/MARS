@@ -253,7 +253,7 @@ func TestInit_success(t *testing.T) {
 	expectedPrompts := []string{
 		"ceo", "coo", "cto", "engineer", "qa", "security",
 		"dependency-manager", "release-manager", "dogfood",
-		"pipeline-fixer", "pr-comment-fixer",
+		"pipeline-fixer", "janitor",
 	}
 	for _, role := range expectedPrompts {
 		assert.FileExists(t, filepath.Join(dir, ".harness", "roles", role+".md"),
@@ -265,10 +265,10 @@ func TestInit_success(t *testing.T) {
 	manifestStr := string(manifest)
 	assert.Contains(t, manifestStr, filepath.Base(dir))
 	for _, key := range []string{
-		"ceo:", "coo:", "cto-pr-merge:", "cto-weekly:",
-		"engineer:", "qa:", "security-pr:", "security-weekly:",
-		"dependency-manager:", "release-pr:", "release-weekly:",
-		"dogfood:", "pipeline-fixer:", "pr-comment-fixer:",
+		"ceo:", "coo:", "cto-weekly:",
+		"engineer:", "qa:", "security:",
+		"dependency-manager:", "release-manager:",
+		"dogfood:", "pipeline-fixer:", "janitor:",
 	} {
 		assert.Contains(t, manifestStr, key, "manifest missing role %s", key)
 	}
@@ -279,7 +279,7 @@ func TestInit_success(t *testing.T) {
 		"then: [engineer]",
 		"then: [qa, engineer, dogfood]",
 		"then: [qa]",
-		"then: [security-pr]",
+		"then: [security]",
 		"then: [dependency-manager]",
 		"idle_then: [ceo, janitor]",
 	} {

@@ -26,20 +26,20 @@ Roles should gain capability only when evidence supports it. Trust levels gate P
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Role at `observer` completes a diagnostic job without creating a PR
-- [ ] Scripted high scores promote `contributor` → `autonomous` per threshold **over 20+ outcomes** (MH-017)
-- [ ] **Runs-to-promote:** default **5** trial runs advance `observer` → `contributor`; no automatic downgrade solely because a trial “expired”
+- [x] Role at `observer` completes a diagnostic job without creating a PR
+- [x] Scripted high scores promote `contributor` → `autonomous` per threshold **over 20+ outcomes** (MH-017)
+- [x] **Runs-to-promote:** default **5** trial runs advance `observer` → `contributor`; no automatic downgrade solely because a trial “expired”
 
 ### Edge cases and negative paths
-- [ ] Manual CLI override immediately affects enforcement without waiting for next job
-- [ ] Conflicting manifest trust vs DB: precedence rules documented and tested (recommend DB wins, manifest is default seed)
-- [ ] Demotion mid-queue: new jobs pick up reduced trust; running job policy documented (finish vs cancel)
+- [x] Manual CLI override immediately affects enforcement without waiting for next job
+- [x] Conflicting manifest trust vs DB: precedence rules documented and tested (recommend DB wins, manifest is default seed)
+- [x] Demotion mid-queue: new jobs pick up reduced trust; running job policy documented (finish vs cancel)
 
 ### Non-goals
-- [ ] Per-user GitHub identity trust (installation-scoped only)
-- [ ] Fine-grained OAuth scopes beyond MH-010
+- Per-user GitHub identity trust (installation-scoped only)
+- Fine-grained OAuth scopes beyond MH-010
 
 ### Observability, docs, and regressions
-- [ ] Audit table entries for every promotion/demotion/override
-- [ ] Integration test covering blocked PR tool at observer
-- [ ] User-facing table of capabilities × trust level in docs
+- [x] Audit table entries for every promotion/demotion/override
+- [x] Integration test covering blocked PR tool at observer
+- [x] User-facing table of capabilities × trust level in docs

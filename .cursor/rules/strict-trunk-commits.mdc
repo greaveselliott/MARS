@@ -1,0 +1,18 @@
+# Strict trunk commits
+
+`main` is the canonical delivery branch. Work directly on `main`, commit each
+completed step, and push `main` after every semantic commit.
+
+## Required workflow
+
+1. Confirm you are on `main` before making changes.
+2. Make one coherent step of progress.
+3. Run the relevant checks for that step.
+4. Commit with a semantic commit message.
+5. Push `main`.
+
+## Guardrails
+
+- Never force-push.
+- Never rewrite shared history.
+- Never leave unrelated dirty work dangling at the end of a task.

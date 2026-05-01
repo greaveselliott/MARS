@@ -45,8 +45,8 @@ roles:
       - file_read
       - grep
     triggers:
-      - pull_request.opened
-      - pull_request.synchronize
+      - commit.pushed
+      - workflow_dispatch
     tier: supervised
     model: ""
 
@@ -70,7 +70,7 @@ roles:
       - shell_exec
       - grep
     triggers:
-      - pull_request.merged
+      - commit.pushed
       - schedule.weekly
     tier: autonomous
     model: ""

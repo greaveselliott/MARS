@@ -23,19 +23,19 @@ Shipping confidence requires the tool to run its own CI hygiene and QA loops aga
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Pipeline Fixer opens a draft PR on a controlled fixture failure (or scheduled noop test branch) end-to-end
-- [ ] QA role executes on schedule or `workflow_dispatch` without manual token paste in logs
-- [ ] At least one merged dogfood PR authored by the harness with human review
+- [x] Pipeline Fixer opens a draft PR on a controlled fixture failure (or scheduled noop test branch) end-to-end
+- [x] QA role executes on schedule or `workflow_dispatch` without manual token paste in logs
+- [x] At least one merged dogfood PR authored by the harness with human review
 
 ### Edge cases and negative paths
-- [ ] Fork PRs from contributors do not auto-run privileged steps (guard documented)
-- [ ] Secret redaction verified in CI logs for tokens
+- [x] Fork PRs from contributors do not auto-run privileged steps (guard documented)
+- [x] Secret redaction verified in CI logs for tokens
 
 ### Non-goals
-- [ ] Full removal of human reviewers
-- [ ] Auto-merge to default branch without checks green
+- Full removal of human reviewers
+- Auto-merge to default branch without checks green
 
 ### Observability, docs, and regressions
-- [ ] Badge or docs section linking to example harness PRs
-- [ ] Post-incident checklist if dogfood loop wedges queue (MH-013/MH-016 ops)
-- [ ] MH-017 scoreboard includes dogfood repo metrics separately flagged
+- [x] Badge or docs section linking to example harness PRs
+- [x] Post-incident checklist if dogfood loop wedges queue (MH-013/MH-016 ops)
+- [x] MH-017 scoreboard includes dogfood repo metrics separately flagged

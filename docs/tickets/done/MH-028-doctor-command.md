@@ -23,19 +23,19 @@ Support load drops when failures are self-explanatory. M8 closes the loop with a
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Healthy dev machine prints all green with durations per check
-- [ ] `--json` emits stable schema version field for CI consumers
+- [x] Healthy dev machine prints all green with durations per check
+- [x] `--json` emits stable schema version field for CI consumers
 
 ### Edge cases and negative paths
-- [ ] Partial configuration (PAT without App) reports `info` + clear mode explanation, not spurious failures
-- [ ] Inference timeout prints latency and suggests endpoint URL flag
-- [ ] DB missing runs migrator suggestion, does not auto-mutate unless `--fix` (optional flag)
+- [x] Partial configuration (PAT without App) reports `info` + clear mode explanation, not spurious failures
+- [x] Inference timeout prints latency and suggests endpoint URL flag
+- [x] DB missing runs migrator suggestion, does not auto-mutate unless `--fix` (optional flag)
 
 ### Non-goals
-- [ ] Remote log collection from production fleet
-- [ ] Editing config files automatically
+- Remote log collection from production fleet
+- Editing config files automatically
 
 ### Observability, docs, and regressions
-- [ ] Table-driven unit tests per check with fakes
-- [ ] Docs section “Troubleshooting” references `doctor` as first step
-- [ ] Golden JSON snapshot for one representative failure bundle
+- [x] Table-driven unit tests per check with fakes
+- [x] Docs section “Troubleshooting” references `doctor` as first step
+- [x] Golden JSON snapshot for one representative failure bundle

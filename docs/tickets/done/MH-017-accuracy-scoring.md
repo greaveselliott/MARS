@@ -26,20 +26,20 @@ Trust and autonomy (M6) need grounded metrics, not vibes. Scores must derive fro
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Synthetic fixture spanning the **30-day rolling window** produces the expected v1 ratio for known outcome mix
-- [ ] Noop PR lands in **noop** and does not increase the numerator; denominator reflects noop correctly
-- [ ] Alert fires when scripted drop crosses threshold
+- [x] Synthetic fixture spanning the **30-day rolling window** produces the expected v1 ratio for known outcome mix
+- [x] Noop PR lands in **noop** and does not increase the numerator; denominator reflects noop correctly
+- [x] Alert fires when scripted drop crosses threshold
 
 ### Edge cases and negative paths
-- [ ] Events arriving out-of-order reconcile to stable final state (merge after close ignored correctly)
-- [ ] Missing optional signals (no reviews configured) do not NaN the score; documented defaults
-- [ ] Sparse data in window: score computed on available terminal outcomes with `sample_size` and window bounds exposed in status
+- [x] Events arriving out-of-order reconcile to stable final state (merge after close ignored correctly)
+- [x] Missing optional signals (no reviews configured) do not NaN the score; documented defaults
+- [x] Sparse data in window: score computed on available terminal outcomes with `sample_size` and window bounds exposed in status
 
 ### Non-goals
-- [ ] LLM-as-judge for code quality
-- [ ] Cross-repo normalization across unrelated languages
+- LLM-as-judge for code quality
+- Cross-repo normalization across unrelated languages
 
 ### Observability, docs, and regressions
-- [ ] Golden-file tests for scorer `v1` (ratio + window boundaries)
-- [ ] `/api/metrics` exposes rolling score, window, formula version (see MH-016 `/healthz` for process health)
-- [ ] Design note: formula tuning process and backwards compatibility (v2 weighted scoring when promoted from backlog)
+- [x] Golden-file tests for scorer `v1` (ratio + window boundaries)
+- [x] `/api/metrics` exposes rolling score, window, formula version (see MH-016 `/healthz` for process health)
+- [x] Design note: formula tuning process and backwards compatibility (v2 weighted scoring when promoted from backlog)

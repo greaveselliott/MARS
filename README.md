@@ -2,7 +2,7 @@
 
 A self-hosted autonomous AI delivery system. Run it on your own hardware with open models. No cloud API costs, no data exfiltration, no vendor lock-in.
 
-You provide a machine with a GPU. Mars Harness autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, PR review, release management, documentation maintenance. All inference runs locally.
+You provide a machine with a GPU. Mars Harness autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, trunk checks and review, release management, documentation maintenance. All inference runs locally.
 
 **Status:** Under active development. See [delivery schedule](docs/exec-plans/active/delivery-schedule.md).
 
@@ -26,7 +26,7 @@ Full text: [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
 # Install
 curl -sSL https://get.mars-harness.dev | sh
 
-# Setup (auto-detects GPU, downloads models, creates GitHub App)
+# Setup (auto-detects GPU, downloads pinned models, optional GitHub integration)
 mars-harness setup
 
 # Run a single role against a repo

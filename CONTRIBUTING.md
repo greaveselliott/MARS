@@ -11,11 +11,11 @@ go test ./...
 
 ## Development Workflow
 
-1. Create a branch from `main`: `git checkout -b feat/short-description`
-2. Make changes with tests
+1. Work directly on `main`
+2. Make one coherent change with tests
 3. Run `go test ./...` and `golangci-lint run`
-4. Commit with a meaningful message referencing the milestone if applicable
-5. Push and open a PR
+4. Commit with a semantic message referencing the milestone if applicable
+5. Push `main`
 
 ## Commit Messages
 

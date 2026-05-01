@@ -23,20 +23,20 @@ Operators need visibility without standing up a separate frontend repo. M9 ships
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Each page loads with seed data in dev mode; charts render in headless fetch tests (HTML contains expected canvas/svg markers)
-- [ ] SSE pushes new job state within one second of DB update in local benchmark
-- [ ] Trace viewer paginates large traces without OOM (streaming read)
+- [x] Each page loads with seed data in dev mode; charts render in headless fetch tests (HTML contains expected canvas/svg markers)
+- [x] SSE pushes new job state within one second of DB update in local benchmark
+- [x] Trace viewer paginates large traces without OOM (streaming read)
 
 ### Edge cases and negative paths
-- [ ] Invalid token when required → 401 on all routes including static assets
-- [ ] DB locked briefly: UI shows degraded banner, retries with backoff
-- [ ] Missing optional modules (e.g. no Reviewer yet) page shows empty state, not 500
+- [x] Invalid token when required → 401 on all routes including static assets
+- [x] DB locked briefly: UI shows degraded banner, retries with backoff
+- [x] Missing optional modules (e.g. no Reviewer yet) page shows empty state, not 500
 
 ### Non-goals
-- [ ] OAuth login for multi-user teams
-- [ ] Full distributed tracing backend
+- OAuth login for multi-user teams
+- Full distributed tracing backend
 
 ### Observability, docs, and regressions
-- [ ] `go test` HTTP handler tests with `httptest` for each route
-- [ ] Bundle size budget documented; `//go:embed` asset checksum test
-- [ ] Screenshot or ascii wireframe in docs for each page
+- [x] `go test` HTTP handler tests with `httptest` for each route
+- [x] Bundle size budget documented; `//go:embed` asset checksum test
+- [x] Screenshot or ascii wireframe in docs for each page

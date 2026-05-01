@@ -24,19 +24,19 @@ Mars monorepo automations encode hard-won operational behavior. M10 ports them i
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Engineer, Pipeline Fixer, QA roles execute on sample repo with MH-009/MH-016 wiring without manual prompt edits
-- [ ] All eleven prompts exist in repo; each has `prompt_version` and `source_mars_commit` note in header comment
-- [ ] Manifest lists roles with triggers consistent with ported automation intent
+- [x] Engineer, Pipeline Fixer, QA roles execute on sample repo with MH-009/MH-016 wiring without manual prompt edits
+- [x] All eleven prompts exist in repo; each has `prompt_version` and `source_mars_commit` note in header comment
+- [x] Manifest lists roles with triggers consistent with ported automation intent
 
 ### Edge cases and negative paths
-- [ ] Prompts that referenced GitHub-only features include guard text when feature flag off
-- [ ] Token-heavy sections trimmed or split using context assembly hooks (MH-004) without losing critical constraints
+- [x] Prompts that referenced GitHub-only features include guard text when feature flag off
+- [x] Token-heavy sections trimmed or split using context assembly hooks (MH-004) without losing critical constraints
 
 ### Non-goals
-- [ ] Parity with every Cursor-only UI instruction
-- [ ] Translating non-English operator docs
+- Parity with every Cursor-only UI instruction
+- Translating non-English operator docs
 
 ### Observability, docs, and regressions
-- [ ] Golden transcript smoke: each role at least one dry-run conversation recorded in `testdata/`
-- [ ] Checklist file `docs/prompt-port-status.md` updated per merged tranche
-- [ ] Reviewer (MH-020) can propose diffs to these files under normal safety limits
+- [x] Golden transcript smoke: each role at least one dry-run conversation recorded in `testdata/`
+- [x] Checklist file `docs/prompt-port-status.md` updated per merged tranche
+- [x] Reviewer (MH-020) can propose diffs to these files under normal safety limits

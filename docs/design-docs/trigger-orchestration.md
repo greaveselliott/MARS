@@ -4,11 +4,11 @@
 **Date:** 2026-04-12
 **Author:** Mars Harness contributors
 
-How agent roles are activated: webhook events, cron schedules, and completion chains. Defines the manifest configuration format and the complete role registry derived from the [Mars](https://github.com/elliottgreaves/mars) pipeline.
+How agent roles are activated: optional webhook events, cron schedules, and completion chains. Defines the manifest configuration format and the strict-trunk role registry derived from the [Mars](https://github.com/elliottgreaves/mars) pipeline.
 
 ## Context
 
-The Mars monorepo runs 11 autonomous roles (14 Cursor automation entries) through a combination of GitHub Actions cron schedules, webhook events (PR open, PR merge, CI failure, review comments), and implicit agent-to-agent chaining. That orchestration is split across `automations.yml`, `cursor-pr-automations-dispatch.yml`, `ci.yml`, and `release.yml` — all Cursor-specific infrastructure.
+The Mars monorepo proved the autonomous role model through Cursor-specific automation. Mars Harness keeps the roles, but changes the delivery contract: work lands as bounded semantic commits on `main`, with optional GitHub events used for checks, status, comments, and webhooks rather than as the core delivery model.
 
 Mars Harness must express the same pipeline in a single `.harness/manifest.yaml` without depending on Cursor or GitHub Actions as the orchestrator. The harness itself is the orchestrator.
 
@@ -18,11 +18,11 @@ Mars Harness must express the same pipeline in a single `.harness/manifest.yaml`
 
 All role activation flows through one of three sources:
 
-1. **Webhook** — GitHub sends an event (PR opened, CI failed, review comment). The trigger router matches it to registered roles.
+1. **Webhook** — GitHub or another integration sends an event such as CI failure, check completion, or external feedback. The trigger router matches it to registered roles.
 2. **Schedule** — Cron-based activation. The scheduler fires at the specified time and enqueues a job.
 3. **Chain** — A completed job immediately enqueues follow-up roles via the `then` field.
 
-No expression parser in v1 — triggers are simple `type.action` pattern strings, cron expressions, or role name references. This maps directly to the three job paths in Mars's `automations.yml`: schedule-driven, event-driven, and workflow_dispatch (manual).
+No expression parser in v1 — triggers are simple `type.action` pattern strings, cron expressions, or role name references. This maps directly to schedule-driven, event-driven, and manual job paths.
 
 ### AD-017: Upstream chaining via `then` field
 
@@ -30,8 +30,8 @@ Agent-to-agent sequencing is declared on the **upstream** role (`then: [qa]`), n
 
 Two chaining patterns are distinguished:
 
-- **Direct chain** (`then`) — immediate enqueue after successful completion. Used when role B needs to verify role A's work on the same repo state. Example: pipeline-fixer completes fix → run QA on the same branch.
-- **Event-mediated chain** — role A produces a side effect (opens a PR, pushes a commit) that generates a GitHub webhook event, which triggers role B through its existing `triggers` list. Example: engineer opens PR → GitHub sends `pull_request.opened` → QA fires. This requires no new mechanism.
+- **Direct chain** (`then`) — immediate enqueue after successful completion. Used when role B needs to verify role A's work on the same repo state. Example: pipeline-fixer completes fix → run QA on the same trunk commit.
+- **Event-mediated chain** — role A produces a side effect such as a pushed commit or failed check that generates an integration event, which triggers role B through its existing `triggers` list.
 
 The `then` field only handles direct chains. Event-mediated chains happen naturally through existing webhook triggers.
 
@@ -50,91 +50,75 @@ The `schedule` field on a role accepts either:
 
 Presets expand to cron at schedule registration time. Standard 5-field only — no second-resolution or year-field cron. This supports every schedule pattern used in Mars's `automations.yml`.
 
-### AD-020: Dual-mode roles are separate manifest entries
+### AD-020: Strict trunk keeps default roles single-purpose
 
-Roles that operate in two modes (e.g., CTO on PR merge vs CTO weekly audit) are expressed as **separate role entries** in the manifest (`cto-pr-merge`, `cto-weekly`). They may share the same prompt file but differ in model tier, tools, triggers, and schedule.
-
-This matches how Mars configures them as separate Cursor automations with distinct models and tool sets (e.g., CTO Weekly uses Opus 4.6 / reasoning tier; CTO PR Merge uses Sonnet 4.6 / coding tier).
+Default roles are expressed around schedules and direct chains, not external review-system modes. If a deployment needs compatibility event handlers, it can add separate entries explicitly, but generated bundles do not include review/merge compatibility roles.
 
 ## Pipeline Graph
 
-The complete Mars pipeline as it maps to manifest configuration:
+The default strict-trunk pipeline as it maps to manifest configuration:
 
 ```mermaid
 flowchart TD
-    CEO["CEO\n schedule: 0 20 * * 0"] -->|"opens vision PR"| COO["COO\n trigger: pull_request.merged"]
-    COO -->|"creates tickets"| Engineer["Engineer\n schedule: 0 0,6,12,18 * * 1-5"]
-    Engineer -->|"opens feature PR"| QA["QA\n trigger: pull_request.opened"]
-    Engineer -->|"opens feature PR"| SecurityPR["Security - PR\n trigger: pull_request.opened"]
-    Engineer -->|"opens feature PR"| CI["CI Workflow"]
-    CI -->|failure| Fixer["Pipeline Fixer\n trigger: workflow_run failure"]
+    CEO["CEO\n schedule: 0 20 * * 0"] -->|"priorities committed to main"| CTO["CTO\n schedule: 0 21 * * 0"]
+    CTO -->|"then: coo"| COO["COO\n creates tickets"]
+    COO -->|"then: engineer"| Engineer["Engineer\n schedule: 0 0,6,12,18 * * 1-5"]
+    Engineer -->|"commit and push main"| QA["QA\n then: security"]
+    QA -->|"review report"| Security["Security\n schedule: 0 22 * * 0"]
+    Security -->|"then: dependency-manager"| DepMgr["Dependency Mgr\n schedule: 0 23 * * 0"]
+    CI["CI Workflow"] -->|failure| Fixer["Pipeline Fixer\n trigger: workflow_run failure"]
     Fixer -->|"then: qa"| QA
-    QA -->|"review comment"| PRFixer["PR Comment Fixer\n trigger: review_comment.created"]
-    Engineer -->|"merges PR"| CTOPR["CTO - PR Merge\n trigger: pull_request.merged"]
-    Engineer -->|"merges PR"| ReleaseP["Release Mgr - PR\n trigger: pull_request.merged"]
-    CTOWeekly["CTO - Weekly\n schedule: 0 21 * * 0"] -.->|"same prompt"| CTOPR
-    SecurityW["Security - Weekly\n schedule: 0 22 * * 0"] -.->|"same prompt"| SecurityPR
-    ReleaseW["Release Mgr - Weekly\n schedule: 0 8 * * 1"] -.->|"same prompt"| ReleaseP
-    Dependabot["Dependabot PR"] --> DepMgr["Dependency Mgr\n trigger: pull_request.opened"]
+    Release["Release Manager\n schedule: 0 8 * * 1"]
     Dogfood["Dogfood Tester\n schedule: 0 10 * * 1-5"] -->|"failure ticket"| Engineer
 ```
 
-Solid arrows are runtime data flow. Dashed arrows show dual-mode roles sharing prompts.
+Solid arrows are runtime data flow. Every mutating role commits and pushes directly to `main` within trust and safety limits.
 
 ## Complete Role Registry
 
-Derived from `mars/.github/workflows/automations.yml`, `mars/docs/automations/BOTS.md`, and `mars/docs/automations/README.md`.
+Derived from the Mars role set and normalized for strict trunk delivery.
 
 | # | Role | Manifest Key | Trigger | Schedule (cron) | Chain (`then`) | Model Tier |
 |---|------|-------------|---------|-----------------|----------------|------------|
-| 1 | CEO | `ceo` | — | `0 20 * * 0` (Sun 8pm) | — | reasoning |
-| 2 | COO | `coo` | `pull_request.merged` (vision PR) | — | — | reasoning |
-| 3 | CTO (PR) | `cto-pr-merge` | `pull_request.merged` | — | — | coding |
-| 4 | CTO (Weekly) | `cto-weekly` | — | `0 21 * * 0` (Sun 9pm) | — | reasoning |
-| 5 | Engineer | `engineer` | — | `0 0,6,12,18 * * 1-5` (4x/day) | — | coding |
-| 6 | QA | `qa` | `pull_request.opened`, `.synchronize` | — | — | fast |
-| 7 | Security (PR) | `security-pr` | `pull_request.opened` | — | — | reasoning |
-| 8 | Security (Weekly) | `security-weekly` | — | `0 22 * * 0` (Sun 10pm) | — | reasoning |
-| 9 | Dependency Mgr | `dependency-manager` | `pull_request.opened` | — | — | fast |
-| 10 | Release Mgr (PR) | `release-pr` | `pull_request.merged` | — | — | coding |
-| 11 | Release Mgr (Weekly) | `release-weekly` | — | `0 8 * * 1` (Mon 8am) | — | reasoning |
-| 12 | Dogfood Tester | `dogfood` | — | `0 10 * * 1-5` (daily 10am) | — | coding |
-| 13 | Pipeline Fixer | `pipeline-fixer` | `workflow_run.conclusion == "failure"` | — | `[qa]` | coding |
-| 14 | PR Comment Fixer | `pr-comment-fixer` | `pull_request_review_comment.created` | — | — | fast |
+| 1 | CEO | `ceo` | — | `0 20 * * 0` (Sun 8pm) | `[cto-weekly]` | reasoning |
+| 2 | CTO | `cto-weekly` | — | `0 21 * * 0` (Sun 9pm) | `[coo]` | reasoning |
+| 3 | COO | `coo` | — | — | `[engineer]` | reasoning |
+| 4 | Engineer | `engineer` | — | `0 0,6,12,18 * * 1-5` (4x/day) | `[qa, engineer, dogfood]` | coding |
+| 5 | QA | `qa` | — | — | `[security]` | fast |
+| 6 | Security | `security` | — | `0 22 * * 0` (Sun 10pm) | `[dependency-manager]` | reasoning |
+| 7 | Dependency Mgr | `dependency-manager` | — | `0 23 * * 0` (Sun 11pm) | — | fast |
+| 8 | Release Mgr | `release-manager` | — | `0 8 * * 1` (Mon 8am) | — | reasoning |
+| 9 | Dogfood Tester | `dogfood` | — | `0 10 * * 1-5` (daily 10am) | — | coding |
+| 10 | Pipeline Fixer | `pipeline-fixer` | `workflow_run.conclusion == "failure"` | — | `[qa]` | coding |
+| 11 | Janitor | `janitor` | — | `0 7 * * *` (daily 7am) | — | fast |
 
 ## Reference Manifest
 
-The full `.harness/manifest.yaml` expressing all 14 role entries:
+The full `.harness/manifest.yaml` expressing the default strict-trunk roles:
 
 ```yaml
 name: mars
-description: Full Mars pipeline — 11 roles, 14 trigger entries
+description: Full Mars Harness pipeline — strict trunk, 11 roles
 
 roles:
   ceo:
     prompt: roles/ceo-vision.md
     model: reasoning
     schedule: "0 20 * * 0"
+    then: [cto-weekly]
     tools: [file_read, file_write, shell_exec, grep]
 
   coo:
     prompt: roles/coo-tickets.md
     model: reasoning
-    triggers:
-      - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep]
-
-  cto-pr-merge:
-    prompt: roles/cto-harness.md
-    model: coding
-    triggers:
-      - pull_request.merged
+    then: [engineer]
     tools: [file_read, file_write, shell_exec, grep]
 
   cto-weekly:
     prompt: roles/cto-harness.md
     model: reasoning
     schedule: "0 21 * * 0"
+    then: [coo]
     tools: [file_read, file_write, shell_exec, grep]
 
   engineer:
@@ -146,39 +130,23 @@ roles:
   qa:
     prompt: roles/qa-health.md
     model: fast
-    triggers:
-      - pull_request.opened
-      - pull_request.synchronize
+    then: [security]
     tools: [file_read, grep]
 
-  security-pr:
-    prompt: roles/security-officer.md
-    model: reasoning
-    triggers:
-      - pull_request.opened
-    tools: [file_read, grep]
-
-  security-weekly:
+  security:
     prompt: roles/security-officer.md
     model: reasoning
     schedule: "0 22 * * 0"
+    then: [dependency-manager]
     tools: [file_read, file_write, shell_exec, grep]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
     model: fast
-    triggers:
-      - pull_request.opened
-    tools: [file_read, grep]
-
-  release-pr:
-    prompt: roles/release-manager.md
-    model: coding
-    triggers:
-      - pull_request.merged
+    schedule: "0 23 * * 0"
     tools: [file_read, file_write, shell_exec, grep]
 
-  release-weekly:
+  release-manager:
     prompt: roles/release-manager.md
     model: reasoning
     schedule: "0 8 * * 1"
@@ -198,11 +166,10 @@ roles:
     then: [qa]
     tools: [file_read, file_write, shell_exec, grep]
 
-  pr-comment-fixer:
-    prompt: roles/pr-comment-fixer.md
+  janitor:
+    prompt: roles/janitor.md
     model: fast
-    triggers:
-      - pull_request_review_comment.created
+    schedule: "0 7 * * *"
     tools: [file_read, file_write, shell_exec, grep]
 ```
 

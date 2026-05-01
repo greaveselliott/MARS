@@ -5,7 +5,7 @@
 
 ## What this is
 
-A self-hosted autonomous AI delivery system. You provide a machine with a GPU, run one command, and it autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, PR review, release management, documentation maintenance. All inference runs locally on open models. No cloud API costs, no data exfiltration, no vendor lock-in.
+A self-hosted autonomous AI delivery system. You provide a machine with a GPU, run one command, and it autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, trunk checks and review, release management, documentation maintenance. All inference runs locally on open models. No cloud API costs, no data exfiltration, no vendor lock-in.
 
 Over time, the harness gets better: accuracy scores improve as prompts and guardrails are refined, interventions decrease as the system learns what the human used to do, and the roadmap advances as the pipeline executes tickets autonomously.
 
@@ -17,8 +17,8 @@ Like Jarvis in Iron Man: an AI system built by you, running in your lab, on your
 
 The Mars monorepo proved the pipeline model works:
 
-- 11 autonomous roles (CEO, COO, CTO, Engineer, QA, Security, Dependency Manager, Release Manager, Dogfood Tester, Pipeline Fixer, PR Comment Fixer) running a full development lifecycle.
-- Self-correcting CI: deterministic fixes before probabilistic (changeset generation, auto-merge, dependabot rebase).
+- 11 autonomous roles (CEO, COO, CTO, Engineer, QA, Security, Dependency Manager, Release Manager, Dogfood Tester, Pipeline Fixer, Janitor) running a full trunk-based development lifecycle.
+- Self-correcting CI: deterministic fixes before probabilistic (changeset generation, direct fix commits, dependency refreshes).
 - Intervention debt tracking: every manual step treated as a signal to automate.
 - Documentation as system of record: AGENTS.md, design docs, exec plans, tickets as markdown.
 
@@ -29,7 +29,7 @@ Mars used Cursor Cloud Automations as the execution plane. Mars Harness replaces
 - **Not a code completion tool.** This is a pipeline automation system, not an IDE plugin.
 - **Not a hosted service.** It runs on your hardware. There is no SaaS version (yet).
 - **Not Mars-specific.** The harness is repo-agnostic. Mars's 11 roles are the seed content; users define their own roles, guardrails, and triggers.
-- **Not a replacement for CI.** The harness works with GitHub Actions (or any CI), not instead of it. It reacts to CI events and produces PRs that CI then validates.
+- **Not a replacement for CI.** The harness works with GitHub Actions (or any CI), not instead of it. It reacts to CI events, commits bounded fixes to `main`, and records the resulting check outcomes.
 
 ## Who this is for
 
@@ -43,4 +43,4 @@ Developers and teams who:
 
 ## The pitch (one paragraph)
 
-Stop paying cloud providers per token to run AI agents on your code. Mars Harness runs on your own hardware with open models, autonomously managing your development pipeline — from ticket to merged PR. It scores its own accuracy, learns from its mistakes, and gets better over time. One command to set up. Zero ongoing costs beyond electricity.
+Stop paying cloud providers per token to run AI agents on your code. Mars Harness runs on your own hardware with open models, autonomously managing your development pipeline from ticket to committed, pushed trunk change. It scores its own accuracy, learns from its mistakes, and gets better over time. One command to set up. Zero ongoing costs beyond electricity.

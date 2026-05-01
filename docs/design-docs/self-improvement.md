@@ -4,13 +4,13 @@
 **Date:** 2026-04-11  
 **Author:** Mars Harness contributors
 
-Closed-loop evolution: detect when humans or the platform had to compensate, classify root cause, propose safe changes (often as PRs), and measure before/after impact.
+Closed-loop evolution: detect when humans or the platform had to compensate, classify root cause, propose or commit safe bounded changes, and measure before/after impact.
 
 ## Context
 
 Self-improvement is a core tenet but must not destabilize repos or the harness itself. Signals include interventions, failed jobs, and score regressions. The **Reviewer** meta-role consumes traces; evolution must respect **safety rails** and acknowledge limits of models reviewing models.
 
-Evolution outputs are **suggestions** until policy allows auto-merge; human review remains the default for high-blast-radius repos.
+Evolution outputs are **suggestions** until an autonomous trust policy allows direct trunk evolution. Human-triggered contributor runs remain the default for high-blast-radius repos.
 
 ## Key Design Decisions
 
@@ -21,20 +21,20 @@ _(AD IDs to be assigned when the evolution pipeline is locked.)_
 - **Intervention detection:** classify events as **clear interventions** (unambiguous human override), **ambiguous** (could be normal workflow), or **non-interventions** to reduce false-positive evolution; store classification rationale in the trace.
 - **Reviewer meta-role:** dedicated analysis pass over traces and diffs; separate prompts/policies from worker roles where practical; same inference stack as workers—see circular trust below.
 - **Root cause classification:** buckets aligned with tenets (prompt, guardrail, trigger, policy, context, model limitation)—each maps to a concrete evolution target file or setting.
-- **Evolution PR creation:** concrete file edits (e.g. `.harness/roles/`, guardrails, manifest) with human-reviewable diffs; include summary comment linking to originating job and score snapshot.
+- **Evolution commit creation:** concrete file edits (e.g. `.harness/roles/`, guardrails, manifest) with trace-linked diffs; include commit text linking to originating job and score snapshot.
 - **Before/after tracking:** link evolution commits to subsequent score distributions and intervention rates; automatic rollback proposal if metrics violate guard thresholds.
-- **Safety rails (non-exhaustive):** cannot modify **own meta-prompts** arbitrarily; **rate limits** (e.g. max one evolution PR per day per scope); **auto-disable** evolution if scores worsen beyond a threshold after a change lands.
-- **Circular trust problem:** Reviewer uses the **same model stack** as workers—mitigate with deterministic checks, hard guardrails, mandatory human merge for high-risk paths, and logging of reviewer conclusions for audit.
+- **Safety rails (non-exhaustive):** cannot modify **own meta-prompts** arbitrarily; **rate limits** (e.g. max one evolution commit per role and scope per day); **auto-disable** evolution if scores worsen beyond a threshold after a change lands.
+- **Circular trust problem:** Reviewer uses the **same model stack** as workers—mitigate with deterministic checks, hard guardrails, human-triggered contributor runs for high-risk paths, and logging of reviewer conclusions for audit.
 
 ### Non-goals (v1)
 
-Fully autonomous prompt rewriting without human visibility, and cross-repo learning without explicit consent and scoping.
+Unbounded prompt rewriting without trace visibility, and cross-repo learning without explicit consent and scoping.
 
 ### Telemetry
 
 Every evolution candidate should record **inputs hash** (manifest + role versions) so duplicate proposals can be deduplicated and A/B comparisons stay reproducible.
 
-Store the **parent job id** on each evolution PR comment for traceability across merges and reverts.
+Store the **parent job id** in each evolution commit message and trace record for traceability across follow-up commits and reverts.
 
 ## Discoveries
 

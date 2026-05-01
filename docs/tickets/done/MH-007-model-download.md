@@ -28,20 +28,20 @@ Implement `internal/models/download.go`:
 ## Acceptance Criteria
 
 ### Functional
-- [ ] Downloads a file from HuggingFace and saves to `~/.mars-harness/models/`
-- [ ] Progress bar shows during download
-- [ ] Checksum verified after download
-- [ ] Cached file skipped on subsequent runs
+- [x] Downloads a file from HuggingFace and saves to `~/.mars-harness/models/`
+- [x] Progress bar shows during download
+- [x] Checksum verified after download
+- [x] Cached file skipped on subsequent runs
 
 ### Edge cases
-- [ ] Interrupted download resumes from where it left off
-- [ ] Corrupted cached file (wrong checksum) triggers re-download
-- [ ] Insufficient disk space detected before download starts with actionable error
-- [ ] Network timeout returns descriptive error with retry suggestion
+- [x] Interrupted download resumes from where it left off
+- [x] Corrupted cached file (wrong checksum) triggers re-download
+- [x] Insufficient disk space detected before download starts with actionable error
+- [x] Network timeout returns descriptive error with retry suggestion
 
 ### Non-goals
-- [ ] Model selection logic (MH-006)
-- [ ] Serving the model (MH-008)
+- Model selection logic (MH-006)
+- Serving the model (MH-008)
 
 ## Notes
 

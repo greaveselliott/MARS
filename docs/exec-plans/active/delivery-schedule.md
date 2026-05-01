@@ -55,7 +55,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 - [ ] `go build ./cmd/mars-harness` produces a binary without errors
 - [ ] `go test ./...` passes (at least one test exists in `pkg/testutil/`)
 - [ ] `golangci-lint run` reports zero issues
-- [ ] CI workflow runs green on push and PR
+- [ ] CI workflow runs green on push to `main`
 - [ ] `AGENTS.md` exists and documents directory structure, build commands, constraints
 - [ ] `docs/design-docs/tenets.md` exists with all nine tenets
 - [ ] `docs/design-docs/index.md` exists and lists all AD stubs
@@ -222,41 +222,41 @@ None new — builds on AD-004, AD-005, AD-006 from M1.
 
 ### Tasks
 
-- **4.1** GitHub API client
+- **4.1** Optional GitHub API client
   - **4.1.1** GitHub App JWT authentication (private key → JWT → installation token)
   - **4.1.2** PAT fallback authentication
-  - **4.1.3** PR operations: create, update body/title, add comment, request review, merge
+  - **4.1.3** Status, comment, check-run, and webhook helper operations
   - **4.1.4** Check run operations: create, update (in_progress, completed), set output summary
   - **4.1.5** Repository operations: get file contents, list directory, get commit, compare commits
   - **4.1.6** Rate limiting: respect `X-RateLimit-Remaining`, sleep on 403 rate limit, secondary rate limit handling
   - **4.1.7** Pagination: auto-paginate all list endpoints
-- **4.2** GitHub App manifest flow
-  - **4.2.1** `mars-harness github setup` command — opens browser to GitHub App creation URL with pre-filled manifest
+- **4.2** Optional GitHub App manifest flow
+  - **4.2.1** `mars-harness github setup` command — opens browser to GitHub App creation URL with pre-filled manifest when the user opts in
   - **4.2.2** Local HTTP callback server to receive App credentials after creation
   - **4.2.3** Store App ID, private key, webhook secret in `~/.mars-harness/github/` (file permissions 0600)
   - **4.2.4** Installation ID discovery — list installations, prompt user to select org/repo
 - **4.3** Webhook receiver
   - **4.3.1** HTTP server on configurable port (default `:9091`)
   - **4.3.2** `X-Hub-Signature-256` validation — reject unsigned or invalid payloads
-  - **4.3.3** Event normalization — parse `pull_request`, `check_suite`, `issue_comment`, `push` events into internal types
+  - **4.3.3** Event normalization — parse `check_suite`, `issue_comment`, `push`, and status events into internal types
   - **4.3.4** Event deduplication — track delivery IDs, reject replays within 1-hour window
-  - **4.3.5** Event routing — map events to appropriate roles (PR opened → QA, check_suite failed → Pipeline Fixer)
+  - **4.3.5** Event routing — map events to appropriate roles (push/check completed → QA, check_suite failed → Pipeline Fixer)
 - **4.4** PAT fallback mode
   - **4.4.1** Detect when no GitHub App configured, use `GITHUB_TOKEN` env var
   - **4.4.2** Disable webhook receiver in PAT mode (polling-only)
-  - **4.4.3** Polling mode: check for new PRs/failures on configurable interval
-- **4.5** Wire GitHub tools into agent
-  - **4.5.1** `github_create_pr`, `github_comment`, `github_create_check_run`, `github_get_file`, `github_push_branch`
+  - **4.4.3** Polling mode: check for new pushes, statuses, and failures on configurable interval
+- **4.5** Wire optional GitHub tools into agent
+  - **4.5.1** `github_comment`, `github_create_check_run`, `github_get_file`, `github_status`
   - **4.5.2** Tools use authenticated client from M4.1
   - **4.5.3** Integration tests against real test repo (`mars-harness-test`)
 
 ### Quality Gate
 
-- [ ] GitHub App created via manifest flow, credentials stored securely
+- [ ] GitHub App created via manifest flow only when requested, credentials stored securely
 - [ ] Webhook signature validation rejects tampered payloads
 - [ ] Events normalized correctly for all supported types (table-driven tests with real GitHub webhook payloads)
 - [ ] Deduplication rejects replayed delivery IDs
-- [ ] Agent creates a real PR on `mars-harness-test` repo via GitHub tools
+- [ ] Agent posts a real status/check/comment on `mars-harness-test` repo via GitHub tools
 - [ ] PAT fallback works when no App is configured
 - [ ] Rate limiting sleeps appropriately on 403 (integration test with rate limit simulation)
 
@@ -317,12 +317,12 @@ None new — GitHub client design follows AD-004 (sync per-job) and AD-014 (doma
   - **5b.2.1** Max files changed per job (default: 20)
   - **5b.2.2** Max lines changed per file (default: 500)
   - **5b.2.3** Max total lines changed per job (default: 2000)
-  - **5b.2.4** Rate limit: max PRs per repo per hour (default: 3)
+  - **5b.2.4** Rate limit: max mutating commits per repo per hour (default: 3)
   - **5b.2.5** No-delete policy: agent cannot delete files unless explicitly allowed in role config
   - **5b.2.6** Secret scanner: regex patterns for AWS keys, GitHub tokens, private keys, database URLs — block commits containing matches
 - **5b.3** Emergency stop
   - **5b.3.1** `mars-harness stop` command — immediately halts all running jobs
-  - **5b.3.2** GitHub state cleanup: convert open PRs to draft, delete branches created by halted jobs, cancel in-progress check runs
+  - **5b.3.2** State cleanup: stop new mutating tool calls, release claimed jobs safely, cancel in-progress check runs where integration credentials allow it
   - **5b.3.3** Record stop event in job history with reason
   - **5b.3.4** Dashboard emergency stop button (wired in M9)
 - **5b.4** `mars-harness serve` command
@@ -335,7 +335,7 @@ None new — GitHub client design follows AD-004 (sync per-job) and AD-014 (doma
 - [ ] Sandbox isolates file writes to workdir (attempt to write outside fails)
 - [ ] Blast radius blocks a diff exceeding max files/lines limits
 - [ ] Secret scanner catches AWS key pattern, GitHub token pattern, and PEM private key
-- [ ] Emergency stop halts running jobs and cleans up GitHub state (drafts PRs, deletes branches, cancels check runs)
+- [ ] Emergency stop halts running jobs, blocks new mutations, and cancels check runs where integration credentials allow it
 - [ ] `mars-harness serve` starts, accepts webhooks, dispatches jobs through the full pipeline
 - [ ] `/healthz` returns accurate component status
 
@@ -347,25 +347,25 @@ None new — safety is an enforcement layer atop existing AD-004 and AD-010 deci
 
 ## Milestone 6: Accuracy and Autonomy (3–4 days)
 
-**Pre-requisite:** M4 webhook receiver must be stable — outcome tracking relies on receiving GitHub events.
+**Pre-requisite:** local git outcome tracking must be stable; optional M4 webhook receiver enriches check/status signals.
 
 ### Tasks
 
 - **6.1** Outcome tracking
-  - **6.1.1** Monitor GitHub events post-job: PR merged (positive), PR closed without merge (negative), check run passed (positive), check run failed after fix (negative), comment requesting changes (negative)
-  - **6.1.2** Match events to originating jobs via branch name / check run external ID
+  - **6.1.1** Monitor post-job signals: commit produced, push to `main`, check run passed, check run failed after fix, guardrail blocked, revert detected, human follow-up commit touched same files, noop when work existed
+  - **6.1.2** Match events to originating jobs via commit SHA, trace ID, or check run external ID
   - **6.1.3** Store outcomes in SQLite: `outcomes` table with `job_id`, `repo_id`, `role`, `outcome_type`, `timestamp`, `details_json`
   - **6.1.4** Timeout: if no outcome event within 48 hours, record as `unknown`
 - **6.2** Scoring engine
-  - **6.2.1** Score formula: `(merged + passed) / (merged + passed + closed + failed + noop)` — noop detection (job ran but produced no output or empty diff) counts as negative
+  - **6.2.1** Score formula: combine committed, checks_passed, checks_failed, guardrail_blocked, reverted, human_followup, noop, and terminal failure outcomes with explicit weights
   - **6.2.2** Rolling window: 30-day window, recalculated on each new outcome
   - **6.2.3** Per-role, per-repo scores stored in `scores` table
   - **6.2.4** Minimum sample size: require 5 outcomes before score is considered valid
 - **6.3** Progressive autonomy
-  - **6.3.1** Trust levels: `observer` (read-only, no PRs), `contributor` (create PRs, require human approval), `autonomous` (create PRs, auto-merge if checks pass)
+  - **6.3.1** Trust levels: `observer` (read/report only), `contributor` (human-triggered or ticket-bound edit/test/commit/push to `main`), `autonomous` (self-schedule, chain jobs, edit/test/commit/push to `main`)
   - **6.3.2** Promotion rules: observer → contributor after N trial runs (configurable, default 5); contributor → autonomous after score ≥ threshold over 20+ outcomes
   - **6.3.3** Demotion rules: autonomous → contributor if score drops below threshold for 5 consecutive jobs; contributor → observer if score drops below contributor threshold for 5 consecutive jobs
-  - **6.3.4** Enforcement: trust level checked before GitHub write operations; observer cannot call `github_create_pr`
+  - **6.3.4** Enforcement: trust level checked before mutating tools; observer cannot write files, commit, or push
   - **6.3.5** Override: `--trust-level` flag on `mars-harness run` for manual override (logged)
 - **6.4** CLI commands
   - **6.4.1** `mars-harness scores` — table of per-role, per-repo scores with sample size and trend arrow
@@ -374,12 +374,12 @@ None new — safety is an enforcement layer atop existing AD-004 and AD-010 deci
 
 ### Quality Gate
 
-- [ ] Each outcome type (merged, closed, passed, failed, noop) scored correctly with unit tests
+- [ ] Each outcome type (committed, checks_passed, checks_failed, guardrail_blocked, reverted, human_followup, noop, timeout/failure) scored correctly with unit tests
 - [ ] Rolling 30-day score computed accurately across window boundaries
 - [ ] Role promotes from observer → contributor → autonomous as scores improve (integration test with synthetic outcomes)
 - [ ] Role demotes when score drops below threshold
-- [ ] Observer trust level cannot create PRs (enforcement test)
-- [ ] Trial mode creates draft PRs only
+- [ ] Observer trust level cannot mutate the repo (enforcement test)
+- [ ] Trial mode permits only human-triggered or ticket-bound trunk commits
 - [ ] `mars-harness scores` displays correct data formatted as table
 - [ ] `mars-harness trust` shows current levels and history
 
@@ -394,8 +394,8 @@ None new — scoring uses AD-009 (SQLite) and AD-010 (repo_id scoping).
 ### Tasks
 
 - **7.1** Intervention detector
-  - **7.1.1** Detect human interventions on agent-created PRs: manual commits pushed to agent branch, PR description edited, review comments with code suggestions applied, PR closed and reopened with changes
-  - **7.1.2** Classify interventions: `clear` (exact diff between agent version and merged version), `ambiguous` (structural changes that may or may not be corrections), `non-intervention` (merge commits, CI-only changes)
+  - **7.1.1** Detect human interventions on harness output: manual follow-up commits touching the same files, reverts, check reruns/fixes, and feedback comments that indicate missed work
+  - **7.1.2** Classify interventions: `clear` (human diff corrects harness output), `ambiguous` (structural changes that may or may not be corrections), `non-intervention` (routine comments or unrelated commits)
   - **7.1.3** Store interventions in SQLite: `interventions` table with `job_id`, `repo_id`, `role`, `classification`, `diff`, `timestamp`
 - **7.2** Reviewer meta-role
   - **7.2.1** Dedicated agent role that reads execution traces and intervention diffs
@@ -404,15 +404,15 @@ None new — scoring uses AD-009 (SQLite) and AD-010 (repo_id scoping).
   - **7.2.4** Proposes prompt evolution: specific additions/modifications to the role's system prompt or guardrails
   - **7.2.5** Rate limit: max 1 evolution proposal per role per day
   - **7.2.6** Auto-disable: if last 3 evolutions for a role worsened its score, suspend Reviewer proposals for that role until manual review
-- **7.3** Evolution PR creation
-  - **7.3.1** Create branch `harness/evolve/{role}/{date}` with proposed prompt changes
-  - **7.3.2** PR body includes: intervention diff, root cause analysis, proposed change, expected impact
-  - **7.3.3** PR requires human approval (never auto-merged)
-  - **7.3.4** Track evolution PR outcomes (merged/closed) for Reviewer accuracy scoring
+- **7.3** Bounded evolution commits
+  - **7.3.1** Commit scoped prompt, guardrail, or manifest changes directly to `main` only at autonomous trust level
+  - **7.3.2** Commit message/body includes: intervention diff summary, root cause analysis, proposed change, expected impact, trace/job ID
+  - **7.3.3** Enforce scoped file allowlist, max one evolution per role/scope/day, and no arbitrary self-meta-prompt edits
+  - **7.3.4** Track evolution outcomes through score deltas, reverts, and human follow-up commits
 - **7.4** Guardrails engine
   - **7.4.1** Guardrail definition format (YAML): `type` (advisory | hard), `name`, `description`, `check` (for hard: function reference; for advisory: prompt text)
   - **7.4.2** Advisory guardrails: injected into system prompt as constraints (e.g., "never modify package.json without running install")
-  - **7.4.3** Hard guardrails: mechanical validation run after each tool call or before PR creation (e.g., max diff size, no secret patterns, required file patterns)
+  - **7.4.3** Hard guardrails: mechanical validation run before and after mutating tools (e.g., max diff size, no secret patterns, required file patterns)
   - **7.4.4** Guardrail override: `--override-guardrail <name>` flag with mandatory reason logged
   - **7.4.5** Staleness detection: flag guardrails not triggered in 90 days for review
   - **7.4.6** Guardrail inheritance: global guardrails + per-role guardrails + per-repo guardrails (most specific wins on conflict)
@@ -422,15 +422,15 @@ None new — scoring uses AD-009 (SQLite) and AD-010 (repo_id scoping).
 
 ### Quality Gate
 
-- [ ] Clear interventions classified correctly (test: agent PR vs merged version with known edits)
+- [ ] Clear interventions classified correctly (test: harness commit followed by known human correction)
 - [ ] Ambiguous interventions classified and flagged for review
 - [ ] Reviewer produces plausible root cause analysis for a known prompt gap scenario
-- [ ] Evolution PR created with correct branch naming, body content, and diff
+- [ ] Evolution commit created with correct scoped files, message content, trace linkage, and diff
 - [ ] Reviewer cannot modify its own prompt (self-modification blocked)
 - [ ] Max 1 evolution per role per day enforced
 - [ ] Auto-disable triggers after 3 consecutive score-worsening evolutions
 - [ ] Advisory guardrails appear in system prompt
-- [ ] Hard guardrails block violations (test: diff exceeding max size blocked before PR creation)
+- [ ] Hard guardrails block violations (test: diff exceeding max size blocked before commit/push)
 - [ ] Guardrail override logged with reason
 - [ ] Stale guardrails (not triggered in 90 days) flagged in `mars-harness doctor`
 
@@ -447,9 +447,9 @@ None new — scoring uses AD-009 (SQLite) and AD-010 (repo_id scoping).
 ### Tasks
 
 - **8.1** `mars-harness setup`
-  - **8.1.1** Orchestrated setup flow: hardware detect → display recommendation → model download (with user confirmation) → GitHub App creation (or PAT entry) → verify connectivity → start serve
-  - **8.1.2** Idempotent: re-running skips completed steps (check for existing models, GitHub credentials, etc.)
-  - **8.1.3** `--test-mode` flag: skip model download (use mock), skip GitHub App (use PAT), reduce timeouts
+  - **8.1.1** Orchestrated setup flow: hardware detect → display recommendation → pinned model download (with user confirmation) → optional GitHub validation if requested → start serve
+  - **8.1.2** Idempotent: re-running skips completed steps (check for existing models, optional GitHub credentials, etc.)
+  - **8.1.3** `--test-mode` flag: skip model download (use mock), skip optional GitHub checks, reduce timeouts
   - **8.1.4** Progress display: step N/M with status indicators
 - **8.2** `mars-harness init`
   - **8.2.1** Scaffold `.harness/` directory in target repo
@@ -524,7 +524,7 @@ None new — setup orchestrates components from prior milestones.
   - **9.5.5** Error log: aggregated errors with frequency and last occurrence
 - **9.6** Page 5: Evolution History
   - **9.6.1** Timeline of Reviewer evolution proposals
-  - **9.6.2** Each entry: role, date, root cause summary, proposed change diff, PR link, outcome (merged/closed/pending)
+  - **9.6.2** Each entry: role, date, root cause summary, proposed change diff, trace/commit link, outcome (improved/regressed/pending)
   - **9.6.3** Score impact graph: role score before and after each merged evolution
 - **9.7** Emergency stop button
   - **9.7.1** Prominent red button in navigation header
@@ -576,7 +576,7 @@ None new — setup orchestrates components from prior milestones.
 - **10.5** Dogfood
   - **10.5.1** Run Pipeline Fixer on the mars-harness repo itself (introduce deliberate CI failure, verify fix)
   - **10.5.2** Run QA on the mars-harness repo (verify it generates meaningful test suggestions)
-  - **10.5.3** Run Code Reviewer on a mars-harness PR (verify review quality)
+  - **10.5.3** Run Code Reviewer on recent mars-harness trunk commits (verify review quality)
   - **10.5.4** Document dogfood results and any prompt adjustments made
 - **10.6** Distribution
   - **10.6.1** Cross-compile: `darwin/arm64`, `darwin/amd64`, `linux/amd64`, `linux/arm64`
@@ -616,7 +616,7 @@ None new — distribution is a packaging concern, not an architectural one.
 | Unit test coverage | ≥ 70% line coverage per package | CI fails below threshold (`go test -coverprofile`) |
 | Integration tests | ≥ 1 per milestone | Tracked in milestone quality gates |
 | Error paths | Every exported function's error return tested | Enforced by review, `errcheck` linter |
-| CI green | All tests pass on every PR | Branch protection rule |
+| CI green | All tests pass on every push to `main` | Required status checks |
 | Lint zero | `golangci-lint run` reports zero issues | CI fails on any lint finding |
 | Race detector | All tests run with `-race` | CI flag: `go test -race ./...` |
 | Table-driven | Preferred style for ≥ 3 cases | Convention in `AGENTS.md`, enforced by review |

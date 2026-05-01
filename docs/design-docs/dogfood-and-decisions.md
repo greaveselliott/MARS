@@ -37,9 +37,9 @@ Agents were committing locally but never pushing, so all work was trapped on the
 - Other agents (or humans) can see progress immediately
 - The remote is always the source of truth
 
-### AD-024: Lean 7-role pipeline for local use
+### AD-024: Strict-trunk default pipeline for local use
 
-The full 15-role pipeline includes 8 event-driven roles that never fire without GitHub webhooks (PR triggers, CI failure triggers, PR review comment triggers). For local use, only 7 roles are active:
+The default pipeline is local-first and strict trunk. GitHub webhooks can still trigger checks and CI repair, but generated bundles do not depend on review-system events to move work forward.
 
 | Role | Purpose |
 |------|---------|
@@ -48,10 +48,14 @@ The full 15-role pipeline includes 8 event-driven roles that never fire without 
 | COO | Ticket creation |
 | Engineer | Feature delivery |
 | QA | Code review |
+| Security | Security audit and review |
+| Dependency Manager | Dependency review |
+| Release Manager | Changelog and release readiness |
 | Dogfood | Build and runtime validation |
+| Pipeline Fixer | CI repair when check/webhook failures are available |
 | Janitor | Backlog entropy management |
 
-The dormant roles (security, dependency-manager, release-manager, pipeline-fixer, pr-comment-fixer, cto-pr-merge) have prompt files on disk and are commented out in the manifest. Uncomment to activate when GitHub webhooks and CI are connected.
+Mutating roles commit and push `main` within their trust level and policy limits. Optional integration events can enqueue pipeline-fixer or other explicitly configured compatibility roles without changing the trunk contract.
 
 ### AD-025: Dogfood chains from Engineer
 
@@ -84,9 +88,9 @@ Three changes close this gap:
 
 ## Consequences
 
-- Local pipeline is fast and focused: 7 roles, no dead triggers
+- Local pipeline is fast and focused: strict-trunk roles, no dead default triggers
 - Decisions accumulate across runs, making agents progressively smarter about the repo
-- Moving to a PR/CI model later requires only uncommenting manifest entries
+- Optional CI/webhook integrations add telemetry and repair triggers without replacing direct commits to `main`
 - Container-based testing catches environment-specific bugs that native runs miss
 - Bootability checks catch structural issues at scan time (before agents even start) and at every stage of the pipeline (engineer, QA, dogfood)
 
@@ -107,9 +111,9 @@ After running the dogfood agent against `recruiter-workflow-portal`, the reposit
 
 ### Changes
 
-1. **Default manifest tool lists** — added `git_status`, `git_diff`, `git_commit`, `git_push` to all write-capable roles (engineer, dogfood, janitor, pipeline-fixer, pr-comment-fixer, CEO, COO, CTO, release-manager, security-weekly).
+1. **Default manifest tool lists** — added `git_status`, `git_diff`, `git_commit`, `git_push` to all write-capable roles (engineer, dogfood, janitor, pipeline-fixer, CEO, COO, CTO, release-manager, security, dependency-manager).
 
-2. **Commit gates in role prompts** — every write-capable role prompt now includes a "COMMIT GATE" section that requires the agent to run `git_status` before finishing and commit any uncommitted changes. The Engineer, Dogfood, Janitor, Pipeline Fixer, and PR Comment Fixer prompts all enforce this.
+2. **Commit gates in role prompts** — every write-capable role prompt now includes a "COMMIT GATE" section that requires the agent to run `git_status` before finishing and commit any uncommitted changes. The Engineer, Dogfood, Janitor, Pipeline Fixer, and strategy/review roles all enforce this.
 
 3. **Prompt language updated** — all prompts now reference `git_commit` and `git_push` tools instead of raw `git commit`/`git push` shell commands, making it clear these are first-class tools.
 
@@ -183,7 +187,7 @@ After running agents against `wave-shooter` and `recruiter-workflow-portal`, bot
 2. No write gate — `file_write` always succeeds with no duplicate check
 3. Context pruning could discard ticket enumeration results mid-run
 4. `file_search` was missing from the COO's tool list
-5. Repeat triggers (every PR merge + CTO chain) re-processed unchanged weekly priorities
+5. Repeat trigger chains re-processed unchanged weekly priorities
 
 ### Changes
 

@@ -4,7 +4,7 @@
 
 ## What is Mars Harness?
 
-A self-hosted autonomous AI delivery system written in Go. You provide a machine with a GPU, run `mars-harness setup`, and it autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, PR review, release management, documentation maintenance. All inference runs locally on open models (Gemma 4, Qwen3-Coder-Next). No cloud API costs, no data exfiltration, no vendor lock-in.
+A self-hosted autonomous AI delivery system written in Go. You provide a machine with a GPU, run `mars-harness setup`, and it autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, trunk checks and review, release management, documentation maintenance. All inference runs locally on open models (Gemma 4, Qwen3-Coder-Next). No cloud API costs, no data exfiltration, no vendor lock-in.
 
 **Lineage:** Mars Harness is an evolution of the [Mars](https://github.com/elliottgreaves/mars) monorepo's Cursor Automations pipeline. Mars proved the model works (11 autonomous roles). This product extracts that into a standalone, self-hosted system.
 
@@ -86,7 +86,7 @@ mars-harness/
 4. **Tests alongside code.** Every new function gets a test in the same commit. Minimum 70% coverage for non-trivial packages.
 5. **Architecture decisions are recorded.** Any non-trivial decision goes in `docs/design-docs/` and is indexed in `docs/design-docs/index.md`.
 6. **Commit after every step.** When executing the delivery schedule, commit after each completed task referencing the milestone and step number.
-7. **Trunk-based development.** All commits go directly to `main`. No feature branches, no PRs. This keeps flows simple for autonomous agents. Use semantic (conventional) commit messages: `feat(scope): ...`, `fix(scope): ...`, `docs: ...`, `chore: ...`, `test: ...`, `refactor: ...`.
+7. **Trunk-based development.** All commits go directly to `main`. Do not use branch-based review as the default delivery path. This keeps flows simple for autonomous agents. Use semantic (conventional) commit messages: `feat(scope): ...`, `fix(scope): ...`, `docs: ...`, `chore: ...`, `test: ...`, `refactor: ...`.
 8. **The repo is the system of record.** Decisions, discoveries, and plans live in docs, not in chat threads.
 9. **Always commit and push both repos.** When making changes to the harness and/or the target project, document, commit, and push changes in both. The harness and target project are separate git repositories — neither should have dangling uncommitted work at the end of a task.
 
@@ -113,7 +113,7 @@ First-time install: hardware detection, llama-server binary, model download.
 mars-harness setup
 ```
 
-Flags: `--skip-download`, `--skip-github`, `--test-mode`, `--dry-run`
+Flags: `--skip-download`, `--github`, `--test-mode`, `--dry-run`
 
 ### 2. Serve
 

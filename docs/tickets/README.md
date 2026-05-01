@@ -8,7 +8,7 @@ Work items live as markdown files in this directory. The repo is the source of t
 docs/tickets/
   backlog/       Tickets waiting to be picked up
   in-progress/   Tickets actively being worked on
-  done/          Completed tickets (moved here on merge)
+  done/          Completed tickets committed directly to main
 ```
 
 ## Ticket Format
@@ -44,7 +44,7 @@ created: 2026-04-11
 - [ ] Invalid input, error paths, boundary conditions covered
 
 ### Non-goals
-- [ ] What this ticket does NOT do
+- What this ticket does NOT do
 
 ### Observability, docs, and regressions
 - [ ] Docs updated if behaviour changed
@@ -62,5 +62,5 @@ created: 2026-04-11
 
 1. Ticket created in `backlog/`
 2. Implementation starts: move to `in-progress/`
-3. PR opened with ticket move to `done/` in the same commit
-4. On merge: ticket lands in `done/` on main
+3. Implementation completes: move to `done/` in a direct semantic commit on `main`
+4. Push `main` after the commit so the repo remains the system of record

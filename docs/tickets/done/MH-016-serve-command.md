@@ -23,20 +23,20 @@ Operators need one command that brings inference, GitHub integration, webhooks, 
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Cold start completes with all green checks when dependencies configured
-- [ ] `/healthz` reflects live metrics after synthetic webhook in dev
-- [ ] SIGTERM triggers shutdown sequence logged step-by-step; in-flight job finishes or times out per flag
+- [x] Cold start completes with all green checks when dependencies configured
+- [x] `/healthz` reflects live metrics after synthetic webhook in dev
+- [x] SIGTERM triggers shutdown sequence logged step-by-step; in-flight job finishes or times out per flag
 
 ### Edge cases and negative paths
-- [ ] Inference unavailable → serve refuses to start OR starts “degraded” with explicit `degraded_reasons[]` (behaviour chosen and documented)
-- [ ] Port collision on webhook bind → actionable error suggesting `--webhook-addr`
-- [ ] Double start on same DB file surfaces SQLite lock error with remediation
+- [x] Inference unavailable → serve refuses to start OR starts “degraded” with explicit `degraded_reasons[]` (behaviour chosen and documented)
+- [x] Port collision on webhook bind → actionable error suggesting `--webhook-addr`
+- [x] Double start on same DB file surfaces SQLite lock error with remediation
 
 ### Non-goals
-- [ ] Dashboard UI (M9 / MH-024)
-- [ ] TLS certificate management
+- Dashboard UI (M9 / MH-024)
+- TLS certificate management
 
 ### Observability, docs, and regressions
-- [ ] Smoke test script: curl `/healthz` in CI with mocked GitHub
-- [ ] Structured startup logs with correlation id per subsystem init
-- [ ] README “day 2 operations” section updated
+- [x] Smoke test script: curl `/healthz` in CI with mocked GitHub
+- [x] Structured startup logs with correlation id per subsystem init
+- [x] README “day 2 operations” section updated

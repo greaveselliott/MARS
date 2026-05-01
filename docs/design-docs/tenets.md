@@ -14,11 +14,11 @@ These are the product's constitution. Every feature, architecture decision, and 
 
 This covers the full lifecycle, not just first boot:
 
-- **First setup:** `mars-harness setup` auto-detects GPU, downloads models, creates the GitHub App via browser manifest flow, scaffolds the bundle, verifies the full loop, and starts serving. Under 10 minutes, 3 browser clicks, 0 configuration files written by hand.
-- **Adding a repo:** `mars-harness init` in a new repo scaffolds everything. Point the existing GitHub App at it. Done.
+- **First setup:** `mars-harness setup` auto-detects GPU, downloads pinned models, scaffolds the bundle, verifies the local loop, and starts serving. GitHub integration is optional and only marked healthy after credentials and webhooks are validated.
+- **Adding a repo:** `mars-harness init` in a new repo scaffolds everything. Register it and start running on `main`.
 - **Upgrading models:** `mars-harness models upgrade` detects newer weights, downloads them, swaps seamlessly.
 - **Upgrading the harness:** `mars-harness upgrade` pulls the latest binary and migrates config.
-- **Permission fallback:** Not everyone can create a GitHub App (requires org admin). Fallback: PAT-based mode that trades check run capability for simpler setup. The harness detects the limitation and adapts.
+- **Permission fallback:** GitHub is optional telemetry and integration infrastructure. Local-only operation remains complete for ticket, commit, push, scoring, and dashboard workflows.
 
 If a user has to debug anything during normal operation, we failed.
 
@@ -30,7 +30,7 @@ If a user has to debug anything during normal operation, we failed.
 
 Two input signals, one evolution system:
 
-**Signal A — Human intervention:** The harness monitors GitHub for human actions that overlap with what it should have done (manual merge, hand-edit of a harness PR, manual CI rerun, PR closed without merge). Each is recorded, classified, and feeds the evolution loop.
+**Signal A — Human intervention:** The harness monitors repo and optional integration signals for human actions that overlap with what it should have done (manual follow-up commits, reverts, hand-edits of harness output, manual CI reruns). Each is recorded, classified, and feeds the evolution loop.
 
 **Signal B — Own failures:** When a role's job scores below threshold (tenet 3), the Reviewer meta-role analyses the full execution trace, classifies the root cause, and proposes an evolution.
 
@@ -39,22 +39,22 @@ Two input signals, one evolution system:
 - **Prompt gap:** The role prompt didn't cover this case. Evolution: add instructions or examples to `.harness/roles/<role>.md`.
 - **Guardrail gap:** No rule caught this class of mistake. Evolution: propose a new guardrail in `.harness/guardrails/`.
 - **Trigger gap:** The harness missed work or a trigger didn't fire. Evolution: adjust triggers or schedule in `manifest.yaml`.
-- **Policy gap:** Auto-merge wasn't enabled, permissions were wrong. Evolution: adjust `.harness/policies/`.
+- **Policy gap:** Trust level, permissions, or push policy blocked useful work. Evolution: adjust `.harness/policies/`.
 - **Context gap:** The role didn't have enough information to succeed. Evolution: add a knowledge route in `.harness/knowledge-routes.yaml`.
 - **Model limitation:** The model isn't capable enough for this task class regardless of prompt. Evolution: log as signal for model upgrade, no prompt change.
 
-**The evolution PR:** Every proposed change is committed as a PR against `.harness/` with: the failure or intervention that triggered it, the root cause classification, the specific change and why it prevents recurrence, and the role's current accuracy score with expected impact. Evolution PRs go through the same review pipeline as any other PR.
+**The evolution commit:** At autonomous trust level, a bounded evolution may be committed directly to `main` under `.harness/` with: the failure or intervention that triggered it, the root cause classification, the specific change and why it prevents recurrence, and the role's current accuracy score with expected impact. Lower-trust roles record a proposed change for a human-triggered contributor run.
 
 **Safety rails:**
 
 - The Reviewer cannot modify its own prompt (prevents self-reinforcing loops).
-- Maximum one evolution PR per role per day (prevents prompt churn).
+- Maximum one evolution commit per role and scope per day (prevents prompt churn).
 - Before/after tracking: post-evolution jobs are tagged, and if the score drops after an evolution, the Reviewer can propose a revert.
 - If evolutions consistently worsen scores, the feature automatically disables for that role and flags for human review.
 
 **North star metric:** Interventions trending toward zero, accuracy trending upward. When the intervention count hits zero sustained over 30 days, the harness is fully autonomous for that repo.
 
-**Intervention classification nuance:** Not every human action is an intervention. Clear interventions (human edited code, human reverted PR) trigger evolution. Ambiguous actions (human merged without edits, human closed without comment) are logged but do not automatically trigger evolution PRs. Non-interventions (human commented on PR) are ignored.
+**Intervention classification nuance:** Not every human action is an intervention. Clear interventions (human edited the same files, reverted a harness commit, or fixed a failed check by hand) trigger evolution. Ambiguous actions are logged but do not automatically trigger evolution. Routine comments are ignored unless they imply missed work.
 
 ---
 
@@ -66,13 +66,14 @@ Two input signals, one evolution system:
 
 | Outcome signal | Score impact |
 |---|---|
-| PR merged without human edits | +1.0 (full success) |
-| PR merged after human edits | +0.5 (partial) |
-| PR closed without merge | 0.0 (failure) |
+| Commit produced and pushed to main | +1.0 (delivery signal) |
+| Checks passed after harness commit | +1.0 |
+| Checks failed after harness commit | 0.0 |
 | CI fix resolved the failure | +1.0 |
 | CI fix did not resolve | 0.0 |
-| Review approved first pass | +1.0 |
-| Review required changes, then approved | +0.5 |
+| Guardrail blocked unsafe mutation | 0.0 for delivery, positive for containment |
+| Revert of harness commit | -1.0 |
+| Human follow-up commit touched same files | +0.5 partial or -0.5 if correcting an error |
 | Human intervention on harness output | -0.5 penalty |
 | Meaningful noop (correctly no action) | neutral |
 | Noop when work was available | -0.5 (value failure) |
@@ -85,7 +86,7 @@ Two input signals, one evolution system:
 - Below 50: critical, suggest pausing the role and investigating.
 - Rising after an evolution: note the improvement with attribution.
 
-**Honest framing:** Scoring is inherently lagging and imperfect. Some outcomes take days to observe (a PR might sit open for a week). Scores are a health signal, not a verdict. They drive progressive autonomy (tenet 8) and self-improvement (tenet 2), but a human should investigate underlying causes, not just react to numbers.
+**Honest framing:** Scoring is inherently lagging and imperfect. Some outcomes take days to observe (a regression might appear later). Scores are a health signal, not a verdict. They drive progressive autonomy (tenet 8) and self-improvement (tenet 2), but a human should investigate underlying causes, not just react to numbers.
 
 **Time horizon acknowledgement:** Weekly roles (CEO) need 20 weeks before the rolling score is meaningful. Low-frequency roles should use manual trust overrides (tenet 8) during the bootstrap period.
 
@@ -131,26 +132,26 @@ Two input signals, one evolution system:
 
 ## 6. Blast Radius Containment
 
-**"The harness must never be able to cause irreversible damage. Pre-merge containment, rate limiting, and an emergency stop."**
+**"The harness must never be able to cause irreversible damage. Bounded trunk commits, rate limiting, and an emergency stop."**
 
 **Hard system limits (not configurable lower, only higher):**
 
-- Never push directly to default branch. Always branch and PR.
-- Never force-push. `--force-with-lease` only, on harness-created branches only.
+- Only push the configured trunk branch, normally `main`.
+- Never force-push or rewrite shared history.
 - No secrets in output. Scan all generated content for API key / token / password patterns before committing.
 
 **Configurable limits (in manifest, with safe defaults):**
 
-- Max changed files per PR: default 20.
+- Max changed files per job: default 20.
 - Max lines changed per commit: default 500.
-- Max PRs per hour per repo: default 5.
+- Max commits per hour per repo: default 5.
 - File deletion requires explicit allowlist per role. Default: no deletions.
 
-**Revert capability:** Every harness PR description includes a revert command. If a merged PR caused problems, one command creates a revert PR.
+**Revert capability:** Every harness commit is trace-linked and can be reverted with a generated command or proposed revert commit.
 
-**Emergency stop:** `mars-harness stop --now` immediately halts all jobs, cancels the queue, and cleans up GitHub state (drafts open PRs, deletes orphaned branches, cancels in-progress check runs). Dashboard has a red stop button.
+**Emergency stop:** `mars-harness stop --now` immediately halts all jobs, cancels the queue, and stops new mutating tool calls. Dashboard has a red stop button.
 
-**Scope:** Containment is the harness's job before merge. After merge, safety is the repo's own concern (release gates, branch protection, CI).
+**Scope:** Containment is the harness's job before commit and push. After a commit lands, safety remains traceable through scoring, checks, revert detection, and emergency stop.
 
 ---
 
@@ -166,11 +167,11 @@ Two input signals, one evolution system:
 - **Model checkpoint:** Which model weights were used (pinned by hash in `bundle.lock.json`).
 - **Full execution trace:** The complete LLM conversation, tool calls, tool results, reasoning.
 
-**Nothing outside the repo:** The harness's behavior is fully determined by the `.harness/` bundle committed in git. No dashboard config, no hidden database state, no learned behavior that isn't committed. Evolution PRs propose changes to the bundle in git, not to internal state.
+**Nothing outside the repo:** The harness's behavior is fully determined by the `.harness/` bundle committed in git. No dashboard config, no hidden database state, no learned behavior that isn't committed. Evolution changes land as bounded commits to the bundle in git, not as hidden internal state.
 
 **Trace storage:** Full traces retained 30 days, summaries retained indefinitely. Configurable in manifest.
 
-**Trace access:** Every harness PR includes a reasoning summary. The dashboard shows full traces. `mars-harness run` streams traces live in the terminal.
+**Trace access:** Every harness commit is linked to a reasoning summary. The dashboard shows full traces. `mars-harness run` streams traces live in the terminal.
 
 ---
 
@@ -182,13 +183,13 @@ Two input signals, one evolution system:
 
 | Level | Capabilities | When |
 |---|---|---|
-| **Observer** | Read repo, comment on PRs. Cannot create PRs or push code. | Default for new setup. |
-| **Contributor** | Create PRs, push code. Human approval required before merge. | After trial, or score 50-80. |
-| **Autonomous** | Full autonomy. Auto-merge enabled. | Score above threshold, sustained 20 jobs. |
+| **Observer** | Read/report only. Cannot mutate the repo. | Default for new setup. |
+| **Contributor** | Human-triggered or ticket-bound edit, test, commit, and push to `main`. | After trial, or score 50-80. |
+| **Autonomous** | May self-schedule, chain jobs, edit, test, commit, push to `main`, and perform bounded evolution. | Score above threshold, sustained 20 jobs. |
 
 **Configurable thresholds per role** in the manifest. A personal side project might set autonomous at 60. A fintech app might need 95.
 
-**Cold start (trial mode):** New roles get N trial runs at Contributor level (can create PRs, human approval required). After N trials, the accuracy score determines the trust level. Default N=5.
+**Cold start (trial mode):** New roles get N trial runs at Contributor level for human-triggered or ticket-bound trunk commits. After N trials, the accuracy score determines the trust level. Default N=5.
 
 **Automatic demotion:** Score drops below threshold for 5 consecutive jobs → demoted one level.
 

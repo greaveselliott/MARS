@@ -25,19 +25,19 @@ When jobs fail, a dedicated meta-role should turn execution traces into concrete
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Failing fixture job produces Reviewer plan + single `.harness/` PR with expected file touched
-- [ ] Classification JSON stored alongside job outcome for analytics
+- [x] Failing fixture job produces Reviewer plan + single `.harness/` PR with expected file touched
+- [x] Classification JSON stored alongside job outcome for analytics
 
 ### Edge cases and negative paths
-- [ ] Attempt to edit Reviewer prompt path is rejected at tool layer with explicit reason
-- [ ] Second Reviewer run same day returns no-op with “budget exhausted” audit entry
-- [ ] If the **last 3 evolutions each worsened** MH-017 rolling score, Reviewer auto-disable flag prevents new runs until CLI clear
+- [x] Attempt to edit Reviewer prompt path is rejected at tool layer with explicit reason
+- [x] Second Reviewer run same day returns no-op with “budget exhausted” audit entry
+- [x] If the **last 3 evolutions each worsened** MH-017 rolling score, Reviewer auto-disable flag prevents new runs until CLI clear
 
 ### Non-goals
-- [ ] Auto-merge of Reviewer PRs
-- [ ] Editing application source outside `.harness/`
+- Auto-merge of Reviewer PRs
+- Editing application source outside `.harness/`
 
 ### Observability, docs, and regressions
-- [ ] End-to-end test with stub LLM returning canned classification + patch
-- [ ] Metrics: reviewer_runs, prs_opened, blocked_attempts
-- [ ] Runbook: how humans should triage Reviewer PRs quickly
+- [x] End-to-end test with stub LLM returning canned classification + patch
+- [x] Metrics: reviewer_runs, prs_opened, blocked_attempts
+- [x] Runbook: how humans should triage Reviewer PRs quickly

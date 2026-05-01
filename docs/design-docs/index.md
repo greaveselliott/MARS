@@ -8,13 +8,13 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [agent-runtime.md](agent-runtime.md) | Draft | Agent execution loop: multi-turn conversation, tool calling, error handling, budget enforcement. AD-004 (sync per-job), AD-005 (sequential tools), AD-006 (additive context) |
 | [local-inference.md](local-inference.md) | Draft | Local model serving: llama.cpp as subprocess, hardware profiles, model registry, download management. AD-007 (no CGO), AD-008 (weights in ~/.mars-harness/), AD-031 (inference resilience) |
 | [scoring-system.md](scoring-system.md) | Draft | Accuracy and value scoring: outcome tracking, rolling scores, progressive autonomy thresholds, noop detection |
-| [self-improvement.md](self-improvement.md) | Draft | Intervention detection, Reviewer meta-role, evolution PRs, before/after tracking, safety rails |
+| [self-improvement.md](self-improvement.md) | Draft | Intervention detection, Reviewer meta-role, bounded evolution commits, before/after tracking, safety rails |
 | [guardrails.md](guardrails.md) | Draft | Advisory vs hard guardrails, validation types, override mechanism, staleness detection. AD-012 (syntactic only in v1) |
 | [pipeline-engine.md](pipeline-engine.md) | Draft | Job queue (SQLite), worker dispatcher, cron scheduler, sandbox. AD-009 (SQLite), AD-010 (repo_id from day one) |
 | [dashboard.md](dashboard.md) | Draft | 5-page dashboard: pipeline flow, role health, throughput, debug, evolution history. AD-011 (htmx + Chart.js embedded) |
 | [context-efficiency.md](context-efficiency.md) | Draft | Context assembly, budgets, knowledge routing, guardrail scoping |
-| [trigger-orchestration.md](trigger-orchestration.md) | Draft | Trigger sources (webhook, schedule, chain), upstream chaining via `then`, custom cron, dual-mode roles. Complete Mars pipeline role registry. AD-016 through AD-020. |
-| [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, lean pipeline for local use. AD-021 through AD-025. |
+| [trigger-orchestration.md](trigger-orchestration.md) | Draft | Trigger sources (webhook, schedule, chain), upstream chaining via `then`, custom cron, strict-trunk default roles. AD-016 through AD-020. |
+| [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, strict-trunk pipeline for local use. AD-021 through AD-025. |
 
 ## Architecture Decision Log
 
@@ -39,11 +39,11 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-017 | Upstream chaining via `then` field. Direct chains vs event-mediated chains. | trigger-orchestration.md | Orchestrator |
 | AD-018 | Fire-and-forget `OnComplete` hook, not a full event bus. Extension point for v2. | trigger-orchestration.md | Orchestrator |
 | AD-019 | Custom cron with named presets (`hourly`, `daily`, `weekly`, `monthly`) as aliases. Standard 5-field only. | trigger-orchestration.md | Orchestrator |
-| AD-020 | Dual-mode roles (e.g., CTO PR merge vs CTO weekly) are separate manifest entries sharing a prompt file. | trigger-orchestration.md | Orchestrator |
+| AD-020 | Strict trunk keeps default roles schedule- and chain-driven; compatibility event handlers must be explicit. | trigger-orchestration.md | Orchestrator |
 | AD-021 | Dogfood tester uses Podman containers with graceful native fallback. Auto-generated Containerfile from conventions. | dogfood-and-decisions.md | Dogfood |
 | AD-022 | `record_decision` is a first-class agent tool, not a file-write convention. Decisions persist in `.harness/learnings.yaml` and are injected into all future agent context. | dogfood-and-decisions.md | Dogfood |
 | AD-023 | Agents push after every semantic commit. Work must never be trapped locally. | dogfood-and-decisions.md | Dogfood |
-| AD-024 | Lean 7-role pipeline for local use (CEO, CTO, COO, Engineer, QA, Dogfood, Janitor). Event-driven roles are dormant until GitHub webhooks are connected. | dogfood-and-decisions.md | Dogfood |
+| AD-024 | Strict-trunk default pipeline for local use. Optional webhook integrations add telemetry and repair triggers without replacing direct commits to `main`. | dogfood-and-decisions.md | Dogfood |
 | AD-025 | Dogfood chains from Engineer (not schedule-only) so builds are validated after every feature when harness isn't always-on. | dogfood-and-decisions.md | Dogfood |
 | AD-026 | Bootability checks: scanner detects unbootable projects (missing scripts, root layout, Tailwind config, conflicting dirs); Engineer must build-verify before closing tickets; Dogfood runs pre-flight structural checks; QA validates structural integrity. | dogfood-and-decisions.md | Bootability |
 | AD-027 | Interactive control surface: CLI key listener (p/r/s/q/h) + dashboard control bar. Shared Server methods, warm restart, pause/resume workers, scan repos, run specific roles. | dashboard.md | Controls |

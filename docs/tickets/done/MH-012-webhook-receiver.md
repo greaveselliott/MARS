@@ -24,21 +24,21 @@ The harness must react to GitHub asynchronously. A small HTTP server validates a
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Valid signed POST for each supported type produces exactly one normalized event record for a unique `X-GitHub-Delivery`
-- [ ] Duplicate delivery with same delivery id is acknowledged and not re-processed
-- [ ] Health endpoint returns 200 when server and DB connectivity (if used) are OK
+- [x] Valid signed POST for each supported type produces exactly one normalized event record for a unique `X-GitHub-Delivery`
+- [x] Duplicate delivery with same delivery id is acknowledged and not re-processed
+- [x] Health endpoint returns 200 when server and DB connectivity (if used) are OK
 
 ### Edge cases and negative paths
-- [ ] Wrong secret → 401/403 with no body logged containing secrets
-- [ ] Oversized body rejected with 413 before HMAC (configurable max)
-- [ ] Unknown `X-GitHub-Event` header → 202 or 204 with structured log “ignored” (no crash)
-- [ ] Clock skew does not break signature path (no time-based MAC)
+- [x] Wrong secret → 401/403 with no body logged containing secrets
+- [x] Oversized body rejected with 413 before HMAC (configurable max)
+- [x] Unknown `X-GitHub-Event` header → 202 or 204 with structured log “ignored” (no crash)
+- [x] Clock skew does not break signature path (no time-based MAC)
 
 ### Non-goals
-- [ ] Full GitHub Apps “org” event catalog
-- [ ] Automatic TLS termination (assume reverse proxy or local dev HTTP)
+- Full GitHub Apps “org” event catalog
+- Automatic TLS termination (assume reverse proxy or local dev HTTP)
 
 ### Observability, docs, and regressions
-- [ ] Tests with golden payloads per event type; property test that duplicate deliveries hit dedupe path
-- [ ] Metrics: deliveries accepted, ignored, rejected, deduped
-- [ ] Runbook snippet: `smee.io` or ngrok for local webhook testing
+- [x] Tests with golden payloads per event type; property test that duplicate deliveries hit dedupe path
+- [x] Metrics: deliveries accepted, ignored, rejected, deduped
+- [x] Runbook snippet: `smee.io` or ngrok for local webhook testing

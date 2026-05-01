@@ -38,29 +38,29 @@ Implement `internal/llm/client.go`:
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Client sends a chat completion request and receives a response
-- [ ] Tool definitions are included in the request when provided
-- [ ] Tool call responses are correctly parsed from the completion
-- [ ] Streaming mode receives and assembles SSE chunks
-- [ ] Token count estimation returns a reasonable number for a given message list
+- [x] Client sends a chat completion request and receives a response
+- [x] Tool definitions are included in the request when provided
+- [x] Tool call responses are correctly parsed from the completion
+- [x] Streaming mode receives and assembles SSE chunks
+- [x] Token count estimation returns a reasonable number for a given message list
 
 ### Edge cases and negative paths
-- [ ] Connection timeout returns a descriptive error (not a raw HTTP error)
-- [ ] 429 rate limit triggers retry with backoff
-- [ ] 500 server error triggers retry (max 3 attempts)
-- [ ] Malformed JSON response returns a descriptive error, does not panic
-- [ ] Empty response body is handled gracefully
-- [ ] Response with tool calls containing malformed arguments is surfaced as an error (not swallowed)
+- [x] Connection timeout returns a descriptive error (not a raw HTTP error)
+- [x] 429 rate limit triggers retry with backoff
+- [x] 500 server error triggers retry (max 3 attempts)
+- [x] Malformed JSON response returns a descriptive error, does not panic
+- [x] Empty response body is handled gracefully
+- [x] Response with tool calls containing malformed arguments is surfaced as an error (not swallowed)
 
 ### Non-goals
-- [ ] This ticket does NOT implement the conversation loop (that's MH-003)
-- [ ] This ticket does NOT implement the router (that's part of MH-008 in M2)
-- [ ] This ticket does NOT handle model-specific quirks (that's MH-004)
+- This ticket does NOT implement the conversation loop (that's MH-003)
+- This ticket does NOT implement the router (that's part of MH-008 in M2)
+- This ticket does NOT handle model-specific quirks (that's MH-004)
 
 ### Observability, docs, and regressions
-- [ ] Unit tests cover all happy path and error scenarios (mock HTTP server)
-- [ ] Types are documented with Go doc comments
-- [ ] agent-runtime.md updated if any design decisions change during implementation
+- [x] Unit tests cover all happy path and error scenarios (mock HTTP server)
+- [x] Types are documented with Go doc comments
+- [x] agent-runtime.md updated if any design decisions change during implementation
 
 ## Notes
 

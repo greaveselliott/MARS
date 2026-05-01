@@ -23,20 +23,20 @@ Roles like nightly QA need manifest-declared schedules without an external cron 
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Daily schedule fires at local wall time in configured timezone across a DST boundary (test with frozen clock)
-- [ ] After 3 days downtime, `fire_once` enqueues at most one catch-up per missed logical window per policy
-- [ ] Scheduler registers cleanly with dispatcher lifecycle (start/stop)
+- [x] Daily schedule fires at local wall time in configured timezone across a DST boundary (test with frozen clock)
+- [x] After 3 days downtime, `fire_once` enqueues at most one catch-up per missed logical window per policy
+- [x] Scheduler registers cleanly with dispatcher lifecycle (start/stop)
 
 ### Edge cases and negative paths
-- [ ] Invalid cron string fails bundle validation at load with file/line context
-- [ ] Unknown timezone fails fast with list of example valid names
-- [ ] Clock jump backward does not double-fire same window (idempotency keys prevent duplicate jobs)
+- [x] Invalid cron string fails bundle validation at load with file/line context
+- [x] Unknown timezone fails fast with list of example valid names
+- [x] Clock jump backward does not double-fire same window (idempotency keys prevent duplicate jobs)
 
 ### Non-goals
-- [ ] Human natural language schedules (“every Tuesday afternoon”)
-- [ ] Multi-repo fan-out from one manifest (single repo per process assumption)
+- Human natural language schedules (“every Tuesday afternoon”)
+- Multi-repo fan-out from one manifest (single repo per process assumption)
 
 ### Observability, docs, and regressions
-- [ ] Unit tests with `github.com/benbjohnson/clock` or equivalent fake timer
-- [ ] Log line per evaluation: next fire time, last fire time, decision (fire/skip)
-- [ ] Manifest schema example added to docs
+- [x] Unit tests with `github.com/benbjohnson/clock` or equivalent fake timer
+- [x] Log line per evaluation: next fire time, last fire time, decision (fire/skip)
+- [x] Manifest schema example added to docs

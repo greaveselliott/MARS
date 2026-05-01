@@ -23,19 +23,19 @@ Self-improvement loops need labels: when humans fix agent output, that signal sh
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Fixture PR with human follow-up commit classified `clear` with file list in evidence
-- [ ] Comment-only activity stored as `non_intervention` without duplicating rows on redelivery
+- [x] Fixture PR with human follow-up commit classified `clear` with file list in evidence
+- [x] Comment-only activity stored as `non_intervention` without duplicating rows on redelivery
 
 ### Edge cases and negative paths
-- [ ] Squash-merge with edited message still detected as code change when diff non-empty
-- [ ] Force-push rewriting history: latest state wins; audit trail notes rewrite
-- [ ] Non-harness PRs ignored cheaply (prefix/label filter first)
+- [x] Squash-merge with edited message still detected as code change when diff non-empty
+- [x] Force-push rewriting history: latest state wins; audit trail notes rewrite
+- [x] Non-harness PRs ignored cheaply (prefix/label filter first)
 
 ### Non-goals
-- [ ] IDE-local edits before push (invisible to GitHub)
-- [ ] Sentiment analysis of review text
+- IDE-local edits before push (invisible to GitHub)
+- Sentiment analysis of review text
 
 ### Observability, docs, and regressions
-- [ ] Table migration + unit tests with JSON fixtures from GitHub API payloads
-- [ ] Dashboard hook optional; at minimum `/api/status` exposes last intervention summary per repo
-- [ ] Privacy note: store minimal diff metadata, not full secret-bearing files
+- [x] Table migration + unit tests with JSON fixtures from GitHub API payloads
+- [x] Dashboard hook optional; at minimum `/api/status` exposes last intervention summary per repo
+- [x] Privacy note: store minimal diff metadata, not full secret-bearing files

@@ -31,19 +31,19 @@ Reference: [docs/design-docs/local-inference.md](../../design-docs/local-inferen
 ## Acceptance Criteria
 
 ### Functional
-- [ ] NVIDIA GPU correctly detected with VRAM on test machine (or reports "no GPU" in CI)
-- [ ] Hardware profile selected correctly based on VRAM thresholds
-- [ ] Registry returns correct models for each profile
-- [ ] Model storage path resolves correctly
+- [x] NVIDIA GPU correctly detected with VRAM on test machine (or reports "no GPU" in CI)
+- [x] Hardware profile selected correctly based on VRAM thresholds
+- [x] Registry returns correct models for each profile
+- [x] Model storage path resolves correctly
 
 ### Edge cases
-- [ ] `nvidia-smi` not found → falls back to cpu profile (not crash)
-- [ ] `nvidia-smi` returns unexpected output format → logs warning, falls back to cpu
-- [ ] Multiple GPUs detected → multi profile with per-GPU VRAM
+- [x] `nvidia-smi` not found → falls back to cpu profile (not crash)
+- [x] `nvidia-smi` returns unexpected output format → logs warning, falls back to cpu
+- [x] Multiple GPUs detected → multi profile with per-GPU VRAM
 
 ### Non-goals
-- [ ] Model download (MH-007)
-- [ ] llama.cpp server management (MH-008)
+- Model download (MH-007)
+- llama.cpp server management (MH-008)
 
 ## Notes
 

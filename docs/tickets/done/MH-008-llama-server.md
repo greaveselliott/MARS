@@ -34,21 +34,21 @@ Reference: [docs/design-docs/local-inference.md](../../design-docs/local-inferen
 ## Acceptance Criteria
 
 ### Functional
-- [ ] llama-server binary downloaded for correct OS/arch
-- [ ] Server starts and `/health` returns OK
-- [ ] Agent runtime from M1 works end-to-end with real local model
-- [ ] Router maps roles to correct endpoints based on manifest
-- [ ] Multi-model: two servers on different ports serving different models
+- [x] llama-server binary downloaded for correct OS/arch
+- [x] Server starts and `/health` returns OK
+- [x] Agent runtime from M1 works end-to-end with real local model
+- [x] Router maps roles to correct endpoints based on manifest
+- [x] Multi-model: two servers on different ports serving different models
 
 ### Edge cases
-- [ ] Server crashes → restarted automatically with backoff
-- [ ] Server fails to start (wrong model path) → descriptive error with fix suggestion
-- [ ] Health check timeout → server reported as unhealthy, fallback to cloud if configured
-- [ ] Shutdown while inference is in progress → waits for current request to complete
+- [x] Server crashes → restarted automatically with backoff
+- [x] Server fails to start (wrong model path) → descriptive error with fix suggestion
+- [x] Health check timeout → server reported as unhealthy, fallback to cloud if configured
+- [x] Shutdown while inference is in progress → waits for current request to complete
 
 ### Non-goals
-- [ ] Model download (MH-007 handles that)
-- [ ] Hardware detection (MH-006 handles that)
+- Model download (MH-007 handles that)
+- Hardware detection (MH-006 handles that)
 
 ## Notes
 

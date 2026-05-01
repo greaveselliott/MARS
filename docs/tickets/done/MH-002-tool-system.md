@@ -58,35 +58,35 @@ Reference: [docs/design-docs/agent-runtime.md](../../design-docs/agent-runtime.m
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Registry returns correct JSON Schema definitions for all registered tools
-- [ ] `file_read` reads a file and returns contents
-- [ ] `file_read` with line range returns only specified lines
-- [ ] `file_write` creates a new file
-- [ ] `file_write` overwrites an existing file
-- [ ] `file_search` finds files matching a glob pattern
-- [ ] `grep` finds lines matching a regex across multiple files
-- [ ] `shell_exec` runs a command and captures stdout and stderr
-- [ ] `git_commit` stages and commits files
-- [ ] `git_branch` creates and checks out a branch
-- [ ] Allowlist blocks tools not in the role config
+- [x] Registry returns correct JSON Schema definitions for all registered tools
+- [x] `file_read` reads a file and returns contents
+- [x] `file_read` with line range returns only specified lines
+- [x] `file_write` creates a new file
+- [x] `file_write` overwrites an existing file
+- [x] `file_search` finds files matching a glob pattern
+- [x] `grep` finds lines matching a regex across multiple files
+- [x] `shell_exec` runs a command and captures stdout and stderr
+- [x] `git_commit` stages and commits files
+- [x] `git_branch` creates and checks out a branch
+- [x] Allowlist blocks tools not in the role config
 
 ### Edge cases and negative paths
-- [ ] `file_read` on non-existent file returns descriptive error
-- [ ] `file_write` to a path outside the working directory is blocked (sandbox boundary)
-- [ ] `shell_exec` with a command that times out is killed and returns timeout error
-- [ ] `shell_exec` with a command that produces >1MB output is truncated
-- [ ] `grep` with invalid regex returns descriptive error
-- [ ] Tool call with unknown tool name returns "tool not found" error
-- [ ] Tool call with wrong argument types returns descriptive error
+- [x] `file_read` on non-existent file returns descriptive error
+- [x] `file_write` to a path outside the working directory is blocked (sandbox boundary)
+- [x] `shell_exec` with a command that times out is killed and returns timeout error
+- [x] `shell_exec` with a command that produces >1MB output is truncated
+- [x] `grep` with invalid regex returns descriptive error
+- [x] Tool call with unknown tool name returns "tool not found" error
+- [x] Tool call with wrong argument types returns descriptive error
 
 ### Non-goals
-- [ ] GitHub tools are stubs only (MH-009 in M4 implements them)
-- [ ] Sandbox enforcement is not in this ticket (M5b)
+- GitHub tools are stubs only (MH-009 in M4 implements them)
+- Sandbox enforcement is not in this ticket (M5b)
 
 ### Observability, docs, and regressions
-- [ ] Each tool has unit tests in its own test file
-- [ ] Registry test verifies schema generation matches expected format
-- [ ] Allowlist test verifies blocked tools cannot be executed
+- [x] Each tool has unit tests in its own test file
+- [x] Registry test verifies schema generation matches expected format
+- [x] Allowlist test verifies blocked tools cannot be executed
 
 ## Notes
 

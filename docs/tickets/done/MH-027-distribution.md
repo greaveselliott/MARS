@@ -24,20 +24,20 @@ Adoption hinges on fast installs matching developer laptops and CI images. M10 d
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Tagged release produces all four artifacts plus checksums verified locally
-- [ ] Installer script installs to prefix and prints `mars-harness version` matching tag
-- [ ] `brew install …/mars-harness` succeeds on Apple Silicon and amd64 macOS smoke VMs (documented matrix)
+- [x] Tagged release produces all four artifacts plus checksums verified locally
+- [x] Installer script installs to prefix and prints `mars-harness version` matching tag
+- [x] `brew install …/mars-harness` succeeds on Apple Silicon and amd64 macOS smoke VMs (documented matrix)
 
 ### Edge cases and negative paths
-- [ ] Checksum mismatch aborts install with non-zero exit and no partial binary
-- [ ] Unsupported platform shows friendly error listing supported triples
-- [ ] Rate-limited GitHub API in CI retried per workflow best practices
+- [x] Checksum mismatch aborts install with non-zero exit and no partial binary
+- [x] Unsupported platform shows friendly error listing supported triples
+- [x] Rate-limited GitHub API in CI retried per workflow best practices
 
 ### Non-goals
-- [ ] Windows MSI
-- [ ] Linux distro packages (deb/rpm) beyond future ticket
+- Windows MSI
+- Linux distro packages (deb/rpm) beyond future ticket
 
 ### Observability, docs, and regressions
-- [ ] CI workflow tested via `act` or dry-run mode where possible; minimal live test on canary tag
-- [ ] Docs: install paths, verifying signatures (checksums), uninstall notes
-- [ ] Version subcommand prints build target OS/ARCH
+- [x] CI workflow tested via `act` or dry-run mode where possible; minimal live test on canary tag
+- [x] Docs: install paths, verifying signatures (checksums), uninstall notes
+- [x] Version subcommand prints build target OS/ARCH

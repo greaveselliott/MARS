@@ -24,20 +24,20 @@ New repos need opinionated structure aligned with the harness mental model. A sc
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Empty repo `init` produces valid bundle passing MH-009 reader validation
-- [ ] Scanner on repo with untested package generates markdown tickets under `.harness/tickets/` with YAML frontmatter consistent with repo ticket format
-- [ ] Well-covered fixture repo generates zero or minimal tickets with documented skip reasons
+- [x] Empty repo `init` produces valid bundle passing MH-009 reader validation
+- [x] Scanner on repo with untested package generates markdown tickets under `.harness/tickets/` with YAML frontmatter consistent with repo ticket format
+- [x] Well-covered fixture repo generates zero or minimal tickets with documented skip reasons
 
 ### Edge cases and negative paths
-- [ ] Re-run on dirty tree: refuse or require `--force` with backup of overwritten files (policy documented)
-- [ ] Monorepo with many packages completes under time budget via concurrency limits
-- [ ] Non-git directory fails with actionable message
+- [x] Re-run on dirty tree: refuse or require `--force` with backup of overwritten files (policy documented)
+- [x] Monorepo with many packages completes under time budget via concurrency limits
+- [x] Non-git directory fails with actionable message
 
 ### Non-goals
-- [ ] LLM-generated ticket prose beyond templates
-- [ ] Automatic fixing of findings
+- LLM-generated ticket prose beyond templates
+- Automatic fixing of findings
 
 ### Observability, docs, and regressions
-- [ ] Snapshot tests for generated tree layout
-- [ ] Scanner unit tests on synthetic tree fixtures
-- [ ] Docs: how to customize scanner thresholds in manifest
+- [x] Snapshot tests for generated tree layout
+- [x] Scanner unit tests on synthetic tree fixtures
+- [x] Docs: how to customize scanner thresholds in manifest

@@ -24,20 +24,20 @@ Guardrails translate org policy into mechanical checks. M7 separates “nudge th
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Role-scoped rule applies only to named role; global applies to all
-- [ ] Advisory rule surfaces once per turn max to avoid prompt spam (dedupe policy tested)
-- [ ] Hard rule blocks disallowed path write with actionable error referencing rule name
+- [x] Role-scoped rule applies only to named role; global applies to all
+- [x] Advisory rule surfaces once per turn max to avoid prompt spam (dedupe policy tested)
+- [x] Hard rule blocks disallowed path write with actionable error referencing rule name
 
 ### Edge cases and negative paths
-- [ ] Invalid regex in YAML fails bundle load with path and column
-- [ ] Override on hard rule logs rule id, principal, expires if TTL set (optional TTL field)
-- [ ] Competing rules: highest severity wins; tie-break deterministic by rule order in file
+- [x] Invalid regex in YAML fails bundle load with path and column
+- [x] Override on hard rule logs rule id, principal, expires if TTL set (optional TTL field)
+- [x] Competing rules: highest severity wins; tie-break deterministic by rule order in file
 
 ### Non-goals
-- [ ] Full Semgrep or AST policy language
-- [ ] Remote policy fetch from network
+- Full Semgrep or AST policy language
+- Remote policy fetch from network
 
 ### Observability, docs, and regressions
-- [ ] Unit tests: regex edge cases, file_pattern glob semantics, override audit
-- [ ] Golden bundle negative tests in CI
-- [ ] Docs: examples for secrets and destructive command patterns
+- [x] Unit tests: regex edge cases, file_pattern glob semantics, override audit
+- [x] Golden bundle negative tests in CI
+- [x] Docs: examples for secrets and destructive command patterns

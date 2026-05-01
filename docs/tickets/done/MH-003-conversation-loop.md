@@ -51,32 +51,32 @@ Implement `internal/agent/loop.go`:
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Loop completes a multi-turn conversation (3+ tool calls) with mock LLM
-- [ ] Each tool call is executed and result appended to conversation
-- [ ] Loop terminates when LLM responds with text only (no more tool calls)
-- [ ] Full conversation history is available after loop completes
+- [x] Loop completes a multi-turn conversation (3+ tool calls) with mock LLM
+- [x] Each tool call is executed and result appended to conversation
+- [x] Loop terminates when LLM responds with text only (no more tool calls)
+- [x] Full conversation history is available after loop completes
 
 ### Edge cases and negative paths
-- [ ] Malformed tool call JSON is handled without panic; error appended to conversation
-- [ ] Circle detection: same tool+args 3 times → loop terminates with diagnostic
-- [ ] Token budget exceeded → loop terminates cleanly with "budget_exceeded" reason
-- [ ] Wall time budget exceeded → loop terminates with "timeout" reason
-- [ ] Max turns exceeded → loop terminates with "max_turns" reason
-- [ ] Empty LLM response → loop terminates with "empty_response" reason
-- [ ] LLM connection failure after retries → loop terminates with "llm_unreachable" reason
-- [ ] Tool call parser handles boolean corruption (true → "true" string)
-- [ ] Tool call parser handles truncated strings with internal quotes
+- [x] Malformed tool call JSON is handled without panic; error appended to conversation
+- [x] Circle detection: same tool+args 3 times → loop terminates with diagnostic
+- [x] Token budget exceeded → loop terminates cleanly with "budget_exceeded" reason
+- [x] Wall time budget exceeded → loop terminates with "timeout" reason
+- [x] Max turns exceeded → loop terminates with "max_turns" reason
+- [x] Empty LLM response → loop terminates with "empty_response" reason
+- [x] LLM connection failure after retries → loop terminates with "llm_unreachable" reason
+- [x] Tool call parser handles boolean corruption (true → "true" string)
+- [x] Tool call parser handles truncated strings with internal quotes
 
 ### Non-goals
-- [ ] Context assembly is a separate ticket (MH-004)
-- [ ] Trace recording is a separate ticket (MH-005)
-- [ ] Real model integration is M2 (this uses mock LLM)
+- Context assembly is a separate ticket (MH-004)
+- Trace recording is a separate ticket (MH-005)
+- Real model integration is M2 (this uses mock LLM)
 
 ### Observability, docs, and regressions
-- [ ] Integration test: mock LLM → loop → real file tools → file created in temp dir
-- [ ] Parser tests use recorded real model output (not just synthetic mocks)
-- [ ] All termination reasons are tested
-- [ ] agent-runtime.md updated with any design changes discovered during implementation
+- [x] Integration test: mock LLM → loop → real file tools → file created in temp dir
+- [x] Parser tests use recorded real model output (not just synthetic mocks)
+- [x] All termination reasons are tested
+- [x] agent-runtime.md updated with any design changes discovered during implementation
 
 ## Notes
 
