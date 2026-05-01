@@ -240,6 +240,15 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		return fmt.Errorf("executor: role %q has no tools configured; strict trunk requires an explicit tools allowlist in .harness/manifest.yaml", job.Role)
 	}
 
+	var beforeTickets ticketSnapshot
+	if job.Role == "engineer" {
+		beforeTickets, err = snapshotTickets(repoPath)
+		if err != nil {
+			tw.WriteError(fmt.Sprintf("snapshot tickets before run: %v", err))
+			return fmt.Errorf("executor: snapshot tickets before engineer run: %w", err)
+		}
+	}
+
 	rec := trace.NewRecorder(nil)
 
 	params := agent.Params{
@@ -301,6 +310,19 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	if err := agent.NonSuccessError(res); err != nil {
 		learnings.RecordJobLessons(learnStore, job.Role, err.Error(), "", nil)
 		return fmt.Errorf("executor: %w", err)
+	}
+
+	if job.Role == "engineer" {
+		afterTickets, sErr := snapshotTickets(repoPath)
+		if sErr != nil {
+			tw.WriteError(fmt.Sprintf("snapshot tickets after run: %v", sErr))
+			return fmt.Errorf("executor: snapshot tickets after engineer run: %w", sErr)
+		}
+		if gateErr := validateEngineerTicketGate(beforeTickets, afterTickets); gateErr != nil {
+			tw.WriteError(gateErr.Error())
+			learnings.RecordJobLessons(learnStore, job.Role, gateErr.Error(), "", nil)
+			return fmt.Errorf("executor: %w", gateErr)
+		}
 	}
 
 	learnings.RecordJobLessons(learnStore, job.Role, "", "", nil)

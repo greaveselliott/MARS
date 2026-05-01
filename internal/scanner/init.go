@@ -715,6 +715,11 @@ TICKET SELECTION:
    of claiming a new one. Read its AC and verify if the work is already done
    in the codebase. If done: move it to done/ immediately. If not: continue
    implementing it.
+   If MORE THAN ONE ticket is in in-progress/, choose the lowest-numbered
+   ticket to resume and move the others back to backlog/ with:
+   git_commit message "chore(tickets): return stale in-progress tickets to backlog"
+   git_push
+   The harness will reject a handoff while ANY ticket remains in in-progress/.
 2. If no in-progress tickets exist, select the highest-priority ticket from
    backlog/ where all dependencies are satisfied (depends_on tickets must be
    in done/)
