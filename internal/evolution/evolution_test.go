@@ -109,6 +109,41 @@ func TestCanReview_autoDisableAfterWorsening(t *testing.T) {
 	require.Contains(t, reason, "auto-disabled")
 }
 
+func TestValidateReviewResult_allowsScopedHarnessFiles(t *testing.T) {
+	t.Parallel()
+	result := ReviewResult{FilesToModify: []string{
+		".harness/roles/engineer.md",
+		".harness/guardrails/security.yaml",
+		".harness/manifest.yaml",
+		".harness/knowledge-routes.yaml",
+	}}
+	require.NoError(t, ValidateReviewResult("engineer", result))
+}
+
+func TestValidateReviewResult_blocksOutOfScopeFiles(t *testing.T) {
+	t.Parallel()
+	err := ValidateReviewResult("engineer", ReviewResult{FilesToModify: []string{"internal/agent/loop.go"}})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "outside allowed evolution scope")
+}
+
+func TestValidateReviewResult_blocksReviewerMetaPrompt(t *testing.T) {
+	t.Parallel()
+	err := ValidateReviewResult("reviewer", ReviewResult{FilesToModify: []string{".harness/roles/reviewer.md"}})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "meta-prompt")
+}
+
+func TestRecordEvolution_rejectsInvalidProposal(t *testing.T) {
+	t.Parallel()
+	store := openTestStore(t)
+	err := RecordEvolution(context.Background(), store, "engineer", "repo-1", ReviewResult{
+		FilesToModify: []string{"../outside.md"},
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "outside the repo")
+}
+
 // --- Store tests ---
 
 func TestStore_interventionRoundTrip(t *testing.T) {
@@ -144,7 +179,7 @@ func TestStore_evolutionRoundTrip(t *testing.T) {
 
 	ev := Evolution{
 		ID:          "ev-rt-1",
-		Role:        "pr-writer",
+		Role:        "prompt-writer",
 		RepoID:      "repo-2",
 		Result:      `{"classification":"missing_test"}`,
 		ScoreBefore: 0.6,
@@ -153,7 +188,7 @@ func TestStore_evolutionRoundTrip(t *testing.T) {
 	}
 	require.NoError(t, store.SaveEvolution(ctx, ev))
 
-	got, err := store.GetEvolutions(ctx, "pr-writer", 10)
+	got, err := store.GetEvolutions(ctx, "prompt-writer", 10)
 	require.NoError(t, err)
 	require.Len(t, got, 1)
 	require.Equal(t, ev.ID, got[0].ID)

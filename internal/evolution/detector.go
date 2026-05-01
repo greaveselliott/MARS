@@ -14,7 +14,7 @@ const (
 	TypeNonIntervention InterventionType = "non_intervention"
 )
 
-// Intervention records a detected human intervention on a harness PR.
+// Intervention records a detected human intervention on harness output.
 type Intervention struct {
 	ID         string
 	JobID      string
@@ -39,7 +39,7 @@ type evidence struct {
 	FilesChanged []string `json:"files_changed"`
 }
 
-// Detect classifies PR activity as intervention or non-intervention.
+// Detect classifies post-job activity as intervention or non-intervention.
 // It examines commits after the harness's last commit to find human changes.
 // Returns the intervention type and a JSON evidence string.
 func Detect(harnessAuthor string, commits []CommitInfo) (InterventionType, string) {

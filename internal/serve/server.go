@@ -756,9 +756,9 @@ func (s *Server) handleRolesAPI(w http.ResponseWriter, r *http.Request) {
 		Roles []roleInfo `json:"roles"`
 	}
 
-	roles := []string{"ceo", "cto-weekly", "cto-pr-merge", "coo", "engineer", "qa",
-		"security-pr", "security-weekly", "dependency-manager", "release-pr",
-		"release-weekly", "dogfood", "pipeline-fixer", "pr-comment-fixer", "janitor"}
+	roles := []string{"ceo", "cto-weekly", "coo", "engineer", "qa",
+		"security", "dependency-manager", "release-manager",
+		"dogfood", "pipeline-fixer", "janitor"}
 
 	var resp apiResponse
 

@@ -41,14 +41,19 @@ func TestAppManifest_structure(t *testing.T) {
 	perms, ok := m["default_permissions"].(map[string]string)
 	require.True(t, ok)
 	require.Equal(t, "write", perms["checks"])
-	require.Equal(t, "write", perms["pull_requests"])
+	require.Equal(t, "read", perms["contents"])
+	require.Equal(t, "write", perms["issues"])
 	require.Equal(t, "read", perms["metadata"])
+	require.Equal(t, "write", perms["statuses"])
+	require.NotContains(t, perms, "pull_requests")
 
 	events, ok := m["default_events"].([]string)
 	require.True(t, ok)
 	require.Contains(t, events, "push")
-	require.Contains(t, events, "pull_request")
 	require.Contains(t, events, "check_suite")
+	require.Contains(t, events, "workflow_run")
+	require.Contains(t, events, "issue_comment")
+	require.NotContains(t, events, "pull_request")
 }
 
 func TestExchangeManifestCode_happyPath(t *testing.T) {
