@@ -152,7 +152,7 @@ func writeDefaultConfigStep(baseDir string) Step {
 				LogFormat:           "text",
 				WebhookPort:         9091,
 				DashboardPort:       9090,
-				PerformanceProfile:  "quality",
+				PerformanceProfile:  "auto",
 				LlamaParallel:       1,
 				LlamaFlashAttention: "auto",
 			}
@@ -219,7 +219,7 @@ func downloadModelsStep(baseDir string) Step {
 				return false, err
 			}
 			hw := hardware.Detect()
-			for _, spec := range hardware.UniqueModels(hardware.DefaultModelsForPerformance(hw.Profile, cfg.PerformanceProfile)) {
+			for _, spec := range hardware.UniqueModels(hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)) {
 				if _, err := os.Stat(filepath.Join(modelsDir, spec.File)); err != nil {
 					return false, nil
 				}
@@ -236,12 +236,12 @@ func downloadModelsStep(baseDir string) Step {
 			if err != nil {
 				slog.Warn("setup: config load failed while selecting models; using quality profile", "err", err)
 			}
-			modelSet := hardware.DefaultModelsForPerformance(hw.Profile, cfg.PerformanceProfile)
+			modelSet := hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)
 			unique := hardware.UniqueModels(modelSet)
 
 			slog.Info("model download plan",
 				"profile", string(hw.Profile),
-				"performance_profile", hardware.NormalizePerformanceProfile(cfg.PerformanceProfile),
+				"performance_profile", hardware.EffectivePerformanceProfile(hw, cfg.PerformanceProfile),
 				"models_to_download", len(unique),
 			)
 

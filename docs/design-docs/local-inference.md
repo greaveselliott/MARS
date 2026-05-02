@@ -36,18 +36,24 @@ Three failure modes observed in production pipeline runs (crowd-runner, April 20
 
 **3. Stale health state (connection refused).** `ServerForRole` returned immediately when a server was previously marked `StateHealthy` without verifying it was still alive. If the server crashed between jobs, the next job got `connection refused`. Added an active `/health` spot-check after `Start` returns. If the server fails the check, it's torn down and restarted before the endpoint is returned. This closes the race window between the supervisor detecting a crash and the next job claiming the "healthy" server.
 
-### AD-032: Explicit local inference performance profile and llama tuning
+### AD-032: Zero-config local inference performance profile and llama tuning
 
 Apple Silicon and other unified-memory machines can show low CPU usage while local generation is slow because llama.cpp is doing most work through Metal/GPU kernels and memory bandwidth. The harness must not imply that idle CPU means unused inference capacity.
 
-The user config now exposes two layers of tuning:
+The default profile is `auto`. Setup/start/serve detect the hardware and choose the model set without operator tuning:
 
-- `performance_profile`: `quality` uses the detected hardware profile as-is; `balanced` caps high/multi hardware at the medium model set; `speed` uses the low model set when a GPU is present. This lets operators trade Q8 quality for Q4/Q5 or Q3/Q4 throughput and lower memory pressure.
+- Apple Silicon / Metal unified-memory machines below 96 GiB RAM use `balanced` automatically, capping high/multi hardware at the medium Q4/Q5 model set.
+- Large dedicated GPUs keep `quality` when their VRAM can absorb the Q8 model without squeezing the host.
+- Lower hardware profiles already use conservative model sets, so `auto` preserves their detected profile.
+
+The user config remains an escape hatch, not the normal path:
+
+- `performance_profile`: `auto`, `quality`, `balanced`, or `speed`. `quality` uses the detected hardware profile as-is; `balanced` caps high/multi hardware at the medium model set; `speed` uses the low model set when a GPU is present.
 - llama-server flags: `llama_parallel`, `llama_threads`, `llama_threads_batch`, `llama_batch_size`, `llama_ubatch_size`, `llama_flash_attention`, and `llama_mlock`.
 
 Default `llama_parallel` is `1` because the strict-trunk default pipeline is one active agent per repo. llama.cpp's auto parallelism can reserve multiple slots and extra KV/cache memory for throughput the default workflow does not use. Operators can set `llama_parallel: 0` to restore llama.cpp auto behavior.
 
-Changing `performance_profile` may require additional model files. `mars-harness setup` now verifies the model files required by the active profile before accepting the download marker as complete.
+Changing the effective `performance_profile` may require additional model files. `mars-harness setup` now verifies the model files required by the active profile before accepting the download marker as complete.
 
 ### Open topics (M2 and beyond)
 

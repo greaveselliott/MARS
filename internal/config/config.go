@@ -64,7 +64,7 @@ func defaults() Config {
 		LogFormat:           "text",
 		WebhookPort:         9091,
 		DashboardPort:       9090,
-		PerformanceProfile:  "quality",
+		PerformanceProfile:  "auto",
 		LlamaParallel:       1,
 		LlamaFlashAttention: "auto",
 	}

@@ -50,21 +50,90 @@ func listTicketFiles(repoPath, status string) ([]string, error) {
 }
 
 func validateEngineerTicketGate(before, after ticketSnapshot) error {
+	if len(before.Backlog)+len(before.InProgress) == 0 {
+		if len(after.InProgress) > 0 {
+			return fmt.Errorf(
+				"ticket gate: engineer created in-progress work without any open ticket at start: %s",
+				strings.Join(after.InProgress, ", "),
+			)
+		}
+		return nil
+	}
+
+	beforeIP := stringSet(before.InProgress)
+	afterIP := stringSet(after.InProgress)
+	doneAdded := setDifference(stringSet(after.Done), stringSet(before.Done))
+
+	if len(before.InProgress) > 0 {
+		var newInProgress []string
+		for _, name := range after.InProgress {
+			if !beforeIP[name] {
+				newInProgress = append(newInProgress, name)
+			}
+		}
+		if len(newInProgress) > 0 {
+			return fmt.Errorf(
+				"ticket gate: engineer must drain existing in-progress tickets before claiming new work: %s",
+				strings.Join(newInProgress, ", "),
+			)
+		}
+
+		removed := setDifference(beforeIP, afterIP)
+		if len(removed) == 0 {
+			return fmt.Errorf(
+				"ticket gate: engineer ended without completing any existing in-progress ticket; remaining: %s",
+				strings.Join(after.InProgress, ", "),
+			)
+		}
+		for name := range removed {
+			if doneAdded[name] {
+				return nil
+			}
+		}
+		return fmt.Errorf(
+			"ticket gate: engineer removed in-progress ticket(s) without moving them to done: %s",
+			strings.Join(sortedSetKeys(removed), ", "),
+		)
+	}
+
 	if len(after.InProgress) > 0 {
 		return fmt.Errorf(
-			"ticket gate: engineer cannot hand off while %d ticket(s) remain in docs/tickets/in-progress: %s",
-			len(after.InProgress),
+			"ticket gate: engineer cannot hand off with newly claimed ticket(s) still in docs/tickets/in-progress: %s",
 			strings.Join(after.InProgress, ", "),
 		)
 	}
-	if len(before.Backlog)+len(before.InProgress) == 0 {
-		return nil
-	}
-	if len(after.Done) <= len(before.Done) {
+	if len(doneAdded) == 0 {
 		return fmt.Errorf(
 			"ticket gate: engineer ended without moving any ticket to docs/tickets/done while %d open ticket(s) existed",
 			len(before.Backlog)+len(before.InProgress),
 		)
 	}
 	return nil
+}
+
+func stringSet(values []string) map[string]bool {
+	set := make(map[string]bool, len(values))
+	for _, value := range values {
+		set[value] = true
+	}
+	return set
+}
+
+func setDifference(a, b map[string]bool) map[string]bool {
+	out := make(map[string]bool)
+	for value := range a {
+		if !b[value] {
+			out[value] = true
+		}
+	}
+	return out
+}
+
+func sortedSetKeys(set map[string]bool) []string {
+	keys := make([]string, 0, len(set))
+	for key := range set {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }

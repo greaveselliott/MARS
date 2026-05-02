@@ -78,11 +78,38 @@ func TestDefaultModelsForPerformance_capsHighProfiles(t *testing.T) {
 	require.Equal(t, "Q4_K_M", speed[TierFast].Quant)
 }
 
+func TestDefaultModelsForHardware_autoBalancesAppleSilicon(t *testing.T) {
+	t.Parallel()
+
+	hw := Summary{
+		Profile: ProfileHigh,
+		RAMMiB:  64 * 1024,
+		GPUs:    []GPU{{Name: "Apple Silicon", Driver: "Metal", VRAMMiB: 64 * 1024}},
+	}
+	models := DefaultModelsForHardware(hw, PerformanceAuto)
+	require.Equal(t, "Q4_K_M", models[TierCoding].Quant)
+	require.Equal(t, PerformanceBalanced, EffectivePerformanceProfile(hw, PerformanceAuto))
+}
+
+func TestDefaultModelsForHardware_autoKeepsQualityForLargeDedicatedGPU(t *testing.T) {
+	t.Parallel()
+
+	hw := Summary{
+		Profile: ProfileHigh,
+		RAMMiB:  128 * 1024,
+		GPUs:    []GPU{{Name: "RTX 6000", Driver: "CUDA", VRAMMiB: 48 * 1024}},
+	}
+	models := DefaultModelsForHardware(hw, PerformanceAuto)
+	require.Equal(t, "Q8_0", models[TierCoding].Quant)
+	require.Equal(t, PerformanceQuality, EffectivePerformanceProfile(hw, PerformanceAuto))
+}
+
 func TestNormalizePerformanceProfile(t *testing.T) {
 	t.Parallel()
 
+	require.Equal(t, PerformanceAuto, NormalizePerformanceProfile(" auto "))
 	require.Equal(t, PerformanceBalanced, NormalizePerformanceProfile(" balanced "))
 	require.Equal(t, PerformanceSpeed, NormalizePerformanceProfile("SPEED"))
-	require.Equal(t, PerformanceQuality, NormalizePerformanceProfile("unknown"))
-	require.Equal(t, PerformanceQuality, NormalizePerformanceProfile(""))
+	require.Equal(t, PerformanceAuto, NormalizePerformanceProfile("unknown"))
+	require.Equal(t, PerformanceAuto, NormalizePerformanceProfile(""))
 }

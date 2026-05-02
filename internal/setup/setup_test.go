@@ -140,6 +140,6 @@ func TestWriteDefaultConfigStep_execute(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join(baseDir, "config.yaml"))
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "models_dir")
-	assert.Contains(t, string(data), "performance_profile: quality")
+	assert.Contains(t, string(data), "performance_profile: auto")
 	assert.Contains(t, string(data), "llama_parallel: 1")
 }

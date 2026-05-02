@@ -355,9 +355,9 @@ func (e *Executor) broadcastEvent(eventType string, payload map[string]string) {
 // BuildTicketIndex scans docs/tickets/ and returns a compact inventory for context injection.
 func BuildTicketIndex(repoPath string) string {
 	ticketsDir := filepath.Join(repoPath, "docs", "tickets")
-	statuses := []string{"backlog", "in-progress", "done"}
+	statuses := []string{"in-progress", "backlog", "done"}
 
-	var lines []string
+	linesByStatus := make(map[string][]string, len(statuses))
 	var total int
 	for _, status := range statuses {
 		dir := filepath.Join(ticketsDir, status)
@@ -369,14 +369,18 @@ func BuildTicketIndex(repoPath string) string {
 			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "README.md" {
 				continue
 			}
-			lines = append(lines, fmt.Sprintf("- [%s] %s", status, e.Name()))
+			linesByStatus[status] = append(linesByStatus[status], fmt.Sprintf("- [%s] %s", status, e.Name()))
 			total++
 		}
 	}
 	if total == 0 {
 		return "No existing tickets found in docs/tickets/."
 	}
-	header := fmt.Sprintf("Existing tickets (%d total):\n", total)
+	var lines []string
+	header := fmt.Sprintf("Existing tickets (%d total). In-progress tickets are the Engineer front of queue; complete the lowest-numbered in-progress ticket before claiming backlog work. If an in-progress ticket is blocked, fix the blocker proactively in the same run.\n", total)
+	for _, status := range statuses {
+		lines = append(lines, linesByStatus[status]...)
+	}
 	return header + strings.Join(lines, "\n")
 }
 

@@ -114,7 +114,7 @@ func New(cfg Config) (*Server, error) {
 	}
 
 	hw := hardware.Detect()
-	modelSet := hardware.DefaultModelsForPerformance(hw.Profile, cfg.PerformanceProfile)
+	modelSet := hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)
 
 	roleMapping := map[string]hardware.Tier{
 		"engineer":              hardware.TierCoding,

@@ -16,7 +16,7 @@ func TestLoad_missingFileReturnsDefaults(t *testing.T) {
 	require.Equal(t, 9091, cfg.WebhookPort)
 	require.Equal(t, 9090, cfg.DashboardPort)
 	require.Equal(t, "text", cfg.LogFormat)
-	require.Equal(t, "quality", cfg.PerformanceProfile)
+	require.Equal(t, "auto", cfg.PerformanceProfile)
 	require.Equal(t, 1, cfg.LlamaParallel)
 	require.Equal(t, "auto", cfg.LlamaFlashAttention)
 }

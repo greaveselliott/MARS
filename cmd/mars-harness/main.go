@@ -356,7 +356,7 @@ func autoStartInference(ctx context.Context, roleName string) (*inference.Router
 	}
 
 	hw := hardware.Detect()
-	modelSet := hardware.DefaultModelsForPerformance(hw.Profile, cfg.PerformanceProfile)
+	modelSet := hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)
 
 	roleMapping := map[string]hardware.Tier{
 		"engineer":       hardware.TierCoding,

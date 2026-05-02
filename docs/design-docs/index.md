@@ -6,7 +6,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 |----------|--------|---------|
 | [tenets.md](tenets.md) | Accepted | The 9 founding tenets: plug and play, self-improving system, accuracy scoring, customisable guardrails, roadmap from init, blast radius containment, execution truth, progressive autonomy, context efficiency |
 | [agent-runtime.md](agent-runtime.md) | Draft | Agent execution loop: multi-turn conversation, tool calling, error handling, budget enforcement. AD-004 (sync per-job), AD-005 (sequential tools), AD-006 (additive context) |
-| [local-inference.md](local-inference.md) | Draft | Local model serving: llama.cpp as subprocess, hardware profiles, model registry, download management. AD-007 (no CGO), AD-008 (weights in ~/.mars-harness/), AD-031 (inference resilience), AD-032 (performance tuning) |
+| [local-inference.md](local-inference.md) | Draft | Local model serving: llama.cpp as subprocess, hardware profiles, model registry, download management. AD-007 (no CGO), AD-008 (weights in ~/.mars-harness/), AD-031 (inference resilience), AD-032 (zero-config performance tuning) |
 | [scoring-system.md](scoring-system.md) | Draft | Accuracy and value scoring: outcome tracking, rolling scores, progressive autonomy thresholds, noop detection |
 | [self-improvement.md](self-improvement.md) | Draft | Intervention detection, Reviewer meta-role, bounded evolution commits, before/after tracking, safety rails |
 | [guardrails.md](guardrails.md) | Draft | Advisory vs hard guardrails, validation types, override mechanism, staleness detection. AD-012 (syntactic only in v1) |
@@ -14,7 +14,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [dashboard.md](dashboard.md) | Draft | 5-page dashboard: pipeline flow, role health, throughput, debug, evolution history. AD-011 (htmx + Chart.js embedded) |
 | [context-efficiency.md](context-efficiency.md) | Draft | Context assembly, budgets, knowledge routing, guardrail scoping |
 | [trigger-orchestration.md](trigger-orchestration.md) | Draft | Trigger sources (webhook, schedule, chain), upstream chaining via `then`, custom cron, strict-trunk default roles. AD-016 through AD-020. |
-| [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, strict-trunk pipeline for local use. AD-021 through AD-025. |
+| [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, strict-trunk pipeline for local use. AD-021 through AD-030, AD-033. |
 
 ## Architecture Decision Log
 
@@ -51,4 +51,5 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-029 | Per-repo database isolation. Default DB path changed from `~/.mars-harness/db/mars.db` to `~/.mars-harness/db/{repo-slug}/mars.db`. `RepoScope` filter in `serve.Config` as defense-in-depth. `doctorCmd` gains `--repo` flag. Migration warning for legacy DB. | dogfood-and-decisions.md | Isolation |
 | AD-030 | Mechanical ticket deduplication. `ticket_create` tool with built-in duplicate detection (normalized title subset matching). Ticket index injected into context assembly for COO/engineer/janitor. COO prompt rewritten to use tool-level enforcement. Scaffold template cleaned of Mars-specific boilerplate. | dogfood-and-decisions.md | Ticket dedup |
 | AD-031 | Inference resilience. HTTP timeout 60s→5min for local inference. Fast-tier context 8192→16384 (Gemma 4 supports 128k). Active health spot-check in router before returning endpoint (catches stale healthy state from crashed servers). Non-retryable error for context-exceeded. Retry backoff increased across client and agent loop. | local-inference.md | Resilience |
-| AD-032 | Local inference performance profile and llama tuning. Config exposes quality/balanced/speed model selection plus llama-server parallel/thread/batch/flash-attention/mlock knobs. Default parallel slots are capped at 1 for strict-trunk single-agent throughput. | local-inference.md | Performance |
+| AD-032 | Zero-config local inference performance profile and llama tuning. Auto profile selects smaller Q4/Q5 defaults on memory-constrained unified-memory machines while keeping overrides available. Default parallel slots are capped at 1 for strict-trunk single-agent throughput. | local-inference.md | Performance |
+| AD-033 | In-progress tickets are drained before backlog work. Engineer gates allow completing one pre-existing in-progress ticket while others remain queued, but block new claims, stale returns to backlog, and no-progress handoffs. | dogfood-and-decisions.md | Ticket completion |

@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	PerformanceAuto     = "auto"
 	PerformanceQuality  = "quality"
 	PerformanceBalanced = "balanced"
 	PerformanceSpeed    = "speed"
@@ -164,10 +165,44 @@ func DefaultModelsForPerformance(p Profile, performance string) map[Tier]ModelSp
 	return DefaultModels(EffectiveModelProfile(p, performance))
 }
 
+// DefaultModelsForHardware returns the default model set after applying the
+// operator's performance preference to the detected hardware.
+func DefaultModelsForHardware(s Summary, performance string) map[Tier]ModelSpec {
+	return DefaultModels(EffectiveModelProfile(s.Profile, EffectivePerformanceProfile(s, performance)))
+}
+
+// EffectivePerformanceProfile resolves "auto" to the profile the harness
+// should use for this machine without requiring operator tuning.
+func EffectivePerformanceProfile(s Summary, requested string) string {
+	normalized := NormalizePerformanceProfile(requested)
+	if normalized != PerformanceAuto {
+		return normalized
+	}
+	return RecommendedPerformanceProfile(s)
+}
+
+// RecommendedPerformanceProfile chooses a safe default for local inference.
+func RecommendedPerformanceProfile(s Summary) string {
+	if s.Profile == ProfileHigh || s.Profile == ProfileMulti {
+		if usesUnifiedMetalMemory(s) {
+			if s.RAMMiB > 0 && s.RAMMiB < 96*1024 {
+				return PerformanceBalanced
+			}
+			return PerformanceQuality
+		}
+		if largestGPUMiB(s.GPUs) < 48*1024 {
+			return PerformanceBalanced
+		}
+	}
+	return PerformanceQuality
+}
+
 // EffectiveModelProfile maps quality/speed preferences to an existing model
 // registry profile without changing the detected hardware record.
 func EffectiveModelProfile(p Profile, performance string) Profile {
 	switch NormalizePerformanceProfile(performance) {
+	case PerformanceAuto:
+		return p
 	case PerformanceSpeed:
 		if p == ProfileCPU {
 			return ProfileCPU
@@ -186,11 +221,32 @@ func EffectiveModelProfile(p Profile, performance string) Profile {
 // NormalizePerformanceProfile returns the supported performance profile name.
 func NormalizePerformanceProfile(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case PerformanceBalanced, PerformanceSpeed, PerformanceQuality:
+	case PerformanceAuto, PerformanceBalanced, PerformanceSpeed, PerformanceQuality:
 		return strings.ToLower(strings.TrimSpace(value))
 	default:
-		return PerformanceQuality
+		return PerformanceAuto
 	}
+}
+
+func usesUnifiedMetalMemory(s Summary) bool {
+	for _, gpu := range s.GPUs {
+		name := strings.ToLower(gpu.Name)
+		driver := strings.ToLower(gpu.Driver)
+		if strings.Contains(driver, "metal") || strings.Contains(name, "apple silicon") {
+			return true
+		}
+	}
+	return false
+}
+
+func largestGPUMiB(gpus []GPU) int {
+	var largest int
+	for _, gpu := range gpus {
+		if gpu.VRAMMiB > largest {
+			largest = gpu.VRAMMiB
+		}
+	}
+	return largest
 }
 
 // UniqueModels deduplicates the model set (coding and reasoning often share the same file).

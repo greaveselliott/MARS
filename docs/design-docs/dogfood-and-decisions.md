@@ -212,3 +212,33 @@ After running agents against `wave-shooter` and `recruiter-workflow-portal`, bot
 - Prompt-only enforcement is fundamentally unreliable with local models for invariants that span multiple tool calls. Any rule that says "check X before doing Y" will eventually be ignored, especially when context pruning discards early results.
 - The `record_decision` tool already demonstrated the right pattern: dedup at the tool level, not the prompt level. This should have been applied to ticket creation from the start.
 - Ticket duplication was not a cross-project contamination issue (as initially suspected) but a single-project, multi-run accumulation bug. Each COO run independently recreated all "This week" items because it couldn't see what previous runs had already created.
+
+---
+
+### AD-033: In-progress tickets are drained before backlog work
+
+**Status:** Accepted
+**Date:** 2026-05-02
+**Author:** Agent (self-improvement — ticket completion discipline)
+
+### Context
+
+Dogfood and scanner failures can create new backlog tickets while the Engineer has already claimed other work. Previous guidance treated any remaining `docs/tickets/in-progress/` ticket as a failed handoff. That prevented silent abandonment for a single ticket, but it also created a dead-end when several tickets were already in progress: the Engineer could either get stuck failing the gate or move work back to backlog just to satisfy the rule.
+
+### Decision
+
+`docs/tickets/in-progress/` is now the front of the Engineer queue. The Engineer must complete the lowest-numbered in-progress ticket before claiming backlog work. If the ticket is blocked by build failures, missing scripts, dependency drift, test failures, or local convention gaps, the Engineer fixes those blockers as part of the same ticket rather than handing the problem off.
+
+The mechanical gate now allows a handoff when an Engineer run drains one pre-existing in-progress ticket to `done/`, even if other pre-existing in-progress tickets remain for the next run. It still blocks:
+
+- claiming new backlog work while any in-progress ticket existed at run start
+- ending with a newly claimed ticket still in progress
+- returning in-progress work to backlog instead of completing it
+- making no completion progress while open work existed
+
+### Consequences
+
+- Multiple in-progress tickets become a drainable queue, not a permanent failure state.
+- The self-chain keeps running Engineer jobs until the in-progress queue is empty before backlog work resumes.
+- Prompt guidance and the injected ticket index both state that in-progress tickets are first priority.
+- Blockers are treated as implementation work, preserving the harness expectation that a ticket ends in committed, pushed, verified trunk changes.

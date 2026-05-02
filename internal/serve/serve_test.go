@@ -268,14 +268,24 @@ func TestBuildTicketIndex_findsTickets(t *testing.T) {
 	}
 	os.WriteFile(filepath.Join(dir, "docs/tickets/done/T-001-alpha.md"), []byte("# Alpha\n"), 0o644)
 	os.WriteFile(filepath.Join(dir, "docs/tickets/backlog/T-002-beta.md"), []byte("# Beta\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "docs/tickets/in-progress/T-003-gamma.md"), []byte("# Gamma\n"), 0o644)
 	os.WriteFile(filepath.Join(dir, "docs/tickets/done/README.md"), []byte("# Tickets\n"), 0o644)
 
 	idx := BuildTicketIndex(dir)
-	if !strings.Contains(idx, "2 total") {
-		t.Errorf("expected 2 total, got: %s", idx)
+	if !strings.Contains(idx, "3 total") {
+		t.Errorf("expected 3 total, got: %s", idx)
+	}
+	if !strings.Contains(idx, "In-progress tickets are the Engineer front of queue") {
+		t.Errorf("expected in-progress priority guidance, got: %s", idx)
 	}
 	if !strings.Contains(idx, "[backlog] T-002-beta.md") {
 		t.Errorf("expected backlog ticket, got: %s", idx)
+	}
+	if !strings.Contains(idx, "[in-progress] T-003-gamma.md") {
+		t.Errorf("expected in-progress ticket, got: %s", idx)
+	}
+	if strings.Index(idx, "[in-progress] T-003-gamma.md") > strings.Index(idx, "[backlog] T-002-beta.md") {
+		t.Errorf("expected in-progress tickets before backlog, got: %s", idx)
 	}
 	if !strings.Contains(idx, "[done] T-001-alpha.md") {
 		t.Errorf("expected done ticket, got: %s", idx)

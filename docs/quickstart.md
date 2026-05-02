@@ -50,15 +50,19 @@ Use `--skip-download` to skip model download if you already have a compatible GG
 
 ### Local inference speed
 
-If token generation is slow and RAM pressure is high, edit `~/.mars-harness/config.yaml`:
+Mars Harness chooses a local inference profile automatically during setup.
+On Apple Silicon and other unified-memory machines, this avoids loading the
+largest Q8 model when a smaller model is likely to run faster overall.
+
+Manual overrides are still available in `~/.mars-harness/config.yaml`:
 
 ```yaml
-performance_profile: balanced   # quality | balanced | speed
+performance_profile: auto       # auto | quality | balanced | speed
 llama_parallel: 1               # default strict-trunk single-agent setting
 llama_flash_attention: auto
 ```
 
-`balanced` uses smaller Q4/Q5 model files on high-memory machines; `speed` uses the smallest default model set. After changing `performance_profile`, run `mars-harness setup` once so any newly required model files are downloaded.
+After changing `performance_profile`, run `mars-harness setup` once so any newly required model files are downloaded.
 
 ## Initialise a Repository
 

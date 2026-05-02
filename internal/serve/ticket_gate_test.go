@@ -21,7 +21,22 @@ func TestValidateEngineerTicketGate_allowsCompletedTicket(t *testing.T) {
 	}
 }
 
-func TestValidateEngineerTicketGate_blocksInProgressHandoff(t *testing.T) {
+func TestValidateEngineerTicketGate_allowsDrainingOneExistingInProgressTicket(t *testing.T) {
+	before := ticketSnapshot{
+		InProgress: []string{"T-001-fix-build.md", "T-002-auth.md"},
+		Done:       []string{"T-000-setup.md"},
+	}
+	after := ticketSnapshot{
+		InProgress: []string{"T-002-auth.md"},
+		Done:       []string{"T-000-setup.md", "T-001-fix-build.md"},
+	}
+
+	if err := validateEngineerTicketGate(before, after); err != nil {
+		t.Fatalf("expected draining one in-progress ticket to pass, got %v", err)
+	}
+}
+
+func TestValidateEngineerTicketGate_blocksNewInProgressHandoff(t *testing.T) {
 	before := ticketSnapshot{
 		Backlog: []string{"T-001-fix-build.md"},
 	}
@@ -39,6 +54,44 @@ func TestValidateEngineerTicketGate_blocksInProgressHandoff(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "T-002-auth.md") {
 		t.Fatalf("expected ticket names in error, got %v", err)
+	}
+}
+
+func TestValidateEngineerTicketGate_blocksExistingInProgressWithoutCompletion(t *testing.T) {
+	before := ticketSnapshot{
+		InProgress: []string{"T-001-fix-build.md", "T-002-auth.md"},
+		Done:       []string{"T-000-setup.md"},
+	}
+	after := ticketSnapshot{
+		InProgress: []string{"T-001-fix-build.md", "T-002-auth.md"},
+		Done:       []string{"T-000-setup.md"},
+	}
+
+	err := validateEngineerTicketGate(before, after)
+	if err == nil {
+		t.Fatal("expected gate to block unchanged in-progress tickets")
+	}
+	if !strings.Contains(err.Error(), "without completing") {
+		t.Fatalf("expected completion error, got %v", err)
+	}
+}
+
+func TestValidateEngineerTicketGate_blocksReturningInProgressToBacklog(t *testing.T) {
+	before := ticketSnapshot{
+		InProgress: []string{"T-001-fix-build.md"},
+		Done:       []string{"T-000-setup.md"},
+	}
+	after := ticketSnapshot{
+		Backlog: []string{"T-001-fix-build.md"},
+		Done:    []string{"T-000-setup.md"},
+	}
+
+	err := validateEngineerTicketGate(before, after)
+	if err == nil {
+		t.Fatal("expected gate to block moving in-progress work away from done")
+	}
+	if !strings.Contains(err.Error(), "without moving them to done") {
+		t.Fatalf("expected done-move error, got %v", err)
 	}
 }
 
