@@ -5,6 +5,15 @@
 **Depends On:** MH-030 and higher-priority release/quality work
 **Blocks:** Default model registry promotion
 **Related Tickets:** MH-030
+**Goals:** G-003
+**BDD Feature:** F-001
+**Hypothesis:** Model changes should be promoted only when benchmark and integration evidence proves they improve scenario delivery without breaking tool calls, speed, or memory constraints.
+**Success Evidence:** Candidate models are evaluated against repo-backed scenarios, hardware metrics, tool-call reliability, and pinned artifact requirements before default promotion.
+**Falsification Evidence:** A model is promoted from novelty or catalog freshness without scenario evidence, checksum metadata, or throughput/memory proof.
+**Scenario Schedule:** Future model-evaluation feature contract; temporarily linked to F-001-S005 because quality/release evidence must distinguish enabler benchmark work from shipped product behavior.
+**Current Failing Scenario:** Waiting for active-plan promotion after higher-priority operating-model and release-asset work.
+**Walking Skeleton Slice:** Run one candidate through the smallest benchmark suite that exercises tool-call JSON, strict JSON output, and one repo-backed edit/test loop.
+**Learning Or MVP Outcome:** Learn whether a candidate model should become an explicit user override, a pinned default, or rejected evidence.
 **Updated:** 2026-05-02
 **Owner:** Mars Harness maintainers
 **Sources:** [May 2026 model landscape](../../references/model-landscape-may-2026.md), [local inference design](../../design-docs/local-inference.md)

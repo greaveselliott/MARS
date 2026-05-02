@@ -318,7 +318,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 			tw.WriteError(fmt.Sprintf("snapshot tickets after run: %v", sErr))
 			return fmt.Errorf("executor: snapshot tickets after engineer run: %w", sErr)
 		}
-		if gateErr := validateEngineerTicketGate(beforeTickets, afterTickets); gateErr != nil {
+		if gateErr := validateEngineerTicketGateWithEvidence(repoPath, beforeTickets, afterTickets); gateErr != nil {
 			tw.WriteError(gateErr.Error())
 			learnings.RecordJobLessons(learnStore, job.Role, gateErr.Error(), "", nil)
 			return fmt.Errorf("executor: %w", gateErr)

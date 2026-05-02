@@ -1,7 +1,9 @@
 package telemetry
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -341,4 +343,78 @@ func TestTriageScore_ignoresHealthyOrSparseScores(t *testing.T) {
 
 	_, ok = TriageScore(ScoreSnapshot{Role: "engineer", Value: 0.75, SampleSize: 10})
 	require.False(t, ok)
+}
+
+func TestRecordGoalFromProposal_createsActiveGoalForActionableTelemetry(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	proposal := TriagePattern(Pattern{
+		RepoID:   "repo-1",
+		Role:     "ceo",
+		Category: CategoryModelUnavailable,
+		Count:    PatternThreshold * 2,
+		Window:   "24h",
+	})
+
+	result, err := RecordGoalFromProposal(dir, proposal, time.Date(2026, 5, 2, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	require.Equal(t, "active", result.Status)
+	require.Equal(t, "docs/goals/active.md", result.Path)
+
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "goals", "active.md"))
+	require.NoError(t, err)
+	text := string(data)
+	require.Contains(t, text, "Status: active")
+	require.Contains(t, text, "Source: telemetry")
+	require.Contains(t, text, "Dedupe Key: "+result.DedupeKey)
+	require.Contains(t, text, "Review Trigger")
+}
+
+func TestRecordGoalFromProposal_createsObservationForWeakTelemetry(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	proposal := ImprovementProposal{
+		RepoID:     "repo-1",
+		Role:       "janitor",
+		Category:   CategoryUnknown,
+		Target:     TargetUnknown,
+		Severity:   "medium",
+		Title:      "Noisy signal",
+		Suggestion: "Watch this pattern before creating work.",
+		Evidence:   "one unknown event",
+		Confidence: 0.4,
+	}
+
+	result, err := RecordGoalFromProposal(dir, proposal, time.Date(2026, 5, 2, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	require.Equal(t, "observation", result.Status)
+	require.Equal(t, "docs/goals/observations.md", result.Path)
+
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "goals", "observations.md"))
+	require.NoError(t, err)
+	require.Contains(t, string(data), "Status: observation")
+	require.Contains(t, string(data), "weak/noisy evidence")
+}
+
+func TestRecordGoalFromProposal_dedupesByEvidenceKey(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	proposal := TriagePattern(Pattern{
+		RepoID:   "repo-1",
+		Role:     "engineer",
+		Category: CategoryInferenceCrash,
+		Count:    PatternThreshold * 2,
+		Window:   "24h",
+	})
+
+	_, err := RecordGoalFromProposal(dir, proposal, time.Date(2026, 5, 2, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	result, err := RecordGoalFromProposal(dir, proposal, time.Date(2026, 5, 3, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	require.True(t, result.Updated)
+
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "goals", "active.md"))
+	require.NoError(t, err)
+	require.Equal(t, 1, strings.Count(string(data), "## G-001:"), "duplicate telemetry should update the existing goal")
+	require.Contains(t, string(data), "Evidence Update - 2026-05-03")
 }

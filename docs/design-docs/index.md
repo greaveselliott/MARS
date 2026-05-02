@@ -22,6 +22,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [role-customization.md](role-customization.md) | Accepted | Shipped roles as configurable starter agents; target manifests, prompts, knowledge routes, and guardrails are user-owned after init. AD-046 through AD-048. |
 | [release-versioning.md](release-versioning.md) | Accepted | Semantic versioning, generated patch notes, mirrored source/target release behavior, automatic versioning after non-release commits, and GitHub Release publication when configured. AD-049 through AD-051, AD-056 through AD-057, AD-059. |
 | [skill-evolution.md](skill-evolution.md) | Accepted | Skills as a first-class self-improvement target and the decision matrix for prompt, skill, tool, guardrail, or knowledge-route changes. AD-052 through AD-055. |
+| [delivery-operating-model.md](delivery-operating-model.md) | Accepted | BDD-led goal-driven walking-skeleton delivery as the source and generated target operating model. AD-074. |
 
 ## Architecture Decision Log
 
@@ -100,3 +101,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-071 | Stale active exec plans are intervention debt; they must be corrected with a current operating plan and mechanical hygiene checks. | self-improvement.md | Self-improvement |
 | AD-072 | A-F quality scores are repo artifacts; source and initialized target repos carry `docs/QUALITY_SCORE.md` until deterministic score export owns the refresh loop. | self-reflective-telemetry.md | Self-improvement |
 | AD-073 | Exec plans follow a ticket-like lifecycle with exactly one active plan; waiting plans live in a prioritized backlog with dependency, blocker, and related-ticket metadata, while historical plans live in superseded lineage. | self-improvement.md | Planning |
+| AD-074 | BDD feature contracts define feature completeness; walking skeleton is the implementation strategy; one active plan schedules failing scenarios from active goals through tickets and evidence. | delivery-operating-model.md | Operating model |

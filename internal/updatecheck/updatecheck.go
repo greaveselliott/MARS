@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/greaveselliott/mars-harness/internal/operatingmodel"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/selfupdate"
 )
@@ -163,6 +164,15 @@ func checkHarness(cfg Config) Component {
 		component.Status = StatusUnknown
 		component.Command = fmt.Sprintf("mars-harness update harness --repo %s", quotePath(absRepo))
 		component.Message = "could not compare target harness metadata with installed tool"
+	}
+	if drift, driftErr := operatingmodel.CheckRepo(absRepo); driftErr != nil {
+		component.Status = StatusUnknown
+		component.Command = fmt.Sprintf("mars-harness update harness --repo %s", quotePath(absRepo))
+		component.Message = driftErr.Error()
+	} else if !drift.OK() {
+		component.Status = StatusBehind
+		component.Command = fmt.Sprintf("mars-harness update harness --repo %s", quotePath(absRepo))
+		component.Message = drift.Summary() + "; update harness writes missing defaults and leaves user-owned stale files for migration tickets"
 	}
 	return component
 }

@@ -4,7 +4,16 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040
+**Goals:** G-001, G-002, G-003
+**BDD Feature:** F-001
+**Hypothesis:** A BDD-led goal-driven operating loop will reduce false-done tickets and stalled in-progress work by making feature completeness depend on scenario evidence instead of ticket movement.
+**Success Evidence:** AD-074 is indexed, source and generated target harnesses contain goal/feature/plan/ticket guidance, feature tickets require BDD evidence before done, and update/doctor report operating-model drift.
+**Falsification Evidence:** An engineer can close a feature ticket without scenario evidence, generated targets omit AD-074 artifacts, or the active plan stops referencing active goals and feature contracts.
+**Scenario Schedule:** F-001-S001, F-001-S002, F-001-S003, F-001-S004, F-001-S005, F-001-S006
+**Current Failing Scenario:** None for F-001; the next active-plan refresh should promote the highest-value backlog scenario group.
+**Walking Skeleton Slice:** Link goals, feature contract, active plan, ticket metadata, generated target docs/prompts, ticket completion gate, update/doctor drift reporting, and BDD-style integration checks through repo artifacts.
+**Learning Or MVP Outcome:** Ship the minimum enforceable AD-074 operating loop: goals, BDD contracts, scenario scheduling, ticket evidence, generated target mirror, drift reporting, release/quality classification, and telemetry-derived goals.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
 **Source:** Exec-plan review and repository state audit on 2026-05-02
@@ -22,10 +31,12 @@ plans to decide what to do next.
 
 - Current source version is recorded in `VERSION`.
 - Current branch: `main`
+- Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, and `G-003`.
+- BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`.
 - Ticket state:
   - `docs/tickets/in-progress/` has no active tickets.
   - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-034`, `MH-035`, and `MH-037`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, `MH-036`, `MH-038`, and `MH-039`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, `MH-036`, `MH-038`, `MH-039`, and `MH-040`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -39,9 +50,9 @@ plans to decide what to do next.
 
 | Plan | State | Depends On | Blocks | How to use it |
 | --- | --- | --- | --- | --- |
-| `active/current-operating-plan.md` | Active, P0 | None | Plan promotions until this file names the next slice | Use this file as the only top-level execution map. |
-| `backlog/mars-parity-supersession-plan.md` | Backlog, P1 | MH-035 for ticket materialization before broad execution | Supersession readiness claims | Pull slices into tickets and this active plan before execution. |
-| `backlog/model-evaluation-refresh-plan.md` | Backlog, P4 | MH-030 and higher-priority release/quality work | Default model registry promotion | Promote into the active plan when model-refresh work is next. |
+| `active/current-operating-plan.md` | Active, P0 | None | Plan promotions until this file names the next slice | Use this file as the only top-level execution map and scenario schedule. |
+| `backlog/mars-parity-supersession-plan.md` | Backlog, P1, G-001/G-002/F-001 | MH-035 for ticket materialization before broad execution | Supersession readiness claims | Pull slices into tickets and this active plan before execution. |
+| `backlog/model-evaluation-refresh-plan.md` | Backlog, P4, G-003/F-001 | MH-030 and higher-priority release/quality work | Default model registry promotion | Promote into the active plan when model-refresh work is next. |
 | `superseded/master-execution-plan.md` | Superseded | None | Nothing | Historical baseline. Do not use its checkbox status as truth. |
 | `superseded/delivery-schedule.md` | Superseded | None | Nothing | Historical milestone schedule; kept for lineage only. |
 
@@ -63,6 +74,17 @@ plans to decide what to do next.
    conversation-as-system-record, intervention debt, active-ticket drain,
    quality exports, orchestrator recovery, deterministic remediation, and
    dogfood matrix workstreams.
+
+## Scenario Schedule
+
+| Scenario | Status | Evidence |
+| --- | --- | --- |
+| F-001-S001 | Passing | `docs/goals/active.md`, `docs/features/F-001-delivery-operating-model.md`, and this active plan are linked. |
+| F-001-S002 | Passing | Engineer ticket gate validates feature ticket evidence before done. |
+| F-001-S003 | Passing | `mars-harness init` emits goals, feature contracts, AD-074, role guidance, ticket metadata, exec-plan metadata, quality guidance, and knowledge routes. |
+| F-001-S004 | Passing | `update check` and `doctor --repo` report operating-model drift without overwriting user-owned docs. |
+| F-001-S005 | Passing | Ticket docs, quality score, and release-note generation distinguish shipped feature scenarios from enabler work when commits reference tickets. |
+| F-001-S006 | Passing | Telemetry proposals can create or update active goals/observations with dedupe evidence. |
 
 ## Quality State
 
@@ -92,6 +114,6 @@ Latest checks observed during the review:
 
 ## Next Ticket Work
 
-- `MH-033`: this plan hygiene reconciliation.
-- `MH-034`: mechanical active-plan hygiene checks in doctor and CI.
+- `MH-034`: broader active-plan hygiene checks in doctor beyond docs-consistency.
 - `MH-035`: materialize Mars parity workstreams as backlog tickets.
+- Next active-plan refresh: promote the highest-value backlog scenario group now that F-001 is passing.

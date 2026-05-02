@@ -254,8 +254,9 @@ golangci-lint run
 2. **Version after non-release commits.** Immediately after a semantic change commit, run `mars-harness release notes --repo . --bump auto`, verify, commit the release-note update, and push. Do not generate another version for the `release: notes` commit itself.
 3. **Publish GitHub release notes when configured.** Once the release-note commit is pushed, publish or update GitHub Release `vX.Y.Z` from the generated changelog entry. Missing GitHub release capability is a blocker to record, not something to silently ignore.
 4. **Document every decision and feature.** Architecture changes and product features go in `docs/design-docs/` or `docs/product-specs/` with the reason why. Discoveries go in the relevant design doc's Discoveries section.
-5. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
-6. **Feed conversations back.** Decisions that exist only in chat threads are invisible to future agents. See the delivery schedule for what to build next.
+5. **BDD defines done.** Goals align the active plan, BDD feature contracts define feature completeness, and walking skeleton slices implement the next failing scenario through real E2E/integration evidence.
+6. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
+7. **Feed conversations back.** Decisions that exist only in chat threads are invisible to future agents. See the delivery schedule for what to build next.
 
 ## Pointers
 
@@ -264,6 +265,8 @@ golangci-lint run
 - **Architecture decisions:** [docs/design-docs/index.md](docs/design-docs/index.md)
 - **Product vision:** [docs/product-specs/vision.md](docs/product-specs/vision.md)
 - **Quality score:** [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md)
+- **Goals:** [docs/goals/active.md](docs/goals/active.md)
+- **BDD feature contracts:** [docs/features/README.md](docs/features/README.md)
 - **Model research:** [docs/references/model-landscape-may-2026.md](docs/references/model-landscape-may-2026.md)
 - **Tech debt:** [docs/exec-plans/tech-debt.md](docs/exec-plans/tech-debt.md)
 - **Tickets:** [docs/tickets/](docs/tickets/)

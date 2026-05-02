@@ -38,6 +38,7 @@ include evidence and the next action needed to improve it.
 | Autonomous operating loop | C+ | Telemetry triage, intervention-debt tickets, ticket-drain gates, scoring, trust, and recovery hooks exist, but orchestration surveys and quality regression triggers are not complete. | Add quality export, regression detection, and Orchestrator survey triggers. |
 | Mars supersession readiness | C | Mars parity has a strategic plan and several imported doctrines, but role registry, dogfood matrix, deterministic remediation, and quality export automation remain open. | Materialize parity workstreams as tickets and execute them in priority order. |
 | Generated target harness | B- | Init deploys AGENTS.md, roles, skills, guardrails, knowledge routes, tickets, exec-plan docs, design docs, references, versioning, and this scorecard seed. | Add generated score export and richer target-specific readiness checks. |
+| BDD delivery evidence | C+ | AD-074, goals, feature contracts, exec-plan metadata, ticket metadata, generated target mirror, update/doctor drift checks, and a feature-ticket evidence gate now exist. | Automate telemetry-derived goals and wire release-note classification directly to scenario state. |
 
 **Current overall grade: C+.** The foundation is real, but the system is not yet
 allowed to claim Mars supersession until the self-grading loop is generated,
@@ -49,6 +50,7 @@ regression-aware, and tied to autonomous work creation.
 | --- | --- | --- | --- |
 | Strict trunk workflow | B | Source and generated guidance use direct semantic commits to `main`, push after each completed step, and generated release notes. | More workflow drift checks are still planned for stale docs and target updates. |
 | Ticket workflow | B- | Canonical `docs/tickets/backlog`, `in-progress`, and `done` paths; ticket creation dedupe; in-progress drain gates. | Stale in-progress scanner and dogfood ticket caps are still open. |
+| BDD operating model | C+ | Goal docs, BDD feature contracts, scenario schedule metadata, and completion evidence gates are present in source and generated target harnesses. | Full fake-LLM multi-role loop and telemetry-derived goal creation still need behavioral hardening. |
 | Agent runtime | B | Terminal result truth, role manifests, tool registry, tracing, and budget handling are implemented. | More loop and live model failure cases need dogfood coverage. |
 | Tool policy and safety | B- | Session-aware policy, guardrails, secret scan, destructive-operation checks, and blast-radius gates exist. | Hard guardrail coverage and target-specific policy tests should expand. |
 | Trust and scoring | C+ | `scores`, `trust`, and trunk-native outcome recording exist. | Quality export, regression detector, and score-to-work triggers remain open. |
@@ -74,5 +76,6 @@ regression-aware, and tied to autonomous work creation.
 
 - Update this file whenever a material feature, architecture decision, quality gate, or parity claim changes the grade.
 - Do not count passive documentation as implementation unless the behavior is wired and tested.
+- Separate shipped feature scenarios from enabler work. Enabler work can improve readiness or quality process grades, but it must not be claimed as shipped feature value without mapped BDD scenario evidence.
 - Do not mark Mars supersession above C until the quality score is generated from live harness evidence.
 - Once `scores export` exists, manual edits should be limited to explanatory notes that the generator preserves.

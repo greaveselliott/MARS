@@ -73,6 +73,8 @@ func Init(repoRoot string, force bool) error {
 		filepath.Join(repoRoot, "docs", "exec-plans", "completed"),
 		filepath.Join(repoRoot, "docs", "exec-plans", "superseded"),
 		filepath.Join(repoRoot, "docs", "design-docs"),
+		filepath.Join(repoRoot, "docs", "goals"),
+		filepath.Join(repoRoot, "docs", "features"),
 		filepath.Join(repoRoot, "docs", "references"),
 		filepath.Join(repoRoot, "docs", "reports", "qa"),
 		filepath.Join(repoRoot, "docs", "reports", "security"),
@@ -396,7 +398,9 @@ var defaultHarnessFiles = map[string]string{
   - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
     paths: AGENTS.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md
   - when: planning, ticket creation, in-progress work, blocked work, or completion status
-    paths: docs/exec-plans/README.md, docs/tickets/README.md
+    paths: docs/goals/README.md, docs/goals/active.md, docs/features/README.md, docs/exec-plans/README.md, docs/tickets/README.md
+  - when: goals, BDD, feature contracts, planning, feedback, or quality evidence
+    paths: docs/goals/README.md, docs/goals/active.md, docs/goals/observations.md, docs/features/README.md, docs/exec-plans/active/current-operating-plan.md, docs/QUALITY_SCORE.md
   - when: implementation, architecture, tests, or local commands
     paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md
   - when: release planning, semantic versioning, changelog, patch notes, or tags
@@ -477,6 +481,7 @@ export.
 | Area | Grade | Evidence To Replace | Next Action |
 | --- | --- | --- | --- |
 | Product goal clarity | C | README and starter docs exist, but the harness has not audited them yet. | Record the product goal and core user flows. |
+| BDD feature evidence | C | Goal docs and feature contracts are generated, but no target scenarios have passed yet. | Map the next shipped feature to scenarios and E2E/integration evidence. |
 | Build and test truth | C | Commands may be unknown until the first scan or human update. | Fill ` + "`docs/design-docs/context-glossary.md`" + ` with build, test, lint, and run commands. |
 | Ticket workflow | B | Canonical backlog, in-progress, and done paths are generated. | Keep in-progress tickets drained before claiming new backlog work. |
 | Architecture documentation | C | Design-doc index exists as a seed. | Record non-obvious architecture and product decisions with rationale. |
@@ -488,6 +493,7 @@ export.
 - Update this scorecard after material features, architecture changes, quality gates, or harness behavior changes.
 - Prefer evidence from tests, traces, tickets, dogfood results, guardrail blocks, and human follow-up.
 - Do not raise a grade for a feature that is only described but not working.
+- Separate shipped feature scenarios from enabler work. Enabler work can improve the grade for process or readiness, but must not be described as a shipped user feature unless the mapped BDD scenarios pass.
 - When Mars Harness provides ` + "`scores export`" + `, use it to refresh this file from live evidence.
 `,
 
@@ -506,15 +512,19 @@ the system of record for plans, decisions, tickets, traces, and completed work.
 1. Read ` + "`README.md`" + ` for the product or project goal.
 2. Read ` + "`docs/design-docs/index.md`" + ` for architectural decisions.
 3. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
-4. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
-5. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
-6. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
-7. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
-8. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
+4. Read ` + "`docs/goals/active.md`" + ` and ` + "`docs/goals/README.md`" + ` before changing strategy.
+5. Read ` + "`docs/features/README.md`" + ` and the relevant feature contract before claiming a feature is complete.
+6. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
+7. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
+8. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
+9. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
+10. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
 
 ## Workflow
 
 - Work on ` + "`main`" + `. Use strict trunk for normal delivery.
+- BDD feature contracts define feature completeness; walking skeleton is the implementation strategy: make the next failing scenario pass through the thinnest real end-to-end path.
+- The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
 - Prefer in-progress tickets before backlog work.
 - Complete one coherent step at a time.
 - If blocked, record the blocker, create or update the dependency ticket, and return the ticket to a non-misleading state.
@@ -576,6 +586,11 @@ id: T-001
 title: Implement player movement and controls
 priority: high
 complexity: medium
+work_type: feature
+bdd_scenarios: ["F-001-S001"]
+end_to_end_evidence: required
+evidence_links: []
+verified_by: TBD
 source: current-operating-plan.md — This week item 1
 created: 2026-04-12
 depends_on: []
@@ -594,6 +609,11 @@ Source: current-operating-plan.md — core gameplay mechanics (Week 1).
 
 ## Design Guidance
 [Link to relevant design doc]
+
+## BDD Evidence
+- Scenario IDs: F-001-S001
+- Evidence links: add command output, report path, trace, or test name before moving a feature ticket to done.
+- Verified by: engineer | qa | dogfood | command
 
 ## Acceptance criteria
 
@@ -621,6 +641,17 @@ The ticket_create tool assigns the next available number automatically.
 2. The highest-priority ticket is picked up and moved to in-progress/
 3. On completion, the ticket moves to done/
 
+Feature tickets cannot move to ` + "`done/`" + ` without BDD scenario evidence:
+
+- ` + "`work_type: feature`" + `
+- non-empty ` + "`bdd_scenarios`" + `
+- ` + "`end_to_end_evidence: required`" + `
+- non-empty ` + "`evidence_links`" + `
+- ` + "`verified_by`" + ` set to the verifier role, command, or human
+
+Enabler, research, docs, and intervention-debt tickets use
+` + "`end_to_end_evidence: not_applicable`" + ` and must not claim a shipped feature.
+
 ## Intervention Debt
 
 Use ` + "`kind: intervention-debt`" + ` for work created from repeated telemetry failures, score regressions, dogfood failures, stuck ticket state, guardrail blocks, or repeated human interventions.
@@ -640,7 +671,10 @@ Plans live here. They follow a ticket-like lifecycle:
 There must be only one active exec plan at a time. Promote work by updating
 ` + "`active/current-operating-plan.md`" + `, not by adding another active plan.
 Backlog plans must carry ` + "`**Priority:**`" + `, ` + "`**Depends On:**`" + `, ` + "`**Blocks:**`" + `,
-and ` + "`**Related Tickets:**`" + ` metadata and wait their turn like backlog tickets.
+` + "`**Related Tickets:**`" + `, ` + "`**Goals:**`" + `, ` + "`**BDD Feature:**`" + `, ` + "`**Hypothesis:**`" + `,
+` + "`**Success Evidence:**`" + `, ` + "`**Falsification Evidence:**`" + `, ` + "`**Scenario Schedule:**`" + `,
+` + "`**Current Failing Scenario:**`" + `, ` + "`**Walking Skeleton Slice:**`" + `, and
+` + "`**Learning Or MVP Outcome:**`" + ` metadata and wait their turn like backlog tickets.
 
 ## Format
 
@@ -650,6 +684,13 @@ Each plan has:
 - **Depends On** (required for active and backlog plans; use None when clear)
 - **Blocks** (required for active and backlog plans; use Nothing when clear)
 - **Related Tickets** (required for active and backlog plans when tickets exist)
+- **Goals** (at least one active goal)
+- **BDD Feature** (at least one feature contract)
+- **Hypothesis** (why this plan advances the goals)
+- **Success Evidence** and **Falsification Evidence**
+- **Scenario Schedule** and **Current Failing Scenario**
+- **Walking Skeleton Slice** (the thinnest real E2E path)
+- **Learning Or MVP Outcome** (what value or learning the slice produces)
 - **Source** (which roadmap item, ticket, audit, or initiative spawned it)
 - **Created / Updated** dates
 - **Purpose** (what the plan achieves)
@@ -664,6 +705,15 @@ Each plan has:
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
 **Related Tickets:** None yet
+**Goals:** G-001
+**BDD Feature:** F-001
+**Hypothesis:** A goal-driven BDD contract plus one active plan will reduce half-finished work by forcing every ticket to map to a scenario and evidence.
+**Success Evidence:** The next feature ticket carries a BDD scenario ID and passes E2E/integration evidence before done.
+**Falsification Evidence:** Tickets move to done without evidence, multiple plans compete, or scenarios disappear from the plan.
+**Scenario Schedule:** F-001-S001, F-001-S002, F-001-S003
+**Current Failing Scenario:** F-001-S001
+**Walking Skeleton Slice:** Record the first project goal, feature contract, active plan, ticket, evidence link, and done state through real repo files.
+**Learning Or MVP Outcome:** Learn the target project's build/test path while shipping the smallest verified operating loop.
 **Created:** 2026-05-02
 **Owner:** Project maintainers
 **Source:** mars-harness init
@@ -680,6 +730,8 @@ not create another active exec plan; move waiting plans to
 - ` + "`docs/exec-plans/active/`" + ` contains exactly one active plan: this file.
 - ` + "`docs/tickets/in-progress/`" + ` should be drained before backlog work.
 - ` + "`docs/tickets/backlog/`" + ` contains waiting tickets.
+- ` + "`docs/goals/active.md`" + ` contains active goals that the CEO uses to align this plan.
+- ` + "`docs/features/`" + ` contains BDD feature contracts that define feature completeness.
 
 ## Current Priority Order
 
@@ -702,6 +754,7 @@ Architectural decisions and design documents for this project.
 
 | Document | Status | Purpose |
 | --- | --- | --- |
+| [delivery-operating-model.md](delivery-operating-model.md) | Seed | BDD-led goal-driven walking-skeleton delivery model used by goals, plans, tickets, evidence, and quality scoring. |
 | [context-glossary.md](context-glossary.md) | Seed | Compact glossary and context map used by agents to find the right docs without loading everything. |
 | [release-versioning.md](release-versioning.md) | Seed | Semantic versioning and generated patch-note policy for this repo. |
 | [skill-evolution.md](skill-evolution.md) | Seed | When repeated failures or interventions should become compact reusable skills. |
@@ -710,6 +763,208 @@ Architectural decisions and design documents for this project.
 
 | ID | Decision | Date | Status |
 |----|----------|------|--------|
+| AD-074 | BDD-led goal-driven walking-skeleton delivery is the canonical operating model. | 2026-05-02 | Accepted |
+`,
+
+	"docs/design-docs/delivery-operating-model.md": `# AD-074: BDD-Led Goal-Driven Walking-Skeleton Delivery
+
+**Status:** Accepted
+**Date:** 2026-05-02
+
+## Context
+
+Autonomous agents can make visible activity while still shipping half a
+feature: tickets move, docs change, and commits land, but the user-visible
+capability remains incomplete. This repo uses goals, BDD feature contracts,
+one active exec plan, and tickets as a closed loop so completion is based on
+evidence instead of ticket count.
+
+## Decision
+
+BDD feature contracts define the full intended capability. Walking skeleton is
+the implementation strategy: make the next failing scenario pass through the
+thinnest real end-to-end path. The schedule is the ordered list of failing BDD
+scenarios in the active exec plan.
+
+No feature ships until its in-scope scenarios pass or the CEO explicitly
+descopes or supersedes them. Enabler work may complete without shipping a
+feature, but it must be labelled as enabler work and must not be described as a
+shipped feature.
+
+## Consequences
+
+- Goals can be user-authored or created from structured evidence.
+- The CEO aligns one active exec plan to active goals and feature contracts.
+- The COO creates tickets only from the current failing scenario or scenario group.
+- The Engineer implements one ticket and provides scenario evidence before done.
+- QA and Dogfood validate behavior against the BDD scenarios.
+- Release notes and quality scores separate shipped feature scenarios from enablers.
+- This operating model mirrors into target harnesses unless explicitly marked source-only.
+
+## Failure Modes And Mitigations
+
+| Failure mode | Mitigation |
+| --- | --- |
+| BDD becomes decorative prose | Each feature needs at least one integration/E2E test or command mapped to scenario IDs. |
+| Walking skeleton becomes scaffold theater | The slice must pass through a real user, CLI, agent, tool, ticket, or evidence path. |
+| Half-features are marked done | Feature truth lives in BDD scenario state, not ticket count. |
+| Enabler work is misrepresented as shipped value | Tickets, release notes, and quality score use ` + "`work_type`" + ` and scenario evidence. |
+| Autonomous goals create thrash | Weak/noisy signals go to observations; actionable goals need source, confidence, dedupe key, and review trigger. |
+| Source and target diverge | ` + "`update check`" + ` and ` + "`doctor --repo`" + ` report operating-model drift; update writes missing defaults only. |
+`,
+
+	"docs/goals/README.md": `# Goals
+
+Goals define outcomes and competing priorities. They do not directly create
+work. The CEO aligns the single active exec plan to active goals, BDD feature
+contracts, and evidence.
+
+## Lifecycle
+
+- observation: weak or noisy evidence not ready to drive work
+- active: an outcome currently allowed to influence the active exec plan
+- paused: still valid, but deliberately not active
+- validated: success evidence closed the goal
+- superseded: replaced by a newer goal
+- invalidated: falsification evidence closed the goal
+- merged: absorbed into another goal
+- split: divided into narrower goals
+
+## Goal Schema
+
+- ID
+- Status
+- Category: product, operational, quality, safety, learning, distribution
+- Priority: P0-P4
+- Confidence: high, medium, low
+- Source: user_chat, product_requirement, telemetry, quality_score, dogfood, github_issue, feedback_form, manual_doc
+- Dedupe Key
+- Hypothesis
+- Success Evidence
+- Falsification Evidence
+- Competes With
+- Supports
+- Last Reviewed
+- Review Trigger
+- Owner
+
+## Autonomous Goal Rule
+
+Structured actionable evidence may create or update an active goal directly.
+Weak/noisy evidence goes to ` + "`docs/goals/observations.md`" + `. Duplicate evidence updates an
+existing goal or observation. Raw goals never create work directly; work still
+flows through the active exec plan and tickets.
+`,
+
+	"docs/goals/active.md": `# Active Goals
+
+## G-001: Establish BDD-led delivery evidence
+
+- ID: G-001
+- Status: active
+- Category: operational
+- Priority: P0
+- Confidence: medium
+- Source: manual_doc
+- Dedupe Key: operating-model:bdd-walking-skeleton
+- Hypothesis: Mapping every feature ticket to BDD scenarios and evidence will reduce half-finished work and make completion auditable.
+- Success Evidence: Feature tickets reference scenario IDs and move to done only with E2E/integration evidence.
+- Falsification Evidence: Tickets move to done without evidence, scenarios are absent from plans, or active work piles up without completion.
+- Competes With: None
+- Supports: G-002
+- Last Reviewed: 2026-05-02
+- Review Trigger: When a feature ticket completes, a dogfood run fails, or the quality score changes.
+- Owner: CEO
+`,
+
+	"docs/goals/observations.md": `# Observations
+
+Weak/noisy evidence lives here until it is deduped into an active goal or
+discarded. Each observation should record source, date, confidence, dedupe key,
+and the review trigger that would make it actionable.
+
+No observations recorded yet.
+`,
+
+	"docs/goals/superseded.md": `# Superseded Goals
+
+Paused, validated, invalidated, merged, split, or replaced goals move here with
+the evidence and date that closed them.
+
+No superseded goals recorded yet.
+`,
+
+	"docs/features/README.md": `# BDD Feature Contracts
+
+BDD feature contracts define feature completeness. They use Markdown
+Given/When/Then scenarios in v1; Go integration/E2E tests or explicit evidence
+commands execute the behavior.
+
+## Required Fields
+
+- Feature ID
+- Goals
+- Status: draft, active, partially-passing, passing, superseded
+- Owner
+- Scenario Schedule
+- Out of Scope
+- Descoped Scenarios
+- Evidence
+
+## Rules
+
+- BDD defines the full feature before implementation.
+- Walking skeleton is the implementation strategy, not the feature definition.
+- The schedule is the ordered list of failing scenarios.
+- No feature ships until in-scope scenarios pass or are explicitly descoped.
+- Every feature needs at least one integration/E2E evidence link mapped to scenario IDs.
+`,
+
+	"docs/features/F-001-delivery-operating-model.md": `# F-001: Delivery Operating Model
+
+- Feature ID: F-001
+- Goals: G-001
+- Status: active
+- Owner: CEO
+
+## Scenario Schedule
+
+1. F-001-S001 — goal to feature to active plan is visible
+2. F-001-S002 — feature ticket requires scenario evidence before done
+3. F-001-S003 — quality and release notes distinguish shipped scenarios from enabler work
+
+## Scenarios
+
+### F-001-S001: Goal aligned to feature and plan
+
+Given an active goal exists
+When the CEO updates the current operating plan
+Then the plan references the goal, the BDD feature contract, the current failing scenario, and the walking skeleton slice
+
+### F-001-S002: Feature ticket cannot close without evidence
+
+Given a feature ticket maps to a BDD scenario
+When the engineer attempts to move it to done
+Then the ticket includes scenario IDs, required end-to-end evidence, evidence links, and a verifier
+
+### F-001-S003: Enabler work is not shipped feature value
+
+Given an enabler ticket completes
+When release notes or quality score are updated
+Then they classify it as enabler work and do not claim shipped feature scenarios
+
+## Out of Scope
+
+- A custom Gherkin parser
+- Automatic scenario execution beyond explicit integration/E2E tests and evidence commands
+
+## Descoped Scenarios
+
+None.
+
+## Evidence
+
+- Pending target-specific integration/E2E commands.
 `,
 
 	"docs/design-docs/context-glossary.md": `# Context Glossary
@@ -736,6 +991,9 @@ loading every document.
 | Harness | The Mars Harness automation layer in ` + "`.harness/`" + `. | ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/metadata.yaml`" + ` |
 | Ticket | A markdown work item. | ` + "`docs/tickets/README.md`" + ` |
 | In progress | Active work that should be completed or explicitly unblocked before new backlog work. | ` + "`docs/tickets/in-progress/`" + ` |
+| Goal | Outcome and priority signal used by the CEO to align the active plan. | ` + "`docs/goals/README.md`" + `, ` + "`docs/goals/active.md`" + ` |
+| BDD feature contract | Markdown Given/When/Then contract that defines feature completeness. | ` + "`docs/features/README.md`" + ` |
+| Walking skeleton | The thinnest real end-to-end path that makes the next failing BDD scenario pass. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
 | Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
 | Release | A semantic version plus patch-note entry generated from commits. | ` + "`docs/design-docs/release-versioning.md`" + ` |
 
@@ -920,11 +1178,13 @@ STEP 2 — Check if docs/exec-plans/active/current-operating-plan.md exists.
 
 STEP 3 (returning projects only):
 3. docs/exec-plans/active/current-operating-plan.md (the only active execution plan)
-4. docs/exec-plans/backlog/ (prioritized waiting plans)
-5. docs/tickets/backlog/ and docs/tickets/in-progress/ (current work state)
-6. docs/tickets/done/ (what was recently completed)
-7. docs/design-docs/ (architectural decisions)
-8. Recent commit history: git log --oneline -20
+4. docs/goals/active.md and docs/goals/observations.md (active goals and weak signals)
+5. docs/features/README.md and relevant docs/features/*.md (BDD feature contracts)
+6. docs/exec-plans/backlog/ (prioritized waiting plans)
+7. docs/tickets/backlog/ and docs/tickets/in-progress/ (current work state)
+8. docs/tickets/done/ (what was recently completed)
+9. docs/design-docs/ (architectural decisions)
+10. Recent commit history: git log --oneline -20
 
 TASK: Update docs/exec-plans/active/current-operating-plan.md using file_write.
 CRITICAL: You MUST write the FULL document content. Do NOT create empty files.
@@ -938,12 +1198,24 @@ It must remain the only markdown file in ` + "`docs/exec-plans/active/`" + `.
 **Depends On:** [None / ticket or plan paths]
 **Blocks:** [Nothing / ticket or plan paths]
 **Related Tickets:** [None yet / T-NNN list]
+**Goals:** [G-NNN list]
+**BDD Feature:** [F-NNN list]
+**Hypothesis:** [why this plan advances the active goals]
+**Success Evidence:** [what evidence closes the plan]
+**Falsification Evidence:** [what would prove the plan wrong or low-value]
+**Scenario Schedule:** [ordered failing BDD scenarios]
+**Current Failing Scenario:** [next scenario or scenario group]
+**Walking Skeleton Slice:** [thinnest real E2E path to make the current scenario pass]
+**Learning Or MVP Outcome:** [learning, validated assumption, or shipped MVP value]
 **Updated:** [date]
 **Owner:** Project maintainers
 **Source:** CEO planning run
 
 ## Strategic alignment
 [3-5 sentences: restate the project's goals, what "This week" optimises for.]
+
+## Goal tradeoffs
+[State competing goals, deferred goals, and why this scenario order is the best current bet.]
 
 ## Prioritised backlog (north-star order)
 
@@ -980,6 +1252,12 @@ ORDERING RUBRIC:
 - P2 — Quality improvement, test coverage, documentation
 - P3 — Nice-to-have, polish, future-proofing
 
+SCENARIO RULES:
+- BDD defines the full feature. Walking skeleton is the implementation strategy.
+- The schedule is the ordered list of failing BDD scenarios.
+- Work comes only from the current failing scenario or scenario group.
+- Do not mark a feature shipped until in-scope scenarios pass or are explicitly descoped.
+
 After writing priorities, commit and push your changes:
   git add docs/exec-plans/active/current-operating-plan.md
   git commit -m "vision: update current operating plan [date]"
@@ -988,11 +1266,13 @@ After writing priorities, commit and push your changes:
 ## Quality Bar
 
 - Every backlog item must cite a specific source (README goal, exec plan task, ticket).
+- The active plan references at least one active goal and one BDD feature contract.
 - "This week" items have at most 7 entries with full detail.
 - Full backlog capped at 20 items.
 - If the project is healthy and no high-priority work exists, say so.
 - Do not create a second active exec plan. Put waiting plans in ` + "`docs/exec-plans/backlog/`" + `.
 - Every active/backlog exec plan needs priority, dependencies, blockers, and related tickets.
+- Every active/backlog exec plan needs goals, BDD feature, hypothesis, success/falsification evidence, scenario schedule, current failing scenario, walking skeleton slice, and learning/MVP outcome.
 `,
 
 	"coo": `# COO — Ticket Creator
@@ -1022,10 +1302,12 @@ who picks up the highest-priority ticket you created.
 ## Prompt
 
 You are the COO. You were triggered because the CEO set priorities and the
-CTO reviewed them. Create tickets from "This week (Week 1)".
+CTO reviewed them. Create tickets from the current failing BDD scenario or
+scenario group named in the active plan.
 
 STEP 1 — Read docs/exec-plans/active/current-operating-plan.md.
-  - If it exists: use "This week (Week 1)" as your ticket source.
+  - If it exists: use "Current Failing Scenario", "Scenario Schedule", and
+    "This week (Week 1)" as your ticket source.
   - If it does NOT exist: read README.md instead and derive tickets directly
     from the project spec / build order in the README. This happens on brand
     new projects where the CEO has not yet produced priorities.
@@ -1035,14 +1317,18 @@ STEP 2 — Check the TICKET INDEX in your system prompt. It lists every
   INDEX is empty or absent, use file_search with pattern "docs/tickets/**/*.md"
   to discover existing tickets.
 
-STEP 3 — For each "This week" priority, check the TICKET INDEX. If a ticket
+STEP 3 — Read docs/goals/active.md and the BDD feature contract named in the
+  active plan. If either is missing, create an enabler ticket to restore the
+  operating model before creating feature work.
+
+STEP 4 — For each current failing scenario priority, check the TICKET INDEX. If a ticket
   covering the same topic already exists in ANY status, SKIP it. Do NOT
   create a duplicate. Only update an existing ticket if the priority
   materially adds scope not already covered.
 
-SCOPE: Create tickets ONLY for "This week" priorities (or, on a new project,
-the first logical batch of work from the README). Do not create tickets for
-future work beyond the first batch.
+SCOPE: Create tickets ONLY for the current failing scenario or scenario group
+(or, on a new project, the first logical batch of work from the README). Do not
+create tickets for future scenarios beyond the first batch.
 
 TICKET CREATION — use the ticket_create tool (NOT file_write):
 
@@ -1053,13 +1339,19 @@ For each "This week" priority that has no existing ticket:
    - title: concise, action-oriented (e.g. "Implement wave progression system")
    - priority: high | medium | low
    - complexity: small | medium | large
+   - work_type: feature | enabler | research | docs | intervention-debt
+   - bdd_scenarios: scenario IDs for feature work, otherwise []
+   - end_to_end_evidence: required for feature work, not_applicable for non-feature work
+   - evidence_links: [] until evidence exists
+   - verified_by: "TBD" until completion
    - source: "current-operating-plan.md — This week item N"
    - depends_on: array of ticket IDs if applicable
    - body: full ticket content with these sections:
-     - Context: link to the current operating plan priority and its rationale
+     - Context: link to the active goal, BDD feature, current scenario, and current operating plan priority
      - Requirements: specific implementation details
      - Affected Files: file paths or directories
      - Design Guidance: link to relevant design doc (or note one is needed)
+     - BDD Evidence: scenario IDs, required evidence links, and verifier
      - Acceptance criteria with subsections:
        - Functional (happy path)
        - Edge cases, boundaries, and negative paths
@@ -1079,6 +1371,8 @@ CONSTRAINTS:
   mechanically. Do NOT use file_write for ticket files.
 - Every ticket MUST have structured acceptance criteria (not flat two-line AC)
 - Every ticket MUST link to a design doc or note that one is needed first
+- Every feature ticket MUST name BDD scenario IDs and ` + "`end_to_end_evidence: required`" + `
+- Enabler tickets MUST use ` + "`work_type: enabler`" + ` and must not claim shipped feature value
 - Do NOT create more than 10 tickets per priority
 
 COMMIT GATE — before finishing:
@@ -1132,9 +1426,11 @@ the CEO's priorities are technically sound.
 START by reading:
 1. README.md (project purpose and tech stack)
 2. docs/exec-plans/active/current-operating-plan.md (the only active execution plan)
-3. docs/design-docs/index.md (existing architectural decisions)
-4. docs/design-docs/ (all design documents)
-5. Recent commits: git log --oneline -20
+3. docs/goals/active.md (active goals)
+4. docs/features/README.md and the BDD feature contracts referenced by the plan
+5. docs/design-docs/index.md (existing architectural decisions)
+6. docs/design-docs/ (all design documents)
+7. Recent commits: git log --oneline -20
 
 TASKS:
 
@@ -1142,6 +1438,8 @@ TASKS:
    - Review the codebase structure. Are there patterns being violated?
    - Look for tech debt: shortcuts that compound, inconsistencies, drift.
    - Check if the CEO's priorities conflict with architectural decisions.
+   - Validate the plan hypothesis and falsification evidence.
+   - Validate that the walking skeleton slice is a real end-to-end path, not scaffold-only work.
 
 2. UPDATE DESIGN DOCS
    If you identify architectural decisions not yet recorded:
@@ -1233,7 +1531,8 @@ START by reading:
 2. docs/tickets/backlog/ (tickets waiting to be picked up)
 3. docs/tickets/done/ (completed tickets, needed for dependency checks)
 4. README.md (project conventions)
-5. docs/design-docs/ (relevant design docs linked in the ticket)
+5. docs/features/README.md and any feature contract named by ` + "`bdd_scenarios`" + `
+6. docs/design-docs/ (relevant design docs linked in the ticket)
 
 TICKET SELECTION:
 1. FIRST check docs/tickets/in-progress/ — if a ticket is already claimed
@@ -1254,6 +1553,7 @@ TICKET SELECTION:
 4. If no eligible tickets exist, report "no eligible tickets" and finish
 
 Read the selected ticket fully: requirements, acceptance criteria, design docs.
+If ` + "`work_type: feature`" + `, also read the BDD scenario(s) named in ` + "`bdd_scenarios`" + `.
 
 IMPLEMENTATION:
 
@@ -1277,6 +1577,7 @@ IMPLEMENTATION:
 
 4. WRITE TESTS
    - Map each acceptance criterion to at least one test
+   - Map each BDD scenario ID to at least one E2E/integration test or explicit evidence command
    - Cover happy path AND edge cases listed in the ticket
    - Run tests to verify they pass
 
@@ -1302,6 +1603,11 @@ IMPLEMENTATION:
    Record any fixes via record_decision so future agents know the convention.
 
 6. MOVE TICKET TO DONE
+   Before moving a feature ticket, update its frontmatter/body with:
+   - non-empty ` + "`bdd_scenarios`" + `
+   - ` + "`end_to_end_evidence: required`" + `
+   - non-empty ` + "`evidence_links`" + ` naming test commands, reports, traces, or proof paths
+   - ` + "`verified_by`" + ` set to the verifier role, command, or human
    shell_exec: git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
    git_commit: message "chore(tickets): move T-NNN to done"
    git_push
@@ -1341,6 +1647,7 @@ DON'T:
 - The project builds successfully (npm run build / go build / equivalent)
 - The project starts without crashing (dev server boots, CLI runs)
 - Tests pass and cover all acceptance criteria
+- Feature tickets include BDD scenario evidence before done
 - One ticket per run, committed with clear messages referencing the ticket ID
 `,
 
@@ -1374,13 +1681,15 @@ START by reading:
 1. Recent commits: git log --oneline -10
 2. Recent diffs: git diff HEAD~5..HEAD (or appropriate range)
 3. docs/tickets/done/ (recently completed tickets to understand intent)
-4. README.md (project conventions)
+4. docs/features/README.md and feature contracts referenced by completed tickets
+5. README.md (project conventions)
 
 REVIEW CHECKLIST:
 
 1. CORRECTNESS
    - Logic errors, off-by-one, null/nil handling, race conditions
    - Does the code do what the ticket says it should?
+   - For feature tickets, do the mapped BDD scenarios pass through real E2E/integration evidence?
 
 2. TEST COVERAGE
    - Are there tests for new code?
@@ -1404,6 +1713,7 @@ REVIEW CHECKLIST:
 5. DOCUMENTATION
    - Are new functions/APIs documented?
    - Are design docs updated if patterns changed?
+   - Are goal, feature, ticket, and quality evidence links updated when feature status changed?
 
 OUTPUT:
 Write your review as a file: docs/reports/qa/qa-review-[date].md
@@ -1570,8 +1880,9 @@ START by reading:
 1. CHANGELOG.md (if it exists)
 2. VERSION (if it exists)
 3. docs/design-docs/release-versioning.md
-4. Recent commits since last release marker: git log --oneline -20
-5. GitHub release state if GitHub is configured: gh release list --limit 10
+4. docs/features/ and recently completed tickets to distinguish shipped feature scenarios from enabler work
+5. Recent commits since last release marker: git log --oneline -20
+6. GitHub release state if GitHub is configured: gh release list --limit 10
 
 TASKS:
 
@@ -1580,7 +1891,8 @@ For direct commits to main:
 2. Run ` + "`mars-harness release notes --repo . --bump auto --dry-run`" + ` to preview the semantic version and patch notes
 3. If the preview is correct, run ` + "`mars-harness release notes --repo . --bump auto`" + `
 4. Do not generate another version for a ` + "`release: notes X.Y.Z`" + ` commit
-5. After the release-note commit is pushed, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry when GitHub release credentials are configured
+5. Separate shipped feature scenarios from enabler work in release notes; do not claim a feature unless mapped scenarios pass.
+6. After the release-note commit is pushed, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry when GitHub release credentials are configured
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
@@ -1687,10 +1999,13 @@ Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix.
     (e.g. signup, login, create resource, view listing)
 12. EDGE CASES: Test with invalid inputs, missing auth, non-existent routes
 13. BUILD OUTPUT: Check for warnings or errors in the build/start output
+14. BDD EVIDENCE: For feature work, read docs/features/ and verify the current
+    scenario schedule against the running project. File tickets for failed
+    scenarios and include scenario IDs in ` + "`bdd_scenarios`" + `.
 
 ### Phase 4 — Report
 
-14. For each failure, create a ticket in docs/tickets/backlog/ with [Dogfood] prefix:
+15. For each failure, create a ticket in docs/tickets/backlog/ with [Dogfood] prefix:
     ---
     id: T-NNN
     title: "[Dogfood] [issue description]"
@@ -1703,15 +2018,15 @@ Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix.
     Include: what was tested, expected vs actual, reproduction steps, and the
     exact error output. Pre-flight failures get priority: high.
 
-15. Record any decisions made during testing via record_decision tool
+16. Record any decisions made during testing via record_decision tool
     (e.g. "App requires Node 22", "Port 3001 conflicts, used 3002")
 
-16. COMMIT AND PUSH all findings (non-negotiable):
+17. COMMIT AND PUSH all findings (non-negotiable):
     Use git_commit with message "dogfood: E2E validation findings [date]"
     Then call git_push.
     An agent run that leaves uncommitted changes is a failed run.
 
-17. CLEANUP (critical):
+18. CLEANUP (critical):
     - Container: podman stop dogfood-{project} && podman rm dogfood-{project}
     - Native: background processes are cleaned up automatically by the harness
 
@@ -1793,16 +2108,18 @@ in the REPO LEARNINGS context block.
 START by reading:
 1. README.md — understand the project scope and purpose
 2. docs/tickets/README.md — understand ticket conventions
-3. List ALL tickets in docs/tickets/backlog/, docs/tickets/in-progress/, docs/tickets/done/
+3. docs/goals/active.md and docs/features/ — understand current scenarios and evidence
+4. List ALL tickets in docs/tickets/backlog/, docs/tickets/in-progress/, docs/tickets/done/
 
 STEP 1 — MOVE COMPLETED WORK TO DONE:
   For each ticket in in-progress/:
   a) Read the ticket's acceptance criteria
-  b) Check recent git history (git log --oneline -20) for related commits
-  c) If the acceptance criteria appear met based on commits and codebase state,
+  b) If ` + "`work_type: feature`" + `, verify BDD scenario evidence fields are non-empty
+  c) Check recent git history (git log --oneline -20) for related commits
+  d) If the acceptance criteria and required evidence appear met based on commits and codebase state,
      move the file to done/ and add a completion note at the bottom:
      "Completed: [date] — AC verified by janitor based on [evidence]"
-  d) git_commit: message "chore(janitor): move [ticket-id] to done — AC met"
+  e) git_commit: message "chore(janitor): move [ticket-id] to done — AC met"
      git_push
 
 STEP 2 — DETECT AND REMOVE DUPLICATES:
@@ -1828,6 +2145,11 @@ STEP 4 — RE-PRIORITIZE STALE ITEMS:
   b) Add a note: "Moved to backlog: [date] — no activity for 7+ days"
   c) git_commit: message "chore(janitor): move stale [ticket-id] back to backlog"
      git_push
+
+STEP 5 — DETECT FALSE DONE:
+  For tickets in done/ with ` + "`work_type: feature`" + ` but missing BDD scenario evidence:
+  a) Create or update an intervention-debt ticket that names the false-done ticket
+  b) Do not rewrite history; record the gap and make the next engineer/QA run fix the evidence or reopen deliberately
 
 COMMIT GATE — run before finishing:
   git_status to verify the working tree is clean. If there are ANY uncommitted

@@ -99,7 +99,7 @@ func Prepare(ctx context.Context, cfg Config) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	entry := renderEntry(next, cfg.Now, head, commits)
+	entry := renderEntry(absRepo, next, cfg.Now, head, commits)
 	result := Result{
 		PreviousVersion: previous,
 		NextVersion:     next,
@@ -222,7 +222,7 @@ func inferBump(commits []Commit) Bump {
 	return bump
 }
 
-func renderEntry(version SemVer, now time.Time, head string, commits []Commit) string {
+func renderEntry(repoRoot string, version SemVer, now time.Time, head string, commits []Commit) string {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, "## [%s] - %s\n", version.String(), now.Format("2006-01-02"))
 	fmt.Fprintf(&buf, "<!-- mars-harness-release: version=%s commit=%s -->\n\n", version.String(), strings.TrimSpace(head))
@@ -245,7 +245,126 @@ func renderEntry(version SemVer, now time.Time, head string, commits []Commit) s
 		}
 		buf.WriteString("\n")
 	}
+	if evidence := renderDeliveryEvidence(repoRoot, commits); evidence != "" {
+		buf.WriteString(evidence)
+		buf.WriteString("\n")
+	}
 	return strings.TrimRight(buf.String(), "\n") + "\n"
+}
+
+func renderDeliveryEvidence(repoRoot string, commits []Commit) string {
+	ids := ticketIDsFromCommits(commits)
+	if len(ids) == 0 {
+		return ""
+	}
+	var shipped []string
+	var enablers []string
+	for _, id := range ids {
+		ticket, ok := readDoneTicketSummary(repoRoot, id)
+		if !ok {
+			continue
+		}
+		switch ticket.WorkType {
+		case "feature":
+			if len(ticket.BDDScenarios) > 0 {
+				shipped = append(shipped, fmt.Sprintf("%s: %s", id, strings.Join(ticket.BDDScenarios, ", ")))
+			}
+		case "enabler", "research", "docs", "intervention-debt":
+			enablers = append(enablers, fmt.Sprintf("%s: %s", id, ticket.Title))
+		}
+	}
+	if len(shipped) == 0 && len(enablers) == 0 {
+		return ""
+	}
+	sort.Strings(shipped)
+	sort.Strings(enablers)
+	var buf bytes.Buffer
+	buf.WriteString("### Delivery Evidence\n")
+	for _, item := range shipped {
+		fmt.Fprintf(&buf, "- Shipped feature scenarios: %s\n", item)
+	}
+	for _, item := range enablers {
+		fmt.Fprintf(&buf, "- Enabler work: %s\n", item)
+	}
+	return buf.String()
+}
+
+var ticketIDRE = regexp.MustCompile(`\b(?:MH|T)-\d{3}\b`)
+
+func ticketIDsFromCommits(commits []Commit) []string {
+	set := make(map[string]bool)
+	for _, commit := range commits {
+		for _, id := range ticketIDRE.FindAllString(commit.Subject+"\n"+commit.Body, -1) {
+			set[id] = true
+		}
+	}
+	ids := make([]string, 0, len(set))
+	for id := range set {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+type doneTicketSummary struct {
+	Title        string
+	WorkType     string
+	BDDScenarios []string
+}
+
+func readDoneTicketSummary(repoRoot, id string) (doneTicketSummary, bool) {
+	matches, err := filepath.Glob(filepath.Join(repoRoot, "docs", "tickets", "done", id+"-*.md"))
+	if err != nil || len(matches) == 0 {
+		return doneTicketSummary{}, false
+	}
+	data, err := os.ReadFile(matches[0])
+	if err != nil {
+		return doneTicketSummary{}, false
+	}
+	fields := parseReleaseFrontmatter(string(data))
+	return doneTicketSummary{
+		Title:        strings.Trim(fields["title"], `"'`),
+		WorkType:     strings.Trim(strings.ToLower(fields["work_type"]), `"'`),
+		BDDScenarios: parseInlineList(fields["bdd_scenarios"]),
+	}, true
+}
+
+func parseReleaseFrontmatter(text string) map[string]string {
+	fields := make(map[string]string)
+	lines := strings.Split(text, "\n")
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+		return fields
+	}
+	for _, line := range lines[1:] {
+		if strings.TrimSpace(line) == "---" {
+			break
+		}
+		key, value, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		fields[strings.TrimSpace(key)] = strings.TrimSpace(value)
+	}
+	return fields
+}
+
+func parseInlineList(value string) []string {
+	value = strings.TrimSpace(value)
+	value = strings.Trim(value, "[]")
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		part = strings.Trim(part, `"'`)
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
 }
 
 func groupCommits(commits []Commit) map[string][]Commit {

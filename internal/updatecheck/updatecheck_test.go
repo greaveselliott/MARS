@@ -71,3 +71,21 @@ func TestRun_reportsHarnessBehindInstalledTool(t *testing.T) {
 	require.Equal(t, StatusBehind, report.Harness.Status)
 	require.Contains(t, report.Harness.Command, "update harness")
 }
+
+func TestRun_reportsOperatingModelDrift(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(repo, ".harness"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(repo, ".harness", "metadata.yaml"), []byte("schema_version: 1\ngenerator: mars-harness\ngenerator_version: "+buildinfo.DefaultVersion+"\n"), 0o644))
+
+	report, err := Run(context.Background(), Config{
+		CurrentVersion: buildinfo.DefaultVersion,
+		RepoPath:       repo,
+		SkipRemote:     true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, StatusBehind, report.Harness.Status)
+	require.Contains(t, report.Harness.Message, "operating model drift")
+	require.Contains(t, report.Harness.Command, "update harness")
+	require.Contains(t, report.Actions, report.Harness.Command)
+}

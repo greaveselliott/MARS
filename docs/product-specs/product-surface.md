@@ -14,6 +14,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | Install and setup | installed `mars-harness` command, `mars-harness setup`, config, model and binary cache | Run the harness from any directory, detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
 | Target harness | `mars-harness init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
 | Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, visible run state, and narrow self-healing for stale recovery jobs. |
+| Delivery model | `docs/goals/`, `docs/features/`, one active exec plan, BDD scenario evidence, ticket completion gates | Align work to goals, define feature completeness before implementation, and ship only scenarios with real E2E/integration evidence. |
 | Learning loop | `scores`, `trust`, `docs/QUALITY_SCORE.md`, telemetry triage, skills, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, reusable workflow skills, prompt or process improvements, repo-visible grades, and safety controls. |
 | Generated references | `docs/generated/` | Provide reproducible, cataloged source-harness maps when generator commands exist. |
 | Release state | `VERSION`, `CHANGELOG.md`, `release notes` | Maintain semantic versions and generated patch notes for both the source harness and target repos. |
@@ -23,18 +24,18 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | Command | Status | Product behavior |
 | --- | --- | --- |
 | `mars-harness setup` | Implemented, still hardening | Creates `~/.mars-harness/`, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
-| `mars-harness update check --repo <path>` | Implemented | Reports whether the installed CLI or deployed target `.harness/` metadata is behind, with JSON output for automation and unknown-but-nonfatal remote status when release lookup fails. |
+| `mars-harness update check --repo <path>` | Implemented | Reports whether the installed CLI, deployed target `.harness/` metadata, or mirrored operating-model artifacts are behind, with JSON output for automation and unknown-but-nonfatal remote status when release lookup fails. |
 | `mars-harness update tool` | Initial implementation | Reinstalls the command into the current binary directory through `go install`, so operators do not need to `cd` into the source repo to update the CLI. Release-asset updates are still tracked separately. |
 | `mars-harness update harness --repo <path>` | Implemented | Uses the same update verb to refresh the deployed target `.harness/` bundle without overwriting user-owned agent configuration. |
 | `make install` from source checkout | Implemented for source development | Installs the dev binary into the Go bin directory so operators do not run stale source-root binaries. |
-| `mars-harness init --repo <path>` | Implemented | Scaffolds the target harness: manifest, roles, guardrails, knowledge routes, compact `AGENTS.md`, tickets, exec-plan docs, design-doc index, context glossary, and references. |
+| `mars-harness init --repo <path>` | Implemented | Scaffolds the target harness: manifest, roles, guardrails, knowledge routes, compact `AGENTS.md`, goals, BDD feature contracts, tickets, exec-plan docs, design-doc index, context glossary, quality score, and references. |
 | `mars-harness upgrade --repo <path>` | Implemented, still hardening | Fills missing target harness defaults while preserving user-owned manifest, role prompts, knowledge routes, guardrails, tickets, design docs, exec plans, references, and target `AGENTS.md`. |
 | `mars-harness scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |
 | `mars-harness run <role> --repo <path>` | Implemented | Loads manifest, guardrails, knowledge routes, context, tools, local model endpoint, and runs one role with terminal-result truth. |
 | `mars-harness start --repo <path>` | Implemented | Initializes if needed, registers the repo, seeds the CEO role, and runs the per-repo autonomous pipeline with isolated database state and recovery-queue self-healing. |
 | `mars-harness serve` | Implemented, multi-repo legacy mode | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, workers, and recovery-queue self-heal watchdog against the configured database. |
 | `mars-harness register --repo <path>` | Implemented | Registers a repo and creates the per-repo database path when one is not supplied. |
-| `mars-harness doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, guardrail/workflow health, and optional integration configuration. |
+| `mars-harness doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, guardrail/workflow health, mirrored operating-model health, and optional integration configuration. |
 | `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
 | `mars-harness trust [--repo <path>]` | Implemented | Shows role trust levels. |
 | `mars-harness trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
@@ -54,6 +55,8 @@ Required generated surfaces:
 - `.harness/skills/*/SKILL.md` for compact reusable workflows and self-improvement guidance
 - `.harness/guardrails/*.yaml` for mechanical policy inputs
 - `.harness/knowledge/*.yaml` for lightweight context routes
+- `docs/goals/` for active goals, observations, and superseded goals
+- `docs/features/` for Markdown BDD feature contracts and scenario schedules
 - `docs/tickets/backlog/`, `docs/tickets/in-progress/`, and `docs/tickets/done/`
 - `docs/tickets/README.md` for ticket lifecycle and completion rules
 - `docs/exec-plans/README.md` and starter priority docs with a one-active-plan lifecycle
@@ -70,7 +73,17 @@ Architecture changes and product features must carry rationale in repo-owned doc
 
 Exec plans mirror the ticket lifecycle. Exactly one plan may be active at a
 time. Waiting plans live in `docs/exec-plans/backlog/` with explicit priority,
-dependencies, blockers, and related tickets. Superseded plans are lineage only.
+dependencies, blockers, related tickets, goals, BDD feature contracts,
+hypotheses, success/falsification evidence, scenario schedules, current failing
+scenarios, walking skeleton slices, and learning or MVP outcomes. Superseded
+plans are lineage only.
+
+BDD feature contracts are the source of truth for feature completeness.
+Walking skeleton is the implementation strategy: agents implement the next
+failing scenario through the thinnest real end-to-end path. Feature tickets must
+carry BDD scenario evidence before done. Enabler work is allowed, but release
+notes and quality score must separate enabler work from shipped feature
+scenarios.
 
 ## Versioning And Patch Notes
 
@@ -97,7 +110,11 @@ Default roles are configurable starter agents, not perfect built-ins. The target
 The product contract is:
 
 - Planner roles create scoped, deduplicated work.
+- CEO owns goals, BDD feature contracts, scenario schedule, tradeoffs, and the active exec plan.
+- CTO validates the hypothesis, architecture fit, and whether the walking skeleton is real.
+- COO creates tickets only from the current failing BDD scenario or scenario group.
 - Engineer roles complete one ticket per run.
+- Engineer roles provide scenario evidence before closing feature tickets.
 - In-progress tickets are highest priority.
 - Intervention-debt tickets are generated from repeated telemetry failures or low score snapshots and outrank ordinary backlog work.
 - Blocked work is documented and proactively unblocked when the fix is in scope.

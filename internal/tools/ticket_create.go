@@ -22,6 +22,11 @@ const ticketCreateSchema = `{
     "priority":   { "type": "string", "enum": ["high", "medium", "low"], "description": "Ticket priority" },
     "complexity": { "type": "string", "enum": ["small", "medium", "large"], "description": "Estimated complexity" },
     "kind":       { "type": "string", "enum": ["standard", "intervention-debt"], "description": "Optional machine-readable ticket kind. Use intervention-debt for telemetry/self-improvement debt." },
+    "work_type":  { "type": "string", "enum": ["feature", "enabler", "research", "docs", "intervention-debt"], "description": "Operating-model work type. Feature tickets require BDD scenario evidence before done." },
+    "bdd_scenarios": { "type": "array", "items": { "type": "string" }, "description": "BDD scenario IDs this ticket implements, e.g. ['F-001-S001']." },
+    "end_to_end_evidence": { "type": "string", "enum": ["required", "not_applicable"], "description": "Whether completion requires E2E/integration evidence." },
+    "evidence_links": { "type": "array", "items": { "type": "string" }, "description": "Evidence links or commands proving BDD scenarios passed." },
+    "verified_by": { "type": "string", "description": "Role, command, or human verifier for completion evidence." },
     "dedupe_key": { "type": "string", "description": "Optional stable dedupe key for machine-generated tickets." },
     "metadata":   { "type": "object", "additionalProperties": { "type": "string" }, "description": "Optional machine-readable string metadata written into frontmatter." },
     "source":     { "type": "string", "description": "Where this ticket originated (e.g. 'weekly-priorities.md — This week item 3')" },
@@ -32,28 +37,38 @@ const ticketCreateSchema = `{
 }`
 
 type ticketCreateArgs struct {
-	Title      string            `json:"title"`
-	Priority   string            `json:"priority"`
-	Complexity string            `json:"complexity"`
-	Kind       string            `json:"kind"`
-	DedupeKey  string            `json:"dedupe_key"`
-	Metadata   map[string]string `json:"metadata"`
-	Source     string            `json:"source"`
-	DependsOn  []string          `json:"depends_on"`
-	Body       string            `json:"body"`
+	Title            string            `json:"title"`
+	Priority         string            `json:"priority"`
+	Complexity       string            `json:"complexity"`
+	Kind             string            `json:"kind"`
+	WorkType         string            `json:"work_type"`
+	BDDScenarios     []string          `json:"bdd_scenarios"`
+	EndToEndEvidence string            `json:"end_to_end_evidence"`
+	EvidenceLinks    []string          `json:"evidence_links"`
+	VerifiedBy       string            `json:"verified_by"`
+	DedupeKey        string            `json:"dedupe_key"`
+	Metadata         map[string]string `json:"metadata"`
+	Source           string            `json:"source"`
+	DependsOn        []string          `json:"depends_on"`
+	Body             string            `json:"body"`
 }
 
 // TicketInput is the shared ticket creation shape used by agents and scanner-generated backlog items.
 type TicketInput struct {
-	Title      string
-	Priority   string
-	Complexity string
-	Kind       string
-	DedupeKey  string
-	Metadata   map[string]string
-	Source     string
-	DependsOn  []string
-	Body       string
+	Title            string
+	Priority         string
+	Complexity       string
+	Kind             string
+	WorkType         string
+	BDDScenarios     []string
+	EndToEndEvidence string
+	EvidenceLinks    []string
+	VerifiedBy       string
+	DedupeKey        string
+	Metadata         map[string]string
+	Source           string
+	DependsOn        []string
+	Body             string
 }
 
 type existingTicket struct {
@@ -85,15 +100,20 @@ func handleTicketCreate(_ context.Context, root Root, raw json.RawMessage) (Tool
 		return ToolResult{}, fmt.Errorf("ticket_create: parse arguments: %w", err)
 	}
 	return CreateTicket(root, TicketInput{
-		Title:      args.Title,
-		Priority:   args.Priority,
-		Complexity: args.Complexity,
-		Kind:       args.Kind,
-		DedupeKey:  args.DedupeKey,
-		Metadata:   args.Metadata,
-		Source:     args.Source,
-		DependsOn:  args.DependsOn,
-		Body:       args.Body,
+		Title:            args.Title,
+		Priority:         args.Priority,
+		Complexity:       args.Complexity,
+		Kind:             args.Kind,
+		WorkType:         args.WorkType,
+		BDDScenarios:     args.BDDScenarios,
+		EndToEndEvidence: args.EndToEndEvidence,
+		EvidenceLinks:    args.EvidenceLinks,
+		VerifiedBy:       args.VerifiedBy,
+		DedupeKey:        args.DedupeKey,
+		Metadata:         args.Metadata,
+		Source:           args.Source,
+		DependsOn:        args.DependsOn,
+		Body:             args.Body,
 	})
 }
 
@@ -156,6 +176,12 @@ func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
 	if complexity == "" {
 		complexity = "medium"
 	}
+	workType := normalizeWorkType(input.Kind, input.WorkType)
+	endToEndEvidence := normalizeEndToEndEvidence(workType, input.EndToEndEvidence)
+	verifiedBy := strings.TrimSpace(input.VerifiedBy)
+	if verifiedBy == "" {
+		verifiedBy = "TBD"
+	}
 	source := input.Source
 	if source == "" {
 		source = "weekly-priorities.md"
@@ -176,6 +202,11 @@ func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
 	fmt.Fprintf(&content, "title: %s\n", title)
 	fmt.Fprintf(&content, "priority: %s\n", input.Priority)
 	fmt.Fprintf(&content, "complexity: %s\n", complexity)
+	fmt.Fprintf(&content, "work_type: %s\n", workType)
+	fmt.Fprintf(&content, "bdd_scenarios: %s\n", yamlInlineList(input.BDDScenarios))
+	fmt.Fprintf(&content, "end_to_end_evidence: %s\n", endToEndEvidence)
+	fmt.Fprintf(&content, "evidence_links: %s\n", yamlInlineList(input.EvidenceLinks))
+	fmt.Fprintf(&content, "verified_by: %s\n", quoteYAMLString(verifiedBy))
 	if kind := strings.TrimSpace(input.Kind); kind != "" && kind != "standard" {
 		fmt.Fprintf(&content, "kind: %s\n", kind)
 	}
@@ -213,6 +244,43 @@ func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
 	return ToolResult{
 		Output: fmt.Sprintf("created ticket %s at %s", id, relPath),
 	}, nil
+}
+
+func normalizeWorkType(kind, workType string) string {
+	normalized := strings.TrimSpace(workType)
+	if normalized != "" {
+		return normalized
+	}
+	if strings.TrimSpace(kind) == "intervention-debt" {
+		return "intervention-debt"
+	}
+	return "feature"
+}
+
+func normalizeEndToEndEvidence(workType, value string) string {
+	normalized := strings.TrimSpace(value)
+	if normalized != "" {
+		return normalized
+	}
+	if workType == "feature" {
+		return "required"
+	}
+	return "not_applicable"
+}
+
+func yamlInlineList(values []string) string {
+	var cleaned []string
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		cleaned = append(cleaned, quoteYAMLString(value))
+	}
+	if len(cleaned) == 0 {
+		return "[]"
+	}
+	return "[" + strings.Join(cleaned, ", ") + "]"
 }
 
 func scanExistingTickets(repoRoot string) ([]existingTicket, error) {

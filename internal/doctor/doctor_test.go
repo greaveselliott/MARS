@@ -32,6 +32,7 @@ func TestRun_returnsResults(t *testing.T) {
 	assert.True(t, names["llama-server"])
 	assert.True(t, names["disk-space"])
 	assert.True(t, names["version-drift"])
+	assert.True(t, names["operating-model"])
 }
 
 func TestCheckGoVersion_findsGo(t *testing.T) {
@@ -118,6 +119,17 @@ func TestCheckVersionDrift_reportsMissingHarnessMetadata(t *testing.T) {
 	})
 	assert.Equal(t, "version-drift", result.Name)
 	assert.Equal(t, statusWarn, result.Status)
+	assert.Contains(t, result.Fix, "update harness")
+}
+
+func TestCheckOperatingModelHealth_reportsDrift(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	result := checkOperatingModelHealth(Config{RepoPath: dir})
+	assert.Equal(t, "operating-model", result.Name)
+	assert.Equal(t, statusWarn, result.Status)
+	assert.Contains(t, result.Message, "operating model drift")
 	assert.Contains(t, result.Fix, "update harness")
 }
 

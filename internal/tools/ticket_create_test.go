@@ -51,7 +51,36 @@ func TestTicketCreate_basic(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "title: Implement scoring system")
 	assert.Contains(t, string(data), "priority: high")
+	assert.Contains(t, string(data), "work_type: feature")
+	assert.Contains(t, string(data), "end_to_end_evidence: required")
 	assert.Contains(t, string(data), "## Context")
+}
+
+func TestTicketCreate_writesBDDOperatingModelMetadata(t *testing.T) {
+	t.Parallel()
+	dir, root := setupTicketDir(t)
+
+	result, err := CreateTicket(root, TicketInput{
+		Title:            "Implement first scenario",
+		Priority:         "high",
+		Complexity:       "small",
+		WorkType:         "feature",
+		BDDScenarios:     []string{"F-001-S001"},
+		EndToEndEvidence: "required",
+		EvidenceLinks:    []string{"go test ./internal/serve -run TestBDDOperatingModel"},
+		VerifiedBy:       "go test",
+		Source:           "current-operating-plan.md — scenario F-001-S001",
+		Body:             "## Context\nScenario work.\n\n## Requirements\nImplement it.\n\n## Acceptance criteria\n- [ ] Scenario passes",
+	})
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "created ticket T-001")
+
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "backlog", "T-001-implement-first-scenario.md"))
+	require.NoError(t, err)
+	text := string(data)
+	assert.Contains(t, text, `bdd_scenarios: ["F-001-S001"]`)
+	assert.Contains(t, text, `evidence_links: ["go test ./internal/serve -run TestBDDOperatingModel"]`)
+	assert.Contains(t, text, `verified_by: "go test"`)
 }
 
 func TestTicketCreate_interventionDebtWritesMetadata(t *testing.T) {
@@ -79,6 +108,8 @@ func TestTicketCreate_interventionDebtWritesMetadata(t *testing.T) {
 	require.NoError(t, err)
 	text := string(data)
 	assert.Contains(t, text, "kind: intervention-debt")
+	assert.Contains(t, text, "work_type: intervention-debt")
+	assert.Contains(t, text, "end_to_end_evidence: not_applicable")
 	assert.Contains(t, text, `dedupe_key: "public-example"`)
 	assert.Contains(t, text, "metadata:")
 	assert.Contains(t, text, `  role: "engineer"`)

@@ -5,6 +5,15 @@
 **Depends On:** MH-035 for ticket materialization before broad execution
 **Blocks:** Mars supersession readiness claims
 **Related Tickets:** MH-035, MH-037
+**Goals:** G-001, G-002
+**BDD Feature:** F-001
+**Hypothesis:** Mars Harness can supersede Mars only if Mars's operating discipline is rebuilt as strict-trunk, goal-driven, BDD-evidenced harness primitives rather than copied as Cursor/PR automation.
+**Success Evidence:** Mars parity workstreams are materialized into tickets whose shipped features map to BDD scenarios, evidence, quality score movement, and generated target parity.
+**Falsification Evidence:** Parity work becomes a broad checklist without scenario evidence, target scaffolds diverge from source rules, or agents keep creating in-progress work without completion.
+**Scenario Schedule:** F-001-S001 through F-001-S006, then future Mars parity feature contracts as workstreams are promoted.
+**Current Failing Scenario:** Waiting for active-plan promotion; no Mars parity scenario is current while AD-074 remains the active plan.
+**Walking Skeleton Slice:** Promote one Mars parity workstream at a time into the active plan, write a BDD feature contract, then create tickets for only the next failing scenario group.
+**Learning Or MVP Outcome:** Prove Mars-derived operating patterns can be delivered as productized harness behavior without returning to branch/PR defaults.
 **Created:** 2026-05-02
 **Updated:** 2026-05-02
 **Owner:** Mars Harness

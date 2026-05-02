@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/hardware"
+	"github.com/greaveselliott/mars-harness/internal/operatingmodel"
 	"github.com/greaveselliott/mars-harness/internal/updatecheck"
 )
 
@@ -59,6 +60,7 @@ func Run(cfg Config) []CheckResult {
 		checkLlamaServer,
 		checkDiskSpace,
 		checkVersionDrift,
+		checkOperatingModelHealth,
 	}
 
 	results := make([]CheckResult, 0, len(checks))
@@ -73,6 +75,44 @@ func Run(cfg Config) []CheckResult {
 		results = append(results, result)
 	}
 	return results
+}
+
+func checkOperatingModelHealth(cfg Config) CheckResult {
+	start := time.Now()
+	name := "operating-model"
+	if strings.TrimSpace(cfg.RepoPath) == "" {
+		return CheckResult{
+			Name:     name,
+			Status:   statusOK,
+			Message:  "repo not supplied; target operating-model health skipped",
+			Duration: time.Since(start),
+		}
+	}
+	report, err := operatingmodel.CheckRepo(cfg.RepoPath)
+	if err != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  err.Error(),
+			Duration: time.Since(start),
+			Fix:      "run 'mars-harness update check --repo <path> --skip-remote'",
+		}
+	}
+	if !report.OK() {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  report.Summary(),
+			Duration: time.Since(start),
+			Fix:      "run 'mars-harness update harness --repo <path>'; create migration tickets for stale user-owned docs",
+		}
+	}
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  "BDD-led goal-driven operating model is present",
+		Duration: time.Since(start),
+	}
 }
 
 func checkVersionDrift(cfg Config) CheckResult {

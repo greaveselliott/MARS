@@ -75,6 +75,48 @@ func TestPrepareUsesChangelogMarkerAsBase(t *testing.T) {
 	require.Contains(t, result.Entry, "One more bug")
 }
 
+func TestPrepareClassifiesDeliveryEvidenceFromDoneTickets(t *testing.T) {
+	t.Parallel()
+	dir := initGitRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.1.0\n"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "done"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "tickets", "done", "MH-040-feature.md"), []byte(`---
+id: MH-040
+title: Feature scenario
+work_type: feature
+bdd_scenarios: ["F-001-S001", "F-001-S002"]
+---
+
+# MH-040
+`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "tickets", "done", "MH-041-enabler.md"), []byte(`---
+id: MH-041
+title: Build enabler
+work_type: enabler
+bdd_scenarios: []
+---
+
+# MH-041
+`), 0o644))
+	gitCommit(t, dir, "chore: initial release state")
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "feature.txt"), []byte("feature"), 0o644))
+	gitCommit(t, dir, "feat: deliver scenario evidence (MH-040)")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "enabler.txt"), []byte("enabler"), 0o644))
+	gitCommit(t, dir, "docs: record enabler work (MH-041)")
+
+	result, err := Prepare(context.Background(), Config{
+		RepoRoot: dir,
+		Bump:     BumpAuto,
+		DryRun:   true,
+		Now:      time.Date(2026, 5, 2, 12, 0, 0, 0, time.UTC),
+	})
+	require.NoError(t, err)
+	require.Contains(t, result.Entry, "### Delivery Evidence")
+	require.Contains(t, result.Entry, "Shipped feature scenarios: MH-040: F-001-S001, F-001-S002")
+	require.Contains(t, result.Entry, "Enabler work: MH-041: Build enabler")
+}
+
 func TestInferBump(t *testing.T) {
 	t.Parallel()
 	require.Equal(t, BumpPatch, inferBump([]Commit{{Type: "docs"}}))

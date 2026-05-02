@@ -20,6 +20,11 @@ title: Short description
 priority: high | medium | low
 complexity: small | medium | large
 kind: standard | intervention-debt
+work_type: feature | enabler | research | docs | intervention-debt
+bdd_scenarios: ["F-001-S001"]
+end_to_end_evidence: required | not_applicable
+evidence_links: []
+verified_by: TBD
 dedupe_key: optional-machine-key
 source: delivery-schedule M1.3.1
 created: 2026-04-11
@@ -35,6 +40,11 @@ created: 2026-04-11
 
 ## Affected Files
 [File paths or packages]
+
+## BDD Evidence
+- Scenario IDs: F-001-S001
+- Evidence links: test command, report path, trace, dogfood result, or explicit proof
+- Verified by: engineer | qa | dogfood | command | human
 
 ## Acceptance Criteria
 
@@ -57,6 +67,19 @@ created: 2026-04-11
 ```
 
 `kind` defaults to `standard` when omitted. `intervention-debt` is reserved for harness self-improvement work created from telemetry, score regressions, stuck ticket state, guardrail blocks, dogfood failures, or repeated human interventions.
+
+`work_type` drives completion truth:
+
+- `feature` means the ticket implements a BDD scenario or scenario group.
+- `enabler` means the ticket improves infrastructure, docs, tests, scaffolding, or process but does not itself ship a feature.
+- `research` records evidence needed before feature work.
+- `docs` updates documentation without claiming shipped feature behavior.
+- `intervention-debt` fixes the harness process that produced bad work.
+
+Feature tickets require non-empty `bdd_scenarios`, `end_to_end_evidence: required`,
+non-empty `evidence_links`, and a real `verified_by` value before moving to
+`done/`. Enabler, research, docs, and intervention-debt tickets normally use
+`end_to_end_evidence: not_applicable` and must not claim a shipped feature.
 
 Intervention-debt tickets must include role, repo, target, category, severity, confidence, evidence, and origin metadata when generated mechanically. They are deduped by repo, role, target, category, and evidence window.
 

@@ -50,6 +50,21 @@ func listTicketFiles(repoPath, status string) ([]string, error) {
 }
 
 func validateEngineerTicketGate(before, after ticketSnapshot) error {
+	return validateEngineerTicketGateWithEvidence("", before, after)
+}
+
+func validateEngineerTicketGateWithEvidence(repoPath string, before, after ticketSnapshot) error {
+	if err := validateEngineerTicketMovement(before, after); err != nil {
+		return err
+	}
+	if strings.TrimSpace(repoPath) == "" {
+		return nil
+	}
+	doneAdded := setDifference(stringSet(after.Done), stringSet(before.Done))
+	return validateCompletedTicketEvidence(repoPath, doneAdded)
+}
+
+func validateEngineerTicketMovement(before, after ticketSnapshot) error {
 	if len(before.Backlog)+len(before.InProgress) == 0 {
 		if len(after.InProgress) > 0 {
 			return fmt.Errorf(
@@ -109,6 +124,81 @@ func validateEngineerTicketGate(before, after ticketSnapshot) error {
 		)
 	}
 	return nil
+}
+
+func validateCompletedTicketEvidence(repoPath string, doneAdded map[string]bool) error {
+	for _, name := range sortedSetKeys(doneAdded) {
+		path := filepath.Join(repoPath, "docs", "tickets", "done", name)
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("ticket gate: read completed ticket %s: %w", name, err)
+		}
+		if err := validateOneCompletedTicketEvidence(name, string(data)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateOneCompletedTicketEvidence(name, text string) error {
+	frontmatter := parseTicketGateFrontmatter(text)
+	workType := strings.Trim(strings.ToLower(frontmatter["work_type"]), `"'`)
+	endToEndEvidence := strings.Trim(strings.ToLower(frontmatter["end_to_end_evidence"]), `"'`)
+	if workType != "feature" && endToEndEvidence != "required" {
+		return nil
+	}
+	var missing []string
+	if workType != "feature" {
+		missing = append(missing, "work_type: feature")
+	}
+	if endToEndEvidence != "required" {
+		missing = append(missing, "end_to_end_evidence: required")
+	}
+	if frontmatterFieldEmpty(frontmatter["bdd_scenarios"]) {
+		missing = append(missing, "bdd_scenarios")
+	}
+	if frontmatterFieldEmpty(frontmatter["evidence_links"]) {
+		missing = append(missing, "evidence_links")
+	}
+	if frontmatterFieldEmpty(frontmatter["verified_by"]) {
+		missing = append(missing, "verified_by")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf(
+			"ticket gate: feature ticket %s cannot move to done without BDD scenario evidence: missing %s",
+			name,
+			strings.Join(missing, ", "),
+		)
+	}
+	return nil
+}
+
+func parseTicketGateFrontmatter(text string) map[string]string {
+	fields := make(map[string]string)
+	scanner := strings.Split(text, "\n")
+	if len(scanner) == 0 || strings.TrimSpace(scanner[0]) != "---" {
+		return fields
+	}
+	for _, line := range scanner[1:] {
+		if strings.TrimSpace(line) == "---" {
+			break
+		}
+		key, value, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		fields[strings.TrimSpace(key)] = strings.TrimSpace(value)
+	}
+	return fields
+}
+
+func frontmatterFieldEmpty(value string) bool {
+	value = strings.TrimSpace(value)
+	value = strings.Trim(value, `"'`)
+	if value == "" || value == "[]" || strings.EqualFold(value, "tbd") || strings.EqualFold(value, "none") {
+		return true
+	}
+	return false
 }
 
 func stringSet(values []string) map[string]bool {

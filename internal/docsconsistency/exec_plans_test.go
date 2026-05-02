@@ -39,6 +39,7 @@ func TestSingleActiveExecPlan(t *testing.T) {
 		t.Fatalf("%s must declare **Priority:**", filepath.ToSlash(filepath.Join("docs/exec-plans/active", activePlans[0])))
 	}
 	requirePlanDependencyMetadata(t, filepath.ToSlash(filepath.Join("docs/exec-plans/active", activePlans[0])), activeText)
+	requirePlanOperatingModelMetadata(t, filepath.ToSlash(filepath.Join("docs/exec-plans/active", activePlans[0])), activeText)
 
 	execRoot := filepath.Join(root, "docs", "exec-plans")
 	err = filepath.WalkDir(execRoot, func(path string, d os.DirEntry, err error) error {
@@ -90,6 +91,7 @@ func TestBacklogExecPlansHavePriority(t *testing.T) {
 			t.Fatalf("docs/exec-plans/backlog/%s must declare **Priority:**", entry.Name())
 		}
 		requirePlanDependencyMetadata(t, filepath.ToSlash(filepath.Join("docs/exec-plans/backlog", entry.Name())), text)
+		requirePlanOperatingModelMetadata(t, filepath.ToSlash(filepath.Join("docs/exec-plans/backlog", entry.Name())), text)
 	}
 }
 
@@ -98,6 +100,25 @@ func requirePlanDependencyMetadata(t *testing.T, rel, text string) {
 	for _, label := range []string{"**Depends On:**", "**Blocks:**", "**Related Tickets:**"} {
 		if !strings.Contains(text, label) {
 			t.Fatalf("%s must declare %s metadata", rel, label)
+		}
+	}
+}
+
+func requirePlanOperatingModelMetadata(t *testing.T, rel, text string) {
+	t.Helper()
+	for _, label := range []string{
+		"**Goals:**",
+		"**BDD Feature:**",
+		"**Hypothesis:**",
+		"**Success Evidence:**",
+		"**Falsification Evidence:**",
+		"**Scenario Schedule:**",
+		"**Current Failing Scenario:**",
+		"**Walking Skeleton Slice:**",
+		"**Learning Or MVP Outcome:**",
+	} {
+		if !strings.Contains(text, label) {
+			t.Fatalf("%s must declare %s operating-model metadata", rel, label)
 		}
 	}
 }

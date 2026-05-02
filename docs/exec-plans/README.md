@@ -10,9 +10,13 @@ This directory holds execution plans with a ticket-like lifecycle:
 There must be only one active exec plan at a time. Promote work by updating
 `active/current-operating-plan.md`, not by adding another active plan. Backlog
 plans must carry `**Priority:**`, `**Depends On:**`, `**Blocks:**`, and
-`**Related Tickets:**` metadata and should be ordered like tickets: the active
-plan chooses the next work, backlog plans wait their turn, and superseded plans
-are lineage only.
+`**Related Tickets:**` metadata. Active and backlog plans also carry
+`**Goals:**`, `**BDD Feature:**`, `**Hypothesis:**`, `**Success Evidence:**`,
+`**Falsification Evidence:**`, `**Scenario Schedule:**`,
+`**Current Failing Scenario:**`, `**Walking Skeleton Slice:**`, and
+`**Learning Or MVP Outcome:**`. Plans should be ordered like tickets: the
+active plan chooses the next work, backlog plans wait their turn, and superseded
+plans are lineage only.
 
 Plan priority never overrides dependencies. A P1 plan with an unresolved
 dependency waits behind a lower-risk unblocked slice or creates the dependency
@@ -27,6 +31,22 @@ Active and backlog plans require:
 - `**Depends On:**` — tickets, plan paths, checks, or `None`
 - `**Blocks:**` — tickets, claims, releases, plan paths, or `Nothing`
 - `**Related Tickets:**` — ticket IDs or `None yet`
+- `**Goals:**` — active goal IDs this plan advances
+- `**BDD Feature:**` — feature contract IDs this plan schedules
+- `**Hypothesis:**` — why this work advances active goals
+- `**Success Evidence:**` — what validates or closes the plan
+- `**Falsification Evidence:**` — what proves the plan wrong or low-value
+- `**Scenario Schedule:**` — ordered failing BDD scenarios or scenario groups
+- `**Current Failing Scenario:**` — the next scenario or blocked reason
+- `**Walking Skeleton Slice:**` — the thinnest real E2E path for the current scenario
+- `**Learning Or MVP Outcome:**` — value or learning the slice should produce
+
+## BDD-Led Planning Rules
+
+- BDD defines the full feature. Walking skeleton is the implementation strategy.
+- The active plan schedule is the ordered list of failing BDD scenarios.
+- Feature tickets are created only from the current failing scenario or scenario group.
+- A feature is not shipped until in-scope BDD scenarios pass or are explicitly descoped by the CEO.
 
 ## Standing trackers
 
