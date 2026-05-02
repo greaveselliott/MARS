@@ -131,7 +131,7 @@ Current defaults favor:
 
 - `performance_profile: auto`
 - one parallel generation slot for strict-trunk single-agent throughput
-- hardware-based model tier selection
+- hardware-based model tier selection, with manifest `role.model` as the source of truth for role routing
 - pinned model revisions and SHA256 verification
 - pinned llama.cpp artifacts with checksums
 - doctor checks for missing or stale model state

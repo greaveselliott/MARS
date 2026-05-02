@@ -184,7 +184,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		log.Debug("executor: context section", "section", s.Name, "tokens", s.Tokens)
 	}
 
-	endpoint, err := e.router.ServerForRole(ctx, job.Role)
+	endpoint, err := e.router.ServerForRoleModel(ctx, job.Role, role.Model)
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("inference for %q: %v", job.Role, err))
 		return fmt.Errorf("executor: get inference endpoint for role %q: %w — check GPU availability or configure a remote fallback", job.Role, err)

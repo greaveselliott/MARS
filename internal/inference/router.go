@@ -84,11 +84,63 @@ func normalizeAPIBase(raw string) string {
 	return u
 }
 
+// DefaultRoleTierMapping returns conservative defaults for built-in starter roles.
+// Manifest role.model remains the source of truth when available; this mapping
+// exists for older callers and custom roles without tier hints.
+func DefaultRoleTierMapping() map[string]hardware.Tier {
+	return map[string]hardware.Tier{
+		"ceo":                   hardware.TierReasoning,
+		"coo":                   hardware.TierReasoning,
+		"cto":                   hardware.TierReasoning,
+		"cto-weekly":            hardware.TierReasoning,
+		"engineer":              hardware.TierCoding,
+		"pipeline-fixer":        hardware.TierCoding,
+		"reviewer":              hardware.TierReasoning,
+		"code-reviewer":         hardware.TierReasoning,
+		"qa":                    hardware.TierFast,
+		"documenter":            hardware.TierFast,
+		"docs-writer":           hardware.TierFast,
+		"release":               hardware.TierFast,
+		"release-manager":       hardware.TierReasoning,
+		"triager":               hardware.TierFast,
+		"onboarder":             hardware.TierFast,
+		"auditor":               hardware.TierReasoning,
+		"security":              hardware.TierReasoning,
+		"security-auditor":      hardware.TierReasoning,
+		"backlog":               hardware.TierFast,
+		"janitor":               hardware.TierFast,
+		"dogfood":               hardware.TierCoding,
+		"evolution":             hardware.TierReasoning,
+		"dependency-manager":    hardware.TierFast,
+		"dependency-updater":    hardware.TierFast,
+		"performance-optimizer": hardware.TierCoding,
+		"refactorer":            hardware.TierCoding,
+		"incident-responder":    hardware.TierCoding,
+	}
+}
+
+// TierForRoleModel resolves a manifest role.model hint into a hardware tier.
+func TierForRoleModel(role, modelHint string) hardware.Tier {
+	switch strings.ToLower(strings.TrimSpace(modelHint)) {
+	case string(hardware.TierCoding):
+		return hardware.TierCoding
+	case string(hardware.TierReasoning):
+		return hardware.TierReasoning
+	case string(hardware.TierFast):
+		return hardware.TierFast
+	default:
+		if tier, ok := DefaultRoleTierMapping()[role]; ok {
+			return tier
+		}
+		return hardware.TierCoding
+	}
+}
+
 func (r *Router) tierForRole(role string) hardware.Tier {
 	if t, ok := r.mapping[role]; ok {
 		return t
 	}
-	return hardware.TierCoding
+	return TierForRoleModel(role, "")
 }
 
 func (r *Router) tierPort(tier hardware.Tier) int {
@@ -115,12 +167,21 @@ func (r *Router) fallbackBase() string {
 // Starts the server if not already running. Verifies the server is actually
 // responsive before returning — catches stale "healthy" state from crashed servers.
 func (r *Router) ServerForRole(ctx context.Context, role string) (string, error) {
-	tier := r.tierForRole(role)
+	return r.serverForTier(ctx, role, r.tierForRole(role))
+}
 
+// ServerForRoleModel returns the base URL for a role using its manifest model tier.
+func (r *Router) ServerForRoleModel(ctx context.Context, role, modelHint string) (string, error) {
+	return r.serverForTier(ctx, role, TierForRoleModel(role, modelHint))
+}
+
+func (r *Router) serverForTier(ctx context.Context, role string, tier hardware.Tier) (string, error) {
 	spec, modelOK := r.models[tier]
 	modelPath := ""
+	expectedPath := ""
 	if modelOK && strings.TrimSpace(spec.File) != "" {
 		candidate := filepath.Join(r.modelsDir, spec.File)
+		expectedPath = candidate
 		if _, err := os.Stat(candidate); err == nil {
 			modelPath = candidate
 		}
@@ -129,7 +190,10 @@ func (r *Router) ServerForRole(ctx context.Context, role string) (string, error)
 	if modelPath == "" {
 		base := r.fallbackBase()
 		if base == "" {
-			return "", fmt.Errorf("inference: no local model for tier %q and no remote fallback configured", tier)
+			if expectedPath != "" {
+				return "", fmt.Errorf("inference: local model for tier %q is missing at %s and no remote fallback configured — run `mars-harness setup` to download the %s model or configure a remote fallback", tier, expectedPath, tier)
+			}
+			return "", fmt.Errorf("inference: no local model configured for tier %q and no remote fallback configured — run `mars-harness setup` or configure a remote fallback", tier)
 		}
 		return base, nil
 	}
@@ -172,7 +236,7 @@ func (r *Router) ServerForRole(ctx context.Context, role string) (string, error)
 		delete(r.servers, tier)
 		r.mu.Unlock()
 		_ = srv.Stop()
-		return r.ServerForRole(ctx, role)
+		return r.serverForTier(ctx, role, tier)
 	}
 
 	return srv.BaseURL(), nil

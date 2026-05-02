@@ -69,6 +69,20 @@ Mars Harness must treat model selection as an evidence loop:
 
 The reason is safety and repeatability: a model-card claim or newest-library ranking is useful discovery input, but default registry entries affect autonomous mutating agents. Default changes need local evidence and reproducible artifacts.
 
+### AD-064: Manifest Model Tier Is The Inference Routing Source Of Truth
+
+Target manifests already declare each role's intended model tier with `model: fast`, `model: reasoning`, or `model: coding`. The inference router must honor that manifest tier before falling back to role-name defaults.
+
+This matters because executive/planning roles such as `ceo`, `coo`, and `cto-weekly` should not accidentally route to the heavy coding model just because their role name was omitted from a hardcoded router map. On constrained or newly configured machines, that causes bootstrap jobs to fail with "no local model for tier coding" even though the manifest asked for a reasoning-tier role.
+
+The router now resolves tiers in this order:
+
+1. manifest `role.model` when it is one of `fast`, `reasoning`, or `coding`
+2. built-in role fallback mapping for older/custom callers
+3. coding tier for truly unknown roles, preserving the conservative quality default
+
+Missing local-model errors also name the expected model file path and suggest `mars-harness setup` or remote fallback configuration. Telemetry classifies these as `model_unavailable` instead of `unknown`, routing repeated failures to inference/setup work. The reason is operator recovery: inference failures should tell the user which tier/file is missing and how to repair it.
+
 ### Open topics (M2 and beyond)
 
 - **Hardware detection:** CPU vs GPU paths, memory ceilings, and safe default model bundles; degrade gracefully when VRAM is insufficient.
@@ -83,3 +97,4 @@ The reason is safety and repeatability: a model-card claim or newest-library ran
 - **Fast-tier context floor:** Role prompts with ticket indices typically assemble to 5000–9000 tokens. Any context window below 12k risks overflow on mature projects with many tickets. 16k provides comfortable headroom.
 - **Health check race window:** The supervisor restart loop (exponential backoff 1s→30s) can leave a 1–30 second gap where `State()` returns `StateHealthy` but the process is dead. Active verification on every `ServerForRole` call is cheap (2s timeout HTTP GET) and closes this gap completely.
 - **Apple Silicon performance diagnosis:** Low CPU with high RAM during Qwen Q8 generation is expected when Metal is active. The limiting resource is usually memory bandwidth and model size, not CPU thread count. Reducing quantization/profile size and limiting parallel slots are the first knobs to try.
+- **Manifest/router mismatch:** A sample-target bootstrap CEO job failed because `ceo` was missing from the static router map and unknown roles defaulted to coding, even though the generated manifest declared `model: reasoning`. Routing by manifest tier fixes the mismatch and makes bootstrap failures less likely on partial local-model installs.

@@ -9,15 +9,16 @@ import (
 type FailureCategory string
 
 const (
-	CategoryContextOverflow FailureCategory = "context_overflow"
-	CategoryLLMUnreachable  FailureCategory = "llm_unreachable"
-	CategoryInferenceCrash  FailureCategory = "inference_crash"
-	CategoryToolTimeout     FailureCategory = "tool_timeout"
-	CategoryCircleDetected  FailureCategory = "circle_detected"
-	CategoryMaxTurns        FailureCategory = "max_turns"
-	CategoryBudgetExceeded  FailureCategory = "budget_exceeded"
-	CategoryManifestError   FailureCategory = "manifest_error"
-	CategoryUnknown         FailureCategory = "unknown"
+	CategoryContextOverflow  FailureCategory = "context_overflow"
+	CategoryLLMUnreachable   FailureCategory = "llm_unreachable"
+	CategoryInferenceCrash   FailureCategory = "inference_crash"
+	CategoryModelUnavailable FailureCategory = "model_unavailable"
+	CategoryToolTimeout      FailureCategory = "tool_timeout"
+	CategoryCircleDetected   FailureCategory = "circle_detected"
+	CategoryMaxTurns         FailureCategory = "max_turns"
+	CategoryBudgetExceeded   FailureCategory = "budget_exceeded"
+	CategoryManifestError    FailureCategory = "manifest_error"
+	CategoryUnknown          FailureCategory = "unknown"
 )
 
 // Event is a single telemetry observation from the pipeline.
@@ -67,6 +68,12 @@ func Classify(errMsg string) FailureCategory {
 		return CategoryInferenceCrash
 	case strings.Contains(lower, "signal: killed"):
 		return CategoryInferenceCrash
+	case strings.Contains(lower, "no local model"):
+		return CategoryModelUnavailable
+	case strings.Contains(lower, "local model") && strings.Contains(lower, "missing"):
+		return CategoryModelUnavailable
+	case strings.Contains(lower, "remote fallback configured") && strings.Contains(lower, "model"):
+		return CategoryModelUnavailable
 
 	case strings.Contains(lower, "circle_detected"):
 		return CategoryCircleDetected

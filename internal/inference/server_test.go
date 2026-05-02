@@ -130,6 +130,28 @@ func TestRouter_defaultsToCodingTier(t *testing.T) {
 	require.Equal(t, hardware.TierCoding, r.tierForRole("unknown-role"))
 }
 
+func TestTierForRoleModel_usesManifestTierBeforeRoleFallback(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, hardware.TierReasoning, TierForRoleModel("ceo", ""))
+	require.Equal(t, hardware.TierFast, TierForRoleModel("ceo", "fast"))
+	require.Equal(t, hardware.TierCoding, TierForRoleModel("qa", "coding"))
+	require.Equal(t, hardware.TierCoding, TierForRoleModel("custom-role", "unknown-model"))
+}
+
+func TestDefaultRoleTierMapping_coversStarterRoles(t *testing.T) {
+	t.Parallel()
+
+	mapping := DefaultRoleTierMapping()
+	require.Equal(t, hardware.TierReasoning, mapping["ceo"])
+	require.Equal(t, hardware.TierReasoning, mapping["coo"])
+	require.Equal(t, hardware.TierReasoning, mapping["cto-weekly"])
+	require.Equal(t, hardware.TierFast, mapping["qa"])
+	require.Equal(t, hardware.TierReasoning, mapping["security"])
+	require.Equal(t, hardware.TierFast, mapping["dependency-manager"])
+	require.Equal(t, hardware.TierCoding, mapping["dogfood"])
+}
+
 func TestRouter_stopAllSafe(t *testing.T) {
 	t.Parallel()
 
@@ -165,4 +187,20 @@ func TestRouter_serverForRoleErrorsWithoutModelOrFallback(t *testing.T) {
 
 	_, err := r.ServerForRole(context.Background(), "unknown-role")
 	require.Error(t, err)
+	require.ErrorContains(t, err, "run `mars-harness setup`")
+}
+
+func TestRouter_serverForRoleModelUsesManifestTierInError(t *testing.T) {
+	t.Parallel()
+
+	r := NewRouter(RouterConfig{
+		Models: map[hardware.Tier]hardware.ModelSpec{
+			hardware.TierFast: {File: "fast.gguf", ContextLen: 4096},
+		},
+		ModelsDir: t.TempDir(),
+	})
+
+	_, err := r.ServerForRoleModel(context.Background(), "ceo", "fast")
+	require.ErrorContains(t, err, `tier "fast"`)
+	require.ErrorContains(t, err, "fast.gguf")
 }

@@ -121,28 +121,7 @@ func New(cfg Config) (*Server, error) {
 	hw := hardware.Detect()
 	modelSet := hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)
 
-	roleMapping := map[string]hardware.Tier{
-		"engineer":              hardware.TierCoding,
-		"pipeline-fixer":        hardware.TierCoding,
-		"reviewer":              hardware.TierReasoning,
-		"code-reviewer":         hardware.TierReasoning,
-		"qa":                    hardware.TierCoding,
-		"documenter":            hardware.TierFast,
-		"docs-writer":           hardware.TierFast,
-		"release":               hardware.TierFast,
-		"release-manager":       hardware.TierFast,
-		"triager":               hardware.TierFast,
-		"onboarder":             hardware.TierFast,
-		"auditor":               hardware.TierReasoning,
-		"security-auditor":      hardware.TierReasoning,
-		"backlog":               hardware.TierFast,
-		"janitor":               hardware.TierFast,
-		"evolution":             hardware.TierReasoning,
-		"dependency-updater":    hardware.TierFast,
-		"performance-optimizer": hardware.TierCoding,
-		"refactorer":            hardware.TierCoding,
-		"incident-responder":    hardware.TierCoding,
-	}
+	roleMapping := inference.DefaultRoleTierMapping()
 
 	binaryPath := filepath.Join(cfg.BinDir, "llama-server")
 	router := inference.NewRouter(inference.RouterConfig{

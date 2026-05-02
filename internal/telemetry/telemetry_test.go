@@ -44,6 +44,18 @@ func TestClassify_inferenceCrash(t *testing.T) {
 	}
 }
 
+func TestClassify_modelUnavailable(t *testing.T) {
+	t.Parallel()
+	cases := []string{
+		`inference: no local model configured for tier "coding" and no remote fallback configured`,
+		`inference: local model for tier "fast" is missing at /models/fast.gguf and no remote fallback configured`,
+		`executor: get inference endpoint for role "ceo": inference: no local model for tier "coding" and no remote fallback configured`,
+	}
+	for _, msg := range cases {
+		require.Equal(t, CategoryModelUnavailable, Classify(msg), "input: %s", msg)
+	}
+}
+
 func TestClassify_toolTimeout(t *testing.T) {
 	t.Parallel()
 	cases := []string{
@@ -92,6 +104,7 @@ func TestRetryable(t *testing.T) {
 		require.True(t, c.Retryable(), "expected retryable: %s", c)
 	}
 	nonRetryable := []FailureCategory{
+		CategoryModelUnavailable,
 		CategoryCircleDetected,
 		CategoryMaxTurns,
 		CategoryBudgetExceeded,
@@ -108,6 +121,7 @@ func TestRemediate_actions(t *testing.T) {
 	require.Equal(t, ActionRetryHalfContext, Remediate(CategoryContextOverflow))
 	require.Equal(t, ActionRestartInference, Remediate(CategoryLLMUnreachable))
 	require.Equal(t, ActionRestartInference, Remediate(CategoryInferenceCrash))
+	require.Equal(t, ActionNone, Remediate(CategoryModelUnavailable))
 	require.Equal(t, ActionRetryLonger, Remediate(CategoryToolTimeout))
 	require.Equal(t, ActionNone, Remediate(CategoryCircleDetected))
 	require.Equal(t, ActionNone, Remediate(CategoryMaxTurns))
@@ -183,6 +197,21 @@ func TestCollector_RingBufferCap(t *testing.T) {
 	}
 
 	require.Len(t, c.Events(), maxEvents)
+}
+
+func TestTriagePattern_modelUnavailableTargetsInference(t *testing.T) {
+	t.Parallel()
+
+	proposal := TriagePattern(Pattern{
+		Role:     "ceo",
+		Category: CategoryModelUnavailable,
+		Count:    3,
+	})
+
+	require.Equal(t, TargetInference, proposal.Target)
+	require.Equal(t, "Install or route model tier", proposal.Title)
+	require.Contains(t, proposal.Suggestion, "setup")
+	require.Contains(t, proposal.CandidateFiles, "~/.mars-harness/config.yaml")
 }
 
 func TestTriagePattern_contextOverflowTargetsContext(t *testing.T) {

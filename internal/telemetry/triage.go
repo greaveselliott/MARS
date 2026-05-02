@@ -76,6 +76,13 @@ func TriagePattern(p Pattern) ImprovementProposal {
 		proposal.Suggestion = fmt.Sprintf("Role %q hit repeated inference availability failures; review local model profile, llama server tuning, restart policy, and doctor checks before changing the role prompt.", p.Role)
 		proposal.Confidence = 0.8
 
+	case CategoryModelUnavailable:
+		proposal.Target = TargetInference
+		proposal.Title = "Install or route model tier"
+		proposal.Suggestion = fmt.Sprintf("Role %q could not find its configured local model tier; run setup for the active performance profile, verify model checksums, or configure an explicit remote fallback before retrying jobs.", p.Role)
+		proposal.CandidateFiles = []string{"~/.mars-harness/config.yaml", ".harness/manifest.yaml"}
+		proposal.Confidence = 0.85
+
 	case CategoryToolTimeout:
 		proposal.Target = TargetToolPolicy
 		proposal.Title = "Fix slow tool workflow"

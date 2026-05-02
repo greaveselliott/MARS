@@ -450,7 +450,7 @@ func executeRun(opts runOpts) error {
 	var router *inference.Router
 
 	if endpoint == "" {
-		router, endpoint, err = autoStartInference(sigCtx, opts.roleName)
+		router, endpoint, err = autoStartInference(sigCtx, opts.roleName, role.Model)
 		if err != nil {
 			tw.WriteError(fmt.Sprintf("inference startup failed: %v", err))
 			return err
@@ -539,7 +539,7 @@ func executeRun(opts runOpts) error {
 // autoStartInference loads config, detects hardware, and starts llama-server
 // for the requested role via the inference Router. Returns the router (for
 // cleanup) and the base URL of the running server.
-func autoStartInference(ctx context.Context, roleName string) (*inference.Router, string, error) {
+func autoStartInference(ctx context.Context, roleName, modelHint string) (*inference.Router, string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, "", fmt.Errorf("cannot determine home directory: %w", err)
@@ -568,29 +568,15 @@ func autoStartInference(ctx context.Context, roleName string) (*inference.Router
 	hw := hardware.Detect()
 	modelSet := hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)
 
-	roleMapping := map[string]hardware.Tier{
-		"engineer":       hardware.TierCoding,
-		"pipeline-fixer": hardware.TierCoding,
-		"reviewer":       hardware.TierReasoning,
-		"qa":             hardware.TierCoding,
-		"documenter":     hardware.TierFast,
-		"release":        hardware.TierFast,
-		"triager":        hardware.TierFast,
-		"onboarder":      hardware.TierFast,
-		"auditor":        hardware.TierReasoning,
-		"backlog":        hardware.TierFast,
-		"evolution":      hardware.TierReasoning,
-	}
-
 	router := inference.NewRouter(inference.RouterConfig{
 		BinaryPath:  binaryPath,
 		Models:      modelSet,
-		RoleMapping: roleMapping,
+		RoleMapping: inference.DefaultRoleTierMapping(),
 		ModelsDir:   modelsDir,
 		Tuning:      inferenceTuningFromConfig(cfg),
 	})
 
-	endpoint, err := router.ServerForRole(ctx, roleName)
+	endpoint, err := router.ServerForRoleModel(ctx, roleName, modelHint)
 	if err != nil {
 		return nil, "", err
 	}

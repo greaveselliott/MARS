@@ -26,6 +26,9 @@ func Remediate(cat FailureCategory) RemediationAction {
 	case CategoryToolTimeout:
 		return ActionRetryLonger
 
+	case CategoryModelUnavailable:
+		return ActionNone
+
 	case CategoryCircleDetected,
 		CategoryMaxTurns,
 		CategoryBudgetExceeded,
