@@ -6,7 +6,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 |----------|--------|---------|
 | [tenets.md](tenets.md) | Accepted | The 9 founding tenets: plug and play, self-improving system, accuracy scoring, customisable guardrails, roadmap from init, blast radius containment, execution truth, progressive autonomy, context efficiency |
 | [agent-runtime.md](agent-runtime.md) | Draft | Agent execution loop: multi-turn conversation, tool calling, error handling, budget enforcement. AD-004 (sync per-job), AD-005 (sequential tools), AD-006 (additive context) |
-| [local-inference.md](local-inference.md) | Draft | Local model serving: llama.cpp as subprocess, hardware profiles, model registry, download management. AD-007 (no CGO), AD-008 (weights in ~/.mars-harness/), AD-031 (inference resilience), AD-032 (zero-config performance tuning), AD-063 (benchmark-backed model promotion), AD-064 (manifest-tier routing) |
+| [local-inference.md](local-inference.md) | Draft | Local model serving: llama.cpp as subprocess, hardware profiles, model registry, download management. AD-007 (no CGO), AD-008 (weights in ~/.mars-harness/), AD-031 (inference resilience), AD-032 (zero-config performance tuning), AD-063 (benchmark-backed model promotion), AD-064 (manifest-tier routing), AD-066 (Ollama catalog/swap provider) |
 | [scoring-system.md](scoring-system.md) | Draft | Accuracy and value scoring: outcome tracking, rolling scores, progressive autonomy thresholds, noop detection |
 | [self-improvement.md](self-improvement.md) | Draft | Intervention detection, Reviewer meta-role, bounded evolution commits, before/after tracking, safety rails |
 | [guardrails.md](guardrails.md) | Draft | Advisory vs hard guardrails, validation types, override mechanism, staleness detection. AD-012 (syntactic only in v1) |
@@ -92,3 +92,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-063 | Default model registry changes require harness-specific benchmark evidence and immutable pinned artifacts. | local-inference.md | Inference |
 | AD-064 | Inference routing honors manifest `role.model` tiers before role-name fallback mapping, and missing-model errors name the expected repair path. | local-inference.md | Inference |
 | AD-065 | Telemetry triage creates or updates `kind: intervention-debt` tickets through the canonical ticket path, deduped by repo, role, target, category, and evidence window. | self-reflective-telemetry.md | Self-improvement |
+| AD-066 | Ollama is a first-class catalog and explicit model-swap provider, while zero-config default promotion still requires benchmark evidence, immutable revision, and SHA256. | local-inference.md | Inference |

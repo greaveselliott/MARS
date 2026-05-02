@@ -17,6 +17,8 @@ Reference: [model evaluation refresh plan](../../exec-plans/active/model-evaluat
 
 ## Requirements
 
+- Treat Ollama as a first-class model catalog/provider so operators can evaluate or explicitly select any installed/published Ollama model without waiting for a hardcoded shortlist.
+- Add simple model swapping at tier/role scope, e.g. choose a provider/model for `fast`, `reasoning`, or `coding` without editing multiple files by hand.
 - Extend `mars-harness models evaluate` beyond mechanical probes into repo-backed benchmark cases.
 - Persist evaluation reports with model, endpoint, hardware profile, benchmark results, timing, token counts, and failures.
 - Compare candidates against the current pinned defaults per tier.
@@ -39,6 +41,8 @@ Reference: [model evaluation refresh plan](../../exec-plans/active/model-evaluat
 ### Functional (happy path)
 
 - [ ] `mars-harness models evaluate --endpoint <url> --model <name> --json` writes a parseable report.
+- [ ] Operators can list or reference Ollama models as explicit evaluation/swap candidates without registry code changes.
+- [ ] Tier/role model swaps are represented in config or manifest with one clear command or documented edit path.
 - [ ] The benchmark pack includes at least one repo-backed ticket completion task.
 - [ ] Reports include pass/fail, latency, token counts, and enough metadata to reproduce the run.
 - [ ] Candidate comparison identifies whether Qwen3.6 or Laguna XS.2 should replace any current tier default.
@@ -50,11 +54,13 @@ Reference: [model evaluation refresh plan](../../exec-plans/active/model-evaluat
 - [ ] Endpoint failures produce actionable errors.
 - [ ] Tool-call JSON failures are visible as failed benchmark cases.
 - [ ] Cloud-only candidates cannot be promoted into local defaults.
+- [ ] Ad-hoc Ollama selections are marked explicit overrides/candidates, not silently promoted defaults.
 
 ### Non-goals
 
 - Changing default model registry entries without benchmark evidence.
-- Downloading large candidate models automatically during this ticket.
+- Downloading every Ollama model automatically.
+- Treating all Ollama models as safe autonomous defaults.
 
 ### Observability, docs, and regressions
 

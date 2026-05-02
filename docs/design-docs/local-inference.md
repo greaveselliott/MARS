@@ -83,10 +83,30 @@ The router now resolves tiers in this order:
 
 Missing local-model errors also name the expected model file path and suggest `mars-harness setup` or remote fallback configuration. Telemetry classifies these as `model_unavailable` instead of `unknown`, routing repeated failures to inference/setup work. The reason is operator recovery: inference failures should tell the user which tier/file is missing and how to repair it.
 
+### AD-066: Ollama Is A Catalog And Swap Provider, Not Automatic Default Promotion
+
+Mars Harness should make it easy to evaluate and explicitly run any model available through Ollama. The model registry should not be the only way to try a model. Operators should be able to list local Ollama models, reference published Ollama model names as evaluation candidates, and swap a tier or role to an Ollama model without editing several files by hand.
+
+This is a provider/candidate path, not a shortcut around default safety. There are three distinct states:
+
+- **Ad-hoc candidate:** a model name supplied to evaluation or a one-off run.
+- **Explicit override:** a repo, role, or tier deliberately configured to use an Ollama model.
+- **Default registry entry:** a harness-managed local default with immutable source revision, SHA256, benchmark evidence, and hardware-fit rationale.
+
+Only the third state is allowed to change zero-config defaults. Ollama access makes exploration broad and simple; benchmark-backed promotion keeps autonomous default behavior reproducible and supportable.
+
+The intended operator experience is:
+
+- discover available local Ollama models
+- evaluate any model by name through the standard benchmark command
+- switch `fast`, `reasoning`, or `coding` tier for a repo or role with one clear command or manifest edit
+- see doctor/setup warnings when an explicit Ollama override is unavailable locally
+- keep default promotion blocked until pinned artifacts and benchmark reports exist
+
 ### Open topics (M2 and beyond)
 
 - **Hardware detection:** CPU vs GPU paths, memory ceilings, and safe default model bundles; degrade gracefully when VRAM is insufficient.
-- **Model registry:** naming, versioning, compatibility with server flags, deprecation notices in CLI output, and benchmark-backed promotion.
+- **Model registry and provider catalog:** naming, versioning, Ollama/local-provider discovery, compatibility with server flags, deprecation notices in CLI output, simple tier/role swaps, and benchmark-backed promotion.
 - **Download with resume:** partial files, checksum retry, bandwidth-friendly defaults; mirror URLs as optional fallback.
 - **Server lifecycle:** start/stop, backoff on crash, upgrade without orphan processes; pidfile or equivalent for operator tooling.
 - **Multi-model serving:** concurrent endpoints vs serial reuse; resource isolation when two roles need different sizes.

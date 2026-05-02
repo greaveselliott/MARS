@@ -48,6 +48,16 @@ A candidate can only replace a default when it passes all of these:
 - It has an immutable source revision and SHA256 before becoming a default.
 - It does not require cloud access unless marked as an optional remote profile.
 
+## Ollama Access Policy
+
+Mars Harness should not require a hardcoded shortlist before an operator can try a model. Ollama is the broad catalog and local-provider path: any installed or published Ollama model can be evaluated or selected as an explicit override when the operator accepts that responsibility.
+
+That broad access does not imply default promotion. A model may be:
+
+- evaluated ad hoc by name
+- used as an explicit repo, role, or tier override
+- promoted to a zero-config default only after benchmark evidence, hardware-fit review, immutable source revision, and SHA256 are recorded
+
 ## Benchmark Pack
 
 Initial mechanical benchmark cases now live behind:

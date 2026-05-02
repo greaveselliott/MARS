@@ -18,6 +18,14 @@ Make "best model" an evidence-backed, repeatable harness process instead of anot
 
 ## Next Slices
 
+- [ ] Add Ollama provider/catalog support:
+  - [ ] list locally installed Ollama models
+  - [ ] accept any Ollama model name as an evaluation candidate
+  - [ ] represent provider/model overrides separately from default registry entries
+- [ ] Add simple model swap support:
+  - [ ] switch `fast`, `reasoning`, or `coding` tier for a repo
+  - [ ] switch one role to an explicit provider/model override
+  - [ ] surface missing explicit overrides through doctor/setup
 - [ ] Add benchmark result persistence under the harness database or `docs/generated/model-evaluations/`.
 - [ ] Add repo-backed benchmark cases using temporary target repos:
   - [ ] brownfield bug diagnosis
@@ -52,4 +60,5 @@ A model can become a default only when:
 - structured triage output is reliable
 - speed and memory fit the target hardware profile
 - artifact source revision and SHA256 are pinned
+- ad-hoc Ollama selections are promoted only after becoming pinned default artifacts or explicit operator-owned overrides
 - rationale is recorded in `docs/design-docs/local-inference.md` and product specs
