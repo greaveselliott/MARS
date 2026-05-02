@@ -36,8 +36,8 @@ surface misleading for future agents.
 
 - `docs/exec-plans/README.md`
 - `docs/exec-plans/active/current-operating-plan.md`
-- `docs/exec-plans/active/master-execution-plan.md`
-- `docs/exec-plans/active/delivery-schedule.md`
+- `docs/exec-plans/superseded/master-execution-plan.md`
+- `docs/exec-plans/superseded/delivery-schedule.md`
 - `docs/tickets/backlog/`
 - `docs/design-docs/self-improvement.md`
 
@@ -59,4 +59,3 @@ surface misleading for future agents.
 
 - [x] Self-improvement docs record active-plan drift as a durable improvement signal.
 - [x] No unchecked acceptance criteria remain in this completed ticket.
-

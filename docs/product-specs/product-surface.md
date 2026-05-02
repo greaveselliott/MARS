@@ -56,7 +56,7 @@ Required generated surfaces:
 - `.harness/knowledge/*.yaml` for lightweight context routes
 - `docs/tickets/backlog/`, `docs/tickets/in-progress/`, and `docs/tickets/done/`
 - `docs/tickets/README.md` for ticket lifecycle and completion rules
-- `docs/exec-plans/README.md` and starter priority docs
+- `docs/exec-plans/README.md` and starter priority docs with a one-active-plan lifecycle
 - `docs/QUALITY_SCORE.md` as the repo-visible A-F quality score seed
 - `docs/design-docs/index.md` and `context-glossary.md`
 - `docs/references/README.md` and selected agent-first references
@@ -67,6 +67,10 @@ Generated target docs must mirror source-harness doctrine while staying project-
 Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. Any change to commit discipline, versioning, ticket flow, documentation rules, skill creation, guardrail policy, trust/scoring behavior, release behavior, or context-routing discipline must update generated target guidance and tests in the same task.
 
 Architecture changes and product features must carry rationale in repo-owned docs: what changed, why it changed, and which behavior future agents should preserve. Source harness changes use design docs and product specs; initialized target repos inherit the same rule through generated `AGENTS.md`, using their design docs and, when present, product specs.
+
+Exec plans mirror the ticket lifecycle. Exactly one plan may be active at a
+time. Waiting plans live in `docs/exec-plans/backlog/` with explicit priority,
+and superseded plans are lineage only.
 
 ## Versioning And Patch Notes
 
@@ -155,7 +159,7 @@ The product must never describe optional integration as complete unless credenti
 
 ## Known Hardening Areas
 
-The active execution plans track the remaining work. The highest-value hardening areas are:
+The single active execution plan tracks the remaining work and pulls from prioritized plan backlog items. The highest-value hardening areas are:
 
 - richer repo-visible role registry
 - richer repo-visible skill registry and skill-evolution proposals

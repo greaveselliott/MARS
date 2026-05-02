@@ -1,6 +1,7 @@
 # Mars Parity Supersession Plan
 
-**Status:** Active
+**Status:** Backlog
+**Priority:** P1
 **Created:** 2026-05-02
 **Updated:** 2026-05-02
 **Owner:** Mars Harness
@@ -11,6 +12,11 @@
 ## Purpose
 
 Mars Harness should supersede the Mars repository's Cursor-based meta-harness. That does not mean copying Mars exactly. It means preserving the useful operating system Mars evolved through real autonomous delivery, then rebuilding those patterns as first-class, local, strict-trunk Mars Harness capabilities.
+
+This plan is a prioritized backlog plan. It is not the active execution plan.
+Promote only the next coherent slice into
+`../active/current-operating-plan.md` before execution so the repo always has
+one active plan.
 
 The target end state is:
 
@@ -117,7 +123,7 @@ The parity work should therefore avoid recreating Mars's Cursor setup and should
 
 ## Supersession Principles
 
-1. **Strict trunk remains canonical.** No default feature branches, PR creation, PR merge, or no-push-main guidance returns.
+1. **Strict trunk remains canonical.** No default branch-based review or no-push-main guidance returns.
 2. **Deterministic first, LLM second.** Known failures should be fixed by recipes, checks, and policy before spending model turns.
 3. **Repo-visible state wins.** Dashboards and databases are useful, but plans, decisions, tickets, traces, and quality summaries must have durable repo artifacts.
 4. **Every intervention creates debt.** Any human rescue, failed job, guardrail block, regression, or handoff without completion should create or update a ticket.
@@ -563,7 +569,7 @@ Tasks:
 Acceptance:
 
 - GitHub improves observability and event intake without becoming the default workflow.
-- No generated default instructs agents to open or merge PRs.
+- No generated default instructs agents to use branch-based review.
 
 ### L. Setup, Doctor, Models, And Release Hardening
 

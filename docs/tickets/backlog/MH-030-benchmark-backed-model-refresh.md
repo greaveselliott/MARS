@@ -13,7 +13,7 @@ created: 2026-05-02
 
 The April 2026 model snapshot is stale. Ollama now lists new candidates such as Qwen3.6, Laguna XS.2, GLM-5.1, Kimi K2.6, DeepSeek V4, and Mistral Medium 3.5. Mars Harness must not change autonomous-agent defaults from newest-model claims alone. Defaults need benchmark evidence, hardware fit, and pinned artifacts.
 
-Reference: [model evaluation refresh plan](../../exec-plans/active/model-evaluation-refresh-plan.md), [May 2026 model landscape](../../references/model-landscape-may-2026.md), [local inference AD-063](../../design-docs/local-inference.md).
+Reference: [model evaluation refresh plan](../../exec-plans/backlog/model-evaluation-refresh-plan.md), [May 2026 model landscape](../../references/model-landscape-may-2026.md), [local inference AD-063](../../design-docs/local-inference.md).
 
 ## Requirements
 
@@ -34,7 +34,7 @@ Reference: [model evaluation refresh plan](../../exec-plans/active/model-evaluat
 - `docs/references/model-landscape-may-2026.md`
 - `docs/design-docs/local-inference.md`
 - `docs/product-specs/product-surface.md`
-- `docs/exec-plans/active/model-evaluation-refresh-plan.md`
+- `docs/exec-plans/backlog/model-evaluation-refresh-plan.md`
 
 ## Acceptance Criteria
 

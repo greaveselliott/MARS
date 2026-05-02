@@ -26,6 +26,7 @@ that detects plan drift before it becomes operational confusion.
 ## Requirements
 
 - Add a docs consistency or doctor check for active-plan hygiene.
+- Detect more than one active exec plan and require waiting plans to live in `docs/exec-plans/backlog/` with priority.
 - Detect active plans that are marked superseded without a pointer to the current plan.
 - Detect active plans with stale status claims that conflict with completed ticket locations where practical.
 - Detect unresolved `TBD`, stale verification notes, and old "current" language in active plans.
@@ -44,6 +45,8 @@ that detects plan drift before it becomes operational confusion.
 ### Functional
 
 - [ ] `go test ./internal/docsconsistency/...` fails on a fixture with stale active-plan status.
+- [ ] Docs consistency fails when more than one active exec plan exists.
+- [ ] Backlog exec plans without priority fail the check.
 - [ ] `mars-harness doctor --repo .` reports active-plan hygiene warnings or ok status.
 - [ ] Superseded plans with a current-plan pointer do not fail the check.
 
@@ -57,4 +60,3 @@ that detects plan drift before it becomes operational confusion.
 
 - [ ] Docs explain how to supersede, reconcile, or complete an exec plan.
 - [ ] Tests cover stale active plans, valid active plans, and superseded plans.
-

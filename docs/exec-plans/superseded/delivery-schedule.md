@@ -4,7 +4,7 @@
 **Date:** 2026-04-11
 **Author:** Elliott Greaves
 
-> Current status lives in [current-operating-plan.md](current-operating-plan.md).
+> Current status lives in [current-operating-plan.md](../active/current-operating-plan.md).
 > This file is retained as the original milestone schedule. Its unchecked
 > quality gates and task status are stale and must not be used as execution
 > truth until reconciled.

@@ -259,7 +259,7 @@ golangci-lint run
 
 ## Pointers
 
-- **Delivery schedule:** [docs/exec-plans/active/delivery-schedule.md](docs/exec-plans/active/delivery-schedule.md)
+- **Current operating plan:** [docs/exec-plans/active/current-operating-plan.md](docs/exec-plans/active/current-operating-plan.md)
 - **Tenets:** [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
 - **Architecture decisions:** [docs/design-docs/index.md](docs/design-docs/index.md)
 - **Product vision:** [docs/product-specs/vision.md](docs/product-specs/vision.md)

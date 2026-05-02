@@ -1,6 +1,7 @@
 # Current Operating Plan
 
 **Status:** Active
+**Priority:** P0
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
 **Source:** Exec-plan review and repository state audit on 2026-05-02
@@ -11,8 +12,8 @@ This is the current execution map for Mars Harness. It exists because the
 original master plan and delivery schedule are now historical baseline
 documents: useful for lineage, but stale as a status source.
 
-Future agents should use this file, the ticket tree, and the Mars parity plan
-to decide what to do next.
+Future agents should use this file, the ticket tree, and prioritized backlog
+plans to decide what to do next.
 
 ## Current Truth
 
@@ -21,7 +22,11 @@ to decide what to do next.
 - Ticket state:
   - `docs/tickets/in-progress/` has no active tickets.
   - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-034`, `MH-035`, and `MH-037`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, and `MH-036`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, `MH-036`, and `MH-038`.
+- Exec-plan state:
+  - `docs/exec-plans/active/` contains exactly one active plan: this file.
+  - `docs/exec-plans/backlog/` contains prioritized waiting plans.
+  - `docs/exec-plans/superseded/` contains historical plans that must not drive current work.
 - GitHub release notes are published for semantic versions generated from `VERSION`.
 - Release binary assets are still missing and tracked by `MH-031`.
 - Model evaluation, Ollama catalog support, and model swaps are still tracked by
@@ -31,11 +36,11 @@ to decide what to do next.
 
 | Plan | State | How to use it |
 | --- | --- | --- |
-| `current-operating-plan.md` | Active | Use this file as the top-level execution map. |
-| `mars-parity-supersession-plan.md` | Active | Strategic parity/supersession roadmap. Workstreams remain mostly open. |
-| `model-evaluation-refresh-plan.md` | Active | Tactical plan for `MH-030`. |
-| `master-execution-plan.md` | Superseded pending reconciliation | Historical baseline. Do not use its checkbox status as truth. |
-| `delivery-schedule.md` | Superseded pending reconciliation | Historical milestone schedule. Do not use its checkbox status as truth. |
+| `active/current-operating-plan.md` | Active, P0 | Use this file as the only top-level execution map. |
+| `backlog/mars-parity-supersession-plan.md` | Backlog, P1 | Strategic parity/supersession roadmap. Pull slices into tickets and this active plan before execution. |
+| `backlog/model-evaluation-refresh-plan.md` | Backlog, P4 | Tactical plan for `MH-030`. Promote into the active plan when model-refresh work is next. |
+| `superseded/master-execution-plan.md` | Superseded | Historical baseline. Do not use its checkbox status as truth. |
+| `superseded/delivery-schedule.md` | Superseded | Historical milestone schedule; kept for lineage only. |
 
 ## Current Priority Order
 

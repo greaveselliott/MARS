@@ -82,8 +82,10 @@ func workflowSurfaces() []string {
 		"docs/tickets/README.md",
 		"docs/product-specs",
 		"docs/design-docs",
-		"docs/exec-plans/active/delivery-schedule.md",
-		"docs/exec-plans/active/master-execution-plan.md",
+		"docs/exec-plans/README.md",
+		"docs/exec-plans/active/current-operating-plan.md",
+		"docs/exec-plans/superseded/delivery-schedule.md",
+		"docs/exec-plans/superseded/master-execution-plan.md",
 		"internal/scanner/init.go",
 		"examples/roles",
 	}

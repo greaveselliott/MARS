@@ -41,7 +41,7 @@ seed.
 - `docs/design-docs/self-reflective-telemetry.md`
 - `docs/design-docs/index.md`
 - `docs/product-specs/product-surface.md`
-- `docs/exec-plans/active/mars-parity-supersession-plan.md`
+- `docs/exec-plans/backlog/mars-parity-supersession-plan.md`
 - `AGENTS.md`
 
 ## Acceptance Criteria

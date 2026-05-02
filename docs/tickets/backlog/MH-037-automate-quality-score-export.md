@@ -43,7 +43,7 @@ grades once scoring, telemetry, dogfood, and ticket-state data are available.
 - `docs/QUALITY_SCORE.md`
 - `docs/design-docs/self-reflective-telemetry.md`
 - `docs/product-specs/product-surface.md`
-- `docs/exec-plans/active/mars-parity-supersession-plan.md`
+- `docs/exec-plans/backlog/mars-parity-supersession-plan.md`
 
 ## Acceptance Criteria
 

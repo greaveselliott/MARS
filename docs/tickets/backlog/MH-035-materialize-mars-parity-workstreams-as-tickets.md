@@ -34,7 +34,7 @@ directly.
 
 ## Affected Files
 
-- `docs/exec-plans/active/mars-parity-supersession-plan.md`
+- `docs/exec-plans/backlog/mars-parity-supersession-plan.md`
 - `docs/tickets/backlog/`
 - `docs/tickets/README.md`
 
@@ -56,4 +56,3 @@ directly.
 
 - [ ] Ticket creation follows canonical backlog path and naming.
 - [ ] No generated ticket contains unchecked assumptions that conflict with strict trunk.
-

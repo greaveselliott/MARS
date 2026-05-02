@@ -177,7 +177,7 @@ Do not import ticket IDs into Harness defaults. Import the failure classes and c
 
 ## Impact On The Active Supersession Plan
 
-The audit supports these workstreams in [mars-parity-supersession-plan.md](../exec-plans/active/mars-parity-supersession-plan.md):
+The audit supports these workstreams in [mars-parity-supersession-plan.md](../exec-plans/backlog/mars-parity-supersession-plan.md):
 
 - A and B: role model and registry.
 - C: conversation and documentation discipline.

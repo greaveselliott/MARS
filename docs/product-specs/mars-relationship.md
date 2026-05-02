@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Updated:** 2026-05-02
 **Owner:** Mars Harness maintainers
-**Sources:** [Mars parity supersession plan](../exec-plans/active/mars-parity-supersession-plan.md), [Mars audit](../references/mars-meta-harness-relevance-audit.md), [vision](vision.md)
+**Sources:** [Mars parity supersession plan](../exec-plans/backlog/mars-parity-supersession-plan.md), [Mars audit](../references/mars-meta-harness-relevance-audit.md), [vision](vision.md)
 
 ## Position
 
@@ -70,7 +70,7 @@ Mars Harness can be considered ready to supersede Mars's meta-harness when:
 
 Mars Harness now has the stronger product foundation: Go binary, local inference, SQLite queue, dashboard, trust store, scoring store, guardrails, scanner, generated target harness, context glossary, and optional remote-code-host integration.
 
-Mars still has richer proven operating habits in some areas: role registry, intervention-debt hygiene, deterministic maintenance scripts, dogfood matrix, and repo-visible quality artifacts. The active [Mars parity supersession plan](../exec-plans/active/mars-parity-supersession-plan.md) owns that remaining parity work.
+Mars still has richer proven operating habits in some areas: role registry, intervention-debt hygiene, deterministic maintenance scripts, dogfood matrix, and repo-visible quality artifacts. The [Mars parity supersession plan](../exec-plans/backlog/mars-parity-supersession-plan.md) is the P1 backlog plan for that remaining work; the current active plan decides which slice runs next.
 
 ## Product Rule
 

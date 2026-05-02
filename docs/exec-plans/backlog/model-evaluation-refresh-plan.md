@@ -1,6 +1,7 @@
 # Model Evaluation Refresh Plan
 
-**Status:** Active
+**Status:** Backlog
+**Priority:** P4
 **Updated:** 2026-05-02
 **Owner:** Mars Harness maintainers
 **Sources:** [May 2026 model landscape](../../references/model-landscape-may-2026.md), [local inference design](../../design-docs/local-inference.md)
@@ -8,6 +9,11 @@
 ## Goal
 
 Make "best model" an evidence-backed, repeatable harness process instead of another hardcoded snapshot.
+
+This plan is waiting behind higher-priority active-plan hygiene, Mars parity
+ticket materialization, quality score export, and release asset work. Promote
+the next model-refresh slice into `../active/current-operating-plan.md` before
+execution.
 
 ## Current Slice
 

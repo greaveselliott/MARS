@@ -68,10 +68,15 @@ func Init(repoRoot string, force bool) error {
 		filepath.Join(repoRoot, "docs", "tickets", "backlog"),
 		filepath.Join(repoRoot, "docs", "tickets", "in-progress"),
 		filepath.Join(repoRoot, "docs", "tickets", "done"),
+		filepath.Join(repoRoot, "docs", "exec-plans", "backlog"),
 		filepath.Join(repoRoot, "docs", "exec-plans", "active"),
 		filepath.Join(repoRoot, "docs", "exec-plans", "completed"),
+		filepath.Join(repoRoot, "docs", "exec-plans", "superseded"),
 		filepath.Join(repoRoot, "docs", "design-docs"),
 		filepath.Join(repoRoot, "docs", "references"),
+		filepath.Join(repoRoot, "docs", "reports", "qa"),
+		filepath.Join(repoRoot, "docs", "reports", "security"),
+		filepath.Join(repoRoot, "docs", "reports", "dependencies"),
 	}
 	for _, d := range dirs {
 		if err := os.MkdirAll(d, 0o755); err != nil {
@@ -514,6 +519,7 @@ the system of record for plans, decisions, tickets, traces, and completed work.
 - Complete one coherent step at a time.
 - If blocked, record the blocker, create or update the dependency ticket, and return the ticket to a non-misleading state.
 - Commit and push after each completed step.
+- Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
 - After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
 - When GitHub release credentials are configured, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry after pushing the release-note commit. If publishing is blocked, record the blocker explicitly.
 - Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
@@ -570,7 +576,7 @@ id: T-001
 title: Implement player movement and controls
 priority: high
 complexity: medium
-source: weekly-priorities.md — This week item 1
+source: current-operating-plan.md — This week item 1
 created: 2026-04-12
 depends_on: []
 ---
@@ -578,7 +584,7 @@ depends_on: []
 # T-001: Implement player movement and controls
 
 ## Context
-Source: weekly-priorities.md — core gameplay mechanics (Week 1).
+Source: current-operating-plan.md — core gameplay mechanics (Week 1).
 
 ## Requirements
 [Specific implementation requirements]
@@ -624,17 +630,60 @@ Intervention-debt tickets include role, target, category, severity, confidence, 
 
 	"docs/exec-plans/README.md": `# Execution Plans
 
-Plans live here. Active plans are in active/, completed plans in completed/.
+Plans live here. They follow a ticket-like lifecycle:
+
+- ` + "`backlog/`" + ` for prioritized plans that are not current
+- ` + "`active/`" + ` for exactly one active plan
+- ` + "`completed/`" + ` for finished plans
+- ` + "`superseded/`" + ` for historical plans that must not drive current work
+
+There must be only one active exec plan at a time. Promote work by updating
+` + "`active/current-operating-plan.md`" + `, not by adding another active plan.
+Backlog plans must carry a ` + "`**Priority:**`" + ` value and wait their turn like
+backlog tickets.
 
 ## Format
 
 Each plan has:
-- **Status** (Active / Completed)
-- **Source** (which weekly priority or initiative spawned it)
+- **Status** (Backlog / Active / Completed / Superseded)
+- **Priority** (required for active and backlog plans)
+- **Source** (which roadmap item, ticket, audit, or initiative spawned it)
 - **Created / Updated** dates
 - **Purpose** (what the plan achieves)
 - **Tasks** with checkboxes and ticket references
 - **Dependencies** between tasks
+`,
+
+	"docs/exec-plans/active/current-operating-plan.md": `# Current Operating Plan
+
+**Status:** Active
+**Priority:** P0
+**Created:** 2026-05-02
+**Owner:** Project maintainers
+**Source:** mars-harness init
+
+## Purpose
+
+This is the only active exec plan for the repository. Use it to decide the next
+work slice, ticket priority, and plan promotions. Do not create another active
+exec plan; move waiting plans to ` + "`docs/exec-plans/backlog/`" + ` with priority.
+
+## Current Truth
+
+- ` + "`docs/exec-plans/active/`" + ` contains exactly one active plan: this file.
+- ` + "`docs/tickets/in-progress/`" + ` should be drained before backlog work.
+- ` + "`docs/tickets/backlog/`" + ` contains waiting tickets.
+
+## Current Priority Order
+
+1. Establish the project build, test, lint, and run commands in ` + "`docs/design-docs/context-glossary.md`" + `.
+2. Convert the first coherent product slice into tickets.
+3. Complete in-progress tickets before claiming new backlog work.
+
+## Plan Backlog
+
+Add waiting plans under ` + "`docs/exec-plans/backlog/`" + ` with explicit priority.
+Promote one slice at a time by updating this file.
 `,
 
 	"docs/design-docs/index.md": `# Design Documents
@@ -827,7 +876,7 @@ var defaultRolePrompts = map[string]string{
 ## Role
 
 You are the CEO. You assess the project's current state, set strategic
-direction, and produce a weekly priorities document that gives the team
+direction, and update the single active operating plan that gives the team
 clear, ordered work.
 
 ## Decision Recording
@@ -855,26 +904,32 @@ multi-week prioritised backlog with a clear "This week (Week 1)" slice.
 
 STEP 1 — Read README.md first. This is the source of truth for the project.
 
-STEP 2 — Check if docs/exec-plans/active/weekly-priorities.md exists.
+STEP 2 — Check if docs/exec-plans/active/current-operating-plan.md exists.
   - If it DOES exist: read it, plus check backlog/ and done/ tickets.
   - If it does NOT exist: this is a BRAND NEW project. Use ONLY the README
     to derive your priorities. Do NOT waste turns reading files that don't
     exist yet. Skip steps 3-7 below and go straight to the TASK.
 
 STEP 3 (returning projects only):
-3. docs/exec-plans/active/ (all active execution plans)
-4. docs/tickets/backlog/ and docs/tickets/in-progress/ (current work state)
-5. docs/tickets/done/ (what was recently completed)
-6. docs/design-docs/ (architectural decisions)
-7. Recent commit history: git log --oneline -20
+3. docs/exec-plans/active/current-operating-plan.md (the only active execution plan)
+4. docs/exec-plans/backlog/ (prioritized waiting plans)
+5. docs/tickets/backlog/ and docs/tickets/in-progress/ (current work state)
+6. docs/tickets/done/ (what was recently completed)
+7. docs/design-docs/ (architectural decisions)
+8. Recent commit history: git log --oneline -20
 
-TASK: Write docs/exec-plans/active/weekly-priorities.md using file_write.
+TASK: Update docs/exec-plans/active/current-operating-plan.md using file_write.
 CRITICAL: You MUST write the FULL document content. Do NOT create empty files.
 The file must contain all sections shown in the structure below.
+It must remain the only markdown file in ` + "`docs/exec-plans/active/`" + `.
 
-# Weekly Priorities — [date range]
+# Current Operating Plan
 
-**Previous week summary:** [2-3 sentences on what was accomplished]
+**Status:** Active
+**Priority:** P0
+**Updated:** [date]
+**Owner:** Project maintainers
+**Source:** CEO planning run
 
 ## Strategic alignment
 [3-5 sentences: restate the project's goals, what "This week" optimises for.]
@@ -915,8 +970,8 @@ ORDERING RUBRIC:
 - P3 — Nice-to-have, polish, future-proofing
 
 After writing priorities, commit and push your changes:
-  git add docs/exec-plans/active/weekly-priorities.md
-  git commit -m "vision: weekly priorities [date]"
+  git add docs/exec-plans/active/current-operating-plan.md
+  git commit -m "vision: update current operating plan [date]"
   git push
 
 ## Quality Bar
@@ -925,13 +980,14 @@ After writing priorities, commit and push your changes:
 - "This week" items have at most 7 entries with full detail.
 - Full backlog capped at 20 items.
 - If the project is healthy and no high-priority work exists, say so.
+- Do not create a second active exec plan. Put waiting plans in ` + "`docs/exec-plans/backlog/`" + `.
 `,
 
 	"coo": `# COO — Ticket Creator
 
 ## Role
 
-You are the COO. You convert the CEO's weekly priorities into specific,
+You are the COO. You convert the current operating plan into specific,
 actionable ticket files with clear acceptance criteria and links to design docs.
 
 ## Decision Recording
@@ -956,7 +1012,7 @@ who picks up the highest-priority ticket you created.
 You are the COO. You were triggered because the CEO set priorities and the
 CTO reviewed them. Create tickets from "This week (Week 1)".
 
-STEP 1 — Read docs/exec-plans/active/weekly-priorities.md.
+STEP 1 — Read docs/exec-plans/active/current-operating-plan.md.
   - If it exists: use "This week (Week 1)" as your ticket source.
   - If it does NOT exist: read README.md instead and derive tickets directly
     from the project spec / build order in the README. This happens on brand
@@ -985,10 +1041,10 @@ For each "This week" priority that has no existing ticket:
    - title: concise, action-oriented (e.g. "Implement wave progression system")
    - priority: high | medium | low
    - complexity: small | medium | large
-   - source: "weekly-priorities.md — This week item N"
+   - source: "current-operating-plan.md — This week item N"
    - depends_on: array of ticket IDs if applicable
    - body: full ticket content with these sections:
-     - Context: link to the weekly priority and its rationale
+     - Context: link to the current operating plan priority and its rationale
      - Requirements: specific implementation details
      - Affected Files: file paths or directories
      - Design Guidance: link to relevant design doc (or note one is needed)
@@ -1016,7 +1072,7 @@ CONSTRAINTS:
 COMMIT GATE — before finishing:
   Use git_status to verify your working tree. If there are uncommitted
   changes, use git_commit and git_push:
-  git_commit with message "tickets: create tickets for weekly priorities [date]"
+  git_commit with message "tickets: create tickets for current priorities [date]"
   git_push
 
 DON'T:
@@ -1063,7 +1119,7 @@ the CEO's priorities are technically sound.
 
 START by reading:
 1. README.md (project purpose and tech stack)
-2. docs/exec-plans/active/weekly-priorities.md (CEO's current priorities)
+2. docs/exec-plans/active/current-operating-plan.md (the only active execution plan)
 3. docs/design-docs/index.md (existing architectural decisions)
 4. docs/design-docs/ (all design documents)
 5. Recent commits: git log --oneline -20
@@ -1096,7 +1152,7 @@ TASKS:
      Active | Superseded by [link]
 
 3. IDENTIFY REFACTORING OPPORTUNITIES
-   If structural improvements are needed, note them in the weekly priorities
+   If structural improvements are needed, note them in the current operating plan
    feedback or create design docs that the COO can reference when creating tickets.
 
 After making changes, commit and push:
@@ -1338,7 +1394,7 @@ REVIEW CHECKLIST:
    - Are design docs updated if patterns changed?
 
 OUTPUT:
-Write your review as a file: docs/exec-plans/active/qa-review-[date].md
+Write your review as a file: docs/reports/qa/qa-review-[date].md
 
 Format:
 # QA Review — [date]
@@ -1359,7 +1415,7 @@ Format:
 - Verdict: PASS | NEEDS_FIXES
 
 Commit and push your review:
-  git add docs/exec-plans/active/qa-review-*.md
+  git add docs/reports/qa/qa-review-*.md
   git commit -m "qa: review [date]"
   git push
 `,
@@ -1405,7 +1461,7 @@ REVIEW CHECKLIST:
 5. CONFIGURATION — Insecure defaults, missing security headers
 
 OUTPUT:
-Write your audit as: docs/exec-plans/active/security-audit-[date].md
+Write your audit as: docs/reports/security/security-audit-[date].md
 
 Format:
 # Security Audit — [date]
@@ -1427,7 +1483,7 @@ Format:
 - Verdict: PASS | NEEDS_REMEDIATION
 
 Commit and push:
-  git add docs/exec-plans/active/security-audit-*.md
+  git add docs/reports/security/security-audit-*.md
   git commit -m "security: audit [date]"
   git push
 `,
@@ -1470,9 +1526,9 @@ If a manifest exists:
 5. Verify compatibility between dependency versions
 
 OUTPUT:
-If issues are found, write: docs/exec-plans/active/dep-review-[date].md
+If issues are found, write: docs/reports/dependencies/dep-review-[date].md
 with findings and recommended actions. Commit and push your review:
-  git add docs/exec-plans/active/dep-review-*.md
+  git add docs/reports/dependencies/dep-review-*.md
   git commit -m "deps: review [date]"
   git push
 `,

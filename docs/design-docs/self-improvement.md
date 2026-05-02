@@ -28,12 +28,26 @@ plan hygiene checks. The long-term response is deterministic checking through
 docs consistency, doctor, and CI so stale "active" plans cannot silently become
 the next agent's source of truth.
 
+### AD-073: One Active Exec Plan At A Time
+
+Exec plans now follow a ticket-like lifecycle: backlog, active, completed, or
+superseded. `docs/exec-plans/active/` must contain exactly one active plan, and
+that plan is the sole top-level control surface for execution. Other strategic
+or tactical plans belong in `docs/exec-plans/backlog/` with an explicit
+`**Priority:**` value until the current active plan promotes a slice of their
+work.
+
+This avoids plan pile-ups that behave like abandoned in-progress tickets. If an
+agent wants to execute work from a backlog plan, it updates the active plan's
+priority order first, then performs the work through normal tickets and commits.
+
 ### Design anchors
 
 - **Intervention detection:** classify events as **clear interventions** (unambiguous human override), **ambiguous** (could be normal workflow), or **non-interventions** to reduce false-positive evolution; store classification rationale in the trace.
 - **Reviewer meta-role:** dedicated analysis pass over traces and diffs; separate prompts/policies from worker roles where practical; same inference stack as workers—see circular trust below.
 - **Root cause classification:** buckets aligned with tenets (prompt, skill, guardrail, trigger, policy, context, model limitation)—each maps to a concrete evolution target file or setting.
 - **Telemetry triage:** recurring failure patterns and low scores become typed improvement proposals before any prompt, guardrail, context, tool, manifest, process, or inference change is attempted.
+- **Plan discipline:** only one active exec plan can drive work at once; backlog plans are prioritized like tickets.
 - **Evolution commit creation:** concrete file edits (e.g. `.harness/roles/`, `.harness/skills/`, guardrails, manifest) with trace-linked diffs; include commit text linking to originating job and score snapshot.
 - **Before/after tracking:** link evolution commits to subsequent score distributions and intervention rates; automatic rollback proposal if metrics violate guard thresholds.
 - **Safety rails (non-exhaustive):** cannot modify **own meta-prompts** arbitrarily; **rate limits** (e.g. max one evolution commit per role and scope per day); **auto-disable** evolution if scores worsen beyond a threshold after a change lands.
@@ -54,3 +68,4 @@ Store the **parent job id** in each evolution commit message and trace record fo
 - **2026-05-02 — Self-reflective telemetry triage:** Recurring telemetry patterns and low score snapshots now map to explicit improvement targets in `internal/telemetry`. The serve loop records bounded evolution reviews from those proposals instead of generic "investigate the prompt" notes.
 - **2026-05-02 — Skill evolution target:** Repeated workflow confusion, max-turn loops, and human recovery procedures should create or update compact scoped skills instead of bloating role prompts.
 - **2026-05-02 — Active plan drift:** The master execution plan and delivery schedule were kept as active even after the ticket tree moved far ahead of them. Stale active plans now count as intervention debt and should be corrected through a current operating plan plus mechanical hygiene checks.
+- **2026-05-02 — Single active plan:** The active exec-plan directory was reduced to one current operating plan. Mars parity and model evaluation plans moved to the plan backlog with priorities, while historical baseline plans moved to superseded lineage.
