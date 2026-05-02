@@ -403,6 +403,7 @@ the system of record for plans, decisions, tickets, traces, and completed work.
 - If blocked, record the blocker, create or update the dependency ticket, and return the ticket to a non-misleading state.
 - Commit and push after each completed step.
 - After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
+- Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
 - Keep generated or harness-owned guidance in sync with ` + "`mars-harness upgrade`" + `.
 - Convert repeated human recovery steps into compact scoped skills rather than growing role prompts.
 

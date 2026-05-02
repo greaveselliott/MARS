@@ -324,6 +324,7 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(agentGuide), "After every non-release semantic commit")
 	assert.Contains(t, string(agentGuide), "release: notes X.Y.Z")
+	assert.Contains(t, string(agentGuide), "Operating rules inherited from Mars Harness apply here")
 
 	releaseDoc, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	require.NoError(t, err)

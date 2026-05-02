@@ -91,6 +91,7 @@ mars-harness/
 8. **The repo is the system of record.** Decisions, discoveries, and plans live in docs, not in chat threads.
 9. **Always commit and push both repos.** When making changes to the harness and/or the target project, document, commit, and push changes in both. The harness and target project are separate git repositories — neither should have dangling uncommitted work at the end of a task.
 10. **Version every source and target change.** Every non-release semantic commit in this repo must be followed by `mars-harness release notes --repo . --bump auto`, then a `release: notes X.Y.Z` commit before the task is considered done. Initialized target repos receive the same rule through generated harness docs. Release-note commits are exempt and are ignored by the generator.
+11. **Operating rules mirror to targets.** Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. When adding or changing a rule, update the generated target guidance and tests in the same task.
 
 ## Database Isolation
 

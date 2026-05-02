@@ -57,6 +57,8 @@ Required generated surfaces:
 
 Generated target docs must mirror source-harness doctrine while staying project-agnostic. Existing target harness files and user-owned docs are preserved by upgrades.
 
+Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. Any change to commit discipline, versioning, ticket flow, documentation rules, skill creation, guardrail policy, trust/scoring behavior, release behavior, or context-routing discipline must update generated target guidance and tests in the same task.
+
 ## Versioning And Patch Notes
 
 Mars Harness and initialized target repos use the same release contract:

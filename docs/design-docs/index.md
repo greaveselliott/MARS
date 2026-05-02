@@ -15,7 +15,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [context-efficiency.md](context-efficiency.md) | Draft | Context assembly, budgets, knowledge routing, guardrail scoping |
 | [trigger-orchestration.md](trigger-orchestration.md) | Draft | Trigger sources (webhook, schedule, chain), upstream chaining via `then`, custom cron, strict-trunk default roles. AD-016 through AD-020. |
 | [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, strict-trunk pipeline for local use. AD-021 through AD-030, AD-033. |
-| [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and initialized harness parity, glossary-as-route context, repo-owned workflow contracts. AD-034 through AD-036. |
+| [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and initialized harness parity, glossary-as-route context, repo-owned workflow contracts, and operating-rule inheritance. AD-034 through AD-036, AD-058. |
 | [self-reflective-telemetry.md](self-reflective-telemetry.md) | Accepted | Harness grades itself and triages telemetry into prompt, skill, process, guardrail, context, inference, manifest, and tool-policy improvement targets. AD-037 through AD-039. |
 | [product-spec-governance.md](product-spec-governance.md) | Accepted | Product specs as a living product contract with metadata, index coverage, and docs-consistency enforcement. AD-040 through AD-042. |
 | [generated-docs-governance.md](generated-docs-governance.md) | Accepted | Generated docs as reproducible reference snapshots with catalog and docs-consistency checks. AD-043 through AD-045. |
@@ -84,3 +84,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-055 | Initialized target harnesses receive skill-evolution guidance so source and target workflows reduce human intervention the same way. | skill-evolution.md | Generated targets |
 | AD-056 | Every non-release semantic commit to this source repo is followed by generated release notes and a `release: notes X.Y.Z` commit before the task is done. | release-versioning.md | Release |
 | AD-057 | Initialized target repos inherit the same automatic versioning workflow through generated AGENTS.md, release-versioning docs, and release-manager prompts. | release-versioning.md | Generated targets |
+| AD-058 | Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. | mirrored-harness-and-context-glossary.md | Generated targets |

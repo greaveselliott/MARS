@@ -53,6 +53,20 @@ Symphony's `WORKFLOW.md` idea maps to Mars Harness as repo-owned workflow artifa
 
 Future work may introduce an explicit `WORKFLOW.md`, but v1 should first make these existing artifacts complete and mechanically checked.
 
+### AD-058: Operating Rules Inherit Into Target Harnesses
+
+Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only.
+
+An operating rule is any durable instruction that changes how agents should work: commit discipline, versioning, ticket flow, documentation rules, skill creation, guardrail policy, trust/scoring behavior, release behavior, or context-routing discipline.
+
+When a source operating rule changes, the same task must update:
+
+- source guidance such as `AGENTS.md`, `.cursor/rules/`, design docs, or product specs
+- generated target guidance in `internal/scanner/init.go`
+- scanner or docs-consistency tests proving the rule is mirrored
+
+Source-only exceptions must be explicit in the rule text. Ambiguity defaults to mirroring.
+
 ## Implementation Requirements
 
 - `init` creates `AGENTS.md` unless it already exists.
@@ -62,6 +76,7 @@ Future work may introduce an explicit `WORKFLOW.md`, but v1 should first make th
 - Starter role manifest entries load the glossary route file through `knowledge`.
 - `upgrade` fills in missing default harness files while preserving existing target manifest, role prompts, knowledge routes, guardrails, and user docs.
 - Repo docs created outside `.harness/` remain user content and are not overwritten by `upgrade`.
+- Any new source operating rule is mirrored into generated target guidance unless the rule is explicitly source-only.
 
 ## Consequences
 
@@ -69,6 +84,7 @@ Future work may introduce an explicit `WORKFLOW.md`, but v1 should first make th
 - Prompts stay smaller because glossary context is a pointer layer.
 - Agents have a standard place to add terminology discovered during work.
 - The source harness and initialized harness can evolve together through `mars-harness upgrade`.
+- Future rules do not silently improve source-agent behavior while leaving target agents behind.
 
 ## Open Follow-Ups
 
