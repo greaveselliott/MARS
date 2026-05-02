@@ -21,7 +21,8 @@ _(No baseline AD IDs; add AD-* rows when choices are frozen.)_
 - **Minimal base context:** smallest fixed preamble that every role needs (policies, repo identity, current task, manifest excerpt); everything else is opt-in per turn.
 - **Tool-based retrieval vs context stuffing:** prefer tools (search, read file, symbol lookup) over preemptively embedding large trees; define default tool set per role template.
 - **Context budgets per role:** token/time ceilings coordinated with agent-runtime max-turn and truncation rules; soft vs hard budget behavior documented.
-- **Knowledge routing:** `.harness/knowledge-routes.yaml` maps task classes or paths to curated docs/snippets; validation and staleness checks on `harness doctor`.
+- **Knowledge routing:** `.harness/knowledge/*.yaml` maps task classes or paths to curated docs/snippets; validation and staleness checks on `harness doctor`.
+- **Context glossary:** initialized repos receive `docs/design-docs/context-glossary.md` and `.harness/knowledge/context-glossary.yaml`; the injected prompt contains only route hints, while agents retrieve the glossary or deeper docs only when needed.
 - **Guardrail scoping:** which rules are injected into which roles to avoid over-exposing sensitive policies or doubling volume unnecessarily; align with [guardrails.md](guardrails.md) tiers.
 
 ### Metrics (future)
@@ -39,3 +40,4 @@ Document default budgets in `.harness/` examples so new repos inherit sensible c
 ## Discoveries
 
 - **2026-04-11 — MH-004 assembler:** `internal/context.Assemble` builds fixed-order sections (`## ROLE`, `## GUARDRAILS`, `## KNOWLEDGE ROUTES`, `## TRIGGER CONTEXT`, `## REPO SUMMARY`), omits optional blocks when empty, filters guardrails by `Scope` (empty/`all` = global), formats knowledge as bullet lines `When working on X, read Y`, and applies a token **budget** using `llm.EstimateTokens` by iteratively shrinking lowest-priority bodies first (`repo` < `trigger` < `knowledge`; `role` is never truncated; shrinking stops if the budget still cannot be met without editing the role text).
+- **2026-05-02 — Context glossary default:** `mars-harness init` now emits a target `AGENTS.md`, `docs/design-docs/context-glossary.md`, and `.harness/knowledge/context-glossary.yaml`. Default roles reference the glossary route file so the base prompt carries a compact map, not full project doctrine.

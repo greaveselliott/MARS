@@ -17,8 +17,9 @@ const harnessDir = ".harness"
 //
 // IMPORTANT: --force only overwrites the manifest.yaml configuration file.
 // It never deletes or overwrites user content (tickets, exec-plans, design-docs,
-// role prompts, or scaffold docs like tickets/README.md). Existing files are
-// always preserved; only missing scaffolding is created.
+// role prompts, generated AGENTS.md, harness knowledge routes, or scaffold docs
+// like tickets/README.md). Existing files are always preserved; only missing
+// scaffolding is created.
 func Init(repoRoot string, force bool) error {
 	if repoRoot == "" {
 		return fmt.Errorf("init: repo root is empty — pass the path to the repository")
@@ -57,6 +58,7 @@ func Init(repoRoot string, force bool) error {
 		filepath.Join(repoRoot, "docs", "exec-plans", "active"),
 		filepath.Join(repoRoot, "docs", "exec-plans", "completed"),
 		filepath.Join(repoRoot, "docs", "design-docs"),
+		filepath.Join(repoRoot, "docs", "references"),
 	}
 	for _, d := range dirs {
 		if err := os.MkdirAll(d, 0o755); err != nil {
@@ -84,6 +86,21 @@ func Init(repoRoot string, force bool) error {
 		slog.Debug("wrote default role prompt", "role", name)
 	}
 
+	for name, content := range defaultHarnessFiles {
+		harnessFilePath := filepath.Join(harnessPath, name)
+		if _, err := os.Stat(harnessFilePath); err == nil {
+			slog.Debug("init: preserving existing harness support file", "path", name)
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(harnessFilePath), 0o755); err != nil {
+			return fmt.Errorf("init: create %s: %w", filepath.Dir(harnessFilePath), err)
+		}
+		if err := os.WriteFile(harnessFilePath, []byte(content), 0o644); err != nil {
+			return fmt.Errorf("init: write %s: %w", harnessFilePath, err)
+		}
+		slog.Debug("wrote default harness support file", "path", name)
+	}
+
 	for name, content := range defaultDocs {
 		docPath := filepath.Join(repoRoot, name)
 		if _, err := os.Stat(docPath); err == nil {
@@ -100,10 +117,11 @@ func Init(repoRoot string, force bool) error {
 	return nil
 }
 
-// Upgrade updates manifest.yaml and role prompts in an existing .harness/ to
-// match the current harness defaults. This is for target projects that were
-// initialised with an older version of mars-harness. Docs and user content
-// (tickets, exec-plans, design-docs) are never touched.
+// Upgrade updates manifest.yaml, role prompts, and harness-owned support files
+// in an existing .harness/ to match the current harness defaults. This is for
+// target projects that were initialised with an older version of mars-harness.
+// Repo docs and user content (tickets, exec-plans, design-docs) are never
+// touched.
 func Upgrade(repoRoot string) (updated []string, err error) {
 	repoRoot = filepath.Clean(repoRoot)
 	harnessPath := filepath.Join(repoRoot, harnessDir)
@@ -130,6 +148,18 @@ func Upgrade(repoRoot string) (updated []string, err error) {
 		}
 		updated = append(updated, "roles/"+name+".md")
 		slog.Debug("upgrade: wrote role prompt", "role", name)
+	}
+
+	for name, content := range defaultHarnessFiles {
+		harnessFilePath := filepath.Join(harnessPath, name)
+		if err := os.MkdirAll(filepath.Dir(harnessFilePath), 0o755); err != nil {
+			return updated, fmt.Errorf("upgrade: create %s: %w", filepath.Dir(harnessFilePath), err)
+		}
+		if err := os.WriteFile(harnessFilePath, []byte(content), 0o644); err != nil {
+			return updated, fmt.Errorf("upgrade: write %s: %w", harnessFilePath, err)
+		}
+		updated = append(updated, name)
+		slog.Debug("upgrade: wrote harness support file", "path", name)
 	}
 
 	slog.Info("upgrade: complete", "files_updated", len(updated))
@@ -179,12 +209,14 @@ roles:
     model: reasoning
     schedule: "0 20 * * 0"
     then: [cto-weekly]
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
 
   coo:
     prompt: roles/coo.md
     model: reasoning
     then: [engineer]
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, file_search, shell_exec, grep, record_decision, ticket_create, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
@@ -193,6 +225,7 @@ roles:
     model: reasoning
     schedule: "0 21 * * 0"
     then: [coo]
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
@@ -202,6 +235,7 @@ roles:
     schedule: "0 0,6,12,18 * * 1-5"
     then: [qa, engineer, dogfood]
     idle_then: [ceo, janitor]
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Review ───────────────────────────────────────────────
@@ -210,6 +244,7 @@ roles:
     model: fast
     max_turns: 20
     then: [security]
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, grep, record_decision]
 
   security:
@@ -218,6 +253,7 @@ roles:
     max_turns: 20
     schedule: "0 22 * * 0"
     then: [dependency-manager]
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
 
   dependency-manager:
@@ -225,6 +261,7 @@ roles:
     model: fast
     max_turns: 10
     schedule: "0 23 * * 0"
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
 
   # ── Release ──────────────────────────────────────────────
@@ -232,6 +269,7 @@ roles:
     prompt: roles/release-manager.md
     model: reasoning
     schedule: "0 8 * * 1"
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
@@ -240,6 +278,7 @@ roles:
     model: coding
     schedule: "0 10 * * 1-5"
     max_turns: 40
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── CI repair ────────────────────────────────────────────
@@ -249,6 +288,7 @@ roles:
     triggers:
       - workflow_run.conclusion == "failure"
     then: [qa]
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Backlog entropy management ─────────────────────────
@@ -257,11 +297,75 @@ roles:
     model: fast
     schedule: "0 7 * * *"
     max_turns: 30
+    knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
 `, projectName, projectName)
 }
 
+var defaultHarnessFiles = map[string]string{
+	"knowledge/context-glossary.yaml": `routes:
+  - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
+    paths: AGENTS.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md
+  - when: planning, ticket creation, in-progress work, blocked work, or completion status
+    paths: docs/exec-plans/README.md, docs/tickets/README.md
+  - when: implementation, architecture, tests, or local commands
+    paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md
+  - when: agent-first workflow, repository memory, or why this harness exists
+    paths: docs/references/harness-engineering-agent-first.md
+`,
+}
+
 var defaultDocs = map[string]string{
+	"AGENTS.md": `# Agent Guide
+
+> First file any agent reads. Keep it concise: this is a map, not the encyclopedia.
+
+## What This Repo Is
+
+This repository is managed by Mars Harness. Agents work directly on ` + "`main`" + `,
+make small semantic commits, and push after each completed step. The repo is
+the system of record for plans, decisions, tickets, traces, and completed work.
+
+## Start Here
+
+1. Read ` + "`README.md`" + ` for the product or project goal.
+2. Read ` + "`docs/design-docs/index.md`" + ` for architectural decisions.
+3. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
+4. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
+5. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
+
+## Workflow
+
+- Work on ` + "`main`" + `. Use strict trunk for normal delivery.
+- Prefer in-progress tickets before backlog work.
+- Complete one coherent step at a time.
+- If blocked, record the blocker, create or update the dependency ticket, and return the ticket to a non-misleading state.
+- Commit and push after each completed step.
+- Keep generated or harness-owned guidance in sync with ` + "`mars-harness upgrade`" + `.
+
+## Context Discipline
+
+Use the glossary route first: read the small map, then open only the files that
+matter for the current task. Do not stuff large docs into context when a
+targeted file read or search would do.
+
+## Decisions
+
+Non-obvious architecture, workflow, guardrail, or trade-off decisions belong in
+` + "`docs/design-docs/`" + ` and must be linked from ` + "`docs/design-docs/index.md`" + `.
+
+## Tickets
+
+Tickets live in:
+
+- ` + "`docs/tickets/backlog/`" + ` for ready work
+- ` + "`docs/tickets/in-progress/`" + ` for actively worked tickets
+- ` + "`docs/tickets/done/`" + ` for completed tickets
+
+In-progress tickets are priority work. Do not leave a ticket in progress unless
+work is actively continuing and the next action is clear.
+`,
+
 	"docs/tickets/README.md": `# Tickets
 
 Work items live as markdown files in this directory. The repo is the source of truth.
@@ -353,12 +457,83 @@ Architectural decisions and design documents for this project.
 
 ## Documents
 
-(None yet — the CTO will create design docs as the project evolves.)
+| Document | Status | Purpose |
+| --- | --- | --- |
+| [context-glossary.md](context-glossary.md) | Seed | Compact glossary and context map used by agents to find the right docs without loading everything. |
 
 ## Decision Log
 
 | ID | Decision | Date | Status |
 |----|----------|------|--------|
+`,
+
+	"docs/design-docs/context-glossary.md": `# Context Glossary
+
+**Status:** Seed
+
+This file is the compact map agents read before pulling larger context. Keep it
+small. Add terms, domain concepts, command names, architecture labels, and
+project-specific vocabulary that help future agents build correctly without
+loading every document.
+
+## How Agents Should Use This
+
+1. Check this glossary when a task uses unfamiliar terms or ambiguous names.
+2. Follow the referenced files for deeper context.
+3. Add a term when a repeated clarification would otherwise live only in chat.
+4. Keep entries short. Link out instead of pasting long explanations here.
+
+## Project Terms
+
+| Term | Meaning | Read next |
+| --- | --- | --- |
+| Repo | This target repository. | ` + "`README.md`" + ` |
+| Harness | The Mars Harness automation layer in ` + "`.harness/`" + `. | ` + "`.harness/manifest.yaml`" + ` |
+| Ticket | A markdown work item. | ` + "`docs/tickets/README.md`" + ` |
+| In progress | Active work that should be completed or explicitly unblocked before new backlog work. | ` + "`docs/tickets/in-progress/`" + ` |
+| Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
+
+## Project Commands
+
+Record the commands future agents should use here:
+
+- Build: TBD
+- Test: TBD
+- Lint: TBD
+- Run locally: TBD
+`,
+
+	"docs/references/README.md": `# References
+
+External material that informs this repository's agent-first workflow.
+
+| File | Type | Purpose |
+| --- | --- | --- |
+| [harness-engineering-agent-first.md](harness-engineering-agent-first.md) | Article | OpenAI Harness Engineering summary for repo-as-system-record, progressive disclosure, mechanical guardrails, and failure feedback loops. |
+`,
+
+	"docs/references/harness-engineering-agent-first.md": `# Reference: Harness Engineering - Leveraging Codex in an Agent-First World
+
+**Source:** https://openai.com/index/harness-engineering/
+**Author:** Ryan Lopopolo, Member of the Technical Staff at OpenAI
+**Published:** February 11, 2026
+
+## Why This Matters Here
+
+The article argues that agent-first repositories need compact entrypoints,
+versioned knowledge, mechanical guardrails, and feedback loops that turn agent
+failures into better tools, tests, docs, and constraints.
+
+For this repository:
+
+- ` + "`AGENTS.md`" + ` is a map, not an encyclopedia.
+- ` + "`docs/`" + ` is the durable system of record.
+- ` + "`docs/design-docs/context-glossary.md`" + ` carries compact terminology and routing hints.
+- Important rules should become checks, guardrails, or tests instead of staying only in prose.
+- Human intervention should become a ticket, decision, guardrail, test, or harness improvement.
+
+Mars Harness translates the article's integration examples into strict trunk:
+small semantic commits directly to ` + "`main`" + `, then push after each completed step.
 `,
 }
 

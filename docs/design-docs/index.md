@@ -15,6 +15,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [context-efficiency.md](context-efficiency.md) | Draft | Context assembly, budgets, knowledge routing, guardrail scoping |
 | [trigger-orchestration.md](trigger-orchestration.md) | Draft | Trigger sources (webhook, schedule, chain), upstream chaining via `then`, custom cron, strict-trunk default roles. AD-016 through AD-020. |
 | [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, strict-trunk pipeline for local use. AD-021 through AD-030, AD-033. |
+| [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and initialized harness parity, glossary-as-route context, repo-owned workflow contracts. AD-034 through AD-036. |
 
 ## Architecture Decision Log
 
@@ -53,3 +54,6 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-031 | Inference resilience. HTTP timeout 60s→5min for local inference. Fast-tier context 8192→16384 (Gemma 4 supports 128k). Active health spot-check in router before returning endpoint (catches stale healthy state from crashed servers). Non-retryable error for context-exceeded. Retry backoff increased across client and agent loop. | local-inference.md | Resilience |
 | AD-032 | Zero-config local inference performance profile and llama tuning. Auto profile selects smaller Q4/Q5 defaults on memory-constrained unified-memory machines while keeping overrides available. Default parallel slots are capped at 1 for strict-trunk single-agent throughput. | local-inference.md | Performance |
 | AD-033 | In-progress tickets are drained before backlog work. Engineer gates allow completing one pre-existing in-progress ticket while others remain queued, but block new claims, stale returns to backlog, and no-progress handoffs. | dogfood-and-decisions.md | Ticket completion |
+| AD-034 | Source and initialized harnesses must mirror operating doctrine: compact AGENTS.md, strict trunk, ticket workflow, design decisions, references, and knowledge routing. | mirrored-harness-and-context-glossary.md | Generated targets |
+| AD-035 | Context glossary is a routing layer, not a prompt-stuffed manual. Initialized repos get `docs/design-docs/context-glossary.md` and `.harness/knowledge/context-glossary.yaml`. | mirrored-harness-and-context-glossary.md | Context |
+| AD-036 | Workflow contracts belong in repo-owned artifacts. Current v1 contract is AGENTS.md + manifest + ticket docs + exec-plan docs + knowledge routes; a first-class WORKFLOW.md remains a future option. | mirrored-harness-and-context-glossary.md | Orchestration |

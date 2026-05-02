@@ -76,11 +76,14 @@ mars-harness init
 This creates:
 
 ```
-.harness/
-├── manifest.yaml     # Role definitions and triggers
-├── roles/            # Role prompt files
-├── guardrails/       # Safety rules
-└── knowledge/        # Context files for roles
+.
+├── AGENTS.md         # Compact agent entrypoint and workflow map
+├── docs/             # Tickets, exec plans, design docs, references
+└── .harness/
+    ├── manifest.yaml # Role definitions and triggers
+    ├── roles/        # Role prompt files
+    ├── guardrails/   # Safety rules
+    └── knowledge/    # Lightweight context routes, including the glossary route
 ```
 
 Edit `.harness/manifest.yaml` to configure which roles are active. See [bundle-reference.md](bundle-reference.md) for the full format.

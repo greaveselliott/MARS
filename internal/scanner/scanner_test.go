@@ -246,9 +246,15 @@ func TestInit_success(t *testing.T) {
 	assert.DirExists(t, filepath.Join(dir, "docs", "exec-plans", "active"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "exec-plans", "completed"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "design-docs"))
+	assert.DirExists(t, filepath.Join(dir, "docs", "references"))
+	assert.FileExists(t, filepath.Join(dir, "AGENTS.md"))
+	assert.FileExists(t, filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "tickets", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "exec-plans", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "index.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "context-glossary.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "references", "README.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "references", "harness-engineering-agent-first.md"))
 
 	expectedPrompts := []string{
 		"ceo", "coo", "cto", "engineer", "qa", "security",
@@ -288,6 +294,11 @@ func TestInit_success(t *testing.T) {
 
 	assert.Contains(t, manifestStr, "record_decision", "manifest should include record_decision in tool lists")
 	assert.Contains(t, manifestStr, "max_turns: 40", "dogfood role should have max_turns: 40")
+	assert.Contains(t, manifestStr, "knowledge/context-glossary.yaml", "manifest should include default glossary knowledge route")
+
+	glossary, err := os.ReadFile(filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml"))
+	require.NoError(t, err)
+	assert.Contains(t, string(glossary), "docs/design-docs/context-glossary.md")
 }
 
 func TestInit_alreadyExists(t *testing.T) {
@@ -330,6 +341,12 @@ func TestInit_forcePreservesExistingContent(t *testing.T) {
 	readmePath := filepath.Join(dir, "docs", "tickets", "README.md")
 	require.NoError(t, os.WriteFile(readmePath, []byte("# Custom README"), 0o644))
 
+	agentsPath := filepath.Join(dir, "AGENTS.md")
+	require.NoError(t, os.WriteFile(agentsPath, []byte("# Custom Agent Guide"), 0o644))
+
+	glossaryRoute := filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml")
+	require.NoError(t, os.WriteFile(glossaryRoute, []byte("routes: []\n# custom"), 0o644))
+
 	require.NoError(t, Init(dir, true))
 
 	ticketContent, err := os.ReadFile(ticketPath)
@@ -343,6 +360,14 @@ func TestInit_forcePreservesExistingContent(t *testing.T) {
 	readmeContent, err := os.ReadFile(readmePath)
 	require.NoError(t, err)
 	assert.Equal(t, "# Custom README", string(readmeContent), "custom docs must be preserved on --force")
+
+	agentsContent, err := os.ReadFile(agentsPath)
+	require.NoError(t, err)
+	assert.Equal(t, "# Custom Agent Guide", string(agentsContent), "custom AGENTS.md must be preserved on --force")
+
+	glossaryContent, err := os.ReadFile(glossaryRoute)
+	require.NoError(t, err)
+	assert.Equal(t, "routes: []\n# custom", string(glossaryContent), "custom harness knowledge routes must be preserved on --force")
 
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"), "manifest must still be created")
 }
@@ -764,11 +789,16 @@ func TestUpgrade_updatesManifestAndPrompts(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, updated, "manifest.yaml")
 	assert.Contains(t, updated, "roles/coo.md")
+	assert.Contains(t, updated, "knowledge/context-glossary.yaml")
 
 	content, err := os.ReadFile(oldPrompt)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "ticket_create", "upgraded prompt should reference ticket_create tool")
 	assert.NotContains(t, string(content), "old outdated prompt")
+
+	knowledge, err := os.ReadFile(filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml"))
+	require.NoError(t, err)
+	assert.Contains(t, string(knowledge), "docs/design-docs/context-glossary.md")
 }
 
 func TestUpgrade_failsWithoutHarness(t *testing.T) {

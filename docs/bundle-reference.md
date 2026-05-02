@@ -12,9 +12,9 @@ A bundle is the `.harness/` directory in your repository. It contains everything
 │   └── pipeline-fixer.md
 ├── guardrails/         # Guardrail rule files (YAML)
 │   └── safety.yaml
-└── knowledge/          # Context files injected into prompts
-    ├── architecture.md
-    └── api-conventions.md
+└── knowledge/          # Lightweight context route files
+    ├── context-glossary.yaml
+    └── api-conventions.yaml
 ```
 
 ## manifest.yaml
@@ -37,7 +37,7 @@ roles:
     guardrails:
       - guardrails/safety.yaml
     knowledge:
-      - knowledge/architecture.md
+      - knowledge/context-glossary.yaml
     triggers:
       - workflow_run.conclusion == "failure"
 ```
@@ -77,15 +77,17 @@ Triggers use the format `<event>.<field> == "<value>"` or shorthand names:
 ```yaml
 triggers:
   - workflow_run.conclusion == "failure"   # CI failure
-  - pull_request.opened                    # PR opened
-  - pull_request.synchronize               # PR updated
-  - pull_request.merged                    # PR merged
   - schedule.weekly                        # Weekly cron
   - schedule.daily                         # Daily cron
   - workflow_dispatch                      # Manual trigger
   - ticket.assigned                        # Ticket assigned
+  - ticket.blocked                         # Blocked ticket needs repair
   - alert.fired                            # Alert triggered
 ```
+
+GitHub compatibility triggers may be configured explicitly, but strict trunk is
+the default delivery model: roles commit directly to `main` and push after each
+completed step.
 
 ## Role Prompts
 
@@ -114,13 +116,19 @@ rules:
 
 ## Knowledge Routes
 
-Knowledge files are plain markdown or text files injected into the role's context during assembly. Use them for:
+Knowledge files are small YAML route maps injected into the role's context during assembly. Use them for:
 
 - Architecture overviews the agent needs to respect
 - API conventions and naming standards
 - Domain-specific terminology
 
-Keep knowledge files concise (under 500 lines). The context assembly engine (MH-004) manages token budgets automatically.
+Keep knowledge files concise. They should usually point to files such as `AGENTS.md`, `docs/design-docs/context-glossary.md`, or a relevant design doc instead of embedding the full content. The context assembly engine (MH-004) manages token budgets automatically.
+
+```yaml
+routes:
+  - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
+    paths: AGENTS.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md
+```
 
 ## Example: Minimal Bundle
 

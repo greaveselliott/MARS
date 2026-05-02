@@ -149,13 +149,13 @@ mars-harness doctor --json
 
 ### 5. Upgrade
 
-Sync a target project's `.harness/` manifest and role prompts to the latest harness defaults. Run this after upgrading `mars-harness` to pick up new tools, prompt improvements, and pipeline changes.
+Sync a target project's `.harness/` manifest, role prompts, and harness-owned support files to the latest harness defaults. Run this after upgrading `mars-harness` to pick up new tools, prompt improvements, knowledge routes, and pipeline changes.
 
 ```bash
 mars-harness upgrade --repo /path/to/repo
 ```
 
-This overwrites `manifest.yaml` and all role prompts. User content (tickets, exec-plans, design-docs) is never touched.
+This overwrites `manifest.yaml`, all role prompts, and harness-owned support files under `.harness/` such as default knowledge routes. User content (tickets, exec-plans, design-docs, references, and target `AGENTS.md`) is never touched.
 
 ### 6. Run
 

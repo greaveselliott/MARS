@@ -6,6 +6,7 @@
 **Owner:** Mars Harness
 **Source:** User request to compare `../mars` with this repository and plan the work required for Mars Harness to supersede Mars.
 **Supporting audit:** [mars-meta-harness-relevance-audit.md](../../references/mars-meta-harness-relevance-audit.md)
+**Supporting references:** [Harness Engineering](../../references/harness-engineering-agent-first.md), [Symphony](../../references/open-source-codex-orchestration-symphony.md)
 
 ## Purpose
 
@@ -32,6 +33,8 @@ This plan is based on a direct repository comparison between:
 - `../mars/docs/design-docs/agent-context-model.md`
 - `../mars/docs/design-docs/conversation-as-system-record.md`
 - `../mars/docs/design-docs/self-correcting-ci.md`
+- OpenAI Harness Engineering reference
+- OpenAI Symphony orchestration reference
 - `../mars/scripts/*`
 - `../mars/.github/workflows/*`
 - `AGENTS.md`
@@ -460,6 +463,7 @@ Replace GitHub Actions orchestration patterns with native Harness orchestration.
 Tasks:
 
 - [ ] Add an Orchestrator loop that surveys queue, tickets, scores, guardrails, traces, and checks.
+- [ ] Translate Symphony's "eligible task has an agent/workspace" rule into queue ownership for in-progress tickets, blocked tickets, and scheduled retries.
 - [ ] Add event routing for failed checks, dogfood failures, stale in-progress tickets, quality regression, intervention debt, dependency alerts, and release readiness.
 - [ ] Add concurrency groups and daily caps to queue scheduling.
 - [ ] Add payload-mode support to jobs and role prompts.
@@ -520,8 +524,11 @@ Make `mars-harness init` create target repo guidance as useful as Mars's templat
 
 Tasks:
 
-- [ ] Expand generated `AGENTS.md` with architecture, workflow, run/test, ticket, decision, guardrail, and dogfood sections.
-- [ ] Generate target `docs/design-docs/index.md` with explicit decision-record instructions.
+- [x] Expand generated `AGENTS.md` with workflow, ticket, decision, and context-routing sections.
+- [x] Generate target `docs/design-docs/index.md` with context glossary instructions.
+- [x] Generate target `docs/design-docs/context-glossary.md` and `.harness/knowledge/context-glossary.yaml`.
+- [x] Add the OpenAI Harness Engineering reference to generated target docs.
+- [ ] Expand generated `AGENTS.md` further with architecture, run/test, guardrail, and dogfood sections.
 - [ ] Generate target `docs/exec-plans/README.md` with active-plan hygiene.
 - [ ] Generate target `docs/tickets/README.md` with direct `main` completion workflow and in-progress drain rules.
 - [ ] Generate target knowledge routes from repo scan.
