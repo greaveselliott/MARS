@@ -9,7 +9,11 @@ completed step, and push `main` after every semantic commit.
 2. Make one coherent step of progress.
 3. Run the relevant checks for that step.
 4. Commit with a semantic commit message.
-5. Push `main`.
+5. For every non-release semantic commit in this repo, run `mars-harness release notes --repo . --bump auto`.
+6. Verify and commit the generated version files with `release: notes X.Y.Z`.
+7. Push `main`.
+
+`release: notes X.Y.Z` commits are exempt from generating another release-note commit.
 
 ## Guardrails
 

@@ -90,6 +90,7 @@ mars-harness/
 7. **Trunk-based development.** All commits go directly to `main`. Do not use branch-based review as the default delivery path. This keeps flows simple for autonomous agents. Use semantic (conventional) commit messages: `feat(scope): ...`, `fix(scope): ...`, `docs: ...`, `chore: ...`, `test: ...`, `refactor: ...`.
 8. **The repo is the system of record.** Decisions, discoveries, and plans live in docs, not in chat threads.
 9. **Always commit and push both repos.** When making changes to the harness and/or the target project, document, commit, and push changes in both. The harness and target project are separate git repositories — neither should have dangling uncommitted work at the end of a task.
+10. **Version every source change.** Every non-release semantic commit in this repo must be followed by `mars-harness release notes --repo . --bump auto`, then a `release: notes X.Y.Z` commit before the task is considered done. Release-note commits are exempt and are ignored by the generator.
 
 ## Database Isolation
 
@@ -180,6 +181,8 @@ mars-harness release notes --repo . --bump auto --dry-run
 
 This same command is generated into target repo release guidance by `mars-harness init`.
 
+For this source repo, run it automatically after every non-release semantic commit, commit the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes with `release: notes X.Y.Z`, then push `main`.
+
 ### Interactive Controls
 
 When `serve` or `start` is running, the terminal provides interactive key bindings and a status bar:
@@ -227,9 +230,10 @@ golangci-lint run
 ## Working Discipline
 
 1. **Commit after every step.** Each completed task gets a commit referencing the milestone and step (e.g., `feat(agent): implement conversation loop (M1.3.1)`).
-2. **Document every decision.** Architecture decisions go in `docs/design-docs/`. Discoveries go in the relevant design doc's Discoveries section.
-3. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
-4. **Feed conversations back.** Decisions that exist only in chat threads are invisible to future agents. See the delivery schedule for what to build next.
+2. **Version after non-release commits.** Immediately after a semantic change commit, run `mars-harness release notes --repo . --bump auto`, verify, commit the release-note update, and push. Do not generate another version for the `release: notes` commit itself.
+3. **Document every decision.** Architecture decisions go in `docs/design-docs/`. Discoveries go in the relevant design doc's Discoveries section.
+4. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
+5. **Feed conversations back.** Decisions that exist only in chat threads are invisible to future agents. See the delivery schedule for what to build next.
 
 ## Pointers
 

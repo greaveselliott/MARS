@@ -23,6 +23,18 @@ Patch notes live in root `CHANGELOG.md`. Entries are generated from semantic com
 
 `mars-harness init` creates `VERSION`, `CHANGELOG.md`, release-versioning design guidance, and release knowledge routes in target repos. The default release-manager prompt uses the same `mars-harness release notes --repo . --bump auto` command that Mars Harness itself uses.
 
+### AD-056: Source Changes Are Automatically Versioned On Commit
+
+Every non-release semantic commit to this source repository must be followed by an automatic release-note generation step before the task is considered done:
+
+1. commit the coherent source/doc/test change
+2. run `mars-harness release notes --repo . --bump auto`
+3. verify the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes
+4. commit them as `release: notes X.Y.Z`
+5. push `main`
+
+The `release: notes X.Y.Z` commit itself is exempt. The release generator ignores release-note commits so the workflow does not create an infinite version loop.
+
 ## Implementation Requirements
 
 - Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
@@ -34,10 +46,12 @@ Patch notes live in root `CHANGELOG.md`. Entries are generated from semantic com
 - Ignore release-note commits when generating later patch notes.
 - Update the source harness fallback version from a repo-owned constant.
 - Generate the same VERSION/CHANGELOG/release guidance in target repos.
+- Treat source-repo versioning as part of done for every non-release semantic commit.
 
 ## Consequences
 
 - Version and patch-note state is visible to agents and humans.
 - Target projects get release discipline without extra configuration.
 - Release Manager work becomes deterministic before it becomes judgment work.
+- Source-repo work cannot silently land without an accompanying semantic version and patch-note entry.
 - Future work can add tag creation, release publishing, and doctor checks for stale patch notes.

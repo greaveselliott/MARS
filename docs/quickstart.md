@@ -132,6 +132,8 @@ mars-harness release notes --repo . --bump auto --dry-run
 mars-harness release notes --repo . --bump auto
 ```
 
+In this source repo, run the release command after every non-release semantic commit and commit the generated version files as `release: notes X.Y.Z` before pushing `main`.
+
 ## Next Steps
 
 - [bundle-reference.md](bundle-reference.md) — manifest.yaml format and role configuration

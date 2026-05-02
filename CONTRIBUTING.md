@@ -15,7 +15,12 @@ go test ./...
 2. Make one coherent change with tests
 3. Run `go test ./...` and `golangci-lint run`
 4. Commit with a semantic message referencing the milestone if applicable
-5. Push `main`
+5. Run `mars-harness release notes --repo . --bump auto`
+6. Verify the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes
+7. Commit them as `release: notes X.Y.Z`
+8. Push `main`
+
+Every non-release semantic commit must follow this versioning step. Release-note commits are the only exception: do not run the release generator again for a `release: notes X.Y.Z` commit.
 
 ## Commit Messages
 

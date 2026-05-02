@@ -20,7 +20,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [product-spec-governance.md](product-spec-governance.md) | Accepted | Product specs as a living product contract with metadata, index coverage, and docs-consistency enforcement. AD-040 through AD-042. |
 | [generated-docs-governance.md](generated-docs-governance.md) | Accepted | Generated docs as reproducible reference snapshots with catalog and docs-consistency checks. AD-043 through AD-045. |
 | [role-customization.md](role-customization.md) | Accepted | Shipped roles as configurable starter agents; target manifests, prompts, knowledge routes, and guardrails are user-owned after init. AD-046 through AD-048. |
-| [release-versioning.md](release-versioning.md) | Accepted | Semantic versioning, generated patch notes, and mirrored source/target release behavior. AD-049 through AD-051. |
+| [release-versioning.md](release-versioning.md) | Accepted | Semantic versioning, generated patch notes, mirrored source/target release behavior, and automatic source versioning after non-release commits. AD-049 through AD-051, AD-056. |
 | [skill-evolution.md](skill-evolution.md) | Accepted | Skills as a first-class self-improvement target and the decision matrix for prompt, skill, tool, guardrail, or knowledge-route changes. AD-052 through AD-055. |
 
 ## Architecture Decision Log
@@ -82,3 +82,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-053 | Skills must stay compact, scoped, evidence-oriented, and separate from large manuals or role identity. | skill-evolution.md | Context |
 | AD-054 | Evolution triage chooses between prompt, skill, tool, guardrail, knowledge route, inference/config, manifest/tool policy, or tickets by evidence type. | skill-evolution.md | Self-improvement |
 | AD-055 | Initialized target harnesses receive skill-evolution guidance so source and target workflows reduce human intervention the same way. | skill-evolution.md | Generated targets |
+| AD-056 | Every non-release semantic commit to this source repo is followed by generated release notes and a `release: notes X.Y.Z` commit before the task is done. | release-versioning.md | Release |
