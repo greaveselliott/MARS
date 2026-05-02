@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.3.0] - 2026-05-02
+<!-- mars-harness-release: version=0.3.0 commit=b2cd7df5f2e5 -->
+
+### Features
+- **skills:** Guide self-improving skill evolution (b2cd7df)
+
 ## [0.2.0] - 2026-05-02
 <!-- mars-harness-release: version=0.2.0 commit=15f4b154182d -->
 
