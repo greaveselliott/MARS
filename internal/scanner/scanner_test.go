@@ -248,11 +248,14 @@ func TestInit_success(t *testing.T) {
 	assert.DirExists(t, filepath.Join(dir, "docs", "design-docs"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "references"))
 	assert.FileExists(t, filepath.Join(dir, "AGENTS.md"))
+	assert.FileExists(t, filepath.Join(dir, "VERSION"))
+	assert.FileExists(t, filepath.Join(dir, "CHANGELOG.md"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "tickets", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "exec-plans", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "index.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "context-glossary.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "references", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "references", "harness-engineering-agent-first.md"))
 
@@ -299,6 +302,15 @@ func TestInit_success(t *testing.T) {
 	glossary, err := os.ReadFile(filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml"))
 	require.NoError(t, err)
 	assert.Contains(t, string(glossary), "docs/design-docs/context-glossary.md")
+	assert.Contains(t, string(glossary), "docs/design-docs/release-versioning.md")
+
+	version, err := os.ReadFile(filepath.Join(dir, "VERSION"))
+	require.NoError(t, err)
+	assert.Equal(t, "0.1.0\n", string(version))
+
+	changelog, err := os.ReadFile(filepath.Join(dir, "CHANGELOG.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(changelog), "mars-harness release notes")
 }
 
 func TestInit_alreadyExists(t *testing.T) {

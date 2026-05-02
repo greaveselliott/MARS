@@ -36,6 +36,12 @@ mars-harness run pipeline-fixer --repo /path/to/your/repo
 mars-harness serve
 ```
 
+Generate semantic-versioned patch notes from commits:
+
+```bash
+mars-harness release notes --repo . --bump auto
+```
+
 ## Lineage
 
 Mars Harness is an evolution of the [Mars](https://github.com/elliottgreaves/mars) monorepo's automation pipeline. Mars proved the model works — 11 autonomous roles running a full development lifecycle via Cursor Automations. This product extracts that into a standalone system that runs on your own hardware against any repo.

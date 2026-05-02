@@ -329,12 +329,22 @@ var defaultHarnessFiles = map[string]string{
     paths: docs/exec-plans/README.md, docs/tickets/README.md
   - when: implementation, architecture, tests, or local commands
     paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md
+  - when: release planning, semantic versioning, changelog, patch notes, or tags
+    paths: VERSION, CHANGELOG.md, docs/design-docs/release-versioning.md
   - when: agent-first workflow, repository memory, or why this harness exists
     paths: docs/references/harness-engineering-agent-first.md
 `,
 }
 
 var defaultDocs = map[string]string{
+	"VERSION": `0.1.0
+`,
+
+	"CHANGELOG.md": `# Changelog
+
+Patch notes are generated with ` + "`mars-harness release notes`" + ` from semantic commits on ` + "`main`" + `.
+`,
+
 	"AGENTS.md": `# Agent Guide
 
 > First file any agent reads. Keep it concise: this is a map, not the encyclopedia.
@@ -352,6 +362,7 @@ the system of record for plans, decisions, tickets, traces, and completed work.
 3. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
 4. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
 5. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
+6. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
 
 ## Workflow
 
@@ -479,6 +490,7 @@ Architectural decisions and design documents for this project.
 | Document | Status | Purpose |
 | --- | --- | --- |
 | [context-glossary.md](context-glossary.md) | Seed | Compact glossary and context map used by agents to find the right docs without loading everything. |
+| [release-versioning.md](release-versioning.md) | Seed | Semantic versioning and generated patch-note policy for this repo. |
 
 ## Decision Log
 
@@ -511,6 +523,7 @@ loading every document.
 | Ticket | A markdown work item. | ` + "`docs/tickets/README.md`" + ` |
 | In progress | Active work that should be completed or explicitly unblocked before new backlog work. | ` + "`docs/tickets/in-progress/`" + ` |
 | Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
+| Release | A semantic version plus patch-note entry generated from commits. | ` + "`docs/design-docs/release-versioning.md`" + ` |
 
 ## Project Commands
 
@@ -520,6 +533,45 @@ Record the commands future agents should use here:
 - Test: TBD
 - Lint: TBD
 - Run locally: TBD
+`,
+
+	"docs/design-docs/release-versioning.md": `# Release Versioning
+
+**Status:** Seed
+
+## Policy
+
+This repository uses semantic versioning and generated patch notes:
+
+- ` + "`VERSION`" + ` stores the current version as ` + "`MAJOR.MINOR.PATCH`" + `.
+- ` + "`CHANGELOG.md`" + ` stores human-readable patch notes.
+- Semantic commits decide the automatic bump:
+  - ` + "`feat:`" + ` -> minor
+  - ` + "`fix:`" + `, ` + "`perf:`" + `, docs, tests, chores, and refactors -> patch
+  - ` + "`!`" + ` or ` + "`BREAKING CHANGE`" + ` -> major
+
+## Command
+
+Preview:
+
+` + "```bash" + `
+mars-harness release notes --repo . --bump auto --dry-run
+` + "```" + `
+
+Write ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `:
+
+` + "```bash" + `
+mars-harness release notes --repo . --bump auto
+` + "```" + `
+
+Then verify, commit, and push the release-note update on ` + "`main`" + `.
+
+## Agent Rules
+
+- Do not hand-edit patch-note entries when the command can generate them.
+- Use ` + "`--bump major`" + `, ` + "`--bump minor`" + `, or ` + "`--bump patch`" + ` only when auto classification is wrong.
+- Do not fabricate commit references.
+- Keep release notes concise and user-facing.
 `,
 
 	"docs/references/README.md": `# References
@@ -1236,23 +1288,26 @@ You are the release manager.
 
 START by reading:
 1. CHANGELOG.md (if it exists)
-2. Recent commits since last tag: git log $(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~20)..HEAD --oneline
-3. Any version files (package.json, version.go, etc.)
+2. VERSION (if it exists)
+3. docs/design-docs/release-versioning.md
+4. Recent commits since last release marker: git log --oneline -20
 
 TASKS:
 
 For direct commits to main:
-1. Track changes — note what landed and categorise (feature, fix, refactor, docs)
-2. Update CHANGELOG.md with entries for committed changes not already documented
+1. Track changes and decide whether patch notes are warranted
+2. Run ` + "`mars-harness release notes --repo . --bump auto --dry-run`" + ` to preview the semantic version and patch notes
+3. If the preview is correct, run ` + "`mars-harness release notes --repo . --bump auto`" + `
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
-2. If yes: update version numbers, finalise changelog, tag the release
+2. If yes: update VERSION and CHANGELOG.md with the command above
 3. Verify tests pass before cutting
+4. Tag the release only after the release-note commit is verified on main
 
 Commit and push:
-  git add CHANGELOG.md
-  git commit -m "release: update changelog [date]"
+  git add VERSION CHANGELOG.md
+  git commit -m "release: notes [version]"
   git push
 `,
 

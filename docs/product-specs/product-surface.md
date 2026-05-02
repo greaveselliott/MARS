@@ -16,6 +16,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, and visible run state. |
 | Learning loop | `scores`, `trust`, telemetry triage, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, prompt or process improvements, and safety controls. |
 | Generated references | `docs/generated/` | Provide reproducible, cataloged source-harness maps when generator commands exist. |
+| Release state | `VERSION`, `CHANGELOG.md`, `release notes` | Maintain semantic versions and generated patch notes for both the source harness and target repos. |
 
 ## CLI Contract
 
@@ -33,6 +34,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
 | `mars-harness trust [--repo <path>]` | Implemented | Shows role trust levels. |
 | `mars-harness trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
+| `mars-harness release notes --repo <path> --bump auto` | Implemented | Generates semantic-versioned patch notes from commits, updates `VERSION`, and prepends `CHANGELOG.md`. |
 
 ## Generated Target Harness
 
@@ -50,8 +52,19 @@ Required generated surfaces:
 - `docs/exec-plans/README.md` and starter priority docs
 - `docs/design-docs/index.md` and `context-glossary.md`
 - `docs/references/README.md` and selected agent-first references
+- `VERSION`, `CHANGELOG.md`, and `docs/design-docs/release-versioning.md`
 
 Generated target docs must mirror source-harness doctrine while staying project-agnostic. Existing target harness files and user-owned docs are preserved by upgrades.
+
+## Versioning And Patch Notes
+
+Mars Harness and initialized target repos use the same release contract:
+
+- `VERSION` contains `MAJOR.MINOR.PATCH`
+- `CHANGELOG.md` contains generated patch notes
+- `mars-harness release notes --repo . --bump auto` infers the next version from semantic commits
+- release-note commits themselves are ignored in the next generated entry
+- generated entries include a marker so tags are useful but not required for the next diff
 
 ## Generated Source References
 

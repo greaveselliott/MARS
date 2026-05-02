@@ -15,6 +15,7 @@ import (
 	_ "modernc.org/sqlite"
 
 	"github.com/greaveselliott/mars-harness/internal/agent"
+	"github.com/greaveselliott/mars-harness/internal/buildinfo"
 	"github.com/greaveselliott/mars-harness/internal/bundle"
 	"github.com/greaveselliott/mars-harness/internal/config"
 	ctx "github.com/greaveselliott/mars-harness/internal/context"
@@ -23,6 +24,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars-harness/internal/release"
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
@@ -34,7 +36,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/ui"
 )
 
-var version = "0.0.1-dev"
+var version = buildinfo.DefaultVersion
 
 var (
 	commit = "unknown"
@@ -62,6 +64,7 @@ func main() {
 	root.AddCommand(doctorCmd())
 	root.AddCommand(scoresCmd())
 	root.AddCommand(trustCmd())
+	root.AddCommand(releaseCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -77,6 +80,68 @@ func versionCmd() *cobra.Command {
 			fmt.Printf("mars-harness %s %s/%s commit=%s built=%s\n", version, runtime.GOOS, runtime.GOARCH, commit, date)
 		},
 	}
+}
+
+func releaseCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "release",
+		Short: "Manage semantic versions and patch notes",
+	}
+	cmd.AddCommand(releaseNotesCmd())
+	return cmd
+}
+
+func releaseNotesCmd() *cobra.Command {
+	var (
+		repoPath string
+		bump     string
+		dryRun   bool
+	)
+	cmd := &cobra.Command{
+		Use:   "notes",
+		Short: "Generate semantic-versioned patch notes",
+		Long: `Generate patch notes from semantic commits on main.
+
+The command reads VERSION, finds commits since the latest release marker or
+version tag, chooses a semantic version bump, updates VERSION, and prepends a
+CHANGELOG.md entry. Use --dry-run to preview without writing files.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repoPath == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("release notes: cannot determine working directory: %w", err)
+				}
+			}
+			result, err := release.Prepare(cmd.Context(), release.Config{
+				RepoRoot: repoPath,
+				Bump:     release.Bump(bump),
+				DryRun:   dryRun,
+			})
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Release notes: %s -> %s (%s, %d commits)\n",
+				result.PreviousVersion, result.NextVersion, result.Bump, len(result.Commits))
+			if result.BaseRef != "" {
+				fmt.Printf("Base: %s\n", result.BaseRef)
+			}
+			if dryRun {
+				fmt.Println()
+				fmt.Print(result.Entry)
+				return nil
+			}
+			fmt.Println("Updated files:")
+			for _, path := range result.UpdatedFiles {
+				fmt.Printf("  %s\n", path)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
+	cmd.Flags().StringVar(&bump, "bump", string(release.BumpAuto), "Version bump: auto, major, minor, or patch")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview release notes without writing files")
+	return cmd
 }
 
 func runCmd() *cobra.Command {

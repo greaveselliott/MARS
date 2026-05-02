@@ -123,6 +123,15 @@ Verify your setup is complete:
 mars-harness doctor
 ```
 
+## Patch Notes
+
+Mars Harness uses semantic versions and generated patch notes. The same command works in this repo and in repos initialized by the harness:
+
+```bash
+mars-harness release notes --repo . --bump auto --dry-run
+mars-harness release notes --repo . --bump auto
+```
+
 ## Next Steps
 
 - [bundle-reference.md](bundle-reference.md) — manifest.yaml format and role configuration

@@ -51,6 +51,7 @@ mars-harness/
 │   ├── llm/                    LLM client (OpenAI-compatible) and router
 │   ├── models/                 Model registry and download
 │   ├── queue/                  SQLite job queue
+│   ├── release/                Semantic version and patch-note generation
 │   ├── safety/                 Blast radius, emergency stop
 │   ├── sandbox/                Process sandbox
 │   ├── scanner/                Repo scanner for starter backlog
@@ -103,7 +104,7 @@ This ensures queue, telemetry, scheduling, and repo registry are physically isol
 
 ## Operations
 
-Mars Harness is controllable by any AI agent via CLI commands. These are the five core operations.
+Mars Harness is controllable by any AI agent via CLI commands. These are the core operations.
 
 ### 1. Setup
 
@@ -167,6 +168,17 @@ mars-harness run engineer --repo . --dry-run   # preview system prompt
 ```
 
 Flags: `--model-endpoint`, `--trace`, `--dry-run`, `--budget`, `--max-turns`
+
+### 7. Release Notes
+
+Generate semantic-versioned patch notes from commits and update `VERSION` plus `CHANGELOG.md`.
+
+```bash
+mars-harness release notes --repo . --bump auto
+mars-harness release notes --repo . --bump auto --dry-run
+```
+
+This same command is generated into target repo release guidance by `mars-harness init`.
 
 ### Interactive Controls
 

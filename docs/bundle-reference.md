@@ -2,6 +2,11 @@
 
 A bundle is the `.harness/` directory in your repository. It contains everything Mars Harness needs to operate on your codebase.
 
+`mars-harness init` also creates repo-level release files (`VERSION` and
+`CHANGELOG.md`) plus `docs/design-docs/release-versioning.md`. Those files live
+outside `.harness/` because semantic versioning and patch notes belong to the
+target project, not just the harness bundle.
+
 ## Directory Structure
 
 ```
