@@ -20,8 +20,8 @@ to decide what to do next.
 - Current branch: `main`
 - Ticket state:
   - `docs/tickets/in-progress/` has no active tickets.
-  - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-034`, and `MH-035`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032` and `MH-033`.
+  - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-034`, `MH-035`, and `MH-037`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, and `MH-036`.
 - GitHub release notes are published for semantic versions generated from `VERSION`.
 - Release binary assets are still missing and tracked by `MH-031`.
 - Model evaluation, Ollama catalog support, and model swaps are still tracked by
@@ -44,11 +44,14 @@ to decide what to do next.
    current truth.
 2. **Mars parity ticket materialization**: turn the first ten work items in the
    Mars parity supersession plan into normal backlog tickets.
-3. **Release asset contract (`MH-031`)**: publish checksum-verified binaries so
+3. **Quality score export (`MH-037`)**: replace the seeded scorecard with a
+   deterministic export from live scores, telemetry, tickets, checks, and
+   dogfood evidence.
+4. **Release asset contract (`MH-031`)**: publish checksum-verified binaries so
    install and `update tool` no longer require Go or a source checkout.
-4. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
+5. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
    support, explicit role/tier swaps, persistent reports, and promotion checks.
-5. **Mars parity execution**: work through operating model, role registry,
+6. **Mars parity execution**: work through operating model, role registry,
    conversation-as-system-record, intervention debt, active-ticket drain,
    quality exports, orchestrator recovery, deterministic remediation, and
    dogfood matrix workstreams.

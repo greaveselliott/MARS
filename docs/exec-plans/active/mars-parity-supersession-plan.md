@@ -281,7 +281,8 @@ Mars has repo-visible quality artifacts and quality regression scripts. Harness 
 
 Gap:
 
-- Harness needs a generated `docs/QUALITY_SCORE.md` or equivalent.
+- Harness needs a generated `docs/QUALITY_SCORE.md` or equivalent. A seeded
+  source and target scorecard now exists; deterministic export is still open.
 - Scoring should summarize role health, stuck tickets, failed dogfood, guardrail blocks, intervention debt, check pass/fail rate, no-op runs, and human follow-up rate.
 - Score regression should trigger Orchestrator/Planner work.
 
@@ -446,8 +447,9 @@ Make Harness scoring as visible as Mars's quality documentation.
 
 Tasks:
 
+- [x] Seed source `docs/QUALITY_SCORE.md` and generated target `docs/QUALITY_SCORE.md`.
 - [ ] Add `mars-harness scores export --repo <path>` or equivalent.
-- [ ] Generate `docs/QUALITY_SCORE.md`.
+- [ ] Generate `docs/QUALITY_SCORE.md` from live score and telemetry data.
 - [ ] Include role score, recent outcomes, stuck tickets, failed dogfood, guardrail blocks, intervention debt, check results, no-op runs, and human follow-up rate.
 - [x] Add typed telemetry triage for recurring failure patterns and low scores.
 - [ ] Include top self-improvement targets in the quality export.

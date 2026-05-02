@@ -252,6 +252,7 @@ func TestInit_success(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, "AGENTS.md"))
 	assert.FileExists(t, filepath.Join(dir, "VERSION"))
 	assert.FileExists(t, filepath.Join(dir, "CHANGELOG.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "QUALITY_SCORE.md"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "skills", "self-improvement", "SKILL.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "tickets", "README.md"))
@@ -328,12 +329,19 @@ func TestInit_success(t *testing.T) {
 
 	agentGuide, err := os.ReadFile(filepath.Join(dir, "AGENTS.md"))
 	require.NoError(t, err)
+	assert.Contains(t, string(agentGuide), "docs/QUALITY_SCORE.md")
 	assert.Contains(t, string(agentGuide), "After every non-release semantic commit")
 	assert.Contains(t, string(agentGuide), "release: notes X.Y.Z")
 	assert.Contains(t, string(agentGuide), "Operating rules inherited from Mars Harness apply here")
 	assert.Contains(t, string(agentGuide), "publish or update GitHub Release")
 	assert.Contains(t, string(agentGuide), "Product features and user-visible behavior changes must be documented with")
 	assert.Contains(t, string(agentGuide), "Do not leave architecture or product intent only in chat")
+
+	qualityScore, err := os.ReadFile(filepath.Join(dir, "docs", "QUALITY_SCORE.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(qualityScore), "## Grading Scale")
+	assert.Contains(t, string(qualityScore), "Harness readiness")
+	assert.Contains(t, string(qualityScore), "scores export")
 
 	releaseDoc, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	require.NoError(t, err)

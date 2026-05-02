@@ -14,7 +14,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | Install and setup | installed `mars-harness` command, `mars-harness setup`, config, model and binary cache | Run the harness from any directory, detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
 | Target harness | `mars-harness init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
 | Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, visible run state, and narrow self-healing for stale recovery jobs. |
-| Learning loop | `scores`, `trust`, telemetry triage, skills, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, reusable workflow skills, prompt or process improvements, and safety controls. |
+| Learning loop | `scores`, `trust`, `docs/QUALITY_SCORE.md`, telemetry triage, skills, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, reusable workflow skills, prompt or process improvements, repo-visible grades, and safety controls. |
 | Generated references | `docs/generated/` | Provide reproducible, cataloged source-harness maps when generator commands exist. |
 | Release state | `VERSION`, `CHANGELOG.md`, `release notes` | Maintain semantic versions and generated patch notes for both the source harness and target repos. |
 
@@ -57,6 +57,7 @@ Required generated surfaces:
 - `docs/tickets/backlog/`, `docs/tickets/in-progress/`, and `docs/tickets/done/`
 - `docs/tickets/README.md` for ticket lifecycle and completion rules
 - `docs/exec-plans/README.md` and starter priority docs
+- `docs/QUALITY_SCORE.md` as the repo-visible A-F quality score seed
 - `docs/design-docs/index.md` and `context-glossary.md`
 - `docs/references/README.md` and selected agent-first references
 - `VERSION`, `CHANGELOG.md`, and `docs/design-docs/release-versioning.md`

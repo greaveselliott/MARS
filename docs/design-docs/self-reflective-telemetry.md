@@ -53,6 +53,21 @@ The dedupe key is repo, role, target, category, and evidence window. This keeps 
 
 Direct evolution remains bounded. Process, product, unknown, or unsafe changes default to intervention-debt tickets; autonomous evolution can only happen after the ticketed evidence is constrained by trust, allowlists, and regression checks.
 
+### AD-072: Quality Scores Are Repo Artifacts
+
+Mars Harness inherits Mars's A-F quality score pattern as a repo-owned artifact.
+The source harness now carries `docs/QUALITY_SCORE.md`, and initialized target
+repos receive the same seed file. This makes current quality, readiness, and
+top improvement targets visible to any agent before it opens SQLite or the
+dashboard.
+
+The seeded file is intentionally honest about its limits: it is a manual audit
+until a deterministic `scores export` command can refresh it from role scores,
+terminal outcomes, traces, ticket state, dogfood results, guardrail blocks,
+check results, human follow-up, and telemetry triage. Once generation exists,
+manual edits should be limited to explanatory notes that the generator
+preserves.
+
 ## Current Implementation
 
 `internal/telemetry` now exposes triage functions that convert recurring failure patterns and low score snapshots into improvement proposals. `serve.checkEvolution` consumes those proposals, creates or updates intervention-debt tickets, emits dashboard events with ticket links, and records bounded evolution reviews with concrete suggestions and candidate files.
@@ -65,10 +80,11 @@ The first implementation is deliberately small:
 - max-turn and loop failures point at role prompt completion criteria or a missing reusable skill
 - manifest failures point at `.harness/manifest.yaml`
 - low scores point at process triage across prompt, skill, guardrail, tool, model, and intervention debt
+- `docs/QUALITY_SCORE.md` seeds the repo-visible grade surface until live score export is implemented
 
 ## Required Next Steps
 
-- Add quality-score exports that include top improvement targets.
+- Automate quality-score exports that include top improvement targets.
 - Add Orchestrator survey support so triage runs even when no new job finishes.
 - Add richer dashboard/API views for improvement proposals beyond the current event stream.
 - Extend triage with dogfood-specific and ticket-state-specific signals.
