@@ -17,4 +17,4 @@ This directory holds **active** plans (`active/`), **completed** plans (`complet
 - **Design decisions:** [docs/design-docs/index.md](../design-docs/index.md)
 - **Active work:** [docs/exec-plans/active/](active/)
 - **Shipped plans:** [docs/exec-plans/completed/](completed/)
-- **Product vision:** [docs/product-specs/vision.md](../product-specs/vision.md)
+- **Product specs:** [docs/product-specs/index.md](../product-specs/index.md)

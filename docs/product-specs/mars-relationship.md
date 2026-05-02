@@ -1,40 +1,77 @@
-# Relationship to Mars
+# Relationship To Mars
 
 **Status:** Accepted
-**Date:** 2026-04-11
+**Updated:** 2026-05-02
+**Owner:** Mars Harness maintainers
+**Sources:** [Mars parity supersession plan](../exec-plans/active/mars-parity-supersession-plan.md), [Mars audit](../references/mars-meta-harness-relevance-audit.md), [vision](vision.md)
 
-## Independence
+## Position
 
-Mars does not depend on Mars Harness. Mars Harness does not depend on Mars. They are separate codebases with separate repos.
+Mars and Mars Harness are separate repositories. Mars remains the application and the successful prototype of the operating model. Mars Harness is the standalone product that should supersede Mars's meta-harness layer.
 
-## Connection
+Supersession does not mean copying Mars exactly. It means preserving the useful delivery system Mars evolved through real autonomous work, then rebuilding those lessons as first-class Mars Harness primitives.
 
-Mars's 11 automation prompts and operational experience are the seed content:
+## What Mars Proved
 
-- **Automation prompts** (`docs/automations/prompts/`): 11 role prompts that become the starter `.harness/roles/` content, adapted for local model capabilities and the harness tool surface.
-- **Automation team design doc** (`docs/design-docs/automation-team.md`): The founding principle (humans out of delivery loop), canonical decision registry, intervention debt tracking, and role design directly inform tenets 2 and 6.
-- **Pipeline learnings** (`docs/exec-plans/pipeline-learnings.md`): CI failure patterns and fix recipes inform the Pipeline Fixer role's prompt and the knowledge routing system.
-- **BOTS.md** (`docs/automations/BOTS.md`): Model-per-role assignment and cost awareness inform the hardware profiles and model routing in the harness manifest.
-- **Knowledge base** (`.cursor/rules/knowledge-base.mdc`): The routing pattern ("when working on X, read Y") directly becomes `.harness/knowledge-routes.yaml`.
-- **Deep research report** (`docs/future-state/deep-research-report.md`): Architecture A's optional GitHub integration, job protocol, webhook handling, and threat model provide the engineering foundation.
+Mars proved that autonomous delivery works best when the repository is treated as an operating system for agents:
 
-## Migration path
+- compact agent entrypoints
+- durable tickets and plans
+- role-specific prompts
+- decision records
+- intervention debt
+- self-review and quality scoring
+- deterministic repair paths before probabilistic work
+- dogfood coverage that generates real backlog
+- docs and rules that future agents can retrieve
 
-Mars continues on Cursor Cloud Automations. When Mars Harness reaches parity, Mars migrates by:
+Those ideas are product requirements for Mars Harness, not historical trivia.
 
-1. Adding `.harness/` to the Mars monorepo with all 11 roles ported
-2. Enabling optional GitHub integration for Mars only after credentials, checks, and webhooks validate
-3. Running `mars-harness serve` on a GPU machine
-4. Validating each role produces equivalent output to Cursor Automations
-5. Turning off Cursor webhooks in `.github/workflows/automations.yml`
+## What Mars Harness Keeps
 
-## Parity definition
+Mars Harness carries forward the meta-harness pieces that are generally useful:
 
-"Parity" means the pipeline flow operates equivalently — not that outputs are identical. Specifically:
+- multi-role delivery loops
+- planner, engineer, reviewer, maintainer, tester, orchestrator, and evolution responsibilities
+- tickets as work state
+- intervention debt as product input
+- context routing over context stuffing
+- quality and trust signals from real outcomes
+- generated target guidance from day one
+- dogfood results as actionable work
 
-- Same pipeline flow: CEO -> COO -> Engineer -> QA/Security -> CTO -> Release Manager
-- Same trigger model: cron schedules + webhook events
-- Equivalent or better accuracy scores per role (measured after 20+ jobs)
-- Acknowledged quality delta on code-generating roles (Engineer, Pipeline Fixer) due to local model ceiling vs Opus 4.6
+## What Mars Harness Changes
 
-True output quality parity for code generation may require local models exceeding 80% SWE-bench Verified. As of April 2026, Qwen3-Coder-Next achieves 70.6%. Cloud fallback per role is the interim solution.
+Mars Harness translates Mars's repo-specific automation into product-native primitives:
+
+| Mars lesson | Mars Harness product form |
+| --- | --- |
+| Repository docs guide agents | `AGENTS.md`, design docs, exec plans, tickets, references, and generated target docs |
+| Role prompts operate the pipeline | `.harness/manifest.yaml`, role prompts, tool allowlists, trust levels, and queue jobs |
+| Human fixes reveal automation debt | Telemetry triage, intervention tickets, score penalties, and bounded evolution |
+| Agent context must be routed | `.harness/knowledge/` and context glossary files |
+| Dogfood failures create work | Scanner and dogfood tickets in `docs/tickets/backlog/` with dedupe |
+| Quality must be visible | Scores, traces, dashboard state, and future repo-visible exports |
+| Workflow is repo-owned | Source and initialized harnesses mirror the same operating doctrine |
+
+## Supersession Criteria
+
+Mars Harness can be considered ready to supersede Mars's meta-harness when:
+
+- initialized target repos receive guidance at least as useful as the Mars template
+- role registry, trust, scoring, tickets, context routes, guardrails, and references are visible and checked
+- in-progress work is drained or truthfully blocked instead of left to pile up
+- local inference setup is zero-config for normal users and transparent for advanced users
+- telemetry produces concrete improvement proposals instead of passive charts
+- generated target harness files evolve with the source harness through `upgrade`
+- Mars itself can be run as a target repo without relying on Mars-specific automation glue
+
+## Current Status
+
+Mars Harness now has the stronger product foundation: Go binary, local inference, SQLite queue, dashboard, trust store, scoring store, guardrails, scanner, generated target harness, context glossary, and optional remote-code-host integration.
+
+Mars still has richer proven operating habits in some areas: role registry, intervention-debt hygiene, deterministic maintenance scripts, dogfood matrix, and repo-visible quality artifacts. The active [Mars parity supersession plan](../exec-plans/active/mars-parity-supersession-plan.md) owns that remaining parity work.
+
+## Product Rule
+
+When Mars and Mars Harness disagree, Mars Harness should copy the underlying lesson only if it strengthens the reusable product. Mars-specific application rules stay in Mars. General autonomous-delivery discipline graduates into Mars Harness.

@@ -46,7 +46,7 @@ Mars Harness is an evolution of the [Mars](https://github.com/elliottgreaves/mar
 - [ARCHITECTURE.md](ARCHITECTURE.md) — system architecture
 - [docs/design-docs/](docs/design-docs/) — architectural decisions
 - [docs/exec-plans/](docs/exec-plans/) — delivery plans and trackers
-- [docs/product-specs/](docs/product-specs/) — product vision and specifications
+- [docs/product-specs/index.md](docs/product-specs/index.md) — living product specs
 - [docs/references/](docs/references/) — research findings and external sources
 
 ## License

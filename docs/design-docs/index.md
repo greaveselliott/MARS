@@ -17,6 +17,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, strict-trunk pipeline for local use. AD-021 through AD-030, AD-033. |
 | [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and initialized harness parity, glossary-as-route context, repo-owned workflow contracts. AD-034 through AD-036. |
 | [self-reflective-telemetry.md](self-reflective-telemetry.md) | Accepted | Harness grades itself and triages telemetry into prompt, process, guardrail, context, inference, manifest, and tool-policy improvement targets. AD-037 through AD-039. |
+| [product-spec-governance.md](product-spec-governance.md) | Accepted | Product specs as a living product contract with metadata, index coverage, and docs-consistency enforcement. AD-040 through AD-042. |
 
 ## Architecture Decision Log
 
@@ -61,3 +62,6 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-037 | Telemetry must be triaged into explicit improvement targets: prompt, process, guardrail, context, inference, manifest, tool policy, or unknown. | self-reflective-telemetry.md | Self-improvement |
 | AD-038 | Scores are control signals, not vanity metrics. Low rolling scores with enough samples trigger triage and bounded evolution review. | self-reflective-telemetry.md | Scoring |
 | AD-039 | Self-improvement is proactive but bounded. Direct edits stay inside allowlisted harness surfaces; process/product changes become tickets or plans unless trust and scope allow direct evolution. | self-reflective-telemetry.md | Safety |
+| AD-040 | Product specs are a living product contract, updated with product-facing changes and carrying status, update date, and owner metadata. | product-spec-governance.md | Docs |
+| AD-041 | Product specs link to design docs, exec plans, references, and tickets instead of duplicating all supporting context. | product-spec-governance.md | Context |
+| AD-042 | Product spec freshness is mechanically checked through docs-consistency tests for metadata, index coverage, links, and strict trunk wording. | product-spec-governance.md | Quality |

@@ -1,46 +1,81 @@
-# Mars Harness — Product Vision
+# Mars Harness Product Vision
 
 **Status:** Accepted
-**Date:** 2026-04-11
+**Updated:** 2026-05-02
+**Owner:** Mars Harness maintainers
+**Sources:** [tenets](../design-docs/tenets.md), [Mars relationship](mars-relationship.md), [product surface](product-surface.md)
 
-## What this is
+## Product Promise
 
-A self-hosted autonomous AI delivery system. You provide a machine with a GPU, run one command, and it autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, trunk checks and review, release management, documentation maintenance. All inference runs locally on open models. No cloud API costs, no data exfiltration, no vendor lock-in.
+Mars Harness is a self-hosted autonomous AI delivery system. A user points it at a git checkout, runs one setup path, and gets an agent-operated delivery loop: planning, ticket creation, implementation, verification, documentation, scoring, trust management, guardrail enforcement, and visible operational telemetry.
 
-Over time, the harness gets better: accuracy scores improve as prompts and guardrails are refined, interventions decrease as the system learns what the human used to do, and the roadmap advances as the pipeline executes tickets autonomously.
+The product must feel zero-config. It detects local hardware, chooses a sensible local inference profile, scaffolds a target harness when needed, drains existing in-progress work before new backlog work, and records decisions in the repo so future agents inherit the context.
 
-## The analogy
+## What The Product Must Be
 
-Like Jarvis in Iron Man: an AI system built by you, running in your lab, on your hardware, managing your systems autonomously. You provide strategic direction (exec plans, priorities, product decisions). The harness handles execution (integration, review, fix, merge, release). No S.H.I.E.L.D. dependency — no Cursor, no OpenAI billing, no cloud vendor lock-in.
+### Local-first autonomous delivery
 
-## The Mars lineage
+Inference runs through local open-weight models by default, with llama.cpp managed as a subprocess. Model, binary, and performance choices should be automatic for normal users and overrideable for advanced users.
 
-The Mars monorepo proved the pipeline model works:
+The user should not need to tune thread counts, context sizes, model quantization, or parallel slots before seeing a useful run. Doctor checks explain what is missing and how to fix it.
 
-- 11 autonomous roles (CEO, COO, CTO, Engineer, QA, Security, Dependency Manager, Release Manager, Dogfood Tester, Pipeline Fixer, Janitor) running a full trunk-based development lifecycle.
-- Self-correcting CI: deterministic fixes before probabilistic (changeset generation, direct fix commits, dependency refreshes).
-- Intervention debt tracking: every manual step treated as a signal to automate.
-- Documentation as system of record: AGENTS.md, design docs, exec plans, tickets as markdown.
+### Strict trunk by design
 
-Mars used Cursor Cloud Automations as the execution plane. Mars Harness replaces that with a self-hosted system. Mars becomes the first customer, not the only one.
+The canonical unit of progress is a small semantic commit on `main`, followed by a push. Review, checks, comments, and statuses are signals around trunk work, not a separate delivery model.
 
-## What this is not
+Every role, generated target harness, trust capability, scoring rule, and product doc should align with that model.
 
-- **Not a code completion tool.** This is a pipeline automation system, not an IDE plugin.
-- **Not a hosted service.** It runs on your hardware. There is no SaaS version (yet).
-- **Not Mars-specific.** The harness is repo-agnostic. Mars's 11 roles are the seed content; users define their own roles, guardrails, and triggers.
-- **Not a replacement for CI.** The harness works with GitHub Actions (or any CI), not instead of it. It reacts to CI events, commits bounded fixes to `main`, and records the resulting check outcomes.
+### Repo as system of record
 
-## Who this is for
+Plans, decisions, tickets, design docs, traces, generated guidance, and harness evolution must be recoverable from the repo and the harness database. Chat-only decisions are not product state.
 
-Developers and teams who:
+Product specs describe what Mars Harness promises. Design docs describe why key implementation decisions exist. Exec plans describe active delivery work. Tickets describe discrete work items.
 
-- Want autonomous AI managing their development pipeline
-- Care about data sovereignty (code never leaves their infrastructure)
-- Want to eliminate per-token API costs
-- Have a machine with a GPU (consumer or workstation grade)
-- Value transparency and auditability over black-box convenience
+### Mirrored source and target harnesses
 
-## The pitch (one paragraph)
+Mars Harness has two surfaces:
 
-Stop paying cloud providers per token to run AI agents on your code. Mars Harness runs on your own hardware with open models, autonomously managing your development pipeline from ticket to committed, pushed trunk change. It scores its own accuracy, learns from its mistakes, and gets better over time. One command to set up. Zero ongoing costs beyond electricity.
+- the source harness in this repository
+- the target harness emitted by `mars-harness init` and refreshed by `mars-harness upgrade`
+
+Those surfaces must share the same doctrine: compact agent entrypoints, strict trunk workflow, ticket discipline, design decisions, references, and context routing. Target repos should not receive a thin manifest while this repo keeps the real operating model hidden in source-only docs.
+
+### Context efficiency
+
+Agents should receive a compact map and retrieve narrow supporting context on demand. `AGENTS.md`, `.harness/manifest.yaml`, `.harness/knowledge/`, tickets, design docs, references, and traces form the routing layer.
+
+The product should avoid prompt-stuffing large manuals into every role. It should instead maintain glossary and knowledge-route files that tell the agent where to look.
+
+### Self-reflective improvement
+
+The harness grades both its own process and the feature work it builds. Outcomes such as completed commits, failed checks, guardrail blocks, timeouts, noops, stuck tickets, human follow-up, and reverts become scoring and telemetry signals.
+
+The product must proactively triage those signals into improvement targets: prompt, process, guardrail, context, inference, manifest, tool policy, scanner, ticket flow, or generated target guidance. Direct evolution is allowed only inside deterministic trust and safety bounds.
+
+## Who It Serves
+
+Mars Harness is for developers and small teams who want autonomous delivery without sending their source code to a hosted model service. The primary user has a local machine with Apple Silicon, NVIDIA, or AMD ROCm hardware and wants agents to operate normal repository workflows with minimal ceremony.
+
+Secondary users include teams that want optional remote-code-host telemetry, local dashboards, score history, trust controls, and durable documentation for autonomous work.
+
+## What It Is Not
+
+- Not an IDE autocomplete product.
+- Not a hosted service.
+- Not a generic chat wrapper over a repository.
+- Not a replacement for tests, checks, or human product direction.
+- Not Mars-specific. Mars is the prototype and first demanding customer; Mars Harness is the reusable product.
+
+## Product Success Measures
+
+- A new target repo can be initialized, scanned, given starter tickets, and run by agents without hand-written harness setup.
+- In-progress tickets are completed, explicitly blocked, or returned to a truthful state before new backlog work is claimed.
+- `doctor` explains local inference, model, database, guardrail, workflow, and optional integration health in actionable terms.
+- Scores and trust levels influence role autonomy and self-improvement work.
+- Guardrails and safety checks are enforced mechanically before mutating actions.
+- The generated target harness remains close enough to the source harness doctrine that agents behave consistently in both places.
+- Product specs stay current through metadata, index coverage, and docs-consistency tests.
+
+## North Star
+
+Mars Harness supersedes the original Mars meta-harness by turning Mars's proven operating habits into a local-first product: one repo-owned workflow, one autonomous queue, one visible scoring and trust system, one mirrored target harness, and a feedback loop that keeps improving the process instead of only completing individual tickets.

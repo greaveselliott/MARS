@@ -1,0 +1,125 @@
+# Product Surface
+
+**Status:** Accepted
+**Updated:** 2026-05-02
+**Owner:** Mars Harness maintainers
+**Sources:** [AGENTS.md](../../AGENTS.md), [quickstart](../quickstart.md), [design docs](../design-docs/index.md), [vision](vision.md)
+
+## Current Product Shape
+
+Mars Harness is a local autonomous delivery runtime with four visible layers:
+
+| Layer | User-facing surface | Product promise |
+| --- | --- | --- |
+| Install and setup | `mars-harness setup`, config, model and binary cache | Detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
+| Target harness | `mars-harness init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
+| Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, and visible run state. |
+| Learning loop | `scores`, `trust`, telemetry triage, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, prompt or process improvements, and safety controls. |
+
+## CLI Contract
+
+| Command | Status | Product behavior |
+| --- | --- | --- |
+| `mars-harness setup` | Implemented, still hardening | Creates `~/.mars-harness/`, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
+| `mars-harness init --repo <path>` | Implemented | Scaffolds the target harness: manifest, roles, guardrails, knowledge routes, compact `AGENTS.md`, tickets, exec-plan docs, design-doc index, context glossary, and references. |
+| `mars-harness upgrade --repo <path>` | Implemented, still hardening | Refreshes harness-owned `.harness/` defaults without overwriting user tickets, design docs, exec plans, references, or target `AGENTS.md`. |
+| `mars-harness scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |
+| `mars-harness run <role> --repo <path>` | Implemented | Loads manifest, guardrails, knowledge routes, context, tools, local model endpoint, and runs one role with terminal-result truth. |
+| `mars-harness start --repo <path>` | Implemented | Initializes if needed, registers the repo, seeds the CEO role, and runs the per-repo autonomous pipeline with isolated database state. |
+| `mars-harness serve` | Implemented, multi-repo legacy mode | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, and workers against the configured database. |
+| `mars-harness register --repo <path>` | Implemented | Registers a repo and creates the per-repo database path when one is not supplied. |
+| `mars-harness doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, guardrail/workflow health, and optional integration configuration. |
+| `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
+| `mars-harness trust [--repo <path>]` | Implemented | Shows role trust levels. |
+| `mars-harness trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
+
+## Generated Target Harness
+
+`mars-harness init` must produce a target repo that is immediately usable by Codex, Cursor, Mars Harness roles, and humans.
+
+Required generated surfaces:
+
+- `AGENTS.md` as the compact first-read map
+- `.harness/manifest.yaml` for roles, model tiers, tools, triggers, chains, guardrails, and knowledge routes
+- `.harness/roles/*.md` for role prompts
+- `.harness/guardrails/*.yaml` for mechanical policy inputs
+- `.harness/knowledge/*.yaml` for lightweight context routes
+- `docs/tickets/backlog/`, `docs/tickets/in-progress/`, and `docs/tickets/done/`
+- `docs/tickets/README.md` for ticket lifecycle and completion rules
+- `docs/exec-plans/README.md` and starter priority docs
+- `docs/design-docs/index.md` and `context-glossary.md`
+- `docs/references/README.md` and selected agent-first references
+
+Generated target docs must mirror source-harness doctrine while staying project-agnostic. User-owned docs outside `.harness/` are preserved by upgrades.
+
+## Role And Work Semantics
+
+Default roles are goal-oriented, not rigid scripts. The product contract is:
+
+- Planner roles create scoped, deduplicated work.
+- Engineer roles complete one ticket per run.
+- In-progress tickets are highest priority.
+- Blocked work is documented and proactively unblocked when the fix is in scope.
+- Dogfood and QA roles produce reproducible evidence.
+- Janitor and orchestrator roles keep ticket state truthful.
+- Evolution roles improve the harness only inside trust and safety limits.
+
+The harness should never reward a role for handing off incomplete work as if it were complete.
+
+## Trust And Scoring
+
+Trust levels are:
+
+- `observer`: read and report only
+- `contributor`: human-triggered or ticket-bound edit, test, commit, and push to `main`
+- `autonomous`: may self-schedule, chain work, edit, test, commit, push to `main`, and perform bounded evolution
+
+Scores are based on real outcomes: completed work, commits, checks, guardrail blocks, timeouts, noops, human follow-up, and reverts. Scores must drive behavior, not merely appear in a dashboard.
+
+## Guardrails And Safety
+
+The product must enforce hard rules at tool execution, not only in prompts. Mutating tools are checked through session context containing role, job, repo, trust, guardrails, and safety limits.
+
+Required protections include:
+
+- repo-relative file writes
+- observer mutation blocks
+- hard guardrail checks
+- secret scanning
+- destructive shell and git operation blocks
+- blast-radius limits before commit and push
+- emergency stop for active workers
+
+## Local Inference And Performance
+
+Setup should choose the best practical local profile automatically. On Apple Silicon and other unified-memory machines, high RAM use and low CPU use can still indicate GPU/Metal-bound inference. The product should optimize for actual tokens per second, not CPU utilization alone.
+
+Current defaults favor:
+
+- `performance_profile: auto`
+- one parallel generation slot for strict-trunk single-agent throughput
+- hardware-based model tier selection
+- pinned model revisions and SHA256 verification
+- pinned llama.cpp artifacts with checksums
+- doctor checks for missing or stale model state
+
+Manual tuning remains available, but the normal path should require none.
+
+## Optional Integrations
+
+Mars Harness is complete without a remote-code-host integration. Optional integration exists for telemetry and coordination: webhooks, statuses, comments, and check-run style reporting.
+
+The product must never describe optional integration as complete unless credentials, webhook delivery, and status/comment behavior have actually been validated.
+
+## Known Hardening Areas
+
+The active execution plans track the remaining work. The highest-value hardening areas are:
+
+- richer repo-visible role registry
+- stronger generated target guidance
+- deterministic remediation recipes before LLM work
+- score exports and dashboard views for improvement targets
+- doctor checks for mirrored harness freshness
+- automatic intervention-debt ticket creation from telemetry triage
+- broader dogfood matrices and generated-app validation
+- safer upgrade previews and backups for target harness files
