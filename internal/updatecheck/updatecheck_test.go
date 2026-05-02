@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/greaveselliott/mars-harness/internal/buildinfo"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +16,7 @@ import (
 func TestRun_reportsBehindToolAndCurrentHarness(t *testing.T) {
 	t.Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"tag_name":"v0.7.0"}`))
+		_, _ = w.Write([]byte(`{"tag_name":"v999.0.0"}`))
 	}))
 	defer server.Close()
 
@@ -24,7 +25,7 @@ func TestRun_reportsBehindToolAndCurrentHarness(t *testing.T) {
 	require.NoError(t, scanner.Init(repo, false))
 
 	report, err := Run(context.Background(), Config{
-		CurrentVersion:   "0.6.0",
+		CurrentVersion:   buildinfo.DefaultVersion,
 		RepoPath:         repo,
 		LatestReleaseURL: server.URL,
 		HTTPClient:       server.Client(),
@@ -33,7 +34,7 @@ func TestRun_reportsBehindToolAndCurrentHarness(t *testing.T) {
 	require.Equal(t, StatusBehind, report.Tool.Status)
 	require.Contains(t, report.Tool.Command, "update tool")
 	require.Equal(t, StatusUpToDate, report.Harness.Status)
-	require.Contains(t, report.Actions, "mars-harness update tool --version v0.7.0")
+	require.Contains(t, report.Actions, "mars-harness update tool --version v999.0.0")
 }
 
 func TestRun_recommendsHarnessUpdateWhenMetadataMissing(t *testing.T) {
@@ -42,7 +43,7 @@ func TestRun_recommendsHarnessUpdateWhenMetadataMissing(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(repo, ".harness"), 0o755))
 
 	report, err := Run(context.Background(), Config{
-		CurrentVersion: "0.6.0",
+		CurrentVersion: buildinfo.DefaultVersion,
 		RepoPath:       repo,
 		SkipRemote:     true,
 	})
@@ -62,7 +63,7 @@ func TestRun_reportsHarnessBehindInstalledTool(t *testing.T) {
 	require.NoError(t, os.WriteFile(metadataPath, []byte("schema_version: 1\ngenerator: mars-harness\ngenerator_version: 0.5.0\n"), 0o644))
 
 	report, err := Run(context.Background(), Config{
-		CurrentVersion: "0.6.0",
+		CurrentVersion: buildinfo.DefaultVersion,
 		RepoPath:       repo,
 		SkipRemote:     true,
 	})
