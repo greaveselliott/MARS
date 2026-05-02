@@ -134,8 +134,8 @@ Do not import ticket IDs into Harness defaults. Import the failure classes and c
 
 | Mars file | Relevance | Harness use |
 | --- | --- | --- |
-| `docs/references/harness-engineering-agent-first.md` | Direct | This is also foundational for Harness: AGENTS as map, docs as system of record, plans as artifacts, rule-to-code promotion, entropy management, and agent-first development. |
-| `docs/references/ui-design-brain.md`, `vercel-composition-patterns.md`, `vercel-react-best-practices.md` | Reference | Useful for frontend target repos, but not core Harness operating-model parity. |
+| `docs/references/harness-engineering-agent-first.md` | Direct | This is foundational for Harness and has been carried into `docs/references/`: AGENTS as map, docs as system of record, plans as artifacts, rule-to-code promotion, entropy management, and agent-first development. |
+| `docs/references/ui-design-brain.md`, `vercel-composition-patterns.md`, `vercel-react-best-practices.md` | Reference | These have been carried into `docs/references/` as target-project and future skill/bundle references. They are useful for generated frontend repos, but not core Harness operating-model parity. |
 
 ## What To Port Into Mars Harness First
 
