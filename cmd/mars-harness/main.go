@@ -34,6 +34,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/selfupdate"
 	"github.com/greaveselliott/mars-harness/internal/serve"
 	"github.com/greaveselliott/mars-harness/internal/setup"
+	"github.com/greaveselliott/mars-harness/internal/shellpath"
 	"github.com/greaveselliott/mars-harness/internal/tools"
 	"github.com/greaveselliott/mars-harness/internal/trace"
 	"github.com/greaveselliott/mars-harness/internal/trust"
@@ -72,6 +73,7 @@ func main() {
 	root.AddCommand(trustCmd())
 	root.AddCommand(modelsCmd())
 	root.AddCommand(releaseCmd())
+	root.AddCommand(pathCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -313,6 +315,15 @@ for source-development installs until release-asset based updates are complete.`
 			fmt.Printf("Version: %s\n", plan.Version)
 			fmt.Printf("Install dir: %s\n", plan.InstallDir)
 			fmt.Printf("Command: GOBIN=%s %s\n", plan.InstallDir, strings.Join(plan.Command, " "))
+			if plan.ShellPath.InstallDir != "" {
+				fmt.Printf("Shell PATH: %s\n", plan.ShellPath.Message)
+				if plan.ShellPath.ProfilePath != "" {
+					fmt.Printf("Profile: %s\n", plan.ShellPath.ProfilePath)
+				}
+				if plan.ShellPath.ReloadHint != "" {
+					fmt.Printf("Reload: %s\n", plan.ShellPath.ReloadHint)
+				}
+			}
 			if dryRun {
 				fmt.Printf("Dry run: no changes made\n")
 				return nil
@@ -325,6 +336,58 @@ for source-development installs until release-asset based updates are complete.`
 	cmd.Flags().StringVar(&updateVersion, "version", selfupdate.DefaultVersion, "Go module version to install, e.g. latest, main, or v0.5.3")
 	cmd.Flags().StringVar(&installDir, "install-dir", "", "Install directory; default is the current mars-harness binary directory")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print the update plan without running go install")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func pathCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "path",
+		Short: "Configure shell PATH for the installed command",
+	}
+	cmd.AddCommand(pathSetupCmd())
+	return cmd
+}
+
+func pathSetupCmd() *cobra.Command {
+	var (
+		installDir string
+		shellName  string
+		dryRun     bool
+		jsonOut    bool
+	)
+	cmd := &cobra.Command{
+		Use:   "setup",
+		Short: "Add the mars-harness install directory to the current user's shell PATH",
+		Long:  "Detect Fish, Zsh, Bash, POSIX sh, or Csh/Tcsh and write an idempotent shell profile snippet so mars-harness works in new terminals.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			result, err := shellpath.Ensure(shellpath.Config{
+				InstallDir: installDir,
+				ShellPath:  shellName,
+				DryRun:     dryRun,
+			})
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return writeJSON(os.Stdout, result)
+			}
+			fmt.Printf("mars-harness path setup\n")
+			fmt.Printf("Install dir: %s\n", result.InstallDir)
+			fmt.Printf("Shell: %s\n", result.Shell)
+			fmt.Printf("Status: %s\n", result.Message)
+			if result.ProfilePath != "" {
+				fmt.Printf("Profile: %s\n", result.ProfilePath)
+			}
+			if result.ReloadHint != "" {
+				fmt.Printf("Reload: %s\n", result.ReloadHint)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&installDir, "install-dir", "", "Directory containing mars-harness; default resolves from current executable or Go bin")
+	cmd.Flags().StringVar(&shellName, "shell", "", "Shell path/name to configure; default is $SHELL")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print what would be configured without writing profile files")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
@@ -755,6 +818,7 @@ func setupCmd() *cobra.Command {
 		enableGitHub bool
 		testMode     bool
 		dryRun       bool
+		installDir   string
 	)
 
 	cmd := &cobra.Command{
@@ -767,6 +831,7 @@ func setupCmd() *cobra.Command {
 				EnableGitHub: enableGitHub,
 				TestMode:     testMode,
 				DryRun:       dryRun,
+				InstallDir:   installDir,
 			})
 			if err != nil {
 				return err
@@ -780,6 +845,7 @@ func setupCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&enableGitHub, "github", false, "Configure optional GitHub status/check integration")
 	cmd.Flags().BoolVar(&testMode, "test-mode", false, "Skip downloads and external services")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print steps without executing")
+	cmd.Flags().StringVar(&installDir, "install-dir", "", "Directory containing mars-harness for shell PATH setup; default resolves automatically")
 
 	return cmd
 }

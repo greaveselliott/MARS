@@ -217,7 +217,7 @@ See [docs/design-docs/dashboard.md](docs/design-docs/dashboard.md) AD-027 for fu
 go build ./cmd/mars-harness
 ```
 
-For day-to-day source development, install the command into the Go bin directory and run it from anywhere:
+For day-to-day source development, install the command into the Go bin directory and run it from anywhere. `make install` also configures the user's supported shell profile so new terminals can resolve `mars-harness` without manual PATH edits:
 
 ```bash
 make install
@@ -230,6 +230,12 @@ Upgrade or reinstall the installed command without changing into this repo:
 mars-harness update check --repo /path/to/target-repo
 mars-harness update tool
 mars-harness update harness --repo /path/to/target-repo
+```
+
+If shell PATH setup needs to be repaired directly, run:
+
+```bash
+mars-harness path setup
 ```
 
 Do not use `go build ./cmd/mars-harness; ./mars-harness ...` as the normal loop. The semicolon runs the old source-root binary when the build fails. Use `make install` or `go build -o build/mars-harness ./cmd/mars-harness` for one-off binaries.

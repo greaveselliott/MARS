@@ -53,3 +53,21 @@
 - Last Reviewed: 2026-05-02
 - Review Trigger: New feature contracts, completion gates, doctor/update drift checks, or dogfood failures.
 - Owner: QA
+
+## G-004: Make CLI Availability Zero-Config Across Shells
+
+- ID: G-004
+- Status: active
+- Category: distribution
+- Priority: P0
+- Confidence: high
+- Source: user_chat
+- Dedupe Key: setup:shell-path-zero-config
+- Hypothesis: Automatically configuring the installed binary directory in the user's shell profile removes a first-run failure mode and keeps plug-and-play true for Fish, Zsh, Bash, and POSIX shell users.
+- Success Evidence: `make install`, `mars-harness setup`, and `mars-harness update tool` all converge on the same idempotent PATH setup, and tests prove supported shells are configured without duplicate profile entries.
+- Falsification Evidence: A supported-shell user installs the binary and still gets `Unknown command: mars-harness` in a new terminal.
+- Competes With: leaving PATH setup to Go tooling or manual docs
+- Supports: G-002
+- Last Reviewed: 2026-05-02
+- Review Trigger: Installer, setup, update-tool, or shell support changes.
+- Owner: Release Manager

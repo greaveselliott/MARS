@@ -30,7 +30,7 @@ cd mars-harness
 make install
 ```
 
-This installs `mars-harness` into your Go binary directory, usually `$(go env GOPATH)/bin`. Make sure that directory is on `PATH`.
+This installs `mars-harness` into your Go binary directory, usually `$(go env GOPATH)/bin`, and configures Fish, Zsh, Bash, POSIX sh/Ksh, Csh, or Tcsh so new terminals can resolve `mars-harness` automatically.
 
 For one-off source builds, prefer `go build -o build/mars-harness ./cmd/mars-harness`. Avoid `go build ./cmd/mars-harness; ./mars-harness ...`: the semicolon runs the old binary if the build fails, and the source-tree binary is easy to confuse with the installed command.
 
@@ -50,14 +50,20 @@ mars-harness update check --repo ~/my-project
 mars-harness update tool
 ```
 
-By default this uses `go install` and writes into the directory that contains the current `mars-harness` binary. For source-development channels:
+By default this uses `go install`, writes into the directory that contains the current `mars-harness` binary, and refreshes shell PATH setup for that directory. For source-development channels:
 
 ```bash
 mars-harness update tool --version main
 mars-harness update tool --dry-run
 ```
 
-If your shell still sees an older binary after updating, refresh its command cache with `hash -r` or open a new terminal.
+If your current shell still sees an older binary after updating, refresh its command cache with `hash -r`, run the reload hint printed by the command, or open a new terminal.
+
+You can rerun shell PATH setup directly:
+
+```bash
+mars-harness path setup
+```
 
 Update the harness files deployed into a target repo with the same verb:
 

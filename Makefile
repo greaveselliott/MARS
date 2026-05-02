@@ -12,8 +12,10 @@ build:
 
 install:
 	CGO_ENABLED=0 $(GO) install ./cmd/mars-harness
+	$(INSTALL_BIN)/$(BINARY) path setup --install-dir $(INSTALL_BIN)
 	@echo "Installed $(BINARY) to $(INSTALL_BIN)/$(BINARY)"
-	@echo "Run: $(BINARY) version"
+	@echo "Run now: $(INSTALL_BIN)/$(BINARY) version"
+	@echo "After opening a new terminal or reloading your shell: $(BINARY) version"
 
 test:
 	$(GO) test ./...

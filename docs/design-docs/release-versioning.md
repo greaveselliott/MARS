@@ -86,12 +86,37 @@ The command emits machine-readable JSON with `--json` and recommends `update too
 
 `mars-harness init` and `mars-harness update harness` write `.harness/metadata.yaml`. This file is generated state owned by the harness updater, unlike role prompts, manifests, guardrails, knowledge routes, tickets, and docs, which remain user-owned after init.
 
+### AD-075: Install And Update Configure User Shell PATH
+
+Operators should not need shell-specific setup knowledge to run the installed
+command. Source `make install`, `mars-harness setup`, and `mars-harness update
+tool` converge on the same shell-path configurator. It detects Fish, Zsh, Bash,
+POSIX sh/Ksh, Csh, and Tcsh; writes an idempotent user-profile snippet; and
+reports unsupported shells with the install directory to add manually.
+
+The explicit command is:
+
+```bash
+mars-harness path setup --install-dir <dir>
+```
+
+`make install` runs that command through the freshly installed binary using its
+absolute path, so the first source install fixes Fish/Zsh/Bash/POSIX PATH for
+future terminals. `update tool` repeats the same setup after reinstalling the
+binary. `setup` includes the same step so binary-release installers can call one
+setup flow later.
+
+The command cannot mutate the already-running parent shell process after it
+exits. It prints a reload hint for the current session and makes new terminals
+work without manual profile editing.
+
 ## Implementation Requirements
 
 - Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
 - Add `mars-harness update tool [--version <version>] [--install-dir <path>] [--dry-run]`.
 - Add `mars-harness update harness --repo <path>`.
 - Add `mars-harness update check --repo <path> [--json] [--skip-remote]`.
+- Add `mars-harness path setup [--install-dir <path>]`.
 - Infer `auto` bumps from semantic commits:
   - breaking changes -> major
   - `feat:` -> minor

@@ -56,12 +56,12 @@ regression-aware, and tied to autonomous work creation.
 | Trust and scoring | C+ | `scores`, `trust`, and trunk-native outcome recording exist. | Quality export, regression detector, and score-to-work triggers remain open. |
 | Self-reflective telemetry | C+ | Recurring failures and low scores become typed improvement proposals and intervention-debt tickets. | Orchestrator surveys and richer dogfood/ticket-state signals are pending. |
 | Local inference and model routing | C+ | Pinned defaults, hardware profile logic, manifest-tier routing, and clearer missing-model errors exist. | Benchmark-backed model refresh and Ollama swap workflow are still early. |
-| Setup and doctor | B- | Local-first setup, `doctor --json`, model checks, guardrail/workflow checks, and version drift warnings exist. | Zero-config throughput tuning still needs live measurement and remediation. |
+| Setup and doctor | B | Local-first setup, automatic shell PATH setup, `doctor --json`, model checks, guardrail/workflow checks, and version drift warnings exist. | Zero-config throughput tuning still needs live measurement and remediation. |
 | Update and release | B- | Unified `update` verb, target harness metadata, semantic patch notes, and GitHub release publication are documented and used. | Checksum-verified binary release assets are not published yet. |
 | Generated target harness | B- | Target repos receive compact AGENTS.md, glossary routing, release guidance, skills, references, and quality score seed. | Generated docs must become evidence-backed rather than static seeds. |
 | Dashboard and observability | B- | Dashboard, event stream, controls, traces, and health state exist. | Dashboard must link to the same quality export data without becoming the source of truth. |
 | Dogfood and CI | C | Deterministic tests cover many packages and the harness has dogfood roles/design. | Coverage is below 70% in several packages, live dogfood matrix is incomplete, and `golangci-lint` availability is not guaranteed locally. |
-| Distribution | C | Source install and `update tool` support the current developer workflow. | Signed/checksum release assets and installer upgrade flow are still tracked separately. |
+| Distribution | C+ | Source install, `path setup`, and `update tool` support the current developer workflow and configure supported user shells automatically. | Signed/checksum release assets and installer upgrade flow are still tracked separately. |
 
 ## Top Improvement Targets
 

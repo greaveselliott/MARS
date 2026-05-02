@@ -12,6 +12,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/config"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/models"
+	"github.com/greaveselliott/mars-harness/internal/shellpath"
 	"gopkg.in/yaml.v3"
 )
 
@@ -34,6 +35,7 @@ type Config struct {
 	EnableGitHub bool
 	TestMode     bool
 	DryRun       bool
+	InstallDir   string
 }
 
 // Result reports what happened during setup.
@@ -92,6 +94,7 @@ func buildSteps(baseDir string, cfg Config) []Step {
 		createDirectoriesStep(baseDir),
 		writeDefaultConfigStep(baseDir),
 		detectHardwareStep(baseDir),
+		configureShellPathStep(cfg),
 	}
 
 	if !cfg.SkipDownload && !cfg.TestMode {
@@ -104,6 +107,31 @@ func buildSteps(baseDir string, cfg Config) []Step {
 	}
 
 	return steps
+}
+
+func configureShellPathStep(cfg Config) Step {
+	return Step{
+		Name: "configure-shell-path",
+		Check: func() (bool, error) {
+			result, err := shellpath.Evaluate(shellpath.Config{InstallDir: cfg.InstallDir})
+			if err != nil {
+				return false, err
+			}
+			return result.UnsupportedShell || result.ProfileAlreadyConfigured, nil
+		},
+		Execute: func() error {
+			result, err := shellpath.Ensure(shellpath.Config{InstallDir: cfg.InstallDir})
+			if err != nil {
+				return err
+			}
+			if result.UnsupportedShell {
+				slog.Warn("setup: shell PATH unsupported", "shell", result.Shell, "install_dir", result.InstallDir)
+				return nil
+			}
+			slog.Info("setup: shell PATH ready", "profile", result.ProfilePath, "changed", result.Changed, "hint", result.ReloadHint)
+			return nil
+		},
+	}
 }
 
 func createDirectoriesStep(baseDir string) Step {

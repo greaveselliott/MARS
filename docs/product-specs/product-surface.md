@@ -11,7 +11,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 
 | Layer | User-facing surface | Product promise |
 | --- | --- | --- |
-| Install and setup | installed `mars-harness` command, `mars-harness setup`, config, model and binary cache | Run the harness from any directory, detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
+| Install and setup | installed `mars-harness` command, `mars-harness setup`, `mars-harness path setup`, config, model and binary cache | Run the harness from any directory, configure the user's shell PATH automatically, detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
 | Target harness | `mars-harness init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
 | Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, visible run state, and narrow self-healing for stale recovery jobs. |
 | Delivery model | `docs/goals/`, `docs/features/`, one active exec plan, BDD scenario evidence, ticket completion gates | Align work to goals, define feature completeness before implementation, and ship only scenarios with real E2E/integration evidence. |
@@ -23,11 +23,12 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 
 | Command | Status | Product behavior |
 | --- | --- | --- |
-| `mars-harness setup` | Implemented, still hardening | Creates `~/.mars-harness/`, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
+| `mars-harness setup` | Implemented, still hardening | Creates `~/.mars-harness/`, configures supported shell profiles for the installed command, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
 | `mars-harness update check --repo <path>` | Implemented | Reports whether the installed CLI, deployed target `.harness/` metadata, or mirrored operating-model artifacts are behind, with JSON output for automation and unknown-but-nonfatal remote status when release lookup fails. |
-| `mars-harness update tool` | Initial implementation | Reinstalls the command into the current binary directory through `go install`, so operators do not need to `cd` into the source repo to update the CLI. Release-asset updates are still tracked separately. |
+| `mars-harness update tool` | Initial implementation | Reinstalls the command into the current binary directory through `go install`, then configures the user's shell PATH for that directory. Release-asset updates are still tracked separately. |
+| `mars-harness path setup --install-dir <path>` | Implemented | Detects Fish, Zsh, Bash, POSIX sh/Ksh, Csh, or Tcsh and writes an idempotent user-profile snippet so new terminals can resolve `mars-harness`. |
 | `mars-harness update harness --repo <path>` | Implemented | Uses the same update verb to refresh the deployed target `.harness/` bundle without overwriting user-owned agent configuration. |
-| `make install` from source checkout | Implemented for source development | Installs the dev binary into the Go bin directory so operators do not run stale source-root binaries. |
+| `make install` from source checkout | Implemented for source development | Installs the dev binary into the Go bin directory and runs the installed binary's PATH setup so operators do not run stale source-root binaries or hand-edit shell config. |
 | `mars-harness init --repo <path>` | Implemented | Scaffolds the target harness: manifest, roles, guardrails, knowledge routes, compact `AGENTS.md`, goals, BDD feature contracts, tickets, exec-plan docs, design-doc index, context glossary, quality score, and references. |
 | `mars-harness upgrade --repo <path>` | Implemented, still hardening | Fills missing target harness defaults while preserving user-owned manifest, role prompts, knowledge routes, guardrails, tickets, design docs, exec plans, references, and target `AGENTS.md`. |
 | `mars-harness scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |

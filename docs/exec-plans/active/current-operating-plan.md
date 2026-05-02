@@ -4,16 +4,16 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040
-**Goals:** G-001, G-002, G-003
-**BDD Feature:** F-001
-**Hypothesis:** A BDD-led goal-driven operating loop will reduce false-done tickets and stalled in-progress work by making feature completeness depend on scenario evidence instead of ticket movement.
-**Success Evidence:** AD-074 is indexed, source and generated target harnesses contain goal/feature/plan/ticket guidance, feature tickets require BDD evidence before done, and update/doctor report operating-model drift.
-**Falsification Evidence:** An engineer can close a feature ticket without scenario evidence, generated targets omit AD-074 artifacts, or the active plan stops referencing active goals and feature contracts.
-**Scenario Schedule:** F-001-S001, F-001-S002, F-001-S003, F-001-S004, F-001-S005, F-001-S006
-**Current Failing Scenario:** None for F-001; the next active-plan refresh should promote the highest-value backlog scenario group.
-**Walking Skeleton Slice:** Link goals, feature contract, active plan, ticket metadata, generated target docs/prompts, ticket completion gate, update/doctor drift reporting, and BDD-style integration checks through repo artifacts.
-**Learning Or MVP Outcome:** Ship the minimum enforceable AD-074 operating loop: goals, BDD contracts, scenario scheduling, ticket evidence, generated target mirror, drift reporting, release/quality classification, and telemetry-derived goals.
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041
+**Goals:** G-001, G-002, G-003, G-004
+**BDD Feature:** F-001, F-002
+**Hypothesis:** Zero-config CLI availability removes the first-run `Unknown command: mars-harness` failure mode while the BDD-led operating loop keeps completion evidence-based.
+**Success Evidence:** `make install`, `mars-harness setup`, and `mars-harness update tool` configure supported user shell profiles idempotently, and F-001 remains passing.
+**Falsification Evidence:** Fish, Zsh, Bash, or POSIX shell users still need manual PATH edits after install/update/setup.
+**Scenario Schedule:** F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005
+**Current Failing Scenario:** None for F-002; the next active-plan refresh should promote the highest-value backlog scenario group.
+**Walking Skeleton Slice:** Use one shellpath package across source install, first-run setup, update-tool reinstall, and an explicit `mars-harness path setup` command.
+**Learning Or MVP Outcome:** Users can install or update once and run `mars-harness` from new terminals across common shells without hand-written shell setup.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
 **Source:** Exec-plan review and repository state audit on 2026-05-02
@@ -31,12 +31,12 @@ plans to decide what to do next.
 
 - Current source version is recorded in `VERSION`.
 - Current branch: `main`
-- Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, and `G-003`.
-- BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`.
+- Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
+- BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001` and the current install/setup feature is `F-002`.
 - Ticket state:
   - `docs/tickets/in-progress/` has no active tickets.
   - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-034`, `MH-035`, and `MH-037`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, `MH-036`, `MH-038`, `MH-039`, and `MH-040`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, `MH-036`, `MH-038`, `MH-039`, `MH-040`, and `MH-041`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -85,6 +85,11 @@ plans to decide what to do next.
 | F-001-S004 | Passing | `update check` and `doctor --repo` report operating-model drift without overwriting user-owned docs. |
 | F-001-S005 | Passing | Ticket docs, quality score, and release-note generation distinguish shipped feature scenarios from enabler work when commits reference tickets. |
 | F-001-S006 | Passing | Telemetry proposals can create or update active goals/observations with dedupe evidence. |
+| F-002-S001 | Passing | `make install` invokes `mars-harness path setup --install-dir <dir>` after `go install`. |
+| F-002-S002 | Passing | `mars-harness setup` includes a `configure-shell-path` step. |
+| F-002-S003 | Passing | `mars-harness update tool` runs shell PATH setup after reinstalling the binary. |
+| F-002-S004 | Passing | Shell profile updates are idempotent and covered by tests. |
+| F-002-S005 | Passing | Unsupported shells return explicit manual remediation without writing profile files. |
 
 ## Quality State
 

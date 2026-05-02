@@ -11,6 +11,7 @@ import (
 
 func TestRun_testMode(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
 
 	result, err := Run(Config{TestMode: true})
 	require.NoError(t, err)
@@ -21,10 +22,12 @@ func TestRun_testMode(t *testing.T) {
 	assert.DirExists(t, baseDir)
 	assert.FileExists(t, filepath.Join(baseDir, "config.yaml"))
 	assert.FileExists(t, filepath.Join(baseDir, "hardware.yaml"))
+	assert.FileExists(t, filepath.Join(home, ".profile"))
 }
 
 func TestRun_idempotent(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
 
 	result1, err := Run(Config{TestMode: true})
 	require.NoError(t, err)
@@ -38,6 +41,7 @@ func TestRun_idempotent(t *testing.T) {
 
 func TestRun_dryRun(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
 
 	result, err := Run(Config{TestMode: true, DryRun: true})
 	require.NoError(t, err)
@@ -52,6 +56,7 @@ func TestRun_dryRun(t *testing.T) {
 
 func TestRun_createsSubdirectories(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
 
 	_, err := Run(Config{TestMode: true})
 	require.NoError(t, err)
@@ -87,6 +92,7 @@ func TestBuildSteps_fullMode(t *testing.T) {
 	assert.Contains(t, names, "create-directories")
 	assert.Contains(t, names, "write-config")
 	assert.Contains(t, names, "detect-hardware")
+	assert.Contains(t, names, "configure-shell-path")
 	assert.Contains(t, names, "install-llama-server")
 	assert.Contains(t, names, "download-models")
 	assert.NotContains(t, names, "github-setup")

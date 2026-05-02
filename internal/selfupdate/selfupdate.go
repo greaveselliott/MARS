@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/greaveselliott/mars-harness/internal/shellpath"
 )
 
 const (
@@ -25,12 +27,13 @@ type Config struct {
 
 // Plan is the resolved update action.
 type Plan struct {
-	Package    string   `json:"package"`
-	Version    string   `json:"version"`
-	InstallDir string   `json:"install_dir"`
-	BinaryPath string   `json:"binary_path"`
-	Command    []string `json:"command"`
-	DryRun     bool     `json:"dry_run"`
+	Package    string           `json:"package"`
+	Version    string           `json:"version"`
+	InstallDir string           `json:"install_dir"`
+	BinaryPath string           `json:"binary_path"`
+	Command    []string         `json:"command"`
+	ShellPath  shellpath.Result `json:"shell_path"`
+	DryRun     bool             `json:"dry_run"`
 }
 
 // ResolvePlan computes the go-install update command without executing it.
@@ -80,6 +83,10 @@ func Run(ctx context.Context, cfg Config) (Plan, error) {
 		return Plan{}, err
 	}
 	if cfg.DryRun {
+		pathResult, pathErr := shellpath.Ensure(shellpath.Config{InstallDir: plan.InstallDir, DryRun: true})
+		if pathErr == nil {
+			plan.ShellPath = pathResult
+		}
 		return plan, nil
 	}
 
@@ -94,5 +101,10 @@ func Run(ctx context.Context, cfg Config) (Plan, error) {
 		return Plan{}, fmt.Errorf("update tool: %s failed with GOBIN=%s: %w\n%s\nIf this is a permission error, rerun with an install dir you own or install from the source checkout with `make install`",
 			strings.Join(plan.Command, " "), plan.InstallDir, err, strings.TrimSpace(string(output)))
 	}
+	pathResult, err := shellpath.Ensure(shellpath.Config{InstallDir: plan.InstallDir})
+	if err != nil {
+		return Plan{}, fmt.Errorf("update tool: installed %s but could not configure shell PATH: %w", plan.BinaryPath, err)
+	}
+	plan.ShellPath = pathResult
 	return plan, nil
 }
