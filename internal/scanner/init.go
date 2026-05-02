@@ -44,7 +44,7 @@ func Init(repoRoot string, force bool) error {
 
 	harnessPath := filepath.Join(repoRoot, harnessDir)
 	if _, err := os.Stat(harnessPath); err == nil && !force {
-		return fmt.Errorf("init: %s already exists — use --force to overwrite", harnessPath)
+		return fmt.Errorf("init: %s already exists — use --force to refresh missing scaffold and rewrite manifest", harnessPath)
 	}
 
 	dirs := []string{
@@ -117,11 +117,12 @@ func Init(repoRoot string, force bool) error {
 	return nil
 }
 
-// Upgrade updates manifest.yaml, role prompts, and harness-owned support files
-// in an existing .harness/ to match the current harness defaults. This is for
-// target projects that were initialised with an older version of mars-harness.
-// Repo docs and user content (tickets, exec-plans, design-docs) are never
-// touched.
+// Upgrade fills in missing default manifest, role prompts, and harness support
+// files in an existing .harness/. Existing target harness files are user-owned:
+// role prompts, manifest.yaml, knowledge routes, guardrails, tickets, docs, and
+// target AGENTS.md are preserved. This keeps starter agents configurable by the
+// end user while still allowing newer mars-harness versions to add missing
+// scaffold files.
 func Upgrade(repoRoot string) (updated []string, err error) {
 	repoRoot = filepath.Clean(repoRoot)
 	harnessPath := filepath.Join(repoRoot, harnessDir)
@@ -132,22 +133,34 @@ func Upgrade(repoRoot string) (updated []string, err error) {
 	projectName := filepath.Base(repoRoot)
 
 	manifestPath := filepath.Join(harnessPath, "manifest.yaml")
-	if err := os.WriteFile(manifestPath, []byte(defaultManifest(projectName)), 0o644); err != nil {
-		return nil, fmt.Errorf("upgrade: write %s: %w", manifestPath, err)
+	if _, err := os.Stat(manifestPath); err == nil {
+		slog.Debug("upgrade: preserving existing manifest.yaml", "path", manifestPath)
+	} else if os.IsNotExist(err) {
+		if err := os.WriteFile(manifestPath, []byte(defaultManifest(projectName)), 0o644); err != nil {
+			return nil, fmt.Errorf("upgrade: write %s: %w", manifestPath, err)
+		}
+		updated = append(updated, "manifest.yaml")
+		slog.Info("upgrade: wrote missing manifest.yaml", "path", manifestPath)
+	} else {
+		return nil, fmt.Errorf("upgrade: stat %s: %w", manifestPath, err)
 	}
-	updated = append(updated, "manifest.yaml")
-	slog.Info("upgrade: wrote manifest.yaml", "path", manifestPath)
 
 	for name, content := range defaultRolePrompts {
 		promptPath := filepath.Join(harnessPath, "roles", name+".md")
 		if err := os.MkdirAll(filepath.Dir(promptPath), 0o755); err != nil {
 			return updated, fmt.Errorf("upgrade: create roles dir: %w", err)
 		}
+		if _, err := os.Stat(promptPath); err == nil {
+			slog.Debug("upgrade: preserving existing role prompt", "role", name)
+			continue
+		} else if !os.IsNotExist(err) {
+			return updated, fmt.Errorf("upgrade: stat %s: %w", promptPath, err)
+		}
 		if err := os.WriteFile(promptPath, []byte(content), 0o644); err != nil {
 			return updated, fmt.Errorf("upgrade: write %s: %w", promptPath, err)
 		}
 		updated = append(updated, "roles/"+name+".md")
-		slog.Debug("upgrade: wrote role prompt", "role", name)
+		slog.Debug("upgrade: wrote missing role prompt", "role", name)
 	}
 
 	for name, content := range defaultHarnessFiles {
@@ -155,11 +168,17 @@ func Upgrade(repoRoot string) (updated []string, err error) {
 		if err := os.MkdirAll(filepath.Dir(harnessFilePath), 0o755); err != nil {
 			return updated, fmt.Errorf("upgrade: create %s: %w", filepath.Dir(harnessFilePath), err)
 		}
+		if _, err := os.Stat(harnessFilePath); err == nil {
+			slog.Debug("upgrade: preserving existing harness support file", "path", name)
+			continue
+		} else if !os.IsNotExist(err) {
+			return updated, fmt.Errorf("upgrade: stat %s: %w", harnessFilePath, err)
+		}
 		if err := os.WriteFile(harnessFilePath, []byte(content), 0o644); err != nil {
 			return updated, fmt.Errorf("upgrade: write %s: %w", harnessFilePath, err)
 		}
 		updated = append(updated, name)
-		slog.Debug("upgrade: wrote harness support file", "path", name)
+		slog.Debug("upgrade: wrote missing harness support file", "path", name)
 	}
 
 	slog.Info("upgrade: complete", "files_updated", len(updated))
@@ -200,7 +219,7 @@ func EnsureHarness(repoRoot string, force bool) (didInit bool, err error) {
 
 func defaultManifest(projectName string) string {
 	return fmt.Sprintf(`name: %s
-description: Full autonomous AI pipeline for %s — strict trunk, 11 roles
+description: Starter autonomous AI pipeline for %s — strict trunk, configurable roles
 
 roles:
   # ── Strategy ─────────────────────────────────────────────

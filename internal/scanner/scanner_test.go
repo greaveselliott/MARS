@@ -775,30 +775,47 @@ func TestScan_hasGitignore(t *testing.T) {
 	}
 }
 
-func TestUpgrade_updatesManifestAndPrompts(t *testing.T) {
+func TestUpgrade_preservesUserConfiguredManifestAndPrompts(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
 
 	require.NoError(t, Init(dir, false))
 
-	oldPrompt := filepath.Join(dir, ".harness", "roles", "coo.md")
-	os.WriteFile(oldPrompt, []byte("old outdated prompt"), 0o644)
+	manifestPath := filepath.Join(dir, ".harness", "manifest.yaml")
+	require.NoError(t, os.WriteFile(manifestPath, []byte("name: custom\nroles:\n  custom:\n    prompt: roles/custom.md\n"), 0o644))
+
+	customPrompt := filepath.Join(dir, ".harness", "roles", "coo.md")
+	require.NoError(t, os.WriteFile(customPrompt, []byte("# Custom COO Prompt"), 0o644))
+
+	customKnowledge := filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml")
+	require.NoError(t, os.WriteFile(customKnowledge, []byte("routes: []\n# custom knowledge"), 0o644))
+
+	missingPrompt := filepath.Join(dir, ".harness", "roles", "qa.md")
+	require.NoError(t, os.Remove(missingPrompt))
 
 	updated, err := Upgrade(dir)
 	require.NoError(t, err)
-	assert.Contains(t, updated, "manifest.yaml")
-	assert.Contains(t, updated, "roles/coo.md")
-	assert.Contains(t, updated, "knowledge/context-glossary.yaml")
+	assert.NotContains(t, updated, "manifest.yaml")
+	assert.NotContains(t, updated, "roles/coo.md")
+	assert.NotContains(t, updated, "knowledge/context-glossary.yaml")
+	assert.Contains(t, updated, "roles/qa.md")
 
-	content, err := os.ReadFile(oldPrompt)
+	manifest, err := os.ReadFile(manifestPath)
 	require.NoError(t, err)
-	assert.Contains(t, string(content), "ticket_create", "upgraded prompt should reference ticket_create tool")
-	assert.NotContains(t, string(content), "old outdated prompt")
+	assert.Contains(t, string(manifest), "custom")
 
-	knowledge, err := os.ReadFile(filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml"))
+	content, err := os.ReadFile(customPrompt)
 	require.NoError(t, err)
-	assert.Contains(t, string(knowledge), "docs/design-docs/context-glossary.md")
+	assert.Equal(t, "# Custom COO Prompt", string(content))
+
+	knowledge, err := os.ReadFile(customKnowledge)
+	require.NoError(t, err)
+	assert.Equal(t, "routes: []\n# custom knowledge", string(knowledge))
+
+	createdPrompt, err := os.ReadFile(missingPrompt)
+	require.NoError(t, err)
+	assert.Contains(t, string(createdPrompt), "Quality Reviewer")
 }
 
 func TestUpgrade_failsWithoutHarness(t *testing.T) {

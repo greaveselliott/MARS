@@ -463,7 +463,7 @@ func initCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
-	cmd.Flags().BoolVar(&force, "force", false, "Overwrite existing .harness/ directory")
+	cmd.Flags().BoolVar(&force, "force", false, "Refresh missing scaffold and rewrite manifest if .harness/ already exists")
 
 	return cmd
 }
@@ -473,10 +473,11 @@ func upgradeCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "upgrade",
-		Short: "Sync .harness/ manifest and role prompts to latest defaults",
-		Long: `Update an existing target project's .harness/ to match the current
-mars-harness defaults. Overwrites manifest.yaml and all role prompts.
-Does not touch user content (tickets, exec-plans, design-docs).`,
+		Short: "Fill missing .harness/ defaults without overwriting user agents",
+		Long: `Fill missing default files in an existing target project's .harness/.
+Existing manifest.yaml, role prompts, knowledge routes, guardrails, target
+AGENTS.md, tickets, exec-plans, design-docs, and references are user-owned and
+preserved.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if repoPath == "" {
 				var err error

@@ -86,7 +86,7 @@ This creates:
     └── knowledge/    # Lightweight context routes, including the glossary route
 ```
 
-Edit `.harness/manifest.yaml` to configure which roles are active. See [bundle-reference.md](bundle-reference.md) for the full format.
+Edit `.harness/manifest.yaml` and `.harness/roles/*.md` to configure the agent team for your repo. The generated roles are starter defaults, not a claim that the shipped agents are perfect for every project. See [bundle-reference.md](bundle-reference.md) for the full format.
 
 ## Run a Role
 
@@ -127,4 +127,4 @@ mars-harness doctor
 
 - [bundle-reference.md](bundle-reference.md) — manifest.yaml format and role configuration
 - [guardrails-guide.md](guardrails-guide.md) — writing safety rules
-- `examples/roles/` — all 11 role prompts ready to copy into your project
+- `examples/roles/` — starter role prompts ready to adapt for your project

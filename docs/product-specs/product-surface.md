@@ -23,7 +23,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | --- | --- | --- |
 | `mars-harness setup` | Implemented, still hardening | Creates `~/.mars-harness/`, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
 | `mars-harness init --repo <path>` | Implemented | Scaffolds the target harness: manifest, roles, guardrails, knowledge routes, compact `AGENTS.md`, tickets, exec-plan docs, design-doc index, context glossary, and references. |
-| `mars-harness upgrade --repo <path>` | Implemented, still hardening | Refreshes harness-owned `.harness/` defaults without overwriting user tickets, design docs, exec plans, references, or target `AGENTS.md`. |
+| `mars-harness upgrade --repo <path>` | Implemented, still hardening | Fills missing target harness defaults while preserving user-owned manifest, role prompts, knowledge routes, guardrails, tickets, design docs, exec plans, references, and target `AGENTS.md`. |
 | `mars-harness scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |
 | `mars-harness run <role> --repo <path>` | Implemented | Loads manifest, guardrails, knowledge routes, context, tools, local model endpoint, and runs one role with terminal-result truth. |
 | `mars-harness start --repo <path>` | Implemented | Initializes if needed, registers the repo, seeds the CEO role, and runs the per-repo autonomous pipeline with isolated database state. |
@@ -51,7 +51,7 @@ Required generated surfaces:
 - `docs/design-docs/index.md` and `context-glossary.md`
 - `docs/references/README.md` and selected agent-first references
 
-Generated target docs must mirror source-harness doctrine while staying project-agnostic. User-owned docs outside `.harness/` are preserved by upgrades.
+Generated target docs must mirror source-harness doctrine while staying project-agnostic. Existing target harness files and user-owned docs are preserved by upgrades.
 
 ## Generated Source References
 
@@ -61,7 +61,9 @@ Expected future artifacts include role registry, tool inventory, package map, mo
 
 ## Role And Work Semantics
 
-Default roles are goal-oriented, not rigid scripts. The product contract is:
+Default roles are configurable starter agents, not perfect built-ins. The target repo owner can edit prompts, add or remove roles, change schedules and chains, restrict tools, attach guardrails, and route context differently through `.harness/manifest.yaml`.
+
+The product contract is:
 
 - Planner roles create scoped, deduplicated work.
 - Engineer roles complete one ticket per run.

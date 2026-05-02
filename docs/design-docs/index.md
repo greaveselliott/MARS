@@ -19,6 +19,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [self-reflective-telemetry.md](self-reflective-telemetry.md) | Accepted | Harness grades itself and triages telemetry into prompt, process, guardrail, context, inference, manifest, and tool-policy improvement targets. AD-037 through AD-039. |
 | [product-spec-governance.md](product-spec-governance.md) | Accepted | Product specs as a living product contract with metadata, index coverage, and docs-consistency enforcement. AD-040 through AD-042. |
 | [generated-docs-governance.md](generated-docs-governance.md) | Accepted | Generated docs as reproducible reference snapshots with catalog and docs-consistency checks. AD-043 through AD-045. |
+| [role-customization.md](role-customization.md) | Accepted | Shipped roles as configurable starter agents; target manifests, prompts, knowledge routes, and guardrails are user-owned after init. AD-046 through AD-048. |
 
 ## Architecture Decision Log
 
@@ -69,3 +70,6 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-043 | Generated docs are reproducible reference snapshots, not hand-written decisions, tickets, product specs, or plans. | generated-docs-governance.md | Docs |
 | AD-044 | Empty generated docs are acceptable until a generator exists, as long as the README states that intentionally. | generated-docs-governance.md | Docs |
 | AD-045 | Generated docs must be cataloged and mechanically checked for README metadata, catalog coverage, and valid links. | generated-docs-governance.md | Quality |
+| AD-046 | Shipped roles are starter agents, not a claim of universal correctness. Users may edit, replace, remove, or add roles. | role-customization.md | Roles |
+| AD-047 | Target role configuration is user-owned once generated: manifest, prompts, knowledge routes, and guardrails are preserved by default. | role-customization.md | Upgrade |
+| AD-048 | Upgrade fills missing defaults and does not silently retune existing agents. New prompt wording must be adopted deliberately. | role-customization.md | Upgrade |

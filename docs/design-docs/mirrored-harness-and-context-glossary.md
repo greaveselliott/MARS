@@ -59,8 +59,8 @@ Future work may introduce an explicit `WORKFLOW.md`, but v1 should first make th
 - `init` creates `docs/design-docs/context-glossary.md` and indexes it.
 - `init` creates `docs/references/README.md` and the OpenAI Harness Engineering summary.
 - `init` creates `.harness/knowledge/context-glossary.yaml`.
-- Default role manifest entries load the glossary route file through `knowledge`.
-- `upgrade` refreshes harness-owned `.harness/knowledge/` defaults along with manifest and role prompts.
+- Starter role manifest entries load the glossary route file through `knowledge`.
+- `upgrade` fills in missing default harness files while preserving existing target manifest, role prompts, knowledge routes, guardrails, and user docs.
 - Repo docs created outside `.harness/` remain user content and are not overwritten by `upgrade`.
 
 ## Consequences
