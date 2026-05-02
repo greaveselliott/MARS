@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.5.2] - 2026-05-02
+<!-- mars-harness-release: version=0.5.2 commit=4a599310de29 -->
+
+### Documentation
+- **models:** Define ollama swap policy (4a59931)
+
 ## [0.5.1] - 2026-05-02
 <!-- mars-harness-release: version=0.5.1 commit=8f0a44f12017 -->
 
