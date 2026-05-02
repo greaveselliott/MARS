@@ -242,3 +242,27 @@ The mechanical gate now allows a handoff when an Engineer run drains one pre-exi
 - The self-chain keeps running Engineer jobs until the in-progress queue is empty before backlog work resumes.
 - Prompt guidance and the injected ticket index both state that in-progress tickets are first priority.
 - Blockers are treated as implementation work, preserving the harness expectation that a ticket ends in committed, pushed, verified trunk changes.
+
+---
+
+### AD-060: Failed recovery jobs do not recursively recover
+
+**Status:** Accepted
+**Date:** 2026-05-02
+**Author:** Agent (self-improvement — recovery loop containment)
+
+### Context
+
+Dogfood against `sample-target` showed an Engineer self-chain recovery loop: several tickets were already in `docs/tickets/in-progress/`, a ticket gate failure triggered an `auto_recover` Engineer job, that recovery job failed for the same gate reason, and the failure handler enqueued another recovery job with a timestamped idempotency key. The queue accumulated pending/running Engineer recovery jobs without making ticket progress.
+
+### Decision
+
+Self-chaining roles get at most one active auto-recovery job per repo and role. Recovery jobs use a stable idempotency key of `recover:<repo_id>:<role>`, so repeated failures collapse into the active recovery job instead of creating a queue storm.
+
+If a job whose trigger type is already `auto_recover` fails, the server records telemetry/evolution signals but does not enqueue another recovery job. Recursive recovery is treated as a failed intervention attempt, not as a reason to keep scheduling the same role forever.
+
+### Consequences
+
+- A stale ticket gate state can no longer create an unbounded Engineer recovery queue.
+- The queue remains inspectable: one recovery attempt captures the failure, and follow-up improvement work comes from telemetry/tickets rather than repeated identical jobs.
+- Operators should restart any old running harness process after this change so the process uses the contained recovery behavior.

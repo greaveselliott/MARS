@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/greaveselliott/mars-harness/internal/queue"
 )
 
 func testDBPath(t *testing.T) string {
@@ -253,12 +255,106 @@ func TestRepoScope_isolatesStartup(t *testing.T) {
 	}
 }
 
+func TestHandleJobFailedEnqueuesSingleRecovery(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+
+	job := &queue.Job{
+		ID:     "job-1",
+		RepoID: repoID,
+		Role:   "engineer",
+	}
+
+	srv.handleJobFailed(ctx, job, errTest("ticket gate failed"))
+	srv.handleJobFailed(ctx, job, errTest("ticket gate failed"))
+
+	if got := countJobsByStatus(t, srv, "pending"); got != 1 {
+		t.Fatalf("expected one active recovery job, got %d", got)
+	}
+}
+
+func TestHandleJobFailedDoesNotRecoverRecoveryJob(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+
+	job := &queue.Job{
+		ID:      "job-1",
+		RepoID:  repoID,
+		Role:    "engineer",
+		Trigger: `{"type":"auto_recover","source_job":"previous","reason":"ticket gate failed"}`,
+	}
+
+	srv.handleJobFailed(ctx, job, errTest("ticket gate failed again"))
+
+	if got := countJobsByStatus(t, srv, "pending"); got != 0 {
+		t.Fatalf("expected no recursive recovery job, got %d", got)
+	}
+}
+
+func TestIsAutoRecoverTrigger(t *testing.T) {
+	if !isAutoRecoverTrigger(`{"type":"auto_recover"}`) {
+		t.Fatal("expected auto_recover trigger to be detected")
+	}
+	if isAutoRecoverTrigger(`{"type":"chain"}`) {
+		t.Fatal("expected non-recovery trigger to be false")
+	}
+	if isAutoRecoverTrigger(`not-json`) {
+		t.Fatal("expected malformed trigger to be false")
+	}
+}
+
 func TestBuildTicketIndex_empty(t *testing.T) {
 	dir := t.TempDir()
 	idx := BuildTicketIndex(dir)
 	if idx != "No existing tickets found in docs/tickets/." {
 		t.Errorf("unexpected index for empty dir: %s", idx)
 	}
+}
+
+type errTest string
+
+func (e errTest) Error() string {
+	return string(e)
+}
+
+func newRecoveryTestServer(t *testing.T) (*Server, string) {
+	t.Helper()
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".harness", "roles"), 0o755); err != nil {
+		t.Fatalf("mkdir harness: %v", err)
+	}
+	manifest := "name: test\nroles:\n  engineer:\n    prompt: roles/engineer.md\n    model: fast\n    then: [engineer]\n    tools: [file_read]\n"
+	if err := os.WriteFile(filepath.Join(repo, ".harness", "manifest.yaml"), []byte(manifest), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, ".harness", "roles", "engineer.md"), []byte("# Engineer\n"), 0o644); err != nil {
+		t.Fatalf("write role prompt: %v", err)
+	}
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+
+	repoID, err := srv.Repos().Register(context.Background(), repo, "", "main")
+	if err != nil {
+		t.Fatalf("register repo: %v", err)
+	}
+	return srv, repoID
+}
+
+func countJobsByStatus(t *testing.T, srv *Server, status string) int {
+	t.Helper()
+	var count int
+	if err := srv.db.QueryRow(`SELECT COUNT(*) FROM jobs WHERE status = ?`, status).Scan(&count); err != nil {
+		t.Fatalf("count jobs: %v", err)
+	}
+	return count
 }
 
 func TestBuildTicketIndex_findsTickets(t *testing.T) {

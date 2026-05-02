@@ -14,7 +14,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [dashboard.md](dashboard.md) | Draft | 5-page dashboard: pipeline flow, role health, throughput, debug, evolution history. AD-011 (htmx + Chart.js embedded) |
 | [context-efficiency.md](context-efficiency.md) | Draft | Context assembly, budgets, knowledge routing, guardrail scoping |
 | [trigger-orchestration.md](trigger-orchestration.md) | Draft | Trigger sources (webhook, schedule, chain), upstream chaining via `then`, custom cron, strict-trunk default roles. AD-016 through AD-020. |
-| [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, strict-trunk pipeline for local use. AD-021 through AD-030, AD-033. |
+| [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, strict-trunk pipeline for local use, ticket-drain discipline, and recovery loop containment. AD-021 through AD-030, AD-033, AD-060. |
 | [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and initialized harness parity, glossary-as-route context, repo-owned workflow contracts, and operating-rule inheritance. AD-034 through AD-036, AD-058. |
 | [self-reflective-telemetry.md](self-reflective-telemetry.md) | Accepted | Harness grades itself and triages telemetry into prompt, skill, process, guardrail, context, inference, manifest, and tool-policy improvement targets. AD-037 through AD-039. |
 | [product-spec-governance.md](product-spec-governance.md) | Accepted | Product specs as a living product contract with metadata, index coverage, and docs-consistency enforcement. AD-040 through AD-042. |
@@ -86,3 +86,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-057 | Initialized target repos inherit the same automatic versioning workflow through generated AGENTS.md, release-versioning docs, and release-manager prompts. | release-versioning.md | Generated targets |
 | AD-058 | Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. | mirrored-harness-and-context-glossary.md | Generated targets |
 | AD-059 | Versioned release notes are published as GitHub Releases named `vX.Y.Z` when authenticated GitHub release capability is configured. | release-versioning.md | Release |
+| AD-060 | Failed auto-recovery jobs do not recursively enqueue more recovery jobs, and active recovery is idempotent by repo and role. | dogfood-and-decisions.md | Recovery |

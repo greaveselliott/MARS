@@ -1115,6 +1115,14 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 		return
 	}
 
+	if isAutoRecoverTrigger(job.Trigger) {
+		log.Warn("serve: not auto-recovering failed recovery job",
+			"error", jobErr,
+		)
+		go s.checkEvolution(context.Background(), job.Role, job.RepoID)
+		return
+	}
+
 	log.Info("serve: auto-recovering self-chaining role after failure",
 		"error", jobErr,
 	)
@@ -1125,7 +1133,7 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 		"reason":     jobErr.Error(),
 	})
 
-	idempotencyKey := fmt.Sprintf("recover:%s:%s:%d", job.RepoID, job.Role, time.Now().UnixNano())
+	idempotencyKey := fmt.Sprintf("recover:%s:%s", job.RepoID, job.Role)
 	recoverJob := queue.Job{
 		RepoID:         job.RepoID,
 		Role:           job.Role,
@@ -1141,6 +1149,16 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 	log.Info("serve: recovery job enqueued", "recovery_job_id", jobID)
 
 	go s.checkEvolution(context.Background(), job.Role, job.RepoID)
+}
+
+func isAutoRecoverTrigger(trigger string) bool {
+	var payload struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal([]byte(trigger), &payload); err != nil {
+		return false
+	}
+	return payload.Type == "auto_recover"
 }
 
 // handleRemediation is the telemetry remediation callback. It executes
