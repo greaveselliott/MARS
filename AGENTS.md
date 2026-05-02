@@ -217,6 +217,15 @@ See [docs/design-docs/dashboard.md](docs/design-docs/dashboard.md) AD-027 for fu
 go build ./cmd/mars-harness
 ```
 
+For day-to-day source development, install the command into the Go bin directory and run it from anywhere:
+
+```bash
+make install
+mars-harness start --repo /path/to/target-repo
+```
+
+Do not use `go build ./cmd/mars-harness; ./mars-harness ...` as the normal loop. The semicolon runs the old source-root binary when the build fails. Use `make install` or `go build -o build/mars-harness ./cmd/mars-harness` for one-off binaries.
+
 ## How to Test
 
 ```bash

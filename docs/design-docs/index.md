@@ -93,3 +93,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-064 | Inference routing honors manifest `role.model` tiers before role-name fallback mapping, and missing-model errors name the expected repair path. | local-inference.md | Inference |
 | AD-065 | Telemetry triage creates or updates `kind: intervention-debt` tickets through the canonical ticket path, deduped by repo, role, target, category, and evidence window. | self-reflective-telemetry.md | Self-improvement |
 | AD-066 | Ollama is a first-class catalog and explicit model-swap provider, while zero-config default promotion still requires benchmark evidence, immutable revision, and SHA256. | local-inference.md | Inference |
+| AD-067 | Source development installs the command into the Go bin directory before operating target repos; root-level source binaries are treated as stale-binary traps. | dogfood-and-decisions.md | Operator workflow |

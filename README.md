@@ -33,8 +33,18 @@ mars-harness setup
 mars-harness run pipeline-fixer --repo /path/to/your/repo
 
 # Start the full autonomous pipeline
-mars-harness serve
+mars-harness start --repo /path/to/your/repo
 ```
+
+When working from a source checkout, install the dev binary once instead of running `./mars-harness` from the repo root:
+
+```bash
+cd /path/to/target-repo
+make install
+mars-harness start --repo /path/to/target-repo
+```
+
+Avoid `go build ./cmd/mars-harness; ./mars-harness ...`: the semicolon can run a stale old binary if the build fails.
 
 Generate semantic-versioned patch notes from commits:
 

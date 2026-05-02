@@ -290,3 +290,38 @@ This repair is deliberately narrow. It only targets active recovery jobs identif
 - A pre-fix recovery storm can be repaired automatically after restart without direct database surgery.
 - The harness can recover from its own queue-control failure mode while preserving audit rows for what was failed or cancelled.
 - Future self-heal routines should stay scoped and observable: repair the mechanical stuck state, record why, and avoid broad queue deletion.
+
+---
+
+### AD-067: Source Development Installs The Command Before Operating Targets
+
+**Status:** Accepted
+**Date:** 2026-05-02
+**Author:** Agent (operator feedback — source checkout workflow)
+
+### Context
+
+During dogfood, the operator was running:
+
+```bash
+cd /path/to/target-repo && go build ./cmd/mars-harness;
+./mars-harness start --repo /path/to/target-repo
+```
+
+That workflow violates the product shape in two ways. First, the semicolon runs the second command even when the build fails, so the operator can accidentally run a stale source-root binary. Second, requiring the operator to sit inside the harness source repo blurs the harness/target boundary. Mars Harness should be an installed command that operates on target repos through `--repo`.
+
+### Decision
+
+Source development now has an explicit `make install` path. It installs `mars-harness` into the Go bin directory using `go install`, after which the operator runs:
+
+```bash
+mars-harness start --repo /path/to/target-repo
+```
+
+One-off builds should write to `build/mars-harness`, not the repo root. The root-level `./mars-harness` binary path is treated as a stale-binary trap, not the normal operating interface.
+
+### Consequences
+
+- The harness and target project stay visually and operationally separate.
+- Failed builds no longer silently fall through to an old binary in the source tree.
+- Docs and agent guidance point to the same development loop.

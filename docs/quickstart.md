@@ -27,9 +27,12 @@ VERSION=v1.0.0 curl -sSfL https://raw.githubusercontent.com/greaveselliott/mars-
 ```bash
 git clone https://github.com/greaveselliott/mars-harness.git
 cd mars-harness
-go build ./cmd/mars-harness
-sudo mv mars-harness /usr/local/bin/
+make install
 ```
+
+This installs `mars-harness` into your Go binary directory, usually `$(go env GOPATH)/bin`. Make sure that directory is on `PATH`.
+
+For one-off source builds, prefer `go build -o build/mars-harness ./cmd/mars-harness`. Avoid `go build ./cmd/mars-harness; ./mars-harness ...`: the semicolon runs the old binary if the build fails, and the source-tree binary is easy to confuse with the installed command.
 
 ## Verify
 
@@ -90,10 +93,18 @@ Edit `.harness/manifest.yaml` and `.harness/roles/*.md` to configure the agent t
 
 ## Run a Role
 
+Mars Harness is a command installed on your machine. It should be runnable from any working directory; the target project is always selected with `--repo`.
+
 Execute a role against your repository:
 
 ```bash
 mars-harness run pipeline-fixer --repo ~/my-project
+```
+
+Start the full autonomous loop for one target repo:
+
+```bash
+mars-harness start --repo ~/my-project
 ```
 
 ### Dry-run mode
