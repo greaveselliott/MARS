@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.8.0] - 2026-05-02
+<!-- mars-harness-release: version=0.8.0 commit=cd7514dfdce5 -->
+
+### Features
+- **operating-model:** Implement BDD-led delivery loop (MH-040) (cd7514d)
+
+### Delivery Evidence
+- Shipped feature scenarios: MH-040: F-001-S001, F-001-S002, F-001-S003, F-001-S004, F-001-S005, F-001-S006
+
 ## [0.7.5] - 2026-05-02
 <!-- mars-harness-release: version=0.7.5 commit=e39e335c8fc2 -->
 
