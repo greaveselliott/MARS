@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	_ "modernc.org/sqlite"
@@ -24,6 +26,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars-harness/internal/models"
 	"github.com/greaveselliott/mars-harness/internal/release"
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
@@ -64,11 +67,143 @@ func main() {
 	root.AddCommand(doctorCmd())
 	root.AddCommand(scoresCmd())
 	root.AddCommand(trustCmd())
+	root.AddCommand(modelsCmd())
 	root.AddCommand(releaseCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
+	}
+}
+
+func modelsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "models",
+		Short: "Inspect and evaluate model candidates",
+	}
+	cmd.AddCommand(modelsEvaluateCmd())
+	return cmd
+}
+
+func modelsEvaluateCmd() *cobra.Command {
+	var (
+		endpoint string
+		model    string
+		apiKey   string
+		timeout  time.Duration
+		jsonOut  bool
+	)
+	cmd := &cobra.Command{
+		Use:   "evaluate",
+		Short: "Evaluate or plan model-candidate benchmarks",
+		Long: `Evaluate a model through an OpenAI-compatible endpoint.
+
+With --endpoint and --model, this runs the mechanical benchmark pack used to
+screen model candidates before registry promotion. Without those flags, it
+prints the current refresh plan, candidate shortlist, benchmark cases, and
+promotion rules. Defaults are not changed by this command.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if endpoint == "" || model == "" {
+				plan := models.DefaultPlan(time.Now())
+				if jsonOut {
+					return writeJSON(os.Stdout, plan)
+				}
+				printModelEvaluationPlan(plan)
+				return nil
+			}
+
+			report, err := models.Evaluate(cmd.Context(), models.Config{
+				Endpoint: endpoint,
+				Model:    model,
+				APIKey:   apiKey,
+				Timeout:  timeout,
+			})
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return writeJSON(os.Stdout, report)
+			}
+			printModelEvaluationReport(report)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "OpenAI-compatible base URL to evaluate")
+	cmd.Flags().StringVar(&model, "model", "", "Model name to evaluate")
+	cmd.Flags().StringVar(&apiKey, "api-key", "", "Optional API key for the endpoint")
+	cmd.Flags().DurationVar(&timeout, "timeout", 5*time.Minute, "Per-request timeout")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func writeJSON(w *os.File, v any) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(v)
+}
+
+func printModelEvaluationPlan(plan models.Plan) {
+	fmt.Println("Model evaluation plan")
+	fmt.Printf("Generated: %s\n\n", plan.GeneratedAt.Format(time.RFC3339))
+
+	fmt.Println("Current medium-profile defaults:")
+	for tier, spec := range plan.CurrentDefaults {
+		fmt.Printf("  %s: %s %s %s context=%d repo=%s revision=%s\n",
+			tier, spec.Name, spec.Params, spec.Quant, spec.ContextLen, spec.Repo, spec.Revision)
+	}
+
+	fmt.Println("\nCandidate shortlist:")
+	for _, c := range plan.Candidates {
+		mode := "local"
+		if c.Cloud && !c.Local {
+			mode = "cloud"
+		} else if c.Cloud && c.Local {
+			mode = "local/cloud"
+		}
+		mem := ""
+		if c.MinMemoryGB > 0 {
+			mem = fmt.Sprintf(" min_memory=%dGB", c.MinMemoryGB)
+		}
+		fmt.Printf("  - %s (%s,%s%s): %s\n", c.Name, c.Role, mode, mem, c.Why)
+		fmt.Printf("    source: %s\n", c.Source)
+	}
+
+	fmt.Println("\nBenchmark cases:")
+	for _, c := range plan.BenchmarkCases {
+		fmt.Printf("  - %s [%s]: %s\n", c.Name, c.Kind, c.Description)
+	}
+
+	fmt.Println("\nPromotion rules:")
+	for _, rule := range plan.PromotionRules {
+		fmt.Printf("  - %s\n", rule)
+	}
+	fmt.Println("\nRun live evaluation with: mars-harness models evaluate --endpoint <url> --model <name>")
+}
+
+func printModelEvaluationReport(report models.Report) {
+	fmt.Printf("Model evaluation: %s\n", report.Model)
+	fmt.Printf("Endpoint: %s\n", report.Endpoint)
+	fmt.Printf("Wall time: %s\n", report.Summary.WallTime.Round(time.Millisecond))
+	if report.Summary.TokensPerSec > 0 {
+		fmt.Printf("Tokens/sec: %.2f\n", report.Summary.TokensPerSec)
+	}
+	fmt.Printf("Passed: %d/%d\n\n", report.Summary.Passed, report.Summary.Total)
+	for _, c := range report.Cases {
+		status := "FAIL"
+		if c.Passed {
+			status = "PASS"
+		}
+		fmt.Printf("  %s %s %s", status, c.Name, c.Duration.Round(time.Millisecond))
+		if c.TotalTokens > 0 {
+			fmt.Printf(" tokens=%d", c.TotalTokens)
+		}
+		fmt.Println()
+		if c.Error != "" {
+			fmt.Printf("    error: %s\n", c.Error)
+		}
+		if c.Detail != "" {
+			fmt.Printf("    detail: %s\n", c.Detail)
+		}
 	}
 }
 

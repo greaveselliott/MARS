@@ -55,10 +55,24 @@ Default `llama_parallel` is `1` because the strict-trunk default pipeline is one
 
 Changing the effective `performance_profile` may require additional model files. `mars-harness setup` now verifies the model files required by the active profile before accepting the download marker as complete.
 
+### AD-063: Model Defaults Change Only After Harness-Specific Evaluation
+
+The open-model landscape moves too quickly for hardcoded defaults to remain "best" by assumption. New releases such as Qwen3.6, Laguna XS.2, GLM-5.1, and Mistral Medium 3.5 are candidates, not automatic replacements.
+
+Mars Harness must treat model selection as an evidence loop:
+
+- maintain a current model landscape reference
+- expose a `mars-harness models evaluate` command for mechanical benchmark runs
+- compare candidates against the current pinned defaults on harness-relevant tasks
+- measure tool-call JSON reliability, structured-output reliability, latency, token throughput, memory fit, and ticket-completion behavior
+- promote only immutable model artifacts with pinned revisions and SHA256 checksums
+
+The reason is safety and repeatability: a model-card claim or newest-library ranking is useful discovery input, but default registry entries affect autonomous mutating agents. Default changes need local evidence and reproducible artifacts.
+
 ### Open topics (M2 and beyond)
 
 - **Hardware detection:** CPU vs GPU paths, memory ceilings, and safe default model bundles; degrade gracefully when VRAM is insufficient.
-- **Model registry:** naming, versioning, compatibility with server flags, deprecation notices in CLI output.
+- **Model registry:** naming, versioning, compatibility with server flags, deprecation notices in CLI output, and benchmark-backed promotion.
 - **Download with resume:** partial files, checksum retry, bandwidth-friendly defaults; mirror URLs as optional fallback.
 - **Server lifecycle:** start/stop, backoff on crash, upgrade without orphan processes; pidfile or equivalent for operator tooling.
 - **Multi-model serving:** concurrent endpoints vs serial reuse; resource isolation when two roles need different sizes.

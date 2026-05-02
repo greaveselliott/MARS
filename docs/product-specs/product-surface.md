@@ -34,6 +34,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
 | `mars-harness trust [--repo <path>]` | Implemented | Shows role trust levels. |
 | `mars-harness trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
+| `mars-harness models evaluate [--endpoint <url> --model <name>]` | Initial implementation | Prints the current model-refresh plan and candidate shortlist, or runs mechanical OpenAI-compatible benchmark probes against a supplied model endpoint. |
 | `mars-harness release notes --repo <path> --bump auto` | Implemented | Generates semantic-versioned patch notes from commits, updates `VERSION`, and prepends `CHANGELOG.md`. |
 
 ## Generated Target Harness
@@ -134,6 +135,7 @@ Current defaults favor:
 - pinned model revisions and SHA256 verification
 - pinned llama.cpp artifacts with checksums
 - doctor checks for missing or stale model state
+- model default changes backed by `mars-harness models evaluate` evidence rather than newest-model claims alone
 
 Manual tuning remains available, but the normal path should require none.
 

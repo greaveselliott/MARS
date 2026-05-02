@@ -246,6 +246,6 @@ golangci-lint run
 - **Tenets:** [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
 - **Architecture decisions:** [docs/design-docs/index.md](docs/design-docs/index.md)
 - **Product vision:** [docs/product-specs/vision.md](docs/product-specs/vision.md)
-- **Model research:** [docs/references/model-landscape-april-2026.md](docs/references/model-landscape-april-2026.md)
+- **Model research:** [docs/references/model-landscape-may-2026.md](docs/references/model-landscape-may-2026.md)
 - **Tech debt:** [docs/exec-plans/tech-debt.md](docs/exec-plans/tech-debt.md)
 - **Tickets:** [docs/tickets/](docs/tickets/)
