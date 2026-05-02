@@ -92,6 +92,7 @@ mars-harness/
 9. **Always commit and push both repos.** When making changes to the harness and/or the target project, document, commit, and push changes in both. The harness and target project are separate git repositories — neither should have dangling uncommitted work at the end of a task.
 10. **Version every source and target change.** Every non-release semantic commit in this repo must be followed by `mars-harness release notes --repo . --bump auto`, then a `release: notes X.Y.Z` commit before the task is considered done. Initialized target repos receive the same rule through generated harness docs. Release-note commits are exempt and are ignored by the generator.
 11. **Operating rules mirror to targets.** Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. When adding or changing a rule, update the generated target guidance and tests in the same task.
+12. **Publish versioned GitHub releases when configured.** After a release-note commit is pushed, repos with authenticated GitHub release capability must publish or update a GitHub Release named `vX.Y.Z` using the generated changelog entry. If GitHub release publication is unavailable, record the blocker explicitly instead of treating release work as complete.
 
 ## Database Isolation
 
@@ -184,6 +185,8 @@ This same command is generated into target repo release guidance by `mars-harnes
 
 For this source repo, run it automatically after every non-release semantic commit, commit the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes with `release: notes X.Y.Z`, then push `main`.
 
+After pushing the release-note commit, publish or update GitHub Release `vX.Y.Z` with the generated changelog entry whenever GitHub release credentials are configured. If publishing is blocked by missing credentials, missing remote, or API failure, record that blocker before ending the task.
+
 ### Interactive Controls
 
 When `serve` or `start` is running, the terminal provides interactive key bindings and a status bar:
@@ -232,9 +235,10 @@ golangci-lint run
 
 1. **Commit after every step.** Each completed task gets a commit referencing the milestone and step (e.g., `feat(agent): implement conversation loop (M1.3.1)`).
 2. **Version after non-release commits.** Immediately after a semantic change commit, run `mars-harness release notes --repo . --bump auto`, verify, commit the release-note update, and push. Do not generate another version for the `release: notes` commit itself.
-3. **Document every decision.** Architecture decisions go in `docs/design-docs/`. Discoveries go in the relevant design doc's Discoveries section.
-4. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
-5. **Feed conversations back.** Decisions that exist only in chat threads are invisible to future agents. See the delivery schedule for what to build next.
+3. **Publish GitHub release notes when configured.** Once the release-note commit is pushed, publish or update GitHub Release `vX.Y.Z` from the generated changelog entry. Missing GitHub release capability is a blocker to record, not something to silently ignore.
+4. **Document every decision.** Architecture decisions go in `docs/design-docs/`. Discoveries go in the relevant design doc's Discoveries section.
+5. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
+6. **Feed conversations back.** Decisions that exist only in chat threads are invisible to future agents. See the delivery schedule for what to build next.
 
 ## Pointers
 

@@ -46,6 +46,19 @@ Initialized target repositories use the same operating rule. `mars-harness init`
 
 Target repos do not have `internal/buildinfo/version.go` unless their own project defines one. The mirrored rule is the workflow contract, not a requirement for target repos to copy Mars Harness internals.
 
+### AD-059: Versioned Releases Are Published To GitHub When Configured
+
+A release is not fully complete until the generated version is visible as a GitHub Release when the repository has authenticated GitHub release capability.
+
+After a `release: notes X.Y.Z` commit is pushed to `main`, release work must:
+
+1. create or update tag `vX.Y.Z` at the release-note commit
+2. publish or update GitHub Release `vX.Y.Z`
+3. use the generated `CHANGELOG.md` entry for `X.Y.Z` as the release notes body
+4. verify the release is visible in GitHub
+
+GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the blocker and leaves a follow-up ticket instead of claiming the release is complete.
+
 ## Implementation Requirements
 
 - Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
@@ -59,6 +72,7 @@ Target repos do not have `internal/buildinfo/version.go` unless their own projec
 - Generate the same VERSION/CHANGELOG/release guidance in target repos.
 - Treat source-repo versioning as part of done for every non-release semantic commit.
 - Treat target-repo versioning as part of done for every non-release semantic commit after `mars-harness init`.
+- Publish or update matching GitHub Releases when authenticated GitHub release capability is configured.
 
 ## Consequences
 
@@ -67,4 +81,5 @@ Target repos do not have `internal/buildinfo/version.go` unless their own projec
 - Release Manager work becomes deterministic before it becomes judgment work.
 - Source-repo work cannot silently land without an accompanying semantic version and patch-note entry.
 - Target repos inherit the same release discipline without extra setup.
+- GitHub users see versioned release notes in the GitHub Releases UI, while local-only users still have repo-owned `VERSION` and `CHANGELOG.md`.
 - Future work can add tag creation, release publishing, and doctor checks for stale patch notes.

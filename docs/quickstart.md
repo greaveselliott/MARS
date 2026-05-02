@@ -133,6 +133,7 @@ mars-harness release notes --repo . --bump auto
 ```
 
 In this source repo and in repos initialized by Mars Harness, run the release command after every non-release semantic commit and commit the generated version files as `release: notes X.Y.Z` before pushing `main`.
+When GitHub release credentials are configured, publish or update GitHub Release `vX.Y.Z` from the generated changelog entry after pushing the release-note commit.
 
 ## Next Steps
 

@@ -20,7 +20,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [product-spec-governance.md](product-spec-governance.md) | Accepted | Product specs as a living product contract with metadata, index coverage, and docs-consistency enforcement. AD-040 through AD-042. |
 | [generated-docs-governance.md](generated-docs-governance.md) | Accepted | Generated docs as reproducible reference snapshots with catalog and docs-consistency checks. AD-043 through AD-045. |
 | [role-customization.md](role-customization.md) | Accepted | Shipped roles as configurable starter agents; target manifests, prompts, knowledge routes, and guardrails are user-owned after init. AD-046 through AD-048. |
-| [release-versioning.md](release-versioning.md) | Accepted | Semantic versioning, generated patch notes, mirrored source/target release behavior, and automatic versioning after non-release commits. AD-049 through AD-051, AD-056 through AD-057. |
+| [release-versioning.md](release-versioning.md) | Accepted | Semantic versioning, generated patch notes, mirrored source/target release behavior, automatic versioning after non-release commits, and GitHub Release publication when configured. AD-049 through AD-051, AD-056 through AD-057, AD-059. |
 | [skill-evolution.md](skill-evolution.md) | Accepted | Skills as a first-class self-improvement target and the decision matrix for prompt, skill, tool, guardrail, or knowledge-route changes. AD-052 through AD-055. |
 
 ## Architecture Decision Log
@@ -85,3 +85,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-056 | Every non-release semantic commit to this source repo is followed by generated release notes and a `release: notes X.Y.Z` commit before the task is done. | release-versioning.md | Release |
 | AD-057 | Initialized target repos inherit the same automatic versioning workflow through generated AGENTS.md, release-versioning docs, and release-manager prompts. | release-versioning.md | Generated targets |
 | AD-058 | Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. | mirrored-harness-and-context-glossary.md | Generated targets |
+| AD-059 | Versioned release notes are published as GitHub Releases named `vX.Y.Z` when authenticated GitHub release capability is configured. | release-versioning.md | Release |

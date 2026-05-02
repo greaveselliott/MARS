@@ -43,6 +43,7 @@ mars-harness release notes --repo . --bump auto
 ```
 
 For changes to this source repo and repos initialized by Mars Harness, that release command is part of the commit flow: every non-release semantic commit is followed by a generated `release: notes X.Y.Z` commit before `main` is pushed.
+When GitHub release credentials are configured, the matching `vX.Y.Z` GitHub Release should be published from the generated changelog entry.
 
 ## Lineage
 

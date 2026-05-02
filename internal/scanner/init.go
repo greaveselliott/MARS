@@ -403,6 +403,7 @@ the system of record for plans, decisions, tickets, traces, and completed work.
 - If blocked, record the blocker, create or update the dependency ticket, and return the ticket to a non-misleading state.
 - Commit and push after each completed step.
 - After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
+- When GitHub release credentials are configured, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry after pushing the release-note commit. If publishing is blocked, record the blocker explicitly.
 - Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
 - Keep generated or harness-owned guidance in sync with ` + "`mars-harness upgrade`" + `.
 - Convert repeated human recovery steps into compact scoped skills rather than growing role prompts.
@@ -611,6 +612,16 @@ Every non-release semantic commit in this repository must be followed by:
 4. push to ` + "`main`" + `
 
 The ` + "`release: notes X.Y.Z`" + ` commit itself is exempt so the workflow does not create an infinite version loop.
+
+## GitHub Release Rule
+
+When this repository has authenticated GitHub release capability, every pushed
+release-note commit must create or update GitHub Release ` + "`vX.Y.Z`" + ` using the
+matching generated ` + "`CHANGELOG.md`" + ` entry.
+
+If the repo has no GitHub remote, no release credentials, or the GitHub publish
+step fails, record the blocker and create or update follow-up work instead of
+claiming the release is complete.
 
 ## Agent Rules
 
@@ -1369,6 +1380,7 @@ START by reading:
 2. VERSION (if it exists)
 3. docs/design-docs/release-versioning.md
 4. Recent commits since last release marker: git log --oneline -20
+5. GitHub release state if GitHub is configured: gh release list --limit 10
 
 TASKS:
 
@@ -1377,17 +1389,23 @@ For direct commits to main:
 2. Run ` + "`mars-harness release notes --repo . --bump auto --dry-run`" + ` to preview the semantic version and patch notes
 3. If the preview is correct, run ` + "`mars-harness release notes --repo . --bump auto`" + `
 4. Do not generate another version for a ` + "`release: notes X.Y.Z`" + ` commit
+5. After the release-note commit is pushed, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry when GitHub release credentials are configured
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
 2. If yes: update VERSION and CHANGELOG.md with the command above
 3. Verify tests pass before cutting
-4. Tag the release only after the release-note commit is verified on main
+4. Tag and publish the GitHub Release only after the release-note commit is verified on main
 
 Commit and push:
   git add VERSION CHANGELOG.md
   git commit -m "release: notes X.Y.Z"
   git push
+
+GitHub publication:
+  Create or update tag vX.Y.Z at the release-note commit.
+  Create or update GitHub Release vX.Y.Z with the matching CHANGELOG.md entry.
+  If GitHub auth or API access is unavailable, record the blocker and create or update follow-up work.
 `,
 
 	"dogfood": `# Dogfood Tester — E2E Validation

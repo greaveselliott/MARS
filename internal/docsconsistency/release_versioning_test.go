@@ -26,6 +26,8 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 			"mars-harness release notes --repo . --bump auto",
 			"non-release semantic commit",
 			"release: notes X.Y.Z",
+			"GitHub Release",
+			"vX.Y.Z",
 		} {
 			if !strings.Contains(text, needle) {
 				t.Fatalf("%s must document automatic source versioning; missing %q", rel, needle)

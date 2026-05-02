@@ -325,16 +325,20 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "After every non-release semantic commit")
 	assert.Contains(t, string(agentGuide), "release: notes X.Y.Z")
 	assert.Contains(t, string(agentGuide), "Operating rules inherited from Mars Harness apply here")
+	assert.Contains(t, string(agentGuide), "publish or update GitHub Release")
 
 	releaseDoc, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(releaseDoc), "Every non-release semantic commit")
 	assert.Contains(t, string(releaseDoc), "release: notes X.Y.Z")
+	assert.Contains(t, string(releaseDoc), "GitHub Release")
+	assert.Contains(t, string(releaseDoc), "vX.Y.Z")
 
 	releasePrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "release-manager.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(releasePrompt), "Treat every non-release semantic commit")
 	assert.Contains(t, string(releasePrompt), "Do not generate another version")
+	assert.Contains(t, string(releasePrompt), "publish or update GitHub Release")
 }
 
 func TestInit_alreadyExists(t *testing.T) {
