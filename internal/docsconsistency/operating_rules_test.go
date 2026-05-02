@@ -22,6 +22,7 @@ func TestOperatingRulesMirrorTargetHarnesses(t *testing.T) {
 			t.Fatalf("read %s: %v", rel, err)
 		}
 		text := string(data)
+		lower := strings.ToLower(text)
 		for _, needle := range []string{
 			"Operating rules",
 			"source-only",
@@ -29,6 +30,15 @@ func TestOperatingRulesMirrorTargetHarnesses(t *testing.T) {
 		} {
 			if !strings.Contains(text, needle) {
 				t.Fatalf("%s must document operating-rule inheritance; missing %q", rel, needle)
+			}
+		}
+		for _, needle := range []string{
+			"architecture",
+			"product",
+			"why",
+		} {
+			if !strings.Contains(lower, needle) {
+				t.Fatalf("%s must document rationale-bearing architecture/product changes; missing %q", rel, needle)
 			}
 		}
 	}

@@ -4,8 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,6 +48,19 @@ type Job struct {
 type Queue struct {
 	db *sql.DB
 	mu sync.Mutex
+}
+
+// RecoveryRepairReport summarizes queue self-healing for active recovery jobs.
+type RecoveryRepairReport struct {
+	StaleFailed         int
+	DuplicatesCancelled int
+	DuplicatesFailed    int
+	ActiveGroups        int
+}
+
+// Total returns the number of jobs repaired.
+func (r RecoveryRepairReport) Total() int {
+	return r.StaleFailed + r.DuplicatesCancelled + r.DuplicatesFailed
 }
 
 // Open opens or creates a SQLite-backed job queue at dbPath.
@@ -281,6 +297,122 @@ WHERE status IN ('claimed','running')`, now.Unix(), now.Unix())
 	return int(n), nil
 }
 
+// RepairActiveRecoveryJobs collapses active auto-recovery storms.
+//
+// Older versions used timestamped recovery idempotency keys, so a repeatedly
+// failing recovery job could leave many pending recovery jobs for the same repo
+// and role. This keeps at most one fresh active recovery job per repo/role and
+// fails stale claimed/running recovery jobs.
+func (q *Queue) RepairActiveRecoveryJobs(ctx context.Context, staleAfter time.Duration) (RecoveryRepairReport, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if staleAfter <= 0 {
+		staleAfter = leaseTimeout
+	}
+
+	rows, err := q.db.QueryContext(ctx, `
+SELECT id, repo_id, role, trigger_payload, idempotency_key, status,
+       claimed_by, created_at, updated_at, completed_at, error_msg
+FROM jobs
+WHERE status IN ('pending','claimed','running')
+  AND (idempotency_key LIKE 'recover:%' OR trigger_payload LIKE '%auto_recover%')`)
+	if err != nil {
+		return RecoveryRepairReport{}, fmt.Errorf("queue: load active recovery jobs: %w", err)
+	}
+
+	groups := make(map[string][]Job)
+	for rows.Next() {
+		j, scanErr := scanJobFromRows(rows)
+		if scanErr != nil {
+			_ = rows.Close()
+			return RecoveryRepairReport{}, fmt.Errorf("queue: scan active recovery job: %w", scanErr)
+		}
+		if !isRecoveryJob(j) {
+			continue
+		}
+		key := j.RepoID + "\x00" + j.Role
+		groups[key] = append(groups[key], j)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return RecoveryRepairReport{}, fmt.Errorf("queue: iterate active recovery jobs: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return RecoveryRepairReport{}, fmt.Errorf("queue: close active recovery rows: %w", err)
+	}
+
+	var report RecoveryRepairReport
+	if len(groups) == 0 {
+		return report, nil
+	}
+
+	now := time.Now().UTC()
+	staleCutoff := now.Add(-staleAfter)
+	tx, err := q.db.BeginTx(ctx, nil)
+	if err != nil {
+		return RecoveryRepairReport{}, fmt.Errorf("queue: begin recovery repair: %w", err)
+	}
+	defer tx.Rollback()
+
+	for _, jobs := range groups {
+		report.ActiveGroups++
+		sort.Slice(jobs, func(i, j int) bool {
+			left := recoveryKeepRank(jobs[i])
+			right := recoveryKeepRank(jobs[j])
+			if left != right {
+				return left < right
+			}
+			leftKey := recoveryKeyRank(jobs[i])
+			rightKey := recoveryKeyRank(jobs[j])
+			if leftKey != rightKey {
+				return leftKey < rightKey
+			}
+			if !jobs[i].CreatedAt.Equal(jobs[j].CreatedAt) {
+				return jobs[i].CreatedAt.Before(jobs[j].CreatedAt)
+			}
+			return jobs[i].ID < jobs[j].ID
+		})
+
+		keeperID := ""
+		for _, job := range jobs {
+			if isStaleActiveJob(job, staleCutoff) {
+				n, repairErr := failActiveJob(ctx, tx, job.ID, now, "self-healed stale recovery job")
+				if repairErr != nil {
+					return RecoveryRepairReport{}, repairErr
+				}
+				report.StaleFailed += n
+				continue
+			}
+
+			if keeperID == "" {
+				keeperID = job.ID
+				continue
+			}
+
+			switch job.Status {
+			case StatusPending:
+				n, repairErr := cancelPendingJob(ctx, tx, job.ID, now, "self-healed duplicate recovery job")
+				if repairErr != nil {
+					return RecoveryRepairReport{}, repairErr
+				}
+				report.DuplicatesCancelled += n
+			case StatusClaimed, StatusRunning:
+				n, repairErr := failActiveJob(ctx, tx, job.ID, now, "self-healed duplicate active recovery job")
+				if repairErr != nil {
+					return RecoveryRepairReport{}, repairErr
+				}
+				report.DuplicatesFailed += n
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return RecoveryRepairReport{}, fmt.Errorf("queue: commit recovery repair: %w", err)
+	}
+	return report, nil
+}
+
 // PruneTTL deletes completed and failed jobs older than maxAge. Returns
 // the number of rows deleted.
 func (q *Queue) PruneTTL(ctx context.Context, maxAge time.Duration) (int, error) {
@@ -396,6 +528,68 @@ ORDER BY hour`, cutoff)
 	return counts, rows.Err()
 }
 
+func isRecoveryJob(job Job) bool {
+	if strings.HasPrefix(job.IdempotencyKey, "recover:") {
+		return true
+	}
+	var payload struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal([]byte(job.Trigger), &payload); err != nil {
+		return false
+	}
+	return payload.Type == "auto_recover"
+}
+
+func recoveryKeepRank(job Job) int {
+	switch job.Status {
+	case StatusRunning:
+		return 0
+	case StatusClaimed:
+		return 1
+	case StatusPending:
+		return 2
+	default:
+		return 3
+	}
+}
+
+func recoveryKeyRank(job Job) int {
+	if job.IdempotencyKey == fmt.Sprintf("recover:%s:%s", job.RepoID, job.Role) {
+		return 0
+	}
+	if strings.HasPrefix(job.IdempotencyKey, "recover:") {
+		return 1
+	}
+	return 2
+}
+
+func isStaleActiveJob(job Job, cutoff time.Time) bool {
+	return (job.Status == StatusClaimed || job.Status == StatusRunning) && job.UpdatedAt.Before(cutoff)
+}
+
+func failActiveJob(ctx context.Context, tx *sql.Tx, jobID string, now time.Time, errMsg string) (int, error) {
+	res, err := tx.ExecContext(ctx, `
+UPDATE jobs SET status = 'failed', claimed_by = '', error_msg = ?, completed_at = ?, updated_at = ?
+WHERE id = ? AND status IN ('claimed','running')`, errMsg, now.Unix(), now.Unix(), jobID)
+	if err != nil {
+		return 0, fmt.Errorf("queue: fail active recovery job %q: %w", jobID, err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
+func cancelPendingJob(ctx context.Context, tx *sql.Tx, jobID string, now time.Time, errMsg string) (int, error) {
+	res, err := tx.ExecContext(ctx, `
+UPDATE jobs SET status = 'cancelled', claimed_by = '', error_msg = ?, updated_at = ?
+WHERE id = ? AND status = 'pending'`, errMsg, now.Unix(), jobID)
+	if err != nil {
+		return 0, fmt.Errorf("queue: cancel duplicate recovery job %q: %w", jobID, err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
 func scanJob(row *sql.Row) (*Job, error) {
 	var j Job
 	var status string
@@ -416,6 +610,28 @@ func scanJob(row *sql.Row) (*Job, error) {
 		j.CompletedAt = &t
 	}
 	return &j, nil
+}
+
+func scanJobFromRows(rows *sql.Rows) (Job, error) {
+	var j Job
+	var status string
+	var createdAt, updatedAt int64
+	var completedAt sql.NullInt64
+	err := rows.Scan(
+		&j.ID, &j.RepoID, &j.Role, &j.Trigger, &j.IdempotencyKey,
+		&status, &j.ClaimedBy, &createdAt, &updatedAt, &completedAt, &j.Error,
+	)
+	if err != nil {
+		return Job{}, err
+	}
+	j.Status = JobStatus(status)
+	j.CreatedAt = time.Unix(createdAt, 0).UTC()
+	j.UpdatedAt = time.Unix(updatedAt, 0).UTC()
+	if completedAt.Valid {
+		t := time.Unix(completedAt.Int64, 0).UTC()
+		j.CompletedAt = &t
+	}
+	return j, nil
 }
 
 func newUUID() string {

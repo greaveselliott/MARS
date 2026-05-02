@@ -165,6 +165,119 @@ func TestQueue_cancel(t *testing.T) {
 	assert.Nil(t, claimed)
 }
 
+func TestQueue_repairActiveRecoveryJobsCollapsesDuplicates(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	var ids []string
+	for i := 0; i < 3; i++ {
+		id, err := q.Enqueue(ctx, Job{
+			RepoID:         "repo-1",
+			Role:           "engineer",
+			Trigger:        fmt.Sprintf(`{"type":"auto_recover","source_job":"job-%d"}`, i),
+			IdempotencyKey: fmt.Sprintf("recover:repo-1:engineer:%d", i),
+		})
+		require.NoError(t, err)
+		ids = append(ids, id)
+	}
+
+	report, err := q.RepairActiveRecoveryJobs(ctx, time.Hour)
+	require.NoError(t, err)
+	assert.Equal(t, 1, report.ActiveGroups)
+	assert.Equal(t, 2, report.DuplicatesCancelled)
+	assert.Equal(t, 2, report.Total())
+
+	statuses := map[JobStatus]int{}
+	for _, id := range ids {
+		got, err := q.Get(ctx, id)
+		require.NoError(t, err)
+		statuses[got.Status]++
+	}
+	assert.Equal(t, 1, statuses[StatusPending])
+	assert.Equal(t, 2, statuses[StatusCancelled])
+}
+
+func TestQueue_repairActiveRecoveryJobsKeepsCanonicalKey(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	legacyID, err := q.Enqueue(ctx, Job{
+		RepoID:         "repo-1",
+		Role:           "engineer",
+		Trigger:        `{"type":"auto_recover","source_job":"legacy"}`,
+		IdempotencyKey: "recover:repo-1:engineer:1777679172228739000",
+	})
+	require.NoError(t, err)
+	canonicalID, err := q.Enqueue(ctx, Job{
+		RepoID:         "repo-1",
+		Role:           "engineer",
+		Trigger:        `{"type":"auto_recover","source_job":"canonical"}`,
+		IdempotencyKey: "recover:repo-1:engineer",
+	})
+	require.NoError(t, err)
+
+	report, err := q.RepairActiveRecoveryJobs(ctx, time.Hour)
+	require.NoError(t, err)
+	assert.Equal(t, 1, report.DuplicatesCancelled)
+
+	canonical, err := q.Get(ctx, canonicalID)
+	require.NoError(t, err)
+	assert.Equal(t, StatusPending, canonical.Status)
+
+	legacy, err := q.Get(ctx, legacyID)
+	require.NoError(t, err)
+	assert.Equal(t, StatusCancelled, legacy.Status)
+}
+
+func TestQueue_repairActiveRecoveryJobsFailsStaleRunning(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	id, err := q.Enqueue(ctx, Job{
+		RepoID:         "repo-1",
+		Role:           "engineer",
+		Trigger:        `{"type":"auto_recover","source_job":"job-1"}`,
+		IdempotencyKey: "recover:repo-1:engineer",
+	})
+	require.NoError(t, err)
+
+	job, err := q.Claim(ctx, "w-1")
+	require.NoError(t, err)
+	require.NoError(t, q.MarkRunning(ctx, job.ID))
+
+	staleTime := time.Now().UTC().Add(-20 * time.Minute).Unix()
+	_, err = q.db.ExecContext(ctx, `UPDATE jobs SET updated_at = ? WHERE id = ?`, staleTime, id)
+	require.NoError(t, err)
+
+	report, err := q.RepairActiveRecoveryJobs(ctx, 5*time.Minute)
+	require.NoError(t, err)
+	assert.Equal(t, 1, report.StaleFailed)
+	assert.Equal(t, 1, report.Total())
+
+	got, err := q.Get(ctx, id)
+	require.NoError(t, err)
+	assert.Equal(t, StatusFailed, got.Status)
+	assert.Contains(t, got.Error, "self-healed stale recovery job")
+}
+
+func TestQueue_repairActiveRecoveryJobsIgnoresNormalJobs(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	_, err := q.Enqueue(ctx, Job{RepoID: "repo-1", Role: "engineer"})
+	require.NoError(t, err)
+	_, err = q.Enqueue(ctx, Job{RepoID: "repo-1", Role: "engineer"})
+	require.NoError(t, err)
+
+	report, err := q.RepairActiveRecoveryJobs(ctx, time.Hour)
+	require.NoError(t, err)
+	assert.Equal(t, 0, report.Total())
+
+	pending, err := q.CountByStatus(ctx, string(StatusPending))
+	require.NoError(t, err)
+	assert.Equal(t, 2, pending)
+}
+
 func TestQueue_pruneTTL(t *testing.T) {
 	q := tempQueue(t)
 	ctx := context.Background()

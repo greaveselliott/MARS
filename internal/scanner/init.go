@@ -418,6 +418,9 @@ targeted file read or search would do.
 
 Non-obvious architecture, workflow, guardrail, or trade-off decisions belong in
 ` + "`docs/design-docs/`" + ` and must be linked from ` + "`docs/design-docs/index.md`" + `.
+Product features and user-visible behavior changes must be documented with
+the reason why, either in a product spec if this repo has one or in the owning
+design doc. Do not leave architecture or product intent only in chat.
 
 ## Tickets
 

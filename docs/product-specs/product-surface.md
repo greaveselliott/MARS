@@ -13,7 +13,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | --- | --- | --- |
 | Install and setup | `mars-harness setup`, config, model and binary cache | Detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
 | Target harness | `mars-harness init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
-| Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, and visible run state. |
+| Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, visible run state, and narrow self-healing for stale recovery jobs. |
 | Learning loop | `scores`, `trust`, telemetry triage, skills, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, reusable workflow skills, prompt or process improvements, and safety controls. |
 | Generated references | `docs/generated/` | Provide reproducible, cataloged source-harness maps when generator commands exist. |
 | Release state | `VERSION`, `CHANGELOG.md`, `release notes` | Maintain semantic versions and generated patch notes for both the source harness and target repos. |
@@ -27,8 +27,8 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness upgrade --repo <path>` | Implemented, still hardening | Fills missing target harness defaults while preserving user-owned manifest, role prompts, knowledge routes, guardrails, tickets, design docs, exec plans, references, and target `AGENTS.md`. |
 | `mars-harness scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |
 | `mars-harness run <role> --repo <path>` | Implemented | Loads manifest, guardrails, knowledge routes, context, tools, local model endpoint, and runs one role with terminal-result truth. |
-| `mars-harness start --repo <path>` | Implemented | Initializes if needed, registers the repo, seeds the CEO role, and runs the per-repo autonomous pipeline with isolated database state. |
-| `mars-harness serve` | Implemented, multi-repo legacy mode | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, and workers against the configured database. |
+| `mars-harness start --repo <path>` | Implemented | Initializes if needed, registers the repo, seeds the CEO role, and runs the per-repo autonomous pipeline with isolated database state and recovery-queue self-healing. |
+| `mars-harness serve` | Implemented, multi-repo legacy mode | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, workers, and recovery-queue self-heal watchdog against the configured database. |
 | `mars-harness register --repo <path>` | Implemented | Registers a repo and creates the per-repo database path when one is not supplied. |
 | `mars-harness doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, guardrail/workflow health, and optional integration configuration. |
 | `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
@@ -58,6 +58,8 @@ Required generated surfaces:
 Generated target docs must mirror source-harness doctrine while staying project-agnostic. Existing target harness files and user-owned docs are preserved by upgrades.
 
 Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. Any change to commit discipline, versioning, ticket flow, documentation rules, skill creation, guardrail policy, trust/scoring behavior, release behavior, or context-routing discipline must update generated target guidance and tests in the same task.
+
+Architecture changes and product features must carry rationale in repo-owned docs: what changed, why it changed, and which behavior future agents should preserve. Source harness changes use design docs and product specs; initialized target repos inherit the same rule through generated `AGENTS.md`, using their design docs and, when present, product specs.
 
 ## Versioning And Patch Notes
 

@@ -266,3 +266,27 @@ If a job whose trigger type is already `auto_recover` fails, the server records 
 - A stale ticket gate state can no longer create an unbounded Engineer recovery queue.
 - The queue remains inspectable: one recovery attempt captures the failure, and follow-up improvement work comes from telemetry/tickets rather than repeated identical jobs.
 - Operators should restart any old running harness process after this change so the process uses the contained recovery behavior.
+
+---
+
+### AD-062: Recovery Queue Storms Are Self-Healed
+
+**Status:** Accepted
+**Date:** 2026-05-02
+**Author:** Agent (self-improvement — autonomous recovery)
+
+### Context
+
+Containment prevents new recursive recovery jobs, but dogfood showed that an already-stuck target repo can still contain stale `running` recovery jobs and duplicate pending recovery jobs from a previous harness version. Requiring a human to inspect SQLite and cancel those records violates Plug and Play, Self-Improving System, and Execution Truth.
+
+### Decision
+
+The queue now has a recovery self-heal pass. On serve/start startup, warm restart, wake recovery, and a periodic watchdog, active `auto_recover` jobs are inspected by repo and role. The repair keeps at most one fresh active recovery job per repo/role, prefers the canonical `recover:<repo_id>:<role>` idempotency key, fails stale claimed/running recovery jobs, and cancels duplicate pending recovery jobs.
+
+This repair is deliberately narrow. It only targets active recovery jobs identified by `auto_recover` trigger payloads or `recover:` idempotency keys, leaving normal user or role-triggered jobs alone.
+
+### Consequences
+
+- A pre-fix recovery storm can be repaired automatically after restart without direct database surgery.
+- The harness can recover from its own queue-control failure mode while preserving audit rows for what was failed or cancelled.
+- Future self-heal routines should stay scoped and observable: repair the mechanical stuck state, record why, and avoid broad queue deletion.

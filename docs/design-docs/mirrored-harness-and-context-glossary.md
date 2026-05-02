@@ -67,6 +67,14 @@ When a source operating rule changes, the same task must update:
 
 Source-only exceptions must be explicit in the rule text. Ambiguity defaults to mirroring.
 
+### AD-061: Architecture And Product Changes Carry Their Rationale
+
+Architectural changes and product features must be documented in repo-owned artifacts with the reason why, not just the description of what changed.
+
+For Mars Harness source changes, the owning artifact is usually a design doc in `docs/design-docs/` plus an index entry in `docs/design-docs/index.md`; user-visible product behavior also updates the relevant `docs/product-specs/` file. For initialized target repos, the same rule applies through generated `AGENTS.md`: architecture decisions belong in `docs/design-docs/`, and product-facing behavior must be captured in a product spec or the owning design doc.
+
+This rule is mirrored because target agents need the same durable rationale trail as source agents. A future agent can only safely evolve the system if it can recover why a feature, guardrail, workflow, or trade-off exists without relying on chat history.
+
 ## Implementation Requirements
 
 - `init` creates `AGENTS.md` unless it already exists.
@@ -77,6 +85,7 @@ Source-only exceptions must be explicit in the rule text. Ambiguity defaults to 
 - `upgrade` fills in missing default harness files while preserving existing target manifest, role prompts, knowledge routes, guardrails, and user docs.
 - Repo docs created outside `.harness/` remain user content and are not overwritten by `upgrade`.
 - Any new source operating rule is mirrored into generated target guidance unless the rule is explicitly source-only.
+- Architecture changes and product features in source and target repos are documented with rationale in design docs or product specs.
 
 ## Consequences
 
@@ -85,6 +94,7 @@ Source-only exceptions must be explicit in the rule text. Ambiguity defaults to 
 - Agents have a standard place to add terminology discovered during work.
 - The source harness and initialized harness can evolve together through `mars-harness upgrade`.
 - Future rules do not silently improve source-agent behavior while leaving target agents behind.
+- Future agents inherit the why behind architectural and product changes, not only the latest file state.
 
 ## Open Follow-Ups
 

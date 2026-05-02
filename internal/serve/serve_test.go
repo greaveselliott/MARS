@@ -3,6 +3,7 @@ package serve
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -300,6 +301,32 @@ func TestIsAutoRecoverTrigger(t *testing.T) {
 	}
 	if isAutoRecoverTrigger(`not-json`) {
 		t.Fatal("expected malformed trigger to be false")
+	}
+}
+
+func TestSelfHealRecoveryQueueCancelsDuplicates(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+
+	for i := 0; i < 2; i++ {
+		_, err := srv.queue.Enqueue(ctx, queue.Job{
+			RepoID:         repoID,
+			Role:           "engineer",
+			Trigger:        fmt.Sprintf(`{"type":"auto_recover","source_job":"job-%d"}`, i),
+			IdempotencyKey: fmt.Sprintf("recover:%s:engineer:%d", repoID, i),
+		})
+		if err != nil {
+			t.Fatalf("enqueue recovery job: %v", err)
+		}
+	}
+
+	srv.selfHealRecoveryQueue(ctx, "test")
+
+	if got := countJobsByStatus(t, srv, "pending"); got != 1 {
+		t.Fatalf("expected one recovery job left pending, got %d", got)
+	}
+	if got := countJobsByStatus(t, srv, "cancelled"); got != 1 {
+		t.Fatalf("expected one duplicate recovery job cancelled, got %d", got)
 	}
 }
 

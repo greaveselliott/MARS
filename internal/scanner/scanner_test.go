@@ -326,6 +326,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "release: notes X.Y.Z")
 	assert.Contains(t, string(agentGuide), "Operating rules inherited from Mars Harness apply here")
 	assert.Contains(t, string(agentGuide), "publish or update GitHub Release")
+	assert.Contains(t, string(agentGuide), "Product features and user-visible behavior changes must be documented with")
+	assert.Contains(t, string(agentGuide), "Do not leave architecture or product intent only in chat")
 
 	releaseDoc, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	require.NoError(t, err)

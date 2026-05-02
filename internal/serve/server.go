@@ -32,6 +32,11 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/trust"
 )
 
+const (
+	queueSelfHealInterval = time.Minute
+	recoveryJobStaleAfter = 10 * time.Minute
+)
+
 // Config controls the serve command.
 type Config struct {
 	WebhookAddr        string
@@ -312,6 +317,7 @@ func (s *Server) Start(ctx context.Context) error {
 	} else if n > 0 {
 		slog.Info("serve: reset orphaned jobs from previous run", "count", n)
 	}
+	s.selfHealRecoveryQueue(ctx, "startup")
 
 	repos, err := s.repos.List(ctx)
 	if err != nil {
@@ -330,6 +336,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 	s.workers.Start(ctx)
 	s.scheduler.Start(ctx)
+	go s.runQueueSelfHeal(ctx)
 
 	power.StartWatchdog(ctx, s.handleWake)
 
@@ -445,9 +452,50 @@ func (s *Server) handleWake(gap time.Duration) {
 	} else if n > 0 {
 		slog.Info("serve: wake recovery — reset stuck jobs", "count", n)
 	}
+	s.selfHealRecoveryQueue(ctx, "wake")
 
 	if s.dash != nil {
 		s.dash.BroadcastEvent("wake_recovery", fmt.Sprintf("resumed after %s sleep", gap.Round(time.Second)))
+	}
+}
+
+func (s *Server) runQueueSelfHeal(ctx context.Context) {
+	ticker := time.NewTicker(queueSelfHealInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			healCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			s.selfHealRecoveryQueue(healCtx, "watchdog")
+			cancel()
+		}
+	}
+}
+
+func (s *Server) selfHealRecoveryQueue(ctx context.Context, source string) {
+	report, err := s.queue.RepairActiveRecoveryJobs(ctx, recoveryJobStaleAfter)
+	if err != nil {
+		slog.Warn("serve: recovery queue self-heal failed", "source", source, "err", err)
+		return
+	}
+	if report.Total() == 0 {
+		return
+	}
+
+	slog.Warn("serve: self-healed recovery queue",
+		"source", source,
+		"stale_failed", report.StaleFailed,
+		"duplicates_cancelled", report.DuplicatesCancelled,
+		"duplicates_failed", report.DuplicatesFailed,
+		"active_groups", report.ActiveGroups,
+	)
+	if s.dash != nil {
+		msg := fmt.Sprintf("repaired recovery queue: stale_failed=%d duplicates_cancelled=%d duplicates_failed=%d",
+			report.StaleFailed, report.DuplicatesCancelled, report.DuplicatesFailed)
+		s.dash.BroadcastEvent("queue_self_heal", msg)
 	}
 }
 
@@ -522,6 +570,7 @@ func (s *Server) Restart(ctx context.Context) error {
 	s.scheduler.Stop()
 
 	s.router.RestartAll()
+	s.selfHealRecoveryQueue(ctx, "restart")
 
 	repos, err := s.repos.List(ctx)
 	if err != nil {

@@ -27,8 +27,9 @@ When a change affects product behavior:
 1. Update the relevant product spec in the same semantic commit.
 2. Update [index.md](index.md) if a spec is added, renamed, or retired.
 3. Link to the design doc or exec plan that owns the implementation detail.
-4. Keep the product spec focused on promises and user-visible behavior.
-5. Run the docs-consistency tests before committing.
+4. State why the behavior exists or changed, either directly or through the linked design doc.
+5. Keep the product spec focused on promises and user-visible behavior.
+6. Run the docs-consistency tests before committing.
 
 ## Mechanical Checks
 
