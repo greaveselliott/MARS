@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.4.1] - 2026-05-02
+<!-- mars-harness-release: version=0.4.1 commit=548fb73403a1 -->
+
+### Fixes
+- **inference:** Route roles by manifest tier (548fb73)
+
 ## [0.4.0] - 2026-05-02
 <!-- mars-harness-release: version=0.4.0 commit=72032c5985e4 -->
 
