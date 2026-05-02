@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.7.3] - 2026-05-02
+<!-- mars-harness-release: version=0.7.3 commit=9a4ced42bdad -->
+
+### Documentation
+- **scoring:** Seed quality score artifact (9a4ced4)
+
 ## [0.7.2] - 2026-05-02
 <!-- mars-harness-release: version=0.7.2 commit=dac23b716ce3 -->
 
