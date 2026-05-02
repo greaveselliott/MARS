@@ -70,7 +70,7 @@ Architecture changes and product features must carry rationale in repo-owned doc
 
 Exec plans mirror the ticket lifecycle. Exactly one plan may be active at a
 time. Waiting plans live in `docs/exec-plans/backlog/` with explicit priority,
-and superseded plans are lineage only.
+dependencies, blockers, and related tickets. Superseded plans are lineage only.
 
 ## Versioning And Patch Notes
 

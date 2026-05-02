@@ -2,6 +2,9 @@
 
 **Status:** Active
 **Priority:** P0
+**Depends On:** None
+**Blocks:** Plan promotions until this file names the next slice
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
 **Source:** Exec-plan review and repository state audit on 2026-05-02
@@ -22,10 +25,10 @@ plans to decide what to do next.
 - Ticket state:
   - `docs/tickets/in-progress/` has no active tickets.
   - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-034`, `MH-035`, and `MH-037`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, `MH-036`, and `MH-038`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, `MH-036`, `MH-038`, and `MH-039`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
-  - `docs/exec-plans/backlog/` contains prioritized waiting plans.
+  - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
   - `docs/exec-plans/superseded/` contains historical plans that must not drive current work.
 - GitHub release notes are published for semantic versions generated from `VERSION`.
 - Release binary assets are still missing and tracked by `MH-031`.
@@ -34,13 +37,13 @@ plans to decide what to do next.
 
 ## Plan State
 
-| Plan | State | How to use it |
-| --- | --- | --- |
-| `active/current-operating-plan.md` | Active, P0 | Use this file as the only top-level execution map. |
-| `backlog/mars-parity-supersession-plan.md` | Backlog, P1 | Strategic parity/supersession roadmap. Pull slices into tickets and this active plan before execution. |
-| `backlog/model-evaluation-refresh-plan.md` | Backlog, P4 | Tactical plan for `MH-030`. Promote into the active plan when model-refresh work is next. |
-| `superseded/master-execution-plan.md` | Superseded | Historical baseline. Do not use its checkbox status as truth. |
-| `superseded/delivery-schedule.md` | Superseded | Historical milestone schedule; kept for lineage only. |
+| Plan | State | Depends On | Blocks | How to use it |
+| --- | --- | --- | --- | --- |
+| `active/current-operating-plan.md` | Active, P0 | None | Plan promotions until this file names the next slice | Use this file as the only top-level execution map. |
+| `backlog/mars-parity-supersession-plan.md` | Backlog, P1 | MH-035 for ticket materialization before broad execution | Supersession readiness claims | Pull slices into tickets and this active plan before execution. |
+| `backlog/model-evaluation-refresh-plan.md` | Backlog, P4 | MH-030 and higher-priority release/quality work | Default model registry promotion | Promote into the active plan when model-refresh work is next. |
+| `superseded/master-execution-plan.md` | Superseded | None | Nothing | Historical baseline. Do not use its checkbox status as truth. |
+| `superseded/delivery-schedule.md` | Superseded | None | Nothing | Historical milestone schedule; kept for lineage only. |
 
 ## Current Priority Order
 

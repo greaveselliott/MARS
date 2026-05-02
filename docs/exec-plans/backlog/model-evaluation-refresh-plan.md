@@ -2,6 +2,9 @@
 
 **Status:** Backlog
 **Priority:** P4
+**Depends On:** MH-030 and higher-priority release/quality work
+**Blocks:** Default model registry promotion
+**Related Tickets:** MH-030
 **Updated:** 2026-05-02
 **Owner:** Mars Harness maintainers
 **Sources:** [May 2026 model landscape](../../references/model-landscape-may-2026.md), [local inference design](../../design-docs/local-inference.md)
@@ -12,8 +15,8 @@ Make "best model" an evidence-backed, repeatable harness process instead of anot
 
 This plan is waiting behind higher-priority active-plan hygiene, Mars parity
 ticket materialization, quality score export, and release asset work. Promote
-the next model-refresh slice into `../active/current-operating-plan.md` before
-execution.
+the next model-refresh slice into `../active/current-operating-plan.md` only
+when those dependencies are clear enough to execute.
 
 ## Current Slice
 

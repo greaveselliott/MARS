@@ -2,6 +2,9 @@
 
 **Status:** Backlog
 **Priority:** P1
+**Depends On:** MH-035 for ticket materialization before broad execution
+**Blocks:** Mars supersession readiness claims
+**Related Tickets:** MH-035, MH-037
 **Created:** 2026-05-02
 **Updated:** 2026-05-02
 **Owner:** Mars Harness
@@ -13,8 +16,8 @@
 
 Mars Harness should supersede the Mars repository's Cursor-based meta-harness. That does not mean copying Mars exactly. It means preserving the useful operating system Mars evolved through real autonomous delivery, then rebuilding those patterns as first-class, local, strict-trunk Mars Harness capabilities.
 
-This plan is a prioritized backlog plan. It is not the active execution plan.
-Promote only the next coherent slice into
+This plan is a prioritized backlog plan with explicit dependencies. It is not
+the active execution plan. Promote only the next coherent unblocked slice into
 `../active/current-operating-plan.md` before execution so the repo always has
 one active plan.
 

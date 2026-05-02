@@ -349,11 +349,16 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(execPlanReadme), "only one active exec plan")
 	assert.Contains(t, string(execPlanReadme), "active/current-operating-plan.md")
 	assert.Contains(t, string(execPlanReadme), "backlog plans")
+	assert.Contains(t, string(execPlanReadme), "**Depends On**")
+	assert.Contains(t, string(execPlanReadme), "**Blocks**")
 
 	currentPlan, err := os.ReadFile(filepath.Join(dir, "docs", "exec-plans", "active", "current-operating-plan.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(currentPlan), "**Status:** Active")
 	assert.Contains(t, string(currentPlan), "**Priority:** P0")
+	assert.Contains(t, string(currentPlan), "**Depends On:**")
+	assert.Contains(t, string(currentPlan), "**Blocks:**")
+	assert.Contains(t, string(currentPlan), "**Related Tickets:**")
 
 	qualityScore, err := os.ReadFile(filepath.Join(dir, "docs", "QUALITY_SCORE.md"))
 	require.NoError(t, err)

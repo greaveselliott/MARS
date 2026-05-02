@@ -9,9 +9,24 @@ This directory holds execution plans with a ticket-like lifecycle:
 
 There must be only one active exec plan at a time. Promote work by updating
 `active/current-operating-plan.md`, not by adding another active plan. Backlog
-plans must carry a `**Priority:**` value and should be ordered like tickets:
-the active plan chooses the next work, backlog plans wait their turn, and
-superseded plans are lineage only.
+plans must carry `**Priority:**`, `**Depends On:**`, `**Blocks:**`, and
+`**Related Tickets:**` metadata and should be ordered like tickets: the active
+plan chooses the next work, backlog plans wait their turn, and superseded plans
+are lineage only.
+
+Plan priority never overrides dependencies. A P1 plan with an unresolved
+dependency waits behind a lower-risk unblocked slice or creates the dependency
+ticket first.
+
+## Plan Metadata
+
+Active and backlog plans require:
+
+- `**Status:**` — `Active` or `Backlog`
+- `**Priority:**` — `P0`, `P1`, `P2`, `P3`, or `P4`
+- `**Depends On:**` — tickets, plan paths, checks, or `None`
+- `**Blocks:**` — tickets, claims, releases, plan paths, or `Nothing`
+- `**Related Tickets:**` — ticket IDs or `None yet`
 
 ## Standing trackers
 

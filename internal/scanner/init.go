@@ -639,14 +639,17 @@ Plans live here. They follow a ticket-like lifecycle:
 
 There must be only one active exec plan at a time. Promote work by updating
 ` + "`active/current-operating-plan.md`" + `, not by adding another active plan.
-Backlog plans must carry a ` + "`**Priority:**`" + ` value and wait their turn like
-backlog tickets.
+Backlog plans must carry ` + "`**Priority:**`" + `, ` + "`**Depends On:**`" + `, ` + "`**Blocks:**`" + `,
+and ` + "`**Related Tickets:**`" + ` metadata and wait their turn like backlog tickets.
 
 ## Format
 
 Each plan has:
 - **Status** (Backlog / Active / Completed / Superseded)
 - **Priority** (required for active and backlog plans)
+- **Depends On** (required for active and backlog plans; use None when clear)
+- **Blocks** (required for active and backlog plans; use Nothing when clear)
+- **Related Tickets** (required for active and backlog plans when tickets exist)
 - **Source** (which roadmap item, ticket, audit, or initiative spawned it)
 - **Created / Updated** dates
 - **Purpose** (what the plan achieves)
@@ -658,6 +661,9 @@ Each plan has:
 
 **Status:** Active
 **Priority:** P0
+**Depends On:** None
+**Blocks:** Plan promotions until this file names the next slice
+**Related Tickets:** None yet
 **Created:** 2026-05-02
 **Owner:** Project maintainers
 **Source:** mars-harness init
@@ -665,8 +671,9 @@ Each plan has:
 ## Purpose
 
 This is the only active exec plan for the repository. Use it to decide the next
-work slice, ticket priority, and plan promotions. Do not create another active
-exec plan; move waiting plans to ` + "`docs/exec-plans/backlog/`" + ` with priority.
+work slice, ticket priority, dependencies, blockers, and plan promotions. Do
+not create another active exec plan; move waiting plans to
+` + "`docs/exec-plans/backlog/`" + ` with priority and dependency metadata.
 
 ## Current Truth
 
@@ -682,8 +689,9 @@ exec plan; move waiting plans to ` + "`docs/exec-plans/backlog/`" + ` with prior
 
 ## Plan Backlog
 
-Add waiting plans under ` + "`docs/exec-plans/backlog/`" + ` with explicit priority.
-Promote one slice at a time by updating this file.
+Add waiting plans under ` + "`docs/exec-plans/backlog/`" + ` with explicit priority,
+dependencies, blockers, and related tickets. Promote one unblocked slice at a
+time by updating this file.
 `,
 
 	"docs/design-docs/index.md": `# Design Documents
@@ -927,6 +935,9 @@ It must remain the only markdown file in ` + "`docs/exec-plans/active/`" + `.
 
 **Status:** Active
 **Priority:** P0
+**Depends On:** [None / ticket or plan paths]
+**Blocks:** [Nothing / ticket or plan paths]
+**Related Tickets:** [None yet / T-NNN list]
 **Updated:** [date]
 **Owner:** Project maintainers
 **Source:** CEO planning run
@@ -981,6 +992,7 @@ After writing priorities, commit and push your changes:
 - Full backlog capped at 20 items.
 - If the project is healthy and no high-priority work exists, say so.
 - Do not create a second active exec plan. Put waiting plans in ` + "`docs/exec-plans/backlog/`" + `.
+- Every active/backlog exec plan needs priority, dependencies, blockers, and related tickets.
 `,
 
 	"coo": `# COO — Ticket Creator
