@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.7.4] - 2026-05-02
+<!-- mars-harness-release: version=0.7.4 commit=c7dbdf3dbb6e -->
+
+### Documentation
+- **plans:** Enforce single active exec plan (c7dbdf3)
+
 ## [0.7.3] - 2026-05-02
 <!-- mars-harness-release: version=0.7.3 commit=9a4ced42bdad -->
 
