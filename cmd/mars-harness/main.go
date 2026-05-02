@@ -263,12 +263,22 @@ func executeRun(opts runOpts) error {
 	for _, kr := range knowledgeDefs {
 		knowledgeRoutes = append(knowledgeRoutes, ctx.KnowledgeRoute{When: kr.When, Paths: kr.Paths})
 	}
+	skillDefs, err := bundle.LoadSkills(absRepo, opts.roleName)
+	if err != nil {
+		tw.WriteError(fmt.Sprintf("load skills: %v", err))
+		return err
+	}
+	var skills []ctx.Skill
+	for _, sd := range skillDefs {
+		skills = append(skills, ctx.Skill{Name: sd.Name, Scope: sd.Scope, Body: sd.Body})
+	}
 
 	assemblyInput := ctx.Input{
 		RoleScope:       opts.roleName,
 		RolePrompt:      rolePrompt,
 		Guardrails:      promptGuardrails,
 		KnowledgeRoutes: knowledgeRoutes,
+		Skills:          skills,
 	}
 	if opts.budget > 0 {
 		assemblyInput.TokenBudget = opts.budget

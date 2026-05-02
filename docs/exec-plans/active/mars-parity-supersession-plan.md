@@ -258,7 +258,7 @@ Harness has `self-improvement.md`, `learnings`, `evolution`, `record_decision`, 
 Gap:
 
 - Harness needs a first-class `intervention-debt` ticket type.
-- Harness needs telemetry triage that names the improvement target before changing prompts, process, guardrails, context, inference, manifests, or tool policy.
+- Harness needs telemetry triage that names the improvement target before changing prompts, skills, process, guardrails, context, inference, manifests, or tool policy.
 - Failed terminal reasons, guardrail blocks, human follow-up commits, reverted commits, repeated ticket-gate failures, and manual run interruptions should create or update intervention-debt tickets.
 - Planner should treat intervention debt as high-priority work.
 - Evolution should be bound to those tickets and trace IDs.

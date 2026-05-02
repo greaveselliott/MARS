@@ -7,6 +7,7 @@ type ImprovementTarget string
 
 const (
 	TargetPrompt     ImprovementTarget = "prompt"
+	TargetSkill      ImprovementTarget = "skill"
 	TargetProcess    ImprovementTarget = "process"
 	TargetGuardrail  ImprovementTarget = "guardrail"
 	TargetContext    ImprovementTarget = "context"
@@ -82,10 +83,13 @@ func TriagePattern(p Pattern) ImprovementProposal {
 		proposal.CandidateFiles = []string{fmt.Sprintf(".harness/roles/%s.md", p.Role), ".harness/manifest.yaml"}
 
 	case CategoryCircleDetected, CategoryMaxTurns:
-		proposal.Target = TargetPrompt
-		proposal.Title = "Tighten role objective"
-		proposal.Suggestion = fmt.Sprintf("Role %q repeatedly looped or exhausted turns; tighten the prompt with clearer completion criteria, blocker handling, and stop conditions.", p.Role)
-		proposal.CandidateFiles = []string{fmt.Sprintf(".harness/roles/%s.md", p.Role)}
+		proposal.Target = TargetSkill
+		proposal.Title = "Capture missing workflow skill"
+		proposal.Suggestion = fmt.Sprintf("Role %q repeatedly looped or exhausted turns; inspect traces for a reusable missing workflow and create or update a compact scoped skill before expanding the role prompt.", p.Role)
+		proposal.CandidateFiles = []string{
+			fmt.Sprintf(".harness/skills/%s-workflow/SKILL.md", p.Role),
+			fmt.Sprintf(".harness/roles/%s.md", p.Role),
+		}
 
 	case CategoryManifestError:
 		proposal.Target = TargetManifest
@@ -103,7 +107,7 @@ func TriagePattern(p Pattern) ImprovementProposal {
 	default:
 		proposal.Target = TargetUnknown
 		proposal.Title = "Review uncategorized telemetry"
-		proposal.Suggestion = fmt.Sprintf("Role %q has recurring %s telemetry; inspect traces and decide whether this belongs in prompt, process, guardrail, tool, or model configuration.", p.Role, p.Category)
+		proposal.Suggestion = fmt.Sprintf("Role %q has recurring %s telemetry; inspect traces and decide whether this belongs in prompt, skill, process, guardrail, tool, or model configuration.", p.Role, p.Category)
 		proposal.Confidence = 0.5
 	}
 
@@ -135,10 +139,11 @@ func TriageScore(sc ScoreSnapshot) (ImprovementProposal, bool) {
 		Target:     TargetProcess,
 		Severity:   "high",
 		Title:      "Low role score",
-		Suggestion: fmt.Sprintf("Role %q has score %.2f over %d samples in %dd; triage failed outcomes, intervention debt, prompt scope, guardrails, tool policy, and model tier before raising autonomy.", sc.Role, sc.Value, sc.SampleSize, window),
+		Suggestion: fmt.Sprintf("Role %q has score %.2f over %d samples in %dd; triage failed outcomes, intervention debt, prompt scope, reusable skills, guardrails, tool policy, and model tier before raising autonomy.", sc.Role, sc.Value, sc.SampleSize, window),
 		Evidence:   fmt.Sprintf("score %.2f, samples %d, window %dd", sc.Value, sc.SampleSize, window),
 		CandidateFiles: []string{
 			fmt.Sprintf(".harness/roles/%s.md", sc.Role),
+			fmt.Sprintf(".harness/skills/%s-workflow/SKILL.md", sc.Role),
 			".harness/manifest.yaml",
 		},
 		Confidence: 0.8,

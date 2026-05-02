@@ -11,7 +11,7 @@ created: 2026-05-02
 
 ## Context
 
-Mars Harness now triages recurring telemetry patterns and low scores into typed improvement targets. The next step is to turn actionable proposals into durable work items so the harness proactively improves prompts, process, guardrails, context routes, inference setup, manifests, and tool policy.
+Mars Harness now triages recurring telemetry patterns and low scores into typed improvement targets. The next step is to turn actionable proposals into durable work items so the harness proactively improves prompts, skills, process, guardrails, context routes, inference setup, manifests, and tool policy.
 
 ## Requirements
 

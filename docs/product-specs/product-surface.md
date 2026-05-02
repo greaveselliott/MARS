@@ -14,7 +14,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | Install and setup | `mars-harness setup`, config, model and binary cache | Detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
 | Target harness | `mars-harness init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
 | Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, and visible run state. |
-| Learning loop | `scores`, `trust`, telemetry triage, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, prompt or process improvements, and safety controls. |
+| Learning loop | `scores`, `trust`, telemetry triage, skills, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, reusable workflow skills, prompt or process improvements, and safety controls. |
 | Generated references | `docs/generated/` | Provide reproducible, cataloged source-harness maps when generator commands exist. |
 | Release state | `VERSION`, `CHANGELOG.md`, `release notes` | Maintain semantic versions and generated patch notes for both the source harness and target repos. |
 
@@ -45,6 +45,7 @@ Required generated surfaces:
 - `AGENTS.md` as the compact first-read map
 - `.harness/manifest.yaml` for roles, model tiers, tools, triggers, chains, guardrails, and knowledge routes
 - `.harness/roles/*.md` for role prompts
+- `.harness/skills/*/SKILL.md` for compact reusable workflows and self-improvement guidance
 - `.harness/guardrails/*.yaml` for mechanical policy inputs
 - `.harness/knowledge/*.yaml` for lightweight context routes
 - `docs/tickets/backlog/`, `docs/tickets/in-progress/`, and `docs/tickets/done/`
@@ -85,6 +86,7 @@ The product contract is:
 - Dogfood and QA roles produce reproducible evidence.
 - Janitor and orchestrator roles keep ticket state truthful.
 - Evolution roles improve the harness only inside trust and safety limits.
+- Repeated human recovery steps become compact scoped skills when they describe reusable procedure.
 
 The harness should never reward a role for handing off incomplete work as if it were complete.
 
@@ -97,6 +99,8 @@ Trust levels are:
 - `autonomous`: may self-schedule, chain work, edit, test, commit, push to `main`, and perform bounded evolution
 
 Scores are based on real outcomes: completed work, commits, checks, guardrail blocks, timeouts, noops, human follow-up, and reverts. Scores must drive behavior, not merely appear in a dashboard.
+
+When scores or telemetry show repeated workflow confusion, the harness should prefer a scoped skill over bloating a role prompt. Use guardrails for non-negotiable enforcement and tools for deterministic actions.
 
 ## Guardrails And Safety
 
@@ -138,6 +142,7 @@ The product must never describe optional integration as complete unless credenti
 The active execution plans track the remaining work. The highest-value hardening areas are:
 
 - richer repo-visible role registry
+- richer repo-visible skill registry and skill-evolution proposals
 - stronger generated target guidance
 - deterministic remediation recipes before LLM work
 - score exports and dashboard views for improvement targets

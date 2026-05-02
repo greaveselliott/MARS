@@ -42,15 +42,15 @@ Those surfaces must share the same doctrine: compact agent entrypoints, strict t
 
 ### Context efficiency
 
-Agents should receive a compact map and retrieve narrow supporting context on demand. `AGENTS.md`, `.harness/manifest.yaml`, `.harness/knowledge/`, tickets, design docs, references, and traces form the routing layer.
+Agents should receive a compact map and retrieve narrow supporting context on demand. `AGENTS.md`, `.harness/manifest.yaml`, `.harness/knowledge/`, `.harness/skills/`, tickets, design docs, references, and traces form the routing layer.
 
-The product should avoid prompt-stuffing large manuals into every role. It should instead maintain glossary and knowledge-route files that tell the agent where to look.
+The product should avoid prompt-stuffing large manuals into every role. It should instead maintain glossary and knowledge-route files that tell the agent where to look, plus compact skills that teach reusable workflows.
 
 ### Self-reflective improvement
 
 The harness grades both its own process and the feature work it builds. Outcomes such as completed commits, failed checks, guardrail blocks, timeouts, noops, stuck tickets, human follow-up, and reverts become scoring and telemetry signals.
 
-The product must proactively triage those signals into improvement targets: prompt, process, guardrail, context, inference, manifest, tool policy, scanner, ticket flow, or generated target guidance. Direct evolution is allowed only inside deterministic trust and safety bounds.
+The product must proactively triage those signals into improvement targets: prompt, skill, process, guardrail, context, inference, manifest, tool policy, scanner, ticket flow, or generated target guidance. Direct evolution is allowed only inside deterministic trust and safety bounds.
 
 ## Who It Serves
 

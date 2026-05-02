@@ -50,6 +50,7 @@ func Init(repoRoot string, force bool) error {
 	dirs := []string{
 		harnessPath,
 		filepath.Join(harnessPath, "roles"),
+		filepath.Join(harnessPath, "skills"),
 		filepath.Join(harnessPath, "guardrails"),
 		filepath.Join(harnessPath, "knowledge"),
 		filepath.Join(repoRoot, "docs", "tickets", "backlog"),
@@ -331,8 +332,37 @@ var defaultHarnessFiles = map[string]string{
     paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md
   - when: release planning, semantic versioning, changelog, patch notes, or tags
     paths: VERSION, CHANGELOG.md, docs/design-docs/release-versioning.md
+  - when: self-improvement, repeated failures, telemetry triage, human intervention, or deciding whether to create a skill
+    paths: docs/design-docs/skill-evolution.md, .harness/skills/self-improvement/SKILL.md
   - when: agent-first workflow, repository memory, or why this harness exists
     paths: docs/references/harness-engineering-agent-first.md
+`,
+
+	"skills/self-improvement/SKILL.md": `---
+name: self-improvement
+scope: all
+---
+
+# Self-Improvement Skill
+
+Use this when a failure, repeated handoff, human follow-up, low score, or dogfood finding suggests the harness should improve itself.
+
+## Decide The Target
+
+- Create or update a skill when the fix is reusable procedure.
+- Update a role prompt when the role's identity, responsibility, or stop condition is wrong.
+- Add a guardrail when a rule must be enforced even if the model forgets.
+- Add or improve a tool when a deterministic action is repeated, risky, or needs validation.
+- Update the glossary or knowledge routes when the agent could not find the right context.
+- Create or update a ticket when the product work itself is incomplete or blocked.
+
+## Skill Creation Rules
+
+- Put skills under ` + "`.harness/skills/<name>/SKILL.md`" + `.
+- Keep the body compact: when to use it, workflow, stop conditions, evidence.
+- Scope narrowly unless the workflow is useful to every role.
+- Link a design decision when the skill changes workflow doctrine.
+- Commit and push the skill change on ` + "`main`" + ` with the triggering job, ticket, or telemetry evidence.
 `,
 }
 
@@ -363,6 +393,7 @@ the system of record for plans, decisions, tickets, traces, and completed work.
 4. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
 5. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
 6. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
+7. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
 
 ## Workflow
 
@@ -372,6 +403,7 @@ the system of record for plans, decisions, tickets, traces, and completed work.
 - If blocked, record the blocker, create or update the dependency ticket, and return the ticket to a non-misleading state.
 - Commit and push after each completed step.
 - Keep generated or harness-owned guidance in sync with ` + "`mars-harness upgrade`" + `.
+- Convert repeated human recovery steps into compact scoped skills rather than growing role prompts.
 
 ## Context Discipline
 
@@ -491,6 +523,7 @@ Architectural decisions and design documents for this project.
 | --- | --- | --- |
 | [context-glossary.md](context-glossary.md) | Seed | Compact glossary and context map used by agents to find the right docs without loading everything. |
 | [release-versioning.md](release-versioning.md) | Seed | Semantic versioning and generated patch-note policy for this repo. |
+| [skill-evolution.md](skill-evolution.md) | Seed | When repeated failures or interventions should become compact reusable skills. |
 
 ## Decision Log
 
@@ -572,6 +605,38 @@ Then verify, commit, and push the release-note update on ` + "`main`" + `.
 - Use ` + "`--bump major`" + `, ` + "`--bump minor`" + `, or ` + "`--bump patch`" + ` only when auto classification is wrong.
 - Do not fabricate commit references.
 - Keep release notes concise and user-facing.
+`,
+
+	"docs/design-docs/skill-evolution.md": `# Skill Evolution
+
+**Status:** Seed
+
+## Policy
+
+Skills are compact reusable workflows stored in ` + "`.harness/skills/<name>/SKILL.md`" + `.
+They are how this repo teaches future agents a procedure without bloating role
+prompts or stuffing large manuals into context.
+
+Create or update a skill when repeated evidence shows missing reusable procedure:
+
+- a role loops, times out, or hands off incomplete work for the same reason
+- a human repeatedly fixes the same class of agent mistake
+- dogfood, QA, or checks repeatedly fail because setup or verification steps were missed
+- an in-progress ticket needs the same unblock workflow more than once
+- a successful workaround should be available to future roles
+
+Do not create a skill for one-off product work. Use a ticket for product work,
+a guardrail for non-negotiable enforcement, a tool for deterministic actions,
+a prompt change for role identity or stop conditions, and a knowledge route for
+where-to-look context.
+
+## Required Shape
+
+- Put the skill under ` + "`.harness/skills/<name>/SKILL.md`" + `.
+- Keep it compact: when to use it, workflow, stop conditions, evidence.
+- Scope it in frontmatter when only one role needs it.
+- Record a design decision if the skill changes workflow doctrine.
+- Commit and push the change on ` + "`main`" + ` with the triggering evidence.
 `,
 
 	"docs/references/README.md": `# References

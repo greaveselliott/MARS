@@ -24,7 +24,7 @@ _(No AD IDs assigned in the baseline plan; capture ADs here as they are minted.)
 - **Noop detection:** down-weight or flag jobs that produced no substantive diff, only repeated hollow actions, or failed to act when actionable work existed; avoid punishing intentional “already clean” outcomes with explicit rules.
 - **Time horizon for low-frequency roles:** wider windows, minimum sample counts, or damped estimates so rare roles are not whipsawed; document chosen approach when implemented.
 - **Score-driven alerts:** thresholds for operator notification and for triggering Reviewer / evolution proposals; hysteresis or cooldown to reduce spam.
-- **Score-driven triage:** low rolling scores with enough samples feed self-reflective telemetry triage. Scores identify unhealthy roles; telemetry, traces, and ticket state decide whether the fix belongs in prompt, process, guardrail, context, inference, manifest, or tool policy.
+- **Score-driven triage:** low rolling scores with enough samples feed self-reflective telemetry triage. Scores identify unhealthy roles; telemetry, traces, and ticket state decide whether the fix belongs in prompt, skill, process, guardrail, context, inference, manifest, or tool policy.
 
 ### Relationships
 

@@ -236,6 +236,7 @@ func TestInit_success(t *testing.T) {
 
 	assert.DirExists(t, filepath.Join(dir, ".harness"))
 	assert.DirExists(t, filepath.Join(dir, ".harness", "roles"))
+	assert.DirExists(t, filepath.Join(dir, ".harness", "skills"))
 	assert.DirExists(t, filepath.Join(dir, ".harness", "guardrails"))
 	assert.DirExists(t, filepath.Join(dir, ".harness", "knowledge"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
@@ -251,11 +252,13 @@ func TestInit_success(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, "VERSION"))
 	assert.FileExists(t, filepath.Join(dir, "CHANGELOG.md"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml"))
+	assert.FileExists(t, filepath.Join(dir, ".harness", "skills", "self-improvement", "SKILL.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "tickets", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "exec-plans", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "index.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "context-glossary.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "skill-evolution.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "references", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "references", "harness-engineering-agent-first.md"))
 
@@ -303,6 +306,11 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(glossary), "docs/design-docs/context-glossary.md")
 	assert.Contains(t, string(glossary), "docs/design-docs/release-versioning.md")
+	assert.Contains(t, string(glossary), "docs/design-docs/skill-evolution.md")
+
+	skill, err := os.ReadFile(filepath.Join(dir, ".harness", "skills", "self-improvement", "SKILL.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(skill), "Create or update a skill when the fix is reusable procedure")
 
 	version, err := os.ReadFile(filepath.Join(dir, "VERSION"))
 	require.NoError(t, err)

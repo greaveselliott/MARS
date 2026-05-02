@@ -405,7 +405,7 @@ None new — scoring uses AD-009 (SQLite) and AD-010 (repo_id scoping).
   - **7.2.5** Rate limit: max 1 evolution proposal per role per day
   - **7.2.6** Auto-disable: if last 3 evolutions for a role worsened its score, suspend Reviewer proposals for that role until manual review
 - **7.3** Bounded evolution commits
-  - **7.3.1** Commit scoped prompt, guardrail, or manifest changes directly to `main` only at autonomous trust level
+  - **7.3.1** Commit scoped prompt, skill, guardrail, or manifest changes directly to `main` only at autonomous trust level
   - **7.3.2** Commit message/body includes: intervention diff summary, root cause analysis, proposed change, expected impact, trace/job ID
   - **7.3.3** Enforce scoped file allowlist, max one evolution per role/scope/day, and no arbitrary self-meta-prompt edits
   - **7.3.4** Track evolution outcomes through score deltas, reverts, and human follow-up commits

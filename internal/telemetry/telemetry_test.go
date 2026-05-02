@@ -217,6 +217,21 @@ func TestTriagePattern_manifestErrorTargetsManifest(t *testing.T) {
 	require.Greater(t, proposal.Confidence, 0.8)
 }
 
+func TestTriagePattern_loopTargetsSkill(t *testing.T) {
+	t.Parallel()
+
+	proposal := TriagePattern(Pattern{
+		Role:     "engineer",
+		Category: CategoryMaxTurns,
+		Count:    3,
+	})
+
+	require.Equal(t, TargetSkill, proposal.Target)
+	require.Contains(t, proposal.Suggestion, "compact scoped skill")
+	require.Contains(t, proposal.CandidateFiles, ".harness/skills/engineer-workflow/SKILL.md")
+	require.Contains(t, proposal.CandidateFiles, ".harness/roles/engineer.md")
+}
+
 func TestTriageScore_lowScoreProducesProcessProposal(t *testing.T) {
 	t.Parallel()
 
@@ -232,7 +247,9 @@ func TestTriageScore_lowScoreProducesProcessProposal(t *testing.T) {
 	require.Equal(t, TargetProcess, proposal.Target)
 	require.Equal(t, "high", proposal.Severity)
 	require.Contains(t, proposal.Suggestion, "intervention debt")
+	require.Contains(t, proposal.Suggestion, "reusable skills")
 	require.Contains(t, proposal.CandidateFiles, ".harness/roles/dogfood.md")
+	require.Contains(t, proposal.CandidateFiles, ".harness/skills/dogfood-workflow/SKILL.md")
 }
 
 func TestTriageScore_ignoresHealthyOrSparseScores(t *testing.T) {
