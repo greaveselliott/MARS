@@ -7,6 +7,7 @@ import (
 
 // Pattern represents a recurring failure for a specific role+category.
 type Pattern struct {
+	RepoID    string          `json:"repo_id,omitempty"`
 	Role      string          `json:"role"`
 	Category  FailureCategory `json:"category"`
 	Count     int             `json:"count"`
@@ -33,14 +34,14 @@ func (c *Collector) DetectPatterns() []Pattern {
 
 	cutoff := time.Now().UTC().Add(-PatternWindow)
 
-	type key struct{ role, cat string }
+	type key struct{ repoID, role, cat string }
 	buckets := map[key][]Event{}
 
 	for _, e := range events {
 		if e.Timestamp.Before(cutoff) {
 			continue
 		}
-		k := key{e.Role, string(e.Category)}
+		k := key{e.RepoID, e.Role, string(e.Category)}
 		buckets[k] = append(buckets[k], e)
 	}
 
@@ -50,6 +51,7 @@ func (c *Collector) DetectPatterns() []Pattern {
 			continue
 		}
 		p := Pattern{
+			RepoID:    k.repoID,
 			Role:      k.role,
 			Category:  FailureCategory(k.cat),
 			Count:     len(evts),
@@ -78,37 +80,31 @@ func (c *Collector) DetectPatternsFromStore() []Pattern {
 		return c.DetectPatterns()
 	}
 
-	roles := c.uniqueRoles()
-	categories := []FailureCategory{
-		CategoryContextOverflow, CategoryLLMUnreachable,
-		CategoryInferenceCrash, CategoryToolTimeout,
-		CategoryCircleDetected, CategoryMaxTurns,
-		CategoryBudgetExceeded, CategoryManifestError,
-	}
-
 	since := time.Now().UTC().Add(-PatternWindow)
+	counts, err := store.RoleCategoryCountsSince(since)
+	if err != nil {
+		slog.Warn("telemetry: pattern detection query failed", "err", err)
+		return c.DetectPatterns()
+	}
 	var patterns []Pattern
 
-	for _, role := range roles {
-		for _, cat := range categories {
-			count, err := store.CountByRoleCategory(role, cat, since)
-			if err != nil {
-				slog.Warn("telemetry: pattern detection query failed", "role", role, "category", cat, "err", err)
-				continue
-			}
-			if count >= PatternThreshold {
-				patterns = append(patterns, Pattern{
-					Role:     role,
-					Category: cat,
-					Count:    count,
-					Window:   "24h",
-				})
-				slog.Warn("telemetry: recurring failure pattern detected (store)",
-					"role", role,
-					"category", string(cat),
-					"count", count,
-				)
-			}
+	for _, rc := range counts {
+		if rc.Count >= PatternThreshold {
+			patterns = append(patterns, Pattern{
+				RepoID:    rc.RepoID,
+				Role:      rc.Role,
+				Category:  rc.Category,
+				Count:     rc.Count,
+				Window:    "24h",
+				FirstSeen: rc.FirstSeen,
+				LastSeen:  rc.LastSeen,
+			})
+			slog.Warn("telemetry: recurring failure pattern detected (store)",
+				"repo_id", rc.RepoID,
+				"role", rc.Role,
+				"category", string(rc.Category),
+				"count", rc.Count,
+			)
 		}
 	}
 	return patterns

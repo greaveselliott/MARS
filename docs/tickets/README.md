@@ -19,6 +19,8 @@ id: MH-001
 title: Short description
 priority: high | medium | low
 complexity: small | medium | large
+kind: standard | intervention-debt
+dedupe_key: optional-machine-key
 source: delivery-schedule M1.3.1
 created: 2026-04-11
 ---
@@ -54,6 +56,10 @@ created: 2026-04-11
 [Implementation notes, discoveries]
 ```
 
+`kind` defaults to `standard` when omitted. `intervention-debt` is reserved for harness self-improvement work created from telemetry, score regressions, stuck ticket state, guardrail blocks, dogfood failures, or repeated human interventions.
+
+Intervention-debt tickets must include role, repo, target, category, severity, confidence, evidence, and origin metadata when generated mechanically. They are deduped by repo, role, target, category, and evidence window.
+
 ## Naming Convention
 
 `MH-NNN-short-description.md` where NNN is a zero-padded sequential number.
@@ -64,3 +70,9 @@ created: 2026-04-11
 2. Implementation starts: move to `in-progress/`
 3. Implementation completes: move to `done/` in a direct semantic commit on `main`
 4. Push `main` after the commit so the repo remains the system of record
+
+## Priority Rules
+
+In-progress tickets are always the front of the queue. If multiple tickets are already in progress, drain the lowest-numbered in-progress ticket first and fix blockers proactively in the same run.
+
+Intervention-debt tickets are prioritised ahead of ordinary backlog work because they represent a failure in the harness process, prompts, skills, guardrails, context routing, inference setup, or tool policy. Existing matching intervention-debt tickets are updated rather than duplicated.

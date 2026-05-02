@@ -502,6 +502,12 @@ The ticket_create tool assigns the next available number automatically.
 1. A ticket is created in backlog/ with frontmatter and acceptance criteria
 2. The highest-priority ticket is picked up and moved to in-progress/
 3. On completion, the ticket moves to done/
+
+## Intervention Debt
+
+Use ` + "`kind: intervention-debt`" + ` for work created from repeated telemetry failures, score regressions, dogfood failures, stuck ticket state, guardrail blocks, or repeated human interventions.
+
+Intervention-debt tickets include role, target, category, severity, confidence, evidence, and origin metadata. They are deduped by repo, role, target, category, and evidence window. Prioritise them ahead of ordinary backlog work because they fix the harness process that produces future work.
 `,
 
 	"docs/exec-plans/README.md": `# Execution Plans

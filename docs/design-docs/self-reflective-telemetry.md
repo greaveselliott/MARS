@@ -45,9 +45,17 @@ The harness should proactively consume its own telemetry after jobs and on orche
 - process or product changes become tickets/plans unless an autonomous role has earned trust and the path is allowlisted
 - repeated worsening disables further evolution for that role/scope
 
+### AD-065: Telemetry Triage Creates Intervention-Debt Tickets
+
+Self-reflection must create durable work, not only dashboard signals or evolution rows. When recurring telemetry patterns or low score snapshots identify actionable improvement targets, Mars Harness creates or updates `kind: intervention-debt` tickets through the canonical ticket creation path.
+
+The dedupe key is repo, role, target, category, and evidence window. This keeps repeated failures from creating ticket storms while still letting a new evidence window reopen durable work when the issue returns. Tickets carry role, repo, target, category, severity, confidence, source event or score snapshot, evidence, recommendation, candidate files, and acceptance criteria.
+
+Direct evolution remains bounded. Process, product, unknown, or unsafe changes default to intervention-debt tickets; autonomous evolution can only happen after the ticketed evidence is constrained by trust, allowlists, and regression checks.
+
 ## Current Implementation
 
-`internal/telemetry` now exposes triage functions that convert recurring failure patterns and low score snapshots into improvement proposals. `serve.checkEvolution` consumes those proposals and records bounded evolution reviews with concrete suggestions and candidate files.
+`internal/telemetry` now exposes triage functions that convert recurring failure patterns and low score snapshots into improvement proposals. `serve.checkEvolution` consumes those proposals, creates or updates intervention-debt tickets, emits dashboard events with ticket links, and records bounded evolution reviews with concrete suggestions and candidate files.
 
 The first implementation is deliberately small:
 
@@ -60,10 +68,9 @@ The first implementation is deliberately small:
 
 ## Required Next Steps
 
-- Create or update intervention-debt tickets from triage proposals.
 - Add quality-score exports that include top improvement targets.
 - Add Orchestrator survey support so triage runs even when no new job finishes.
-- Add dashboard/API views for improvement proposals.
+- Add richer dashboard/API views for improvement proposals beyond the current event stream.
 - Extend triage with dogfood-specific and ticket-state-specific signals.
 - Add scanner-generated glossary and command-route updates when triage repeatedly identifies context gaps.
 - Add skill creation/update proposals when triage repeatedly identifies missing reusable procedure.

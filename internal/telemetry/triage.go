@@ -56,6 +56,7 @@ func TriagePattern(p Pattern) ImprovementProposal {
 	}
 
 	proposal := ImprovementProposal{
+		RepoID:     p.RepoID,
 		Role:       p.Role,
 		Category:   p.Category,
 		Severity:   severityForCount(count),

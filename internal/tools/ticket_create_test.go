@@ -54,6 +54,72 @@ func TestTicketCreate_basic(t *testing.T) {
 	assert.Contains(t, string(data), "## Context")
 }
 
+func TestTicketCreate_interventionDebtWritesMetadata(t *testing.T) {
+	t.Parallel()
+	dir, root := setupTicketDir(t)
+
+	result, err := CreateTicket(root, TicketInput{
+		Title:      "Intervention debt: engineer context context_overflow",
+		Priority:   "high",
+		Complexity: "medium",
+		Kind:       "intervention-debt",
+		DedupeKey:  "intervention-debt:repo-1:engineer:context:context_overflow:24h",
+		Metadata: map[string]string{
+			"role":     "engineer",
+			"repo_id":  "repo-1",
+			"severity": "high",
+		},
+		Source: "telemetry:evt-1",
+		Body:   "## Context\nTelemetry.\n\n## Acceptance Criteria\n- [ ] Fixed",
+	})
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "created ticket T-001")
+
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "backlog", "T-001-intervention-debt-engineer-context-context-overflow.md"))
+	require.NoError(t, err)
+	text := string(data)
+	assert.Contains(t, text, "kind: intervention-debt")
+	assert.Contains(t, text, `dedupe_key: "public-example"`)
+	assert.Contains(t, text, "metadata:")
+	assert.Contains(t, text, `  role: "engineer"`)
+	assert.Contains(t, text, `  severity: "high"`)
+}
+
+func TestTicketCreate_interventionDebtDedupeUpdatesExisting(t *testing.T) {
+	t.Parallel()
+	dir, root := setupTicketDir(t)
+
+	first := TicketInput{
+		Title:     "Intervention debt: engineer context context_overflow",
+		Priority:  "high",
+		Kind:      "intervention-debt",
+		DedupeKey: "intervention-debt:repo-1:engineer:context:context_overflow:24h",
+		Metadata:  map[string]string{"origin_event_id": "evt-1"},
+		Source:    "telemetry:evt-1",
+		Body:      "## Context\nTelemetry.\n\n## Acceptance Criteria\n- [ ] Fixed",
+	}
+	_, err := CreateTicket(root, first)
+	require.NoError(t, err)
+
+	second := first
+	second.Source = "telemetry:evt-2"
+	second.Metadata = map[string]string{"origin_event_id": "evt-2"}
+	result, err := CreateTicket(root, second)
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "UPDATED")
+
+	entries, err := os.ReadDir(filepath.Join(dir, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	assert.Len(t, entries, 1, "same intervention-debt dedupe key should not create another ticket")
+
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "backlog", entries[0].Name()))
+	require.NoError(t, err)
+	text := string(data)
+	assert.Contains(t, text, "## Latest Triage Update")
+	assert.Contains(t, text, "source: telemetry:evt-2")
+	assert.Contains(t, text, "origin_event_id: evt-2")
+}
+
 func TestTicketCreate_duplicateBlocked(t *testing.T) {
 	t.Parallel()
 	dir, root := setupTicketDir(t)

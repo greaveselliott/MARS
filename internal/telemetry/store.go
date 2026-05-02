@@ -13,6 +13,16 @@ type Store struct {
 	db *sql.DB
 }
 
+// RoleCategoryCount is an aggregate telemetry bucket for recurring-pattern detection.
+type RoleCategoryCount struct {
+	RepoID    string
+	Role      string
+	Category  FailureCategory
+	Count     int
+	FirstSeen time.Time
+	LastSeen  time.Time
+}
+
 // OpenStore opens or creates a SQLite database for telemetry at dbPath.
 func OpenStore(dbPath string) (*Store, error) {
 	db, err := sql.Open("sqlite", dbPath+"?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
@@ -128,6 +138,68 @@ WHERE role = ? AND category = ? AND timestamp >= ?`,
 		return 0, fmt.Errorf("telemetry: count by role/category: %w", err)
 	}
 	return count, nil
+}
+
+// RoleCategoryCountsSince returns counts grouped by repo, role, and category.
+func (s *Store) RoleCategoryCountsSince(since time.Time) ([]RoleCategoryCount, error) {
+	if s == nil || s.db == nil {
+		return nil, nil
+	}
+	rows, err := s.db.Query(`
+SELECT repo_id, role, category, COUNT(*), MIN(timestamp), MAX(timestamp)
+FROM telemetry_events
+WHERE timestamp >= ?
+GROUP BY repo_id, role, category
+ORDER BY repo_id, role, category`, since.Unix())
+	if err != nil {
+		return nil, fmt.Errorf("telemetry: role/category counts: %w", err)
+	}
+	defer rows.Close()
+
+	var counts []RoleCategoryCount
+	for rows.Next() {
+		var rc RoleCategoryCount
+		var cat string
+		var firstSeen int64
+		var lastSeen int64
+		if err := rows.Scan(&rc.RepoID, &rc.Role, &cat, &rc.Count, &firstSeen, &lastSeen); err != nil {
+			return nil, fmt.Errorf("telemetry: scan role/category count: %w", err)
+		}
+		rc.Category = FailureCategory(cat)
+		rc.FirstSeen = time.Unix(firstSeen, 0).UTC()
+		rc.LastSeen = time.Unix(lastSeen, 0).UTC()
+		counts = append(counts, rc)
+	}
+	return counts, rows.Err()
+}
+
+// LatestByRoleCategory returns the newest matching event for evidence links.
+func (s *Store) LatestByRoleCategory(repoID, role string, cat FailureCategory, since time.Time) (*Event, error) {
+	if s == nil || s.db == nil {
+		return nil, nil
+	}
+	row := s.db.QueryRow(`
+SELECT id, timestamp, job_id, repo_id, role, category, message, remedied, action
+FROM telemetry_events
+WHERE repo_id = ? AND role = ? AND category = ? AND timestamp >= ?
+ORDER BY timestamp DESC
+LIMIT 1`, repoID, role, string(cat), since.Unix())
+
+	var evt Event
+	var ts int64
+	var remedied int
+	var catValue string
+	err := row.Scan(&evt.ID, &ts, &evt.JobID, &evt.RepoID, &evt.Role, &catValue, &evt.Message, &remedied, &evt.Action)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("telemetry: latest role/category: %w", err)
+	}
+	evt.Timestamp = time.Unix(ts, 0).UTC()
+	evt.Category = FailureCategory(catValue)
+	evt.Remedied = remedied != 0
+	return &evt, nil
 }
 
 // AllCategoryCounts returns aggregate counts per category from all stored events.

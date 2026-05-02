@@ -1401,17 +1401,40 @@ var jobCount int32
 // checkEvolution runs pattern detection and triggers evolution reviews
 // when recurring failures are detected or after enough jobs accumulate.
 func (s *Server) checkEvolution(ctx context.Context, role, repoID string) {
-	if s.evoStore == nil || s.scoreStore == nil {
+	if s.evoStore == nil {
 		return
 	}
 
 	atomic.AddInt32(&jobCount, 1)
 
-	patterns := s.telemetry.DetectPatterns()
+	patterns := s.telemetry.DetectPatternsFromStore()
 	proposals := telemetry.TriagePatterns(patterns)
 
 	for i, p := range patterns {
+		if !matchesTriageScope(p.RepoID, p.Role, repoID, role) {
+			continue
+		}
 		proposal := proposals[i]
+		if proposal.RepoID == "" {
+			proposal.RepoID = repoID
+		}
+		window := p.Window
+		if window == "" {
+			window = "24h"
+		}
+		origin := interventionDebtOrigin{
+			Kind:           "telemetry_pattern",
+			EvidenceWindow: window,
+		}
+		if s.telemStore != nil {
+			if evt, err := s.telemStore.LatestByRoleCategory(proposal.RepoID, proposal.Role, proposal.Category, time.Now().UTC().Add(-telemetry.PatternWindow)); err == nil {
+				origin.Event = evt
+			} else {
+				slog.Warn("serve: latest telemetry evidence lookup failed", "role", proposal.Role, "category", proposal.Category, "err", err)
+			}
+		}
+		s.recordInterventionDebtTicket(ctx, repoID, proposal, origin)
+
 		if s.dash != nil {
 			data, _ := json.Marshal(p)
 			s.dash.BroadcastEvent("telemetry_pattern", string(data))
@@ -1461,12 +1484,6 @@ func (s *Server) runScoreReview(ctx context.Context, role, repoID string) {
 		return
 	}
 
-	ok, reason := evolution.CanReview(s.evoStore, role, evolution.DefaultReviewerConfig())
-	if !ok {
-		slog.Info("serve: evolution review skipped (score drop)", "role", role, "reason", reason)
-		return
-	}
-
 	proposal, ok := telemetry.TriageScore(telemetry.ScoreSnapshot{
 		Role:       role,
 		RepoID:     repoID,
@@ -1475,6 +1492,24 @@ func (s *Server) runScoreReview(ctx context.Context, role, repoID string) {
 		WindowDays: sc.WindowDays,
 	})
 	if !ok {
+		return
+	}
+
+	s.recordInterventionDebtTicket(ctx, repoID, proposal, interventionDebtOrigin{
+		Kind:           "score_snapshot",
+		EvidenceWindow: fmt.Sprintf("%dd", sc.WindowDays),
+		Score: &telemetry.ScoreSnapshot{
+			Role:       role,
+			RepoID:     repoID,
+			Value:      sc.Value,
+			SampleSize: sc.SampleSize,
+			WindowDays: sc.WindowDays,
+		},
+	})
+
+	ok, reason := evolution.CanReview(s.evoStore, role, evolution.DefaultReviewerConfig())
+	if !ok {
+		slog.Info("serve: evolution review skipped (score drop)", "role", role, "reason", reason)
 		return
 	}
 
@@ -1492,6 +1527,16 @@ func (s *Server) runScoreReview(ctx context.Context, role, repoID string) {
 	if err := evolution.RecordEvolution(ctx, s.evoStore, role, repoID, result); err != nil {
 		slog.Error("serve: failed to record score-drop evolution", "role", role, "err", err)
 	}
+}
+
+func matchesTriageScope(patternRepoID, patternRole, repoID, role string) bool {
+	if patternRepoID != "" && repoID != "" && patternRepoID != repoID {
+		return false
+	}
+	if patternRole != "" && role != "" && patternRole != role {
+		return false
+	}
+	return true
 }
 
 func filterReposByPath(repos []RepoRecord, scopePath string) []RepoRecord {

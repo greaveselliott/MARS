@@ -89,6 +89,7 @@ The product contract is:
 - Planner roles create scoped, deduplicated work.
 - Engineer roles complete one ticket per run.
 - In-progress tickets are highest priority.
+- Intervention-debt tickets are generated from repeated telemetry failures or low score snapshots and outrank ordinary backlog work.
 - Blocked work is documented and proactively unblocked when the fix is in scope.
 - Dogfood and QA roles produce reproducible evidence.
 - Janitor and orchestrator roles keep ticket state truthful.
@@ -107,7 +108,7 @@ Trust levels are:
 
 Scores are based on real outcomes: completed work, commits, checks, guardrail blocks, timeouts, noops, human follow-up, and reverts. Scores must drive behavior, not merely appear in a dashboard.
 
-When scores or telemetry show repeated workflow confusion, the harness should prefer a scoped skill over bloating a role prompt. Use guardrails for non-negotiable enforcement and tools for deterministic actions.
+When scores or telemetry show repeated workflow confusion, the harness creates or updates intervention-debt tickets first, then chooses the bounded improvement surface. Prefer a scoped skill over bloating a role prompt. Use guardrails for non-negotiable enforcement and tools for deterministic actions.
 
 ## Guardrails And Safety
 

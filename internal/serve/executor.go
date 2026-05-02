@@ -358,6 +358,8 @@ func BuildTicketIndex(repoPath string) string {
 	statuses := []string{"in-progress", "backlog", "done"}
 
 	linesByStatus := make(map[string][]string, len(statuses))
+	var inProgressIntervention []string
+	var backlogIntervention []string
 	var total int
 	for _, status := range statuses {
 		dir := filepath.Join(ticketsDir, status)
@@ -369,7 +371,22 @@ func BuildTicketIndex(repoPath string) string {
 			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "README.md" {
 				continue
 			}
-			linesByStatus[status] = append(linesByStatus[status], fmt.Sprintf("- [%s] %s", status, e.Name()))
+			kind := readTicketKind(filepath.Join(dir, e.Name()))
+			line := fmt.Sprintf("- [%s] %s", status, e.Name())
+			if kind == "intervention-debt" {
+				line = fmt.Sprintf("- [%s][intervention-debt] %s", status, e.Name())
+				switch status {
+				case "in-progress":
+					inProgressIntervention = append(inProgressIntervention, line)
+					total++
+					continue
+				case "backlog":
+					backlogIntervention = append(backlogIntervention, line)
+					total++
+					continue
+				}
+			}
+			linesByStatus[status] = append(linesByStatus[status], line)
 			total++
 		}
 	}
@@ -377,11 +394,34 @@ func BuildTicketIndex(repoPath string) string {
 		return "No existing tickets found in docs/tickets/."
 	}
 	var lines []string
-	header := fmt.Sprintf("Existing tickets (%d total). In-progress tickets are the Engineer front of queue; complete the lowest-numbered in-progress ticket before claiming backlog work. If an in-progress ticket is blocked, fix the blocker proactively in the same run.\n", total)
-	for _, status := range statuses {
-		lines = append(lines, linesByStatus[status]...)
-	}
+	header := fmt.Sprintf("Existing tickets (%d total). In-progress tickets are the Engineer front of queue; intervention-debt is prioritised ahead of ordinary backlog work. Complete the lowest-numbered in-progress ticket before claiming backlog work. If an in-progress ticket is blocked, fix the blocker proactively in the same run.\n", total)
+	lines = append(lines, inProgressIntervention...)
+	lines = append(lines, linesByStatus["in-progress"]...)
+	lines = append(lines, backlogIntervention...)
+	lines = append(lines, linesByStatus["backlog"]...)
+	lines = append(lines, linesByStatus["done"]...)
 	return header + strings.Join(lines, "\n")
+}
+
+func readTicketKind(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	text := string(data)
+	if !strings.HasPrefix(text, "---\n") {
+		return ""
+	}
+	lines := strings.Split(text, "\n")
+	for _, line := range lines[1:] {
+		if line == "---" {
+			return ""
+		}
+		if strings.HasPrefix(line, "kind:") {
+			return strings.Trim(strings.TrimSpace(strings.TrimPrefix(line, "kind:")), `"'`)
+		}
+	}
+	return ""
 }
 
 // cleanupDogfoodContainers removes any orphaned Podman containers from dogfood runs.

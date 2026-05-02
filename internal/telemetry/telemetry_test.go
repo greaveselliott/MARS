@@ -1,8 +1,10 @@
 package telemetry
 
 import (
+	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -197,6 +199,56 @@ func TestCollector_RingBufferCap(t *testing.T) {
 	}
 
 	require.Len(t, c.Events(), maxEvents)
+}
+
+func TestDetectPatternsFromStoreGroupsByRepoRoleCategory(t *testing.T) {
+	t.Parallel()
+	store, err := OpenStore(filepath.Join(t.TempDir(), "telemetry.db"))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = store.Close() })
+
+	c := NewCollector(nil, store)
+	for i := 0; i < PatternThreshold; i++ {
+		c.Record("job-a", "repo-1", "engineer", "agent stopped: max_turns reached")
+	}
+	c.Record("job-b", "repo-2", "engineer", "agent stopped: max_turns reached")
+
+	patterns := c.DetectPatternsFromStore()
+	require.Len(t, patterns, 1)
+	require.Equal(t, "repo-1", patterns[0].RepoID)
+	require.Equal(t, "engineer", patterns[0].Role)
+	require.Equal(t, CategoryMaxTurns, patterns[0].Category)
+	require.Equal(t, PatternThreshold, patterns[0].Count)
+}
+
+func TestStore_LatestByRoleCategory(t *testing.T) {
+	t.Parallel()
+	store, err := OpenStore(filepath.Join(t.TempDir(), "telemetry.db"))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = store.Close() })
+
+	old := Event{
+		ID:        "evt-old",
+		Timestamp: time.Now().UTC().Add(-time.Hour),
+		JobID:     "job-old",
+		RepoID:    "repo-1",
+		Role:      "engineer",
+		Category:  CategoryToolTimeout,
+		Message:   "old timeout",
+	}
+	latest := old
+	latest.ID = "evt-new"
+	latest.JobID = "job-new"
+	latest.Timestamp = time.Now().UTC()
+	latest.Message = "new timeout"
+	require.NoError(t, store.Save(old))
+	require.NoError(t, store.Save(latest))
+
+	got, err := store.LatestByRoleCategory("repo-1", "engineer", CategoryToolTimeout, time.Now().UTC().Add(-24*time.Hour))
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, "evt-new", got.ID)
+	require.Equal(t, "job-new", got.JobID)
 }
 
 func TestTriagePattern_modelUnavailableTargetsInference(t *testing.T) {

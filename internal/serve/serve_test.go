@@ -417,3 +417,25 @@ func TestBuildTicketIndex_findsTickets(t *testing.T) {
 		t.Errorf("README.md should be excluded")
 	}
 }
+
+func TestBuildTicketIndex_prioritizesInterventionDebtAheadOfOrdinaryBacklog(t *testing.T) {
+	dir := t.TempDir()
+	for _, sub := range []string{"docs/tickets/backlog", "docs/tickets/in-progress", "docs/tickets/done"} {
+		os.MkdirAll(filepath.Join(dir, sub), 0o755)
+	}
+	os.WriteFile(filepath.Join(dir, "docs/tickets/backlog/MH-010-ordinary.md"), []byte("# Ordinary\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "docs/tickets/backlog/MH-011-intervention.md"), []byte("---\nkind: intervention-debt\n---\n# Intervention\n"), 0o644)
+
+	idx := BuildTicketIndex(dir)
+	if !strings.Contains(idx, "intervention-debt is prioritised") {
+		t.Errorf("expected intervention-debt guidance, got: %s", idx)
+	}
+	interventionPos := strings.Index(idx, "[backlog][intervention-debt] MH-011-intervention.md")
+	ordinaryPos := strings.Index(idx, "[backlog] MH-010-ordinary.md")
+	if interventionPos < 0 || ordinaryPos < 0 {
+		t.Fatalf("expected both backlog entries, got: %s", idx)
+	}
+	if interventionPos > ordinaryPos {
+		t.Fatalf("expected intervention-debt backlog before ordinary backlog, got: %s", idx)
+	}
+}

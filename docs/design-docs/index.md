@@ -91,3 +91,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-062 | Active recovery queue storms are self-healed by failing stale recovery jobs and cancelling duplicate pending recovery jobs. | dogfood-and-decisions.md | Recovery |
 | AD-063 | Default model registry changes require harness-specific benchmark evidence and immutable pinned artifacts. | local-inference.md | Inference |
 | AD-064 | Inference routing honors manifest `role.model` tiers before role-name fallback mapping, and missing-model errors name the expected repair path. | local-inference.md | Inference |
+| AD-065 | Telemetry triage creates or updates `kind: intervention-debt` tickets through the canonical ticket path, deduped by repo, role, target, category, and evidence window. | self-reflective-telemetry.md | Self-improvement |
