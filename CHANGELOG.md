@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.5.1] - 2026-05-02
+<!-- mars-harness-release: version=0.5.1 commit=8f0a44f12017 -->
+
+### Fixes
+- **telemetry:** Keep intervention tickets independent (8f0a44f)
+
 ## [0.5.0] - 2026-05-02
 <!-- mars-harness-release: version=0.5.0 commit=0ca0257223cd -->
 
