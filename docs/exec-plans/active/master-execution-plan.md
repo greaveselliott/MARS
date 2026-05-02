@@ -1,8 +1,13 @@
 # Mars Harness — Master Execution Plan
 
-**Status:** Active
+**Status:** Superseded pending reconciliation
 **Created:** 2026-04-11
 **Source:** [delivery-schedule.md](delivery-schedule.md) + [docs/tickets/](../../tickets/)
+
+> Current status lives in [current-operating-plan.md](current-operating-plan.md).
+> This file is retained as a historical baseline and dependency map. Its
+> checkbox status is stale and must not be used as execution truth until
+> reconciled.
 
 ---
 

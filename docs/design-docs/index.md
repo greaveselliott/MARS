@@ -8,7 +8,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [agent-runtime.md](agent-runtime.md) | Draft | Agent execution loop: multi-turn conversation, tool calling, error handling, budget enforcement. AD-004 (sync per-job), AD-005 (sequential tools), AD-006 (additive context) |
 | [local-inference.md](local-inference.md) | Draft | Local model serving: llama.cpp as subprocess, hardware profiles, model registry, download management. AD-007 (no CGO), AD-008 (weights in ~/.mars-harness/), AD-031 (inference resilience), AD-032 (zero-config performance tuning), AD-063 (benchmark-backed model promotion), AD-064 (manifest-tier routing), AD-066 (Ollama catalog/swap provider) |
 | [scoring-system.md](scoring-system.md) | Draft | Accuracy and value scoring: outcome tracking, rolling scores, progressive autonomy thresholds, noop detection |
-| [self-improvement.md](self-improvement.md) | Draft | Intervention detection, Reviewer meta-role, bounded evolution commits, before/after tracking, safety rails |
+| [self-improvement.md](self-improvement.md) | Draft | Intervention detection, Reviewer meta-role, bounded evolution commits, before/after tracking, safety rails. AD-071 (active plan drift as intervention debt) |
 | [guardrails.md](guardrails.md) | Draft | Advisory vs hard guardrails, validation types, override mechanism, staleness detection. AD-012 (syntactic only in v1) |
 | [pipeline-engine.md](pipeline-engine.md) | Draft | Job queue (SQLite), worker dispatcher, cron scheduler, sandbox. AD-009 (SQLite), AD-010 (repo_id from day one) |
 | [dashboard.md](dashboard.md) | Draft | 5-page dashboard: pipeline flow, role health, throughput, debug, evolution history. AD-011 (htmx + Chart.js embedded) |
@@ -97,3 +97,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-068 | The installed command can update itself with `mars-harness update tool`; Go-installed workflows work now, while checksum-verified release-asset updates remain gated on release assets. | release-versioning.md | Release |
 | AD-069 | `update` is the unified CLI verb for the installed tool and deployed target harness. | release-versioning.md | Release |
 | AD-070 | `mars-harness update check` reports tool and target harness version drift, writes JSON for automation, and feeds doctor warnings without mutating state. | release-versioning.md | Release |
+| AD-071 | Stale active exec plans are intervention debt; they must be corrected with a current operating plan and mechanical hygiene checks. | self-improvement.md | Self-improvement |

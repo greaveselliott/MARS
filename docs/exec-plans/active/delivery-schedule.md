@@ -1,8 +1,13 @@
 # Mars Harness — Delivery Schedule
 
-**Status:** Active
+**Status:** Superseded pending reconciliation
 **Date:** 2026-04-11
 **Author:** Elliott Greaves
+
+> Current status lives in [current-operating-plan.md](current-operating-plan.md).
+> This file is retained as the original milestone schedule. Its unchecked
+> quality gates and task status are stale and must not be used as execution
+> truth until reconciled.
 
 ---
 
@@ -31,7 +36,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 - **0.5** Cursor rules
   - **0.5.1** Go conventions rule (error handling, naming, test style)
   - **0.5.2** Documentation discipline rule (mirrors Mars pattern)
-  - **0.5.3** No-push-to-main rule
+  - **0.5.3** Strict-trunk commit-and-push workflow rule
 - **0.6** CI setup
   - **0.6.1** GitHub Actions workflow: `golangci-lint` (vet, staticcheck, errcheck, gosimple)
   - **0.6.2** `go test ./...` with race detector

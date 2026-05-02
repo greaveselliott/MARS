@@ -14,7 +14,19 @@ Evolution outputs are **suggestions** until an autonomous trust policy allows di
 
 ## Key Design Decisions
 
-_(AD IDs to be assigned when the evolution pipeline is locked.)_
+_(Most AD IDs are assigned as concrete slices land.)_
+
+### AD-071: Active Plan Drift Is Intervention Debt
+
+Plans are part of the harness control surface. If an active exec plan presents
+stale status, contradicts completed tickets, or points agents at superseded
+workflow, that is an intervention-debt signal, not mere documentation tidying.
+
+The first response is repo-visible correction: mark superseded plans clearly,
+create a current operating plan, and create follow-up tickets for mechanical
+plan hygiene checks. The long-term response is deterministic checking through
+docs consistency, doctor, and CI so stale "active" plans cannot silently become
+the next agent's source of truth.
 
 ### Design anchors
 
@@ -41,3 +53,4 @@ Store the **parent job id** in each evolution commit message and trace record fo
 
 - **2026-05-02 — Self-reflective telemetry triage:** Recurring telemetry patterns and low score snapshots now map to explicit improvement targets in `internal/telemetry`. The serve loop records bounded evolution reviews from those proposals instead of generic "investigate the prompt" notes.
 - **2026-05-02 — Skill evolution target:** Repeated workflow confusion, max-turn loops, and human recovery procedures should create or update compact scoped skills instead of bloating role prompts.
+- **2026-05-02 — Active plan drift:** The master execution plan and delivery schedule were kept as active even after the ticket tree moved far ahead of them. Stale active plans now count as intervention debt and should be corrected through a current operating plan plus mechanical hygiene checks.
