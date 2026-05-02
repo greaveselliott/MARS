@@ -1401,7 +1401,7 @@ var jobCount int32
 // checkEvolution runs pattern detection and triggers evolution reviews
 // when recurring failures are detected or after enough jobs accumulate.
 func (s *Server) checkEvolution(ctx context.Context, role, repoID string) {
-	if s.evoStore == nil {
+	if s.telemetry == nil {
 		return
 	}
 
@@ -1442,20 +1442,22 @@ func (s *Server) checkEvolution(ctx context.Context, role, repoID string) {
 			s.dash.BroadcastEvent("telemetry_triage", string(proposalData))
 		}
 
-		ok, reason := evolution.CanReview(s.evoStore, proposal.Role, evolution.DefaultReviewerConfig())
-		if !ok {
-			slog.Info("serve: evolution review skipped", "role", proposal.Role, "reason", reason)
-			continue
-		}
+		if s.evoStore != nil {
+			ok, reason := evolution.CanReview(s.evoStore, proposal.Role, evolution.DefaultReviewerConfig())
+			if !ok {
+				slog.Info("serve: evolution review skipped", "role", proposal.Role, "reason", reason)
+				continue
+			}
 
-		result := evolution.ReviewResult{
-			Classification: fmt.Sprintf("telemetry_%s_%s", proposal.Target, proposal.Category),
-			Suggestion:     proposal.Suggestion,
-			FilesToModify:  proposal.CandidateFiles,
-			Confidence:     proposal.Confidence,
-		}
-		if err := evolution.RecordEvolution(ctx, s.evoStore, proposal.Role, repoID, result); err != nil {
-			slog.Error("serve: failed to record evolution", "role", proposal.Role, "err", err)
+			result := evolution.ReviewResult{
+				Classification: fmt.Sprintf("telemetry_%s_%s", proposal.Target, proposal.Category),
+				Suggestion:     proposal.Suggestion,
+				FilesToModify:  proposal.CandidateFiles,
+				Confidence:     proposal.Confidence,
+			}
+			if err := evolution.RecordEvolution(ctx, s.evoStore, proposal.Role, repoID, result); err != nil {
+				slog.Error("serve: failed to record evolution", "role", proposal.Role, "err", err)
+			}
 		}
 	}
 
@@ -1470,7 +1472,7 @@ const scoreDropThreshold = 0.5
 // runScoreReview checks if the role's score has dropped below the threshold
 // and triggers an evolution review if so.
 func (s *Server) runScoreReview(ctx context.Context, role, repoID string) {
-	if s.evoStore == nil || s.scoreStore == nil {
+	if s.scoreStore == nil {
 		return
 	}
 
@@ -1507,25 +1509,27 @@ func (s *Server) runScoreReview(ctx context.Context, role, repoID string) {
 		},
 	})
 
-	ok, reason := evolution.CanReview(s.evoStore, role, evolution.DefaultReviewerConfig())
-	if !ok {
-		slog.Info("serve: evolution review skipped (score drop)", "role", role, "reason", reason)
-		return
-	}
-
 	if s.dash != nil {
 		data, _ := json.Marshal(proposal)
 		s.dash.BroadcastEvent("score_triage", string(data))
 	}
 
-	result := evolution.ReviewResult{
-		Classification: fmt.Sprintf("score_%s", proposal.Target),
-		Suggestion:     proposal.Suggestion,
-		FilesToModify:  proposal.CandidateFiles,
-		Confidence:     proposal.Confidence,
-	}
-	if err := evolution.RecordEvolution(ctx, s.evoStore, role, repoID, result); err != nil {
-		slog.Error("serve: failed to record score-drop evolution", "role", role, "err", err)
+	if s.evoStore != nil {
+		ok, reason := evolution.CanReview(s.evoStore, role, evolution.DefaultReviewerConfig())
+		if !ok {
+			slog.Info("serve: evolution review skipped (score drop)", "role", role, "reason", reason)
+			return
+		}
+
+		result := evolution.ReviewResult{
+			Classification: fmt.Sprintf("score_%s", proposal.Target),
+			Suggestion:     proposal.Suggestion,
+			FilesToModify:  proposal.CandidateFiles,
+			Confidence:     proposal.Confidence,
+		}
+		if err := evolution.RecordEvolution(ctx, s.evoStore, role, repoID, result); err != nil {
+			slog.Error("serve: failed to record score-drop evolution", "role", role, "err", err)
+		}
 	}
 }
 

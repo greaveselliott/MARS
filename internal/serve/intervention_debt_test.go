@@ -1,6 +1,7 @@
 package serve
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -163,4 +164,46 @@ func TestRecordInterventionDebtFailureRecordsTelemetry(t *testing.T) {
 	require.Equal(t, "repo-1", events[0].RepoID)
 	require.Equal(t, "engineer", events[0].Role)
 	require.Contains(t, events[0].Message, "intervention debt ticket creation failed")
+}
+
+func TestCheckEvolutionCreatesInterventionDebtTicketFromTelemetry(t *testing.T) {
+	t.Parallel()
+	repo := setupInterventionDebtRepo(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(repo, ".harness", "roles"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(repo, ".harness", "manifest.yaml"), []byte("name: test\nroles:\n  engineer:\n    prompt: roles/engineer.md\n    tools: [file_read]\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(repo, ".harness", "roles", "engineer.md"), []byte("# Engineer\n"), 0o644))
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+
+	repoID, err := srv.Repos().Register(context.Background(), repo, "", "main")
+	require.NoError(t, err)
+
+	if srv.evoStore != nil {
+		require.NoError(t, srv.evoStore.Close())
+		srv.evoStore = nil
+	}
+
+	for i := 0; i < telemetry.PatternThreshold; i++ {
+		srv.telemetry.Record("job-1", repoID, "engineer", "agent stopped: max_turns reached")
+	}
+
+	srv.checkEvolution(context.Background(), "engineer", repoID)
+
+	entries, err := os.ReadDir(filepath.Join(repo, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	require.Contains(t, entries[0].Name(), "intervention-debt")
+
+	data, err := os.ReadFile(filepath.Join(repo, "docs", "tickets", "backlog", entries[0].Name()))
+	require.NoError(t, err)
+	text := string(data)
+	require.Contains(t, text, "kind: intervention-debt")
+	require.Contains(t, text, "Category: max_turns")
+	require.Contains(t, text, "Origin job: job-1")
 }
