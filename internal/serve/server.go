@@ -1362,26 +1362,31 @@ func (s *Server) checkEvolution(ctx context.Context, role, repoID string) {
 	atomic.AddInt32(&jobCount, 1)
 
 	patterns := s.telemetry.DetectPatterns()
+	proposals := telemetry.TriagePatterns(patterns)
 
-	for _, p := range patterns {
+	for i, p := range patterns {
+		proposal := proposals[i]
 		if s.dash != nil {
 			data, _ := json.Marshal(p)
 			s.dash.BroadcastEvent("telemetry_pattern", string(data))
+			proposalData, _ := json.Marshal(proposal)
+			s.dash.BroadcastEvent("telemetry_triage", string(proposalData))
 		}
 
-		ok, reason := evolution.CanReview(s.evoStore, p.Role, evolution.DefaultReviewerConfig())
+		ok, reason := evolution.CanReview(s.evoStore, proposal.Role, evolution.DefaultReviewerConfig())
 		if !ok {
-			slog.Info("serve: evolution review skipped", "role", p.Role, "reason", reason)
+			slog.Info("serve: evolution review skipped", "role", proposal.Role, "reason", reason)
 			continue
 		}
 
 		result := evolution.ReviewResult{
-			Classification: fmt.Sprintf("recurring_%s", p.Category),
-			Suggestion:     fmt.Sprintf("Role %q has %d %s failures in 24h — investigate prompt or tool configuration", p.Role, p.Count, p.Category),
-			Confidence:     0.7,
+			Classification: fmt.Sprintf("telemetry_%s_%s", proposal.Target, proposal.Category),
+			Suggestion:     proposal.Suggestion,
+			FilesToModify:  proposal.CandidateFiles,
+			Confidence:     proposal.Confidence,
 		}
-		if err := evolution.RecordEvolution(ctx, s.evoStore, p.Role, repoID, result); err != nil {
-			slog.Error("serve: failed to record evolution", "role", p.Role, "err", err)
+		if err := evolution.RecordEvolution(ctx, s.evoStore, proposal.Role, repoID, result); err != nil {
+			slog.Error("serve: failed to record evolution", "role", proposal.Role, "err", err)
 		}
 	}
 
@@ -1416,10 +1421,27 @@ func (s *Server) runScoreReview(ctx context.Context, role, repoID string) {
 		return
 	}
 
+	proposal, ok := telemetry.TriageScore(telemetry.ScoreSnapshot{
+		Role:       role,
+		RepoID:     repoID,
+		Value:      sc.Value,
+		SampleSize: sc.SampleSize,
+		WindowDays: sc.WindowDays,
+	})
+	if !ok {
+		return
+	}
+
+	if s.dash != nil {
+		data, _ := json.Marshal(proposal)
+		s.dash.BroadcastEvent("score_triage", string(data))
+	}
+
 	result := evolution.ReviewResult{
-		Classification: "score_drop",
-		Suggestion:     fmt.Sprintf("Role %q score dropped to %.2f (%d samples) — review prompt effectiveness", role, sc.Value, sc.SampleSize),
-		Confidence:     0.8,
+		Classification: fmt.Sprintf("score_%s", proposal.Target),
+		Suggestion:     proposal.Suggestion,
+		FilesToModify:  proposal.CandidateFiles,
+		Confidence:     proposal.Confidence,
 	}
 	if err := evolution.RecordEvolution(ctx, s.evoStore, role, repoID, result); err != nil {
 		slog.Error("serve: failed to record score-drop evolution", "role", role, "err", err)

@@ -114,6 +114,7 @@ func TestValidateReviewResult_allowsScopedHarnessFiles(t *testing.T) {
 	result := ReviewResult{FilesToModify: []string{
 		".harness/roles/engineer.md",
 		".harness/guardrails/security.yaml",
+		".harness/knowledge/context-glossary.yaml",
 		".harness/manifest.yaml",
 		".harness/knowledge-routes.yaml",
 	}}

@@ -146,7 +146,8 @@ func isAllowedEvolutionPath(path string) bool {
 		return true
 	}
 	return strings.HasPrefix(path, ".harness/roles/") ||
-		strings.HasPrefix(path, ".harness/guardrails/")
+		strings.HasPrefix(path, ".harness/guardrails/") ||
+		strings.HasPrefix(path, ".harness/knowledge/")
 }
 
 func isReviewerMetaPrompt(path string) bool {

@@ -16,6 +16,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [trigger-orchestration.md](trigger-orchestration.md) | Draft | Trigger sources (webhook, schedule, chain), upstream chaining via `then`, custom cron, strict-trunk default roles. AD-016 through AD-020. |
 | [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, strict-trunk pipeline for local use. AD-021 through AD-030, AD-033. |
 | [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and initialized harness parity, glossary-as-route context, repo-owned workflow contracts. AD-034 through AD-036. |
+| [self-reflective-telemetry.md](self-reflective-telemetry.md) | Accepted | Harness grades itself and triages telemetry into prompt, process, guardrail, context, inference, manifest, and tool-policy improvement targets. AD-037 through AD-039. |
 
 ## Architecture Decision Log
 
@@ -57,3 +58,6 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-034 | Source and initialized harnesses must mirror operating doctrine: compact AGENTS.md, strict trunk, ticket workflow, design decisions, references, and knowledge routing. | mirrored-harness-and-context-glossary.md | Generated targets |
 | AD-035 | Context glossary is a routing layer, not a prompt-stuffed manual. Initialized repos get `docs/design-docs/context-glossary.md` and `.harness/knowledge/context-glossary.yaml`. | mirrored-harness-and-context-glossary.md | Context |
 | AD-036 | Workflow contracts belong in repo-owned artifacts. Current v1 contract is AGENTS.md + manifest + ticket docs + exec-plan docs + knowledge routes; a first-class WORKFLOW.md remains a future option. | mirrored-harness-and-context-glossary.md | Orchestration |
+| AD-037 | Telemetry must be triaged into explicit improvement targets: prompt, process, guardrail, context, inference, manifest, tool policy, or unknown. | self-reflective-telemetry.md | Self-improvement |
+| AD-038 | Scores are control signals, not vanity metrics. Low rolling scores with enough samples trigger triage and bounded evolution review. | self-reflective-telemetry.md | Scoring |
+| AD-039 | Self-improvement is proactive but bounded. Direct edits stay inside allowlisted harness surfaces; process/product changes become tickets or plans unless trust and scope allow direct evolution. | self-reflective-telemetry.md | Safety |

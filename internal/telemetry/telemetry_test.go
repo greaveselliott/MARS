@@ -184,3 +184,63 @@ func TestCollector_RingBufferCap(t *testing.T) {
 
 	require.Len(t, c.Events(), maxEvents)
 }
+
+func TestTriagePattern_contextOverflowTargetsContext(t *testing.T) {
+	t.Parallel()
+
+	proposal := TriagePattern(Pattern{
+		Role:     "engineer",
+		Category: CategoryContextOverflow,
+		Count:    3,
+		Window:   "24h",
+	})
+
+	require.Equal(t, TargetContext, proposal.Target)
+	require.Equal(t, "medium", proposal.Severity)
+	require.Contains(t, proposal.Suggestion, "knowledge routes")
+	require.Contains(t, proposal.CandidateFiles, ".harness/knowledge/context-glossary.yaml")
+	require.Contains(t, proposal.CandidateFiles, ".harness/roles/engineer.md")
+}
+
+func TestTriagePattern_manifestErrorTargetsManifest(t *testing.T) {
+	t.Parallel()
+
+	proposal := TriagePattern(Pattern{
+		Role:     "coo",
+		Category: CategoryManifestError,
+		Count:    6,
+	})
+
+	require.Equal(t, TargetManifest, proposal.Target)
+	require.Equal(t, "high", proposal.Severity)
+	require.Contains(t, proposal.CandidateFiles, ".harness/manifest.yaml")
+	require.Greater(t, proposal.Confidence, 0.8)
+}
+
+func TestTriageScore_lowScoreProducesProcessProposal(t *testing.T) {
+	t.Parallel()
+
+	proposal, ok := TriageScore(ScoreSnapshot{
+		Role:       "dogfood",
+		RepoID:     "repo-1",
+		Value:      0.33,
+		SampleSize: 9,
+		WindowDays: 30,
+	})
+
+	require.True(t, ok)
+	require.Equal(t, TargetProcess, proposal.Target)
+	require.Equal(t, "high", proposal.Severity)
+	require.Contains(t, proposal.Suggestion, "intervention debt")
+	require.Contains(t, proposal.CandidateFiles, ".harness/roles/dogfood.md")
+}
+
+func TestTriageScore_ignoresHealthyOrSparseScores(t *testing.T) {
+	t.Parallel()
+
+	_, ok := TriageScore(ScoreSnapshot{Role: "engineer", Value: 0.4, SampleSize: 4})
+	require.False(t, ok)
+
+	_, ok = TriageScore(ScoreSnapshot{Role: "engineer", Value: 0.75, SampleSize: 10})
+	require.False(t, ok)
+}

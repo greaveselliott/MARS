@@ -65,6 +65,7 @@ Mars Harness is philosophically close to Mars but not yet operationally equivale
 | Trigger orchestration | Medium | Harness has queue/scheduler primitives; Mars has more mature event routing, caps, and watchdog behavior. |
 | Intervention debt | Low | Mars makes human intervention a first-class automation debt signal; Harness has the design direction but not the full loop. |
 | Quality score | Medium-low | Harness has scoring infrastructure; Mars has more repo-visible quality artifacts and regression scripts. |
+| Self-reflective telemetry | Medium-low | Harness records telemetry and scores, but the proactive triage loop must become a first-class improvement pipeline. |
 | Dogfood coverage | Medium-low | Harness has dogfood design and recent ticket-drain fixes; Mars has broader matrix-style dogfood and generated-app checks. |
 | Deterministic remediation | Low | Mars uses deterministic CI and maintenance scripts before LLM work; Harness should absorb these as native recipes. |
 | Local inference and setup | High | Harness is ahead: local models, hardware detection, setup, doctor, and runtime packaging are product concerns. |
@@ -257,6 +258,7 @@ Harness has `self-improvement.md`, `learnings`, `evolution`, `record_decision`, 
 Gap:
 
 - Harness needs a first-class `intervention-debt` ticket type.
+- Harness needs telemetry triage that names the improvement target before changing prompts, process, guardrails, context, inference, manifests, or tool policy.
 - Failed terminal reasons, guardrail blocks, human follow-up commits, reverted commits, repeated ticket-gate failures, and manual run interruptions should create or update intervention-debt tickets.
 - Planner should treat intervention debt as high-priority work.
 - Evolution should be bound to those tickets and trace IDs.
@@ -447,6 +449,8 @@ Tasks:
 - [ ] Add `mars-harness scores export --repo <path>` or equivalent.
 - [ ] Generate `docs/QUALITY_SCORE.md`.
 - [ ] Include role score, recent outcomes, stuck tickets, failed dogfood, guardrail blocks, intervention debt, check results, no-op runs, and human follow-up rate.
+- [x] Add typed telemetry triage for recurring failure patterns and low scores.
+- [ ] Include top self-improvement targets in the quality export.
 - [ ] Add a quality-regression detector.
 - [ ] Trigger Planner/Orchestrator when quality regresses.
 - [ ] Add dashboard links to the same source data without making the dashboard the source of truth.
@@ -455,6 +459,7 @@ Acceptance:
 
 - Repo readers can see current autonomous health without opening SQLite or the dashboard.
 - Score regressions create work automatically.
+- Low scores are treated as control signals that create concrete improvement work, not as passive metrics.
 
 ### G. Native Orchestrator And Event Router
 
@@ -464,6 +469,7 @@ Tasks:
 
 - [ ] Add an Orchestrator loop that surveys queue, tickets, scores, guardrails, traces, and checks.
 - [ ] Translate Symphony's "eligible task has an agent/workspace" rule into queue ownership for in-progress tickets, blocked tickets, and scheduled retries.
+- [ ] Run self-reflective telemetry triage during Orchestrator surveys, not only after job completion.
 - [ ] Add event routing for failed checks, dogfood failures, stale in-progress tickets, quality regression, intervention debt, dependency alerts, and release readiness.
 - [ ] Add concurrency groups and daily caps to queue scheduling.
 - [ ] Add payload-mode support to jobs and role prompts.
