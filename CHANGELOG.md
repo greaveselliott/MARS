@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.3.6] - 2026-05-02
+<!-- mars-harness-release: version=0.3.6 commit=ecf0f5596249 -->
+
+### Fixes
+- **queue:** Self-heal recovery storms (ecf0f55)
+
 ## [0.3.5] - 2026-05-02
 <!-- mars-harness-release: version=0.3.5 commit=4769fb4172da -->
 
