@@ -66,7 +66,7 @@ mars-harness/
 │   ├── tickets/                Work items (backlog, in-progress, done)
 │   ├── product-specs/          Product vision and specifications
 │   ├── references/             Research findings and external sources
-│   └── generated/              Auto-generated docs
+│   └── generated/              Reproducible generated reference docs (catalog-only until generators exist)
 ├── examples/
 │   └── sample-bundle/          Example .harness/ bundle
 ├── .cursor/rules/              Agent governance rules

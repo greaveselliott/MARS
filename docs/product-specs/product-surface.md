@@ -15,6 +15,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | Target harness | `mars-harness init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
 | Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, and visible run state. |
 | Learning loop | `scores`, `trust`, telemetry triage, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, prompt or process improvements, and safety controls. |
+| Generated references | `docs/generated/` | Provide reproducible, cataloged source-harness maps when generator commands exist. |
 
 ## CLI Contract
 
@@ -51,6 +52,12 @@ Required generated surfaces:
 - `docs/references/README.md` and selected agent-first references
 
 Generated target docs must mirror source-harness doctrine while staying project-agnostic. User-owned docs outside `.harness/` are preserved by upgrades.
+
+## Generated Source References
+
+`docs/generated/` is reserved for reproducible reference snapshots generated from the source harness. It is intentionally catalog-only until generator commands exist.
+
+Expected future artifacts include role registry, tool inventory, package map, model inventory, score exports, and bundle schema reference. Generated docs must name their generator, source inputs, and freshness signal so agents can trust them as context routes.
 
 ## Role And Work Semantics
 
@@ -120,6 +127,7 @@ The active execution plans track the remaining work. The highest-value hardening
 - deterministic remediation recipes before LLM work
 - score exports and dashboard views for improvement targets
 - doctor checks for mirrored harness freshness
+- generated role, tool, package, model, and score reference artifacts
 - automatic intervention-debt ticket creation from telemetry triage
 - broader dogfood matrices and generated-app validation
 - safer upgrade previews and backups for target harness files

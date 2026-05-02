@@ -18,6 +18,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and initialized harness parity, glossary-as-route context, repo-owned workflow contracts. AD-034 through AD-036. |
 | [self-reflective-telemetry.md](self-reflective-telemetry.md) | Accepted | Harness grades itself and triages telemetry into prompt, process, guardrail, context, inference, manifest, and tool-policy improvement targets. AD-037 through AD-039. |
 | [product-spec-governance.md](product-spec-governance.md) | Accepted | Product specs as a living product contract with metadata, index coverage, and docs-consistency enforcement. AD-040 through AD-042. |
+| [generated-docs-governance.md](generated-docs-governance.md) | Accepted | Generated docs as reproducible reference snapshots with catalog and docs-consistency checks. AD-043 through AD-045. |
 
 ## Architecture Decision Log
 
@@ -65,3 +66,6 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-040 | Product specs are a living product contract, updated with product-facing changes and carrying status, update date, and owner metadata. | product-spec-governance.md | Docs |
 | AD-041 | Product specs link to design docs, exec plans, references, and tickets instead of duplicating all supporting context. | product-spec-governance.md | Context |
 | AD-042 | Product spec freshness is mechanically checked through docs-consistency tests for metadata, index coverage, links, and strict trunk wording. | product-spec-governance.md | Quality |
+| AD-043 | Generated docs are reproducible reference snapshots, not hand-written decisions, tickets, product specs, or plans. | generated-docs-governance.md | Docs |
+| AD-044 | Empty generated docs are acceptable until a generator exists, as long as the README states that intentionally. | generated-docs-governance.md | Docs |
+| AD-045 | Generated docs must be cataloged and mechanically checked for README metadata, catalog coverage, and valid links. | generated-docs-governance.md | Quality |
