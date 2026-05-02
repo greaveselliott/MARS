@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.9.0] - 2026-05-02
+<!-- mars-harness-release: version=0.9.0 commit=c3a87e2179e3 -->
+
+### Features
+- **setup:** Configure shell path automatically (MH-041) (c3a87e2)
+
+### Delivery Evidence
+- Shipped feature scenarios: MH-041: F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005
+
 ## [0.8.0] - 2026-05-02
 <!-- mars-harness-release: version=0.8.0 commit=cd7514dfdce5 -->
 
