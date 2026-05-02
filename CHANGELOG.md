@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.4.0] - 2026-05-02
+<!-- mars-harness-release: version=0.4.0 commit=72032c5985e4 -->
+
+### Features
+- **models:** Add benchmark evaluation path (72032c5)
+
 ## [0.3.6] - 2026-05-02
 <!-- mars-harness-release: version=0.3.6 commit=ecf0f5596249 -->
 
