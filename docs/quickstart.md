@@ -41,6 +41,29 @@ mars-harness version
 # mars-harness v1.0.0 linux/amd64 commit=abc123 built=2026-04-12T00:00:00Z
 ```
 
+## Upgrade The Command
+
+Upgrade or reinstall the installed command without changing into the source checkout:
+
+```bash
+mars-harness update tool
+```
+
+By default this uses `go install` and writes into the directory that contains the current `mars-harness` binary. For source-development channels:
+
+```bash
+mars-harness update tool --version main
+mars-harness update tool --dry-run
+```
+
+If your shell still sees an older binary after updating, refresh its command cache with `hash -r` or open a new terminal.
+
+Update the harness files deployed into a target repo with the same verb:
+
+```bash
+mars-harness update harness --repo ~/my-project
+```
+
 ## Setup
 
 Run the first-time wizard. This detects your GPU, downloads a model, and creates `~/.mars-harness/`.

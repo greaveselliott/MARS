@@ -31,6 +31,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
+	"github.com/greaveselliott/mars-harness/internal/selfupdate"
 	"github.com/greaveselliott/mars-harness/internal/serve"
 	"github.com/greaveselliott/mars-harness/internal/setup"
 	"github.com/greaveselliott/mars-harness/internal/tools"
@@ -56,6 +57,7 @@ func main() {
 	}
 
 	root.AddCommand(versionCmd())
+	root.AddCommand(updateCmd())
 	root.AddCommand(startCmd())
 	root.AddCommand(runCmd())
 	root.AddCommand(setupCmd())
@@ -215,6 +217,85 @@ func versionCmd() *cobra.Command {
 			fmt.Printf("mars-harness %s %s/%s commit=%s built=%s\n", version, runtime.GOOS, runtime.GOARCH, commit, date)
 		},
 	}
+}
+
+func updateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "update",
+		Short: "Update the CLI binary or a deployed target harness",
+		Long: `Update Mars Harness surfaces with one verb.
+
+Use "mars-harness update tool" to reinstall or upgrade the installed CLI.
+Use "mars-harness update harness --repo <path>" to update the .harness/
+bundle deployed into a target repository.`,
+	}
+	cmd.AddCommand(updateToolCmd())
+	cmd.AddCommand(updateHarnessCmd())
+	return cmd
+}
+
+func updateToolCmd() *cobra.Command {
+	var (
+		updateVersion string
+		installDir    string
+		dryRun        bool
+		jsonOut       bool
+	)
+	cmd := &cobra.Command{
+		Use:     "tool",
+		Aliases: []string{"binary", "cli"},
+		Short:   "Reinstall or upgrade the mars-harness command",
+		Long: `Reinstall the mars-harness command without changing directories.
+
+This source-based updater uses go install and writes into the directory that
+contains the currently running mars-harness binary by default. It is intended
+for source-development installs until release-asset based updates are complete.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := selfupdate.Config{
+				Version:    updateVersion,
+				InstallDir: installDir,
+				DryRun:     dryRun,
+			}
+			plan, err := selfupdate.Run(cmd.Context(), cfg)
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return writeJSON(os.Stdout, plan)
+			}
+			fmt.Printf("mars-harness update tool\n")
+			fmt.Printf("Version: %s\n", plan.Version)
+			fmt.Printf("Install dir: %s\n", plan.InstallDir)
+			fmt.Printf("Command: GOBIN=%s %s\n", plan.InstallDir, strings.Join(plan.Command, " "))
+			if dryRun {
+				fmt.Printf("Dry run: no changes made\n")
+				return nil
+			}
+			fmt.Printf("Installed: %s\n", plan.BinaryPath)
+			fmt.Printf("Run: mars-harness version\n")
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&updateVersion, "version", selfupdate.DefaultVersion, "Go module version to install, e.g. latest, main, or v0.5.3")
+	cmd.Flags().StringVar(&installDir, "install-dir", "", "Install directory; default is the current mars-harness binary directory")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print the update plan without running go install")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func updateHarnessCmd() *cobra.Command {
+	var repoPath string
+	cmd := &cobra.Command{
+		Use:     "harness",
+		Aliases: []string{"target", "bundle"},
+		Short:   "Update a deployed target .harness/ bundle",
+		Long:    "Fill missing defaults in a target project's .harness/ without overwriting user-owned agent configuration.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runHarnessUpgrade(repoPath, "update harness")
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
+	return cmd
 }
 
 func releaseCmd() *cobra.Command {
@@ -675,33 +756,37 @@ Existing manifest.yaml, role prompts, knowledge routes, guardrails, target
 AGENTS.md, tickets, exec-plans, design-docs, and references are user-owned and
 preserved.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if repoPath == "" {
-				var err error
-				repoPath, err = os.Getwd()
-				if err != nil {
-					return fmt.Errorf("upgrade: cannot determine working directory: %w", err)
-				}
-			}
-			absPath, err := filepath.Abs(repoPath)
-			if err != nil {
-				return fmt.Errorf("upgrade: resolve path: %w", err)
-			}
-
-			updated, err := scanner.Upgrade(absPath)
-			if err != nil {
-				return err
-			}
-
-			fmt.Printf("Upgraded .harness/ in %s (%d files updated)\n", absPath, len(updated))
-			for _, f := range updated {
-				fmt.Printf("  %s\n", f)
-			}
-			return nil
+			return runHarnessUpgrade(repoPath, "upgrade")
 		},
 	}
 
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
 	return cmd
+}
+
+func runHarnessUpgrade(repoPath, verb string) error {
+	if repoPath == "" {
+		var err error
+		repoPath, err = os.Getwd()
+		if err != nil {
+			return fmt.Errorf("%s: cannot determine working directory: %w", verb, err)
+		}
+	}
+	absPath, err := filepath.Abs(repoPath)
+	if err != nil {
+		return fmt.Errorf("%s: resolve path: %w", verb, err)
+	}
+
+	updated, err := scanner.Upgrade(absPath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Updated .harness/ in %s (%d files updated)\n", absPath, len(updated))
+	for _, f := range updated {
+		fmt.Printf("  %s\n", f)
+	}
+	return nil
 }
 
 func scanCmd() *cobra.Command {

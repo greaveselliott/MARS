@@ -46,6 +46,13 @@ mars-harness start --repo /path/to/target-repo
 
 Avoid `go build ./cmd/mars-harness; ./mars-harness ...`: the semicolon can run a stale old binary if the build fails.
 
+Upgrade the installed command without changing directories:
+
+```bash
+mars-harness update tool
+mars-harness update harness --repo /path/to/target-repo
+```
+
 Generate semantic-versioned patch notes from commits:
 
 ```bash

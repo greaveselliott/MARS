@@ -59,9 +59,29 @@ After a `release: notes X.Y.Z` commit is pushed to `main`, release work must:
 
 GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the blocker and leaves a follow-up ticket instead of claiming the release is complete.
 
+### AD-068: The Installed Command Can Update Itself
+
+Operators should not need to `cd` into the source repository to upgrade the built binary. The installed `mars-harness` command owns its own update surface through `mars-harness update tool`.
+
+The first implementation uses `go install github.com/greaveselliott/mars-harness/cmd/mars-harness@<version>` with `GOBIN` set to the directory containing the currently running binary. This supports source-development and Go-installed workflows immediately. It also avoids the stale source-root binary trap where `go build; ./mars-harness ...` can run an old binary after a failed build.
+
+Release-asset self-updates remain the desired packaged-user path: download the matching OS/arch binary, verify `checksums.txt`, and atomically replace the installed executable. That depends on the release asset contract tracked separately by MH-031.
+
+### AD-069: Update Is The Unified Verb For Tool And Deployed Harness Changes
+
+The CLI should use the same language when the goal is the same. "Update" means bring an installed or deployed harness surface up to the current expected version:
+
+- `mars-harness update tool` updates the installed CLI binary.
+- `mars-harness update harness --repo <path>` updates the `.harness/` bundle deployed into a target repo.
+- `mars-harness upgrade --repo <path>` remains as a compatibility alias for target harness updates while docs migrate to `update harness`.
+
+Future work should add automatic version checks: compare the installed CLI against the latest GitHub release or configured source, compare target repo harness metadata against the installed CLI, then recommend or run the relevant update subcommand.
+
 ## Implementation Requirements
 
 - Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
+- Add `mars-harness update tool [--version <version>] [--install-dir <path>] [--dry-run]`.
+- Add `mars-harness update harness --repo <path>`.
 - Infer `auto` bumps from semantic commits:
   - breaking changes -> major
   - `feat:` -> minor
@@ -73,6 +93,8 @@ GitHub remains optional infrastructure. If the repo has no GitHub remote, no aut
 - Treat source-repo versioning as part of done for every non-release semantic commit.
 - Treat target-repo versioning as part of done for every non-release semantic commit after `mars-harness init`.
 - Publish or update matching GitHub Releases when authenticated GitHub release capability is configured.
+- Let the installed binary reinstall itself without requiring a source checkout.
+- Use the same update vocabulary for binary and deployed target harness updates.
 
 ## Consequences
 
@@ -82,4 +104,4 @@ GitHub remains optional infrastructure. If the repo has no GitHub remote, no aut
 - Source-repo work cannot silently land without an accompanying semantic version and patch-note entry.
 - Target repos inherit the same release discipline without extra setup.
 - GitHub users see versioned release notes in the GitHub Releases UI, while local-only users still have repo-owned `VERSION` and `CHANGELOG.md`.
-- Future work can add tag creation, release publishing, and doctor checks for stale patch notes.
+- Future work can add tag creation, release publishing, release-asset self-update, automatic behind-version checks, and doctor checks for stale patch notes.

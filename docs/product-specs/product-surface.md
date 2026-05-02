@@ -23,6 +23,8 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | Command | Status | Product behavior |
 | --- | --- | --- |
 | `mars-harness setup` | Implemented, still hardening | Creates `~/.mars-harness/`, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
+| `mars-harness update tool` | Initial implementation | Reinstalls the command into the current binary directory through `go install`, so operators do not need to `cd` into the source repo to update the CLI. Release-asset updates are still tracked separately. |
+| `mars-harness update harness --repo <path>` | Implemented | Uses the same update verb to refresh the deployed target `.harness/` bundle without overwriting user-owned agent configuration. |
 | `make install` from source checkout | Implemented for source development | Installs the dev binary into the Go bin directory so operators do not run stale source-root binaries. |
 | `mars-harness init --repo <path>` | Implemented | Scaffolds the target harness: manifest, roles, guardrails, knowledge routes, compact `AGENTS.md`, tickets, exec-plan docs, design-doc index, context glossary, and references. |
 | `mars-harness upgrade --repo <path>` | Implemented, still hardening | Fills missing target harness defaults while preserving user-owned manifest, role prompts, knowledge routes, guardrails, tickets, design docs, exec plans, references, and target `AGENTS.md`. |

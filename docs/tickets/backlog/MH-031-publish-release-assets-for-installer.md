@@ -33,6 +33,7 @@ That workflow can run stale binaries and violates the Plug and Play promise.
 - Verify whether the tag-triggered release workflow is firing when release notes are published.
 - Ensure `linux/darwin` x `amd64/arm64` binaries and `checksums.txt` are attached to every GitHub Release.
 - Make release publication create or push the matching tag in the way the workflow expects.
+- Extend `mars-harness update tool` from Go-install source updates to checksum-verified release-asset updates once assets exist.
 - Add a release verification step that fails when the latest release has no assets.
 - Update docs if manual release publication must be replaced by tag-first publication.
 
@@ -50,6 +51,7 @@ That workflow can run stale binaries and violates the Plug and Play promise.
 
 - [ ] Latest release includes four binaries and `checksums.txt`.
 - [ ] `scripts/install.sh` succeeds against the latest release on supported macOS/Linux platforms.
+- [ ] `mars-harness update tool` can use release assets without requiring Go or a source checkout.
 - [ ] Release process documents whether `git tag && git push --tags` or `gh release create` is authoritative.
 
 ### Edge cases and negative paths

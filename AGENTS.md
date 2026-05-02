@@ -224,6 +224,13 @@ make install
 mars-harness start --repo /path/to/target-repo
 ```
 
+Upgrade or reinstall the installed command without changing into this repo:
+
+```bash
+mars-harness update tool
+mars-harness update harness --repo /path/to/target-repo
+```
+
 Do not use `go build ./cmd/mars-harness; ./mars-harness ...` as the normal loop. The semicolon runs the old source-root binary when the build fails. Use `make install` or `go build -o build/mars-harness ./cmd/mars-harness` for one-off binaries.
 
 ## How to Test
