@@ -5,6 +5,7 @@
 **Updated:** 2026-05-02
 **Owner:** Mars Harness
 **Source:** User request to compare `../mars` with this repository and plan the work required for Mars Harness to supersede Mars.
+**Supporting audit:** [mars-meta-harness-relevance-audit.md](../../references/mars-meta-harness-relevance-audit.md)
 
 ## Purpose
 
