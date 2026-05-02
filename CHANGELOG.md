@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.6.0] - 2026-05-02
+<!-- mars-harness-release: version=0.6.0 commit=2187d5a379c3 -->
+
+### Features
+- **update:** Unify tool and harness updates (2187d5a)
+
 ## [0.5.3] - 2026-05-02
 <!-- mars-harness-release: version=0.5.3 commit=781c1e5051dd -->
 
