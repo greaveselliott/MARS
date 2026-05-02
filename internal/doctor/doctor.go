@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/hardware"
+	"github.com/greaveselliott/mars-harness/internal/updatecheck"
 )
 
 // CheckResult represents the outcome of a single health check.
@@ -27,10 +29,13 @@ type CheckResult struct {
 
 // Config controls doctor behaviour.
 type Config struct {
-	ConfigPath string
-	DBPath     string
-	SkipRemote bool
-	JSONOutput bool
+	ConfigPath       string
+	DBPath           string
+	RepoPath         string
+	CurrentVersion   string
+	LatestReleaseURL string
+	SkipRemote       bool
+	JSONOutput       bool
 }
 
 const (
@@ -53,6 +58,7 @@ func Run(cfg Config) []CheckResult {
 		checkDBAccessible,
 		checkLlamaServer,
 		checkDiskSpace,
+		checkVersionDrift,
 	}
 
 	results := make([]CheckResult, 0, len(checks))
@@ -67,6 +73,67 @@ func Run(cfg Config) []CheckResult {
 		results = append(results, result)
 	}
 	return results
+}
+
+func checkVersionDrift(cfg Config) CheckResult {
+	start := time.Now()
+	name := "version-drift"
+	current := strings.TrimSpace(cfg.CurrentVersion)
+	if current == "" {
+		current = "unknown"
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	report, err := updatecheck.Run(ctx, updatecheck.Config{
+		CurrentVersion:   current,
+		RepoPath:         cfg.RepoPath,
+		LatestReleaseURL: cfg.LatestReleaseURL,
+		SkipRemote:       cfg.SkipRemote,
+	})
+	if err != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  err.Error(),
+			Duration: time.Since(start),
+		}
+	}
+	for _, component := range []updatecheck.Component{report.Tool, report.Harness} {
+		if component.Status == updatecheck.StatusBehind {
+			return CheckResult{
+				Name:     name,
+				Status:   statusWarn,
+				Message:  fmt.Sprintf("%s is behind: %s", component.Name, component.Message),
+				Duration: time.Since(start),
+				Fix:      component.Command,
+			}
+		}
+	}
+	if report.Tool.Status == updatecheck.StatusUnknown && !cfg.SkipRemote {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  report.Tool.Message,
+			Duration: time.Since(start),
+			Fix:      "run 'mars-harness update check --skip-remote' to check local target harness state only",
+		}
+	}
+	if report.Harness.Status == updatecheck.StatusUnknown && cfg.RepoPath != "" && report.Harness.Command != "" {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  report.Harness.Message,
+			Duration: time.Since(start),
+			Fix:      report.Harness.Command,
+		}
+	}
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  "no update drift detected",
+		Duration: time.Since(start),
+	}
 }
 
 func checkModelRegistry(_ Config) CheckResult {

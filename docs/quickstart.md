@@ -46,6 +46,7 @@ mars-harness version
 Upgrade or reinstall the installed command without changing into the source checkout:
 
 ```bash
+mars-harness update check --repo ~/my-project
 mars-harness update tool
 ```
 
@@ -62,6 +63,12 @@ Update the harness files deployed into a target repo with the same verb:
 
 ```bash
 mars-harness update harness --repo ~/my-project
+```
+
+Use JSON when another agent or automation needs to decide which update action to run:
+
+```bash
+mars-harness update check --repo ~/my-project --json
 ```
 
 ## Setup

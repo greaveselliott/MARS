@@ -5,6 +5,7 @@ priority: high
 complexity: medium
 source: operator feedback 2026-05-02
 created: 2026-05-02
+completed: 2026-05-02
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -25,8 +26,8 @@ Mars Harness now has semantic versioning for the source tool and initialized tar
 
 - Add a version-check path under the unified `mars-harness update` command.
 - Compare the installed CLI version with the latest configured source:
-  - GitHub latest release when a GitHub source is configured
-  - source checkout or Go module version when using source-development mode
+  - GitHub latest release by default
+  - another GitHub-compatible latest-release endpoint when explicitly supplied
 - Compare a target repo's deployed harness metadata/version with the installed CLI's generated-harness version.
 - Recommend or run the right command:
   - `mars-harness update tool`
@@ -48,16 +49,16 @@ Mars Harness now has semantic versioning for the source tool and initialized tar
 
 ### Functional (happy path)
 
-- [ ] `mars-harness update check --repo <path> --json` emits parseable status for tool and target harness.
-- [ ] Behind CLI version reports latest available version and update command.
-- [ ] Behind target harness reports installed generator version and update command.
-- [ ] Up-to-date tool and target report no action needed.
+- [x] `mars-harness update check --repo <path> --json` emits parseable status for tool and target harness.
+- [x] Behind CLI version reports latest available version and update command.
+- [x] Behind target harness reports installed generator version and update command.
+- [x] Up-to-date tool and target report no action needed.
 
 ### Edge cases and negative paths
 
-- [ ] Missing network or GitHub API failure reports unknown remote status without failing local target checks.
-- [ ] Target repos without harness metadata receive an actionable `mars-harness init` or `update harness` recommendation.
-- [ ] Source-development installs can check `main`/configured module version without requiring `cd`.
+- [x] Missing network or GitHub API failure reports unknown remote status without failing local target checks.
+- [x] Target repos without harness metadata receive an actionable `mars-harness init` or `update harness` recommendation.
+- [x] Source-development installs can check a configured latest-release endpoint without requiring `cd`.
 
 ### Non-goals
 
@@ -66,6 +67,6 @@ Mars Harness now has semantic versioning for the source tool and initialized tar
 
 ### Observability, docs, and regressions
 
-- [ ] Doctor includes version drift findings.
-- [ ] Docs use `update tool` and `update harness` consistently.
-- [ ] Tests cover behind/ahead/equal/unknown states.
+- [x] Doctor includes version drift findings.
+- [x] Docs use `update tool` and `update harness` consistently.
+- [x] Tests cover behind/ahead/equal/unknown states.

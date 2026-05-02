@@ -75,13 +75,23 @@ The CLI should use the same language when the goal is the same. "Update" means b
 - `mars-harness update harness --repo <path>` updates the `.harness/` bundle deployed into a target repo.
 - `mars-harness upgrade --repo <path>` remains as a compatibility alias for target harness updates while docs migrate to `update harness`.
 
-Future work should add automatic version checks: compare the installed CLI against the latest GitHub release or configured source, compare target repo harness metadata against the installed CLI, then recommend or run the relevant update subcommand.
+### AD-070: Update Check Detects Tool And Target Harness Drift
+
+`mars-harness update check --repo <path>` compares both update surfaces before mutating anything:
+
+- the installed CLI version against the latest GitHub release, or another GitHub-compatible latest-release endpoint supplied by the operator
+- the target repo's generated `.harness/metadata.yaml` generator version against the installed CLI version
+
+The command emits machine-readable JSON with `--json` and recommends `update tool`, `update harness`, or both. Remote lookup failures are reported as `unknown` for the tool and do not prevent local target-harness checks. `mars-harness doctor --repo <path>` includes the same drift signal as a warning so operators see stale binary or target harness state during health checks.
+
+`mars-harness init` and `mars-harness update harness` write `.harness/metadata.yaml`. This file is generated state owned by the harness updater, unlike role prompts, manifests, guardrails, knowledge routes, tickets, and docs, which remain user-owned after init.
 
 ## Implementation Requirements
 
 - Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
 - Add `mars-harness update tool [--version <version>] [--install-dir <path>] [--dry-run]`.
 - Add `mars-harness update harness --repo <path>`.
+- Add `mars-harness update check --repo <path> [--json] [--skip-remote]`.
 - Infer `auto` bumps from semantic commits:
   - breaking changes -> major
   - `feat:` -> minor
@@ -95,6 +105,8 @@ Future work should add automatic version checks: compare the installed CLI again
 - Publish or update matching GitHub Releases when authenticated GitHub release capability is configured.
 - Let the installed binary reinstall itself without requiring a source checkout.
 - Use the same update vocabulary for binary and deployed target harness updates.
+- Record generated target harness version in `.harness/metadata.yaml`.
+- Check version drift without mutating the installed tool or target repo.
 
 ## Consequences
 
@@ -104,4 +116,4 @@ Future work should add automatic version checks: compare the installed CLI again
 - Source-repo work cannot silently land without an accompanying semantic version and patch-note entry.
 - Target repos inherit the same release discipline without extra setup.
 - GitHub users see versioned release notes in the GitHub Releases UI, while local-only users still have repo-owned `VERSION` and `CHANGELOG.md`.
-- Future work can add tag creation, release publishing, release-asset self-update, automatic behind-version checks, and doctor checks for stale patch notes.
+- Future work can add tag creation, release publishing, release-asset self-update, and doctor checks for stale patch notes.

@@ -240,6 +240,7 @@ func TestInit_success(t *testing.T) {
 	assert.DirExists(t, filepath.Join(dir, ".harness", "guardrails"))
 	assert.DirExists(t, filepath.Join(dir, ".harness", "knowledge"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
+	assert.FileExists(t, filepath.Join(dir, ".harness", "metadata.yaml"))
 
 	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "backlog"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "in-progress"))
@@ -301,6 +302,11 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, manifestStr, "record_decision", "manifest should include record_decision in tool lists")
 	assert.Contains(t, manifestStr, "max_turns: 40", "dogfood role should have max_turns: 40")
 	assert.Contains(t, manifestStr, "knowledge/context-glossary.yaml", "manifest should include default glossary knowledge route")
+
+	metadata, err := ReadHarnessMetadata(dir)
+	require.NoError(t, err)
+	assert.Equal(t, "mars-harness", metadata.Generator)
+	assert.NotEmpty(t, metadata.GeneratorVersion)
 
 	glossary, err := os.ReadFile(filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml"))
 	require.NoError(t, err)
@@ -842,6 +848,10 @@ func TestUpgrade_preservesUserConfiguredManifestAndPrompts(t *testing.T) {
 	assert.NotContains(t, updated, "roles/coo.md")
 	assert.NotContains(t, updated, "knowledge/context-glossary.yaml")
 	assert.Contains(t, updated, "roles/qa.md")
+
+	metadata, err := ReadHarnessMetadata(dir)
+	require.NoError(t, err)
+	assert.Equal(t, "mars-harness", metadata.Generator)
 
 	manifest, err := os.ReadFile(manifestPath)
 	require.NoError(t, err)

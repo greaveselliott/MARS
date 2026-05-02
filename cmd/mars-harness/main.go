@@ -38,6 +38,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/trace"
 	"github.com/greaveselliott/mars-harness/internal/trust"
 	"github.com/greaveselliott/mars-harness/internal/ui"
+	"github.com/greaveselliott/mars-harness/internal/updatecheck"
 )
 
 var version = buildinfo.DefaultVersion
@@ -229,8 +230,53 @@ Use "mars-harness update tool" to reinstall or upgrade the installed CLI.
 Use "mars-harness update harness --repo <path>" to update the .harness/
 bundle deployed into a target repository.`,
 	}
+	cmd.AddCommand(updateCheckCmd())
 	cmd.AddCommand(updateToolCmd())
 	cmd.AddCommand(updateHarnessCmd())
+	return cmd
+}
+
+func updateCheckCmd() *cobra.Command {
+	var (
+		repoPath         string
+		latestReleaseURL string
+		skipRemote       bool
+		jsonOut          bool
+	)
+	cmd := &cobra.Command{
+		Use:   "check",
+		Short: "Check whether the CLI or deployed target harness is behind",
+		Long: `Check version drift for the installed mars-harness tool and a target repo's
+deployed .harness/ metadata. Remote release failures are reported as unknown so
+local target checks still complete.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repoPath == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("update check: cannot determine working directory: %w", err)
+				}
+			}
+			report, err := updatecheck.Run(cmd.Context(), updatecheck.Config{
+				CurrentVersion:   version,
+				RepoPath:         repoPath,
+				LatestReleaseURL: latestReleaseURL,
+				SkipRemote:       skipRemote,
+			})
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return writeJSON(os.Stdout, report)
+			}
+			printUpdateCheck(report)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to target repository (default: current directory)")
+	cmd.Flags().StringVar(&latestReleaseURL, "latest-release-url", selfupdate.DefaultLatestReleaseURL, "GitHub-compatible latest release endpoint")
+	cmd.Flags().BoolVar(&skipRemote, "skip-remote", false, "Skip remote latest-release check")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
 
@@ -296,6 +342,31 @@ func updateHarnessCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
 	return cmd
+}
+
+func printUpdateCheck(report updatecheck.Report) {
+	fmt.Println("Mars Harness Update Check")
+	for _, component := range []updatecheck.Component{report.Tool, report.Harness} {
+		fmt.Printf("  %s: %s", component.Name, component.Status)
+		if component.CurrentVersion != "" {
+			fmt.Printf(" current=%s", component.CurrentVersion)
+		}
+		if component.LatestVersion != "" {
+			fmt.Printf(" latest=%s", component.LatestVersion)
+		}
+		fmt.Printf(" — %s\n", component.Message)
+		if component.Command != "" {
+			fmt.Printf("    run: %s\n", component.Command)
+		}
+	}
+	if len(report.Actions) == 0 {
+		fmt.Println("  actions: none")
+		return
+	}
+	fmt.Println("  actions:")
+	for _, action := range report.Actions {
+		fmt.Printf("    %s\n", action)
+	}
 }
 
 func releaseCmd() *cobra.Command {
@@ -873,10 +944,12 @@ func doctorCmd() *cobra.Command {
 				}
 			}
 			results := doctor.Run(doctor.Config{
-				ConfigPath: configPath,
-				DBPath:     dbPath,
-				SkipRemote: skipRemote,
-				JSONOutput: jsonOutput,
+				ConfigPath:     configPath,
+				DBPath:         dbPath,
+				RepoPath:       repoPath,
+				CurrentVersion: version,
+				SkipRemote:     skipRemote,
+				JSONOutput:     jsonOutput,
 			})
 
 			if jsonOutput {

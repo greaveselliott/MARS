@@ -95,4 +95,5 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-066 | Ollama is a first-class catalog and explicit model-swap provider, while zero-config default promotion still requires benchmark evidence, immutable revision, and SHA256. | local-inference.md | Inference |
 | AD-067 | Source development installs the command into the Go bin directory before operating target repos; root-level source binaries are treated as stale-binary traps. | dogfood-and-decisions.md | Operator workflow |
 | AD-068 | The installed command can update itself with `mars-harness update tool`; Go-installed workflows work now, while checksum-verified release-asset updates remain gated on release assets. | release-versioning.md | Release |
-| AD-069 | `update` is the unified CLI verb for the installed tool and deployed target harness; future checks compare installed/source/target versions and choose the right update path. | release-versioning.md | Release |
+| AD-069 | `update` is the unified CLI verb for the installed tool and deployed target harness. | release-versioning.md | Release |
+| AD-070 | `mars-harness update check` reports tool and target harness version drift, writes JSON for automation, and feeds doctor warnings without mutating state. | release-versioning.md | Release |

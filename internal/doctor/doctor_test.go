@@ -31,6 +31,7 @@ func TestRun_returnsResults(t *testing.T) {
 	assert.True(t, names["database"])
 	assert.True(t, names["llama-server"])
 	assert.True(t, names["disk-space"])
+	assert.True(t, names["version-drift"])
 }
 
 func TestCheckGoVersion_findsGo(t *testing.T) {
@@ -103,6 +104,21 @@ func TestCheckDiskSpace_passes(t *testing.T) {
 	result := checkDiskSpace(Config{})
 	assert.Equal(t, "disk-space", result.Name)
 	assert.Contains(t, []string{statusOK, statusFail, statusWarn}, result.Status)
+}
+
+func TestCheckVersionDrift_reportsMissingHarnessMetadata(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(dir, ".harness"), 0o755))
+
+	result := checkVersionDrift(Config{
+		RepoPath:       dir,
+		CurrentVersion: "0.6.0",
+		SkipRemote:     true,
+	})
+	assert.Equal(t, "version-drift", result.Name)
+	assert.Equal(t, statusWarn, result.Status)
+	assert.Contains(t, result.Fix, "update harness")
 }
 
 func TestFormatText(t *testing.T) {

@@ -7,10 +7,22 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/greaveselliott/mars-harness/internal/buildinfo"
 	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"gopkg.in/yaml.v3"
 )
 
 const harnessDir = ".harness"
+
+const harnessMetadataFile = "metadata.yaml"
+
+// HarnessMetadata records which mars-harness generator last refreshed the
+// deployed target harness scaffold.
+type HarnessMetadata struct {
+	SchemaVersion    int    `json:"schema_version" yaml:"schema_version"`
+	Generator        string `json:"generator" yaml:"generator"`
+	GeneratorVersion string `json:"generator_version" yaml:"generator_version"`
+}
 
 // Init scaffolds the .harness/ directory and docs/ structure for a repository.
 // If .harness/ exists and force is false, returns an error.
@@ -102,6 +114,10 @@ func Init(repoRoot string, force bool) error {
 		slog.Debug("wrote default harness support file", "path", name)
 	}
 
+	if _, err := writeHarnessMetadata(repoRoot, buildinfo.DefaultVersion); err != nil {
+		return err
+	}
+
 	for name, content := range defaultDocs {
 		docPath := filepath.Join(repoRoot, name)
 		if _, err := os.Stat(docPath); err == nil {
@@ -182,8 +198,56 @@ func Upgrade(repoRoot string) (updated []string, err error) {
 		slog.Debug("upgrade: wrote missing harness support file", "path", name)
 	}
 
+	changed, err := writeHarnessMetadata(repoRoot, buildinfo.DefaultVersion)
+	if err != nil {
+		return updated, err
+	}
+	if changed {
+		updated = append(updated, harnessMetadataFile)
+	}
+
 	slog.Info("upgrade: complete", "files_updated", len(updated))
 	return updated, nil
+}
+
+// ReadHarnessMetadata loads .harness/metadata.yaml from a target repository.
+func ReadHarnessMetadata(repoRoot string) (HarnessMetadata, error) {
+	path := filepath.Join(filepath.Clean(repoRoot), harnessDir, harnessMetadataFile)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return HarnessMetadata{}, err
+	}
+	var metadata HarnessMetadata
+	if err := yaml.Unmarshal(data, &metadata); err != nil {
+		return HarnessMetadata{}, fmt.Errorf("harness metadata: parse %s: %w", path, err)
+	}
+	if metadata.Generator == "" || metadata.GeneratorVersion == "" {
+		return HarnessMetadata{}, fmt.Errorf("harness metadata: %s is missing generator or generator_version", path)
+	}
+	return metadata, nil
+}
+
+func writeHarnessMetadata(repoRoot, generatorVersion string) (bool, error) {
+	path := filepath.Join(filepath.Clean(repoRoot), harnessDir, harnessMetadataFile)
+	metadata := HarnessMetadata{
+		SchemaVersion:    1,
+		Generator:        "mars-harness",
+		GeneratorVersion: generatorVersion,
+	}
+	data, err := yaml.Marshal(metadata)
+	if err != nil {
+		return false, fmt.Errorf("harness metadata: marshal: %w", err)
+	}
+	if existing, err := os.ReadFile(path); err == nil && string(existing) == string(data) {
+		return false, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return false, fmt.Errorf("harness metadata: create %s: %w", filepath.Dir(path), err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return false, fmt.Errorf("harness metadata: write %s: %w", path, err)
+	}
+	return true, nil
 }
 
 // EnsureHarness scaffolds .harness/ when manifest.yaml is missing. If the
@@ -405,7 +469,7 @@ the system of record for plans, decisions, tickets, traces, and completed work.
 - After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
 - When GitHub release credentials are configured, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry after pushing the release-note commit. If publishing is blocked, record the blocker explicitly.
 - Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
-- Keep generated or harness-owned guidance in sync with ` + "`mars-harness upgrade`" + `.
+- Check drift with ` + "`mars-harness update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars-harness update harness --repo .`" + `.
 - Convert repeated human recovery steps into compact scoped skills rather than growing role prompts.
 
 ## Context Discipline
@@ -564,7 +628,7 @@ loading every document.
 | Term | Meaning | Read next |
 | --- | --- | --- |
 | Repo | This target repository. | ` + "`README.md`" + ` |
-| Harness | The Mars Harness automation layer in ` + "`.harness/`" + `. | ` + "`.harness/manifest.yaml`" + ` |
+| Harness | The Mars Harness automation layer in ` + "`.harness/`" + `. | ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/metadata.yaml`" + ` |
 | Ticket | A markdown work item. | ` + "`docs/tickets/README.md`" + ` |
 | In progress | Active work that should be completed or explicitly unblocked before new backlog work. | ` + "`docs/tickets/in-progress/`" + ` |
 | Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
@@ -638,6 +702,8 @@ claiming the release is complete.
 - Use ` + "`--bump major`" + `, ` + "`--bump minor`" + `, or ` + "`--bump patch`" + ` only when auto classification is wrong.
 - Do not fabricate commit references.
 - Keep release notes concise and user-facing.
+- Use ` + "`mars-harness update check --repo .`" + ` to detect stale installed CLI or target harness metadata.
+- Use ` + "`mars-harness update harness --repo .`" + ` when generated harness-owned files need to catch up.
 `,
 
 	"docs/design-docs/skill-evolution.md": `# Skill Evolution

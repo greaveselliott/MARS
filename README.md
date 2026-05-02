@@ -49,6 +49,7 @@ Avoid `go build ./cmd/mars-harness; ./mars-harness ...`: the semicolon can run a
 Upgrade the installed command without changing directories:
 
 ```bash
+mars-harness update check --repo /path/to/target-repo
 mars-harness update tool
 mars-harness update harness --repo /path/to/target-repo
 ```

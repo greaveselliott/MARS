@@ -227,6 +227,7 @@ mars-harness start --repo /path/to/target-repo
 Upgrade or reinstall the installed command without changing into this repo:
 
 ```bash
+mars-harness update check --repo /path/to/target-repo
 mars-harness update tool
 mars-harness update harness --repo /path/to/target-repo
 ```

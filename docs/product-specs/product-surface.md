@@ -23,6 +23,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | Command | Status | Product behavior |
 | --- | --- | --- |
 | `mars-harness setup` | Implemented, still hardening | Creates `~/.mars-harness/`, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
+| `mars-harness update check --repo <path>` | Implemented | Reports whether the installed CLI or deployed target `.harness/` metadata is behind, with JSON output for automation and unknown-but-nonfatal remote status when release lookup fails. |
 | `mars-harness update tool` | Initial implementation | Reinstalls the command into the current binary directory through `go install`, so operators do not need to `cd` into the source repo to update the CLI. Release-asset updates are still tracked separately. |
 | `mars-harness update harness --repo <path>` | Implemented | Uses the same update verb to refresh the deployed target `.harness/` bundle without overwriting user-owned agent configuration. |
 | `make install` from source checkout | Implemented for source development | Installs the dev binary into the Go bin directory so operators do not run stale source-root binaries. |
@@ -48,6 +49,7 @@ Required generated surfaces:
 
 - `AGENTS.md` as the compact first-read map
 - `.harness/manifest.yaml` for roles, model tiers, tools, triggers, chains, guardrails, and knowledge routes
+- `.harness/metadata.yaml` for generated-harness version drift checks
 - `.harness/roles/*.md` for role prompts
 - `.harness/skills/*/SKILL.md` for compact reusable workflows and self-improvement guidance
 - `.harness/guardrails/*.yaml` for mechanical policy inputs
