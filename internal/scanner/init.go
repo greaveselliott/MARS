@@ -402,6 +402,7 @@ the system of record for plans, decisions, tickets, traces, and completed work.
 - Complete one coherent step at a time.
 - If blocked, record the blocker, create or update the dependency ticket, and return the ticket to a non-misleading state.
 - Commit and push after each completed step.
+- After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
 - Keep generated or harness-owned guidance in sync with ` + "`mars-harness upgrade`" + `.
 - Convert repeated human recovery steps into compact scoped skills rather than growing role prompts.
 
@@ -598,6 +599,17 @@ mars-harness release notes --repo . --bump auto
 ` + "```" + `
 
 Then verify, commit, and push the release-note update on ` + "`main`" + `.
+
+## Automatic Versioning Rule
+
+Every non-release semantic commit in this repository must be followed by:
+
+1. ` + "`mars-harness release notes --repo . --bump auto`" + `
+2. verification of generated ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `
+3. a ` + "`release: notes X.Y.Z`" + ` commit
+4. push to ` + "`main`" + `
+
+The ` + "`release: notes X.Y.Z`" + ` commit itself is exempt so the workflow does not create an infinite version loop.
 
 ## Agent Rules
 
@@ -1360,9 +1372,10 @@ START by reading:
 TASKS:
 
 For direct commits to main:
-1. Track changes and decide whether patch notes are warranted
+1. Treat every non-release semantic commit as warranting generated versioning
 2. Run ` + "`mars-harness release notes --repo . --bump auto --dry-run`" + ` to preview the semantic version and patch notes
 3. If the preview is correct, run ` + "`mars-harness release notes --repo . --bump auto`" + `
+4. Do not generate another version for a ` + "`release: notes X.Y.Z`" + ` commit
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
@@ -1372,7 +1385,7 @@ During weekly releases:
 
 Commit and push:
   git add VERSION CHANGELOG.md
-  git commit -m "release: notes [version]"
+  git commit -m "release: notes X.Y.Z"
   git push
 `,
 

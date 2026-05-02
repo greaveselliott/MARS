@@ -319,6 +319,21 @@ func TestInit_success(t *testing.T) {
 	changelog, err := os.ReadFile(filepath.Join(dir, "CHANGELOG.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(changelog), "mars-harness release notes")
+
+	agentGuide, err := os.ReadFile(filepath.Join(dir, "AGENTS.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(agentGuide), "After every non-release semantic commit")
+	assert.Contains(t, string(agentGuide), "release: notes X.Y.Z")
+
+	releaseDoc, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(releaseDoc), "Every non-release semantic commit")
+	assert.Contains(t, string(releaseDoc), "release: notes X.Y.Z")
+
+	releasePrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "release-manager.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(releasePrompt), "Treat every non-release semantic commit")
+	assert.Contains(t, string(releasePrompt), "Do not generate another version")
 }
 
 func TestInit_alreadyExists(t *testing.T) {

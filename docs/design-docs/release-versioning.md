@@ -35,6 +35,17 @@ Every non-release semantic commit to this source repository must be followed by 
 
 The `release: notes X.Y.Z` commit itself is exempt. The release generator ignores release-note commits so the workflow does not create an infinite version loop.
 
+### AD-057: Target Harnesses Inherit Automatic Versioning
+
+Initialized target repositories use the same operating rule. `mars-harness init` writes target `AGENTS.md`, `docs/design-docs/release-versioning.md`, and the release-manager prompt so every non-release semantic commit in the target repo is followed by:
+
+1. `mars-harness release notes --repo . --bump auto`
+2. verification of generated `VERSION` and `CHANGELOG.md`
+3. a `release: notes X.Y.Z` commit
+4. push to `main`
+
+Target repos do not have `internal/buildinfo/version.go` unless their own project defines one. The mirrored rule is the workflow contract, not a requirement for target repos to copy Mars Harness internals.
+
 ## Implementation Requirements
 
 - Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
@@ -47,6 +58,7 @@ The `release: notes X.Y.Z` commit itself is exempt. The release generator ignore
 - Update the source harness fallback version from a repo-owned constant.
 - Generate the same VERSION/CHANGELOG/release guidance in target repos.
 - Treat source-repo versioning as part of done for every non-release semantic commit.
+- Treat target-repo versioning as part of done for every non-release semantic commit after `mars-harness init`.
 
 ## Consequences
 
@@ -54,4 +66,5 @@ The `release: notes X.Y.Z` commit itself is exempt. The release generator ignore
 - Target projects get release discipline without extra configuration.
 - Release Manager work becomes deterministic before it becomes judgment work.
 - Source-repo work cannot silently land without an accompanying semantic version and patch-note entry.
+- Target repos inherit the same release discipline without extra setup.
 - Future work can add tag creation, release publishing, and doctor checks for stale patch notes.

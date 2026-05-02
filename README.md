@@ -42,7 +42,7 @@ Generate semantic-versioned patch notes from commits:
 mars-harness release notes --repo . --bump auto
 ```
 
-For changes to this source repo, that release command is part of the commit flow: every non-release semantic commit is followed by a generated `release: notes X.Y.Z` commit before `main` is pushed.
+For changes to this source repo and repos initialized by Mars Harness, that release command is part of the commit flow: every non-release semantic commit is followed by a generated `release: notes X.Y.Z` commit before `main` is pushed.
 
 ## Lineage
 

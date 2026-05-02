@@ -66,7 +66,7 @@ Mars Harness and initialized target repos use the same release contract:
 - `mars-harness release notes --repo . --bump auto` infers the next version from semantic commits
 - release-note commits themselves are ignored in the next generated entry
 - generated entries include a marker so tags are useful but not required for the next diff
-- in the source harness repo, every non-release semantic commit is immediately followed by the generated version/patch-note commit before the task is done
+- in the source harness repo and initialized target repos, every non-release semantic commit is immediately followed by the generated version/patch-note commit before the task is done
 
 ## Generated Source References
 
