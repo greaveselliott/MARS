@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.15.0] - 2026-05-03
+<!-- mars-harness-release: version=0.15.0 commit=b9b84535812f -->
+
+### Features
+- **tools:** Formalize repeated workflow tools (b9b8453)
+
 ## [0.14.6] - 2026-05-03
 <!-- mars-harness-release: version=0.14.6 commit=3ca1a420b043 -->
 
