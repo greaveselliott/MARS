@@ -1,0 +1,80 @@
+# F-009: Release And Update Lifecycle
+
+- Feature ID: F-009
+- Goals: G-002, G-004
+- Status: partially-passing
+- Owner: Release Manager
+
+## Scenario Schedule
+
+1. F-009-S001 - Semantic release notes update `VERSION` and `CHANGELOG.md` from commits.
+2. F-009-S002 - Release-note commits are ignored as the base for the next generated entry.
+3. F-009-S003 - Done-ticket metadata classifies shipped BDD scenarios separately from enablers.
+4. F-009-S004 - `update tool` installs checksum-verified release assets atomically.
+5. F-009-S005 - `update harness` refreshes deployed harness defaults through the unified update verb.
+6. F-009-S006 - `release verify-assets` fails when platform binaries or checksums are missing from a GitHub Release.
+7. F-009-S007 - Source and generated targets inherit the same versioning and release-note discipline.
+
+## Scenarios
+
+### F-009-S001: Generated Version And Changelog
+
+Given semantic commits exist after the current release marker
+When `mars-harness release notes --repo <path> --bump auto` runs
+Then `VERSION` is bumped and `CHANGELOG.md` receives a generated entry
+
+### F-009-S002: Release Commit Exemption
+
+Given the most recent commit is `release: notes X.Y.Z`
+When the next release-note generation runs
+Then that release commit is ignored so it does not create a recursive version entry
+
+### F-009-S003: BDD Scenario Release Classification
+
+Given done tickets include `work_type`, `bdd_scenarios`, and evidence metadata
+When release notes are generated
+Then shipped feature scenarios are named separately from enabler work
+
+### F-009-S004: Checksum-Verified Tool Update
+
+Given a release asset and `checksums.txt` are available
+When `mars-harness update tool` installs the tool
+Then checksum mismatch prevents replacement and valid assets atomically replace the installed binary
+
+### F-009-S005: Unified Harness Update
+
+Given a target repo has generated harness metadata
+When `mars-harness update harness --repo <path>` runs
+Then the update path refreshes missing target harness defaults without overwriting user-owned configuration
+
+### F-009-S006: Release Asset Verification
+
+Given a GitHub Release exists for version `vX.Y.Z`
+When `mars-harness release verify-assets --version vX.Y.Z` runs
+Then it fails unless all required platform binaries and `checksums.txt` are attached
+
+### F-009-S007: Mirrored Release Discipline
+
+Given the source harness requires versioning after every non-release semantic commit
+When target harness docs are generated
+Then they include the same version, changelog, release-note, and release guidance unless explicitly marked source-only
+
+## Out of Scope
+
+- Treating tags as the only release-note state.
+- Publishing GitHub Releases when authentication or remote capability is unavailable.
+- Runtime dependencies on npm, Postgres, Redis, or Grafana.
+
+## Descoped Scenarios
+
+None.
+
+## Evidence
+
+- F-009-S001: `go test ./internal/release -run TestPrepareGeneratesVersionAndChangelog`
+- F-009-S002: `go test ./internal/release -run TestPrepareUsesChangelogMarkerAsBase`
+- F-009-S003: `go test ./internal/release -run TestPrepareClassifiesDeliveryEvidenceFromDoneTickets`
+- F-009-S004: `go test ./internal/selfupdate -run TestRunReleaseAssets`
+- F-009-S005: `go test ./internal/scanner -run TestUpgrade_preservesUserConfiguredManifestAndPrompts`
+- F-009-S006: `go test ./internal/selfupdate -run TestVerifyReleaseAssetsReportsMissingAssets`
+- F-009-S007: `go test ./internal/scanner -run TestInit_success` and docs-consistency checks for release guidance

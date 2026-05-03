@@ -7,6 +7,21 @@ end-to-end path.
 V1 uses Markdown Given/When/Then. Do not introduce a custom Gherkin parser until
 there is evidence that Markdown plus Go integration/E2E tests is not enough.
 
+## Contract Rules
+
+- BDD defines the full feature before implementation.
+- The schedule is the ordered list of failing BDD scenarios or scenario groups.
+- Tickets implement only the current failing scenario or scenario group.
+- No feature ships until in-scope scenarios pass or are explicitly descoped.
+- Every feature has integration, E2E, dogfood, command, or docs-consistency
+  evidence mapped to scenario IDs.
+- Unit tests may support deterministic helpers, but they do not replace the
+  product-level scenario evidence for user-visible behavior.
+- Enabler work can complete without feature evidence, but it must not claim
+  shipped feature value.
+- A broad contract may be `partially-passing` when some scenarios have evidence
+  and the remaining scenarios are still open product promises.
+
 ## Required Fields
 
 - `Feature ID`
@@ -18,13 +33,43 @@ there is evidence that Markdown plus Go integration/E2E tests is not enough.
 - `Descoped Scenarios`
 - `Evidence`
 
-## Rules
+## Status Semantics
 
-- BDD defines the full feature before implementation.
-- The schedule is the ordered list of failing BDD scenarios.
-- Tickets implement only the current failing scenario or scenario group.
-- No feature ships until in-scope scenarios pass or are explicitly descoped.
-- Every feature has at least one integration/E2E evidence link mapped to
-  scenario IDs.
-- Enabler work can complete without feature evidence, but it must not claim
-  shipped feature value.
+- `draft`: contract exists for planned work, but implementation evidence is not
+  yet expected.
+- `active`: current or near-current work is executing against the scenario
+  schedule.
+- `partially-passing`: at least one scenario has evidence, and at least one
+  scenario remains unproven or intentionally pending.
+- `passing`: all in-scope scenarios have evidence or are explicitly descoped.
+- `superseded`: retained for lineage; do not schedule new tickets from it.
+
+## Feature Catalog
+
+| ID | Contract | Status | Product Surface |
+| --- | --- | --- | --- |
+| F-001 | [Delivery Operating Model](F-001-delivery-operating-model.md) | passing | Goals, BDD, plans, tickets, evidence, target mirroring |
+| F-002 | [Zero-Config Shell PATH](F-002-zero-config-shell-path.md) | passing | Source install, setup, self-update PATH setup |
+| F-003 | [Local Inference Lifecycle](F-003-local-inference-lifecycle.md) | partially-passing | Hardware profiles, model downloads, llama.cpp supervision, model evaluation |
+| F-004 | [Target Harness Lifecycle](F-004-target-harness-lifecycle.md) | partially-passing | Init, upgrade, update check, doctor drift reporting |
+| F-005 | [Agent Execution Runtime](F-005-agent-execution-runtime.md) | partially-passing | Context assembly, tool calls, traces, budgets, run command |
+| F-006 | [Queue And Orchestration](F-006-queue-and-orchestration.md) | partially-passing | Register, start, serve, scheduler, chains, recovery |
+| F-007 | [Guardrails And Safety](F-007-guardrails-and-safety.md) | partially-passing | Hard guardrails, secret scanning, sandbox, blast radius, emergency stop |
+| F-008 | [Scoring Trust And Quality](F-008-scoring-trust-quality.md) | partially-passing | Role scores, trust levels, quality score export, intervention debt |
+| F-009 | [Release And Update Lifecycle](F-009-release-update-lifecycle.md) | partially-passing | Versioning, changelog, GitHub releases, release assets, update tool |
+| F-010 | [Dashboard And Control Plane](F-010-dashboard-control-plane.md) | partially-passing | Dashboard pages, status APIs, pause/resume/restart/scan/run-role controls |
+| F-011 | [Optional GitHub Integration](F-011-optional-github-integration.md) | partially-passing | GitHub App setup, webhooks, statuses, comments |
+| F-012 | [Self-Improvement Loop](F-012-self-improvement-loop.md) | partially-passing | Telemetry, intervention detection, skills, tool creation, bounded evolution |
+
+## Scenario Evidence Discipline
+
+Evidence entries should be executable where possible:
+
+- `go test ./internal/... -run TestName`
+- `mars-harness <command> --dry-run`
+- `mars-harness doctor --repo <path> --json`
+- dogfood run traces or release verification commands
+- docs-consistency checks when the feature is about repository-owned contracts
+
+When a scenario is not yet covered, record the missing evidence in the feature
+contract and keep the status below `passing`.
