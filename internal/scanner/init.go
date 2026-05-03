@@ -397,7 +397,7 @@ var defaultHarnessFiles = map[string]string{
 	"knowledge/context-glossary.yaml": `routes:
   - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
     paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md
-  - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, tools, tenets, first-class definitions, or contextual definitions
+  - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, operating model, tools, tenets, first-class definitions, or contextual definitions
     paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
   - when: planning, ticket creation, in-progress work, blocked work, or completion status
     paths: docs/goals/README.md, docs/goals/active.md, docs/features/README.md, docs/exec-plans/README.md, docs/tickets/README.md
@@ -528,6 +528,9 @@ would otherwise live only in chat.
 - **Foundation harness** — the harness consumed by ` + "`mars-harness`" + ` in the source repo.
 - **Deployed harness** — the harness consumed by this target application.
 - **Mirrored harness definitions** — harness definitions included in both the foundation harness and deployed harnesses.
+- **Operating model** — the documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops.
+- **Foundation operating model** — the operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
+- **Deployed operating model** — the operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
@@ -1086,6 +1089,9 @@ harness and deployed harnesses.
 | Foundation harness | The harness consumed by ` + "`mars-harness`" + ` in the source repo. |
 | Deployed harness | The harness consumed by this target application. |
 | Mirrored harness definitions | Harness definitions included in both the foundation harness and deployed harnesses. |
+| Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
+| Foundation operating model | The operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
+| Deployed operating model | The operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
@@ -1169,9 +1175,11 @@ larger docs.
 
 ### AD-076: Harness Glossary Is Mirrored First-Class Context
 
-First-class harness definitions live in ` + "`AGENTS.md`" + `. Expanded definitions
-and situational "When doing X include this: path" routes live in
-` + "`docs/design-docs/harness-glossary.md`" + `.
+First-class harness definitions live in ` + "`AGENTS.md`" + `. They include
+operating model, foundation operating model, and deployed operating model so
+agents can distinguish source-harness doctrine from target-harness execution.
+Expanded definitions and situational "When doing X include this: path" routes
+live in ` + "`docs/design-docs/harness-glossary.md`" + `.
 
 ## Maintenance Rules
 

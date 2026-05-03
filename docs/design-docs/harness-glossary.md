@@ -28,6 +28,9 @@ harness and deployed harnesses.
 | Foundation harness | The harness consumed by `mars-harness` in this source repo. |
 | Deployed harness | The harness consumed by the target application being built by `mars-harness`. |
 | Mirrored harness definitions | Harness definitions included in both the foundation harness and deployed harnesses. |
+| Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
+| Foundation operating model | The operating model for `mars-harness` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
+| Deployed operating model | The operating model inside a target application harness, governing how agents build that target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `grep`, `record_decision`, `ticket_create`, `tool_create`, and git tools. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |

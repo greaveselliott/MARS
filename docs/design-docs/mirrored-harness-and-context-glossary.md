@@ -46,9 +46,10 @@ The knowledge route file injects hints such as "when terminology is unclear, rea
 The foundation harness and deployed harnesses share a first-class harness
 glossary. Core terms such as `mars-harness`, foundation harness, deployed
 harness, harness definitions, mirrored harness definitions, tools, mirrored
-tools, tenets, first-class harness definitions, and contextual harness
-definitions belong in top-level `AGENTS.md` so agents never have to infer the
-operating vocabulary.
+tools, operating model, foundation operating model, deployed operating model,
+tenets, first-class harness definitions, and contextual harness definitions
+belong in top-level `AGENTS.md` so agents never have to infer the operating
+vocabulary.
 
 The expanded glossary lives in `docs/design-docs/harness-glossary.md`. It is
 also a routing layer for contextual harness definitions written as "When doing
