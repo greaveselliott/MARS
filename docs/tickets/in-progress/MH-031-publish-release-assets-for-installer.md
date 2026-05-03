@@ -6,6 +6,13 @@ complexity: medium
 source: operator feedback 2026-05-02
 created: 2026-05-02
 kind: intervention-debt
+work_type: intervention-debt
+end_to_end_evidence: not_applicable
+evidence_links:
+  - "GOCACHE=<validation-root> go test ./internal/selfupdate ./cmd/mars-harness"
+  - "GOCACHE=<validation-root> go test ./internal/scanner ./internal/docsconsistency"
+  - "GOCACHE=<validation-root> go test -cover ./internal/selfupdate ./internal/scanner ./internal/docsconsistency ./internal/release ./cmd/mars-harness"
+verified_by: command
 dedupe_key: "public-example"
 metadata:
   role: "release"
@@ -68,3 +75,26 @@ That workflow can run stale binaries and violates the Plug and Play promise.
 
 - [ ] Docs explain the source-development `make install` path separately from the binary-release install path.
 - [ ] A test or release-check script validates expected asset names before announcing a release.
+
+## Progress Notes
+
+2026-05-03:
+
+- Implemented checksum-verified release-asset self-update as the default
+  `mars-harness update tool` path, with `--source` and `--version main` retaining
+  the Go-install source-development path.
+- Added `mars-harness release verify-assets` to fail when a GitHub Release is
+  missing any expected binary or `checksums.txt`.
+- Updated the tag-triggered Release workflow to use portable checksums, verify
+  all expected files before publication, and use the matching `CHANGELOG.md`
+  entry as the release body.
+- Confirmed the previously latest visible release `v0.12.1` has no assets:
+  `gh release view --repo greaveselliott/mars-harness --json tagName,assets,url`
+  returned `"assets":[]`.
+- Pushed `main` through `release: notes 0.13.0` and pushed tag `v0.13.0` at the
+  release-note commit.
+- Blocker: after waiting, `gh release view v0.13.0 --repo
+  greaveselliott/mars-harness` still returned `release not found`, and `gh run
+  list --repo greaveselliott/mars-harness --workflow Release --limit 5` could not
+  connect to `api.github.com`. `MH-031` remains in progress until GitHub release
+  creation and asset verification can be observed.
