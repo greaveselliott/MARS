@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 
@@ -203,4 +205,27 @@ func TestRouter_serverForRoleModelUsesManifestTierInError(t *testing.T) {
 	_, err := r.ServerForRoleModel(context.Background(), "ceo", "fast")
 	require.ErrorContains(t, err, `tier "fast"`)
 	require.ErrorContains(t, err, "fast.gguf")
+}
+
+func TestRouter_serverForRoleModelMentionsInstalledVariant(t *testing.T) {
+	t.Parallel()
+
+	modelsDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(modelsDir, "Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf"), []byte("model"), 0o644))
+
+	r := NewRouter(RouterConfig{
+		Models: map[hardware.Tier]hardware.ModelSpec{
+			hardware.TierReasoning: {
+				Name:       "Qwen3-Coder-30B-A3B-Instruct",
+				File:       "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf",
+				ContextLen: 4096,
+			},
+		},
+		ModelsDir: modelsDir,
+	})
+
+	_, err := r.ServerForRoleModel(context.Background(), "ceo", "reasoning")
+	require.ErrorContains(t, err, "Installed variant(s) for the same model are present")
+	require.ErrorContains(t, err, "Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf")
+	require.ErrorContains(t, err, "performance_profile: quality")
 }

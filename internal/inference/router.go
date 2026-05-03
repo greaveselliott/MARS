@@ -191,7 +191,11 @@ func (r *Router) serverForTier(ctx context.Context, role string, tier hardware.T
 		base := r.fallbackBase()
 		if base == "" {
 			if expectedPath != "" {
-				return "", fmt.Errorf("inference: local model for tier %q is missing at %s and no remote fallback configured — run `mars-harness setup` to download the %s model or configure a remote fallback", tier, expectedPath, tier)
+				detail := r.installedModelVariantHint(spec)
+				if detail != "" {
+					detail = " " + detail
+				}
+				return "", fmt.Errorf("inference: local model for tier %q is missing at %s and no remote fallback configured.%s Run `mars-harness setup` to download the %s model, set `performance_profile: quality` in ~/.mars-harness/config.yaml to keep using an installed larger local model, or configure a remote fallback", tier, expectedPath, detail, tier)
 			}
 			return "", fmt.Errorf("inference: no local model configured for tier %q and no remote fallback configured — run `mars-harness setup` or configure a remote fallback", tier)
 		}
@@ -240,6 +244,39 @@ func (r *Router) serverForTier(ctx context.Context, role string, tier hardware.T
 	}
 
 	return srv.BaseURL(), nil
+}
+
+func (r *Router) installedModelVariantHint(spec hardware.ModelSpec) string {
+	if strings.TrimSpace(r.modelsDir) == "" || strings.TrimSpace(spec.Name) == "" {
+		return ""
+	}
+
+	entries, err := os.ReadDir(r.modelsDir)
+	if err != nil {
+		return ""
+	}
+
+	prefix := strings.TrimSuffix(spec.Name, "-Instruct")
+	var matches []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if name == spec.File {
+			continue
+		}
+		if !strings.HasSuffix(name, ".gguf") {
+			continue
+		}
+		if strings.Contains(name, spec.Name) || (prefix != "" && strings.Contains(name, prefix)) {
+			matches = append(matches, name)
+		}
+	}
+	if len(matches) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("Installed variant(s) for the same model are present: %s.", strings.Join(matches, ", "))
 }
 
 // StopAll gracefully stops all managed servers.
