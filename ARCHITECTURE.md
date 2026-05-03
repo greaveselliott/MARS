@@ -245,10 +245,13 @@ checks.
 
 ### Sandbox, Safety, and Guardrails (`internal/sandbox/`, `internal/safety/`, `internal/guardrails/`)
 
-Sandboxing is process-level. Linux attempts PID, mount, and network namespaces
-with ulimit wrappers. Non-Linux platforms use process groups, current working
-directory restriction, and ulimit wrappers. Current execution roots tools in
-the registered repo path; it does not clone a fresh working directory per job.
+Sandboxing is process-level. Linux probes PID, mount, and network namespaces
+before applying clone flags, then degrades with a warning to process groups and
+ulimit wrappers when namespaces are denied by the host. Operators can force the
+fallback with `MARS_HARNESS_DISABLE_LINUX_NAMESPACES=1`. Non-Linux platforms
+use process groups, current working directory restriction, and ulimit wrappers.
+Current execution roots tools in the registered repo path; it does not clone a
+fresh working directory per job.
 
 Safety and guardrails provide blast-radius limits, deletion policy, secret
 scanning, blocked destructive operations, advisory prompt guidance, mechanical
