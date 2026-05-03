@@ -1,171 +1,410 @@
-# Mars Harness — Architecture
+# Mars Harness - Architecture
 
 ## System Overview
 
-Mars Harness is a single Go binary that runs as a persistent server managing an autonomous AI delivery pipeline. It receives GitHub webhook events, schedules cron-triggered jobs, executes agent roles against repos using local LLM inference, and tracks quality through accuracy scoring and self-improvement.
+Mars Harness is a single Go binary and repo-owned operating system for local
+autonomous delivery. It installs local inference support, initializes target
+repositories with an agent harness, registers repos into an isolated SQLite
+runtime, executes role jobs through a bounded tool registry, records traces and
+telemetry, scores real outcomes, adjusts trust, and turns failures into durable
+work.
+
+The source repo is also a software factory. Operating doctrine, mirrored tools,
+release rules, target harness defaults, and generated documentation all evolve
+together. Changes that affect how agents work must be symbiotic with the
+existing closed loop: goals, BDD feature contracts, active plans, tickets,
+evidence, release, scoring, trust, and self-improvement.
 
 ## Core Architecture
 
 ```mermaid
 flowchart TB
-  subgraph YourMachine ["Your Machine"]
-    direction TB
-    CLI["mars-harness (single Go binary)"]
+  subgraph LocalMachine ["Developer or operator machine"]
+    CLI["mars-harness single Go binary"]
+    CONFIG["~/.mars-harness config, caches, per-repo DBs"]
+    LLM["OpenAI-compatible LLM endpoint"]
+    LLAMA["llama.cpp server subprocess"]
+    GPU["Local GPU or CPU fallback"]
+    DASH["Dashboard and HTTP API"]
 
-    CLI --> SETUP["setup"]
-    CLI --> SERVE["serve"]
-    CLI --> RUN["run"]
-    CLI --> INIT["init"]
-    CLI --> DOCTOR["doctor"]
-    CLI --> SCORES["scores"]
-    CLI --> STOP["stop --now"]
+    CLI --> SETUP["setup / path setup"]
+    CLI --> UPDATE["update check / tool / harness"]
+    CLI --> RELEASE["release notes / verify-assets"]
+    CLI --> TARGETOPS["init / upgrade / scan / register"]
+    CLI --> EXECOPS["start / serve / run"]
+    CLI --> HEALTH["doctor / scores / trust / models"]
 
-    SERVE --> WH[Webhook receiver]
-    SERVE --> SCHED[Cron scheduler]
-    WH --> QUEUE["SQLite: jobs, scores, interventions, traces"]
-    SCHED --> QUEUE
+    SETUP --> CONFIG
+    UPDATE --> CONFIG
+    RELEASE --> SOURCE["mars-harness source repo"]
+    TARGETOPS --> TARGET["Target repository"]
+    EXECOPS --> SERVER["Orchestrator server"]
+    HEALTH --> CONFIG
 
-    QUEUE --> AGENT[Agent runtime]
-    AGENT --> CTX[Context assembly engine]
-    CTX --> GRAILS[Guardrail scoping]
-    CTX --> KROUTES[Knowledge routing]
-    CTX --> BUDGET[Context budget enforcement]
-
-    AGENT --> LLMCPP["llama.cpp subprocess"]
-    LLMCPP --> GPU[Your GPU]
-    AGENT --> SANDBOX["Process sandbox"]
-    SANDBOX --> TOOLS["git, shell, file_read, file_search, grep"]
-    AGENT --> GHAPI[GitHub API client]
-    GHAPI --> GH[GitHub]
-
-    AGENT --> SCORER[Accuracy + value scorer]
-    AGENT --> INTERV[Intervention detector]
-    SCORER --> QUEUE
-    INTERV --> QUEUE
-
-    INTERV --> REVIEWER["Reviewer meta-role"]
-    SCORER --> REVIEWER
-    REVIEWER --> AGENT
-
-    SERVE --> DASH["Dashboard: localhost:9090"]
-    QUEUE --> DASH
+    LLAMA --> GPU
+    SERVER --> DASH
+    SERVER --> QUEUE["SQLite: repos, jobs, scores, trust, traces, telemetry"]
+    SERVER --> SCHED["Cron and manifest triggers"]
+    SERVER --> WEBHOOKS["Webhook receiver"]
+    SERVER --> WORKERS["Worker pool"]
+    WORKERS --> AGENT["Agent runtime"]
+    AGENT --> CONTEXT["Context assembly"]
+    AGENT --> TOOLS["Built-in tool registry"]
+    AGENT --> LLM
+    LLM -. local default .-> LLAMA
+    AGENT --> TRACE["Trace recorder"]
+    TRACE --> QUEUE
+    AGENT --> SCORE["Scoring and telemetry"]
+    SCORE --> QUEUE
+    SCORE --> EVOLVE["Self-improvement triage"]
+    EVOLVE --> TICKETS["Intervention-debt tickets and evolution work"]
   end
 
-  subgraph Repo ["Your repo"]
-    HARNESS[".harness/"]
-    HARNESS --> MANIFEST[manifest.yaml]
-    HARNESS --> ROLES["roles/*.md"]
-    HARNESS --> GUARDRAILS["guardrails/*.yaml"]
-    HARNESS --> POLICIES["policies/*.yaml"]
-    HARNESS --> KR["knowledge-routes.yaml"]
-    HARNESS --> LOCK["lock/bundle.lock.json"]
-    TICKETS["docs/tickets/"]
+  subgraph TargetRepo ["Initialized target repository"]
+    AGENTS["AGENTS.md"]
+    MANIFEST[".harness/manifest.yaml"]
+    ROLES[".harness/roles/*.md"]
+    GUARDRAILS[".harness/guardrails/*.yaml"]
+    KNOWLEDGE[".harness/knowledge/*.yaml"]
+    SKILLS[".harness/skills/*/SKILL.md"]
+    METADATA[".harness/metadata.yaml"]
+    GOALS["docs/goals/"]
+    FEATURES["docs/features/"]
     PLANS["docs/exec-plans/"]
-    AGENTSMD["AGENTS.md"]
+    TICKETDOCS["docs/tickets/"]
+    QUALITY["docs/QUALITY_SCORE.md"]
+    DESIGN["docs/design-docs/"]
+    REFS["docs/references/"]
   end
 
-  CTX -.->|"reads scoped context"| HARNESS
-  AGENT -.->|"reads tickets as work queue"| TICKETS
-  REVIEWER -.->|"proposes evolution commits"| HARNESS
+  CONTEXT -. reads .-> AGENTS
+  CONTEXT -. reads .-> MANIFEST
+  CONTEXT -. routes .-> KNOWLEDGE
+  CONTEXT -. includes .-> ROLES
+  CONTEXT -. scopes .-> GUARDRAILS
+  AGENT -. uses .-> SKILLS
+  TOOLS -. mutate within policy .-> TargetRepo
+  TICKETS -. writes .-> TICKETDOCS
+  SCORE -. exports .-> QUALITY
+  UPDATE -. checks drift .-> METADATA
 ```
+
+## Product Layers
+
+Mars Harness has six visible layers:
+
+| Layer | Primary surface | Responsibility |
+| --- | --- | --- |
+| Install and setup | `setup`, `path setup`, config, model cache | Prepare a local machine, configure PATH, detect hardware, install or check inference assets, and report actionable setup gaps. |
+| Target harness | `init`, `upgrade`, `.harness/`, generated docs | Give each target repo a compact mirrored operating system for agents and humans. |
+| Execution | `run`, `start`, `serve`, queue, scheduler, workers, tools, traces | Execute roles against a registered repo with explicit tool allowlists and trust-gated mutation. |
+| Delivery model | goals, BDD feature contracts, one active exec plan, tickets, evidence | Keep work tied to outcomes and prove scenarios before calling feature work done. |
+| Learning loop | scores, trust, telemetry, quality score, skills, guardrails, decisions | Convert outcomes and failures into trust changes, intervention work, and reusable procedure. |
+| Release state | `release notes`, tags, release assets, `CHANGELOG.md`, `VERSION` | Version source and target changes, publish source binaries, and verify release assets. |
+
+## CLI Contract
+
+`cmd/mars-harness/` is the single command entry point. The current implemented
+surface is:
+
+| Command | Purpose |
+| --- | --- |
+| `mars-harness version` | Print version, OS/architecture, commit, and build date. |
+| `mars-harness setup` | Create config/cache state, configure supported shell profiles, detect hardware, and install inference assets unless skipped. |
+| `mars-harness path setup` | Idempotently add the install directory to supported user shell profiles. |
+| `mars-harness update check --repo <path>` | Report installed CLI, remote release, target metadata, and mirrored operating-model drift. |
+| `mars-harness update tool` | Upgrade or reinstall the installed binary from release assets or source-development mode. |
+| `mars-harness update harness --repo <path>` | Fill missing generated target harness defaults without overwriting user-owned files. |
+| `mars-harness init --repo <path>` | Scaffold `.harness/`, target `AGENTS.md`, goals, BDD features, tickets, exec plans, design docs, references, release state, and quality score. |
+| `mars-harness upgrade --repo <path>` | Preserve existing target policy while adding missing generated defaults. |
+| `mars-harness scan --repo <path> --tickets` | Scan a repo for starter findings and optionally create deduplicated backlog tickets. |
+| `mars-harness register --repo <path>` | Register a repo into the configured SQLite database. |
+| `mars-harness start --repo <path>` | Auto-init if needed, register the repo, seed the CEO role, and run the per-repo orchestrator. |
+| `mars-harness serve` | Run the legacy multi-repo orchestrator, dashboard, webhooks, cron scheduler, workers, and recovery watchdog. |
+| `mars-harness run <role> --repo <path>` | Execute one role against a target repo, with `--dry-run` for prompt preview. |
+| `mars-harness doctor [--repo <path>] [--json]` | Diagnose setup, models, DB, repo, guardrail/workflow health, operating-model drift, active-plan hygiene, and integration state. |
+| `mars-harness scores [--repo <path>]` | Print stored role scores. |
+| `mars-harness scores export --repo <path>` | Refresh `docs/QUALITY_SCORE.md` from score, telemetry, ticket, dogfood, guardrail, check, no-op, and human-follow-up evidence. |
+| `mars-harness trust [--repo <path>]` | Show role trust levels. |
+| `mars-harness trust set <role> <repo> <level> --reason <text>` | Apply an audited trust override. |
+| `mars-harness models evaluate` | Print or run model evaluation probes against an OpenAI-compatible endpoint. |
+| `mars-harness release notes --repo <path> --bump auto` | Generate semantic patch notes, update `VERSION`, `CHANGELOG.md`, and source build info. |
+| `mars-harness release verify-assets [--version <tag>]` | Check that a GitHub Release has the required platform binaries and checksums. |
+
+There is no current top-level `status`, `interventions`, or `stop --now`
+command. Graceful stop is exposed through Ctrl+C, terminal key `q`, and the
+dashboard/API stop controls while `start` or `serve` is running.
 
 ## Component Responsibilities
 
 ### CLI (`cmd/mars-harness/`)
 
-Single entry point with subcommands: `setup`, `serve`, `run`, `init`, `doctor`, `status`, `scores`, `interventions`, `trust`, `models`, `stop`, `upgrade`.
+Owns all operator and agent-facing commands. CLI commands must produce
+actionable errors, prefer repo-local defaults, and keep setup/update/release
+flows usable from outside the source checkout.
+
+### Config, Build Info, and Updates (`internal/config/`, `internal/buildinfo/`, `internal/updatecheck/`, `internal/selfupdate/`, `internal/shellpath/`)
+
+Config holds local runtime paths and integration settings. Build info carries
+the packaged version. Update checks compare the installed binary, target
+metadata, release availability, and mirrored operating-model health. Self-update
+downloads release assets, verifies checksums, replaces the installed command
+atomically, and reuses shell path setup.
+
+### Scanner and Generated Harness (`internal/scanner/`)
+
+Scans repos for starter findings, creates deduplicated tickets, and owns the
+generated target harness defaults. `init` and `update harness` write missing
+defaults only; target-owned manifests, prompts, guardrails, knowledge routes,
+tickets, docs, and `AGENTS.md` are preserved after initialization.
+
+### Bundle and Context (`internal/bundle/`, `internal/context/`)
+
+The bundle reader loads `.harness/manifest.yaml`, role prompts, guardrails, and
+knowledge routes from the target repo. Context assembly builds the role system
+prompt from the role definition, routed knowledge, scoped guardrails, trigger
+payload, and context budget. Retrieval remains tool-driven rather than stuffing
+every document into each prompt.
 
 ### Agent Runtime (`internal/agent/`)
 
-The core execution loop. Takes a role prompt + tools, calls the LLM, executes tool calls in a sandbox, feeds results back, and repeats until done or budget exhausted. Synchronous single-threaded per job; concurrency is at the job level.
+Runs the synchronous conversation loop for one job: call the LLM, parse tool
+calls, execute allowed tools, return observations, and stop on completion,
+budget exhaustion, max turns, or error. Concurrency is owned by the worker pool,
+not by a single agent loop.
 
-### LLM Client and Router (`internal/llm/`)
+### LLM Client, Router, and Local Inference (`internal/llm/`, `internal/inference/`, `internal/models/`, `internal/hardware/`)
 
-OpenAI-compatible HTTP client. The router maps roles to model endpoints based on the manifest. Supports local llama.cpp, external vLLM, and cloud API fallback — all through the same interface.
-
-### Local Inference (`internal/inference/`, `internal/models/`, `internal/hardware/`)
-
-Manages llama.cpp as a subprocess. Auto-detects GPU hardware, downloads appropriate model weights, starts/stops/restarts the inference server, and health-checks it.
+The LLM client speaks the OpenAI-compatible HTTP shape used by local llama.cpp
+and compatible model servers. Local inference manages llama.cpp as a subprocess,
+detects hardware, downloads or verifies model weights, starts and stops the
+server, and health-checks it. Model evaluation prints the current candidate plan
+or probes a supplied compatible endpoint.
 
 ### Tool System (`internal/tools/`)
 
-Typed tool registry with JSON Schema definitions. Core tools: `file_read`, `file_write`, `file_search`, `grep`, `shell_exec`, and bounded `git_*` operations for direct commits to `main`. Optional GitHub helpers cover status, check-run, comment, and webhook telemetry. Per-role tool allowlists are enforced from the bundle and fail closed when empty.
+The tool registry exposes typed tools with JSON Schema definitions. Built-ins
+are registered in code and then filtered by the current role allowlist. Empty
+allowlists fail closed. Mutating tools are blocked at observer trust and pass
+through repository-root checks, guardrails, safety limits, and secret scanning
+where applicable.
 
-### Context Assembly (`internal/context/`)
+Current mirrored built-in tools are:
 
-Builds the system prompt from: role prompt + in-scope guardrails + knowledge routes + trigger context. Enforces context budgets per role. Everything else is retrieved on demand via tools.
+- `file_read`, `file_write`, `file_search`
+- `grep`, `shell_exec`
+- `mars_harness_cli`
+- `record_decision`
+- `ticket_create`
+- `tool_create`
+- `git_status`, `git_diff`, `git_commit`, `git_push`
 
-### Bundle Resolver (`internal/bundle/`)
+`docs/design-docs/tools-glossary.md` is first-class mirrored context for tool
+availability and selection. New tools must extend that glossary and the
+generated target copy in the same change.
 
-Reads `.harness/` from a repo at a specific commit SHA. Parses manifest, role prompts, guardrails, policies, knowledge routes. Computes content hash for auditability.
+### Queue and Server (`internal/queue/`, `internal/serve/`, `internal/scheduler/`, `internal/github/`)
 
-### Job Queue (`internal/queue/`)
+SQLite is the runtime system of record for repos, jobs, scores, trust, traces,
+telemetry, and related state. Jobs carry `repo_id`, role, trigger payload, and
+idempotency key. Claiming is atomic and prevents concurrent jobs for the same
+repo while allowing different repos to progress. `start` defaults to a per-repo
+database; `serve` keeps the legacy multi-repo mode.
 
-SQLite-backed. Schema includes `repo_id` from day one (multi-repo ready). Per-repo serialization via advisory locking. Idempotency keys prevent duplicate jobs from webhook replay.
+The server owns webhooks, cron triggers, recovery queue self-healing, worker
+pool lifecycle, dashboard/API controls, role chaining, and self-improvement
+checks.
 
-### Sandbox (`internal/sandbox/`)
+### Sandbox, Safety, and Guardrails (`internal/sandbox/`, `internal/safety/`, `internal/guardrails/`)
 
-Process-level isolation. Linux: PID, mount, network namespaces. macOS: process groups with filesystem restrictions. Fresh working directory per job with repo cloned at target SHA.
+Sandboxing is process-level. Linux attempts PID, mount, and network namespaces
+with ulimit wrappers. Non-Linux platforms use process groups, current working
+directory restriction, and ulimit wrappers. Current execution roots tools in
+the registered repo path; it does not clone a fresh working directory per job.
 
-### Scoring (`internal/scoring/`)
+Safety and guardrails provide blast-radius limits, deletion policy, secret
+scanning, blocked destructive operations, advisory prompt guidance, mechanical
+validation, and auditability. Dashboard/API stop is graceful: it stops claiming
+new work and shuts down running orchestration rather than pretending to roll
+back already-landed commits.
 
-Tracks real outcomes via trunk-native signals: commit produced, checks passed or failed, guardrail blocks, reverts, human follow-up commits touching the same files, noops when actionable work existed, and terminal failures. Computes per-role rolling accuracy score.
+### Scoring, Telemetry, Trust, and Quality (`internal/scoring/`, `internal/telemetry/`, `internal/trust/`, `internal/qualityscore/`)
 
-### Progressive Autonomy (`internal/trust/`)
+Scores are based on real outcomes: successful completion, commits, checks,
+guardrail blocks, max turns, noops, dogfood failures, reverts, human follow-up,
+and repeated failure categories. Trust levels are `observer`, `contributor`,
+and `autonomous`; trust gates mutating tools and role behavior.
 
-Three trust levels: observer (read/report only), contributor (human-triggered or ticket-bound edit/test/commit/push to `main`), and autonomous (self-schedule, chain jobs, edit/test/commit/push to `main`). Driven by accuracy scores with configurable thresholds per role. Trial mode for cold start.
+`scores export` converts runtime evidence into `docs/QUALITY_SCORE.md`, keeps a
+manual notes block, and can create deduplicated low-score intervention-debt
+tickets. The dashboard should not become a separate quality source of truth.
 
-### Self-Improvement (`internal/evolution/`)
+### Self-Improvement and Learnings (`internal/evolution/`, `internal/learnings/`, `internal/docsconsistency/`, `internal/operatingmodel/`, `internal/planhygiene/`)
 
-Intervention detector monitors git history, traces, scoring events, and optional integration events for human follow-up work on harness output. Reviewer meta-role analyses failures, classifies root causes, and proposes bounded evolution commits to `.harness/`. Before/after tracking validates improvements.
+The learning loop triages failures before changing the system. Improvement
+targets can be role prompts, skills, process, guardrails, context routes, tool
+policy, manifest settings, scanner defaults, ticket flow, inference settings,
+or generated target guidance. Docs consistency, operating-model checks, and
+active-plan hygiene keep source and deployed harness doctrine aligned.
 
-### Guardrails (`internal/guardrails/`)
+### Dashboard and UI (`internal/dashboard/`, `internal/ui/`)
 
-Advisory (prompt-injected, best-effort) and hard (mechanically validated, blocking) tiers. Override mechanism with logging. Staleness detection for unused guardrails.
+The dashboard is server-rendered HTML with embedded assets and SSE updates. It
+exposes status, queues, repos, roles, telemetry, quality links, and controls for
+pause/resume, warm restart, scan, run-role, and graceful stop. The terminal UI
+provides the same operational controls during `start` and `serve`: `p`, `r`,
+`s`, `q`, and `h`.
 
-### Dashboard (`internal/dashboard/`)
+### Release (`internal/release/`, `.github/workflows/`)
 
-Server-rendered HTML at `localhost:9090`. htmx for live updates, Chart.js for graphs, SSE for streaming. Five pages: pipeline flow, role health, throughput, debug, evolution history. All static assets embedded in the Go binary.
+Release notes infer semantic versions from commits, update source build info,
+and prepend generated changelog entries. Source release-note commits are tagged
+as `vX.Y.Z`; the tag-triggered Release workflow builds platform binaries and
+checksums. `release verify-assets` confirms the GitHub Release has the expected
+assets.
 
-### Safety (`internal/safety/`)
+## Generated Target Harness Layout
 
-Blast radius containment: max changed files and lines per job, file deletion allowlist, rate limiting, secret scanning, and blocked destructive operations. Emergency stop halts jobs, cancels the queue, and stops new mutations.
+`mars-harness init` writes a deployed harness that is immediately usable by
+Codex, Cursor, Mars Harness roles, and humans:
 
-## Bundle Format (`.harness/`)
-
+```text
+target-repo/
+  AGENTS.md
+  .harness/
+    manifest.yaml
+    metadata.yaml
+    roles/
+      ceo.md
+      cto.md
+      coo.md
+      engineer.md
+      ...
+    guardrails/
+      *.yaml
+    knowledge/
+      context-glossary.yaml
+    skills/
+      self-improvement/
+        SKILL.md
+  docs/
+    goals/
+    features/
+    tickets/
+      backlog/
+      in-progress/
+      done/
+      README.md
+    exec-plans/
+      active/
+      backlog/
+      completed/
+      superseded/
+      README.md
+    design-docs/
+      index.md
+      context-glossary.md
+      harness-glossary.md
+      tools-glossary.md
+      release-versioning.md
+    references/
+    generated/
+    QUALITY_SCORE.md
+  VERSION
+  CHANGELOG.md
 ```
-.harness/
-  manifest.yaml             # Roles, triggers, models, budgets, trust thresholds
-  roles/
-    engineer.md             # Prompt for each role
-    pipeline-fixer.md
-    ceo.md
-    ...
-  guardrails/
-    architecture.yaml       # Hard + advisory rules
-    conventions.yaml
-    security.yaml
-  policies/
-    file-allowlist.yaml     # Per-role write restrictions
-    egress-policy.yaml      # Network rules
-    trunk-policy.yaml       # Direct main commit/push rules
-    blast-radius.yaml       # Max files, max lines, rate limits
-  knowledge-routes.yaml     # "When working on X, read Y"
-  lock/
-    bundle.lock.json        # Content hash + model weight hashes
-```
+
+Generated target docs mirror foundation doctrine while staying
+project-agnostic. Upgrade/update commands write missing defaults and metadata
+for drift detection, not destructive replacements of user-owned policy.
+
+## Operating Model
+
+Mars Harness uses BDD-led, goal-driven walking-skeleton delivery:
+
+1. Goals define outcomes and competing priorities.
+2. BDD feature contracts define the intended capability.
+3. The active exec plan ranks failing scenarios and states the hypothesis.
+4. Tickets implement the next highest-value failing scenario or scenario group.
+5. Engineers ship the thinnest real end-to-end slice that passes evidence.
+6. Dogfood, QA, telemetry, quality score, release notes, and feedback update the
+   loop.
+
+The CEO owns goals, BDD contracts, scenario schedule, tradeoffs, and the active
+plan. The CTO checks architecture fit and whether the walking skeleton is real.
+The COO creates scoped tickets from the current failing scenario. Engineers
+complete one ticket per run and supply scenario evidence before feature tickets
+move to done. Janitor and orchestrator roles keep state truthful. Evolution
+roles improve the harness only inside trust and safety limits.
+
+No feature is shipped just because a ticket moved. Feature truth lives in BDD
+scenario evidence.
 
 ## Data Flow
 
-1. **Event arrives** (webhook or cron schedule)
-2. **Normalized** into a common event struct
-3. **Deduplicated** via idempotency key
-4. **Job created** in SQLite queue
-5. **Dispatcher claims** the job (respects per-repo serialization)
-6. **Bundle resolved** at the commit SHA
-7. **Context assembled** (role prompt + scoped guardrails + trigger context)
-8. **Agent loop runs** in a sandbox with tools available
-9. **Output validated** against hard guardrails and blast radius limits
-10. **Git operations** executed as bounded commits and pushes to `main`, gated by trust level
-11. **Outcome tracked** and scored when observable (commit, checks, guardrails, reverts, human follow-up)
-12. **Self-improvement triggered** if score below threshold or intervention detected
+1. A command, webhook, cron trigger, dashboard action, telemetry pattern, or
+   chain rule creates intent.
+2. The target repo is auto-initialized when required by `start`, `register`,
+   `run`, or `scan`.
+3. The repo is resolved from the registry and the per-repo or configured SQLite
+   database.
+4. The event is normalized into a job with a repo ID, role, trigger payload, and
+   idempotency key.
+5. The queue deduplicates the job and atomically claims only work whose repo has
+   no currently claimed/running job.
+6. The executor loads the target harness, role prompt, manifest settings,
+   guardrails, knowledge routes, trust level, and tool allowlist.
+7. Context is assembled within the role budget.
+8. The agent loop calls the configured OpenAI-compatible endpoint and executes
+   only allowed tools through the tool executor.
+9. Mutating tool calls are checked against trust, root boundaries, safety,
+   guardrails, and secret scanning.
+10. Trace, terminal output, telemetry, and job status are recorded.
+11. Scoring consumes observable outcomes and updates role health.
+12. Quality export, intervention-debt tickets, learnings, skills, prompt
+   changes, manifest/tool-policy updates, or generated-harness updates are
+   created when evidence supports them.
+
+## Database Isolation
+
+The default database is isolated per target repo for `start`, `register`, and
+`doctor --repo`:
+
+```text
+~/.mars-harness/db/{repo-name}/mars.db
+```
+
+`serve` uses the legacy shared path unless `--db` is supplied. Explicit `--db`
+always wins. This keeps queue, telemetry, scheduling, trust, and registry state
+from different projects physically separate by default.
+
+## Release and Versioning Flow
+
+Every non-release semantic source commit is followed by:
+
+1. `mars-harness release notes --repo . --bump auto`
+2. A `release: notes X.Y.Z` commit containing `VERSION`, `CHANGELOG.md`, and
+   source build-info updates.
+3. Push to `main`.
+4. Tag `vX.Y.Z` at the release-note commit.
+5. Push the tag so the Release workflow publishes binaries and checksums.
+6. `mars-harness release verify-assets --version vX.Y.Z`.
+
+Initialized target repos receive the same release-note discipline through
+generated guidance, adjusted to their own release capability.
+
+## Source of Truth
+
+- First-read operating guidance: `AGENTS.md`
+- Tenets: `docs/design-docs/tenets.md`
+- Product surface: `docs/product-specs/product-surface.md`
+- Operating model: `docs/design-docs/delivery-operating-model.md`
+- Harness terminology: `docs/design-docs/harness-glossary.md`
+- Tool availability and use cases: `docs/design-docs/tools-glossary.md`
+- Architecture decisions: `docs/design-docs/index.md`
+- Active work: `docs/exec-plans/active/current-operating-plan.md`
+- Quality evidence: `docs/QUALITY_SCORE.md`
+
+Architecture changes should update this file when they change command surfaces,
+runtime components, generated target layout, operating flow, persistence,
+tooling, release behavior, or trust/safety boundaries.
