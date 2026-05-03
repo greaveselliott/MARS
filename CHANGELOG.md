@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.19.0] - 2026-05-03
+<!-- mars-harness-release: version=0.19.0 commit=6a2d36a9be79 -->
+
+### Features
+- **role-registry:** Add checked role inventory (MH-043) (6a2d36a)
+
+### Delivery Evidence
+- Enabler work: MH-043: Add checked role registry
+
 ## [0.18.0] - 2026-05-03
 <!-- mars-harness-release: version=0.18.0 commit=d5436fdefd23 -->
 
