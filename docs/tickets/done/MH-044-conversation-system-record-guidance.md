@@ -7,8 +7,10 @@ kind: intervention-debt
 work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: TBD
+evidence_links:
+  - go test ./internal/scanner ./internal/docsconsistency ./internal/operatingmodel ./internal/doctor ./internal/updatecheck
+  - go test ./...
+verified_by: command
 dedupe_key: "public-example"
 source: Mars parity workstream C
 created: 2026-05-03
@@ -51,28 +53,28 @@ agents.
 - `docs/design-docs/conversation-as-system-record.md`
 - `docs/design-docs/index.md`
 - `internal/scanner/init.go`
-- `internal/scanner/init_test.go`
+- `internal/scanner/scanner_test.go`
 
 ## Acceptance Criteria
 
 ### Functional
 
-- [ ] The new design doc defines which conversations must create repo artifacts.
-- [ ] Root guidance and generated target guidance both require persistent
+- [x] The new design doc defines which conversations must create repo artifacts.
+- [x] Root guidance and generated target guidance both require persistent
       artifacts for non-trivial decisions and investigations.
-- [ ] The guidance is framed for direct commits to `main`, not PR handoff.
-- [ ] Existing active-plan hygiene checks are linked as enforcement evidence.
+- [x] The guidance is framed for direct commits to `main`, not external handoff.
+- [x] Existing active-plan hygiene checks are linked as enforcement evidence.
 
 ### Edge cases and negative paths
 
-- [ ] Trivial command responses are not forced into docs churn.
-- [ ] Chat summaries cannot replace tickets, design docs, quality notes, or
+- [x] Trivial command responses are not forced into docs churn.
+- [x] Chat summaries cannot replace tickets, design docs, quality notes, or
       exec plans when those artifacts are required.
-- [ ] Generated target guidance remains generic and does not import Mars-specific
+- [x] Generated target guidance remains generic and does not import Mars-specific
       SaaS constraints.
 
 ### Observability, docs, and regressions
 
-- [ ] Scanner/init tests cover the generated guidance.
-- [ ] Docs-consistency tests still pass.
-- [ ] The design-doc index points to the new record-keeping decision.
+- [x] Scanner/init tests cover the generated guidance.
+- [x] Docs-consistency tests still pass.
+- [x] The design-doc index points to the new record-keeping decision.

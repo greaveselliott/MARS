@@ -35,8 +35,8 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001` and the current install/setup feature is `F-002`.
 - Ticket state:
   - `docs/tickets/in-progress/` is empty.
-  - `docs/tickets/backlog/` contains `MH-044` through `MH-049`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-043`.
+  - `docs/tickets/backlog/` contains `MH-045` through `MH-049`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-044`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -58,9 +58,8 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Mars parity execution**: work through the tickets materialized on 2026-05-03 for
-   operating model (`MH-042`), role registry (`MH-043`),
-   conversation-as-system-record (`MH-044`), intervention debt (`MH-045`),
+1. **Mars parity execution**: `MH-044` is done; continue the tickets
+   materialized on 2026-05-03 for intervention debt (`MH-045`),
    active-ticket drain (`MH-046`), orchestrator recovery (`MH-047`),
    deterministic remediation (`MH-048`), and dogfood matrix (`MH-049`).
 
@@ -108,5 +107,5 @@ Checks recorded during the 2026-05-02 review:
 
 ## Next Ticket Work
 
-- `MH-044`: conversation-as-system-record guidance is the next backlog ticket.
+- `MH-045`: complete intervention debt signal ingestion is the next backlog ticket.
 - Next active-plan refresh: promote the highest-value Mars parity scenario group.

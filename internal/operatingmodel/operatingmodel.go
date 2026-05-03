@@ -45,9 +45,10 @@ type requiredArtifact struct {
 }
 
 var requiredArtifacts = []requiredArtifact{
-	{path: "AGENTS.md", needles: []string{"BDD feature contracts", "walking skeleton"}},
+	{path: "AGENTS.md", needles: []string{"BDD feature contracts", "walking skeleton", "Conversation system record"}},
 	{path: "docs/QUALITY_SCORE.md", needles: []string{"shipped feature scenarios", "enabler work"}},
 	{path: "docs/design-docs/delivery-operating-model.md", needles: []string{"AD-074", "BDD-Led Goal-Driven Walking-Skeleton"}},
+	{path: "docs/design-docs/conversation-as-system-record.md", needles: []string{"AD-086", "Conversation As System Record", "Chat summaries can help humans catch up"}},
 	{path: "docs/goals/README.md", needles: []string{"Goal Schema", "Dedupe Key", "Autonomous Goal Rule"}},
 	{path: "docs/goals/active.md", needles: []string{"G-001", "Status: active", "Hypothesis"}},
 	{path: "docs/goals/observations.md", needles: []string{"weak/noisy evidence"}},

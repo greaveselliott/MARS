@@ -8,23 +8,32 @@ Every task that changes behaviour, fixes bugs, or adds infrastructure MUST updat
 
 - If the work was driven by the delivery schedule, update it: mark tasks complete, record discoveries.
 - If the work was driven by a ticket, move the ticket to `done/` in the same direct commit to `main`.
+- If a conversation changes priority, scope, scenario order, ticket state, or blocker state, update the active plan or ticket in the same direct commit to `main`.
 
 ### 2. Design docs
 
 - If the work introduced or changed an architectural decision, update the relevant doc in `docs/design-docs/`.
 - Discoveries found during implementation go in the design doc's Discoveries section.
 - Add a row to `docs/design-docs/index.md` if a new decision was made.
+- Investigations that future agents may need must land in an owning design doc, reference, report, or ticket. A chat summary is not enough.
 
 ### 3. AGENTS.md
 
 - If the work changed project constraints, conventions, or key workflows, update `AGENTS.md`.
 
+### 4. Quality and completion evidence
+
+- Quality findings, regressions, verification evidence, and readiness claims must update ticket evidence, `docs/QUALITY_SCORE.md`, traces, reports, or test references as applicable.
+- Completed work must leave the ticket, plan state, release evidence, and commit history consistent. Use the active-plan hygiene checker from `MH-034` through `mars-harness doctor --repo .` or docs-consistency tests rather than duplicating those checks manually.
+
 ## What NOT to document
 
 - Trivial single-file edits (typo fixes, dependency bumps) that don't change behaviour.
 - Work the user explicitly says is experimental or throwaway.
+- Simple command responses, restatements of existing docs, and local experiments that do not affect future decisions, investigations, quality claims, or completion state.
 
 ## Anti-patterns
 
 - Committing code without updating the execution plan that drove it.
 - Recording discoveries only in commit messages or chat — they must land in a design doc or execution plan.
+- Treating a chat summary as a substitute for required plans, tickets, design docs, quality notes, or completed-work evidence.

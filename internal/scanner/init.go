@@ -419,8 +419,8 @@ roles:
 
 var defaultHarnessFiles = map[string]string{
 	"knowledge/context-glossary.yaml": `routes:
-  - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
-    paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md
+  - when: project terminology, domain concepts, architecture vocabulary, naming, unclear intent, conversation record discipline, durable decisions, investigation findings, quality evidence, or completed-work state
+    paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/conversation-as-system-record.md, docs/design-docs/index.md
   - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, operating model, role domains, role modes, tools, tool availability, tool use cases, tool selection, tool allowlists, tenets, first-class definitions, or contextual definitions
     paths: AGENTS.md, docs/roles/ROLES.md, docs/design-docs/harness-glossary.md, docs/design-docs/harness-operating-model.md, docs/design-docs/tools-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
   - when: role routing, role model, domains, modes, schedules, chains, trigger routing, or manifest role behavior
@@ -562,6 +562,7 @@ would otherwise live only in chat.
 - **Foundation operating model** — the operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
 - **Deployed operating model** — the operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
+- **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
@@ -584,13 +585,14 @@ Role registry: ` + "`docs/roles/ROLES.md`" + `
 4. Read ` + "`docs/design-docs/harness-operating-model.md`" + ` and ` + "`docs/roles/ROLES.md`" + ` before changing role domains, modes, triggers, tools, trust, guardrails, or role behavior.
 5. Read ` + "`docs/design-docs/index.md`" + ` for architectural decisions.
 6. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
-7. Read ` + "`docs/goals/active.md`" + ` and ` + "`docs/goals/README.md`" + ` before changing strategy.
-8. Read ` + "`docs/features/README.md`" + ` and the relevant feature contract before claiming a feature is complete.
-9. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
-10. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
-11. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
-12. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
-13. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
+7. Read ` + "`docs/design-docs/conversation-as-system-record.md`" + ` before turning chat context into durable plans, decisions, investigations, quality evidence, or completed-work state.
+8. Read ` + "`docs/goals/active.md`" + ` and ` + "`docs/goals/README.md`" + ` before changing strategy.
+9. Read ` + "`docs/features/README.md`" + ` and the relevant feature contract before claiming a feature is complete.
+10. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
+11. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
+12. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
+13. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
+14. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
 
 ## Workflow
 
@@ -601,6 +603,8 @@ Role registry: ` + "`docs/roles/ROLES.md`" + `
 - Complete one coherent step at a time.
 - If blocked, record the blocker, create or update the dependency ticket, and return the ticket to a non-misleading state.
 - Commit and push after each completed step.
+- Significant conversations must update the owning repo artifact in the same direct commit to ` + "`main`" + `: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
+- Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
 - Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
 - After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
 - When GitHub release credentials are configured, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets. A notes-only GitHub Release is a blocker until required assets are attached and verified. If publishing or verification is blocked, record the blocker explicitly.
@@ -621,6 +625,19 @@ Non-obvious architecture, workflow, guardrail, or trade-off decisions belong in
 Product features and user-visible behavior changes must be documented with
 the reason why, either in a product spec if this repo has one or in the owning
 design doc. Do not leave architecture or product intent only in chat.
+
+## Conversation Record Discipline
+
+Significant agent conversations are inputs, not durable records. If a
+conversation changes plans, decisions, investigations, quality findings, or
+completed-work state, update the owning repo artifact before claiming the work
+is complete.
+
+Use ` + "`docs/design-docs/conversation-as-system-record.md`" + ` to route each signal.
+The common durable targets are goals, feature contracts, active exec plans,
+tickets, design docs, product specs, references, reports, quality evidence,
+release evidence, traces, and tests. Trivial command responses and restatements
+of existing docs do not require docs churn.
 
 ## Tickets
 
@@ -841,6 +858,7 @@ Architectural decisions and design documents for this project.
 | --- | --- | --- |
 | [delivery-operating-model.md](delivery-operating-model.md) | Seed | BDD-led goal-driven walking-skeleton delivery model used by goals, plans, tickets, evidence, and quality scoring. |
 | [harness-operating-model.md](harness-operating-model.md) | Seed | Canonical six-domain role model with optional domain and mode metadata for explicit manifest roles. |
+| [conversation-as-system-record.md](conversation-as-system-record.md) | Seed | Significant conversations must become durable repo artifacts for plans, decisions, investigations, quality evidence, and completed work. |
 | [context-glossary.md](context-glossary.md) | Seed | Compact glossary and context map used by agents to find the right docs without loading everything. |
 | [harness-glossary.md](harness-glossary.md) | Accepted | First-class and contextual harness definitions mirrored from the foundation harness. |
 | [tools-glossary.md](tools-glossary.md) | Accepted | First-class mirrored tool availability, selection, and use-case context. |
@@ -858,6 +876,56 @@ Architectural decisions and design documents for this project.
 | AD-082 | Repeated, risky, validation-heavy, or likely-to-recur processes should become formalized tools. | 2026-05-03 | Accepted |
 | AD-083 | New built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires ` + "`record_decision`" + ` and design-doc rationale. | 2026-05-03 | Accepted |
 | AD-084 | Six canonical operating domains are the role-model vocabulary while explicit manifest roles remain executable units with optional domain and mode metadata. | 2026-05-03 | Accepted |
+| AD-086 | Significant conversations must become durable repo artifacts when they change plans, decisions, investigations, quality evidence, or completed-work state. | 2026-05-03 | Accepted |
+`,
+
+	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
+
+**Status:** Seed
+**Date:** 2026-05-03
+**Owner:** Project maintainers
+
+## Context
+
+This harness treats the repository as the system of record. Significant agent
+conversations are useful inputs, but future agents cannot safely rely on chat
+history unless the decision, investigation, quality finding, or completion
+claim is converted into a repo-owned artifact.
+
+This rule is scoped. Trivial command responses, restatements of existing docs,
+and explicitly throwaway experiments do not require docs churn unless they later
+justify a decision, investigation, quality claim, or completion claim.
+
+## Decision
+
+When a conversation changes how work should proceed, what should be built, why
+a trade-off was chosen, what an investigation discovered, whether quality is
+acceptable, or what work is complete, update the owning artifact in the same
+direct commit to main.
+
+Chat summaries can help humans catch up, but they cannot replace required
+plans, tickets, design docs, product specs, investigation notes, quality
+evidence, release evidence, traces, or tests.
+
+## Artifact Routing
+
+| Conversation signal | Required durable artifact |
+| --- | --- |
+| Goal, priority, scope, or scenario direction changes | docs/goals, docs/features, and the active exec plan as applicable. |
+| Ticket creation, blocker, dependency, or completion state changes | docs/tickets plus the active plan ticket-state section when it names ticket locations. |
+| Architecture, workflow, guardrail, tool-policy, or non-obvious trade-off decisions | docs/design-docs and docs/design-docs/index.md. |
+| Product-facing behavior or user-visible capability changes | Owning product spec or design doc with the reason why. |
+| Investigation findings that future agents may need | Owning design doc Discoveries section, docs/references, docs/reports, or a focused ticket. |
+| Quality findings, regressions, verification evidence, or readiness claims | Ticket evidence fields, docs/QUALITY_SCORE.md, test names, traces, or reproducible report paths. |
+| Completed work | Ticket moved to done, active plan refreshed when it names the ticket, semantic commit, generated release notes, and release evidence when configured. |
+
+## Enforcement Evidence
+
+Use the active-plan hygiene checks exposed by mars-harness doctor --repo . and
+docs-consistency tests for plan and ticket-state drift. Those checks report
+multiple active plans, misleading ticket-location claims, unresolved TBD
+placeholders, relative status language without dates, and stale verification
+notes.
 `,
 
 	"docs/design-docs/harness-operating-model.md": `# AD-084: Canonical Harness Operating Domains
@@ -1180,6 +1248,7 @@ loading every document.
 | Canonical role domain | One of Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Role mode | A lower-kebab-case purpose inside a role domain, such as ticket-delivery or quality-review. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. | ` + "`docs/roles/ROLES.md`" + ` |
+| Conversation system record | Durable artifact rule for significant agent conversations that affect plans, decisions, investigations, quality findings, or completed-work state. | ` + "`docs/design-docs/conversation-as-system-record.md`" + ` |
 | Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
 | Release | A semantic version plus patch-note entry generated from commits. | ` + "`docs/design-docs/release-versioning.md`" + ` |
 | Harness glossary | Mirrored foundation/deployed harness vocabulary and contextual routing rules. | ` + "`docs/design-docs/harness-glossary.md`" + ` |
@@ -1232,6 +1301,7 @@ harness and deployed harnesses.
 | Foundation operating model | The operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
 | Deployed operating model | The operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
+| Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
@@ -1262,6 +1332,12 @@ foundation and deployed harnesses.
 Generated deployed harness definitions are owned by this repository after init.
 Use ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/roles/`" + `, and the docs under
 ` + "`docs/design-docs/`" + ` to understand local policy before changing role behavior.
+
+### When turning chat context into durable repo state include this: ` + "`docs/design-docs/conversation-as-system-record.md`" + `
+
+Use the conversation system record decision when a conversation changes plans,
+tickets, design decisions, investigations, quality evidence, or completed-work
+state. Do not use chat summaries as substitutes for the owning artifacts.
 
 ### When changing role domains, modes, trigger routing, tools, trust, guardrails, or scoring include this: ` + "`docs/roles/ROLES.md`" + `
 

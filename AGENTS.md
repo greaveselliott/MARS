@@ -30,6 +30,7 @@ would otherwise live only in chat.
 - **Foundation operating model** — the operating model for `mars-harness` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
 - **Deployed operating model** — the operating model inside a target application harness, governing how agents build that target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
+- **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `mars_harness_cli`, `grep`, `record_decision`, `ticket_create`, `tool_create`, release/status/audit workflow tools, and git tools.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
@@ -118,7 +119,7 @@ mars-harness/
 5. **Architecture and product changes are recorded.** Any non-trivial architecture change or product feature goes in `docs/design-docs/` or `docs/product-specs/` with the reason why, and design decisions are indexed in `docs/design-docs/index.md`.
 6. **Commit after every step.** When executing the delivery schedule, commit after each completed task referencing the milestone and step number.
 7. **Trunk-based development.** All commits go directly to `main`. Do not use branch-based review as the default delivery path. This keeps flows simple for autonomous agents. Use semantic (conventional) commit messages: `feat(scope): ...`, `fix(scope): ...`, `docs: ...`, `chore: ...`, `test: ...`, `refactor: ...`.
-8. **The repo is the system of record.** Decisions, discoveries, and plans live in docs, not in chat threads.
+8. **The repo is the system of record.** Decisions, discoveries, investigations, quality evidence, plans, and completed-work state live in durable repo artifacts, not in chat threads.
 9. **Always commit and push both repos.** When making changes to the harness and/or the target project, document, commit, and push changes in both. The harness and target project are separate git repositories — neither should have dangling uncommitted work at the end of a task.
 10. **Version every source and target change.** Every non-release semantic commit in this repo must be followed by `mars-harness release notes --repo . --bump auto`, then a `release: notes X.Y.Z` commit before the task is considered done. Initialized target repos receive the same rule through generated harness docs. Release-note commits are exempt and are ignored by the generator.
 11. **Operating rules mirror to targets.** Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. When adding or changing a rule, update the generated target guidance and tests in the same task.
@@ -292,13 +293,15 @@ golangci-lint run
 4. **Document every decision and feature.** Architecture changes and product features go in `docs/design-docs/` or `docs/product-specs/` with the reason why. Discoveries go in the relevant design doc's Discoveries section.
 5. **BDD defines done.** Goals align the active plan, BDD feature contracts define feature completeness, and walking skeleton slices implement the next failing scenario through real E2E/integration evidence.
 6. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
-7. **Feed conversations back.** Decisions that exist only in chat threads are invisible to future agents. See the delivery schedule for what to build next.
+7. **Feed conversations back.** Significant conversations must update the owning repo artifact in the same direct commit to `main`: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
+8. **Avoid docs churn for trivial replies.** Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
 
 ## Pointers
 
 - **Current operating plan:** [docs/exec-plans/active/current-operating-plan.md](docs/exec-plans/active/current-operating-plan.md)
 - **Tenets:** [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
 - **Architecture decisions:** [docs/design-docs/index.md](docs/design-docs/index.md)
+- **Conversation record discipline:** [docs/design-docs/conversation-as-system-record.md](docs/design-docs/conversation-as-system-record.md)
 - **Product vision:** [docs/product-specs/vision.md](docs/product-specs/vision.md)
 - **Quality score:** [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md)
 - **Goals:** [docs/goals/active.md](docs/goals/active.md)

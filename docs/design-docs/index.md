@@ -14,6 +14,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [dashboard.md](dashboard.md) | Draft | 5-page dashboard: pipeline flow, role health, throughput, debug, evolution history. AD-011 (htmx + Chart.js embedded) |
 | [context-efficiency.md](context-efficiency.md) | Draft | Context assembly, budgets, knowledge routing, guardrail scoping |
 | [harness-operating-model.md](harness-operating-model.md) | Accepted | Canonical six-domain operating model with explicit role mode metadata, checked role registry, and strict-trunk migration path. AD-084, AD-085. |
+| [conversation-as-system-record.md](conversation-as-system-record.md) | Accepted | Significant conversations must become durable repo artifacts for plans, decisions, investigations, quality evidence, and completed work. AD-086. |
 | [harness-glossary.md](harness-glossary.md) | Accepted | First-class and contextual harness definitions mirrored between the foundation harness and deployed harnesses. |
 | [tools-glossary.md](tools-glossary.md) | Accepted | First-class mirrored tool availability, selection, and use-case context for foundation and deployed harnesses. |
 | [trigger-orchestration.md](trigger-orchestration.md) | Draft | Trigger sources (webhook, schedule, chain), upstream chaining via `then`, custom cron, strict-trunk default roles. AD-016 through AD-020. |
@@ -116,3 +117,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-083 | New built-in tools must originate through `tool_create`; bypassing it requires `record_decision` and design-doc rationale before completion. | dogfood-and-decisions.md | Tools |
 | AD-084 | Six canonical operating domains are the role-model vocabulary, while explicit manifest roles remain the executable units and may declare optional domain/mode metadata. | harness-operating-model.md | Role model |
 | AD-085 | Checked role registries in source and generated targets inventory manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior, and doctor checks them against manifests. | harness-operating-model.md | Role registry |
+| AD-086 | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality evidence, or completed-work state. | conversation-as-system-record.md | Documentation discipline |

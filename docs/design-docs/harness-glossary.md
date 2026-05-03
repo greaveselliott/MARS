@@ -35,6 +35,7 @@ harness and deployed harnesses.
 | Foundation operating model | The operating model for `mars-harness` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
 | Deployed operating model | The operating model inside a target application harness, governing how agents build that target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
+| Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `mars_harness_cli`, `grep`, `record_decision`, `ticket_create`, `tool_create`, release/status/audit workflow tools, and git tools. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
@@ -65,6 +66,12 @@ foundation and deployed harnesses.
 Generated deployed harness definitions live in scanner defaults. Mirrored
 changes must update source guidance, generated target guidance, and tests in
 the same task.
+
+### When turning chat context into durable repo state include this: `docs/design-docs/conversation-as-system-record.md`
+
+Use the conversation system record decision when a conversation changes plans,
+tickets, design decisions, investigations, quality evidence, or completed-work
+state. Do not use chat summaries as substitutes for the owning artifacts.
 
 ### When changing role domains, modes, trigger routing, tools, trust, guardrails, or scoring include this: `docs/roles/ROLES.md`
 
