@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.8] - 2026-05-03
+<!-- mars-harness-release: version=0.24.8 commit=0507ef14d1a4 -->
+
+### Why This Release Matters
+It makes the harness easier to understand and operate through work to record persistent store upgrade coverage gap in tickets.
+
+### Documentation
+- **tickets:** Record persistent store upgrade coverage gap (0507ef1)
+
 ## [0.24.7] - 2026-05-03
 <!-- mars-harness-release: version=0.24.7 commit=31f16cb2cfc7 -->
 
