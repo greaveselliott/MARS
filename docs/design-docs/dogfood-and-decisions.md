@@ -520,3 +520,41 @@ diff and secret checks remain as defense-in-depth for less obvious mutation.
   self-healing are treated as contributor rather than becoming invalid.
 - Blast-radius tickets should no longer be created after obvious repo deletion
   commands have already modified the worktree.
+
+---
+
+### AD-092: Intervention Debt Signals Avoid Secondary Ticket Amplification
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Author:** Agent (target telemetry diagnosis)
+
+### Context
+
+The same `../sample-target` bootstrap failure produced additional
+intervention-debt tickets after the primary guardrail failures:
+
+- blast-radius policy blocks were classified as `unknown`, creating a
+  high-priority "Classify unknown failure" ticket for a known guardrail event
+- the Engineer later failed the ticket gate because it could not complete the
+  newly claimed intervention-debt ticket after those policy blocks, creating a
+  second "Fix ticket completion workflow" ticket for the same job
+
+This made one root failure look like several independent process failures.
+
+### Decision
+
+Telemetry classification treats `tool policy blocked` and
+`blast radius exceeded` messages as `guardrail_block`.
+
+When a job already has a policy or guardrail telemetry event, a later terminal
+`ticket_gate` failure from the same job is still recorded as telemetry, but it
+does not create a second intervention-debt ticket. The primary guardrail ticket
+remains the work item to investigate.
+
+### Consequences
+
+- Intervention debt stays closer to root cause instead of multiplying symptoms.
+- Ticket-gate telemetry remains visible for scoring and dashboards.
+- Genuine ticket-gate failures without prior policy blocks still create
+  intervention-debt tickets.

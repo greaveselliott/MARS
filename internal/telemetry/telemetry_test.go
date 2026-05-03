@@ -110,6 +110,8 @@ func TestClassify_interventionSignals(t *testing.T) {
 		want FailureCategory
 	}{
 		{`guardrails: blocked by rule "no-secrets"`, CategoryGuardrailBlock},
+		{`post tool policy blocked shell_exec: blast radius exceeded: 127 files changed (limit 10)`, CategoryGuardrailBlock},
+		{`pre tool policy blocked git_commit: blast radius exceeded: 127 files changed (limit 10)`, CategoryGuardrailBlock},
 		{`policy: trust level observer cannot run mutating tool "file_write"`, CategoryGuardrailBlock},
 		{`human follow-up commit fixed agent output`, CategoryHumanFollowup},
 		{`reverted agent commit abc123`, CategoryRevertedCommit},

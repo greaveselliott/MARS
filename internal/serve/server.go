@@ -1343,19 +1343,24 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 		})
 	}
 
+	suppressSecondaryTicketGate := cat == telemetry.CategoryTicketGate && s.jobHadPolicyBlock(job.ID)
 	evt := s.telemetry.Record(job.ID, job.RepoID, job.Role, jobErr.Error())
-	s.recordInterventionDebtSignal(ctx, interventionDebtSignal{
-		Kind:           interventionDebtSignalKindForCategory(cat),
-		RepoID:         job.RepoID,
-		Role:           job.Role,
-		JobID:          job.ID,
-		Category:       cat,
-		EvidenceWindow: "24h",
-		Event:          &evt,
-		TraceID:        s.latestTraceID(ctx, job.ID),
-		Outcome:        string(outcomeType),
-		Message:        jobErr.Error(),
-	})
+	if suppressSecondaryTicketGate {
+		log.Info("serve: suppressing secondary ticket-gate intervention debt after policy block")
+	} else {
+		s.recordInterventionDebtSignal(ctx, interventionDebtSignal{
+			Kind:           interventionDebtSignalKindForCategory(cat),
+			RepoID:         job.RepoID,
+			Role:           job.Role,
+			JobID:          job.ID,
+			Category:       cat,
+			EvidenceWindow: "24h",
+			Event:          &evt,
+			TraceID:        s.latestTraceID(ctx, job.ID),
+			Outcome:        string(outcomeType),
+			Message:        jobErr.Error(),
+		})
+	}
 
 	if s.dash != nil {
 		payload, _ := json.Marshal(map[string]string{
@@ -1452,6 +1457,25 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 	log.Info("serve: recovery job enqueued", "recovery_job_id", jobID)
 
 	go s.checkEvolution(context.Background(), job.Role, job.RepoID)
+}
+
+func (s *Server) jobHadPolicyBlock(jobID string) bool {
+	if s == nil || s.telemetry == nil || strings.TrimSpace(jobID) == "" {
+		return false
+	}
+	for _, evt := range s.telemetry.Events() {
+		if evt.JobID != jobID {
+			continue
+		}
+		if evt.Category == telemetry.CategoryGuardrailBlock {
+			return true
+		}
+		msg := strings.ToLower(evt.Message)
+		if strings.Contains(msg, "tool policy blocked") || strings.Contains(msg, "blast radius exceeded") {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Server) latestTraceID(ctx context.Context, jobID string) string {

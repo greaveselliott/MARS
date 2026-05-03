@@ -269,6 +269,29 @@ func TestHandleJobFailedCreatesDedupedInterventionDebtTicket(t *testing.T) {
 	require.Contains(t, text, "## Latest Triage Update", "same signal should update the existing ticket")
 }
 
+func TestHandleJobFailedSuppressesSecondaryTicketGateAfterPolicyBlock(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+
+	rec, err := srv.repos.FindByID(ctx, repoID)
+	require.NoError(t, err)
+	require.NotNil(t, rec)
+	require.NoError(t, os.MkdirAll(filepath.Join(rec.Path, "docs", "tickets", "backlog"), 0o755))
+
+	job := &queue.Job{
+		ID:     "job-1",
+		RepoID: repoID,
+		Role:   "engineer",
+	}
+
+	srv.telemetry.Record(job.ID, job.RepoID, job.Role, "post tool policy blocked shell_exec: blast radius exceeded: 127 files changed (limit 10)")
+	srv.handleJobFailed(ctx, job, errTest("executor: ticket gate: engineer cannot hand off with newly claimed ticket(s) still in docs/tickets/in-progress: T-003.md"))
+
+	entries, err := os.ReadDir(filepath.Join(rec.Path, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Empty(t, entries, "ticket-gate fallout should not create a second intervention-debt ticket when the same job already hit policy blocks")
+}
+
 func TestRecordInterventionDebtFailureRecordsTelemetry(t *testing.T) {
 	t.Parallel()
 	srv := &Server{telemetry: telemetry.NewCollector(nil, nil)}

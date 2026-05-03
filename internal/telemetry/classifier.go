@@ -106,6 +106,10 @@ func Classify(errMsg string) FailureCategory {
 		return CategoryGuardrailBlock
 	case strings.Contains(lower, "guardrail block"):
 		return CategoryGuardrailBlock
+	case strings.Contains(lower, "tool policy blocked"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "blast radius exceeded"):
+		return CategoryGuardrailBlock
 	case strings.Contains(lower, "policy: secret scanner blocked"):
 		return CategoryGuardrailBlock
 	case strings.Contains(lower, "policy: trust level observer cannot run mutating tool"):
