@@ -305,6 +305,7 @@ func TestInit_success(t *testing.T) {
 
 	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "backlog"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "in-progress"))
+	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "in-review"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "done"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "exec-plans", "backlog"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "exec-plans", "active"))
@@ -347,7 +348,7 @@ func TestInit_success(t *testing.T) {
 	expectedPrompts := []string{
 		"ceo", "coo", "cto", "engineer", "qa", "security",
 		"dependency-manager", "release-manager", "dogfood",
-		"pipeline-fixer", "janitor",
+		"pipeline-fixer", "orchestrator", "janitor",
 	}
 	for _, role := range expectedPrompts {
 		assert.FileExists(t, filepath.Join(dir, ".harness", "roles", role+".md"),
@@ -362,7 +363,7 @@ func TestInit_success(t *testing.T) {
 		"ceo:", "coo:", "cto-weekly:",
 		"engineer:", "qa:", "security:",
 		"dependency-manager:", "release-manager:",
-		"dogfood:", "pipeline-fixer:", "janitor:",
+		"dogfood:", "pipeline-fixer:", "orchestrator:", "janitor:",
 	} {
 		assert.Contains(t, manifestStr, key, "manifest missing role %s", key)
 	}
@@ -381,6 +382,8 @@ func TestInit_success(t *testing.T) {
 	}
 
 	assert.Contains(t, manifestStr, "record_decision", "manifest should include record_decision in tool lists")
+	assert.Contains(t, manifestStr, "orchestration_mode: legacy", "generated manifest should default to legacy orchestration")
+	assert.Contains(t, manifestStr, "job_disposition_record", "manifest should expose dispatch disposition recording")
 	assert.Contains(t, manifestStr, "domain: planner", "manifest should include canonical domain metadata")
 	assert.Contains(t, manifestStr, "mode: ticket-delivery", "manifest should include role mode metadata")
 	assert.Contains(t, manifestStr, "mars_harness_cli", "manifest should expose mars_harness_cli as a mirrored tool")
@@ -441,6 +444,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Universal tool surface")
 	assert.Contains(t, string(agentGuide), "mars-harness mcp serve")
 	assert.Contains(t, string(agentGuide), "mars_harness_cli")
+	assert.Contains(t, string(agentGuide), "job_disposition_record")
 	assert.Contains(t, string(agentGuide), "tool_create")
 	assert.Contains(t, string(agentGuide), "Contextual harness definition")
 	assert.Contains(t, string(agentGuide), "docs/design-docs/harness-glossary.md")
@@ -475,6 +479,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(harnessGlossary), "Tool creation path")
 	assert.Contains(t, string(harnessGlossary), "Universal tool surface")
 	assert.Contains(t, string(harnessGlossary), "mars_harness_cli")
+	assert.Contains(t, string(harnessGlossary), "job_disposition_record")
 	assert.Contains(t, string(harnessGlossary), "When changing operating doctrine include this")
 	assert.Contains(t, string(harnessGlossary), "When choosing, creating, or changing tools include this")
 	assert.Contains(t, string(harnessGlossary), "`tool_create` is a mirrored tool")
@@ -486,6 +491,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(toolsGlossary), "Mirrored Built-In Tools")
 	assert.Contains(t, string(toolsGlossary), "mars_harness_cli")
 	assert.Contains(t, string(toolsGlossary), "release_orchestrate")
+	assert.Contains(t, string(toolsGlossary), "job_disposition_record")
 	assert.Contains(t, string(toolsGlossary), "harness_doctrine_sync")
 	assert.Contains(t, string(toolsGlossary), "tool_creation_guard")
 	assert.Contains(t, string(toolsGlossary), "task_trace_summarize")
@@ -496,6 +502,7 @@ func TestInit_success(t *testing.T) {
 	roleRegistry, err := os.ReadFile(filepath.Join(dir, "docs", "roles", "ROLES.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(roleRegistry), "| `engineer` | default | engineer | `ticket-delivery` |")
+	assert.Contains(t, string(roleRegistry), "| `orchestrator` | default | orchestrator | `dispatch-routing` |")
 	assert.Contains(t, string(roleRegistry), "Optional GitHub webhook triggers are explicit repair inputs")
 	assert.Contains(t, string(roleRegistry), "`Origin` set to `custom`")
 

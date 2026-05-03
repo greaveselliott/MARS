@@ -8,6 +8,7 @@ Work items live as markdown files in this directory. The repo is the source of t
 docs/tickets/
   backlog/       Tickets waiting to be picked up
   in-progress/   Tickets actively being worked on
+  in-review/     Tickets waiting for approval or reviewer changes
   done/          Completed tickets committed directly to main
 ```
 
@@ -116,6 +117,7 @@ Janitor, Doctor, and the next Engineer run to recover state.
 2. Implementation starts: move to `in-progress/`
 3. An unfinished in-progress ticket must end as one of:
    - completed and moved to `done/`
+   - moved to `in-review/` with reviewer or approval metadata
    - returned to `backlog/` with `blocker` and `next_action`
    - left in `in-progress/` with `blocked_by` pointing at a dependency ticket
    - guardrail-blocked with `blocked_by` pointing at intervention debt
@@ -129,3 +131,18 @@ Eligible in-progress tickets are always the front of the queue. If multiple tick
 Engineer runs cannot create ordinary backlog tickets while eligible in-progress tickets remain. Dependency tickets are allowed only when deduped and linked back to the blocked ticket through metadata such as `metadata.blocks`. Dogfood ticket creation is capped per run by total count, severity, group, and repeated dedupe key.
 
 Intervention-debt tickets are prioritised ahead of ordinary backlog work because they represent a failure in the harness process, prompts, skills, guardrails, context routing, inference setup, or tool policy. Existing matching intervention-debt tickets are updated rather than duplicated.
+
+## Dispatch-Orchestration Metadata
+
+Repos that opt into `orchestration_mode: dispatch` keep the same ticket source
+of truth, but active agents also record operational liveness in SQLite. A role
+that reaches a terminal state records a job disposition with `job_disposition_record`:
+
+- `completed` when the ticket moved to `done/` with required evidence.
+- `blocked` when the ticket remains in progress with `blocker`, `blocked_by`, and `next_action`.
+- `in_review` when the ticket moves to `in-review/` with reviewer or approval metadata.
+- `changes_requested` when review sends work back to Engineer.
+- `no_work` when no repo change was needed.
+
+The disposition helps the Orchestrator choose the next best role. It does not
+replace BDD evidence or ticket movement rules.

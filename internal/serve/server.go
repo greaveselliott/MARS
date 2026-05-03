@@ -21,6 +21,8 @@ import (
 	gh "github.com/greaveselliott/mars-harness/internal/github"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
+	"github.com/greaveselliott/mars-harness/internal/orchestration"
+	"github.com/greaveselliott/mars-harness/internal/orgstate"
 	"github.com/greaveselliott/mars-harness/internal/power"
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/safety"
@@ -84,6 +86,7 @@ type Server struct {
 	scoreStore  *scoring.Store
 	evoStore    *evolution.Store
 	trustStore  *trust.Store
+	orgStore    *orgstate.Store
 
 	mu        sync.Mutex
 	started   bool
@@ -165,6 +168,11 @@ func New(cfg Config) (*Server, error) {
 		slog.Warn("serve: trust store unavailable — mutating tools default to observer restrictions", "err", err)
 	}
 
+	orgStore, err := orgstate.OpenStore(cfg.DBPath)
+	if err != nil {
+		slog.Warn("serve: orgstate store unavailable — dispatch-mode orchestration disabled", "err", err)
+	}
+
 	executor := NewExecutor(repoLookup, router, traceStore, trustStore)
 
 	sched := scheduler.New(jobQueue)
@@ -193,10 +201,12 @@ func New(cfg Config) (*Server, error) {
 		scoreStore: scoreStore,
 		evoStore:   evoStore,
 		trustStore: trustStore,
+		orgStore:   orgStore,
 	}
 
 	telem.SetRemediator(s.handleRemediation)
 	executor.SetInterventionSignalHandler(s.recordInterventionDebtSignal)
+	executor.SetOrgState(orgStore)
 
 	s.workers = queue.NewWorkerPool(jobQueue, queue.WorkerConfig{
 		Concurrency: cfg.concurrency(),
@@ -254,6 +264,8 @@ func New(cfg Config) (*Server, error) {
 	dash.HandleFunc("/api/roles", s.handleRolesAPI)
 	dash.HandleFunc("/api/quality-score", s.handleQualityScoreAPI)
 	dash.HandleFunc("/api/throughput", s.handleThroughputAPI)
+	dash.HandleFunc("/api/orchestration", s.handleOrchestrationAPI)
+	dash.HandleFunc("/api/orchestration/decisions", s.handleOrchestrationDecisionsAPI)
 
 	webhookHandler := gh.WebhookHandler(
 		gh.WebhookConfig{Secret: cfg.WebhookSecret},
@@ -959,6 +971,61 @@ func (s *Server) handleThroughputAPI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) handleOrchestrationAPI(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	type repoSummary struct {
+		ID                string `json:"id"`
+		Path              string `json:"path"`
+		OrchestrationMode string `json:"orchestration_mode"`
+	}
+	type apiResponse struct {
+		Repos        []repoSummary          `json:"repos"`
+		Dispositions []orgstate.Disposition `json:"dispositions"`
+		Decisions    []orgstate.Decision    `json:"decisions"`
+	}
+	var resp apiResponse
+	if s.repos != nil {
+		repos, err := s.repos.List(ctx)
+		if err == nil {
+			for _, repo := range repos {
+				mode := "legacy"
+				if manifest, mErr := bundle.Load(repo.Path); mErr == nil && manifest.DispatchMode() {
+					mode = "dispatch"
+				}
+				resp.Repos = append(resp.Repos, repoSummary{ID: repo.ID, Path: repo.Path, OrchestrationMode: mode})
+			}
+		}
+	}
+	if s.orgStore != nil {
+		dispositions, err := s.orgStore.RecentDispositions(ctx, "", 25)
+		if err == nil {
+			resp.Dispositions = dispositions
+		}
+		decisions, err := s.orgStore.RecentDecisions(ctx, "", 25)
+		if err == nil {
+			resp.Decisions = decisions
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("serve: orchestration API encode error", "err", err)
+	}
+}
+
+func (s *Server) handleOrchestrationDecisionsAPI(w http.ResponseWriter, r *http.Request) {
+	repoID := strings.TrimSpace(r.URL.Query().Get("repo_id"))
+	var decisions []orgstate.Decision
+	if s.orgStore != nil {
+		if rows, err := s.orgStore.RecentDecisions(r.Context(), repoID, 50); err == nil {
+			decisions = rows
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string][]orgstate.Decision{"decisions": decisions}); err != nil {
+		slog.Error("serve: orchestration decisions API encode error", "err", err)
+	}
+}
+
 // Repos returns the registry for external use (e.g. CLI register command).
 func (s *Server) Repos() *RepoRegistry { return s.repos }
 
@@ -1057,6 +1124,14 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 
 	role, ok := manifest.Roles[job.Role]
 	if !ok || (len(role.Then) == 0 && len(role.IdleThen) == 0) {
+		if manifest.DispatchMode() {
+			s.handleDispatchComplete(ctx, job, rec, manifest)
+		}
+		return
+	}
+
+	if manifest.DispatchMode() {
+		s.handleDispatchComplete(ctx, job, rec, manifest)
 		return
 	}
 
@@ -1153,6 +1228,97 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 	go s.checkEvolution(context.Background(), job.Role, job.RepoID)
 }
 
+func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec *RepoRecord, manifest *bundle.Manifest) {
+	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+	if s.orgStore == nil {
+		log.Warn("serve: dispatch mode unavailable — orgstate store is nil")
+		return
+	}
+
+	disposition, err := s.orgStore.GetDisposition(ctx, job.ID)
+	if err != nil {
+		log.Warn("serve: dispatch disposition load failed", "err", err)
+		return
+	}
+	if disposition == nil {
+		log.Warn("serve: dispatch mode job completed without disposition")
+		return
+	}
+
+	snap, snapErr := snapshotTickets(rec.Path)
+	ticketHash := ""
+	if snapErr == nil {
+		ticketHash = snap.hash()
+	} else {
+		log.Warn("serve: dispatch ticket snapshot failed", "err", snapErr)
+	}
+
+	recent, err := s.orgStore.RecentDecisions(ctx, job.RepoID, 20)
+	if err != nil {
+		log.Warn("serve: recent decisions unavailable", "err", err)
+	}
+
+	decision, err := orchestration.Decide(orchestration.Input{
+		Disposition:     *disposition,
+		Manifest:        manifest,
+		RecentDecisions: recent,
+		TicketStateHash: ticketHash,
+	})
+	if err != nil {
+		log.Warn("serve: dispatch decision failed", "err", err)
+		return
+	}
+	decision, err = s.orgStore.RecordDecision(ctx, decision)
+	if err != nil {
+		log.Warn("serve: record dispatch decision failed", "err", err)
+		return
+	}
+
+	if s.dash != nil {
+		dispPayload, _ := json.Marshal(disposition)
+		s.dash.BroadcastEvent("job_disposition", string(dispPayload))
+		decisionPayload, _ := json.Marshal(decision)
+		s.dash.BroadcastEvent("orchestration_decision", string(decisionPayload))
+	}
+
+	if strings.TrimSpace(decision.NextRole) == "" {
+		log.Info("serve: dispatch stopped", "reason", decision.StopReason)
+		return
+	}
+
+	triggerJSON, _ := json.Marshal(map[string]string{
+		"type":               "dispatch",
+		"source_role":        job.Role,
+		"source_job":         job.ID,
+		"decision_id":        decision.ID,
+		"disposition_status": disposition.Status,
+		"ticket_id":          disposition.TicketID,
+		"reason":             decision.Reason,
+	})
+	dispatchJob := queue.Job{
+		RepoID:         job.RepoID,
+		Role:           decision.NextRole,
+		Trigger:        string(triggerJSON),
+		IdempotencyKey: fmt.Sprintf("dispatch:%s:%s:%s", decision.ID, job.RepoID, decision.NextRole),
+	}
+	jobID, err := s.queue.Enqueue(ctx, dispatchJob)
+	if err != nil {
+		log.Error("serve: failed to enqueue dispatch job", "target_role", decision.NextRole, "err", err)
+		return
+	}
+	log.Info("serve: dispatch job enqueued", "target_role", decision.NextRole, "dispatch_job_id", jobID)
+	if s.dash != nil {
+		payload, _ := json.Marshal(map[string]string{
+			"decision_id": decision.ID,
+			"job_id":      jobID,
+			"role":        decision.NextRole,
+			"repo":        job.RepoID,
+			"reason":      decision.Reason,
+		})
+		s.dash.BroadcastEvent("dispatch_enqueued", string(payload))
+	}
+}
+
 // handleJobFailed is the OnFail callback for the worker pool.
 // It records a telemetry event (which triggers classification and
 // remediation), then falls back to the existing self-chain recovery
@@ -1215,6 +1381,21 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 
 	role, ok := manifest.Roles[job.Role]
 	if !ok {
+		return
+	}
+
+	if manifest.DispatchMode() {
+		if s.orgStore != nil {
+			_ = s.orgStore.RecordDisposition(ctx, orgstate.Disposition{
+				JobID:   job.ID,
+				RepoID:  job.RepoID,
+				Role:    job.Role,
+				Status:  "failed",
+				Reason:  jobErr.Error(),
+				TraceID: s.latestTraceID(ctx, job.ID),
+			})
+			s.handleDispatchComplete(ctx, job, rec, manifest)
+		}
 		return
 	}
 

@@ -1,6 +1,7 @@
 package serve
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,8 +14,24 @@ import (
 type ticketSnapshot struct {
 	Backlog    []string
 	InProgress []string
+	InReview   []string
 	Done       []string
 	Details    map[string]ticketstate.Ticket
+}
+
+func (s ticketSnapshot) hash() string {
+	var lines []string
+	names := append([]string{}, s.Backlog...)
+	names = append(names, s.InProgress...)
+	names = append(names, s.InReview...)
+	names = append(names, s.Done...)
+	for _, name := range names {
+		t := s.Details[name]
+		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s", t.Status, name, t.ID, t.Blocker, strings.Join(t.BlockedBy, ","), t.NextAction))
+	}
+	sort.Strings(lines)
+	sum := sha256.Sum256([]byte(strings.Join(lines, "\n")))
+	return fmt.Sprintf("%x", sum[:8])
 }
 
 func snapshotTickets(repoPath string) (ticketSnapshot, error) {
@@ -31,12 +48,15 @@ func snapshotTickets(repoPath string) (ticketSnapshot, error) {
 			snap.Backlog = append(snap.Backlog, t.Name)
 		case ticketstate.StatusInProgress:
 			snap.InProgress = append(snap.InProgress, t.Name)
+		case ticketstate.StatusInReview:
+			snap.InReview = append(snap.InReview, t.Name)
 		case ticketstate.StatusDone:
 			snap.Done = append(snap.Done, t.Name)
 		}
 	}
 	sort.Strings(snap.Backlog)
 	sort.Strings(snap.InProgress)
+	sort.Strings(snap.InReview)
 	sort.Strings(snap.Done)
 	return snap, nil
 }
@@ -89,6 +109,7 @@ func validateEngineerTicketMovement(before, after ticketSnapshot) error {
 
 	beforeIP := stringSet(before.InProgress)
 	afterIP := stringSet(after.InProgress)
+	inReviewAdded := setDifference(stringSet(after.InReview), stringSet(before.InReview))
 	doneAdded := setDifference(stringSet(after.Done), stringSet(before.Done))
 
 	eligibleBefore := before.eligibleInProgressSet()
@@ -114,6 +135,9 @@ func validateEngineerTicketMovement(before, after ticketSnapshot) error {
 				return nil
 			}
 			if after.ticketInStatus(name, ticketstate.StatusInProgress) && after.ticketHasLinkedDependency(name) {
+				return nil
+			}
+			if inReviewAdded[name] && after.ticketHasReviewMetadata(name) {
 				return nil
 			}
 		}
@@ -144,6 +168,11 @@ func validateEngineerTicketMovement(before, after ticketSnapshot) error {
 		)
 	}
 	if len(doneAdded) == 0 {
+		for name := range inReviewAdded {
+			if after.ticketHasReviewMetadata(name) {
+				return nil
+			}
+		}
 		if len(before.Backlog) == 0 && len(eligibleBefore) == 0 {
 			return nil
 		}
@@ -176,6 +205,8 @@ func (s ticketSnapshot) ticketInStatus(name, status string) bool {
 		return stringSet(s.Backlog)[name]
 	case ticketstate.StatusInProgress:
 		return stringSet(s.InProgress)[name]
+	case ticketstate.StatusInReview:
+		return stringSet(s.InReview)[name]
 	case ticketstate.StatusDone:
 		return stringSet(s.Done)[name]
 	default:
@@ -204,6 +235,19 @@ func (s ticketSnapshot) ticketHasLinkedDependency(name string) bool {
 	return false
 }
 
+func (s ticketSnapshot) ticketHasReviewMetadata(name string) bool {
+	t, ok := s.Details[name]
+	if !ok {
+		return false
+	}
+	owner := strings.ToLower(t.Owner)
+	next := strings.ToLower(t.NextAction)
+	return strings.Contains(owner, "qa") ||
+		strings.Contains(owner, "review") ||
+		strings.Contains(next, "review") ||
+		strings.Contains(next, "approval")
+}
+
 func (s ticketSnapshot) hasTicketReferenceExcept(ref, excludedName string) bool {
 	ref = strings.Trim(strings.TrimSpace(ref), `"'`)
 	if ref == "" {
@@ -217,7 +261,11 @@ func (s ticketSnapshot) hasTicketReferenceExcept(ref, excludedName string) bool 
 			return true
 		}
 	}
-	for _, name := range append(append([]string{}, s.Backlog...), append(s.InProgress, s.Done...)...) {
+	names := append([]string{}, s.Backlog...)
+	names = append(names, s.InProgress...)
+	names = append(names, s.InReview...)
+	names = append(names, s.Done...)
+	for _, name := range names {
 		if name == excludedName {
 			continue
 		}

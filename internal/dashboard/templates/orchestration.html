@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} — Mars Harness</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="logo">Mars Harness</div>
+    <a href="/orchestration" class="nav-item{{if eq .ActiveNav "orchestration"}} active{{end}}">Orchestration</a>
+    <a href="/pipeline" class="nav-item{{if eq .ActiveNav "pipeline"}} active{{end}}">Pipeline</a>
+    <a href="/roles" class="nav-item{{if eq .ActiveNav "roles"}} active{{end}}">Roles</a>
+    <a href="/throughput" class="nav-item{{if eq .ActiveNav "throughput"}} active{{end}}">Throughput</a>
+    <a href="/debug" class="nav-item{{if eq .ActiveNav "debug"}} active{{end}}">Debug</a>
+    <a href="/evolution" class="nav-item{{if eq .ActiveNav "evolution"}} active{{end}}">Evolution</a>
+    <div class="nav-spacer"></div>
+
+    <div class="control-bar" id="control-bar">
+      <div class="status-indicator">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-label">Running</span>
+        <span id="active-jobs" style="margin-left:auto"></span>
+      </div>
+
+      <button class="ctrl-btn" id="btn-pause" onclick="togglePause()">
+        <span class="key-hint">P</span><span id="pause-label">Pause</span>
+      </button>
+
+      <button class="ctrl-btn warn" id="btn-restart" onclick="confirmRestart()">
+        <span class="key-hint">R</span>Restart
+      </button>
+
+      <div class="ctrl-group">
+        <select class="ctrl-select" id="select-repo" onchange="loadRoles()">
+          <option value="">Repo...</option>
+        </select>
+        <button class="ctrl-btn" id="btn-scan" onclick="triggerScan()">
+          <span class="key-hint">S</span>Scan
+        </button>
+      </div>
+
+      <div class="ctrl-group">
+        <select class="ctrl-select" id="select-role">
+          <option value="">Role...</option>
+        </select>
+        <button class="ctrl-btn" id="btn-run" onclick="triggerRunRole()">Run</button>
+      </div>
+
+      <button class="ctrl-btn danger" id="btn-stop" onclick="confirmStop()">
+        <span class="key-hint">Q</span>Stop
+      </button>
+    </div>
+
+    <button id="estop-btn" class="estop-btn" onclick="emergencyStop()">Emergency Stop</button>
+  </nav>
+
+  <main class="content">
+    <header class="page-header">
+      <h1>Orchestration</h1>
+      <span class="timestamp">{{.Now}}</span>
+    </header>
+
+    <div class="card">
+      <h2>Dispatch Model</h2>
+      <div class="orchestration-hub" aria-label="Orchestrator dispatch graph">
+        <div class="hub-node">Orchestrator</div>
+        <div class="spoke-row">
+          <span class="spoke-node">CEO</span>
+          <span class="spoke-node">CTO</span>
+          <span class="spoke-node">COO</span>
+          <span class="spoke-node">Engineer</span>
+          <span class="spoke-node">QA</span>
+          <span class="spoke-node">Security</span>
+          <span class="spoke-node">Dependency</span>
+          <span class="spoke-node">Release</span>
+          <span class="spoke-node">Dogfood</span>
+          <span class="spoke-node">Janitor</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Registered Repos</h2>
+      <div id="orchestration-repos" class="repo-mode-grid">
+        <p class="muted">Loading orchestration state...</p>
+      </div>
+    </div>
+
+    <div class="card-row">
+      <div class="card half">
+        <h2>Recent Dispositions</h2>
+        <div id="disposition-list" class="decision-list">
+          <p class="muted">No dispositions recorded yet...</p>
+        </div>
+      </div>
+      <div class="card half">
+        <h2>Dispatch Decisions</h2>
+        <div id="decision-list" class="decision-list">
+          <p class="muted">No dispatch decisions recorded yet...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Live Orchestration Events</h2>
+      <div id="event-log" class="event-log"></div>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script>
+    (function () {
+      function esc(str) {
+        var div = document.createElement("div");
+        div.textContent = str == null ? "" : String(str);
+        return div.innerHTML;
+      }
+
+      function pill(text, cls) {
+        return '<span class="status-pill ' + cls + '">' + esc(text) + '</span>';
+      }
+
+      function renderRepos(repos) {
+        var el = document.getElementById("orchestration-repos");
+        if (!el) return;
+        if (!repos || repos.length === 0) {
+          el.innerHTML = '<p class="muted">No repositories registered.</p>';
+          return;
+        }
+        el.innerHTML = repos.map(function (repo) {
+          var mode = repo.orchestration_mode || "legacy";
+          var cls = mode === "dispatch" ? "success" : "primary";
+          return '<div class="repo-mode-item">' +
+            '<strong>' + esc(repo.id) + '</strong>' +
+            '<span class="mono">' + esc(repo.path || "") + '</span>' +
+            pill(mode, cls) +
+          '</div>';
+        }).join("");
+      }
+
+      function renderDispositions(items) {
+        var el = document.getElementById("disposition-list");
+        if (!el) return;
+        if (!items || items.length === 0) {
+          el.innerHTML = '<p class="muted">No dispositions recorded yet...</p>';
+          return;
+        }
+        el.innerHTML = items.map(function (item) {
+          return '<div class="decision-item">' +
+            '<div><strong>' + esc(item.role) + '</strong> ' + pill(item.status, statusClass(item.status)) + '</div>' +
+            '<div class="muted">' + esc(item.repo_id) + ' · job ' + esc(item.job_id) + '</div>' +
+            '<div>' + esc(item.next_need || item.reason || "") + '</div>' +
+          '</div>';
+        }).join("");
+      }
+
+      function renderDecisions(items) {
+        var el = document.getElementById("decision-list");
+        if (!el) return;
+        if (!items || items.length === 0) {
+          el.innerHTML = '<p class="muted">No dispatch decisions recorded yet...</p>';
+          return;
+        }
+        el.innerHTML = items.map(function (item) {
+          var source = item.source_role || item.from_role || "";
+          var target = item.next_role ? esc(item.next_role) : "stop";
+          return '<div class="decision-item">' +
+            '<div><strong>' + esc(source) + '</strong> &rarr; <strong>' + target + '</strong></div>' +
+            '<div class="muted">' + esc(item.repo_id) + ' · ' + esc(item.reason) + '</div>' +
+            '<div>' + esc(item.next_need || item.stop_reason || "") + '</div>' +
+          '</div>';
+        }).join("");
+      }
+
+      function statusClass(status) {
+        if (status === "completed" || status === "approved") return "success";
+        if (status === "blocked" || status === "failed" || status === "changes_requested") return "danger";
+        if (status === "in_review" || status === "ambiguous") return "warning";
+        return "primary";
+      }
+
+      function loadOrchestration() {
+        fetch("/api/orchestration")
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            renderRepos(data.repos || []);
+            renderDispositions(data.dispositions || []);
+            renderDecisions(data.decisions || []);
+          })
+          .catch(function (err) {
+            var el = document.getElementById("orchestration-repos");
+            if (el) el.innerHTML = '<p class="muted">Unable to load orchestration state: ' + esc(err) + '</p>';
+          });
+      }
+
+      loadOrchestration();
+      setInterval(loadOrchestration, 15000);
+    })();
+  </script>
+</body>
+</html>

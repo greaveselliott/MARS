@@ -16,9 +16,10 @@ const manifestFile = "manifest.yaml"
 
 // Manifest is the .harness/manifest.yaml structure.
 type Manifest struct {
-	Name        string                `yaml:"name"`
-	Description string                `yaml:"description"`
-	Roles       map[string]RoleConfig `yaml:"roles"`
+	Name              string                `yaml:"name"`
+	Description       string                `yaml:"description"`
+	OrchestrationMode string                `yaml:"orchestration_mode"`
+	Roles             map[string]RoleConfig `yaml:"roles"`
 }
 
 // RoleConfig defines a single role's configuration within a bundle.
@@ -77,6 +78,11 @@ func Load(repoRoot string) (*Manifest, error) {
 	if len(m.Roles) == 0 {
 		return nil, fmt.Errorf("bundle: manifest %s defines no roles — add at least one role under the 'roles' key", path)
 	}
+	switch strings.TrimSpace(m.OrchestrationMode) {
+	case "", "legacy", "dispatch":
+	default:
+		return nil, fmt.Errorf("bundle: manifest %s has invalid orchestration_mode %q — use legacy or dispatch", path, m.OrchestrationMode)
+	}
 
 	for name, role := range m.Roles {
 		if strings.TrimSpace(role.Prompt) == "" {
@@ -100,6 +106,11 @@ func Load(repoRoot string) (*Manifest, error) {
 	}
 
 	return &m, nil
+}
+
+// DispatchMode reports whether the manifest has opted into disposition-driven routing.
+func (m Manifest) DispatchMode() bool {
+	return strings.TrimSpace(m.OrchestrationMode) == "dispatch"
 }
 
 var schedulePresets = map[string]bool{

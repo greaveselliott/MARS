@@ -68,6 +68,7 @@ func Init(repoRoot string, force bool) error {
 		filepath.Join(harnessPath, "knowledge"),
 		filepath.Join(repoRoot, "docs", "tickets", "backlog"),
 		filepath.Join(repoRoot, "docs", "tickets", "in-progress"),
+		filepath.Join(repoRoot, "docs", "tickets", "in-review"),
 		filepath.Join(repoRoot, "docs", "tickets", "done"),
 		filepath.Join(repoRoot, "docs", "exec-plans", "backlog"),
 		filepath.Join(repoRoot, "docs", "exec-plans", "active"),
@@ -294,6 +295,7 @@ func EnsureHarness(repoRoot string, force bool) (didInit bool, err error) {
 func defaultManifest(projectName string) string {
 	return fmt.Sprintf(`name: %s
 description: Starter autonomous AI pipeline for %s — strict trunk, configurable roles
+orchestration_mode: legacy
 
 roles:
   # ── Strategy ─────────────────────────────────────────────
@@ -305,7 +307,7 @@ roles:
     schedule: "0 20 * * 0"
     then: [cto-weekly]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
 
   coo:
     prompt: roles/coo.md
@@ -314,7 +316,7 @@ roles:
     model: reasoning
     then: [engineer]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
   cto-weekly:
@@ -325,7 +327,7 @@ roles:
     schedule: "0 21 * * 0"
     then: [coo]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -337,7 +339,7 @@ roles:
     then: [qa, engineer, dogfood]
     idle_then: [ceo, janitor]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -348,7 +350,7 @@ roles:
     max_turns: 20
     then: [security]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, grep, record_decision, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit]
+    tools: [file_read, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit]
 
   security:
     prompt: roles/security.md
@@ -359,7 +361,7 @@ roles:
     schedule: "0 22 * * 0"
     then: [dependency-manager]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, git_status, git_commit, git_push]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
@@ -369,7 +371,7 @@ roles:
     max_turns: 10
     schedule: "0 23 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, git_status, git_commit, git_push]
 
   # ── Release ──────────────────────────────────────────────
   release-manager:
@@ -379,7 +381,7 @@ roles:
     model: reasoning
     schedule: "0 8 * * 1"
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, release_orchestrate, github_release_status, git_release_guard, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
   dogfood:
@@ -390,7 +392,7 @@ roles:
     schedule: "0 10 * * 1-5"
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -402,7 +404,17 @@ roles:
       - workflow_run.conclusion == "failure"
     then: [qa]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+
+  # ── Dispatch coordination ───────────────────────────────
+  orchestrator:
+    prompt: roles/orchestrator.md
+    domain: orchestrator
+    mode: dispatch-routing
+    model: reasoning
+    max_turns: 20
+    knowledge: [knowledge/context-glossary.yaml]
+    tools: [file_read, grep, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff]
 
   # ── Backlog entropy management ─────────────────────────
   janitor:
@@ -415,7 +427,7 @@ roles:
       - ticket.stale_in_progress
     max_turns: 30
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, git_status, git_diff, git_commit, git_push]
 `, projectName, projectName)
 }
 
@@ -515,7 +527,7 @@ evidence with ` + "`mars-harness scores export --repo .`" + `.
 | Product goal clarity | C | README and starter docs exist, but the harness has not audited them yet. | Record the product goal and core user flows. |
 | BDD feature evidence | C | Goal docs and feature contracts are generated, but no target scenarios have passed yet. | Map the next shipped feature to scenarios and E2E/integration evidence. |
 | Build and test truth | C | Commands may be unknown until the first scan or human update. | Fill ` + "`docs/design-docs/context-glossary.md`" + ` with build, test, lint, and run commands. |
-| Ticket workflow | B | Canonical backlog, in-progress, done, and blocker metadata paths are generated. | Keep eligible in-progress tickets drained before claiming new backlog work. |
+| Ticket workflow | B | Canonical backlog, in-progress, in-review, done, and blocker metadata paths are generated. | Keep eligible in-progress tickets drained before claiming new backlog work. |
 | Architecture documentation | C | Design-doc index exists as a seed. | Record non-obvious architecture and product decisions with rationale. |
 | Release/versioning | B | VERSION, CHANGELOG.md, and release guidance are generated. | Run ` + "`mars-harness release notes --repo . --bump auto`" + ` after non-release semantic commits. |
 | Harness readiness | B | AGENTS.md, manifest, roles, guardrails, knowledge routes, and skills are generated. | Tune roles and guardrails to this project after early runs. |
@@ -566,7 +578,7 @@ would otherwise live only in chat.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools.
 - **Universal tool surface** — the mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + ` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale.
@@ -648,6 +660,7 @@ Tickets live in:
 
 - ` + "`docs/tickets/backlog/`" + ` for ready work
 - ` + "`docs/tickets/in-progress/`" + ` for actively worked tickets
+- ` + "`docs/tickets/in-review/`" + ` for tickets waiting on approval or requested changes
 - ` + "`docs/tickets/done/`" + ` for completed tickets
 
 In-progress tickets are priority work. Do not leave a ticket in progress unless
@@ -664,6 +677,7 @@ Work items live as markdown files in this directory. The repo is the source of t
 docs/tickets/
   backlog/       Tickets waiting to be picked up
   in-progress/   Tickets actively being worked on
+  in-review/     Tickets waiting for approval or reviewer changes
   done/          Completed tickets committed directly to main
 ` + "```" + `
 
@@ -767,6 +781,12 @@ meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + `. Eligible in-progress w
 of backlog work. Blocked in-progress tickets do not cause infinite retries, but
 they must point to a dependency ticket or carry a blocker note clear enough for
 Janitor, Doctor, and the next Engineer run to recover state.
+
+Repos that opt into ` + "`orchestration_mode: dispatch`" + ` keep the same ticket
+source of truth, but roles also record terminal outcomes with
+` + "`job_disposition_record`" + `. Use ` + "`in-review/`" + ` only when a ticket is waiting on a
+reviewer, approval, or requested-change loop. Dispositions and approvals support
+routing; they do not replace BDD evidence or ticket movement rules.
 
 ## Intervention Debt
 
@@ -1335,7 +1355,7 @@ harness and deployed harnesses.
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools. |
 | Universal tool surface | The mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + `, so any MCP-compatible client or local harness agent can use the same tools through a model-provider-agnostic tool mechanism. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
@@ -1447,6 +1467,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
+| ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before successful dispatch-mode jobs complete. |
 | ` + "`tool_create`" + ` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
 | ` + "`release_orchestrate`" + ` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with ` + "`mars_harness_cli`" + ` and git tools. |
 | ` + "`github_release_status`" + ` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
@@ -1476,6 +1497,8 @@ tools are added, removed, renamed, or materially change behavior.
   ` + "`git_release_guard`" + `, and ` + "`github_release_status`" + ` before mutating state.
 - Need a durable repo-owned note: use ` + "`record_decision`" + `.
 - Need backlog or intervention-debt work item creation: use ` + "`ticket_create`" + `.
+- Need dispatch-mode routing to know the terminal role outcome: use
+  ` + "`job_disposition_record`" + `.
 - Need a new deterministic capability: use ` + "`tool_create`" + `, then finish the code
   and tests manually.
 - Need to decide whether repeated work deserves a tool: use
@@ -2131,11 +2154,12 @@ STANDARD:
 
 START by reading:
 1. docs/tickets/in-progress/ (tickets already being worked; highest priority)
-2. docs/tickets/backlog/ (tickets waiting to be picked up)
-3. docs/tickets/done/ (completed tickets, needed for dependency checks)
-4. README.md (project conventions)
-5. docs/features/README.md and any feature contract named by ` + "`bdd_scenarios`" + `
-6. docs/design-docs/ (relevant design docs linked in the ticket)
+2. docs/tickets/in-review/ (only if the trigger contains review context or changes_requested)
+3. docs/tickets/backlog/ (tickets waiting to be picked up)
+4. docs/tickets/done/ (completed tickets, needed for dependency checks)
+5. README.md (project conventions)
+6. docs/features/README.md and any feature contract named by ` + "`bdd_scenarios`" + `
+7. docs/design-docs/ (relevant design docs linked in the ticket)
 
 TICKET SELECTION:
 1. FIRST check docs/tickets/in-progress/ for eligible tickets. If one exists,
@@ -2217,6 +2241,14 @@ IMPLEMENTATION:
 
 7. FINAL VERIFICATION
    Run the full test suite. Ensure everything passes.
+
+8. DISPATCH MODE
+   If the manifest has ` + "`orchestration_mode: dispatch`" + `, call job_disposition_record before
+   finishing. Use:
+   - completed when the ticket moved to done/ with evidence
+   - blocked when the ticket remains in-progress/ with blocker and next_action
+   - in_review when the ticket moved to in-review/ for QA or another reviewer
+   - no_work when no eligible ticket existed or no repo change was needed
 
 COMMIT GATE — MANDATORY before finishing (every run, no exceptions):
    a) If you implemented code for a ticket, move it to done/ FIRST:
@@ -2692,6 +2724,44 @@ COMMIT GATE — before finishing, run git_status. If there are ANY uncommitted
 changes, commit and push them. An agent run that leaves dirty state is a failed run.
 `,
 
+	"orchestrator": `# Orchestrator — Dispatch Coordination
+
+## Role
+
+You are the dispatch coordinator. You run when deterministic routing cannot
+truthfully choose the next role, or when repeated loops show that the normal
+handoff path is stuck.
+
+## Prompt
+
+START by reading:
+1. The current trigger payload and latest trace summary if available
+2. docs/tickets/README.md
+3. docs/tickets/in-progress/, docs/tickets/in-review/, docs/tickets/backlog/
+4. docs/goals/active.md and docs/exec-plans/active/current-operating-plan.md
+5. Relevant design docs for the blocker or review loop
+
+DECIDE THE NEXT BEST ROLE:
+- Choose CEO when portfolio intent, goals, priorities, or active plan direction is missing.
+- Choose CTO when architecture fit, cross-cutting design, or implementation strategy is unclear.
+- Choose COO when the plan is valid but ticket shaping, dependency order, or acceptance criteria are missing.
+- Choose Engineer when implementation, requested changes, or blocker removal is the next action.
+- Choose QA when evidence review or approval is pending.
+- Choose Security or Dependency Manager when their specialized review owns the risk.
+- Choose Release Manager when versioning, changelog, tags, or release assets are the next action.
+- Choose Dogfood when end-to-end validation is missing.
+- Choose Janitor when ticket state, stale work, orphaned review, or missing work-product metadata must be reconciled.
+
+Record exactly one disposition before finishing with job_disposition_record:
+- status: completed
+- next_need: the reason for the next role, or empty if the truthful answer is to stop
+- suggested_role: the exact manifest role to run next when one should run
+- reason: concise evidence-backed explanation
+
+Do not modify product code. Do not invent roles not present in the manifest.
+If state is contradictory, record a durable decision and choose Janitor or stop.
+`,
+
 	"janitor": `# Backlog Janitor
 
 ## Role
@@ -2714,7 +2784,7 @@ START by reading:
 1. README.md — understand the project scope and purpose
 2. docs/tickets/README.md — understand ticket conventions
 3. docs/goals/active.md and docs/features/ — understand current scenarios and evidence
-4. List ALL tickets in docs/tickets/backlog/, docs/tickets/in-progress/, docs/tickets/done/
+4. List ALL tickets in docs/tickets/backlog/, docs/tickets/in-progress/, docs/tickets/in-review/, docs/tickets/done/
 
 STEP 1 — MOVE COMPLETED WORK TO DONE:
   For each ticket in in-progress/:

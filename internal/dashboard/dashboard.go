@@ -98,6 +98,7 @@ func (d *Dashboard) HandleFunc(pattern string, handler http.HandlerFunc) {
 
 func (d *Dashboard) routes() {
 	d.mux.HandleFunc("/", d.handleIndex)
+	d.mux.HandleFunc("/orchestration", d.handlePage("orchestration", "Orchestration"))
 	d.mux.HandleFunc("/pipeline", d.handlePage("pipeline", "Pipeline Flow"))
 	d.mux.HandleFunc("/roles", d.handlePage("roles", "Role Health"))
 	d.mux.HandleFunc("/throughput", d.handlePage("throughput", "Throughput"))

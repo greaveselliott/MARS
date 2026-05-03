@@ -75,6 +75,12 @@
         return '<strong>' + esc(data.role) + '</strong> ' + esc(data.outcome || "done") + ' in ' + esc(data.duration || "?");
       case "chain":
         return esc(data.from) + ' &rarr; ' + esc(data.to);
+      case "job_disposition":
+        return '<strong>' + esc(data.role || "") + '</strong> recorded ' + esc(data.status || "");
+      case "orchestration_decision":
+        return '<strong>' + esc(data.source_role || data.from_role || "") + '</strong> &rarr; ' + esc(data.next_role || "stop");
+      case "dispatch_enqueued":
+        return 'enqueued <strong>' + esc(data.role || "") + '</strong> as ' + esc(data.job_id || "");
       default:
         return JSON.stringify(data);
     }

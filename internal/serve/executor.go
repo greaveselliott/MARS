@@ -19,6 +19,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/learnings"
 	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars-harness/internal/orgstate"
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
@@ -40,6 +41,7 @@ type Executor struct {
 	router     *inference.Router
 	traceStore *trace.Store
 	trustStore *trust.Store
+	orgStore   *orgstate.Store
 	dash       *dashboard.Dashboard
 	onSignal   func(context.Context, interventionDebtSignal)
 }
@@ -58,6 +60,11 @@ func NewExecutor(lookupRepo RepoLookup, router *inference.Router, traceStore *tr
 // SetDashboard wires the dashboard for SSE event broadcasting.
 func (e *Executor) SetDashboard(d *dashboard.Dashboard) {
 	e.dash = d
+}
+
+// SetOrgState wires the operational orchestration state store.
+func (e *Executor) SetOrgState(store *orgstate.Store) {
+	e.orgStore = store
 }
 
 // SetInterventionSignalHandler wires intervention-debt signal ingestion for
@@ -258,6 +265,22 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 				Message:        fmt.Sprintf("%s tool policy blocked %s: %s", evt.Stage, evt.ToolName, evt.Message),
 			})
 		},
+		DispositionRecorder: func(ctx context.Context, raw json.RawMessage) error {
+			if e.orgStore == nil {
+				return fmt.Errorf("orgstate store unavailable")
+			}
+			var d orgstate.Disposition
+			if err := json.Unmarshal(raw, &d); err != nil {
+				return fmt.Errorf("parse disposition: %w", err)
+			}
+			d.JobID = job.ID
+			d.RepoID = job.RepoID
+			d.Role = job.Role
+			if d.TraceID == "" {
+				d.TraceID = rec.TraceID()
+			}
+			return e.orgStore.RecordDisposition(ctx, d)
+		},
 	}
 
 	root, err := tools.NewRoot(repoPath)
@@ -354,6 +377,19 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		}
 	}
 
+	if manifest.DispatchMode() {
+		if e.orgStore == nil {
+			return fmt.Errorf("executor: dispatch mode requires orgstate store")
+		}
+		disposition, dErr := e.orgStore.GetDisposition(ctx, job.ID)
+		if dErr != nil {
+			return fmt.Errorf("executor: load dispatch disposition: %w", dErr)
+		}
+		if disposition == nil {
+			return fmt.Errorf("executor: dispatch mode requires %s to call job_disposition_record before completing", job.Role)
+		}
+	}
+
 	learnings.RecordJobLessons(learnStore, job.Role, "", "", nil)
 
 	if len(role.Then) > 0 {
@@ -390,6 +426,7 @@ func BuildTicketIndex(repoPath string) string {
 	var inProgressInterventionEligible []string
 	var inProgressEligible []string
 	var inProgressBlocked []string
+	var inReview []string
 	var backlogIntervention []string
 	var backlog []string
 	var done []string
@@ -410,6 +447,8 @@ func BuildTicketIndex(repoPath string) string {
 			} else {
 				backlog = append(backlog, line)
 			}
+		case ticketstate.StatusInReview:
+			inReview = append(inReview, line)
 		case ticketstate.StatusDone:
 			done = append(done, line)
 		}
@@ -420,6 +459,7 @@ func BuildTicketIndex(repoPath string) string {
 	lines = append(lines, inProgressEligible...)
 	lines = append(lines, backlogIntervention...)
 	lines = append(lines, backlog...)
+	lines = append(lines, inReview...)
 	lines = append(lines, inProgressBlocked...)
 	lines = append(lines, done...)
 	return header + strings.Join(lines, "\n")

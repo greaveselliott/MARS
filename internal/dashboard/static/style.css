@@ -239,6 +239,63 @@ body {
   font-size: 18px;
 }
 
+.orchestration-hub {
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+  padding: 8px 0 2px;
+}
+
+.hub-node {
+  padding: 10px 18px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.22);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.spoke-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spoke-node {
+  min-width: 92px;
+  text-align: center;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.55);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.repo-mode-grid,
+.decision-list {
+  display: grid;
+  gap: 10px;
+}
+
+.repo-mode-item,
+.decision-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--primary);
+  border-radius: 0 6px 6px 0;
+  background: rgba(15, 23, 42, 0.5);
+  font-size: 13px;
+}
+
+.repo-mode-item {
+  grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr) auto;
+  align-items: center;
+}
+
 .role-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -612,4 +669,27 @@ body {
 
 .ctrl-group .ctrl-select {
   flex: 2;
+}
+
+@media (max-width: 900px) {
+  body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .content {
+    padding: 18px;
+  }
+
+  .card-row {
+    flex-direction: column;
+  }
+
+  .repo-mode-item {
+    grid-template-columns: 1fr;
+  }
 }

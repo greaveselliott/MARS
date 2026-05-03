@@ -52,6 +52,7 @@ tools are added, removed, renamed, or materially change behavior.
 | `mars_harness_cli` | Read exhaustive CLI reference or run `mars-harness` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. |
 | `record_decision` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | `ticket_create` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
+| `job_disposition_record` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before successful dispatch-mode jobs complete. |
 | `tool_create` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
 | `release_orchestrate` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with `mars_harness_cli` and git tools. |
 | `github_release_status` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
@@ -81,6 +82,8 @@ tools are added, removed, renamed, or materially change behavior.
   `git_release_guard`, and `github_release_status` before mutating state.
 - Need a durable repo-owned note: use `record_decision`.
 - Need backlog or intervention-debt work item creation: use `ticket_create`.
+- Need a dispatch-mode handoff, blocker, review request, no-work outcome, or
+  completed-work signal: use `job_disposition_record`.
 - Need a new deterministic capability: use `tool_create`, then finish the code
   and tests manually.
 - Need to decide whether repeated work deserves a tool: use

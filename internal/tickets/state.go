@@ -14,6 +14,7 @@ import (
 const (
 	StatusBacklog    = "backlog"
 	StatusInProgress = "in-progress"
+	StatusInReview   = "in-review"
 	StatusDone       = "done"
 
 	DefaultStaleInProgressAfter = 7 * 24 * time.Hour
@@ -41,10 +42,10 @@ type Ticket struct {
 	ModTime       time.Time
 }
 
-// List reads docs/tickets/{backlog,in-progress,done} from repoRoot.
+// List reads docs/tickets/{backlog,in-progress,in-review,done} from repoRoot.
 func List(repoRoot string) ([]Ticket, error) {
 	var out []Ticket
-	for _, status := range []string{StatusBacklog, StatusInProgress, StatusDone} {
+	for _, status := range []string{StatusBacklog, StatusInProgress, StatusInReview, StatusDone} {
 		dir := filepath.Join(repoRoot, "docs", "tickets", status)
 		entries, err := os.ReadDir(dir)
 		if err != nil {

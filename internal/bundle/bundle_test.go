@@ -56,6 +56,36 @@ roles:
 	assert.Equal(t, "qwen3-coder", reviewer.Model)
 }
 
+func TestLoad_DispatchOrchestrationMode(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `
+name: dispatch-project
+orchestration_mode: dispatch
+roles:
+  engineer:
+    prompt: roles/engineer.md
+`)
+
+	m, err := Load(root)
+	require.NoError(t, err)
+	require.True(t, m.DispatchMode())
+}
+
+func TestLoad_InvalidOrchestrationMode(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `
+name: bad-dispatch-project
+orchestration_mode: freestyle
+roles:
+  engineer:
+    prompt: roles/engineer.md
+`)
+
+	_, err := Load(root)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid orchestration_mode")
+}
+
 func TestLoad_MissingHarnessDir(t *testing.T) {
 	root := t.TempDir()
 

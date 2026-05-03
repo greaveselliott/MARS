@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/greaveselliott/mars-harness/internal/guardrails"
 	"github.com/greaveselliott/mars-harness/internal/safety"
@@ -21,15 +22,16 @@ type PolicyEvent struct {
 // Session carries job-specific policy data through tool execution without making
 // the registry process-global stateful.
 type Session struct {
-	Role           string
-	JobID          string
-	RepoID         string
-	TrustLevel     string
-	BaselineCommit string
-	Guardrails     *guardrails.Engine
-	SafetyLimits   safety.Limits
-	ToolCounts     map[string]int
-	PolicyRecorder func(PolicyEvent)
+	Role                string
+	JobID               string
+	RepoID              string
+	TrustLevel          string
+	BaselineCommit      string
+	Guardrails          *guardrails.Engine
+	SafetyLimits        safety.Limits
+	ToolCounts          map[string]int
+	PolicyRecorder      func(PolicyEvent)
+	DispositionRecorder func(context.Context, json.RawMessage) error
 }
 
 // WithSession stores a tool execution session on ctx.
