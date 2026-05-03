@@ -2,6 +2,19 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.22.0] - 2026-05-03
+<!-- mars-harness-release: version=0.22.0 commit=44f2c8464e91 -->
+
+### Why This Release Matters
+This release matters because it gives operators new capability through work to harden recovery evidence and tool surface in quality.
+It makes the harness easier to understand and operate through work to add OpenHarness comparator in references.
+
+### Features
+- **quality:** Harden recovery evidence and tool surface (44f2c84)
+
+### Documentation
+- **references:** Add OpenHarness comparator (82efaa6)
+
 ## [0.21.0] - 2026-05-03
 <!-- mars-harness-release: version=0.21.0 commit=cb32661e015e -->
 
