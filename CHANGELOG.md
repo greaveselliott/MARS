@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.4] - 2026-05-03
+<!-- mars-harness-release: version=0.24.4 commit=eda0526868fd -->
+
+### Why This Release Matters
+It improves reliability through work to check serve test file setup in ci.
+
+### Fixes
+- **ci:** Check serve test file setup (eda0526)
+
 ## [0.24.3] - 2026-05-03
 <!-- mars-harness-release: version=0.24.3 commit=59f889ea7ed0 -->
 
