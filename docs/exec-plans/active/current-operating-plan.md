@@ -65,6 +65,9 @@ plans to decide what to do next.
 1. **Mars parity execution**: `MH-046` is done; continue the tickets
    materialized on 2026-05-03 for orchestrator recovery (`MH-047`),
    deterministic remediation (`MH-048`), and dogfood matrix (`MH-049`).
+   Use [OpenHarness comparator](../../references/openharness-comparator.md)
+   as reference input for readiness, skill metadata, compaction, and
+   remediation ergonomics without creating a parallel roadmap.
 
 ## Scenario Schedule
 
