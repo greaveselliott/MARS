@@ -50,9 +50,10 @@ trusted.
 
 - Completed in the fast gate: generated target baseline, real executor, fake
   OpenAI-compatible LLM endpoint, contributor trust, controlled mutation,
-  destructive shell preflight block, dirty-worktree containment, read-only shell
-  inspection behavior, intervention-debt dedupe, ticket-gate fallout
-  suppression, scoring, and bounded triage updates.
+  start bootstrap scaffold commit, destructive shell preflight block,
+  dirty-worktree containment, read-only shell inspection behavior,
+  intervention-debt dedupe, ticket-gate fallout suppression, scoring, and
+  bounded triage updates.
 - Remaining in this ticket: broader matrix coverage, full dogfood loop evidence,
   `../mars` observer profile/trial, contributor-mode graduation criteria, and a
   completed validation report.
@@ -78,6 +79,8 @@ trusted.
 - [x] Fast fake-LLM containment tests cover generated target execution,
       controlled edit, trust policy, dirty-worktree containment, scoring,
       telemetry, and intervention-debt routing.
+- [x] `start` commits the generated scaffold baseline before seeding CEO without
+      staging pre-existing target work.
 - [ ] Broader fake-LLM integration tests cover ticket creation, test, direct-main
       commit, push attempt, scoring, and quality export hooks.
 - [ ] A `../mars` observer-mode target profile exists with guardrails and

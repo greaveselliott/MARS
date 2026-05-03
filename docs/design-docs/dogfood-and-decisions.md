@@ -591,6 +591,12 @@ Jobs now perform dirty-worktree containment before LLM invocation. If the repo
 already exceeds blast-radius limits at job start, the executor fails with one
 clear containment signal instead of spending tokens or starting inference.
 
+Fresh `start` bootstrap commits the generated harness scaffold before seeding
+the first CEO job. The commit stages only files that appeared during harness
+initialization, preserving any pre-existing target work as uncommitted user
+state. This keeps generated baseline size from tripping dirty-worktree
+containment while still making the scaffold auditable in git.
+
 `shell_exec` remains mutating for trust purposes, and destructive shell
 operations remain blocked before execution. Conservative inspection commands
 are treated as read-only for post-diff policy so dirty targets can still be
@@ -606,5 +612,7 @@ repeated signals do not inflate later prompts.
 - Foundation releases are blocked by an executable containment gate rather than
   relying on dogfood doctrine alone.
 - Dirty target repos fail closed before model work begins.
+- Fresh generated harness baselines are clean before the first autonomous role
+  runs.
 - Read-only investigation stays possible without amplifying intervention debt.
 - Repeated intervention signals remain visible but bounded.

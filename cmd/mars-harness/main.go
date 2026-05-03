@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"runtime"
@@ -96,6 +97,106 @@ foundation or deployed harness without depending on a model provider.`,
 	}
 	cmd.AddCommand(mcpServeCmd())
 	return cmd
+}
+
+func gitChangedPaths(repoRoot string) (map[string]bool, error) {
+	paths := map[string]bool{}
+	if _, err := os.Stat(filepath.Join(repoRoot, ".git")); os.IsNotExist(err) {
+		return filesystemPaths(repoRoot)
+	}
+	cmd := exec.Command("git", "status", "--porcelain=v1", "-z")
+	cmd.Dir = repoRoot
+	out, err := cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return nil, fmt.Errorf("git status in %s failed: %w\n%s", repoRoot, err, strings.TrimSpace(string(exitErr.Stderr)))
+		}
+		return nil, fmt.Errorf("git status in %s failed: %w", repoRoot, err)
+	}
+	entries := strings.Split(string(out), "\x00")
+	for i := 0; i < len(entries); i++ {
+		entry := entries[i]
+		if entry == "" || len(entry) < 4 {
+			continue
+		}
+		status := entry[:2]
+		path := strings.TrimSpace(entry[3:])
+		if path != "" {
+			paths[path] = true
+		}
+		if (status[0] == 'R' || status[0] == 'C') && i+1 < len(entries) {
+			i++
+		}
+	}
+	return paths, nil
+}
+
+func filesystemPaths(repoRoot string) (map[string]bool, error) {
+	paths := map[string]bool{}
+	err := filepath.WalkDir(repoRoot, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if path == repoRoot {
+			return nil
+		}
+		if entry.IsDir() {
+			if entry.Name() == ".git" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		rel, err := filepath.Rel(repoRoot, path)
+		if err != nil {
+			return err
+		}
+		paths[filepath.ToSlash(rel)] = true
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("inspect filesystem paths in %s: %w", repoRoot, err)
+	}
+	return paths, nil
+}
+
+func commitGeneratedHarnessBaseline(repoRoot string, preInitChanges map[string]bool) (bool, error) {
+	postInitChanges, err := gitChangedPaths(repoRoot)
+	if err != nil {
+		return false, err
+	}
+	var generated []string
+	for path := range postInitChanges {
+		if !preInitChanges[path] {
+			generated = append(generated, path)
+		}
+	}
+	if len(generated) == 0 {
+		return false, nil
+	}
+	if err := runStartGit(repoRoot, append([]string{"add", "--"}, generated...)...); err != nil {
+		return false, err
+	}
+	if err := runStartGit(repoRoot, "diff", "--cached", "--quiet"); err == nil {
+		return false, nil
+	}
+	if err := runStartGit(repoRoot,
+		"-c", "user.name=Mars Harness",
+		"-c", "user.email=mars-harness@example.invalid",
+		"commit", "--no-gpg-sign", "-m", "chore(harness): initialize mars harness",
+	); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func runStartGit(repoRoot string, args ...string) error {
+	cmd := exec.Command("git", args...)
+	cmd.Dir = repoRoot
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git %s in %s failed: %w\n%s", strings.Join(args, " "), repoRoot, err, strings.TrimSpace(string(out)))
+	}
+	return nil
 }
 
 func mcpServeCmd() *cobra.Command {
@@ -1966,6 +2067,12 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 				return fmt.Errorf("start: resolve path: %w", err)
 			}
 
+			preInitChanges, err := gitChangedPaths(absPath)
+			if err != nil {
+				tw.WriteError(fmt.Sprintf("inspect pre-init git status: %v", err))
+				return err
+			}
+
 			didInit, err := scanner.EnsureHarness(absPath, force)
 			if err != nil {
 				tw.WriteError(fmt.Sprintf("init failed: %v", err))
@@ -1973,6 +2080,14 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 			}
 			if didInit {
 				tw.WriteAssistant("No .harness/ found — initialised with default pipeline...")
+				committed, err := commitGeneratedHarnessBaseline(absPath, preInitChanges)
+				if err != nil {
+					tw.WriteError(fmt.Sprintf("commit generated harness baseline: %v", err))
+					return err
+				}
+				if committed {
+					tw.WriteAssistant("Committed generated harness baseline so bootstrap agents start from a clean scaffold.")
+				}
 			}
 
 			cfg, err := config.Load(config.DefaultPath())

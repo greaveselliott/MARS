@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
 	"github.com/greaveselliott/mars-harness/internal/serve"
 	"github.com/stretchr/testify/require"
@@ -223,6 +224,7 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), "Registered repo")
 	require.Contains(t, out.String(), "Seeded CEO agent")
+	require.Contains(t, out.String(), "Committed generated harness baseline")
 	require.FileExists(t, filepath.Join(repoDir, ".harness", "manifest.yaml"))
 	require.FileExists(t, dbPath)
 
@@ -245,6 +247,36 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	require.Equal(t, "ceo", jobs[0].Role)
 	require.Equal(t, repos[0].ID, jobs[0].RepoID)
 	require.Contains(t, jobs[0].Trigger, `"type":"bootstrap"`)
+
+	log := runMainTestGit(t, repoDir, "log", "--oneline", "-1")
+	require.Contains(t, log, "chore(harness): initialize mars harness")
+	status := runMainTestGit(t, repoDir, "status", "--short")
+	require.Empty(t, strings.TrimSpace(status))
+}
+
+func TestCommitGeneratedHarnessBaselineLeavesExistingChangesUnstaged(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "scratch.txt"), []byte("user work\n"), 0o644))
+	preInitChanges, err := gitChangedPaths(repoDir)
+	require.NoError(t, err)
+
+	didInit, err := scanner.EnsureHarness(repoDir, false)
+	require.NoError(t, err)
+	require.True(t, didInit)
+	committed, err := commitGeneratedHarnessBaseline(repoDir, preInitChanges)
+	require.NoError(t, err)
+	require.True(t, committed)
+
+	log := runMainTestGit(t, repoDir, "log", "--oneline", "-1")
+	require.Contains(t, log, "chore(harness): initialize mars harness")
+	status := runMainTestGit(t, repoDir, "status", "--short")
+	require.Equal(t, "?? scratch.txt", strings.TrimSpace(status))
+	tracked := runMainTestGit(t, repoDir, "ls-files")
+	require.Contains(t, tracked, ".harness/manifest.yaml")
+	require.NotContains(t, tracked, "scratch.txt")
 }
 
 func writeToolRunRepoFile(t *testing.T, root, rel, content string) {
@@ -252,4 +284,13 @@ func writeToolRunRepoFile(t *testing.T, root, rel, content string) {
 	path := filepath.Join(root, rel)
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+}
+
+func runMainTestGit(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(out))
+	return string(out)
 }
