@@ -43,6 +43,10 @@ plans to decide what to do next.
   - `docs/exec-plans/superseded/` contains historical plans that must not drive current work.
 - GitHub release notes are published for semantic versions generated from `VERSION`.
 - Release binary assets are published for `v0.14.5`; `MH-031` is done.
+- `v0.21.0` release notes and tag were pushed on 2026-05-03, but
+  `mars-harness release verify-assets --version v0.21.0` is blocked because
+  GitHub returned `404 Not Found` for the tag release immediately after the
+  tag push.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
