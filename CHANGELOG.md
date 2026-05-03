@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.15.1] - 2026-05-03
+<!-- mars-harness-release: version=0.15.1 commit=358216584c40 -->
+
+### Documentation
+- **features:** Expand BDD contract catalog (3582165)
+
 ## [0.15.0] - 2026-05-03
 <!-- mars-harness-release: version=0.15.0 commit=b9b84535812f -->
 
