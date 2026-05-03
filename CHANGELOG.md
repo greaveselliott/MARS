@@ -2,6 +2,18 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.23.0] - 2026-05-03
+<!-- mars-harness-release: version=0.23.0 commit=deccb88b12bb -->
+
+### Why This Release Matters
+This release matters because it gives operators new capability through work to add native orchestrator survey loop (MH-047) in serve.
+
+### Features
+- **serve:** Add native orchestrator survey loop (MH-047) (deccb88)
+
+### Delivery Evidence
+- Enabler work: MH-047: Add native Orchestrator survey loop
+
 ## [0.22.1] - 2026-05-03
 <!-- mars-harness-release: version=0.22.1 commit=ef3c15d1c115 -->
 
