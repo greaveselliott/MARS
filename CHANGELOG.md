@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.19.1] - 2026-05-03
+<!-- mars-harness-release: version=0.19.1 commit=9b7e4bb50117 -->
+
+### Documentation
+- **operating-model:** Add conversation system record guidance (MH-044) (9b7e4bb)
+
+### Delivery Evidence
+- Enabler work: MH-044: Add conversation system record guidance
+
 ## [0.19.0] - 2026-05-03
 <!-- mars-harness-release: version=0.19.0 commit=6a2d36a9be79 -->
 
