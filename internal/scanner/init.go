@@ -531,6 +531,7 @@ would otherwise live only in chat.
 - **Operating model** — the documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops.
 - **Foundation operating model** — the operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
 - **Deployed operating model** — the operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
+- **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
@@ -845,6 +846,14 @@ descopes or supersedes them. Enabler work may complete without shipping a
 feature, but it must be labelled as enabler work and must not be described as a
 shipped feature.
 
+Operating-model changes must be symbiotic with the existing system. New rules,
+artifacts, role behavior, tools, gates, or automations must fit the closed loop
+without handoff gaps, duplicate sources of truth, or inconsistencies with
+current workflows. If a change alters how work moves between goals, BDD, plans,
+tickets, roles, evidence, release, scoring, or self-improvement, update the
+affected artifacts, generated defaults, role prompts, routes, and tests in the
+same task.
+
 ## Consequences
 
 - Goals can be user-authored or created from structured evidence.
@@ -865,6 +874,7 @@ shipped feature.
 | Enabler work is misrepresented as shipped value | Tickets, release notes, and quality score use ` + "`work_type`" + ` and scenario evidence. |
 | Autonomous goals create thrash | Weak/noisy signals go to observations; actionable goals need source, confidence, dedupe key, and review trigger. |
 | Source and target diverge | ` + "`update check`" + ` and ` + "`doctor --repo`" + ` report operating-model drift; update writes missing defaults only. |
+| Operating-model additions create handoff gaps | Treat operating-model changes as system changes: update the whole affected workflow in one task or record the blocker before merging. |
 `,
 
 	"docs/goals/README.md": `# Goals
@@ -1096,6 +1106,7 @@ harness and deployed harnesses.
 | Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
 | Foundation operating model | The operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
 | Deployed operating model | The operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
+| Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |

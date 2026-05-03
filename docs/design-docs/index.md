@@ -24,7 +24,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [role-customization.md](role-customization.md) | Accepted | Shipped roles as configurable starter agents; target manifests, prompts, knowledge routes, and guardrails are user-owned after init. AD-046 through AD-048. |
 | [release-versioning.md](release-versioning.md) | Accepted | Semantic versioning, generated patch notes, mirrored source/target release behavior, automatic versioning after non-release commits, GitHub Release publication when configured, self-update, release assets, and shell PATH setup. AD-049 through AD-051, AD-056 through AD-057, AD-059, AD-068 through AD-070, AD-075, AD-078. |
 | [skill-evolution.md](skill-evolution.md) | Accepted | Skills as a first-class self-improvement target and the decision matrix for prompt, skill, tool, guardrail, or knowledge-route changes. AD-052 through AD-055. |
-| [delivery-operating-model.md](delivery-operating-model.md) | Accepted | BDD-led goal-driven walking-skeleton delivery as the source and generated target operating model. AD-074. |
+| [delivery-operating-model.md](delivery-operating-model.md) | Accepted | BDD-led goal-driven walking-skeleton delivery as the source and generated target operating model. AD-074, AD-081. |
 
 ## Architecture Decision Log
 
@@ -110,3 +110,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-078 | Source harness release assets are built from pushed tags, verified before publication, and checked with `mars-harness release verify-assets`. | release-versioning.md | Release |
 | AD-079 | `mars_harness_cli` is a mirrored mutating tool that exposes exhaustive CLI reference and structured execution for foundation and deployed harness operation. | dogfood-and-decisions.md | Tools |
 | AD-080 | Tool availability and use cases live in a first-class mirrored tools glossary, and every newly created tool must extend it. | mirrored-harness-and-context-glossary.md | Tools |
+| AD-081 | Operating-model changes must be symbiotic with the existing workflow: no handoff gaps, duplicate sources of truth, or inconsistencies with adjacent artifacts, roles, tools, evidence, release, scoring, or self-improvement paths. | delivery-operating-model.md | Operating model |

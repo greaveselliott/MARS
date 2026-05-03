@@ -358,6 +358,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Deployed harness")
 	assert.Contains(t, string(agentGuide), "Foundation operating model")
 	assert.Contains(t, string(agentGuide), "Deployed operating model")
+	assert.Contains(t, string(agentGuide), "Symbiotic operating-model change")
 	assert.Contains(t, string(agentGuide), "Meta tool")
 	assert.Contains(t, string(agentGuide), "mars_harness_cli")
 	assert.Contains(t, string(agentGuide), "tool_create")
@@ -381,6 +382,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(harnessGlossary), "Operating model")
 	assert.Contains(t, string(harnessGlossary), "Foundation operating model")
 	assert.Contains(t, string(harnessGlossary), "Deployed operating model")
+	assert.Contains(t, string(harnessGlossary), "Symbiotic operating-model change")
 	assert.Contains(t, string(harnessGlossary), "mars_harness_cli")
 	assert.Contains(t, string(harnessGlossary), "When changing operating doctrine include this")
 	assert.Contains(t, string(harnessGlossary), "When choosing, creating, or changing tools include this")
@@ -403,6 +405,11 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(tenets), "Progressive Autonomy")
 	assert.Contains(t, string(tenets), "Context Efficiency")
+
+	operatingModel, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "delivery-operating-model.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(operatingModel), "Operating-model changes must be symbiotic")
+	assert.Contains(t, string(operatingModel), "without handoff gaps")
 
 	execPlanReadme, err := os.ReadFile(filepath.Join(dir, "docs", "exec-plans", "README.md"))
 	require.NoError(t, err)

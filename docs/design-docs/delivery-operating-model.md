@@ -43,6 +43,15 @@ Core rule:
 > BDD defines the full feature. Walking skeleton is the implementation
 > strategy. The schedule is the ordered list of failing BDD scenarios.
 
+Operating-model changes must be **symbiotic** with the existing system. A new
+rule, artifact, role behavior, tool, gate, or automation must fit the closed
+loop without creating handoff gaps, duplicate sources of truth, or
+inconsistencies with current workflows. If a proposed change alters how work
+moves between goals, BDD, plans, tickets, roles, evidence, release, scoring, or
+self-improvement, the same change must update the affected artifacts, generated
+target defaults, role prompts, knowledge routes, and tests so agents have one
+coherent path to follow.
+
 No feature is shipped until its in-scope BDD scenarios pass or the CEO
 explicitly descopes, supersedes, or invalidates them. Enabler work may complete
 without shipping a feature, but it must be labelled as enabler work and must
@@ -106,6 +115,7 @@ and release notes.
 | Source and target harness diverge | Init gets new doctrine but old targets keep stale docs | `update check` and `doctor --repo` report drift; `update harness` writes missing defaults only; stale user-owned files become migration tickets. |
 | Unit tests give false confidence | Operating-model bugs appear only in full loops | BDD E2E/integration is default acceptance; unit and docs tests support deterministic helpers. |
 | Lean becomes endless learning | Hypotheses never close | Exec plans require success and falsification evidence; inconclusive plans are revised, superseded, or split. |
+| Operating-model additions create handoff gaps | New rules are added without updating the adjacent artifacts, roles, tools, or evidence path | Treat operating-model changes as system changes: update the whole affected workflow in one task or record the blocker before merging. |
 
 ## Mirrored Application
 

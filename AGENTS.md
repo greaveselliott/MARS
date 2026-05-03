@@ -26,6 +26,7 @@ would otherwise live only in chat.
 - **Operating model** — the documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops.
 - **Foundation operating model** — the operating model for `mars-harness` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
 - **Deployed operating model** — the operating model inside a target application harness, governing how agents build that target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
+- **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `mars_harness_cli`, `grep`, `record_decision`, `ticket_create`, `tool_create`, and git tools.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
