@@ -41,6 +41,20 @@ The glossary is intentionally small. It defines project terms, points to canonic
 
 The knowledge route file injects hints such as "when terminology is unclear, read the glossary" into role prompts. The agent then uses file tools to retrieve only what it needs.
 
+### AD-076: Harness Glossary Is Mirrored First-Class Context
+
+The foundation harness and deployed harnesses share a first-class harness
+glossary. Core terms such as `mars-harness`, foundation harness, deployed
+harness, harness definitions, mirrored harness definitions, tools, mirrored
+tools, tenets, first-class harness definitions, and contextual harness
+definitions belong in top-level `AGENTS.md` so agents never have to infer the
+operating vocabulary.
+
+The expanded glossary lives in `docs/design-docs/harness-glossary.md`. It is
+also a routing layer for contextual harness definitions written as "When doing
+X include this: <path>". Agents should expand it autonomously when repeated
+language appears in docs, tickets, traces, prompts, or user conversations.
+
 ### AD-036: Workflow Contracts Belong In The Repo
 
 Symphony's `WORKFLOW.md` idea maps to Mars Harness as repo-owned workflow artifacts:
@@ -86,6 +100,7 @@ This rule is mirrored because target agents need the same durable rationale trai
 - Repo docs created outside `.harness/` remain user content and are not overwritten by `upgrade`.
 - Any new source operating rule is mirrored into generated target guidance unless the rule is explicitly source-only.
 - Architecture changes and product features in source and target repos are documented with rationale in design docs or product specs.
+- First-class harness glossary definitions are mirrored into source and generated target `AGENTS.md`, while the expanded glossary is mirrored through `docs/design-docs/harness-glossary.md`.
 
 ## Consequences
 

@@ -10,10 +10,27 @@ A self-hosted autonomous AI delivery system written in Go. You provide a machine
 
 **Tech stack:** Go, SQLite, llama.cpp (managed as subprocess), htmx + Chart.js (embedded dashboard).
 
-## Terminology
+## Harness Glossary
 
-- **Harness** — the agent orchestration platform (`mars-harness` itself). This is the system that schedules, executes, and monitors autonomous agent roles.
-- **Target project** — the repository that the harness is building, testing, and managing. When you run `mars-harness start --repo /path/to/wave-shooter`, the harness is `mars-harness` and the target project is `wave-shooter`.
+These definitions are first-class harness context. They apply to this
+foundation harness and to deployed harnesses generated into target projects.
+Expand the glossary when repeated language, distinctions, or routing rules
+would otherwise live only in chat.
+
+- **mars-harness** — this repo: a software factory containing an AI harness, agent orchestration platform, CLI, local inference management, queue, telemetry, scoring, trust, dashboard, scanner, release tooling, and generated target harness defaults.
+- **Harness** — extensive organized documentation for how an LLM should operate within the scope of a given directory.
+- **Harness definitions** — individual pieces of documentation contained within the harness.
+- **Foundation harness** — the harness consumed by `mars-harness` in this source repo.
+- **Deployed harness** — the harness consumed by the target application being built by `mars-harness`.
+- **Mirrored harness definitions** — harness definitions included in both the foundation harness and deployed harnesses.
+- **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness.
+- **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
+- **First-class harness definition** — context that should always be included in the top-level `AGENTS.md`.
+- **Contextual harness definition** — situational context routed through the harness glossary with the form: `When doing X include this: <path to document.md>`.
+- **Target project** — the repository that `mars-harness` is building, testing, and managing. When you run `mars-harness start --repo /path/to/wave-shooter`, `mars-harness` is the software factory and `wave-shooter` is the target project.
+
+Full glossary: [docs/design-docs/harness-glossary.md](docs/design-docs/harness-glossary.md)
 
 Agents always operate on a target project. The harness is never the target of its own agents (no self-modification during runs).
 

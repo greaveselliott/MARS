@@ -396,7 +396,9 @@ roles:
 var defaultHarnessFiles = map[string]string{
 	"knowledge/context-glossary.yaml": `routes:
   - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
-    paths: AGENTS.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md
+    paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md
+  - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, tools, tenets, first-class definitions, or contextual definitions
+    paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
   - when: planning, ticket creation, in-progress work, blocked work, or completion status
     paths: docs/goals/README.md, docs/goals/active.md, docs/features/README.md, docs/exec-plans/README.md, docs/tickets/README.md
   - when: goals, BDD, feature contracts, planning, feedback, or quality evidence
@@ -507,18 +509,40 @@ This repository is managed by Mars Harness. Agents work directly on ` + "`main`"
 make small semantic commits, and push after each completed step. The repo is
 the system of record for plans, decisions, tickets, traces, and completed work.
 
+## Harness Glossary
+
+These definitions are first-class harness context. They apply to this deployed
+harness and mirror the foundation harness in the ` + "`mars-harness`" + ` source repo.
+Expand the glossary when repeated language, distinctions, or routing rules
+would otherwise live only in chat.
+
+- **mars-harness** — the source repo and software factory containing an AI harness, agent orchestration platform, CLI, local inference management, queue, telemetry, scoring, trust, dashboard, scanner, release tooling, and generated target harness defaults.
+- **Harness** — extensive organized documentation for how an LLM should operate within the scope of a given directory.
+- **Harness definitions** — individual pieces of documentation contained within the harness.
+- **Foundation harness** — the harness consumed by ` + "`mars-harness`" + ` in the source repo.
+- **Deployed harness** — the harness consumed by this target application.
+- **Mirrored harness definitions** — harness definitions included in both the foundation harness and deployed harnesses.
+- **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness.
+- **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
+- **First-class harness definition** — context that should always be included in the top-level ` + "`AGENTS.md`" + `.
+- **Contextual harness definition** — situational context routed through the harness glossary with the form: ` + "`When doing X include this: <path to document.md>`" + `.
+
+Full glossary: ` + "`docs/design-docs/harness-glossary.md`" + `
+
 ## Start Here
 
 1. Read ` + "`README.md`" + ` for the product or project goal.
-2. Read ` + "`docs/design-docs/index.md`" + ` for architectural decisions.
-3. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
-4. Read ` + "`docs/goals/active.md`" + ` and ` + "`docs/goals/README.md`" + ` before changing strategy.
-5. Read ` + "`docs/features/README.md`" + ` and the relevant feature contract before claiming a feature is complete.
-6. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
-7. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
-8. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
-9. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
-10. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
+2. Read ` + "`docs/design-docs/harness-glossary.md`" + ` for shared harness vocabulary and contextual routes.
+3. Read ` + "`docs/design-docs/index.md`" + ` for architectural decisions.
+4. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
+5. Read ` + "`docs/goals/active.md`" + ` and ` + "`docs/goals/README.md`" + ` before changing strategy.
+6. Read ` + "`docs/features/README.md`" + ` and the relevant feature contract before claiming a feature is complete.
+7. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
+8. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
+9. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
+10. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
+11. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
 
 ## Workflow
 
@@ -769,6 +793,9 @@ Architectural decisions and design documents for this project.
 | --- | --- | --- |
 | [delivery-operating-model.md](delivery-operating-model.md) | Seed | BDD-led goal-driven walking-skeleton delivery model used by goals, plans, tickets, evidence, and quality scoring. |
 | [context-glossary.md](context-glossary.md) | Seed | Compact glossary and context map used by agents to find the right docs without loading everything. |
+| [harness-glossary.md](harness-glossary.md) | Accepted | First-class and contextual harness definitions mirrored from the foundation harness. |
+| [tenets.md](tenets.md) | Accepted | Foundational rules the deployed harness inherits from Mars Harness. |
+| [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and deployed harness doctrine mirroring rules. |
 | [release-versioning.md](release-versioning.md) | Seed | Semantic versioning and generated patch-note policy for this repo. |
 | [skill-evolution.md](skill-evolution.md) | Seed | When repeated failures or interventions should become compact reusable skills. |
 
@@ -777,6 +804,7 @@ Architectural decisions and design documents for this project.
 | ID | Decision | Date | Status |
 |----|----------|------|--------|
 | AD-074 | BDD-led goal-driven walking-skeleton delivery is the canonical operating model. | 2026-05-02 | Accepted |
+| AD-076 | Harness glossary definitions are mirrored first-class context in foundation and deployed harnesses. | 2026-05-03 | Accepted |
 `,
 
 	"docs/design-docs/delivery-operating-model.md": `# AD-074: BDD-Led Goal-Driven Walking-Skeleton Delivery
@@ -1009,6 +1037,7 @@ loading every document.
 | Walking skeleton | The thinnest real end-to-end path that makes the next failing BDD scenario pass. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
 | Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
 | Release | A semantic version plus patch-note entry generated from commits. | ` + "`docs/design-docs/release-versioning.md`" + ` |
+| Harness glossary | Mirrored foundation/deployed harness vocabulary and contextual routing rules. | ` + "`docs/design-docs/harness-glossary.md`" + ` |
 
 ## Project Commands
 
@@ -1018,6 +1047,150 @@ Record the commands future agents should use here:
 - Test: TBD
 - Lint: TBD
 - Run locally: TBD
+`,
+
+	"docs/design-docs/harness-glossary.md": `# Harness Glossary
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Owner:** Project maintainers
+**Mirrors:** Foundation harness ` + "`AGENTS.md`" + `, deployed ` + "`AGENTS.md`" + `
+
+## Purpose
+
+This glossary is first-class harness context. It defines the shared language
+agents should use when operating this deployed harness and the foundation
+harness in the ` + "`mars-harness`" + ` source repo.
+
+Expand this file autonomously when repeated terminology, distinctions, or
+context-routing rules appear during the life of the harness. Do not leave
+common language only in chat.
+
+## First-Class Harness Definitions
+
+These definitions belong in the top-level ` + "`AGENTS.md`" + ` for the foundation
+harness and deployed harnesses.
+
+| Term | Definition |
+| --- | --- |
+| mars-harness | The source repo and software factory containing an AI harness, agent orchestration platform, CLI, local inference management, queue, telemetry, scoring, trust, dashboard, scanner, release tooling, and generated target harness defaults. |
+| Harness | Extensive organized documentation for how an LLM should operate within the scope of a given directory. |
+| Harness definitions | Individual pieces of documentation contained within the harness. |
+| Foundation harness | The harness consumed by ` + "`mars-harness`" + ` in the source repo. |
+| Deployed harness | The harness consumed by this target application. |
+| Mirrored harness definitions | Harness definitions included in both the foundation harness and deployed harnesses. |
+| Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. |
+| Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
+| First-class harness definition | Context that should always be included in the top-level ` + "`AGENTS.md`" + `. |
+| Contextual harness definition | Situational context routed through the harness glossary with the form: ` + "`When doing X include this: <path to document.md>`" + `. |
+
+## Contextual Harness Definitions
+
+Use these entries as routing rules. Open the referenced path only when the
+current task matches the trigger.
+
+### When changing operating doctrine include this: ` + "`docs/design-docs/mirrored-harness-and-context-glossary.md`" + `
+
+Operating doctrine includes commit discipline, versioning, ticket flow,
+documentation rules, skill creation, guardrail policy, trust/scoring behavior,
+release behavior, or context-routing discipline.
+
+### When changing foundational rules include this: ` + "`docs/design-docs/tenets.md`" + `
+
+The tenets are the non-negotiable product and operating rules shared by the
+foundation and deployed harnesses.
+
+### When changing target harness defaults include this: ` + "`.harness/manifest.yaml`" + `
+
+Generated deployed harness definitions are owned by this repository after init.
+Use ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/roles/`" + `, and the docs under
+` + "`docs/design-docs/`" + ` to understand local policy before changing role behavior.
+
+### When changing context routes include this: ` + "`.harness/knowledge/context-glossary.yaml`" + `
+
+Context routes are the lightweight map from a situation to the files an agent
+should retrieve.
+
+## Maintenance Rules
+
+- Add common language here when a term appears repeatedly across tickets, docs,
+  traces, prompts, or user conversations.
+- Keep entries short and stable. Link to deeper docs rather than pasting long
+  explanations.
+- Mirror first-class definitions into ` + "`AGENTS.md`" + `.
+- Keep contextual harness definitions in the "When doing X include this: path"
+  style so agents can route themselves without loading every document.
+`,
+
+	"docs/design-docs/mirrored-harness-and-context-glossary.md": `# Mirrored Harness And Context Glossary
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Owner:** Project maintainers
+
+## Context
+
+This deployed harness is generated by ` + "`mars-harness`" + ` and inherits operating
+doctrine from the foundation harness unless a rule is explicitly source-only or
+conflicts with deliberate project policy.
+
+The target repo should receive the same first-class operating language as the
+foundation harness: compact ` + "`AGENTS.md`" + ` guidance, strict trunk workflow,
+ticket state, design decisions, release/versioning rules, quality score,
+knowledge routes, and glossary context.
+
+## Decisions
+
+### AD-034: Source And Initialized Harnesses Mirror Doctrine
+
+Operating rules added to the foundation harness apply here unless explicitly
+marked source-only.
+
+### AD-035: Context Glossary Is A Routing Layer
+
+Use ` + "`docs/design-docs/context-glossary.md`" + ` and
+` + "`.harness/knowledge/context-glossary.yaml`" + ` as compact maps before opening
+larger docs.
+
+### AD-076: Harness Glossary Is Mirrored First-Class Context
+
+First-class harness definitions live in ` + "`AGENTS.md`" + `. Expanded definitions
+and situational "When doing X include this: path" routes live in
+` + "`docs/design-docs/harness-glossary.md`" + `.
+
+## Maintenance Rules
+
+- Mirror new operating language into ` + "`AGENTS.md`" + ` when every agent needs it.
+- Put situational context behind glossary routes instead of bloating top-level
+  prompts.
+- Update tests or checks when generated harness guidance changes.
+`,
+
+	"docs/design-docs/tenets.md": `# Tenets
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Owner:** Project maintainers
+**Mirrors:** Foundation harness ` + "`docs/design-docs/tenets.md`" + `
+
+These are the foundational rules this deployed harness inherits from
+` + "`mars-harness`" + `. Use them when deciding how agents should operate, how
+guardrails should behave, and whether a workflow change belongs in the harness.
+
+1. **Plug and Play** - zero to running in one command; extends to full lifecycle.
+2. **Self-Improving System** - evolves from human interventions and its own failures.
+3. **Accuracy and Value Scoring** - per-role health scores from real outcomes.
+4. **Customisable Guardrails** - user-defined rules enforced during execution.
+5. **Roadmap from Init** - tickets and backlog deployed on day one.
+6. **Blast Radius Containment** - never cause irreversible damage.
+7. **Execution Truth and Transparency** - auditable, attributable, everything in git.
+8. **Progressive Autonomy** - earn trust, graduate from observer to autonomous.
+9. **Context Efficiency** - minimal context assembly, retrieval over stuffing.
+
+When changing these rules, update ` + "`AGENTS.md`" + `,
+` + "`docs/design-docs/harness-glossary.md`" + `, and the owning design doc so future
+agents can recover both the rule and the reason why.
 `,
 
 	"docs/design-docs/release-versioning.md": `# Release Versioning
