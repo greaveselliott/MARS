@@ -75,7 +75,7 @@ func TestCheckConfigFile_exists(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.yaml")
-	os.WriteFile(cfgPath, []byte("test: true\n"), 0o644)
+	require.NoError(t, os.WriteFile(cfgPath, []byte("test: true\n"), 0o644))
 
 	result := checkConfigFile(Config{ConfigPath: cfgPath})
 	assert.Equal(t, statusOK, result.Status)
