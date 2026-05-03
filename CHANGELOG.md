@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.18.0] - 2026-05-03
+<!-- mars-harness-release: version=0.18.0 commit=d5436fdefd23 -->
+
+### Features
+- **role-model:** Add canonical harness operating domains (MH-042) (d5436fd)
+
+### Delivery Evidence
+- Enabler work: MH-042: Create canonical harness operating model
+
 ## [0.17.0] - 2026-05-03
 <!-- mars-harness-release: version=0.17.0 commit=ed664ab2a36e -->
 
