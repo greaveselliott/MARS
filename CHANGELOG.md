@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.20.0] - 2026-05-03
+<!-- mars-harness-release: version=0.20.0 commit=5546e12b1874 -->
+
+### Features
+- **serve:** Ingest intervention debt signals (MH-045) (5546e12)
+
+### Delivery Evidence
+- Enabler work: MH-045: Complete intervention-debt signal ingestion
+
 ## [0.19.1] - 2026-05-03
 <!-- mars-harness-release: version=0.19.1 commit=9b7e4bb50117 -->
 
