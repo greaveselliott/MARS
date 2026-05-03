@@ -177,6 +177,10 @@ func (ev *evidence) collect(ctx context.Context) error {
 
 	scoreStore, err := scoring.OpenStore(ev.dbPath)
 	if err != nil {
+		if isDatabaseEvidenceUnavailable(err) {
+			ev.warnings = append(ev.warnings, fmt.Sprintf("SQLite score evidence unavailable at %s; score evidence is insufficient. Run `mars-harness setup`, run `mars-harness register --repo <path>`, or pass --db with a writable SQLite path.", ev.dbPath))
+			return nil
+		}
 		return err
 	}
 	defer scoreStore.Close()
@@ -246,6 +250,17 @@ func (ev *evidence) collect(ctx context.Context) error {
 		return ev.telemetryCounts[i].Count > ev.telemetryCounts[j].Count
 	})
 	return nil
+}
+
+func isDatabaseEvidenceUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "database directory") && strings.Contains(msg, "does not exist") ||
+		strings.Contains(msg, "database at") && strings.Contains(msg, "is unavailable") ||
+		strings.Contains(msg, "unable to open database file") ||
+		strings.Contains(msg, "out of memory (14)")
 }
 
 func scanTickets(repoPath string) (ticketSummary, error) {

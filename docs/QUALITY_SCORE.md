@@ -28,7 +28,7 @@ This file is the repo-visible quality artifact for Mars Harness evidence. It is 
 | --- | --- | --- | --- |
 | Role health | A | 10 scored samples, weighted score 0.90 | Keep recording terminal outcomes for every role run. |
 | Terminal outcomes and checks | A | 9 positive, 1 negative, 10 total | Investigate failed checks, guardrail blocks, no-op runs, and human follow-up. |
-| Ticket flow and intervention debt | B | 3 backlog, 0 in-progress, 46 done, 3 open intervention-debt | Drain in-progress and intervention-debt tickets before ordinary backlog work. |
+| Ticket flow and intervention debt | B | 3 backlog, 0 in-progress, 47 done, 3 open intervention-debt | Drain in-progress and intervention-debt tickets before ordinary backlog work. |
 | Telemetry and dogfood | A | No telemetry triage targets; None recorded | Promote recurring telemetry and dogfood failures into bounded remediation. |
 | Evidence coverage | B | SQLite score and telemetry evidence available. | Run harness jobs with scoring enabled when evidence is insufficient. |
 
@@ -38,7 +38,7 @@ This file is the repo-visible quality artifact for Mars Harness evidence. It is 
 
 | Repo | Role | Grade | Score | Samples | Window | Computed |
 | --- | --- | --- | ---: | ---: | ---: | --- |
-| mars-harness | engineer | A | 0.90 | 10 | 30d | 2026-05-03T17:37:58Z |
+| mars-harness | engineer | A | 0.90 | 10 | 30d | 2026-05-03T19:17:43Z |
 
 ## Evidence Signals
 
@@ -49,7 +49,7 @@ This file is the repo-visible quality artifact for Mars Harness evidence. It is 
 | Stuck tickets | No in-progress tickets. |
 | Failed dogfood | None recorded |
 | Guardrail blocks | 1 guardrail blocks |
-| Intervention debt | 3 open intervention-debt, 17 total intervention-debt |
+| Intervention debt | 3 open intervention-debt, 18 total intervention-debt |
 | Check results | 6 passed, 0 failed |
 | No-op runs | None recorded |
 | Human follow-up | None recorded |
@@ -72,10 +72,11 @@ This file is the repo-visible quality artifact for Mars Harness evidence. It is 
 
 <!-- BEGIN MANUAL NOTES -->
 - 2026-05-03 local recovery verification passed `go test ./...`, `go test -race -count=1 ./...`, `go test -cover ./...`, and `go build -o <validation-root> ./cmd/mars-harness`.
-- Total coverage from `<validation-root>` is 64.4%; `internal/power` remains platform glue with no direct unit coverage.
+- Total coverage from `<validation-root>` is 64.2%; `internal/power` remains platform glue with no direct unit coverage.
 - `golangci-lint run` was not available locally (`command not found`); rely on CI or install golangci-lint before claiming local lint evidence.
 <!-- END MANUAL NOTES -->
 
 ## Generation Notes
 
 - No export warnings.
+- Regression ticket: created ticket T-001 at docs/tickets/backlog/T-001-intervention-debt-calibrate-guardrail-workflow-for-engineer.md

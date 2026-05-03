@@ -125,6 +125,23 @@ func TestScoresCommandMissingDBDirectoryIsActionable(t *testing.T) {
 	require.Contains(t, out.String(), "mars-harness register --repo")
 }
 
+func TestScoresCommandUnavailableDBIsActionable(t *testing.T) {
+	t.Parallel()
+	cmd := scoresCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{
+		"--db", t.TempDir(),
+	})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "No scores recorded yet.")
+	require.Contains(t, out.String(), "database is unavailable")
+	require.Contains(t, out.String(), "mars-harness register --repo")
+	require.NotContains(t, out.String(), "unable to open database file")
+	require.NotContains(t, out.String(), "(14)")
+}
+
 func TestScoresCommandFormatsWindowColumn(t *testing.T) {
 	t.Parallel()
 	dbPath := filepath.Join(t.TempDir(), "mars.db")
@@ -165,6 +182,23 @@ func TestTrustCommandMissingDBDirectoryIsActionable(t *testing.T) {
 	require.Contains(t, out.String(), "No trust entries recorded yet.")
 	require.Contains(t, out.String(), "database directory")
 	require.Contains(t, out.String(), "mars-harness register --repo")
+}
+
+func TestTrustCommandUnavailableDBIsActionable(t *testing.T) {
+	t.Parallel()
+	cmd := trustCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{
+		"--db", t.TempDir(),
+	})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "No trust entries recorded yet.")
+	require.Contains(t, out.String(), "database is unavailable")
+	require.Contains(t, out.String(), "mars-harness register --repo")
+	require.NotContains(t, out.String(), "unable to open database file")
+	require.NotContains(t, out.String(), "(14)")
 }
 
 func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {

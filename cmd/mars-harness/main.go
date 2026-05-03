@@ -1505,8 +1505,8 @@ func scoresCmd() *cobra.Command {
 			}
 			store, err := scoring.OpenStore(path)
 			if err != nil {
-				if isMissingDatabaseDirError(err) {
-					fmt.Fprintf(cmd.OutOrStdout(), "No scores recorded yet. %v\n", err)
+				if isUnavailableDatabaseError(err) {
+					fmt.Fprintf(cmd.OutOrStdout(), "No scores recorded yet. %s\n", databaseEvidenceRemediation(path, err))
 					return nil
 				}
 				return err
@@ -1588,8 +1588,8 @@ func trustCmd() *cobra.Command {
 			}
 			store, err := trust.OpenStore(path)
 			if err != nil {
-				if isMissingDatabaseDirError(err) {
-					fmt.Fprintf(cmd.OutOrStdout(), "No trust entries recorded yet. %v\n", err)
+				if isUnavailableDatabaseError(err) {
+					fmt.Fprintf(cmd.OutOrStdout(), "No trust entries recorded yet. %s\n", databaseEvidenceRemediation(path, err))
 					return nil
 				}
 				return err
@@ -1828,6 +1828,25 @@ func isMissingDatabaseDirError(err error) bool {
 	}
 	msg := err.Error()
 	return strings.Contains(msg, "database directory") && strings.Contains(msg, "does not exist")
+}
+
+func isUnavailableDatabaseError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return isMissingDatabaseDirError(err) ||
+		strings.Contains(msg, "database at") && strings.Contains(msg, "is unavailable") ||
+		strings.Contains(msg, "unable to open database file") ||
+		strings.Contains(msg, "out of memory (14)")
+}
+
+func databaseEvidenceRemediation(dbPath string, err error) string {
+	reason := "database is unavailable"
+	if isMissingDatabaseDirError(err) {
+		reason = "database directory does not exist"
+	}
+	return fmt.Sprintf("%s for %s — run `mars-harness setup`, run `mars-harness register --repo <path>`, or pass --db with a writable SQLite path", reason, dbPath)
 }
 
 // defaultDBPath returns the per-repo database path: ~/.mars-harness/db/{repo-slug}/mars.db.

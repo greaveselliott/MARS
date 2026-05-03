@@ -107,6 +107,9 @@ func OpenStore(dbPath string) (*Store, error) {
 	s := &Store{db: db}
 	if err := s.initSchema(); err != nil {
 		_ = db.Close()
+		if isSQLiteOpenUnavailable(err) {
+			return nil, fmt.Errorf("trust: database at %s is unavailable — run `mars-harness setup`, run `mars-harness register --repo <path>`, or pass --db with a writable SQLite path", dbPath)
+		}
 		return nil, err
 	}
 	return s, nil
@@ -135,6 +138,17 @@ func validateDBPath(dbPath string) error {
 		return fmt.Errorf("trust: database parent %s is not a directory — pass --db with a writable database file path", dir)
 	}
 	return nil
+}
+
+func isSQLiteOpenUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "unable to open database file") ||
+		strings.Contains(msg, "out of memory (14)") ||
+		strings.Contains(msg, "permission denied") ||
+		strings.Contains(msg, "is a directory")
 }
 
 func (s *Store) initSchema() error {
