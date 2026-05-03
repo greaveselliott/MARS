@@ -56,6 +56,17 @@ also a routing layer for contextual harness definitions written as "When doing
 X include this: <path>". Agents should expand it autonomously when repeated
 language appears in docs, tickets, traces, prompts, or user conversations.
 
+### AD-080: Tools Glossary Is Mirrored First-Class Context
+
+Tool availability and use cases live in `docs/design-docs/tools-glossary.md`.
+The tools glossary is mirrored into initialized target harnesses so every LLM
+chat can discover which tools exist, when to use them, and what policy applies
+without inferring from memory or searching implementation files first.
+
+Every newly created tool must extend the tools glossary in the same change that
+implements or exposes it. Tool removals, renames, and material behavior changes
+must update the same glossary, generated target defaults, and tests.
+
 ### AD-036: Workflow Contracts Belong In The Repo
 
 Symphony's `WORKFLOW.md` idea maps to Mars Harness as repo-owned workflow artifacts:

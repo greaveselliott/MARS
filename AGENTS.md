@@ -35,6 +35,7 @@ would otherwise live only in chat.
 - **Target project** — the repository that `mars-harness` is building, testing, and managing. When you run `mars-harness start --repo /path/to/wave-shooter`, `mars-harness` is the software factory and `wave-shooter` is the target project.
 
 Full glossary: [docs/design-docs/harness-glossary.md](docs/design-docs/harness-glossary.md)
+Tools glossary: [docs/design-docs/tools-glossary.md](docs/design-docs/tools-glossary.md)
 
 Agents always operate on a target project. The harness is never the target of its own agents (no self-modification during runs).
 

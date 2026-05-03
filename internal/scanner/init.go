@@ -397,8 +397,8 @@ var defaultHarnessFiles = map[string]string{
 	"knowledge/context-glossary.yaml": `routes:
   - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
     paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md
-  - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, operating model, tools, tenets, first-class definitions, or contextual definitions
-    paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
+  - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, operating model, tools, tool availability, tool use cases, tool selection, tool allowlists, tenets, first-class definitions, or contextual definitions
+    paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/tools-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
   - when: planning, ticket creation, in-progress work, blocked work, or completion status
     paths: docs/goals/README.md, docs/goals/active.md, docs/features/README.md, docs/exec-plans/README.md, docs/tickets/README.md
   - when: goals, BDD, feature contracts, planning, feedback, or quality evidence
@@ -539,20 +539,22 @@ would otherwise live only in chat.
 - **Contextual harness definition** — situational context routed through the harness glossary with the form: ` + "`When doing X include this: <path to document.md>`" + `.
 
 Full glossary: ` + "`docs/design-docs/harness-glossary.md`" + `
+Tools glossary: ` + "`docs/design-docs/tools-glossary.md`" + `
 
 ## Start Here
 
 1. Read ` + "`README.md`" + ` for the product or project goal.
 2. Read ` + "`docs/design-docs/harness-glossary.md`" + ` for shared harness vocabulary and contextual routes.
-3. Read ` + "`docs/design-docs/index.md`" + ` for architectural decisions.
-4. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
-5. Read ` + "`docs/goals/active.md`" + ` and ` + "`docs/goals/README.md`" + ` before changing strategy.
-6. Read ` + "`docs/features/README.md`" + ` and the relevant feature contract before claiming a feature is complete.
-7. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
-8. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
-9. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
-10. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
-11. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
+3. Read ` + "`docs/design-docs/tools-glossary.md`" + ` before choosing tools or changing role tool allowlists.
+4. Read ` + "`docs/design-docs/index.md`" + ` for architectural decisions.
+5. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
+6. Read ` + "`docs/goals/active.md`" + ` and ` + "`docs/goals/README.md`" + ` before changing strategy.
+7. Read ` + "`docs/features/README.md`" + ` and the relevant feature contract before claiming a feature is complete.
+8. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
+9. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
+10. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
+11. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
+12. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
 
 ## Workflow
 
@@ -804,6 +806,7 @@ Architectural decisions and design documents for this project.
 | [delivery-operating-model.md](delivery-operating-model.md) | Seed | BDD-led goal-driven walking-skeleton delivery model used by goals, plans, tickets, evidence, and quality scoring. |
 | [context-glossary.md](context-glossary.md) | Seed | Compact glossary and context map used by agents to find the right docs without loading everything. |
 | [harness-glossary.md](harness-glossary.md) | Accepted | First-class and contextual harness definitions mirrored from the foundation harness. |
+| [tools-glossary.md](tools-glossary.md) | Accepted | First-class mirrored tool availability, selection, and use-case context. |
 | [tenets.md](tenets.md) | Accepted | Foundational rules the deployed harness inherits from Mars Harness. |
 | [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and deployed harness doctrine mirroring rules. |
 | [release-versioning.md](release-versioning.md) | Seed | Semantic versioning and generated patch-note policy for this repo. |
@@ -1048,6 +1051,7 @@ loading every document.
 | Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
 | Release | A semantic version plus patch-note entry generated from commits. | ` + "`docs/design-docs/release-versioning.md`" + ` |
 | Harness glossary | Mirrored foundation/deployed harness vocabulary and contextual routing rules. | ` + "`docs/design-docs/harness-glossary.md`" + ` |
+| Tools glossary | Mirrored tool availability, selection, and use-case context. | ` + "`docs/design-docs/tools-glossary.md`" + ` |
 
 ## Project Commands
 
@@ -1121,11 +1125,13 @@ Generated deployed harness definitions are owned by this repository after init.
 Use ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/roles/`" + `, and the docs under
 ` + "`docs/design-docs/`" + ` to understand local policy before changing role behavior.
 
-### When creating or changing tools include this: ` + "`docs/design-docs/harness-glossary.md`" + `
+### When choosing, creating, or changing tools include this: ` + "`docs/design-docs/tools-glossary.md`" + `
 
 ` + "`tool_create`" + ` is a mirrored tool and may be exposed by both the foundation
 and deployed harness role allowlists. Use it for tool scaffolding; built-in Go
-tool implementation still lives in the foundation harness source.
+tool implementation still lives in the foundation harness source. Every newly
+created tool must extend ` + "`docs/design-docs/tools-glossary.md`" + ` in the same
+change that implements or exposes it.
 
 ### When changing context routes include this: ` + "`.harness/knowledge/context-glossary.yaml`" + `
 
@@ -1141,6 +1147,78 @@ should retrieve.
 - Mirror first-class definitions into ` + "`AGENTS.md`" + `.
 - Keep contextual harness definitions in the "When doing X include this: path"
   style so agents can route themselves without loading every document.
+`,
+
+	"docs/design-docs/tools-glossary.md": `# Tools Glossary
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Owner:** Project maintainers
+**Mirrors:** Foundation harness ` + "`docs/design-docs/tools-glossary.md`" + `
+
+## Purpose
+
+This glossary is first-class mirrored tool context. It tells LLM chats which
+tools exist, when to use them, and which guardrails shape their use in this
+deployed harness and the foundation harness.
+
+Read this file whenever a task involves tool availability, tool selection,
+tool allowlists, tool policy, or CLI operation. Keep it current when built-in
+tools are added, removed, renamed, or materially change behavior.
+
+## Availability Rules
+
+- Tools are available only when registered in the built-in registry and included
+  in the current role allowlist.
+- Mirrored tools are valid in both the foundation harness and deployed harnesses.
+- Mutating tools are blocked at observer trust.
+- Prefer purpose-built tools over ` + "`shell_exec`" + ` when a deterministic tool exists.
+- Prefer structured argv over shell strings unless shell features are required.
+
+## Mirrored Built-In Tools
+
+| Tool | Use When | Notes |
+| --- | --- | --- |
+| ` + "`file_read`" + ` | Read a known file path from the repository. | Non-mutating. Use before editing or reviewing code. |
+| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. |
+| ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
+| ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
+| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
+| ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. |
+| ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
+| ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
+| ` + "`tool_create`" + ` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
+| ` + "`git_status`" + ` | Inspect repository state. | Non-mutating. Use before commits or risky operations. |
+| ` + "`git_diff`" + ` | Inspect unstaged or staged changes. | Non-mutating. Use before review, commit, and release notes. |
+| ` + "`git_commit`" + ` | Stage files and create a semantic commit. | Mutating. Requires meaningful diff and strict-trunk discipline. |
+| ` + "`git_push`" + ` | Push committed changes. | Mutating. Strict trunk allows pushing ` + "`main`" + `. |
+
+## Selection Guide
+
+- Need Mars Harness behavior, versioning, setup, release, score, trust, or target
+  harness lifecycle operations: use ` + "`mars_harness_cli`" + `.
+- Need a durable repo-owned note: use ` + "`record_decision`" + `.
+- Need backlog or intervention-debt work item creation: use ` + "`ticket_create`" + `.
+- Need a new deterministic capability: use ` + "`tool_create`" + `, then finish the code
+  and tests manually.
+- Need ordinary repository inspection: use ` + "`file_search`" + `, ` + "`grep`" + `, ` + "`file_read`" + `,
+  ` + "`git_status`" + `, or ` + "`git_diff`" + `.
+- Need ordinary repository mutation: use ` + "`file_write`" + `, ` + "`git_commit`" + `, and
+  ` + "`git_push`" + ` with the repository's operating rules.
+- Need a command outside the built-in tool surface: use ` + "`shell_exec`" + `, keep the
+  command narrow, and record any reusable gap as a tool improvement.
+
+## Maintenance Rules
+
+- Every newly created tool must extend this glossary in the same change that
+  implements or exposes the tool.
+- Update this glossary in the same change that removes, renames, or materially
+  changes a built-in tool.
+- Mirror changes into foundation harness defaults.
+- Update scanner tests so initialized harnesses keep this first-class tool
+  context.
+- Keep use cases short and action-oriented; deeper rationale belongs in design
+  decisions.
 `,
 
 	"docs/design-docs/mirrored-harness-and-context-glossary.md": `# Mirrored Harness And Context Glossary
@@ -1180,6 +1258,17 @@ operating model, foundation operating model, and deployed operating model so
 agents can distinguish source-harness doctrine from target-harness execution.
 Expanded definitions and situational "When doing X include this: path" routes
 live in ` + "`docs/design-docs/harness-glossary.md`" + `.
+
+### AD-080: Tools Glossary Is Mirrored First-Class Context
+
+Tool availability and use cases live in ` + "`docs/design-docs/tools-glossary.md`" + `.
+Every LLM chat can use it to discover which tools exist, when to use them, and
+what policy applies without inferring from memory or searching implementation
+files first.
+
+Every newly created tool must extend the tools glossary in the same change that
+implements or exposes it. Tool removals, renames, and material behavior changes
+must update the same glossary, generated target defaults, and tests.
 
 ## Maintenance Rules
 

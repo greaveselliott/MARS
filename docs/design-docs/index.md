@@ -14,6 +14,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [dashboard.md](dashboard.md) | Draft | 5-page dashboard: pipeline flow, role health, throughput, debug, evolution history. AD-011 (htmx + Chart.js embedded) |
 | [context-efficiency.md](context-efficiency.md) | Draft | Context assembly, budgets, knowledge routing, guardrail scoping |
 | [harness-glossary.md](harness-glossary.md) | Accepted | First-class and contextual harness definitions mirrored between the foundation harness and deployed harnesses. |
+| [tools-glossary.md](tools-glossary.md) | Accepted | First-class mirrored tool availability, selection, and use-case context for foundation and deployed harnesses. |
 | [trigger-orchestration.md](trigger-orchestration.md) | Draft | Trigger sources (webhook, schedule, chain), upstream chaining via `then`, custom cron, strict-trunk default roles. AD-016 through AD-020. |
 | [dogfood-and-decisions.md](dogfood-and-decisions.md) | Accepted | Containerised E2E validation (Podman + native fallback), decision recording tool, strict-trunk pipeline for local use, ticket-drain discipline, recovery loop containment, queue self-healing, tool-creation scaffolding, and mirrored CLI interaction. AD-021 through AD-030, AD-033, AD-060, AD-062, AD-077, AD-079. |
 | [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and initialized harness parity, glossary-as-route context, repo-owned workflow contracts, operating-rule inheritance, and rationale-bearing architecture/product docs. AD-034 through AD-036, AD-058, AD-061. |
@@ -108,3 +109,4 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-077 | `tool_create` is a mirrored mutating tool that scaffolds built-in tool files and tests while requiring separate implementation, registration, trust-policy review, and allowlist exposure. | dogfood-and-decisions.md | Tools |
 | AD-078 | Source harness release assets are built from pushed tags, verified before publication, and checked with `mars-harness release verify-assets`. | release-versioning.md | Release |
 | AD-079 | `mars_harness_cli` is a mirrored mutating tool that exposes exhaustive CLI reference and structured execution for foundation and deployed harness operation. | dogfood-and-decisions.md | Tools |
+| AD-080 | Tool availability and use cases live in a first-class mirrored tools glossary, and every newly created tool must extend it. | mirrored-harness-and-context-glossary.md | Tools |

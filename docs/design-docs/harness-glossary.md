@@ -60,13 +60,13 @@ Generated deployed harness definitions live in scanner defaults. Mirrored
 changes must update source guidance, generated target guidance, and tests in
 the same task.
 
-### When creating or changing tools include this: `internal/tools/`
+### When choosing, creating, or changing tools include this: `docs/design-docs/tools-glossary.md`
 
 `tool_create` is a mirrored tool and may be exposed by both the foundation and
 deployed harness role allowlists. Use it for tool scaffolding, then implement
 the handler, register it in `internal/tools/register_default.go`, update trust
-policy if the tool mutates state, and add tests before exposing new tools in
-any role allowlist.
+policy if the tool mutates state, extend `docs/design-docs/tools-glossary.md`,
+and add tests before exposing new tools in any role allowlist.
 
 ### When changing context routes include this: `.harness/knowledge/context-glossary.yaml`
 

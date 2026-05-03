@@ -97,7 +97,7 @@ func handleToolCreate(_ context.Context, root Root, raw json.RawMessage) (ToolRe
 	}
 
 	return ToolResult{Output: fmt.Sprintf(
-		"created %s and %s\nnext: add register%s to %s, implement handle%s, then run go test ./internal/tools",
+		"created %s and %s\nnext: add register%s to %s, implement handle%s, extend docs/design-docs/tools-glossary.md, then run go test ./internal/tools",
 		toolPath,
 		testPath,
 		spec.TypeName,

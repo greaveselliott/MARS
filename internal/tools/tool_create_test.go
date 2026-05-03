@@ -31,6 +31,7 @@ func TestToolCreate_scaffoldsToolFiles(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, res.Output, "internal/tools/cli_reference.go")
 	require.Contains(t, res.Output, "registerCliReference")
+	require.Contains(t, res.Output, "docs/design-docs/tools-glossary.md")
 
 	toolData, err := os.ReadFile(filepath.Join(dir, "internal", "tools", "cli_reference.go"))
 	require.NoError(t, err)
