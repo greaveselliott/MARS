@@ -19,6 +19,11 @@ const (
 	CategoryBudgetExceeded   FailureCategory = "budget_exceeded"
 	CategoryManifestError    FailureCategory = "manifest_error"
 	CategoryTicketGate       FailureCategory = "ticket_gate"
+	CategoryGuardrailBlock   FailureCategory = "guardrail_block"
+	CategoryHumanFollowup    FailureCategory = "human_followup"
+	CategoryRevertedCommit   FailureCategory = "reverted_commit"
+	CategoryStaleTicket      FailureCategory = "stale_in_progress_ticket"
+	CategoryManualStop       FailureCategory = "manual_stop"
 	CategoryUnknown          FailureCategory = "unknown"
 )
 
@@ -45,6 +50,8 @@ func Classify(errMsg string) FailureCategory {
 	// Tool timeout must match before context overflow because "context deadline exceeded"
 	// contains both "context" and "timeout".
 	case strings.Contains(lower, "timed out"):
+		return CategoryToolTimeout
+	case strings.Contains(lower, "timeout"):
 		return CategoryToolTimeout
 	case strings.Contains(lower, "context deadline exceeded"):
 		return CategoryToolTimeout
@@ -94,6 +101,51 @@ func Classify(errMsg string) FailureCategory {
 		return CategoryTicketGate
 	case strings.Contains(lower, "cannot hand off") && strings.Contains(lower, "docs/tickets/in-progress"):
 		return CategoryTicketGate
+
+	case strings.Contains(lower, "guardrails: blocked"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "guardrail block"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "policy: secret scanner blocked"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "policy: trust level observer cannot run mutating tool"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "policy: strict trunk only allows"):
+		return CategoryGuardrailBlock
+
+	case strings.Contains(lower, "human_followup"):
+		return CategoryHumanFollowup
+	case strings.Contains(lower, "human follow-up"):
+		return CategoryHumanFollowup
+	case strings.Contains(lower, "human followup"):
+		return CategoryHumanFollowup
+
+	case strings.Contains(lower, "reverted_commit"):
+		return CategoryRevertedCommit
+	case strings.Contains(lower, "reverted agent commit"):
+		return CategoryRevertedCommit
+	case strings.Contains(lower, "agent commit reverted"):
+		return CategoryRevertedCommit
+	case strings.Contains(lower, "revert") && strings.Contains(lower, "agent"):
+		return CategoryRevertedCommit
+
+	case strings.Contains(lower, "stale_in_progress_ticket"):
+		return CategoryStaleTicket
+	case strings.Contains(lower, "stale in-progress ticket"):
+		return CategoryStaleTicket
+	case strings.Contains(lower, "stale ticket"):
+		return CategoryStaleTicket
+
+	case strings.Contains(lower, "manual_stop"):
+		return CategoryManualStop
+	case strings.Contains(lower, "manual stop"):
+		return CategoryManualStop
+	case strings.Contains(lower, "operator stopped"):
+		return CategoryManualStop
+	case strings.Contains(lower, "interrupted by operator"):
+		return CategoryManualStop
+	case strings.Contains(lower, "context canceled") || strings.Contains(lower, "context cancelled"):
+		return CategoryManualStop
 
 	default:
 		return CategoryUnknown

@@ -117,6 +117,60 @@ func TriagePattern(p Pattern) ImprovementProposal {
 		}
 		proposal.Confidence = 0.85
 
+	case CategoryGuardrailBlock:
+		proposal.Target = TargetGuardrail
+		proposal.Title = "Calibrate guardrail workflow"
+		proposal.Suggestion = fmt.Sprintf("Role %q hit guardrail or tool-policy blocks; inspect the blocked operation, the relevant guardrail, trust level, and role guidance before loosening enforcement.", p.Role)
+		proposal.CandidateFiles = []string{
+			".harness/guardrails/",
+			fmt.Sprintf(".harness/roles/%s.md", p.Role),
+			".harness/manifest.yaml",
+		}
+		proposal.Confidence = 0.8
+
+	case CategoryHumanFollowup:
+		proposal.Target = TargetProcess
+		proposal.Title = "Reduce human follow-up"
+		proposal.Suggestion = fmt.Sprintf("Role %q needed human follow-up after agent work; inspect the follow-up commit or review evidence, then update role guidance, a compact skill, tests, or guardrails so the same correction is captured by the harness.", p.Role)
+		proposal.CandidateFiles = []string{
+			fmt.Sprintf(".harness/roles/%s.md", p.Role),
+			fmt.Sprintf(".harness/skills/%s-workflow/SKILL.md", p.Role),
+			".harness/guardrails/",
+		}
+		proposal.Confidence = 0.75
+
+	case CategoryRevertedCommit:
+		proposal.Target = TargetProcess
+		proposal.Title = "Prevent reverted agent commits"
+		proposal.Suggestion = fmt.Sprintf("Role %q produced work that was reverted; inspect the reverted commit, trace, ticket evidence, and quality gates before letting the role repeat that workflow.", p.Role)
+		proposal.CandidateFiles = []string{
+			fmt.Sprintf(".harness/roles/%s.md", p.Role),
+			fmt.Sprintf(".harness/skills/%s-workflow/SKILL.md", p.Role),
+			".harness/guardrails/",
+		}
+		proposal.Confidence = 0.8
+
+	case CategoryStaleTicket:
+		proposal.Target = TargetProcess
+		proposal.Title = "Drain stale in-progress work"
+		proposal.Suggestion = fmt.Sprintf("Role %q has stale in-progress ticket state; inspect blockers, ticket handoff rules, janitor recovery, and whether the ticket should move back to backlog with explicit blocker evidence.", p.Role)
+		proposal.CandidateFiles = []string{
+			"docs/tickets/in-progress/",
+			fmt.Sprintf(".harness/roles/%s.md", p.Role),
+			".harness/manifest.yaml",
+		}
+		proposal.Confidence = 0.8
+
+	case CategoryManualStop:
+		proposal.Target = TargetProcess
+		proposal.Title = "Remove manual stop trigger"
+		proposal.Suggestion = fmt.Sprintf("Role %q was manually stopped or cancelled; inspect the trace and operator reason, then tighten the role stop condition, timeout, recovery policy, or escalation behavior before retrying unchanged.", p.Role)
+		proposal.CandidateFiles = []string{
+			fmt.Sprintf(".harness/roles/%s.md", p.Role),
+			".harness/manifest.yaml",
+		}
+		proposal.Confidence = 0.7
+
 	case CategoryUnknown:
 		proposal.Target = TargetProcess
 		proposal.Title = "Classify unknown failure"

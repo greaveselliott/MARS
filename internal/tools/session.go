@@ -9,6 +9,15 @@ import (
 
 type sessionKey struct{}
 
+// PolicyEvent describes a trust, guardrail, or repository policy block during
+// tool execution. Callers can record it as telemetry without coupling tools to
+// the telemetry package.
+type PolicyEvent struct {
+	Stage    string
+	ToolName string
+	Message  string
+}
+
 // Session carries job-specific policy data through tool execution without making
 // the registry process-global stateful.
 type Session struct {
@@ -19,6 +28,7 @@ type Session struct {
 	BaselineCommit string
 	Guardrails     *guardrails.Engine
 	SafetyLimits   safety.Limits
+	PolicyRecorder func(PolicyEvent)
 }
 
 // WithSession stores a tool execution session on ctx.

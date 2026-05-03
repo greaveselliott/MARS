@@ -21,6 +21,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/llm"
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/safety"
+	"github.com/greaveselliott/mars-harness/internal/telemetry"
 	"github.com/greaveselliott/mars-harness/internal/tools"
 	"github.com/greaveselliott/mars-harness/internal/trace"
 	"github.com/greaveselliott/mars-harness/internal/trust"
@@ -39,6 +40,7 @@ type Executor struct {
 	traceStore *trace.Store
 	trustStore *trust.Store
 	dash       *dashboard.Dashboard
+	onSignal   func(context.Context, interventionDebtSignal)
 }
 
 // NewExecutor creates an executor bound to a repo lookup function and inference router.
@@ -55,6 +57,12 @@ func NewExecutor(lookupRepo RepoLookup, router *inference.Router, traceStore *tr
 // SetDashboard wires the dashboard for SSE event broadcasting.
 func (e *Executor) SetDashboard(d *dashboard.Dashboard) {
 	e.dash = d
+}
+
+// SetInterventionSignalHandler wires intervention-debt signal ingestion for
+// tool-policy blocks observed inside an otherwise-running agent loop.
+func (e *Executor) SetInterventionSignalHandler(handler func(context.Context, interventionDebtSignal)) {
+	e.onSignal = handler
 }
 
 // Execute is the OnJob callback for the worker pool.
@@ -219,6 +227,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		}
 	}
 
+	rec := trace.NewRecorder(nil)
 	toolExec := tools.NewExecutor(reg)
 	toolExec.Session = &tools.Session{
 		Role:         job.Role,
@@ -227,6 +236,26 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		TrustLevel:   trustLevel,
 		Guardrails:   guardEngine,
 		SafetyLimits: safety.DefaultLimits(),
+		PolicyRecorder: func(evt tools.PolicyEvent) {
+			if e.onSignal == nil {
+				return
+			}
+			category := telemetry.Classify(evt.Message)
+			if category == telemetry.CategoryUnknown {
+				category = telemetry.CategoryGuardrailBlock
+			}
+			e.onSignal(context.Background(), interventionDebtSignal{
+				Kind:           interventionDebtSignalKindForCategory(category),
+				RepoID:         job.RepoID,
+				Role:           job.Role,
+				JobID:          job.ID,
+				Category:       category,
+				EvidenceWindow: "24h",
+				TraceID:        rec.TraceID(),
+				ToolName:       evt.ToolName,
+				Message:        fmt.Sprintf("%s tool policy blocked %s: %s", evt.Stage, evt.ToolName, evt.Message),
+			})
+		},
 	}
 
 	root, err := tools.NewRoot(repoPath)
@@ -248,8 +277,6 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 			return fmt.Errorf("executor: snapshot tickets before engineer run: %w", err)
 		}
 	}
-
-	rec := trace.NewRecorder(nil)
 
 	params := agent.Params{
 		Completer:    client,

@@ -66,7 +66,7 @@ created: 2026-04-11
 [Implementation notes, discoveries]
 ```
 
-`kind` defaults to `standard` when omitted. `intervention-debt` is reserved for harness self-improvement work created from telemetry, score regressions, stuck ticket state, guardrail blocks, dogfood failures, or repeated human interventions.
+`kind` defaults to `standard` when omitted. `intervention-debt` is reserved for harness self-improvement work created from telemetry, non-success terminal agent results, guardrail or tool-policy blocks, repeated tool loops, manual stops, timeouts, score regressions, stale ticket state, dogfood failures, human follow-up, or reverted agent commits.
 
 `work_type` drives completion truth:
 
@@ -81,7 +81,7 @@ non-empty `evidence_links`, and a real `verified_by` value before moving to
 `done/`. Enabler, research, docs, and intervention-debt tickets normally use
 `end_to_end_evidence: not_applicable` and must not claim a shipped feature.
 
-Intervention-debt tickets must include role, repo, target, category, severity, confidence, evidence, and origin metadata when generated mechanically. They are deduped by repo, role, target, category, and evidence window.
+Intervention-debt tickets must include role, repo, target, category, severity, confidence, evidence, and origin metadata when generated mechanically. Origin metadata should link trace IDs, score snapshots, commits, outcomes, tools, jobs, telemetry events, and source messages when available locally; missing optional GitHub metadata must not block local ticket creation. They are deduped by repo, role, target, category, and evidence window.
 
 ## Naming Convention
 

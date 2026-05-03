@@ -47,9 +47,9 @@ The harness should proactively consume its own telemetry after jobs and on orche
 
 ### AD-065: Telemetry Triage Creates Intervention-Debt Tickets
 
-Self-reflection must create durable work, not only dashboard signals or evolution rows. When recurring telemetry patterns or low score snapshots identify actionable improvement targets, Mars Harness creates or updates `kind: intervention-debt` tickets through the canonical ticket creation path.
+Self-reflection must create durable work, not only dashboard signals or evolution rows. When recurring telemetry patterns, non-success terminal agent results, guardrail or tool-policy blocks, repeated tool loops, manual stops, timeouts, low score snapshots, human follow-up, reverted agent commits, or stale in-progress tickets identify actionable improvement targets, Mars Harness creates or updates `kind: intervention-debt` tickets through the canonical ticket creation path.
 
-The dedupe key is repo, role, target, category, and evidence window. This keeps repeated failures from creating ticket storms while still letting a new evidence window reopen durable work when the issue returns. Tickets carry role, repo, target, category, severity, confidence, source event or score snapshot, evidence, recommendation, candidate files, and acceptance criteria.
+The dedupe key is repo, role, target, category, and evidence window. This keeps repeated failures from creating ticket storms while still letting a new evidence window reopen durable work when the issue returns. Tickets carry role, repo, target, category, severity, confidence, source event, trace ID, score snapshot, commit, outcome, evidence, recommendation, candidate files, and acceptance criteria when those fields are available locally.
 
 Direct evolution remains bounded. Process, product, unknown, or unsafe changes default to intervention-debt tickets; autonomous evolution can only happen after the ticketed evidence is constrained by trust, allowlists, and regression checks.
 
@@ -76,7 +76,7 @@ not the source of truth.
 
 ## Current Implementation
 
-`internal/telemetry` now exposes triage functions that convert recurring failure patterns and low score snapshots into improvement proposals. `serve.checkEvolution` consumes those proposals, creates or updates intervention-debt tickets, emits dashboard events with ticket links, and records bounded evolution reviews with concrete suggestions and candidate files.
+`internal/telemetry` now exposes triage functions that convert recurring failure patterns, terminal failure signals, guardrail blocks, human follow-up, reverted commits, stale ticket state, manual stops, and low score snapshots into improvement proposals. `serve.checkEvolution`, failed-job handling, tool-policy reporting, and quality-score export consume those proposals, create or update intervention-debt tickets, emit dashboard events with ticket links, and record bounded evolution reviews with concrete suggestions and candidate files when confidence and allowlisted paths make direct review safe.
 
 The first implementation is deliberately small:
 
@@ -86,15 +86,20 @@ The first implementation is deliberately small:
 - max-turn and loop failures point at role prompt completion criteria or a missing reusable skill
 - manifest failures point at `.harness/manifest.yaml`
 - ticket-gate failures point at the role's ticket completion workflow, trust level, and target ticket state; self-chain auto-recovery does not retry them unchanged
+- guardrail and tool-policy blocks point at guardrail calibration, trust level, and role guidance without weakening enforcement first
+- human follow-up and reverted commits point at the role workflow, reusable skills, and guardrails that should have prevented the correction
+- stale in-progress tickets point at Engineer and Janitor ticket-drain behavior
+- manual stops point at role stop conditions, timeout policy, recovery, or escalation behavior
 - low scores point at process triage across prompt, skill, guardrail, tool, model, and intervention debt
 - `mars-harness scores export --repo <path>` refreshes `docs/QUALITY_SCORE.md`
-  from live evidence and preserves manual notes
+  from live evidence, creates deduped low-score/outcome/ticket-state
+  intervention debt, and preserves manual notes
 
 ## Required Next Steps
 
 - Add Orchestrator survey support so triage runs even when no new job finishes.
 - Add richer dashboard/API views for improvement proposals beyond the current event stream.
-- Extend triage with dogfood-specific and ticket-state-specific signals.
+- Extend triage with dogfood-specific signal detail and richer commit metadata when optional GitHub evidence is configured.
 - Add scanner-generated glossary and command-route updates when triage repeatedly identifies context gaps.
 - Add skill creation/update proposals when triage repeatedly identifies missing reusable procedure.
 

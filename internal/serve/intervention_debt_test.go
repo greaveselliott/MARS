@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
 	"github.com/stretchr/testify/require"
 )
@@ -142,6 +143,130 @@ func TestInterventionDebtUnknownFailureStaysTicketed(t *testing.T) {
 	require.Contains(t, text, "Classify unknown failure")
 	require.Contains(t, text, "Unknown or unsafe fixes remain ticketed")
 	require.False(t, strings.Contains(text, "directly edit arbitrary files"))
+}
+
+func TestCreateInterventionDebtTicketFromConfiguredSignals(t *testing.T) {
+	t.Parallel()
+	repo := setupInterventionDebtRepo(t)
+	signals := []interventionDebtSignal{
+		{
+			Kind:     "terminal_agent_result",
+			RepoID:   "repo-1",
+			Role:     "engineer",
+			JobID:    "job-terminal",
+			Category: telemetry.CategoryUnknown,
+			Message:  "agent ended with unknown failure",
+			TraceID:  "tr-terminal",
+			Outcome:  "failed",
+		},
+		{
+			Kind:     "guardrail_block",
+			RepoID:   "repo-1",
+			Role:     "engineer",
+			JobID:    "job-guardrail",
+			Category: telemetry.CategoryGuardrailBlock,
+			Message:  "guardrails: blocked by rule no-secrets",
+			ToolName: "file_write",
+		},
+		{
+			Kind:     "repeated_tool_loop",
+			RepoID:   "repo-1",
+			Role:     "engineer",
+			JobID:    "job-loop",
+			Category: telemetry.CategoryCircleDetected,
+			Message:  "circle_detected: same tool call 3x",
+			TraceID:  "tr-loop",
+		},
+		{
+			Kind:     "human_followup_commit",
+			RepoID:   "repo-1",
+			Role:     "engineer",
+			Category: telemetry.CategoryHumanFollowup,
+			Message:  "human follow-up commit fixed agent output",
+			Commit:   "abc1234",
+		},
+		{
+			Kind:     "reverted_agent_commit",
+			RepoID:   "repo-1",
+			Role:     "engineer",
+			Category: telemetry.CategoryRevertedCommit,
+			Message:  "reverted agent commit",
+			Commit:   "def5678",
+		},
+		{
+			Kind:     "stale_in_progress_ticket",
+			RepoID:   "repo-1",
+			Role:     "engineer",
+			Category: telemetry.CategoryStaleTicket,
+			Message:  "stale in-progress ticket T-001",
+		},
+		{
+			Kind:     "manual_stop",
+			RepoID:   "repo-1",
+			Role:     "engineer",
+			JobID:    "job-stop",
+			Category: telemetry.CategoryManualStop,
+			Message:  "manual stop requested by operator",
+		},
+		{
+			Kind:     "timeout",
+			RepoID:   "repo-1",
+			Role:     "engineer",
+			JobID:    "job-timeout",
+			Category: telemetry.CategoryToolTimeout,
+			Message:  "agent ended with timeout",
+			Outcome:  "timeout",
+		},
+	}
+
+	for _, signal := range signals {
+		proposal := interventionDebtProposalFromSignal(signal)
+		ticket, err := createInterventionDebtTicket(repo, proposal, interventionDebtOrigin{
+			Kind:           interventionDebtSignalKind(signal),
+			EvidenceWindow: interventionDebtSignalWindow(signal),
+			TraceID:        signal.TraceID,
+			Commit:         signal.Commit,
+			Outcome:        signal.Outcome,
+			ToolName:       signal.ToolName,
+			Message:        signal.Message,
+		})
+		require.NoError(t, err, "signal %s", signal.Kind)
+		data, err := os.ReadFile(filepath.Join(repo, ticket.Path))
+		require.NoError(t, err)
+		text := string(data)
+		require.Contains(t, text, "kind: intervention-debt", "signal %s", signal.Kind)
+		require.Contains(t, text, `origin_kind: "`+signal.Kind+`"`, "signal %s", signal.Kind)
+		require.Contains(t, text, `category: "`+string(signal.Category)+`"`, "signal %s", signal.Kind)
+	}
+}
+
+func TestHandleJobFailedCreatesDedupedInterventionDebtTicket(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+	require.NoError(t, srv.traceStore.Save(ctx, "job-1", "tr-job-1", "{}", "{}"))
+
+	job := &queue.Job{
+		ID:     "job-1",
+		RepoID: repoID,
+		Role:   "engineer",
+	}
+
+	srv.handleJobFailed(ctx, job, errTest("executor: agent ended with max_turns"))
+	srv.handleJobFailed(ctx, job, errTest("executor: agent ended with max_turns"))
+
+	rec, err := srv.repos.FindByID(ctx, repoID)
+	require.NoError(t, err)
+	entries, err := os.ReadDir(filepath.Join(rec.Path, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+
+	data, err := os.ReadFile(filepath.Join(rec.Path, "docs", "tickets", "backlog", entries[0].Name()))
+	require.NoError(t, err)
+	text := string(data)
+	require.Contains(t, text, "Category: max_turns")
+	require.Contains(t, text, "Trace ID: tr-job-1")
+	require.Contains(t, text, "Outcome: failed")
+	require.Contains(t, text, "## Latest Triage Update", "same signal should update the existing ticket")
 }
 
 func TestRecordInterventionDebtFailureRecordsTelemetry(t *testing.T) {

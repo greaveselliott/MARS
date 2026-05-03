@@ -7,8 +7,8 @@ kind: intervention-debt
 work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: TBD
+evidence_links: ["go test ./internal/telemetry ./internal/tools", "go test ./internal/serve -run 'Test(CreateInterventionDebt|InterventionDebt|RecordInterventionDebt|CheckEvolution|HandleJobFailed|BuildTicketIndex)'", "go test ./internal/qualityscore", "go test ./internal/scanner ./internal/docsconsistency ./internal/operatingmodel", "go test ./..."]
+verified_by: "go test ./..."
 dedupe_key: "public-example"
 source: Mars parity workstream D
 created: 2026-05-03
@@ -58,24 +58,37 @@ deduped intervention-debt tickets linked to traces and scores.
 
 ### Functional
 
-- [ ] Each configured failure signal can create or update one deduped
+- [x] Each configured failure signal can create or update one deduped
       intervention-debt ticket.
-- [ ] Tickets include role, repo, target, category, severity, confidence,
+- [x] Tickets include role, repo, target, category, severity, confidence,
       evidence, origin, trace ID, and commit where available.
-- [ ] Eligible tickets are offered to bounded evolution with source evidence.
-- [ ] Planner and Engineer context still list intervention-debt ahead of ordinary
+- [x] Eligible tickets are offered to bounded evolution with source evidence.
+- [x] Planner and Engineer context still list intervention-debt ahead of ordinary
       backlog work.
 
 ### Edge cases and negative paths
 
-- [ ] The same repeated signal updates an existing open ticket instead of
+- [x] The same repeated signal updates an existing open ticket instead of
       creating duplicates.
-- [ ] Missing optional GitHub data does not block local intervention-debt
+- [x] Missing optional GitHub data does not block local intervention-debt
       creation.
-- [ ] Low-confidence or unsafe evolution targets remain tickets only.
+- [x] Low-confidence or unsafe evolution targets remain tickets only.
 
 ### Observability, docs, and regressions
 
-- [ ] Unit tests cover each new signal path and dedupe behavior.
-- [ ] Integration tests cover at least one terminal failure creating a ticket.
-- [ ] Docs explain which signals become intervention debt and how dedupe works.
+- [x] Unit tests cover each new signal path and dedupe behavior.
+- [x] Integration tests cover at least one terminal failure creating a ticket.
+- [x] Docs explain which signals become intervention debt and how dedupe works.
+
+## Completion Notes
+
+- Added telemetry categories and triage mappings for guardrail/tool-policy
+  blocks, human follow-up, reverted commits, stale in-progress tickets, manual
+  stops, and terminal timeout/loop signals.
+- Failed job handling now creates deduped intervention-debt tickets immediately
+  with telemetry event, outcome, and trace ID evidence when available.
+- Tool-policy blocks report intervention signals from inside running agent
+  loops, and quality-score export creates deduped tickets for outcome and
+  stale-ticket evidence without requiring optional GitHub metadata.
+- Bounded evolution review now filters candidate files to allowlisted harness
+  paths and leaves low-confidence or unsafe targets as tickets only.

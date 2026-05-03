@@ -16,11 +16,64 @@ type interventionDebtOrigin struct {
 	EvidenceWindow string
 	Event          *telemetry.Event
 	Score          *telemetry.ScoreSnapshot
+	TraceID        string
+	Commit         string
+	Outcome        string
+	ToolName       string
+	Message        string
 }
 
 type interventionDebtTicket struct {
 	Path   string
 	Output string
+}
+
+type interventionDebtSignal struct {
+	Kind           string
+	RepoID         string
+	Role           string
+	JobID          string
+	Category       telemetry.FailureCategory
+	Count          int
+	EvidenceWindow string
+	Event          *telemetry.Event
+	TraceID        string
+	Commit         string
+	Outcome        string
+	ToolName       string
+	Message        string
+}
+
+func (s *Server) recordInterventionDebtSignal(ctx context.Context, signal interventionDebtSignal) {
+	signal.RepoID = strings.TrimSpace(signal.RepoID)
+	signal.Role = strings.TrimSpace(signal.Role)
+	if signal.RepoID == "" || signal.Role == "" {
+		return
+	}
+	if signal.Category == "" {
+		signal.Category = telemetry.Classify(signal.Message)
+	}
+	if signal.Event == nil && s.telemetry != nil && strings.TrimSpace(signal.Message) != "" && strings.TrimSpace(signal.JobID) != "" {
+		evt := s.telemetry.Record(signal.JobID, signal.RepoID, signal.Role, signal.Message)
+		signal.Event = &evt
+		if signal.Category == "" || signal.Category == telemetry.CategoryUnknown {
+			signal.Category = evt.Category
+		}
+	}
+
+	proposal := interventionDebtProposalFromSignal(signal)
+	origin := interventionDebtOrigin{
+		Kind:           interventionDebtSignalKind(signal),
+		EvidenceWindow: interventionDebtSignalWindow(signal),
+		Event:          signal.Event,
+		TraceID:        strings.TrimSpace(signal.TraceID),
+		Commit:         strings.TrimSpace(signal.Commit),
+		Outcome:        strings.TrimSpace(signal.Outcome),
+		ToolName:       strings.TrimSpace(signal.ToolName),
+		Message:        strings.TrimSpace(signal.Message),
+	}
+	s.recordInterventionDebtTicket(ctx, signal.RepoID, proposal, origin)
+	s.offerInterventionDebtEvolution(ctx, signal.RepoID, proposal, "signal_"+interventionDebtCategory(proposal))
 }
 
 func (s *Server) recordInterventionDebtTicket(ctx context.Context, repoID string, proposal telemetry.ImprovementProposal, origin interventionDebtOrigin) {
@@ -111,6 +164,87 @@ func createInterventionDebtTicket(repoPath string, proposal telemetry.Improvemen
 		Path:   ticketPathFromToolOutput(result.Output),
 		Output: result.Output,
 	}, nil
+}
+
+func interventionDebtProposalFromSignal(signal interventionDebtSignal) telemetry.ImprovementProposal {
+	count := signal.Count
+	if count <= 0 {
+		count = telemetry.PatternThreshold
+	}
+	window := interventionDebtSignalWindow(signal)
+	proposal := telemetry.TriagePattern(telemetry.Pattern{
+		RepoID:   signal.RepoID,
+		Role:     signal.Role,
+		Category: signal.Category,
+		Count:    count,
+		Window:   window,
+	})
+	evidence := strings.TrimSpace(interventionDebtSignalEvidence(signal))
+	if evidence != "" {
+		proposal.Evidence = evidence
+	}
+	return proposal
+}
+
+func interventionDebtSignalWindow(signal interventionDebtSignal) string {
+	window := strings.TrimSpace(signal.EvidenceWindow)
+	if window == "" {
+		window = "24h"
+	}
+	return window
+}
+
+func interventionDebtSignalKind(signal interventionDebtSignal) string {
+	if kind := strings.TrimSpace(signal.Kind); kind != "" {
+		return kind
+	}
+	switch signal.Category {
+	case telemetry.CategoryGuardrailBlock:
+		return "guardrail_block"
+	case telemetry.CategoryHumanFollowup:
+		return "human_followup_commit"
+	case telemetry.CategoryRevertedCommit:
+		return "reverted_agent_commit"
+	case telemetry.CategoryStaleTicket:
+		return "stale_in_progress_ticket"
+	case telemetry.CategoryManualStop:
+		return "manual_stop"
+	case telemetry.CategoryToolTimeout:
+		return "timeout"
+	case telemetry.CategoryCircleDetected:
+		return "repeated_tool_loop"
+	default:
+		return "terminal_agent_result"
+	}
+}
+
+func interventionDebtSignalEvidence(signal interventionDebtSignal) string {
+	var parts []string
+	kind := interventionDebtSignalKind(signal)
+	parts = append(parts, fmt.Sprintf("%s signal for repo %s role %s category %s in %s",
+		kind, signal.RepoID, signal.Role, signal.Category, interventionDebtSignalWindow(signal)))
+	if signal.Count > 0 {
+		parts = append(parts, fmt.Sprintf("count=%d", signal.Count))
+	}
+	if signal.JobID != "" {
+		parts = append(parts, "job="+signal.JobID)
+	}
+	if signal.TraceID != "" {
+		parts = append(parts, "trace="+signal.TraceID)
+	}
+	if signal.Commit != "" {
+		parts = append(parts, "commit="+signal.Commit)
+	}
+	if signal.Outcome != "" {
+		parts = append(parts, "outcome="+signal.Outcome)
+	}
+	if signal.ToolName != "" {
+		parts = append(parts, "tool="+signal.ToolName)
+	}
+	if msg := strings.TrimSpace(signal.Message); msg != "" {
+		parts = append(parts, "message="+msg)
+	}
+	return strings.Join(parts, "\n")
 }
 
 func interventionDebtTitle(proposal telemetry.ImprovementProposal) string {
@@ -207,6 +341,18 @@ func interventionDebtMetadata(proposal telemetry.ImprovementProposal, origin int
 		metadata["origin_event_id"] = origin.Event.ID
 		metadata["origin_job_id"] = origin.Event.JobID
 	}
+	if origin.TraceID != "" {
+		metadata["trace_id"] = origin.TraceID
+	}
+	if origin.Commit != "" {
+		metadata["commit"] = origin.Commit
+	}
+	if origin.Outcome != "" {
+		metadata["outcome"] = origin.Outcome
+	}
+	if origin.ToolName != "" {
+		metadata["tool"] = origin.ToolName
+	}
 	if origin.Score != nil {
 		metadata["score_value"] = fmt.Sprintf("%.2f", origin.Score.Value)
 		metadata["score_samples"] = fmt.Sprintf("%d", origin.Score.SampleSize)
@@ -221,16 +367,28 @@ func interventionDebtSource(proposal telemetry.ImprovementProposal, origin inter
 	if origin.Score != nil {
 		return fmt.Sprintf("score:%s:%s:%dd", proposal.RepoID, proposal.Role, origin.Score.WindowDays)
 	}
+	if origin.TraceID != "" {
+		return "trace:" + origin.TraceID
+	}
+	if origin.Commit != "" {
+		return "commit:" + origin.Commit
+	}
+	if kind := strings.TrimSpace(origin.Kind); kind != "" {
+		return "signal:" + kind
+	}
 	return "telemetry-triage"
 }
 
 func interventionDebtBody(proposal telemetry.ImprovementProposal, origin interventionDebtOrigin) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## Context\n\n")
-	fmt.Fprintf(&b, "Telemetry triage identified intervention debt that should become durable work before direct harness evolution. This ticket is generated from evidence and deduped by repo, role, target, category, and evidence window.\n\n")
+	fmt.Fprintf(&b, "A harness self-improvement signal identified intervention debt that should become durable work before direct harness evolution. This ticket is generated from evidence and deduped by repo, role, target, category, and evidence window.\n\n")
 
 	fmt.Fprintf(&b, "## Triage Metadata\n\n")
 	fmt.Fprintf(&b, "- Kind: intervention-debt\n")
+	if origin.Kind != "" {
+		fmt.Fprintf(&b, "- Origin kind: %s\n", origin.Kind)
+	}
 	fmt.Fprintf(&b, "- Repo ID: %s\n", proposal.RepoID)
 	fmt.Fprintf(&b, "- Role: %s\n", proposal.Role)
 	fmt.Fprintf(&b, "- Proposal: %s\n", proposal.Title)
@@ -245,6 +403,18 @@ func interventionDebtBody(proposal telemetry.ImprovementProposal, origin interve
 		fmt.Fprintf(&b, "- Origin event: %s\n", origin.Event.ID)
 		fmt.Fprintf(&b, "- Origin job: %s\n", origin.Event.JobID)
 	}
+	if origin.TraceID != "" {
+		fmt.Fprintf(&b, "- Trace ID: %s\n", origin.TraceID)
+	}
+	if origin.Commit != "" {
+		fmt.Fprintf(&b, "- Commit: %s\n", origin.Commit)
+	}
+	if origin.Outcome != "" {
+		fmt.Fprintf(&b, "- Outcome: %s\n", origin.Outcome)
+	}
+	if origin.ToolName != "" {
+		fmt.Fprintf(&b, "- Tool: %s\n", origin.ToolName)
+	}
 	if origin.Score != nil {
 		fmt.Fprintf(&b, "- Score snapshot: %.2f over %d samples in %dd\n", origin.Score.Value, origin.Score.SampleSize, origin.Score.WindowDays)
 	}
@@ -252,6 +422,8 @@ func interventionDebtBody(proposal telemetry.ImprovementProposal, origin interve
 	fmt.Fprintf(&b, "\n## Evidence\n\n%s\n\n", strings.TrimSpace(proposal.Evidence))
 	if origin.Event != nil && strings.TrimSpace(origin.Event.Message) != "" {
 		fmt.Fprintf(&b, "Latest event message:\n\n```text\n%s\n```\n\n", strings.TrimSpace(origin.Event.Message))
+	} else if strings.TrimSpace(origin.Message) != "" {
+		fmt.Fprintf(&b, "Latest signal message:\n\n```text\n%s\n```\n\n", strings.TrimSpace(origin.Message))
 	}
 
 	fmt.Fprintf(&b, "## Recommendation\n\n%s\n\n", strings.TrimSpace(proposal.Suggestion))

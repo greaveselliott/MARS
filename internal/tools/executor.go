@@ -70,6 +70,7 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 		runCtx = WithSession(runCtx, *e.Session)
 	}
 	if err := preToolPolicy(runCtx, root, name, raw); err != nil {
+		recordPolicyEvent(runCtx, "pre", name, err)
 		return ToolResult{Duration: time.Since(start)}, err
 	}
 	res, err := h(runCtx, root, raw)
@@ -78,6 +79,7 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 		return res, err
 	}
 	if err := postToolPolicy(runCtx, root, name); err != nil {
+		recordPolicyEvent(runCtx, "post", name, err)
 		return res, err
 	}
 	if res.Output != "" || res.Stderr != "" {
@@ -92,4 +94,19 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 		}
 	}
 	return res, nil
+}
+
+func recordPolicyEvent(ctx context.Context, stage, toolName string, err error) {
+	if err == nil {
+		return
+	}
+	session, ok := SessionFromContext(ctx)
+	if !ok || session.PolicyRecorder == nil {
+		return
+	}
+	session.PolicyRecorder(PolicyEvent{
+		Stage:    stage,
+		ToolName: toolName,
+		Message:  err.Error(),
+	})
 }

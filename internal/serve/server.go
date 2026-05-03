@@ -196,6 +196,7 @@ func New(cfg Config) (*Server, error) {
 	}
 
 	telem.SetRemediator(s.handleRemediation)
+	executor.SetInterventionSignalHandler(s.recordInterventionDebtSignal)
 
 	s.workers = queue.NewWorkerPool(jobQueue, queue.WorkerConfig{
 		Concurrency: cfg.concurrency(),
@@ -1106,12 +1107,14 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
 
 	cat := telemetry.Classify(jobErr.Error())
+	outcomeType := scoring.OutcomeFailed
+	switch cat {
+	case telemetry.CategoryToolTimeout, telemetry.CategoryContextOverflow:
+		outcomeType = scoring.OutcomeTimeout
+	case telemetry.CategoryGuardrailBlock:
+		outcomeType = scoring.OutcomeGuardrailBlocked
+	}
 	if s.scoreStore != nil {
-		outcomeType := scoring.OutcomeFailed
-		switch cat {
-		case telemetry.CategoryToolTimeout, telemetry.CategoryContextOverflow:
-			outcomeType = scoring.OutcomeTimeout
-		}
 		_ = s.scoreStore.RecordOutcome(ctx, scoring.Outcome{
 			JobID:   job.ID,
 			RepoID:  job.RepoID,
@@ -1121,7 +1124,19 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 		})
 	}
 
-	s.telemetry.Record(job.ID, job.RepoID, job.Role, jobErr.Error())
+	evt := s.telemetry.Record(job.ID, job.RepoID, job.Role, jobErr.Error())
+	s.recordInterventionDebtSignal(ctx, interventionDebtSignal{
+		Kind:           interventionDebtSignalKindForCategory(cat),
+		RepoID:         job.RepoID,
+		Role:           job.Role,
+		JobID:          job.ID,
+		Category:       cat,
+		EvidenceWindow: "24h",
+		Event:          &evt,
+		TraceID:        s.latestTraceID(ctx, job.ID),
+		Outcome:        string(outcomeType),
+		Message:        jobErr.Error(),
+	})
 
 	if s.dash != nil {
 		payload, _ := json.Marshal(map[string]string{
@@ -1203,6 +1218,25 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 	log.Info("serve: recovery job enqueued", "recovery_job_id", jobID)
 
 	go s.checkEvolution(context.Background(), job.Role, job.RepoID)
+}
+
+func (s *Server) latestTraceID(ctx context.Context, jobID string) string {
+	if s.traceStore == nil || strings.TrimSpace(jobID) == "" {
+		return ""
+	}
+	rec, err := s.traceStore.GetLatestByJobID(ctx, jobID)
+	if err != nil {
+		slog.Warn("serve: trace lookup failed for intervention-debt evidence", "job_id", jobID, "err", err)
+		return ""
+	}
+	if rec == nil {
+		return ""
+	}
+	return rec.TraceID
+}
+
+func interventionDebtSignalKindForCategory(category telemetry.FailureCategory) string {
+	return interventionDebtSignalKind(interventionDebtSignal{Category: category})
 }
 
 func isAutoRecoverTrigger(trigger string) bool {
@@ -1468,23 +1502,7 @@ func (s *Server) checkEvolution(ctx context.Context, role, repoID string) {
 			s.dash.BroadcastEvent("telemetry_triage", string(proposalData))
 		}
 
-		if s.evoStore != nil {
-			ok, reason := evolution.CanReview(s.evoStore, proposal.Role, evolution.DefaultReviewerConfig())
-			if !ok {
-				slog.Info("serve: evolution review skipped", "role", proposal.Role, "reason", reason)
-				continue
-			}
-
-			result := evolution.ReviewResult{
-				Classification: fmt.Sprintf("telemetry_%s_%s", proposal.Target, proposal.Category),
-				Suggestion:     proposal.Suggestion,
-				FilesToModify:  proposal.CandidateFiles,
-				Confidence:     proposal.Confidence,
-			}
-			if err := evolution.RecordEvolution(ctx, s.evoStore, proposal.Role, repoID, result); err != nil {
-				slog.Error("serve: failed to record evolution", "role", proposal.Role, "err", err)
-			}
-		}
+		s.offerInterventionDebtEvolution(ctx, repoID, proposal, fmt.Sprintf("telemetry_%s_%s", proposal.Target, proposal.Category))
 	}
 
 	if count := atomic.LoadInt32(&jobCount); count >= 10 {
@@ -1540,23 +1558,63 @@ func (s *Server) runScoreReview(ctx context.Context, role, repoID string) {
 		s.dash.BroadcastEvent("score_triage", string(data))
 	}
 
-	if s.evoStore != nil {
-		ok, reason := evolution.CanReview(s.evoStore, role, evolution.DefaultReviewerConfig())
-		if !ok {
-			slog.Info("serve: evolution review skipped (score drop)", "role", role, "reason", reason)
-			return
-		}
+	s.offerInterventionDebtEvolution(ctx, repoID, proposal, fmt.Sprintf("score_%s", proposal.Target))
+}
 
-		result := evolution.ReviewResult{
-			Classification: fmt.Sprintf("score_%s", proposal.Target),
-			Suggestion:     proposal.Suggestion,
-			FilesToModify:  proposal.CandidateFiles,
-			Confidence:     proposal.Confidence,
-		}
-		if err := evolution.RecordEvolution(ctx, s.evoStore, role, repoID, result); err != nil {
-			slog.Error("serve: failed to record score-drop evolution", "role", role, "err", err)
-		}
+func (s *Server) offerInterventionDebtEvolution(ctx context.Context, repoID string, proposal telemetry.ImprovementProposal, classification string) {
+	if s.evoStore == nil {
+		return
 	}
+	files := boundedEvolutionFiles(proposal.CandidateFiles)
+	if proposal.Confidence < 0.65 || len(files) == 0 || proposal.Target == telemetry.TargetUnknown {
+		slog.Info("serve: evolution review skipped (ticket only)",
+			"role", proposal.Role,
+			"target", proposal.Target,
+			"confidence", proposal.Confidence,
+			"candidate_files", len(files),
+		)
+		return
+	}
+	ok, reason := evolution.CanReview(s.evoStore, proposal.Role, evolution.DefaultReviewerConfig())
+	if !ok {
+		slog.Info("serve: evolution review skipped", "role", proposal.Role, "reason", reason)
+		return
+	}
+
+	result := evolution.ReviewResult{
+		Classification: classification,
+		Suggestion:     proposal.Suggestion,
+		FilesToModify:  files,
+		Confidence:     proposal.Confidence,
+	}
+	if err := evolution.RecordEvolution(ctx, s.evoStore, proposal.Role, repoID, result); err != nil {
+		slog.Error("serve: failed to record evolution", "role", proposal.Role, "err", err)
+	}
+}
+
+func boundedEvolutionFiles(files []string) []string {
+	seen := map[string]struct{}{}
+	var out []string
+	for _, file := range files {
+		clean := filepath.ToSlash(filepath.Clean(strings.TrimSpace(file)))
+		if clean == "." || clean == "" {
+			continue
+		}
+		allowed := clean == ".harness/manifest.yaml" ||
+			clean == ".harness/knowledge-routes.yaml" ||
+			strings.HasPrefix(clean, ".harness/roles/") ||
+			strings.HasPrefix(clean, ".harness/guardrails/") ||
+			strings.HasPrefix(clean, ".harness/knowledge/")
+		if !allowed {
+			continue
+		}
+		if _, ok := seen[clean]; ok {
+			continue
+		}
+		seen[clean] = struct{}{}
+		out = append(out, clean)
+	}
+	return out
 }
 
 func matchesTriageScope(patternRepoID, patternRole, repoID, role string) bool {

@@ -743,9 +743,9 @@ Enabler, research, docs, and intervention-debt tickets use
 
 ## Intervention Debt
 
-Use ` + "`kind: intervention-debt`" + ` for work created from repeated telemetry failures, score regressions, dogfood failures, stuck ticket state, guardrail blocks, or repeated human interventions.
+Use ` + "`kind: intervention-debt`" + ` for work created from repeated telemetry failures, non-success terminal agent results, guardrail or tool-policy blocks, repeated tool loops, manual stops, timeouts, score regressions, dogfood failures, stale ticket state, human follow-up, or reverted agent commits.
 
-Intervention-debt tickets include role, target, category, severity, confidence, evidence, and origin metadata. They are deduped by repo, role, target, category, and evidence window. Prioritise them ahead of ordinary backlog work because they fix the harness process that produces future work.
+Intervention-debt tickets include role, repo, target, category, severity, confidence, evidence, and origin metadata. Origin metadata should link trace IDs, score snapshots, commits, outcomes, tools, jobs, telemetry events, and source messages when available locally; missing optional GitHub metadata must not block local ticket creation. They are deduped by repo, role, target, category, and evidence window. Prioritise them ahead of ordinary backlog work because they fix the harness process that produces future work.
 `,
 
 	"docs/exec-plans/README.md": `# Execution Plans

@@ -16,6 +16,7 @@ import (
 
 const (
 	defaultWindowDays = 30
+	staleTicketDays   = 7
 	manualStart       = "<!-- BEGIN MANUAL NOTES -->"
 	manualEnd         = "<!-- END MANUAL NOTES -->"
 )
@@ -111,10 +112,22 @@ func Export(ctx context.Context, opts Options) (Report, error) {
 		return Report{}, err
 	}
 	if !opts.DisableTicketCreation {
-		changed, err := createRegressionTickets(repoPath, ev.repoID, ev.scores)
+		var changed []string
+		regressionTickets, err := createRegressionTickets(repoPath, ev.repoID, ev.scores)
 		if err != nil {
 			return Report{}, err
 		}
+		changed = append(changed, regressionTickets...)
+		outcomeTickets, err := createOutcomeSignalTickets(repoPath, ev.repoID, ev.outcomeCounts, opts.WindowDays)
+		if err != nil {
+			return Report{}, err
+		}
+		changed = append(changed, outcomeTickets...)
+		staleTickets, err := createStaleTicketSignalTickets(repoPath, ev.repoID, ev.tickets.InProgressTickets, opts.Now)
+		if err != nil {
+			return Report{}, err
+		}
+		changed = append(changed, staleTickets...)
 		ev.ticketsChanged = changed
 		if len(changed) > 0 {
 			tickets, err := scanTickets(repoPath)
@@ -380,6 +393,211 @@ func createRegressionTickets(repoPath, repoID string, scores []scoring.Score) ([
 		changed = append(changed, result.Output)
 	}
 	return changed, nil
+}
+
+func createOutcomeSignalTickets(repoPath, repoID string, counts []scoring.OutcomeCount, windowDays int) ([]string, error) {
+	root, err := tools.NewRoot(repoPath)
+	if err != nil {
+		return nil, err
+	}
+	if windowDays <= 0 {
+		windowDays = defaultWindowDays
+	}
+	window := fmt.Sprintf("%dd", windowDays)
+	var changed []string
+	for _, count := range counts {
+		category, ok := categoryForOutcome(count.Type)
+		if !ok || count.Count <= 0 {
+			continue
+		}
+		eventRepoID := count.RepoID
+		if eventRepoID == "" {
+			eventRepoID = repoID
+		}
+		patternCount := count.Count
+		if patternCount < telemetry.PatternThreshold {
+			patternCount = telemetry.PatternThreshold
+		}
+		proposal := telemetry.TriagePattern(telemetry.Pattern{
+			RepoID:   eventRepoID,
+			Role:     count.Role,
+			Category: category,
+			Count:    patternCount,
+			Window:   window,
+		})
+		proposal.Evidence = fmt.Sprintf("%d %s outcome(s) for repo %s role %s in %s", count.Count, count.Type, eventRepoID, count.Role, window)
+		result, err := tools.CreateTicket(root, tools.TicketInput{
+			Title:      fmt.Sprintf("Intervention debt: %s for %s", proposal.Title, count.Role),
+			Priority:   priorityForSeverity(proposal.Severity),
+			Complexity: "medium",
+			Kind:       "intervention-debt",
+			WorkType:   "intervention-debt",
+			DedupeKey:  signalDedupeKey(eventRepoID, count.Role, proposal.Target, category, window),
+			Metadata: map[string]string{
+				"role":            count.Role,
+				"repo_id":         eventRepoID,
+				"target":          string(proposal.Target),
+				"category":        string(category),
+				"severity":        proposal.Severity,
+				"confidence":      fmt.Sprintf("%.2f", proposal.Confidence),
+				"evidence_window": window,
+				"origin_kind":     "quality_score_outcome",
+				"outcome_type":    string(count.Type),
+				"outcome_count":   fmt.Sprintf("%d", count.Count),
+			},
+			Source: fmt.Sprintf("quality-score-outcome:%s:%s:%s:%s", eventRepoID, count.Role, count.Type, window),
+			Body:   outcomeSignalTicketBody(proposal, count, window),
+		})
+		if err != nil {
+			return nil, err
+		}
+		changed = append(changed, result.Output)
+	}
+	return changed, nil
+}
+
+func createStaleTicketSignalTickets(repoPath, repoID string, tickets []ticketInfo, now time.Time) ([]string, error) {
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+	cutoff := now.AddDate(0, 0, -staleTicketDays)
+	var stale []ticketInfo
+	for _, ticket := range tickets {
+		if ticket.ModifiedAt.IsZero() || ticket.ModifiedAt.After(cutoff) {
+			continue
+		}
+		stale = append(stale, ticket)
+	}
+	if len(stale) == 0 {
+		return nil, nil
+	}
+	root, err := tools.NewRoot(repoPath)
+	if err != nil {
+		return nil, err
+	}
+	role := "engineer"
+	category := telemetry.CategoryStaleTicket
+	window := fmt.Sprintf("%dd", staleTicketDays)
+	proposal := telemetry.TriagePattern(telemetry.Pattern{
+		RepoID:   repoID,
+		Role:     role,
+		Category: category,
+		Count:    telemetry.PatternThreshold,
+		Window:   window,
+	})
+	proposal.Evidence = staleTicketEvidence(stale, now)
+	result, err := tools.CreateTicket(root, tools.TicketInput{
+		Title:      fmt.Sprintf("Intervention debt: %s", proposal.Title),
+		Priority:   priorityForSeverity(proposal.Severity),
+		Complexity: "medium",
+		Kind:       "intervention-debt",
+		WorkType:   "intervention-debt",
+		DedupeKey:  signalDedupeKey(repoID, role, proposal.Target, category, window),
+		Metadata: map[string]string{
+			"role":               role,
+			"repo_id":            repoID,
+			"target":             string(proposal.Target),
+			"category":           string(category),
+			"severity":           proposal.Severity,
+			"confidence":         fmt.Sprintf("%.2f", proposal.Confidence),
+			"evidence_window":    window,
+			"origin_kind":        "quality_score_ticket_state",
+			"stale_ticket_count": fmt.Sprintf("%d", len(stale)),
+		},
+		Source: fmt.Sprintf("quality-score-ticket-state:%s:%s", repoID, window),
+		Body:   staleTicketSignalTicketBody(proposal, stale, now),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return []string{result.Output}, nil
+}
+
+func categoryForOutcome(outcome scoring.OutcomeType) (telemetry.FailureCategory, bool) {
+	switch outcome {
+	case scoring.OutcomeTimeout:
+		return telemetry.CategoryToolTimeout, true
+	case scoring.OutcomeGuardrailBlocked:
+		return telemetry.CategoryGuardrailBlock, true
+	case scoring.OutcomeHumanFollowup:
+		return telemetry.CategoryHumanFollowup, true
+	case scoring.OutcomeReverted:
+		return telemetry.CategoryRevertedCommit, true
+	default:
+		return "", false
+	}
+}
+
+func signalDedupeKey(repoID, role string, target telemetry.ImprovementTarget, category telemetry.FailureCategory, window string) string {
+	return strings.Join([]string{
+		"intervention-debt",
+		normalizePart(repoID),
+		normalizePart(role),
+		normalizePart(string(target)),
+		normalizePart(string(category)),
+		normalizePart(window),
+	}, ":")
+}
+
+func priorityForSeverity(severity string) string {
+	switch strings.ToLower(strings.TrimSpace(severity)) {
+	case "critical", "high":
+		return "high"
+	case "medium":
+		return "medium"
+	default:
+		return "low"
+	}
+}
+
+func outcomeSignalTicketBody(proposal telemetry.ImprovementProposal, count scoring.OutcomeCount, window string) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "## Context\n\n")
+	fmt.Fprintf(&b, "`mars-harness scores export` detected an intervention-debt outcome signal while refreshing `docs/QUALITY_SCORE.md`.\n\n")
+	fmt.Fprintf(&b, "## Evidence\n\n")
+	fmt.Fprintf(&b, "- Role: %s\n", count.Role)
+	fmt.Fprintf(&b, "- Repo ID: %s\n", proposal.RepoID)
+	fmt.Fprintf(&b, "- Outcome: %s\n", count.Type)
+	fmt.Fprintf(&b, "- Count: %d\n", count.Count)
+	fmt.Fprintf(&b, "- Evidence window: %s\n\n", window)
+	fmt.Fprintf(&b, "## Recommendation\n\n%s\n\n", strings.TrimSpace(proposal.Suggestion))
+	fmt.Fprintf(&b, "## Acceptance Criteria\n\n")
+	fmt.Fprintf(&b, "### Functional (happy path)\n\n")
+	fmt.Fprintf(&b, "- [ ] The originating outcome signal is linked to trace, commit, score, or ticket evidence where available.\n")
+	fmt.Fprintf(&b, "- [ ] The harness workflow change prevents the same signal from recurring in the evidence window.\n\n")
+	fmt.Fprintf(&b, "### Edge cases and negative paths\n\n")
+	fmt.Fprintf(&b, "- [ ] Missing optional GitHub or commit metadata does not block local ticket creation.\n")
+	fmt.Fprintf(&b, "- [ ] Existing matching intervention-debt tickets are updated instead of duplicated.\n\n")
+	fmt.Fprintf(&b, "### Observability, docs, and regressions\n\n")
+	fmt.Fprintf(&b, "- [ ] `docs/QUALITY_SCORE.md` and completion notes link the relevant verification evidence.")
+	return b.String()
+}
+
+func staleTicketEvidence(tickets []ticketInfo, now time.Time) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "%d in-progress ticket(s) older than %d days as of %s", len(tickets), staleTicketDays, now.Format("2006-01-02"))
+	for _, ticket := range tickets {
+		fmt.Fprintf(&b, "\n- %s last modified %s", ticket.Path, ticket.ModifiedAt.Format("2006-01-02"))
+	}
+	return b.String()
+}
+
+func staleTicketSignalTicketBody(proposal telemetry.ImprovementProposal, tickets []ticketInfo, now time.Time) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "## Context\n\n")
+	fmt.Fprintf(&b, "`mars-harness scores export` detected stale in-progress ticket state while refreshing `docs/QUALITY_SCORE.md`.\n\n")
+	fmt.Fprintf(&b, "## Evidence\n\n%s\n\n", staleTicketEvidence(tickets, now))
+	fmt.Fprintf(&b, "## Recommendation\n\n%s\n\n", strings.TrimSpace(proposal.Suggestion))
+	fmt.Fprintf(&b, "## Acceptance Criteria\n\n")
+	fmt.Fprintf(&b, "### Functional (happy path)\n\n")
+	fmt.Fprintf(&b, "- [ ] Each stale in-progress ticket is completed, moved back to backlog with blocker evidence, or converted into focused intervention debt.\n")
+	fmt.Fprintf(&b, "- [ ] The Engineer and Janitor flow prevents the same stale state from recurring.\n\n")
+	fmt.Fprintf(&b, "### Edge cases and negative paths\n\n")
+	fmt.Fprintf(&b, "- [ ] Tickets blocked by dependencies record the blocker explicitly instead of silently remaining active.\n")
+	fmt.Fprintf(&b, "- [ ] Existing matching stale-ticket intervention debt is updated instead of duplicated.\n\n")
+	fmt.Fprintf(&b, "### Observability, docs, and regressions\n\n")
+	fmt.Fprintf(&b, "- [ ] Follow-up quality export no longer reports the same stale in-progress ticket set.")
+	return b.String()
 }
 
 func qualityDedupeKey(repoID, role string, windowDays int) string {

@@ -103,6 +103,25 @@ func TestClassify_ticketGate(t *testing.T) {
 	}
 }
 
+func TestClassify_interventionSignals(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		msg  string
+		want FailureCategory
+	}{
+		{`guardrails: blocked by rule "no-secrets"`, CategoryGuardrailBlock},
+		{`policy: trust level observer cannot run mutating tool "file_write"`, CategoryGuardrailBlock},
+		{`human follow-up commit fixed agent output`, CategoryHumanFollowup},
+		{`reverted agent commit abc123`, CategoryRevertedCommit},
+		{`stale in-progress ticket docs/tickets/in-progress/T-001.md`, CategoryStaleTicket},
+		{`manual stop requested by operator`, CategoryManualStop},
+		{`agent ended with timeout`, CategoryToolTimeout},
+	}
+	for _, tc := range cases {
+		require.Equal(t, tc.want, Classify(tc.msg), "input: %s", tc.msg)
+	}
+}
+
 func TestClassify_unknown(t *testing.T) {
 	t.Parallel()
 	require.Equal(t, CategoryUnknown, Classify("something completely different"))
@@ -126,6 +145,11 @@ func TestRetryable(t *testing.T) {
 		CategoryBudgetExceeded,
 		CategoryManifestError,
 		CategoryTicketGate,
+		CategoryGuardrailBlock,
+		CategoryHumanFollowup,
+		CategoryRevertedCommit,
+		CategoryStaleTicket,
+		CategoryManualStop,
 		CategoryUnknown,
 	}
 	for _, c := range nonRetryable {
@@ -344,6 +368,36 @@ func TestTriagePattern_ticketGateTargetsProcess(t *testing.T) {
 	require.Contains(t, proposal.CandidateFiles, ".harness/roles/engineer.md")
 	require.Contains(t, proposal.CandidateFiles, "docs/tickets/in-progress/")
 	require.Greater(t, proposal.Confidence, 0.8)
+}
+
+func TestTriagePattern_interventionSignalTargets(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		category FailureCategory
+		target   ImprovementTarget
+		title    string
+	}{
+		{CategoryGuardrailBlock, TargetGuardrail, "Calibrate guardrail workflow"},
+		{CategoryHumanFollowup, TargetProcess, "Reduce human follow-up"},
+		{CategoryRevertedCommit, TargetProcess, "Prevent reverted agent commits"},
+		{CategoryStaleTicket, TargetProcess, "Drain stale in-progress work"},
+		{CategoryManualStop, TargetProcess, "Remove manual stop trigger"},
+	}
+	for _, tt := range tests {
+		proposal := TriagePattern(Pattern{
+			Role:     "engineer",
+			RepoID:   "repo-1",
+			Category: tt.category,
+			Count:    PatternThreshold,
+			Window:   "24h",
+		})
+		require.Equal(t, tt.target, proposal.Target, "category: %s", tt.category)
+		require.Equal(t, tt.title, proposal.Title, "category: %s", tt.category)
+		require.NotEmpty(t, proposal.Suggestion)
+		require.NotEmpty(t, proposal.CandidateFiles)
+		require.GreaterOrEqual(t, proposal.Confidence, 0.7)
+	}
 }
 
 func TestTriageScore_lowScoreProducesProcessProposal(t *testing.T) {
