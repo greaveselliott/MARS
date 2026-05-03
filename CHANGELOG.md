@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.13.0] - 2026-05-03
+<!-- mars-harness-release: version=0.13.0 commit=ccd36bc3bf3d -->
+
+### Features
+- **release:** Verify release assets for self-update (MH-031) (9e027a2)
+
+### Fixes
+- **release:** Ignore stale changelog markers (MH-031) (ccd36bc)
+
 ## [0.12.1] - 2026-05-03
 <!-- mars-harness-release: version=0.12.1 commit=d8e8c6fcc990 -->
 
