@@ -109,18 +109,3 @@ func (c *Collector) DetectPatternsFromStore() []Pattern {
 	}
 	return patterns
 }
-
-// uniqueRoles extracts distinct roles from the in-memory buffer.
-func (c *Collector) uniqueRoles() []string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	seen := map[string]struct{}{}
-	for _, e := range c.events {
-		seen[e.Role] = struct{}{}
-	}
-	roles := make([]string, 0, len(seen))
-	for r := range seen {
-		roles = append(roles, r)
-	}
-	return roles
-}

@@ -471,7 +471,7 @@ WHERE status IN ('pending','claimed','running')
 	if err != nil {
 		return RecoveryRepairReport{}, fmt.Errorf("queue: begin recovery repair: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	for _, jobs := range groups {
 		report.ActiveGroups++

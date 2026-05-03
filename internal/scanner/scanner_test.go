@@ -14,7 +14,7 @@ import (
 func TestScan_emptyRepo(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -39,8 +39,8 @@ func TestScan_emptyRepo(t *testing.T) {
 func TestScan_detectsGoLanguage(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -50,10 +50,10 @@ func TestScan_detectsGoLanguage(t *testing.T) {
 func TestScan_detectsCI(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 	wfDir := filepath.Join(dir, ".github", "workflows")
-	os.MkdirAll(wfDir, 0o755)
-	os.WriteFile(filepath.Join(wfDir, "ci.yml"), []byte("name: CI\n"), 0o644)
+	require.NoError(t, os.MkdirAll(wfDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(wfDir, "ci.yml"), []byte("name: CI\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -63,10 +63,10 @@ func TestScan_detectsCI(t *testing.T) {
 func TestScan_detectsMissingTests(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 	pkgDir := filepath.Join(dir, "pkg", "foo")
-	os.MkdirAll(pkgDir, 0o755)
-	os.WriteFile(filepath.Join(pkgDir, "foo.go"), []byte("package foo\n"), 0o644)
+	require.NoError(t, os.MkdirAll(pkgDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "foo.go"), []byte("package foo\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)

@@ -131,7 +131,7 @@ func TestWriteDefaultConfigStep_execute(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	baseDir := filepath.Join(dir, ".mars-harness")
-	os.MkdirAll(baseDir, 0o755)
+	require.NoError(t, os.MkdirAll(baseDir, 0o755))
 
 	step := writeDefaultConfigStep(baseDir)
 

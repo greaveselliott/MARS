@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -87,40 +86,6 @@ func installLlamaServerStep(baseDir string) Step {
 			return nil
 		},
 	}
-}
-
-type ghRelease struct {
-	TagName string `json:"tag_name"`
-}
-
-func fetchLatestLlamaCppTag() (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), httpTimeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest", nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GitHub API returned %s", resp.Status)
-	}
-
-	var rel ghRelease
-	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
-		return "", fmt.Errorf("decode release JSON: %w", err)
-	}
-	if rel.TagName == "" {
-		return "", fmt.Errorf("release has no tag_name")
-	}
-	return rel.TagName, nil
 }
 
 func llamaPlatformKey() (string, error) {
