@@ -28,6 +28,7 @@ func RegisterBuiltinTools(r *Registry) error {
 		registerGitReleaseGuard,
 		registerToolInventoryAudit,
 		registerTaskTraceSummarize,
+		registerToolCreationGuard,
 	}
 	for _, fn := range registrations {
 		if err := fn(r); err != nil {

@@ -198,7 +198,8 @@ Current mirrored built-in tools are:
 - `ticket_create`
 - `tool_create`
 - `release_orchestrate`, `github_release_status`, `git_release_guard`
-- `architecture_audit`, `harness_doctrine_sync`, `tool_inventory_audit`
+- `architecture_audit`, `harness_doctrine_sync`, `tool_creation_guard`,
+  `tool_inventory_audit`
 - `task_trace_summarize`
 - `git_status`, `git_diff`, `git_commit`, `git_push`
 

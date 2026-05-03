@@ -19,6 +19,7 @@ func TestFormalizedWorkflowTools_registered(t *testing.T) {
 		"architecture_audit",
 		"harness_doctrine_sync",
 		"git_release_guard",
+		"tool_creation_guard",
 		"tool_inventory_audit",
 		"task_trace_summarize",
 	} {
@@ -71,6 +72,7 @@ it does not clone a fresh working directory per job
 `+"`architecture_audit`"+`
 `+"`harness_doctrine_sync`"+`
 `+"`git_release_guard`"+`
+`+"`tool_creation_guard`"+`
 `+"`tool_inventory_audit`"+`
 `+"`task_trace_summarize`"+`
 `+"`file_read`"+`

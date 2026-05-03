@@ -186,7 +186,7 @@ func handleHarnessDoctrineSync(_ context.Context, root Root, raw json.RawMessage
 	}{
 		{"AGENTS.md", []string{"Operating model", "Mirrored tools", "docs/design-docs/tools-glossary.md"}},
 		{"docs/design-docs/harness-glossary.md", []string{"Symbiotic operating-model change", "Formalized tool creation trigger"}},
-		{"docs/design-docs/tools-glossary.md", []string{"release_orchestrate", "tool_inventory_audit", "task_trace_summarize"}},
+		{"docs/design-docs/tools-glossary.md", []string{"release_orchestrate", "tool_creation_guard", "tool_inventory_audit", "task_trace_summarize"}},
 		{"docs/design-docs/delivery-operating-model.md", []string{"formalized tools", "repeated process"}},
 		{"internal/scanner/init.go", []string{"release_orchestrate", "Formalized tool creation trigger"}},
 	} {
@@ -359,6 +359,7 @@ func isMirroredWorkflowTool(name string) bool {
 		"architecture_audit",
 		"harness_doctrine_sync",
 		"git_release_guard",
+		"tool_creation_guard",
 		"tool_inventory_audit",
 		"task_trace_summarize",
 	}, name)
