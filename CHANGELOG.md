@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.22.1] - 2026-05-03
+<!-- mars-harness-release: version=0.22.1 commit=ef3c15d1c115 -->
+
+### Why This Release Matters
+It improves reliability through work to fall back when linux namespaces are unavailable in sandbox.
+
+### Fixes
+- **sandbox:** Fall back when linux namespaces are unavailable (ef3c15d)
+
 ## [0.22.0] - 2026-05-03
 <!-- mars-harness-release: version=0.22.0 commit=44f2c8464e91 -->
 
