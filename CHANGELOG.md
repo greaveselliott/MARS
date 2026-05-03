@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.10.2] - 2026-05-03
+<!-- mars-harness-release: version=0.10.2 commit=e2bcf2f7a080 -->
+
+### Fixes
+- **telemetry:** Classify ticket gate failures (e2bcf2f)
+
 ## [0.10.1] - 2026-05-03
 <!-- mars-harness-release: version=0.10.1 commit=bb885cd5ad7e -->
 
