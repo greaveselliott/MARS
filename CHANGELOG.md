@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.21.0] - 2026-05-03
+<!-- mars-harness-release: version=0.21.0 commit=cb32661e015e -->
+
+### Features
+- **tickets:** Enforce in-progress drain states (MH-046) (cb32661)
+
+### Delivery Evidence
+- Enabler work: MH-046: Enforce in-progress ticket drain
+
 ## [0.20.0] - 2026-05-03
 <!-- mars-harness-release: version=0.20.0 commit=5546e12b1874 -->
 
