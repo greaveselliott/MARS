@@ -316,6 +316,7 @@ func TestInit_success(t *testing.T) {
 	}
 
 	assert.Contains(t, manifestStr, "record_decision", "manifest should include record_decision in tool lists")
+	assert.Contains(t, manifestStr, "mars_harness_cli", "manifest should expose mars_harness_cli as a mirrored tool")
 	assert.Contains(t, manifestStr, "tool_create", "manifest should expose tool_create as a mirrored tool")
 	assert.Contains(t, manifestStr, "record_decision, tool_create, git_status", "implementation roles should allow tool_create before git tools")
 	assert.Contains(t, manifestStr, "max_turns: 40", "dogfood role should have max_turns: 40")
@@ -356,6 +357,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Foundation operating model")
 	assert.Contains(t, string(agentGuide), "Deployed operating model")
 	assert.Contains(t, string(agentGuide), "Meta tool")
+	assert.Contains(t, string(agentGuide), "mars_harness_cli")
 	assert.Contains(t, string(agentGuide), "tool_create")
 	assert.Contains(t, string(agentGuide), "Contextual harness definition")
 	assert.Contains(t, string(agentGuide), "docs/design-docs/harness-glossary.md")
@@ -376,6 +378,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(harnessGlossary), "Operating model")
 	assert.Contains(t, string(harnessGlossary), "Foundation operating model")
 	assert.Contains(t, string(harnessGlossary), "Deployed operating model")
+	assert.Contains(t, string(harnessGlossary), "mars_harness_cli")
 	assert.Contains(t, string(harnessGlossary), "When changing operating doctrine include this")
 	assert.Contains(t, string(harnessGlossary), "When creating or changing tools include this")
 	assert.Contains(t, string(harnessGlossary), "`tool_create` is a mirrored tool")

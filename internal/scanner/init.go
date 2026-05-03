@@ -301,14 +301,14 @@ roles:
     schedule: "0 20 * * 0"
     then: [cto-weekly]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_commit, git_push]
 
   coo:
     prompt: roles/coo.md
     model: reasoning
     then: [engineer]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, file_search, shell_exec, grep, record_decision, ticket_create, git_status, git_commit, git_push]
+    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
   cto-weekly:
@@ -317,7 +317,7 @@ roles:
     schedule: "0 21 * * 0"
     then: [coo]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -327,7 +327,7 @@ roles:
     then: [qa, engineer, dogfood]
     idle_then: [ceo, janitor]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, tool_create, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, git_status, git_diff, git_commit, git_push]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -345,7 +345,7 @@ roles:
     schedule: "0 22 * * 0"
     then: [dependency-manager]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_commit, git_push]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
@@ -353,7 +353,7 @@ roles:
     max_turns: 10
     schedule: "0 23 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_commit, git_push]
 
   # ── Release ──────────────────────────────────────────────
   release-manager:
@@ -361,7 +361,7 @@ roles:
     model: reasoning
     schedule: "0 8 * * 1"
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
   dogfood:
@@ -370,7 +370,7 @@ roles:
     schedule: "0 10 * * 1-5"
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, tool_create, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, git_status, git_diff, git_commit, git_push]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -380,7 +380,7 @@ roles:
       - workflow_run.conclusion == "failure"
     then: [qa]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_diff, git_commit, git_push]
 
   # ── Backlog entropy management ─────────────────────────
   janitor:
@@ -389,7 +389,7 @@ roles:
     schedule: "0 7 * * *"
     max_turns: 30
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_diff, git_commit, git_push]
 `, projectName, projectName)
 }
 
@@ -532,7 +532,7 @@ would otherwise live only in chat.
 - **Foundation operating model** — the operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
 - **Deployed operating model** — the operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level ` + "`AGENTS.md`" + `.
@@ -1093,7 +1093,7 @@ harness and deployed harnesses.
 | Foundation operating model | The operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
 | Deployed operating model | The operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
 | First-class harness definition | Context that should always be included in the top-level ` + "`AGENTS.md`" + `. |

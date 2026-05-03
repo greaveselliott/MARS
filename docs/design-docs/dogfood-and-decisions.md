@@ -371,3 +371,51 @@ self-improvement roles.
   inside an arbitrary-code tool argument.
 - Tool creation has an explicit, repeatable path that can later grow into richer
   inventories, validators, and generated tool references.
+
+---
+
+### AD-079: Mars Harness CLI Interaction Is A Mirrored Tool
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Author:** User direction and Agent (tool-system self-improvement)
+
+### Context
+
+The `mars-harness` CLI is the operational control plane for setup, init,
+upgrade, start/serve, scans, doctor checks, release notes, score exports, trust
+updates, model evaluation, and self-update flows. Agents could call these
+commands through `shell_exec`, but that hides the command surface behind an
+arbitrary shell and forces the model to rediscover CLI affordances from memory.
+
+Foundation and deployed harnesses both need this surface. The source repo uses
+it to evolve the software factory; target repos use it to operate their deployed
+harness and keep it synchronized.
+
+### Decision
+
+Add `mars_harness_cli` as a mirrored built-in tool. It provides:
+
+- a `reference` mode with an exhaustive LLM-facing CLI reference
+- a `run` mode that executes `mars-harness` with structured argv
+- a `repo` shortcut that safely appends `--repo <workspace path>` for commands
+  that support it
+- timeout and background support for long-running `serve` and `start`
+
+The tool resolves the installed `mars-harness` binary from `PATH`, accepts
+`MARS_HARNESS_CLI_BIN` for explicit operator/test configuration, and falls back
+to `go run ./cmd/mars-harness` only when operating inside the foundation source
+checkout.
+
+`mars_harness_cli` is classified as mutating because many CLI commands can
+write files, change trust, start workers, or change release state. Observer
+trust therefore blocks it.
+
+### Consequences
+
+- Agents can discover and use the full CLI without relying on generic shell
+  recall.
+- Deployed harnesses can operate their own harness lifecycle through the same
+  mirrored tool language as the foundation harness.
+- CLI changes should update the tool reference and tests so the LLM-facing
+  command surface remains current.

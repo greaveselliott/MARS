@@ -80,6 +80,7 @@ harness manifests when a role allowlist includes them.
 | `file_read` | Read file contents |
 | `file_write` | Write or create files |
 | `shell_exec` | Execute shell commands |
+| `mars_harness_cli` | Read exhaustive CLI reference or execute `mars-harness` commands with structured argv; mirrored for foundation and deployed harnesses |
 | `grep` | Search file contents with regex |
 | `ticket_create` | Create or update deduped ticket files |
 | `record_decision` | Persist durable learning and decision notes |

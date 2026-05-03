@@ -16,6 +16,7 @@ func RegisterBuiltinTools(r *Registry) error {
 		registerFileSearch,
 		registerGrep,
 		registerShellExec,
+		registerMarsHarnessCLI,
 		registerGitTools,
 		registerRecordDecision,
 		registerTicketCreate,
