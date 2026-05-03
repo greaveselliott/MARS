@@ -106,6 +106,17 @@ func TriagePattern(p Pattern) ImprovementProposal {
 		proposal.CandidateFiles = []string{".harness/manifest.yaml"}
 		proposal.Confidence = 0.85
 
+	case CategoryTicketGate:
+		proposal.Target = TargetProcess
+		proposal.Title = "Fix ticket completion workflow"
+		proposal.Suggestion = fmt.Sprintf("Role %q repeatedly ended without completing an existing in-progress ticket; inspect traces, role guidance, trust level, ticket gate rules, and target ticket state before retrying the same queue item.", p.Role)
+		proposal.CandidateFiles = []string{
+			fmt.Sprintf(".harness/roles/%s.md", p.Role),
+			".harness/manifest.yaml",
+			"docs/tickets/in-progress/",
+		}
+		proposal.Confidence = 0.85
+
 	case CategoryUnknown:
 		proposal.Target = TargetProcess
 		proposal.Title = "Classify unknown failure"

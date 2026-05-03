@@ -91,6 +91,18 @@ func TestClassify_manifestError(t *testing.T) {
 	require.Equal(t, CategoryManifestError, Classify("bundle: role 'x' not found"))
 }
 
+func TestClassify_ticketGate(t *testing.T) {
+	t.Parallel()
+	cases := []string{
+		`executor: ticket gate: engineer ended without completing any existing in-progress ticket; remaining: T-004.md`,
+		`engineer ended without completing any existing in-progress ticket`,
+		`executor: ticket gate: engineer cannot hand off while 4 ticket(s) remain in docs/tickets/in-progress: T-004.md`,
+	}
+	for _, msg := range cases {
+		require.Equal(t, CategoryTicketGate, Classify(msg), "input: %s", msg)
+	}
+}
+
 func TestClassify_unknown(t *testing.T) {
 	t.Parallel()
 	require.Equal(t, CategoryUnknown, Classify("something completely different"))
@@ -113,6 +125,7 @@ func TestRetryable(t *testing.T) {
 		CategoryMaxTurns,
 		CategoryBudgetExceeded,
 		CategoryManifestError,
+		CategoryTicketGate,
 		CategoryUnknown,
 	}
 	for _, c := range nonRetryable {
@@ -129,6 +142,7 @@ func TestRemediate_actions(t *testing.T) {
 	require.Equal(t, ActionRetryLonger, Remediate(CategoryToolTimeout))
 	require.Equal(t, ActionNone, Remediate(CategoryCircleDetected))
 	require.Equal(t, ActionNone, Remediate(CategoryMaxTurns))
+	require.Equal(t, ActionNone, Remediate(CategoryTicketGate))
 	require.Equal(t, ActionNone, Remediate(CategoryUnknown))
 }
 
@@ -313,6 +327,23 @@ func TestTriagePattern_loopTargetsSkill(t *testing.T) {
 	require.Contains(t, proposal.Suggestion, "compact scoped skill")
 	require.Contains(t, proposal.CandidateFiles, ".harness/skills/engineer-workflow/SKILL.md")
 	require.Contains(t, proposal.CandidateFiles, ".harness/roles/engineer.md")
+}
+
+func TestTriagePattern_ticketGateTargetsProcess(t *testing.T) {
+	t.Parallel()
+
+	proposal := TriagePattern(Pattern{
+		Role:     "engineer",
+		Category: CategoryTicketGate,
+		Count:    3,
+	})
+
+	require.Equal(t, TargetProcess, proposal.Target)
+	require.Equal(t, "Fix ticket completion workflow", proposal.Title)
+	require.Contains(t, proposal.Suggestion, "trust level")
+	require.Contains(t, proposal.CandidateFiles, ".harness/roles/engineer.md")
+	require.Contains(t, proposal.CandidateFiles, "docs/tickets/in-progress/")
+	require.Greater(t, proposal.Confidence, 0.8)
 }
 
 func TestTriageScore_lowScoreProducesProcessProposal(t *testing.T) {

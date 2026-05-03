@@ -33,6 +33,7 @@ func Remediate(cat FailureCategory) RemediationAction {
 		CategoryMaxTurns,
 		CategoryBudgetExceeded,
 		CategoryManifestError,
+		CategoryTicketGate,
 		CategoryUnknown:
 		return ActionNone
 

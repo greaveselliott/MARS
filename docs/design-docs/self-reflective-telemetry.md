@@ -79,6 +79,7 @@ The first implementation is deliberately small:
 - tool timeouts point at tool policy and role command guidance
 - max-turn and loop failures point at role prompt completion criteria or a missing reusable skill
 - manifest failures point at `.harness/manifest.yaml`
+- ticket-gate failures point at the role's ticket completion workflow, trust level, and target ticket state; self-chain auto-recovery does not retry them unchanged
 - low scores point at process triage across prompt, skill, guardrail, tool, model, and intervention debt
 - `docs/QUALITY_SCORE.md` seeds the repo-visible grade surface until live score export is implemented
 

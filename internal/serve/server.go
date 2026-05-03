@@ -1087,8 +1087,8 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr error) {
 	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
 
+	cat := telemetry.Classify(jobErr.Error())
 	if s.scoreStore != nil {
-		cat := telemetry.Classify(jobErr.Error())
 		outcomeType := scoring.OutcomeFailed
 		switch cat {
 		case telemetry.CategoryToolTimeout, telemetry.CategoryContextOverflow:
@@ -1140,6 +1140,14 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 	}
 
 	if !selfChains {
+		return
+	}
+
+	if cat == telemetry.CategoryTicketGate {
+		log.Warn("serve: not auto-recovering ticket-gate failure",
+			"error", jobErr,
+		)
+		go s.checkEvolution(context.Background(), job.Role, job.RepoID)
 		return
 	}
 

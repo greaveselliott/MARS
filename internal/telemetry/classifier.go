@@ -18,6 +18,7 @@ const (
 	CategoryMaxTurns         FailureCategory = "max_turns"
 	CategoryBudgetExceeded   FailureCategory = "budget_exceeded"
 	CategoryManifestError    FailureCategory = "manifest_error"
+	CategoryTicketGate       FailureCategory = "ticket_gate"
 	CategoryUnknown          FailureCategory = "unknown"
 )
 
@@ -86,6 +87,13 @@ func Classify(errMsg string) FailureCategory {
 
 	case strings.Contains(lower, "manifest") || strings.Contains(lower, "bundle"):
 		return CategoryManifestError
+
+	case strings.Contains(lower, "ticket gate"):
+		return CategoryTicketGate
+	case strings.Contains(lower, "ended without completing any existing in-progress ticket"):
+		return CategoryTicketGate
+	case strings.Contains(lower, "cannot hand off") && strings.Contains(lower, "docs/tickets/in-progress"):
+		return CategoryTicketGate
 
 	default:
 		return CategoryUnknown

@@ -266,11 +266,28 @@ func TestHandleJobFailedEnqueuesSingleRecovery(t *testing.T) {
 		Role:   "engineer",
 	}
 
-	srv.handleJobFailed(ctx, job, errTest("ticket gate failed"))
-	srv.handleJobFailed(ctx, job, errTest("ticket gate failed"))
+	srv.handleJobFailed(ctx, job, errTest("agent failed unexpectedly"))
+	srv.handleJobFailed(ctx, job, errTest("agent failed unexpectedly"))
 
 	if got := countJobsByStatus(t, srv, "pending"); got != 1 {
 		t.Fatalf("expected one active recovery job, got %d", got)
+	}
+}
+
+func TestHandleJobFailedDoesNotRecoverTicketGateFailure(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+
+	job := &queue.Job{
+		ID:     "job-1",
+		RepoID: repoID,
+		Role:   "engineer",
+	}
+
+	srv.handleJobFailed(ctx, job, errTest("executor: ticket gate: engineer ended without completing any existing in-progress ticket"))
+
+	if got := countJobsByStatus(t, srv, "pending"); got != 0 {
+		t.Fatalf("expected no ticket-gate recovery job, got %d", got)
 	}
 }
 
