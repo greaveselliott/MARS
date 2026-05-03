@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.6] - 2026-05-03
+<!-- mars-harness-release: version=0.24.6 commit=c63ef60fc301 -->
+
+### Why This Release Matters
+It improves reliability through work to make evidence stores actionable in cli.
+
+### Fixes
+- **cli:** Make evidence stores actionable (c63ef60)
+
 ## [0.24.5] - 2026-05-03
 <!-- mars-harness-release: version=0.24.5 commit=d3add7e85a82 -->
 
