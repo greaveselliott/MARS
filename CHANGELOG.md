@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.11] - 2026-05-03
+<!-- mars-harness-release: version=0.24.11 commit=310a5b052c6a -->
+
+### Why This Release Matters
+It improves reliability through work to add foundation containment gate in harness.
+
+### Fixes
+- **harness:** Add foundation containment gate (310a5b0)
+
 ## [0.24.10] - 2026-05-03
 <!-- mars-harness-release: version=0.24.10 commit=7396ea0bc26f -->
 
