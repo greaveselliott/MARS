@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.10] - 2026-05-03
+<!-- mars-harness-release: version=0.24.10 commit=7396ea0bc26f -->
+
+### Why This Release Matters
+It improves reliability through work to dedupe secondary intervention debt in telemetry.
+
+### Fixes
+- **telemetry:** Dedupe secondary intervention debt (7396ea0)
+
 ## [0.24.9] - 2026-05-03
 <!-- mars-harness-release: version=0.24.9 commit=48655a2079dd -->
 
