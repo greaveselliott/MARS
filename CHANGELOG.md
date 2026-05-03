@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.0] - 2026-05-03
+<!-- mars-harness-release: version=0.24.0 commit=8d27b4ed3583 -->
+
+### Why This Release Matters
+This release matters because it gives operators new capability through work to add dispatch organization layer in orchestration.
+
+### Features
+- **orchestration:** Add dispatch organization layer (8d27b4e)
+
 ## [0.23.0] - 2026-05-03
 <!-- mars-harness-release: version=0.23.0 commit=deccb88b12bb -->
 
