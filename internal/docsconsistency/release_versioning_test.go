@@ -35,3 +35,27 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 		}
 	}
 }
+
+func TestReleaseWorkflowBackfillsNotesOnlyReleases(t *testing.T) {
+	root := repoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatalf("read release workflow: %v", err)
+	}
+	text := string(data)
+	for _, needle := range []string{
+		"tags: ['v*']",
+		"release:",
+		"types: [published]",
+		"workflow_dispatch:",
+		"version:",
+		"RELEASE_TAG:",
+		"ref: ${{ env.RELEASE_TAG }}",
+		"tag_name: ${{ env.RELEASE_TAG }}",
+		"overwrite_files: true",
+	} {
+		if !strings.Contains(text, needle) {
+			t.Fatalf("release workflow must support asset backfills; missing %q", needle)
+		}
+	}
+}

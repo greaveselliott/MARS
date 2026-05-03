@@ -98,7 +98,7 @@ Mars Harness and initialized target repos use the same release contract:
 - release-note commits themselves are ignored in the next generated entry
 - generated entries include a marker so tags are useful but not required for the next diff
 - in the source harness repo and initialized target repos, every non-release semantic commit is immediately followed by the generated version/patch-note commit before the task is done
-- when authenticated GitHub release capability is configured, the generated version is tagged as `vX.Y.Z`; the source harness tag-triggered release workflow publishes the matching changelog entry plus checksum-verified binary assets
+- when authenticated GitHub release capability is configured, the generated version is tagged as `vX.Y.Z`; the source harness Release workflow publishes or backfills the matching changelog entry plus checksum-verified binary assets
 
 ## Generated Source References
 

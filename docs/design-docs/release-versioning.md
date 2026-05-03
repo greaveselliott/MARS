@@ -53,8 +53,8 @@ A release is not fully complete until the generated version is visible as a GitH
 After a `release: notes X.Y.Z` commit is pushed to `main`, release work must:
 
 1. create or update tag `vX.Y.Z` at the release-note commit
-2. push the tag so the tag-triggered release workflow builds binary assets and
-   publishes or updates GitHub Release `vX.Y.Z`
+2. push the tag so the release workflow builds binary assets and publishes or
+   updates GitHub Release `vX.Y.Z`
 3. use the generated `CHANGELOG.md` entry for `X.Y.Z` as the release notes body
 4. verify the release is visible in GitHub and `mars-harness release
    verify-assets --version vX.Y.Z` passes
@@ -122,16 +122,18 @@ work without manual profile editing.
 
 For the source harness, `git tag vX.Y.Z && git push origin vX.Y.Z` is the
 authoritative release-publication trigger after the release-note commit is on
-`main`. Direct `gh release create` publication can create a notes-only release
-that never runs the binary asset workflow, so it is not the default source
-harness release path.
+`main`. Direct `gh release create` publication can still create a notes-only
+release, so it is not the default source harness release path and is incomplete
+until release assets are attached and verified.
 
-The tag-triggered Release workflow cross-compiles `linux/darwin` x
-`amd64/arm64`, writes `checksums.txt`, verifies all expected assets before
-publication, and uses the matching `CHANGELOG.md` entry as the GitHub Release
-body. Release managers must run `mars-harness release verify-assets --version
-vX.Y.Z` after publication before claiming the installer or self-update path is
-shipped.
+The Release workflow cross-compiles `linux/darwin` x `amd64/arm64`, writes
+`checksums.txt`, verifies all expected assets before publication, and uses the
+matching `CHANGELOG.md` entry as the GitHub Release body. It runs on pushed
+version tags, on newly published GitHub Releases to recover from notes-only
+publication, and through `workflow_dispatch` with a `version` input for manual
+backfills. Release managers must run `mars-harness release verify-assets
+--version vX.Y.Z` after publication before claiming the installer or self-update
+path is shipped.
 
 ## Implementation Requirements
 

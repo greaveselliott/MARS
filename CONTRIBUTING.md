@@ -19,11 +19,11 @@ go test ./...
 6. Verify the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes
 7. Commit them as `release: notes X.Y.Z`
 8. Push `main`
-9. Publish or update GitHub Release `vX.Y.Z` with the generated changelog entry when GitHub release credentials are configured
+9. Publish or update GitHub Release `vX.Y.Z` with the generated changelog entry when GitHub release credentials are configured, then run any repo-required asset backfill or verification
 
 Every non-release semantic commit must follow this versioning step. Release-note commits are the only exception: do not run the release generator again for a `release: notes X.Y.Z` commit.
 
-If GitHub release publication is unavailable, record the blocker explicitly before ending the task.
+If GitHub release publication or asset verification is unavailable, record the blocker explicitly before ending the task.
 
 ## Commit Messages
 

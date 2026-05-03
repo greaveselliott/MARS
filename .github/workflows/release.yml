@@ -3,6 +3,17 @@ name: Release
 on:
   push:
     tags: ['v*']
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Existing release tag to build assets for, for example v0.14.2
+        required: true
+        type: string
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
 
 permissions:
   contents: write
@@ -27,7 +38,16 @@ jobs:
             goos: darwin
             goarch: arm64
     steps:
+      - name: Validate release tag
+        run: |
+          case "${RELEASE_TAG}" in
+            v*) ;;
+            *) echo "::error::Release tag must start with v: ${RELEASE_TAG}" && exit 1 ;;
+          esac
+
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: actions/setup-go@v5
         with:
@@ -39,8 +59,8 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          VERSION="${GITHUB_REF_NAME}"
-          COMMIT="${GITHUB_SHA::8}"
+          VERSION="${RELEASE_TAG}"
+          COMMIT="$(git rev-parse --short=8 HEAD)"
           DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           go build \
             -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
@@ -68,7 +88,16 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Validate release tag
+        run: |
+          case "${RELEASE_TAG}" in
+            v*) ;;
+            *) echo "::error::Release tag must start with v: ${RELEASE_TAG}" && exit 1 ;;
+          esac
+
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: actions/download-artifact@v4
         with:
@@ -98,7 +127,7 @@ jobs:
 
       - name: Extract changelog release body
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${RELEASE_TAG#v}"
           awk -v version="${version}" '
             $0 ~ "^## \\[" version "\\]" { capture=1 }
             capture && $0 ~ "^## \\[" && $0 !~ "^## \\[" version "\\]" { exit }
@@ -110,8 +139,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: false
+          tag_name: ${{ env.RELEASE_TAG }}
           body_path: release-body.md
           fail_on_unmatched_files: true
+          overwrite_files: true
           files: |
             release/mars-harness-linux-amd64
             release/mars-harness-linux-arm64

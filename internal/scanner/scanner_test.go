@@ -373,6 +373,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "release: notes X.Y.Z")
 	assert.Contains(t, string(agentGuide), "Operating rules inherited from Mars Harness apply here")
 	assert.Contains(t, string(agentGuide), "publish or update GitHub Release")
+	assert.Contains(t, string(agentGuide), "notes-only GitHub Release")
 	assert.Contains(t, string(agentGuide), "Product features and user-visible behavior changes must be documented with")
 	assert.Contains(t, string(agentGuide), "Do not leave architecture or product intent only in chat")
 
@@ -459,6 +460,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(releaseDoc), "release: notes X.Y.Z")
 	assert.Contains(t, string(releaseDoc), "GitHub Release")
 	assert.Contains(t, string(releaseDoc), "vX.Y.Z")
+	assert.Contains(t, string(releaseDoc), "notes-only GitHub")
 
 	releasePrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "release-manager.md"))
 	require.NoError(t, err)
@@ -466,6 +468,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(releasePrompt), "Do not generate another version")
 	assert.Contains(t, string(releasePrompt), "Separate shipped feature scenarios from enabler work")
 	assert.Contains(t, string(releasePrompt), "publish or update GitHub Release")
+	assert.Contains(t, string(releasePrompt), "notes-only release is a blocker")
 }
 
 func TestInit_alreadyExists(t *testing.T) {

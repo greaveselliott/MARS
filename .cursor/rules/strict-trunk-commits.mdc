@@ -12,10 +12,10 @@ completed step, and push `main` after every semantic commit.
 5. For every non-release semantic commit in this repo, run `mars-harness release notes --repo . --bump auto`.
 6. Verify and commit the generated version files with `release: notes X.Y.Z`.
 7. Push `main`.
-8. When GitHub release credentials are configured, publish or update GitHub Release `vX.Y.Z` with the generated changelog entry.
+8. When GitHub release credentials are configured, publish or update GitHub Release `vX.Y.Z` with the generated changelog entry and run any repo-required asset backfill or verification.
 
 `release: notes X.Y.Z` commits are exempt from generating another release-note commit.
-If GitHub release publication is unavailable, record the blocker explicitly.
+If GitHub release publication or asset verification is unavailable, record the blocker explicitly.
 
 ## Guardrails
 
