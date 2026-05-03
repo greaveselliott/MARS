@@ -83,9 +83,7 @@ func TestServer_qualityScoreAPIServesRepoArtifact(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(repo, "docs"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(repo, "docs", "QUALITY_SCORE.md"), []byte("# Quality Score\n\nGenerated.\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	mustWriteFile(t, filepath.Join(repo, "docs", "QUALITY_SCORE.md"), []byte("# Quality Score\n\nGenerated.\n"))
 	srv := &Server{cfg: Config{RepoScope: repo}}
 
 	rec := httptest.NewRecorder()
@@ -227,9 +225,7 @@ func TestRepoScope_isolatesStartup(t *testing.T) {
 			t.Fatalf("mkdir: %v", err)
 		}
 		manifest := "name: test\nroles:\n  ceo:\n    prompt: roles/ceo.md\n    model: fast\n    tools: [file_read]\n"
-		if err := os.WriteFile(filepath.Join(harnessDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
-			t.Fatalf("write manifest: %v", err)
-		}
+		mustWriteFile(t, filepath.Join(harnessDir, "manifest.yaml"), []byte(manifest))
 	}
 
 	srv, err := New(Config{
@@ -392,12 +388,8 @@ func newRecoveryTestServer(t *testing.T) (*Server, string) {
 		t.Fatalf("mkdir harness: %v", err)
 	}
 	manifest := "name: test\nroles:\n  engineer:\n    prompt: roles/engineer.md\n    model: fast\n    then: [engineer]\n    tools: [file_read]\n"
-	if err := os.WriteFile(filepath.Join(repo, ".harness", "manifest.yaml"), []byte(manifest), 0o644); err != nil {
-		t.Fatalf("write manifest: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(repo, ".harness", "roles", "engineer.md"), []byte("# Engineer\n"), 0o644); err != nil {
-		t.Fatalf("write role prompt: %v", err)
-	}
+	mustWriteFile(t, filepath.Join(repo, ".harness", "manifest.yaml"), []byte(manifest))
+	mustWriteFile(t, filepath.Join(repo, ".harness", "roles", "engineer.md"), []byte("# Engineer\n"))
 
 	srv, err := New(Config{
 		WebhookAddr:   "127.0.0.1:0",
@@ -425,15 +417,29 @@ func countJobsByStatus(t *testing.T, srv *Server, status string) int {
 	return count
 }
 
+func mustMkdirAll(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", path, err)
+	}
+}
+
+func mustWriteFile(t *testing.T, path string, data []byte) {
+	t.Helper()
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
 func TestBuildTicketIndex_findsTickets(t *testing.T) {
 	dir := t.TempDir()
 	for _, sub := range []string{"docs/tickets/backlog", "docs/tickets/in-progress", "docs/tickets/done"} {
-		os.MkdirAll(filepath.Join(dir, sub), 0o755)
+		mustMkdirAll(t, filepath.Join(dir, sub))
 	}
-	os.WriteFile(filepath.Join(dir, "docs/tickets/done/T-001-alpha.md"), []byte("# Alpha\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "docs/tickets/backlog/T-002-beta.md"), []byte("# Beta\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "docs/tickets/in-progress/T-003-gamma.md"), []byte("# Gamma\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "docs/tickets/done/README.md"), []byte("# Tickets\n"), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/done/T-001-alpha.md"), []byte("# Alpha\n"))
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/backlog/T-002-beta.md"), []byte("# Beta\n"))
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/in-progress/T-003-gamma.md"), []byte("# Gamma\n"))
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/done/README.md"), []byte("# Tickets\n"))
 
 	idx := BuildTicketIndex(dir)
 	if !strings.Contains(idx, "3 total") {
@@ -462,10 +468,10 @@ func TestBuildTicketIndex_findsTickets(t *testing.T) {
 func TestBuildTicketIndex_prioritizesInterventionDebtAheadOfOrdinaryBacklog(t *testing.T) {
 	dir := t.TempDir()
 	for _, sub := range []string{"docs/tickets/backlog", "docs/tickets/in-progress", "docs/tickets/done"} {
-		os.MkdirAll(filepath.Join(dir, sub), 0o755)
+		mustMkdirAll(t, filepath.Join(dir, sub))
 	}
-	os.WriteFile(filepath.Join(dir, "docs/tickets/backlog/MH-010-ordinary.md"), []byte("# Ordinary\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "docs/tickets/backlog/MH-011-intervention.md"), []byte("---\nkind: intervention-debt\n---\n# Intervention\n"), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/backlog/MH-010-ordinary.md"), []byte("# Ordinary\n"))
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/backlog/MH-011-intervention.md"), []byte("---\nkind: intervention-debt\n---\n# Intervention\n"))
 
 	idx := BuildTicketIndex(dir)
 	if !strings.Contains(idx, "intervention-debt is prioritised") {
@@ -484,11 +490,11 @@ func TestBuildTicketIndex_prioritizesInterventionDebtAheadOfOrdinaryBacklog(t *t
 func TestBuildTicketIndex_movesBlockedInProgressBehindEligibleBacklog(t *testing.T) {
 	dir := t.TempDir()
 	for _, sub := range []string{"docs/tickets/backlog", "docs/tickets/in-progress", "docs/tickets/done"} {
-		os.MkdirAll(filepath.Join(dir, sub), 0o755)
+		mustMkdirAll(t, filepath.Join(dir, sub))
 	}
-	os.WriteFile(filepath.Join(dir, "docs/tickets/in-progress/T-001-blocked.md"), []byte("---\nid: T-001\nblocker: \"waiting\"\nblocked_by: [\"T-003\"]\nnext_action: \"complete T-003\"\n---\n# Blocked\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "docs/tickets/in-progress/T-002-ready.md"), []byte("---\nid: T-002\nblocker: none\nblocked_by: []\n---\n# Ready\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "docs/tickets/backlog/T-003-dependency.md"), []byte("---\nid: T-003\n---\n# Dependency\n"), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/in-progress/T-001-blocked.md"), []byte("---\nid: T-001\nblocker: \"waiting\"\nblocked_by: [\"T-003\"]\nnext_action: \"complete T-003\"\n---\n# Blocked\n"))
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/in-progress/T-002-ready.md"), []byte("---\nid: T-002\nblocker: none\nblocked_by: []\n---\n# Ready\n"))
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/backlog/T-003-dependency.md"), []byte("---\nid: T-003\n---\n# Dependency\n"))
 
 	idx := BuildTicketIndex(dir)
 	readyPos := strings.Index(idx, "[in-progress] T-002-ready.md")
