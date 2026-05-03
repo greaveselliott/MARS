@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.14.5] - 2026-05-03
+<!-- mars-harness-release: version=0.14.5 commit=227b6f718abf -->
+
+### Fixes
+- **ui:** Support linux terminal ioctl constants (MH-031) (227b6f7)
+
 ## [0.14.4] - 2026-05-03
 <!-- mars-harness-release: version=0.14.4 commit=be63396bb21a -->
 
