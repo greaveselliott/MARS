@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.14.1] - 2026-05-03
+<!-- mars-harness-release: version=0.14.1 commit=195c73e1183c -->
+
+### Documentation
+- **tools:** Add mirrored tools glossary (195c73e)
+
 ## [0.14.0] - 2026-05-03
 <!-- mars-harness-release: version=0.14.0 commit=422adac6f6ad -->
 
