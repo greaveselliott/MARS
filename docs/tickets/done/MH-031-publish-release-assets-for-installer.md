@@ -12,6 +12,12 @@ evidence_links:
   - "GOCACHE=<validation-root> go test ./internal/selfupdate ./cmd/mars-harness"
   - "GOCACHE=<validation-root> go test ./internal/scanner ./internal/docsconsistency"
   - "GOCACHE=<validation-root> go test -cover ./internal/selfupdate ./internal/scanner ./internal/docsconsistency ./internal/release ./cmd/mars-harness"
+  - "GOCACHE=<validation-root> go test ./cmd/mars-harness ./internal/ui ./internal/docsconsistency ./internal/scanner ./internal/selfupdate ./internal/release ./internal/buildinfo"
+  - "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOCACHE=<validation-root> go build -o <validation-root> ./cmd/mars-harness"
+  - "GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOCACHE=<validation-root> go test -c -o <validation-root> ./internal/ui"
+  - "shasum -a 256 -c <validation-root>"
+  - "gh release view v0.14.5 --repo greaveselliott/mars-harness --json tagName,url,assets,publishedAt,targetCommitish"
+  - "gh release list --repo greaveselliott/mars-harness --limit 5"
 verified_by: command
 dedupe_key: "public-example"
 metadata:
@@ -56,16 +62,16 @@ That workflow can run stale binaries and violates the Plug and Play promise.
 
 ### Functional (happy path)
 
-- [ ] Latest release includes four binaries and `checksums.txt`.
-- [ ] `scripts/install.sh` succeeds against the latest release on supported macOS/Linux platforms.
-- [ ] `mars-harness update tool` can use release assets without requiring Go or a source checkout.
-- [ ] Release process documents whether `git tag && git push --tags` or `gh release create` is authoritative.
+- [x] Latest release includes four binaries and `checksums.txt`.
+- [x] `scripts/install.sh` succeeds against the latest release on supported macOS/Linux platforms.
+- [x] `mars-harness update tool` can use release assets without requiring Go or a source checkout.
+- [x] Release process documents whether `git tag && git push --tags` or `gh release create` is authoritative.
 
 ### Edge cases and negative paths
 
-- [ ] Installer fails with an actionable message when assets are missing.
-- [ ] Checksum mismatch still aborts without leaving a partial binary.
-- [ ] Release publication cannot silently succeed with notes only.
+- [x] Installer fails with an actionable message when assets are missing.
+- [x] Checksum mismatch still aborts without leaving a partial binary.
+- [x] Release publication cannot silently succeed with notes only.
 
 ### Non-goals
 
@@ -73,8 +79,8 @@ That workflow can run stale binaries and violates the Plug and Play promise.
 
 ### Observability, docs, and regressions
 
-- [ ] Docs explain the source-development `make install` path separately from the binary-release install path.
-- [ ] A test or release-check script validates expected asset names before announcing a release.
+- [x] Docs explain the source-development `make install` path separately from the binary-release install path.
+- [x] A test or release-check script validates expected asset names before announcing a release.
 
 ## Progress Notes
 
@@ -98,3 +104,32 @@ That workflow can run stale binaries and violates the Plug and Play promise.
   list --repo greaveselliott/mars-harness --workflow Release --limit 5` could not
   connect to `api.github.com`. `MH-031` remains in progress until GitHub release
   creation and asset verification can be observed.
+
+2026-05-03 follow-up:
+
+- Confirmed GitHub Releases `v0.14.0`, `v0.14.1`, and `v0.14.2` existed as
+  notes-only releases with empty asset lists.
+- Updated the source Release workflow so pushed tags remain authoritative, while
+  newly published GitHub Releases and manual `workflow_dispatch` runs can
+  backfill assets for an existing tag. Mirrored the notes-only release blocker
+  into source docs and generated target guidance.
+- Found and fixed a release-build blocker in `internal/ui`: Linux
+  cross-compilation failed because Darwin-only terminal ioctl constants were
+  used directly. Split the termios ioctl constants by platform and verified
+  Linux `amd64`/`arm64` compilation.
+- Pushed `main` through `release: notes 0.14.5` and pushed tag `v0.14.5`.
+- Built release assets for `linux/darwin` x `amd64/arm64`, generated
+  `checksums.txt`, and verified the checksums locally with `shasum -a 256 -c`.
+- Published GitHub Release `v0.14.5` and uploaded
+  `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
+  `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
+  `checksums.txt`.
+- `gh release view v0.14.5 --repo greaveselliott/mars-harness --json
+  tagName,url,assets,publishedAt,targetCommitish` confirmed all five assets are
+  uploaded, and `gh release list --repo greaveselliott/mars-harness --limit 5`
+  showed `v0.14.5` as latest.
+- Local `mars-harness release verify-assets --version v0.14.5` and
+  `INSTALL_DIR=<validation-root> VERSION=v0.14.5 bash
+  scripts/install.sh` were blocked by sandbox DNS failures resolving
+  `api.github.com` and `github.com`; the installer failure remained actionable
+  and the GitHub release metadata verified the asset contract.

@@ -34,15 +34,15 @@ plans to decide what to do next.
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001` and the current install/setup feature is `F-002`.
 - Ticket state:
-  - `docs/tickets/in-progress/` contains `MH-031`.
+  - `docs/tickets/in-progress/` is empty.
   - `docs/tickets/backlog/` contains `MH-030` and `MH-042` through `MH-049`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-029` and `MH-032` through `MH-041`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-041`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
   - `docs/exec-plans/superseded/` contains historical plans that must not drive current work.
 - GitHub release notes are published for semantic versions generated from `VERSION`.
-- Release binary assets are still missing and tracked by `MH-031`.
+- Release binary assets are published for `v0.14.5`; `MH-031` is done.
 - Model evaluation, Ollama catalog support, and model swaps are still tracked by
   `MH-030`.
 
@@ -58,11 +58,9 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Release asset contract (`MH-031`)**: publish checksum-verified binaries so
-   install and `update tool` no longer require Go or a source checkout.
-2. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
+1. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
    support, explicit role/tier swaps, persistent reports, and promotion checks.
-3. **Mars parity execution**: work through the tickets materialized on 2026-05-03 for
+2. **Mars parity execution**: work through the tickets materialized on 2026-05-03 for
    operating model (`MH-042`), role registry (`MH-043`),
    conversation-as-system-record (`MH-044`), intervention debt (`MH-045`),
    active-ticket drain (`MH-046`), orchestrator recovery (`MH-047`),
@@ -112,5 +110,6 @@ Checks recorded during the 2026-05-02 review:
 
 ## Next Ticket Work
 
-- `MH-031`: publish checksum-verified release assets for installers and `update tool`.
-- Next active-plan refresh: promote the release asset contract or the highest-value backlog scenario group if release assets are blocked.
+- `MH-030`: complete benchmark-backed model refresh and model swap workflow.
+- Next active-plan refresh: promote the model evaluation refresh plan or the
+  highest-value Mars parity scenario group if model work is blocked.
