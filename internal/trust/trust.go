@@ -23,6 +23,24 @@ const (
 	LevelAutonomous  Level = "autonomous"
 )
 
+// ParseLevel normalizes configured trust levels. "operator" is accepted as a
+// legacy manifest alias for contributor because early deployed harness learnings
+// used that term before manifest trust defaults were wired into runtime policy.
+func ParseLevel(raw string) (Level, bool) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "":
+		return "", false
+	case string(LevelObserver):
+		return LevelObserver, true
+	case string(LevelContributor), "operator":
+		return LevelContributor, true
+	case string(LevelAutonomous):
+		return LevelAutonomous, true
+	default:
+		return "", false
+	}
+}
+
 const (
 	observerTrialThreshold     = 5
 	autonomousScoreThreshold   = 0.8

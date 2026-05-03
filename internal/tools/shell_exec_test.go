@@ -95,6 +95,21 @@ func TestShellPolicyBlocksDestructiveVariants(t *testing.T) {
 			raw:  `{"argv":["rm","-fr","--","/"]}`,
 			want: "rm -rf /",
 		},
+		{
+			name: "repo delete shell command",
+			raw:  `{"shell_command":"rm -rf src docs/tickets"}`,
+			want: "rm",
+		},
+		{
+			name: "git rm shell command",
+			raw:  `{"shell_command":"git rm -r src"}`,
+			want: "git rm",
+		},
+		{
+			name: "find delete shell command",
+			raw:  `{"shell_command":"find . -name '*.tmp' -delete"}`,
+			want: "find -delete",
+		},
 	}
 	for _, tc := range cases {
 		tc := tc

@@ -73,6 +73,13 @@ func (e *Executor) SetInterventionSignalHandler(handler func(context.Context, in
 	e.onSignal = handler
 }
 
+func roleDefaultTrustLevel(role bundle.RoleConfig) trust.Level {
+	if level, ok := trust.ParseLevel(role.TrustLevel); ok {
+		return level
+	}
+	return trust.LevelObserver
+}
+
 // Execute is the OnJob callback for the worker pool.
 // It loads the bundle, assembles context, starts inference, and runs the agent loop.
 func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
@@ -225,14 +232,14 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 
 	tools.RecordDecisionRole = job.Role
 
-	trustLevel := string(trust.LevelObserver)
+	trustLevel := roleDefaultTrustLevel(role)
 	if e.trustStore != nil {
 		entry, tErr := e.trustStore.Get(ctx, job.Role, job.RepoID)
 		if tErr != nil {
 			return fmt.Errorf("executor: load trust for %s/%s: %w", job.Role, job.RepoID, tErr)
 		}
 		if entry != nil {
-			trustLevel = string(entry.Level)
+			trustLevel = entry.Level
 		}
 	}
 
@@ -242,7 +249,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		Role:         job.Role,
 		JobID:        job.ID,
 		RepoID:       job.RepoID,
-		TrustLevel:   trustLevel,
+		TrustLevel:   string(trustLevel),
 		Guardrails:   guardEngine,
 		SafetyLimits: safety.DefaultLimits(),
 		PolicyRecorder: func(evt tools.PolicyEvent) {

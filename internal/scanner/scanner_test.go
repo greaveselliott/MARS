@@ -382,6 +382,7 @@ func TestInit_success(t *testing.T) {
 	}
 
 	assert.Contains(t, manifestStr, "record_decision", "manifest should include record_decision in tool lists")
+	assert.Contains(t, manifestStr, "trust_level: contributor", "generated manifest should seed bootstrap mutating roles above observer trust")
 	assert.Contains(t, manifestStr, "orchestration_mode: legacy", "generated manifest should default to legacy orchestration")
 	assert.Contains(t, manifestStr, "job_disposition_record", "manifest should expose dispatch disposition recording")
 	assert.Contains(t, manifestStr, "domain: planner", "manifest should include canonical domain metadata")

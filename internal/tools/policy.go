@@ -278,11 +278,20 @@ func forbiddenShellOperation(cmd string) (string, bool) {
 	if hasGitSubcommand(fields, "branch") && hasGitBranchDelete(fields) {
 		return "git branch -d", true
 	}
+	if hasGitSubcommand(fields, "rm") {
+		return "git rm", true
+	}
 	if hasGitSubcommand(fields, "checkout") && hasToken(fields, "-b") {
 		return "git checkout -b", true
 	}
 	if hasRootRemoval(fields) {
 		return "rm -rf /", true
+	}
+	if operation, ok := hasShellRemoval(fields); ok {
+		return operation, true
+	}
+	if hasFindDelete(fields) {
+		return "find -delete", true
 	}
 	return "", false
 }
@@ -394,6 +403,30 @@ func hasRootRemoval(fields []string) bool {
 				continue
 			}
 			if token == "/" && strings.Contains(flags, "r") && strings.Contains(flags, "f") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func hasShellRemoval(fields []string) (string, bool) {
+	for _, field := range fields {
+		switch field {
+		case "rm", "rmdir", "unlink":
+			return field, true
+		}
+	}
+	return "", false
+}
+
+func hasFindDelete(fields []string) bool {
+	for i, field := range fields {
+		if field != "find" && !strings.HasSuffix(field, "/find") {
+			continue
+		}
+		for _, token := range fields[i+1:] {
+			if token == "-delete" {
 				return true
 			}
 		}

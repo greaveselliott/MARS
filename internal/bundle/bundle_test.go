@@ -26,6 +26,7 @@ roles:
     prompt: roles/fixer.md
     domain: engineer
     mode: pipeline-repair
+    trust_level: contributor
     tools:
       - file_read
       - shell_exec
@@ -49,6 +50,7 @@ roles:
 	assert.Equal(t, "roles/fixer.md", fixer.Prompt)
 	assert.Equal(t, "engineer", fixer.Domain)
 	assert.Equal(t, "pipeline-repair", fixer.Mode)
+	assert.Equal(t, "contributor", fixer.TrustLevel)
 	assert.Equal(t, []string{"file_read", "shell_exec"}, fixer.Tools)
 	assert.Equal(t, []string{`workflow_run.conclusion == "failure"`}, fixer.Triggers)
 
@@ -84,6 +86,21 @@ roles:
 	_, err := Load(root)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid orchestration_mode")
+}
+
+func TestLoad_InvalidTrustLevel(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".harness/manifest.yaml", `
+name: bad-trust-project
+roles:
+  engineer:
+    prompt: roles/engineer.md
+    trust_level: root
+`)
+
+	_, err := Load(root)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid trust_level")
 }
 
 func TestLoad_MissingHarnessDir(t *testing.T) {

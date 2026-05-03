@@ -307,6 +307,7 @@ roles:
     schedule: "0 20 * * 0"
     then: [cto-weekly]
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
 
   coo:
@@ -316,6 +317,7 @@ roles:
     model: reasoning
     then: [engineer]
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
@@ -327,6 +329,7 @@ roles:
     schedule: "0 21 * * 0"
     then: [coo]
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
@@ -339,6 +342,7 @@ roles:
     then: [qa, engineer, dogfood]
     idle_then: [ceo, janitor]
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── Review ───────────────────────────────────────────────
@@ -350,6 +354,7 @@ roles:
     max_turns: 20
     then: [security]
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit]
 
   security:
@@ -361,6 +366,7 @@ roles:
     schedule: "0 22 * * 0"
     then: [dependency-manager]
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, git_status, git_commit, git_push]
 
   dependency-manager:
@@ -371,6 +377,7 @@ roles:
     max_turns: 10
     schedule: "0 23 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, git_status, git_commit, git_push]
 
   # ── Release ──────────────────────────────────────────────
@@ -381,6 +388,7 @@ roles:
     model: reasoning
     schedule: "0 8 * * 1"
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
@@ -392,6 +400,7 @@ roles:
     schedule: "0 10 * * 1-5"
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── CI repair ────────────────────────────────────────────
@@ -404,6 +413,7 @@ roles:
       - workflow_run.conclusion == "failure"
     then: [qa]
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Dispatch coordination ───────────────────────────────
@@ -414,6 +424,7 @@ roles:
     model: reasoning
     max_turns: 20
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, grep, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff]
 
   # ── Backlog entropy management ─────────────────────────
@@ -427,6 +438,7 @@ roles:
       - ticket.stale_in_progress
     max_turns: 30
     knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, git_status, git_diff, git_commit, git_push]
 `, projectName, projectName)
 }

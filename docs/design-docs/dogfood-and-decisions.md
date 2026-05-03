@@ -478,3 +478,45 @@ blocked until an operator deliberately starts the server with
 - Tool additions must keep the registry, role allowlists, MCP exposure,
   `mars_harness_cli` reference, tools glossary, generated target defaults, and
   tests aligned.
+
+---
+
+### AD-091: Bootstrap Trust Defaults And Destructive Shell Gates
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Author:** Agent (target bootstrap diagnosis)
+
+### Context
+
+A target harness run in `../sample-target` produced repeated intervention-debt
+tickets for `guardrail_block` instead of useful bootstrap work. Telemetry showed
+two foundation failures:
+
+- generated roles listed mutating tools such as `record_decision`,
+  `ticket_create`, `file_write`, and `shell_exec`, but queued jobs ignored
+  manifest trust defaults and fell back to observer trust unless SQLite already
+  had a role entry
+- `shell_exec` enforced blast-radius limits after command execution, so
+  destructive commands could delete many repo files before the policy reported
+  that the diff was too large
+
+### Decision
+
+Generated target manifests seed the default starter roles with
+`trust_level: contributor`. The runtime parses manifest trust levels and uses
+them only when no persisted SQLite trust entry exists; explicit DB trust
+overrides still win.
+
+The shell preflight policy blocks obvious deletion operations before execution,
+including `rm`, `rmdir`, `unlink`, `git rm`, and `find -delete`. The post-tool
+diff and secret checks remain as defense-in-depth for less obvious mutation.
+
+### Consequences
+
+- Fresh `start` pipelines no longer create observer-trust intervention debt for
+  roles that are intentionally write-capable during bootstrap.
+- Deployed harnesses that already wrote `trust_level: operator` during early
+  self-healing are treated as contributor rather than becoming invalid.
+- Blast-radius tickets should no longer be created after obvious repo deletion
+  commands have already modified the worktree.

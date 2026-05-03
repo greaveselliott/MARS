@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/guardrails"
+	"github.com/greaveselliott/mars-harness/internal/trust"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,6 +29,7 @@ type RoleConfig struct {
 	Domain      string   `yaml:"domain"`
 	Mode        string   `yaml:"mode"`
 	Model       string   `yaml:"model"`
+	TrustLevel  string   `yaml:"trust_level"`
 	Tools       []string `yaml:"tools"`
 	Guardrails  []string `yaml:"guardrails"`
 	Knowledge   []string `yaml:"knowledge"`
@@ -87,6 +89,11 @@ func Load(repoRoot string) (*Manifest, error) {
 	for name, role := range m.Roles {
 		if strings.TrimSpace(role.Prompt) == "" {
 			return nil, fmt.Errorf("bundle: role %q has no prompt path — set 'prompt' to a file relative to %s/", name, harnessDir)
+		}
+		if rawTrust := strings.TrimSpace(role.TrustLevel); rawTrust != "" {
+			if _, ok := trust.ParseLevel(rawTrust); !ok {
+				return nil, fmt.Errorf("bundle: role %q has invalid trust_level %q — use observer, contributor, or autonomous", name, role.TrustLevel)
+			}
 		}
 		for _, target := range role.Then {
 			if _, ok := m.Roles[target]; !ok {
