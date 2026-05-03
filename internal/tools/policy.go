@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -544,12 +543,4 @@ func atoiDiffField(s string) int {
 		return 0
 	}
 	return n
-}
-
-func repoRel(root Root, abs string) string {
-	rel, err := filepath.Rel(root.Abs(), abs)
-	if err != nil {
-		return abs
-	}
-	return rel
 }

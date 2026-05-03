@@ -480,27 +480,6 @@ func ticketIndexLine(t ticketstate.Ticket) string {
 	return line
 }
 
-func readTicketKind(path string) string {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	text := string(data)
-	if !strings.HasPrefix(text, "---\n") {
-		return ""
-	}
-	lines := strings.Split(text, "\n")
-	for _, line := range lines[1:] {
-		if line == "---" {
-			return ""
-		}
-		if strings.HasPrefix(line, "kind:") {
-			return strings.Trim(strings.TrimSpace(strings.TrimPrefix(line, "kind:")), `"'`)
-		}
-	}
-	return ""
-}
-
 // cleanupDogfoodContainers removes any orphaned Podman containers from dogfood runs.
 func cleanupDogfoodContainers(projectName string) {
 	name := "dogfood-" + projectName

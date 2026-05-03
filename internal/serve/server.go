@@ -92,7 +92,6 @@ type Server struct {
 	started   bool
 	startedAt time.Time
 	startCtx  context.Context
-	stopFunc  context.CancelFunc
 }
 
 // New creates a Server wired with all subsystems.

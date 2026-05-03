@@ -84,11 +84,11 @@ func TestScan_detectsMissingTests(t *testing.T) {
 func TestScan_noMissingTestsWhenTestExists(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 	pkgDir := filepath.Join(dir, "pkg", "bar")
-	os.MkdirAll(pkgDir, 0o755)
-	os.WriteFile(filepath.Join(pkgDir, "bar.go"), []byte("package bar\n"), 0o644)
-	os.WriteFile(filepath.Join(pkgDir, "bar_test.go"), []byte("package bar\n"), 0o644)
+	require.NoError(t, os.MkdirAll(pkgDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "bar.go"), []byte("package bar\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "bar_test.go"), []byte("package bar\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -103,8 +103,8 @@ func TestScan_noMissingTestsWhenTestExists(t *testing.T) {
 func TestScan_detectsTodos(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n// TODO: fix this\n// FIXME: broken\n// HACK: workaround\n"), 0o644)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n// TODO: fix this\n// FIXME: broken\n// HACK: workaround\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
