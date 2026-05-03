@@ -35,8 +35,8 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001` and the current install/setup feature is `F-002`.
 - Ticket state:
   - `docs/tickets/in-progress/` has no active tickets.
-  - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-037`, and `MH-042` through `MH-049`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-029`, `MH-032` through `MH-036`, and `MH-038` through `MH-041`.
+  - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, and `MH-042` through `MH-049`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-029` and `MH-032` through `MH-041`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -58,14 +58,11 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Quality score export (`MH-037`)**: replace the seeded scorecard with a
-   deterministic export from live scores, telemetry, tickets, checks, and
-   dogfood evidence.
-2. **Release asset contract (`MH-031`)**: publish checksum-verified binaries so
+1. **Release asset contract (`MH-031`)**: publish checksum-verified binaries so
    install and `update tool` no longer require Go or a source checkout.
-3. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
+2. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
    support, explicit role/tier swaps, persistent reports, and promotion checks.
-4. **Mars parity execution**: work through the tickets materialized on 2026-05-03 for
+3. **Mars parity execution**: work through the tickets materialized on 2026-05-03 for
    operating model (`MH-042`), role registry (`MH-043`),
    conversation-as-system-record (`MH-044`), intervention debt (`MH-045`),
    active-ticket drain (`MH-046`), orchestrator recovery (`MH-047`),
@@ -115,5 +112,5 @@ Checks recorded during the 2026-05-02 review:
 
 ## Next Ticket Work
 
-- `MH-037`: automate quality score export from live scoring, telemetry, ticket, check, and dogfood evidence.
-- Next active-plan refresh: promote the highest-value backlog scenario group after quality export evidence is complete.
+- `MH-031`: publish checksum-verified release assets for installers and `update tool`.
+- Next active-plan refresh: promote the release asset contract or the highest-value backlog scenario group if release assets are blocked.

@@ -56,6 +56,20 @@ type Score struct {
 	ComputedAt time.Time
 }
 
+// RoleRepo identifies a role+repo pair with recorded terminal outcomes.
+type RoleRepo struct {
+	Role   string
+	RepoID string
+}
+
+// OutcomeCount is an aggregate terminal outcome bucket.
+type OutcomeCount struct {
+	Role   string
+	RepoID string
+	Type   OutcomeType
+	Count  int
+}
+
 // Store persists outcomes and scores in SQLite.
 type Store struct {
 	db *sql.DB
@@ -265,6 +279,64 @@ ORDER BY repo_id, role`)
 		return nil, fmt.Errorf("scoring: list scores rows: %w", err)
 	}
 	return scores, nil
+}
+
+// RoleReposWithOutcomes returns role+repo pairs with terminal outcomes since
+// the cutoff. Empty repoID means all repos in the database.
+func (s *Store) RoleReposWithOutcomes(ctx context.Context, repoID string, since time.Time) ([]RoleRepo, error) {
+	rows, err := s.db.QueryContext(ctx, `
+SELECT role, repo_id
+FROM outcomes
+WHERE recorded_at >= ? AND (? = '' OR repo_id = ?)
+GROUP BY role, repo_id
+ORDER BY repo_id, role`, since.Unix(), repoID, repoID)
+	if err != nil {
+		return nil, fmt.Errorf("scoring: list role repos with outcomes: %w", err)
+	}
+	defer rows.Close()
+
+	var pairs []RoleRepo
+	for rows.Next() {
+		var pair RoleRepo
+		if err := rows.Scan(&pair.Role, &pair.RepoID); err != nil {
+			return nil, fmt.Errorf("scoring: scan role repo: %w", err)
+		}
+		pairs = append(pairs, pair)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("scoring: role repo rows: %w", err)
+	}
+	return pairs, nil
+}
+
+// OutcomeCounts returns aggregate terminal outcome counts since the cutoff.
+// Empty repoID means all repos in the database.
+func (s *Store) OutcomeCounts(ctx context.Context, repoID string, since time.Time) ([]OutcomeCount, error) {
+	rows, err := s.db.QueryContext(ctx, `
+SELECT role, repo_id, type, COUNT(*)
+FROM outcomes
+WHERE recorded_at >= ? AND (? = '' OR repo_id = ?)
+GROUP BY role, repo_id, type
+ORDER BY repo_id, role, type`, since.Unix(), repoID, repoID)
+	if err != nil {
+		return nil, fmt.Errorf("scoring: outcome counts: %w", err)
+	}
+	defer rows.Close()
+
+	var counts []OutcomeCount
+	for rows.Next() {
+		var count OutcomeCount
+		var typ string
+		if err := rows.Scan(&count.Role, &count.RepoID, &typ, &count.Count); err != nil {
+			return nil, fmt.Errorf("scoring: scan outcome count: %w", err)
+		}
+		count.Type = OutcomeType(typ)
+		counts = append(counts, count)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("scoring: outcome count rows: %w", err)
+	}
+	return counts, nil
 }
 
 func newUUID() string {

@@ -53,7 +53,7 @@ The dedupe key is repo, role, target, category, and evidence window. This keeps 
 
 Direct evolution remains bounded. Process, product, unknown, or unsafe changes default to intervention-debt tickets; autonomous evolution can only happen after the ticketed evidence is constrained by trust, allowlists, and regression checks.
 
-### AD-072: Quality Scores Are Repo Artifacts
+### AD-072: Quality Scores Are Generated Repo Artifacts
 
 Mars Harness inherits Mars's A-F quality score pattern as a repo-owned artifact.
 The source harness now carries `docs/QUALITY_SCORE.md`, and initialized target
@@ -61,12 +61,18 @@ repos receive the same seed file. This makes current quality, readiness, and
 top improvement targets visible to any agent before it opens SQLite or the
 dashboard.
 
-The seeded file is intentionally honest about its limits: it is a manual audit
-until a deterministic `scores export` command can refresh it from role scores,
-terminal outcomes, traces, ticket state, dogfood results, guardrail blocks,
-check results, human follow-up, and telemetry triage. Once generation exists,
-manual edits should be limited to explanatory notes that the generator
-preserves.
+`mars-harness scores export --repo <path>` is now the deterministic refresh
+path. It reads role scores, terminal outcomes, ticket state, dogfood results,
+guardrail blocks, check outcomes, no-op runs, human follow-up, and telemetry
+triage from the repo-specific SQLite database and repo-visible ticket tree,
+then rewrites `docs/QUALITY_SCORE.md`. Missing SQLite data is rendered as
+`Insufficient evidence` instead of a fabricated grade.
+
+Manual edits belong only inside the preserved manual-notes block. Low role
+scores with at least five samples create or update deduped
+`kind: intervention-debt` tickets, making quality regressions durable work.
+Dashboard quality links point back to this generated artifact; the dashboard is
+not the source of truth.
 
 ## Current Implementation
 
@@ -81,11 +87,11 @@ The first implementation is deliberately small:
 - manifest failures point at `.harness/manifest.yaml`
 - ticket-gate failures point at the role's ticket completion workflow, trust level, and target ticket state; self-chain auto-recovery does not retry them unchanged
 - low scores point at process triage across prompt, skill, guardrail, tool, model, and intervention debt
-- `docs/QUALITY_SCORE.md` seeds the repo-visible grade surface until live score export is implemented
+- `mars-harness scores export --repo <path>` refreshes `docs/QUALITY_SCORE.md`
+  from live evidence and preserves manual notes
 
 ## Required Next Steps
 
-- Automate quality-score exports that include top improvement targets.
 - Add Orchestrator survey support so triage runs even when no new job finishes.
 - Add richer dashboard/API views for improvement proposals beyond the current event stream.
 - Extend triage with dogfood-specific and ticket-state-specific signals.

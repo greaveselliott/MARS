@@ -462,11 +462,11 @@ Patch notes are generated with ` + "`mars-harness release notes`" + ` from seman
 This file grades the project and its harness operation in the repo itself. It is
 the visible counterpart to Mars Harness scores, traces, tickets, checks, and
 telemetry. Keep it honest so future agents can see whether the project is
-healthy without opening a dashboard or database.
+healthy without treating a dashboard or database as the source of truth.
 
 The initial grades below are placeholders from the generated harness. Replace
-them with project-specific evidence after the first audit or generated score
-export.
+them with project-specific evidence after the first audit, then refresh live
+evidence with ` + "`mars-harness scores export --repo .`" + `.
 
 ## Grading Scale
 
@@ -490,13 +490,19 @@ export.
 | Release/versioning | B | VERSION, CHANGELOG.md, and release guidance are generated. | Run ` + "`mars-harness release notes --repo . --bump auto`" + ` after non-release semantic commits. |
 | Harness readiness | B | AGENTS.md, manifest, roles, guardrails, knowledge routes, and skills are generated. | Tune roles and guardrails to this project after early runs. |
 
+## Manual Notes
+
+<!-- BEGIN MANUAL NOTES -->
+_No manual notes recorded. Keep human context here; ` + "`scores export`" + ` preserves this block._
+<!-- END MANUAL NOTES -->
+
 ## Update Rules
 
 - Update this scorecard after material features, architecture changes, quality gates, or harness behavior changes.
 - Prefer evidence from tests, traces, tickets, dogfood results, guardrail blocks, and human follow-up.
 - Do not raise a grade for a feature that is only described but not working.
 - Separate shipped feature scenarios from enabler work. Enabler work can improve the grade for process or readiness, but must not be described as a shipped user feature unless the mapped BDD scenarios pass.
-- When Mars Harness provides ` + "`scores export`" + `, use it to refresh this file from live evidence.
+- Refresh live evidence with ` + "`mars-harness scores export --repo .`" + `; the command preserves the manual notes block and creates deduped intervention-debt tickets for low-score regressions.
 `,
 
 	"AGENTS.md": `# Agent Guide

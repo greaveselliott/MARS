@@ -27,6 +27,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/llm"
 	"github.com/greaveselliott/mars-harness/internal/models"
+	"github.com/greaveselliott/mars-harness/internal/qualityscore"
 	"github.com/greaveselliott/mars-harness/internal/release"
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
@@ -1080,6 +1081,48 @@ func scoresCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Target repository path (default: shared legacy database)")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database")
+	cmd.AddCommand(scoresExportCmd())
+	return cmd
+}
+
+func scoresExportCmd() *cobra.Command {
+	var repoPath string
+	var dbPath string
+	var windowDays int
+	var noTicket bool
+	cmd := &cobra.Command{
+		Use:   "export",
+		Short: "Refresh docs/QUALITY_SCORE.md from live evidence",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repoAbs, resolvedDB, repoID, err := resolveQualityExportPaths(repoPath, dbPath)
+			if err != nil {
+				return err
+			}
+			report, err := qualityscore.Export(cmd.Context(), qualityscore.Options{
+				RepoPath:              repoAbs,
+				RepoID:                repoID,
+				DBPath:                resolvedDB,
+				WindowDays:            windowDays,
+				DisableTicketCreation: noTicket,
+			})
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Exported quality score to %s\n", report.Path)
+			fmt.Printf("Overall grade: %s\n", report.Grade)
+			for _, warning := range report.Warnings {
+				fmt.Printf("Warning: %s\n", warning)
+			}
+			for _, ticket := range report.TicketsChanged {
+				fmt.Printf("%s\n", ticket)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().IntVar(&windowDays, "window-days", 30, "Scoring and telemetry evidence window in days")
+	cmd.Flags().BoolVar(&noTicket, "no-ticket", false, "Do not create or update low-score intervention-debt tickets")
 	return cmd
 }
 
@@ -1363,6 +1406,44 @@ func resolveRepoDBAndID(repoArg, dbPath string) (string, string, error) {
 		}
 	}
 	return dbPath, repoID, nil
+}
+
+func resolveQualityExportPaths(repoArg, dbPath string) (string, string, string, error) {
+	repoArg = strings.TrimSpace(repoArg)
+	if repoArg == "" {
+		repoArg = "."
+	}
+	abs, err := filepath.Abs(repoArg)
+	if err != nil {
+		return "", "", "", fmt.Errorf("resolve repo path: %w", err)
+	}
+	if dbPath == "" {
+		dbPath = defaultDBPath(abs)
+	}
+
+	repoID := ""
+	if _, err := os.Stat(dbPath); err == nil {
+		db, err := openDB(dbPath)
+		if err == nil {
+			defer db.Close()
+			reg, regErr := serve.NewRepoRegistry(db)
+			if regErr == nil {
+				repos, listErr := reg.List(context.Background())
+				if listErr == nil {
+					for _, rec := range repos {
+						if rec.Path == abs {
+							repoID = rec.ID
+							break
+						}
+					}
+				}
+			}
+		}
+	} else if !os.IsNotExist(err) {
+		return "", "", "", fmt.Errorf("resolve quality export database: %w", err)
+	}
+
+	return abs, dbPath, repoID, nil
 }
 
 // legacyDBPath returns the old shared database path: ~/.mars-harness/db/mars.db.

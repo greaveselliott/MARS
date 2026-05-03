@@ -295,13 +295,13 @@ Gap:
 
 ### 8. Quality Score
 
-Mars has repo-visible quality artifacts and quality regression scripts. Harness has scoring packages and commands underway, but the score is not yet as visible in the repo.
+Mars has repo-visible quality artifacts and quality regression scripts. Harness
+now has a generated `docs/QUALITY_SCORE.md` export, but Orchestrator surveys
+still need to consume score regressions proactively.
 
 Gap:
 
-- Harness needs a generated `docs/QUALITY_SCORE.md` or equivalent. A seeded
-  source and target scorecard now exists; deterministic export is still open.
-- Scoring should summarize role health, stuck tickets, failed dogfood, guardrail blocks, intervention debt, check pass/fail rate, no-op runs, and human follow-up rate.
+- Scoring export summarizes role health, stuck tickets, failed dogfood, guardrail blocks, intervention debt, check pass/fail rate, no-op runs, and human follow-up rate.
 - Score regression should trigger Orchestrator/Planner work.
 
 ### 9. Dogfood Matrix
@@ -473,19 +473,19 @@ Acceptance:
 
 Make Harness scoring as visible as Mars's quality documentation.
 
-Backlog ticket: [MH-037](../../tickets/backlog/MH-037-automate-quality-score-export.md).
+Completed ticket: [MH-037](../../tickets/done/MH-037-automate-quality-score-export.md).
 
 Tasks:
 
 - [x] Seed source `docs/QUALITY_SCORE.md` and generated target `docs/QUALITY_SCORE.md`.
-- [ ] Add `mars-harness scores export --repo <path>` or equivalent.
-- [ ] Generate `docs/QUALITY_SCORE.md` from live score and telemetry data.
-- [ ] Include role score, recent outcomes, stuck tickets, failed dogfood, guardrail blocks, intervention debt, check results, no-op runs, and human follow-up rate.
+- [x] Add `mars-harness scores export --repo <path>` or equivalent.
+- [x] Generate `docs/QUALITY_SCORE.md` from live score and telemetry data.
+- [x] Include role score, recent outcomes, stuck tickets, failed dogfood, guardrail blocks, intervention debt, check results, no-op runs, and human follow-up rate.
 - [x] Add typed telemetry triage for recurring failure patterns and low scores.
-- [ ] Include top self-improvement targets in the quality export.
-- [ ] Add a quality-regression detector.
+- [x] Include top self-improvement targets in the quality export.
+- [x] Add a quality-regression detector.
 - [ ] Trigger Planner/Orchestrator when quality regresses.
-- [ ] Add dashboard links to the same source data without making the dashboard the source of truth.
+- [x] Add dashboard links to the same source data without making the dashboard the source of truth.
 
 Acceptance:
 
@@ -678,7 +678,7 @@ Acceptance:
 4. [MH-034](../../tickets/done/MH-034-active-plan-hygiene-checker.md): Implement active-plan hygiene checks in doctor and CI.
 5. [MH-045](../../tickets/backlog/MH-045-complete-intervention-debt-signal-ingestion.md): Complete intervention-debt creation rules and dedupe beyond the `MH-029` telemetry foundation.
 6. [MH-046](../../tickets/backlog/MH-046-enforce-in-progress-ticket-drain.md): Enforce in-progress ticket priority and blocked-ticket outcomes.
-7. [MH-037](../../tickets/backlog/MH-037-automate-quality-score-export.md): Add `docs/QUALITY_SCORE.md` export from scoring data.
+7. [MH-037](../../tickets/done/MH-037-automate-quality-score-export.md): Add `docs/QUALITY_SCORE.md` export from scoring data.
 8. [MH-047](../../tickets/backlog/MH-047-native-orchestrator-survey-loop.md): Add native Orchestrator survey loop for stuck jobs, stale tickets, and score regression.
 9. [MH-048](../../tickets/backlog/MH-048-deterministic-remediation-recipes.md): Add deterministic remediation recipe framework.
 10. [MH-049](../../tickets/backlog/MH-049-dogfood-matrix-supersession-benchmark.md): Define and test the Harness dogfood matrix, including observer-mode operation on `../mars`.

@@ -251,6 +251,7 @@ func New(cfg Config) (*Server, error) {
 	dash.HandleFunc("/api/telemetry", s.handleTelemetryAPI)
 	dash.HandleFunc("/api/evolution", s.handleEvolutionAPI)
 	dash.HandleFunc("/api/roles", s.handleRolesAPI)
+	dash.HandleFunc("/api/quality-score", s.handleQualityScoreAPI)
 	dash.HandleFunc("/api/throughput", s.handleThroughputAPI)
 
 	webhookHandler := gh.WebhookHandler(
@@ -824,6 +825,23 @@ func (s *Server) handleRolesAPI(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error("serve: roles API encode error", "err", err)
 	}
+}
+
+func (s *Server) handleQualityScoreAPI(w http.ResponseWriter, r *http.Request) {
+	repoPath := strings.TrimSpace(s.cfg.RepoScope)
+	if repoPath == "" && s.repos != nil {
+		repos, err := s.repos.List(r.Context())
+		if err == nil && len(repos) > 0 {
+			repoPath = repos[0].Path
+		}
+	}
+	if repoPath == "" {
+		http.Error(w, "quality score unavailable: no repo is registered", http.StatusNotFound)
+		return
+	}
+	scorePath := filepath.Join(repoPath, "docs", "QUALITY_SCORE.md")
+	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+	http.ServeFile(w, r, scorePath)
 }
 
 func (s *Server) handleThroughputAPI(w http.ResponseWriter, r *http.Request) {

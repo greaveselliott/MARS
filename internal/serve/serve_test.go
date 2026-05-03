@@ -76,6 +76,28 @@ func TestServer_healthHandler_unhealthy(t *testing.T) {
 	}
 }
 
+func TestServer_qualityScoreAPIServesRepoArtifact(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, "docs"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "docs", "QUALITY_SCORE.md"), []byte("# Quality Score\n\nGenerated.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	srv := &Server{cfg: Config{RepoScope: repo}}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/quality-score", nil)
+	srv.handleQualityScoreAPI(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "# Quality Score") {
+		t.Fatalf("expected quality score body, got %q", rec.Body.String())
+	}
+}
+
 func TestNew_missingAddr(t *testing.T) {
 	_, err := New(Config{})
 	if err == nil {

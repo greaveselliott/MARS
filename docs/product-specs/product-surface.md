@@ -38,6 +38,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness register --repo <path>` | Implemented | Registers a repo and creates the per-repo database path when one is not supplied. |
 | `mars-harness doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, guardrail/workflow health, mirrored operating-model health, active-plan hygiene, and optional integration configuration. |
 | `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
+| `mars-harness scores export --repo <path>` | Implemented | Refreshes `docs/QUALITY_SCORE.md` from live score, telemetry, ticket, dogfood, guardrail, check, no-op, and human follow-up evidence while preserving manual notes and creating deduped low-score intervention-debt tickets. |
 | `mars-harness trust [--repo <path>]` | Implemented | Shows role trust levels. |
 | `mars-harness trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
 | `mars-harness models evaluate [--endpoint <url> --model <name>]` | Initial implementation | Prints the current model-refresh plan and candidate shortlist, or runs mechanical OpenAI-compatible benchmark probes against a supplied model endpoint. Next slice adds Ollama catalog access, explicit tier/role swaps, persisted reports, and promotion decisions. |
@@ -61,7 +62,7 @@ Required generated surfaces:
 - `docs/tickets/backlog/`, `docs/tickets/in-progress/`, and `docs/tickets/done/`
 - `docs/tickets/README.md` for ticket lifecycle and completion rules
 - `docs/exec-plans/README.md` and starter priority docs with a one-active-plan lifecycle
-- `docs/QUALITY_SCORE.md` as the repo-visible A-F quality score seed
+- `docs/QUALITY_SCORE.md` as the repo-visible A-F quality score artifact
 - `docs/design-docs/index.md` and `context-glossary.md`
 - `docs/references/README.md` and selected agent-first references
 - `VERSION`, `CHANGELOG.md`, and `docs/design-docs/release-versioning.md`
@@ -102,7 +103,7 @@ Mars Harness and initialized target repos use the same release contract:
 
 `docs/generated/` is reserved for reproducible reference snapshots generated from the source harness. It is intentionally catalog-only until generator commands exist.
 
-Expected future artifacts include role registry, tool inventory, package map, model inventory, score exports, and bundle schema reference. Generated docs must name their generator, source inputs, and freshness signal so agents can trust them as context routes.
+Expected future artifacts include role registry, tool inventory, package map, model inventory, and bundle schema reference. Generated docs must name their generator, source inputs, and freshness signal so agents can trust them as context routes.
 
 ## Role And Work Semantics
 
@@ -135,6 +136,8 @@ Trust levels are:
 - `autonomous`: may self-schedule, chain work, edit, test, commit, push to `main`, and perform bounded evolution
 
 Scores are based on real outcomes: completed work, commits, checks, guardrail blocks, timeouts, noops, human follow-up, and reverts. Scores must drive behavior, not merely appear in a dashboard.
+
+`docs/QUALITY_SCORE.md` is refreshed with `mars-harness scores export --repo <path>`. The generated artifact is the quality source of truth for agents; dashboard quality views link to the same file and database-derived signals instead of becoming a separate grading surface. Missing SQLite evidence is explicitly graded as insufficient evidence.
 
 When scores or telemetry show repeated workflow confusion, the harness creates or updates intervention-debt tickets first, then chooses the bounded improvement surface. Prefer a scoped skill over bloating a role prompt. Use guardrails for non-negotiable enforcement and tools for deterministic actions.
 
@@ -183,7 +186,7 @@ The single active execution plan tracks the remaining work and pulls from priori
 - richer repo-visible skill registry and skill-evolution proposals
 - stronger generated target guidance
 - deterministic remediation recipes before LLM work
-- score exports and dashboard views for improvement targets
+- richer dashboard views for improvement targets backed by the generated quality score
 - doctor checks for mirrored harness freshness
 - generated role, tool, package, model, and score reference artifacts
 - automatic intervention-debt ticket creation from telemetry triage

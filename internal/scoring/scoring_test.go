@@ -169,3 +169,36 @@ func TestComputeScore_minimumSampleSize(t *testing.T) {
 	assert.Equal(t, 3, sc.SampleSize, "SampleSize should reflect actual count even below minimum threshold")
 	assert.Less(t, sc.SampleSize, 5, "below minimum threshold of 5 outcomes")
 }
+
+func TestRoleReposWithOutcomesAndOutcomeCounts(t *testing.T) {
+	s := tempStore(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	require.NoError(t, s.RecordOutcome(ctx, Outcome{
+		JobID: "j-1", RepoID: "repo-1", Role: "engineer",
+		Type: OutcomePassed, RecordedAt: now,
+	}))
+	require.NoError(t, s.RecordOutcome(ctx, Outcome{
+		JobID: "j-2", RepoID: "repo-1", Role: "engineer",
+		Type: OutcomeFailed, RecordedAt: now,
+	}))
+	require.NoError(t, s.RecordOutcome(ctx, Outcome{
+		JobID: "j-3", RepoID: "repo-2", Role: "qa",
+		Type: OutcomeNoop, RecordedAt: now,
+	}))
+
+	pairs, err := s.RoleReposWithOutcomes(ctx, "repo-1", now.Add(-time.Hour))
+	require.NoError(t, err)
+	require.Equal(t, []RoleRepo{{Role: "engineer", RepoID: "repo-1"}}, pairs)
+
+	counts, err := s.OutcomeCounts(ctx, "repo-1", now.Add(-time.Hour))
+	require.NoError(t, err)
+	require.Len(t, counts, 2)
+	byType := map[OutcomeType]int{}
+	for _, count := range counts {
+		byType[count.Type] = count.Count
+	}
+	assert.Equal(t, 1, byType[OutcomePassed])
+	assert.Equal(t, 1, byType[OutcomeFailed])
+}

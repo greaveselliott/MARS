@@ -136,6 +136,29 @@ body {
   margin-bottom: 16px;
 }
 
+.card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.card-heading h2 {
+  margin-bottom: 0;
+}
+
+.doc-link {
+  color: var(--accent);
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.doc-link:hover {
+  text-decoration: underline;
+}
+
 .event-log {
   max-height: 500px;
   overflow-y: auto;
