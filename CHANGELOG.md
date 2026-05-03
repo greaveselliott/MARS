@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.16.0] - 2026-05-03
+<!-- mars-harness-release: version=0.16.0 commit=5f9870bd9b08 -->
+
+### Features
+- **models:** Add benchmark-backed provider workflow (MH-030) (5f9870b)
+
+### Delivery Evidence
+- Enabler work: MH-030: Benchmark-backed model refresh and promotion
+
 ## [0.15.2] - 2026-05-03
 <!-- mars-harness-release: version=0.15.2 commit=027449036856 -->
 
