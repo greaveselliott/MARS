@@ -535,6 +535,7 @@ would otherwise live only in chat.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
+- **Tool creation path** — new built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level ` + "`AGENTS.md`" + `.
@@ -821,6 +822,7 @@ Architectural decisions and design documents for this project.
 | AD-074 | BDD-led goal-driven walking-skeleton delivery is the canonical operating model. | 2026-05-02 | Accepted |
 | AD-076 | Harness glossary definitions are mirrored first-class context in foundation and deployed harnesses. | 2026-05-03 | Accepted |
 | AD-082 | Repeated, risky, validation-heavy, or likely-to-recur processes should become formalized tools. | 2026-05-03 | Accepted |
+| AD-083 | New built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires ` + "`record_decision`" + ` and design-doc rationale. | 2026-05-03 | Accepted |
 `,
 
 	"docs/design-docs/delivery-operating-model.md": `# AD-074: BDD-Led Goal-Driven Walking-Skeleton Delivery
@@ -863,6 +865,13 @@ requires exact command ordering, create or improve a first-class tool for it.
 Mirror the tool when the process applies to both foundation and deployed
 harnesses, document it in the tools glossary, add generated target guidance and
 tests when appropriate, and expose it only to roles that should use it.
+
+Built-in tool creation must dogfood the meta-tool path. New built-in tools
+originate through ` + "`tool_create`" + `, one tool at a time, before manual
+implementation and any later refactor into shared helper files. Bypassing
+` + "`tool_create`" + ` is an exception: the agent must first record the reason with
+` + "`record_decision`" + `, then add design-doc rationale and tests that preserve the
+exception context.
 
 ## Consequences
 
@@ -1121,6 +1130,7 @@ harness and deployed harnesses.
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
+| Tool creation path | New built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale. |
 | Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
 | First-class harness definition | Context that should always be included in the top-level ` + "`AGENTS.md`" + `. |
 | Contextual harness definition | Situational context routed through the harness glossary with the form: ` + "`When doing X include this: <path to document.md>`" + `. |
@@ -1150,8 +1160,10 @@ Use ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/roles/`" + `, and the doc
 ### When choosing, creating, or changing tools include this: ` + "`docs/design-docs/tools-glossary.md`" + `
 
 ` + "`tool_create`" + ` is a mirrored tool and may be exposed by both the foundation
-and deployed harness role allowlists. Use it for tool scaffolding; built-in Go
-tool implementation still lives in the foundation harness source. Every newly
+and deployed harness role allowlists. New built-in tools must originate through
+` + "`tool_create`" + `, one tool at a time, before manual implementation or shared-helper
+refactors. If an agent bypasses ` + "`tool_create`" + `, it must first use
+` + "`record_decision`" + ` to record why, then add design-doc rationale. Every newly
 created tool must extend ` + "`docs/design-docs/tools-glossary.md`" + ` in the same
 change that implements or exposes it.
 
@@ -1245,6 +1257,10 @@ tools are added, removed, renamed, or materially change behavior.
 
 ## Maintenance Rules
 
+- New built-in tools must originate through ` + "`tool_create`" + ` before manual
+  implementation. If an agent bypasses ` + "`tool_create`" + `, it must first record a
+  durable exception with ` + "`record_decision`" + ` and add design-doc rationale before
+  the change is complete.
 - Every newly created tool must extend this glossary in the same change that
   implements or exposes the tool.
 - Update this glossary in the same change that removes, renames, or materially
@@ -1312,6 +1328,12 @@ foundation and deployed harness boundaries, it should become a formalized tool
 instead of remaining ad hoc chat memory. Mirrored formal tools must be listed in
 the tools glossary, exposed through generated target defaults where useful, and
 covered by tests before roles depend on them.
+
+New built-in tools must originate through ` + "`tool_create`" + `. Bypassing
+` + "`tool_create`" + ` is allowed only as an explicit exception recorded with
+` + "`record_decision`" + ` and backed by design-doc rationale before implementation is
+treated as complete. Shared implementation files are a refactor after
+scaffolding, not a reason to skip the governed path.
 
 ## Maintenance Rules
 

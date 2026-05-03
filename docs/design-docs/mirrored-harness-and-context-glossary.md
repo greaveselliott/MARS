@@ -75,6 +75,12 @@ instead of remaining ad hoc chat memory. Mirrored formal tools must be listed in
 the tools glossary, exposed through generated target defaults where useful, and
 covered by tests before roles depend on them.
 
+New built-in tools must originate through `tool_create`. Bypassing
+`tool_create` is allowed only as an explicit exception recorded with
+`record_decision` and backed by design-doc rationale before implementation is
+treated as complete. Shared implementation files are a refactor after
+scaffolding, not a reason to skip the governed path.
+
 ### AD-036: Workflow Contracts Belong In The Repo
 
 Symphony's `WORKFLOW.md` idea maps to Mars Harness as repo-owned workflow artifacts:

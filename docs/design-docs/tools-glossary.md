@@ -72,6 +72,10 @@ tools are added, removed, renamed, or materially change behavior.
 
 ## Maintenance Rules
 
+- New built-in tools must originate through `tool_create` before manual
+  implementation. If an agent bypasses `tool_create`, it must first record a
+  durable exception with `record_decision` and add design-doc rationale before
+  the change is complete.
 - Every newly created tool must extend this glossary in the same change that
   implements or exposes the tool.
 - Update this glossary in the same change that removes, renames, or materially

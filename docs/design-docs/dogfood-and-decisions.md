@@ -372,6 +372,19 @@ self-improvement roles.
 - Tool creation has an explicit, repeatable path that can later grow into richer
   inventories, validators, and generated tool references.
 
+### Discovery: bypassing `tool_create` breaks the doctrine it represents
+
+On 2026-05-03, seven related workflow tools were implemented manually in one
+shared file instead of being scaffolded iteratively through `tool_create`. The
+end state had registry, glossary, generated-harness, tests, release, and docs,
+but the creation path bypassed the meta-tool designed to govern tool creation.
+
+The correction is operational rather than feature-heavy: new built-in tools
+must originate through `tool_create`, one tool at a time, before manual
+implementation or consolidation into shared helpers. Bypassing `tool_create`
+requires an explicit `record_decision` entry and design-doc rationale before the
+change can be considered complete.
+
 ---
 
 ### AD-079: Mars Harness CLI Interaction Is A Mirrored Tool

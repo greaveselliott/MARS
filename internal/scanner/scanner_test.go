@@ -364,6 +364,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Symbiotic operating-model change")
 	assert.Contains(t, string(agentGuide), "Meta tool")
 	assert.Contains(t, string(agentGuide), "Formalized tool creation trigger")
+	assert.Contains(t, string(agentGuide), "Tool creation path")
 	assert.Contains(t, string(agentGuide), "mars_harness_cli")
 	assert.Contains(t, string(agentGuide), "tool_create")
 	assert.Contains(t, string(agentGuide), "Contextual harness definition")
@@ -389,6 +390,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(harnessGlossary), "Deployed operating model")
 	assert.Contains(t, string(harnessGlossary), "Symbiotic operating-model change")
 	assert.Contains(t, string(harnessGlossary), "Formalized tool creation trigger")
+	assert.Contains(t, string(harnessGlossary), "Tool creation path")
 	assert.Contains(t, string(harnessGlossary), "mars_harness_cli")
 	assert.Contains(t, string(harnessGlossary), "When changing operating doctrine include this")
 	assert.Contains(t, string(harnessGlossary), "When choosing, creating, or changing tools include this")
@@ -403,6 +405,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(toolsGlossary), "release_orchestrate")
 	assert.Contains(t, string(toolsGlossary), "harness_doctrine_sync")
 	assert.Contains(t, string(toolsGlossary), "task_trace_summarize")
+	assert.Contains(t, string(toolsGlossary), "New built-in tools must originate through")
 	assert.Contains(t, string(toolsGlossary), "Every newly created tool must extend this glossary")
 
 	mirroredGlossary, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "mirrored-harness-and-context-glossary.md"))
@@ -425,6 +428,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(operatingModel), "Operating-model changes must be symbiotic")
 	assert.Contains(t, string(operatingModel), "without handoff gaps")
 	assert.Contains(t, string(operatingModel), "Repeated useful process becomes a formalized tool")
+	assert.Contains(t, string(operatingModel), "Built-in tool creation must dogfood the meta-tool path")
 
 	execPlanReadme, err := os.ReadFile(filepath.Join(dir, "docs", "exec-plans", "README.md"))
 	require.NoError(t, err)

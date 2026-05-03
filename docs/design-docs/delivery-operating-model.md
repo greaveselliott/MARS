@@ -68,6 +68,14 @@ role allowlists only where the role should use it. Until the tool exists, the
 process should be captured as a ticket or decision rather than left only in
 chat.
 
+Built-in tool creation must dogfood the meta-tool path. New built-in tools
+originate through `tool_create`, one tool at a time, before manual
+implementation and any later refactor into shared helper files. Bypassing
+`tool_create` is an exception: the agent must first record the reason with
+`record_decision`, then add design-doc rationale and tests that preserve the
+exception context. Completing the artifact shape without the governed creation
+path is not a complete operating-model change.
+
 ## Artifact Ownership
 
 Goals live in `docs/goals/`. Active goals may come from user chat, product

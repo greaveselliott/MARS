@@ -43,3 +43,47 @@ func TestOperatingRulesMirrorTargetHarnesses(t *testing.T) {
 		}
 	}
 }
+
+func TestToolCreationPathIsDocumented(t *testing.T) {
+	root := repoRoot(t)
+	required := map[string][]string{
+		"AGENTS.md": {
+			"Tool creation path",
+			"tool_create",
+			"record_decision",
+		},
+		"docs/design-docs/tools-glossary.md": {
+			"New built-in tools must originate through `tool_create`",
+			"record_decision",
+			"design-doc rationale",
+		},
+		"docs/design-docs/delivery-operating-model.md": {
+			"Built-in tool creation must dogfood the meta-tool path",
+			"tool_create",
+			"record_decision",
+		},
+		"docs/design-docs/dogfood-and-decisions.md": {
+			"bypassing `tool_create` breaks the doctrine it represents",
+			"record_decision",
+			"design-doc rationale",
+		},
+		"internal/scanner/init.go": {
+			"Tool creation path",
+			"tool_create",
+			"record_decision",
+		},
+	}
+
+	for rel, needles := range required {
+		data, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		text := string(data)
+		for _, needle := range needles {
+			if !strings.Contains(text, needle) {
+				t.Fatalf("%s must document governed tool creation path; missing %q", rel, needle)
+			}
+		}
+	}
+}

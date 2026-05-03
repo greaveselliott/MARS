@@ -33,9 +33,10 @@ harness and deployed harnesses.
 | Deployed operating model | The operating model inside a target application harness, governing how agents build that target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `mars_harness_cli`, `grep`, `record_decision`, `ticket_create`, `tool_create`, and git tools. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `mars_harness_cli`, `grep`, `record_decision`, `ticket_create`, `tool_create`, release/status/audit workflow tools, and git tools. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
+| Tool creation path | New built-in tools must originate through `tool_create`; bypassing it requires a prior `record_decision` entry and design-doc rationale. |
 | Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
 | First-class harness definition | Context that should always be included in the top-level `AGENTS.md`. |
 | Contextual harness definition | Situational context routed through the harness glossary with the form: `When doing X include this: <path to document.md>`. |
@@ -65,10 +66,14 @@ the same task.
 ### When choosing, creating, or changing tools include this: `docs/design-docs/tools-glossary.md`
 
 `tool_create` is a mirrored tool and may be exposed by both the foundation and
-deployed harness role allowlists. Use it for tool scaffolding, then implement
-the handler, register it in `internal/tools/register_default.go`, update trust
-policy if the tool mutates state, extend `docs/design-docs/tools-glossary.md`,
-and add tests before exposing new tools in any role allowlist.
+deployed harness role allowlists. New built-in tools must originate through
+`tool_create`, one tool at a time, before manual implementation or shared-helper
+refactors. If an agent bypasses `tool_create`, it must first use
+`record_decision` to record why, then add design-doc rationale. After
+scaffolding, implement the handler, register it in
+`internal/tools/register_default.go`, update trust policy if the tool mutates
+state, extend `docs/design-docs/tools-glossary.md`, and add tests before
+exposing new tools in any role allowlist.
 
 ### When changing context routes include this: `.harness/knowledge/context-glossary.yaml`
 

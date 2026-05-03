@@ -30,6 +30,7 @@ would otherwise live only in chat.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `mars_harness_cli`, `grep`, `record_decision`, `ticket_create`, `tool_create`, release/status/audit workflow tools, and git tools.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
+- **Tool creation path** — new built-in tools must originate through `tool_create`; bypassing it requires a prior `record_decision` entry and design-doc rationale.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level `AGENTS.md`.

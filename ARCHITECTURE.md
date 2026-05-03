@@ -348,6 +348,11 @@ be formalized as tools. The tool is mirrored when it applies to both foundation
 and deployed harnesses, documented in the tools glossary, added to generated
 target defaults when appropriate, and tested before roles depend on it.
 
+New built-in tools originate through `tool_create` before manual
+implementation. Manual bypass requires a prior `record_decision` entry and
+design-doc rationale so future agents can recover why the governed path was not
+used.
+
 ## Data Flow
 
 1. A command, webhook, cron trigger, dashboard action, telemetry pattern, or
