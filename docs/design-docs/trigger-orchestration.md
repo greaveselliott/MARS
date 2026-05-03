@@ -4,7 +4,7 @@
 **Date:** 2026-04-12
 **Author:** Mars Harness contributors
 
-How agent roles are activated: optional webhook events, cron schedules, and completion chains. Defines the manifest configuration format and the strict-trunk role registry derived from the [Mars](https://github.com/elliottgreaves/mars) pipeline.
+How agent roles are activated: optional webhook events, cron schedules, and completion chains. Defines the manifest configuration format and the strict-trunk role registry derived from the [Mars](https://github.com/elliottgreaves/mars) pipeline. Role routing uses the canonical domain and mode vocabulary from [harness-operating-model.md](harness-operating-model.md).
 
 ## Context
 
@@ -50,9 +50,18 @@ The `schedule` field on a role accepts either:
 
 Presets expand to cron at schedule registration time. Standard 5-field only — no second-resolution or year-field cron. This supports every schedule pattern used in Mars's `automations.yml`.
 
-### AD-020: Strict trunk keeps default roles single-purpose
+### AD-020: Strict trunk keeps default roles explicit and domain-shaped
 
-Default roles are expressed around schedules and direct chains, not external review-system modes. If a deployment needs compatibility event handlers, it can add separate entries explicitly, but generated bundles do not include review/merge compatibility roles.
+Default roles are expressed around schedules and direct chains, not external
+review-system modes. Generated bundles keep explicit role keys because those
+keys own prompts, schedules, chains, tools, trust, scoring, and guardrails. The
+canonical six-domain model is expressed through optional `domain` and `mode`
+metadata on each role rather than by replacing the role keys with only six
+manifest entries.
+
+Existing manifests without `domain` and `mode` remain valid. New generated
+manifests include those fields so routing, registry, trace, score, and
+self-improvement work can speak the same role-model vocabulary.
 
 ## Pipeline Graph
 
@@ -78,19 +87,19 @@ Solid arrows are runtime data flow. Every mutating role commits and pushes direc
 
 Derived from the Mars role set and normalized for strict trunk delivery.
 
-| # | Role | Manifest Key | Trigger | Schedule (cron) | Chain (`then`) | Model Tier |
-|---|------|-------------|---------|-----------------|----------------|------------|
-| 1 | CEO | `ceo` | — | `0 20 * * 0` (Sun 8pm) | `[cto-weekly]` | reasoning |
-| 2 | CTO | `cto-weekly` | — | `0 21 * * 0` (Sun 9pm) | `[coo]` | reasoning |
-| 3 | COO | `coo` | — | — | `[engineer]` | reasoning |
-| 4 | Engineer | `engineer` | — | `0 0,6,12,18 * * 1-5` (4x/day) | `[qa, engineer, dogfood]` | coding |
-| 5 | QA | `qa` | — | — | `[security]` | fast |
-| 6 | Security | `security` | — | `0 22 * * 0` (Sun 10pm) | `[dependency-manager]` | reasoning |
-| 7 | Dependency Mgr | `dependency-manager` | — | `0 23 * * 0` (Sun 11pm) | — | fast |
-| 8 | Release Mgr | `release-manager` | — | `0 8 * * 1` (Mon 8am) | — | reasoning |
-| 9 | Dogfood Tester | `dogfood` | — | `0 10 * * 1-5` (daily 10am) | — | coding |
-| 10 | Pipeline Fixer | `pipeline-fixer` | `workflow_run.conclusion == "failure"` | — | `[qa]` | coding |
-| 11 | Janitor | `janitor` | — | `0 7 * * *` (daily 7am) | — | fast |
+| # | Role | Manifest Key | Domain | Mode | Trigger | Schedule (cron) | Chain (`then`) | Model Tier |
+|---|------|-------------|--------|------|---------|-----------------|----------------|------------|
+| 1 | CEO | `ceo` | planner | `strategy` | — | `0 20 * * 0` (Sun 8pm) | `[cto-weekly]` | reasoning |
+| 2 | CTO | `cto-weekly` | planner | `architecture-planning` | — | `0 21 * * 0` (Sun 9pm) | `[coo]` | reasoning |
+| 3 | COO | `coo` | planner | `ticket-breakdown` | — | — | `[engineer]` | reasoning |
+| 4 | Engineer | `engineer` | engineer | `ticket-delivery` | — | `0 0,6,12,18 * * 1-5` (4x/day) | `[qa, engineer, dogfood]` | coding |
+| 5 | QA | `qa` | reviewer | `quality-review` | — | — | `[security]` | fast |
+| 6 | Security | `security` | reviewer | `security-review` | — | `0 22 * * 0` (Sun 10pm) | `[dependency-manager]` | reasoning |
+| 7 | Dependency Mgr | `dependency-manager` | maintainer | `dependency-maintenance` | — | `0 23 * * 0` (Sun 11pm) | — | fast |
+| 8 | Release Mgr | `release-manager` | maintainer | `release-management` | — | `0 8 * * 1` (Mon 8am) | — | reasoning |
+| 9 | Dogfood Tester | `dogfood` | end-to-end-tester | `dogfood-validation` | — | `0 10 * * 1-5` (daily 10am) | — | coding |
+| 10 | Pipeline Fixer | `pipeline-fixer` | engineer | `pipeline-repair` | `workflow_run.conclusion == "failure"` | — | `[qa]` | coding |
+| 11 | Janitor | `janitor` | orchestrator | `ticket-hygiene` | — | `0 7 * * *` (daily 7am) | — | fast |
 
 ## Reference Manifest
 
@@ -103,6 +112,8 @@ description: Full Mars Harness pipeline — strict trunk, 11 roles
 roles:
   ceo:
     prompt: roles/ceo-vision.md
+    domain: planner
+    mode: strategy
     model: reasoning
     schedule: "0 20 * * 0"
     then: [cto-weekly]
@@ -110,12 +121,16 @@ roles:
 
   coo:
     prompt: roles/coo-tickets.md
+    domain: planner
+    mode: ticket-breakdown
     model: reasoning
     then: [engineer]
     tools: [file_read, file_write, shell_exec, grep]
 
   cto-weekly:
     prompt: roles/cto-harness.md
+    domain: planner
+    mode: architecture-planning
     model: reasoning
     schedule: "0 21 * * 0"
     then: [coo]
@@ -123,18 +138,24 @@ roles:
 
   engineer:
     prompt: roles/engineer-delivery.md
+    domain: engineer
+    mode: ticket-delivery
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
     tools: [file_read, file_write, shell_exec, grep]
 
   qa:
     prompt: roles/qa-health.md
+    domain: reviewer
+    mode: quality-review
     model: fast
     then: [security]
     tools: [file_read, grep]
 
   security:
     prompt: roles/security-officer.md
+    domain: reviewer
+    mode: security-review
     model: reasoning
     schedule: "0 22 * * 0"
     then: [dependency-manager]
@@ -142,24 +163,32 @@ roles:
 
   dependency-manager:
     prompt: roles/dependency-manager.md
+    domain: maintainer
+    mode: dependency-maintenance
     model: fast
     schedule: "0 23 * * 0"
     tools: [file_read, file_write, shell_exec, grep]
 
   release-manager:
     prompt: roles/release-manager.md
+    domain: maintainer
+    mode: release-management
     model: reasoning
     schedule: "0 8 * * 1"
     tools: [file_read, file_write, shell_exec, grep]
 
   dogfood:
     prompt: roles/dogfood-tester.md
+    domain: end-to-end-tester
+    mode: dogfood-validation
     model: coding
     schedule: "0 10 * * 1-5"
     tools: [file_read, file_write, shell_exec, grep]
 
   pipeline-fixer:
     prompt: roles/pipeline-fixer.md
+    domain: engineer
+    mode: pipeline-repair
     model: coding
     triggers:
       - workflow_run.conclusion == "failure"
@@ -168,6 +197,8 @@ roles:
 
   janitor:
     prompt: roles/janitor.md
+    domain: orchestrator
+    mode: ticket-hygiene
     model: fast
     schedule: "0 7 * * *"
     tools: [file_read, file_write, shell_exec, grep]

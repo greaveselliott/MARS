@@ -7,8 +7,11 @@ kind: intervention-debt
 work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: TBD
+evidence_links:
+  - go test ./internal/docsconsistency ./internal/scanner
+  - go test ./internal/bundle
+  - go test ./...
+verified_by: go test ./...
 dedupe_key: "public-example"
 source: Mars parity workstream A
 created: 2026-05-03
@@ -54,21 +57,27 @@ domain modes without breaking existing bundles.
 
 ### Functional
 
-- [ ] The six canonical domains are defined with responsibilities and mode
+- [x] The six canonical domains are defined with responsibilities and mode
       boundaries.
-- [ ] Every current default role maps to one canonical domain and mode.
-- [ ] The design explains the migration path for existing 11-role bundles.
-- [ ] Trigger orchestration docs use the same domain and mode vocabulary.
+- [x] Every current default role maps to one canonical domain and mode.
+- [x] The design explains the migration path for existing 11-role bundles.
+- [x] Trigger orchestration docs use the same domain and mode vocabulary.
 
 ### Edge cases and negative paths
 
-- [ ] Existing manifests are not invalidated by the new canonical model.
-- [ ] The doc explicitly rejects PR/branch delivery as the default workflow.
-- [ ] Domain modes do not hide guardrail, trust, or scoring responsibilities.
+- [x] Existing manifests are not invalidated by the new canonical model.
+- [x] The doc explicitly rejects PR/branch delivery as the default workflow.
+- [x] Domain modes do not hide guardrail, trust, or scoring responsibilities.
 
 ### Observability, docs, and regressions
 
-- [ ] Design-doc index includes the new decision.
-- [ ] Target-generation implications are recorded for a follow-up ticket when
+- [x] Design-doc index includes the new decision.
+- [x] Target-generation implications are recorded for a follow-up ticket when
       not implemented in this slice.
-- [ ] `go test ./internal/docsconsistency ./internal/scanner` passes.
+- [x] `go test ./internal/docsconsistency ./internal/scanner` passes.
+
+## Completion Evidence
+
+- `go test ./internal/docsconsistency ./internal/scanner`
+- `go test ./internal/bundle`
+- `go test ./...`

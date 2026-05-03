@@ -297,6 +297,8 @@ roles:
   # ── Strategy ─────────────────────────────────────────────
   ceo:
     prompt: roles/ceo.md
+    domain: planner
+    mode: strategy
     model: reasoning
     schedule: "0 20 * * 0"
     then: [cto-weekly]
@@ -305,6 +307,8 @@ roles:
 
   coo:
     prompt: roles/coo.md
+    domain: planner
+    mode: ticket-breakdown
     model: reasoning
     then: [engineer]
     knowledge: [knowledge/context-glossary.yaml]
@@ -313,6 +317,8 @@ roles:
   # ── Architecture ─────────────────────────────────────────
   cto-weekly:
     prompt: roles/cto.md
+    domain: planner
+    mode: architecture-planning
     model: reasoning
     schedule: "0 21 * * 0"
     then: [coo]
@@ -322,6 +328,8 @@ roles:
   # ── Delivery ─────────────────────────────────────────────
   engineer:
     prompt: roles/engineer.md
+    domain: engineer
+    mode: ticket-delivery
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
     then: [qa, engineer, dogfood]
@@ -332,6 +340,8 @@ roles:
   # ── Review ───────────────────────────────────────────────
   qa:
     prompt: roles/qa.md
+    domain: reviewer
+    mode: quality-review
     model: fast
     max_turns: 20
     then: [security]
@@ -340,6 +350,8 @@ roles:
 
   security:
     prompt: roles/security.md
+    domain: reviewer
+    mode: security-review
     model: reasoning
     max_turns: 20
     schedule: "0 22 * * 0"
@@ -349,6 +361,8 @@ roles:
 
   dependency-manager:
     prompt: roles/dependency-manager.md
+    domain: maintainer
+    mode: dependency-maintenance
     model: fast
     max_turns: 10
     schedule: "0 23 * * 0"
@@ -358,6 +372,8 @@ roles:
   # ── Release ──────────────────────────────────────────────
   release-manager:
     prompt: roles/release-manager.md
+    domain: maintainer
+    mode: release-management
     model: reasoning
     schedule: "0 8 * * 1"
     knowledge: [knowledge/context-glossary.yaml]
@@ -366,6 +382,8 @@ roles:
   # ── Testing ──────────────────────────────────────────────
   dogfood:
     prompt: roles/dogfood.md
+    domain: end-to-end-tester
+    mode: dogfood-validation
     model: coding
     schedule: "0 10 * * 1-5"
     max_turns: 40
@@ -375,6 +393,8 @@ roles:
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
     prompt: roles/pipeline-fixer.md
+    domain: engineer
+    mode: pipeline-repair
     model: coding
     triggers:
       - workflow_run.conclusion == "failure"
@@ -385,6 +405,8 @@ roles:
   # ── Backlog entropy management ─────────────────────────
   janitor:
     prompt: roles/janitor.md
+    domain: orchestrator
+    mode: ticket-hygiene
     model: fast
     schedule: "0 7 * * *"
     max_turns: 30
@@ -397,8 +419,10 @@ var defaultHarnessFiles = map[string]string{
 	"knowledge/context-glossary.yaml": `routes:
   - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
     paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md
-  - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, operating model, tools, tool availability, tool use cases, tool selection, tool allowlists, tenets, first-class definitions, or contextual definitions
-    paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/tools-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
+  - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, operating model, role domains, role modes, tools, tool availability, tool use cases, tool selection, tool allowlists, tenets, first-class definitions, or contextual definitions
+    paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/harness-operating-model.md, docs/design-docs/tools-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
+  - when: role routing, role model, domains, modes, schedules, chains, trigger routing, or manifest role behavior
+    paths: .harness/manifest.yaml, docs/design-docs/harness-operating-model.md, docs/design-docs/context-glossary.md
   - when: planning, ticket creation, in-progress work, blocked work, or completion status
     paths: docs/goals/README.md, docs/goals/active.md, docs/features/README.md, docs/exec-plans/README.md, docs/tickets/README.md
   - when: goals, BDD, feature contracts, planning, feedback, or quality evidence
@@ -529,6 +553,8 @@ would otherwise live only in chat.
 - **Deployed harness** — the harness consumed by this target application.
 - **Mirrored harness definitions** — harness definitions included in both the foundation harness and deployed harnesses.
 - **Operating model** — the documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops.
+- **Canonical operating domain** — one of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator.
+- **Role mode** — a lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `.
 - **Foundation operating model** — the operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
 - **Deployed operating model** — the operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
@@ -543,21 +569,23 @@ would otherwise live only in chat.
 
 Full glossary: ` + "`docs/design-docs/harness-glossary.md`" + `
 Tools glossary: ` + "`docs/design-docs/tools-glossary.md`" + `
+Role model: ` + "`docs/design-docs/harness-operating-model.md`" + `
 
 ## Start Here
 
 1. Read ` + "`README.md`" + ` for the product or project goal.
 2. Read ` + "`docs/design-docs/harness-glossary.md`" + ` for shared harness vocabulary and contextual routes.
 3. Read ` + "`docs/design-docs/tools-glossary.md`" + ` before choosing tools or changing role tool allowlists.
-4. Read ` + "`docs/design-docs/index.md`" + ` for architectural decisions.
-5. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
-6. Read ` + "`docs/goals/active.md`" + ` and ` + "`docs/goals/README.md`" + ` before changing strategy.
-7. Read ` + "`docs/features/README.md`" + ` and the relevant feature contract before claiming a feature is complete.
-8. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
-9. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
-10. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
-11. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
-12. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
+4. Read ` + "`docs/design-docs/harness-operating-model.md`" + ` before changing role domains, modes, triggers, or role behavior.
+5. Read ` + "`docs/design-docs/index.md`" + ` for architectural decisions.
+6. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
+7. Read ` + "`docs/goals/active.md`" + ` and ` + "`docs/goals/README.md`" + ` before changing strategy.
+8. Read ` + "`docs/features/README.md`" + ` and the relevant feature contract before claiming a feature is complete.
+9. Read ` + "`docs/tickets/README.md`" + ` before creating, claiming, moving, or completing tickets.
+10. Read ` + "`docs/exec-plans/README.md`" + ` before changing active or completed plans.
+11. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
+12. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
+13. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
 
 ## Workflow
 
@@ -807,6 +835,7 @@ Architectural decisions and design documents for this project.
 | Document | Status | Purpose |
 | --- | --- | --- |
 | [delivery-operating-model.md](delivery-operating-model.md) | Seed | BDD-led goal-driven walking-skeleton delivery model used by goals, plans, tickets, evidence, and quality scoring. |
+| [harness-operating-model.md](harness-operating-model.md) | Seed | Canonical six-domain role model with optional domain and mode metadata for explicit manifest roles. |
 | [context-glossary.md](context-glossary.md) | Seed | Compact glossary and context map used by agents to find the right docs without loading everything. |
 | [harness-glossary.md](harness-glossary.md) | Accepted | First-class and contextual harness definitions mirrored from the foundation harness. |
 | [tools-glossary.md](tools-glossary.md) | Accepted | First-class mirrored tool availability, selection, and use-case context. |
@@ -823,6 +852,72 @@ Architectural decisions and design documents for this project.
 | AD-076 | Harness glossary definitions are mirrored first-class context in foundation and deployed harnesses. | 2026-05-03 | Accepted |
 | AD-082 | Repeated, risky, validation-heavy, or likely-to-recur processes should become formalized tools. | 2026-05-03 | Accepted |
 | AD-083 | New built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires ` + "`record_decision`" + ` and design-doc rationale. | 2026-05-03 | Accepted |
+| AD-084 | Six canonical operating domains are the role-model vocabulary while explicit manifest roles remain executable units with optional domain and mode metadata. | 2026-05-03 | Accepted |
+`,
+
+	"docs/design-docs/harness-operating-model.md": `# AD-084: Canonical Harness Operating Domains
+
+**Status:** Seed
+**Date:** 2026-05-03
+
+## Context
+
+This deployed harness keeps explicit manifest roles because role keys own
+prompts, schedules, chains, tools, trust, scoring, and guardrails. The canonical
+role vocabulary is six operating domains with narrower modes.
+
+## Decision
+
+The canonical operating domains are:
+
+| Domain | Responsibility |
+| --- | --- |
+| Planner | Goals, scenarios, architecture direction, and ticket shape. |
+| Engineer | Bounded source, test, docs, or deterministic repair changes. |
+| Reviewer | Behavior, design, security, evidence, and completion review. |
+| Maintainer | Dependency, release, docs hygiene, scores, and upkeep. |
+| End-to-End Tester | Real build, run, user, or agent-path validation. |
+| Orchestrator | Queue health, stuck work, recovery, routing, and ticket hygiene. |
+
+Manifest roles may declare optional domain and mode fields. Domain identifies
+the canonical responsibility. Mode is a short purpose within that domain, such
+as ticket-delivery, quality-review, or pipeline-repair.
+
+Existing manifests without domain or mode remain valid. New generated defaults
+include the metadata so future registry, trace, score, and trigger tooling can
+reason about role purpose without renaming role keys or overwriting user-owned
+target manifests.
+
+## Default Mapping
+
+| Role | Domain | Mode |
+| --- | --- | --- |
+| ceo | Planner | strategy |
+| cto-weekly | Planner | architecture-planning |
+| coo | Planner | ticket-breakdown |
+| engineer | Engineer | ticket-delivery |
+| pipeline-fixer | Engineer | pipeline-repair |
+| qa | Reviewer | quality-review |
+| security | Reviewer | security-review |
+| dependency-manager | Maintainer | dependency-maintenance |
+| release-manager | Maintainer | release-management |
+| dogfood | End-to-End Tester | dogfood-validation |
+| janitor | Orchestrator | ticket-hygiene |
+
+## Rules
+
+- Explicit manifest role keys remain the executable units.
+- Modes classify why a role is running; they do not loosen tool, trust,
+  scoring, or guardrail policy.
+- Strict trunk remains the generated default: roles make semantic commits to
+  main and push directly.
+- Existing target manifests are user-owned. Upgrade fills missing defaults but
+  does not retune existing roles silently.
+
+## Follow-Up
+
+Future role-registry and payload-routing work should check and use this
+metadata. Missing metadata should be reported without invalidating old bundles.
 `,
 
 	"docs/design-docs/delivery-operating-model.md": `# AD-074: BDD-Led Goal-Driven Walking-Skeleton Delivery
@@ -1077,6 +1172,8 @@ loading every document.
 | Goal | Outcome and priority signal used by the CEO to align the active plan. | ` + "`docs/goals/README.md`" + `, ` + "`docs/goals/active.md`" + ` |
 | BDD feature contract | Markdown Given/When/Then contract that defines feature completeness. | ` + "`docs/features/README.md`" + ` |
 | Walking skeleton | The thinnest real end-to-end path that makes the next failing BDD scenario pass. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
+| Canonical role domain | One of Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
+| Role mode | A lower-kebab-case purpose inside a role domain, such as ticket-delivery or quality-review. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
 | Release | A semantic version plus patch-note entry generated from commits. | ` + "`docs/design-docs/release-versioning.md`" + ` |
 | Harness glossary | Mirrored foundation/deployed harness vocabulary and contextual routing rules. | ` + "`docs/design-docs/harness-glossary.md`" + ` |
@@ -1123,6 +1220,8 @@ harness and deployed harnesses.
 | Deployed harness | The harness consumed by this target application. |
 | Mirrored harness definitions | Harness definitions included in both the foundation harness and deployed harnesses. |
 | Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
+| Canonical operating domain | One of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. |
+| Role mode | A lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `. |
 | Foundation operating model | The operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
 | Deployed operating model | The operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
@@ -1156,6 +1255,12 @@ foundation and deployed harnesses.
 Generated deployed harness definitions are owned by this repository after init.
 Use ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/roles/`" + `, and the docs under
 ` + "`docs/design-docs/`" + ` to understand local policy before changing role behavior.
+
+### When changing role domains, modes, or trigger routing include this: ` + "`docs/design-docs/harness-operating-model.md`" + `
+
+Role domains and modes are canonical vocabulary, but explicit manifest role
+keys remain the executable units that own prompts, schedules, tools, trust,
+scoring, and guardrails.
 
 ### When choosing, creating, or changing tools include this: ` + "`docs/design-docs/tools-glossary.md`" + `
 

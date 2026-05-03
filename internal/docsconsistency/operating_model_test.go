@@ -11,6 +11,7 @@ func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 	root := repoRoot(t)
 	required := map[string][]string{
 		"docs/design-docs/delivery-operating-model.md":    {"AD-074", "BDD-Led Goal-Driven Walking-Skeleton"},
+		"docs/design-docs/harness-operating-model.md":     {"AD-084", "Planner", "End-to-End Tester", "`domain`", "`mode`"},
 		"docs/goals/README.md":                            {"Goal Schema", "Autonomous Goal Rule", "Dedupe Key"},
 		"docs/goals/active.md":                            {"G-001", "Status: active", "Hypothesis"},
 		"docs/goals/observations.md":                      {"weak/noisy evidence"},

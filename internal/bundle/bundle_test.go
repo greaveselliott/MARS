@@ -24,6 +24,8 @@ description: A test bundle
 roles:
   fixer:
     prompt: roles/fixer.md
+    domain: engineer
+    mode: pipeline-repair
     tools:
       - file_read
       - shell_exec
@@ -45,6 +47,8 @@ roles:
 
 	fixer := m.Roles["fixer"]
 	assert.Equal(t, "roles/fixer.md", fixer.Prompt)
+	assert.Equal(t, "engineer", fixer.Domain)
+	assert.Equal(t, "pipeline-repair", fixer.Mode)
 	assert.Equal(t, []string{"file_read", "shell_exec"}, fixer.Tools)
 	assert.Equal(t, []string{`workflow_run.conclusion == "failure"`}, fixer.Triggers)
 

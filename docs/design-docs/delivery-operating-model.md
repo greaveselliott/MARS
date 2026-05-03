@@ -99,6 +99,10 @@ feature evidence, but cannot claim shipped feature value.
 
 ## Role Responsibilities
 
+Role responsibilities use explicit starter role names here because those roles
+remain the executable manifest units. Their canonical domain and mode mapping
+lives in [harness-operating-model.md](harness-operating-model.md).
+
 The CEO owns goals, BDD feature contracts, scenario schedule, tradeoffs, and the
 single active exec plan.
 

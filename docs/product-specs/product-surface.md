@@ -54,7 +54,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 Required generated surfaces:
 
 - `AGENTS.md` as the compact first-read map
-- `.harness/manifest.yaml` for roles, model tiers, tools, triggers, chains, guardrails, and knowledge routes
+- `.harness/manifest.yaml` for explicit roles, canonical domain/mode metadata, model tiers, tools, triggers, chains, guardrails, and knowledge routes
 - `.harness/metadata.yaml` for generated-harness version drift checks
 - `.harness/roles/*.md` for role prompts
 - `.harness/skills/*/SKILL.md` for compact reusable workflows and self-improvement guidance
@@ -116,6 +116,8 @@ Default roles are configurable starter agents, not perfect built-ins. The target
 
 The product contract is:
 
+- Six canonical operating domains describe role memory and routing vocabulary: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, and Orchestrator.
+- Explicit manifest role keys remain the executable units; optional `domain` and `mode` metadata classify why the role runs without changing trust, scoring, tool, or guardrail policy.
 - Planner roles create scoped, deduplicated work.
 - CEO owns goals, BDD feature contracts, scenario schedule, tradeoffs, and the active exec plan.
 - CTO validates the hypothesis, architecture fit, and whether the walking skeleton is real.

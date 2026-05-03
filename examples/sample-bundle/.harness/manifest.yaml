@@ -1,116 +1,99 @@
 name: mars
-description: Full Mars pipeline — 12 roles, 14 trigger entries
+description: Full Mars Harness sample pipeline - strict trunk, 11 explicit roles with canonical domains and modes
 
 roles:
-  # ── Strategy (weekly) ─────────────────────────────────────
   ceo:
     prompt: roles/ceo-vision.md
+    domain: planner
+    mode: strategy
     model: reasoning
     schedule: "0 20 * * 0"
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
-
-  # ── Ticket creation (chain from CEO vision PR merge) ──────
-  coo:
-    prompt: roles/coo-tickets.md
-    model: reasoning
-    triggers:
-      - pull_request.merged
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
-
-  # ── Architecture (dual mode) ──────────────────────────────
-  cto-pr-merge:
-    prompt: roles/cto-harness.md
-    model: coding
-    triggers:
-      - pull_request.merged
+    then: [cto-weekly]
     tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   cto-weekly:
     prompt: roles/cto-harness.md
+    domain: planner
+    mode: architecture-planning
     model: reasoning
     schedule: "0 21 * * 0"
+    then: [coo]
     tools: [file_read, file_write, shell_exec, grep, record_decision]
 
-  # ── Delivery (continuous) ────────────────────────────────
+  coo:
+    prompt: roles/coo-tickets.md
+    domain: planner
+    mode: ticket-breakdown
+    model: reasoning
+    then: [engineer]
+    tools: [file_read, file_write, shell_exec, grep, record_decision]
+
   engineer:
     prompt: roles/engineer-delivery.md
+    domain: engineer
+    mode: ticket-delivery
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
     then: [qa, engineer, dogfood]
     idle_then: [ceo, janitor]
     tools: [file_read, file_write, shell_exec, grep, record_decision]
 
-  # ── Review (event-driven) ────────────────────────────────
   qa:
     prompt: roles/qa-health.md
+    domain: reviewer
+    mode: quality-review
     model: fast
-    triggers:
-      - pull_request.opened
-      - pull_request.synchronize
+    then: [security]
     tools: [file_read, grep, record_decision]
 
-  security-pr:
+  security:
     prompt: roles/security-officer.md
-    model: reasoning
-    triggers:
-      - pull_request.opened
-    tools: [file_read, grep, record_decision]
-
-  security-weekly:
-    prompt: roles/security-officer.md
+    domain: reviewer
+    mode: security-review
     model: reasoning
     schedule: "0 22 * * 0"
+    then: [dependency-manager]
     tools: [file_read, file_write, shell_exec, grep, record_decision]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
+    domain: maintainer
+    mode: dependency-maintenance
     model: fast
-    triggers:
-      - pull_request.opened
-    tools: [file_read, grep, record_decision]
-
-  # ── Release (dual mode) ──────────────────────────────────
-  release-pr:
-    prompt: roles/release-manager.md
-    model: coding
-    triggers:
-      - pull_request.merged
+    schedule: "0 23 * * 0"
     tools: [file_read, file_write, shell_exec, grep, record_decision]
 
-  release-weekly:
+  release-manager:
     prompt: roles/release-manager.md
+    domain: maintainer
+    mode: release-management
     model: reasoning
     schedule: "0 8 * * 1"
     tools: [file_read, file_write, shell_exec, grep, record_decision]
 
-  # ── Testing (daily) ──────────────────────────────────────
   dogfood:
     prompt: roles/dogfood-tester.md
+    domain: end-to-end-tester
+    mode: dogfood-validation
     model: coding
     schedule: "0 10 * * 1-5"
     max_turns: 40
     tools: [file_read, file_write, shell_exec, grep, record_decision]
 
-  # ── CI repair (event-driven + chain) ─────────────────────
   pipeline-fixer:
     prompt: roles/pipeline-fixer.md
+    domain: engineer
+    mode: pipeline-repair
     model: coding
     triggers:
       - workflow_run.conclusion == "failure"
     then: [qa]
     tools: [file_read, file_write, shell_exec, grep, record_decision]
 
-  # ── PR comment resolution (event-driven) ─────────────────
-  pr-comment-fixer:
-    prompt: roles/pr-comment-fixer.md
-    model: fast
-    triggers:
-      - pull_request_review_comment.created
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
-
-  # ── Backlog entropy management ─────────────────────────
   janitor:
     prompt: roles/janitor.md
+    domain: orchestrator
+    mode: ticket-hygiene
     model: fast
     schedule: "0 7 * * *"
     max_turns: 30

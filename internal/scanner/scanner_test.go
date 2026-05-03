@@ -267,6 +267,7 @@ func TestInit_success(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, "docs", "exec-plans", "active", "current-operating-plan.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "index.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "delivery-operating-model.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "harness-operating-model.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "context-glossary.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "design-docs", "skill-evolution.md"))
@@ -316,6 +317,8 @@ func TestInit_success(t *testing.T) {
 	}
 
 	assert.Contains(t, manifestStr, "record_decision", "manifest should include record_decision in tool lists")
+	assert.Contains(t, manifestStr, "domain: planner", "manifest should include canonical domain metadata")
+	assert.Contains(t, manifestStr, "mode: ticket-delivery", "manifest should include role mode metadata")
 	assert.Contains(t, manifestStr, "mars_harness_cli", "manifest should expose mars_harness_cli as a mirrored tool")
 	assert.Contains(t, manifestStr, "tool_create", "manifest should expose tool_create as a mirrored tool")
 	assert.Contains(t, manifestStr, "record_decision, tool_create, task_trace_summarize, git_status", "implementation roles should allow tool_create before git tools")
@@ -335,6 +338,7 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(glossary), "docs/design-docs/context-glossary.md")
 	assert.Contains(t, string(glossary), "docs/design-docs/harness-glossary.md")
+	assert.Contains(t, string(glossary), "docs/design-docs/harness-operating-model.md")
 	assert.Contains(t, string(glossary), "docs/design-docs/tools-glossary.md")
 	assert.Contains(t, string(glossary), "tool availability")
 	assert.Contains(t, string(glossary), "docs/design-docs/release-versioning.md")
@@ -358,6 +362,7 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(agentGuide), "docs/QUALITY_SCORE.md")
 	assert.Contains(t, string(agentGuide), "Harness Glossary")
+	assert.Contains(t, string(agentGuide), "docs/design-docs/harness-operating-model.md")
 	assert.Contains(t, string(agentGuide), "Foundation harness")
 	assert.Contains(t, string(agentGuide), "Deployed harness")
 	assert.Contains(t, string(agentGuide), "Foundation operating model")

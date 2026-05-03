@@ -29,6 +29,8 @@ harness and deployed harnesses.
 | Deployed harness | The harness consumed by the target application being built by `mars-harness`. |
 | Mirrored harness definitions | Harness definitions included in both the foundation harness and deployed harnesses. |
 | Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
+| Canonical operating domain | One of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. |
+| Role mode | A lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as `ticket-delivery`, `quality-review`, or `pipeline-repair`. |
 | Foundation operating model | The operating model for `mars-harness` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
 | Deployed operating model | The operating model inside a target application harness, governing how agents build that target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
@@ -62,6 +64,12 @@ foundation and deployed harnesses.
 Generated deployed harness definitions live in scanner defaults. Mirrored
 changes must update source guidance, generated target guidance, and tests in
 the same task.
+
+### When changing role domains, modes, or trigger routing include this: `docs/design-docs/harness-operating-model.md`
+
+Role domains and modes are canonical vocabulary, but explicit manifest role
+keys remain the executable units that own prompts, schedules, tools, trust,
+scoring, and guardrails.
 
 ### When choosing, creating, or changing tools include this: `docs/design-docs/tools-glossary.md`
 

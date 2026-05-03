@@ -24,6 +24,8 @@ would otherwise live only in chat.
 - **Deployed harness** — the harness consumed by the target application being built by `mars-harness`.
 - **Mirrored harness definitions** — harness definitions included in both the foundation harness and deployed harnesses.
 - **Operating model** — the documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops.
+- **Canonical operating domain** — one of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator.
+- **Role mode** — a lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as `ticket-delivery`, `quality-review`, or `pipeline-repair`.
 - **Foundation operating model** — the operating model for `mars-harness` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
 - **Deployed operating model** — the operating model inside a target application harness, governing how agents build that target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
@@ -39,6 +41,7 @@ would otherwise live only in chat.
 
 Full glossary: [docs/design-docs/harness-glossary.md](docs/design-docs/harness-glossary.md)
 Tools glossary: [docs/design-docs/tools-glossary.md](docs/design-docs/tools-glossary.md)
+Role model: [docs/design-docs/harness-operating-model.md](docs/design-docs/harness-operating-model.md)
 
 Agents always operate on a target project. The harness is never the target of its own agents (no self-modification during runs).
 

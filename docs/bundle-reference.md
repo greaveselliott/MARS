@@ -37,6 +37,8 @@ description: Mars Harness bundle for my-project
 roles:
   pipeline-fixer:
     prompt: roles/pipeline-fixer.md
+    domain: engineer
+    mode: pipeline-repair
     model: ""
     tools:
       - file_read
@@ -64,6 +66,8 @@ roles:
 | Field | Required | Description |
 |-------|----------|-------------|
 | `prompt` | Yes | Path to the role's markdown prompt file, relative to `.harness/`. |
+| `domain` | No | Canonical operating domain: `planner`, `engineer`, `reviewer`, `maintainer`, `end-to-end-tester`, or `orchestrator`. Existing manifests without this field remain valid. |
+| `mode` | No | Lower-kebab-case purpose inside the domain, such as `ticket-delivery`, `quality-review`, or `pipeline-repair`. |
 | `model` | No | Model hint (e.g. `gemma-4-27b`). Empty string uses the default. |
 | `tools` | No | List of tools the role is allowed to use. |
 | `guardrails` | No | List of guardrail files to load for this role. |

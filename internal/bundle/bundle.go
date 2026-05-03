@@ -24,6 +24,8 @@ type Manifest struct {
 // RoleConfig defines a single role's configuration within a bundle.
 type RoleConfig struct {
 	Prompt      string   `yaml:"prompt"`
+	Domain      string   `yaml:"domain"`
+	Mode        string   `yaml:"mode"`
 	Model       string   `yaml:"model"`
 	Tools       []string `yaml:"tools"`
 	Guardrails  []string `yaml:"guardrails"`
