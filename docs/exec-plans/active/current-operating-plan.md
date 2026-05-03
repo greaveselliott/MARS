@@ -21,7 +21,7 @@
 ## Purpose
 
 This is the current execution map for Mars Harness. It exists because the
-original master plan and delivery schedule are now historical baseline
+original master plan and delivery schedule are historical baseline
 documents: useful for lineage, but stale as a status source.
 
 Future agents should use this file, the ticket tree, and prioritized backlog
@@ -35,8 +35,8 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001` and the current install/setup feature is `F-002`.
 - Ticket state:
   - `docs/tickets/in-progress/` has no active tickets.
-  - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-034`, `MH-035`, and `MH-037`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, `MH-036`, `MH-038`, `MH-039`, `MH-040`, and `MH-041`.
+  - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-035`, and `MH-037`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, `MH-034`, `MH-036`, `MH-038`, `MH-039`, `MH-040`, and `MH-041`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -58,19 +58,16 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Plan hygiene and stale-plan prevention**: reconcile superseded plans and add
-   mechanical active-plan checks so future agents cannot mistake stale plans for
-   current truth.
-2. **Mars parity ticket materialization**: turn the first ten work items in the
+1. **Mars parity ticket materialization**: turn the first ten work items in the
    Mars parity supersession plan into normal backlog tickets.
-3. **Quality score export (`MH-037`)**: replace the seeded scorecard with a
+2. **Quality score export (`MH-037`)**: replace the seeded scorecard with a
    deterministic export from live scores, telemetry, tickets, checks, and
    dogfood evidence.
-4. **Release asset contract (`MH-031`)**: publish checksum-verified binaries so
+3. **Release asset contract (`MH-031`)**: publish checksum-verified binaries so
    install and `update tool` no longer require Go or a source checkout.
-5. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
+4. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
    support, explicit role/tier swaps, persistent reports, and promotion checks.
-6. **Mars parity execution**: work through operating model, role registry,
+5. **Mars parity execution**: work through operating model, role registry,
    conversation-as-system-record, intervention debt, active-ticket drain,
    quality exports, orchestrator recovery, deterministic remediation, and
    dogfood matrix workstreams.
@@ -93,7 +90,7 @@ plans to decide what to do next.
 
 ## Quality State
 
-Latest checks observed during the review:
+Checks recorded during the 2026-05-02 review:
 
 - `go test ./...` passes.
 - `go test -cover ./...` passes after making update-check fixtures
@@ -101,7 +98,7 @@ Latest checks observed during the review:
 - Coverage remains below the stated 70 percent target in several packages,
   including `internal/inference`, `internal/setup`, `internal/ui`,
   `internal/serve`, `internal/hardware`, and command entrypoint code.
-- `golangci-lint` was not installed in the local environment during the latest
+- `golangci-lint` was not installed in the local environment during the 2026-05-02
   review, so local lint status is unknown.
 
 ## Operating Rules
@@ -119,6 +116,5 @@ Latest checks observed during the review:
 
 ## Next Ticket Work
 
-- `MH-034`: broader active-plan hygiene checks in doctor beyond docs-consistency.
 - `MH-035`: materialize Mars parity workstreams as backlog tickets.
-- Next active-plan refresh: promote the highest-value backlog scenario group now that F-001 is passing.
+- Next active-plan refresh: promote the highest-value backlog scenario group after F-001 passing evidence.

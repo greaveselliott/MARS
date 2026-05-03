@@ -28,6 +28,12 @@ plan hygiene checks. The long-term response is deterministic checking through
 docs consistency, doctor, and CI so stale "active" plans cannot silently become
 the next agent's source of truth.
 
+As of 2026-05-03, the deterministic hygiene check validates the single active
+plan lifecycle, backlog-plan priority, superseded-plan current pointers,
+active-plan ticket-state claims, unresolved placeholders, relative status
+language, and stale verification notes. `doctor --repo` surfaces the same
+report as an operator warning with the first remediation action.
+
 ### AD-073: One Active Exec Plan At A Time
 
 Exec plans now follow a ticket-like lifecycle: backlog, active, completed, or
@@ -71,3 +77,4 @@ Store the **parent job id** in each evolution commit message and trace record fo
 - **2026-05-02 — Active plan drift:** The master execution plan and delivery schedule were kept as active even after the ticket tree moved far ahead of them. Stale active plans now count as intervention debt and should be corrected through a current operating plan plus mechanical hygiene checks.
 - **2026-05-02 — Single active plan:** The active exec-plan directory was reduced to one current operating plan. Mars parity and model evaluation plans moved to the plan backlog with priorities, while historical baseline plans moved to superseded lineage.
 - **2026-05-02 — Plan dependency metadata:** Active and backlog exec plans now require dependency, blocker, and related-ticket metadata so future orchestration can choose the next plan by priority and sequencing, not priority alone.
+- **2026-05-03 — Active-plan hygiene checker:** `internal/planhygiene` now powers docs-consistency and `doctor --repo` warnings for lifecycle drift, stale active-plan ticket claims, unresolved placeholders, relative status language, old verification notes, and superseded plans without current-plan pointers.

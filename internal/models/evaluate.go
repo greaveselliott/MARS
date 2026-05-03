@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -55,10 +56,11 @@ type BenchmarkCase struct {
 
 // Config controls an evaluation run against an OpenAI-compatible endpoint.
 type Config struct {
-	Endpoint string
-	Model    string
-	APIKey   string
-	Timeout  time.Duration
+	Endpoint   string
+	Model      string
+	APIKey     string
+	HTTPClient *http.Client
+	Timeout    time.Duration
 }
 
 // Report summarizes a model evaluation run.
@@ -192,10 +194,11 @@ func Evaluate(ctx context.Context, cfg Config) (Report, error) {
 	}
 
 	client, err := llm.NewClient(llm.Config{
-		BaseURL: cfg.Endpoint,
-		APIKey:  cfg.APIKey,
-		Model:   cfg.Model,
-		Timeout: timeout,
+		BaseURL:    cfg.Endpoint,
+		APIKey:     cfg.APIKey,
+		Model:      cfg.Model,
+		HTTPClient: cfg.HTTPClient,
+		Timeout:    timeout,
 	})
 	if err != nil {
 		return Report{}, err

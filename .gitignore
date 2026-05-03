@@ -38,4 +38,4 @@ build/
 config.local.yaml
 
 # Model weights (too large for git)
-models/
+/models/

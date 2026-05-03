@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -41,18 +40,17 @@ func TestEvaluate_requiresEndpointAndModel(t *testing.T) {
 
 func TestEvaluate_runsMechanicalCases(t *testing.T) {
 	var calls int
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	httpClient := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		if r.URL.Path != "/v1/chat/completions" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		calls++
 		var req llm.ChatCompletionRequest
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
-		w.Header().Set("Content-Type", "application/json")
 
 		if calls == 1 {
 			require.NotEmpty(t, req.Tools)
-			_ = json.NewEncoder(w).Encode(llm.ChatCompletionResponse{
+			return jsonResponse(llm.ChatCompletionResponse{
 				Model: req.Model,
 				Choices: []llm.Choice{{
 					Message: llm.Message{
@@ -67,24 +65,23 @@ func TestEvaluate_runsMechanicalCases(t *testing.T) {
 					},
 				}},
 				Usage: llm.Usage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15},
-			})
-			return
+			}), nil
 		}
 
-		_ = json.NewEncoder(w).Encode(llm.ChatCompletionResponse{
+		return jsonResponse(llm.ChatCompletionResponse{
 			Model: req.Model,
 			Choices: []llm.Choice{{
 				Message: llm.Message{Content: `{"category":"timeout","risk":"stalled work","next_action":"repair queue recovery"}`},
 			}},
 			Usage: llm.Usage{PromptTokens: 20, CompletionTokens: 8, TotalTokens: 28},
-		})
-	}))
-	defer srv.Close()
+		}), nil
+	})}
 
 	report, err := Evaluate(context.Background(), Config{
-		Endpoint: srv.URL,
-		Model:    "candidate",
-		Timeout:  time.Second,
+		Endpoint:   "http://models.test",
+		Model:      "candidate",
+		HTTPClient: httpClient,
+		Timeout:    time.Second,
 	})
 	require.NoError(t, err)
 

@@ -5,7 +5,55 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/greaveselliott/mars-harness/internal/planhygiene"
 )
+
+func TestActivePlanHygiene(t *testing.T) {
+	root := repoRoot(t)
+	report, err := planhygiene.CheckRepo(root)
+	if err != nil {
+		t.Fatalf("active-plan hygiene check: %v", err)
+	}
+	if !report.OK() {
+		var details []string
+		for _, issue := range report.Issues {
+			details = append(details, issue.Path+": "+issue.Message+"; fix: "+issue.Fix)
+		}
+		t.Fatalf("active-plan hygiene failed:\n%s", strings.Join(details, "\n"))
+	}
+}
+
+func TestActivePlanHygieneDetectsStaleFixture(t *testing.T) {
+	root := t.TempDir()
+	writePlanHygieneFile(t, root, "docs/exec-plans/active/current-operating-plan.md", strings.Join([]string{
+		"# Current Operating Plan",
+		"",
+		"**Status:** Active",
+		"**Priority:** P0",
+		"",
+		"## Current Truth",
+		"",
+		"- `docs/tickets/backlog/` contains MH-001.",
+		"- Latest checks observed during review.",
+		"- Verification evidence was recorded on 2026-01-01.",
+		"- Owner: TBD",
+	}, "\n"))
+	writePlanHygieneFile(t, root, "docs/tickets/done/MH-001-done.md", "# done\n")
+
+	report, err := planhygiene.Check(planhygiene.Config{
+		RepoPath: root,
+		Now:      time.Date(2026, 5, 3, 0, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatalf("active-plan hygiene check: %v", err)
+	}
+	assertPlanHygieneIssue(t, report, "active plan lists MH-001 as backlog but ticket is done")
+	assertPlanHygieneIssue(t, report, "active plan uses relative status language without an absolute date")
+	assertPlanHygieneIssue(t, report, "active plan verification note from 2026-01-01 is stale")
+	assertPlanHygieneIssue(t, report, "active plan contains unresolved TBD placeholder")
+}
 
 func TestSingleActiveExecPlan(t *testing.T) {
 	root := repoRoot(t)
@@ -121,4 +169,28 @@ func requirePlanOperatingModelMetadata(t *testing.T, rel, text string) {
 			t.Fatalf("%s must declare %s operating-model metadata", rel, label)
 		}
 	}
+}
+
+func writePlanHygieneFile(t *testing.T, root, rel, content string) {
+	t.Helper()
+	path := filepath.Join(root, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", path, err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
+func assertPlanHygieneIssue(t *testing.T, report planhygiene.Report, want string) {
+	t.Helper()
+	for _, issue := range report.Issues {
+		if strings.Contains(issue.Message, want) {
+			if strings.TrimSpace(issue.Fix) == "" {
+				t.Fatalf("issue %q has no remediation", want)
+			}
+			return
+		}
+	}
+	t.Fatalf("expected active-plan hygiene issue containing %q, got %+v", want, report.Issues)
 }

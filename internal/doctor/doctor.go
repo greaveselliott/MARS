@@ -16,6 +16,7 @@ import (
 
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/operatingmodel"
+	"github.com/greaveselliott/mars-harness/internal/planhygiene"
 	"github.com/greaveselliott/mars-harness/internal/updatecheck"
 )
 
@@ -61,11 +62,15 @@ func Run(cfg Config) []CheckResult {
 		checkDiskSpace,
 		checkVersionDrift,
 		checkOperatingModelHealth,
+		checkActivePlanHygiene,
 	}
 
 	results := make([]CheckResult, 0, len(checks))
 	for _, check := range checks {
 		result := check(cfg)
+		if result.Duration == 0 {
+			result.Duration = time.Nanosecond
+		}
 		slog.Info("doctor check",
 			"name", result.Name,
 			"status", result.Status,
@@ -75,6 +80,52 @@ func Run(cfg Config) []CheckResult {
 		results = append(results, result)
 	}
 	return results
+}
+
+func checkActivePlanHygiene(cfg Config) CheckResult {
+	start := time.Now()
+	name := "active-plan-hygiene"
+	if strings.TrimSpace(cfg.RepoPath) == "" {
+		return CheckResult{
+			Name:     name,
+			Status:   statusOK,
+			Message:  "repo not supplied; active-plan hygiene skipped",
+			Duration: nonZeroDurationSince(start),
+		}
+	}
+	report, err := planhygiene.CheckRepo(cfg.RepoPath)
+	if err != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  err.Error(),
+			Duration: nonZeroDurationSince(start),
+			Fix:      "run 'mars-harness doctor --repo <path>' with a valid git checkout containing docs/exec-plans/",
+		}
+	}
+	if !report.OK() {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  report.Summary(),
+			Duration: nonZeroDurationSince(start),
+			Fix:      report.Remediation(),
+		}
+	}
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  "active-plan hygiene is clean",
+		Duration: nonZeroDurationSince(start),
+	}
+}
+
+func nonZeroDurationSince(start time.Time) time.Duration {
+	elapsed := time.Since(start)
+	if elapsed == 0 {
+		return time.Nanosecond
+	}
+	return elapsed
 }
 
 func checkOperatingModelHealth(cfg Config) CheckResult {

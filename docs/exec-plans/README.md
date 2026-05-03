@@ -48,6 +48,23 @@ Active and backlog plans require:
 - Feature tickets are created only from the current failing scenario or scenario group.
 - A feature is not shipped until in-scope BDD scenarios pass or are explicitly descoped by the CEO.
 
+## Plan Hygiene
+
+Run `go test ./internal/docsconsistency/...` or `mars-harness doctor --repo .`
+after changing plan state. The active-plan hygiene check reports actionable
+warnings when plan lifecycle state drifts from the ticket tree.
+
+- Supersede a plan by moving it to `superseded/`, setting
+  `**Status:** Superseded`, and adding a visible pointer to
+  `docs/exec-plans/active/current-operating-plan.md`.
+- Complete a plan by moving it to `completed/` with `**Status:** Completed`;
+  completed historical plans are not active-plan failures.
+- Reconcile a stale active plan by updating ticket-state claims after moving
+  tickets between `backlog/`, `in-progress/`, and `done/`.
+- Replace `TBD`, relative status language such as `latest` or `currently`, and
+  stale verification notes with absolute dates, concrete blockers, or durable
+  source-of-truth pointers.
+
 ## Standing trackers
 
 | File | Purpose |

@@ -696,6 +696,19 @@ Each plan has:
 - **Purpose** (what the plan achieves)
 - **Tasks** with checkboxes and ticket references
 - **Dependencies** between tasks
+
+## Plan Hygiene
+
+Run ` + "`go test ./internal/docsconsistency/...`" + ` or
+` + "`mars-harness doctor --repo .`" + ` after changing plan state. Supersede a
+plan by moving it to ` + "`superseded/`" + `, setting ` + "`**Status:** Superseded`" + `,
+and adding a pointer to
+` + "`docs/exec-plans/active/current-operating-plan.md`" + `. Complete a plan by
+moving it to ` + "`completed/`" + ` with ` + "`**Status:** Completed`" + `. Reconcile a stale
+active plan by updating ticket-state claims after moving tickets between
+` + "`backlog/`" + `, ` + "`in-progress/`" + `, and ` + "`done/`" + `. Replace ` + "`TBD`" + `, relative
+status language such as ` + "`latest`" + ` or ` + "`currently`" + `, and stale verification notes
+with absolute dates, concrete blockers, or durable source-of-truth pointers.
 `,
 
 	"docs/exec-plans/active/current-operating-plan.md": `# Current Operating Plan

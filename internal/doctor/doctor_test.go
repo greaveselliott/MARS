@@ -33,6 +33,7 @@ func TestRun_returnsResults(t *testing.T) {
 	assert.True(t, names["disk-space"])
 	assert.True(t, names["version-drift"])
 	assert.True(t, names["operating-model"])
+	assert.True(t, names["active-plan-hygiene"])
 }
 
 func TestCheckGoVersion_findsGo(t *testing.T) {
@@ -133,6 +134,28 @@ func TestCheckOperatingModelHealth_reportsDrift(t *testing.T) {
 	assert.Contains(t, result.Fix, "update harness")
 }
 
+func TestCheckActivePlanHygieneReportsIssue(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeDoctorFile(t, dir, "docs/exec-plans/active/current-operating-plan.md", "# Current Operating Plan\n\n**Status:** Active\n**Priority:** P0\n\n- `docs/tickets/backlog/` contains MH-001.\n")
+	writeDoctorFile(t, dir, "docs/exec-plans/active/second-plan.md", "# Second Plan\n\n**Status:** Active\n**Priority:** P1\n")
+	writeDoctorFile(t, dir, "docs/tickets/done/MH-001-done.md", "# done\n")
+
+	result := checkActivePlanHygiene(Config{RepoPath: dir})
+	assert.Equal(t, "active-plan-hygiene", result.Name)
+	assert.Equal(t, statusWarn, result.Status)
+	assert.Contains(t, result.Message, "active-plan hygiene")
+	assert.NotEmpty(t, result.Fix)
+}
+
+func TestCheckActivePlanHygieneSkipsWithoutRepo(t *testing.T) {
+	t.Parallel()
+	result := checkActivePlanHygiene(Config{})
+	assert.Equal(t, "active-plan-hygiene", result.Name)
+	assert.Equal(t, statusOK, result.Status)
+	assert.Contains(t, result.Message, "skipped")
+}
+
 func TestFormatText(t *testing.T) {
 	t.Parallel()
 	results := []CheckResult{
@@ -174,4 +197,11 @@ func TestStatusIcon(t *testing.T) {
 	assert.Equal(t, "!!", statusIcon(statusWarn))
 	assert.Equal(t, "FAIL", statusIcon(statusFail))
 	assert.Equal(t, "??", statusIcon("unknown"))
+}
+
+func writeDoctorFile(t *testing.T, root, rel, content string) {
+	t.Helper()
+	path := filepath.Join(root, filepath.FromSlash(rel))
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 }
