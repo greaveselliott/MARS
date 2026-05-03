@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.10.0] - 2026-05-03
+<!-- mars-harness-release: version=0.10.0 commit=0f4d9ec86ceb -->
+
+### Features
+- **planhygiene:** Add active plan hygiene checker (MH-034) (0f4d9ec)
+
+### Delivery Evidence
+- Enabler work: MH-034: Implement active-plan hygiene checker
+
 ## [0.9.0] - 2026-05-02
 <!-- mars-harness-release: version=0.9.0 commit=c3a87e2179e3 -->
 
