@@ -63,6 +63,60 @@ func TestStrictTrunkWorkflowDocs(t *testing.T) {
 	}
 }
 
+func TestReadmePointsAtCurrentOperatingPlan(t *testing.T) {
+	root := repoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "README.md"))
+	if err != nil {
+		t.Fatalf("read README.md: %v", err)
+	}
+	text := string(data)
+	if !strings.Contains(text, "docs/exec-plans/active/current-operating-plan.md") {
+		t.Fatalf("README.md must link to the current operating plan")
+	}
+	if strings.Contains(text, "docs/exec-plans/active/delivery-schedule.md") {
+		t.Fatalf("README.md must not link to the removed active delivery schedule")
+	}
+}
+
+func TestDogfoodMatrixNamesRequiredEvidence(t *testing.T) {
+	root := repoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "docs", "design-docs", "dogfood-matrix.md"))
+	if err != nil {
+		t.Fatalf("read dogfood matrix: %v", err)
+	}
+	text := string(data)
+	for _, needle := range []string{
+		"mars-harness start --repo <temp repo>",
+		"fake-LLM dogfood path",
+		"`../mars` is the supersession target",
+		"Optional GitHub paths are skipped honestly",
+		"docs/validation/profiles/mars-observer.md",
+	} {
+		if !strings.Contains(text, needle) {
+			t.Fatalf("dogfood matrix missing %q", needle)
+		}
+	}
+}
+
+func TestMarsObserverProfileStaysReadOnly(t *testing.T) {
+	root := repoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "docs", "validation", "profiles", "mars-observer.md"))
+	if err != nil {
+		t.Fatalf("read Mars observer profile: %v", err)
+	}
+	text := string(data)
+	for _, needle := range []string{
+		"`../mars`",
+		"Trust level stays `observer`",
+		"must not call `file_write`",
+		"No target harness files are overwritten",
+	} {
+		if !strings.Contains(text, needle) {
+			t.Fatalf("Mars observer profile missing %q", needle)
+		}
+	}
+}
+
 func repoRoot(t *testing.T) string {
 	t.Helper()
 	_, file, _, ok := runtime.Caller(0)

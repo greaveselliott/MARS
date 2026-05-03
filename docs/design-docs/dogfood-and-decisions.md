@@ -436,3 +436,45 @@ trust therefore blocks it.
   mirrored tool language as the foundation harness.
 - CLI changes should update the tool reference and tests so the LLM-facing
   command surface remains current.
+
+---
+
+### AD-085: Universal Tools Are Exposed Through MCP
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Author:** User direction and Agent (tool-system self-improvement)
+
+### Context
+
+Mirrored tools are not useful enough if external agents or local harness agents
+can only reach them through an ad hoc shell convention. MCP-compatible clients
+already have a standard tool mechanism: MCP stdio servers. Mars Harness needs
+the same built-in registry to be available through that native path for both the
+foundation harness and deployed target harnesses, without assuming any specific
+model provider. Deployed harnesses use local models by default.
+
+### Decision
+
+Expose the Mars Harness built-in registry through `mars-harness mcp serve`.
+The server implements newline-delimited JSON-RPC stdio, supports `initialize`,
+`ping`, `tools/list`, and `tools/call`, and delegates execution to the same
+tool executor, repo root, trust policy, allowlist, and JSON argument path used
+by agent runs.
+
+The default MCP trust level is `observer`, so mutating tools are visible but
+blocked until an operator deliberately starts the server with
+`--trust contributor` or another explicit trust level.
+
+### Consequences
+
+- MCP-compatible hosts and local harness agents can attach to Mars Harness tools
+  as native tools.
+- The CLI remains useful for operator smoke tests through `tools list` and
+  `tools run`, but MCP is the preferred integration surface for external LLM
+  clients.
+- The universal tool surface remains model-provider agnostic: tool transport and
+  policy must not depend on frontier cloud model access.
+- Tool additions must keep the registry, role allowlists, MCP exposure,
+  `mars_harness_cli` reference, tools glossary, generated target defaults, and
+  tests aligned.

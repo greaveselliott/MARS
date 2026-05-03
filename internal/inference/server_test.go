@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/stretchr/testify/require"
@@ -79,6 +80,37 @@ func TestServer_stateTransitions(t *testing.T) {
 
 	s := NewServer(ServerConfig{Port: 8080})
 	require.Equal(t, StateStopped, s.State())
+}
+
+func TestServer_startCanceledContext(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	s := NewServer(ServerConfig{BinaryPath: "/missing/llama-server", Port: 8080})
+	err := s.Start(ctx)
+	require.ErrorIs(t, err, context.Canceled)
+	require.Equal(t, StateStopped, s.State())
+}
+
+func TestServer_startMissingBinaryMarksFailed(t *testing.T) {
+	t.Parallel()
+
+	s := NewServer(ServerConfig{BinaryPath: filepath.Join(t.TempDir(), "missing-llama-server"), Port: 8080})
+	err := s.Start(context.Background())
+	require.Error(t, err)
+	require.Equal(t, StateFailed, s.State())
+}
+
+func TestServer_restartBackoffAndContextLength(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, time.Second, restartBackoff(1))
+	require.Equal(t, 2*time.Second, restartBackoff(2))
+	require.Equal(t, 30*time.Second, restartBackoff(10))
+	require.Equal(t, 4096, effectiveContextLength(0))
+	require.Equal(t, 4096, effectiveContextLength(-1))
+	require.Equal(t, 8192, effectiveContextLength(8192))
 }
 
 func TestServer_healthCheck(t *testing.T) {

@@ -223,6 +223,10 @@ func marsHarnessCommandSupportsRepo(args []string) bool {
 	switch command {
 	case "init", "upgrade", "scan", "doctor", "register", "start", "run":
 		return true
+	case "mcp":
+		return sub == "serve"
+	case "tools":
+		return sub == "run"
 	case "update":
 		return sub == "check" || sub == "harness"
 	case "release":
@@ -248,6 +252,8 @@ Modes:
     Return this exhaustive command reference. No subprocess is executed.
   run
     Execute mars-harness with structured argv.
+    Use ["tools", "run", <name>, "--args-json", "{...}"] when an LLM or
+    operator needs a universal registered tool from outside an active agent run.
 
 Tool arguments:
   mode: "reference" or "run". Omit mode to get reference when args is empty, or run when args is present.
@@ -307,6 +313,24 @@ Global command surface:
     Diagnose config, models, database, repo, and operating-model health.
     Flags: --config <path>, --db <path>, --repo <path>, --skip-remote, --json
     Example: ["doctor", "--repo", ".", "--json"]
+
+  tools list
+    List every registered built-in tool. This is the universal tool catalog for
+    both foundation and deployed harness operators.
+    Flags: --json
+    Example: ["tools", "list", "--json"]
+
+  tools run <name>
+    Execute one registered built-in tool through the same executor, allowlist,
+    trust policy, repo root, and JSON argument path used by agent runs.
+    Flags: --repo <path>, --args-json <json>, --allowlist <csv>, --role <name>, --trust <observer|contributor|autonomous>, --max-output-bytes <n>, --json
+    Example: ["tools", "run", "tool_create", "--repo", ".", "--args-json", "{\"name\":\"cli_reference\",\"description\":\"Read CLI docs.\",\"fields\":[]}"]
+
+  mcp serve
+    Expose all registered Mars Harness tools as a stdio MCP server for any
+    MCP-compatible client or local harness agent.
+    Flags: --repo <path>, --allowlist <csv>, --role <name>, --trust <observer|contributor|autonomous>, --max-output-bytes <n>
+    Example client command: mars-harness mcp serve --repo /path/to/repo --trust contributor
 
   update check
     Check installed CLI and deployed harness version drift.

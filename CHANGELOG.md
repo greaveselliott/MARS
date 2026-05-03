@@ -50,11 +50,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.17.0] - 2026-05-03
 <!-- mars-harness-release: version=0.17.0 commit=ed664ab2a36e -->
 
+### Why This Release Matters
+This release made tool creation safer by adding a guard that pushes repeated, risky, or validation-heavy work into governed first-class tools instead of fragile chat memory.
+
 ### Features
 - **tools:** Add tool creation guard (ed664ab)
 
 ## [0.16.0] - 2026-05-03
 <!-- mars-harness-release: version=0.16.0 commit=5f9870bd9b08 -->
+
+### Why This Release Matters
+This release made model choices more evidence-driven by adding a benchmark-backed workflow for evaluating and promoting local inference providers.
 
 ### Features
 - **models:** Add benchmark-backed provider workflow (MH-030) (5f9870b)
@@ -65,11 +71,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.15.2] - 2026-05-03
 <!-- mars-harness-release: version=0.15.2 commit=027449036856 -->
 
+### Why This Release Matters
+This release tightened the operating discipline around tools so new automation capabilities are created through documented, reviewable paths.
+
 ### Documentation
 - **tools:** Require governed tool creation (0274490)
 
 ## [0.15.1] - 2026-05-03
 <!-- mars-harness-release: version=0.15.1 commit=358216584c40 -->
+
+### Why This Release Matters
+This release made done criteria clearer by expanding the BDD feature contract catalog that anchors delivery claims to observable scenarios.
 
 ### Documentation
 - **features:** Expand BDD contract catalog (3582165)
@@ -77,11 +89,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.15.0] - 2026-05-03
 <!-- mars-harness-release: version=0.15.0 commit=b9b84535812f -->
 
+### Why This Release Matters
+This release turned recurring operational rituals into formal workflow tools, making important release and quality steps easier for agents to repeat correctly.
+
 ### Features
 - **tools:** Formalize repeated workflow tools (b9b8453)
 
 ## [0.14.6] - 2026-05-03
 <!-- mars-harness-release: version=0.14.6 commit=3ca1a420b043 -->
+
+### Why This Release Matters
+This release clarified the release asset contract so installer-facing releases have an explicit definition of what must be published and verified.
 
 ### Documentation
 - **tickets:** Complete release asset contract (MH-031) (3ca1a42)
@@ -92,11 +110,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.14.5] - 2026-05-03
 <!-- mars-harness-release: version=0.14.5 commit=227b6f718abf -->
 
+### Why This Release Matters
+This release improved Linux terminal support so interactive UI behavior can work across more operator environments.
+
 ### Fixes
 - **ui:** Support linux terminal ioctl constants (MH-031) (227b6f7)
 
 ## [0.14.4] - 2026-05-03
 <!-- mars-harness-release: version=0.14.4 commit=be63396bb21a -->
+
+### Why This Release Matters
+This release improved release reliability by adding a path to backfill binary assets when a GitHub Release had notes but no downloadable artifacts.
 
 ### Fixes
 - **release:** Backfill notes-only release assets (MH-031) (be63396)
@@ -104,11 +128,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.14.3] - 2026-05-03
 <!-- mars-harness-release: version=0.14.3 commit=ed9853b52bd3 -->
 
+### Why This Release Matters
+This release refreshed the architecture map so future agents and maintainers can understand the current system without reconstructing it from code.
+
 ### Documentation
 - **architecture:** Update current system map (ed9853b)
 
 ## [0.14.2] - 2026-05-03
 <!-- mars-harness-release: version=0.14.2 commit=9fe9b5857df7 -->
+
+### Why This Release Matters
+This release protected the operating model from piecemeal drift by requiring workflow changes to fit the surrounding delivery loop.
 
 ### Documentation
 - **operating-model:** Require symbiotic workflow changes (9fe9b58)
@@ -116,11 +146,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.14.1] - 2026-05-03
 <!-- mars-harness-release: version=0.14.1 commit=195c73e1183c -->
 
+### Why This Release Matters
+This release made the shared tool vocabulary explicit, helping source and target harnesses describe the same capabilities consistently.
+
 ### Documentation
 - **tools:** Add mirrored tools glossary (195c73e)
 
 ## [0.14.0] - 2026-05-03
 <!-- mars-harness-release: version=0.14.0 commit=422adac6f6ad -->
+
+### Why This Release Matters
+This release gave target harnesses a mirrored Mars Harness CLI tool, making core harness operations available through the same universal tool surface.
 
 ### Features
 - **tools:** Add mirrored mars harness cli tool (422adac)
@@ -128,11 +164,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.13.1] - 2026-05-03
 <!-- mars-harness-release: version=0.13.1 commit=cd0ffd67d96a -->
 
+### Why This Release Matters
+This release recorded the release asset blocker plainly, keeping unfinished publication work visible instead of burying it in chat or CI logs.
+
 ### Documentation
 - **tickets:** Record release asset blocker (MH-031) (cd0ffd6)
 
 ## [0.13.0] - 2026-05-03
 <!-- mars-harness-release: version=0.13.0 commit=ccd36bc3bf3d -->
+
+### Why This Release Matters
+This release made self-update releases more trustworthy by verifying GitHub assets and avoiding stale changelog markers when finding new release work.
 
 ### Features
 - **release:** Verify release assets for self-update (MH-031) (9e027a2)
@@ -143,11 +185,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.12.1] - 2026-05-03
 <!-- mars-harness-release: version=0.12.1 commit=d8e8c6fcc990 -->
 
+### Why This Release Matters
+This release clarified the difference between foundation and deployed operating models, reducing ambiguity when rules are mirrored into target projects.
+
 ### Documentation
 - **glossary:** Define operating model distinctions (d8e8c6f)
 
 ## [0.12.0] - 2026-05-03
 <!-- mars-harness-release: version=0.12.0 commit=416a91bd5fa1 -->
+
+### Why This Release Matters
+This release made repository health measurable by exporting a quality score that agents and operators can use to track delivery confidence.
 
 ### Features
 - **scoring:** Export repo quality score (MH-037) (416a91b)
@@ -158,11 +206,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.11.1] - 2026-05-03
 <!-- mars-harness-release: version=0.11.1 commit=450d1bbbbbd9 -->
 
+### Why This Release Matters
+This release fixed target harness parity by ensuring deployed projects receive the same governed `tool_create` capability as the foundation harness.
+
 ### Fixes
 - **tools:** Mirror tool_create in target harness (450d1bb)
 
 ## [0.11.0] - 2026-05-03
 <!-- mars-harness-release: version=0.11.0 commit=a00bb9e11730 -->
+
+### Why This Release Matters
+This release added the scaffold for creating new tools, turning repeatable operator workflows into durable harness capabilities.
 
 ### Features
 - **tools:** Add tool creation scaffold (a00bb9e)
@@ -170,11 +224,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.10.4] - 2026-05-03
 <!-- mars-harness-release: version=0.10.4 commit=f133e393f97a -->
 
+### Why This Release Matters
+This release mirrored harness terminology so initialized target projects inherit the same language and operating context as the source harness.
+
 ### Documentation
 - **glossary:** Mirror harness terminology (f133e39)
 
 ## [0.10.3] - 2026-05-03
 <!-- mars-harness-release: version=0.10.3 commit=9e444541196c -->
+
+### Why This Release Matters
+This release converted Mars parity workstreams into concrete backlog tickets, making the remaining migration work visible and schedulable.
 
 ### Documentation
 - **planning:** Materialize mars parity backlog tickets (MH-035) (9e44454)
@@ -185,17 +245,26 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.10.2] - 2026-05-03
 <!-- mars-harness-release: version=0.10.2 commit=e2bcf2f7a080 -->
 
+### Why This Release Matters
+This release improved diagnosis by classifying ticket gate failures in telemetry, making blocked delivery easier to understand and repair.
+
 ### Fixes
 - **telemetry:** Classify ticket gate failures (e2bcf2f)
 
 ## [0.10.1] - 2026-05-03
 <!-- mars-harness-release: version=0.10.1 commit=bb885cd5ad7e -->
 
+### Why This Release Matters
+This release made installed model state clearer by surfacing available model variants during inference checks.
+
 ### Fixes
 - **inference:** Surface installed model variants (bb885cd)
 
 ## [0.10.0] - 2026-05-03
 <!-- mars-harness-release: version=0.10.0 commit=0f4d9ec86ceb -->
+
+### Why This Release Matters
+This release added an active plan hygiene checker so the harness can detect stale or inconsistent execution planning before it misleads agents.
 
 ### Features
 - **planhygiene:** Add active plan hygiene checker (MH-034) (0f4d9ec)
@@ -206,6 +275,9 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.9.0] - 2026-05-02
 <!-- mars-harness-release: version=0.9.0 commit=c3a87e2179e3 -->
 
+### Why This Release Matters
+This release made installation more plug-and-play by configuring shell paths automatically, reducing the chance that a working install is hidden from new terminals.
+
 ### Features
 - **setup:** Configure shell path automatically (MH-041) (c3a87e2)
 
@@ -214,6 +286,9 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 
 ## [0.8.0] - 2026-05-02
 <!-- mars-harness-release: version=0.8.0 commit=cd7514dfdce5 -->
+
+### Why This Release Matters
+This release made delivery more evidence-led by wiring the operating model around BDD scenarios, goals, and quality gates instead of vague task completion.
 
 ### Features
 - **operating-model:** Implement BDD-led delivery loop (MH-040) (cd7514d)
@@ -224,11 +299,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.7.5] - 2026-05-02
 <!-- mars-harness-release: version=0.7.5 commit=e39e335c8fc2 -->
 
+### Why This Release Matters
+This release made execution planning clearer by recording dependency metadata, helping agents understand what must happen before a plan can advance.
+
 ### Documentation
 - **plans:** Add exec plan dependency metadata (e39e335)
 
 ## [0.7.4] - 2026-05-02
 <!-- mars-harness-release: version=0.7.4 commit=c7dbdf3dbb6e -->
+
+### Why This Release Matters
+This release reduced planning ambiguity by enforcing a single active execution plan as the current source of truth.
 
 ### Documentation
 - **plans:** Enforce single active exec plan (c7dbdf3)
@@ -236,11 +317,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.7.3] - 2026-05-02
 <!-- mars-harness-release: version=0.7.3 commit=9a4ced42bdad -->
 
+### Why This Release Matters
+This release seeded the quality score artifact so repository health could be tracked as a first-class output, not inferred from scattered notes.
+
 ### Documentation
 - **scoring:** Seed quality score artifact (9a4ced4)
 
 ## [0.7.2] - 2026-05-02
 <!-- mars-harness-release: version=0.7.2 commit=dac23b716ce3 -->
+
+### Why This Release Matters
+This release reconciled the current execution state, giving future agents a more accurate starting point for planning and delivery.
 
 ### Documentation
 - **plans:** Reconcile current execution state (dac23b7)
@@ -248,11 +335,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.7.1] - 2026-05-02
 <!-- mars-harness-release: version=0.7.1 commit=21d617f832ef -->
 
+### Why This Release Matters
+This release made version drift tests less brittle by keeping fixtures independent from the current release number.
+
 ### Tests
 - **update:** Keep version drift fixtures release-agnostic (21d617f)
 
 ## [0.7.0] - 2026-05-02
 <!-- mars-harness-release: version=0.7.0 commit=ce831c5cd4de -->
+
+### Why This Release Matters
+This release helped operators see when either the installed tool or a target harness has drifted from the expected version.
 
 ### Features
 - **update:** Check tool and harness version drift (ce831c5)
@@ -260,11 +353,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.6.0] - 2026-05-02
 <!-- mars-harness-release: version=0.6.0 commit=2187d5a379c3 -->
 
+### Why This Release Matters
+This release unified update workflows so operators have one coherent path for keeping both the CLI tool and harness files current.
+
 ### Features
 - **update:** Unify tool and harness updates (2187d5a)
 
 ## [0.5.3] - 2026-05-02
 <!-- mars-harness-release: version=0.5.3 commit=781c1e5051dd -->
+
+### Why This Release Matters
+This release made source installs less confusing by clarifying the supported workflow for running Mars Harness from a checkout.
 
 ### Fixes
 - **setup:** Clarify source install workflow (781c1e5)
@@ -272,11 +371,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.5.2] - 2026-05-02
 <!-- mars-harness-release: version=0.5.2 commit=4a599310de29 -->
 
+### Why This Release Matters
+This release documented the policy for swapping Ollama-backed models, preserving the rationale behind provider choices.
+
 ### Documentation
 - **models:** Define ollama swap policy (4a59931)
 
 ## [0.5.1] - 2026-05-02
 <!-- mars-harness-release: version=0.5.1 commit=8f0a44f12017 -->
+
+### Why This Release Matters
+This release kept intervention-debt tickets independent so self-improvement work can be tracked without contaminating unrelated telemetry.
 
 ### Fixes
 - **telemetry:** Keep intervention tickets independent (8f0a44f)
@@ -284,11 +389,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.5.0] - 2026-05-02
 <!-- mars-harness-release: version=0.5.0 commit=0ca0257223cd -->
 
+### Why This Release Matters
+This release gave the harness a durable feedback loop by creating intervention-debt tickets from human corrections and operational failures.
+
 ### Features
 - **telemetry:** Create intervention-debt tickets (0ca0257)
 
 ## [0.4.1] - 2026-05-02
 <!-- mars-harness-release: version=0.4.1 commit=548fb73403a1 -->
+
+### Why This Release Matters
+This release improved local inference routing by respecting manifest tiers when choosing which model should handle each role.
 
 ### Fixes
 - **inference:** Route roles by manifest tier (548fb73)
@@ -296,11 +407,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.4.0] - 2026-05-02
 <!-- mars-harness-release: version=0.4.0 commit=72032c5985e4 -->
 
+### Why This Release Matters
+This release added a benchmark evaluation path so model changes can be judged against evidence instead of preference or guesswork.
+
 ### Features
 - **models:** Add benchmark evaluation path (72032c5)
 
 ## [0.3.6] - 2026-05-02
 <!-- mars-harness-release: version=0.3.6 commit=ecf0f5596249 -->
+
+### Why This Release Matters
+This release improved queue stability by preventing self-healing logic from creating recovery storms.
 
 ### Fixes
 - **queue:** Self-heal recovery storms (ecf0f55)
@@ -308,11 +425,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.3.5] - 2026-05-02
 <!-- mars-harness-release: version=0.3.5 commit=4769fb4172da -->
 
+### Why This Release Matters
+This release contained recursive recovery jobs, reducing the risk that a repair attempt creates more orchestration work than it solves.
+
 ### Fixes
 - **serve:** Contain recursive recovery jobs (4769fb4)
 
 ## [0.3.4] - 2026-05-02
 <!-- mars-harness-release: version=0.3.4 commit=5fef93f4bc04 -->
+
+### Why This Release Matters
+This release made GitHub Release publication an explicit part of the release contract, so versioned notes and assets are not treated as optional afterthoughts.
 
 ### Documentation
 - **release:** Require github release publication (5fef93f)
@@ -320,11 +443,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.3.3] - 2026-05-02
 <!-- mars-harness-release: version=0.3.3 commit=3232920f527f -->
 
+### Why This Release Matters
+This release ensured initialized target projects inherit the same operating rules as the foundation harness unless deliberately overridden.
+
 ### Documentation
 - **harness:** Mirror operating rules into targets (3232920)
 
 ## [0.3.2] - 2026-05-02
 <!-- mars-harness-release: version=0.3.2 commit=5c5bc2d6761b -->
+
+### Why This Release Matters
+This release mirrored versioning rules into target projects so source and deployed harnesses follow the same release discipline.
 
 ### Documentation
 - **release:** Mirror versioning rule into targets (5c5bc2d)
@@ -332,11 +461,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.3.1] - 2026-05-02
 <!-- mars-harness-release: version=0.3.1 commit=466bc65ad438 -->
 
+### Why This Release Matters
+This release required semantic versioning after source commits, making release state explicit and recoverable from the repo.
+
 ### Documentation
 - **release:** Require versioning after source commits (466bc65)
 
 ## [0.3.0] - 2026-05-02
 <!-- mars-harness-release: version=0.3.0 commit=b2cd7df5f2e5 -->
+
+### Why This Release Matters
+This release documented how agent skills should evolve, supporting the self-improving system tenet without losing safety or reviewability.
 
 ### Features
 - **skills:** Guide self-improving skill evolution (b2cd7df)
@@ -344,11 +479,17 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 ## [0.2.0] - 2026-05-02
 <!-- mars-harness-release: version=0.2.0 commit=15f4b154182d -->
 
+### Why This Release Matters
+This release introduced automated semantic patch notes, giving Mars Harness a repeatable way to turn commits into versioned release history.
+
 ### Features
 - **release:** Automate semantic patch notes (15f4b15)
 
 ## [0.1.0] - 2026-05-02
 <!-- mars-harness-release: version=0.1.0 commit=edaafeacae3a -->
+
+### Why This Release Matters
+This foundation release turned Mars Harness from a concept into a working self-hosted AI delivery system. It established the CLI, local model runtime, agent loop, context assembly, queue, scheduler, safety controls, scanner, dashboard, tool registry, release workflow, and the initial operating doctrine needed for autonomous delivery on target repositories.
 
 ### Features
 - **tools:** Mechanical ticket deduplication with ticket_create tool (AD-030) (0322c0c)

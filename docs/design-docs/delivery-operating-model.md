@@ -57,7 +57,8 @@ explicitly descopes, supersedes, or invalidates them. Enabler work may complete
 without shipping a feature, but it must be labelled as enabler work and must
 not be represented as shipped feature value.
 
-Repeated useful process becomes a formalized tool. When agents or humans use a
+A repeated process promotion to formalized tools is part of the operating model.
+When agents or humans use a
 multi-step process that is likely to recur, is risky to perform manually, needs
 consistent validation, crosses source and deployed harness boundaries, or
 requires exact command ordering, the harness should create or improve a

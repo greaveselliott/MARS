@@ -19,6 +19,11 @@ Mars Harness and initialized target repos use a root `VERSION` file containing `
 
 Patch notes live in root `CHANGELOG.md`. Entries are generated from semantic commits using `mars-harness release notes`. Each generated entry includes a release marker with the version and source commit so the next run can find only new commits even when no git tag exists yet.
 
+Generated entries start with a plain-English `Why This Release Matters`
+section before the commit buckets. That section explains the operator-facing
+importance of the release so the changelog is useful to humans, not just a
+mechanical list of semantic commit subjects.
+
 ### AD-051: Source And Target Release Behavior Mirrors
 
 `mars-harness init` creates `VERSION`, `CHANGELOG.md`, release-versioning design guidance, and release knowledge routes in target repos. The default release-manager prompt uses the same `mars-harness release notes --repo . --bump auto` command that Mars Harness itself uses.
@@ -149,6 +154,7 @@ path is shipped.
   - other documented changes -> patch
 - Preserve strict trunk: generated version and patch-note changes are committed directly to `main` and pushed after verification.
 - Ignore release-note commits when generating later patch notes.
+- Start each generated changelog entry with a plain-English explanation of why the release matters.
 - Update the source harness fallback version from a repo-owned constant.
 - Generate the same VERSION/CHANGELOG/release guidance in target repos.
 - Treat source-repo versioning as part of done for every non-release semantic commit.

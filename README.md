@@ -4,7 +4,7 @@ A self-hosted autonomous AI delivery system. Run it on your own hardware with op
 
 You provide a machine with a GPU. Mars Harness autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, trunk checks and review, release management, documentation maintenance. All inference runs locally.
 
-**Status:** Under active development. See [delivery schedule](docs/exec-plans/active/delivery-schedule.md).
+**Status:** Under active development. See the [current operating plan](docs/exec-plans/active/current-operating-plan.md).
 
 ## The Nine Tenets
 

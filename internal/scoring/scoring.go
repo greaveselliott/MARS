@@ -6,6 +6,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -78,6 +81,9 @@ type Store struct {
 
 // OpenStore opens or creates a SQLite-backed scoring store at dbPath.
 func OpenStore(dbPath string) (*Store, error) {
+	if err := validateDBPath(dbPath); err != nil {
+		return nil, err
+	}
 	db, err := sql.Open("sqlite", dbPath+"?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, fmt.Errorf("scoring: open sqlite %q: %w", dbPath, err)
@@ -89,6 +95,31 @@ func OpenStore(dbPath string) (*Store, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+func validateDBPath(dbPath string) error {
+	dbPath = strings.TrimSpace(dbPath)
+	if dbPath == "" {
+		return fmt.Errorf("scoring: database path is empty — pass --db <path> or run `mars-harness register --repo <path>`")
+	}
+	if dbPath == ":memory:" || strings.HasPrefix(dbPath, "file:") {
+		return nil
+	}
+	dir := filepath.Dir(dbPath)
+	if dir == "." || dir == "" {
+		return nil
+	}
+	info, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("scoring: database directory %s does not exist for %s — run `mars-harness setup`, run `mars-harness register --repo <path>`, or create the directory before retrying", dir, dbPath)
+		}
+		return fmt.Errorf("scoring: check database directory %s: %w", dir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("scoring: database parent %s is not a directory — pass --db with a writable database file path", dir)
+	}
+	return nil
 }
 
 func (s *Store) initSchema() error {

@@ -20,6 +20,13 @@ func tempStore(t *testing.T) *Store {
 	return s
 }
 
+func TestOpenStore_missingParentIsActionable(t *testing.T) {
+	_, err := OpenStore(filepath.Join(t.TempDir(), "missing", "scoring.db"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "database directory")
+	assert.Contains(t, err.Error(), "mars-harness register --repo")
+}
+
 func TestComputeScore_emptyReturnsZero(t *testing.T) {
 	s := tempStore(t)
 	ctx := context.Background()

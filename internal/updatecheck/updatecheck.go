@@ -124,6 +124,13 @@ func checkHarness(cfg Config) Component {
 	}
 	current := selfupdate.NormalizeVersion(cfg.CurrentVersion)
 	component.CurrentVersion = current
+	component.LatestVersion = current
+
+	if operatingmodel.IsFoundationHarnessRepo(absRepo) {
+		component.Status = StatusUpToDate
+		component.Message = "foundation harness source repo uses AGENTS.md and docs instead of generated .harness metadata"
+		return component
+	}
 
 	harnessDir := filepath.Join(absRepo, ".harness")
 	if _, err := os.Stat(harnessDir); os.IsNotExist(err) {

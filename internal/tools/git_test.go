@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -106,4 +107,35 @@ func TestGitPush_noRemote(t *testing.T) {
 	_, err = handleGitPush(context.Background(), root, []byte(`{}`))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "git_push")
+}
+
+func TestGitPushPolicyAllowsOnlyMain(t *testing.T) {
+	t.Parallel()
+	root, err := NewRoot(t.TempDir())
+	require.NoError(t, err)
+
+	err = preToolPolicy(context.Background(), root, "git_push", json.RawMessage(`{"branch":"feature/recovery"}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "strict trunk")
+
+	err = preToolPolicy(context.Background(), root, "git_push", json.RawMessage(`{"branch":"main"}`))
+	require.NoError(t, err)
+}
+
+func TestGitCommitPolicyBlocksSecretsInDirtyDiff(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	testutil.WriteFile(t, filepath.Join(dir, "README.md"), "initial\n")
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "README.md"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "init"))
+
+	testutil.WriteFile(t, filepath.Join(dir, "secret.txt"), "token = \"github-token-placeholder\"\n")
+
+	err = preToolPolicy(context.Background(), root, "git_commit", json.RawMessage(`{"message":"commit secret"}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "secret scanner")
 }

@@ -72,6 +72,25 @@ func TestRun_reportsHarnessBehindInstalledTool(t *testing.T) {
 	require.Contains(t, report.Harness.Command, "update harness")
 }
 
+func TestRun_treatsFoundationRepoAsSourceHarness(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "go.mod"), []byte("module github.com/greaveselliott/mars-harness\n"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(repo, "internal", "scanner"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "internal", "scanner", "init.go"), []byte("package scanner\n"), 0o644))
+
+	report, err := Run(context.Background(), Config{
+		CurrentVersion: buildinfo.DefaultVersion,
+		RepoPath:       repo,
+		SkipRemote:     true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, StatusUpToDate, report.Harness.Status)
+	require.Empty(t, report.Harness.Command)
+	require.NotContains(t, report.Actions, "mars-harness init --repo "+repo)
+	require.Contains(t, report.Harness.Message, "foundation harness source repo")
+}
+
 func TestRun_reportsOperatingModelDrift(t *testing.T) {
 	t.Parallel()
 	repo := t.TempDir()

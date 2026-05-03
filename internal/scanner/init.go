@@ -567,6 +567,7 @@ would otherwise live only in chat.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools.
+- **Universal tool surface** — the mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + ` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
@@ -904,7 +905,9 @@ Architectural decisions and design documents for this project.
 | AD-082 | Repeated, risky, validation-heavy, or likely-to-recur processes should become formalized tools. | 2026-05-03 | Accepted |
 | AD-083 | New built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires ` + "`record_decision`" + ` and design-doc rationale. | 2026-05-03 | Accepted |
 | AD-084 | Six canonical operating domains are the role-model vocabulary while explicit manifest roles remain executable units with optional domain and mode metadata. | 2026-05-03 | Accepted |
+| AD-085 | Checked role registries inventory explicit manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. | 2026-05-03 | Accepted |
 | AD-086 | Significant conversations must become durable repo artifacts when they change plans, decisions, investigations, quality evidence, or completed-work state. | 2026-05-03 | Accepted |
+| AD-087 | Universal mirrored tools are exposed through ` + "`mars-harness mcp serve`" + ` for MCP-compatible clients and local harness agents without depending on a model provider. | 2026-05-03 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1054,7 +1057,8 @@ tickets, roles, evidence, release, scoring, or self-improvement, update the
 affected artifacts, generated defaults, role prompts, routes, and tests in the
 same task.
 
-Repeated useful process becomes a formalized tool. When agents or humans use a
+A repeated process promotion to formalized tools is part of the operating model.
+When agents or humans use a
 multi-step process that is likely to recur, is risky to perform manually, needs
 consistent validation, crosses source and deployed harness boundaries, or
 requires exact command ordering, create or improve a first-class tool for it.
@@ -1332,6 +1336,7 @@ harness and deployed harnesses.
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools. |
+| Universal tool surface | The mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + `, so any MCP-compatible client or local harness agent can use the same tools through a model-provider-agnostic tool mechanism. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
 | Tool creation path | New built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale. |
@@ -1425,6 +1430,10 @@ tools are added, removed, renamed, or materially change behavior.
 - Mutating tools are blocked at observer trust.
 - Prefer purpose-built tools over ` + "`shell_exec`" + ` when a deterministic tool exists.
 - Prefer structured argv over shell strings unless shell features are required.
+- Universal tools are also exposed through ` + "`mars-harness mcp serve --repo <path>`" + ` for MCP-compatible clients and local harness agents.
+- The universal tool surface is model-provider agnostic. Deployed harnesses use
+  local models by default, and MCP/tool transport must not assume frontier cloud
+  model access.
 
 ## Mirrored Built-In Tools
 
@@ -1456,6 +1465,13 @@ tools are added, removed, renamed, or materially change behavior.
 
 - Need Mars Harness behavior, versioning, setup, release, score, trust, or target
   harness lifecycle operations: use ` + "`mars_harness_cli`" + `.
+- Need to discover or invoke the universal tool surface from an operator shell:
+  use ` + "`mars-harness tools list`" + ` and
+  ` + "`mars-harness tools run <name> --args-json '{...}'`" + `. Add
+  ` + "`--trust contributor`" + ` only for deliberate mutating tool calls.
+- Need an MCP-compatible client or local harness agent to see Mars Harness tools
+  as native tools: configure it to launch
+  ` + "`mars-harness mcp serve --repo <path> --trust observer|contributor`" + `.
 - Need to run or prepare the whole release ritual: use ` + "`release_orchestrate`" + `,
   ` + "`git_release_guard`" + `, and ` + "`github_release_status`" + ` before mutating state.
 - Need a durable repo-owned note: use ` + "`record_decision`" + `.

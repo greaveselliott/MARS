@@ -229,6 +229,11 @@ func renderEntry(repoRoot string, version SemVer, now time.Time, head string, co
 	fmt.Fprintf(&buf, "## [%s] - %s\n", version.String(), now.Format("2006-01-02"))
 	fmt.Fprintf(&buf, "<!-- mars-harness-release: version=%s commit=%s -->\n\n", version.String(), strings.TrimSpace(head))
 
+	if summary := renderImportanceSummary(commits); summary != "" {
+		buf.WriteString(summary)
+		buf.WriteString("\n\n")
+	}
+
 	groups := groupCommits(commits)
 	order := []string{"Breaking Changes", "Features", "Fixes", "Documentation", "Maintenance", "Tests", "Other"}
 	for _, group := range order {
@@ -252,6 +257,78 @@ func renderEntry(repoRoot string, version SemVer, now time.Time, head string, co
 		buf.WriteString("\n")
 	}
 	return strings.TrimRight(buf.String(), "\n") + "\n"
+}
+
+func renderImportanceSummary(commits []Commit) string {
+	if len(commits) == 0 {
+		return ""
+	}
+	type section struct {
+		group string
+		intro string
+	}
+	sections := []section{
+		{group: "Breaking Changes", intro: "This release includes compatibility-changing work to %s."},
+		{group: "Features", intro: "This release matters because it gives operators new capability through work to %s."},
+		{group: "Fixes", intro: "It improves reliability through work to %s."},
+		{group: "Documentation", intro: "It makes the harness easier to understand and operate through work to %s."},
+		{group: "Maintenance", intro: "It keeps the project healthier through work to %s."},
+		{group: "Tests", intro: "It raises confidence in the code through work to %s."},
+		{group: "Other", intro: "It also includes work to %s."},
+	}
+
+	groups := groupCommits(commits)
+	var lines []string
+	for _, section := range sections {
+		items := groups[section.group]
+		if len(items) == 0 {
+			continue
+		}
+		sort.SliceStable(items, func(i, j int) bool { return items[i].Short < items[j].Short })
+		phrases := make([]string, 0, len(items))
+		for _, commit := range items {
+			phrases = append(phrases, importancePhrase(commit))
+		}
+		lines = append(lines, fmt.Sprintf(section.intro, humanList(phrases)))
+	}
+	if len(lines) == 0 {
+		return ""
+	}
+	return "### Why This Release Matters\n" + strings.Join(lines, "\n")
+}
+
+func importancePhrase(commit Commit) string {
+	phrase := strings.TrimSpace(commit.Message)
+	if phrase == "" {
+		phrase = strings.TrimSpace(commit.Subject)
+	}
+	phrase = strings.TrimSuffix(phrase, ".")
+	phrase = lowerFirst(phrase)
+	if commit.Scope != "" {
+		return fmt.Sprintf("%s in %s", phrase, commit.Scope)
+	}
+	return phrase
+}
+
+func lowerFirst(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return value
+	}
+	return strings.ToLower(value[:1]) + value[1:]
+}
+
+func humanList(items []string) string {
+	switch len(items) {
+	case 0:
+		return ""
+	case 1:
+		return items[0]
+	case 2:
+		return items[0] + " and " + items[1]
+	default:
+		return strings.Join(items[:len(items)-1], ", ") + ", and " + items[len(items)-1]
+	}
 }
 
 func renderDeliveryEvidence(repoRoot string, commits []Commit) string {

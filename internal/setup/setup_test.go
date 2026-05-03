@@ -149,3 +149,44 @@ func TestWriteDefaultConfigStep_execute(t *testing.T) {
 	assert.Contains(t, string(data), "performance_profile: auto")
 	assert.Contains(t, string(data), "llama_parallel: 1")
 }
+
+func TestDetectHardwareStep_execute(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	baseDir := filepath.Join(dir, ".mars-harness")
+	require.NoError(t, os.MkdirAll(baseDir, 0o755))
+
+	step := detectHardwareStep(baseDir)
+
+	done, _ := step.Check()
+	assert.False(t, done)
+	require.NoError(t, step.Execute())
+
+	done, err := step.Check()
+	require.NoError(t, err)
+	assert.True(t, done)
+	data, err := os.ReadFile(filepath.Join(baseDir, "hardware.yaml"))
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "profile:")
+	assert.Contains(t, string(data), "os:")
+}
+
+func TestGithubPlaceholderStep_execute(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	baseDir := filepath.Join(dir, ".mars-harness")
+	require.NoError(t, os.MkdirAll(baseDir, 0o755))
+
+	step := githubPlaceholderStep(baseDir)
+
+	done, _ := step.Check()
+	assert.False(t, done)
+	require.NoError(t, step.Execute())
+
+	done, err := step.Check()
+	require.NoError(t, err)
+	assert.True(t, done)
+	data, err := os.ReadFile(filepath.Join(baseDir, ".github-configured"))
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "pending")
+}

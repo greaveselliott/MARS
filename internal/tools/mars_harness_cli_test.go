@@ -24,6 +24,7 @@ func TestMarsHarnessCLI_reference(t *testing.T) {
 		"scan", "doctor", "update check", "update tool", "update harness",
 		"path setup", "release notes", "release verify-assets", "scores export",
 		"trust set", "models evaluate", "models list", "models override",
+		"tools list", "tools run <name>", "mcp serve",
 	} {
 		require.Contains(t, res.Output, command)
 	}
@@ -61,6 +62,23 @@ func TestMarsHarnessCLI_repoShortcutAppendsRepoFlag(t *testing.T) {
 	}`))
 	require.NoError(t, err)
 	require.Contains(t, res.Output, "args: scan --repo "+root.Abs())
+}
+
+func TestMarsHarnessCLI_repoShortcutAppendsRepoFlagForToolsRun(t *testing.T) {
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	bin := writeFakeMarsHarnessBinary(t, dir)
+	t.Setenv("MARS_HARNESS_CLI_BIN", bin)
+
+	res, err := handleMarsHarnessCLI(context.Background(), root, []byte(`{
+		"mode": "run",
+		"args": ["tools", "run", "tool_creation_guard", "--args-json", "{}"],
+		"repo": ".",
+		"timeout_seconds": 5
+	}`))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "args: tools run tool_creation_guard --args-json {} --repo "+root.Abs())
 }
 
 func TestMarsHarnessCLI_repoShortcutRejectsUnsupportedCommand(t *testing.T) {

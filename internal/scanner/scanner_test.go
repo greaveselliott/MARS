@@ -438,6 +438,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Meta tool")
 	assert.Contains(t, string(agentGuide), "Formalized tool creation trigger")
 	assert.Contains(t, string(agentGuide), "Tool creation path")
+	assert.Contains(t, string(agentGuide), "Universal tool surface")
+	assert.Contains(t, string(agentGuide), "mars-harness mcp serve")
 	assert.Contains(t, string(agentGuide), "mars_harness_cli")
 	assert.Contains(t, string(agentGuide), "tool_create")
 	assert.Contains(t, string(agentGuide), "Contextual harness definition")
@@ -471,6 +473,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(harnessGlossary), "docs/design-docs/conversation-as-system-record.md")
 	assert.Contains(t, string(harnessGlossary), "Formalized tool creation trigger")
 	assert.Contains(t, string(harnessGlossary), "Tool creation path")
+	assert.Contains(t, string(harnessGlossary), "Universal tool surface")
 	assert.Contains(t, string(harnessGlossary), "mars_harness_cli")
 	assert.Contains(t, string(harnessGlossary), "When changing operating doctrine include this")
 	assert.Contains(t, string(harnessGlossary), "When choosing, creating, or changing tools include this")
@@ -486,6 +489,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(toolsGlossary), "harness_doctrine_sync")
 	assert.Contains(t, string(toolsGlossary), "tool_creation_guard")
 	assert.Contains(t, string(toolsGlossary), "task_trace_summarize")
+	assert.Contains(t, string(toolsGlossary), "mars-harness mcp serve")
 	assert.Contains(t, string(toolsGlossary), "New built-in tools must originate through")
 	assert.Contains(t, string(toolsGlossary), "Every newly created tool must extend this glossary")
 
@@ -504,7 +508,9 @@ func TestInit_success(t *testing.T) {
 	designIndex, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "index.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(designIndex), "AD-082")
+	assert.Contains(t, string(designIndex), "AD-085")
 	assert.Contains(t, string(designIndex), "AD-086")
+	assert.Contains(t, string(designIndex), "AD-087")
 
 	conversationRecord, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "conversation-as-system-record.md"))
 	require.NoError(t, err)
@@ -521,7 +527,7 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(operatingModel), "Operating-model changes must be symbiotic")
 	assert.Contains(t, string(operatingModel), "without handoff gaps")
-	assert.Contains(t, string(operatingModel), "Repeated useful process becomes a formalized tool")
+	assert.Contains(t, string(operatingModel), "repeated process promotion to formalized tools")
 	assert.Contains(t, string(operatingModel), "Built-in tool creation must dogfood the meta-tool path")
 
 	execPlanReadme, err := os.ReadFile(filepath.Join(dir, "docs", "exec-plans", "README.md"))

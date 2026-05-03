@@ -26,6 +26,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars-harness/internal/mcpstdio"
 	"github.com/greaveselliott/mars-harness/internal/models"
 	"github.com/greaveselliott/mars-harness/internal/qualityscore"
 	"github.com/greaveselliott/mars-harness/internal/release"
@@ -72,6 +73,8 @@ func main() {
 	root.AddCommand(doctorCmd())
 	root.AddCommand(scoresCmd())
 	root.AddCommand(trustCmd())
+	root.AddCommand(toolsCmd())
+	root.AddCommand(mcpCmd())
 	root.AddCommand(modelsCmd())
 	root.AddCommand(releaseCmd())
 	root.AddCommand(pathCmd())
@@ -80,6 +83,205 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func mcpCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "mcp",
+		Short: "Expose Mars Harness tools through Model Context Protocol",
+		Long: `Expose the registered Mars Harness tool registry through standard MCP
+transports so any MCP-compatible client or local harness agent can attach to the
+foundation or deployed harness without depending on a model provider.`,
+	}
+	cmd.AddCommand(mcpServeCmd())
+	return cmd
+}
+
+func mcpServeCmd() *cobra.Command {
+	var (
+		repoPath  string
+		allow     string
+		role      string
+		trustLvl  string
+		maxOutput int
+	)
+	cmd := &cobra.Command{
+		Use:   "serve",
+		Short: "Run a stdio MCP server for registered Mars Harness tools",
+		Long: `Run a newline-delimited JSON-RPC stdio MCP server. The server exposes
+registered Mars Harness tools via tools/list and tools/call, using the same
+executor, trust policy, repository root, and JSON arguments as agent runs.
+
+Configure MCP clients to launch this command as a local stdio server.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			absRepo, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("mcp serve: resolve repo %s: %w", repoPath, err)
+			}
+			root, err := tools.NewRoot(absRepo)
+			if err != nil {
+				return err
+			}
+			registry, err := tools.DefaultRegistry()
+			if err != nil {
+				return err
+			}
+			executor := tools.NewExecutor(registry)
+			if maxOutput > 0 {
+				executor.MaxOutput = maxOutput
+			}
+			executor.Session = &tools.Session{
+				Role:       role,
+				TrustLevel: trustLvl,
+			}
+			allowlist := splitCSV(allow)
+			server := mcpstdio.Server{
+				Registry: registry,
+				Executor: executor,
+				Root:     root,
+				Allow:    allowlist,
+			}
+			return server.Serve(cmd.Context(), cmd.InOrStdin(), cmd.OutOrStdout())
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", ".", "Repository root for root-scoped tool execution")
+	cmd.Flags().StringVar(&allow, "allowlist", "", "Comma-separated tool allowlist; empty exposes every registered tool")
+	cmd.Flags().StringVar(&role, "role", "mcp-client", "Role label used for session policy")
+	cmd.Flags().StringVar(&trustLvl, "trust", "observer", "Trust level used for mutating-tool policy")
+	cmd.Flags().IntVar(&maxOutput, "max-output-bytes", 0, "Maximum combined tool output bytes; 0 uses the executor default")
+	return cmd
+}
+
+func toolsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "tools",
+		Short: "Inspect and execute registered Mars Harness tools",
+		Long: `Inspect and execute registered Mars Harness tools through the same registry,
+allowlist, trust policy, repository root, and JSON argument path used by agent
+runs. This gives operators and external LLM shells a first-class bridge to
+mirrored tools such as tool_create without reaching into Go package internals.`,
+	}
+	cmd.AddCommand(toolsListCmd())
+	cmd.AddCommand(toolsRunCmd())
+	return cmd
+}
+
+func toolsListCmd() *cobra.Command {
+	var jsonOut bool
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List registered built-in tools",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			registry, err := tools.DefaultRegistry()
+			if err != nil {
+				return err
+			}
+			names := registry.Names()
+			if jsonOut {
+				defs, err := registry.Definitions(names)
+				if err != nil {
+					return err
+				}
+				enc := json.NewEncoder(cmd.OutOrStdout())
+				enc.SetIndent("", "  ")
+				return enc.Encode(defs)
+			}
+			for _, name := range names {
+				fmt.Fprintln(cmd.OutOrStdout(), name)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write OpenAI-style tool definitions as JSON")
+	return cmd
+}
+
+func toolsRunCmd() *cobra.Command {
+	var (
+		repoPath  string
+		argsJSON  string
+		allow     string
+		role      string
+		trustLvl  string
+		maxOutput int
+		jsonOut   bool
+	)
+	cmd := &cobra.Command{
+		Use:   "run <name>",
+		Short: "Execute one registered built-in tool",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			name := strings.TrimSpace(args[0])
+			if name == "" {
+				return fmt.Errorf("tools run: tool name is empty")
+			}
+			absRepo, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("tools run: resolve repo %s: %w", repoPath, err)
+			}
+			root, err := tools.NewRoot(absRepo)
+			if err != nil {
+				return err
+			}
+			registry, err := tools.DefaultRegistry()
+			if err != nil {
+				return err
+			}
+			executor := tools.NewExecutor(registry)
+			if maxOutput > 0 {
+				executor.MaxOutput = maxOutput
+			}
+			executor.Session = &tools.Session{
+				Role:       role,
+				TrustLevel: trustLvl,
+			}
+			allowlist := []string{name}
+			if strings.TrimSpace(allow) != "" {
+				allowlist = splitCSV(allow)
+			}
+			res, err := executor.Execute(cmd.Context(), root, allowlist, name, argsJSON)
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				enc := json.NewEncoder(cmd.OutOrStdout())
+				enc.SetIndent("", "  ")
+				return enc.Encode(map[string]any{
+					"tool":      name,
+					"output":    res.Output,
+					"stderr":    res.Stderr,
+					"exit_code": res.ExitCode,
+					"truncated": res.Truncated,
+					"is_binary": res.IsBinary,
+					"duration":  res.Duration.String(),
+				})
+			}
+			if formatted := res.FormatForModel(); formatted != "" {
+				fmt.Fprintln(cmd.OutOrStdout(), formatted)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", ".", "Repository root for root-scoped tool execution")
+	cmd.Flags().StringVar(&argsJSON, "args-json", "{}", "JSON object arguments for the tool")
+	cmd.Flags().StringVar(&allow, "allowlist", "", "Comma-separated allowlist; defaults to the named tool")
+	cmd.Flags().StringVar(&role, "role", "cli-tool", "Role label used for session policy")
+	cmd.Flags().StringVar(&trustLvl, "trust", "observer", "Trust level used for mutating-tool policy")
+	cmd.Flags().IntVar(&maxOutput, "max-output-bytes", 0, "Maximum combined tool output bytes; 0 uses the executor default")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write structured JSON output")
+	return cmd
+}
+
+func splitCSV(s string) []string {
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
 }
 
 func modelsCmd() *cobra.Command {
@@ -1194,7 +1396,11 @@ If .harness/manifest.yaml is missing, mars-harness scaffolds it first (same as i
 				return fmt.Errorf("scan: %w", err)
 			}
 
-			sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+			parentCtx := cmd.Context()
+			if parentCtx == nil {
+				parentCtx = context.Background()
+			}
+			sigCtx, stop := signal.NotifyContext(parentCtx, os.Interrupt)
 			defer stop()
 
 			result, err := scanner.Scan(sigCtx, scanner.Config{RepoRoot: absPath})
@@ -1298,6 +1504,10 @@ func scoresCmd() *cobra.Command {
 			}
 			store, err := scoring.OpenStore(path)
 			if err != nil {
+				if isMissingDatabaseDirError(err) {
+					fmt.Fprintf(cmd.OutOrStdout(), "No scores recorded yet. %v\n", err)
+					return nil
+				}
 				return err
 			}
 			defer store.Close()
@@ -1306,12 +1516,12 @@ func scoresCmd() *cobra.Command {
 				return err
 			}
 			if len(scores) == 0 {
-				fmt.Println("No scores recorded yet.")
+				fmt.Fprintln(cmd.OutOrStdout(), "No scores recorded yet.")
 				return nil
 			}
-			fmt.Printf("%-36s %-18s %-8s %-7s %-8s %s\n", "REPO", "ROLE", "SCORE", "SAMPLES", "WINDOW", "COMPUTED")
+			fmt.Fprintf(cmd.OutOrStdout(), "%-36s %-18s %-8s %-7s %-8s %s\n", "REPO", "ROLE", "SCORE", "SAMPLES", "WINDOW", "COMPUTED")
 			for _, sc := range scores {
-				fmt.Printf("%-36s %-18s %-8.2f %-7d %-8dd %s\n",
+				fmt.Fprintf(cmd.OutOrStdout(), "%-36s %-18s %-8.2f %-7d %-8d %s\n",
 					sc.RepoID, sc.Role, sc.Value, sc.SampleSize, sc.WindowDays, sc.ComputedAt.Format("2006-01-02 15:04"))
 			}
 			return nil
@@ -1377,6 +1587,10 @@ func trustCmd() *cobra.Command {
 			}
 			store, err := trust.OpenStore(path)
 			if err != nil {
+				if isMissingDatabaseDirError(err) {
+					fmt.Fprintf(cmd.OutOrStdout(), "No trust entries recorded yet. %v\n", err)
+					return nil
+				}
 				return err
 			}
 			defer store.Close()
@@ -1385,12 +1599,12 @@ func trustCmd() *cobra.Command {
 				return err
 			}
 			if len(entries) == 0 {
-				fmt.Println("No trust entries recorded yet.")
+				fmt.Fprintln(cmd.OutOrStdout(), "No trust entries recorded yet.")
 				return nil
 			}
-			fmt.Printf("%-36s %-18s %-12s %-7s %s\n", "REPO", "ROLE", "LEVEL", "TRIALS", "UPDATED")
+			fmt.Fprintf(cmd.OutOrStdout(), "%-36s %-18s %-12s %-7s %s\n", "REPO", "ROLE", "LEVEL", "TRIALS", "UPDATED")
 			for _, e := range entries {
-				fmt.Printf("%-36s %-18s %-12s %-7d %s\n",
+				fmt.Fprintf(cmd.OutOrStdout(), "%-36s %-18s %-12s %-7d %s\n",
 					e.RepoID, e.Role, e.Level, e.TrialRuns, e.UpdatedAt.Format("2006-01-02 15:04"))
 			}
 			return nil
@@ -1490,7 +1704,11 @@ func serveCmd() *cobra.Command {
 				return err
 			}
 
-			sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+			parentCtx := cmd.Context()
+			if parentCtx == nil {
+				parentCtx = context.Background()
+			}
+			sigCtx, stop := signal.NotifyContext(parentCtx, os.Interrupt)
 			defer stop()
 
 			sb := ui.NewStatusBar(os.Stderr, srv)
@@ -1603,6 +1821,14 @@ func openDB(path string) (*sql.DB, error) {
 	return db, nil
 }
 
+func isMissingDatabaseDirError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "database directory") && strings.Contains(msg, "does not exist")
+}
+
 // defaultDBPath returns the per-repo database path: ~/.mars-harness/db/{repo-slug}/mars.db.
 // Each repo gets its own SQLite file so queue, telemetry, and scheduling are isolated.
 func defaultDBPath(repoAbsPath string) string {
@@ -1692,10 +1918,11 @@ func legacyDBPath() string {
 
 func startCmd() *cobra.Command {
 	var (
-		repoPath    string
-		concurrency int
-		dbPath      string
-		force       bool
+		repoPath      string
+		concurrency   int
+		dbPath        string
+		force         bool
+		exitAfterSeed bool
 	)
 
 	cmd := &cobra.Command{
@@ -1705,7 +1932,7 @@ func startCmd() *cobra.Command {
 and start the orchestrator. The CEO plans strategy, hands off to CTO,
 then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tw := ui.NewTraceWriter(os.Stdout, false, false)
+			tw := ui.NewTraceWriter(cmd.OutOrStdout(), false, false)
 
 			if repoPath == "" {
 				var err error
@@ -1748,7 +1975,9 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 			webhookAddr := fmt.Sprintf(":%d", cfg.WebhookPort)
 			dashboardAddr := fmt.Sprintf(":%d", cfg.DashboardPort)
 
-			serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
+			if os.Getenv("MARS_HARNESS_SKIP_START_CLEANUP") != "1" {
+				serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
+			}
 
 			srv, err := serve.New(serve.Config{
 				WebhookAddr:        webhookAddr,
@@ -1766,7 +1995,11 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 				return err
 			}
 
-			sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+			parentCtx := cmd.Context()
+			if parentCtx == nil {
+				parentCtx = context.Background()
+			}
+			sigCtx, stop := signal.NotifyContext(parentCtx, os.Interrupt)
 			defer stop()
 
 			repoID, err := srv.Repos().Register(sigCtx, absPath, "", "main")
@@ -1784,6 +2017,10 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 			}
 			tw.WriteAssistant(fmt.Sprintf("Seeded CEO agent (job %s) — pipeline will cascade: CEO → CTO → COO → Engineer → QA → Security → Deps", jobID))
 
+			if exitAfterSeed {
+				return srv.Stop(context.Background())
+			}
+
 			sb := ui.NewStatusBar(os.Stderr, srv)
 			sb.Start()
 			defer sb.Stop()
@@ -1800,6 +2037,8 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 	cmd.Flags().IntVar(&concurrency, "concurrency", 1, "Number of concurrent agent workers (1 = sequential pipeline)")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
 	cmd.Flags().BoolVar(&force, "force", false, "Force re-init .harness/ even if it exists")
+	cmd.Flags().BoolVar(&exitAfterSeed, "exit-after-seed", false, "Exit after init/register/seed; intended for deterministic smoke tests")
+	_ = cmd.Flags().MarkHidden("exit-after-seed")
 
 	return cmd
 }

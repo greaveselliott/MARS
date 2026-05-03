@@ -60,10 +60,42 @@ func TestCheckRepo_reportsStaleOperatingModelArtifact(t *testing.T) {
 	}
 }
 
+func TestCheckRepo_foundationRepoSkipsGeneratedHarnessContextGlossary(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	writeTestFile(t, repo, "go.mod", "module github.com/greaveselliott/mars-harness\n")
+	writeTestFile(t, repo, "internal/scanner/init.go", "package scanner\n")
+	for _, artifact := range requiredArtifacts {
+		if artifact.path == ".harness/knowledge/context-glossary.yaml" {
+			continue
+		}
+		writeTestFile(t, repo, artifact.path, stringsForNeedles(artifact.needles))
+	}
+
+	report, err := CheckRepo(repo)
+	if err != nil {
+		t.Fatalf("CheckRepo: %v", err)
+	}
+	if !report.OK() {
+		t.Fatalf("expected foundation repo to be current, got missing=%+v stale=%+v", report.Missing, report.Stale)
+	}
+}
+
 func stringsForNeedles(needles []string) string {
 	out := "# artifact\n"
 	for _, needle := range needles {
 		out += needle + "\n"
 	}
 	return out
+}
+
+func writeTestFile(t *testing.T, repo, rel, content string) {
+	t.Helper()
+	path := filepath.Join(repo, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", path, err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
 }

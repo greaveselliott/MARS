@@ -256,23 +256,150 @@ func checkShellPolicy(raw json.RawMessage) error {
 	if strings.TrimSpace(args.ShellCommand) != "" {
 		cmd = args.ShellCommand
 	}
-	lower := strings.ToLower(cmd)
-	blocked := []string{
-		"git push --force",
-		"git push -f",
-		"git reset --hard",
-		"git clean -fd",
-		"git checkout -b",
-		"git branch -d",
-		"git branch -D",
-		"rm -rf /",
-	}
-	for _, phrase := range blocked {
-		if strings.Contains(lower, strings.ToLower(phrase)) {
-			return fmt.Errorf("policy: shell_exec command contains forbidden operation %q", phrase)
-		}
+	if operation, ok := forbiddenShellOperation(cmd); ok {
+		return fmt.Errorf("policy: shell_exec command contains forbidden operation %q", operation)
 	}
 	return nil
+}
+
+func forbiddenShellOperation(cmd string) (string, bool) {
+	fields := shellFields(cmd)
+	if len(fields) == 0 {
+		return "", false
+	}
+	if hasGitSubcommand(fields, "push") && hasGitForcePushFlag(fields) {
+		return "git push --force", true
+	}
+	if hasGitSubcommand(fields, "reset") && hasToken(fields, "--hard") {
+		return "git reset --hard", true
+	}
+	if hasGitSubcommand(fields, "clean") && hasGitCleanForceDelete(fields) {
+		return "git clean -fd", true
+	}
+	if hasGitSubcommand(fields, "branch") && hasGitBranchDelete(fields) {
+		return "git branch -d", true
+	}
+	if hasGitSubcommand(fields, "checkout") && hasToken(fields, "-b") {
+		return "git checkout -b", true
+	}
+	if hasRootRemoval(fields) {
+		return "rm -rf /", true
+	}
+	return "", false
+}
+
+func shellFields(cmd string) []string {
+	raw := strings.Fields(strings.ToLower(cmd))
+	fields := make([]string, 0, len(raw))
+	for _, field := range raw {
+		field = strings.Trim(field, `"'`)
+		field = strings.TrimRight(field, ";")
+		if field != "" {
+			fields = append(fields, field)
+		}
+	}
+	return fields
+}
+
+func hasGitSubcommand(fields []string, subcommand string) bool {
+	for i := 0; i < len(fields); i++ {
+		if fields[i] != "git" && !strings.HasSuffix(fields[i], "/git") {
+			continue
+		}
+		for j := i + 1; j < len(fields); j++ {
+			token := fields[j]
+			if token == "-c" && j+1 < len(fields) {
+				j++
+				continue
+			}
+			if strings.HasPrefix(token, "--git-dir") || strings.HasPrefix(token, "--work-tree") {
+				continue
+			}
+			if token == subcommand {
+				return true
+			}
+			if strings.HasPrefix(token, "-") {
+				continue
+			}
+			break
+		}
+	}
+	return false
+}
+
+func hasToken(fields []string, want string) bool {
+	for _, field := range fields {
+		if field == want {
+			return true
+		}
+	}
+	return false
+}
+
+func hasGitForcePushFlag(fields []string) bool {
+	for _, field := range fields {
+		switch {
+		case field == "-f", field == "--force", field == "--force-with-lease":
+			return true
+		case strings.HasPrefix(field, "--force="), strings.HasPrefix(field, "--force-with-lease="):
+			return true
+		}
+	}
+	return false
+}
+
+func hasGitCleanForceDelete(fields []string) bool {
+	force := false
+	dirs := false
+	for _, field := range fields {
+		switch {
+		case field == "-f", field == "--force":
+			force = true
+		case field == "-d":
+			dirs = true
+		case strings.HasPrefix(field, "-") && !strings.HasPrefix(field, "--"):
+			if strings.Contains(field, "f") {
+				force = true
+			}
+			if strings.Contains(field, "d") {
+				dirs = true
+			}
+		}
+	}
+	return force && dirs
+}
+
+func hasGitBranchDelete(fields []string) bool {
+	for _, field := range fields {
+		switch field {
+		case "-d", "--delete", "--force":
+			return true
+		}
+	}
+	return false
+}
+
+func hasRootRemoval(fields []string) bool {
+	for i := 0; i < len(fields); i++ {
+		if fields[i] != "rm" {
+			continue
+		}
+		flags := ""
+		for j := i + 1; j < len(fields); j++ {
+			token := fields[j]
+			if token == "--" {
+				continue
+			}
+			if strings.HasPrefix(token, "-") {
+				flags += token
+				continue
+			}
+			if token == "/" && strings.Contains(flags, "r") && strings.Contains(flags, "f") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func validateRepoDiff(ctx context.Context, root Root, session Session) error {

@@ -55,7 +55,7 @@ var requiredArtifacts = []requiredArtifact{
 	{path: "docs/goals/superseded.md", needles: []string{"Superseded Goals"}},
 	{path: "docs/features/README.md", needles: []string{"BDD Feature Contracts", "Scenario Schedule", "Given/When/Then"}},
 	{path: "docs/features/F-001-delivery-operating-model.md", needles: []string{"Feature ID: F-001", "Scenario Schedule", "Given", "When", "Then"}},
-	{path: "docs/exec-plans/README.md", needles: []string{"**Goals**", "**BDD Feature**", "**Scenario Schedule**", "**Walking Skeleton Slice**"}},
+	{path: "docs/exec-plans/README.md", needles: []string{"**Goals:**", "**BDD Feature:**", "**Scenario Schedule:**", "**Walking Skeleton Slice:**"}},
 	{path: "docs/exec-plans/active/current-operating-plan.md", needles: []string{"**Goals:**", "**BDD Feature:**", "**Current Failing Scenario:**"}},
 	{path: "docs/tickets/README.md", needles: []string{"work_type", "bdd_scenarios", "end_to_end_evidence", "verified_by"}},
 	{path: ".harness/knowledge/context-glossary.yaml", needles: []string{"goals, BDD, feature contracts, planning, feedback, or quality evidence"}},
@@ -71,7 +71,7 @@ func CheckRepo(repoPath string) (Report, error) {
 		return Report{}, fmt.Errorf("operating model: resolve repo path: %w", err)
 	}
 	var report Report
-	for _, artifact := range requiredArtifacts {
+	for _, artifact := range requiredArtifactsForRepo(absRepo) {
 		absPath := filepath.Join(absRepo, filepath.FromSlash(artifact.path))
 		data, err := os.ReadFile(absPath)
 		if err != nil {
@@ -92,6 +92,37 @@ func CheckRepo(repoPath string) (Report, error) {
 		}
 	}
 	return report, nil
+}
+
+func requiredArtifactsForRepo(absRepo string) []requiredArtifact {
+	if !IsFoundationHarnessRepo(absRepo) {
+		return requiredArtifacts
+	}
+	filtered := make([]requiredArtifact, 0, len(requiredArtifacts))
+	for _, artifact := range requiredArtifacts {
+		if artifact.path == ".harness/knowledge/context-glossary.yaml" {
+			continue
+		}
+		filtered = append(filtered, artifact)
+	}
+	return filtered
+}
+
+// IsFoundationHarnessRepo reports whether repoPath is the mars-harness source
+// repo. The source harness records doctrine in AGENTS.md and docs rather than
+// in generated target .harness metadata.
+func IsFoundationHarnessRepo(absRepo string) bool {
+	data, err := os.ReadFile(filepath.Join(absRepo, "go.mod"))
+	if err != nil {
+		return false
+	}
+	if !strings.Contains(string(data), "module github.com/greaveselliott/mars-harness") {
+		return false
+	}
+	if _, err := os.Stat(filepath.Join(absRepo, "internal", "scanner", "init.go")); err != nil {
+		return false
+	}
+	return true
 }
 
 func containsFold(text, needle string) bool {

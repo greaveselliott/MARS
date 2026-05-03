@@ -33,6 +33,7 @@ would otherwise live only in chat.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `mars_harness_cli`, `grep`, `record_decision`, `ticket_create`, `tool_create`, release/status/audit workflow tools, and git tools.
+- **Universal tool surface** — the mirrored Mars Harness tool registry exposed through agent role allowlists, `mars-harness tools run`, and `mars-harness mcp serve` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through `tool_create`; bypassing it requires a prior `record_decision` entry and design-doc rationale.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
@@ -203,7 +204,22 @@ mars-harness run engineer --repo . --dry-run   # preview system prompt
 
 Flags: `--model-endpoint`, `--trace`, `--dry-run`, `--budget`, `--max-turns`
 
-### 7. Release Notes
+### 7. Universal Tools
+
+Expose the same registered Mars Harness tool surface to operators and external
+LLM clients.
+
+```bash
+mars-harness tools list --json
+mars-harness tools run tool_creation_guard --repo . --args-json '{"tool_name":"tool_creation_guard"}'
+mars-harness mcp serve --repo /path/to/repo --trust observer
+```
+
+Use `mcp serve` for any MCP-compatible client or local harness agent.
+Use `--trust contributor` only when the client should be allowed to call
+mutating tools such as `tool_create`, `file_write`, or `record_decision`.
+
+### 8. Release Notes
 
 Generate semantic-versioned patch notes from commits and update `VERSION` plus `CHANGELOG.md`.
 

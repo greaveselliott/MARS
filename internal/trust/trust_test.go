@@ -18,6 +18,13 @@ func tempStore(t *testing.T) *Store {
 	return s
 }
 
+func TestOpenStore_missingParentIsActionable(t *testing.T) {
+	_, err := OpenStore(filepath.Join(t.TempDir(), "missing", "trust.db"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "database directory")
+	assert.Contains(t, err.Error(), "mars-harness register --repo")
+}
+
 func TestEvaluate_observerToContributor(t *testing.T) {
 	entry := &Entry{
 		Role:      "ci-fix",

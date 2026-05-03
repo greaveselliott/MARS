@@ -26,37 +26,38 @@ This file is the repo-visible quality artifact for Mars Harness evidence. It is 
 
 | Area | Grade | Evidence | Next Action |
 | --- | --- | --- | --- |
-| Role health | Insufficient evidence | No scored role outcomes. | Keep recording terminal outcomes for every role run. |
-| Terminal outcomes and checks | Insufficient evidence | No terminal outcomes recorded. | Investigate failed checks, guardrail blocks, no-op runs, and human follow-up. |
-| Ticket flow and intervention debt | C | 10 backlog, 0 in-progress, 39 done, 9 open intervention-debt | Drain in-progress and intervention-debt tickets before ordinary backlog work. |
+| Role health | A | 10 scored samples, weighted score 0.90 | Keep recording terminal outcomes for every role run. |
+| Terminal outcomes and checks | A | 9 positive, 1 negative, 10 total | Investigate failed checks, guardrail blocks, no-op runs, and human follow-up. |
+| Ticket flow and intervention debt | B | 3 backlog, 0 in-progress, 46 done, 3 open intervention-debt | Drain in-progress and intervention-debt tickets before ordinary backlog work. |
 | Telemetry and dogfood | A | No telemetry triage targets; None recorded | Promote recurring telemetry and dogfood failures into bounded remediation. |
-| Evidence coverage | Insufficient evidence | SQLite score database missing. | Run harness jobs with scoring enabled when evidence is insufficient. |
+| Evidence coverage | B | SQLite score and telemetry evidence available. | Run harness jobs with scoring enabled when evidence is insufficient. |
 
-**Current overall grade: Insufficient evidence.**
+**Current overall grade: B.**
 
 ## Role Health
 
-No role scores were available in the selected evidence window.
+| Repo | Role | Grade | Score | Samples | Window | Computed |
+| --- | --- | --- | ---: | ---: | ---: | --- |
+| mars-harness | engineer | A | 0.90 | 10 | 30d | 2026-05-03T17:37:58Z |
 
 ## Evidence Signals
 
 | Signal | Evidence |
 | --- | --- |
-| Role scores | No scored role outcomes. |
-| Terminal outcomes | No terminal outcomes recorded. |
+| Role scores | 10 scored samples, weighted score 0.90 |
+| Terminal outcomes | 9 positive, 1 negative, 10 total |
 | Stuck tickets | No in-progress tickets. |
 | Failed dogfood | None recorded |
-| Guardrail blocks | None recorded |
-| Intervention debt | 9 open intervention-debt, 17 total intervention-debt |
-| Check results | 0 passed, 0 failed |
+| Guardrail blocks | 1 guardrail blocks |
+| Intervention debt | 3 open intervention-debt, 17 total intervention-debt |
+| Check results | 6 passed, 0 failed |
 | No-op runs | None recorded |
 | Human follow-up | None recorded |
 | Top telemetry triage targets | No telemetry triage targets |
 
 ## Top Improvement Targets
 
-1. Run harness jobs with scoring enabled or pass `--db` for the repo-specific SQLite database.
-2. Resolve or explicitly downgrade 9 open intervention-debt ticket(s).
+1. Resolve or explicitly downgrade 3 open intervention-debt ticket(s).
 
 ## Source And Target Contract
 
@@ -70,9 +71,11 @@ No role scores were available in the selected evidence window.
 ## Manual Notes
 
 <!-- BEGIN MANUAL NOTES -->
-_No manual notes recorded. Keep human context here; `scores export` preserves this block._
+- 2026-05-03 local recovery verification passed `go test ./...`, `go test -race -count=1 ./...`, `go test -cover ./...`, and `go build -o <validation-root> ./cmd/mars-harness`.
+- Total coverage from `<validation-root>` is 64.4%; `internal/power` remains platform glue with no direct unit coverage.
+- `golangci-lint run` was not available locally (`command not found`); rely on CI or install golangci-lint before claiming local lint evidence.
 <!-- END MANUAL NOTES -->
 
 ## Generation Notes
 
-- No SQLite database found at /path/to/local-redacted; score evidence is insufficient.
+- No export warnings.

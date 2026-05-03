@@ -19,6 +19,22 @@ tools are added, removed, renamed, or materially change behavior.
 
 - Tools are available only when registered in the built-in registry and included
   in the current role allowlist.
+- Universal mirrored tools are part of the same built-in registry in the
+  foundation harness and every deployed harness initialized or upgraded by
+  `mars-harness`.
+- Universal tools must be readily discoverable through `mars-harness tools list`
+  and executable through `mars-harness tools run <name>` when an operator or
+  external LLM shell is outside an active agent run.
+- Universal tools must also be exposed through the standard MCP stdio surface:
+  `mars-harness mcp serve --repo <path>`. This is the preferred integration
+  point for MCP-compatible clients and local harness agents because it makes
+  Mars Harness tools native tools instead of shell conventions.
+- The universal tool surface is model-provider agnostic. Deployed harnesses use
+  local models by default, and MCP/tool transport must not assume frontier cloud
+  model access.
+- During active agent runs, universal tools are still trust-gated and must appear
+  in the role's allowlist; outside an agent run, `mars-harness tools run` uses
+  the same executor, repo-root resolution, trust policy, and JSON argument path.
 - Mirrored tools are valid in both the foundation harness and deployed harnesses.
 - Mutating tools are blocked at observer trust.
 - Prefer purpose-built tools over `shell_exec` when a deterministic tool exists.
@@ -54,6 +70,13 @@ tools are added, removed, renamed, or materially change behavior.
 
 - Need Mars Harness behavior, versioning, setup, release, score, trust, or target
   harness lifecycle operations: use `mars_harness_cli`.
+- Need to discover or invoke the universal tool surface from an operator shell
+  or external LLM context: use `mars-harness tools list` and
+  `mars-harness tools run <name> --args-json '{...}'`. Add
+  `--trust contributor` only for deliberate mutating tool calls.
+- Need an MCP-compatible client or local harness agent to see Mars Harness tools
+  as native tools: configure it to launch
+  `mars-harness mcp serve --repo <path> --trust observer|contributor`.
 - Need to run or prepare the whole release ritual: use `release_orchestrate`,
   `git_release_guard`, and `github_release_status` before mutating state.
 - Need a durable repo-owned note: use `record_decision`.

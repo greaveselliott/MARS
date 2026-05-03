@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -50,4 +51,58 @@ func TestShellExec_mutexArgs(t *testing.T) {
 	_, err = handleShellExec(context.Background(), root, []byte(`{"argv":["sh","-c","echo x"],"shell_command":"echo y"}`))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "exactly one")
+}
+
+func TestShellPolicyBlocksDestructiveVariants(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{
+			name: "force push reordered shell command",
+			raw:  `{"shell_command":"git push origin main --force"}`,
+			want: "git push --force",
+		},
+		{
+			name: "force with lease shell command",
+			raw:  `{"shell_command":"git push origin main --force-with-lease"}`,
+			want: "git push --force",
+		},
+		{
+			name: "short force push argv",
+			raw:  `{"argv":["git","push","origin","main","-f"]}`,
+			want: "git push --force",
+		},
+		{
+			name: "reset hard",
+			raw:  `{"shell_command":"git reset --hard HEAD~1"}`,
+			want: "git reset --hard",
+		},
+		{
+			name: "clean combined flags",
+			raw:  `{"shell_command":"git clean -dfx"}`,
+			want: "git clean -fd",
+		},
+		{
+			name: "branch delete uppercase",
+			raw:  `{"shell_command":"git branch -D topic"}`,
+			want: "git branch -d",
+		},
+		{
+			name: "root delete reordered flags",
+			raw:  `{"argv":["rm","-fr","--","/"]}`,
+			want: "rm -rf /",
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := checkShellPolicy(json.RawMessage(tc.raw))
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.want)
+		})
+	}
 }

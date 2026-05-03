@@ -9,6 +9,11 @@ runtime, executes role jobs through a bounded tool registry, records traces and
 telemetry, scores real outcomes, adjusts trust, and turns failures into durable
 work.
 
+The deployed harness uses local models by default. Universal harness surfaces
+are model-provider agnostic: tools, MCP transport, trust policy, context routing,
+and generated documentation must work for local harness agents and any
+MCP-compatible client without assuming frontier cloud model access.
+
 The source repo is also a software factory. Operating doctrine, mirrored tools,
 release rules, target harness defaults, and generated documentation all evolve
 together. Changes that affect how agents work must be symbiotic with the
@@ -22,16 +27,19 @@ flowchart TB
   subgraph LocalMachine ["Developer or operator machine"]
     CLI["mars-harness single Go binary"]
     CONFIG["~/.mars-harness config, caches, per-repo DBs"]
-    LLM["OpenAI-compatible LLM endpoint"]
+    LLM["Local or compatible LLM endpoint"]
     LLAMA["llama.cpp server subprocess"]
     GPU["Local GPU or CPU fallback"]
     DASH["Dashboard and HTTP API"]
+    MCPCLIENT["MCP-compatible client or local harness agent"]
 
     CLI --> SETUP["setup / path setup"]
     CLI --> UPDATE["update check / tool / harness"]
     CLI --> RELEASE["release notes / verify-assets"]
     CLI --> TARGETOPS["init / upgrade / scan / register"]
     CLI --> EXECOPS["start / serve / run"]
+    CLI --> TOOLOPS["tools list / run"]
+    CLI --> MCPOPS["mcp serve"]
     CLI --> HEALTH["doctor / scores / trust / models"]
 
     SETUP --> CONFIG
@@ -39,6 +47,9 @@ flowchart TB
     RELEASE --> SOURCE["mars-harness source repo"]
     TARGETOPS --> TARGET["Target repository"]
     EXECOPS --> SERVER["Orchestrator server"]
+    TOOLOPS --> TOOLS["Built-in tool registry"]
+    MCPOPS --> TOOLS
+    MCPCLIENT -. stdio MCP .-> MCPOPS
     HEALTH --> CONFIG
 
     LLAMA --> GPU
@@ -122,6 +133,9 @@ surface is:
 | `mars-harness start --repo <path>` | Auto-init if needed, register the repo, seed the CEO role, and run the per-repo orchestrator. |
 | `mars-harness serve` | Run the legacy multi-repo orchestrator, dashboard, webhooks, cron scheduler, workers, and recovery watchdog. |
 | `mars-harness run <role> --repo <path>` | Execute one role against a target repo, with `--dry-run` for prompt preview. |
+| `mars-harness tools list [--json]` | List the universal registered built-in tool surface available to foundation and deployed harness contexts. |
+| `mars-harness tools run <name> --repo <path> --args-json <json>` | Execute one registered tool through the same executor, allowlist, trust policy, repo root, and JSON argument path used by agent runs. |
+| `mars-harness mcp serve --repo <path>` | Expose registered tools through stdio MCP so any MCP-compatible client or local harness agent can use Mars Harness tools through a model-provider-agnostic tool mechanism. |
 | `mars-harness doctor [--repo <path>] [--json]` | Diagnose setup, models, DB, repo, guardrail/workflow health, operating-model drift, active-plan hygiene, and integration state. |
 | `mars-harness scores [--repo <path>]` | Print stored role scores. |
 | `mars-harness scores export --repo <path>` | Refresh `docs/QUALITY_SCORE.md` from score, telemetry, ticket, dogfood, guardrail, check, no-op, and human-follow-up evidence. |
@@ -176,10 +190,11 @@ not by a single agent loop.
 ### LLM Client, Router, and Local Inference (`internal/llm/`, `internal/inference/`, `internal/models/`, `internal/hardware/`)
 
 The LLM client speaks the OpenAI-compatible HTTP shape used by local llama.cpp
-and compatible model servers. Local inference manages llama.cpp as a subprocess,
-detects hardware, downloads or verifies model weights, starts and stops the
-server, and health-checks it. Model evaluation prints the current candidate plan
-or probes a supplied compatible endpoint.
+and compatible model servers, but the architecture does not require frontier
+cloud models. Deployed harnesses default to local inference. Local inference
+manages llama.cpp as a subprocess, detects hardware, downloads or verifies model
+weights, starts and stops the server, and health-checks it. Model evaluation
+prints the current candidate plan or probes a supplied compatible endpoint.
 
 ### Tool System (`internal/tools/`)
 
@@ -188,6 +203,15 @@ are registered in code and then filtered by the current role allowlist. Empty
 allowlists fail closed. Mutating tools are blocked at observer trust and pass
 through repository-root checks, guardrails, safety limits, and secret scanning
 where applicable.
+
+The universal tool surface is the same registry exposed three ways:
+
+- role tool allowlists during Mars Harness agent runs
+- `mars-harness tools list/run` for operator and smoke-test workflows
+- `mars-harness mcp serve` for MCP-compatible clients and local harness agents
+
+This surface is intentionally model-provider agnostic. It describes capability
+transport, schemas, trust, and execution policy, not where inference runs.
 
 Current mirrored built-in tools are:
 
@@ -270,7 +294,7 @@ assets.
 ## Generated Target Harness Layout
 
 `mars-harness init` writes a deployed harness that is immediately usable by
-Codex, Cursor, Mars Harness roles, and humans:
+local Mars Harness roles, MCP-compatible clients, and humans:
 
 ```text
 target-repo/

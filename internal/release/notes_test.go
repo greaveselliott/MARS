@@ -45,10 +45,29 @@ func TestPrepareGeneratesVersionAndChangelog(t *testing.T) {
 	changelog, err := os.ReadFile(filepath.Join(dir, "CHANGELOG.md"))
 	require.NoError(t, err)
 	require.Contains(t, string(changelog), "## [0.2.0] - 2026-05-02")
+	require.Contains(t, string(changelog), "### Why This Release Matters")
+	require.Contains(t, string(changelog), "This release matters because it gives operators new capability through work to add search endpoint in api.")
+	require.Contains(t, string(changelog), "It improves reliability through work to handle empty results.")
 	require.Contains(t, string(changelog), "### Features")
 	require.Contains(t, string(changelog), "**api:** Add search endpoint")
 	require.Contains(t, string(changelog), "### Fixes")
 	require.Contains(t, string(changelog), "Handle empty results")
+}
+
+func TestRenderImportanceSummaryUsesPlainEnglishAcrossCommitTypes(t *testing.T) {
+	t.Parallel()
+	commits := []Commit{
+		{Short: "aaa111", Type: "docs", Scope: "release", Message: "document release process"},
+		{Short: "bbb222", Type: "test", Message: "cover changelog generation"},
+		{Short: "ccc333", Type: "chore", Scope: "deps", Message: "update go modules"},
+	}
+
+	summary := renderImportanceSummary(commits)
+
+	require.Contains(t, summary, "### Why This Release Matters")
+	require.Contains(t, summary, "It makes the harness easier to understand and operate through work to document release process in release.")
+	require.Contains(t, summary, "It keeps the project healthier through work to update go modules in deps.")
+	require.Contains(t, summary, "It raises confidence in the code through work to cover changelog generation.")
 }
 
 func TestPrepareUsesChangelogMarkerAsBase(t *testing.T) {
