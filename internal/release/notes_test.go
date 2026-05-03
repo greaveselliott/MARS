@@ -75,6 +75,29 @@ func TestPrepareUsesChangelogMarkerAsBase(t *testing.T) {
 	require.Contains(t, result.Entry, "One more bug")
 }
 
+func TestPrepareIgnoresStaleChangelogMarkerAndUsesCurrentVersionTag(t *testing.T) {
+	t.Parallel()
+	dir := initGitRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.1.0\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte("# Changelog\n\n## [0.1.0] - 2026-05-01\n<!-- mars-harness-release: version=0.1.0 commit=deadbeefdead -->\n"), 0o644))
+	gitCommit(t, dir, "release: notes 0.1.0")
+	gitRun(t, dir, "tag", "v0.1.0")
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "fix.txt"), []byte("fix"), 0o644))
+	gitCommit(t, dir, "fix: one more bug")
+
+	result, err := Prepare(context.Background(), Config{
+		RepoRoot: dir,
+		Bump:     BumpAuto,
+		DryRun:   true,
+		Now:      time.Date(2026, 5, 2, 12, 0, 0, 0, time.UTC),
+	})
+	require.NoError(t, err)
+	require.Equal(t, "v0.1.0", result.BaseRef)
+	require.Len(t, result.Commits, 1)
+	require.Contains(t, result.Entry, "One more bug")
+}
+
 func TestPrepareClassifiesDeliveryEvidenceFromDoneTickets(t *testing.T) {
 	t.Parallel()
 	dir := initGitRepo(t)

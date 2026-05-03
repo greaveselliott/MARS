@@ -134,7 +134,9 @@ func readVersion(repoRoot string) (SemVer, error) {
 
 func findBaseRef(ctx context.Context, repoRoot string, current SemVer) string {
 	if marker := latestChangelogMarker(repoRoot); marker != "" {
-		return marker
+		if gitOK(ctx, repoRoot, "merge-base", "--is-ancestor", marker, "HEAD") {
+			return marker
+		}
 	}
 	currentTag := "v" + current.String()
 	if current != (SemVer{}) && gitOK(ctx, repoRoot, "rev-parse", "--verify", "--quiet", currentTag) {
