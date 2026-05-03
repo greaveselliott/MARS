@@ -2,6 +2,12 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.10.1] - 2026-05-03
+<!-- mars-harness-release: version=0.10.1 commit=bb885cd5ad7e -->
+
+### Fixes
+- **inference:** Surface installed model variants (bb885cd)
+
 ## [0.10.0] - 2026-05-03
 <!-- mars-harness-release: version=0.10.0 commit=0f4d9ec86ceb -->
 
