@@ -411,6 +411,8 @@ roles:
     mode: ticket-hygiene
     model: fast
     schedule: "0 7 * * *"
+    triggers:
+      - ticket.stale_in_progress
     max_turns: 30
     knowledge: [knowledge/context-glossary.yaml]
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_diff, git_commit, git_push]
@@ -513,7 +515,7 @@ evidence with ` + "`mars-harness scores export --repo .`" + `.
 | Product goal clarity | C | README and starter docs exist, but the harness has not audited them yet. | Record the product goal and core user flows. |
 | BDD feature evidence | C | Goal docs and feature contracts are generated, but no target scenarios have passed yet. | Map the next shipped feature to scenarios and E2E/integration evidence. |
 | Build and test truth | C | Commands may be unknown until the first scan or human update. | Fill ` + "`docs/design-docs/context-glossary.md`" + ` with build, test, lint, and run commands. |
-| Ticket workflow | B | Canonical backlog, in-progress, and done paths are generated. | Keep in-progress tickets drained before claiming new backlog work. |
+| Ticket workflow | B | Canonical backlog, in-progress, done, and blocker metadata paths are generated. | Keep eligible in-progress tickets drained before claiming new backlog work. |
 | Architecture documentation | C | Design-doc index exists as a seed. | Record non-obvious architecture and product decisions with rationale. |
 | Release/versioning | B | VERSION, CHANGELOG.md, and release guidance are generated. | Run ` + "`mars-harness release notes --repo . --bump auto`" + ` after non-release semantic commits. |
 | Harness readiness | B | AGENTS.md, manifest, roles, guardrails, knowledge routes, and skills are generated. | Tune roles and guardrails to this project after early runs. |
@@ -599,9 +601,9 @@ Role registry: ` + "`docs/roles/ROLES.md`" + `
 - Work on ` + "`main`" + `. Use strict trunk for normal delivery.
 - BDD feature contracts define feature completeness; walking skeleton is the implementation strategy: make the next failing scenario pass through the thinnest real end-to-end path.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
-- Prefer in-progress tickets before backlog work.
+- Prefer eligible in-progress tickets before backlog work; a ticket is eligible when it has no meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata.
 - Complete one coherent step at a time.
-- If blocked, record the blocker, create or update the dependency ticket, and return the ticket to a non-misleading state.
+- If blocked, record ` + "`blocker`" + `, ` + "`blocked_by`" + `, ` + "`trace_id`" + `, and ` + "`next_action`" + `, create or update the dependency/intervention-debt ticket, and return the ticket to a non-misleading state.
 - Commit and push after each completed step.
 - Significant conversations must update the owning repo artifact in the same direct commit to ` + "`main`" + `: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
 - Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
@@ -680,6 +682,12 @@ bdd_scenarios: ["F-001-S001"]
 end_to_end_evidence: required
 evidence_links: []
 verified_by: TBD
+owner: TBD
+last_attempt: TBD
+blocker: none
+blocked_by: []
+trace_id: TBD
+next_action: TBD
 source: current-operating-plan.md — This week item 1
 created: 2026-04-12
 depends_on: []
@@ -728,7 +736,8 @@ The ticket_create tool assigns the next available number automatically.
 
 1. A ticket is created in backlog/ with frontmatter and acceptance criteria
 2. The highest-priority ticket is picked up and moved to in-progress/
-3. On completion, the ticket moves to done/
+3. An unfinished in-progress ticket must end as completed, returned to backlog with ` + "`blocker`" + ` and ` + "`next_action`" + `, left in in-progress with ` + "`blocked_by`" + ` pointing at a dependency ticket, or guardrail-blocked with ` + "`blocked_by`" + ` pointing at intervention debt.
+4. On completion, the ticket moves to done/
 
 Feature tickets cannot move to ` + "`done/`" + ` without BDD scenario evidence:
 
@@ -741,11 +750,30 @@ Feature tickets cannot move to ` + "`done/`" + ` without BDD scenario evidence:
 Enabler, research, docs, and intervention-debt tickets use
 ` + "`end_to_end_evidence: not_applicable`" + ` and must not claim a shipped feature.
 
+## Drain Metadata
+
+The ticket drain gate uses these fields:
+
+- ` + "`owner`" + `: role or human currently responsible for the ticket.
+- ` + "`last_attempt`" + `: ISO date or timestamp for the latest meaningful attempt.
+- ` + "`blocker`" + `: concrete blocker note; use ` + "`none`" + ` or ` + "`TBD`" + ` when unblocked.
+- ` + "`blocked_by`" + `: dependency ticket IDs that must land before this resumes.
+- ` + "`trace_id`" + `: trace for the latest relevant run when available.
+- ` + "`next_action`" + `: concrete resume or unblock instruction.
+
+Eligible in-progress tickets are ` + "`docs/tickets/in-progress/`" + ` files without a
+meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + `. Eligible in-progress work is always ahead
+of backlog work. Blocked in-progress tickets do not cause infinite retries, but
+they must point to a dependency ticket or carry a blocker note clear enough for
+Janitor, Doctor, and the next Engineer run to recover state.
+
 ## Intervention Debt
 
 Use ` + "`kind: intervention-debt`" + ` for work created from repeated telemetry failures, non-success terminal agent results, guardrail or tool-policy blocks, repeated tool loops, manual stops, timeouts, score regressions, dogfood failures, stale ticket state, human follow-up, or reverted agent commits.
 
 Intervention-debt tickets include role, repo, target, category, severity, confidence, evidence, and origin metadata. Origin metadata should link trace IDs, score snapshots, commits, outcomes, tools, jobs, telemetry events, and source messages when available locally; missing optional GitHub metadata must not block local ticket creation. They are deduped by repo, role, target, category, and evidence window. Prioritise them ahead of ordinary backlog work because they fix the harness process that produces future work.
+
+Eligible in-progress tickets are always the front of the queue. Engineer runs cannot create ordinary backlog tickets while eligible in-progress tickets remain. Dependency tickets are allowed only when deduped and linked back to the blocked ticket through metadata such as ` + "`metadata.blocks`" + `. Dogfood ticket creation is capped per run by total count, severity, group, and repeated dedupe key.
 `,
 
 	"docs/exec-plans/README.md": `# Execution Plans
@@ -1241,7 +1269,7 @@ loading every document.
 | Repo | This target repository. | ` + "`README.md`" + ` |
 | Harness | The Mars Harness automation layer in ` + "`.harness/`" + `. | ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/metadata.yaml`" + ` |
 | Ticket | A markdown work item. | ` + "`docs/tickets/README.md`" + ` |
-| In progress | Active work that should be completed or explicitly unblocked before new backlog work. | ` + "`docs/tickets/in-progress/`" + ` |
+| In progress | Active work that should be completed, explicitly blocked, or returned with blocker metadata before new backlog work. | ` + "`docs/tickets/in-progress/`" + ` |
 | Goal | Outcome and priority signal used by the CEO to align the active plan. | ` + "`docs/goals/README.md`" + `, ` + "`docs/goals/active.md`" + ` |
 | BDD feature contract | Markdown Given/When/Then contract that defines feature completeness. | ` + "`docs/features/README.md`" + ` |
 | Walking skeleton | The thinnest real end-to-end path that makes the next failing BDD scenario pass. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
@@ -2069,9 +2097,11 @@ a continuous delivery loop: Engineer → QA + Engineer → QA + Engineer → ...
 ## Prompt
 
 You are a staff-level engineer. Your job is to pick up ONE ticket from the
-active ticket queue, implement it fully, and commit. In-progress tickets are
-the front of the queue. Each run completes exactly one ticket. The orchestrator
-handles re-queuing — do not try to process multiple tickets in a single run.
+active ticket queue, implement it fully, and commit. Eligible in-progress tickets
+are the front of the queue; a ticket is eligible when it has no meaningful
+` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata. Each run completes exactly one ticket or leaves
+one explicit blocked outcome. The orchestrator handles re-queuing — do not try
+to process multiple tickets in a single run.
 
 STANDARD:
 - Write complete tests that validate every feature you build
@@ -2092,18 +2122,17 @@ START by reading:
 6. docs/design-docs/ (relevant design docs linked in the ticket)
 
 TICKET SELECTION:
-1. FIRST check docs/tickets/in-progress/ — if a ticket is already claimed
-   there (by a previous run that didn't finish), resume that ticket instead
-   of claiming a new one. Read its AC and verify if the work is already done
-   in the codebase. If done: move it to done/ immediately. If not: continue
-   implementing it.
-   If MORE THAN ONE ticket is in in-progress/, choose the lowest-numbered
-   ticket to resume. Leave the others in in-progress/ for later engineer runs;
-   do NOT move them back to backlog/ as cleanup.
-   If the ticket is blocked by a build failure, missing config, failing test,
-   dependency issue, or unclear local convention, fix that blocker proactively
-   in this same run. Record non-obvious fixes with record_decision.
-2. If no in-progress tickets exist, select the highest-priority ticket from
+1. FIRST check docs/tickets/in-progress/ for eligible tickets. If one exists,
+   resume the lowest-numbered eligible ticket instead of claiming a new one.
+   Read its AC and verify if the work is already done in the codebase. If done:
+   move it to done/ immediately. If not: continue implementing it.
+   Leave blocked in-progress tickets alone unless you are resolving their
+   ` + "`blocked_by`" + ` dependency or updating stale blocker metadata.
+   If the selected ticket is blocked by a build failure, missing config,
+   failing test, dependency issue, unclear local convention, or guardrail,
+   either fix that blocker proactively in this same run or record ` + "`blocker`" + `,
+   ` + "`blocked_by`" + `, ` + "`trace_id`" + `, and ` + "`next_action`" + ` before ending.
+2. If no eligible in-progress tickets exist, select the highest-priority ticket from
    backlog/ where all dependencies are satisfied (depends_on tickets must be
    in done/)
 3. If multiple tickets share the same priority, pick the lowest number
@@ -2165,6 +2194,7 @@ IMPLEMENTATION:
    - ` + "`end_to_end_evidence: required`" + `
    - non-empty ` + "`evidence_links`" + ` naming test commands, reports, traces, or proof paths
    - ` + "`verified_by`" + ` set to the verifier role, command, or human
+   - ` + "`blocker: none`" + `, ` + "`blocked_by: []`" + `, and ` + "`next_action`" + ` summarizing follow-up if useful
    shell_exec: git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
    git_commit: message "chore(tickets): move T-NNN to done"
    git_push
@@ -2180,18 +2210,18 @@ COMMIT GATE — MANDATORY before finishing (every run, no exceptions):
    b) git_status to verify the working tree is clean. If there are ANY
       uncommitted changes, commit them now.
    c) If multiple tickets were already in in-progress/ at the start, it is
-      acceptable for other pre-existing in-progress tickets to remain after you
-      complete one. The next engineer run will drain the next lowest-numbered
-      in-progress ticket. It is NOT acceptable to claim new backlog work while
-      any in-progress ticket exists.
+      acceptable for other blocked or lower-numbered queued tickets to remain
+      after you complete one eligible ticket. The next engineer run will drain
+      the next lowest-numbered eligible in-progress ticket. It is NOT acceptable
+      to claim ordinary backlog work while any eligible in-progress ticket exists.
 
 DON'T:
 - Guess when acceptance criteria are ambiguous — note the gap and skip
 - Skip or disable tests to make things pass
 - Introduce new patterns not already documented in design docs
 - Work on more than one ticket per run
-- NEVER return in-progress tickets to backlog just to satisfy the gate.
-- NEVER claim backlog work while any in-progress ticket exists.
+- NEVER return in-progress tickets to backlog without blocker metadata just to satisfy the gate.
+- NEVER claim ordinary backlog work while any eligible in-progress ticket exists.
 - NEVER finish a run with uncommitted changes. Always check git_status at the end.
 - For long-running processes (dev servers, watchers, next dev, npm start), ALWAYS use
   shell_exec with background:true so they run as a background process and don't block your run.
@@ -2698,11 +2728,13 @@ STEP 3 — DELETE ITEMS THAT DON'T BELONG:
   b) git_commit: message "chore(janitor): remove [ticket-id] — does not belong to project"
      git_push
 
-STEP 4 — RE-PRIORITIZE STALE ITEMS:
+STEP 4 — RE-PRIORITIZE OR BLOCK STALE ITEMS:
   For tickets in in-progress/ with no related git activity in the last 7 days:
-  a) Move the file back to backlog/
-  b) Add a note: "Moved to backlog: [date] — no activity for 7+ days"
-  c) git_commit: message "chore(janitor): move stale [ticket-id] back to backlog"
+  a) If acceptance criteria are already satisfied, move the ticket to done/
+  b) If work is still valid but blocked, set ` + "`blocker`" + `, ` + "`blocked_by`" + `, ` + "`trace_id`" + ` if known, and ` + "`next_action`" + `
+  c) Move the file back to backlog/ only when it has a concrete ` + "`blocker`" + ` and ` + "`next_action`" + `
+  d) Create or update a dependency/intervention-debt ticket when ` + "`blocked_by`" + ` names missing work
+  e) git_commit: message "chore(janitor): reconcile stale [ticket-id]"
      git_push
 
 STEP 5 — DETECT FALSE DONE:

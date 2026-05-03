@@ -35,8 +35,8 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001` and the current install/setup feature is `F-002`.
 - Ticket state:
   - `docs/tickets/in-progress/` is empty.
-  - `docs/tickets/backlog/` contains `MH-046` through `MH-049`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-045`.
+  - `docs/tickets/backlog/` contains `MH-047` through `MH-049`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-046`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -58,10 +58,9 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Mars parity execution**: `MH-045` is done; continue the tickets
-   materialized on 2026-05-03 for active-ticket drain (`MH-046`),
-   orchestrator recovery (`MH-047`), deterministic remediation (`MH-048`),
-   and dogfood matrix (`MH-049`).
+1. **Mars parity execution**: `MH-046` is done; continue the tickets
+   materialized on 2026-05-03 for orchestrator recovery (`MH-047`),
+   deterministic remediation (`MH-048`), and dogfood matrix (`MH-049`).
 
 ## Scenario Schedule
 
@@ -107,5 +106,5 @@ Checks recorded during the 2026-05-02 review:
 
 ## Next Ticket Work
 
-- `MH-046`: active ticket drain is the next backlog ticket.
+- `MH-047`: native Orchestrator survey loop is the next backlog ticket.
 - Next active-plan refresh: promote the highest-value Mars parity scenario group.

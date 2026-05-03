@@ -449,20 +449,20 @@ Acceptance:
 
 Make the user-observed "lots of in-progress tickets" failure impossible to ignore.
 
-Backlog ticket: [MH-046](../../tickets/backlog/MH-046-enforce-in-progress-ticket-drain.md).
+Completed ticket: [MH-046](../../tickets/done/MH-046-enforce-in-progress-ticket-drain.md).
 
 Tasks:
 
-- [ ] Add ticket metadata for owner, last attempt, blocker, blocked-by, trace ID, and next action.
-- [ ] Enforce a queue policy: in-progress tickets are considered before backlog tickets.
-- [ ] Prevent an Engineer run from opening a new backlog ticket while eligible in-progress tickets remain.
-- [ ] Require every unfinished in-progress ticket to end with one of:
+- [x] Add ticket metadata for owner, last attempt, blocker, blocked-by, trace ID, and next action.
+- [x] Enforce a queue policy: in-progress tickets are considered before backlog tickets.
+- [x] Prevent an Engineer run from opening a new backlog ticket while eligible in-progress tickets remain.
+- [x] Require every unfinished in-progress ticket to end with one of:
   - completion and move to done
   - blocker note and return to backlog
   - dependency ticket creation and explicit blocked state
   - guardrail-blocked intervention-debt ticket
-- [ ] Add a stale in-progress scanner and Orchestrator trigger.
-- [ ] Cap dogfood ticket creation per run by severity, grouping, and dedupe key.
+- [x] Add a stale in-progress scanner and Orchestrator trigger.
+- [x] Cap dogfood ticket creation per run by severity, grouping, and dedupe key.
 
 Acceptance:
 
@@ -677,7 +677,7 @@ Acceptance:
 3. [MH-044](../../tickets/backlog/MH-044-conversation-system-record-guidance.md): Add conversation-as-system-record design doc and generated guidance.
 4. [MH-034](../../tickets/done/MH-034-active-plan-hygiene-checker.md): Implement active-plan hygiene checks in doctor and CI.
 5. [MH-045](../../tickets/backlog/MH-045-complete-intervention-debt-signal-ingestion.md): Complete intervention-debt creation rules and dedupe beyond the `MH-029` telemetry foundation.
-6. [MH-046](../../tickets/backlog/MH-046-enforce-in-progress-ticket-drain.md): Enforce in-progress ticket priority and blocked-ticket outcomes.
+6. [MH-046](../../tickets/done/MH-046-enforce-in-progress-ticket-drain.md): Enforce in-progress ticket priority and blocked-ticket outcomes.
 7. [MH-037](../../tickets/done/MH-037-automate-quality-score-export.md): Add `docs/QUALITY_SCORE.md` export from scoring data.
 8. [MH-047](../../tickets/backlog/MH-047-native-orchestrator-survey-loop.md): Add native Orchestrator survey loop for stuck jobs, stale tickets, and score regression.
 9. [MH-048](../../tickets/backlog/MH-048-deterministic-remediation-recipes.md): Add deterministic remediation recipe framework.

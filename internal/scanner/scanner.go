@@ -9,7 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
+	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 	"github.com/greaveselliott/mars-harness/internal/tools"
 )
 
@@ -158,6 +160,7 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 	result.Findings = append(result.Findings, findUntestedPackages(cfg.RepoRoot, allFiles)...)
 	result.Findings = append(result.Findings, findLargeFunctions(ctx, cfg.RepoRoot, allFiles, cfg.MaxPackages)...)
 	result.Findings = append(result.Findings, findTodos(ctx, cfg.RepoRoot, allFiles, cfg.MaxPackages)...)
+	result.Findings = append(result.Findings, findStaleInProgressTickets(cfg.RepoRoot, time.Now().UTC())...)
 
 	slog.Info("scan complete",
 		"language", result.Language,
@@ -782,6 +785,28 @@ func scanFileForTodos(root, relPath string) []Finding {
 	return findings
 }
 
+func findStaleInProgressTickets(root string, now time.Time) []Finding {
+	stale, err := ticketstate.StaleInProgress(root, now, ticketstate.DefaultStaleInProgressAfter)
+	if err != nil {
+		return nil
+	}
+	var findings []Finding
+	for _, t := range stale {
+		last := t.LastActivity()
+		ageDays := 0
+		if !last.IsZero() && now.After(last) {
+			ageDays = int(now.Sub(last).Hours() / 24)
+		}
+		findings = append(findings, Finding{
+			Type:        "stale_in_progress_ticket",
+			Path:        t.RelPath,
+			Description: fmt.Sprintf("In-progress ticket %s has been idle for %d day(s) since %s — complete it, return it to backlog with blocker metadata, or link a dependency ticket before taking ordinary backlog work", t.Name, ageDays, t.LastActivityLabel()),
+			Severity:    "high",
+		})
+	}
+	return findings
+}
+
 // GenerateTickets creates deduplicated backlog tickets from scan findings.
 func GenerateTickets(findings []Finding, repoRoot string) error {
 	root, err := tools.NewRoot(repoRoot)
@@ -791,13 +816,7 @@ func GenerateTickets(findings []Finding, repoRoot string) error {
 	count := 0
 	for _, f := range findings {
 		count++
-		res, err := tools.CreateTicket(root, tools.TicketInput{
-			Title:      titleFromFinding(f),
-			Priority:   f.Severity,
-			Complexity: "small",
-			Source:     "scanner",
-			Body:       formatTicketBody(f),
-		})
+		res, err := tools.CreateTicket(root, ticketInputFromFinding(f))
 		if err != nil {
 			return err
 		}
@@ -805,6 +824,31 @@ func GenerateTickets(findings []Finding, repoRoot string) error {
 	}
 	slog.Info("ticket generation complete", "findings", count, "repo", repoRoot)
 	return nil
+}
+
+func ticketInputFromFinding(f Finding) tools.TicketInput {
+	input := tools.TicketInput{
+		Title:      titleFromFinding(f),
+		Priority:   f.Severity,
+		Complexity: "small",
+		Source:     "scanner",
+		Body:       formatTicketBody(f),
+	}
+	if f.Type == "stale_in_progress_ticket" {
+		input.Kind = "intervention-debt"
+		input.WorkType = "intervention-debt"
+		input.EndToEndEvidence = "not_applicable"
+		input.DedupeKey = "intervention-debt:stale-in-progress:" + slugFindingPath(f.Path)
+		input.Metadata = map[string]string{
+			"role":        "janitor",
+			"target":      "ticket-queue",
+			"category":    "stale_in_progress_ticket",
+			"severity":    f.Severity,
+			"ticket_path": f.Path,
+		}
+		input.NextAction = "Drain or explicitly block the stale in-progress ticket."
+	}
+	return input
 }
 
 func formatTicketBody(f Finding) string {
@@ -848,6 +892,8 @@ func titleFromType(t string) string {
 		return "Add Missing Tests"
 	case "large_function":
 		return "Refactor Large Function"
+	case "stale_in_progress_ticket":
+		return "Drain Stale In-Progress Ticket"
 	case "todo":
 		return "Resolve TODO/FIXME Finding"
 	case "missing_dev_script":
@@ -865,4 +911,30 @@ func titleFromType(t string) string {
 	default:
 		return strings.ReplaceAll(t, "_", " ")
 	}
+}
+
+func slugFindingPath(path string) string {
+	path = strings.ToLower(strings.TrimSpace(path))
+	if path == "" {
+		return "unknown"
+	}
+	var b strings.Builder
+	lastDash := false
+	for _, r := range path {
+		switch {
+		case r >= 'a' && r <= 'z' || r >= '0' && r <= '9':
+			b.WriteRune(r)
+			lastDash = false
+		default:
+			if !lastDash {
+				b.WriteRune('-')
+				lastDash = true
+			}
+		}
+	}
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		return "unknown"
+	}
+	return out
 }

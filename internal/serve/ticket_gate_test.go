@@ -97,6 +97,197 @@ func TestValidateEngineerTicketGate_blocksReturningInProgressToBacklog(t *testin
 	}
 }
 
+func TestValidateEngineerTicketGate_allowsReturningInProgressToBacklogWithBlocker(t *testing.T) {
+	dir := t.TempDir()
+	for _, sub := range []string{"backlog", "in-progress", "done"} {
+		if err := os.MkdirAll(filepath.Join(dir, "docs", "tickets", sub), 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+	}
+	writeTicketGateContent(t, dir, "in-progress", "T-001-fix-build.md", `---
+id: T-001
+title: Fix build
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+	before, err := snapshotTickets(dir)
+	if err != nil {
+		t.Fatalf("snapshot before: %v", err)
+	}
+	if err := os.Rename(
+		filepath.Join(dir, "docs", "tickets", "in-progress", "T-001-fix-build.md"),
+		filepath.Join(dir, "docs", "tickets", "backlog", "T-001-fix-build.md"),
+	); err != nil {
+		t.Fatalf("move ticket: %v", err)
+	}
+	writeTicketGateContent(t, dir, "backlog", "T-001-fix-build.md", `---
+id: T-001
+title: Fix build
+blocker: "missing SDK; install before retry"
+blocked_by: []
+next_action: "Install SDK and resume"
+---
+
+# T-001
+`)
+	after, err := snapshotTickets(dir)
+	if err != nil {
+		t.Fatalf("snapshot after: %v", err)
+	}
+
+	if err := validateEngineerTicketGate(before, after); err != nil {
+		t.Fatalf("expected blocker return to backlog to pass, got %v", err)
+	}
+}
+
+func TestValidateEngineerTicketGate_allowsInProgressBlockedByDependencyTicket(t *testing.T) {
+	dir := t.TempDir()
+	for _, sub := range []string{"backlog", "in-progress", "done"} {
+		if err := os.MkdirAll(filepath.Join(dir, "docs", "tickets", sub), 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+	}
+	writeTicketGateContent(t, dir, "in-progress", "T-001-active.md", `---
+id: T-001
+title: Active
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+	before, err := snapshotTickets(dir)
+	if err != nil {
+		t.Fatalf("snapshot before: %v", err)
+	}
+	writeTicketGateContent(t, dir, "in-progress", "T-001-active.md", `---
+id: T-001
+title: Active
+blocker: "waiting for deterministic setup"
+blocked_by: ["T-002"]
+next_action: "Complete T-002 first"
+---
+
+# T-001
+`)
+	writeTicketGateContent(t, dir, "backlog", "T-002-setup.md", `---
+id: T-002
+title: Setup
+dedupe_key: "dep:T-001:setup"
+metadata:
+  blocks: "T-001"
+---
+
+# T-002
+`)
+	after, err := snapshotTickets(dir)
+	if err != nil {
+		t.Fatalf("snapshot after: %v", err)
+	}
+
+	if err := validateEngineerTicketGate(before, after); err != nil {
+		t.Fatalf("expected linked dependency blocker to pass, got %v", err)
+	}
+}
+
+func TestValidateEngineerTicketGate_blocksSelfReferencedDependency(t *testing.T) {
+	dir := t.TempDir()
+	for _, sub := range []string{"backlog", "in-progress", "done"} {
+		if err := os.MkdirAll(filepath.Join(dir, "docs", "tickets", sub), 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+	}
+	writeTicketGateContent(t, dir, "in-progress", "T-001-active.md", `---
+id: T-001
+title: Active
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+	before, err := snapshotTickets(dir)
+	if err != nil {
+		t.Fatalf("snapshot before: %v", err)
+	}
+	writeTicketGateContent(t, dir, "in-progress", "T-001-active.md", `---
+id: T-001
+title: Active
+blocker: "waiting"
+blocked_by: ["T-001"]
+---
+
+# T-001
+`)
+	after, err := snapshotTickets(dir)
+	if err != nil {
+		t.Fatalf("snapshot after: %v", err)
+	}
+
+	err = validateEngineerTicketGate(before, after)
+	if err == nil {
+		t.Fatal("expected self-referenced dependency to fail")
+	}
+	if !strings.Contains(err.Error(), "without completing") {
+		t.Fatalf("expected blocker-progress error, got %v", err)
+	}
+}
+
+func TestValidateEngineerTicketGate_allowsOnlyBlockedInProgressToAvoidRetryLoop(t *testing.T) {
+	dir := t.TempDir()
+	for _, sub := range []string{"backlog", "in-progress", "done"} {
+		if err := os.MkdirAll(filepath.Join(dir, "docs", "tickets", sub), 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+	}
+	writeTicketGateContent(t, dir, "in-progress", "T-001-blocked.md", `---
+id: T-001
+title: Blocked
+blocker: "waiting for T-002"
+blocked_by: ["T-002"]
+---
+
+# T-001
+`)
+	writeTicketGateContent(t, dir, "backlog", "T-002-dependency.md", `---
+id: T-002
+title: Dependency
+---
+
+# T-002
+`)
+	before, err := snapshotTickets(dir)
+	if err != nil {
+		t.Fatalf("snapshot before: %v", err)
+	}
+	after, err := snapshotTickets(dir)
+	if err != nil {
+		t.Fatalf("snapshot after: %v", err)
+	}
+
+	if err := validateEngineerTicketGate(before, after); err == nil {
+		t.Fatal("expected backlog dependency to require progress")
+	}
+
+	if err := os.Remove(filepath.Join(dir, "docs", "tickets", "backlog", "T-002-dependency.md")); err != nil {
+		t.Fatalf("remove dependency: %v", err)
+	}
+	before, err = snapshotTickets(dir)
+	if err != nil {
+		t.Fatalf("snapshot before blocked-only: %v", err)
+	}
+	after, err = snapshotTickets(dir)
+	if err != nil {
+		t.Fatalf("snapshot after blocked-only: %v", err)
+	}
+	if err := validateEngineerTicketGate(before, after); err != nil {
+		t.Fatalf("expected blocked-only in-progress state to pass, got %v", err)
+	}
+}
+
 func TestValidateEngineerTicketGate_blocksNoCompletionWithOpenWork(t *testing.T) {
 	before := ticketSnapshot{
 		Backlog: []string{"T-001-fix-build.md"},

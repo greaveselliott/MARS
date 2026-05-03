@@ -28,6 +28,7 @@ type Session struct {
 	BaselineCommit string
 	Guardrails     *guardrails.Engine
 	SafetyLimits   safety.Limits
+	ToolCounts     map[string]int
 	PolicyRecorder func(PolicyEvent)
 }
 

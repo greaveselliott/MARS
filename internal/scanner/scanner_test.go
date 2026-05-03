@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -224,6 +225,66 @@ func TestGenerateTickets(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "priority:")
 	assert.Contains(t, string(data), "source: scanner")
+}
+
+func TestFindStaleInProgressTicketsSkipsBlockedTickets(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "backlog"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "in-progress"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "done"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "tickets", "in-progress", "T-001-stale.md"), []byte(`---
+id: T-001
+title: Stale
+last_attempt: "2026-04-01"
+blocker: none
+blocked_by: []
+---
+
+# Stale
+`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "tickets", "in-progress", "T-002-blocked.md"), []byte(`---
+id: T-002
+title: Blocked
+last_attempt: "2026-04-01"
+blocker: "waiting for dependency"
+blocked_by: ["T-003"]
+---
+
+# Blocked
+`), 0o644))
+
+	findings := findStaleInProgressTickets(dir, time.Date(2026, 5, 3, 0, 0, 0, 0, time.UTC))
+	require.Len(t, findings, 1)
+	assert.Equal(t, "stale_in_progress_ticket", findings[0].Type)
+	assert.Contains(t, findings[0].Path, "T-001-stale.md")
+}
+
+func TestGenerateTicketsCreatesInterventionDebtForStaleInProgress(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "backlog"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "in-progress"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "done"), 0o755))
+
+	err := GenerateTickets([]Finding{{
+		Type:        "stale_in_progress_ticket",
+		Path:        "docs/tickets/in-progress/T-001-stale.md",
+		Description: "stale ticket",
+		Severity:    "high",
+	}}, dir)
+	require.NoError(t, err)
+
+	entries, err := os.ReadDir(filepath.Join(dir, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "backlog", entries[0].Name()))
+	require.NoError(t, err)
+	text := string(data)
+	assert.Contains(t, text, "kind: intervention-debt")
+	assert.Contains(t, text, "work_type: intervention-debt")
+	assert.Contains(t, text, "dedupe_key:")
+	assert.Contains(t, text, "category: \"stale_in_progress_ticket\"")
 }
 
 func TestInit_success(t *testing.T) {

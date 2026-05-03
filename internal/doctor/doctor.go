@@ -18,6 +18,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/operatingmodel"
 	"github.com/greaveselliott/mars-harness/internal/planhygiene"
 	"github.com/greaveselliott/mars-harness/internal/roleregistry"
+	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 	"github.com/greaveselliott/mars-harness/internal/updatecheck"
 )
 
@@ -65,6 +66,7 @@ func Run(cfg Config) []CheckResult {
 		checkOperatingModelHealth,
 		checkRoleRegistryHealth,
 		checkActivePlanHygiene,
+		checkTicketDrainHealth,
 	}
 
 	results := make([]CheckResult, 0, len(checks))
@@ -82,6 +84,52 @@ func Run(cfg Config) []CheckResult {
 		results = append(results, result)
 	}
 	return results
+}
+
+func checkTicketDrainHealth(cfg Config) CheckResult {
+	start := time.Now()
+	name := "ticket-drain"
+	if strings.TrimSpace(cfg.RepoPath) == "" {
+		return CheckResult{
+			Name:     name,
+			Status:   statusOK,
+			Message:  "repo not supplied; ticket-drain health skipped",
+			Duration: nonZeroDurationSince(start),
+		}
+	}
+	stale, err := ticketstate.StaleInProgress(cfg.RepoPath, time.Now().UTC(), ticketstate.DefaultStaleInProgressAfter)
+	if err != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  err.Error(),
+			Duration: nonZeroDurationSince(start),
+			Fix:      "restore docs/tickets/{backlog,in-progress,done}/ or run 'mars-harness init --repo <path>' for a new target repo",
+		}
+	}
+	if len(stale) == 0 {
+		return CheckResult{
+			Name:     name,
+			Status:   statusOK,
+			Message:  "no stale eligible in-progress tickets",
+			Duration: nonZeroDurationSince(start),
+		}
+	}
+	return CheckResult{
+		Name:     name,
+		Status:   statusWarn,
+		Message:  fmt.Sprintf("%d stale eligible in-progress ticket(s): %s", len(stale), staleTicketSummary(stale)),
+		Duration: nonZeroDurationSince(start),
+		Fix:      "complete the ticket, move it back to docs/tickets/backlog with blocker metadata, or add blocked_by linking to a dependency ticket; then run 'mars-harness scan --repo <path> --tickets' or 'mars-harness run janitor --repo <path>'",
+	}
+}
+
+func staleTicketSummary(stale []ticketstate.Ticket) string {
+	parts := make([]string, 0, len(stale))
+	for _, t := range stale {
+		parts = append(parts, fmt.Sprintf("%s last_attempt=%s", t.RelPath, t.LastActivityLabel()))
+	}
+	return strings.Join(parts, "; ")
 }
 
 func checkActivePlanHygiene(cfg Config) CheckResult {

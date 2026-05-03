@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars-harness/internal/scanner"
 )
 
 func testDBPath(t *testing.T) string {
@@ -437,7 +438,7 @@ func TestBuildTicketIndex_findsTickets(t *testing.T) {
 	if !strings.Contains(idx, "3 total") {
 		t.Errorf("expected 3 total, got: %s", idx)
 	}
-	if !strings.Contains(idx, "In-progress tickets are the Engineer front of queue") {
+	if !strings.Contains(idx, "Eligible in-progress tickets are the Engineer front of queue") {
 		t.Errorf("expected in-progress priority guidance, got: %s", idx)
 	}
 	if !strings.Contains(idx, "[backlog] T-002-beta.md") {
@@ -476,5 +477,76 @@ func TestBuildTicketIndex_prioritizesInterventionDebtAheadOfOrdinaryBacklog(t *t
 	}
 	if interventionPos > ordinaryPos {
 		t.Fatalf("expected intervention-debt backlog before ordinary backlog, got: %s", idx)
+	}
+}
+
+func TestBuildTicketIndex_movesBlockedInProgressBehindEligibleBacklog(t *testing.T) {
+	dir := t.TempDir()
+	for _, sub := range []string{"docs/tickets/backlog", "docs/tickets/in-progress", "docs/tickets/done"} {
+		os.MkdirAll(filepath.Join(dir, sub), 0o755)
+	}
+	os.WriteFile(filepath.Join(dir, "docs/tickets/in-progress/T-001-blocked.md"), []byte("---\nid: T-001\nblocker: \"waiting\"\nblocked_by: [\"T-003\"]\nnext_action: \"complete T-003\"\n---\n# Blocked\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "docs/tickets/in-progress/T-002-ready.md"), []byte("---\nid: T-002\nblocker: none\nblocked_by: []\n---\n# Ready\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "docs/tickets/backlog/T-003-dependency.md"), []byte("---\nid: T-003\n---\n# Dependency\n"), 0o644)
+
+	idx := BuildTicketIndex(dir)
+	readyPos := strings.Index(idx, "[in-progress] T-002-ready.md")
+	backlogPos := strings.Index(idx, "[backlog] T-003-dependency.md")
+	blockedPos := strings.Index(idx, "[in-progress][blocked] T-001-blocked.md")
+	if readyPos < 0 || backlogPos < 0 || blockedPos < 0 {
+		t.Fatalf("expected ready, backlog, and blocked lines, got: %s", idx)
+	}
+	if readyPos > backlogPos || backlogPos > blockedPos {
+		t.Fatalf("expected eligible in-progress, backlog, blocked in-progress ordering, got: %s", idx)
+	}
+	if !strings.Contains(idx, "next: complete T-003") {
+		t.Fatalf("expected next action in blocked line, got: %s", idx)
+	}
+}
+
+func TestScanRepoEnqueuesJanitorForStaleInProgressTicket(t *testing.T) {
+	ctx := context.Background()
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir .git: %v", err)
+	}
+	if err := scanner.Init(repo, false); err != nil {
+		t.Fatalf("init target harness: %v", err)
+	}
+	writeTicketGateContent(t, repo, "in-progress", "T-001-stale.md", `---
+id: T-001
+title: Stale
+last_attempt: "2026-04-01"
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+	repoID, err := srv.Repos().Register(ctx, repo, "", "main")
+	if err != nil {
+		t.Fatalf("register repo: %v", err)
+	}
+
+	if err := srv.ScanRepo(ctx, repoID); err != nil {
+		t.Fatalf("ScanRepo: %v", err)
+	}
+
+	var count int
+	if err := srv.db.QueryRow(`SELECT COUNT(*) FROM jobs WHERE role = 'janitor' AND idempotency_key = ?`, "ticket:stale-in-progress:"+repoID).Scan(&count); err != nil {
+		t.Fatalf("count janitor jobs: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected one janitor stale-ticket job, got %d", count)
 	}
 }

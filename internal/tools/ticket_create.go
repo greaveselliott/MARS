@@ -27,6 +27,12 @@ const ticketCreateSchema = `{
     "end_to_end_evidence": { "type": "string", "enum": ["required", "not_applicable"], "description": "Whether completion requires E2E/integration evidence." },
     "evidence_links": { "type": "array", "items": { "type": "string" }, "description": "Evidence links or commands proving BDD scenarios passed." },
     "verified_by": { "type": "string", "description": "Role, command, or human verifier for completion evidence." },
+    "owner": { "type": "string", "description": "Current owner or role responsible for the ticket. Use TBD when unknown." },
+    "last_attempt": { "type": "string", "description": "ISO date or timestamp for the last meaningful attempt. Use TBD when none." },
+    "blocker": { "type": "string", "description": "Concrete blocker note, or none/TBD when unblocked." },
+    "blocked_by": { "type": "array", "items": { "type": "string" }, "description": "Ticket IDs that must land before this ticket can resume." },
+    "trace_id": { "type": "string", "description": "Trace ID for the current or most recent attempt. Use TBD when absent." },
+    "next_action": { "type": "string", "description": "Concrete next action for resuming or unblocking the ticket." },
     "dedupe_key": { "type": "string", "description": "Optional stable dedupe key for machine-generated tickets." },
     "metadata":   { "type": "object", "additionalProperties": { "type": "string" }, "description": "Optional machine-readable string metadata written into frontmatter." },
     "source":     { "type": "string", "description": "Where this ticket originated (e.g. 'weekly-priorities.md — This week item 3')" },
@@ -46,6 +52,12 @@ type ticketCreateArgs struct {
 	EndToEndEvidence string            `json:"end_to_end_evidence"`
 	EvidenceLinks    []string          `json:"evidence_links"`
 	VerifiedBy       string            `json:"verified_by"`
+	Owner            string            `json:"owner"`
+	LastAttempt      string            `json:"last_attempt"`
+	Blocker          string            `json:"blocker"`
+	BlockedBy        []string          `json:"blocked_by"`
+	TraceID          string            `json:"trace_id"`
+	NextAction       string            `json:"next_action"`
 	DedupeKey        string            `json:"dedupe_key"`
 	Metadata         map[string]string `json:"metadata"`
 	Source           string            `json:"source"`
@@ -64,6 +76,12 @@ type TicketInput struct {
 	EndToEndEvidence string
 	EvidenceLinks    []string
 	VerifiedBy       string
+	Owner            string
+	LastAttempt      string
+	Blocker          string
+	BlockedBy        []string
+	TraceID          string
+	NextAction       string
 	DedupeKey        string
 	Metadata         map[string]string
 	Source           string
@@ -109,6 +127,12 @@ func handleTicketCreate(_ context.Context, root Root, raw json.RawMessage) (Tool
 		EndToEndEvidence: args.EndToEndEvidence,
 		EvidenceLinks:    args.EvidenceLinks,
 		VerifiedBy:       args.VerifiedBy,
+		Owner:            args.Owner,
+		LastAttempt:      args.LastAttempt,
+		Blocker:          args.Blocker,
+		BlockedBy:        args.BlockedBy,
+		TraceID:          args.TraceID,
+		NextAction:       args.NextAction,
 		DedupeKey:        args.DedupeKey,
 		Metadata:         args.Metadata,
 		Source:           args.Source,
@@ -182,6 +206,11 @@ func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
 	if verifiedBy == "" {
 		verifiedBy = "TBD"
 	}
+	owner := defaultTicketField(input.Owner, "TBD")
+	lastAttempt := defaultTicketField(input.LastAttempt, "TBD")
+	blocker := defaultTicketField(input.Blocker, "none")
+	traceID := defaultTicketField(input.TraceID, "TBD")
+	nextAction := defaultTicketField(input.NextAction, "TBD")
 	source := input.Source
 	if source == "" {
 		source = "weekly-priorities.md"
@@ -207,6 +236,12 @@ func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
 	fmt.Fprintf(&content, "end_to_end_evidence: %s\n", endToEndEvidence)
 	fmt.Fprintf(&content, "evidence_links: %s\n", yamlInlineList(input.EvidenceLinks))
 	fmt.Fprintf(&content, "verified_by: %s\n", quoteYAMLString(verifiedBy))
+	fmt.Fprintf(&content, "owner: %s\n", quoteYAMLString(owner))
+	fmt.Fprintf(&content, "last_attempt: %s\n", quoteYAMLString(lastAttempt))
+	fmt.Fprintf(&content, "blocker: %s\n", quoteYAMLString(blocker))
+	fmt.Fprintf(&content, "blocked_by: %s\n", yamlInlineList(input.BlockedBy))
+	fmt.Fprintf(&content, "trace_id: %s\n", quoteYAMLString(traceID))
+	fmt.Fprintf(&content, "next_action: %s\n", quoteYAMLString(nextAction))
 	if kind := strings.TrimSpace(input.Kind); kind != "" && kind != "standard" {
 		fmt.Fprintf(&content, "kind: %s\n", kind)
 	}
@@ -266,6 +301,14 @@ func normalizeEndToEndEvidence(workType, value string) string {
 		return "required"
 	}
 	return "not_applicable"
+}
+
+func defaultTicketField(value, fallback string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return fallback
+	}
+	return value
 }
 
 func yamlInlineList(values []string) string {

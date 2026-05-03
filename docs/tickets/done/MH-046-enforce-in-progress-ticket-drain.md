@@ -7,8 +7,14 @@ kind: intervention-debt
 work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: TBD
+evidence_links: ["go test ./internal/tickets ./internal/tools ./internal/serve ./internal/scanner ./internal/doctor ./internal/roleregistry", "go test ./internal/docsconsistency", "go test ./..."]
+verified_by: "go test"
+owner: "task-runner"
+last_attempt: "2026-05-03"
+blocker: "none"
+blocked_by: []
+trace_id: "task-runner-2026-05-03"
+next_action: "Move MH-047 next after release notes."
 dedupe_key: "public-example"
 source: Mars parity workstream E
 created: 2026-05-03
@@ -58,22 +64,35 @@ ticket creation so autonomous runs cannot accumulate unfinished work silently.
 
 ### Functional
 
-- [ ] Eligible in-progress tickets are selected before backlog tickets.
-- [ ] Engineer context cannot claim new backlog work while eligible in-progress
+- [x] Eligible in-progress tickets are selected before backlog tickets.
+- [x] Engineer context cannot claim new backlog work while eligible in-progress
       tickets remain.
-- [ ] Unfinished in-progress tickets must record completion, blocker,
+- [x] Unfinished in-progress tickets must record completion, blocker,
       dependency, or guardrail-blocked intervention debt.
-- [ ] Stale in-progress tickets create a scan finding or Orchestrator trigger.
+- [x] Stale in-progress tickets create a scan finding or Orchestrator trigger.
 
 ### Edge cases and negative paths
 
-- [ ] Explicitly blocked tickets do not cause an infinite retry loop.
-- [ ] Dependency tickets are deduped and linked back to the blocked ticket.
-- [ ] Dogfood runs cannot create an unbounded number of tickets in one pass.
+- [x] Explicitly blocked tickets do not cause an infinite retry loop.
+- [x] Dependency tickets are deduped and linked back to the blocked ticket.
+- [x] Dogfood runs cannot create an unbounded number of tickets in one pass.
 
 ### Observability, docs, and regressions
 
-- [ ] Tests cover queue ordering, blocked outcomes, stale detection, and dogfood
+- [x] Tests cover queue ordering, blocked outcomes, stale detection, and dogfood
       ticket caps.
-- [ ] Target ticket README generation mirrors the same drain rules.
-- [ ] Doctor output gives concrete remediation for stale in-progress work.
+- [x] Target ticket README generation mirrors the same drain rules.
+- [x] Doctor output gives concrete remediation for stale in-progress work.
+
+## Completion Notes
+
+- Added `internal/tickets` as the shared ticket-state parser for eligibility,
+  blocker, dependency, and stale-ticket detection.
+- Updated Engineer tool policy and post-run gates to block ordinary backlog
+  creation during eligible in-progress drain while allowing linked dependency
+  and intervention-debt outcomes.
+- Scanner now emits stale in-progress findings, creates deduped intervention
+  debt for those findings, and `serve` enqueues Janitor through
+  `ticket.stale_in_progress` when configured.
+- Doctor now reports stale eligible in-progress tickets with concrete
+  remediation.

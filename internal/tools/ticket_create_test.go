@@ -53,6 +53,12 @@ func TestTicketCreate_basic(t *testing.T) {
 	assert.Contains(t, string(data), "priority: high")
 	assert.Contains(t, string(data), "work_type: feature")
 	assert.Contains(t, string(data), "end_to_end_evidence: required")
+	assert.Contains(t, string(data), `owner: "TBD"`)
+	assert.Contains(t, string(data), `last_attempt: "TBD"`)
+	assert.Contains(t, string(data), `blocker: "none"`)
+	assert.Contains(t, string(data), "blocked_by: []")
+	assert.Contains(t, string(data), `trace_id: "TBD"`)
+	assert.Contains(t, string(data), `next_action: "TBD"`)
 	assert.Contains(t, string(data), "## Context")
 }
 
@@ -69,6 +75,12 @@ func TestTicketCreate_writesBDDOperatingModelMetadata(t *testing.T) {
 		EndToEndEvidence: "required",
 		EvidenceLinks:    []string{"go test ./internal/serve -run TestBDDOperatingModel"},
 		VerifiedBy:       "go test",
+		Owner:            "engineer",
+		LastAttempt:      "2026-05-03",
+		Blocker:          "waiting on dependency",
+		BlockedBy:        []string{"T-002"},
+		TraceID:          "trace-123",
+		NextAction:       "land T-002 first",
 		Source:           "current-operating-plan.md — scenario F-001-S001",
 		Body:             "## Context\nScenario work.\n\n## Requirements\nImplement it.\n\n## Acceptance criteria\n- [ ] Scenario passes",
 	})
@@ -81,6 +93,12 @@ func TestTicketCreate_writesBDDOperatingModelMetadata(t *testing.T) {
 	assert.Contains(t, text, `bdd_scenarios: ["F-001-S001"]`)
 	assert.Contains(t, text, `evidence_links: ["go test ./internal/serve -run TestBDDOperatingModel"]`)
 	assert.Contains(t, text, `verified_by: "go test"`)
+	assert.Contains(t, text, `owner: "engineer"`)
+	assert.Contains(t, text, `last_attempt: "2026-05-03"`)
+	assert.Contains(t, text, `blocker: "waiting on dependency"`)
+	assert.Contains(t, text, `blocked_by: ["T-002"]`)
+	assert.Contains(t, text, `trace_id: "trace-123"`)
+	assert.Contains(t, text, `next_action: "land T-002 first"`)
 }
 
 func TestTicketCreate_interventionDebtWritesMetadata(t *testing.T) {

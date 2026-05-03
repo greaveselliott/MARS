@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/greaveselliott/mars-harness/internal/safety"
+	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 )
 
 var mutatingTools = map[string]bool{
@@ -24,6 +25,12 @@ var mutatingTools = map[string]bool{
 	"release_orchestrate": true,
 }
 
+const (
+	dogfoodTicketCreateLimitTotal       = 5
+	dogfoodTicketCreateLimitPerSeverity = 3
+	dogfoodTicketCreateLimitPerGroup    = 2
+)
+
 func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMessage) error {
 	session, hasSession := SessionFromContext(ctx)
 	if hasSession {
@@ -35,6 +42,8 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 	switch name {
 	case "file_write":
 		return checkFileWritePolicy(session, hasSession, raw)
+	case "ticket_create":
+		return checkTicketCreatePolicy(root, session, hasSession, raw)
 	case "git_commit":
 		return validateRepoDiff(ctx, root, session)
 	case "git_push":
@@ -68,6 +77,133 @@ func enforceTrust(session Session, name string) error {
 		return fmt.Errorf("policy: trust level observer cannot run mutating tool %q", name)
 	}
 	return nil
+}
+
+func checkTicketCreatePolicy(root Root, session Session, hasSession bool, raw json.RawMessage) error {
+	if !hasSession {
+		return nil
+	}
+	var args ticketCreateArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return nil
+	}
+	role := strings.ToLower(strings.TrimSpace(session.Role))
+	switch role {
+	case "engineer":
+		return checkEngineerTicketCreatePolicy(root, args)
+	case "dogfood":
+		return checkDogfoodTicketCreatePolicy(session, args)
+	default:
+		return nil
+	}
+}
+
+func checkEngineerTicketCreatePolicy(root Root, args ticketCreateArgs) error {
+	eligible, err := ticketstate.EligibleInProgress(root.Abs())
+	if err != nil {
+		return fmt.Errorf("policy: inspect in-progress tickets before ticket_create: %w", err)
+	}
+	if len(eligible) == 0 {
+		return nil
+	}
+	if isInterventionDebtTicket(args) || isDependencyTicketForEligibleWork(args, eligible) {
+		return nil
+	}
+	return fmt.Errorf(
+		"policy: engineer cannot create ordinary backlog tickets while eligible in-progress tickets remain: %s. Complete the ticket or create a linked dependency/intervention-debt ticket with metadata.blocks.",
+		joinTicketNames(eligible),
+	)
+}
+
+func isInterventionDebtTicket(args ticketCreateArgs) bool {
+	return strings.TrimSpace(args.Kind) == "intervention-debt" || strings.TrimSpace(args.WorkType) == "intervention-debt"
+}
+
+func isDependencyTicketForEligibleWork(args ticketCreateArgs, eligible []ticketstate.Ticket) bool {
+	if strings.TrimSpace(args.DedupeKey) == "" {
+		return false
+	}
+	values := []string{
+		args.Metadata["blocks"],
+		args.Metadata["blocked_ticket"],
+		args.Metadata["blocked_by_target"],
+	}
+	for _, value := range values {
+		for _, t := range eligible {
+			if ticketMetadataMentions(value, t) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func ticketMetadataMentions(value string, ticket ticketstate.Ticket) bool {
+	value = strings.ToLower(value)
+	return strings.Contains(value, strings.ToLower(ticket.ID)) ||
+		strings.Contains(value, strings.ToLower(ticket.Name))
+}
+
+func checkDogfoodTicketCreatePolicy(session Session, args ticketCreateArgs) error {
+	if session.ToolCounts == nil {
+		return nil
+	}
+	severity := strings.ToLower(strings.TrimSpace(args.Priority))
+	if severity == "" {
+		severity = "medium"
+	}
+	group := dogfoodTicketGroup(args)
+	dedupe := strings.TrimSpace(args.DedupeKey)
+	totalKey := "ticket_create:dogfood:total"
+	severityKey := "ticket_create:dogfood:severity:" + severity
+	groupKey := "ticket_create:dogfood:group:" + group
+	dedupeKey := "ticket_create:dogfood:dedupe:" + dedupe
+	if dedupe != "" && session.ToolCounts[dedupeKey] > 0 {
+		return fmt.Errorf("policy: dogfood ticket_create repeated dedupe key %q in one run; update the existing ticket instead", dedupe)
+	}
+	if session.ToolCounts[totalKey] >= dogfoodTicketCreateLimitTotal {
+		return fmt.Errorf("policy: dogfood ticket_create capped at %d tickets per run; group remaining findings behind the highest-severity dedupe keys", dogfoodTicketCreateLimitTotal)
+	}
+	if session.ToolCounts[severityKey] >= dogfoodTicketCreateLimitPerSeverity {
+		return fmt.Errorf("policy: dogfood ticket_create capped at %d %s-severity tickets per run", dogfoodTicketCreateLimitPerSeverity, severity)
+	}
+	if session.ToolCounts[groupKey] >= dogfoodTicketCreateLimitPerGroup {
+		return fmt.Errorf("policy: dogfood ticket_create capped at %d tickets for group %q per run", dogfoodTicketCreateLimitPerGroup, group)
+	}
+	session.ToolCounts[totalKey]++
+	session.ToolCounts[severityKey]++
+	session.ToolCounts[groupKey]++
+	if dedupe != "" {
+		session.ToolCounts[dedupeKey]++
+	}
+	return nil
+}
+
+func dogfoodTicketGroup(args ticketCreateArgs) string {
+	if dedupe := strings.TrimSpace(args.DedupeKey); dedupe != "" {
+		parts := strings.Split(dedupe, ":")
+		if len(parts) >= 5 {
+			return strings.Join(parts[:5], ":")
+		}
+		return dedupe
+	}
+	if args.Metadata != nil {
+		if category := strings.TrimSpace(args.Metadata["category"]); category != "" {
+			return category
+		}
+	}
+	if title := strings.TrimSpace(args.Title); title != "" {
+		return slugify(title)
+	}
+	return "unknown"
+}
+
+func joinTicketNames(tickets []ticketstate.Ticket) string {
+	names := make([]string, 0, len(tickets))
+	for _, t := range tickets {
+		names = append(names, t.Name)
+	}
+	return strings.Join(names, ", ")
 }
 
 func checkFileWritePolicy(session Session, hasSession bool, raw json.RawMessage) error {

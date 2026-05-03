@@ -6,26 +6,38 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 )
 
 type ticketSnapshot struct {
 	Backlog    []string
 	InProgress []string
 	Done       []string
+	Details    map[string]ticketstate.Ticket
 }
 
 func snapshotTickets(repoPath string) (ticketSnapshot, error) {
 	var snap ticketSnapshot
-	var err error
-	if snap.Backlog, err = listTicketFiles(repoPath, "backlog"); err != nil {
+	snap.Details = make(map[string]ticketstate.Ticket)
+	all, err := ticketstate.List(repoPath)
+	if err != nil {
 		return snap, err
 	}
-	if snap.InProgress, err = listTicketFiles(repoPath, "in-progress"); err != nil {
-		return snap, err
+	for _, t := range all {
+		snap.Details[t.Name] = t
+		switch t.Status {
+		case ticketstate.StatusBacklog:
+			snap.Backlog = append(snap.Backlog, t.Name)
+		case ticketstate.StatusInProgress:
+			snap.InProgress = append(snap.InProgress, t.Name)
+		case ticketstate.StatusDone:
+			snap.Done = append(snap.Done, t.Name)
+		}
 	}
-	if snap.Done, err = listTicketFiles(repoPath, "done"); err != nil {
-		return snap, err
-	}
+	sort.Strings(snap.Backlog)
+	sort.Strings(snap.InProgress)
+	sort.Strings(snap.Done)
 	return snap, nil
 }
 
@@ -79,7 +91,8 @@ func validateEngineerTicketMovement(before, after ticketSnapshot) error {
 	afterIP := stringSet(after.InProgress)
 	doneAdded := setDifference(stringSet(after.Done), stringSet(before.Done))
 
-	if len(before.InProgress) > 0 {
+	eligibleBefore := before.eligibleInProgressSet()
+	if len(eligibleBefore) > 0 {
 		var newInProgress []string
 		for _, name := range after.InProgress {
 			if !beforeIP[name] {
@@ -93,37 +106,136 @@ func validateEngineerTicketMovement(before, after ticketSnapshot) error {
 			)
 		}
 
-		removed := setDifference(beforeIP, afterIP)
-		if len(removed) == 0 {
-			return fmt.Errorf(
-				"ticket gate: engineer ended without completing any existing in-progress ticket; remaining: %s",
-				strings.Join(after.InProgress, ", "),
-			)
-		}
-		for name := range removed {
+		for name := range eligibleBefore {
 			if doneAdded[name] {
 				return nil
 			}
+			if after.ticketInStatus(name, ticketstate.StatusBacklog) && after.ticketHasBlockerNote(name) {
+				return nil
+			}
+			if after.ticketInStatus(name, ticketstate.StatusInProgress) && after.ticketHasLinkedDependency(name) {
+				return nil
+			}
+		}
+
+		removed := setDifference(eligibleBefore, afterIP)
+		if len(removed) == 0 {
+			return fmt.Errorf(
+				"ticket gate: engineer ended without completing, blocking, or returning any eligible in-progress ticket; remaining: %s",
+				strings.Join(after.InProgress, ", "),
+			)
 		}
 		return fmt.Errorf(
-			"ticket gate: engineer removed in-progress ticket(s) without moving them to done: %s",
+			"ticket gate: engineer removed in-progress ticket(s) without moving them to done or backlog with blocker metadata: %s",
 			strings.Join(sortedSetKeys(removed), ", "),
 		)
 	}
 
-	if len(after.InProgress) > 0 {
+	var newlyClaimed []string
+	for _, name := range after.InProgress {
+		if !beforeIP[name] {
+			newlyClaimed = append(newlyClaimed, name)
+		}
+	}
+	if len(newlyClaimed) > 0 {
 		return fmt.Errorf(
 			"ticket gate: engineer cannot hand off with newly claimed ticket(s) still in docs/tickets/in-progress: %s",
-			strings.Join(after.InProgress, ", "),
+			strings.Join(newlyClaimed, ", "),
 		)
 	}
 	if len(doneAdded) == 0 {
+		if len(before.Backlog) == 0 && len(eligibleBefore) == 0 {
+			return nil
+		}
 		return fmt.Errorf(
 			"ticket gate: engineer ended without moving any ticket to docs/tickets/done while %d open ticket(s) existed",
 			len(before.Backlog)+len(before.InProgress),
 		)
 	}
 	return nil
+}
+
+func (s ticketSnapshot) eligibleInProgressSet() map[string]bool {
+	out := make(map[string]bool)
+	for _, name := range s.InProgress {
+		t, ok := s.Details[name]
+		if !ok || t.EligibleInProgress() {
+			out[name] = true
+		}
+	}
+	return out
+}
+
+func (s ticketSnapshot) ticketInStatus(name, status string) bool {
+	t, ok := s.Details[name]
+	if ok {
+		return t.Status == status
+	}
+	switch status {
+	case ticketstate.StatusBacklog:
+		return stringSet(s.Backlog)[name]
+	case ticketstate.StatusInProgress:
+		return stringSet(s.InProgress)[name]
+	case ticketstate.StatusDone:
+		return stringSet(s.Done)[name]
+	default:
+		return false
+	}
+}
+
+func (s ticketSnapshot) ticketHasBlockerNote(name string) bool {
+	t, ok := s.Details[name]
+	if !ok {
+		return false
+	}
+	return meaningfulTicketGateField(t.Blocker)
+}
+
+func (s ticketSnapshot) ticketHasLinkedDependency(name string) bool {
+	t, ok := s.Details[name]
+	if !ok || len(t.BlockedBy) == 0 {
+		return false
+	}
+	for _, dep := range t.BlockedBy {
+		if s.hasTicketReferenceExcept(dep, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s ticketSnapshot) hasTicketReferenceExcept(ref, excludedName string) bool {
+	ref = strings.Trim(strings.TrimSpace(ref), `"'`)
+	if ref == "" {
+		return false
+	}
+	for name, t := range s.Details {
+		if name == excludedName {
+			continue
+		}
+		if strings.EqualFold(ref, t.ID) || strings.EqualFold(ref, name) {
+			return true
+		}
+	}
+	for _, name := range append(append([]string{}, s.Backlog...), append(s.InProgress, s.Done...)...) {
+		if name == excludedName {
+			continue
+		}
+		if strings.EqualFold(ref, name) || strings.Contains(strings.ToLower(name), strings.ToLower(ref)) {
+			return true
+		}
+	}
+	return false
+}
+
+func meaningfulTicketGateField(value string) bool {
+	value = strings.Trim(strings.TrimSpace(value), `"'`)
+	switch strings.ToLower(value) {
+	case "", "[]", "none", "null", "nil", "tbd", "todo":
+		return false
+	default:
+		return true
+	}
 }
 
 func validateCompletedTicketEvidence(repoPath string, doneAdded map[string]bool) error {

@@ -67,6 +67,9 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 	}
 
 	if e.Session != nil {
+		if e.Session.ToolCounts == nil {
+			e.Session.ToolCounts = make(map[string]int)
+		}
 		runCtx = WithSession(runCtx, *e.Session)
 	}
 	if err := preToolPolicy(runCtx, root, name, raw); err != nil {

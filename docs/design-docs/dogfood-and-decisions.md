@@ -227,21 +227,25 @@ Dogfood and scanner failures can create new backlog tickets while the Engineer h
 
 ### Decision
 
-`docs/tickets/in-progress/` is now the front of the Engineer queue. The Engineer must complete the lowest-numbered in-progress ticket before claiming backlog work. If the ticket is blocked by build failures, missing scripts, dependency drift, test failures, or local convention gaps, the Engineer fixes those blockers as part of the same ticket rather than handing the problem off.
+`docs/tickets/in-progress/` is now the front of the Engineer queue when the ticket is eligible. A ticket is eligible when it has no meaningful `blocker` or `blocked_by` metadata. The Engineer must complete the lowest-numbered eligible in-progress ticket before claiming backlog work. If the ticket is blocked by build failures, missing scripts, dependency drift, test failures, local convention gaps, or guardrails, the run must leave explicit recovery metadata instead of silently abandoning the ticket.
 
-The mechanical gate now allows a handoff when an Engineer run drains one pre-existing in-progress ticket to `done/`, even if other pre-existing in-progress tickets remain for the next run. It still blocks:
+The mechanical gate now allows a handoff when an Engineer run drains one pre-existing in-progress ticket to `done/`, returns it to backlog with `blocker` and `next_action`, or leaves it in progress with `blocked_by` pointing at a dependency or intervention-debt ticket. It still blocks:
 
-- claiming new backlog work while any in-progress ticket existed at run start
+- claiming ordinary backlog work while any eligible in-progress ticket existed at run start
 - ending with a newly claimed ticket still in progress
-- returning in-progress work to backlog instead of completing it
-- making no completion progress while open work existed
+- returning in-progress work to backlog without blocker metadata
+- making no completion or explicit blocker progress while eligible work existed
+
+`ticket_create` enforces the same policy for Engineer runs: ordinary backlog tickets are blocked while eligible in-progress work remains. Dependency tickets are allowed only when they carry a dedupe key and metadata such as `metadata.blocks` that links back to the blocked ticket. Dogfood ticket creation is capped per run by total count, severity, group, and repeated dedupe key so validation failures cannot flood backlog.
+
+Scanner and Doctor now treat stale eligible in-progress tickets as ticket-drain findings. A scanner stale finding creates deduped intervention debt and enqueues the Janitor (`ticket.stale_in_progress`) when configured. Doctor reports concrete remediation: complete the ticket, return it to backlog with blocker metadata, or link a dependency ticket through `blocked_by`.
 
 ### Consequences
 
-- Multiple in-progress tickets become a drainable queue, not a permanent failure state.
+- Multiple eligible in-progress tickets become a drainable queue, not a permanent failure state.
 - The self-chain keeps running Engineer jobs until the in-progress queue is empty before backlog work resumes.
-- Prompt guidance and the injected ticket index both state that in-progress tickets are first priority.
-- Blockers are treated as implementation work, preserving the harness expectation that a ticket ends in committed, pushed, verified trunk changes.
+- Prompt guidance and the injected ticket index both state that eligible in-progress tickets are first priority and blocked tickets must carry recovery metadata.
+- Blockers are either treated as implementation work or recorded as explicit dependency/intervention debt, preserving the harness expectation that a ticket ends in committed, pushed, verified trunk changes or a truthful blocked state.
 
 ---
 

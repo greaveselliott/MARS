@@ -22,6 +22,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
+	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 	"github.com/greaveselliott/mars-harness/internal/tools"
 	"github.com/greaveselliott/mars-harness/internal/trace"
 	"github.com/greaveselliott/mars-harness/internal/trust"
@@ -381,53 +382,61 @@ func (e *Executor) broadcastEvent(eventType string, payload map[string]string) {
 
 // BuildTicketIndex scans docs/tickets/ and returns a compact inventory for context injection.
 func BuildTicketIndex(repoPath string) string {
-	ticketsDir := filepath.Join(repoPath, "docs", "tickets")
-	statuses := []string{"in-progress", "backlog", "done"}
-
-	linesByStatus := make(map[string][]string, len(statuses))
-	var inProgressIntervention []string
-	var backlogIntervention []string
-	var total int
-	for _, status := range statuses {
-		dir := filepath.Join(ticketsDir, status)
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-		for _, e := range entries {
-			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "README.md" {
-				continue
-			}
-			kind := readTicketKind(filepath.Join(dir, e.Name()))
-			line := fmt.Sprintf("- [%s] %s", status, e.Name())
-			if kind == "intervention-debt" {
-				line = fmt.Sprintf("- [%s][intervention-debt] %s", status, e.Name())
-				switch status {
-				case "in-progress":
-					inProgressIntervention = append(inProgressIntervention, line)
-					total++
-					continue
-				case "backlog":
-					backlogIntervention = append(backlogIntervention, line)
-					total++
-					continue
-				}
-			}
-			linesByStatus[status] = append(linesByStatus[status], line)
-			total++
-		}
-	}
-	if total == 0 {
+	all, err := ticketstate.List(repoPath)
+	if err != nil || len(all) == 0 {
 		return "No existing tickets found in docs/tickets/."
 	}
+	var inProgressInterventionEligible []string
+	var inProgressEligible []string
+	var inProgressBlocked []string
+	var backlogIntervention []string
+	var backlog []string
+	var done []string
+	for _, t := range all {
+		line := ticketIndexLine(t)
+		switch t.Status {
+		case ticketstate.StatusInProgress:
+			if t.Blocked() {
+				inProgressBlocked = append(inProgressBlocked, line)
+			} else if t.Kind == "intervention-debt" {
+				inProgressInterventionEligible = append(inProgressInterventionEligible, line)
+			} else {
+				inProgressEligible = append(inProgressEligible, line)
+			}
+		case ticketstate.StatusBacklog:
+			if t.Kind == "intervention-debt" {
+				backlogIntervention = append(backlogIntervention, line)
+			} else {
+				backlog = append(backlog, line)
+			}
+		case ticketstate.StatusDone:
+			done = append(done, line)
+		}
+	}
 	var lines []string
-	header := fmt.Sprintf("Existing tickets (%d total). In-progress tickets are the Engineer front of queue; intervention-debt is prioritised ahead of ordinary backlog work. Complete the lowest-numbered in-progress ticket before claiming backlog work. If an in-progress ticket is blocked, fix the blocker proactively in the same run.\n", total)
-	lines = append(lines, inProgressIntervention...)
-	lines = append(lines, linesByStatus["in-progress"]...)
+	header := fmt.Sprintf("Existing tickets (%d total). Eligible in-progress tickets are the Engineer front of queue; intervention-debt is prioritised ahead of ordinary backlog work. Complete the lowest-numbered eligible in-progress ticket before claiming backlog work. Blocked in-progress tickets must name blocker, blocked_by, trace_id, and next_action metadata and do not block backlog work.\n", len(all))
+	lines = append(lines, inProgressInterventionEligible...)
+	lines = append(lines, inProgressEligible...)
 	lines = append(lines, backlogIntervention...)
-	lines = append(lines, linesByStatus["backlog"]...)
-	lines = append(lines, linesByStatus["done"]...)
+	lines = append(lines, backlog...)
+	lines = append(lines, inProgressBlocked...)
+	lines = append(lines, done...)
 	return header + strings.Join(lines, "\n")
+}
+
+func ticketIndexLine(t ticketstate.Ticket) string {
+	labels := []string{t.Status}
+	if t.Kind == "intervention-debt" {
+		labels = append(labels, "intervention-debt")
+	}
+	if t.Blocked() {
+		labels = append(labels, "blocked")
+	}
+	line := fmt.Sprintf("- [%s] %s", strings.Join(labels, "]["), t.Name)
+	if t.Blocked() && strings.TrimSpace(t.NextAction) != "" && !strings.EqualFold(strings.TrimSpace(t.NextAction), "TBD") {
+		line += fmt.Sprintf(" — next: %s", t.NextAction)
+	}
+	return line
 }
 
 func readTicketKind(path string) string {

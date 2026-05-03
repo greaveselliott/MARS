@@ -36,6 +36,7 @@ func TestRun_returnsResults(t *testing.T) {
 	assert.True(t, names["operating-model"])
 	assert.True(t, names["role-registry"])
 	assert.True(t, names["active-plan-hygiene"])
+	assert.True(t, names["ticket-drain"])
 }
 
 func TestCheckGoVersion_findsGo(t *testing.T) {
@@ -190,6 +191,48 @@ func TestCheckActivePlanHygieneSkipsWithoutRepo(t *testing.T) {
 	assert.Equal(t, "active-plan-hygiene", result.Name)
 	assert.Equal(t, statusOK, result.Status)
 	assert.Contains(t, result.Message, "skipped")
+}
+
+func TestCheckTicketDrainHealthReportsStaleInProgress(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeDoctorFile(t, dir, "docs/tickets/in-progress/T-001-stale.md", `---
+id: T-001
+title: Stale
+last_attempt: "2026-04-01"
+blocker: none
+blocked_by: []
+---
+
+# Stale
+`)
+
+	result := checkTicketDrainHealth(Config{RepoPath: dir})
+	assert.Equal(t, "ticket-drain", result.Name)
+	assert.Equal(t, statusWarn, result.Status)
+	assert.Contains(t, result.Message, "stale eligible in-progress")
+	assert.Contains(t, result.Fix, "blocked_by")
+	assert.Contains(t, result.Fix, "mars-harness run janitor")
+}
+
+func TestCheckTicketDrainHealthSkipsBlockedInProgress(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeDoctorFile(t, dir, "docs/tickets/in-progress/T-001-blocked.md", `---
+id: T-001
+title: Blocked
+last_attempt: "2026-04-01"
+blocker: "waiting for T-002"
+blocked_by: ["T-002"]
+---
+
+# Blocked
+`)
+
+	result := checkTicketDrainHealth(Config{RepoPath: dir})
+	assert.Equal(t, "ticket-drain", result.Name)
+	assert.Equal(t, statusOK, result.Status)
+	assert.Contains(t, result.Message, "no stale")
 }
 
 func TestFormatText(t *testing.T) {

@@ -598,12 +598,56 @@ func (s *Server) ScanRepo(ctx context.Context, repoID string) error {
 	if err := scanner.GenerateTickets(result.Findings, rec.Path); err != nil {
 		return fmt.Errorf("scan: generate tickets: %w", err)
 	}
+	if err := s.enqueueStaleTicketHygiene(ctx, rec, result.Findings); err != nil {
+		return fmt.Errorf("scan: enqueue stale ticket hygiene: %w", err)
+	}
 
 	slog.Info("serve: scan complete", "repo", repoID, "findings", len(result.Findings))
 	if s.dash != nil {
 		s.dash.BroadcastEvent("scan_complete", fmt.Sprintf(
 			`{"repo_id":"%s","findings":%d}`, repoID, len(result.Findings)))
 	}
+	return nil
+}
+
+func (s *Server) enqueueStaleTicketHygiene(ctx context.Context, rec *RepoRecord, findings []scanner.Finding) error {
+	if rec == nil {
+		return nil
+	}
+	var paths []string
+	for _, finding := range findings {
+		if finding.Type == "stale_in_progress_ticket" {
+			paths = append(paths, finding.Path)
+		}
+	}
+	if len(paths) == 0 {
+		return nil
+	}
+	manifest, err := bundle.Load(rec.Path)
+	if err != nil {
+		slog.Warn("serve: stale ticket hygiene skipped; manifest load failed", "repo_id", rec.ID, "err", err)
+		return nil
+	}
+	if _, ok := manifest.Roles["janitor"]; !ok {
+		slog.Warn("serve: stale ticket hygiene skipped; janitor role is not configured", "repo_id", rec.ID)
+		return nil
+	}
+	trigger, _ := json.Marshal(map[string]any{
+		"type":    "ticket.stale_in_progress",
+		"source":  "scanner",
+		"count":   len(paths),
+		"tickets": paths,
+	})
+	jobID, err := s.queue.Enqueue(ctx, queue.Job{
+		RepoID:         rec.ID,
+		Role:           "janitor",
+		Trigger:        string(trigger),
+		IdempotencyKey: fmt.Sprintf("ticket:stale-in-progress:%s", rec.ID),
+	})
+	if err != nil {
+		return err
+	}
+	slog.Info("serve: stale ticket hygiene enqueued", "repo_id", rec.ID, "job_id", jobID, "tickets", len(paths))
 	return nil
 }
 
