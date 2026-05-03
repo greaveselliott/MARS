@@ -316,6 +316,8 @@ func TestInit_success(t *testing.T) {
 	}
 
 	assert.Contains(t, manifestStr, "record_decision", "manifest should include record_decision in tool lists")
+	assert.Contains(t, manifestStr, "tool_create", "manifest should expose tool_create as a mirrored tool")
+	assert.Contains(t, manifestStr, "record_decision, tool_create, git_status", "implementation roles should allow tool_create before git tools")
 	assert.Contains(t, manifestStr, "max_turns: 40", "dogfood role should have max_turns: 40")
 	assert.Contains(t, manifestStr, "knowledge/context-glossary.yaml", "manifest should include default glossary knowledge route")
 
@@ -351,6 +353,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Foundation harness")
 	assert.Contains(t, string(agentGuide), "Deployed harness")
 	assert.Contains(t, string(agentGuide), "Meta tool")
+	assert.Contains(t, string(agentGuide), "tool_create")
 	assert.Contains(t, string(agentGuide), "Contextual harness definition")
 	assert.Contains(t, string(agentGuide), "docs/design-docs/harness-glossary.md")
 	assert.Contains(t, string(agentGuide), "docs/goals/active.md")
@@ -369,6 +372,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(harnessGlossary), "First-Class Harness Definitions")
 	assert.Contains(t, string(harnessGlossary), "When changing operating doctrine include this")
 	assert.Contains(t, string(harnessGlossary), "When creating or changing tools include this")
+	assert.Contains(t, string(harnessGlossary), "`tool_create` is a mirrored tool")
 	assert.Contains(t, string(harnessGlossary), "When doing X include this: <path to document.md>")
 
 	mirroredGlossary, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "mirrored-harness-and-context-glossary.md"))

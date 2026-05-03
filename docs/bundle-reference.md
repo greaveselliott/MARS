@@ -72,6 +72,9 @@ roles:
 
 ### Available tools
 
+These built-in tools are available to both the foundation harness and deployed
+harness manifests when a role allowlist includes them.
+
 | Tool | Description |
 |------|-------------|
 | `file_read` | Read file contents |

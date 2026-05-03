@@ -359,7 +359,10 @@ Agents must still implement deterministic behavior, register the tool in
 `internal/tools/register_default.go`, update trust policy if it mutates state,
 and add meaningful tests before exposing it in role allowlists.
 
-`tool_create` is itself mutating and therefore blocked at observer trust.
+`tool_create` is itself mutating and therefore blocked at observer trust. It is
+a mirrored tool: the built-in exists in the foundation harness registry and can
+be included in deployed harness role allowlists for trusted implementation and
+self-improvement roles.
 
 ### Consequences
 

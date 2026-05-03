@@ -327,7 +327,7 @@ roles:
     then: [qa, engineer, dogfood]
     idle_then: [ceo, janitor]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, tool_create, git_status, git_diff, git_commit, git_push]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -370,7 +370,7 @@ roles:
     schedule: "0 10 * * 1-5"
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, grep, record_decision, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, tool_create, git_status, git_diff, git_commit, git_push]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -523,7 +523,7 @@ would otherwise live only in chat.
 - **Deployed harness** — the harness consumed by this target application.
 - **Mirrored harness definitions** — harness definitions included in both the foundation harness and deployed harnesses.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level ` + "`AGENTS.md`" + `.
@@ -1081,7 +1081,7 @@ harness and deployed harnesses.
 | Deployed harness | The harness consumed by this target application. |
 | Mirrored harness definitions | Harness definitions included in both the foundation harness and deployed harnesses. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
 | First-class harness definition | Context that should always be included in the top-level ` + "`AGENTS.md`" + `. |
@@ -1111,9 +1111,9 @@ Use ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/roles/`" + `, and the doc
 
 ### When creating or changing tools include this: ` + "`docs/design-docs/harness-glossary.md`" + `
 
-Use source ` + "`mars-harness`" + ` docs for built-in Go tools. Deployed harnesses
-may expose mirrored tools through role allowlists, but built-in tool
-implementation lives in the foundation harness source.
+` + "`tool_create`" + ` is a mirrored tool and may be exposed by both the foundation
+and deployed harness role allowlists. Use it for tool scaffolding; built-in Go
+tool implementation still lives in the foundation harness source.
 
 ### When changing context routes include this: ` + "`.harness/knowledge/context-glossary.yaml`" + `
 

@@ -24,7 +24,7 @@ would otherwise live only in chat.
 - **Deployed harness** — the harness consumed by the target application being built by `mars-harness`.
 - **Mirrored harness definitions** — harness definitions included in both the foundation harness and deployed harnesses.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `grep`, `record_decision`, `ticket_create`, `tool_create`, and git tools.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level `AGENTS.md`.
