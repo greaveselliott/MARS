@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.10.3] - 2026-05-03
+<!-- mars-harness-release: version=0.10.3 commit=9e444541196c -->
+
+### Documentation
+- **planning:** Materialize mars parity backlog tickets (MH-035) (9e44454)
+
+### Delivery Evidence
+- Enabler work: MH-035: Materialize Mars parity workstreams as tickets
+
 ## [0.10.2] - 2026-05-03
 <!-- mars-harness-release: version=0.10.2 commit=e2bcf2f7a080 -->
 
