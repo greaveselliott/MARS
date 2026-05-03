@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,6 +22,54 @@ func tempQueue(t *testing.T) *Queue {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = q.Close() })
 	return q
+}
+
+func TestQueueOpenMigratesLegacyJobsTableBeforeCreatingIndexes(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "legacy.db")
+
+	db, err := sql.Open("sqlite", dbPath)
+	require.NoError(t, err)
+	_, err = db.Exec(`
+CREATE TABLE jobs (
+  id              TEXT PRIMARY KEY,
+  repo_id         TEXT NOT NULL,
+  role            TEXT NOT NULL,
+  trigger_payload TEXT NOT NULL DEFAULT '',
+  idempotency_key TEXT NOT NULL DEFAULT '',
+  status          TEXT NOT NULL DEFAULT 'pending',
+  claimed_by      TEXT NOT NULL DEFAULT '',
+  created_at      INTEGER NOT NULL,
+  updated_at      INTEGER NOT NULL,
+  completed_at    INTEGER,
+  error_msg       TEXT NOT NULL DEFAULT ''
+);
+`)
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+
+	q, err := Open(dbPath)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = q.Close() })
+
+	for _, column := range []string{"payload_mode", "concurrency_group", "daily_cap"} {
+		var count int
+		err := q.db.QueryRow(`
+SELECT COUNT(*)
+FROM pragma_table_info('jobs')
+WHERE name = ?`, column).Scan(&count)
+		require.NoError(t, err)
+		assert.Equal(t, 1, count, "expected jobs.%s to be backfilled", column)
+	}
+
+	id, err := q.Enqueue(context.Background(), Job{
+		RepoID:           "repo-1",
+		Role:             "release-manager",
+		ConcurrencyGroup: "release",
+		DailyCap:         1,
+	})
+	require.NoError(t, err)
+	assert.NotEmpty(t, id)
 }
 
 func TestQueue_enqueueAndClaim(t *testing.T) {

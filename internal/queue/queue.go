@@ -99,9 +99,6 @@ CREATE TABLE IF NOT EXISTS jobs (
   completed_at    INTEGER,
   error_msg       TEXT NOT NULL DEFAULT ''
 );
-CREATE INDEX IF NOT EXISTS idx_jobs_repo_status_created ON jobs(repo_id, status, created_at);
-CREATE INDEX IF NOT EXISTS idx_jobs_idempotency ON jobs(idempotency_key) WHERE idempotency_key != '';
-CREATE INDEX IF NOT EXISTS idx_jobs_concurrency_status ON jobs(concurrency_group, status) WHERE concurrency_group != '';
 `)
 	if err != nil {
 		return fmt.Errorf("queue: init schema: %w", err)
@@ -117,6 +114,14 @@ CREATE INDEX IF NOT EXISTS idx_jobs_concurrency_status ON jobs(concurrency_group
 		if err := q.ensureJobsColumn(col.name, col.def); err != nil {
 			return err
 		}
+	}
+	_, err = q.db.Exec(`
+CREATE INDEX IF NOT EXISTS idx_jobs_repo_status_created ON jobs(repo_id, status, created_at);
+CREATE INDEX IF NOT EXISTS idx_jobs_idempotency ON jobs(idempotency_key) WHERE idempotency_key != '';
+CREATE INDEX IF NOT EXISTS idx_jobs_concurrency_status ON jobs(concurrency_group, status) WHERE concurrency_group != '';
+`)
+	if err != nil {
+		return fmt.Errorf("queue: init indexes: %w", err)
 	}
 	return nil
 }
