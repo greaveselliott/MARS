@@ -42,7 +42,7 @@ func (kl *KeyListener) Start(ctx context.Context) {
 	ctx, kl.cancel = context.WithCancel(ctx)
 
 	fd := int(os.Stdin.Fd())
-	origTermios, err := unix.IoctlGetTermios(fd, unix.TIOCGETA)
+	origTermios, err := unix.IoctlGetTermios(fd, ioctlGetTermios)
 	if err != nil {
 		slog.Warn("ui: cannot set raw mode — interactive controls disabled", "err", err)
 		return
@@ -53,14 +53,14 @@ func (kl *KeyListener) Start(ctx context.Context) {
 	raw.Cc[unix.VMIN] = 1
 	raw.Cc[unix.VTIME] = 0
 
-	if err := unix.IoctlSetTermios(fd, unix.TIOCSETA, &raw); err != nil {
+	if err := unix.IoctlSetTermios(fd, ioctlSetTermios, &raw); err != nil {
 		slog.Warn("ui: cannot set raw mode — interactive controls disabled", "err", err)
 		return
 	}
 
 	go func() {
 		defer func() {
-			_ = unix.IoctlSetTermios(fd, unix.TIOCSETA, origTermios)
+			_ = unix.IoctlSetTermios(fd, ioctlSetTermios, origTermios)
 		}()
 
 		buf := make([]byte, 1)

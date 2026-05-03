@@ -185,7 +185,7 @@ func isTTY(w io.Writer) bool {
 	if !ok {
 		return false
 	}
-	_, err := unix.IoctlGetTermios(int(f.Fd()), unix.TIOCGETA)
+	_, err := unix.IoctlGetTermios(int(f.Fd()), ioctlGetTermios)
 	return err == nil
 }
 
