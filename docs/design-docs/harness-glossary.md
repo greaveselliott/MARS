@@ -30,6 +30,7 @@ harness and deployed harnesses.
 | Mirrored harness definitions | Harness definitions included in both the foundation harness and deployed harnesses. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. |
+| Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
 | First-class harness definition | Context that should always be included in the top-level `AGENTS.md`. |
 | Contextual harness definition | Situational context routed through the harness glossary with the form: `When doing X include this: <path to document.md>`. |
@@ -55,6 +56,12 @@ foundation and deployed harnesses.
 Generated deployed harness definitions live in scanner defaults. Mirrored
 changes must update source guidance, generated target guidance, and tests in
 the same task.
+
+### When creating or changing tools include this: `internal/tools/`
+
+Use `tool_create` for built-in tool scaffolding, then implement the handler,
+register it in `internal/tools/register_default.go`, update trust policy if the
+tool mutates state, and add tests before exposing it in any role allowlist.
 
 ### When changing context routes include this: `.harness/knowledge/context-glossary.yaml`
 

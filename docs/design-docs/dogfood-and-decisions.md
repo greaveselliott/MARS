@@ -325,3 +325,46 @@ One-off builds should write to `build/mars-harness`, not the repo root. The root
 - The harness and target project stay visually and operationally separate.
 - Failed builds no longer silently fall through to an old binary in the source tree.
 - Docs and agent guidance point to the same development loop.
+
+---
+
+### AD-077: Tool Creation Is Scaffolded By A Meta Tool
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Author:** User direction and Agent (tool-system self-improvement)
+
+### Context
+
+Mars Harness tools are first-class model capabilities. Adding one requires a
+consistent Go file, JSON Schema, argument type, handler, tests, default-registry
+registration, trust-policy classification, and role allowlist exposure. Agents
+can do that work manually, but repeated manual scaffolding wastes model turns
+and invites small inconsistencies.
+
+At the same time, a tool that accepts arbitrary implementation code would be too
+powerful. It would collapse design, safety review, and executable behavior into
+one opaque model action.
+
+### Decision
+
+Add `tool_create` as a built-in meta tool. It accepts a snake_case tool name,
+description, and JSON Schema field list, then scaffolds:
+
+- `internal/tools/<name>.go`
+- `internal/tools/<name>_test.go`
+
+The generated handler intentionally returns "handler not implemented yet".
+Agents must still implement deterministic behavior, register the tool in
+`internal/tools/register_default.go`, update trust policy if it mutates state,
+and add meaningful tests before exposing it in role allowlists.
+
+`tool_create` is itself mutating and therefore blocked at observer trust.
+
+### Consequences
+
+- Agents can create consistent tool boilerplate quickly.
+- The implementation remains reviewable and test-driven instead of hidden
+  inside an arbitrary-code tool argument.
+- Tool creation has an explicit, repeatable path that can later grow into richer
+  inventories, validators, and generated tool references.

@@ -78,6 +78,13 @@ roles:
 | `file_write` | Write or create files |
 | `shell_exec` | Execute shell commands |
 | `grep` | Search file contents with regex |
+| `ticket_create` | Create or update deduped ticket files |
+| `record_decision` | Persist durable learning and decision notes |
+| `tool_create` | Scaffold a new built-in Go tool under `internal/tools/`; implementation and registration still require follow-up edits and tests |
+| `git_status` | Inspect repository status |
+| `git_diff` | Inspect diffs |
+| `git_commit` | Stage files and create a commit |
+| `git_push` | Push commits |
 
 ### Trigger syntax
 

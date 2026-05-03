@@ -19,6 +19,7 @@ var mutatingTools = map[string]bool{
 	"git_push":        true,
 	"record_decision": true,
 	"ticket_create":   true,
+	"tool_create":     true,
 }
 
 func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMessage) error {

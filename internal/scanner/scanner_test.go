@@ -350,6 +350,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Harness Glossary")
 	assert.Contains(t, string(agentGuide), "Foundation harness")
 	assert.Contains(t, string(agentGuide), "Deployed harness")
+	assert.Contains(t, string(agentGuide), "Meta tool")
 	assert.Contains(t, string(agentGuide), "Contextual harness definition")
 	assert.Contains(t, string(agentGuide), "docs/design-docs/harness-glossary.md")
 	assert.Contains(t, string(agentGuide), "docs/goals/active.md")
@@ -367,6 +368,7 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(harnessGlossary), "First-Class Harness Definitions")
 	assert.Contains(t, string(harnessGlossary), "When changing operating doctrine include this")
+	assert.Contains(t, string(harnessGlossary), "When creating or changing tools include this")
 	assert.Contains(t, string(harnessGlossary), "When doing X include this: <path to document.md>")
 
 	mirroredGlossary, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "mirrored-harness-and-context-glossary.md"))
