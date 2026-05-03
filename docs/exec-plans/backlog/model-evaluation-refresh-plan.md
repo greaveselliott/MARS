@@ -1,9 +1,9 @@
 # Model Evaluation Refresh Plan
 
-**Status:** Backlog
+**Status:** Backlog (initial MH-030 slice complete; future expansion needs a new ticket)
 **Priority:** P4
-**Depends On:** MH-030 and higher-priority release/quality work
-**Blocks:** Default model registry promotion
+**Depends On:** Higher-priority release/quality work for any future promotion ticket
+**Blocks:** Default model registry promotion until live benchmark evidence exists
 **Related Tickets:** MH-030
 **Goals:** G-003
 **BDD Feature:** F-001
@@ -22,10 +22,11 @@
 
 Make "best model" an evidence-backed, repeatable harness process instead of another hardcoded snapshot.
 
-This plan is waiting behind higher-priority active-plan hygiene, Mars parity
-ticket materialization, quality score export, and release asset work. Promote
-the next model-refresh slice into `../active/current-operating-plan.md` only
-when those dependencies are clear enough to execute.
+The initial product slice shipped through `MH-030`: model evaluation now supports
+Ollama catalog access, explicit tier/role overrides, persisted reports,
+repo-backed ticket-completion JSON, and promotion blocking. Future model-refresh
+work should use a new ticket and promote only the specific benchmark or default
+promotion slice into `../active/current-operating-plan.md`.
 
 ## Current Slice
 
@@ -33,19 +34,17 @@ when those dependencies are clear enough to execute.
 - [x] Add `mars-harness models evaluate` planning output.
 - [x] Add initial mechanical benchmark cases for tool-call JSON and strict JSON output.
 - [x] Document benchmark-backed promotion as an architecture decision.
+- [x] Add Ollama provider/catalog support for local model listing and evaluation.
+- [x] Add explicit tier/role override support through `.harness/model-overrides.yaml`.
+- [x] Persist live evaluation reports under `docs/generated/model-evaluations/`.
+- [x] Add a repo-backed ticket-completion JSON benchmark case.
+- [x] Add a promotion report that blocks unpinned or cloud-only defaults.
 
 ## Next Slices
 
-- [ ] Add Ollama provider/catalog support:
-  - [ ] list locally installed Ollama models
-  - [ ] accept any Ollama model name as an evaluation candidate
-  - [ ] represent provider/model overrides separately from default registry entries
-- [ ] Add simple model swap support:
-  - [ ] switch `fast`, `reasoning`, or `coding` tier for a repo
-  - [ ] switch one role to an explicit provider/model override
+- [ ] Add override diagnostics:
   - [ ] surface missing explicit overrides through doctor/setup
-- [ ] Add benchmark result persistence under the harness database or `docs/generated/model-evaluations/`.
-- [ ] Add repo-backed benchmark cases using temporary target repos:
+- [ ] Add deeper repo-backed benchmark cases using temporary target repos:
   - [ ] brownfield bug diagnosis
   - [ ] small code edit plus test run
   - [ ] multiple in-progress ticket prioritization

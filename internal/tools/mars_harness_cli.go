@@ -349,9 +349,19 @@ Global command surface:
     Example: ["trust", "set", "engineer", "repo-id", "contributor", "--reason", "human approved"]
 
   models evaluate
-    Print model evaluation plan or run live benchmark against an OpenAI-compatible endpoint.
-    Flags: --endpoint <url>, --model <name>, --api-key <key>, --timeout <duration>, --json
+    Print model evaluation plan or run live benchmark against an OpenAI-compatible/Ollama endpoint.
+    Flags: --endpoint <url>, --model <name>, --provider <openai-compatible|ollama>, --repo <path>, --report-dir <path>, --save-report, --api-key <key>, --timeout <duration>, --json
     Example: ["models", "evaluate", "--json"]
+
+  models list
+    List registry defaults or locally installed Ollama models.
+    Flags: --provider <registry|ollama>, --json
+    Example: ["models", "list", "--provider", "ollama", "--json"]
+
+  models override
+    Set a repo-owned tier or role model override in .harness/model-overrides.yaml.
+    Flags: --repo <path>, --tier <fast|reasoning|coding>, --role <name>, --provider <ollama|openai-compatible>, --model <name>, --endpoint <url>, --reason <text>, --json
+    Example: ["models", "override", "--repo", ".", "--tier", "coding", "--provider", "ollama", "--model", "qwen3.6:27b"]
 
 Operational guidance:
   Prefer --json when available for machine-readable output.

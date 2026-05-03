@@ -23,7 +23,7 @@ func TestMarsHarnessCLI_reference(t *testing.T) {
 		"setup", "init", "upgrade", "start", "serve", "register", "run <role>",
 		"scan", "doctor", "update check", "update tool", "update harness",
 		"path setup", "release notes", "release verify-assets", "scores export",
-		"trust set", "models evaluate",
+		"trust set", "models evaluate", "models list", "models override",
 	} {
 		require.Contains(t, res.Output, command)
 	}

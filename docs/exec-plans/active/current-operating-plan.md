@@ -35,7 +35,7 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001` and the current install/setup feature is `F-002`.
 - Ticket state:
   - `docs/tickets/in-progress/` is empty.
-  - `docs/tickets/backlog/` contains `MH-030` and `MH-042` through `MH-049`.
+  - `docs/tickets/backlog/` contains `MH-042` through `MH-049`.
   - `docs/tickets/done/` contains `MH-001` through `MH-041`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
@@ -43,8 +43,8 @@ plans to decide what to do next.
   - `docs/exec-plans/superseded/` contains historical plans that must not drive current work.
 - GitHub release notes are published for semantic versions generated from `VERSION`.
 - Release binary assets are published for `v0.14.5`; `MH-031` is done.
-- Model evaluation, Ollama catalog support, and model swaps are still tracked by
-  `MH-030`.
+- Model evaluation, Ollama catalog support, model overrides, persisted reports,
+  repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
 ## Plan State
 
@@ -52,15 +52,13 @@ plans to decide what to do next.
 | --- | --- | --- | --- | --- |
 | `active/current-operating-plan.md` | Active, P0 | None | Plan promotions until this file names the next slice | Use this file as the only top-level execution map and scenario schedule. |
 | `backlog/mars-parity-supersession-plan.md` | Backlog, P1, G-001/G-002/F-001 | Ticket materialization completed on 2026-05-03; no open blocker | Supersession readiness claims | Pull slices into tickets and this active plan before execution. |
-| `backlog/model-evaluation-refresh-plan.md` | Backlog, P4, G-003/F-001 | MH-030 and higher-priority release/quality work | Default model registry promotion | Promote into the active plan when model-refresh work is next. |
+| `backlog/model-evaluation-refresh-plan.md` | Completed initial model-refresh slice; future P4, G-003/F-001 | Higher-priority release/quality work for any future promotion ticket | Default model registry promotion until live benchmark evidence exists | Use only to seed future model-refresh tickets. |
 | `superseded/master-execution-plan.md` | Superseded | None | Nothing | Historical baseline. Do not use its checkbox status as truth. |
 | `superseded/delivery-schedule.md` | Superseded | None | Nothing | Historical milestone schedule; kept for lineage only. |
 
 ## Current Priority Order
 
-1. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
-   support, explicit role/tier swaps, persistent reports, and promotion checks.
-2. **Mars parity execution**: work through the tickets materialized on 2026-05-03 for
+1. **Mars parity execution**: work through the tickets materialized on 2026-05-03 for
    operating model (`MH-042`), role registry (`MH-043`),
    conversation-as-system-record (`MH-044`), intervention debt (`MH-045`),
    active-ticket drain (`MH-046`), orchestrator recovery (`MH-047`),
@@ -110,6 +108,5 @@ Checks recorded during the 2026-05-02 review:
 
 ## Next Ticket Work
 
-- `MH-030`: complete benchmark-backed model refresh and model swap workflow.
-- Next active-plan refresh: promote the model evaluation refresh plan or the
-  highest-value Mars parity scenario group if model work is blocked.
+- `MH-042`: canonical harness operating model is the next backlog ticket.
+- Next active-plan refresh: promote the highest-value Mars parity scenario group.

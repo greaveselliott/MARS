@@ -3,6 +3,14 @@ id: MH-030
 title: Benchmark-backed model refresh and promotion
 priority: high
 complexity: large
+kind: standard
+work_type: enabler
+bdd_scenarios: []
+end_to_end_evidence: not_applicable
+evidence_links:
+  - go test ./internal/models
+  - go test ./...
+verified_by: command
 source: model-evaluation-refresh-plan.md
 created: 2026-05-02
 ---
@@ -40,21 +48,21 @@ Reference: [model evaluation refresh plan](../../exec-plans/backlog/model-evalua
 
 ### Functional (happy path)
 
-- [ ] `mars-harness models evaluate --endpoint <url> --model <name> --json` writes a parseable report.
-- [ ] Operators can list or reference Ollama models as explicit evaluation/swap candidates without registry code changes.
-- [ ] Tier/role model swaps are represented in config or manifest with one clear command or documented edit path.
-- [ ] The benchmark pack includes at least one repo-backed ticket completion task.
-- [ ] Reports include pass/fail, latency, token counts, and enough metadata to reproduce the run.
-- [ ] Candidate comparison identifies whether Qwen3.6 or Laguna XS.2 should replace any current tier default.
-- [ ] Default registry update is blocked unless revision and SHA256 are present.
+- [x] `mars-harness models evaluate --endpoint <url> --model <name> --json` writes a parseable report.
+- [x] Operators can list or reference Ollama models as explicit evaluation/swap candidates without registry code changes.
+- [x] Tier/role model swaps are represented in config or manifest with one clear command or documented edit path.
+- [x] The benchmark pack includes at least one repo-backed ticket completion task.
+- [x] Reports include pass/fail, latency, token counts, and enough metadata to reproduce the run.
+- [x] Candidate comparison identifies whether Qwen3.6 or Laguna XS.2 should replace any current tier default.
+- [x] Default registry update is blocked unless revision and SHA256 are present.
 
 ### Edge cases and negative paths
 
-- [ ] Missing endpoint/model prints the plan and does not pretend evaluation happened.
-- [ ] Endpoint failures produce actionable errors.
-- [ ] Tool-call JSON failures are visible as failed benchmark cases.
-- [ ] Cloud-only candidates cannot be promoted into local defaults.
-- [ ] Ad-hoc Ollama selections are marked explicit overrides/candidates, not silently promoted defaults.
+- [x] Missing endpoint/model prints the plan and does not pretend evaluation happened.
+- [x] Endpoint failures produce actionable errors.
+- [x] Tool-call JSON failures are visible as failed benchmark cases.
+- [x] Cloud-only candidates cannot be promoted into local defaults.
+- [x] Ad-hoc Ollama selections are marked explicit overrides/candidates, not silently promoted defaults.
 
 ### Non-goals
 
@@ -64,6 +72,12 @@ Reference: [model evaluation refresh plan](../../exec-plans/backlog/model-evalua
 
 ### Observability, docs, and regressions
 
-- [ ] Docs explain why the chosen default changed or why it did not.
-- [ ] Tests cover report JSON, failed benchmark cases, and promotion blocking.
-- [ ] Product specs and design docs stay in sync with the implemented command behavior.
+- [x] Docs explain why the chosen default changed or why it did not.
+- [x] Tests cover report JSON, failed benchmark cases, and promotion blocking.
+- [x] Product specs and design docs stay in sync with the implemented command behavior.
+
+## Completion Notes
+
+Implemented as an enabler slice. No default model changed: Qwen3.6, Laguna XS.2,
+and other Ollama selections remain explicit candidates or overrides until
+benchmark reports pass and immutable revision plus SHA256 metadata are present.

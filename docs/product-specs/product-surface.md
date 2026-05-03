@@ -41,7 +41,9 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness scores export --repo <path>` | Implemented | Refreshes `docs/QUALITY_SCORE.md` from live score, telemetry, ticket, dogfood, guardrail, check, no-op, and human follow-up evidence while preserving manual notes and creating deduped low-score intervention-debt tickets. |
 | `mars-harness trust [--repo <path>]` | Implemented | Shows role trust levels. |
 | `mars-harness trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
-| `mars-harness models evaluate [--endpoint <url> --model <name>]` | Initial implementation | Prints the current model-refresh plan and candidate shortlist, or runs mechanical OpenAI-compatible benchmark probes against a supplied model endpoint. Next slice adds Ollama catalog access, explicit tier/role swaps, persisted reports, and promotion decisions. |
+| `mars-harness models list [--provider registry\|ollama]` | Implemented | Lists pinned medium-profile registry defaults or locally installed Ollama models. Ollama listing is a catalog/evaluation surface, not default promotion. |
+| `mars-harness models evaluate [--endpoint <url> --model <name>]` | Implemented | Prints the model-refresh plan or runs benchmark probes with tool-call JSON, strict triage JSON, and repo-backed ticket-completion JSON. Live reports include provider, model, endpoint, hardware profile, timing, token counts, failures, promotion status, and are persisted under `docs/generated/model-evaluations/` by default. `--provider ollama --model <name>` targets local Ollama's OpenAI-compatible endpoint. |
+| `mars-harness models override --repo <path> (--tier <tier>\|--role <role>) --provider <provider> --model <name>` | Implemented | Writes `.harness/model-overrides.yaml` so a repo can explicitly route one tier or role to an Ollama or OpenAI-compatible model without changing default registry entries. |
 | `mars-harness release notes --repo <path> --bump auto` | Implemented | Generates semantic-versioned patch notes from commits, updates `VERSION`, and prepends `CHANGELOG.md`. |
 | `mars-harness release verify-assets [--version <tag>]` | Implemented | Fails a release check unless all four platform binaries and `checksums.txt` are attached to the GitHub Release. |
 
@@ -105,6 +107,8 @@ Mars Harness and initialized target repos use the same release contract:
 `docs/generated/` is reserved for reproducible reference snapshots generated from the source harness. It is intentionally catalog-only until generator commands exist.
 
 Expected future artifacts include role registry, tool inventory, package map, model inventory, and bundle schema reference. Generated docs must name their generator, source inputs, and freshness signal so agents can trust them as context routes.
+
+Model evaluation reports are generated evidence artifacts, not hand-written reference docs. `mars-harness models evaluate` writes JSON under `docs/generated/model-evaluations/` for benchmark and promotion review; operators may commit selected reports when they support a default-model decision.
 
 ## Role And Work Semantics
 

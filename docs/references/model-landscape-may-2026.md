@@ -66,14 +66,18 @@ Initial mechanical benchmark cases now live behind:
 mars-harness models evaluate
 mars-harness models evaluate --endpoint <openai-compatible-url> --model <name>
 mars-harness models evaluate --endpoint <openai-compatible-url> --model <name> --json
+mars-harness models evaluate --provider ollama --model qwen3.6:27b --json
 ```
 
-The first version checks:
+The current version checks:
 
 - `tool-call-json`: the model must call a simple repo file inspection tool with parseable JSON arguments.
 - `structured-triage-json`: the model must return strict JSON for a harness failure classification.
+- `repo-ticket-completion-json`: the model must read a repo ticket and return strict JSON naming the completion gate and next test.
 
-The next version should add repo-backed tasks:
+Live reports are persisted under `docs/generated/model-evaluations/` by default and include provider, endpoint, hardware profile, timing, token counts, failures, current default comparison, and a promotion decision. Qwen3.6 and Laguna XS.2 remain explicit candidates: the promotion gate blocks default replacement until a report passes against current defaults and the exact promoted artifact has immutable revision and SHA256 metadata.
+
+The next benchmark version should add deeper repo-backed tasks:
 
 - brownfield bug diagnosis with expected file references
 - small code edit with tests

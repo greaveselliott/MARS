@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -12,9 +14,17 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/llm"
 )
 
+const (
+	ProviderOpenAICompatible = "openai-compatible"
+	ProviderOllama           = "ollama"
+	ProviderRegistry         = "registry"
+)
+
 // Candidate describes a model worth benchmarking before registry promotion.
 type Candidate struct {
 	Name        string   `json:"name"`
+	Model       string   `json:"model,omitempty"`
+	Provider    string   `json:"provider,omitempty"`
 	Role        string   `json:"role"`
 	Local       bool     `json:"local"`
 	Cloud       bool     `json:"cloud"`
@@ -52,25 +62,39 @@ type BenchmarkCase struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Kind        string `json:"kind"`
+	RepoBacked  bool   `json:"repo_backed,omitempty"`
 }
 
 // Config controls an evaluation run against an OpenAI-compatible endpoint.
 type Config struct {
-	Endpoint   string
-	Model      string
-	APIKey     string
-	HTTPClient *http.Client
-	Timeout    time.Duration
+	Endpoint        string
+	Model           string
+	Provider        string
+	APIKey          string
+	RepoRoot        string
+	ReportsDir      string
+	HardwareProfile string
+	CandidateSource string
+	Revision        string
+	SHA256          string
+	Cloud           bool
+	HTTPClient      *http.Client
+	Timeout         time.Duration
 }
 
 // Report summarizes a model evaluation run.
 type Report struct {
-	Model       string       `json:"model"`
-	Endpoint    string       `json:"endpoint"`
-	StartedAt   time.Time    `json:"started_at"`
-	CompletedAt time.Time    `json:"completed_at"`
-	Cases       []CaseResult `json:"cases"`
-	Summary     Summary      `json:"summary"`
+	Model           string          `json:"model"`
+	Provider        string          `json:"provider"`
+	Endpoint        string          `json:"endpoint"`
+	RepoRoot        string          `json:"repo_root,omitempty"`
+	HardwareProfile string          `json:"hardware_profile,omitempty"`
+	StartedAt       time.Time       `json:"started_at"`
+	CompletedAt     time.Time       `json:"completed_at"`
+	ReportPath      string          `json:"report_path,omitempty"`
+	Cases           []CaseResult    `json:"cases"`
+	Summary         Summary         `json:"summary"`
+	Promotion       PromotionReport `json:"promotion"`
 }
 
 // CaseResult captures timing and mechanical pass/fail signals for one case.
@@ -94,6 +118,29 @@ type Summary struct {
 	TokensPerSec float64       `json:"tokens_per_sec,omitempty"`
 }
 
+// PromotionReport explains whether benchmark evidence is enough to change a default.
+type PromotionReport struct {
+	Decision         string                        `json:"decision"`
+	SafeToPromote    bool                          `json:"safe_to_promote"`
+	Candidate        PromotionCandidate            `json:"candidate"`
+	ComparedTo       map[hardware.Tier]ModelRecord `json:"compared_to"`
+	ComparableTiers  []hardware.Tier               `json:"comparable_tiers"`
+	Reasons          []string                      `json:"reasons"`
+	RequiredEvidence []string                      `json:"required_evidence,omitempty"`
+}
+
+// PromotionCandidate is the candidate metadata used by the promotion gate.
+type PromotionCandidate struct {
+	Provider         string `json:"provider"`
+	Model            string `json:"model"`
+	Source           string `json:"source,omitempty"`
+	Revision         string `json:"revision,omitempty"`
+	SHA256           string `json:"sha256,omitempty"`
+	Local            bool   `json:"local"`
+	Cloud            bool   `json:"cloud"`
+	ExplicitOverride bool   `json:"explicit_override"`
+}
+
 // DefaultPlan returns the current model refresh plan without contacting any endpoint.
 func DefaultPlan(now time.Time) Plan {
 	current := make(map[hardware.Tier]ModelRecord)
@@ -107,6 +154,8 @@ func DefaultPlan(now time.Time) Plan {
 		Candidates: []Candidate{
 			{
 				Name:        "Qwen3.6 35B-A3B Coding",
+				Model:       "qwen3.6:35b-a3b",
+				Provider:    ProviderOllama,
 				Role:        "coding/reasoning candidate",
 				Local:       true,
 				MinMemoryGB: 22,
@@ -117,6 +166,8 @@ func DefaultPlan(now time.Time) Plan {
 			},
 			{
 				Name:        "Qwen3.6 27B",
+				Model:       "qwen3.6:27b",
+				Provider:    ProviderOllama,
 				Role:        "balanced coding candidate",
 				Local:       true,
 				MinMemoryGB: 17,
@@ -127,6 +178,8 @@ func DefaultPlan(now time.Time) Plan {
 			},
 			{
 				Name:        "Laguna XS.2",
+				Model:       "laguna-xs.2:latest",
+				Provider:    ProviderOllama,
 				Role:        "local long-horizon coding candidate",
 				Local:       true,
 				MinMemoryGB: 22,
@@ -136,17 +189,21 @@ func DefaultPlan(now time.Time) Plan {
 				Source:      "https://ollama.com/library/laguna-xs.2",
 			},
 			{
-				Name:    "GLM-5.1",
-				Role:    "optional cloud/remote quality candidate",
-				Local:   false,
-				Cloud:   true,
-				Context: "198K",
-				Why:     "Strong self-reported agentic engineering results; useful as optional remote benchmark target.",
-				Risks:   []string{"Cloud-only in Ollama listing", "Not a default for local/private operation"},
-				Source:  "https://ollama.com/library/glm-5.1",
+				Name:     "GLM-5.1",
+				Model:    "glm-5.1:latest",
+				Provider: ProviderOllama,
+				Role:     "optional cloud/remote quality candidate",
+				Local:    false,
+				Cloud:    true,
+				Context:  "198K",
+				Why:      "Strong self-reported agentic engineering results; useful as optional remote benchmark target.",
+				Risks:    []string{"Cloud-only in Ollama listing", "Not a default for local/private operation"},
+				Source:   "https://ollama.com/library/glm-5.1",
 			},
 			{
 				Name:        "Mistral Medium 3.5",
+				Model:       "mistral-medium3.5:latest",
+				Provider:    ProviderOllama,
 				Role:        "large remote/high-memory candidate",
 				Local:       true,
 				Cloud:       true,
@@ -168,6 +225,12 @@ func DefaultPlan(now time.Time) Plan {
 				Description: "Model must return strict JSON classifying a failing harness run.",
 				Kind:        "json",
 			},
+			{
+				Name:        "repo-ticket-completion-json",
+				Description: "Model must read a repo ticket and return strict JSON naming the next completion gate.",
+				Kind:        "repo_ticket",
+				RepoBacked:  true,
+			},
 		},
 		PromotionRules: []string{
 			"Do not promote from newest/model-card claims alone.",
@@ -177,6 +240,20 @@ func DefaultPlan(now time.Time) Plan {
 			"Default registry entries must be pinned by immutable source revision and SHA256.",
 			"Cloud-only candidates may be optional remote profiles but not local defaults.",
 		},
+	}
+}
+
+// NormalizeProvider returns the supported provider name used in reports and overrides.
+func NormalizeProvider(provider string) string {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "", ProviderOpenAICompatible, "openai":
+		return ProviderOpenAICompatible
+	case ProviderOllama:
+		return ProviderOllama
+	case ProviderRegistry:
+		return ProviderRegistry
+	default:
+		return strings.ToLower(strings.TrimSpace(provider))
 	}
 }
 
@@ -192,6 +269,13 @@ func Evaluate(ctx context.Context, cfg Config) (Report, error) {
 	if timeout <= 0 {
 		timeout = 5 * time.Minute
 	}
+	provider := NormalizeProvider(cfg.Provider)
+	repoRoot := strings.TrimSpace(cfg.RepoRoot)
+	if repoRoot == "" {
+		if cwd, err := os.Getwd(); err == nil {
+			repoRoot = cwd
+		}
+	}
 
 	client, err := llm.NewClient(llm.Config{
 		BaseURL:    cfg.Endpoint,
@@ -206,15 +290,26 @@ func Evaluate(ctx context.Context, cfg Config) (Report, error) {
 
 	started := time.Now().UTC()
 	report := Report{
-		Model:     cfg.Model,
-		Endpoint:  cfg.Endpoint,
-		StartedAt: started,
+		Model:           cfg.Model,
+		Provider:        provider,
+		Endpoint:        cfg.Endpoint,
+		RepoRoot:        repoRoot,
+		HardwareProfile: strings.TrimSpace(cfg.HardwareProfile),
+		StartedAt:       started,
 	}
 
 	report.Cases = append(report.Cases, runToolCallCase(ctx, client, cfg.Model))
 	report.Cases = append(report.Cases, runStructuredJSONCase(ctx, client, cfg.Model))
+	report.Cases = append(report.Cases, runRepoTicketCase(ctx, client, cfg.Model, repoRoot))
 	report.CompletedAt = time.Now().UTC()
 	report.Summary = summarize(report.Cases, report.CompletedAt.Sub(started))
+	report.Promotion = promotionForReport(report, cfg)
+	if strings.TrimSpace(cfg.ReportsDir) != "" {
+		report.ReportPath = filepath.Join(cfg.ReportsDir, reportFilename(report.Provider, report.Model, report.StartedAt))
+		if _, err := writeReport(report, cfg.ReportsDir); err != nil {
+			return Report{}, err
+		}
+	}
 	return report, nil
 }
 
@@ -336,6 +431,61 @@ Return {"category": "...", "risk": "...", "next_action": "..."} with short strin
 	return result
 }
 
+func runRepoTicketCase(ctx context.Context, client *llm.Client, model, repoRoot string) CaseResult {
+	start := time.Now()
+	result := CaseResult{Name: "repo-ticket-completion-json", Duration: time.Since(start)}
+	ticketPath, ticketBody, err := findBenchmarkTicket(repoRoot)
+	if err != nil {
+		result.Error = err.Error()
+		result.Duration = time.Since(start)
+		return result
+	}
+	ticketID := ticketIDFromBody(ticketBody)
+	req := llm.ChatCompletionRequest{
+		Model: model,
+		Messages: []llm.Message{
+			{
+				Role:    "system",
+				Content: "Return only strict JSON. Do not wrap it in markdown.",
+			},
+			{
+				Role: "user",
+				Content: fmt.Sprintf(`This is a Mars Harness repo ticket from %s:
+
+%s
+
+Return {"ticket_id":"...","work_type":"...","next_test":"...","completion_gate":"..."} with short string values.`, ticketPath, truncate(ticketBody, 4000)),
+			},
+		},
+	}
+	resp, err := client.ChatCompletion(ctx, req)
+	result.Duration = time.Since(start)
+	if err != nil {
+		result.Error = err.Error()
+		return result
+	}
+	addUsage(&result, resp.Usage)
+	content := strings.TrimSpace(resp.Choices[0].Message.Content)
+	var parsed map[string]string
+	if err := json.Unmarshal([]byte(content), &parsed); err != nil {
+		result.Detail = "response was not strict JSON: " + err.Error()
+		return result
+	}
+	for _, key := range []string{"ticket_id", "work_type", "next_test", "completion_gate"} {
+		if strings.TrimSpace(parsed[key]) == "" {
+			result.Detail = "missing JSON field " + key
+			return result
+		}
+	}
+	if ticketID != "" && !strings.EqualFold(strings.TrimSpace(parsed["ticket_id"]), ticketID) {
+		result.Detail = fmt.Sprintf("ticket_id %q did not match source ticket %q", parsed["ticket_id"], ticketID)
+		return result
+	}
+	result.Passed = true
+	result.Detail = "repo-backed ticket completion JSON parsed with required fields"
+	return result
+}
+
 func addUsage(result *CaseResult, usage llm.Usage) {
 	result.PromptTokens = usage.PromptTokens
 	result.CompletionTokens = usage.CompletionTokens
@@ -357,4 +507,193 @@ func summarize(results []CaseResult, wall time.Duration) Summary {
 		summary.TokensPerSec = float64(totalTokens) / wall.Seconds()
 	}
 	return summary
+}
+
+func findBenchmarkTicket(repoRoot string) (string, string, error) {
+	if strings.TrimSpace(repoRoot) == "" {
+		return "", "", fmt.Errorf("repo-backed benchmark: repo root is required")
+	}
+	for _, dir := range []string{
+		filepath.Join(repoRoot, "docs", "tickets", "in-progress"),
+		filepath.Join(repoRoot, "docs", "tickets", "backlog"),
+		filepath.Join(repoRoot, "docs", "tickets", "done"),
+	} {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+				continue
+			}
+			path := filepath.Join(dir, entry.Name())
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return "", "", fmt.Errorf("repo-backed benchmark: read %s: %w", path, err)
+			}
+			return path, string(data), nil
+		}
+	}
+	return "", "", fmt.Errorf("repo-backed benchmark: no ticket markdown found under docs/tickets/{in-progress,backlog,done} — run against a harness-initialized repo or pass --repo <path>")
+}
+
+func ticketIDFromBody(body string) string {
+	for _, line := range strings.Split(body, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "id:") {
+			return strings.Trim(strings.TrimSpace(strings.TrimPrefix(line, "id:")), `"'`)
+		}
+		if strings.HasPrefix(line, "# ") {
+			heading := strings.TrimSpace(strings.TrimPrefix(line, "# "))
+			if before, _, ok := strings.Cut(heading, ":"); ok {
+				return strings.TrimSpace(before)
+			}
+		}
+	}
+	return ""
+}
+
+func truncate(value string, max int) string {
+	if len(value) <= max {
+		return value
+	}
+	return value[:max] + "\n...[truncated]"
+}
+
+func writeReport(report Report, dir string) (string, error) {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", fmt.Errorf("models evaluate: create report directory %s: %w", dir, err)
+	}
+	path := filepath.Join(dir, reportFilename(report.Provider, report.Model, report.StartedAt))
+	file, err := os.Create(path)
+	if err != nil {
+		return "", fmt.Errorf("models evaluate: create report %s: %w", path, err)
+	}
+	defer file.Close()
+	enc := json.NewEncoder(file)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(report); err != nil {
+		return "", fmt.Errorf("models evaluate: write report %s: %w", path, err)
+	}
+	return path, nil
+}
+
+func reportFilename(provider, model string, ts time.Time) string {
+	name := sanitizeFilename(provider + "-" + model)
+	if name == "" {
+		name = "model"
+	}
+	return fmt.Sprintf("%s-%s.json", ts.UTC().Format("20060102T150405Z"), name)
+}
+
+func sanitizeFilename(value string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(value) {
+		switch {
+		case r >= 'a' && r <= 'z':
+			b.WriteRune(r)
+		case r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '-' || r == '_' || r == '.':
+			b.WriteRune(r)
+		default:
+			b.WriteRune('-')
+		}
+	}
+	return strings.Trim(b.String(), "-")
+}
+
+func promotionForReport(report Report, cfg Config) PromotionReport {
+	comparedTo := make(map[hardware.Tier]ModelRecord)
+	for tier, spec := range hardware.DefaultModels(hardware.ProfileMedium) {
+		comparedTo[tier] = modelRecord(spec)
+	}
+	known := knownCandidate(cfg.Model)
+	source := strings.TrimSpace(cfg.CandidateSource)
+	if source == "" {
+		source = known.Source
+	}
+	provider := NormalizeProvider(cfg.Provider)
+	cloud := cfg.Cloud || (known.Cloud && !known.Local)
+	local := !cloud
+	if known.Local {
+		local = true
+	}
+	candidate := PromotionCandidate{
+		Provider:         provider,
+		Model:            cfg.Model,
+		Source:           source,
+		Revision:         strings.TrimSpace(cfg.Revision),
+		SHA256:           strings.TrimSpace(cfg.SHA256),
+		Local:            local,
+		Cloud:            cloud,
+		ExplicitOverride: provider == ProviderOllama || provider == ProviderOpenAICompatible,
+	}
+
+	var reasons []string
+	if report.Summary.Failed > 0 {
+		reasons = append(reasons, fmt.Sprintf("%d/%d benchmark cases failed", report.Summary.Failed, report.Summary.Total))
+	}
+	if cloud && !local {
+		reasons = append(reasons, "cloud-only candidates cannot be promoted into local zero-config defaults")
+	}
+	if candidate.Revision == "" || candidate.SHA256 == "" {
+		reasons = append(reasons, "default promotion requires immutable source revision and SHA256")
+	}
+	if provider == ProviderOllama && (candidate.Revision == "" || candidate.SHA256 == "") {
+		reasons = append(reasons, "ad-hoc Ollama selections remain explicit overrides or candidates until pinned as default artifacts")
+	}
+
+	promotion := PromotionReport{
+		Decision:        "safe",
+		SafeToPromote:   true,
+		Candidate:       candidate,
+		ComparedTo:      comparedTo,
+		ComparableTiers: comparableTiers(known, cfg.Model),
+		Reasons:         []string{"candidate passed benchmark gates and includes pinned artifact metadata"},
+	}
+	if len(reasons) > 0 {
+		promotion.Decision = "blocked"
+		promotion.SafeToPromote = false
+		promotion.Reasons = reasons
+		promotion.RequiredEvidence = []string{
+			"passing harness benchmark report against current defaults",
+			"hardware-fit timing and token-throughput evidence",
+			"immutable artifact revision",
+			"SHA256 checksum for the exact promoted artifact",
+			"design/product rationale for any default change",
+		}
+	}
+	return promotion
+}
+
+func knownCandidate(model string) Candidate {
+	normalized := strings.ToLower(strings.TrimSpace(model))
+	for _, candidate := range DefaultPlan(time.Now()).Candidates {
+		if strings.EqualFold(candidate.Model, model) || strings.Contains(normalized, strings.ToLower(candidate.Name)) {
+			return candidate
+		}
+		if candidate.Model != "" && strings.Contains(normalized, strings.Split(strings.ToLower(candidate.Model), ":")[0]) {
+			return candidate
+		}
+	}
+	return Candidate{Provider: NormalizeProvider(""), Local: true}
+}
+
+func comparableTiers(candidate Candidate, model string) []hardware.Tier {
+	role := strings.ToLower(candidate.Role + " " + model)
+	var tiers []hardware.Tier
+	if strings.Contains(role, "fast") {
+		tiers = append(tiers, hardware.TierFast)
+	}
+	if strings.Contains(role, "reasoning") {
+		tiers = append(tiers, hardware.TierReasoning)
+	}
+	if strings.Contains(role, "coding") || strings.Contains(role, "code") {
+		tiers = append(tiers, hardware.TierCoding)
+	}
+	if len(tiers) == 0 {
+		tiers = append(tiers, hardware.TierCoding, hardware.TierReasoning)
+	}
+	return tiers
 }

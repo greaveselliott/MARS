@@ -87,17 +87,77 @@ func modelsCmd() *cobra.Command {
 		Use:   "models",
 		Short: "Inspect and evaluate model candidates",
 	}
+	cmd.AddCommand(modelsListCmd())
 	cmd.AddCommand(modelsEvaluateCmd())
+	cmd.AddCommand(modelsOverrideCmd())
+	return cmd
+}
+
+func modelsListCmd() *cobra.Command {
+	var (
+		provider string
+		jsonOut  bool
+	)
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List model candidates from a provider",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			switch models.NormalizeProvider(provider) {
+			case models.ProviderOllama:
+				rows, err := models.ListOllamaModels(cmd.Context(), nil)
+				if err != nil {
+					return err
+				}
+				if jsonOut {
+					return writeJSON(os.Stdout, rows)
+				}
+				fmt.Println("Ollama models")
+				for _, row := range rows {
+					fmt.Printf("  - %s", row.Name)
+					if row.Size != "" {
+						fmt.Printf(" size=%s", row.Size)
+					}
+					if row.Modified != "" {
+						fmt.Printf(" modified=%s", row.Modified)
+					}
+					fmt.Println()
+				}
+				return nil
+			case models.ProviderRegistry:
+				rows := hardware.DefaultModels(hardware.ProfileMedium)
+				if jsonOut {
+					return writeJSON(os.Stdout, rows)
+				}
+				fmt.Println("Medium-profile registry defaults")
+				for tier, spec := range rows {
+					fmt.Printf("  - %s: %s %s %s revision=%s sha256=%s\n", tier, spec.Name, spec.Params, spec.Quant, spec.Revision, spec.SHA256)
+				}
+				return nil
+			default:
+				return fmt.Errorf("models list: unsupported provider %q — use ollama or registry", provider)
+			}
+		},
+	}
+	cmd.Flags().StringVar(&provider, "provider", models.ProviderRegistry, "Provider to list: registry or ollama")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
 
 func modelsEvaluateCmd() *cobra.Command {
 	var (
-		endpoint string
-		model    string
-		apiKey   string
-		timeout  time.Duration
-		jsonOut  bool
+		endpoint        string
+		model           string
+		provider        string
+		apiKey          string
+		repoRoot        string
+		reportDir       string
+		saveReport      bool
+		revision        string
+		sha256          string
+		candidateSource string
+		cloud           bool
+		timeout         time.Duration
+		jsonOut         bool
 	)
 	cmd := &cobra.Command{
 		Use:   "evaluate",
@@ -109,6 +169,10 @@ screen model candidates before registry promotion. Without those flags, it
 prints the current refresh plan, candidate shortlist, benchmark cases, and
 promotion rules. Defaults are not changed by this command.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			provider = models.NormalizeProvider(provider)
+			if provider == models.ProviderOllama && endpoint == "" && model != "" {
+				endpoint = models.DefaultOllamaEndpoint
+			}
 			if endpoint == "" || model == "" {
 				plan := models.DefaultPlan(time.Now())
 				if jsonOut {
@@ -117,12 +181,32 @@ promotion rules. Defaults are not changed by this command.`,
 				printModelEvaluationPlan(plan)
 				return nil
 			}
+			absRepo, err := filepath.Abs(repoRoot)
+			if err != nil {
+				return fmt.Errorf("models evaluate: resolve repo %s: %w", repoRoot, err)
+			}
+			resolvedReportDir := ""
+			if saveReport {
+				resolvedReportDir = reportDir
+				if !filepath.IsAbs(resolvedReportDir) {
+					resolvedReportDir = filepath.Join(absRepo, resolvedReportDir)
+				}
+			}
+			hw := hardware.Detect()
 
 			report, err := models.Evaluate(cmd.Context(), models.Config{
-				Endpoint: endpoint,
-				Model:    model,
-				APIKey:   apiKey,
-				Timeout:  timeout,
+				Endpoint:        endpoint,
+				Model:           model,
+				Provider:        provider,
+				APIKey:          apiKey,
+				RepoRoot:        absRepo,
+				ReportsDir:      resolvedReportDir,
+				HardwareProfile: string(hw.Profile),
+				CandidateSource: candidateSource,
+				Revision:        revision,
+				SHA256:          sha256,
+				Cloud:           cloud,
+				Timeout:         timeout,
 			})
 			if err != nil {
 				return err
@@ -136,8 +220,62 @@ promotion rules. Defaults are not changed by this command.`,
 	}
 	cmd.Flags().StringVar(&endpoint, "endpoint", "", "OpenAI-compatible base URL to evaluate")
 	cmd.Flags().StringVar(&model, "model", "", "Model name to evaluate")
+	cmd.Flags().StringVar(&provider, "provider", models.ProviderOpenAICompatible, "Provider label: openai-compatible or ollama")
 	cmd.Flags().StringVar(&apiKey, "api-key", "", "Optional API key for the endpoint")
+	cmd.Flags().StringVar(&repoRoot, "repo", ".", "Repo root for repo-backed benchmark cases")
+	cmd.Flags().StringVar(&reportDir, "report-dir", filepath.Join("docs", "generated", "model-evaluations"), "Directory for persisted evaluation reports")
+	cmd.Flags().BoolVar(&saveReport, "save-report", true, "Persist live evaluation reports")
+	cmd.Flags().StringVar(&revision, "revision", "", "Immutable artifact revision for promotion checks")
+	cmd.Flags().StringVar(&sha256, "sha256", "", "Artifact SHA256 for promotion checks")
+	cmd.Flags().StringVar(&candidateSource, "source", "", "Candidate source URL or artifact reference")
+	cmd.Flags().BoolVar(&cloud, "cloud", false, "Mark candidate as cloud-only/remote")
 	cmd.Flags().DurationVar(&timeout, "timeout", 5*time.Minute, "Per-request timeout")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func modelsOverrideCmd() *cobra.Command {
+	var (
+		repoRoot string
+		tier     string
+		role     string
+		provider string
+		model    string
+		endpoint string
+		reason   string
+		jsonOut  bool
+	)
+	cmd := &cobra.Command{
+		Use:   "override",
+		Short: "Set a repo-owned model override for one tier or role",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			absRepo, err := filepath.Abs(repoRoot)
+			if err != nil {
+				return fmt.Errorf("models override: resolve repo %s: %w", repoRoot, err)
+			}
+			path, err := models.SetModelOverride(absRepo, tier, role, models.ModelOverride{
+				Provider: provider,
+				Model:    model,
+				Endpoint: endpoint,
+				Reason:   reason,
+			})
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return writeJSON(os.Stdout, map[string]string{"path": path})
+			}
+			fmt.Printf("Wrote model override: %s\n", path)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoRoot, "repo", ".", "Target repo root")
+	cmd.Flags().StringVar(&tier, "tier", "", "Tier to override: fast, reasoning, or coding")
+	cmd.Flags().StringVar(&role, "role", "", "Role name to override")
+	cmd.Flags().StringVar(&provider, "provider", models.ProviderOllama, "Provider: ollama or openai-compatible")
+	cmd.Flags().StringVar(&model, "model", "", "Provider model name")
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "OpenAI-compatible endpoint; Ollama defaults to local Ollama")
+	cmd.Flags().StringVar(&reason, "reason", "", "Operator rationale saved with the override")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
@@ -170,7 +308,11 @@ func printModelEvaluationPlan(plan models.Plan) {
 		if c.MinMemoryGB > 0 {
 			mem = fmt.Sprintf(" min_memory=%dGB", c.MinMemoryGB)
 		}
-		fmt.Printf("  - %s (%s,%s%s): %s\n", c.Name, c.Role, mode, mem, c.Why)
+		ref := c.Name
+		if c.Provider != "" && c.Model != "" {
+			ref = fmt.Sprintf("%s [%s:%s]", c.Name, c.Provider, c.Model)
+		}
+		fmt.Printf("  - %s (%s,%s%s): %s\n", ref, c.Role, mode, mem, c.Why)
 		fmt.Printf("    source: %s\n", c.Source)
 	}
 
@@ -188,7 +330,11 @@ func printModelEvaluationPlan(plan models.Plan) {
 
 func printModelEvaluationReport(report models.Report) {
 	fmt.Printf("Model evaluation: %s\n", report.Model)
+	fmt.Printf("Provider: %s\n", report.Provider)
 	fmt.Printf("Endpoint: %s\n", report.Endpoint)
+	if report.HardwareProfile != "" {
+		fmt.Printf("Hardware profile: %s\n", report.HardwareProfile)
+	}
 	fmt.Printf("Wall time: %s\n", report.Summary.WallTime.Round(time.Millisecond))
 	if report.Summary.TokensPerSec > 0 {
 		fmt.Printf("Tokens/sec: %.2f\n", report.Summary.TokensPerSec)
@@ -210,6 +356,13 @@ func printModelEvaluationReport(report models.Report) {
 		if c.Detail != "" {
 			fmt.Printf("    detail: %s\n", c.Detail)
 		}
+	}
+	fmt.Printf("\nPromotion: %s\n", strings.ToUpper(report.Promotion.Decision))
+	for _, reason := range report.Promotion.Reasons {
+		fmt.Printf("  - %s\n", reason)
+	}
+	if report.ReportPath != "" {
+		fmt.Printf("\nReport saved: %s\n", report.ReportPath)
 	}
 }
 
@@ -731,22 +884,39 @@ func executeRun(opts runOpts) error {
 	defer stop()
 
 	endpoint := opts.modelEndpoint
+	modelName := role.Model
 	var router *inference.Router
 
 	if endpoint == "" {
-		router, endpoint, err = autoStartInference(sigCtx, opts.roleName, role.Model)
-		if err != nil {
-			tw.WriteError(fmt.Sprintf("inference startup failed: %v", err))
-			return err
+		override, ok, overrideErr := models.ResolveModelOverride(absRepo, opts.roleName, role.Model)
+		if overrideErr != nil {
+			tw.WriteError(fmt.Sprintf("model override failed: %v", overrideErr))
+			return overrideErr
 		}
-		defer router.StopAll()
+		if ok {
+			endpoint = override.Endpoint
+			modelName = override.Model
+			slog.Info("model override selected",
+				"role", opts.roleName,
+				"provider", override.Provider,
+				"model", modelName,
+				"endpoint", endpoint,
+			)
+		} else {
+			router, endpoint, err = autoStartInference(sigCtx, opts.roleName, role.Model)
+			if err != nil {
+				tw.WriteError(fmt.Sprintf("inference startup failed: %v", err))
+				return err
+			}
+			defer router.StopAll()
+		}
 	}
 
 	tw.WriteReady()
 
 	client, err := llm.NewClient(llm.Config{
 		BaseURL: endpoint,
-		Model:   role.Model,
+		Model:   modelName,
 	})
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("failed to create LLM client: %v", err))
@@ -785,7 +955,7 @@ func executeRun(opts runOpts) error {
 		SystemPrompt: systemPrompt,
 		UserMessage:  "Begin your task. Inspect the repository and take action.",
 		Config: agent.LoopConfig{
-			Model:       role.Model,
+			Model:       modelName,
 			MaxTurns:    opts.maxTurns,
 			TokenBudget: opts.budget,
 		},

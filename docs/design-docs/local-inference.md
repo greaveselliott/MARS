@@ -103,10 +103,27 @@ The intended operator experience is:
 - see doctor/setup warnings when an explicit Ollama override is unavailable locally
 - keep default promotion blocked until pinned artifacts and benchmark reports exist
 
+Implemented command shape:
+
+```bash
+mars-harness models list --provider ollama
+mars-harness models evaluate --provider ollama --model qwen3.6:27b
+mars-harness models override --repo /path/to/repo --tier coding --provider ollama --model qwen3.6:27b
+mars-harness models override --repo /path/to/repo --role engineer --provider openai-compatible --endpoint http://127.0.0.1:8088/v1 --model repo-coder
+```
+
+Overrides are stored in `.harness/model-overrides.yaml`. The runtime checks a
+role override first, then a tier override, then the existing pinned local
+registry route. Ollama overrides default to `http://127.0.0.1:11434/v1`.
+Evaluation reports include a promotion section; ad-hoc Ollama candidates and
+cloud-only candidates are blocked from default promotion unless pinned artifact
+revision, SHA256, benchmark evidence, and docs rationale are present.
+
 ### Open topics (M2 and beyond)
 
 - **Hardware detection:** CPU vs GPU paths, memory ceilings, and safe default model bundles; degrade gracefully when VRAM is insufficient.
 - **Model registry and provider catalog:** naming, versioning, Ollama/local-provider discovery, compatibility with server flags, deprecation notices in CLI output, simple tier/role swaps, and benchmark-backed promotion.
+- **Override diagnostics:** doctor/setup should warn when `.harness/model-overrides.yaml` references an unavailable local Ollama model or an unreachable OpenAI-compatible endpoint.
 - **Download with resume:** partial files, checksum retry, bandwidth-friendly defaults; mirror URLs as optional fallback.
 - **Server lifecycle:** start/stop, backoff on crash, upgrade without orphan processes; pidfile or equivalent for operator tooling.
 - **Multi-model serving:** concurrent endpoints vs serial reuse; resource isolation when two roles need different sizes.
