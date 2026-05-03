@@ -25,7 +25,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | --- | --- | --- |
 | `mars-harness setup` | Implemented, still hardening | Creates `~/.mars-harness/`, configures supported shell profiles for the installed command, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
 | `mars-harness update check --repo <path>` | Implemented | Reports whether the installed CLI, deployed target `.harness/` metadata, or mirrored operating-model artifacts are behind, with JSON output for automation and unknown-but-nonfatal remote status when release lookup fails. |
-| `mars-harness update tool` | Initial implementation | Reinstalls the command into the current binary directory through `go install`, then configures the user's shell PATH for that directory. Release-asset updates are still tracked separately. |
+| `mars-harness update tool` | Implemented | Downloads the latest platform release asset, verifies `checksums.txt`, atomically replaces the installed command, and configures shell PATH. Source-development updates remain available with `--source` or `--version main`. |
 | `mars-harness path setup --install-dir <path>` | Implemented | Detects Fish, Zsh, Bash, POSIX sh/Ksh, Csh, or Tcsh and writes an idempotent user-profile snippet so new terminals can resolve `mars-harness`. |
 | `mars-harness update harness --repo <path>` | Implemented | Uses the same update verb to refresh the deployed target `.harness/` bundle without overwriting user-owned agent configuration. |
 | `make install` from source checkout | Implemented for source development | Installs the dev binary into the Go bin directory and runs the installed binary's PATH setup so operators do not run stale source-root binaries or hand-edit shell config. |
@@ -43,6 +43,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
 | `mars-harness models evaluate [--endpoint <url> --model <name>]` | Initial implementation | Prints the current model-refresh plan and candidate shortlist, or runs mechanical OpenAI-compatible benchmark probes against a supplied model endpoint. Next slice adds Ollama catalog access, explicit tier/role swaps, persisted reports, and promotion decisions. |
 | `mars-harness release notes --repo <path> --bump auto` | Implemented | Generates semantic-versioned patch notes from commits, updates `VERSION`, and prepends `CHANGELOG.md`. |
+| `mars-harness release verify-assets [--version <tag>]` | Implemented | Fails a release check unless all four platform binaries and `checksums.txt` are attached to the GitHub Release. |
 
 ## Generated Target Harness
 
@@ -97,7 +98,7 @@ Mars Harness and initialized target repos use the same release contract:
 - release-note commits themselves are ignored in the next generated entry
 - generated entries include a marker so tags are useful but not required for the next diff
 - in the source harness repo and initialized target repos, every non-release semantic commit is immediately followed by the generated version/patch-note commit before the task is done
-- when authenticated GitHub release capability is configured, the generated version is published or updated as GitHub Release `vX.Y.Z` using the matching changelog entry
+- when authenticated GitHub release capability is configured, the generated version is tagged as `vX.Y.Z`; the source harness tag-triggered release workflow publishes the matching changelog entry plus checksum-verified binary assets
 
 ## Generated Source References
 

@@ -54,6 +54,10 @@ mars-harness update tool
 mars-harness update harness --repo /path/to/target-repo
 ```
 
+`update tool` uses checksum-verified GitHub Release assets by default. Source
+development channels remain available with `mars-harness update tool --source
+--version main`.
+
 Generate semantic-versioned patch notes from commits:
 
 ```bash
@@ -61,7 +65,10 @@ mars-harness release notes --repo . --bump auto
 ```
 
 For changes to this source repo and repos initialized by Mars Harness, that release command is part of the commit flow: every non-release semantic commit is followed by a generated `release: notes X.Y.Z` commit before `main` is pushed.
-When GitHub release credentials are configured, the matching `vX.Y.Z` GitHub Release should be published from the generated changelog entry.
+When GitHub release credentials are configured, push tag `vX.Y.Z` at the
+release-note commit so the Release workflow publishes the changelog entry and
+checksum-verified binaries. Verify it with `mars-harness release verify-assets
+--version vX.Y.Z`.
 
 ## Lineage
 

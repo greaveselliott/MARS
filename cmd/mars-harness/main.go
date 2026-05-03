@@ -287,6 +287,7 @@ func updateToolCmd() *cobra.Command {
 	var (
 		updateVersion string
 		installDir    string
+		sourceUpdate  bool
 		dryRun        bool
 		jsonOut       bool
 	)
@@ -296,13 +297,19 @@ func updateToolCmd() *cobra.Command {
 		Short:   "Reinstall or upgrade the mars-harness command",
 		Long: `Reinstall the mars-harness command without changing directories.
 
-This source-based updater uses go install and writes into the directory that
-contains the currently running mars-harness binary by default. It is intended
-for source-development installs until release-asset based updates are complete.`,
+By default this downloads the platform release asset, verifies checksums.txt,
+and atomically replaces the binary in the directory that contains the currently
+running mars-harness binary. Use --source for source-development updates through
+go install, or pass --version main which selects the source path automatically.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			method := selfupdate.UpdateMethod("")
+			if sourceUpdate {
+				method = selfupdate.MethodSource
+			}
 			cfg := selfupdate.Config{
 				Version:    updateVersion,
 				InstallDir: installDir,
+				Method:     method,
 				DryRun:     dryRun,
 			}
 			plan, err := selfupdate.Run(cmd.Context(), cfg)
@@ -313,9 +320,21 @@ for source-development installs until release-asset based updates are complete.`
 				return writeJSON(os.Stdout, plan)
 			}
 			fmt.Printf("mars-harness update tool\n")
+			fmt.Printf("Method: %s\n", plan.Method)
 			fmt.Printf("Version: %s\n", plan.Version)
 			fmt.Printf("Install dir: %s\n", plan.InstallDir)
-			fmt.Printf("Command: GOBIN=%s %s\n", plan.InstallDir, strings.Join(plan.Command, " "))
+			if len(plan.Command) > 0 {
+				fmt.Printf("Command: GOBIN=%s %s\n", plan.InstallDir, strings.Join(plan.Command, " "))
+			}
+			if plan.AssetName != "" {
+				fmt.Printf("Asset: %s\n", plan.AssetName)
+				if plan.ReleaseTag == selfupdate.DefaultVersion {
+					fmt.Printf("Release metadata: %s\n", selfupdate.DefaultLatestReleaseURL)
+				} else {
+					fmt.Printf("Download: %s\n", plan.DownloadURL)
+					fmt.Printf("Checksums: %s\n", plan.ChecksumsURL)
+				}
+			}
 			if plan.ShellPath.InstallDir != "" {
 				fmt.Printf("Shell PATH: %s\n", plan.ShellPath.Message)
 				if plan.ShellPath.ProfilePath != "" {
@@ -334,9 +353,10 @@ for source-development installs until release-asset based updates are complete.`
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&updateVersion, "version", selfupdate.DefaultVersion, "Go module version to install, e.g. latest, main, or v0.5.3")
+	cmd.Flags().StringVar(&updateVersion, "version", selfupdate.DefaultVersion, "Release or source version to install, e.g. latest, v0.5.3, or main")
 	cmd.Flags().StringVar(&installDir, "install-dir", "", "Install directory; default is the current mars-harness binary directory")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print the update plan without running go install")
+	cmd.Flags().BoolVar(&sourceUpdate, "source", false, "Use go install instead of checksum-verified release assets")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print the update plan without downloading or replacing the binary")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
@@ -439,6 +459,7 @@ func releaseCmd() *cobra.Command {
 		Short: "Manage semantic versions and patch notes",
 	}
 	cmd.AddCommand(releaseNotesCmd())
+	cmd.AddCommand(releaseVerifyAssetsCmd())
 	return cmd
 }
 
@@ -492,6 +513,53 @@ CHANGELOG.md entry. Use --dry-run to preview without writing files.`,
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
 	cmd.Flags().StringVar(&bump, "bump", string(release.BumpAuto), "Version bump: auto, major, minor, or patch")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview release notes without writing files")
+	return cmd
+}
+
+func releaseVerifyAssetsCmd() *cobra.Command {
+	var (
+		repoFullName  string
+		verifyVersion string
+		releaseURL    string
+		jsonOut       bool
+	)
+	cmd := &cobra.Command{
+		Use:   "verify-assets",
+		Short: "Verify GitHub Release binary assets",
+		Long: `Verify that a GitHub Release contains all Mars Harness binary assets
+and checksums.txt before announcing an installer or self-update release.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			url := strings.TrimSpace(releaseURL)
+			if url == "" {
+				url = selfupdate.ReleaseAPIURL(repoFullName, verifyVersion)
+			}
+			report, err := selfupdate.VerifyReleaseAssets(cmd.Context(), nil, url)
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return writeJSON(os.Stdout, report)
+			}
+			fmt.Printf("Release assets: %s\n", report.TagName)
+			if report.URL != "" {
+				fmt.Printf("URL: %s\n", report.URL)
+			}
+			fmt.Printf("Required: %s\n", strings.Join(report.Required, ", "))
+			if len(report.Found) > 0 {
+				fmt.Printf("Found: %s\n", strings.Join(report.Found, ", "))
+			}
+			if report.OK {
+				fmt.Println("Status: ok")
+				return nil
+			}
+			fmt.Printf("Missing: %s\n", strings.Join(report.Missing, ", "))
+			return fmt.Errorf("release verify-assets: release %s is missing required assets", report.TagName)
+		},
+	}
+	cmd.Flags().StringVar(&repoFullName, "repo", selfupdate.DefaultRepoFullName, "GitHub repository in owner/name form")
+	cmd.Flags().StringVar(&verifyVersion, "version", selfupdate.DefaultVersion, "Release tag to verify, e.g. latest or v0.12.0")
+	cmd.Flags().StringVar(&releaseURL, "release-url", "", "GitHub-compatible release metadata URL override")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
 

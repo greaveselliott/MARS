@@ -56,7 +56,7 @@ download_binary() {
 
     info "Downloading ${artifact}..."
     curl -sS -fL -o "${tmpdir}/${artifact}" "${binary_url}" \
-        || err "Download failed. Verify that version ${VERSION} exists at https://github.com/${REPO}/releases"
+        || err "Download failed for ${artifact}. Verify that release ${VERSION} exists and includes binary assets at https://github.com/${REPO}/releases"
 
     info "Downloading checksums..."
     curl -sS -fL -o "${tmpdir}/checksums.txt" "${checksums_url}" \
@@ -64,7 +64,7 @@ download_binary() {
 
     info "Verifying checksum..."
     local expected_checksum
-    expected_checksum="$(grep "${artifact}" "${tmpdir}/checksums.txt" | awk '{print $1}')" \
+    expected_checksum="$(awk -v artifact="${artifact}" '$2 == artifact {print $1}' "${tmpdir}/checksums.txt")" \
         || err "Binary ${artifact} not found in checksums.txt. Release may be incomplete."
     [ -n "${expected_checksum}" ] \
         || err "Empty checksum for ${artifact}. Release may be corrupt."
@@ -93,6 +93,14 @@ download_binary() {
     chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
 }
 
+configure_path() {
+    if "${INSTALL_DIR}/${BINARY_NAME}" path setup --install-dir "${INSTALL_DIR}"; then
+        return 0
+    fi
+    log "Shell PATH setup did not complete automatically."
+    log "Add it manually with: export PATH=\"${INSTALL_DIR}:\$PATH\""
+}
+
 main() {
     info "Mars Harness Installer"
     echo ""
@@ -104,6 +112,7 @@ main() {
 
     resolve_version
     download_binary "${os}" "${arch}"
+    configure_path
 
     echo ""
     info "Installation complete!"

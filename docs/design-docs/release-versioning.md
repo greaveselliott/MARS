@@ -53,9 +53,11 @@ A release is not fully complete until the generated version is visible as a GitH
 After a `release: notes X.Y.Z` commit is pushed to `main`, release work must:
 
 1. create or update tag `vX.Y.Z` at the release-note commit
-2. publish or update GitHub Release `vX.Y.Z`
+2. push the tag so the tag-triggered release workflow builds binary assets and
+   publishes or updates GitHub Release `vX.Y.Z`
 3. use the generated `CHANGELOG.md` entry for `X.Y.Z` as the release notes body
-4. verify the release is visible in GitHub
+4. verify the release is visible in GitHub and `mars-harness release
+   verify-assets --version vX.Y.Z` passes
 
 GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the blocker and leaves a follow-up ticket instead of claiming the release is complete.
 
@@ -63,9 +65,15 @@ GitHub remains optional infrastructure. If the repo has no GitHub remote, no aut
 
 Operators should not need to `cd` into the source repository to upgrade the built binary. The installed `mars-harness` command owns its own update surface through `mars-harness update tool`.
 
-The first implementation uses `go install github.com/greaveselliott/mars-harness/cmd/mars-harness@<version>` with `GOBIN` set to the directory containing the currently running binary. This supports source-development and Go-installed workflows immediately. It also avoids the stale source-root binary trap where `go build; ./mars-harness ...` can run an old binary after a failed build.
+The packaged-user path downloads the matching `mars-harness-{os}-{arch}` release
+asset, verifies `checksums.txt`, and atomically replaces the binary in the
+directory containing the currently running command. This avoids requiring Go or a
+source checkout for ordinary upgrades.
 
-Release-asset self-updates remain the desired packaged-user path: download the matching OS/arch binary, verify `checksums.txt`, and atomically replace the installed executable. That depends on the release asset contract tracked separately by MH-031.
+Source-development updates remain available through `mars-harness update tool
+--source` or `mars-harness update tool --version main`. That path uses `go
+install github.com/greaveselliott/mars-harness/cmd/mars-harness@<version>` with
+`GOBIN` set to the install directory.
 
 ### AD-069: Update Is The Unified Verb For Tool And Deployed Harness Changes
 
@@ -110,10 +118,26 @@ The command cannot mutate the already-running parent shell process after it
 exits. It prints a reload hint for the current session and makes new terminals
 work without manual profile editing.
 
+### AD-078: Release Assets Are Built From Tags And Verified
+
+For the source harness, `git tag vX.Y.Z && git push origin vX.Y.Z` is the
+authoritative release-publication trigger after the release-note commit is on
+`main`. Direct `gh release create` publication can create a notes-only release
+that never runs the binary asset workflow, so it is not the default source
+harness release path.
+
+The tag-triggered Release workflow cross-compiles `linux/darwin` x
+`amd64/arm64`, writes `checksums.txt`, verifies all expected assets before
+publication, and uses the matching `CHANGELOG.md` entry as the GitHub Release
+body. Release managers must run `mars-harness release verify-assets --version
+vX.Y.Z` after publication before claiming the installer or self-update path is
+shipped.
+
 ## Implementation Requirements
 
 - Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
 - Add `mars-harness update tool [--version <version>] [--install-dir <path>] [--dry-run]`.
+- Add `mars-harness release verify-assets [--version <tag>]`.
 - Add `mars-harness update harness --repo <path>`.
 - Add `mars-harness update check --repo <path> [--json] [--skip-remote]`.
 - Add `mars-harness path setup [--install-dir <path>]`.
@@ -129,6 +153,7 @@ work without manual profile editing.
 - Treat target-repo versioning as part of done for every non-release semantic commit after `mars-harness init`.
 - Publish or update matching GitHub Releases when authenticated GitHub release capability is configured.
 - Let the installed binary reinstall itself without requiring a source checkout.
+- Verify release assets before announcing installer or self-update availability.
 - Use the same update vocabulary for binary and deployed target harness updates.
 - Record generated target harness version in `.harness/metadata.yaml`.
 - Check version drift without mutating the installed tool or target repo.

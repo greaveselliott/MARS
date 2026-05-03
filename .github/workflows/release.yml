@@ -49,8 +49,12 @@ jobs:
 
       - name: Generate checksum
         run: |
-          sha256sum mars-harness-${{ matrix.goos }}-${{ matrix.goarch }} \
-            > mars-harness-${{ matrix.goos }}-${{ matrix.goarch }}.sha256
+          asset="mars-harness-${{ matrix.goos }}-${{ matrix.goarch }}"
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "${asset}" > "${asset}.sha256"
+          else
+            shasum -a 256 "${asset}" > "${asset}.sha256"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -78,11 +82,36 @@ jobs:
           cat *.sha256 > checksums.txt
           ls -la
 
+      - name: Verify release assets
+        run: |
+          cd release
+          for asset in \
+            mars-harness-linux-amd64 \
+            mars-harness-linux-arm64 \
+            mars-harness-darwin-amd64 \
+            mars-harness-darwin-arm64 \
+            checksums.txt
+          do
+            test -s "${asset}"
+          done
+          sha256sum -c checksums.txt
+
+      - name: Extract changelog release body
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v version="${version}" '
+            $0 ~ "^## \\[" version "\\]" { capture=1 }
+            capture && $0 ~ "^## \\[" && $0 !~ "^## \\[" version "\\]" { exit }
+            capture { print }
+          ' CHANGELOG.md > release-body.md
+          test -s release-body.md
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           draft: false
-          generate_release_notes: true
+          body_path: release-body.md
+          fail_on_unmatched_files: true
           files: |
             release/mars-harness-linux-amd64
             release/mars-harness-linux-arm64

@@ -34,8 +34,8 @@ plans to decide what to do next.
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001` and the current install/setup feature is `F-002`.
 - Ticket state:
-  - `docs/tickets/in-progress/` has no active tickets.
-  - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, and `MH-042` through `MH-049`.
+  - `docs/tickets/in-progress/` contains `MH-031`.
+  - `docs/tickets/backlog/` contains `MH-030` and `MH-042` through `MH-049`.
   - `docs/tickets/done/` contains `MH-001` through `MH-029` and `MH-032` through `MH-041`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.

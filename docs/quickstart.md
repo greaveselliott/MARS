@@ -50,10 +50,12 @@ mars-harness update check --repo ~/my-project
 mars-harness update tool
 ```
 
-By default this uses `go install`, writes into the directory that contains the current `mars-harness` binary, and refreshes shell PATH setup for that directory. For source-development channels:
+By default this downloads the latest platform release asset, verifies
+`checksums.txt`, atomically replaces the current `mars-harness` binary, and
+refreshes shell PATH setup for that directory. For source-development channels:
 
 ```bash
-mars-harness update tool --version main
+mars-harness update tool --source --version main
 mars-harness update tool --dry-run
 ```
 
@@ -180,7 +182,14 @@ mars-harness release notes --repo . --bump auto
 ```
 
 In this source repo and in repos initialized by Mars Harness, run the release command after every non-release semantic commit and commit the generated version files as `release: notes X.Y.Z` before pushing `main`.
-When GitHub release credentials are configured, publish or update GitHub Release `vX.Y.Z` from the generated changelog entry after pushing the release-note commit.
+When GitHub release credentials are configured, push tag `vX.Y.Z` at the
+release-note commit so release automation can publish the generated changelog
+entry and any repo-required assets. For Mars Harness source releases, verify the
+binary asset contract with:
+
+```bash
+mars-harness release verify-assets --version vX.Y.Z
+```
 
 ## Next Steps
 
