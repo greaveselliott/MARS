@@ -36,12 +36,26 @@ trusted.
 - Define a Harness product dogfood matrix covering setup, init, register, run,
   start, serve, scan, doctor, trust, scores, dashboard, local inference,
   optional GitHub helpers, and upgrade.
-- Add deterministic fake-LLM integration tests for the full loop.
+- Add deterministic fake-LLM integration tests for the fast foundation
+  containment gate.
+- Keep the broader dogfood loop open for ticket creation, test, commit, push,
+  scoring, quality export, and release evidence beyond the fast gate.
 - Add a dogfood target profile for `../mars`.
 - Run Harness against Mars as a target repo in observer mode first.
 - Define graduation criteria for contributor mode.
 - Document supersession results in a completed execution plan when the trial
   runs.
+
+## Status Notes
+
+- Completed in the fast gate: generated target baseline, real executor, fake
+  OpenAI-compatible LLM endpoint, contributor trust, controlled mutation,
+  destructive shell preflight block, dirty-worktree containment, read-only shell
+  inspection behavior, intervention-debt dedupe, ticket-gate fallout
+  suppression, scoring, and bounded triage updates.
+- Remaining in this ticket: broader matrix coverage, full dogfood loop evidence,
+  `../mars` observer profile/trial, contributor-mode graduation criteria, and a
+  completed validation report.
 
 ## Affected Files
 
@@ -59,9 +73,12 @@ trusted.
 
 ### Functional
 
-- [ ] The dogfood matrix names product surfaces, evidence commands, expected
+- [x] The dogfood matrix names product surfaces, evidence commands, expected
       artifacts, and failure routing.
-- [ ] Fake-LLM integration tests cover ticket creation, edit, test, direct-main
+- [x] Fast fake-LLM containment tests cover generated target execution,
+      controlled edit, trust policy, dirty-worktree containment, scoring,
+      telemetry, and intervention-debt routing.
+- [ ] Broader fake-LLM integration tests cover ticket creation, test, direct-main
       commit, push attempt, scoring, and quality export hooks.
 - [ ] A `../mars` observer-mode target profile exists with guardrails and
       non-destructive behavior.
@@ -72,10 +89,14 @@ trusted.
 - [ ] Dogfood against `../mars` cannot write to Mars without contributor-mode
       trust and guardrail approval.
 - [ ] Optional GitHub paths are skipped honestly when credentials are missing.
-- [ ] Failed dogfood creates or updates deduped intervention-debt tickets.
+- [x] Failed fast-gate dogfood creates or updates deduped intervention-debt
+      tickets without secondary ticket-gate amplification.
+- [ ] Broader failed dogfood runs create or update deduped intervention-debt
+      tickets.
 
 ### Observability, docs, and regressions
 
-- [ ] Tests or dry-runs prove the fake-LLM loop is deterministic in CI.
+- [x] Tests prove the fast fake-LLM containment loop is deterministic in CI.
+- [ ] Tests or dry-runs prove the broader fake-LLM loop is deterministic in CI.
 - [ ] Design docs explain where dogfood evidence is stored.
 - [ ] A completed exec-plan report records the first observer-mode trial results.

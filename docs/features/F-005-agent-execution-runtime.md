@@ -33,7 +33,7 @@ Then tool calls execute in order, tool results are returned to the model, and th
 
 Given a role has an allowlist and trust level
 When it asks to call a tool
-Then unknown tools, disallowed tools, invalid JSON, observer mutations, path escapes, and secret writes fail closed
+Then unknown tools, disallowed tools, invalid JSON, observer mutations, path escapes, secret writes, destructive shell commands, and mutating shell commands in already-over-budget repos fail closed, while known read-only shell inspection remains available for diagnosis
 
 ### F-005-S004: Auditable Trace
 
@@ -73,7 +73,7 @@ None.
 
 - F-005-S001: `go test ./internal/context`
 - F-005-S002: `go test ./internal/agent -run TestRun`
-- F-005-S003: `go test ./internal/tools -run TestExecutor`
+- F-005-S003: `go test ./internal/tools -run 'TestExecutor|TestShellExec'` and `go test ./internal/serve -run TestFoundationAcceptance`
 - F-005-S004: `go test ./internal/agent -run TestRun_persistsTraceToSQLite`
 - F-005-S005: `go test ./internal/agent -run 'TestRun_(max|token|wall|circle|empty)'`
 - F-005-S006: covered by command-level run behavior and planned broader E2E dogfood evidence

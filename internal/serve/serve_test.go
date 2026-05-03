@@ -286,11 +286,43 @@ func TestHandleJobFailedEnqueuesSingleRecovery(t *testing.T) {
 		Role:   "engineer",
 	}
 
-	srv.handleJobFailed(ctx, job, errTest("agent failed unexpectedly"))
-	srv.handleJobFailed(ctx, job, errTest("agent failed unexpectedly"))
+	srv.handleJobFailed(ctx, job, errTest("executor: agent loop error (llm_unreachable): connection refused"))
+	srv.handleJobFailed(ctx, job, errTest("executor: agent loop error (llm_unreachable): connection refused"))
 
 	if got := countJobsByStatus(t, srv, "pending"); got != 1 {
 		t.Fatalf("expected one active recovery job, got %d", got)
+	}
+}
+
+func TestHandleJobFailedDoesNotRecoverDeterministicFailures(t *testing.T) {
+	tests := []struct {
+		name string
+		err  errTest
+	}{
+		{name: "guardrail", err: "executor: dirty worktree containment: blast radius exceeded: 12 files changed (limit 10)"},
+		{name: "context overflow", err: "executor: agent loop error (llm_unreachable): llm: context size exceeded (non-retryable)"},
+		{name: "model unavailable", err: "inference: local model for tier reasoning is missing"},
+		{name: "max turns", err: "executor: agent ended with max_turns"},
+		{name: "circle", err: "executor: agent ended with circle_detected"},
+		{name: "unknown", err: "agent failed unexpectedly"},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			srv, repoID := newRecoveryTestServer(t)
+			ctx := context.Background()
+			job := &queue.Job{
+				ID:     "job-1",
+				RepoID: repoID,
+				Role:   "engineer",
+			}
+
+			srv.handleJobFailed(ctx, job, tt.err)
+
+			if got := countJobsByStatus(t, srv, "pending"); got != 0 {
+				t.Fatalf("expected no deterministic recovery job, got %d", got)
+			}
+		})
 	}
 }
 

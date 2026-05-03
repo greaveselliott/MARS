@@ -1431,6 +1431,15 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 		return
 	}
 
+	if !cat.Retryable() {
+		log.Warn("serve: not auto-recovering deterministic failure",
+			"category", cat,
+			"error", jobErr,
+		)
+		go s.checkEvolution(context.Background(), job.Role, job.RepoID)
+		return
+	}
+
 	log.Info("serve: auto-recovering self-chaining role after failure",
 		"error", jobErr,
 	)

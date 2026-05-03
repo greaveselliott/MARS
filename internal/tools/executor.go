@@ -81,7 +81,7 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 	if err != nil {
 		return res, err
 	}
-	if err := postToolPolicy(runCtx, root, name); err != nil {
+	if err := postToolPolicy(runCtx, root, name, raw); err != nil {
 		recordPolicyEvent(runCtx, "post", name, err)
 		return res, err
 	}

@@ -51,6 +51,25 @@ execution, direct-main commit attempt or guarded substitute, score recording,
 trust visibility, and quality export without requiring network, real models,
 or GitHub credentials.
 
+The fast foundation acceptance gate is release-blocking and runs under the
+normal `go test ./...` path. It uses an OpenAI-compatible fake LLM endpoint
+through the real executor, router fallback, tool registry, trust policy,
+telemetry, scoring, ticket gate, and intervention-debt creation paths. The gate
+must prove:
+
+- a clean initialized target baseline can run a generated starter role with
+  contributor trust and controlled mutation
+- destructive shell commands are blocked before execution
+- dirty worktrees that already exceed blast radius are contained before LLM
+  invocation
+- read-only shell inspection does not create blast-radius noise in an already
+  dirty repo
+- repeated intervention-debt updates stay bounded so ticket context does not
+  become its own context-overflow source
+
+Broader scheduled dogfood remains useful for product coverage, but it is not a
+substitute for this fast foundation containment gate.
+
 ## Mars Observer Profile
 
 `../mars` is the supersession target. The first trial must run observer mode:

@@ -33,7 +33,7 @@ Then the proposed target is one of prompt, skill, process, guardrail, context, i
 
 Given triage produces actionable or weak evidence
 When the harness records the proposal
-Then actionable evidence creates or updates active goals or intervention-debt tickets, while weak evidence becomes an observation
+Then actionable evidence creates or updates active goals or intervention-debt tickets, weak evidence becomes an observation, and repeated intervention-debt updates are compacted instead of inflating future context
 
 ### F-012-S004: Intervention Detection
 
@@ -73,7 +73,7 @@ None.
 
 - F-012-S001: `go test ./internal/telemetry -run 'TestClassify|TestRetryable|TestRemediate'`
 - F-012-S002: `go test ./internal/telemetry -run TestTriage`
-- F-012-S003: `go test ./internal/telemetry -run TestRecordGoalFromProposal` and `go test ./internal/serve -run TestCreateInterventionDebt`
+- F-012-S003: `go test ./internal/telemetry -run TestRecordGoalFromProposal`, `go test ./internal/serve -run TestCreateInterventionDebt`, and `go test ./internal/tools -run TestTicketCreate_interventionDebtDedupeCompactsRepeatedUpdates`
 - F-012-S004: `go test ./internal/evolution -run TestDetect`
 - F-012-S005: `go test ./internal/evolution -run 'TestCanReview|TestValidateReviewResult|TestRecordEvolution|TestStore'`
 - F-012-S006: `go test ./internal/tools -run TestToolCreate` plus docs-consistency checks for skill and tools glossary updates

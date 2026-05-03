@@ -100,6 +100,13 @@ type existingTicket struct {
 }
 
 var ticketNumberRe = regexp.MustCompile(`T-(\d+)`)
+var compactedTriageRe = regexp.MustCompile(`(?m)- ([0-9]+) earlier triage update\(s\) compacted`)
+
+const (
+	triageUpdateHeading    = "\n\n## Latest Triage Update\n\n"
+	compactedTriageHeading = "\n\n## Earlier Triage Updates Compacted\n\n"
+	maxLatestTriageUpdates = 3
+)
 
 func registerTicketCreate(r *Registry) error {
 	return r.Register(
@@ -465,10 +472,44 @@ func updateExistingTicket(root Root, existing existingTicket, input TicketInput)
 		}
 	}
 
-	if err := os.WriteFile(absPath, append(data, []byte(update.String())...), 0o644); err != nil {
+	updated := compactTriageUpdates(string(data) + update.String())
+	if err := os.WriteFile(absPath, []byte(updated), 0o644); err != nil {
 		return false, fmt.Errorf("ticket_create: update existing ticket: %w", err)
 	}
 	return true, nil
+}
+
+func compactTriageUpdates(text string) string {
+	parts := strings.Split(text, triageUpdateHeading)
+	if len(parts) <= maxLatestTriageUpdates+1 {
+		return text
+	}
+	base, previouslyCompacted := stripCompactedTriageMarker(parts[0])
+	updates := parts[1:]
+	compactCount := previouslyCompacted + len(updates) - maxLatestTriageUpdates
+	recent := updates[len(updates)-maxLatestTriageUpdates:]
+
+	var b strings.Builder
+	b.WriteString(strings.TrimRight(base, "\n"))
+	fmt.Fprintf(&b, "%s- %d earlier triage update(s) compacted to keep this intervention-debt ticket bounded.\n", compactedTriageHeading, compactCount)
+	for _, update := range recent {
+		b.WriteString(triageUpdateHeading)
+		b.WriteString(update)
+	}
+	return b.String()
+}
+
+func stripCompactedTriageMarker(text string) (string, int) {
+	idx := strings.LastIndex(text, compactedTriageHeading)
+	if idx < 0 {
+		return text, 0
+	}
+	marker := text[idx:]
+	count := 0
+	if m := compactedTriageRe.FindStringSubmatch(marker); len(m) == 2 {
+		count, _ = strconv.Atoi(m[1])
+	}
+	return strings.TrimRight(text[:idx], "\n"), count
 }
 
 var stopWords = map[string]bool{

@@ -160,8 +160,7 @@ func Classify(errMsg string) FailureCategory {
 // (possibly with adjusted parameters).
 func (c FailureCategory) Retryable() bool {
 	switch c {
-	case CategoryContextOverflow,
-		CategoryLLMUnreachable,
+	case CategoryLLMUnreachable,
 		CategoryInferenceCrash,
 		CategoryToolTimeout:
 		return true

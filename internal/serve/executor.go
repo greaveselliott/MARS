@@ -208,22 +208,6 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		log.Debug("executor: context section", "section", s.Name, "tokens", s.Tokens)
 	}
 
-	endpoint, err := e.router.ServerForRoleModel(ctx, job.Role, role.Model)
-	if err != nil {
-		tw.WriteError(fmt.Sprintf("inference for %q: %v", job.Role, err))
-		return fmt.Errorf("executor: get inference endpoint for role %q: %w", job.Role, err)
-	}
-	tw.WriteReady()
-
-	client, err := llm.NewClient(llm.Config{
-		BaseURL: endpoint,
-		Model:   role.Model,
-	})
-	if err != nil {
-		tw.WriteError(fmt.Sprintf("LLM client: %v", err))
-		return fmt.Errorf("executor: create LLM client: %w", err)
-	}
-
 	reg, err := tools.DefaultRegistry()
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("tool registry: %v", err))
@@ -294,6 +278,33 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("sandbox root: %v", err))
 		return fmt.Errorf("executor: create sandbox root for %q: %w", repoPath, err)
+	}
+
+	if err := tools.ValidateRepoDiff(ctx, root, tools.Session{
+		Role:         job.Role,
+		JobID:        job.ID,
+		RepoID:       job.RepoID,
+		TrustLevel:   string(trustLevel),
+		SafetyLimits: safety.DefaultLimits(),
+	}); err != nil {
+		tw.WriteError(fmt.Sprintf("dirty worktree containment: %v", err))
+		return fmt.Errorf("executor: dirty worktree containment before role %q run: %w", job.Role, err)
+	}
+
+	endpoint, err := e.router.ServerForRoleModel(ctx, job.Role, role.Model)
+	if err != nil {
+		tw.WriteError(fmt.Sprintf("inference for %q: %v", job.Role, err))
+		return fmt.Errorf("executor: get inference endpoint for role %q: %w", job.Role, err)
+	}
+	tw.WriteReady()
+
+	client, err := llm.NewClient(llm.Config{
+		BaseURL: endpoint,
+		Model:   role.Model,
+	})
+	if err != nil {
+		tw.WriteError(fmt.Sprintf("LLM client: %v", err))
+		return fmt.Errorf("executor: create LLM client: %w", err)
 	}
 
 	allowlist := role.Tools

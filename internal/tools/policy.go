@@ -48,13 +48,21 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 	case "git_push":
 		return checkGitPushPolicy(ctx, root, raw)
 	case "shell_exec":
-		return checkShellPolicy(raw)
+		if err := checkShellPolicy(raw); err != nil {
+			return err
+		}
+		if !shellExecReadOnly(raw) {
+			if err := validateRepoDiff(ctx, root, session); err != nil {
+				return fmt.Errorf("policy: shell_exec command may mutate while repository is already outside blast-radius limits: %w", err)
+			}
+		}
+		return nil
 	default:
 		return nil
 	}
 }
 
-func postToolPolicy(ctx context.Context, root Root, name string) error {
+func postToolPolicy(ctx context.Context, root Root, name string, raw json.RawMessage) error {
 	if !mutatingTools[name] {
 		return nil
 	}
@@ -62,6 +70,11 @@ func postToolPolicy(ctx context.Context, root Root, name string) error {
 	switch name {
 	case "git_commit", "git_push":
 		return nil
+	case "shell_exec":
+		if shellExecReadOnly(raw) {
+			return nil
+		}
+		return validateRepoDiff(ctx, root, session)
 	default:
 		return validateRepoDiff(ctx, root, session)
 	}
@@ -261,6 +274,143 @@ func checkShellPolicy(raw json.RawMessage) error {
 	return nil
 }
 
+func shellExecReadOnly(raw json.RawMessage) bool {
+	var args shellExecArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return false
+	}
+	if args.Background {
+		return false
+	}
+	if len(args.Argv) > 0 {
+		return shellTokensReadOnly(args.Argv)
+	}
+	cmd := strings.TrimSpace(args.ShellCommand)
+	if cmd == "" || shellCommandHasControlSyntax(cmd) {
+		return false
+	}
+	return shellTokensReadOnly(shellFields(cmd))
+}
+
+func shellCommandHasControlSyntax(cmd string) bool {
+	for _, token := range []string{"|", "&&", "||", ";", ">", "<", "`", "$(", "\n"} {
+		if strings.Contains(cmd, token) {
+			return true
+		}
+	}
+	return false
+}
+
+func shellTokensReadOnly(raw []string) bool {
+	if len(raw) == 0 {
+		return false
+	}
+	fields := make([]string, 0, len(raw))
+	for _, field := range raw {
+		field = strings.TrimSpace(strings.ToLower(field))
+		field = strings.Trim(field, `"'`)
+		if field != "" {
+			fields = append(fields, field)
+		}
+	}
+	if len(fields) == 0 {
+		return false
+	}
+	cmd := filepathBase(fields[0])
+	switch cmd {
+	case "ls", "pwd", "cat", "head", "tail", "wc", "test", "grep", "rg":
+		return true
+	case "sed":
+		return sedReadOnly(fields[1:])
+	case "find":
+		return findReadOnly(fields[1:])
+	case "git":
+		return gitShellReadOnly(fields)
+	default:
+		return false
+	}
+}
+
+func filepathBase(path string) string {
+	path = strings.TrimRight(path, "/")
+	if path == "" {
+		return ""
+	}
+	if idx := strings.LastIndex(path, "/"); idx >= 0 {
+		return path[idx+1:]
+	}
+	return path
+}
+
+func sedReadOnly(args []string) bool {
+	hasNoPrint := false
+	for _, arg := range args {
+		switch {
+		case arg == "-n":
+			hasNoPrint = true
+		case strings.HasPrefix(arg, "-") && strings.Contains(arg, "n"):
+			hasNoPrint = true
+		case arg == "-i" || arg == "--in-place" || strings.HasPrefix(arg, "-i"):
+			return false
+		}
+	}
+	return hasNoPrint
+}
+
+func findReadOnly(args []string) bool {
+	for _, arg := range args {
+		switch {
+		case arg == "-delete", arg == "-exec", arg == "-execdir", arg == "-ok", arg == "-okdir":
+			return false
+		case strings.HasPrefix(arg, "-fprint"):
+			return false
+		}
+	}
+	return true
+}
+
+func gitShellReadOnly(fields []string) bool {
+	subcommand, args := gitShellSubcommand(fields)
+	switch subcommand {
+	case "status", "diff", "log", "show", "rev-parse", "ls-files":
+		return !hasGitShellOutputFlag(args)
+	case "branch":
+		return len(args) == 1 && args[0] == "--show-current"
+	default:
+		return false
+	}
+}
+
+func gitShellSubcommand(fields []string) (string, []string) {
+	if len(fields) == 0 || filepathBase(fields[0]) != "git" {
+		return "", nil
+	}
+	for i := 1; i < len(fields); i++ {
+		token := fields[i]
+		switch {
+		case token == "-c" || token == "-C":
+			i++
+			continue
+		case strings.HasPrefix(token, "--git-dir") || strings.HasPrefix(token, "--work-tree"):
+			continue
+		case strings.HasPrefix(token, "-"):
+			continue
+		default:
+			return token, fields[i+1:]
+		}
+	}
+	return "", nil
+}
+
+func hasGitShellOutputFlag(args []string) bool {
+	for _, arg := range args {
+		if arg == "--output" || strings.HasPrefix(arg, "--output=") {
+			return true
+		}
+	}
+	return false
+}
+
 func forbiddenShellOperation(cmd string) (string, bool) {
 	fields := shellFields(cmd)
 	if len(fields) == 0 {
@@ -447,6 +597,12 @@ func validateRepoDiff(ctx context.Context, root Root, session Session) error {
 		return err
 	}
 	return safety.Check(stats, limits)
+}
+
+// ValidateRepoDiff checks the current repository diff against the same safety
+// limits enforced after mutating tool calls.
+func ValidateRepoDiff(ctx context.Context, root Root, session Session) error {
+	return validateRepoDiff(ctx, root, session)
 }
 
 func checkDiffForSecrets(ctx context.Context, root Root) error {

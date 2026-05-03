@@ -13,7 +13,7 @@
 4. F-006-S004 - Triggers match webhooks, schedules, and chains from manifests.
 5. F-006-S005 - `start` initializes, registers, seeds, and runs a single-repo pipeline.
 6. F-006-S006 - `serve` runs the multi-repo orchestrator, dashboard, webhook receiver, scheduler, workers, and control plane.
-7. F-006-S007 - Recovery jobs are bounded, idempotent, and self-healed when stale or duplicated.
+7. F-006-S007 - Recovery jobs are bounded, idempotent, self-healed when stale or duplicated, and suppressed for deterministic failures.
 8. F-006-S008 - In-progress and intervention-debt ticket priority controls what engineers claim next.
 9. F-006-S009 - Native Orchestrator surveys route unattended failure states into bounded jobs or intervention-debt tickets.
 
@@ -57,9 +57,9 @@ Then health, dashboard, webhook, scheduler, worker, recovery, and API control su
 
 ### F-006-S007: Recovery Containment
 
-Given a job fails in a recoverable category
+Given a job fails in a recoverable or deterministic category
 When recovery is enqueued or existing recovery jobs are stale
-Then the system creates at most one active recovery job per repo/role key, avoids recursive recovery, and cancels duplicates
+Then the system creates at most one active recovery job per repo/role key for transient failures, avoids recursive recovery, cancels duplicates, and routes deterministic failures to intervention debt without same-role retry
 
 ### F-006-S008: Ticket Claim Priority
 

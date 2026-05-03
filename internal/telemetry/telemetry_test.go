@@ -132,7 +132,6 @@ func TestClassify_unknown(t *testing.T) {
 func TestRetryable(t *testing.T) {
 	t.Parallel()
 	retryable := []FailureCategory{
-		CategoryContextOverflow,
 		CategoryLLMUnreachable,
 		CategoryInferenceCrash,
 		CategoryToolTimeout,
@@ -141,6 +140,7 @@ func TestRetryable(t *testing.T) {
 		require.True(t, c.Retryable(), "expected retryable: %s", c)
 	}
 	nonRetryable := []FailureCategory{
+		CategoryContextOverflow,
 		CategoryModelUnavailable,
 		CategoryCircleDetected,
 		CategoryMaxTurns,
@@ -161,7 +161,7 @@ func TestRetryable(t *testing.T) {
 
 func TestRemediate_actions(t *testing.T) {
 	t.Parallel()
-	require.Equal(t, ActionRetryHalfContext, Remediate(CategoryContextOverflow))
+	require.Equal(t, ActionNone, Remediate(CategoryContextOverflow))
 	require.Equal(t, ActionRestartInference, Remediate(CategoryLLMUnreachable))
 	require.Equal(t, ActionRestartInference, Remediate(CategoryInferenceCrash))
 	require.Equal(t, ActionNone, Remediate(CategoryModelUnavailable))
@@ -191,8 +191,8 @@ func TestCollector_RecordAndBroadcast(t *testing.T) {
 	evt := c.Record("job-1", "repo-1", "cto", "request (134706 tokens) exceeds the available context size (32768 tokens)")
 
 	require.Equal(t, CategoryContextOverflow, evt.Category)
-	require.True(t, evt.Remedied)
-	require.Equal(t, string(ActionRetryHalfContext), evt.Action)
+	require.False(t, evt.Remedied)
+	require.Equal(t, "", evt.Action)
 
 	require.Len(t, c.Events(), 1)
 	require.Len(t, dash.events, 1)

@@ -14,9 +14,6 @@ const (
 // Remediate returns the recommended auto-fix action for a failure category.
 func Remediate(cat FailureCategory) RemediationAction {
 	switch cat {
-	case CategoryContextOverflow:
-		return ActionRetryHalfContext
-
 	case CategoryLLMUnreachable:
 		return ActionRestartInference
 
@@ -30,6 +27,7 @@ func Remediate(cat FailureCategory) RemediationAction {
 		return ActionNone
 
 	case CategoryCircleDetected,
+		CategoryContextOverflow,
 		CategoryMaxTurns,
 		CategoryBudgetExceeded,
 		CategoryManifestError,

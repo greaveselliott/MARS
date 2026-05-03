@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -167,6 +168,43 @@ func TestTicketCreate_interventionDebtDedupeUpdatesExisting(t *testing.T) {
 	assert.Contains(t, text, "## Latest Triage Update")
 	assert.Contains(t, text, "source: telemetry:evt-2")
 	assert.Contains(t, text, "origin_event_id: evt-2")
+}
+
+func TestTicketCreate_interventionDebtDedupeCompactsRepeatedUpdates(t *testing.T) {
+	t.Parallel()
+	dir, root := setupTicketDir(t)
+
+	input := TicketInput{
+		Title:     "Intervention debt: engineer guardrail guardrail_block",
+		Priority:  "medium",
+		Kind:      "intervention-debt",
+		DedupeKey: "intervention-debt:repo-1:engineer:guardrail:guardrail_block:24h",
+		Metadata:  map[string]string{"origin_event_id": "evt-1"},
+		Source:    "telemetry:evt-1",
+		Body:      "## Context\nTelemetry.\n\n## Acceptance Criteria\n- [ ] Fixed",
+	}
+	_, err := CreateTicket(root, input)
+	require.NoError(t, err)
+
+	for i := 2; i <= 8; i++ {
+		next := input
+		next.Source = "telemetry:evt-" + strconv.Itoa(i)
+		next.Metadata = map[string]string{"origin_event_id": "evt-" + strconv.Itoa(i)}
+		_, err := CreateTicket(root, next)
+		require.NoError(t, err)
+	}
+
+	entries, err := os.ReadDir(filepath.Join(dir, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "backlog", entries[0].Name()))
+	require.NoError(t, err)
+	text := string(data)
+	require.Equal(t, maxLatestTriageUpdates, strings.Count(text, "## Latest Triage Update"))
+	require.Contains(t, text, "## Earlier Triage Updates Compacted")
+	require.Contains(t, text, "4 earlier triage update(s) compacted")
+	require.Contains(t, text, "source: telemetry:evt-8")
+	require.NotContains(t, text, "source: telemetry:evt-2")
 }
 
 func TestTicketCreate_duplicateBlocked(t *testing.T) {

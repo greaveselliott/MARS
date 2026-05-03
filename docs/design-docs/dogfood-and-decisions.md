@@ -558,3 +558,53 @@ remains the work item to investigate.
 - Ticket-gate telemetry remains visible for scoring and dashboards.
 - Genuine ticket-gate failures without prior policy blocks still create
   intervention-debt tickets.
+
+---
+
+### AD-093: Foundation Containment Gate Is Release-Blocking
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Author:** Agent (target dogfood containment diagnosis)
+
+### Context
+
+The live `../sample-target` harness run showed a second-order foundation failure.
+Once the target worktree had already exceeded blast-radius limits, every
+subsequent `shell_exec` call, including read-only commands such as `ls` and
+`find`, emitted guardrail telemetry. The repeated guardrail, ticket-gate,
+circle-detected, and context-overflow signals produced intervention-debt churn
+instead of containing the unsafe target state.
+
+The dogfood matrix had already named the need for a deterministic fake-LLM
+loop, but it was not executable in normal CI. Doctrine and backlog were present;
+the release-blocking foundation proof was missing.
+
+### Decision
+
+The normal Go test suite includes a fast foundation acceptance gate that drives
+a generated target harness through the real executor, OpenAI-compatible client,
+router fallback, tool registry, trust policy, telemetry, scoring, ticket gate,
+and intervention-debt paths with deterministic fake LLM responses.
+
+Jobs now perform dirty-worktree containment before LLM invocation. If the repo
+already exceeds blast-radius limits at job start, the executor fails with one
+clear containment signal instead of spending tokens or starting inference.
+
+`shell_exec` remains mutating for trust purposes, and destructive shell
+operations remain blocked before execution. Conservative inspection commands
+are treated as read-only for post-diff policy so dirty targets can still be
+inspected without producing new blast-radius noise.
+
+Deterministic failures such as guardrail blocks, context overflow, missing
+models, ticket-gate failures, max turns, and circle detection do not blindly
+enqueue same-role recovery. Intervention-debt ticket updates are compacted so
+repeated signals do not inflate later prompts.
+
+### Consequences
+
+- Foundation releases are blocked by an executable containment gate rather than
+  relying on dogfood doctrine alone.
+- Dirty target repos fail closed before model work begins.
+- Read-only investigation stays possible without amplifying intervention debt.
+- Repeated intervention signals remain visible but bounded.
