@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.9] - 2026-05-03
+<!-- mars-harness-release: version=0.24.9 commit=48655a2079dd -->
+
+### Why This Release Matters
+It improves reliability through work to honor bootstrap trust defaults in trust.
+
+### Fixes
+- **trust:** Honor bootstrap trust defaults (48655a2)
+
 ## [0.24.8] - 2026-05-03
 <!-- mars-harness-release: version=0.24.8 commit=0507ef14d1a4 -->
 
