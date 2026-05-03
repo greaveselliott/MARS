@@ -47,6 +47,10 @@ plans to decide what to do next.
   `mars-harness release verify-assets --version v0.21.0` is blocked because
   GitHub returned `404 Not Found` for the tag release immediately after the
   tag push.
+- `v0.23.0` release notes and tag were pushed on 2026-05-03 for `MH-047`, but
+  `go run ./cmd/mars-harness release verify-assets --version v0.23.0` is
+  blocked because GitHub returned `404 Not Found` for the tag release
+  immediately after the tag push.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
