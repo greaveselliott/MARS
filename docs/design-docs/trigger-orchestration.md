@@ -63,6 +63,32 @@ Existing manifests without `domain` and `mode` remain valid. New generated
 manifests include those fields so routing, registry, trace, score, and
 self-improvement work can speak the same role-model vocabulary.
 
+### AD-089: Native Orchestrator Surveys Are A Fourth Internal Signal Source
+
+Webhook, schedule, and chain remain the manifest-facing trigger sources.
+Inside `serve`, the Orchestrator also runs a native survey loop on startup and
+on a watchdog interval. This survey reads repo-local queue state, tickets,
+recent scored outcomes, telemetry patterns, low score snapshots, recovery
+jobs, and stuck running jobs without requiring a GitHub event or a newly
+completed agent run.
+
+Survey-routed jobs use the same SQLite queue as manifest triggers, but carry
+extra ownership metadata:
+
+- `payload_mode` names the work shape exposed in role prompt context, such as
+  `ticket_delivery`, `ticket_hygiene`, `pipeline_repair`,
+  `dogfood_failure`, or `intervention_debt`.
+- `concurrency_group` prevents duplicate work on the same ticket, check
+  class, dogfood failure, no-op signal, or release-style global lane.
+- `daily_cap` bounds repeated retry storms even when the source signal remains
+  present across surveys.
+
+Running jobs are no longer reset by normal claim polling. Claimed jobs can
+still be reclaimed after a short lease timeout, while running jobs are only
+failed by the Orchestrator watchdog after a long stuck-work window. This avoids
+interrupting healthy long-running agent work while still surfacing silent
+stalls.
+
 ## Pipeline Graph
 
 The default strict-trunk pipeline as it maps to manifest configuration:

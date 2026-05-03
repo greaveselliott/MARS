@@ -31,17 +31,20 @@ const leaseTimeout = 5 * time.Minute
 
 // Job represents a queued agent job.
 type Job struct {
-	ID             string
-	RepoID         string
-	Role           string
-	Trigger        string // JSON payload
-	IdempotencyKey string
-	Status         JobStatus
-	ClaimedBy      string // worker ID
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	CompletedAt    *time.Time
-	Error          string
+	ID               string
+	RepoID           string
+	Role             string
+	Trigger          string // JSON payload
+	PayloadMode      string
+	ConcurrencyGroup string
+	DailyCap         int
+	IdempotencyKey   string
+	Status           JobStatus
+	ClaimedBy        string // worker ID
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	CompletedAt      *time.Time
+	Error            string
 }
 
 // Queue is a SQLite-backed job queue with per-repo serialization.
@@ -85,6 +88,9 @@ CREATE TABLE IF NOT EXISTS jobs (
   repo_id         TEXT NOT NULL,
   role            TEXT NOT NULL,
   trigger_payload TEXT NOT NULL DEFAULT '',
+  payload_mode    TEXT NOT NULL DEFAULT '',
+  concurrency_group TEXT NOT NULL DEFAULT '',
+  daily_cap       INTEGER NOT NULL DEFAULT 0,
   idempotency_key TEXT NOT NULL DEFAULT '',
   status          TEXT NOT NULL DEFAULT 'pending',
   claimed_by      TEXT NOT NULL DEFAULT '',
@@ -95,9 +101,50 @@ CREATE TABLE IF NOT EXISTS jobs (
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_repo_status_created ON jobs(repo_id, status, created_at);
 CREATE INDEX IF NOT EXISTS idx_jobs_idempotency ON jobs(idempotency_key) WHERE idempotency_key != '';
+CREATE INDEX IF NOT EXISTS idx_jobs_concurrency_status ON jobs(concurrency_group, status) WHERE concurrency_group != '';
 `)
 	if err != nil {
 		return fmt.Errorf("queue: init schema: %w", err)
+	}
+	for _, col := range []struct {
+		name string
+		def  string
+	}{
+		{name: "payload_mode", def: "TEXT NOT NULL DEFAULT ''"},
+		{name: "concurrency_group", def: "TEXT NOT NULL DEFAULT ''"},
+		{name: "daily_cap", def: "INTEGER NOT NULL DEFAULT 0"},
+	} {
+		if err := q.ensureJobsColumn(col.name, col.def); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (q *Queue) ensureJobsColumn(name, definition string) error {
+	rows, err := q.db.Query(`PRAGMA table_info(jobs)`)
+	if err != nil {
+		return fmt.Errorf("queue: inspect jobs schema: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cid int
+		var colName, colType string
+		var notNull, pk int
+		var defaultValue any
+		if err := rows.Scan(&cid, &colName, &colType, &notNull, &defaultValue, &pk); err != nil {
+			return fmt.Errorf("queue: scan jobs schema: %w", err)
+		}
+		if colName == name {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("queue: read jobs schema: %w", err)
+	}
+	if _, err := q.db.Exec(fmt.Sprintf("ALTER TABLE jobs ADD COLUMN %s %s", name, definition)); err != nil {
+		return fmt.Errorf("queue: add jobs.%s column: %w", name, err)
 	}
 	return nil
 }
@@ -136,11 +183,31 @@ LIMIT 1`, job.IdempotencyKey).Scan(&existingID)
 	if job.ID == "" {
 		job.ID = newUUID()
 	}
+	job.PayloadMode = strings.TrimSpace(job.PayloadMode)
+	job.ConcurrencyGroup = strings.TrimSpace(job.ConcurrencyGroup)
+	if job.DailyCap < 0 {
+		job.DailyCap = 0
+	}
+	if job.DailyCap > 0 {
+		if job.ConcurrencyGroup == "" {
+			job.ConcurrencyGroup = fmt.Sprintf("%s:%s", job.RepoID, job.Role)
+		}
+		if existingID, capped, err := q.dailyCapReached(ctx, job.ConcurrencyGroup, job.DailyCap, now); err != nil {
+			return "", err
+		} else if capped {
+			slog.Info("queue: daily cap reached",
+				"group", job.ConcurrencyGroup,
+				"cap", job.DailyCap,
+				"existing_id", existingID,
+			)
+			return existingID, nil
+		}
+	}
 
 	_, err := q.db.ExecContext(ctx, `
-INSERT INTO jobs(id, repo_id, role, trigger_payload, idempotency_key, status, claimed_by, created_at, updated_at, error_msg)
-VALUES(?,?,?,?,?,?,?,?,?,?)`,
-		job.ID, job.RepoID, job.Role, job.Trigger, job.IdempotencyKey,
+INSERT INTO jobs(id, repo_id, role, trigger_payload, payload_mode, concurrency_group, daily_cap, idempotency_key, status, claimed_by, created_at, updated_at, error_msg)
+VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		job.ID, job.RepoID, job.Role, job.Trigger, job.PayloadMode, job.ConcurrencyGroup, job.DailyCap, job.IdempotencyKey,
 		string(StatusPending), "", now.Unix(), now.Unix(), "")
 	if err != nil {
 		return "", fmt.Errorf("queue: enqueue: %w", err)
@@ -149,9 +216,27 @@ VALUES(?,?,?,?,?,?,?,?,?,?)`,
 	return job.ID, nil
 }
 
+func (q *Queue) dailyCapReached(ctx context.Context, group string, cap int, now time.Time) (string, bool, error) {
+	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix()
+	var count int
+	var existingID string
+	err := q.db.QueryRowContext(ctx, `
+SELECT COUNT(*), COALESCE(MAX(id), '')
+FROM jobs
+WHERE concurrency_group = ?
+  AND created_at >= ?
+  AND status != 'cancelled'`, group, dayStart).Scan(&count, &existingID)
+	if err != nil {
+		return "", false, fmt.Errorf("queue: check daily cap for group %q: %w", group, err)
+	}
+	return existingID, count >= cap, nil
+}
+
 // Claim atomically picks the next eligible pending job and marks it as claimed.
 // Per-repo serialization: a job is only claimable if no running job exists for
-// the same repo_id. Stale claimed jobs (older than leaseTimeout) are reset first.
+// the same repo_id or concurrency group. Stale claimed jobs (older than
+// leaseTimeout) are reset first. Running jobs are left alone; the orchestrator
+// watchdog handles genuinely stuck running work using a much longer window.
 func (q *Queue) Claim(ctx context.Context, workerID string) (*Job, error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -159,12 +244,11 @@ func (q *Queue) Claim(ctx context.Context, workerID string) (*Job, error) {
 	now := time.Now().UTC()
 	expiry := now.Add(-leaseTimeout).Unix()
 
-	// Reset stale claimed/running jobs so they can be re-claimed.
-	// Jobs stuck in these states beyond the lease timeout are orphans from
-	// crashed processes.
+	// Reset stale claimed jobs so they can be re-claimed. Running jobs may be
+	// healthy long-running work, so they are not reset by claim polling.
 	res, err := q.db.ExecContext(ctx, `
 UPDATE jobs SET status = 'pending', claimed_by = '', updated_at = ?
-WHERE status IN ('claimed','running') AND updated_at < ?`, now.Unix(), expiry)
+WHERE status = 'claimed' AND updated_at < ?`, now.Unix(), expiry)
 	if err != nil {
 		return nil, fmt.Errorf("queue: reset stale leases: %w", err)
 	}
@@ -174,11 +258,18 @@ WHERE status IN ('claimed','running') AND updated_at < ?`, now.Unix(), expiry)
 
 	// Find the oldest pending job whose repo has no claimed or running job.
 	row := q.db.QueryRowContext(ctx, `
-SELECT id, repo_id, role, trigger_payload, idempotency_key, status,
+SELECT id, repo_id, role, trigger_payload, payload_mode, concurrency_group, daily_cap, idempotency_key, status,
        claimed_by, created_at, updated_at, completed_at, error_msg
 FROM jobs
 WHERE status = 'pending'
   AND repo_id NOT IN (SELECT DISTINCT repo_id FROM jobs WHERE status IN ('claimed','running'))
+  AND (
+    concurrency_group = ''
+    OR concurrency_group NOT IN (
+      SELECT DISTINCT concurrency_group FROM jobs
+      WHERE status IN ('claimed','running') AND concurrency_group != ''
+    )
+  )
 ORDER BY created_at ASC
 LIMIT 1`)
 
@@ -297,6 +388,33 @@ WHERE status IN ('claimed','running')`, now.Unix(), now.Unix())
 	return int(n), nil
 }
 
+// FailStuckRunningJobs marks running jobs as failed when they have not updated
+// for a long watchdog window. This is intentionally separate from Claim so
+// normal long-running jobs are not interrupted by worker polling.
+func (q *Queue) FailStuckRunningJobs(ctx context.Context, staleAfter time.Duration, reason string) (int, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if staleAfter <= 0 {
+		staleAfter = 6 * time.Hour
+	}
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = "orchestrator watchdog: running job exceeded stale window"
+	}
+
+	now := time.Now().UTC()
+	cutoff := now.Add(-staleAfter).Unix()
+	res, err := q.db.ExecContext(ctx, `
+UPDATE jobs SET status = 'failed', claimed_by = '', error_msg = ?, completed_at = ?, updated_at = ?
+WHERE status = 'running' AND updated_at < ?`, reason, now.Unix(), now.Unix(), cutoff)
+	if err != nil {
+		return 0, fmt.Errorf("queue: fail stuck running jobs: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
 // RepairActiveRecoveryJobs collapses active auto-recovery storms.
 //
 // Older versions used timestamped recovery idempotency keys, so a repeatedly
@@ -312,7 +430,7 @@ func (q *Queue) RepairActiveRecoveryJobs(ctx context.Context, staleAfter time.Du
 	}
 
 	rows, err := q.db.QueryContext(ctx, `
-SELECT id, repo_id, role, trigger_payload, idempotency_key, status,
+SELECT id, repo_id, role, trigger_payload, payload_mode, concurrency_group, daily_cap, idempotency_key, status,
        claimed_by, created_at, updated_at, completed_at, error_msg
 FROM jobs
 WHERE status IN ('pending','claimed','running')
@@ -433,7 +551,7 @@ WHERE status IN ('completed','failed') AND completed_at < ?`, cutoff)
 // Get retrieves a single job by ID. Returns nil if not found.
 func (q *Queue) Get(ctx context.Context, jobID string) (*Job, error) {
 	row := q.db.QueryRowContext(ctx, `
-SELECT id, repo_id, role, trigger_payload, idempotency_key, status,
+SELECT id, repo_id, role, trigger_payload, payload_mode, concurrency_group, daily_cap, idempotency_key, status,
        claimed_by, created_at, updated_at, completed_at, error_msg
 FROM jobs WHERE id = ?`, jobID)
 	job, err := scanJob(row)
@@ -459,7 +577,7 @@ func (q *Queue) CountByStatus(ctx context.Context, status string) (int, error) {
 // RecentJobs returns the most recent jobs (newest first), limited to maxRows.
 func (q *Queue) RecentJobs(ctx context.Context, maxRows int) ([]Job, error) {
 	rows, err := q.db.QueryContext(ctx, `
-SELECT id, repo_id, role, trigger_payload, idempotency_key, status,
+SELECT id, repo_id, role, trigger_payload, payload_mode, concurrency_group, daily_cap, idempotency_key, status,
        claimed_by, created_at, updated_at, completed_at, error_msg
 FROM jobs ORDER BY created_at DESC LIMIT ?`, maxRows)
 	if err != nil {
@@ -474,7 +592,7 @@ FROM jobs ORDER BY created_at DESC LIMIT ?`, maxRows)
 		var createdAt, updatedAt int64
 		var completedAt sql.NullInt64
 		if err := rows.Scan(
-			&j.ID, &j.RepoID, &j.Role, &j.Trigger, &j.IdempotencyKey,
+			&j.ID, &j.RepoID, &j.Role, &j.Trigger, &j.PayloadMode, &j.ConcurrencyGroup, &j.DailyCap, &j.IdempotencyKey,
 			&status, &j.ClaimedBy, &createdAt, &updatedAt, &completedAt, &j.Error,
 		); err != nil {
 			return jobs, fmt.Errorf("queue: scan recent job: %w", err)
@@ -596,7 +714,7 @@ func scanJob(row *sql.Row) (*Job, error) {
 	var createdAt, updatedAt int64
 	var completedAt sql.NullInt64
 	err := row.Scan(
-		&j.ID, &j.RepoID, &j.Role, &j.Trigger, &j.IdempotencyKey,
+		&j.ID, &j.RepoID, &j.Role, &j.Trigger, &j.PayloadMode, &j.ConcurrencyGroup, &j.DailyCap, &j.IdempotencyKey,
 		&status, &j.ClaimedBy, &createdAt, &updatedAt, &completedAt, &j.Error,
 	)
 	if err != nil {
@@ -618,7 +736,7 @@ func scanJobFromRows(rows *sql.Rows) (Job, error) {
 	var createdAt, updatedAt int64
 	var completedAt sql.NullInt64
 	err := rows.Scan(
-		&j.ID, &j.RepoID, &j.Role, &j.Trigger, &j.IdempotencyKey,
+		&j.ID, &j.RepoID, &j.Role, &j.Trigger, &j.PayloadMode, &j.ConcurrencyGroup, &j.DailyCap, &j.IdempotencyKey,
 		&status, &j.ClaimedBy, &createdAt, &updatedAt, &completedAt, &j.Error,
 	)
 	if err != nil {

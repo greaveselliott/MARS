@@ -182,6 +182,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		KnowledgeRoutes: knowledgeRoutes,
 		Skills:          skills,
 		Trigger:         job.Trigger,
+		PayloadMode:     job.PayloadMode,
 		Learnings:       learnData.FormatForContext(),
 		TicketIndex:     ticketIndex,
 	})

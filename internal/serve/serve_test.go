@@ -14,6 +14,7 @@ import (
 
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
+	"github.com/greaveselliott/mars-harness/internal/scoring"
 )
 
 func testDBPath(t *testing.T) string {
@@ -548,5 +549,184 @@ blocked_by: []
 	}
 	if count != 1 {
 		t.Fatalf("expected one janitor stale-ticket job, got %d", count)
+	}
+}
+
+func TestOrchestratorSurveyRoutesStaleTicketAndOwnership(t *testing.T) {
+	ctx := context.Background()
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir .git: %v", err)
+	}
+	if err := scanner.Init(repo, false); err != nil {
+		t.Fatalf("init target harness: %v", err)
+	}
+	writeTicketGateContent(t, repo, "in-progress", "T-001-stale.md", `---
+id: T-001
+title: Stale
+last_attempt: "2026-04-01"
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+	repoID, err := srv.Repos().Register(ctx, repo, "", "main")
+	if err != nil {
+		t.Fatalf("register repo: %v", err)
+	}
+
+	report, err := srv.surveyOrchestrator(ctx, "test")
+	if err != nil {
+		t.Fatalf("surveyOrchestrator: %v", err)
+	}
+	if report.JobsRouted < 2 {
+		t.Fatalf("expected ticket owner and stale janitor jobs, got %+v", report)
+	}
+
+	assertSurveyJob(t, srv, repoID, "engineer", "ticket_delivery", "eligible_in_progress_ticket")
+	assertSurveyJob(t, srv, repoID, "janitor", "ticket_hygiene", "stale_in_progress_ticket")
+}
+
+func TestOrchestratorSurveyRoutesFailedChecksAndNoops(t *testing.T) {
+	ctx := context.Background()
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir .git: %v", err)
+	}
+	if err := scanner.Init(repo, false); err != nil {
+		t.Fatalf("init target harness: %v", err)
+	}
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+	repoID, err := srv.Repos().Register(ctx, repo, "", "main")
+	if err != nil {
+		t.Fatalf("register repo: %v", err)
+	}
+
+	if err := srv.scoreStore.RecordOutcome(ctx, scoring.Outcome{JobID: "check-1", RepoID: repoID, Role: "engineer", Type: scoring.OutcomeChecksFailed}); err != nil {
+		t.Fatalf("record failed check: %v", err)
+	}
+	if err := srv.scoreStore.RecordOutcome(ctx, scoring.Outcome{JobID: "noop-1", RepoID: repoID, Role: "engineer", Type: scoring.OutcomeNoop}); err != nil {
+		t.Fatalf("record noop: %v", err)
+	}
+
+	report, err := srv.surveyOrchestrator(ctx, "test")
+	if err != nil {
+		t.Fatalf("surveyOrchestrator: %v", err)
+	}
+	if report.JobsRouted < 2 {
+		t.Fatalf("expected failed-check and no-op routing, got %+v", report)
+	}
+
+	assertSurveyJob(t, srv, repoID, "pipeline-fixer", "pipeline_repair", "failed_check")
+	assertSurveyJob(t, srv, repoID, "janitor", "ticket_hygiene", "silent_noop")
+}
+
+func TestOrchestratorSurveyTriagesTelemetryAndLowScores(t *testing.T) {
+	ctx := context.Background()
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir .git: %v", err)
+	}
+	if err := scanner.Init(repo, false); err != nil {
+		t.Fatalf("init target harness: %v", err)
+	}
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+	repoID, err := srv.Repos().Register(ctx, repo, "", "main")
+	if err != nil {
+		t.Fatalf("register repo: %v", err)
+	}
+
+	for i := 0; i < 3; i++ {
+		srv.telemetry.Record(fmt.Sprintf("job-%d", i), repoID, "engineer", "context overflow while assembling prompt")
+	}
+	for i := 0; i < 5; i++ {
+		if err := srv.scoreStore.RecordOutcome(ctx, scoring.Outcome{JobID: fmt.Sprintf("score-%d", i), RepoID: repoID, Role: "qa", Type: scoring.OutcomeFailed}); err != nil {
+			t.Fatalf("record outcome: %v", err)
+		}
+	}
+	if _, err := srv.scoreStore.ComputeScore(ctx, "qa", repoID, 30); err != nil {
+		t.Fatalf("compute score: %v", err)
+	}
+
+	report, err := srv.surveyOrchestrator(ctx, "test")
+	if err != nil {
+		t.Fatalf("surveyOrchestrator: %v", err)
+	}
+	if report.TicketsTriaged < 2 {
+		t.Fatalf("expected telemetry and score intervention-debt triage, got %+v", report)
+	}
+
+	entries, err := os.ReadDir(filepath.Join(repo, "docs", "tickets", "backlog"))
+	if err != nil {
+		t.Fatalf("read backlog: %v", err)
+	}
+	var interventionDebt int
+	for _, entry := range entries {
+		data, err := os.ReadFile(filepath.Join(repo, "docs", "tickets", "backlog", entry.Name()))
+		if err != nil {
+			t.Fatalf("read ticket: %v", err)
+		}
+		if strings.Contains(string(data), "kind: intervention-debt") {
+			interventionDebt++
+		}
+	}
+	if interventionDebt < 2 {
+		t.Fatalf("expected at least two intervention-debt tickets, got %d", interventionDebt)
+	}
+}
+
+func assertSurveyJob(t *testing.T, srv *Server, repoID, role, payloadMode, signal string) {
+	t.Helper()
+	var trigger, gotPayloadMode, group string
+	var cap int
+	err := srv.db.QueryRow(`
+SELECT trigger_payload, payload_mode, concurrency_group, daily_cap
+FROM jobs
+WHERE repo_id = ? AND role = ? AND payload_mode = ?
+ORDER BY created_at DESC
+LIMIT 1`, repoID, role, payloadMode).Scan(&trigger, &gotPayloadMode, &group, &cap)
+	if err != nil {
+		t.Fatalf("query survey job %s/%s/%s: %v", role, payloadMode, signal, err)
+	}
+	if gotPayloadMode != payloadMode {
+		t.Fatalf("payload mode = %q, want %q", gotPayloadMode, payloadMode)
+	}
+	if group == "" {
+		t.Fatalf("expected concurrency group for %s/%s", role, payloadMode)
+	}
+	if cap <= 0 {
+		t.Fatalf("expected positive daily cap for %s/%s", role, payloadMode)
+	}
+	if !strings.Contains(trigger, signal) {
+		t.Fatalf("expected trigger %q to contain signal %q", trigger, signal)
 	}
 }

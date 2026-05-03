@@ -98,8 +98,9 @@ func Assemble(in Input) (system string, stats []SectionStat, err error) {
 		}
 	}
 
-	if strings.TrimSpace(in.Trigger) != "" {
-		parts = append(parts, block{name: "trigger", header: headerTrigger, body: strings.TrimSpace(in.Trigger), truncPri: 20})
+	triggerBody := triggerContextBody(in.PayloadMode, in.Trigger)
+	if strings.TrimSpace(triggerBody) != "" {
+		parts = append(parts, block{name: "trigger", header: headerTrigger, body: strings.TrimSpace(triggerBody), truncPri: 20})
 	}
 	if strings.TrimSpace(in.TicketIndex) != "" {
 		parts = append(parts, block{name: "tickets", header: headerTickets, body: strings.TrimSpace(in.TicketIndex), truncPri: 75})
@@ -122,6 +123,18 @@ func Assemble(in Input) (system string, stats []SectionStat, err error) {
 		stats = append(stats, SectionStat{Name: p.name, Tokens: n})
 	}
 	return strings.TrimSpace(out.String()), stats, nil
+}
+
+func triggerContextBody(payloadMode, trigger string) string {
+	payloadMode = strings.TrimSpace(payloadMode)
+	trigger = strings.TrimSpace(trigger)
+	if payloadMode == "" {
+		return trigger
+	}
+	if trigger == "" {
+		return fmt.Sprintf("payload_mode: %s", payloadMode)
+	}
+	return fmt.Sprintf("payload_mode: %s\n\n%s", payloadMode, trigger)
 }
 
 func loadRolePrompt(in Input) (string, error) {

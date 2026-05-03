@@ -15,6 +15,7 @@
 6. F-006-S006 - `serve` runs the multi-repo orchestrator, dashboard, webhook receiver, scheduler, workers, and control plane.
 7. F-006-S007 - Recovery jobs are bounded, idempotent, and self-healed when stale or duplicated.
 8. F-006-S008 - In-progress and intervention-debt ticket priority controls what engineers claim next.
+9. F-006-S009 - Native Orchestrator surveys route unattended failure states into bounded jobs or intervention-debt tickets.
 
 ## Scenarios
 
@@ -66,6 +67,12 @@ Given tickets exist in in-progress, intervention-debt, and ordinary backlog stat
 When engineer context is assembled
 Then existing in-progress and intervention-debt work are prioritized ahead of ordinary backlog claims
 
+### F-006-S009: Native Orchestrator Survey
+
+Given queue, ticket, score, telemetry, and recent outcome signals exist
+When the Orchestrator survey runs
+Then stale tickets, blocked tickets, failed checks, dogfood failures, no-op outcomes, telemetry patterns, and low scores create bounded queue work or deduped intervention-debt tickets with payload mode, concurrency group, and daily cap metadata
+
 ## Out of Scope
 
 - External queue systems such as Redis.
@@ -86,3 +93,4 @@ None.
 - F-006-S006: `go test ./internal/serve -run TestServer`
 - F-006-S007: `go test ./internal/serve -run 'TestHandleJobFailed|TestSelfHealRecoveryQueue'` and `go test ./internal/queue -run TestQueue_repairActiveRecoveryJobs`
 - F-006-S008: `go test ./internal/serve -run 'TestValidateEngineerTicketGate|TestBuildTicketIndex'`
+- F-006-S009: `go test ./internal/serve -run TestOrchestratorSurvey` and `go test ./internal/queue -run 'TestQueue_concurrencyGroupSerialization|TestQueue_dailyCapConstrainsRepeatedScheduling|TestQueue_claimDoesNotResetHealthyRunningJob|TestQueue_failStuckRunningJobs'`

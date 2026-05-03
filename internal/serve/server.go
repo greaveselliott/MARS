@@ -318,6 +318,7 @@ func (s *Server) Start(ctx context.Context) error {
 	s.workers.Start(ctx)
 	s.scheduler.Start(ctx)
 	go s.runQueueSelfHeal(ctx)
+	go s.runOrchestratorSurvey(ctx)
 
 	power.StartWatchdog(ctx, s.handleWake)
 
@@ -1075,6 +1076,15 @@ func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 				"duration", runDuration.Round(time.Second),
 				"threshold", selfChainMinDuration,
 			)
+			if s.scoreStore != nil {
+				_ = s.scoreStore.RecordOutcome(ctx, scoring.Outcome{
+					JobID:   job.ID,
+					RepoID:  job.RepoID,
+					Role:    job.Role,
+					Type:    scoring.OutcomeNoop,
+					Details: "self-chain skipped because run was too short; orchestrator survey will route follow-up if needed",
+				})
+			}
 			idle = true
 			continue
 		}
@@ -1449,12 +1459,15 @@ func (s *Server) registerCronSchedules(repos []RepoRecord) {
 			}
 
 			sched := scheduler.Schedule{
-				Name:     fmt.Sprintf("%s:%s", repo.ID, roleName),
-				RepoID:   repo.ID,
-				Role:     roleName,
-				Cron:     cron,
-				Timezone: "UTC",
-				Trigger:  fmt.Sprintf(`{"type":"schedule","role":"%s"}`, roleName),
+				Name:             fmt.Sprintf("%s:%s", repo.ID, roleName),
+				RepoID:           repo.ID,
+				Role:             roleName,
+				Cron:             cron,
+				Timezone:         "UTC",
+				Trigger:          fmt.Sprintf(`{"type":"schedule","role":"%s"}`, roleName),
+				PayloadMode:      "schedule",
+				ConcurrencyGroup: fmt.Sprintf("schedule:%s:%s", repo.ID, roleName),
+				DailyCap:         scheduleDailyCap(cron),
 			}
 			if err := s.scheduler.Register(sched); err != nil {
 				slog.Warn("serve: failed to register cron schedule",
@@ -1497,6 +1510,13 @@ func cronFromTrigger(trigger string) string {
 		return c
 	}
 	return ""
+}
+
+func scheduleDailyCap(cron string) int {
+	if strings.TrimSpace(cron) == "" {
+		return 0
+	}
+	return 24
 }
 
 // jobCount tracks how many jobs have completed since the last evolution check.

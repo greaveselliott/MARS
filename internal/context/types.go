@@ -32,6 +32,7 @@ type Input struct {
 	KnowledgeRoutes []KnowledgeRoute
 	Skills          []Skill // from .harness/skills/, filtered by role scope
 	Trigger         string  // ticket body, CI excerpt, etc.
+	PayloadMode     string  // machine-readable trigger mode, e.g. ticket_hygiene
 	RepoSummary     string  // directory tree or short manifest
 
 	// Learnings is a pre-formatted text block of per-repo conventions, lessons, and excludes.

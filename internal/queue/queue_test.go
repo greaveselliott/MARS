@@ -121,6 +121,57 @@ func TestQueue_perRepoSerialization(t *testing.T) {
 	assert.Equal(t, "repo-A", job2.RepoID)
 }
 
+func TestQueue_concurrencyGroupSerialization(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	_, err := q.Enqueue(ctx, Job{RepoID: "repo-A", Role: "release-manager", ConcurrencyGroup: "release"})
+	require.NoError(t, err)
+	_, err = q.Enqueue(ctx, Job{RepoID: "repo-B", Role: "release-manager", ConcurrencyGroup: "release"})
+	require.NoError(t, err)
+
+	job1, err := q.Claim(ctx, "w-1")
+	require.NoError(t, err)
+	require.NotNil(t, job1)
+	require.NoError(t, q.MarkRunning(ctx, job1.ID))
+
+	job2, err := q.Claim(ctx, "w-2")
+	require.NoError(t, err)
+	assert.Nil(t, job2, "same concurrency group should not be claimed concurrently across repos")
+
+	require.NoError(t, q.Complete(ctx, job1.ID))
+	job2, err = q.Claim(ctx, "w-2")
+	require.NoError(t, err)
+	require.NotNil(t, job2)
+	assert.Equal(t, "release", job2.ConcurrencyGroup)
+}
+
+func TestQueue_dailyCapConstrainsRepeatedScheduling(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	first, err := q.Enqueue(ctx, Job{
+		RepoID:           "repo-1",
+		Role:             "janitor",
+		ConcurrencyGroup: "ticket:repo-1:stale",
+		DailyCap:         1,
+	})
+	require.NoError(t, err)
+
+	second, err := q.Enqueue(ctx, Job{
+		RepoID:           "repo-1",
+		Role:             "janitor",
+		ConcurrencyGroup: "ticket:repo-1:stale",
+		DailyCap:         1,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, first, second, "daily cap should return the existing capped job id")
+
+	pending, err := q.CountByStatus(ctx, string(StatusPending))
+	require.NoError(t, err)
+	assert.Equal(t, 1, pending)
+}
+
 func TestQueue_leaseExpiry(t *testing.T) {
 	q := tempQueue(t)
 	ctx := context.Background()
@@ -144,6 +195,62 @@ func TestQueue_leaseExpiry(t *testing.T) {
 	require.NotNil(t, reclaimed)
 	assert.Equal(t, id, reclaimed.ID)
 	assert.Equal(t, "w-fresh", reclaimed.ClaimedBy)
+}
+
+func TestQueue_claimDoesNotResetHealthyRunningJob(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	id, err := q.Enqueue(ctx, Job{RepoID: "repo-1", Role: "engineer"})
+	require.NoError(t, err)
+	job, err := q.Claim(ctx, "w-running")
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.NoError(t, q.MarkRunning(ctx, job.ID))
+
+	staleTime := time.Now().UTC().Add(-10 * time.Minute).Unix()
+	_, err = q.db.ExecContext(ctx, `UPDATE jobs SET updated_at = ? WHERE id = ?`, staleTime, id)
+	require.NoError(t, err)
+
+	reclaimed, err := q.Claim(ctx, "w-fresh")
+	require.NoError(t, err)
+	assert.Nil(t, reclaimed, "running jobs are left to the orchestrator watchdog")
+
+	got, err := q.Get(ctx, id)
+	require.NoError(t, err)
+	assert.Equal(t, StatusRunning, got.Status)
+}
+
+func TestQueue_failStuckRunningJobs(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	oldID, err := q.Enqueue(ctx, Job{RepoID: "repo-1", Role: "engineer"})
+	require.NoError(t, err)
+	oldJob, err := q.Claim(ctx, "w-old")
+	require.NoError(t, err)
+	require.NoError(t, q.MarkRunning(ctx, oldJob.ID))
+	_, err = q.db.ExecContext(ctx, `UPDATE jobs SET updated_at = ? WHERE id = ?`, time.Now().UTC().Add(-8*time.Hour).Unix(), oldID)
+	require.NoError(t, err)
+
+	newID, err := q.Enqueue(ctx, Job{RepoID: "repo-2", Role: "engineer"})
+	require.NoError(t, err)
+	newJob, err := q.Claim(ctx, "w-new")
+	require.NoError(t, err)
+	require.NoError(t, q.MarkRunning(ctx, newJob.ID))
+
+	failed, err := q.FailStuckRunningJobs(ctx, 6*time.Hour, "watchdog test")
+	require.NoError(t, err)
+	assert.Equal(t, 1, failed)
+
+	oldGot, err := q.Get(ctx, oldID)
+	require.NoError(t, err)
+	assert.Equal(t, StatusFailed, oldGot.Status)
+	assert.Contains(t, oldGot.Error, "watchdog test")
+
+	newGot, err := q.Get(ctx, newID)
+	require.NoError(t, err)
+	assert.Equal(t, StatusRunning, newGot.Status)
 }
 
 func TestQueue_cancel(t *testing.T) {

@@ -14,12 +14,15 @@ import (
 
 // Schedule represents a periodic job trigger.
 type Schedule struct {
-	Name     string
-	RepoID   string
-	Role     string
-	Cron     string // standard 5-field cron expression
-	Timezone string // IANA timezone name
-	Trigger  string // JSON payload template
+	Name             string
+	RepoID           string
+	Role             string
+	Cron             string // standard 5-field cron expression
+	Timezone         string // IANA timezone name
+	Trigger          string // JSON payload template
+	PayloadMode      string
+	ConcurrencyGroup string
+	DailyCap         int
 }
 
 // Scheduler evaluates cron schedules and enqueues jobs.
@@ -141,10 +144,13 @@ func (s *Scheduler) evaluate(ctx context.Context, sched Schedule) {
 	idemKey := fmt.Sprintf("sched:%s:%d", sched.Name, nowMinute.Unix())
 
 	_, err = s.q.Enqueue(ctx, queue.Job{
-		RepoID:         sched.RepoID,
-		Role:           sched.Role,
-		Trigger:        sched.Trigger,
-		IdempotencyKey: idemKey,
+		RepoID:           sched.RepoID,
+		Role:             sched.Role,
+		Trigger:          sched.Trigger,
+		PayloadMode:      sched.PayloadMode,
+		ConcurrencyGroup: sched.ConcurrencyGroup,
+		DailyCap:         sched.DailyCap,
+		IdempotencyKey:   idemKey,
 	})
 	if err != nil {
 		slog.Error("scheduler: enqueue failed", "name", sched.Name, "error", err)
@@ -155,11 +161,11 @@ func (s *Scheduler) evaluate(ctx context.Context, sched Schedule) {
 
 // cronExpr holds parsed 5-field cron data. Each field is a set of valid values.
 type cronExpr struct {
-	minutes    map[int]bool
-	hours      map[int]bool
+	minutes     map[int]bool
+	hours       map[int]bool
 	daysOfMonth map[int]bool
-	months     map[int]bool
-	daysOfWeek map[int]bool
+	months      map[int]bool
+	daysOfWeek  map[int]bool
 }
 
 func (e *cronExpr) matches(t time.Time) bool {

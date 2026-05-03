@@ -12,7 +12,7 @@ import (
 func TestAssemble_fullSections(t *testing.T) {
 	t.Parallel()
 	in := Input{
-		RoleScope: "engineer",
+		RoleScope:  "engineer",
 		RolePrompt: "You are the engineer role.",
 		Guardrails: []Guardrail{
 			{Scope: "", Title: "Global", Body: "Be honest."},
@@ -115,8 +115,8 @@ func TestAssemble_roleFromFile(t *testing.T) {
 func TestAssemble_ticketIndex(t *testing.T) {
 	t.Parallel()
 	in := Input{
-		RoleScope:  "coo",
-		RolePrompt: "You are the COO.",
+		RoleScope:   "coo",
+		RolePrompt:  "You are the COO.",
 		TicketIndex: "Existing tickets (3 total):\n- [done] T-001-player-movement.md\n- [in-progress] T-002-shooting.md\n- [backlog] T-003-scoring.md",
 	}
 	out, stats, err := Assemble(in)
@@ -144,4 +144,19 @@ func TestAssemble_ticketIndexOmittedWhenEmpty(t *testing.T) {
 	out, _, err := Assemble(in)
 	require.NoError(t, err)
 	require.NotContains(t, out, "## TICKET INDEX")
+}
+
+func TestAssemble_payloadModeInTriggerContext(t *testing.T) {
+	t.Parallel()
+	in := Input{
+		RoleScope:   "janitor",
+		RolePrompt:  "You are the janitor.",
+		PayloadMode: "ticket_hygiene",
+		Trigger:     `{"type":"orchestrator.survey"}`,
+	}
+	out, _, err := Assemble(in)
+	require.NoError(t, err)
+	require.Contains(t, out, "## TRIGGER CONTEXT")
+	require.Contains(t, out, "payload_mode: ticket_hygiene")
+	require.Contains(t, out, `"type":"orchestrator.survey"`)
 }

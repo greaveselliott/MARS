@@ -6,14 +6,14 @@
 **Blocks:** Plan promotions until this file names the next slice
 **Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049
 **Goals:** G-001, G-002, G-003, G-004
-**BDD Feature:** F-001, F-002
-**Hypothesis:** Zero-config CLI availability removes the first-run `Unknown command: mars-harness` failure mode while the BDD-led operating loop keeps completion evidence-based.
-**Success Evidence:** `make install`, `mars-harness setup`, and `mars-harness update tool` configure supported user shell profiles idempotently, and F-001 remains passing.
-**Falsification Evidence:** Fish, Zsh, Bash, or POSIX shell users still need manual PATH edits after install/update/setup.
-**Scenario Schedule:** F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005
-**Current Failing Scenario:** None for F-002; the next active-plan refresh should promote the highest-value backlog scenario group.
-**Walking Skeleton Slice:** Use one shellpath package across source install, first-run setup, update-tool reinstall, and an explicit `mars-harness path setup` command.
-**Learning Or MVP Outcome:** Users can install or update once and run `mars-harness` from new terminals across common shells without hand-written shell setup.
+**BDD Feature:** F-001, F-002, F-006
+**Hypothesis:** Zero-config CLI availability removes the first-run `Unknown command: mars-harness` failure mode while the BDD-led operating loop keeps completion evidence-based, and native Orchestrator surveys prevent unattended failure states from silently stalling work.
+**Success Evidence:** `make install`, `mars-harness setup`, and `mars-harness update tool` configure supported user shell profiles idempotently, F-001 remains passing, and `F-006-S009` has survey-to-queue tests for stale tickets, failed checks, no-op outcomes, telemetry patterns, low scores, queue ownership, payload modes, concurrency groups, daily caps, and stuck-job watchdog behavior.
+**Falsification Evidence:** Fish, Zsh, Bash, or POSIX shell users still need manual PATH edits after install/update/setup, or stale ticket/check/telemetry/score/no-op signals remain unrouted until a human or GitHub event intervenes.
+**Scenario Schedule:** F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005, F-006-S009
+**Current Failing Scenario:** None for F-002 or F-006-S009; continue the Mars parity backlog with deterministic remediation.
+**Walking Skeleton Slice:** Use one shellpath package across source install, first-run setup, update-tool reinstall, and an explicit `mars-harness path setup` command; use one native Orchestrator survey path across ticket ownership, telemetry triage, failed checks, dogfood failures, no-op outcomes, queue caps, and stuck-job watchdogs.
+**Learning Or MVP Outcome:** Users can install or update once and run `mars-harness` from new terminals across common shells without hand-written shell setup; as of 2026-05-03, unattended harness failure states become bounded queue work or deduped intervention-debt tickets.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
 **Source:** Exec-plan review and repository state audit on 2026-05-02
@@ -32,11 +32,11 @@ plans to decide what to do next.
 - Current source version is recorded in `VERSION`.
 - Current branch: `main`
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
-- BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001` and the current install/setup feature is `F-002`.
+- BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, the current install/setup feature is `F-002`, and the current queue/orchestration survey scenario is `F-006-S009`.
 - Ticket state:
   - `docs/tickets/in-progress/` is empty.
-  - `docs/tickets/backlog/` contains `MH-047` through `MH-049`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-046`.
+  - `docs/tickets/backlog/` contains `MH-048` and `MH-049`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-047`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -62,9 +62,9 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Mars parity execution**: `MH-046` is done; continue the tickets
-   materialized on 2026-05-03 for orchestrator recovery (`MH-047`),
-   deterministic remediation (`MH-048`), and dogfood matrix (`MH-049`).
+1. **Mars parity execution**: `MH-047` is done; continue the tickets
+   materialized on 2026-05-03 for deterministic remediation (`MH-048`)
+   and dogfood matrix (`MH-049`).
    Use [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.
@@ -84,6 +84,7 @@ plans to decide what to do next.
 | F-002-S003 | Passing | `mars-harness update tool` runs shell PATH setup after reinstalling the binary. |
 | F-002-S004 | Passing | Shell profile updates are idempotent and covered by tests. |
 | F-002-S005 | Passing | Unsupported shells return explicit manual remediation without writing profile files. |
+| F-006-S009 | Passing | `go test ./internal/serve -run TestOrchestratorSurvey` and `go test ./internal/queue -run 'TestQueue_concurrencyGroupSerialization|TestQueue_dailyCapConstrainsRepeatedScheduling|TestQueue_claimDoesNotResetHealthyRunningJob|TestQueue_failStuckRunningJobs'` cover native survey routing, ownership metadata, daily caps, telemetry/score triage, no-op detection, and stuck-job safety. |
 
 ## Quality State
 
@@ -113,5 +114,5 @@ Checks recorded during the 2026-05-02 review:
 
 ## Next Ticket Work
 
-- `MH-047`: native Orchestrator survey loop is the next backlog ticket.
-- Next active-plan refresh: promote the highest-value Mars parity scenario group.
+- `MH-048`: deterministic remediation recipes are the next backlog ticket.
+- Next active-plan refresh: promote the deterministic-first repair scenario group.

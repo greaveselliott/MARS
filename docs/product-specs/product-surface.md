@@ -34,7 +34,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |
 | `mars-harness run <role> --repo <path>` | Implemented | Loads manifest, guardrails, knowledge routes, context, tools, local model endpoint, and runs one role with terminal-result truth. |
 | `mars-harness start --repo <path>` | Implemented | Initializes if needed, registers the repo, seeds the CEO role, and runs the per-repo autonomous pipeline with isolated database state and recovery-queue self-healing. |
-| `mars-harness serve` | Implemented, multi-repo legacy mode | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, workers, and recovery-queue self-heal watchdog against the configured database. |
+| `mars-harness serve` | Implemented, multi-repo legacy mode | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, workers, recovery-queue self-heal watchdog, and native survey loop for unattended ticket, check, telemetry, score, dogfood, no-op, and stuck-work signals against the configured database. |
 | `mars-harness register --repo <path>` | Implemented | Registers a repo and creates the per-repo database path when one is not supplied. |
 | `mars-harness doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, guardrail/workflow health, mirrored operating-model health, active-plan hygiene, and optional integration configuration. |
 | `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
