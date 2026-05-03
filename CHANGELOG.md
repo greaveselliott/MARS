@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.12.0] - 2026-05-03
+<!-- mars-harness-release: version=0.12.0 commit=416a91bd5fa1 -->
+
+### Features
+- **scoring:** Export repo quality score (MH-037) (416a91b)
+
+### Delivery Evidence
+- Enabler work: MH-037: Automate quality score export
+
 ## [0.11.1] - 2026-05-03
 <!-- mars-harness-release: version=0.11.1 commit=450d1bbbbbd9 -->
 
