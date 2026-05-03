@@ -2,9 +2,9 @@
 
 **Status:** Backlog
 **Priority:** P1
-**Depends On:** MH-035 for ticket materialization before broad execution
+**Depends On:** Ticket materialization completed by MH-035 on 2026-05-03 before broad execution
 **Blocks:** Mars supersession readiness claims
-**Related Tickets:** MH-035, MH-037
+**Related Tickets:** MH-029, MH-034, MH-035, MH-037, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049
 **Goals:** G-001, G-002
 **BDD Feature:** F-001
 **Hypothesis:** Mars Harness can supersede Mars only if Mars's operating discipline is rebuilt as strict-trunk, goal-driven, BDD-evidenced harness primitives rather than copied as Cursor/PR automation.
@@ -15,7 +15,7 @@
 **Walking Skeleton Slice:** Promote one Mars parity workstream at a time into the active plan, write a BDD feature contract, then create tickets for only the next failing scenario group.
 **Learning Or MVP Outcome:** Prove Mars-derived operating patterns can be delivered as productized harness behavior without returning to branch/PR defaults.
 **Created:** 2026-05-02
-**Updated:** 2026-05-02
+**Updated:** 2026-05-03
 **Owner:** Mars Harness
 **Source:** User request to compare `../mars` with this repository and plan the work required for Mars Harness to supersede Mars.
 **Supporting audit:** [mars-meta-harness-relevance-audit.md](../../references/mars-meta-harness-relevance-audit.md)
@@ -353,6 +353,8 @@ Gap:
 
 Create the Harness-native equivalent of Mars's automation-team and agent-context-model docs.
 
+Backlog ticket: [MH-042](../../tickets/backlog/MH-042-canonical-harness-operating-model.md).
+
 Tasks:
 
 - [ ] Add `docs/design-docs/harness-operating-model.md`.
@@ -382,6 +384,8 @@ Acceptance:
 
 Build a Harness equivalent of `docs/automations/BOTS.md`.
 
+Backlog ticket: [MH-043](../../tickets/backlog/MH-043-checked-role-registry.md).
+
 Tasks:
 
 - [ ] Add `docs/roles/ROLES.md` or `docs/automations/ROLES.md` as the repo-visible registry.
@@ -399,13 +403,15 @@ Acceptance:
 
 Import Mars's "conversation as system record" discipline into Harness.
 
+Backlog ticket: [MH-044](../../tickets/backlog/MH-044-conversation-system-record-guidance.md). Active-plan hygiene implementation was completed in [MH-034](../../tickets/done/MH-034-active-plan-hygiene-checker.md).
+
 Tasks:
 
 - [ ] Add `docs/design-docs/conversation-as-system-record.md`, adapted for strict trunk.
 - [ ] Update root and generated `AGENTS.md` guidance to require persistent artifacts for plans, decisions, investigations, quality findings, and completed work.
 - [ ] Update `.cursor/rules/documentation-discipline.mdc` with active-plan hygiene thresholds.
-- [ ] Add an active-plan hygiene checker in Go or shell with no new runtime dependency.
-- [ ] Wire the checker into CI and `mars-harness doctor`.
+- [x] Add an active-plan hygiene checker in Go or shell with no new runtime dependency. (MH-034)
+- [x] Wire the checker into CI and `mars-harness doctor`. (MH-034)
 
 Acceptance:
 
@@ -416,9 +422,11 @@ Acceptance:
 
 Close the self-improvement loop Mars already practices.
 
+Backlog ticket: [MH-045](../../tickets/backlog/MH-045-complete-intervention-debt-signal-ingestion.md). The initial ticket type and telemetry triage foundation was completed in [MH-029](../../tickets/done/MH-029-create-intervention-debt-from-telemetry-triage.md).
+
 Tasks:
 
-- [ ] Define an `intervention-debt` ticket schema.
+- [x] Define an `intervention-debt` ticket schema. (MH-029)
 - [ ] Extend ticket creation and scanner dedupe to handle intervention-debt tickets.
 - [ ] Create or update intervention-debt tickets on:
   - non-success terminal agent result
@@ -440,6 +448,8 @@ Acceptance:
 ### E. Active Ticket Drain And Blocker Repair
 
 Make the user-observed "lots of in-progress tickets" failure impossible to ignore.
+
+Backlog ticket: [MH-046](../../tickets/backlog/MH-046-enforce-in-progress-ticket-drain.md).
 
 Tasks:
 
@@ -463,6 +473,8 @@ Acceptance:
 
 Make Harness scoring as visible as Mars's quality documentation.
 
+Backlog ticket: [MH-037](../../tickets/backlog/MH-037-automate-quality-score-export.md).
+
 Tasks:
 
 - [x] Seed source `docs/QUALITY_SCORE.md` and generated target `docs/QUALITY_SCORE.md`.
@@ -485,6 +497,8 @@ Acceptance:
 
 Replace GitHub Actions orchestration patterns with native Harness orchestration.
 
+Backlog ticket: [MH-047](../../tickets/backlog/MH-047-native-orchestrator-survey-loop.md).
+
 Tasks:
 
 - [ ] Add an Orchestrator loop that surveys queue, tickets, scores, guardrails, traces, and checks.
@@ -503,6 +517,8 @@ Acceptance:
 ### H. Deterministic Remediation Recipes
 
 Promote Mars's script-first lesson into Harness-native recipes.
+
+Backlog ticket: [MH-048](../../tickets/backlog/MH-048-deterministic-remediation-recipes.md).
 
 Tasks:
 
@@ -528,6 +544,8 @@ Acceptance:
 ### I. Dogfood Matrix And Supersession Benchmark
 
 Define what it means for Harness to supersede Mars.
+
+Backlog ticket: [MH-049](../../tickets/backlog/MH-049-dogfood-matrix-supersession-benchmark.md).
 
 Tasks:
 
@@ -654,16 +672,16 @@ Acceptance:
 
 ## First Ten Implementation Tickets
 
-1. Create the Harness operating model design doc and role-mode mapping.
-2. Add a checked role registry equivalent to Mars's `BOTS.md`.
-3. Add conversation-as-system-record design doc and generated guidance.
-4. Implement active-plan hygiene checks in doctor and CI.
-5. Add intervention-debt ticket type, creation rules, and dedupe.
-6. Enforce in-progress ticket priority and blocked-ticket outcomes.
-7. Add `docs/QUALITY_SCORE.md` export from scoring data.
-8. Add native Orchestrator survey loop for stuck jobs, stale tickets, and score regression.
-9. Add deterministic remediation recipe framework.
-10. Define and test the Harness dogfood matrix, including observer-mode operation on `../mars`.
+1. [MH-042](../../tickets/backlog/MH-042-canonical-harness-operating-model.md): Create the Harness operating model design doc and role-mode mapping.
+2. [MH-043](../../tickets/backlog/MH-043-checked-role-registry.md): Add a checked role registry equivalent to Mars's `BOTS.md`.
+3. [MH-044](../../tickets/backlog/MH-044-conversation-system-record-guidance.md): Add conversation-as-system-record design doc and generated guidance.
+4. [MH-034](../../tickets/done/MH-034-active-plan-hygiene-checker.md): Implement active-plan hygiene checks in doctor and CI.
+5. [MH-045](../../tickets/backlog/MH-045-complete-intervention-debt-signal-ingestion.md): Complete intervention-debt creation rules and dedupe beyond the `MH-029` telemetry foundation.
+6. [MH-046](../../tickets/backlog/MH-046-enforce-in-progress-ticket-drain.md): Enforce in-progress ticket priority and blocked-ticket outcomes.
+7. [MH-037](../../tickets/backlog/MH-037-automate-quality-score-export.md): Add `docs/QUALITY_SCORE.md` export from scoring data.
+8. [MH-047](../../tickets/backlog/MH-047-native-orchestrator-survey-loop.md): Add native Orchestrator survey loop for stuck jobs, stale tickets, and score regression.
+9. [MH-048](../../tickets/backlog/MH-048-deterministic-remediation-recipes.md): Add deterministic remediation recipe framework.
+10. [MH-049](../../tickets/backlog/MH-049-dogfood-matrix-supersession-benchmark.md): Define and test the Harness dogfood matrix, including observer-mode operation on `../mars`.
 
 ## Acceptance Criteria For Supersession
 

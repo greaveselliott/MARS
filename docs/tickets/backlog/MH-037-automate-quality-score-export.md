@@ -4,6 +4,11 @@ title: Automate quality score export
 priority: high
 complexity: medium
 kind: intervention-debt
+work_type: intervention-debt
+bdd_scenarios: []
+end_to_end_evidence: not_applicable
+evidence_links: []
+verified_by: TBD
 dedupe_key: "public-example"
 source: Mars parity workstream F
 created: 2026-05-02

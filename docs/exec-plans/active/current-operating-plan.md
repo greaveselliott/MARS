@@ -4,7 +4,7 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-002
 **Hypothesis:** Zero-config CLI availability removes the first-run `Unknown command: mars-harness` failure mode while the BDD-led operating loop keeps completion evidence-based.
@@ -35,8 +35,8 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001` and the current install/setup feature is `F-002`.
 - Ticket state:
   - `docs/tickets/in-progress/` has no active tickets.
-  - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-035`, and `MH-037`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-029` plus `MH-032`, `MH-033`, `MH-034`, `MH-036`, `MH-038`, `MH-039`, `MH-040`, and `MH-041`.
+  - `docs/tickets/backlog/` contains `MH-030`, `MH-031`, `MH-037`, and `MH-042` through `MH-049`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-029`, `MH-032` through `MH-036`, and `MH-038` through `MH-041`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -51,26 +51,25 @@ plans to decide what to do next.
 | Plan | State | Depends On | Blocks | How to use it |
 | --- | --- | --- | --- | --- |
 | `active/current-operating-plan.md` | Active, P0 | None | Plan promotions until this file names the next slice | Use this file as the only top-level execution map and scenario schedule. |
-| `backlog/mars-parity-supersession-plan.md` | Backlog, P1, G-001/G-002/F-001 | MH-035 for ticket materialization before broad execution | Supersession readiness claims | Pull slices into tickets and this active plan before execution. |
+| `backlog/mars-parity-supersession-plan.md` | Backlog, P1, G-001/G-002/F-001 | Ticket materialization completed on 2026-05-03; no open blocker | Supersession readiness claims | Pull slices into tickets and this active plan before execution. |
 | `backlog/model-evaluation-refresh-plan.md` | Backlog, P4, G-003/F-001 | MH-030 and higher-priority release/quality work | Default model registry promotion | Promote into the active plan when model-refresh work is next. |
 | `superseded/master-execution-plan.md` | Superseded | None | Nothing | Historical baseline. Do not use its checkbox status as truth. |
 | `superseded/delivery-schedule.md` | Superseded | None | Nothing | Historical milestone schedule; kept for lineage only. |
 
 ## Current Priority Order
 
-1. **Mars parity ticket materialization**: turn the first ten work items in the
-   Mars parity supersession plan into normal backlog tickets.
-2. **Quality score export (`MH-037`)**: replace the seeded scorecard with a
+1. **Quality score export (`MH-037`)**: replace the seeded scorecard with a
    deterministic export from live scores, telemetry, tickets, checks, and
    dogfood evidence.
-3. **Release asset contract (`MH-031`)**: publish checksum-verified binaries so
+2. **Release asset contract (`MH-031`)**: publish checksum-verified binaries so
    install and `update tool` no longer require Go or a source checkout.
-4. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
+3. **Model evaluation and swap workflow (`MH-030`)**: complete Ollama catalog
    support, explicit role/tier swaps, persistent reports, and promotion checks.
-5. **Mars parity execution**: work through operating model, role registry,
-   conversation-as-system-record, intervention debt, active-ticket drain,
-   quality exports, orchestrator recovery, deterministic remediation, and
-   dogfood matrix workstreams.
+4. **Mars parity execution**: work through the tickets materialized on 2026-05-03 for
+   operating model (`MH-042`), role registry (`MH-043`),
+   conversation-as-system-record (`MH-044`), intervention debt (`MH-045`),
+   active-ticket drain (`MH-046`), orchestrator recovery (`MH-047`),
+   deterministic remediation (`MH-048`), and dogfood matrix (`MH-049`).
 
 ## Scenario Schedule
 
@@ -116,5 +115,5 @@ Checks recorded during the 2026-05-02 review:
 
 ## Next Ticket Work
 
-- `MH-035`: materialize Mars parity workstreams as backlog tickets.
-- Next active-plan refresh: promote the highest-value backlog scenario group after F-001 passing evidence.
+- `MH-037`: automate quality score export from live scoring, telemetry, ticket, check, and dogfood evidence.
+- Next active-plan refresh: promote the highest-value backlog scenario group after quality export evidence is complete.

@@ -4,6 +4,14 @@ title: Materialize Mars parity workstreams as tickets
 priority: high
 complexity: medium
 kind: intervention-debt
+work_type: intervention-debt
+bdd_scenarios: []
+end_to_end_evidence: not_applicable
+evidence_links:
+  - "go test ./internal/docsconsistency ./internal/operatingmodel"
+  - "go test ./..."
+  - "go run ./cmd/mars-harness doctor --repo . --skip-remote"
+verified_by: command
 dedupe_key: "public-example"
 source: mars-parity-supersession-plan.md
 created: 2026-05-02
@@ -13,6 +21,9 @@ metadata:
   target: "mars-parity"
   category: "plan_to_ticket_gap"
   severity: "high"
+  confidence: "high"
+  evidence: "Mars parity workstreams existed only in a backlog plan; first-ten work items now map to ticket IDs."
+  origin: "mars-parity-supersession-plan.md"
 ---
 
 # MH-035: Materialize Mars parity workstreams as tickets
@@ -42,17 +53,24 @@ directly.
 
 ### Functional
 
-- [ ] Each first-ten Mars parity item has a corresponding backlog ticket.
-- [ ] The Mars parity plan links to the ticket IDs.
-- [ ] Tickets have acceptance criteria and affected files.
-- [ ] Ticket priorities reflect the current operating plan.
+- [x] Each first-ten Mars parity item has a corresponding backlog ticket or an
+      existing linked ticket.
+- [x] The Mars parity plan links to the ticket IDs.
+- [x] Tickets have acceptance criteria and affected files.
+- [x] Ticket priorities reflect the current operating plan.
 
 ### Edge cases and negative paths
 
-- [ ] Existing tickets are reused or linked instead of duplicated.
-- [ ] Broad workstreams are split into coherent implementation slices.
+- [x] Existing tickets are reused or linked instead of duplicated.
+- [x] Broad workstreams are split into coherent implementation slices.
 
 ### Observability, docs, and regressions
 
-- [ ] Ticket creation follows canonical backlog path and naming.
-- [ ] No generated ticket contains unchecked assumptions that conflict with strict trunk.
+- [x] Ticket creation follows canonical backlog path and naming.
+- [x] No generated ticket contains unchecked assumptions that conflict with strict trunk.
+
+## Completion Notes
+
+- Created `MH-042` through `MH-049` for the missing first-ten Mars parity slices.
+- Reused `MH-034` for active-plan hygiene checks and `MH-037` for quality export.
+- Updated the active plan so the next ticket is `MH-037`.
