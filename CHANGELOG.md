@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.12] - 2026-05-03
+<!-- mars-harness-release: version=0.24.12 commit=7a09c57bc3aa -->
+
+### Why This Release Matters
+It improves reliability through work to commit generated harness baseline in start.
+
+### Fixes
+- **start:** Commit generated harness baseline (7a09c57)
+
 ## [0.24.11] - 2026-05-03
 <!-- mars-harness-release: version=0.24.11 commit=310a5b052c6a -->
 
