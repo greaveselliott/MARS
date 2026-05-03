@@ -117,28 +117,7 @@ func handleTicketCreate(_ context.Context, root Root, raw json.RawMessage) (Tool
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return ToolResult{}, fmt.Errorf("ticket_create: parse arguments: %w", err)
 	}
-	return CreateTicket(root, TicketInput{
-		Title:            args.Title,
-		Priority:         args.Priority,
-		Complexity:       args.Complexity,
-		Kind:             args.Kind,
-		WorkType:         args.WorkType,
-		BDDScenarios:     args.BDDScenarios,
-		EndToEndEvidence: args.EndToEndEvidence,
-		EvidenceLinks:    args.EvidenceLinks,
-		VerifiedBy:       args.VerifiedBy,
-		Owner:            args.Owner,
-		LastAttempt:      args.LastAttempt,
-		Blocker:          args.Blocker,
-		BlockedBy:        args.BlockedBy,
-		TraceID:          args.TraceID,
-		NextAction:       args.NextAction,
-		DedupeKey:        args.DedupeKey,
-		Metadata:         args.Metadata,
-		Source:           args.Source,
-		DependsOn:        args.DependsOn,
-		Body:             args.Body,
-	})
+	return CreateTicket(root, TicketInput(args))
 }
 
 // CreateTicket creates a backlog ticket under docs/tickets/backlog with automatic dedupe.

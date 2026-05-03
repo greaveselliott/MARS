@@ -61,26 +61,6 @@ func snapshotTickets(repoPath string) (ticketSnapshot, error) {
 	return snap, nil
 }
 
-func listTicketFiles(repoPath, status string) ([]string, error) {
-	dir := filepath.Join(repoPath, "docs", "tickets", status)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("read %s tickets: %w", status, err)
-	}
-	var files []string
-	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".md" || entry.Name() == "README.md" {
-			continue
-		}
-		files = append(files, entry.Name())
-	}
-	sort.Strings(files)
-	return files, nil
-}
-
 func validateEngineerTicketGate(before, after ticketSnapshot) error {
 	return validateEngineerTicketGateWithEvidence("", before, after)
 }

@@ -121,7 +121,7 @@ func TestScan_detectsTodos(t *testing.T) {
 func TestScan_detectsLargeFunction(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 
 	var src string
 	src += "package main\n\n"
@@ -130,7 +130,7 @@ func TestScan_detectsLargeFunction(t *testing.T) {
 		src += "\t_ = 0\n"
 	}
 	src += "}\n"
-	os.WriteFile(filepath.Join(dir, "big.go"), []byte(src), 0o644)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "big.go"), []byte(src), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -148,10 +148,10 @@ func TestScan_detectsLargeFunction(t *testing.T) {
 func TestScan_skipsDefaultDirs(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 	nmDir := filepath.Join(dir, "node_modules", "pkg")
-	os.MkdirAll(nmDir, 0o755)
-	os.WriteFile(filepath.Join(nmDir, "index.js"), []byte("// TODO: never see this\n"), 0o644)
+	require.NoError(t, os.MkdirAll(nmDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(nmDir, "index.js"), []byte("// TODO: never see this\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -166,8 +166,8 @@ func TestScan_skipsDefaultDirs(t *testing.T) {
 func TestScan_detectsLicense(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "LICENSE"), []byte("MIT\n"), 0o644)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "LICENSE"), []byte("MIT\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -191,7 +191,7 @@ func TestScan_emptyRoot(t *testing.T) {
 func TestScan_contextCancellation(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -290,7 +290,7 @@ func TestGenerateTicketsCreatesInterventionDebtForStaleInProgress(t *testing.T) 
 func TestInit_success(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 
 	err := Init(dir, false)
 	require.NoError(t, err)
@@ -599,8 +599,8 @@ func TestInit_success(t *testing.T) {
 func TestInit_alreadyExists(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.MkdirAll(filepath.Join(dir, ".harness"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".harness"), 0o755))
 
 	err := Init(dir, false)
 	require.Error(t, err)
@@ -610,8 +610,8 @@ func TestInit_alreadyExists(t *testing.T) {
 func TestInit_forceOverwrite(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.MkdirAll(filepath.Join(dir, ".harness"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".harness"), 0o755))
 
 	err := Init(dir, true)
 	require.NoError(t, err)
@@ -621,13 +621,13 @@ func TestInit_forceOverwrite(t *testing.T) {
 func TestInit_forcePreservesExistingContent(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 
 	require.NoError(t, Init(dir, false))
 
 	ticketDir := filepath.Join(dir, "docs", "tickets", "in-progress")
 	ticketPath := filepath.Join(ticketDir, "T-001-user-work.md")
-	os.MkdirAll(ticketDir, 0o755)
+	require.NoError(t, os.MkdirAll(ticketDir, 0o755))
 	require.NoError(t, os.WriteFile(ticketPath, []byte("# T-001: User created ticket\nThis is real work."), 0o644))
 
 	customPrompt := filepath.Join(dir, ".harness", "roles", "engineer.md")
@@ -687,7 +687,7 @@ func TestInit_emptyRoot(t *testing.T) {
 func TestEnsureHarness_noManifest(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 
 	did, err := EnsureHarness(dir, false)
 	require.NoError(t, err)
@@ -702,8 +702,8 @@ func TestEnsureHarness_noManifest(t *testing.T) {
 func TestEnsureHarness_invalidManifest(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.MkdirAll(filepath.Join(dir, ".harness"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".harness"), 0o755))
 	err := os.WriteFile(filepath.Join(dir, ".harness", "manifest.yaml"),
 		[]byte("name: bad\n"), 0o644)
 	require.NoError(t, err)
@@ -715,7 +715,7 @@ func TestEnsureHarness_invalidManifest(t *testing.T) {
 func TestDetectFramework_goMod(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example\n"), 0o644)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example\n"), 0o644))
 
 	fw := detectFramework(dir, []string{"go.mod"})
 	assert.Equal(t, "Go Module", fw)
@@ -724,7 +724,7 @@ func TestDetectFramework_goMod(t *testing.T) {
 func TestDetectFramework_cargoToml(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "Cargo.toml"), []byte("[package]\n"), 0o644)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "Cargo.toml"), []byte("[package]\n"), 0o644))
 
 	fw := detectFramework(dir, []string{"Cargo.toml"})
 	assert.Equal(t, "Rust/Cargo", fw)
@@ -735,12 +735,12 @@ func TestDetectFramework_cargoToml(t *testing.T) {
 func TestBootability_missingDevScript(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
 		"name": "test",
 		"dependencies": {"next": "^16.0.0"},
 		"scripts": {"test": "jest"}
-	}`), 0o644)
+	}`), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -758,12 +758,12 @@ func TestBootability_missingDevScript(t *testing.T) {
 func TestBootability_hasDevScript(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
 		"name": "test",
 		"dependencies": {"next": "^16.0.0"},
 		"scripts": {"dev": "next dev", "build": "next build", "test": "jest"}
-	}`), 0o644)
+	}`), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -778,15 +778,15 @@ func TestBootability_hasDevScript(t *testing.T) {
 func TestBootability_missingRootLayout(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
 		"name": "test",
 		"dependencies": {"next": "^16.0.0"},
 		"scripts": {"dev": "next dev", "build": "next build"}
-	}`), 0o644)
+	}`), 0o644))
 	appDir := filepath.Join(dir, "src", "app", "(dashboard)")
-	os.MkdirAll(appDir, 0o755)
-	os.WriteFile(filepath.Join(appDir, "page.tsx"), []byte("export default function Page() { return <div/>; }"), 0o644)
+	require.NoError(t, os.MkdirAll(appDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "page.tsx"), []byte("export default function Page() { return <div/>; }"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -804,15 +804,15 @@ func TestBootability_missingRootLayout(t *testing.T) {
 func TestBootability_hasRootLayout(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
 		"name": "test",
 		"dependencies": {"next": "^16.0.0"},
 		"scripts": {"dev": "next dev", "build": "next build"}
-	}`), 0o644)
+	}`), 0o644))
 	appDir := filepath.Join(dir, "src", "app")
-	os.MkdirAll(appDir, 0o755)
-	os.WriteFile(filepath.Join(appDir, "layout.tsx"), []byte("export default function Layout({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+	require.NoError(t, os.MkdirAll(appDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "layout.tsx"), []byte("export default function Layout({children}) { return <html><body>{children}</body></html>; }"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -827,22 +827,22 @@ func TestBootability_hasRootLayout(t *testing.T) {
 func TestBootability_conflictingAppAndPages(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
 		"name": "test",
 		"dependencies": {"next": "^16.0.0"},
 		"scripts": {"dev": "next dev", "build": "next build"}
-	}`), 0o644)
+	}`), 0o644))
 
 	// app/ at root, pages/ under src/ — conflict
 	rootApp := filepath.Join(dir, "app")
-	os.MkdirAll(rootApp, 0o755)
-	os.WriteFile(filepath.Join(rootApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
-	os.WriteFile(filepath.Join(rootApp, "page.tsx"), []byte("export default function P() { return <div/>; }"), 0o644)
+	require.NoError(t, os.MkdirAll(rootApp, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(rootApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(rootApp, "page.tsx"), []byte("export default function P() { return <div/>; }"), 0o644))
 
 	srcPages := filepath.Join(dir, "src", "pages", "auth")
-	os.MkdirAll(srcPages, 0o755)
-	os.WriteFile(filepath.Join(srcPages, "login.tsx"), []byte("export default function Login() { return <div/>; }"), 0o644)
+	require.NoError(t, os.MkdirAll(srcPages, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcPages, "login.tsx"), []byte("export default function Login() { return <div/>; }"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -860,20 +860,20 @@ func TestBootability_conflictingAppAndPages(t *testing.T) {
 func TestBootability_noConflictWhenSameRoot(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
 		"name": "test",
 		"dependencies": {"next": "^16.0.0"},
 		"scripts": {"dev": "next dev", "build": "next build"}
-	}`), 0o644)
+	}`), 0o644))
 
 	srcApp := filepath.Join(dir, "src", "app")
-	os.MkdirAll(srcApp, 0o755)
-	os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+	require.NoError(t, os.MkdirAll(srcApp, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644))
 
 	srcPages := filepath.Join(dir, "src", "pages", "api")
-	os.MkdirAll(srcPages, 0o755)
-	os.WriteFile(filepath.Join(srcPages, "health.ts"), []byte("export default function handler() {}"), 0o644)
+	require.NoError(t, os.MkdirAll(srcPages, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcPages, "health.ts"), []byte("export default function handler() {}"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -888,20 +888,20 @@ func TestBootability_noConflictWhenSameRoot(t *testing.T) {
 func TestBootability_missingTailwindConfig(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
 		"name": "test",
 		"dependencies": {"next": "^16.0.0"},
 		"scripts": {"dev": "next dev", "build": "next build"}
-	}`), 0o644)
+	}`), 0o644))
 
 	srcApp := filepath.Join(dir, "src", "app")
-	os.MkdirAll(srcApp, 0o755)
-	os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+	require.NoError(t, os.MkdirAll(srcApp, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644))
 
 	stylesDir := filepath.Join(dir, "src", "styles")
-	os.MkdirAll(stylesDir, 0o755)
-	os.WriteFile(filepath.Join(stylesDir, "globals.css"), []byte("@tailwind base;\n@tailwind components;\n@tailwind utilities;\n"), 0o644)
+	require.NoError(t, os.MkdirAll(stylesDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(stylesDir, "globals.css"), []byte("@tailwind base;\n@tailwind components;\n@tailwind utilities;\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -923,13 +923,13 @@ func TestBootability_missingTailwindConfig(t *testing.T) {
 func TestBootability_tailwindConfigPresent(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 
 	stylesDir := filepath.Join(dir, "src", "styles")
-	os.MkdirAll(stylesDir, 0o755)
-	os.WriteFile(filepath.Join(stylesDir, "globals.css"), []byte("@tailwind base;\n@tailwind components;\n@tailwind utilities;\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "tailwind.config.js"), []byte("module.exports = {};\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "postcss.config.js"), []byte("module.exports = {};\n"), 0o644)
+	require.NoError(t, os.MkdirAll(stylesDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(stylesDir, "globals.css"), []byte("@tailwind base;\n@tailwind components;\n@tailwind utilities;\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "tailwind.config.js"), []byte("module.exports = {};\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "postcss.config.js"), []byte("module.exports = {};\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -944,17 +944,17 @@ func TestBootability_tailwindConfigPresent(t *testing.T) {
 func TestBootability_deprecatedNextConfig(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
 		"name": "test",
 		"dependencies": {"next": "^16.0.0"},
 		"scripts": {"dev": "next dev", "build": "next build"}
-	}`), 0o644)
-	os.WriteFile(filepath.Join(dir, "next.config.js"), []byte(`const nextConfig = { experimental: { appDir: true } }; module.exports = nextConfig;`), 0o644)
+	}`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "next.config.js"), []byte(`const nextConfig = { experimental: { appDir: true } }; module.exports = nextConfig;`), 0o644))
 
 	srcApp := filepath.Join(dir, "src", "app")
-	os.MkdirAll(srcApp, 0o755)
-	os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+	require.NoError(t, os.MkdirAll(srcApp, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -972,23 +972,23 @@ func TestBootability_deprecatedNextConfig(t *testing.T) {
 func TestBootability_misconfiguredPathAlias(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
 		"name": "test",
 		"dependencies": {"next": "^16.0.0"},
 		"scripts": {"dev": "next dev", "build": "next build"}
-	}`), 0o644)
-	os.WriteFile(filepath.Join(dir, "tsconfig.json"), []byte(`{
+	}`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "tsconfig.json"), []byte(`{
 		"compilerOptions": {
 			"baseUrl": ".",
 			"paths": { "@/*": ["./*"] }
 		}
-	}`), 0o644)
+	}`), 0o644))
 
 	srcApp := filepath.Join(dir, "src", "app")
-	os.MkdirAll(srcApp, 0o755)
-	os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
-	os.WriteFile(filepath.Join(srcApp, "page.tsx"), []byte("export default function P() { return <div/>; }"), 0o644)
+	require.NoError(t, os.MkdirAll(srcApp, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcApp, "page.tsx"), []byte("export default function P() { return <div/>; }"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -1006,22 +1006,22 @@ func TestBootability_misconfiguredPathAlias(t *testing.T) {
 func TestBootability_correctPathAlias(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{
 		"name": "test",
 		"dependencies": {"next": "^16.0.0"},
 		"scripts": {"dev": "next dev", "build": "next build"}
-	}`), 0o644)
-	os.WriteFile(filepath.Join(dir, "tsconfig.json"), []byte(`{
+	}`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "tsconfig.json"), []byte(`{
 		"compilerOptions": {
 			"baseUrl": ".",
 			"paths": { "@/*": ["./src/*"] }
 		}
-	}`), 0o644)
+	}`), 0o644))
 
 	srcApp := filepath.Join(dir, "src", "app")
-	os.MkdirAll(srcApp, 0o755)
-	os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644)
+	require.NoError(t, os.MkdirAll(srcApp, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcApp, "layout.tsx"), []byte("export default function L({children}) { return <html><body>{children}</body></html>; }"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -1036,8 +1036,8 @@ func TestBootability_correctPathAlias(t *testing.T) {
 func TestScan_missingGitignore(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -1056,9 +1056,9 @@ func TestScan_missingGitignore(t *testing.T) {
 func TestScan_hasGitignore(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
-	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules/\n.next/\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules/\n.next/\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644))
 
 	result, err := Scan(context.Background(), Config{RepoRoot: dir})
 	require.NoError(t, err)
@@ -1073,7 +1073,7 @@ func TestScan_hasGitignore(t *testing.T) {
 func TestUpgrade_preservesUserConfiguredManifestAndPrompts(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".git"), 0o755)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 
 	require.NoError(t, Init(dir, false))
 

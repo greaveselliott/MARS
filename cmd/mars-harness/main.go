@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -999,7 +1000,7 @@ func executeRun(opts runOpts) error {
 	if !ok {
 		msg := fmt.Sprintf("role %q not found in manifest; check .harness/manifest.yaml", opts.roleName)
 		tw.WriteError(msg)
-		return fmt.Errorf(msg)
+		return errors.New(msg)
 	}
 
 	tw.WriteHeader(opts.roleName, role.Model, role.Tools, role.Then)
@@ -2041,14 +2042,4 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 	_ = cmd.Flags().MarkHidden("exit-after-seed")
 
 	return cmd
-}
-
-func placeholderCmd(name, description string) *cobra.Command {
-	return &cobra.Command{
-		Use:   name,
-		Short: description,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("%s: not yet implemented\n", name)
-		},
-	}
 }
