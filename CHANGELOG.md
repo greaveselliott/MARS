@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.3] - 2026-05-03
+<!-- mars-harness-release: version=0.24.3 commit=59f889ea7ed0 -->
+
+### Why This Release Matters
+It improves reliability through work to clear static lint findings in ci.
+
+### Fixes
+- **ci:** Clear static lint findings (59f889e)
+
 ## [0.24.2] - 2026-05-03
 <!-- mars-harness-release: version=0.24.2 commit=571bf7138d6c -->
 
