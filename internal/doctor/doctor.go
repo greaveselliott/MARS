@@ -17,6 +17,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/operatingmodel"
 	"github.com/greaveselliott/mars-harness/internal/planhygiene"
+	"github.com/greaveselliott/mars-harness/internal/roleregistry"
 	"github.com/greaveselliott/mars-harness/internal/updatecheck"
 )
 
@@ -62,6 +63,7 @@ func Run(cfg Config) []CheckResult {
 		checkDiskSpace,
 		checkVersionDrift,
 		checkOperatingModelHealth,
+		checkRoleRegistryHealth,
 		checkActivePlanHygiene,
 	}
 
@@ -116,6 +118,44 @@ func checkActivePlanHygiene(cfg Config) CheckResult {
 		Name:     name,
 		Status:   statusOK,
 		Message:  "active-plan hygiene is clean",
+		Duration: nonZeroDurationSince(start),
+	}
+}
+
+func checkRoleRegistryHealth(cfg Config) CheckResult {
+	start := time.Now()
+	name := "role-registry"
+	if strings.TrimSpace(cfg.RepoPath) == "" {
+		return CheckResult{
+			Name:     name,
+			Status:   statusOK,
+			Message:  "repo not supplied; role-registry health skipped",
+			Duration: nonZeroDurationSince(start),
+		}
+	}
+	report, err := roleregistry.CheckRepo(cfg.RepoPath)
+	if err != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  err.Error(),
+			Duration: nonZeroDurationSince(start),
+			Fix:      "run 'mars-harness init --repo <path>' for new repos, or restore .harness/manifest.yaml before checking role registry",
+		}
+	}
+	if !report.OK() {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  report.Summary(),
+			Duration: nonZeroDurationSince(start),
+			Fix:      report.Remediation(),
+		}
+	}
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  "role registry matches manifest",
 		Duration: nonZeroDurationSince(start),
 	}
 }

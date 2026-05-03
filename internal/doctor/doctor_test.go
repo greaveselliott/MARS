@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,6 +34,7 @@ func TestRun_returnsResults(t *testing.T) {
 	assert.True(t, names["disk-space"])
 	assert.True(t, names["version-drift"])
 	assert.True(t, names["operating-model"])
+	assert.True(t, names["role-registry"])
 	assert.True(t, names["active-plan-hygiene"])
 }
 
@@ -132,6 +134,40 @@ func TestCheckOperatingModelHealth_reportsDrift(t *testing.T) {
 	assert.Equal(t, statusWarn, result.Status)
 	assert.Contains(t, result.Message, "operating model drift")
 	assert.Contains(t, result.Fix, "update harness")
+}
+
+func TestCheckRoleRegistryHealthPassesGeneratedRegistry(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, scanner.Init(dir, false))
+
+	result := checkRoleRegistryHealth(Config{RepoPath: dir})
+	assert.Equal(t, "role-registry", result.Name)
+	assert.Equal(t, statusOK, result.Status)
+	assert.Contains(t, result.Message, "matches manifest")
+}
+
+func TestCheckRoleRegistryHealthReportsDrift(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, scanner.Init(dir, false))
+	require.NoError(t, os.Remove(filepath.Join(dir, "docs", "roles", "ROLES.md")))
+
+	result := checkRoleRegistryHealth(Config{RepoPath: dir})
+	assert.Equal(t, "role-registry", result.Name)
+	assert.Equal(t, statusWarn, result.Status)
+	assert.Contains(t, result.Message, "role registry is missing")
+	assert.Contains(t, result.Fix, "docs/roles/ROLES.md")
+}
+
+func TestCheckRoleRegistryHealthSkipsWithoutRepo(t *testing.T) {
+	t.Parallel()
+	result := checkRoleRegistryHealth(Config{})
+	assert.Equal(t, "role-registry", result.Name)
+	assert.Equal(t, statusOK, result.Status)
+	assert.Contains(t, result.Message, "skipped")
 }
 
 func TestCheckActivePlanHygieneReportsIssue(t *testing.T) {

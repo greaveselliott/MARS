@@ -7,8 +7,9 @@ kind: intervention-debt
 work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: TBD
+evidence_links:
+  - go test ./...
+verified_by: command
 dedupe_key: "public-example"
 source: Mars parity workstream B
 created: 2026-05-03
@@ -54,25 +55,25 @@ guardrails, trust levels, triggers, and score signals apply.
 
 ### Functional
 
-- [ ] A human or agent can find all default roles and their modes in one
+- [x] A human or agent can find all default roles and their modes in one
       checked-in registry.
-- [ ] `mars-harness init` emits the target registry.
-- [ ] Docs-consistency or an equivalent check fails when a default manifest role
+- [x] `mars-harness init` emits the target registry.
+- [x] Docs-consistency or an equivalent check fails when a default manifest role
       is missing from the registry.
-- [ ] `mars-harness doctor --repo <repo>` reports role-registry health.
+- [x] `mars-harness doctor --repo <repo>` reports role-registry health.
 
 ### Edge cases and negative paths
 
-- [ ] Custom target roles are represented without being mistaken for missing
+- [x] Custom target roles are represented without being mistaken for missing
       source defaults.
-- [ ] Optional GitHub triggers are marked optional and are not treated as the
+- [x] Optional GitHub triggers are marked optional and are not treated as the
       default delivery model.
-- [ ] Registry checks produce actionable remediation text.
+- [x] Registry checks produce actionable remediation text.
 
 ### Observability, docs, and regressions
 
-- [ ] Tests cover registry generation, missing-role detection, and doctor
+- [x] Tests cover registry generation, missing-role detection, and doctor
       reporting.
-- [ ] The registry links to relevant design docs instead of duplicating long
+- [x] The registry links to relevant design docs instead of duplicating long
       architecture sections.
-- [ ] Generated target docs remain strict-trunk native.
+- [x] Generated target docs remain strict-trunk native.

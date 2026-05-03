@@ -9,6 +9,7 @@ import (
 
 	"github.com/greaveselliott/mars-harness/internal/buildinfo"
 	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"github.com/greaveselliott/mars-harness/internal/roleregistry"
 	"gopkg.in/yaml.v3"
 )
 
@@ -75,6 +76,7 @@ func Init(repoRoot string, force bool) error {
 		filepath.Join(repoRoot, "docs", "design-docs"),
 		filepath.Join(repoRoot, "docs", "goals"),
 		filepath.Join(repoRoot, "docs", "features"),
+		filepath.Join(repoRoot, "docs", "roles"),
 		filepath.Join(repoRoot, "docs", "references"),
 		filepath.Join(repoRoot, "docs", "reports", "qa"),
 		filepath.Join(repoRoot, "docs", "reports", "security"),
@@ -420,9 +422,9 @@ var defaultHarnessFiles = map[string]string{
   - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
     paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md
   - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, operating model, role domains, role modes, tools, tool availability, tool use cases, tool selection, tool allowlists, tenets, first-class definitions, or contextual definitions
-    paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/harness-operating-model.md, docs/design-docs/tools-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
+    paths: AGENTS.md, docs/roles/ROLES.md, docs/design-docs/harness-glossary.md, docs/design-docs/harness-operating-model.md, docs/design-docs/tools-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
   - when: role routing, role model, domains, modes, schedules, chains, trigger routing, or manifest role behavior
-    paths: .harness/manifest.yaml, docs/design-docs/harness-operating-model.md, docs/design-docs/context-glossary.md
+    paths: .harness/manifest.yaml, docs/roles/ROLES.md, docs/design-docs/harness-operating-model.md, docs/design-docs/context-glossary.md
   - when: planning, ticket creation, in-progress work, blocked work, or completion status
     paths: docs/goals/README.md, docs/goals/active.md, docs/features/README.md, docs/exec-plans/README.md, docs/tickets/README.md
   - when: goals, BDD, feature contracts, planning, feedback, or quality evidence
@@ -473,6 +475,8 @@ var defaultDocs = map[string]string{
 
 Patch notes are generated with ` + "`mars-harness release notes`" + ` from semantic commits on ` + "`main`" + `.
 `,
+
+	roleregistry.RegistryPath: roleregistry.DefaultMarkdown(),
 
 	"docs/QUALITY_SCORE.md": `# Quality Score
 
@@ -570,13 +574,14 @@ would otherwise live only in chat.
 Full glossary: ` + "`docs/design-docs/harness-glossary.md`" + `
 Tools glossary: ` + "`docs/design-docs/tools-glossary.md`" + `
 Role model: ` + "`docs/design-docs/harness-operating-model.md`" + `
+Role registry: ` + "`docs/roles/ROLES.md`" + `
 
 ## Start Here
 
 1. Read ` + "`README.md`" + ` for the product or project goal.
 2. Read ` + "`docs/design-docs/harness-glossary.md`" + ` for shared harness vocabulary and contextual routes.
 3. Read ` + "`docs/design-docs/tools-glossary.md`" + ` before choosing tools or changing role tool allowlists.
-4. Read ` + "`docs/design-docs/harness-operating-model.md`" + ` before changing role domains, modes, triggers, or role behavior.
+4. Read ` + "`docs/design-docs/harness-operating-model.md`" + ` and ` + "`docs/roles/ROLES.md`" + ` before changing role domains, modes, triggers, tools, trust, guardrails, or role behavior.
 5. Read ` + "`docs/design-docs/index.md`" + ` for architectural decisions.
 6. Read ` + "`docs/design-docs/context-glossary.md`" + ` when terminology, domain concepts, or naming are unclear.
 7. Read ` + "`docs/goals/active.md`" + ` and ` + "`docs/goals/README.md`" + ` before changing strategy.
@@ -1174,6 +1179,7 @@ loading every document.
 | Walking skeleton | The thinnest real end-to-end path that makes the next failing BDD scenario pass. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
 | Canonical role domain | One of Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Role mode | A lower-kebab-case purpose inside a role domain, such as ticket-delivery or quality-review. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
+| Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. | ` + "`docs/roles/ROLES.md`" + ` |
 | Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
 | Release | A semantic version plus patch-note entry generated from commits. | ` + "`docs/design-docs/release-versioning.md`" + ` |
 | Harness glossary | Mirrored foundation/deployed harness vocabulary and contextual routing rules. | ` + "`docs/design-docs/harness-glossary.md`" + ` |
@@ -1222,6 +1228,7 @@ harness and deployed harnesses.
 | Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
 | Canonical operating domain | One of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. |
 | Role mode | A lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `. |
+| Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. |
 | Foundation operating model | The operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
 | Deployed operating model | The operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
@@ -1256,11 +1263,12 @@ Generated deployed harness definitions are owned by this repository after init.
 Use ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/roles/`" + `, and the docs under
 ` + "`docs/design-docs/`" + ` to understand local policy before changing role behavior.
 
-### When changing role domains, modes, or trigger routing include this: ` + "`docs/design-docs/harness-operating-model.md`" + `
+### When changing role domains, modes, trigger routing, tools, trust, guardrails, or scoring include this: ` + "`docs/roles/ROLES.md`" + `
 
 Role domains and modes are canonical vocabulary, but explicit manifest role
 keys remain the executable units that own prompts, schedules, tools, trust,
-scoring, and guardrails.
+scoring, and guardrails. Use ` + "`docs/design-docs/harness-operating-model.md`" + `
+for the domain contract and ` + "`docs/roles/ROLES.md`" + ` for checked role inventory.
 
 ### When choosing, creating, or changing tools include this: ` + "`docs/design-docs/tools-glossary.md`" + `
 

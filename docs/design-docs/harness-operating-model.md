@@ -115,10 +115,31 @@ This slice updates generated target defaults with optional domain/mode metadata
 and a seed version of this design decision. Existing targets are not rewritten;
 `upgrade` still fills only missing defaults.
 
+## AD-085: Checked Role Registry
+
+**Status:** Accepted
+**Date:** 2026-05-03
+**Owner:** Mars Harness maintainers
+
+Mars Harness keeps `docs/roles/ROLES.md` as the checked role inventory for the
+foundation harness and generated target harnesses. The registry records each
+manifest role's origin, canonical domain, mode, trigger sources, schedule,
+tools, trust level, guardrails, model routing, scoring signals, and escalation
+behavior.
+
+The registry links back to this operating-model decision and the tools glossary
+instead of duplicating long architecture sections. Runtime truth remains in
+`.harness/manifest.yaml`; the registry is the human and agent inventory that
+must stay consistent with that runtime surface.
+
+`mars-harness init` emits the target registry. `mars-harness doctor --repo`
+checks the registry against the target manifest and reports actionable drift,
+including custom target roles that need `Origin` set to `custom`. Optional
+GitHub webhook triggers must be marked optional so compatibility repair inputs
+do not replace the schedule-and-chain strict-trunk delivery model.
+
 Follow-up work remains:
 
-- `MH-043` should produce a checked role registry that reports manifest roles,
-  domain, mode, trigger, tools, guardrails, trust, and scoring signals.
 - `MH-047` should add native payload-mode routing to jobs and traces where the
   runtime needs more than static manifest metadata.
 
@@ -126,7 +147,7 @@ Follow-up work remains:
 
 | Failure mode | Mitigation |
 | --- | --- |
-| Domain names become decorative prose | Generated manifests carry `domain` and `mode`; the role registry follow-up will check them. |
+| Domain names become decorative prose | Generated manifests carry `domain` and `mode`; `docs/roles/ROLES.md` and doctor role-registry checks verify them. |
 | Role sprawl returns under new names | Prefer new modes inside existing domains unless a new explicit role needs different prompts, tools, schedules, or trust. |
 | A mode hides unsafe authority | Tool, trust, scoring, and guardrail policy remain attached to explicit role execution. |
 | Existing bundles break | Domain and mode fields are optional and ignored by older manifests. |
