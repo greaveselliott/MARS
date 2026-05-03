@@ -13,14 +13,15 @@ import (
 )
 
 var mutatingTools = map[string]bool{
-	"file_write":       true,
-	"shell_exec":       true,
-	"mars_harness_cli": true,
-	"git_commit":       true,
-	"git_push":         true,
-	"record_decision":  true,
-	"ticket_create":    true,
-	"tool_create":      true,
+	"file_write":          true,
+	"shell_exec":          true,
+	"mars_harness_cli":    true,
+	"git_commit":          true,
+	"git_push":            true,
+	"record_decision":     true,
+	"ticket_create":       true,
+	"tool_create":         true,
+	"release_orchestrate": true,
 }
 
 func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMessage) error {

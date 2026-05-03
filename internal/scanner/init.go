@@ -301,14 +301,14 @@ roles:
     schedule: "0 20 * * 0"
     then: [cto-weekly]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
 
   coo:
     prompt: roles/coo.md
     model: reasoning
     then: [engineer]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, git_status, git_commit, git_push]
+    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, task_trace_summarize, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
   cto-weekly:
@@ -317,7 +317,7 @@ roles:
     schedule: "0 21 * * 0"
     then: [coo]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, architecture_audit, harness_doctrine_sync, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -327,7 +327,7 @@ roles:
     then: [qa, engineer, dogfood]
     idle_then: [ceo, janitor]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -336,7 +336,7 @@ roles:
     max_turns: 20
     then: [security]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, grep, record_decision]
+    tools: [file_read, grep, record_decision, architecture_audit, harness_doctrine_sync, tool_inventory_audit]
 
   security:
     prompt: roles/security.md
@@ -361,7 +361,7 @@ roles:
     model: reasoning
     schedule: "0 8 * * 1"
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, release_orchestrate, github_release_status, git_release_guard, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
   dogfood:
@@ -370,7 +370,7 @@ roles:
     schedule: "0 10 * * 1-5"
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -380,7 +380,7 @@ roles:
       - workflow_run.conclusion == "failure"
     then: [qa]
     knowledge: [knowledge/context-glossary.yaml]
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, architecture_audit, harness_doctrine_sync, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Backlog entropy management ─────────────────────────
   janitor:
@@ -533,7 +533,8 @@ would otherwise live only in chat.
 - **Deployed operating model** — the operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools.
+- **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level ` + "`AGENTS.md`" + `.
@@ -819,6 +820,7 @@ Architectural decisions and design documents for this project.
 |----|----------|------|--------|
 | AD-074 | BDD-led goal-driven walking-skeleton delivery is the canonical operating model. | 2026-05-02 | Accepted |
 | AD-076 | Harness glossary definitions are mirrored first-class context in foundation and deployed harnesses. | 2026-05-03 | Accepted |
+| AD-082 | Repeated, risky, validation-heavy, or likely-to-recur processes should become formalized tools. | 2026-05-03 | Accepted |
 `,
 
 	"docs/design-docs/delivery-operating-model.md": `# AD-074: BDD-Led Goal-Driven Walking-Skeleton Delivery
@@ -853,6 +855,14 @@ current workflows. If a change alters how work moves between goals, BDD, plans,
 tickets, roles, evidence, release, scoring, or self-improvement, update the
 affected artifacts, generated defaults, role prompts, routes, and tests in the
 same task.
+
+Repeated useful process becomes a formalized tool. When agents or humans use a
+multi-step process that is likely to recur, is risky to perform manually, needs
+consistent validation, crosses source and deployed harness boundaries, or
+requires exact command ordering, create or improve a first-class tool for it.
+Mirror the tool when the process applies to both foundation and deployed
+harnesses, document it in the tools glossary, add generated target guidance and
+tests when appropriate, and expose it only to roles that should use it.
 
 ## Consequences
 
@@ -1108,8 +1118,9 @@ harness and deployed harnesses.
 | Deployed operating model | The operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, and git tools. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
+| Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
 | Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
 | First-class harness definition | Context that should always be included in the top-level ` + "`AGENTS.md`" + `. |
 | Contextual harness definition | Situational context routed through the harness glossary with the form: ` + "`When doing X include this: <path to document.md>`" + `. |
@@ -1199,6 +1210,13 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
 | ` + "`tool_create`" + ` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
+| ` + "`release_orchestrate`" + ` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with ` + "`mars_harness_cli`" + ` and git tools. |
+| ` + "`github_release_status`" + ` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
+| ` + "`architecture_audit`" + ` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
+| ` + "`harness_doctrine_sync`" + ` | Check mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency. | Non-mutating. Use when changing operating doctrine or mirrored definitions. |
+| ` + "`git_release_guard`" + ` | Check git, tag, version, and release-note invariants around the release flow. | Non-mutating. Use before and after release-note generation. |
+| ` + "`tool_inventory_audit`" + ` | Compare registered tools, mutating policy, tools glossary, generated target guidance, and role exposure. | Non-mutating. Use whenever tools are added, removed, renamed, or reclassified. |
+| ` + "`task_trace_summarize`" + ` | Summarize a recent work trace and identify repeated manual processes that should become formal tools. | Non-mutating. Use after multi-step work or recurring manual recovery. |
 | ` + "`git_status`" + ` | Inspect repository state. | Non-mutating. Use before commits or risky operations. |
 | ` + "`git_diff`" + ` | Inspect unstaged or staged changes. | Non-mutating. Use before review, commit, and release notes. |
 | ` + "`git_commit`" + ` | Stage files and create a semantic commit. | Mutating. Requires meaningful diff and strict-trunk discipline. |
@@ -1208,10 +1226,16 @@ tools are added, removed, renamed, or materially change behavior.
 
 - Need Mars Harness behavior, versioning, setup, release, score, trust, or target
   harness lifecycle operations: use ` + "`mars_harness_cli`" + `.
+- Need to run or prepare the whole release ritual: use ` + "`release_orchestrate`" + `,
+  ` + "`git_release_guard`" + `, and ` + "`github_release_status`" + ` before mutating state.
 - Need a durable repo-owned note: use ` + "`record_decision`" + `.
 - Need backlog or intervention-debt work item creation: use ` + "`ticket_create`" + `.
 - Need a new deterministic capability: use ` + "`tool_create`" + `, then finish the code
   and tests manually.
+- Need to decide whether repeated work deserves a tool: use
+  ` + "`task_trace_summarize`" + `, then create or update a ticket or tool.
+- Need to keep documentation, doctrine, and tools mirrored: use
+  ` + "`architecture_audit`" + `, ` + "`harness_doctrine_sync`" + `, and ` + "`tool_inventory_audit`" + `.
 - Need ordinary repository inspection: use ` + "`file_search`" + `, ` + "`grep`" + `, ` + "`file_read`" + `,
   ` + "`git_status`" + `, or ` + "`git_diff`" + `.
 - Need ordinary repository mutation: use ` + "`file_write`" + `, ` + "`git_commit`" + `, and
@@ -1280,6 +1304,14 @@ files first.
 Every newly created tool must extend the tools glossary in the same change that
 implements or exposes it. Tool removals, renames, and material behavior changes
 must update the same glossary, generated target defaults, and tests.
+
+### AD-082: Repeated Process Becomes Formal Tool
+
+When a process is repeated, risky, validation-heavy, likely to recur, or spans
+foundation and deployed harness boundaries, it should become a formalized tool
+instead of remaining ad hoc chat memory. Mirrored formal tools must be listed in
+the tools glossary, exposed through generated target defaults where useful, and
+covered by tests before roles depend on them.
 
 ## Maintenance Rules
 

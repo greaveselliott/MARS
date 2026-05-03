@@ -197,6 +197,9 @@ Current mirrored built-in tools are:
 - `record_decision`
 - `ticket_create`
 - `tool_create`
+- `release_orchestrate`, `github_release_status`, `git_release_guard`
+- `architecture_audit`, `harness_doctrine_sync`, `tool_inventory_audit`
+- `task_trace_summarize`
 - `git_status`, `git_diff`, `git_commit`, `git_push`
 
 `docs/design-docs/tools-glossary.md` is first-class mirrored context for tool
@@ -339,6 +342,11 @@ roles improve the harness only inside trust and safety limits.
 
 No feature is shipped just because a ticket moved. Feature truth lives in BDD
 scenario evidence.
+
+Repeated, risky, validation-heavy, or likely-to-recur manual processes should
+be formalized as tools. The tool is mirrored when it applies to both foundation
+and deployed harnesses, documented in the tools glossary, added to generated
+target defaults when appropriate, and tested before roles depend on it.
 
 ## Data Flow
 

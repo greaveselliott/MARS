@@ -67,6 +67,14 @@ Every newly created tool must extend the tools glossary in the same change that
 implements or exposes it. Tool removals, renames, and material behavior changes
 must update the same glossary, generated target defaults, and tests.
 
+### AD-082: Repeated Process Becomes Formal Tool
+
+When a process is repeated, risky, validation-heavy, likely to recur, or spans
+foundation and deployed harness boundaries, it should become a formalized tool
+instead of remaining ad hoc chat memory. Mirrored formal tools must be listed in
+the tools glossary, exposed through generated target defaults where useful, and
+covered by tests before roles depend on them.
+
 ### AD-036: Workflow Contracts Belong In The Repo
 
 Symphony's `WORKFLOW.md` idea maps to Mars Harness as repo-owned workflow artifacts:

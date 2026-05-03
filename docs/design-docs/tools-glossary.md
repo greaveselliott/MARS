@@ -37,6 +37,13 @@ tools are added, removed, renamed, or materially change behavior.
 | `record_decision` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | `ticket_create` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
 | `tool_create` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
+| `release_orchestrate` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with `mars_harness_cli` and git tools. |
+| `github_release_status` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
+| `architecture_audit` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
+| `harness_doctrine_sync` | Check mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency. | Non-mutating. Use when changing operating doctrine or mirrored definitions. |
+| `git_release_guard` | Check git, tag, version, and release-note invariants around the release flow. | Non-mutating. Use before and after release-note generation. |
+| `tool_inventory_audit` | Compare registered tools, mutating policy, tools glossary, generated target guidance, and role exposure. | Non-mutating. Use whenever tools are added, removed, renamed, or reclassified. |
+| `task_trace_summarize` | Summarize a recent work trace and identify repeated manual processes that should become formal tools. | Non-mutating. Use after multi-step work or recurring manual recovery. |
 | `git_status` | Inspect repository state. | Non-mutating. Use before commits or risky operations. |
 | `git_diff` | Inspect unstaged or staged changes. | Non-mutating. Use before review, commit, and release notes. |
 | `git_commit` | Stage files and create a semantic commit. | Mutating. Requires meaningful diff and strict-trunk discipline. |
@@ -46,10 +53,16 @@ tools are added, removed, renamed, or materially change behavior.
 
 - Need Mars Harness behavior, versioning, setup, release, score, trust, or target
   harness lifecycle operations: use `mars_harness_cli`.
+- Need to run or prepare the whole release ritual: use `release_orchestrate`,
+  `git_release_guard`, and `github_release_status` before mutating state.
 - Need a durable repo-owned note: use `record_decision`.
 - Need backlog or intervention-debt work item creation: use `ticket_create`.
 - Need a new deterministic capability: use `tool_create`, then finish the code
   and tests manually.
+- Need to decide whether repeated work deserves a tool: use
+  `task_trace_summarize`, then create or update a ticket or tool.
+- Need to keep documentation, doctrine, and tools mirrored: use
+  `architecture_audit`, `harness_doctrine_sync`, and `tool_inventory_audit`.
 - Need ordinary repository inspection: use `file_search`, `grep`, `file_read`,
   `git_status`, or `git_diff`.
 - Need ordinary repository mutation: use `file_write`, `git_commit`, and

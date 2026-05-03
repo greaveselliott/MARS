@@ -57,6 +57,17 @@ explicitly descopes, supersedes, or invalidates them. Enabler work may complete
 without shipping a feature, but it must be labelled as enabler work and must
 not be represented as shipped feature value.
 
+Repeated useful process becomes a formalized tool. When agents or humans use a
+multi-step process that is likely to recur, is risky to perform manually, needs
+consistent validation, crosses source and deployed harness boundaries, or
+requires exact command ordering, the harness should create or improve a
+first-class tool for it. The tool must be mirrored when the process applies to
+both foundation and deployed harnesses, documented in the tools glossary, added
+to generated target defaults when appropriate, covered by tests, and wired into
+role allowlists only where the role should use it. Until the tool exists, the
+process should be captured as a ticket or decision rather than left only in
+chat.
+
 ## Artifact Ownership
 
 Goals live in `docs/goals/`. Active goals may come from user chat, product
