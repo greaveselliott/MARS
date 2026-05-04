@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.15] - 2026-05-04
+<!-- mars-harness-release: version=0.24.15 commit=eb7e43cbf37e -->
+
+### Why This Release Matters
+It improves reliability through work to disable default file-count blast radius cap in safety.
+
+### Fixes
+- **safety:** Disable default file-count blast radius cap (eb7e43c)
+
 ## [0.24.14] - 2026-05-04
 <!-- mars-harness-release: version=0.24.14 commit=1bf62cd85b50 -->
 
