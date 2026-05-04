@@ -37,6 +37,10 @@ would otherwise live only in chat.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through `tool_create`; bypassing it requires a prior `record_decision` entry and design-doc rationale.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
+- **Skills** — compact reusable workflow instructions stored in `.harness/skills/<name>/SKILL.md` that teach agents how to perform recurring procedures; skills guide behavior but do not grant tool authority.
+- **Universal skills** — skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable Mars Harness operating doctrine.
+- **Foundation skills** — skills used by agents operating on `mars-harness` itself to evolve, validate, release, or maintain the software factory.
+- **Deployed skills** — skills stored in a target project's `.harness/skills/` directory and used by that deployed harness to capture project-specific reusable procedures.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level `AGENTS.md`.
 - **Contextual harness definition** — situational context routed through the harness glossary with the form: `When doing X include this: <path to document.md>`.

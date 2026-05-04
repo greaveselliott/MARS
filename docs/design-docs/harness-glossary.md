@@ -42,6 +42,10 @@ harness and deployed harnesses.
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
 | Tool creation path | New built-in tools must originate through `tool_create`; bypassing it requires a prior `record_decision` entry and design-doc rationale. |
+| Skills | Compact reusable workflow instructions stored in `.harness/skills/<name>/SKILL.md` that teach agents how to perform recurring procedures; skills guide behavior but do not grant tool authority. |
+| Universal skills | Skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable Mars Harness operating doctrine. |
+| Foundation skills | Skills used by agents operating on `mars-harness` itself to evolve, validate, release, or maintain the software factory. |
+| Deployed skills | Skills stored in a target project's `.harness/skills/` directory and used by that deployed harness to capture project-specific reusable procedures. |
 | Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
 | First-class harness definition | Context that should always be included in the top-level `AGENTS.md`. |
 | Contextual harness definition | Situational context routed through the harness glossary with the form: `When doing X include this: <path to document.md>`. |
