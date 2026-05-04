@@ -22,6 +22,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 5. F-001-S005 - Release notes and quality score distinguish shipped scenarios from enabler work.
 6. F-001-S006 - Telemetry can create or update goals/observations from structured evidence.
 7. F-001-S007 - Business logic is documented step by step in feature contracts.
+8. F-001-S008 - Code changes declare associated documentation and keep it current.
 
 ## Scenarios
 
@@ -67,11 +68,18 @@ Given business logic changes through a product rule, workflow branch, state tran
 When a planner, engineer, reviewer, or maintainer records or implements that behavior
 Then the matching `docs/features/F-NNN-*.md` contract documents the behavior step by step with Business Logic, Step-By-Step Behavior, Given/When/Then scenarios, and evidence before the feature is claimed complete
 
+### F-001-S008: No Stale Documentation
+
+Given code is created or materially changed
+When an agent prepares the change for review or commit
+Then the changed code carries a top-of-file `MarsDocSync` metadata block listing associated documentation, and those docs are updated in the same change or explicitly checked as still current
+
 ## Out of Scope
 
 - Custom Gherkin parsing.
 - Fully autonomous goal scoring and weighting.
 - Overwriting user-owned target docs during update.
+- Retrofitting `MarsDocSync` metadata onto every historical code file in one sweep.
 
 ## Descoped Scenarios
 
@@ -86,3 +94,4 @@ None.
 - F-001-S005: docs-consistency checks for `docs/QUALITY_SCORE.md` and `docs/tickets/README.md`
 - F-001-S006: `go test ./internal/telemetry -run TestRecordGoalFromProposal`
 - F-001-S007: `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields`
+- F-001-S008: `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata`

@@ -1,3 +1,11 @@
+/*
+MarsDocSync:
+- AGENTS.md
+- docs/design-docs/delivery-operating-model.md
+- docs/design-docs/harness-glossary.md
+- docs/features/README.md
+- docs/features/F-001-delivery-operating-model.md
+*/
 package scanner
 
 import (
@@ -577,6 +585,8 @@ would otherwise live only in chat.
 - **Operating model** — the documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops.
 - **BDD feature contract** — a Markdown feature artifact in ` + "`docs/features/`" + ` that defines feature completeness, business logic, step-by-step behavior, scenarios, and evidence.
 - **Business logic** — product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, release classification, and user-visible outcomes; business logic is documented step by step in BDD feature contracts before or alongside implementation.
+- **No stale documentation** — all durable docs are updated as behavior changes; code carries top-of-file ` + "`MarsDocSync`" + ` metadata listing associated documentation so reviewers and automation know which docs must be checked.
+- **MarsDocSync block** — a top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and containing repo-relative documentation paths, usually feature contracts, design docs, product specs, ticket guidance, or README surfaces touched by that code.
 - **Canonical operating domain** — one of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator.
 - **Role mode** — a lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `.
 - **Foundation operating model** — the operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
@@ -627,6 +637,7 @@ Role registry: ` + "`docs/roles/ROLES.md`" + `
   tickets, or delivery work until the active exec plan names the current slice.
 - BDD feature contracts define feature completeness; walking skeleton is the implementation strategy: make the next failing scenario pass through the thinnest real end-to-end path.
 - Business logic is first-class BDD: every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, or user-visible outcome must be documented step by step in ` + "`docs/features/`" + ` before or alongside implementation.
+- No stale documentation: when writing or materially changing code, add or update the top-of-file ` + "`MarsDocSync`" + ` comment block listing associated docs, then update those docs in the same commit or record why no doc change was needed.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
 - Prefer eligible in-progress tickets before backlog work; a ticket is eligible when it has no meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata.
 - Complete one coherent step at a time.
@@ -655,6 +666,9 @@ Non-obvious architecture, workflow, guardrail, or trade-off decisions belong in
 Product features and user-visible behavior changes must be documented with
 the reason why, either in a product spec if this repo has one or in the owning
 design doc. Do not leave architecture or product intent only in chat.
+Code changes must also keep docs current through top-of-file ` + "`MarsDocSync`" + `
+metadata. Each new or materially changed code file lists associated docs; those
+docs are updated in the same change or explicitly checked as still current.
 
 ## Conversation Record Discipline
 
@@ -760,6 +774,7 @@ Source: current-operating-plan.md — core gameplay mechanics (Week 1).
 
 ### Observability, docs, and regressions
 - [ ] Docs or regressions to watch for
+- [ ] New or materially changed code files include ` + "`MarsDocSync`" + ` metadata listing docs reviewed for this ticket
 ` + "```" + `
 
 ## Naming Convention
@@ -797,6 +812,12 @@ ticket changes product rules, workflow branches, state transitions,
 validations, permissions, scoring/trust behavior, routing behavior, or
 user-visible outcomes, the matching ` + "`docs/features/F-NNN-*.md`" + ` contract must
 include the step-by-step BDD behavior before the ticket moves to ` + "`done/`" + `.
+
+Tickets must not be the only stale-doc checkpoint either. If code changes for a
+ticket affect behavior, public surface, workflow, architecture, generated
+output, or operating doctrine, the changed code files should carry top-of-file
+` + "`MarsDocSync`" + ` metadata listing the docs reviewed. Update those docs before
+moving the ticket to ` + "`done/`" + `, or record why they remain current.
 
 Enabler, research, docs, and intervention-debt tickets use
 ` + "`end_to_end_evidence: not_applicable`" + ` and must not claim a shipped feature.
@@ -870,6 +891,9 @@ plan pointer, fix the exec plan first.
 - All business logic must be documented step by step in ` + "`docs/features/`" + `,
   including rules, branches, state transitions, validations, permissions,
   scoring/trust behavior, routing behavior, and user-visible outcomes.
+- No stale documentation: implementation slices identify associated docs with
+  top-of-file ` + "`MarsDocSync`" + ` metadata, and plans or tickets record whether those
+  docs were updated or explicitly checked as current.
 - The active plan schedule is the ordered list of failing BDD scenarios.
 - Feature tickets are created only from the current failing scenario or scenario group.
 - A feature is not shipped until in-scope BDD scenarios pass or are explicitly descoped by the CEO.
@@ -990,6 +1014,7 @@ Architectural decisions and design documents for this project.
 | AD-086 | Significant conversations must become durable repo artifacts when they change plans, decisions, investigations, quality evidence, or completed-work state. | 2026-05-03 | Accepted |
 | AD-087 | Universal mirrored tools are exposed through ` + "`mars-harness mcp serve`" + ` for MCP-compatible clients and local harness agents without depending on a model provider. | 2026-05-03 | Accepted |
 | AD-097 | Business logic is first-class BDD and belongs step by step under ` + "`docs/features/`" + `. | 2026-05-04 | Accepted |
+| AD-098 | No stale documentation: code changes carry top-of-file ` + "`MarsDocSync`" + ` metadata listing associated docs, and those docs are updated or explicitly checked as current. | 2026-05-04 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1135,6 +1160,13 @@ is the durable source of truth. Feature contracts must include ` + "`Business Lo
 ` + "`Step-By-Step Behavior`" + `, scenario schedule, Given/When/Then scenarios, and
 evidence.
 
+No stale documentation is a universal operating-model rule. All durable docs
+are live system artifacts. When code is created or materially changed, the file
+must carry a top-of-file ` + "`MarsDocSync`" + ` metadata comment block listing the
+repo-relative docs that describe, constrain, or explain that code. The same
+change updates those docs, or records in ticket, plan, review, or commit
+evidence why the listed docs were checked and did not need content changes.
+
 Planning order is strict: active exec plan first, then feature contract, then
 tickets, then implementation delivery. A project that has feature docs or
 tickets without a current plan has lost the control plane; repair the plan
@@ -1186,6 +1218,7 @@ exception context.
 | --- | --- |
 | BDD becomes decorative prose | Each feature needs at least one integration/E2E test or command mapped to scenario IDs. |
 | Business logic hides in code or tickets | Require ` + "`Business Logic`" + ` and ` + "`Step-By-Step Behavior`" + ` sections in feature contracts and update them whenever behavior changes. |
+| Documentation drifts stale from code | Require top-of-file ` + "`MarsDocSync`" + ` metadata on new or materially changed code files and review the listed docs in the same change. |
 | Walking skeleton becomes scaffold theater | The slice must pass through a real user, CLI, agent, tool, ticket, or evidence path. |
 | Half-features are marked done | Feature truth lives in BDD scenario state, not ticket count. |
 | Enabler work is misrepresented as shipped value | Tickets, release notes, and quality score use ` + "`work_type`" + ` and scenario evidence. |
@@ -1202,6 +1235,29 @@ validations, permissions, scoring and trust behavior, queue or orchestration
 routing, release classification, and user-visible outcomes. Tickets and code
 may reference or implement this behavior, but they are not the durable source
 of truth.
+
+## AD-098: No Stale Documentation
+
+All documentation is kept current as the system changes. Every newly created or
+materially changed code file includes a top-of-file ` + "`MarsDocSync`" + ` metadata
+comment block that lists repo-relative documentation paths associated with
+that code.
+
+The canonical shape is:
+
+` + "```" + `text
+/*
+MarsDocSync:
+- docs/features/F-001-delivery-operating-model.md
+- docs/design-docs/delivery-operating-model.md
+*/
+` + "```" + `
+
+The listed docs are the review checklist for the change. If behavior, public
+surface, workflow, architecture, generated output, or operating doctrine
+changes, the same commit updates the relevant docs. If the docs are still
+correct, the ticket, plan, review, or commit evidence says they were checked
+and remain current.
 `,
 
 	"docs/goals/README.md": `# Goals
@@ -1305,6 +1361,15 @@ feature contract is the source of truth for business behavior. If required
 behavior is missing or stale in ` + "`docs/features/`" + `, update the feature contract
 or return to planning before expanding implementation.
 
+## No Stale Documentation
+
+All documentation is live. When code is written or materially changed, the code
+file should carry a top-of-file ` + "`MarsDocSync`" + ` comment block listing the
+feature contracts, design docs, product specs, README surfaces, ticket guidance,
+or other durable docs associated with that behavior. The listed docs must be
+reviewed and updated in the same change, or the ticket, plan, review, or commit
+evidence must state why they remain current.
+
 ## Required Fields
 
 - Feature ID
@@ -1325,6 +1390,8 @@ or return to planning before expanding implementation.
 - BDD defines the full feature before implementation.
 - Business logic is documented step by step under the feature contract, not
   only in tickets, code comments, or release notes.
+- Code files that implement or constrain behavior carry ` + "`MarsDocSync`" + ` metadata
+  pointing at the docs that must stay current with that behavior.
 - Walking skeleton is the implementation strategy, not the feature definition.
 - The schedule is the ordered list of failing scenarios.
 - No feature ships until in-scope scenarios pass or are explicitly descoped.
@@ -1359,6 +1426,7 @@ their evidence before claiming the feature is complete.
 2. F-001-S002 — feature ticket requires scenario evidence before done
 3. F-001-S003 — quality and release notes distinguish shipped scenarios from enabler work
 4. F-001-S004 — business logic is documented step by step in feature contracts
+5. F-001-S005 — code changes declare associated documentation and keep it current
 
 ## Scenarios
 
@@ -1386,10 +1454,17 @@ Given business logic changes through a product rule, workflow branch, state tran
 When a planner, engineer, reviewer, or maintainer records or implements that behavior
 Then the matching ` + "`docs/features/F-NNN-*.md`" + ` contract documents the behavior step by step with Business Logic, Step-By-Step Behavior, Given/When/Then scenarios, and evidence before the feature is claimed complete
 
+### F-001-S005: No Stale Documentation
+
+Given code is created or materially changed
+When an agent prepares the change for review or commit
+Then the changed code carries a top-of-file ` + "`MarsDocSync`" + ` metadata block listing associated documentation, and those docs are updated in the same change or explicitly checked as still current
+
 ## Out of Scope
 
 - A custom Gherkin parser
 - Automatic scenario execution beyond explicit integration/E2E tests and evidence commands
+- Retrofitting ` + "`MarsDocSync`" + ` metadata onto every historical code file in one sweep
 
 ## Descoped Scenarios
 
@@ -1399,6 +1474,7 @@ None.
 
 - Pending target-specific integration/E2E commands.
 - F-001-S004: ` + "`go test ./internal/scanner -run TestInit_success`" + ` verifies generated feature contracts include first-class business-logic sections.
+- F-001-S005: ` + "`go test ./internal/scanner -run TestInit_success`" + ` verifies generated doctrine includes no-stale-documentation metadata guidance.
 `,
 
 	"docs/design-docs/context-glossary.md": `# Context Glossary
@@ -1428,6 +1504,8 @@ loading every document.
 | Goal | Outcome and priority signal used by the CEO to align the active plan. | ` + "`docs/goals/README.md`" + `, ` + "`docs/goals/active.md`" + ` |
 | BDD feature contract | Markdown Given/When/Then contract that defines feature completeness. | ` + "`docs/features/README.md`" + ` |
 | Business logic | Product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, and user-visible outcomes; document these step by step in feature contracts. | ` + "`docs/features/README.md`" + ` |
+| No stale documentation | Code and docs change together; code lists associated docs in top-of-file ` + "`MarsDocSync`" + ` metadata so reviewers know what must stay current. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
+| MarsDocSync block | Top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and listing repo-relative documentation paths. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
 | Walking skeleton | The thinnest real end-to-end path that makes the next failing BDD scenario pass. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
 | Canonical role domain | One of Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Role mode | A lower-kebab-case purpose inside a role domain, such as ticket-delivery or quality-review. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
@@ -1481,6 +1559,8 @@ harness and deployed harnesses.
 | Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
 | BDD feature contract | A Markdown feature artifact in ` + "`docs/features/`" + ` that defines feature completeness, business logic, step-by-step behavior, scenarios, and evidence. |
 | Business logic | Product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, release classification, and user-visible outcomes; business logic is documented step by step in BDD feature contracts before or alongside implementation. |
+| No stale documentation | All durable docs are updated as behavior changes; code carries top-of-file ` + "`MarsDocSync`" + ` metadata listing associated documentation so reviewers and automation know which docs must be checked. |
+| MarsDocSync block | A top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and containing repo-relative documentation paths, usually feature contracts, design docs, product specs, ticket guidance, or README surfaces touched by that code. |
 | Canonical operating domain | One of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. |
 | Role mode | A lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `. |
 | Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. |
@@ -2236,6 +2316,8 @@ TASKS:
    If you identify architectural decisions not yet recorded:
    - Create or update docs in docs/design-docs/
    - Update docs/design-docs/index.md with new entries
+   - If code files carry ` + "`MarsDocSync`" + ` metadata for the changed architecture,
+     review those docs and keep the metadata paths current
    - Design doc format:
 
      # [Decision Title]
@@ -2317,6 +2399,10 @@ STANDARD:
   ` + "`docs/features/F-NNN-*.md`" + ` contract: rules, branches, state transitions,
   validations, permissions, scoring/trust behavior, routing, and user-visible
   outcomes cannot live only in code or ticket text
+- No stale documentation: every new or materially changed code file must carry
+  a top-of-file ` + "`MarsDocSync`" + ` metadata comment block listing associated docs.
+  Review and update those docs in the same change, or record why they remain
+  current before committing
 - Follow the project's existing code style and conventions
 - Handle errors explicitly, no magic numbers, use named constants
 - COMMIT AFTER EVERY SEMANTIC CHANGE — this is non-negotiable. Use the
@@ -2386,7 +2472,15 @@ IMPLEMENTATION:
    - Cover happy path AND edge cases listed in the ticket
    - Run tests to verify they pass
 
-5. BUILD VERIFICATION (mandatory before closing any ticket)
+5. CHECK DOCUMENTATION SYNC
+   - For every new or materially changed code file, add or update its
+     top-of-file ` + "`MarsDocSync`" + ` block with associated docs
+   - Update the listed docs when behavior, public surface, workflow,
+     architecture, generated output, or operating doctrine changed
+   - If the listed docs were checked and remain accurate, mention that in the
+     ticket evidence or commit context
+
+6. BUILD VERIFICATION (mandatory before closing any ticket)
    After implementation, verify the project actually builds and starts:
    a) Read .harness/learnings.yaml for the framework and package manager
    b) Run the build command:
@@ -2407,7 +2501,7 @@ IMPLEMENTATION:
    e) If the project has no build or dev script, that is itself a bug — add one.
    Record any fixes via record_decision so future agents know the convention.
 
-6. MOVE TICKET TO DONE
+7. MOVE TICKET TO DONE
    Before moving a feature ticket, update its frontmatter/body with:
    - non-empty ` + "`bdd_scenarios`" + `
    - ` + "`end_to_end_evidence: required`" + `
@@ -2418,10 +2512,10 @@ IMPLEMENTATION:
    git_commit: message "chore(tickets): move T-NNN to done"
    git_push
 
-7. FINAL VERIFICATION
+8. FINAL VERIFICATION
    Run the full test suite. Ensure everything passes.
 
-8. DISPATCH MODE
+9. DISPATCH MODE
    If the manifest has ` + "`orchestration_mode: dispatch`" + `, call job_disposition_record before
    finishing. Use:
    - completed when the ticket moved to done/ with evidence
@@ -2534,6 +2628,10 @@ REVIEW CHECKLIST:
    - Are design docs updated if patterns changed?
    - Are ` + "`docs/features/`" + ` Business Logic and Step-By-Step Behavior sections
      updated when business behavior changed?
+   - Do new or materially changed code files include top-of-file ` + "`MarsDocSync`" + `
+     metadata listing associated docs?
+   - Were the docs listed by ` + "`MarsDocSync`" + ` updated, or did the review evidence
+     state why they remain current?
    - Are goal, feature, ticket, and quality evidence links updated when feature status changed?
 
 OUTPUT:

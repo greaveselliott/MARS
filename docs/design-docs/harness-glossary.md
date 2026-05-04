@@ -31,6 +31,8 @@ harness and deployed harnesses.
 | Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
 | BDD feature contract | A Markdown feature artifact in `docs/features/` that defines feature completeness, business logic, step-by-step behavior, scenarios, and evidence. |
 | Business logic | Product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, release classification, and user-visible outcomes; business logic is documented step by step in BDD feature contracts before or alongside implementation. |
+| No stale documentation | All durable docs are updated as behavior changes; code carries top-of-file `MarsDocSync` metadata listing associated documentation so reviewers and automation know which docs must be checked. |
+| MarsDocSync block | A top-of-file code comment block beginning with `MarsDocSync:` and containing repo-relative documentation paths, usually feature contracts, design docs, product specs, ticket guidance, or README surfaces touched by that code. |
 | Canonical operating domain | One of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. |
 | Role mode | A lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as `ticket-delivery`, `quality-review`, or `pipeline-repair`. |
 | Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. |

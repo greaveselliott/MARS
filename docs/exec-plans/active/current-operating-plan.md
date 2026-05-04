@@ -8,9 +8,9 @@
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-002, F-006
 **Hypothesis:** Zero-config CLI availability removes the first-run `Unknown command: mars-harness` failure mode while the BDD-led operating loop keeps completion evidence-based, and native Orchestrator surveys prevent unattended failure states from silently stalling work.
-**Success Evidence:** `make install`, `mars-harness setup`, and `mars-harness update tool` configure supported user shell profiles idempotently, F-001 remains passing, and `F-006-S009` has survey-to-queue tests for stale tickets, failed checks, no-op outcomes, telemetry patterns, low scores, queue ownership, payload modes, concurrency groups, daily caps, and stuck-job watchdog behavior.
+**Success Evidence:** `make install`, `mars-harness setup`, and `mars-harness update tool` configure supported user shell profiles idempotently, F-001 remains passing including first-class BDD and no-stale-documentation checks, and `F-006-S009` has survey-to-queue tests for stale tickets, failed checks, no-op outcomes, telemetry patterns, low scores, queue ownership, payload modes, concurrency groups, daily caps, and stuck-job watchdog behavior.
 **Falsification Evidence:** Fish, Zsh, Bash, or POSIX shell users still need manual PATH edits after install/update/setup, or stale ticket/check/telemetry/score/no-op signals remain unrouted until a human or GitHub event intervenes.
-**Scenario Schedule:** F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005, F-006-S009
+**Scenario Schedule:** F-001-S007, F-001-S008, F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005, F-006-S009
 **Current Failing Scenario:** None for F-002 or F-006-S009; continue the Mars parity backlog with deterministic remediation.
 **Walking Skeleton Slice:** Use one shellpath package across source install, first-run setup, update-tool reinstall, and an explicit `mars-harness path setup` command; use one native Orchestrator survey path across ticket ownership, telemetry triage, failed checks, dogfood failures, no-op outcomes, queue caps, and stuck-job watchdogs.
 **Learning Or MVP Outcome:** Users can install or update once and run `mars-harness` from new terminals across common shells without hand-written shell setup; as of 2026-05-03, unattended harness failure states become bounded queue work or deduped intervention-debt tickets.
@@ -83,6 +83,8 @@ plans to decide what to do next.
 | F-001-S004 | Passing | `update check` and `doctor --repo` report operating-model drift without overwriting user-owned docs. |
 | F-001-S005 | Passing | Ticket docs, quality score, and release-note generation distinguish shipped feature scenarios from enabler work when commits reference tickets. |
 | F-001-S006 | Passing | Telemetry proposals can create or update active goals/observations with dedupe evidence. |
+| F-001-S007 | Passing | `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields` checks feature contracts include first-class business-logic sections. |
+| F-001-S008 | Passing | `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata` checks operating-model code files carry associated documentation metadata. |
 | F-002-S001 | Passing | `make install` invokes `mars-harness path setup --install-dir <dir>` after `go install`. |
 | F-002-S002 | Passing | `mars-harness setup` includes a `configure-shell-path` step. |
 | F-002-S003 | Passing | `mars-harness update tool` runs shell PATH setup after reinstalling the binary. |

@@ -61,6 +61,9 @@ Active and backlog plans require:
 - All business logic must be documented step by step in `docs/features/`,
   including rules, branches, state transitions, validations, permissions,
   scoring/trust behavior, routing behavior, and user-visible outcomes.
+- No stale documentation: implementation slices identify associated docs with
+  top-of-file `MarsDocSync` metadata, and plans or tickets record whether those
+  docs were updated or explicitly checked as current.
 - The active plan schedule is the ordered list of failing BDD scenarios.
 - Feature tickets are created only from the current failing scenario or scenario group.
 - A feature is not shipped until in-scope BDD scenarios pass or are explicitly descoped by the CEO.

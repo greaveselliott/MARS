@@ -83,6 +83,11 @@ Operating rules added to the source harness apply to initialized target harnesse
 
 Architecture changes and product features must carry rationale in repo-owned docs: what changed, why it changed, and which behavior future agents should preserve. Source harness changes use design docs and product specs; initialized target repos inherit the same rule through generated `AGENTS.md`, using their design docs and, when present, product specs.
 
+Documentation must not go stale. Code written or materially changed by agents
+uses a top-of-file `MarsDocSync` metadata block to list the docs that describe
+or constrain the behavior, and those docs are updated in the same change or
+explicitly checked as still current.
+
 Exec plans mirror the ticket lifecycle. Exactly one plan may be active at a
 time. Waiting plans live in `docs/exec-plans/backlog/` with explicit priority,
 dependencies, blockers, related tickets, goals, BDD feature contracts,

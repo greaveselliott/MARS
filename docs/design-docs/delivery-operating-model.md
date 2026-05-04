@@ -52,6 +52,14 @@ is the durable source of truth. Feature contracts must include `Business
 Logic`, `Step-By-Step Behavior`, scenario schedule, Given/When/Then scenarios,
 and evidence.
 
+No stale documentation is a universal operating-model rule. All durable docs
+are live system artifacts, not retrospective notes. When code is created or
+materially changed, the file must carry a top-of-file `MarsDocSync` metadata
+comment block listing the repo-relative docs that describe, constrain, or
+explain that code. The same change updates those docs, or records in the ticket,
+plan, review, or commit evidence why the listed docs were checked and did not
+need content changes.
+
 Operating-model changes must be **symbiotic** with the existing system. A new
 rule, artifact, role behavior, tool, gate, or automation must fit the closed
 loop without creating handoff gaps, duplicate sources of truth, or
@@ -146,6 +154,7 @@ and release notes.
 | --- | --- | --- |
 | BDD becomes decorative prose | Scenarios are written but not executed or checked | Every feature needs at least one integration/E2E test or command mapped to scenario IDs. |
 | Business logic hides in code or tickets | Agents implement rules that future planners and reviewers cannot see | Require `Business Logic` and `Step-By-Step Behavior` sections in feature contracts and update them whenever behavior changes. |
+| Documentation drifts stale from code | Code changes do not reveal which docs own the behavior | Require top-of-file `MarsDocSync` metadata on new or materially changed code files and review the listed docs in the same change. |
 | Walking skeleton becomes scaffold theater | Thin slice is mistaken for placeholder architecture | Slice must pass through a real user, CLI, agent, tool, ticket, docs, or evidence path as applicable. |
 | Half-features are marked done | Ticket AC passes locally while the feature contract still fails | Feature truth lives in BDD scenario state, not ticket count. |
 | Enabler work is misrepresented as shipped value | Release notes infer feature status from commit text | Release notes and quality score classify by `work_type` and scenario evidence. |
@@ -215,3 +224,53 @@ of truth.
   contract.
 - Generated target harnesses inherit the same first-class BDD rule.
 - Docs-consistency tests enforce the required feature-contract sections.
+
+---
+
+## AD-098: No Stale Documentation
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The repo is the system of record, but docs can still lag behind implementation
+when agents change code without a durable pointer to the docs that describe the
+affected behavior. Reviewers then have to rediscover which feature contract,
+design doc, product spec, ticket guide, README, or generated target surface
+needs attention.
+
+### Decision
+
+All documentation is kept current as the system changes. Every newly created or
+materially changed code file must include a top-of-file metadata comment block
+named `MarsDocSync` that lists repo-relative documentation paths associated
+with that code.
+
+The canonical shape is:
+
+```text
+/*
+MarsDocSync:
+- docs/features/F-001-delivery-operating-model.md
+- docs/design-docs/delivery-operating-model.md
+*/
+```
+
+The listed docs are not decorative. They are the review checklist for the
+change. If behavior, public surface, workflow, architecture, generated output,
+or operating doctrine changes, the same commit updates the relevant docs. If
+the docs are still correct, the ticket, plan, review, or commit evidence should
+say they were checked and remain current.
+
+Generated files, language-specific license headers, or framework-mandated file
+headers may keep their required first line, but the `MarsDocSync` block must be
+near the top of the file before implementation declarations.
+
+### Consequences
+
+- Code review can identify associated docs without guessing.
+- Automation has a stable marker for future stale-doc checks.
+- Generated target harnesses inherit the same documentation-sync doctrine.
+- Agents treat docs updates as part of implementation, not as optional cleanup.

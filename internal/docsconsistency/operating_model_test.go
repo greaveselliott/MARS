@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+- docs/design-docs/delivery-operating-model.md
+- docs/design-docs/harness-glossary.md
+- docs/features/README.md
+- docs/features/F-001-delivery-operating-model.md
+*/
 package docsconsistency
 
 import (
@@ -10,15 +17,15 @@ import (
 func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 	root := repoRoot(t)
 	required := map[string][]string{
-		"docs/design-docs/delivery-operating-model.md":      {"AD-074", "BDD-Led Goal-Driven Walking-Skeleton", "AD-097", "Business logic is first-class BDD"},
+		"docs/design-docs/delivery-operating-model.md":      {"AD-074", "BDD-Led Goal-Driven Walking-Skeleton", "AD-097", "Business logic is first-class BDD", "AD-098", "No stale documentation", "MarsDocSync"},
 		"docs/design-docs/harness-operating-model.md":       {"AD-084", "Planner", "End-to-End Tester", "`domain`", "`mode`"},
 		"docs/design-docs/conversation-as-system-record.md": {"AD-086", "Conversation As System Record", "Chat summaries can help humans catch up", "active-plan hygiene checker"},
 		"docs/goals/README.md":                              {"Goal Schema", "Autonomous Goal Rule", "Dedupe Key"},
 		"docs/goals/active.md":                              {"G-001", "Status: active", "Hypothesis"},
 		"docs/goals/observations.md":                        {"weak/noisy evidence"},
 		"docs/goals/superseded.md":                          {"Superseded Goals"},
-		"docs/features/README.md":                           {"BDD Feature Contracts", "Business Logic Is First-Class BDD", "Given/When/Then", "Scenario Schedule"},
-		"docs/features/F-001-delivery-operating-model.md":   {"Feature ID: F-001", "Scenario Schedule", "Given", "When", "Then"},
+		"docs/features/README.md":                           {"BDD Feature Contracts", "Business Logic Is First-Class BDD", "No Stale Documentation", "Given/When/Then", "Scenario Schedule"},
+		"docs/features/F-001-delivery-operating-model.md":   {"Feature ID: F-001", "Scenario Schedule", "F-001-S008", "No Stale Documentation", "Given", "When", "Then"},
 		"docs/tickets/README.md":                            {"work_type", "bdd_scenarios", "end_to_end_evidence", "verified_by"},
 		"docs/QUALITY_SCORE.md":                             {"shipped feature scenarios", "enabler work"},
 	}
@@ -31,6 +38,42 @@ func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 		for _, needle := range needles {
 			if !strings.Contains(text, needle) {
 				t.Fatalf("%s must contain %q", rel, needle)
+			}
+		}
+	}
+}
+
+func TestOperatingModelCodeFilesDeclareDocSyncMetadata(t *testing.T) {
+	root := repoRoot(t)
+	required := map[string][]string{
+		"internal/docsconsistency/operating_model_test.go": {
+			"docs/design-docs/delivery-operating-model.md",
+			"docs/features/F-001-delivery-operating-model.md",
+		},
+		"internal/scanner/init.go": {
+			"docs/design-docs/delivery-operating-model.md",
+			"docs/features/F-001-delivery-operating-model.md",
+		},
+		"internal/scanner/scanner_test.go": {
+			"docs/design-docs/delivery-operating-model.md",
+			"docs/features/F-001-delivery-operating-model.md",
+		},
+	}
+	for rel, docs := range required {
+		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		prefix := string(data)
+		if len(prefix) > 1200 {
+			prefix = prefix[:1200]
+		}
+		if !strings.Contains(prefix, "MarsDocSync:") {
+			t.Fatalf("%s must declare top-of-file MarsDocSync metadata", rel)
+		}
+		for _, doc := range docs {
+			if !strings.Contains(prefix, doc) {
+				t.Fatalf("%s MarsDocSync metadata must reference %s", rel, doc)
 			}
 		}
 	}

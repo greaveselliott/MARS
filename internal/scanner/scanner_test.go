@@ -1,3 +1,11 @@
+/*
+MarsDocSync:
+- AGENTS.md
+- docs/design-docs/delivery-operating-model.md
+- docs/design-docs/harness-glossary.md
+- docs/features/README.md
+- docs/features/F-001-delivery-operating-model.md
+*/
 package scanner
 
 import (
@@ -448,6 +456,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "docs/goals/active.md")
 	assert.Contains(t, string(agentGuide), "BDD feature contracts")
 	assert.Contains(t, string(agentGuide), "Business logic is first-class BDD")
+	assert.Contains(t, string(agentGuide), "No stale documentation")
+	assert.Contains(t, string(agentGuide), "MarsDocSync")
 	assert.Contains(t, string(agentGuide), "walking skeleton")
 	assert.Contains(t, string(agentGuide), "exactly one active exec plan")
 	assert.Contains(t, string(agentGuide), "After every non-release semantic commit")
@@ -469,6 +479,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(harnessGlossary), "Operating model")
 	assert.Contains(t, string(harnessGlossary), "BDD feature contract")
 	assert.Contains(t, string(harnessGlossary), "Business logic")
+	assert.Contains(t, string(harnessGlossary), "No stale documentation")
+	assert.Contains(t, string(harnessGlossary), "MarsDocSync")
 	assert.Contains(t, string(harnessGlossary), "Role registry")
 	assert.Contains(t, string(harnessGlossary), "Foundation operating model")
 	assert.Contains(t, string(harnessGlossary), "Deployed operating model")
@@ -524,6 +536,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(designIndex), "AD-086")
 	assert.Contains(t, string(designIndex), "AD-087")
 	assert.Contains(t, string(designIndex), "AD-097")
+	assert.Contains(t, string(designIndex), "AD-098")
 
 	conversationRecord, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "conversation-as-system-record.md"))
 	require.NoError(t, err)
@@ -545,6 +558,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(operatingModel), "active exec plan first, then feature contract, then")
 	assert.Contains(t, string(operatingModel), "AD-097: Business Logic Is First-Class BDD")
 	assert.Contains(t, string(operatingModel), "Business logic is first-class BDD")
+	assert.Contains(t, string(operatingModel), "AD-098: No Stale Documentation")
+	assert.Contains(t, string(operatingModel), "MarsDocSync")
 
 	execPlanReadme, err := os.ReadFile(filepath.Join(dir, "docs", "exec-plans", "README.md"))
 	require.NoError(t, err)
@@ -559,6 +574,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(execPlanReadme), "**BDD Feature**")
 	assert.Contains(t, string(execPlanReadme), "**Scenario Schedule**")
 	assert.Contains(t, string(execPlanReadme), "All business logic must be documented step by step")
+	assert.Contains(t, string(execPlanReadme), "No stale documentation")
 
 	currentPlan, err := os.ReadFile(filepath.Join(dir, "docs", "exec-plans", "active", "current-operating-plan.md"))
 	require.NoError(t, err)
@@ -590,6 +606,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(featureContract), "## Business Logic")
 	assert.Contains(t, string(featureContract), "## Step-By-Step Behavior")
 	assert.Contains(t, string(featureContract), "Business Logic Is First-Class BDD")
+	assert.Contains(t, string(featureContract), "F-001-S005: No Stale Documentation")
+	assert.Contains(t, string(featureContract), "MarsDocSync")
 	assert.Contains(t, string(featureContract), "Given")
 	assert.Contains(t, string(featureContract), "When")
 	assert.Contains(t, string(featureContract), "Then")
@@ -597,12 +615,15 @@ func TestInit_success(t *testing.T) {
 	featuresReadme, err := os.ReadFile(filepath.Join(dir, "docs", "features", "README.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(featuresReadme), "Business Logic Is First-Class BDD")
+	assert.Contains(t, string(featuresReadme), "No Stale Documentation")
+	assert.Contains(t, string(featuresReadme), "MarsDocSync")
 	assert.Contains(t, string(featuresReadme), "Business logic is documented step by step")
 	assert.Contains(t, string(featuresReadme), "Feature contracts come after the active exec plan")
 
 	ticketsReadme, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "README.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(ticketsReadme), "Tickets come after planning and feature contracts")
+	assert.Contains(t, string(ticketsReadme), "MarsDocSync")
 
 	assert.Contains(t, string(agentGuide), "Bootstrap and delivery order is strict")
 
@@ -614,6 +635,15 @@ func TestInit_success(t *testing.T) {
 	cooPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "coo.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(cooPrompt), "Do NOT derive")
+
+	engineerPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "engineer.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(engineerPrompt), "No stale documentation")
+	assert.Contains(t, string(engineerPrompt), "MarsDocSync")
+
+	qaPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "qa.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(qaPrompt), "MarsDocSync")
 
 	releaseDoc, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	require.NoError(t, err)
