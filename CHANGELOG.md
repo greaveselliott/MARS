@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.16] - 2026-05-04
+<!-- mars-harness-release: version=0.24.16 commit=b78f9f4e4b50 -->
+
+### Why This Release Matters
+It improves reliability through work to enforce canonical ticket creation in tickets.
+
+### Fixes
+- **tickets:** Enforce canonical ticket creation (b78f9f4)
+
 ## [0.24.15] - 2026-05-04
 <!-- mars-harness-release: version=0.24.15 commit=eb7e43cbf37e -->
 
