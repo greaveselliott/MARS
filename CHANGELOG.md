@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.29.1] - 2026-05-04
+<!-- mars-harness-release: version=0.29.1 commit=8a718debfcbc -->
+
+### Impact
+- **docsync:** Operators and future agents now have a first-class Documentation Sync architecture and universal operating model, so "no stale documentation" is no longer just a rule spread across guidance. Every code change has an explicit path from changed files to associated docs, BDD contracts, audit evidence, and release notes.
+- **docsync:** Initialized target harnesses inherit the same documentation-sync doctrine, feature scenario, knowledge route, and generated design doc, which keeps source and deployed operating models aligned as projects are scaffolded.
+
+### Why
+- **docsync:** The previous source-to-doc map made ownership auditable, but it did not yet explain the architecture, role responsibilities, maintenance workflows, or failure modes deeply enough for agents to apply the process consistently without chat context.
+- **docsync:** The stale-doc problem spans foundation and deployed harnesses. Without a universal operating model mirrored into generated targets, new projects could receive the metadata gate but miss the decision-making workflow that tells agents when to update BDD, design docs, product specs, tool docs, role docs, or release notes.
+
+### What Changed
+- **docsync:** Added AD-102 in `docs/design-docs/documentation-sync-architecture.md`, documenting the six-layer architecture, the seven-step universal operating model, role responsibilities, maintenance workflows, invariants, mitigations, observability, and acceptance criteria for documentation sync (8a718de).
+- **docsync:** Linked the new architecture from `AGENTS.md`, the design-doc index, the delivery operating model, the code-documentation map, the tools glossary, and the BDD feature catalog so agents can discover it from normal context assembly paths (8a718de).
+- **docsync:** Mirrored AD-102 into generated target harness defaults, updated target knowledge routes and F-001 with a universal documentation-sync scenario, and expanded scanner/docs-consistency/formal workflow tests so the architecture remains release-blocking (8a718de).
+
+### Documentation
+- **docsync:** Document universal operating model (8a718de)
+
 ## [0.29.0] - 2026-05-04
 <!-- mars-harness-release: version=0.29.0 commit=cb59e75cacf2 -->
 
