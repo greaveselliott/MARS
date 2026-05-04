@@ -110,6 +110,12 @@ asset, verifies `checksums.txt`, and atomically replaces the binary in the
 directory containing the currently running command. This avoids requiring Go or a
 source checkout for ordinary upgrades.
 
+Private release repositories use the same checksum-verified path when
+`GH_TOKEN` or `GITHUB_TOKEN` is exported with repository contents read access.
+When release metadata exposes GitHub asset API URLs, the updater downloads from
+those authenticated API URLs instead of browser download URLs so private assets
+do not fail behind a misleading 404.
+
 Source-development updates remain available through `mars-harness update tool
 --source` or `mars-harness update tool --version main`. That path uses `go
 install github.com/greaveselliott/mars-harness/cmd/mars-harness@<version>` with

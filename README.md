@@ -56,7 +56,9 @@ mars-harness update harness --repo /path/to/target-repo
 
 `update tool` uses checksum-verified GitHub Release assets by default. Source
 development channels remain available with `mars-harness update tool --source
---version main`.
+--version main`. For private release repositories, authenticate the release
+asset lookup with `GH_TOKEN` or `GITHUB_TOKEN`, for example:
+`GH_TOKEN="$(gh auth token)" mars-harness update tool`.
 
 Remove Mars Harness from a target repo with a dry-run kill switch:
 

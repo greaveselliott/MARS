@@ -1,3 +1,8 @@
+/*
+MarsDocSync:
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+*/
 package selfupdate
 
 import (
@@ -28,6 +33,17 @@ func TestLatestRelease_readsGitHubStyleTag(t *testing.T) {
 	version, err := LatestRelease(context.Background(), client, "https://example.test/releases/latest")
 	require.NoError(t, err)
 	require.Equal(t, "0.7.0", version)
+}
+
+func TestLatestReleaseInfoReportsPrivateReleaseAuthHint(t *testing.T) {
+	t.Parallel()
+	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
+		return textResponse(http.StatusUnauthorized, `{"message":"bad credentials"}`), nil
+	})
+
+	_, err := LatestReleaseInfo(context.Background(), client, "https://example.test/releases/latest")
+	require.ErrorContains(t, err, "GH_TOKEN")
+	require.ErrorContains(t, err, "private releases")
 }
 
 func TestVerifyReleaseAssetsReportsMissingAssets(t *testing.T) {

@@ -1,3 +1,8 @@
+/*
+MarsDocSync:
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+*/
 package selfupdate
 
 import (
@@ -20,6 +25,7 @@ const (
 // ReleaseAsset is the subset of GitHub release asset metadata the harness
 // needs for update and release verification.
 type ReleaseAsset struct {
+	APIURL             string `json:"url"`
 	Name               string `json:"name"`
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
@@ -94,7 +100,7 @@ func LatestReleaseInfo(ctx context.Context, client *http.Client, url string) (Re
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return ReleaseInfo{}, fmt.Errorf("latest release: %s returned %s", url, resp.Status)
+		return ReleaseInfo{}, fmt.Errorf("latest release: %s returned %s%s", url, resp.Status, githubAuthHint(resp.StatusCode))
 	}
 	var payload ReleaseInfo
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
@@ -113,12 +119,31 @@ func LatestReleaseInfo(ctx context.Context, client *http.Client, url string) (Re
 func setGitHubHeaders(req *http.Request, userAgent string) {
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", userAgent)
+	setGitHubAuth(req)
+}
+
+func setGitHubDownloadHeaders(req *http.Request, userAgent string) {
+	req.Header.Set("Accept", "application/octet-stream")
+	req.Header.Set("User-Agent", userAgent)
+	setGitHubAuth(req)
+}
+
+func setGitHubAuth(req *http.Request) {
 	if token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN")); token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 		return
 	}
 	if token := strings.TrimSpace(os.Getenv("GH_TOKEN")); token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
+	}
+}
+
+func githubAuthHint(statusCode int) string {
+	switch statusCode {
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return "\nAuthenticate private releases by exporting GH_TOKEN or GITHUB_TOKEN with repository contents read access. With GitHub CLI auth, run `GH_TOKEN=\"$(gh auth token)\" mars-harness update tool`."
+	default:
+		return ""
 	}
 }
 

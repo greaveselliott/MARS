@@ -1,3 +1,8 @@
+/*
+MarsDocSync:
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+*/
 package selfupdate
 
 import (
@@ -252,11 +257,15 @@ func resolveLatestAssetPlan(ctx context.Context, client *http.Client, cfg Config
 	for _, asset := range release.Assets {
 		switch asset.Name {
 		case plan.AssetName:
-			if asset.BrowserDownloadURL != "" {
+			if asset.APIURL != "" {
+				plan.DownloadURL = asset.APIURL
+			} else if asset.BrowserDownloadURL != "" {
 				plan.DownloadURL = asset.BrowserDownloadURL
 			}
 		case "checksums.txt":
-			if asset.BrowserDownloadURL != "" {
+			if asset.APIURL != "" {
+				plan.ChecksumsURL = asset.APIURL
+			} else if asset.BrowserDownloadURL != "" {
 				plan.ChecksumsURL = asset.BrowserDownloadURL
 			}
 		}
@@ -346,14 +355,14 @@ func downloadFile(ctx context.Context, client *http.Client, url, path string) er
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
-	setGitHubHeaders(req, "mars-harness-self-update")
+	setGitHubDownloadHeaders(req, "mars-harness-self-update")
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("%s returned %s", url, resp.Status)
+		return fmt.Errorf("%s returned %s%s", url, resp.Status, githubAuthHint(resp.StatusCode))
 	}
 	out, err := os.Create(path)
 	if err != nil {

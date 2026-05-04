@@ -50,6 +50,7 @@ Then shipped feature scenarios are named separately from enabler work
 Given a release asset and `checksums.txt` are available
 When `mars-harness update tool` installs the tool
 Then checksum mismatch prevents replacement and valid assets atomically replace the installed binary
+And private releases are authenticated with `GH_TOKEN` or `GITHUB_TOKEN` and downloaded through GitHub asset API URLs when release metadata provides them
 
 ### F-009-S005: Unified Harness Update
 
