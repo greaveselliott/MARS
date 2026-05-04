@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.25.0] - 2026-05-04
+<!-- mars-harness-release: version=0.25.0 commit=8622d4122e83 -->
+
+### Why This Release Matters
+This release matters because it gives operators new capability through work to return dispatch handoffs to orchestrator in orchestration.
+
+### Features
+- **orchestration:** Return dispatch handoffs to orchestrator (8622d41)
+
 ## [0.24.16] - 2026-05-04
 <!-- mars-harness-release: version=0.24.16 commit=b78f9f4e4b50 -->
 
