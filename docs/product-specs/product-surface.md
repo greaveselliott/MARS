@@ -14,7 +14,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | Install and setup | installed `mars-harness` command, `mars-harness setup`, `mars-harness path setup`, config, model and binary cache | Run the harness from any directory, configure the user's shell PATH automatically, detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
 | Target harness | `mars-harness init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
 | Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, visible run state, default dispatch orchestration, and narrow self-healing for stale recovery jobs. |
-| Delivery model | `docs/goals/`, one active exec plan, `docs/features/`, BDD scenario evidence, ticket completion gates, org liveness state | Keep planning order explicit: active exec plan first, feature contracts second, tickets third, delivery fourth, with Orchestrator routing the next best role and shipped scenarios backed by real E2E/integration evidence. |
+| Delivery model | `docs/goals/`, one active exec plan, `docs/features/`, BDD scenario evidence, ticket completion gates, org liveness state | Keep planning order explicit: active exec plan first, feature contracts second, tickets third, delivery fourth, with all business logic documented step by step under `docs/features/`, Orchestrator routing the next best role, and shipped scenarios backed by real E2E/integration evidence. |
 | Learning loop | `scores`, `trust`, `docs/QUALITY_SCORE.md`, telemetry triage, skills, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, reusable workflow skills, prompt or process improvements, repo-visible grades, and safety controls. |
 | Generated references | `docs/generated/` | Provide reproducible, cataloged source-harness maps when generator commands exist. |
 | Release state | `VERSION`, `CHANGELOG.md`, `release notes` | Maintain semantic versions and generated patch notes for both the source harness and target repos. |
@@ -62,7 +62,7 @@ Required generated surfaces:
 - `.harness/guardrails/*.yaml` for mechanical policy inputs
 - `.harness/knowledge/*.yaml` for lightweight context routes
 - `docs/goals/` for active goals, observations, and superseded goals
-- `docs/features/` for Markdown BDD feature contracts and scenario schedules
+- `docs/features/` for Markdown BDD feature contracts, step-by-step business logic, and scenario schedules
 - `docs/tickets/backlog/`, `docs/tickets/in-progress/`, `docs/tickets/in-review/`, and `docs/tickets/done/`
 - `docs/tickets/README.md` for ticket lifecycle and completion rules
 - `docs/exec-plans/README.md` and starter priority docs with a one-active-plan lifecycle
@@ -90,12 +90,15 @@ hypotheses, success/falsification evidence, scenario schedules, current failing
 scenarios, walking skeleton slices, and learning or MVP outcomes. Superseded
 plans are lineage only.
 
-BDD feature contracts are the source of truth for feature completeness.
-Walking skeleton is the implementation strategy: agents implement the next
-failing scenario through the thinnest real end-to-end path. Feature tickets must
-carry BDD scenario evidence before done. Enabler work is allowed, but release
-notes and quality score must separate enabler work from shipped feature
-scenarios.
+BDD feature contracts are the source of truth for feature completeness and
+business behavior. Product rules, workflow branches, state transitions,
+validations, permissions, scoring/trust behavior, routing behavior, release
+classification, and user-visible outcomes must be documented step by step under
+`docs/features/`, not only in tickets or code comments. Walking skeleton is the
+implementation strategy: agents implement the next failing scenario through the
+thinnest real end-to-end path. Feature tickets must carry BDD scenario evidence
+before done. Enabler work is allowed, but release notes and quality score must
+separate enabler work from shipped feature scenarios.
 
 ## Versioning And Patch Notes
 

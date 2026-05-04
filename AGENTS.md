@@ -24,6 +24,8 @@ would otherwise live only in chat.
 - **Deployed harness** — the harness consumed by the target application being built by `mars-harness`.
 - **Mirrored harness definitions** — harness definitions included in both the foundation harness and deployed harnesses.
 - **Operating model** — the documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops.
+- **BDD feature contract** — a Markdown feature artifact in `docs/features/` that defines feature completeness, business logic, step-by-step behavior, scenarios, and evidence.
+- **Business logic** — product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, release classification, and user-visible outcomes; business logic is documented step by step in BDD feature contracts before or alongside implementation.
 - **Canonical operating domain** — one of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator.
 - **Role mode** — a lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as `ticket-delivery`, `quality-review`, or `pipeline-repair`.
 - **Role registry** — a checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior.
@@ -326,10 +328,11 @@ golangci-lint run
 3. **Publish GitHub release notes when configured.** Once the release-note commit is pushed, push tag `vX.Y.Z` at that commit so the Release workflow publishes the changelog entry and binary assets. If a notes-only release appears, run the Release workflow backfill for that tag. Verify assets with `mars-harness release verify-assets --version vX.Y.Z`. Missing GitHub release capability or failed asset verification is a blocker to record, not something to silently ignore.
 4. **Document every decision and feature.** Architecture changes and product features go in `docs/design-docs/` or `docs/product-specs/` with the reason why. Discoveries go in the relevant design doc's Discoveries section.
 5. **BDD defines done.** Goals align the active plan, BDD feature contracts define feature completeness, and walking skeleton slices implement the next failing scenario through real E2E/integration evidence.
-6. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
-7. **Feed conversations back.** Significant conversations must update the owning repo artifact in the same direct commit to `main`: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
-8. **Avoid docs churn for trivial replies.** Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
-9. **Use the ticket lifecycle directories.** New tickets are created with `ticket_create` in `docs/tickets/backlog/`. Do not hand-write ticket markdown directly under `docs/tickets/`; ticket files belong only in `backlog/`, `in-progress/`, `in-review/`, or `done/`.
+6. **Business logic is first-class BDD.** Every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, release classification, or user-visible outcome must be documented step by step in `docs/features/` before or alongside implementation.
+7. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
+8. **Feed conversations back.** Significant conversations must update the owning repo artifact in the same direct commit to `main`: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
+9. **Avoid docs churn for trivial replies.** Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
+10. **Use the ticket lifecycle directories.** New tickets are created with `ticket_create` in `docs/tickets/backlog/`. Do not hand-write ticket markdown directly under `docs/tickets/`; ticket files belong only in `backlog/`, `in-progress/`, `in-review/`, or `done/`.
 
 ## Pointers
 

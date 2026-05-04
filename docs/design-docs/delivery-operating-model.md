@@ -43,6 +43,15 @@ Core rule:
 > BDD defines the full feature. Walking skeleton is the implementation
 > strategy. The schedule is the ordered list of failing BDD scenarios.
 
+Business logic is first-class BDD. Every product rule, workflow branch, state
+transition, validation, permission check, scoring/trust calculation, queue
+routing rule, release classification, or other user-visible outcome belongs in
+`docs/features/` as step-by-step behavior before or alongside implementation.
+Tickets may reference business logic, and code may comment on it, but neither
+is the durable source of truth. Feature contracts must include `Business
+Logic`, `Step-By-Step Behavior`, scenario schedule, Given/When/Then scenarios,
+and evidence.
+
 Operating-model changes must be **symbiotic** with the existing system. A new
 rule, artifact, role behavior, tool, gate, or automation must fit the closed
 loop without creating handoff gaps, duplicate sources of truth, or
@@ -85,8 +94,9 @@ forms, or manual docs. Weak/noisy evidence becomes an observation until it is
 actionable.
 
 BDD feature contracts live in `docs/features/`. They use Markdown
-Given/When/Then in v1. We deliberately do not add a custom Gherkin parser yet;
-Go integration/E2E tests and explicit evidence commands execute behavior.
+Given/When/Then in v1 and also carry step-by-step business-logic notes for the
+rules behind each scenario. We deliberately do not add a custom Gherkin parser
+yet; Go integration/E2E tests and explicit evidence commands execute behavior.
 
 Exec plans live in `docs/exec-plans/` with exactly one active plan. Active and
 backlog plans must name goals, BDD feature contracts, hypothesis, success and
@@ -135,6 +145,7 @@ and release notes.
 | Failure Mode | Why It Happens | Mitigation |
 | --- | --- | --- |
 | BDD becomes decorative prose | Scenarios are written but not executed or checked | Every feature needs at least one integration/E2E test or command mapped to scenario IDs. |
+| Business logic hides in code or tickets | Agents implement rules that future planners and reviewers cannot see | Require `Business Logic` and `Step-By-Step Behavior` sections in feature contracts and update them whenever behavior changes. |
 | Walking skeleton becomes scaffold theater | Thin slice is mistaken for placeholder architecture | Slice must pass through a real user, CLI, agent, tool, ticket, docs, or evidence path as applicable. |
 | Half-features are marked done | Ticket AC passes locally while the feature contract still fails | Feature truth lives in BDD scenario state, not ticket count. |
 | Enabler work is misrepresented as shipped value | Release notes infer feature status from commit text | Release notes and quality score classify by `work_type` and scenario evidence. |
@@ -168,3 +179,39 @@ evidence is visible. That is intentional: the system should optimise for
 truthful completion, not autonomous motion. The tradeoff is more upfront
 structure in goals and feature contracts, but less downstream ambiguity, fewer
 half-shipped features, and clearer evidence for self-improvement.
+
+---
+
+## AD-097: Business Logic Is First-Class BDD
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The BDD-led operating model already required feature contracts and scenario
+evidence, but business rules could still be scattered across ticket bodies,
+code comments, role prompts, or release notes. That makes future agents guess
+why behavior exists and tempts implementation to outrun product truth.
+
+### Decision
+
+All business logic is documented step by step under `docs/features/`. A feature
+contract must carry the business behavior, not merely a scenario title list.
+The required sections are `Business Logic`, `Step-By-Step Behavior`, `Scenario
+Schedule`, Markdown Given/When/Then scenarios, and `Evidence`.
+
+Business logic includes product rules, workflow branches, state transitions,
+validations, permissions, scoring and trust behavior, queue or orchestration
+routing, release classification, and user-visible outcomes. Tickets and code
+may reference or implement this behavior, but they are not the durable source
+of truth.
+
+### Consequences
+
+- Planner roles document behavior before or alongside implementation.
+- Engineer and reviewer roles can detect when code changes outrun the feature
+  contract.
+- Generated target harnesses inherit the same first-class BDD rule.
+- Docs-consistency tests enforce the required feature-contract sections.

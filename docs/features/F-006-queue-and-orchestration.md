@@ -5,6 +5,14 @@
 - Status: partially-passing
 - Owner: COO
 
+## Business Logic
+
+This feature contract is the durable home for business logic in this area. Product rules, workflow branches, state transitions, validations, permissions, scoring or trust decisions, routing rules, release classification, and user-visible outcomes must be documented here before or alongside implementation. Do not rely on ticket text or code comments as the only description of behavior.
+
+## Step-By-Step Behavior
+
+The scenarios below are the step-by-step BDD contract for this feature. Each scenario should describe the starting state, the action or event, and the observable outcome. When implementation changes business logic, update these steps and their evidence before claiming the feature is complete.
+
 ## Scenario Schedule
 
 1. F-006-S001 - Repositories are registered with per-repo database isolation.

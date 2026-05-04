@@ -58,6 +58,9 @@ Active and backlog plans require:
 ## BDD-Led Planning Rules
 
 - BDD defines the full feature. Walking skeleton is the implementation strategy.
+- All business logic must be documented step by step in `docs/features/`,
+  including rules, branches, state transitions, validations, permissions,
+  scoring/trust behavior, routing behavior, and user-visible outcomes.
 - The active plan schedule is the ordered list of failing BDD scenarios.
 - Feature tickets are created only from the current failing scenario or scenario group.
 - A feature is not shipped until in-scope BDD scenarios pass or are explicitly descoped by the CEO.

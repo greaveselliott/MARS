@@ -5,6 +5,14 @@
 - Status: passing
 - Owner: CEO
 
+## Business Logic
+
+This feature contract is the durable home for business logic in this area. Product rules, workflow branches, state transitions, validations, permissions, scoring or trust decisions, routing rules, release classification, and user-visible outcomes must be documented here before or alongside implementation. Do not rely on ticket text or code comments as the only description of behavior.
+
+## Step-By-Step Behavior
+
+The scenarios below are the step-by-step BDD contract for this feature. Each scenario should describe the starting state, the action or event, and the observable outcome. When implementation changes business logic, update these steps and their evidence before claiming the feature is complete.
+
 ## Scenario Schedule
 
 1. F-001-S001 - Goal, BDD feature, and active plan are linked.
@@ -13,6 +21,7 @@
 4. F-001-S004 - Existing target drift is reported without overwriting user-owned files.
 5. F-001-S005 - Release notes and quality score distinguish shipped scenarios from enabler work.
 6. F-001-S006 - Telemetry can create or update goals/observations from structured evidence.
+7. F-001-S007 - Business logic is documented step by step in feature contracts.
 
 ## Scenarios
 
@@ -52,6 +61,12 @@ Given telemetry, dogfood, quality, or feedback contains structured actionable ev
 When triage runs
 Then it creates or updates an active goal or observation with source, confidence, dedupe key, and review trigger
 
+### F-001-S007: Business Logic Is First-Class BDD
+
+Given business logic changes through a product rule, workflow branch, state transition, validation, permission, scoring rule, routing rule, or user-visible outcome
+When a planner, engineer, reviewer, or maintainer records or implements that behavior
+Then the matching `docs/features/F-NNN-*.md` contract documents the behavior step by step with Business Logic, Step-By-Step Behavior, Given/When/Then scenarios, and evidence before the feature is claimed complete
+
 ## Out of Scope
 
 - Custom Gherkin parsing.
@@ -70,3 +85,4 @@ None.
 - F-001-S004: `go test ./internal/updatecheck -run TestRun_reportsOperatingModelDrift`
 - F-001-S005: docs-consistency checks for `docs/QUALITY_SCORE.md` and `docs/tickets/README.md`
 - F-001-S006: `go test ./internal/telemetry -run TestRecordGoalFromProposal`
+- F-001-S007: `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields`

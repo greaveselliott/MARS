@@ -7,11 +7,28 @@ end-to-end path.
 V1 uses Markdown Given/When/Then. Do not introduce a custom Gherkin parser until
 there is evidence that Markdown plus Go integration/E2E tests is not enough.
 
+## Business Logic Is First-Class BDD
+
+All business logic belongs in `docs/features/`. A feature contract is not just a
+completion checklist; it is the durable step-by-step description of how the
+product behaves. Document product rules, workflow branches, state transitions,
+validations, permissions, scoring or trust rules, queue routing, release
+classification, and user-visible outcomes here before or alongside
+implementation.
+
+Tickets may scope a slice of work, and code may include local comments, but the
+feature contract is the source of truth for business behavior. If an engineer
+discovers that required behavior is missing or stale in `docs/features/`, the
+correct fix is to update the feature contract or return to planning before
+expanding implementation.
+
 ## Contract Rules
 
 - Feature contracts come after the active exec plan: the plan names the feature
   and scenario schedule before tickets or delivery begin.
 - BDD defines the full feature before implementation.
+- Business logic is documented step by step under the feature contract, not
+  only in tickets, code comments, or release notes.
 - The schedule is the ordered list of failing BDD scenarios or scenario groups.
 - Tickets implement only the current failing scenario or scenario group.
 - No feature ships until in-scope scenarios pass or are explicitly descoped.
@@ -30,6 +47,8 @@ there is evidence that Markdown plus Go integration/E2E tests is not enough.
 - `Goals`
 - `Status`: draft, active, partially-passing, passing, superseded
 - `Owner`
+- `Business Logic`
+- `Step-By-Step Behavior`
 - `Scenario Schedule`
 - `Out of Scope`
 - `Descoped Scenarios`

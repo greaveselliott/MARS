@@ -88,6 +88,12 @@ non-empty `evidence_links`, and a real `verified_by` value before moving to
 `done/`. Enabler, research, docs, and intervention-debt tickets normally use
 `end_to_end_evidence: not_applicable` and must not claim a shipped feature.
 
+Feature tickets must not be the only place business logic is described. If a
+ticket changes product rules, workflow branches, state transitions,
+validations, permissions, scoring/trust behavior, routing behavior, or
+user-visible outcomes, the matching `docs/features/F-NNN-*.md` contract must
+include the step-by-step BDD behavior before the ticket moves to `done/`.
+
 Intervention-debt tickets must include role, repo, target, category, severity, confidence, evidence, and origin metadata when generated mechanically. Origin metadata should link trace IDs, score snapshots, commits, outcomes, tools, jobs, telemetry events, and source messages when available locally; missing optional GitHub metadata must not block local ticket creation. They are deduped by repo, role, target, category, and evidence window.
 
 ## Drain Metadata

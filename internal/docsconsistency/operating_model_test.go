@@ -10,14 +10,14 @@ import (
 func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 	root := repoRoot(t)
 	required := map[string][]string{
-		"docs/design-docs/delivery-operating-model.md":      {"AD-074", "BDD-Led Goal-Driven Walking-Skeleton"},
+		"docs/design-docs/delivery-operating-model.md":      {"AD-074", "BDD-Led Goal-Driven Walking-Skeleton", "AD-097", "Business logic is first-class BDD"},
 		"docs/design-docs/harness-operating-model.md":       {"AD-084", "Planner", "End-to-End Tester", "`domain`", "`mode`"},
 		"docs/design-docs/conversation-as-system-record.md": {"AD-086", "Conversation As System Record", "Chat summaries can help humans catch up", "active-plan hygiene checker"},
 		"docs/goals/README.md":                              {"Goal Schema", "Autonomous Goal Rule", "Dedupe Key"},
 		"docs/goals/active.md":                              {"G-001", "Status: active", "Hypothesis"},
 		"docs/goals/observations.md":                        {"weak/noisy evidence"},
 		"docs/goals/superseded.md":                          {"Superseded Goals"},
-		"docs/features/README.md":                           {"BDD Feature Contracts", "Given/When/Then", "Scenario Schedule"},
+		"docs/features/README.md":                           {"BDD Feature Contracts", "Business Logic Is First-Class BDD", "Given/When/Then", "Scenario Schedule"},
 		"docs/features/F-001-delivery-operating-model.md":   {"Feature ID: F-001", "Scenario Schedule", "Given", "When", "Then"},
 		"docs/tickets/README.md":                            {"work_type", "bdd_scenarios", "end_to_end_evidence", "verified_by"},
 		"docs/QUALITY_SCORE.md":                             {"shipped feature scenarios", "enabler work"},
@@ -82,6 +82,8 @@ func TestFeatureContractsDeclareRequiredFields(t *testing.T) {
 			"Goals:",
 			"Status:",
 			"Owner:",
+			"Business Logic",
+			"Step-By-Step Behavior",
 			"Scenario Schedule",
 			"Out of Scope",
 			"Descoped Scenarios",

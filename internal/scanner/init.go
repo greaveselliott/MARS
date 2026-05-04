@@ -575,6 +575,8 @@ would otherwise live only in chat.
 - **Deployed harness** — the harness consumed by this target application.
 - **Mirrored harness definitions** — harness definitions included in both the foundation harness and deployed harnesses.
 - **Operating model** — the documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops.
+- **BDD feature contract** — a Markdown feature artifact in ` + "`docs/features/`" + ` that defines feature completeness, business logic, step-by-step behavior, scenarios, and evidence.
+- **Business logic** — product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, release classification, and user-visible outcomes; business logic is documented step by step in BDD feature contracts before or alongside implementation.
 - **Canonical operating domain** — one of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator.
 - **Role mode** — a lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `.
 - **Foundation operating model** — the operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
@@ -624,6 +626,7 @@ Role registry: ` + "`docs/roles/ROLES.md`" + `
   then tickets, then implementation delivery. Do not create feature contracts,
   tickets, or delivery work until the active exec plan names the current slice.
 - BDD feature contracts define feature completeness; walking skeleton is the implementation strategy: make the next failing scenario pass through the thinnest real end-to-end path.
+- Business logic is first-class BDD: every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, or user-visible outcome must be documented step by step in ` + "`docs/features/`" + ` before or alongside implementation.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
 - Prefer eligible in-progress tickets before backlog work; a ticket is eligible when it has no meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata.
 - Complete one coherent step at a time.
@@ -789,6 +792,12 @@ Feature tickets cannot move to ` + "`done/`" + ` without BDD scenario evidence:
 - non-empty ` + "`evidence_links`" + `
 - ` + "`verified_by`" + ` set to the verifier role, command, or human
 
+Feature tickets must not be the only place business logic is described. If a
+ticket changes product rules, workflow branches, state transitions,
+validations, permissions, scoring/trust behavior, routing behavior, or
+user-visible outcomes, the matching ` + "`docs/features/F-NNN-*.md`" + ` contract must
+include the step-by-step BDD behavior before the ticket moves to ` + "`done/`" + `.
+
 Enabler, research, docs, and intervention-debt tickets use
 ` + "`end_to_end_evidence: not_applicable`" + ` and must not claim a shipped feature.
 
@@ -854,6 +863,16 @@ In shorthand: exec plan, feature contract, ticket, delivery.
 
 If a feature contract, ticket, or implementation idea exists without an active
 plan pointer, fix the exec plan first.
+
+## BDD-Led Planning Rules
+
+- BDD defines the full feature. Walking skeleton is the implementation strategy.
+- All business logic must be documented step by step in ` + "`docs/features/`" + `,
+  including rules, branches, state transitions, validations, permissions,
+  scoring/trust behavior, routing behavior, and user-visible outcomes.
+- The active plan schedule is the ordered list of failing BDD scenarios.
+- Feature tickets are created only from the current failing scenario or scenario group.
+- A feature is not shipped until in-scope BDD scenarios pass or are explicitly descoped by the CEO.
 
 ## Format
 
@@ -970,6 +989,7 @@ Architectural decisions and design documents for this project.
 | AD-085 | Checked role registries inventory explicit manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. | 2026-05-03 | Accepted |
 | AD-086 | Significant conversations must become durable repo artifacts when they change plans, decisions, investigations, quality evidence, or completed-work state. | 2026-05-03 | Accepted |
 | AD-087 | Universal mirrored tools are exposed through ` + "`mars-harness mcp serve`" + ` for MCP-compatible clients and local harness agents without depending on a model provider. | 2026-05-03 | Accepted |
+| AD-097 | Business logic is first-class BDD and belongs step by step under ` + "`docs/features/`" + `. | 2026-05-04 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1106,6 +1126,15 @@ the implementation strategy: make the next failing scenario pass through the
 thinnest real end-to-end path. The schedule is the ordered list of failing BDD
 scenarios in the active exec plan.
 
+Business logic is first-class BDD. Every product rule, workflow branch, state
+transition, validation, permission check, scoring/trust calculation, queue
+routing rule, release classification, or other user-visible outcome belongs in
+` + "`docs/features/`" + ` as step-by-step behavior before or alongside implementation.
+Tickets may reference business logic, and code may comment on it, but neither
+is the durable source of truth. Feature contracts must include ` + "`Business Logic`" + `,
+` + "`Step-By-Step Behavior`" + `, scenario schedule, Given/When/Then scenarios, and
+evidence.
+
 Planning order is strict: active exec plan first, then feature contract, then
 tickets, then implementation delivery. A project that has feature docs or
 tickets without a current plan has lost the control plane; repair the plan
@@ -1156,12 +1185,23 @@ exception context.
 | Failure mode | Mitigation |
 | --- | --- |
 | BDD becomes decorative prose | Each feature needs at least one integration/E2E test or command mapped to scenario IDs. |
+| Business logic hides in code or tickets | Require ` + "`Business Logic`" + ` and ` + "`Step-By-Step Behavior`" + ` sections in feature contracts and update them whenever behavior changes. |
 | Walking skeleton becomes scaffold theater | The slice must pass through a real user, CLI, agent, tool, ticket, or evidence path. |
 | Half-features are marked done | Feature truth lives in BDD scenario state, not ticket count. |
 | Enabler work is misrepresented as shipped value | Tickets, release notes, and quality score use ` + "`work_type`" + ` and scenario evidence. |
 | Autonomous goals create thrash | Weak/noisy signals go to observations; actionable goals need source, confidence, dedupe key, and review trigger. |
 | Source and target diverge | ` + "`update check`" + ` and ` + "`doctor --repo`" + ` report operating-model drift; update writes missing defaults only. |
 | Operating-model additions create handoff gaps | Treat operating-model changes as system changes: update the whole affected workflow in one task or record the blocker before merging. |
+
+## AD-097: Business Logic Is First-Class BDD
+
+All business logic is documented step by step under ` + "`docs/features/`" + `. A feature
+contract must carry the business behavior, not merely a scenario title list.
+Business logic includes product rules, workflow branches, state transitions,
+validations, permissions, scoring and trust behavior, queue or orchestration
+routing, release classification, and user-visible outcomes. Tickets and code
+may reference or implement this behavior, but they are not the durable source
+of truth.
 `,
 
 	"docs/goals/README.md": `# Goals
@@ -1251,12 +1291,28 @@ BDD feature contracts define feature completeness. They use Markdown
 Given/When/Then scenarios in v1; Go integration/E2E tests or explicit evidence
 commands execute the behavior.
 
+## Business Logic Is First-Class BDD
+
+All business logic belongs in ` + "`docs/features/`" + `. A feature contract is not just a
+completion checklist; it is the durable step-by-step description of how the
+product behaves. Document product rules, workflow branches, state transitions,
+validations, permissions, scoring or trust rules, routing, release
+classification, and user-visible outcomes here before or alongside
+implementation.
+
+Tickets may scope a slice of work, and code may include local comments, but the
+feature contract is the source of truth for business behavior. If required
+behavior is missing or stale in ` + "`docs/features/`" + `, update the feature contract
+or return to planning before expanding implementation.
+
 ## Required Fields
 
 - Feature ID
 - Goals
 - Status: draft, active, partially-passing, passing, superseded
 - Owner
+- Business Logic
+- Step-By-Step Behavior
 - Scenario Schedule
 - Out of Scope
 - Descoped Scenarios
@@ -1267,6 +1323,8 @@ commands execute the behavior.
 - Feature contracts come after the active exec plan: the plan names the feature
   and scenario schedule before tickets or delivery begin.
 - BDD defines the full feature before implementation.
+- Business logic is documented step by step under the feature contract, not
+  only in tickets, code comments, or release notes.
 - Walking skeleton is the implementation strategy, not the feature definition.
 - The schedule is the ordered list of failing scenarios.
 - No feature ships until in-scope scenarios pass or are explicitly descoped.
@@ -1280,11 +1338,27 @@ commands execute the behavior.
 - Status: active
 - Owner: CEO
 
+## Business Logic
+
+This feature contract is the durable home for business logic in this area.
+Product rules, workflow branches, state transitions, validations, permissions,
+scoring decisions, routing rules, and user-visible outcomes must be documented
+here before or alongside implementation. Do not rely on ticket text or code
+comments as the only description of behavior.
+
+## Step-By-Step Behavior
+
+The scenarios below are the step-by-step BDD contract for this feature. Each
+scenario describes the starting state, the action or event, and the observable
+outcome. When implementation changes business logic, update these steps and
+their evidence before claiming the feature is complete.
+
 ## Scenario Schedule
 
 1. F-001-S001 — goal to feature to active plan is visible
 2. F-001-S002 — feature ticket requires scenario evidence before done
 3. F-001-S003 — quality and release notes distinguish shipped scenarios from enabler work
+4. F-001-S004 — business logic is documented step by step in feature contracts
 
 ## Scenarios
 
@@ -1306,6 +1380,12 @@ Given an enabler ticket completes
 When release notes or quality score are updated
 Then they classify it as enabler work and do not claim shipped feature scenarios
 
+### F-001-S004: Business Logic Is First-Class BDD
+
+Given business logic changes through a product rule, workflow branch, state transition, validation, permission, scoring rule, routing rule, or user-visible outcome
+When a planner, engineer, reviewer, or maintainer records or implements that behavior
+Then the matching ` + "`docs/features/F-NNN-*.md`" + ` contract documents the behavior step by step with Business Logic, Step-By-Step Behavior, Given/When/Then scenarios, and evidence before the feature is claimed complete
+
 ## Out of Scope
 
 - A custom Gherkin parser
@@ -1318,6 +1398,7 @@ None.
 ## Evidence
 
 - Pending target-specific integration/E2E commands.
+- F-001-S004: ` + "`go test ./internal/scanner -run TestInit_success`" + ` verifies generated feature contracts include first-class business-logic sections.
 `,
 
 	"docs/design-docs/context-glossary.md": `# Context Glossary
@@ -1346,6 +1427,7 @@ loading every document.
 | In progress | Active work that should be completed, explicitly blocked, or returned with blocker metadata before new backlog work. | ` + "`docs/tickets/in-progress/`" + ` |
 | Goal | Outcome and priority signal used by the CEO to align the active plan. | ` + "`docs/goals/README.md`" + `, ` + "`docs/goals/active.md`" + ` |
 | BDD feature contract | Markdown Given/When/Then contract that defines feature completeness. | ` + "`docs/features/README.md`" + ` |
+| Business logic | Product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, and user-visible outcomes; document these step by step in feature contracts. | ` + "`docs/features/README.md`" + ` |
 | Walking skeleton | The thinnest real end-to-end path that makes the next failing BDD scenario pass. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
 | Canonical role domain | One of Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Role mode | A lower-kebab-case purpose inside a role domain, such as ticket-delivery or quality-review. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
@@ -1397,6 +1479,8 @@ harness and deployed harnesses.
 | Deployed harness | The harness consumed by this target application. |
 | Mirrored harness definitions | Harness definitions included in both the foundation harness and deployed harnesses. |
 | Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
+| BDD feature contract | A Markdown feature artifact in ` + "`docs/features/`" + ` that defines feature completeness, business logic, step-by-step behavior, scenarios, and evidence. |
+| Business logic | Product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, release classification, and user-visible outcomes; business logic is documented step by step in BDD feature contracts before or alongside implementation. |
 | Canonical operating domain | One of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. |
 | Role mode | A lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `. |
 | Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. |
@@ -1951,7 +2035,11 @@ SCENARIO RULES:
 TASK 2: After the exec plan write succeeds, make sure the feature contract named
 by **BDD Feature** exists in ` + "`docs/features/`" + `. If it is missing or stale,
 write the full ` + "`docs/features/F-NNN-*.md`" + ` contract with:
-- Feature ID, goals, owner, status, scenario schedule, out of scope, descoped scenarios, and evidence.
+- Feature ID, goals, owner, status, Business Logic, Step-By-Step Behavior,
+  scenario schedule, out of scope, descoped scenarios, and evidence.
+- Product rules, workflow branches, state transitions, validations,
+  permissions, scoring/trust behavior, routing behavior, and user-visible
+  outcomes documented step by step.
 - Given/When/Then scenarios matching the active plan schedule.
 - A clear note that tickets may only target the current failing scenario or scenario group.
 
@@ -2047,7 +2135,8 @@ For each "This week" priority that has no existing ticket:
    - depends_on: array of ticket IDs if applicable
    - body: full ticket content with these sections:
      - Context: link to the active goal, BDD feature, current scenario, and current operating plan priority
-     - Requirements: specific implementation details
+     - Requirements: specific implementation details and the feature-contract
+       business-logic section this ticket implements
      - Affected Files: file paths or directories
      - Design Guidance: link to relevant design doc (or note one is needed)
      - BDD Evidence: scenario IDs, required evidence links, and verifier
@@ -2224,6 +2313,10 @@ to process multiple tickets in a single run.
 STANDARD:
 - Write complete tests that validate every feature you build
 - Every acceptance criterion is covered by at least one test
+- Business logic changes must be documented step by step in the matching
+  ` + "`docs/features/F-NNN-*.md`" + ` contract: rules, branches, state transitions,
+  validations, permissions, scoring/trust behavior, routing, and user-visible
+  outcomes cannot live only in code or ticket text
 - Follow the project's existing code style and conventions
 - Handle errors explicitly, no magic numbers, use named constants
 - COMMIT AFTER EVERY SEMANTIC CHANGE — this is non-negotiable. Use the
@@ -2261,6 +2354,11 @@ TICKET SELECTION:
 
 Read the selected ticket fully: requirements, acceptance criteria, design docs.
 If ` + "`work_type: feature`" + `, also read the BDD scenario(s) named in ` + "`bdd_scenarios`" + `.
+If the selected feature ticket changes business logic that is missing from the
+feature contract, update the contract with Business Logic, Step-By-Step
+Behavior, Given/When/Then scenarios, and evidence mapping before closing the
+ticket. If the missing behavior changes scope beyond the current failing
+scenario, block and return to CEO/COO instead of expanding the implementation.
 
 IMPLEMENTATION:
 
@@ -2408,6 +2506,9 @@ REVIEW CHECKLIST:
    - Logic errors, off-by-one, null/nil handling, race conditions
    - Does the code do what the ticket says it should?
    - For feature tickets, do the mapped BDD scenarios pass through real E2E/integration evidence?
+   - Is every changed business rule, workflow branch, state transition,
+     validation, permission, scoring/trust rule, routing rule, or user-visible
+     outcome documented step by step in the matching feature contract?
 
 2. TEST COVERAGE
    - Are there tests for new code?
@@ -2431,6 +2532,8 @@ REVIEW CHECKLIST:
 5. DOCUMENTATION
    - Are new functions/APIs documented?
    - Are design docs updated if patterns changed?
+   - Are ` + "`docs/features/`" + ` Business Logic and Step-By-Step Behavior sections
+     updated when business behavior changed?
    - Are goal, feature, ticket, and quality evidence links updated when feature status changed?
 
 OUTPUT:
