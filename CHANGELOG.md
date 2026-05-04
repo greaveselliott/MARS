@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.25.1] - 2026-05-04
+<!-- mars-harness-release: version=0.25.1 commit=42393b327478 -->
+
+### Why This Release Matters
+It improves reliability through work to enforce bootstrap artifact order in planning.
+
+### Fixes
+- **planning:** Enforce bootstrap artifact order (42393b3)
+
 ## [0.25.0] - 2026-05-04
 <!-- mars-harness-release: version=0.25.0 commit=8622d4122e83 -->
 
