@@ -4,13 +4,16 @@
 **Date:** 2026-05-04
 **Owner:** Mars Harness maintainers
 **Decision:** AD-101
+**Architecture:** [documentation-sync-architecture.md](documentation-sync-architecture.md)
 
 ## Purpose
 
 This map is the durable bridge between source files, architecture, and BDD
 feature contracts. Every source file carries top-of-file `MarsDocSync` metadata
 with a `docs` array. When an agent changes a file, the listed docs are the
-minimum documentation review set for that change.
+minimum documentation review set for that change. The full architecture and
+universal operating model live in
+[documentation-sync-architecture.md](documentation-sync-architecture.md).
 
 The map is maintained by `internal/docsync` and checked with:
 
@@ -40,7 +43,7 @@ field is a list of repo-relative documentation paths.
 | Source Prefix | Architecture / Product Docs | Feature Contracts |
 | --- | --- | --- |
 | `.github/workflows/` | `docs/design-docs/release-versioning.md` | `docs/features/F-009-release-update-lifecycle.md` |
-| `cmd/mars-harness/` | `docs/product-specs/product-surface.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/release-versioning.md` | F-001, F-002, F-004, F-009 |
+| `cmd/mars-harness/` | `docs/product-specs/product-surface.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, `docs/design-docs/release-versioning.md` | F-001, F-002, F-004, F-009 |
 | `examples/` | `docs/design-docs/role-customization.md` | F-004 |
 | `internal/agent/` | `docs/design-docs/agent-runtime.md` | F-005 |
 | `internal/buildinfo/` | `docs/design-docs/release-versioning.md` | F-009 |
@@ -49,7 +52,7 @@ field is a list of repo-relative documentation paths.
 | `internal/context/` | `docs/design-docs/context-efficiency.md` | F-005 |
 | `internal/dashboard/` | `docs/design-docs/dashboard.md` | F-010 |
 | `internal/docsconsistency/` | `docs/design-docs/delivery-operating-model.md` | F-001 |
-| `internal/docsync/` | `docs/design-docs/delivery-operating-model.md`, this map | F-001 |
+| `internal/docsync/` | `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, this map | F-001 |
 | `internal/doctor/` | `docs/product-specs/product-surface.md` | F-004 |
 | `internal/evolution/` | `docs/design-docs/self-improvement.md` | F-012 |
 | `internal/github/` | `docs/product-specs/product-surface.md` | F-011 |
@@ -101,6 +104,8 @@ Notable cross-boundary files:
 ## Maintenance Rules
 
 - `docsync audit` is the mechanical source-code coverage gate.
+- The universal operating model and architecture live in
+  [documentation-sync-architecture.md](documentation-sync-architecture.md).
 - If a source prefix moves, update this document, `internal/docsync`, and the
   affected file metadata in the same change.
 - If a code change alters business behavior, update the referenced BDD feature

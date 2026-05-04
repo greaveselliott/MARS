@@ -54,6 +54,7 @@ Full glossary: [docs/design-docs/harness-glossary.md](docs/design-docs/harness-g
 Tools glossary: [docs/design-docs/tools-glossary.md](docs/design-docs/tools-glossary.md)
 Role model: [docs/design-docs/harness-operating-model.md](docs/design-docs/harness-operating-model.md)
 Role registry: [docs/roles/ROLES.md](docs/roles/ROLES.md)
+Documentation sync architecture: [docs/design-docs/documentation-sync-architecture.md](docs/design-docs/documentation-sync-architecture.md)
 
 Agents always operate on a target project. The harness is never the target of its own agents (no self-modification during runs).
 

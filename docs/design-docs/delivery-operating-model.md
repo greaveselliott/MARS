@@ -58,7 +58,9 @@ created or materially changed code files must carry a top-of-file
 `MarsDocSync` metadata comment block with a `docs:` list of repo-relative docs
 that describe, constrain, or explain that code. The same change updates those
 docs, or records in the ticket, plan, review, or commit evidence why the listed
-docs were checked and did not need content changes.
+docs were checked and did not need content changes. The full docsync
+architecture and universal operating model are documented in
+[documentation-sync-architecture.md](documentation-sync-architecture.md).
 
 Operating-model changes must be **symbiotic** with the existing system. A new
 rule, artifact, role behavior, tool, gate, or automation must fit the closed
@@ -247,9 +249,11 @@ All documentation is kept current as the system changes. Every source file and
 every newly created or materially changed code file must include a top-of-file
 metadata comment block named `MarsDocSync` that lists repo-relative
 documentation paths associated with that code. The source-to-documentation map
-lives in [code-documentation-map.md](code-documentation-map.md), is implemented
-by `internal/docsync`, and is checked by `mars-harness docsync audit --repo .`
-or the mirrored `docsync_audit` tool.
+lives in [code-documentation-map.md](code-documentation-map.md), the architecture
+and universal operating model live in
+[documentation-sync-architecture.md](documentation-sync-architecture.md), and the
+gate is implemented by `internal/docsync` and checked by
+`mars-harness docsync audit --repo .` or the mirrored `docsync_audit` tool.
 
 The canonical shape is:
 

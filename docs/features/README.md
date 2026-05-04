@@ -38,6 +38,9 @@ mars-harness docsync audit --repo .
 mars-harness tools run docsync_audit --repo . --args-json '{}'
 ```
 
+The architecture and universal operating model for this process live in
+[../design-docs/documentation-sync-architecture.md](../design-docs/documentation-sync-architecture.md).
+
 ## Contract Rules
 
 - Feature contracts come after the active exec plan: the plan names the feature

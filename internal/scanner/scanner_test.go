@@ -3,6 +3,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
+- docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/harness-glossary.md
 - docs/design-docs/harness-operating-model.md
 - docs/design-docs/release-versioning.md
@@ -416,6 +417,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(glossary), "docs/roles/ROLES.md")
 	assert.Contains(t, string(glossary), "docs/design-docs/tools-glossary.md")
 	assert.Contains(t, string(glossary), "docs/design-docs/code-documentation-map.md")
+	assert.Contains(t, string(glossary), "docs/design-docs/documentation-sync-architecture.md")
 	assert.Contains(t, string(glossary), "tool availability")
 	assert.Contains(t, string(glossary), "docs/design-docs/release-versioning.md")
 	assert.Contains(t, string(glossary), "docs/design-docs/skill-evolution.md")
@@ -445,6 +447,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Harness Glossary")
 	assert.Contains(t, string(agentGuide), "docs/design-docs/harness-operating-model.md")
 	assert.Contains(t, string(agentGuide), "docs/roles/ROLES.md")
+	assert.Contains(t, string(agentGuide), "docs/design-docs/documentation-sync-architecture.md")
 	assert.Contains(t, string(agentGuide), "Foundation harness")
 	assert.Contains(t, string(agentGuide), "Deployed harness")
 	assert.Contains(t, string(agentGuide), "Foundation operating model")
@@ -557,6 +560,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(designIndex), "AD-099")
 	assert.Contains(t, string(designIndex), "AD-100")
 	assert.Contains(t, string(designIndex), "AD-101")
+	assert.Contains(t, string(designIndex), "AD-102")
 
 	codeDocMap, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "code-documentation-map.md"))
 	require.NoError(t, err)
@@ -564,6 +568,14 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(codeDocMap), "MarsDocSync")
 	assert.Contains(t, string(codeDocMap), "docs:")
 	assert.Contains(t, string(codeDocMap), "docsync audit")
+	assert.Contains(t, string(codeDocMap), "documentation-sync-architecture.md")
+
+	docSyncArchitecture, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "documentation-sync-architecture.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(docSyncArchitecture), "Documentation Sync Architecture")
+	assert.Contains(t, string(docSyncArchitecture), "Universal Operating Model")
+	assert.Contains(t, string(docSyncArchitecture), "docsync_audit")
+	assert.Contains(t, string(docSyncArchitecture), "Role Responsibilities")
 
 	conversationRecord, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "conversation-as-system-record.md"))
 	require.NoError(t, err)
@@ -637,6 +649,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(featureContract), "Business Logic Is First-Class BDD")
 	assert.Contains(t, string(featureContract), "F-001-S005: No Stale Documentation")
 	assert.Contains(t, string(featureContract), "F-001-S006: Source-Wide Docsync Audit")
+	assert.Contains(t, string(featureContract), "F-001-S007: Universal Documentation Sync Operating Model")
 	assert.Contains(t, string(featureContract), "MarsDocSync")
 	assert.Contains(t, string(featureContract), "docs:")
 	assert.Contains(t, string(featureContract), "Given")
@@ -649,6 +662,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(featuresReadme), "No Stale Documentation")
 	assert.Contains(t, string(featuresReadme), "MarsDocSync")
 	assert.Contains(t, string(featuresReadme), "docsync audit")
+	assert.Contains(t, string(featuresReadme), "documentation-sync-architecture.md")
 	assert.Contains(t, string(featuresReadme), "Business logic is documented step by step")
 	assert.Contains(t, string(featuresReadme), "Feature contracts come after the active exec plan")
 

@@ -3,6 +3,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
+- docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/harness-glossary.md
 - docs/design-docs/harness-operating-model.md
 - docs/design-docs/release-versioning.md
@@ -462,7 +463,7 @@ var defaultHarnessFiles = map[string]string{
   - when: goals, BDD, feature contracts, planning, feedback, or quality evidence
     paths: docs/goals/README.md, docs/goals/active.md, docs/goals/observations.md, docs/features/README.md, docs/exec-plans/active/current-operating-plan.md, docs/QUALITY_SCORE.md
   - when: implementation, architecture, tests, local commands, source documentation metadata, or no-stale-documentation checks
-    paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md, docs/design-docs/code-documentation-map.md, docs/features/README.md
+    paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md, docs/design-docs/code-documentation-map.md, docs/design-docs/documentation-sync-architecture.md, docs/features/README.md
   - when: release planning, semantic versioning, changelog, patch notes, or tags
     paths: VERSION, CHANGELOG.md, docs/design-docs/release-versioning.md
   - when: self-improvement, repeated failures, telemetry triage, human intervention, or deciding whether to create a skill
@@ -617,6 +618,7 @@ Full glossary: ` + "`docs/design-docs/harness-glossary.md`" + `
 Tools glossary: ` + "`docs/design-docs/tools-glossary.md`" + `
 Role model: ` + "`docs/design-docs/harness-operating-model.md`" + `
 Role registry: ` + "`docs/roles/ROLES.md`" + `
+Documentation sync architecture: ` + "`docs/design-docs/documentation-sync-architecture.md`" + `
 
 ## Start Here
 
@@ -1003,6 +1005,7 @@ Architectural decisions and design documents for this project.
 | [harness-glossary.md](harness-glossary.md) | Accepted | First-class and contextual harness definitions mirrored from the foundation harness. |
 | [tools-glossary.md](tools-glossary.md) | Accepted | First-class mirrored tool availability, selection, and use-case context. |
 | [code-documentation-map.md](code-documentation-map.md) | Accepted | Source metadata map for keeping code, architecture docs, and BDD feature contracts in sync. |
+| [documentation-sync-architecture.md](documentation-sync-architecture.md) | Accepted | Architecture and universal operating model for ` + "`MarsDocSync`" + `, docsync audit, generated target mirroring, and stale-doc prevention. |
 | [tenets.md](tenets.md) | Accepted | Foundational rules the deployed harness inherits from Mars Harness. |
 | [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and deployed harness doctrine mirroring rules. |
 | [release-versioning.md](release-versioning.md) | Seed | Semantic versioning and generated patch-note policy for this repo. |
@@ -1025,6 +1028,7 @@ Architectural decisions and design documents for this project.
 | AD-099 | Generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. | 2026-05-04 | Accepted |
 | AD-100 | Historical release entries are backfilled through ` + "`mars-harness release backfill-notes`" + ` from marker-backed commit ranges. | 2026-05-04 | Accepted |
 | AD-101 | Source metadata maps code files to associated architecture docs and BDD feature contracts, then ` + "`docsync audit`" + ` checks coverage. | 2026-05-04 | Accepted |
+| AD-102 | Documentation Sync is a universal operating model: agents read changed-file ` + "`MarsDocSync`" + ` docs, classify documentation impact, update or verify associated docs, run docsync evidence, and mirror the model into generated targets. | 2026-05-04 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1282,6 +1286,7 @@ and remain current.
 **Date:** 2026-05-04
 **Owner:** Project maintainers
 **Decision:** AD-101
+**Architecture:** [documentation-sync-architecture.md](documentation-sync-architecture.md)
 
 ## Purpose
 
@@ -1289,6 +1294,8 @@ This map is the durable bridge between source files, architecture, and BDD
 feature contracts. Every source file carries top-of-file ` + "`MarsDocSync`" + `
 metadata with a ` + "`docs`" + ` array. When an agent changes a file, the listed
 docs are the minimum documentation review set for that change.
+The architecture and universal operating model live in
+[documentation-sync-architecture.md](documentation-sync-architecture.md).
 
 Check the map with:
 
@@ -1323,6 +1330,90 @@ block must be near the top before implementation declarations.
   docsync configuration in the same change.
 - If a file crosses package or feature boundaries, add the additional docs
   directly in that file's metadata.
+`,
+
+	"docs/design-docs/documentation-sync-architecture.md": `# AD-102: Documentation Sync Architecture And Universal Operating Model
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Owner:** Project maintainers
+**Related:** AD-098, AD-101, F-001
+
+## Context
+
+This deployed harness treats the repository as the system of record. That means
+source changes and durable docs must move together. The ` + "`MarsDocSync`" + `
+metadata block gives every audited source file a small, local checklist of the
+docs that own its behavior. The code map gives the repo a package-level default,
+and docsync audit checks that the checklist exists and points to real docs.
+
+## Decision
+
+Documentation Sync is a universal operating model inherited from Mars Harness.
+Before a code change is complete, agents read the changed file's ` + "`MarsDocSync`" + `
+docs, classify the documentation impact, update or verify associated docs, run
+docsync evidence, and record which docs changed or remained current.
+
+## Architecture
+
+The model has six layers:
+
+1. Metadata layer: top-of-file ` + "`MarsDocSync`" + ` blocks with a structured ` + "`docs:`" + `
+   list.
+2. Map layer: ` + "`docs/design-docs/code-documentation-map.md`" + ` records expected
+   docs for source prefixes.
+3. Audit layer: ` + "`mars-harness docsync audit --repo .`" + ` checks metadata,
+   missing docs, and map coverage.
+4. Tool layer: ` + "`docsync_audit`" + ` exposes the same check to harness agents.
+5. Evidence layer: tickets, reviews, releases, and traces record docsync output.
+6. Generated target layer: this target receives the same doctrine, feature
+   scenario, role guidance, and knowledge routes.
+
+## Universal Operating Model
+
+1. Identify changed source files.
+2. Read each file's ` + "`MarsDocSync`" + ` docs before claiming implementation is done.
+3. Classify the change:
+   - business behavior updates ` + "`docs/features/`" + `;
+   - architecture, generated defaults, tools, roles, or workflow changes update
+     design docs and role/tool guidance;
+   - public commands or user-facing surfaces update product or release docs.
+4. Update the listed docs in the same change, or record why they remain current.
+5. Add or repair metadata when files are created, moved, split, or gain new doc
+   ownership.
+6. Run ` + "`mars-harness docsync audit --repo .`" + ` or ` + "`docsync_audit`" + `.
+7. Record evidence in the ticket, review, release notes, or commit summary.
+
+## Role Responsibilities
+
+| Role | Documentation Sync Responsibility |
+| --- | --- |
+| Planner roles | Ensure plans and tickets name the feature contracts and docs that define the work. |
+| Engineer roles | Read metadata, update associated docs with code, and run docsync before commit. |
+| Reviewer roles | Verify metadata, docs freshness, and docsync evidence before approval. |
+| Maintainer roles | Keep release, dependency, and generated guidance docs aligned with source changes. |
+| Orchestrator roles | Route docsync blockers or stale-doc findings to the next appropriate role. |
+
+## Maintenance Rules
+
+- New source packages add metadata, update the code map, and run docsync.
+- Moved files re-check expected docs for the target prefix.
+- New feature contracts or design docs are added to metadata for files they own.
+- Deleted or renamed docs require metadata and map repairs before completion.
+- Generated target doctrine is user-owned after init; upgrades report drift
+  instead of overwriting local policy.
+
+## Evidence
+
+Use these commands as the local gate:
+
+` + "```" + `bash
+mars-harness docsync audit --repo .
+mars-harness tools run docsync_audit --repo . --args-json '{}'
+` + "```" + `
+
+The audit proves metadata coverage and real doc paths. It does not replace
+human or agent judgment over whether the prose itself is complete.
 `,
 
 	"docs/goals/README.md": `# Goals
@@ -1442,6 +1533,9 @@ mars-harness docsync audit --repo .
 mars-harness tools run docsync_audit --repo . --args-json '{}'
 ` + "```" + `
 
+The architecture and universal operating model for this process live in
+[../design-docs/documentation-sync-architecture.md](../design-docs/documentation-sync-architecture.md).
+
 ## Required Fields
 
 - Feature ID
@@ -1501,6 +1595,7 @@ their evidence before claiming the feature is complete.
 4. F-001-S004 — business logic is documented step by step in feature contracts
 5. F-001-S005 — code changes declare associated documentation and keep it current
 6. F-001-S006 — source-wide docsync audit maps code to architecture and feature documentation
+7. F-001-S007 — documentation sync has a universal operating model for source and generated targets
 
 ## Scenarios
 
@@ -1540,6 +1635,12 @@ Given the deployed harness source tree is audited
 When ` + "`mars-harness docsync audit --repo .`" + ` or the mirrored ` + "`docsync_audit`" + ` tool runs
 Then every audited source file declares a top-of-file ` + "`MarsDocSync`" + ` block with a ` + "`docs:`" + ` array, every referenced doc exists, and every file includes the documentation required by ` + "`docs/design-docs/code-documentation-map.md`" + `
 
+### F-001-S007: Universal Documentation Sync Operating Model
+
+Given an agent changes source, tools, generated defaults, role behavior, CLI behavior, architecture, or business logic
+When the agent prepares completion evidence
+Then it follows the documented documentation-sync operating model: read changed-file ` + "`MarsDocSync`" + ` metadata, classify the documentation impact, update or verify the listed docs, repair metadata or the canonical map when ownership changes, run docsync evidence, and record which docs changed or remained current
+
 ## Out of Scope
 
 - A custom Gherkin parser
@@ -1555,6 +1656,7 @@ None.
 - F-001-S004: ` + "`go test ./internal/scanner -run TestInit_success`" + ` verifies generated feature contracts include first-class business-logic sections.
 - F-001-S005: ` + "`go test ./internal/scanner -run TestInit_success`" + ` verifies generated doctrine includes no-stale-documentation metadata guidance.
 - F-001-S006: ` + "`mars-harness docsync audit --repo .`" + ` or ` + "`mars-harness tools run docsync_audit --repo . --args-json '{}'`" + `.
+- F-001-S007: ` + "`docs/design-docs/documentation-sync-architecture.md`" + ` documents the universal operating model.
 `,
 
 	"docs/design-docs/context-glossary.md": `# Context Glossary
@@ -1771,7 +1873,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`github_release_status`" + ` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
 | ` + "`architecture_audit`" + ` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
 | ` + "`harness_doctrine_sync`" + ` | Check mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency. | Non-mutating. Use when changing operating doctrine or mirrored definitions. |
-| ` + "`docsync_audit`" + ` | Audit source files for ` + "`MarsDocSync`" + ` metadata and associated documentation pointers. | Non-mutating. Use before commits that touch code or when validating the no-stale-docs operating model. |
+| ` + "`docsync_audit`" + ` | Audit source files for ` + "`MarsDocSync`" + ` metadata and associated documentation pointers. | Non-mutating. Use before commits that touch code or when validating the no-stale-docs operating model in [documentation-sync-architecture.md](documentation-sync-architecture.md). |
 | ` + "`git_release_guard`" + ` | Check git, tag, version, and release-note invariants around the release flow. | Non-mutating. Use before and after release-note generation. |
 | ` + "`tool_inventory_audit`" + ` | Compare registered tools, mutating policy, tools glossary, generated target guidance, and role exposure. | Non-mutating. Use whenever tools are added, removed, renamed, or reclassified. |
 | ` + "`tool_creation_guard`" + ` | Audit whether built-in tool creation followed the governed ` + "`tool_create`" + ` and ` + "`record_decision`" + ` path. | Non-mutating. Use when reviewing new tool work or exception handling. |

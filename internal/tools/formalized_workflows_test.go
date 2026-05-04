@@ -3,6 +3,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
+- docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-005-agent-execution-runtime.md
@@ -132,9 +133,11 @@ it does not clone a fresh working directory per job
 `+"`git_commit`"+`
 `+"`git_push`"+`
 `)
+	writeWorkflowFile(t, dir, "AGENTS.md", "Operating model\nMirrored tools\ndocs/design-docs/tools-glossary.md\ndocs/design-docs/documentation-sync-architecture.md\n")
 	writeWorkflowFile(t, dir, "docs/design-docs/harness-glossary.md", "Symbiotic operating-model change\nFormalized tool creation trigger\n")
-	writeWorkflowFile(t, dir, "docs/design-docs/delivery-operating-model.md", "formalized tools\nrepeated process\ndocsync_audit\n")
-	writeWorkflowFile(t, dir, "internal/scanner/init.go", "release_orchestrate\ndocsync_audit\nFormalized tool creation trigger\n")
+	writeWorkflowFile(t, dir, "docs/design-docs/delivery-operating-model.md", "formalized tools\nrepeated process\ndocsync_audit\ndocumentation-sync-architecture.md\n")
+	writeWorkflowFile(t, dir, "docs/design-docs/documentation-sync-architecture.md", "AD-102\nUniversal Operating Model\ndocsync_audit\n")
+	writeWorkflowFile(t, dir, "internal/scanner/init.go", "release_orchestrate\ndocsync_audit\ndocumentation-sync-architecture.md\nFormalized tool creation trigger\n")
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
 	return root

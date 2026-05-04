@@ -3,6 +3,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
+- docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/release-versioning.md
 - docs/product-specs/product-surface.md
 - docs/features/F-001-delivery-operating-model.md

@@ -3,6 +3,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
+- docs/design-docs/documentation-sync-architecture.md
 - docs/features/F-001-delivery-operating-model.md
 */
 package docsconsistency
@@ -19,18 +20,19 @@ import (
 func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 	root := repoRoot(t)
 	required := map[string][]string{
-		"docs/design-docs/delivery-operating-model.md":      {"AD-074", "BDD-Led Goal-Driven Walking-Skeleton", "AD-097", "Business logic is first-class BDD", "AD-098", "No stale documentation", "MarsDocSync"},
-		"docs/design-docs/harness-operating-model.md":       {"AD-084", "Planner", "End-to-End Tester", "`domain`", "`mode`"},
-		"docs/design-docs/conversation-as-system-record.md": {"AD-086", "Conversation As System Record", "Chat summaries can help humans catch up", "active-plan hygiene checker"},
-		"docs/goals/README.md":                              {"Goal Schema", "Autonomous Goal Rule", "Dedupe Key"},
-		"docs/goals/active.md":                              {"G-001", "Status: active", "Hypothesis"},
-		"docs/goals/observations.md":                        {"weak/noisy evidence"},
-		"docs/goals/superseded.md":                          {"Superseded Goals"},
-		"docs/design-docs/code-documentation-map.md":        {"Code Documentation Map", "MarsDocSync", "docsync audit", "Package Map"},
-		"docs/features/README.md":                           {"BDD Feature Contracts", "Business Logic Is First-Class BDD", "No Stale Documentation", "Given/When/Then", "Scenario Schedule"},
-		"docs/features/F-001-delivery-operating-model.md":   {"Feature ID: F-001", "Scenario Schedule", "F-001-S008", "F-001-S009", "No Stale Documentation", "Given", "When", "Then"},
-		"docs/tickets/README.md":                            {"work_type", "bdd_scenarios", "end_to_end_evidence", "verified_by"},
-		"docs/QUALITY_SCORE.md":                             {"shipped feature scenarios", "enabler work"},
+		"docs/design-docs/delivery-operating-model.md":        {"AD-074", "BDD-Led Goal-Driven Walking-Skeleton", "AD-097", "Business logic is first-class BDD", "AD-098", "No stale documentation", "MarsDocSync"},
+		"docs/design-docs/harness-operating-model.md":         {"AD-084", "Planner", "End-to-End Tester", "`domain`", "`mode`"},
+		"docs/design-docs/conversation-as-system-record.md":   {"AD-086", "Conversation As System Record", "Chat summaries can help humans catch up", "active-plan hygiene checker"},
+		"docs/goals/README.md":                                {"Goal Schema", "Autonomous Goal Rule", "Dedupe Key"},
+		"docs/goals/active.md":                                {"G-001", "Status: active", "Hypothesis"},
+		"docs/goals/observations.md":                          {"weak/noisy evidence"},
+		"docs/goals/superseded.md":                            {"Superseded Goals"},
+		"docs/design-docs/code-documentation-map.md":          {"Code Documentation Map", "MarsDocSync", "docsync audit", "Package Map", "documentation-sync-architecture.md"},
+		"docs/design-docs/documentation-sync-architecture.md": {"AD-102", "Documentation Sync", "Universal Operating Model", "Architecture", "docsync_audit", "Generated Target Layer"},
+		"docs/features/README.md":                             {"BDD Feature Contracts", "Business Logic Is First-Class BDD", "No Stale Documentation", "Given/When/Then", "Scenario Schedule"},
+		"docs/features/F-001-delivery-operating-model.md":     {"Feature ID: F-001", "Scenario Schedule", "F-001-S008", "F-001-S009", "F-001-S010", "No Stale Documentation", "Given", "When", "Then"},
+		"docs/tickets/README.md":                              {"work_type", "bdd_scenarios", "end_to_end_evidence", "verified_by"},
+		"docs/QUALITY_SCORE.md":                               {"shipped feature scenarios", "enabler work"},
 	}
 	for rel, needles := range required {
 		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
