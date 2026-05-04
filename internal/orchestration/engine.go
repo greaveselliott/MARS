@@ -102,7 +102,7 @@ func route(in Input) (nextRole, kind, reason, stop string) {
 		}
 		return "qa", "deterministic", "routing in-review ticket to QA", ""
 	case "blocked":
-		if role := roleForNeed(nextNeed); role != "" {
+		if role := roleForNeedInManifest(in.Manifest, nextNeed); role != "" {
 			return role, "deterministic", "routing blocker by next_need", ""
 		}
 		return fallbackRole(in.Manifest), "ambiguous", "blocked disposition lacks a deterministic next role", ""
@@ -116,7 +116,7 @@ func route(in Input) (nextRole, kind, reason, stop string) {
 		}
 		return "", "deterministic", "no work disposition stops dispatch", "no actionable work"
 	case "approved":
-		if role := roleForNeed(nextNeed); role != "" {
+		if role := roleForNeedInManifest(in.Manifest, nextNeed); role != "" {
 			return role, "deterministic", "routing approved work by next_need", ""
 		}
 		if role := defaultCompletionRoute(d.Role); role != "" {
@@ -124,7 +124,7 @@ func route(in Input) (nextRole, kind, reason, stop string) {
 		}
 		return "release-manager", "deterministic", "approved work is ready for release review", ""
 	case "completed":
-		if role := roleForNeed(nextNeed); role != "" {
+		if role := roleForNeedInManifest(in.Manifest, nextNeed); role != "" {
 			return role, "deterministic", "routing completed work by next_need", ""
 		}
 		if role := defaultCompletionRoute(d.Role); role != "" {
@@ -134,6 +134,19 @@ func route(in Input) (nextRole, kind, reason, stop string) {
 	default:
 		return fallbackRole(in.Manifest), "ambiguous", fmt.Sprintf("unknown disposition status %q", d.Status), ""
 	}
+}
+
+func roleForNeedInManifest(m *bundle.Manifest, nextNeed string) string {
+	role := roleForNeed(nextNeed)
+	if role != "head-of-strategy" {
+		return role
+	}
+	if m != nil {
+		if _, ok := m.Roles["head-of-strategy"]; ok {
+			return role
+		}
+	}
+	return "ceo"
 }
 
 func roleForNeed(nextNeed string) string {
@@ -152,6 +165,8 @@ func roleForNeed(nextNeed string) string {
 		return "cto-weekly"
 	case "ticket", "ticket_shaping", "ticket_breakdown":
 		return "coo"
+	case "strategy_advice", "executive_narrative", "tradeoff_analysis", "goal_conflict":
+		return "head-of-strategy"
 	case "goal", "goals", "goal_decision", "strategy", "strategy_review":
 		return "ceo"
 	case "dogfood", "e2e", "end_to_end":

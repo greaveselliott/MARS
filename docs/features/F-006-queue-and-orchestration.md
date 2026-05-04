@@ -100,6 +100,14 @@ Given an active plan names a BDD feature ID such as `F-001`
 When generated planner, ticketing, or Orchestrator prompts check for the feature contract
 Then they search `docs/features/F-001*.md`, treat slugged contracts as present, and do not block solely because `docs/features/F-001.md` is absent
 
+Given Orchestrator receives a next need of `strategy_advice`, `executive_narrative`, `tradeoff_analysis`, or `goal_conflict`
+When the target manifest includes the optional `head-of-strategy` role
+Then Orchestrator routes to that advisor for memo, tradeoff, and narrative work while CEO remains owner of final goal or vision decisions
+
+Given Orchestrator receives one of those strategy advisory next needs
+When the target manifest does not include `head-of-strategy`
+Then Orchestrator routes to CEO instead of inventing an absent role or blocking delivery
+
 ## Out of Scope
 
 - External queue systems such as Redis.

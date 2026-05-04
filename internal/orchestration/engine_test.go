@@ -117,6 +117,43 @@ func TestDecide_invalidOrchestratorSuggestedRoleFallsBackToOrchestrator(t *testi
 	require.Contains(t, decision.Reason, "suggested route rejected")
 }
 
+func TestDecide_strategyAdviceRoutesToHeadOfStrategyWhenConfigured(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "ceo", "head-of-strategy"),
+		Disposition: orgstate.Disposition{
+			JobID:    "job-1",
+			RepoID:   "repo-1",
+			Role:     "orchestrator",
+			Status:   "completed",
+			NextNeed: "strategy_advice",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "head-of-strategy", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "next_need")
+}
+
+func TestDecide_strategyAdviceFallsBackToCEOWhenHeadOfStrategyMissing(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "ceo"),
+		Disposition: orgstate.Disposition{
+			JobID:    "job-1",
+			RepoID:   "repo-1",
+			Role:     "orchestrator",
+			Status:   "completed",
+			NextNeed: "strategy_advice",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "ceo", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+}
+
 func TestDecide_repeatedOrchestratorRouteStopsDispatch(t *testing.T) {
 	t.Parallel()
 

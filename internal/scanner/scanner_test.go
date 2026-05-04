@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -335,6 +336,7 @@ func TestInit_success(t *testing.T) {
 	assert.DirExists(t, filepath.Join(dir, "docs", "reports", "qa"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "reports", "security"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "reports", "dependencies"))
+	assert.DirExists(t, filepath.Join(dir, "docs", "reports", "strategy"))
 	assert.FileExists(t, filepath.Join(dir, "AGENTS.md"))
 	assert.FileExists(t, filepath.Join(dir, "VERSION"))
 	assert.FileExists(t, filepath.Join(dir, "CHANGELOG.md"))
@@ -363,7 +365,7 @@ func TestInit_success(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, "docs", "references", "harness-engineering-agent-first.md"))
 
 	expectedPrompts := []string{
-		"ceo", "coo", "cto", "engineer", "qa", "security",
+		"ceo", "head-of-strategy", "coo", "cto", "engineer", "qa", "security",
 		"dependency-manager", "release-manager", "dogfood",
 		"pipeline-fixer", "orchestrator", "janitor",
 	}
@@ -377,7 +379,7 @@ func TestInit_success(t *testing.T) {
 	manifestStr := string(manifest)
 	assert.Contains(t, manifestStr, filepath.Base(dir))
 	for _, key := range []string{
-		"ceo:", "coo:", "cto-weekly:",
+		"ceo:", "head-of-strategy:", "coo:", "cto-weekly:",
 		"engineer:", "qa:", "security:",
 		"dependency-manager:", "release-manager:",
 		"dogfood:", "pipeline-fixer:", "orchestrator:", "janitor:",
@@ -405,6 +407,25 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, manifestStr, "tool_inventory_audit", "review roles should expose tool inventory audit")
 	assert.Contains(t, manifestStr, "max_turns: 40", "dogfood role should have max_turns: 40")
 	assert.Contains(t, manifestStr, "knowledge/context-glossary.yaml", "manifest should include default glossary knowledge route")
+
+	strategyRoleBlock := manifestRoleBlock(t, manifestStr, "head-of-strategy")
+	assert.Contains(t, strategyRoleBlock, "domain: planner")
+	assert.Contains(t, strategyRoleBlock, "mode: strategy-advisory")
+	assert.NotContains(t, strategyRoleBlock, "schedule:", "strategy advisor should not enter the default scheduled flow")
+	assert.NotContains(t, strategyRoleBlock, "triggers:", "strategy advisor should be dispatch/manual only")
+	assert.NotContains(t, strategyRoleBlock, "ticket_create", "strategy advisor should not create tickets")
+	assert.NotContains(t, strategyRoleBlock, "tool_create", "strategy advisor should not implement tooling")
+	assert.NotContains(t, strategyRoleBlock, "shell_exec", "strategy advisor should not get general implementation shell access")
+
+	strategyPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "head-of-strategy.md"))
+	require.NoError(t, err)
+	strategyPromptStr := string(strategyPrompt)
+	assert.Contains(t, strategyPromptStr, "## Personal Guide")
+	assert.Contains(t, strategyPromptStr, "### Modus Operandi")
+	assert.Contains(t, strategyPromptStr, "### Owns")
+	assert.Contains(t, strategyPromptStr, "### Does Not Own")
+	assert.Contains(t, strategyPromptStr, "### Best Feedback Format")
+	assert.Contains(t, strategyPromptStr, "### Stop Conditions")
 
 	metadata, err := ReadHarnessMetadata(dir)
 	require.NoError(t, err)
@@ -745,6 +766,36 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(releasePrompt), "What Changed")
 	assert.Contains(t, string(releasePrompt), "publish or update GitHub Release")
 	assert.Contains(t, string(releasePrompt), "notes-only release is a blocker")
+}
+
+func TestDefaultHeadOfStrategyPromptIncludesPersonalGuide(t *testing.T) {
+	t.Parallel()
+
+	prompt := defaultRolePrompts["head-of-strategy"]
+	require.NotEmpty(t, prompt)
+	assert.Contains(t, prompt, "## Personal Guide")
+	assert.Contains(t, prompt, "### Modus Operandi")
+	assert.Contains(t, prompt, "### Priorities")
+	assert.Contains(t, prompt, "### Owns")
+	assert.Contains(t, prompt, "### Does Not Own")
+	assert.Contains(t, prompt, "### Best Feedback Format")
+	assert.Contains(t, prompt, "### How I Like To Receive Feedback")
+	assert.Contains(t, prompt, "### Stop Conditions")
+	assert.Contains(t, prompt, "Final CEO decision")
+	assert.Contains(t, prompt, "Decision needed")
+	assert.Contains(t, prompt, "next needed artifact is an exec plan, ticket, implementation, or QA decision")
+}
+
+func manifestRoleBlock(t *testing.T, manifest, role string) string {
+	t.Helper()
+	marker := "\n  " + role + ":"
+	start := strings.Index(manifest, marker)
+	require.NotEqual(t, -1, start, "manifest missing role block %s", role)
+	block := manifest[start+1:]
+	if end := strings.Index(block[1:], "\n\n  "); end >= 0 {
+		block = block[:end+1]
+	}
+	return block
 }
 
 func TestInit_alreadyExists(t *testing.T) {

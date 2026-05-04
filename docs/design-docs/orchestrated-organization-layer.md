@@ -105,6 +105,11 @@ The orchestration engine uses these rules:
 - Non-Orchestrator dispositions route to the configured `orchestrator` role.
 - Orchestrator dispositions honor `suggested_role` after validating that the
   role exists in the manifest.
+- Strategy advisory needs (`strategy_advice`, `executive_narrative`,
+  `tradeoff_analysis`, and `goal_conflict`) route to the optional
+  `head-of-strategy` role when the manifest defines it, and otherwise fall back
+  to CEO. The advisor can shape options and narrative, but CEO records the
+  actual goal or vision decision.
 - Manifests without an `orchestrator` keep deterministic fallback routing for
   compatibility.
 - Repeated identical role/ticket/need decisions on the same ticket-state hash

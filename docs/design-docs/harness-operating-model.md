@@ -52,6 +52,7 @@ integrations; normal roles make semantic commits to `main` and push directly.
 | Manifest role | Domain | Mode | Notes |
 | --- | --- | --- | --- |
 | `ceo` | Planner | `strategy` | Owns goals, feature contracts, and scenario priority. |
+| `head-of-strategy` | Planner | `strategy-advisory` | Optional dispatch/manual advisor for strategy memos, tradeoffs, executive narrative, and goal conflicts; CEO owns the final decision. |
 | `cto-weekly` | Planner | `architecture-planning` | Validates architecture fit and walking-skeleton shape. |
 | `coo` | Planner | `ticket-breakdown` | Converts the active scenario group into deduped tickets. |
 | `engineer` | Engineer | `ticket-delivery` | Implements one ticket and records evidence. |
@@ -76,6 +77,18 @@ Modes classify why a role is running; they do not loosen policy.
   evidence still comes from tickets, tests, traces, and release artifacts.
 - A mode cannot turn a read-only reviewer into a mutating engineer unless the
   manifest role, trust level, and guardrails allow that behavior.
+
+## Personal Guides
+
+Role prompts can include a Personal Guide when handoff nuance matters. A guide
+states the role's modus operandi, priorities, ownership boundary, non-ownership
+boundary, preferred feedback format, and stop conditions so other agents can
+brief it explicitly instead of relying on implicit expectations.
+
+Optional advisory roles must include this guide because they sit outside the
+default delivery loop. The guide does not grant new authority: final decisions,
+tools, schedules, trust, and guardrails still come from the manifest, role
+registry, and owning role contracts.
 
 ## Trigger Routing
 

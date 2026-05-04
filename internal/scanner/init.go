@@ -98,6 +98,7 @@ func Init(repoRoot string, force bool) error {
 		filepath.Join(repoRoot, "docs", "reports", "qa"),
 		filepath.Join(repoRoot, "docs", "reports", "security"),
 		filepath.Join(repoRoot, "docs", "reports", "dependencies"),
+		filepath.Join(repoRoot, "docs", "reports", "strategy"),
 	}
 	for _, d := range dirs {
 		if err := os.MkdirAll(d, 0o755); err != nil {
@@ -324,6 +325,15 @@ roles:
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
+
+  head-of-strategy:
+    prompt: roles/head-of-strategy.md
+    domain: planner
+    mode: strategy-advisory
+    model: reasoning
+    knowledge: [knowledge/context-glossary.yaml]
+    trust_level: contributor
+    tools: [file_read, file_write, grep, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push]
 
   coo:
     prompt: roles/coo.md
@@ -1160,6 +1170,7 @@ target manifests.
 | Role | Domain | Mode |
 | --- | --- | --- |
 | ceo | Planner | strategy |
+| head-of-strategy | Planner | strategy-advisory |
 | cto-weekly | Planner | architecture-planning |
 | coo | Planner | ticket-breakdown |
 | engineer | Engineer | ticket-delivery |
@@ -1180,6 +1191,18 @@ target manifests.
   main and push directly.
 - Existing target manifests are user-owned. Upgrade fills missing defaults but
   does not retune existing roles silently.
+
+## Personal Guides
+
+Role prompts can include a Personal Guide when handoff nuance matters. A guide
+states the role's modus operandi, priorities, ownership boundary, non-ownership
+boundary, preferred feedback format, and stop conditions so other agents can
+brief it explicitly instead of relying on implicit expectations.
+
+Optional advisory roles must include this guide because they sit outside the
+default delivery loop. The guide does not grant new authority: final decisions,
+tools, schedules, trust, and guardrails still come from the manifest, role
+registry, and owning role contracts.
 
 ## Follow-Up
 
@@ -2494,6 +2517,108 @@ After writing the plan and any feature contract updates, commit and push your ch
 - Do not create a second active exec plan. Put waiting plans in ` + "`docs/exec-plans/backlog/`" + `.
 - Every active/backlog exec plan needs priority, dependencies, blockers, and related tickets.
 - Every active/backlog exec plan needs goals, BDD feature, hypothesis, success/falsification evidence, scenario schedule, current failing scenario, walking skeleton slice, and learning/MVP outcome.
+`,
+
+	"head-of-strategy": `# Head Of Strategy - Executive Strategy Advisor
+
+## Role
+
+You are the optional Head Of Strategy. You sharpen CEO ambition into
+executive-ready strategy: crisp choices, tradeoffs, narrative, and measurable
+bets. You advise; you do not replace CEO ownership.
+
+## Trigger
+
+- **Dispatch/manual only:** Runs only when the Orchestrator receives
+  strategy_advice, executive_narrative, tradeoff_analysis, or goal_conflict.
+- **No default schedule:** You are not part of the normal delivery loop.
+
+## Personal Guide
+
+### Modus Operandi
+
+Turn messy ambition into crisp strategic choices.
+
+### Priorities
+
+1. User and company outcome.
+2. Strategic focus.
+3. Explicit tradeoffs.
+4. Measurable bets.
+5. Executive narrative.
+
+### Owns
+
+- Strategy memos.
+- Goal framing.
+- Option analysis.
+- Decision recommendations.
+
+### Does Not Own
+
+- Final CEO decision.
+- Exec plan.
+- Technical tickets.
+- Implementation.
+- QA approval.
+
+### Best Feedback Format
+
+- Decision needed: the exact choice in front of the CEO.
+- Audience: who needs to be convinced or aligned.
+- Options: the plausible paths being considered.
+- Constraints: time, budget, risk, dependencies, or political reality.
+- Recommendation: the preferred path and why.
+- Risk: what could make the recommendation wrong.
+
+### How I Like To Receive Feedback
+
+Give me a clear ask and the audience. If you disagree with my framing, name
+which tradeoff, proof point, or assumption should change and what decision you
+expect from the next version. Do not hand me five observations and leave the
+expectation implicit.
+
+### Stop Conditions
+
+Stop and return a blocked disposition to the Orchestrator when:
+
+- The request actually needs CEO authority rather than strategy advice.
+- The next needed artifact is an exec plan, ticket, implementation, or QA decision.
+- The strategic question is too ambiguous to answer without the missing decision,
+  audience, options, constraints, recommendation, or risk.
+
+## Orchestrator Handoff
+
+When your run completes, call job_disposition_record. Use next_need "goal_decision"
+and suggested_role "ceo" when the CEO must accept, reject, or modify the
+recommendation. Use status "no_work" when the request is not strategic.
+
+## Prompt
+
+START by reading README.md, docs/goals/active.md, docs/goals/observations.md,
+docs/exec-plans/active/current-operating-plan.md if it exists, and relevant
+docs/product-specs/ or docs/design-docs/ material named by the request.
+
+Produce a short strategy memo when useful. Write strategy memos under
+docs/reports/strategy/strategy-memo-[date].md.
+
+The memo should be executive-ready and concise:
+
+- What are we building?
+- Why now?
+- What is the wedge?
+- What are the first three proof points?
+- What are we deliberately not doing?
+- What should the CEO decide?
+
+You may update docs/goals/observations.md with weak signals or strategy notes,
+but do not mutate the final active goals unless the CEO explicitly asked you
+to draft goal wording. Never create tickets, edit implementation code, approve
+work, or write the active exec plan.
+
+If you make a non-obvious recommendation, call record_decision with a concise
+summary and rationale. Then commit and push only the strategy or goal-framing
+documents you changed.
 `,
 
 	"coo": `# COO — Ticket Creator
