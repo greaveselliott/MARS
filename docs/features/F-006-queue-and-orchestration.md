@@ -108,6 +108,14 @@ Given Orchestrator receives one of those strategy advisory next needs
 When the target manifest does not include `head-of-strategy`
 Then Orchestrator routes to CEO instead of inventing an absent role or blocking delivery
 
+Given a role records `handoff` or `feedback` in `job_disposition_record`
+When Orchestrator selects the next role
+Then the disposition stores those objects durably and the next ask names the target role, requested change or action, context, constraints, expected output, and evidence instead of relying on implicit handoff prose
+
+Given Orchestrator receives `ticket`, `ticket_shaping`, or `ticket_breakdown`
+When the target manifest contains `cto-weekly`
+Then Orchestrator routes to CTO for technical decomposition and implementation ticket creation, while `exec_plan`, `feature_contract`, `scenario_schedule`, and `current_failing_scenario` route to COO
+
 ## Out of Scope
 
 - External queue systems such as Redis.

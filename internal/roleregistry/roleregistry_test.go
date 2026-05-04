@@ -28,6 +28,18 @@ func TestCheckRepoPassesGeneratedRegistry(t *testing.T) {
 	assert.True(t, report.OK(), "unexpected registry issues: %+v", report.Issues)
 }
 
+func TestSourceDefaultRegistryMatchesGenerated(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+	path := filepath.Join(repoRoot, filepath.FromSlash(roleregistry.RegistryPath))
+	expected := roleregistry.DefaultMarkdown()
+	if os.Getenv("UPDATE_ROLE_REGISTRY") == "1" {
+		require.NoError(t, os.WriteFile(path, []byte(expected), 0o644))
+	}
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, expected, string(data))
+}
+
 func TestCheckRepoReportsMissingManifestRole(t *testing.T) {
 	t.Parallel()
 	repo := initRegistryRepo(t)
@@ -123,4 +135,20 @@ func appendRegistryRow(t *testing.T, repo, row string) {
 	defer f.Close()
 	_, err = f.WriteString(row)
 	require.NoError(t, err)
+}
+
+func findRepoRoot(t *testing.T) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	require.NoError(t, err)
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatal("go.mod not found")
+		}
+		dir = parent
+	}
 }

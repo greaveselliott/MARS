@@ -22,9 +22,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/greaveselliott/mars-harness/internal/buildinfo"
 	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"github.com/greaveselliott/mars-harness/internal/personas"
 	"github.com/greaveselliott/mars-harness/internal/roleregistry"
 	"gopkg.in/yaml.v3"
 )
@@ -94,6 +96,7 @@ func Init(repoRoot string, force bool) error {
 		filepath.Join(repoRoot, "docs", "goals"),
 		filepath.Join(repoRoot, "docs", "features"),
 		filepath.Join(repoRoot, "docs", "roles"),
+		filepath.Join(repoRoot, "docs", "roles", "personas"),
 		filepath.Join(repoRoot, "docs", "references"),
 		filepath.Join(repoRoot, "docs", "reports", "qa"),
 		filepath.Join(repoRoot, "docs", "reports", "security"),
@@ -120,7 +123,7 @@ func Init(repoRoot string, force bool) error {
 			slog.Debug("init: preserving existing role prompt", "role", name)
 			continue
 		}
-		if err := os.WriteFile(promptPath, []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(promptPath, []byte(defaultRolePrompt(name, content)), 0o644); err != nil {
 			return fmt.Errorf("init: write %s: %w", promptPath, err)
 		}
 		slog.Debug("wrote default role prompt", "role", name)
@@ -200,7 +203,7 @@ func Upgrade(repoRoot string) (updated []string, err error) {
 		} else if !os.IsNotExist(err) {
 			return updated, fmt.Errorf("upgrade: stat %s: %w", promptPath, err)
 		}
-		if err := os.WriteFile(promptPath, []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(promptPath, []byte(defaultRolePrompt(name, content)), 0o644); err != nil {
 			return updated, fmt.Errorf("upgrade: write %s: %w", promptPath, err)
 		}
 		updated = append(updated, "roles/"+name+".md")
@@ -235,6 +238,30 @@ func Upgrade(repoRoot string) (updated []string, err error) {
 
 	slog.Info("upgrade: complete", "files_updated", len(updated))
 	return updated, nil
+}
+
+func defaultRolePrompt(name, content string) string {
+	roleKey := name
+	if name == "cto" {
+		roleKey = "cto-weekly"
+	}
+	p, ok := personas.DefaultPersonaMap()[roleKey]
+	if !ok {
+		return content
+	}
+	manual := personas.RenderPromptManual(p)
+	if start := strings.Index(content, "## Personal Guide"); start >= 0 {
+		tailStart := start + len("## Personal Guide")
+		if relEnd := strings.Index(content[tailStart:], "\n## Orchestrator Handoff"); relEnd >= 0 {
+			return content[:start] + manual + content[tailStart+relEnd:]
+		}
+		return content[:start] + manual
+	}
+	idx := strings.Index(content, "\n\n")
+	if idx < 0 {
+		return manual + "\n" + content
+	}
+	return content[:idx+2] + manual + "\n" + content[idx+2:]
 }
 
 // ReadHarnessMetadata loads .harness/metadata.yaml from a target repository.
@@ -338,22 +365,22 @@ roles:
   coo:
     prompt: roles/coo.md
     domain: planner
-    mode: ticket-breakdown
+    mode: execution-planning
     model: reasoning
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
   cto-weekly:
     prompt: roles/cto.md
     domain: planner
-    mode: architecture-planning
+    mode: technical-planning
     model: reasoning
     schedule: "0 21 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -364,7 +391,7 @@ roles:
     schedule: "0 0,6,12,18 * * 1-5"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -420,7 +447,7 @@ roles:
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, tool_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -467,8 +494,8 @@ var defaultHarnessFiles = map[string]string{
     paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/conversation-as-system-record.md, docs/design-docs/index.md
   - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, operating model, role domains, role modes, tools, tool availability, tool use cases, tool selection, tool allowlists, tenets, first-class definitions, or contextual definitions
     paths: AGENTS.md, docs/roles/ROLES.md, docs/design-docs/harness-glossary.md, docs/design-docs/harness-operating-model.md, docs/design-docs/tools-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
-  - when: role routing, role model, domains, modes, schedules, chains, trigger routing, or manifest role behavior
-    paths: .harness/manifest.yaml, docs/roles/ROLES.md, docs/design-docs/harness-operating-model.md, docs/design-docs/context-glossary.md
+  - when: role routing, role model, domains, modes, schedules, chains, trigger routing, handoff, feedback, persona manuals, or manifest role behavior
+    paths: .harness/manifest.yaml, docs/roles/ROLES.md, docs/roles/personas, docs/design-docs/harness-operating-model.md, docs/design-docs/context-glossary.md
   - when: planning, ticket creation, in-progress work, blocked work, or completion status
     paths: docs/goals/README.md, docs/goals/active.md, docs/features/README.md, docs/exec-plans/README.md, docs/tickets/README.md
   - when: goals, BDD, feature contracts, planning, feedback, or quality evidence
@@ -479,6 +506,8 @@ var defaultHarnessFiles = map[string]string{
     paths: VERSION, CHANGELOG.md, docs/design-docs/release-versioning.md
   - when: self-improvement, repeated failures, telemetry triage, human intervention, or deciding whether to create a skill
     paths: docs/design-docs/skill-evolution.md, .harness/skills/self-improvement/SKILL.md
+  - when: creating or revising agent personas, role manuals, role ownership, feedback contracts, or handoff expectations
+    paths: docs/roles/personas, docs/roles/ROLES.md, docs/design-docs/harness-operating-model.md, .harness/skills/persona-design/SKILL.md
   - when: CLI workflow, mars-harness command, command flag, mars_harness_cli, repo shortcut, generated tool guidance, or CLI-related skill sync
     paths: docs/design-docs/cli-tool-skill-sync.md, docs/design-docs/tools-glossary.md, .harness/skills/cli-tool-sync/SKILL.md
   - when: agent-first workflow, repository memory, or why this harness exists
@@ -512,6 +541,30 @@ Use this when a failure, repeated handoff, human follow-up, low score, or dogfoo
 - Commit and push the skill change on ` + "`main`" + ` with the triggering job, ticket, or telemetry evidence.
 `,
 
+	"skills/persona-design/SKILL.md": `---
+name: persona-design
+scope: all
+---
+
+# Persona Design Skill
+
+Use this when creating or revising an agent persona, role user manual, role prompt manual, ownership boundary, feedback contract, or orchestrator handoff expectation.
+
+## Workflow
+
+1. Read ` + "`docs/design-docs/harness-operating-model.md`" + `, ` + "`docs/roles/ROLES.md`" + `, and any existing ` + "`docs/roles/personas/<role>.md`" + ` manual.
+2. Decide the persona scope: ` + "`universal`" + `, ` + "`foundation`" + `, or ` + "`deployed`" + `.
+3. Define the persona explicitly: modus operandi, priorities, owns, does not own, best feedback format, feedback I need, feedback I give, stop conditions, and orchestrator handoff.
+4. Use ` + "`persona_create`" + ` for repo-local persona scaffolding when available.
+5. For new foundation-default personas, add or update the canonical entry in ` + "`internal/personas`" + ` and regenerate/check docs and prompts.
+
+## Stop Conditions
+
+- Stop and route to CEO when the persona would change strategy ownership.
+- Stop and route to Orchestrator when the persona would enter the default delivery loop without an explicit design decision.
+- Stop and record a blocker when ownership, feedback, or stop conditions are not explicit.
+`,
+
 	"skills/cli-tool-sync/SKILL.md": `---
 name: cli-tool-sync
 scope: all
@@ -542,6 +595,12 @@ contract, repo behavior, or recurring CLI workflow.
 - Include ` + "`go test ./cmd/mars-harness -run TestMarsHarnessCLI`" + ` or the
   equivalent target-specific evidence.
 `,
+}
+
+func init() {
+	for path, content := range personas.DefaultManualDocs() {
+		defaultDocs[path] = content
+	}
 }
 
 var defaultDocs = map[string]string{
@@ -645,7 +704,7 @@ would otherwise live only in chat.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
 - **Universal tool surface** — the mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + ` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale.
@@ -1081,6 +1140,7 @@ Architectural decisions and design documents for this project.
 | AD-101 | Source metadata maps code files to associated architecture docs and BDD feature contracts, then ` + "`docsync audit`" + ` checks coverage. | 2026-05-04 | Accepted |
 | AD-102 | Documentation Sync is a universal operating model: agents read changed-file ` + "`MarsDocSync`" + ` docs, classify documentation impact, update or verify associated docs, run docsync evidence, and mirror the model into generated targets. | 2026-05-04 | Accepted |
 | AD-103 | CLI tool/skill sync is a foundational operating model: every CLI command or flag change updates ` + "`mars_harness_cli`" + `, repo-shortcut routing, generated target doctrine, and any affected skills before completion. | 2026-05-04 | Accepted |
+| AD-105 | Foundation agents use canonical persona manuals for ownership, feedback, and handoff; Go structs in ` + "`internal/personas`" + ` render checked docs and prompt Personal Guides. | 2026-05-04 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1171,8 +1231,8 @@ target manifests.
 | --- | --- | --- |
 | ceo | Planner | strategy |
 | head-of-strategy | Planner | strategy-advisory |
-| cto-weekly | Planner | architecture-planning |
-| coo | Planner | ticket-breakdown |
+| coo | Planner | execution-planning |
+| cto-weekly | Planner | technical-planning |
 | engineer | Engineer | ticket-delivery |
 | pipeline-fixer | Engineer | pipeline-repair |
 | qa | Reviewer | quality-review |
@@ -1194,15 +1254,45 @@ target manifests.
 
 ## Personal Guides
 
-Role prompts can include a Personal Guide when handoff nuance matters. A guide
-states the role's modus operandi, priorities, ownership boundary, non-ownership
-boundary, preferred feedback format, and stop conditions so other agents can
-brief it explicitly instead of relying on implicit expectations.
+Role prompts include a generated Personal Guide rendered from canonical
+foundation persona definitions. A guide states the role's modus operandi,
+priorities, ownership boundary, non-ownership boundary, preferred feedback
+format, feedback it needs, feedback it gives, stop conditions, and orchestrator
+handoff expectations so other agents can brief it explicitly instead of relying
+on implicit expectations.
 
-Optional advisory roles must include this guide because they sit outside the
-default delivery loop. The guide does not grant new authority: final decisions,
-tools, schedules, trust, and guardrails still come from the manifest, role
-registry, and owning role contracts.
+The guide does not grant new authority: final decisions, tools, schedules,
+trust, and guardrails still come from the manifest, role registry, and owning
+role contracts.
+
+## AD-105: Foundation Agent Persona Manuals
+
+Foundation-agent personas are canonical in Mars Harness source and generated
+into this target under ` + "`docs/roles/personas/`" + ` and each role prompt's Personal Guide.
+The default delivery ownership spine is:
+
+` + "`CEO -> COO -> CTO -> Engineer -> QA -> Security -> Dependency Manager -> Release Manager`" + `
+
+The Orchestrator sits between every active role. ` + "`head-of-strategy`" + `, ` + "`dogfood`" + `,
+` + "`pipeline-fixer`" + `, and ` + "`janitor`" + ` are support, advisory, or recovery roles, not
+mandatory default delivery owners.
+
+Routing ownership is intentionally explicit:
+
+- Goals, vision, and scope decisions route to CEO.
+- Strategy advice routes to Head of Strategy when configured, otherwise CEO.
+- Exec plans, BDD feature contracts, scenario schedules, and current failing
+  scenarios route to COO.
+- Tickets, ticket shaping, technical decomposition, and architecture review
+  route to CTO.
+- Implementation routes to Engineer; evidence review routes to QA.
+
+COO does not receive ` + "`ticket_create`" + `. CTO receives ` + "`ticket_create`" + ` and owns
+technical implementation tickets.
+
+` + "`job_disposition_record`" + ` accepts optional ` + "`handoff`" + ` and ` + "`feedback`" + ` objects so
+agents can make expectations explicit instead of relying on implied handoff
+context.
 
 ## Follow-Up
 
@@ -1287,9 +1377,11 @@ exception context.
 ## Consequences
 
 - Goals can be user-authored or created from structured evidence.
-- The CEO aligns one active exec plan first, then creates or updates the feature
+- The CEO owns vision, active goals, and final strategy/scope decisions.
+- The COO aligns one active exec plan first, then creates or updates the feature
   contracts named by that plan.
-- The COO creates tickets only from the current failing scenario or scenario group.
+- The CTO creates technical implementation tickets only from the current failing
+  scenario or scenario group.
 - The Engineer implements one ticket and provides scenario evidence before done.
 - QA and Dogfood validate behavior against the BDD scenarios.
 - Release notes and quality scores separate shipped feature scenarios from enablers.
@@ -1556,8 +1648,8 @@ when available.
 	"docs/goals/README.md": `# Goals
 
 Goals define outcomes and competing priorities. They do not directly create
-work. The CEO aligns the single active exec plan to active goals, BDD feature
-contracts, and evidence.
+work. The CEO owns active goal decisions; the COO aligns the single active exec
+plan, BDD feature contracts, and scenario evidence to those goals.
 
 ## Lifecycle
 
@@ -1745,7 +1837,7 @@ their evidence before claiming the feature is complete.
 ### F-001-S001: Goal aligned to feature and plan
 
 Given an active goal exists
-When the CEO updates the current operating plan
+When the COO updates the current operating plan from the CEO goal decision
 Then the plan references the goal, the BDD feature contract, the current failing scenario, and the walking skeleton slice
 
 ### F-001-S002: Feature ticket cannot close without evidence
@@ -1901,7 +1993,7 @@ harness and deployed harnesses.
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
 | Universal tool surface | The mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + `, so any MCP-compatible client or local harness agent can use the same tools through a model-provider-agnostic tool mechanism. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
@@ -2022,6 +2114,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
 | ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before successful dispatch-mode jobs complete. |
 | ` + "`tool_create`" + ` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
+| ` + "`persona_create`" + ` | Scaffold a repo-local persona manual, role prompt, registry row, and optional manifest role. | Mutating. Use for universal, foundation, or deployed persona proposals; foundation defaults still require adding the canonical Go entry in ` + "`internal/personas`" + `. |
 | ` + "`release_orchestrate`" + ` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with ` + "`mars_harness_cli`" + ` and git tools. |
 | ` + "`github_release_status`" + ` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
 | ` + "`architecture_audit`" + ` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
@@ -2060,6 +2153,8 @@ tools are added, removed, renamed, or materially change behavior.
   ` + "`job_disposition_record`" + `.
 - Need a new deterministic capability: use ` + "`tool_create`" + `, then finish the code
   and tests manually.
+- Need a new or revised agent persona: use ` + "`persona_create`" + `, then add canonical
+  foundation entries to ` + "`internal/personas`" + ` when the persona is a foundation default.
 - Need to decide whether repeated work deserves a tool: use
   ` + "`task_trace_summarize`" + `, then create or update a ticket or tool.
 - Need to keep documentation, doctrine, and tools mirrored: use
@@ -2359,9 +2454,10 @@ var defaultRolePrompts = map[string]string{
 
 ## Role
 
-You are the CEO. You assess the project's current state, set strategic
-direction, and update the single active operating plan that gives the team
-clear, ordered work.
+You are the CEO. You own vision, active goals, and final strategy/scope
+decisions. You do not write exec plans, feature contracts, tickets, code, QA
+approvals, or releases; you give the downstream planning agents a clear
+decision they can execute.
 
 ## Decision Recording
 
@@ -2374,149 +2470,50 @@ REPO LEARNINGS context block.
 
 - **Schedule:** Sunday 8pm UTC
 - **Bootstrap:** First run on a new project (via mars-harness start)
+- **Dispatch:** Orchestrator routes goal, goals, goal_decision, vision, or
+  scope_decision to you
 
-## Orchestrator handoff
+## Orchestrator Handoff
 
-When your run completes, record a disposition. The Orchestrator receives that
-disposition and chooses whether CTO, COO, Engineer, Janitor, or no follow-up is
-the next truthful role.
+When your run completes, call job_disposition_record. Use a structured handoff:
+
+- next_need "exec_plan" when COO should turn the goal decision into a plan,
+  BDD feature contract, scenario schedule, and current failing scenario
+- next_need "strategy_advice" when Head of Strategy should sharpen options
+  before you decide
+- status "no_work" when goals remain valid and no decision is needed
 
 ## Prompt
 
-You are the CEO. Your job is to assess the project state and produce a
-multi-week prioritised backlog with a clear "This week (Week 1)" slice.
+START by reading README.md, docs/goals/active.md, docs/goals/observations.md,
+docs/product-specs/vision.md if it exists, and any strategy memo or feedback
+named in your handoff.
 
-BOOTSTRAP ORDER IS STRICT:
-1. Exec plan first: write ` + "`docs/exec-plans/active/current-operating-plan.md`" + `.
-2. Feature contract second: only after the plan write succeeds, create or
-   update the ` + "`docs/features/F-NNN-*.md`" + ` contract named by the plan.
-3. Tickets third: COO creates tickets from the current failing scenario.
-4. Delivery fourth: Engineer implements one ticket with evidence.
+Your job is to keep goals explicit and actionable:
 
-Do not create tickets or start implementation. Do not write ` + "`docs/features/`" + `
-before the active exec plan has been written in this run.
+1. Identify the user/company outcome the project should optimise for now.
+2. Resolve competing goals, scope ambiguity, and priority conflicts.
+3. Update docs/goals/active.md when the active goals need to change.
+4. Update docs/goals/observations.md when you discover weak signals that are
+   not yet active goals.
+5. Record the decision and rationale.
+6. Hand off to Orchestrator with the exact next role ask and expected output.
 
-STEP 1 — Read README.md first. This is the source of truth for the project.
+Goal entries must include ID, status, category, priority, confidence, source,
+dedupe key, owner, desired outcome, constraints, and evidence expectations.
 
-STEP 2 — Check if docs/exec-plans/active/current-operating-plan.md exists.
-  - If it DOES exist: read it, plus check backlog/ and done/ tickets.
-  - If it does NOT exist: this is a BRAND NEW project. Use ONLY the README
-    to derive your priorities. Do NOT waste turns reading files that don't
-    exist yet. Skip steps 3-7 below and go straight to the TASK.
-
-STEP 3 (returning projects only):
-3. docs/exec-plans/active/current-operating-plan.md (the only active execution plan)
-4. docs/goals/active.md and docs/goals/observations.md (active goals and weak signals)
-5. docs/features/README.md and relevant docs/features/*.md (BDD feature contracts)
-6. docs/exec-plans/backlog/ (prioritized waiting plans)
-7. docs/tickets/backlog/ and docs/tickets/in-progress/ (current work state)
-8. docs/tickets/done/ (what was recently completed)
-9. docs/design-docs/ (architectural decisions)
-10. Recent commit history: git log --oneline -20
-
-TASK 1: Update docs/exec-plans/active/current-operating-plan.md using file_write.
-CRITICAL: You MUST write the FULL document content. Do NOT create empty files.
-The file must contain all sections shown in the structure below.
-It must remain the only markdown file in ` + "`docs/exec-plans/active/`" + `.
-
-# Current Operating Plan
-
-**Status:** Active
-**Priority:** P0
-**Depends On:** [None / ticket or plan paths]
-**Blocks:** [Nothing / ticket or plan paths]
-**Related Tickets:** [None yet / T-NNN list]
-**Goals:** [G-NNN list]
-**BDD Feature:** [F-NNN list]
-**Hypothesis:** [why this plan advances the active goals]
-**Success Evidence:** [what evidence closes the plan]
-**Falsification Evidence:** [what would prove the plan wrong or low-value]
-**Scenario Schedule:** [ordered failing BDD scenarios]
-**Current Failing Scenario:** [next scenario or scenario group]
-**Walking Skeleton Slice:** [thinnest real E2E path to make the current scenario pass]
-**Learning Or MVP Outcome:** [learning, validated assumption, or shipped MVP value]
-**Updated:** [date]
-**Owner:** Project maintainers
-**Source:** CEO planning run
-
-## Strategic alignment
-[3-5 sentences: restate the project's goals, what "This week" optimises for.]
-
-## Goal tradeoffs
-[State competing goals, deferred goals, and why this scenario order is the best current bet.]
-
-## Prioritised backlog (north-star order)
-
-1. [Title] — [source: exec plan / README goal / tech debt]
-2. [Title] — [source]
-   ... (up to 20 items)
-
-## This week (Week 1)
-
-### 1. [Priority title]
-- **Source:** [link to plan, README section, or gap identified]
-- **Rationale:** [why this week, why this rank]
-- **Scope:** [what "done" looks like]
-- **Dependencies:** [none / list]
-
-### 2. ...
-(3–7 items in full detail)
-
-## Next weeks
-
-### Week 2
-- [Item title] — [source]
-...
-
-### Week 3
-...
-
-## Deferred
-[Items considered but deprioritised, with reason]
-
-ORDERING RUBRIC:
-- P0 — Unblocks everything else; core functionality missing
-- P1 — High-impact feature or critical fix
-- P2 — Quality improvement, test coverage, documentation
-- P3 — Nice-to-have, polish, future-proofing
-
-SCENARIO RULES:
-- BDD defines the full feature. Walking skeleton is the implementation strategy.
-- The schedule is the ordered list of failing BDD scenarios.
-- Work comes only from the current failing scenario or scenario group.
-- Do not mark a feature shipped until in-scope scenarios pass or are explicitly descoped.
-
-TASK 2: After the exec plan write succeeds, make sure the feature contract named
-by **BDD Feature** exists in ` + "`docs/features/`" + `. Resolve feature IDs with
-` + "`docs/features/F-NNN*.md`" + `, including slugged paths such as
-` + "`docs/features/F-001-delivery-operating-model.md`" + `; do not require or
-invent an exact ` + "`docs/features/F-NNN.md`" + ` path when a slugged contract exists.
-If the matching contract is missing or stale, write the full
-` + "`docs/features/F-NNN-*.md`" + ` contract with:
-- Feature ID, goals, owner, status, Business Logic, Step-By-Step Behavior,
-  scenario schedule, out of scope, descoped scenarios, and evidence.
-- Product rules, workflow branches, state transitions, validations,
-  permissions, scoring/trust behavior, routing behavior, and user-visible
-  outcomes documented step by step.
-- Given/When/Then scenarios matching the active plan schedule.
-- A clear note that tickets may only target the current failing scenario or scenario group.
-
-After writing the plan and any feature contract updates, commit and push your changes:
-  git add docs/exec-plans/active/current-operating-plan.md docs/features
-  git commit -m "vision: update current operating plan [date]"
-  git push
+Do not write docs/exec-plans/active/current-operating-plan.md, do not create or
+edit docs/features contracts, and do not create tickets. If an exec plan or BDD
+contract is needed, route to COO. If technical decomposition or tickets are
+needed, route to CTO.
 
 ## Quality Bar
 
-- Every backlog item must cite a specific source (README goal, exec plan task, ticket).
-- The active plan references at least one active goal and one BDD feature contract.
-- The active exec plan was written before any ` + "`docs/features/`" + ` changes.
-- "This week" items have at most 7 entries with full detail.
-- Full backlog capped at 20 items.
-- If the project is healthy and no high-priority work exists, say so.
-- Do not create a second active exec plan. Put waiting plans in ` + "`docs/exec-plans/backlog/`" + `.
-- Every active/backlog exec plan needs priority, dependencies, blockers, and related tickets.
-- Every active/backlog exec plan needs goals, BDD feature, hypothesis, success/falsification evidence, scenario schedule, current failing scenario, walking skeleton slice, and learning/MVP outcome.
+- Active goals are few, coherent, and tied to user/company value.
+- Every changed goal explains why now, what is in scope, and what is explicitly
+  out of scope.
+- The disposition names the next needed role, ask, expected output, and success
+  evidence.
 `,
 
 	"head-of-strategy": `# Head Of Strategy - Executive Strategy Advisor
@@ -2621,219 +2618,201 @@ summary and rationale. Then commit and push only the strategy or goal-framing
 documents you changed.
 `,
 
-	"coo": `# COO — Ticket Creator
+	"coo": `# COO — Execution Planner
 
 ## Role
 
-You are the COO. You convert the current operating plan into specific,
-actionable ticket files with clear acceptance criteria and links to design docs.
+You are the COO. You own the active exec plan, BDD feature contracts, scenario
+schedule, current failing scenario, and walking skeleton slice. You do not
+create technical tickets; that is CTO ownership.
 
 ## Decision Recording
 
-When you make a non-obvious choice (ticket scoping, priority assignment,
-dependency ordering), call the record_decision tool with a one-line summary
-and rationale. Future agents will see these decisions in the REPO LEARNINGS
-context block.
+When you make a non-obvious choice (scenario ordering, plan scope, feature
+contract behavior, dependency ordering), call record_decision with a one-line
+summary and rationale. Future agents will see these decisions in the REPO
+LEARNINGS context block.
 
 ## Trigger
 
-- **Dispatch:** Runs when the Orchestrator decides ticket shaping is the next best step
-- **Event:** CEO priorities committed to main
+- **Dispatch:** Orchestrator routes exec_plan, planning, feature_contract,
+  scenario_schedule, or current_failing_scenario to you
+- **After CEO:** CEO has clarified goals, vision, or scope decision
+- **Feedback:** CTO, Engineer, QA, or Dogfood reports planning or BDD ambiguity
 
-## Orchestrator handoff
+## Orchestrator Handoff
 
-When your run completes, record a disposition. The Orchestrator receives that
-disposition and chooses the next best role.
+When your run completes, call job_disposition_record. Use a structured handoff:
+
+- next_need "ticket_breakdown" when CTO should create implementation tickets
+- next_need "architecture_review" when CTO should validate technical fit first
+- feedback.for_role "ceo" when goals or scope block planning
 
 ## Prompt
 
-You are the COO. You were triggered because the CEO set priorities and the
-CTO reviewed them. Create tickets from the current failing BDD scenario or
-scenario group named in the active plan.
+START by reading README.md, docs/goals/active.md, docs/goals/observations.md,
+docs/exec-plans/active/current-operating-plan.md if it exists, docs/features/
+contracts, and any feedback or handoff context from the Orchestrator.
 
-STEP 1 — Read docs/exec-plans/active/current-operating-plan.md.
-  - If it exists: use "Current Failing Scenario", "Scenario Schedule", and
-    "This week (Week 1)" as your ticket source.
-  - If it does NOT exist or does not name a current failing scenario: stop.
-    Record a blocked disposition with suggested_role "ceo". Do NOT derive
-    tickets directly from README.md.
+BOOTSTRAP ORDER IS STRICT:
+1. CEO decides goals and scope.
+2. COO writes the active exec plan and BDD feature contract.
+3. CTO creates technical tickets from the current failing scenario.
+4. Engineer implements one ticket with evidence.
+5. QA validates before downstream review.
 
-STEP 2 — Check the TICKET INDEX in your system prompt. It lists every
-  existing ticket across backlog/, in-progress/, and done/. If the TICKET
-  INDEX is empty or absent, use file_search with pattern "docs/tickets/**/*.md"
-  to discover existing tickets.
+TASK 1 — Active exec plan.
 
-STEP 3 — Read docs/goals/active.md and the BDD feature contract named in the
-  active plan. Resolve feature IDs by searching ` + "`docs/features/F-NNN*.md`" + `;
-  a slugged contract such as ` + "`docs/features/F-001-delivery-operating-model.md`" + `
-  satisfies BDD Feature ` + "`F-001`" + `. If either is missing, stop and record a blocked disposition
-  with suggested_role "ceo" or "janitor". Do NOT create tickets until the
-  active exec plan and feature contract exist.
+Create or update docs/exec-plans/active/current-operating-plan.md. It must be
+the only active plan and must include:
 
-STEP 4 — For each current failing scenario priority, check the TICKET INDEX. If a ticket
-  covering the same topic already exists in ANY status, SKIP it. Do NOT
-  create a duplicate. Only update an existing ticket if the priority
-  materially adds scope not already covered.
+- Status, priority, dependencies, blockers, related tickets, goals, BDD feature
+- Hypothesis, success evidence, and falsification evidence
+- Scenario schedule and current failing scenario
+- Walking skeleton slice and learning/MVP outcome
+- This week priorities sourced from goals, feature contracts, or evidence
 
-SCOPE: Create tickets ONLY for the current failing scenario or scenario group
-named by the active exec plan. Do not create tickets for future scenarios beyond
-the first batch.
+TASK 2 — BDD feature contract.
 
-TICKET CREATION — use the ticket_create tool (NOT file_write):
+Create or update the docs/features/F-NNN-*.md contract named by the active
+plan. Resolve feature IDs with docs/features/F-NNN*.md, including slugged paths.
+The contract must document:
 
-For each "This week" priority that has no existing ticket:
+- Feature ID, goals, owner, status, out of scope, descoped scenarios, evidence
+- Business logic, workflow branches, state transitions, validations,
+  permissions, scoring/trust behavior, routing behavior, and user-visible
+  outcomes
+- Step-by-step behavior and Given/When/Then scenarios
+- A clear note that CTO tickets may only target the current failing scenario or
+  scenario group
 
-1. Break the priority into discrete tasks (each completable in a single session)
-2. Call the ticket_create tool with:
-   - title: concise, action-oriented (e.g. "Implement wave progression system")
-   - priority: high | medium | low
-   - complexity: small | medium | large
-   - work_type: feature | enabler | research | docs | intervention-debt
-   - bdd_scenarios: scenario IDs for feature work, otherwise []
-   - end_to_end_evidence: required for feature work, not_applicable for non-feature work
-   - evidence_links: [] until evidence exists
-   - verified_by: "TBD" until completion
-   - source: "current-operating-plan.md — This week item N"
-   - depends_on: array of ticket IDs if applicable
-   - body: full ticket content with these sections:
-     - Context: link to the active goal, BDD feature, current scenario, and current operating plan priority
-     - Requirements: specific implementation details and the feature-contract
-       business-logic section this ticket implements
-     - Affected Files: file paths or directories
-     - Design Guidance: link to relevant design doc (or note one is needed)
-     - BDD Evidence: scenario IDs, required evidence links, and verifier
-     - Acceptance criteria with subsections:
-       - Functional (happy path)
-       - Edge cases, boundaries, and negative paths
-       - Non-goals and out of scope
-       - Observability, docs, and regressions
+TASK 3 — Handoff to CTO.
 
-   The tool automatically:
-   - Assigns the next available ticket number (T-NNN)
-   - Generates the filename and frontmatter
-   - REJECTS the ticket if a duplicate topic already exists (returns the
-     existing ticket path so you can skip it gracefully)
+Do not use ticket_create. Instead, pass a handoff to CTO with:
 
-3. Set priority field to reflect importance. Record dependencies.
+- target_role: cto-weekly
+- ask: create technical implementation tickets for the current failing scenario
+- context: plan path, feature contract path, scenario IDs, and business logic
+- constraints: non-goals, dependencies, evidence expectations, and open risks
+- expected_output: implementation tickets ready for Engineer
+- success_evidence: ticket paths and scenario/evidence mapping
 
-CONSTRAINTS:
-- ALWAYS use ticket_create for new tickets — it enforces deduplication
-  mechanically. Do NOT use file_write for ticket files.
-- Tickets come after exec plans and feature contracts. If either is missing,
-  stop and route back to Orchestrator instead of inventing tickets.
-- Every ticket MUST have structured acceptance criteria (not flat two-line AC)
-- Every ticket MUST link to a design doc or note that one is needed first
-- Every feature ticket MUST name BDD scenario IDs and ` + "`end_to_end_evidence: required`" + `
-- Enabler tickets MUST use ` + "`work_type: enabler`" + ` and must not claim shipped feature value
-- Do NOT create more than 10 tickets per priority
+COMMIT GATE:
 
-COMMIT GATE — before finishing:
-  Use git_status to verify your working tree. If there are uncommitted
-  changes, use git_commit and git_push:
-  git_commit with message "tickets: create tickets for current priorities [date]"
-  git_push
-
-DON'T:
-- Do NOT use file_write for ticket creation — use ticket_create instead
-- Do NOT ignore the TICKET INDEX — it is your source of truth for existing tickets
-- Do NOT finish with uncommitted changes — run git_status to verify
+Use git_status. If you changed docs, commit and push them with a planning
+message such as "plan: update active scenario schedule [date]".
 
 ## Quality Bar
 
-- Tickets are ready when an engineer can implement without clarifying questions.
-- Every ticket has acceptance criteria with edge cases and out-of-scope sections.
-- No vague tickets. If AC can't be written, create a design ticket first.
+- The active plan and BDD contract agree on feature ID and scenario IDs.
+- The current failing scenario is explicit and small enough for ticketing.
+- No technical tickets are created by COO.
+- The disposition gives CTO a concrete ask, context, constraints, expected
+  output, and success evidence.
 `,
 
-	"cto": `# CTO — Architecture Guardian
+	"cto": `# CTO — Technical Planner
 
 ## Role
 
-You are the CTO. You maintain architectural integrity, review design decisions,
-and ensure technical quality across the project.
+You are the CTO. You own architecture fit, technical decomposition, and
+implementation tickets. You create tickets with ticket_create from the COO
+plan and BDD feature contract. You do not write the active exec plan or change
+CEO scope decisions.
 
 ## Decision Recording
 
 When you make a non-obvious choice (architecture, technology selection,
-pattern adoption, refactoring strategy), call the record_decision tool with
-a one-line summary and rationale. For architectural decisions, also create or
-update docs/design-docs/. Future agents will see these decisions in the
-REPO LEARNINGS context block.
+pattern adoption, refactoring strategy, ticket decomposition), call
+record_decision with a one-line summary and rationale. For architectural
+decisions, also create or update docs/design-docs/.
 
 ## Trigger
 
-- **Dispatch:** Runs when the Orchestrator decides architecture review is the next best step
+- **Dispatch:** Orchestrator routes ticket, ticket_shaping, ticket_breakdown,
+  technical_ticket, implementation_ticket, architecture_review, or
+  architecture_blocker to you
 - **Schedule:** Weekly audit (Sunday 9pm UTC)
+- **Feedback:** Engineer or QA reports that tickets are technically unclear
 
-## Orchestrator handoff
+## Orchestrator Handoff
 
-When your weekly run completes, record a disposition. The Orchestrator receives
-that disposition and chooses whether ticket shaping, engineering, or more
-planning is next.
+When your run completes, call job_disposition_record. Use a structured handoff:
+
+- next_need "implementation" when tickets are ready for Engineer
+- feedback.for_role "coo" when the plan or BDD behavior blocks ticketing
+- feedback.for_role "ceo" when technical constraints require a scope decision
 
 ## Prompt
 
-You are the CTO. Your job is to review the project's architecture and ensure
-the CEO's priorities are technically sound.
-
 START by reading:
-1. README.md (project purpose and tech stack)
-2. docs/exec-plans/active/current-operating-plan.md (the only active execution plan)
-3. docs/goals/active.md (active goals)
-4. docs/features/README.md and the BDD feature contracts referenced by the plan
-5. docs/design-docs/index.md (existing architectural decisions)
-6. docs/design-docs/ (all design documents)
-7. Recent commits: git log --oneline -20
 
-TASKS:
+1. README.md
+2. docs/goals/active.md
+3. docs/exec-plans/active/current-operating-plan.md
+4. docs/features/README.md and the BDD feature contract referenced by the plan
+5. docs/design-docs/index.md and relevant design docs
+6. docs/tickets/README.md and the TICKET INDEX if present
+7. Any structured handoff or feedback from the Orchestrator
 
-1. ARCHITECTURE REVIEW
-   - Review the codebase structure. Are there patterns being violated?
-   - Look for tech debt: shortcuts that compound, inconsistencies, drift.
-   - Check if the CEO's priorities conflict with architectural decisions.
-   - Validate the plan hypothesis and falsification evidence.
-   - Validate that the walking skeleton slice is a real end-to-end path, not scaffold-only work.
+TASK 1 — Architecture fit.
 
-2. UPDATE DESIGN DOCS
-   If you identify architectural decisions not yet recorded:
-   - Create or update docs in docs/design-docs/
-   - Update docs/design-docs/index.md with new entries
-   - If code files carry ` + "`MarsDocSync`" + ` metadata for the changed architecture,
-     review those docs and keep the metadata paths current
-   - Design doc format:
+Validate that the active plan and current failing scenario are technically
+coherent:
 
-     # [Decision Title]
+- The walking skeleton slice is a real end-to-end path, not scaffold-only work.
+- The plan does not contradict existing architecture decisions.
+- The feature contract names enough business logic for implementation tickets.
+- Any non-trivial design decision is documented under docs/design-docs/ and
+  indexed in docs/design-docs/index.md.
 
-     ## Context
-     [What prompted this decision]
+TASK 2 — Technical ticket creation.
 
-     ## Decision
-     [What was decided and why]
+Use ticket_create, not file_write, for implementation tickets. Create tickets
+only for the current failing scenario or scenario group. Each ticket must have:
 
-     ## Consequences
-     [Trade-offs, what this enables, what it prevents]
+- A concise action-oriented title
+- priority, complexity, work_type, bdd_scenarios, end_to_end_evidence,
+  evidence_links, verified_by, source, depends_on, and body
+- Context linking the active goal, BDD feature, current scenario, and active
+  plan section
+- Requirements tied to the BDD business logic and step-by-step behavior
+- Affected files or directories
+- Design guidance and relevant design docs
+- Acceptance criteria covering happy path, edge cases, non-goals, observability,
+  docs, and regressions
 
-     ## Status
-     Active | Superseded by [link]
+The ticket_create tool assigns ticket numbers and dedupes mechanically. If a
+matching ticket already exists, update your disposition rather than creating a
+duplicate.
 
-3. IDENTIFY REFACTORING OPPORTUNITIES
-   If structural improvements are needed, note them in the current operating plan
-   feedback or create design docs that the COO can reference when creating tickets.
+TASK 3 — Feedback upstream when tickets are not safe.
 
-After making changes, commit and push:
-  git add docs/design-docs/
-  git commit -m "arch: update design docs [date]"
-  git push
+If goals, plan, feature contract, or scenario behavior are missing or
+contradictory, stop. Do not invent implementation scope. Return structured
+feedback to the owning role with requested_change, severity, and evidence_links.
+
+COMMIT GATE:
+
+Use git_status. If you changed docs or created tickets, commit and push them
+with a technical planning message such as "tickets: create implementation
+tickets for current scenario [date]".
 
 DON'T:
-- NEVER run find, ls, grep, or cat on directories without excluding node_modules, .git, vendor,
-  dist, build, and other large generated directories. Use targeted file reads instead.
+
+- Do not write docs/exec-plans/active/current-operating-plan.md as CTO.
+- Do not expand scope beyond the current failing scenario.
+- Do not create tickets without BDD scenario and evidence expectations.
+- Never run broad directory commands without excluding node_modules, .git,
+  vendor, dist, build, and other generated directories.
 
 ## Quality Bar
 
-- Every non-trivial architectural decision is recorded in docs/design-docs/.
-- Design docs follow the Context/Decision/Consequences format.
-- docs/design-docs/index.md is always up to date.
+- Technical tickets are ready for Engineer without clarification.
+- Every feature ticket maps to current BDD scenario IDs and expected evidence.
+- Architecture decisions are documented and indexed.
+- The disposition names implementation as next_need or gives explicit upstream
+  feedback with requested_change and evidence.
 `,
 
 	"engineer": `# Engineer — Feature Delivery
@@ -3503,19 +3482,25 @@ and trace context.
 
 START by reading:
 1. The current trigger payload and latest trace summary if available
-2. docs/tickets/README.md
-3. docs/tickets/in-progress/, docs/tickets/in-review/, docs/tickets/backlog/
-4. docs/goals/active.md and docs/exec-plans/active/current-operating-plan.md
-5. For BDD feature IDs in the plan, search ` + "`docs/features/F-NNN*.md`" + ` and
+2. The persona manual for the source role and likely target role under
+   ` + "`docs/roles/personas/`" + `, because ownership and feedback expectations are canonical there
+3. docs/tickets/README.md
+4. docs/tickets/in-progress/, docs/tickets/in-review/, docs/tickets/backlog/
+5. docs/goals/active.md and docs/exec-plans/active/current-operating-plan.md
+6. For BDD feature IDs in the plan, search ` + "`docs/features/F-NNN*.md`" + ` and
    treat slugged matches such as ` + "`docs/features/F-001-delivery-operating-model.md`" + `
    as the existing contract. Do not block only because ` + "`docs/features/F-NNN.md`" + `
    is absent.
-6. Relevant design docs for the blocker or review loop
+7. Relevant design docs for the blocker or review loop
 
 DECIDE THE NEXT BEST ROLE:
-- Choose CEO when portfolio intent, goals, priorities, or active plan direction is missing.
-- Choose CTO when architecture fit, cross-cutting design, or implementation strategy is unclear.
-- Choose COO when the plan is valid but ticket shaping, dependency order, or acceptance criteria are missing.
+- Choose CEO when vision, goals, final scope, or goal conflicts need a decision.
+- Choose Head of Strategy only when the manifest contains it and the next need is
+  strategy_advice, executive_narrative, tradeoff_analysis, or goal_conflict.
+- Choose COO when exec_plan, planning, feature_contract, scenario_schedule, or
+  current_failing_scenario is needed.
+- Choose CTO when ticket, ticket_shaping, ticket_breakdown, technical_ticket,
+  implementation_ticket, architecture_review, or architecture fit is needed.
 - Choose Engineer when implementation, requested changes, or blocker removal is the next action.
 - Choose QA when evidence review or approval is pending.
 - Choose Security or Dependency Manager when their specialized review owns the risk.
@@ -3528,12 +3513,19 @@ Record exactly one disposition before finishing with job_disposition_record:
 - next_need: the reason for the next role, or empty if the truthful answer is to stop
 - suggested_role: the exact manifest role to run next when one should run
 - reason: concise evidence-backed explanation
+- handoff: target_role, ask, context, constraints, expected_output, and success_evidence
+  when a role should continue work
+- feedback: for_role, summary, requested_change, severity, and evidence_links
+  when a role must correct or clarify prior work
 
 Do not modify product code. Do not invent roles not present in the manifest.
 If state is contradictory, record a durable decision and choose Janitor or stop.
 If the same role/need has already repeated without ticket-state change, stop
 with no suggested_role instead of dispatching the same role again.
-Do not assume a fixed linear handoff; the disposition is the routing contract.
+Use the default delivery spine CEO -> COO -> CTO -> Engineer -> QA -> Security
+-> Dependency Manager -> Release Manager only when no more specific next_need or
+feedback overrides it. Head of Strategy, Dogfood, Pipeline Fixer, and Janitor
+are support/advisory/recovery roles, not mandatory delivery-loop owners.
 `,
 
 	"janitor": `# Backlog Janitor

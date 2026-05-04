@@ -344,6 +344,7 @@ func TestInit_success(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, ".harness", "knowledge", "context-glossary.yaml"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "skills", "self-improvement", "SKILL.md"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "skills", "cli-tool-sync", "SKILL.md"))
+	assert.FileExists(t, filepath.Join(dir, ".harness", "skills", "persona-design", "SKILL.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "tickets", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "exec-plans", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "exec-plans", "active", "current-operating-plan.md"))
@@ -361,6 +362,9 @@ func TestInit_success(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, "docs", "features", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "features", "F-001-delivery-operating-model.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "roles", "ROLES.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "roles", "personas", "ceo.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "roles", "personas", "coo.md"))
+	assert.FileExists(t, filepath.Join(dir, "docs", "roles", "personas", "cto-weekly.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "references", "README.md"))
 	assert.FileExists(t, filepath.Join(dir, "docs", "references", "harness-engineering-agent-first.md"))
 
@@ -399,8 +403,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, manifestStr, "mars_harness_cli", "manifest should expose mars_harness_cli as a mirrored tool")
 	assert.Contains(t, manifestStr, "tool_create", "manifest should expose tool_create as a mirrored tool")
 	assert.Contains(t, manifestStr, "docsync_audit", "manifest should expose docsync_audit as a mirrored documentation tool")
-	assert.Contains(t, manifestStr, "record_decision, tool_create, task_trace_summarize, docsync_audit, git_status", "implementation roles should allow tool_create and docsync before git tools")
-	assert.Contains(t, manifestStr, "record_decision, ticket_create, tool_create, task_trace_summarize, docsync_audit", "dogfood should create findings through ticket_create and audit docs")
+	assert.Contains(t, manifestStr, "record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status", "implementation roles should allow tool/persona creation and docsync before git tools")
+	assert.Contains(t, manifestStr, "record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit", "dogfood should create findings through ticket_create and audit docs")
 	assert.Contains(t, manifestStr, "release_orchestrate", "release role should expose release orchestration")
 	assert.Contains(t, manifestStr, "architecture_audit", "review roles should expose architecture audit")
 	assert.Contains(t, manifestStr, "tool_creation_guard", "review roles should expose tool creation guard")
@@ -417,6 +421,14 @@ func TestInit_success(t *testing.T) {
 	assert.NotContains(t, strategyRoleBlock, "tool_create", "strategy advisor should not implement tooling")
 	assert.NotContains(t, strategyRoleBlock, "shell_exec", "strategy advisor should not get general implementation shell access")
 
+	cooRoleBlock := manifestRoleBlock(t, manifestStr, "coo")
+	assert.Contains(t, cooRoleBlock, "mode: execution-planning")
+	assert.NotContains(t, cooRoleBlock, "ticket_create", "COO owns plans and BDD contracts, not ticket creation")
+
+	ctoRoleBlock := manifestRoleBlock(t, manifestStr, "cto-weekly")
+	assert.Contains(t, ctoRoleBlock, "mode: technical-planning")
+	assert.Contains(t, ctoRoleBlock, "ticket_create", "CTO owns technical ticket creation")
+
 	strategyPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "head-of-strategy.md"))
 	require.NoError(t, err)
 	strategyPromptStr := string(strategyPrompt)
@@ -426,6 +438,13 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, strategyPromptStr, "### Does Not Own")
 	assert.Contains(t, strategyPromptStr, "### Best Feedback Format")
 	assert.Contains(t, strategyPromptStr, "### Stop Conditions")
+
+	cooPersona, err := os.ReadFile(filepath.Join(dir, "docs", "roles", "personas", "coo.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(cooPersona), "## Owns")
+	assert.Contains(t, string(cooPersona), "BDD feature contracts and scenario schedule")
+	assert.Contains(t, string(cooPersona), "## Feedback I Need")
+	assert.Contains(t, string(cooPersona), "## Stop Conditions")
 
 	metadata, err := ReadHarnessMetadata(dir)
 	require.NoError(t, err)
@@ -722,20 +741,23 @@ func TestInit_success(t *testing.T) {
 
 	ceoPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "ceo.md"))
 	require.NoError(t, err)
-	assert.Contains(t, string(ceoPrompt), "BOOTSTRAP ORDER IS STRICT")
-	assert.Contains(t, string(ceoPrompt), "Do not write `docs/features/`")
-	assert.Contains(t, string(ceoPrompt), "docs/features/F-NNN*.md")
-	assert.Contains(t, string(ceoPrompt), "do not require or")
+	assert.Contains(t, string(ceoPrompt), "You own vision, active goals, and final strategy/scope")
+	assert.Contains(t, string(ceoPrompt), "Do not write docs/exec-plans/active/current-operating-plan.md")
+	assert.Contains(t, string(ceoPrompt), "route to COO")
+	assert.Contains(t, string(ceoPrompt), "route to CTO")
 
 	cooPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "coo.md"))
 	require.NoError(t, err)
-	assert.Contains(t, string(cooPrompt), "Do NOT derive")
+	assert.Contains(t, string(cooPrompt), "Do not use ticket_create")
 	assert.Contains(t, string(cooPrompt), "docs/features/F-NNN*.md")
+	assert.Contains(t, string(cooPrompt), "target_role: cto-weekly")
 
 	orchestratorPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "orchestrator.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(orchestratorPrompt), "treat slugged matches")
 	assert.Contains(t, string(orchestratorPrompt), "without ticket-state change")
+	assert.Contains(t, string(orchestratorPrompt), "ticket_shaping")
+	assert.Contains(t, string(orchestratorPrompt), "CEO -> COO -> CTO -> Engineer")
 
 	engineerPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "engineer.md"))
 	require.NoError(t, err)
@@ -771,7 +793,7 @@ func TestInit_success(t *testing.T) {
 func TestDefaultHeadOfStrategyPromptIncludesPersonalGuide(t *testing.T) {
 	t.Parallel()
 
-	prompt := defaultRolePrompts["head-of-strategy"]
+	prompt := defaultRolePrompt("head-of-strategy", defaultRolePrompts["head-of-strategy"])
 	require.NotEmpty(t, prompt)
 	assert.Contains(t, prompt, "## Personal Guide")
 	assert.Contains(t, prompt, "### Modus Operandi")
@@ -783,7 +805,7 @@ func TestDefaultHeadOfStrategyPromptIncludesPersonalGuide(t *testing.T) {
 	assert.Contains(t, prompt, "### Stop Conditions")
 	assert.Contains(t, prompt, "Final CEO decision")
 	assert.Contains(t, prompt, "Decision needed")
-	assert.Contains(t, prompt, "next needed artifact is an exec plan, ticket, implementation, or QA decision")
+	assert.Contains(t, prompt, "The request needs CEO authority rather than strategy advice")
 }
 
 func manifestRoleBlock(t *testing.T, manifest, role string) string {

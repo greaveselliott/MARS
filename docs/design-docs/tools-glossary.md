@@ -54,6 +54,7 @@ tools are added, removed, renamed, or materially change behavior.
 | `ticket_create` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
 | `job_disposition_record` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before successful dispatch-mode jobs complete. |
 | `tool_create` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
+| `persona_create` | Scaffold a repo-local persona manual, role prompt, registry row, and optional manifest role. | Mutating. Use for universal, foundation, or deployed persona proposals; foundation defaults still require adding the canonical Go entry in `internal/personas`. |
 | `release_orchestrate` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with `mars_harness_cli` and git tools. |
 | `github_release_status` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
 | `architecture_audit` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
@@ -94,6 +95,9 @@ tools are added, removed, renamed, or materially change behavior.
   completed-work signal: use `job_disposition_record`.
 - Need a new deterministic capability: use `tool_create`, then finish the code
   and tests manually.
+- Need a new or revised agent persona: use `persona_create`, then add canonical
+  foundation entries to `internal/personas` when the persona is a foundation
+  default.
 - Need to decide whether repeated work deserves a tool: use
   `task_trace_summarize`, then create or update a ticket or tool.
 - Need to keep documentation, doctrine, and tools mirrored: use

@@ -129,14 +129,17 @@ Role responsibilities use explicit starter role names here because those roles
 remain the executable manifest units. Their canonical domain and mode mapping
 lives in [harness-operating-model.md](harness-operating-model.md).
 
-The CEO updates the single active exec plan first, then creates or updates the
-feature contracts and scenario schedule named by that plan.
+The CEO owns vision, active goals, and final strategy/scope decisions. When the
+goals are clear, CEO hands off `exec_plan` to COO through Orchestrator.
+
+The COO updates the single active exec plan first, then creates or updates the
+feature contracts and scenario schedule named by that plan. COO hands off
+`ticket_breakdown` or `architecture_review` to CTO through Orchestrator.
 
 The CTO validates the plan hypothesis, architecture fit, and whether the
-walking skeleton is a real end-to-end path rather than scaffold-only work.
-
-The COO creates tickets only from the current failing scenario or scenario
-group.
+walking skeleton is a real end-to-end path rather than scaffold-only work. CTO
+creates implementation tickets only from the current failing scenario or
+scenario group.
 
 The Engineer implements one ticket and provides scenario evidence before done.
 

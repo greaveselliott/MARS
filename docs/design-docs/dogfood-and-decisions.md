@@ -195,9 +195,9 @@ After running agents against `wave-shooter` and `recruiter-workflow-portal`, bot
 
 2. **Ticket index in context assembly** (`internal/context/assembler.go`) — new `## TICKET INDEX` block (`truncPri: 75`) injected into the system prompt for ticket-aware roles (COO, engineer, janitor, QA, dogfood). Built by `BuildTicketIndex()` in `internal/serve/executor.go`, which globs existing tickets and formats a compact inventory. Agents start every run knowing what already exists.
 
-3. **COO manifest updated** — `ticket_create` and `file_search` added to tool allowlist in `internal/scanner/init.go`.
+3. **Historical COO manifest update** — `ticket_create` and `file_search` were added to COO in this slice. AD-105 supersedes the ownership boundary: COO now keeps `file_search` for planning context, while CTO owns `ticket_create` and technical ticket shaping.
 
-4. **COO prompt rewritten** — STEP 3 now references the TICKET INDEX and instructs the agent to use `ticket_create` instead of `file_write`. "Build a mental list" language removed (the tool handles this mechanically). Commit gate added.
+4. **Historical COO prompt rewrite** — the original ticketing prompt taught COO to use `ticket_create`. AD-105 supersedes that split: COO writes exec plans and BDD contracts, then hands `ticket_breakdown` to CTO.
 
 5. **Scaffold template cleaned** — `docs/tickets/README.md` template in `init.go` no longer contains "CEO's North star / tier + pillar" boilerplate or "COO creates" lifecycle language. Replaced with project-neutral wording.
 

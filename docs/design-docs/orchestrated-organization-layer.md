@@ -23,6 +23,12 @@ roles, tools, tickets, traces, scores, and dashboard. It is not a second
 scheduler and it does not replace repo-owned tickets, goals, exec plans, or BDD
 evidence.
 
+The corrected foundation-agent ownership spine is now:
+
+`CEO -> COO -> CTO -> Engineer -> QA -> Security -> Dependency Manager -> Release Manager`
+
+with Orchestrator between every active role.
+
 ## Decision
 
 Add a manifest field:
@@ -60,6 +66,9 @@ Supported dispositions:
 Roles record dispositions through `job_disposition_record`, a built-in tool
 that writes SQLite state scoped to the current job, repo, and role. The tool is
 registered like other built-in tools and is trust-gated by the role allowlist.
+Dispositions may also carry structured `handoff` and `feedback` objects so the
+next role gets an explicit ask and the prior role gets explicit correction
+rather than implicit prose.
 
 ## Ticket State
 
@@ -86,7 +95,8 @@ BDD completion evidence.
 serve database:
 
 - `job_dispositions`: terminal status, next need, ticket, evidence links,
-  approval/work-product references, trace, and reason for a job.
+  approval/work-product references, trace, reason, structured handoff, and
+  structured feedback for a job.
 - `orchestration_decisions`: recorded dispatch choice, policy, input hash, stop
   reason, and loop-break evidence.
 - `approvals`: lifecycle state for review requests and approvals.
@@ -110,6 +120,12 @@ The orchestration engine uses these rules:
   `head-of-strategy` role when the manifest defines it, and otherwise fall back
   to CEO. The advisor can shape options and narrative, but CEO records the
   actual goal or vision decision.
+- Goal, vision, and scope decisions route to CEO.
+- Exec plans, planning, BDD feature contracts, scenario schedules, and current
+  failing scenarios route to COO.
+- Tickets, ticket shaping, ticket breakdown, technical tickets, implementation
+  tickets, and architecture review route to CTO.
+- Implementation routes to Engineer; QA and evidence review route to QA.
 - Manifests without an `orchestrator` keep deterministic fallback routing for
   compatibility.
 - Repeated identical role/ticket/need decisions on the same ticket-state hash

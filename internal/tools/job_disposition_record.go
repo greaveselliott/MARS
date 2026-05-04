@@ -26,7 +26,32 @@ const jobDispositionRecordSchema = `{
     "approval_id": { "type": "string", "description": "Approval record ID when the next move is review or approval." },
     "work_product_ids": { "type": "array", "items": { "type": "string" }, "description": "Work product IDs produced by this job." },
     "blocked_by": { "type": "array", "items": { "type": "string" }, "description": "Ticket IDs or blockers preventing progress." },
-    "trace_id": { "type": "string", "description": "Trace ID when known." }
+    "trace_id": { "type": "string", "description": "Trace ID when known." },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Explicit ask for the next role. Include when another role should continue the work.",
+      "properties": {
+        "target_role": { "type": "string", "description": "Manifest role key expected to receive the handoff." },
+        "ask": { "type": "string", "description": "Concrete action requested from the next role." },
+        "context": { "type": "string", "description": "Brief context the next role needs." },
+        "constraints": { "type": "array", "items": { "type": "string" }, "description": "Constraints, non-goals, or boundaries." },
+        "expected_output": { "type": "string", "description": "Artifact or result expected from the next role." },
+        "success_evidence": { "type": "array", "items": { "type": "string" }, "description": "Evidence that proves the handoff is complete." }
+      }
+    },
+    "feedback": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Actionable correction for the role that owns a problem.",
+      "properties": {
+        "for_role": { "type": "string", "description": "Manifest role key that should receive this feedback." },
+        "summary": { "type": "string", "description": "Short feedback summary." },
+        "requested_change": { "type": "string", "description": "Specific change expected; do not leave expectations implicit." },
+        "severity": { "type": "string", "enum": ["info", "revision_requested", "blocking"], "description": "How strongly this feedback blocks progress." },
+        "evidence_links": { "type": "array", "items": { "type": "string" }, "description": "Evidence paths, commands, traces, or reports supporting the feedback." }
+      }
+    }
   },
   "required": ["status"]
 }`

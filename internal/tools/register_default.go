@@ -38,6 +38,7 @@ func RegisterBuiltinTools(r *Registry) error {
 		registerTaskTraceSummarize,
 		registerToolCreationGuard,
 		registerJobDispositionRecord,
+		registerPersonaCreate,
 	}
 	for _, fn := range registrations {
 		if err := fn(r); err != nil {

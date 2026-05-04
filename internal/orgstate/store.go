@@ -35,7 +35,29 @@ type Disposition struct {
 	WorkProductIDs []string  `json:"work_product_ids,omitempty"`
 	BlockedBy      []string  `json:"blocked_by,omitempty"`
 	TraceID        string    `json:"trace_id,omitempty"`
+	Handoff        Handoff   `json:"handoff,omitempty"`
+	Feedback       Feedback  `json:"feedback,omitempty"`
 	RecordedAt     time.Time `json:"recorded_at"`
+}
+
+// Handoff gives the next role an explicit ask instead of relying on implicit
+// role-to-role inference.
+type Handoff struct {
+	TargetRole      string   `json:"target_role,omitempty"`
+	Ask             string   `json:"ask,omitempty"`
+	Context         string   `json:"context,omitempty"`
+	Constraints     []string `json:"constraints,omitempty"`
+	ExpectedOutput  string   `json:"expected_output,omitempty"`
+	SuccessEvidence []string `json:"success_evidence,omitempty"`
+}
+
+// Feedback returns actionable correction to the role that owns the problem.
+type Feedback struct {
+	ForRole         string   `json:"for_role,omitempty"`
+	Summary         string   `json:"summary,omitempty"`
+	RequestedChange string   `json:"requested_change,omitempty"`
+	Severity        string   `json:"severity,omitempty"`
+	EvidenceLinks   []string `json:"evidence_links,omitempty"`
 }
 
 // Decision is the deterministic routing decision recorded after a disposition.
@@ -90,6 +112,8 @@ CREATE TABLE IF NOT EXISTS job_dispositions (
   work_products_json TEXT NOT NULL DEFAULT '[]',
   blocked_by_json   TEXT NOT NULL DEFAULT '[]',
   trace_id          TEXT NOT NULL DEFAULT '',
+  handoff_json      TEXT NOT NULL DEFAULT '{}',
+  feedback_json     TEXT NOT NULL DEFAULT '{}',
   recorded_at       INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_job_dispositions_repo_time ON job_dispositions(repo_id, recorded_at);
@@ -146,6 +170,40 @@ CREATE TABLE IF NOT EXISTS organization_repos (
 	if err != nil {
 		return fmt.Errorf("orgstate: init schema: %w", err)
 	}
+	if err := s.ensureColumn("job_dispositions", "handoff_json", "TEXT NOT NULL DEFAULT '{}'"); err != nil {
+		return err
+	}
+	if err := s.ensureColumn("job_dispositions", "feedback_json", "TEXT NOT NULL DEFAULT '{}'"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Store) ensureColumn(table, column, definition string) error {
+	rows, err := s.db.Query(fmt.Sprintf("PRAGMA table_info(%s)", table))
+	if err != nil {
+		return fmt.Errorf("orgstate: inspect %s columns: %w", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name, typ string
+		var notNull int
+		var defaultValue any
+		var pk int
+		if err := rows.Scan(&cid, &name, &typ, &notNull, &defaultValue, &pk); err != nil {
+			return fmt.Errorf("orgstate: scan %s columns: %w", table, err)
+		}
+		if name == column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("orgstate: scan %s columns: %w", table, err)
+	}
+	if _, err := s.db.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", table, column, definition)); err != nil {
+		return fmt.Errorf("orgstate: add %s.%s: %w", table, column, err)
+	}
 	return nil
 }
 
@@ -171,19 +229,22 @@ func (s *Store) RecordDisposition(ctx context.Context, d Disposition) error {
 	evidence, _ := json.Marshal(d.EvidenceLinks)
 	workProducts, _ := json.Marshal(d.WorkProductIDs)
 	blockedBy, _ := json.Marshal(d.BlockedBy)
+	handoff, _ := json.Marshal(d.Handoff)
+	feedback, _ := json.Marshal(d.Feedback)
 
 	_, err := s.db.ExecContext(ctx, `
-INSERT INTO job_dispositions(job_id, repo_id, role, status, next_need, suggested_role, ticket_id, reason, evidence_json, approval_id, work_products_json, blocked_by_json, trace_id, recorded_at)
-VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+INSERT INTO job_dispositions(job_id, repo_id, role, status, next_need, suggested_role, ticket_id, reason, evidence_json, approval_id, work_products_json, blocked_by_json, trace_id, handoff_json, feedback_json, recorded_at)
+VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 ON CONFLICT(job_id) DO UPDATE SET
   repo_id=excluded.repo_id, role=excluded.role, status=excluded.status,
   next_need=excluded.next_need, suggested_role=excluded.suggested_role,
   ticket_id=excluded.ticket_id, reason=excluded.reason, evidence_json=excluded.evidence_json,
   approval_id=excluded.approval_id, work_products_json=excluded.work_products_json,
   blocked_by_json=excluded.blocked_by_json, trace_id=excluded.trace_id,
+  handoff_json=excluded.handoff_json, feedback_json=excluded.feedback_json,
   recorded_at=excluded.recorded_at`,
 		d.JobID, d.RepoID, d.Role, d.Status, d.NextNeed, d.SuggestedRole, d.TicketID, d.Reason,
-		string(evidence), d.ApprovalID, string(workProducts), string(blockedBy), d.TraceID, d.RecordedAt.Unix())
+		string(evidence), d.ApprovalID, string(workProducts), string(blockedBy), d.TraceID, string(handoff), string(feedback), d.RecordedAt.Unix())
 	if err != nil {
 		return fmt.Errorf("orgstate: record disposition: %w", err)
 	}
@@ -212,13 +273,67 @@ func ValidateDisposition(d Disposition) error {
 	if d.Status == "blocked" && strings.TrimSpace(d.NextNeed) == "" && strings.TrimSpace(d.SuggestedRole) == "" {
 		return fmt.Errorf("orgstate: blocked disposition requires next_need or suggested_role")
 	}
+	if err := validateHandoff(d.Handoff); err != nil {
+		return err
+	}
+	if err := validateFeedback(d.Feedback); err != nil {
+		return err
+	}
 	return nil
+}
+
+func validateHandoff(h Handoff) error {
+	if emptyHandoff(h) {
+		return nil
+	}
+	if strings.TrimSpace(h.TargetRole) == "" {
+		return fmt.Errorf("orgstate: disposition handoff.target_role is required when handoff is provided")
+	}
+	if strings.TrimSpace(h.Ask) == "" {
+		return fmt.Errorf("orgstate: disposition handoff.ask is required when handoff is provided")
+	}
+	return nil
+}
+
+func validateFeedback(f Feedback) error {
+	if emptyFeedback(f) {
+		return nil
+	}
+	if strings.TrimSpace(f.ForRole) == "" {
+		return fmt.Errorf("orgstate: disposition feedback.for_role is required when feedback is provided")
+	}
+	if strings.TrimSpace(f.RequestedChange) == "" {
+		return fmt.Errorf("orgstate: disposition feedback.requested_change is required when feedback is provided")
+	}
+	switch strings.TrimSpace(f.Severity) {
+	case "", "info", "revision_requested", "blocking":
+		return nil
+	default:
+		return fmt.Errorf("orgstate: disposition feedback.severity must be info, revision_requested, or blocking")
+	}
+}
+
+func emptyHandoff(h Handoff) bool {
+	return strings.TrimSpace(h.TargetRole) == "" &&
+		strings.TrimSpace(h.Ask) == "" &&
+		strings.TrimSpace(h.Context) == "" &&
+		strings.TrimSpace(h.ExpectedOutput) == "" &&
+		len(h.Constraints) == 0 &&
+		len(h.SuccessEvidence) == 0
+}
+
+func emptyFeedback(f Feedback) bool {
+	return strings.TrimSpace(f.ForRole) == "" &&
+		strings.TrimSpace(f.Summary) == "" &&
+		strings.TrimSpace(f.RequestedChange) == "" &&
+		strings.TrimSpace(f.Severity) == "" &&
+		len(f.EvidenceLinks) == 0
 }
 
 // GetDisposition returns the recorded disposition for a job.
 func (s *Store) GetDisposition(ctx context.Context, jobID string) (*Disposition, error) {
 	row := s.db.QueryRowContext(ctx, `
-SELECT job_id, repo_id, role, status, next_need, suggested_role, ticket_id, reason, evidence_json, approval_id, work_products_json, blocked_by_json, trace_id, recorded_at
+SELECT job_id, repo_id, role, status, next_need, suggested_role, ticket_id, reason, evidence_json, approval_id, work_products_json, blocked_by_json, trace_id, handoff_json, feedback_json, recorded_at
 FROM job_dispositions WHERE job_id = ?`, jobID)
 	d, err := scanDisposition(row)
 	if err == sql.ErrNoRows {
@@ -236,7 +351,7 @@ func (s *Store) RecentDispositions(ctx context.Context, repoID string, limit int
 		limit = 20
 	}
 	rows, err := s.db.QueryContext(ctx, `
-SELECT job_id, repo_id, role, status, next_need, suggested_role, ticket_id, reason, evidence_json, approval_id, work_products_json, blocked_by_json, trace_id, recorded_at
+SELECT job_id, repo_id, role, status, next_need, suggested_role, ticket_id, reason, evidence_json, approval_id, work_products_json, blocked_by_json, trace_id, handoff_json, feedback_json, recorded_at
 FROM job_dispositions
 WHERE (? = '' OR repo_id = ?)
 ORDER BY recorded_at DESC
@@ -317,15 +432,17 @@ type scanner interface {
 
 func scanDisposition(row scanner) (Disposition, error) {
 	var d Disposition
-	var evidence, workProducts, blockedBy string
+	var evidence, workProducts, blockedBy, handoff, feedback string
 	var recordedAt int64
-	err := row.Scan(&d.JobID, &d.RepoID, &d.Role, &d.Status, &d.NextNeed, &d.SuggestedRole, &d.TicketID, &d.Reason, &evidence, &d.ApprovalID, &workProducts, &blockedBy, &d.TraceID, &recordedAt)
+	err := row.Scan(&d.JobID, &d.RepoID, &d.Role, &d.Status, &d.NextNeed, &d.SuggestedRole, &d.TicketID, &d.Reason, &evidence, &d.ApprovalID, &workProducts, &blockedBy, &d.TraceID, &handoff, &feedback, &recordedAt)
 	if err != nil {
 		return Disposition{}, err
 	}
 	_ = json.Unmarshal([]byte(evidence), &d.EvidenceLinks)
 	_ = json.Unmarshal([]byte(workProducts), &d.WorkProductIDs)
 	_ = json.Unmarshal([]byte(blockedBy), &d.BlockedBy)
+	_ = json.Unmarshal([]byte(handoff), &d.Handoff)
+	_ = json.Unmarshal([]byte(feedback), &d.Feedback)
 	d.RecordedAt = time.Unix(recordedAt, 0).UTC()
 	return d, nil
 }

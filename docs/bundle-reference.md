@@ -89,6 +89,7 @@ harness manifests when a role allowlist includes them.
 | `ticket_create` | Create or update deduped ticket files |
 | `record_decision` | Persist durable learning and decision notes |
 | `tool_create` | Scaffold a new built-in Go tool under `internal/tools/`; implementation and registration still require follow-up edits and tests |
+| `persona_create` | Scaffold a repo-local persona manual, role prompt, registry row, and optional manifest role |
 | `git_status` | Inspect repository status |
 | `git_diff` | Inspect diffs |
 | `git_commit` | Stage files and create a commit |

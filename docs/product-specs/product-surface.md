@@ -145,10 +145,10 @@ The product contract is:
 - Explicit manifest role keys remain the executable units; optional `domain` and `mode` metadata classify why the role runs without changing trust, scoring, tool, or guardrail policy.
 - `orchestration_mode: dispatch` is the generated default: completed jobs record dispositions, return to the Orchestrator, and let it choose the next best manifest role while keeping the queue, tickets, BDD evidence, scoring, traces, and trust policy as the runtime backbone.
 - `orchestration_mode: legacy` remains supported for repos that deliberately preserve manifest `then` and `idle_then` chains.
-- Planner roles create scoped, deduplicated work.
-- CEO owns goals, BDD feature contracts, scenario schedule, tradeoffs, and the active exec plan.
-- CTO validates the hypothesis, architecture fit, and whether the walking skeleton is real.
-- COO creates tickets only from the current failing BDD scenario or scenario group.
+- Planner roles have explicit ownership boundaries.
+- CEO owns vision, active goals, tradeoffs, and final strategy/scope decisions.
+- COO owns active exec plans, BDD feature contracts, scenario schedules, and current failing scenarios.
+- CTO owns architecture fit, technical decomposition, and implementation tickets for the current failing BDD scenario or scenario group.
 - Engineer roles complete one ticket per run.
 - Engineer roles provide scenario evidence before closing feature tickets.
 - In-progress tickets are highest priority.

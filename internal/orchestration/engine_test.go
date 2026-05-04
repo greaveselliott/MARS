@@ -154,6 +154,68 @@ func TestDecide_strategyAdviceFallsBackToCEOWhenHeadOfStrategyMissing(t *testing
 	require.Equal(t, "deterministic", decision.DecisionKind)
 }
 
+func TestDecide_ticketShapingRoutesToCTO(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "cto-weekly"),
+		Disposition: orgstate.Disposition{
+			JobID:    "job-1",
+			RepoID:   "repo-1",
+			Role:     "orchestrator",
+			Status:   "blocked",
+			NextNeed: "ticket_shaping",
+			Reason:   "technical tickets are needed",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "cto-weekly", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+}
+
+func TestDecide_execPlanRoutesToCOO(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "coo"),
+		Disposition: orgstate.Disposition{
+			JobID:    "job-1",
+			RepoID:   "repo-1",
+			Role:     "orchestrator",
+			Status:   "blocked",
+			NextNeed: "feature_contract",
+			Reason:   "BDD contract is needed before tickets",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "coo", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+}
+
+func TestDecide_defaultCompletionRouteMatchesOwnershipSpine(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		role string
+		want string
+	}{
+		{"ceo", "coo"},
+		{"head-of-strategy", "ceo"},
+		{"coo", "cto-weekly"},
+		{"cto-weekly", "engineer"},
+		{"engineer", "qa"},
+		{"qa", "security"},
+		{"security", "dependency-manager"},
+		{"dependency-manager", "release-manager"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.role, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, defaultCompletionRoute(tt.role))
+		})
+	}
+}
+
 func TestDecide_repeatedOrchestratorRouteStopsDispatch(t *testing.T) {
 	t.Parallel()
 

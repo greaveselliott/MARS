@@ -22,6 +22,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 5. F-005-S005 - Budgets, max turns, max tool calls, context pruning, and wall time stop runaway jobs.
 6. F-005-S006 - `mars-harness run <role> --repo <path>` executes one role with terminal-result truth.
 7. F-005-S007 - Tool creation and CLI-operation tools are first-class mirrored harness capabilities.
+8. F-005-S008 - Persona creation tools scaffold role manuals and prompt manuals with explicit ownership and feedback sections.
 
 ## Scenarios
 
@@ -71,6 +72,12 @@ Given a recurring deterministic harness operation exists
 When it is implemented as a built-in tool
 Then the tool has schema, tests, registry exposure, trust-policy review, glossary documentation, and target mirroring when applicable
 
+### F-005-S008: Persona Creation Tool
+
+Given a role persona needs to be created or revised
+When `persona_create` runs with ownership, feedback, stop-condition, and handoff sections
+Then it scaffolds a repo-local persona manual, prompt manual, role registry row, and optional manifest role, and foundation defaults still require adding the canonical entry to `internal/personas`
+
 ## Out of Scope
 
 - Parallel tool execution inside a single agent turn.
@@ -90,3 +97,4 @@ None.
 - F-005-S005: `go test ./internal/agent -run 'TestRun_(max|token|wall|circle|empty)'`
 - F-005-S006: covered by command-level run behavior and planned broader E2E dogfood evidence
 - F-005-S007: `go test ./internal/tools -run 'TestToolCreate|TestMarsHarnessCLI'`
+- F-005-S008: `go test ./internal/tools -run TestPersonaCreate` and `go test ./internal/personas`

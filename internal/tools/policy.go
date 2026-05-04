@@ -29,6 +29,7 @@ var mutatingTools = map[string]bool{
 	"record_decision":     true,
 	"ticket_create":       true,
 	"tool_create":         true,
+	"persona_create":      true,
 	"release_orchestrate": true,
 }
 

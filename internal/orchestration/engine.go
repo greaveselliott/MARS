@@ -161,13 +161,13 @@ func roleForNeed(nextNeed string) string {
 		return "release-manager"
 	case "implementation", "implementation_rework", "engineering", "fix":
 		return "engineer"
-	case "architecture", "architecture_review", "architecture_blocker":
+	case "architecture", "architecture_review", "architecture_blocker", "ticket", "ticket_shaping", "ticket_breakdown", "technical_ticket", "implementation_ticket":
 		return "cto-weekly"
-	case "ticket", "ticket_shaping", "ticket_breakdown":
+	case "exec_plan", "planning", "feature_contract", "scenario_schedule", "current_failing_scenario":
 		return "coo"
 	case "strategy_advice", "executive_narrative", "tradeoff_analysis", "goal_conflict":
 		return "head-of-strategy"
-	case "goal", "goals", "goal_decision", "strategy", "strategy_review":
+	case "goal", "goals", "goal_decision", "vision", "scope_decision", "strategy", "strategy_review":
 		return "ceo"
 	case "dogfood", "e2e", "end_to_end":
 		return "dogfood"
@@ -181,10 +181,12 @@ func roleForNeed(nextNeed string) string {
 func defaultCompletionRoute(role string) string {
 	switch role {
 	case "ceo":
-		return "cto-weekly"
-	case "cto-weekly":
 		return "coo"
 	case "coo":
+		return "cto-weekly"
+	case "head-of-strategy":
+		return "ceo"
+	case "cto-weekly":
 		return "engineer"
 	case "engineer", "pipeline-fixer":
 		return "qa"
@@ -192,6 +194,8 @@ func defaultCompletionRoute(role string) string {
 		return "security"
 	case "security":
 		return "dependency-manager"
+	case "dependency-manager":
+		return "release-manager"
 	default:
 		return ""
 	}

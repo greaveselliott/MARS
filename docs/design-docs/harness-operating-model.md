@@ -51,10 +51,10 @@ integrations; normal roles make semantic commits to `main` and push directly.
 
 | Manifest role | Domain | Mode | Notes |
 | --- | --- | --- | --- |
-| `ceo` | Planner | `strategy` | Owns goals, feature contracts, and scenario priority. |
+| `ceo` | Planner | `strategy` | Owns vision, active goals, and final strategy/scope decisions. |
 | `head-of-strategy` | Planner | `strategy-advisory` | Optional dispatch/manual advisor for strategy memos, tradeoffs, executive narrative, and goal conflicts; CEO owns the final decision. |
-| `cto-weekly` | Planner | `architecture-planning` | Validates architecture fit and walking-skeleton shape. |
-| `coo` | Planner | `ticket-breakdown` | Converts the active scenario group into deduped tickets. |
+| `coo` | Planner | `execution-planning` | Owns active exec plans, BDD feature contracts, scenario schedule, and current failing scenario. |
+| `cto-weekly` | Planner | `technical-planning` | Owns architecture fit, technical decomposition, and implementation tickets. |
 | `engineer` | Engineer | `ticket-delivery` | Implements one ticket and records evidence. |
 | `pipeline-fixer` | Engineer | `pipeline-repair` | Repairs failing build or check paths through bounded commits. |
 | `qa` | Reviewer | `quality-review` | Reviews behavior and evidence against ticket and BDD contracts. |
@@ -80,15 +80,63 @@ Modes classify why a role is running; they do not loosen policy.
 
 ## Personal Guides
 
-Role prompts can include a Personal Guide when handoff nuance matters. A guide
-states the role's modus operandi, priorities, ownership boundary, non-ownership
-boundary, preferred feedback format, and stop conditions so other agents can
-brief it explicitly instead of relying on implicit expectations.
+Role prompts include a generated Personal Guide rendered from canonical Go
+persona definitions. A guide states the role's modus operandi, priorities,
+ownership boundary, non-ownership boundary, preferred feedback format,
+feedback it needs, feedback it gives, stop conditions, and orchestrator
+handoff expectations so other agents can brief it explicitly instead of
+relying on implicit expectations.
 
-Optional advisory roles must include this guide because they sit outside the
-default delivery loop. The guide does not grant new authority: final decisions,
-tools, schedules, trust, and guardrails still come from the manifest, role
-registry, and owning role contracts.
+The guide does not grant new authority: final decisions, tools, schedules,
+trust, and guardrails still come from the manifest, role registry, and owning
+role contracts.
+
+## AD-105: Foundation Agents Use Canonical Persona Manuals
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Owner:** Mars Harness maintainers
+
+Foundation-agent personas are canonical Go structs in `internal/personas`.
+Generated docs under `docs/roles/personas/` and generated prompt Personal Guide
+sections are checked surfaces, not separate sources of truth. Tests validate
+that every default persona has ownership, non-ownership, feedback, stop
+condition, and orchestrator handoff sections, and that checked manuals match the
+canonical Go definitions.
+
+The default ownership spine is:
+
+`CEO -> COO -> CTO -> Engineer -> QA -> Security -> Dependency Manager -> Release Manager`
+
+The Orchestrator sits between every active role. It reads dispositions,
+structured handoff/feedback objects, persona manuals, manifest validity, and
+loop guards before choosing the next best role. `head-of-strategy`, `dogfood`,
+`pipeline-fixer`, and `janitor` remain support, advisory, or recovery roles;
+they do not replace the mandatory delivery owners.
+
+Routing ownership is intentionally hard-cut:
+
+- `goal`, `goals`, `goal_decision`, `vision`, and `scope_decision` route to CEO.
+- `strategy_advice`, `executive_narrative`, `tradeoff_analysis`, and
+  `goal_conflict` route to Head of Strategy when configured, otherwise CEO.
+- `exec_plan`, `planning`, `feature_contract`, `scenario_schedule`, and
+  `current_failing_scenario` route to COO.
+- `ticket`, `ticket_shaping`, `ticket_breakdown`, `technical_ticket`,
+  `implementation_ticket`, and `architecture_review` route to CTO.
+- `implementation`, `implementation_rework`, `engineering`, and `fix` route to
+  Engineer.
+- `qa`, `qa_review`, `evidence_review`, and `review` route to QA.
+
+COO no longer receives `ticket_create`; COO owns execution planning and BDD
+contracts. CTO receives `ticket_create`; CTO owns technical decomposition and
+implementation tickets. New generated target harnesses inherit this split, while
+existing target upgrades preserve user-owned prompts and manifests.
+
+`job_disposition_record` accepts optional `handoff` and `feedback` objects so
+agents can state exactly what they expect from the next role or what correction
+the prior role must make. The Orchestrator uses those fields with persona
+manuals to avoid implicit feedback, role ping-pong, and intervention-debt
+floods.
 
 ## Trigger Routing
 

@@ -115,9 +115,9 @@ Derived from the Mars role set and normalized for strict trunk delivery.
 
 | # | Role | Manifest Key | Domain | Mode | Trigger | Schedule (cron) | Chain (`then`) | Model Tier |
 |---|------|-------------|--------|------|---------|-----------------|----------------|------------|
-| 1 | CEO | `ceo` | planner | `strategy` | — | `0 20 * * 0` (Sun 8pm) | `[cto-weekly]` | reasoning |
-| 2 | CTO | `cto-weekly` | planner | `architecture-planning` | — | `0 21 * * 0` (Sun 9pm) | `[coo]` | reasoning |
-| 3 | COO | `coo` | planner | `ticket-breakdown` | — | — | `[engineer]` | reasoning |
+| 1 | CEO | `ceo` | planner | `strategy` | — | `0 20 * * 0` (Sun 8pm) | Orchestrator -> COO | reasoning |
+| 2 | COO | `coo` | planner | `execution-planning` | — | — | Orchestrator -> CTO | reasoning |
+| 3 | CTO | `cto-weekly` | planner | `technical-planning` | — | `0 21 * * 0` (Sun 9pm) | Orchestrator -> Engineer | reasoning |
 | 4 | Engineer | `engineer` | engineer | `ticket-delivery` | — | `0 0,6,12,18 * * 1-5` (4x/day) | `[qa, engineer, dogfood]` | coding |
 | 5 | QA | `qa` | reviewer | `quality-review` | — | — | `[security]` | fast |
 | 6 | Security | `security` | reviewer | `security-review` | — | `0 22 * * 0` (Sun 10pm) | `[dependency-manager]` | reasoning |
@@ -142,24 +142,21 @@ roles:
     mode: strategy
     model: reasoning
     schedule: "0 20 * * 0"
-    then: [cto-weekly]
     tools: [file_read, file_write, shell_exec, grep]
 
   coo:
     prompt: roles/coo-tickets.md
     domain: planner
-    mode: ticket-breakdown
+    mode: execution-planning
     model: reasoning
-    then: [engineer]
     tools: [file_read, file_write, shell_exec, grep]
 
   cto-weekly:
     prompt: roles/cto-harness.md
     domain: planner
-    mode: architecture-planning
+    mode: technical-planning
     model: reasoning
     schedule: "0 21 * * 0"
-    then: [coo]
     tools: [file_read, file_write, shell_exec, grep]
 
   engineer:

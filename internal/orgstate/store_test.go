@@ -9,6 +9,7 @@ package orgstate
 
 import (
 	"context"
+	"database/sql"
 	"path/filepath"
 	"testing"
 
@@ -33,6 +34,21 @@ func TestStoreRecordsDispositionAndDecision(t *testing.T) {
 		TicketID:      "MH-001",
 		Reason:        "needs evidence review",
 		EvidenceLinks: []string{"go test ./..."},
+		Handoff: Handoff{
+			TargetRole:      "qa",
+			Ask:             "review the evidence",
+			Context:         "ticket MH-001",
+			Constraints:     []string{"do not approve without test output"},
+			ExpectedOutput:  "approval or changes requested",
+			SuccessEvidence: []string{"review note"},
+		},
+		Feedback: Feedback{
+			ForRole:         "engineer",
+			Summary:         "missing evidence",
+			RequestedChange: "attach test output before QA",
+			Severity:        "revision_requested",
+			EvidenceLinks:   []string{"docs/tickets/in-progress/MH-001.md"},
+		},
 	}
 	require.NoError(t, store.RecordDisposition(ctx, disposition))
 
@@ -41,6 +57,8 @@ func TestStoreRecordsDispositionAndDecision(t *testing.T) {
 	require.NotNil(t, got)
 	require.Equal(t, "qa_review", got.NextNeed)
 	require.Equal(t, []string{"go test ./..."}, got.EvidenceLinks)
+	require.Equal(t, "qa", got.Handoff.TargetRole)
+	require.Equal(t, "attach test output before QA", got.Feedback.RequestedChange)
 
 	dispositions, err := store.RecentDispositions(ctx, "repo-1", 10)
 	require.NoError(t, err)
@@ -89,4 +107,71 @@ func TestValidateDispositionAllowsApprovedWithoutReason(t *testing.T) {
 		Status: "approved",
 	})
 	require.NoError(t, err)
+}
+
+func TestValidateDispositionRejectsInvalidStructuredHandoffAndFeedback(t *testing.T) {
+	t.Parallel()
+
+	base := Disposition{
+		JobID:    "job-1",
+		RepoID:   "repo-1",
+		Role:     "qa",
+		Status:   "changes_requested",
+		Reason:   "needs rework",
+		NextNeed: "implementation_rework",
+	}
+
+	invalidHandoff := base
+	invalidHandoff.Handoff = Handoff{TargetRole: "engineer"}
+	require.ErrorContains(t, ValidateDisposition(invalidHandoff), "handoff.ask is required")
+
+	invalidFeedback := base
+	invalidFeedback.Feedback = Feedback{ForRole: "engineer"}
+	require.ErrorContains(t, ValidateDisposition(invalidFeedback), "feedback.requested_change is required")
+
+	invalidSeverity := base
+	invalidSeverity.Feedback = Feedback{ForRole: "engineer", RequestedChange: "fix tests", Severity: "urgent"}
+	require.ErrorContains(t, ValidateDisposition(invalidSeverity), "feedback.severity")
+}
+
+func TestOpenStoreMigratesExistingDispositionsWithoutStructuredFields(t *testing.T) {
+	t.Parallel()
+
+	dbPath := filepath.Join(t.TempDir(), "orgstate.db")
+	db, err := sql.Open("sqlite", dbPath)
+	require.NoError(t, err)
+	_, err = db.Exec(`
+CREATE TABLE job_dispositions (
+  job_id TEXT PRIMARY KEY,
+  repo_id TEXT NOT NULL,
+  role TEXT NOT NULL,
+  status TEXT NOT NULL,
+  next_need TEXT NOT NULL DEFAULT '',
+  suggested_role TEXT NOT NULL DEFAULT '',
+  ticket_id TEXT NOT NULL DEFAULT '',
+  reason TEXT NOT NULL DEFAULT '',
+  evidence_json TEXT NOT NULL DEFAULT '[]',
+  approval_id TEXT NOT NULL DEFAULT '',
+  work_products_json TEXT NOT NULL DEFAULT '[]',
+  blocked_by_json TEXT NOT NULL DEFAULT '[]',
+  trace_id TEXT NOT NULL DEFAULT '',
+  recorded_at INTEGER NOT NULL
+);
+INSERT INTO job_dispositions(job_id, repo_id, role, status, reason, recorded_at)
+VALUES('job-legacy', 'repo-1', 'engineer', 'completed', '', 1);
+`)
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+
+	store, err := OpenStore(dbPath)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, store.Close())
+	})
+
+	got, err := store.GetDisposition(context.Background(), "job-legacy")
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Empty(t, got.Handoff)
+	require.Empty(t, got.Feedback)
 }

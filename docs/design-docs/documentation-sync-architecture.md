@@ -313,9 +313,9 @@ when they affect agents or operators, not as invisible internal churn.
 
 | Role | Documentation Sync Responsibility |
 | --- | --- |
-| CEO | Ensures active plans name the feature contracts and docs that define the work before tickets are created. |
-| CTO | Checks architecture docs, code map changes, tool-policy implications, and generated target mirroring. |
-| COO | Creates tickets that reference BDD scenarios and docsync evidence expectations. |
+| CEO | Ensures goal and scope decisions name the outcome, non-goals, and evidence expectations that planning must serve. |
+| COO | Ensures active plans and BDD feature contracts name the docs that define the work before tickets are created. |
+| CTO | Checks architecture docs, code map changes, tool-policy implications, generated target mirroring, and implementation tickets that reference BDD scenarios and docsync evidence expectations. |
 | Engineer | Reads metadata before editing, updates associated docs with code, and runs docsync before commit. |
 | QA | Verifies changed files include metadata, docs were updated or explicitly checked, and docsync passes. |
 | Dogfood | Runs real harness paths and creates intervention debt when docsync or docs freshness fails repeatedly. |
@@ -412,4 +412,3 @@ Documentation Sync is observable through:
 - Roles that write or review code can run `docsync_audit`.
 - The design-doc index records this decision.
 - Future source-package changes have a clear maintenance workflow.
-

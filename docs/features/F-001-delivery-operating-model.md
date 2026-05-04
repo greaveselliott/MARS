@@ -32,7 +32,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 ### F-001-S001: Goal, Feature, And Plan Alignment
 
 Given at least one active goal exists
-When the CEO updates the single active exec plan
+When the COO updates the single active exec plan from the CEO goal decision
 Then the plan references an active goal, a BDD feature contract, a hypothesis, success evidence, falsification evidence, scenario schedule, current failing scenario, walking skeleton slice, and learning or MVP outcome
 
 ### F-001-S002: Feature Ticket Evidence Gate
