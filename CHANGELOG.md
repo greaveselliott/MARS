@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.26.1] - 2026-05-04
+<!-- mars-harness-release: version=0.26.1 commit=dad878a5206c -->
+
+### Why This Release Matters
+It makes the harness easier to understand and operate through work to make business logic first-class BDD in operating-model.
+
+### Documentation
+- **operating-model:** Make business logic first-class BDD (dad878a)
+
 ## [0.26.0] - 2026-05-04
 <!-- mars-harness-release: version=0.26.0 commit=38c1627fb039 -->
 
