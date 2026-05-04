@@ -75,6 +75,8 @@
         return '<strong>' + esc(data.role) + '</strong> ' + esc(data.outcome || "done") + ' in ' + esc(data.duration || "?");
       case "chain":
         return esc(data.from) + ' &rarr; ' + esc(data.to);
+      case "dispatch_return":
+        return esc(data.from) + ' returned disposition to <strong>' + esc(data.to || "orchestrator") + '</strong>';
       case "job_disposition":
         return '<strong>' + esc(data.role || "") + '</strong> recorded ' + esc(data.status || "");
       case "orchestration_decision":

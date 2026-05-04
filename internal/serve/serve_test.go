@@ -450,6 +450,15 @@ func countJobsByStatus(t *testing.T, srv *Server, status string) int {
 	return count
 }
 
+func countJobsByStatusAndRole(t *testing.T, srv *Server, status, role string) int {
+	t.Helper()
+	var count int
+	if err := srv.db.QueryRow(`SELECT COUNT(*) FROM jobs WHERE status = ? AND role = ?`, status, role).Scan(&count); err != nil {
+		t.Fatalf("count jobs by status and role: %v", err)
+	}
+	return count
+}
+
 func mustMkdirAll(t *testing.T, path string) {
 	t.Helper()
 	if err := os.MkdirAll(path, 0o755); err != nil {

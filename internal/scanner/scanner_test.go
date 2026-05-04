@@ -368,22 +368,12 @@ func TestInit_success(t *testing.T) {
 		assert.Contains(t, manifestStr, key, "manifest missing role %s", key)
 	}
 
-	for _, chain := range []string{
-		"then: [cto-weekly]",
-		"then: [coo]",
-		"then: [engineer]",
-		"then: [qa, engineer, dogfood]",
-		"then: [qa]",
-		"then: [security]",
-		"then: [dependency-manager]",
-		"idle_then: [ceo, janitor]",
-	} {
-		assert.Contains(t, manifestStr, chain, "manifest missing chain %s", chain)
-	}
+	assert.Contains(t, manifestStr, "orchestration_mode: dispatch", "generated manifest should return terminal dispositions through the orchestrator")
+	assert.NotContains(t, manifestStr, "then: [cto-weekly]", "dispatch defaults should not encode fixed role-to-role handoffs")
+	assert.NotContains(t, manifestStr, "idle_then:", "dispatch defaults should route idle work through dispositions and the orchestrator")
 
 	assert.Contains(t, manifestStr, "record_decision", "manifest should include record_decision in tool lists")
 	assert.Contains(t, manifestStr, "trust_level: contributor", "generated manifest should seed bootstrap mutating roles above observer trust")
-	assert.Contains(t, manifestStr, "orchestration_mode: legacy", "generated manifest should default to legacy orchestration")
 	assert.Contains(t, manifestStr, "job_disposition_record", "manifest should expose dispatch disposition recording")
 	assert.Contains(t, manifestStr, "domain: planner", "manifest should include canonical domain metadata")
 	assert.Contains(t, manifestStr, "mode: ticket-delivery", "manifest should include role mode metadata")

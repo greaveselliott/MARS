@@ -113,7 +113,8 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		return fmt.Errorf("executor: role %q not found in manifest for repo %q; available: %v", job.Role, job.RepoID, available)
 	}
 
-	tw.WriteHeader(job.Role, role.Model, role.Tools, role.Then)
+	handoff := manifest.DisplayHandoff(job.Role)
+	tw.WriteHeader(job.Role, role.Model, role.Tools, handoff)
 
 	started := time.Now()
 	e.broadcastEvent("job_start", map[string]string{
@@ -126,6 +127,9 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("load role prompt: %v", err))
 		return fmt.Errorf("executor: load role prompt: %w", err)
+	}
+	if manifest.DispatchMode() {
+		rolePrompt = appendDispatchCompletionInstruction(rolePrompt)
 	}
 
 	guardRules, err := manifest.LoadGuardrails(repoPath, job.Role)
@@ -410,7 +414,13 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 
 	learnings.RecordJobLessons(learnStore, job.Role, "", "", nil)
 
-	if len(role.Then) > 0 {
+	if manifest.DispatchMode() && job.Role != "orchestrator" {
+		e.broadcastEvent("dispatch_return", map[string]string{
+			"from": job.Role,
+			"to":   "orchestrator",
+			"repo": job.RepoID,
+		})
+	} else if len(role.Then) > 0 {
 		e.broadcastEvent("chain", map[string]string{
 			"from": job.Role,
 			"to":   strings.Join(role.Then, ","),
@@ -418,9 +428,21 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		})
 	}
 
-	tw.WriteHandoff(job.Role, role.Then)
+	tw.WriteHandoff(job.Role, handoff)
 
 	return nil
+}
+
+func appendDispatchCompletionInstruction(rolePrompt string) string {
+	return strings.TrimSpace(rolePrompt) + `
+
+## Dispatch Completion
+
+Before finishing this autonomous server job, call job_disposition_record exactly
+once. Set status, next_need, suggested_role when you have a concrete suggestion,
+ticket_id when applicable, reason, and evidence_links. The Orchestrator consumes
+that disposition and decides the next best role; do not assume a fixed linear
+handoff.`
 }
 
 func (e *Executor) broadcastEvent(eventType string, payload map[string]string) {

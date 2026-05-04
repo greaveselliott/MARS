@@ -16,7 +16,9 @@ type Input struct {
 	TicketStateHash string
 }
 
-// Decide routes a disposition to the next role, a stop reason, or the Orchestrator for ambiguity.
+// Decide routes a disposition to the Orchestrator, the Orchestrator-selected
+// next role, a deterministic fallback for manifests without an Orchestrator, or
+// a stop reason.
 func Decide(in Input) (orgstate.Decision, error) {
 	d := in.Disposition
 	if in.Manifest == nil {
@@ -68,8 +70,14 @@ func route(in Input) (nextRole, kind, reason, stop string) {
 	nextNeed := normalize(d.NextNeed)
 	suggested := strings.TrimSpace(d.SuggestedRole)
 
-	if suggested != "" && status != "completed" {
-		return suggested, "deterministic", "using disposition suggested_role", ""
+	if d.Role != "orchestrator" {
+		if orch := orchestratorRole(in.Manifest); orch != "" {
+			return orch, "orchestrator_review", "terminal disposition returned to Orchestrator for next-role selection", ""
+		}
+	}
+
+	if suggested != "" {
+		return suggested, "orchestrator", "using Orchestrator suggested_role", ""
 	}
 
 	switch status {
@@ -175,11 +183,21 @@ func fallbackRole(m *bundle.Manifest) string {
 	if m == nil {
 		return ""
 	}
-	if _, ok := m.Roles["orchestrator"]; ok {
-		return "orchestrator"
+	if role := orchestratorRole(m); role != "" {
+		return role
 	}
 	if _, ok := m.Roles["janitor"]; ok {
 		return "janitor"
+	}
+	return ""
+}
+
+func orchestratorRole(m *bundle.Manifest) string {
+	if m == nil {
+		return ""
+	}
+	if _, ok := m.Roles["orchestrator"]; ok {
+		return "orchestrator"
 	}
 	return ""
 }

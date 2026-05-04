@@ -1118,7 +1118,8 @@ func executeRun(opts runOpts) error {
 		return errors.New(msg)
 	}
 
-	tw.WriteHeader(opts.roleName, role.Model, role.Tools, role.Then)
+	handoff := manifest.DisplayHandoff(opts.roleName)
+	tw.WriteHeader(opts.roleName, role.Model, role.Tools, handoff)
 
 	rolePrompt, err := manifest.RolePrompt(absRepo, opts.roleName)
 	if err != nil {
@@ -1303,7 +1304,7 @@ func executeRun(opts runOpts) error {
 		return fmt.Errorf("run: %w", err)
 	}
 
-	tw.WriteHandoff(opts.roleName, role.Then)
+	tw.WriteHandoff(opts.roleName, handoff)
 
 	return nil
 }

@@ -65,20 +65,8 @@
 
     <div class="card">
       <h2>Dispatch Model</h2>
-      <div class="orchestration-hub" aria-label="Orchestrator dispatch graph">
-        <div class="hub-node">Orchestrator</div>
-        <div class="spoke-row">
-          <span class="spoke-node">CEO</span>
-          <span class="spoke-node">CTO</span>
-          <span class="spoke-node">COO</span>
-          <span class="spoke-node">Engineer</span>
-          <span class="spoke-node">QA</span>
-          <span class="spoke-node">Security</span>
-          <span class="spoke-node">Dependency</span>
-          <span class="spoke-node">Release</span>
-          <span class="spoke-node">Dogfood</span>
-          <span class="spoke-node">Janitor</span>
-        </div>
+      <div id="dispatch-model" class="orchestration-hub" aria-label="Orchestrator dispatch graph">
+        <p class="muted">Loading dispatch model...</p>
       </div>
     </div>
 
@@ -141,6 +129,31 @@
         }).join("");
       }
 
+      function renderDispatchModel(repos) {
+        var el = document.getElementById("dispatch-model");
+        if (!el) return;
+        if (!repos || repos.length === 0) {
+          el.innerHTML = '<p class="muted">No repositories registered.</p>';
+          return;
+        }
+        var repo = repos[0];
+        var roles = (repo.roles || []).filter(function (role) {
+          return role.name !== "orchestrator";
+        });
+        var mode = repo.orchestration_mode || "legacy";
+        var spokes = roles.map(function (role) {
+          var meta = [role.domain, role.mode].filter(Boolean).join(" / ");
+          return '<span class="spoke-node" title="' + esc(meta) + '">' +
+            esc(role.name) +
+            (meta ? '<small>' + esc(meta) + '</small>' : '') +
+          '</span>';
+        }).join("");
+        if (!spokes) spokes = '<span class="chain-node">No roles configured</span>';
+        el.innerHTML = '<div class="hub-node">Orchestrator</div>' +
+          '<div class="dispatch-return">' + esc(mode === "dispatch" ? "active dispatch router" : "legacy chain preview") + '</div>' +
+          '<div class="spoke-row">' + spokes + '</div>';
+      }
+
       function renderDispositions(items) {
         var el = document.getElementById("disposition-list");
         if (!el) return;
@@ -187,6 +200,7 @@
           .then(function (r) { return r.json(); })
           .then(function (data) {
             renderRepos(data.repos || []);
+            renderDispatchModel(data.repos || []);
             renderDispositions(data.dispositions || []);
             renderDecisions(data.decisions || []);
           })

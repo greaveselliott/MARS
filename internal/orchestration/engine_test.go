@@ -16,7 +16,7 @@ func testManifest(roles ...string) *bundle.Manifest {
 	return m
 }
 
-func TestDecide_completedEngineerRoutesToQA(t *testing.T) {
+func TestDecide_completedEngineerRoutesToQAMissingOrchestrator(t *testing.T) {
 	t.Parallel()
 
 	decision, err := Decide(Input{
@@ -34,15 +34,53 @@ func TestDecide_completedEngineerRoutesToQA(t *testing.T) {
 	require.Empty(t, decision.StopReason)
 }
 
-func TestDecide_invalidSuggestedRoleFallsBackToOrchestrator(t *testing.T) {
+func TestDecide_completedEngineerReturnsToOrchestrator(t *testing.T) {
 	t.Parallel()
 
 	decision, err := Decide(Input{
-		Manifest: testManifest("engineer", "orchestrator"),
+		Manifest: testManifest("engineer", "qa", "orchestrator"),
+		Disposition: orgstate.Disposition{
+			JobID:  "job-1",
+			RepoID: "repo-1",
+			Role:   "engineer",
+			Status: "completed",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "orchestrator", decision.NextRole)
+	require.Equal(t, "orchestrator_review", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "returned to Orchestrator")
+}
+
+func TestDecide_orchestratorSuggestedRoleRoutesNext(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "cto-weekly"),
+		Disposition: orgstate.Disposition{
+			JobID:         "job-2",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			SuggestedRole: "cto-weekly",
+			Reason:        "plan needs architecture review",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "cto-weekly", decision.NextRole)
+	require.Equal(t, "orchestrator", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "suggested_role")
+}
+
+func TestDecide_invalidOrchestratorSuggestedRoleFallsBackToOrchestrator(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator"),
 		Disposition: orgstate.Disposition{
 			JobID:         "job-1",
 			RepoID:        "repo-1",
-			Role:          "engineer",
+			Role:          "orchestrator",
 			Status:        "blocked",
 			SuggestedRole: "missing-role",
 			Reason:        "needs routing",
@@ -60,12 +98,13 @@ func TestDecide_repeatedRouteFallsBackToOrchestrator(t *testing.T) {
 	decision, err := Decide(Input{
 		Manifest: testManifest("engineer", "qa", "orchestrator"),
 		Disposition: orgstate.Disposition{
-			JobID:    "job-3",
-			RepoID:   "repo-1",
-			Role:     "engineer",
-			Status:   "completed",
-			NextNeed: "qa_review",
-			TicketID: "MH-001",
+			JobID:         "job-3",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			NextNeed:      "qa_review",
+			SuggestedRole: "qa",
+			TicketID:      "MH-001",
 		},
 		TicketStateHash: "same-state",
 		RecentDecisions: []orgstate.Decision{

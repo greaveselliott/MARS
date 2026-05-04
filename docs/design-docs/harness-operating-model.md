@@ -84,13 +84,14 @@ mode as metadata for selection, reporting, and future payload routing. This
 keeps current bundles deterministic while making the intended memory boundary
 visible to agents and tools.
 
-The default generated topology remains strict trunk:
+The default generated topology remains strict trunk with dispatch routing:
 
-- Schedule and chain triggers activate stable role keys.
+- Schedules, events, surveys, and Orchestrator dispatch activate stable role keys.
 - Event integrations are optional telemetry or repair inputs, not the default
   delivery path.
-- Follow-up work that needs a different responsibility should chain to a role
-  whose domain and mode match the next action.
+- Follow-up work that needs a different responsibility returns a disposition to
+  Orchestrator, which chooses a role whose domain and mode match the next
+  action.
 
 ## Migration Path
 

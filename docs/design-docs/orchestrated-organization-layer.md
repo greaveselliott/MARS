@@ -25,21 +25,17 @@ evidence.
 
 ## Decision
 
-Add an opt-in manifest field:
+Add a manifest field:
 
 ```yaml
 orchestration_mode: legacy | dispatch
 ```
 
-`legacy` is the default and preserves the existing `then` and `idle_then`
-runtime behavior. `dispatch` makes the queue call an orchestration engine after
-each job reaches a terminal state. The orchestration engine chooses the next
-best role from the current disposition, ticket state, recent dispatch history,
-and manifest roles.
-
-The first implementation is deterministic. It routes common cases in code and
-falls back to a configured `orchestrator` role only for ambiguity or repeated
-loops. This avoids replacing every handoff with another LLM call.
+`dispatch` is the generated default. Each role records a terminal disposition,
+returns that disposition to the configured `orchestrator` role, and the
+Orchestrator chooses the next best manifest role or stops. `legacy` remains
+supported for existing repos that deliberately want `then` and `idle_then`
+runtime behavior.
 
 ## Runtime Contract
 
@@ -104,20 +100,15 @@ views can land without another database migration shape change.
 
 ## Routing Rules
 
-The deterministic orchestration engine uses these rules before any LLM
-orchestrator is needed:
+The orchestration engine uses these rules:
 
-- `in_review` routes to `suggested_role`, then QA.
-- `changes_requested` routes to Engineer.
-- `blocked` routes from `next_need` when it maps to a known role, otherwise to
-  Orchestrator or Janitor.
-- `completed` routes from `next_need`, otherwise follows the legacy happy-path
-  fallback for compatible roles.
-- `no_work` by Engineer routes to CEO, preserving the strategy bridge; other
-  roles stop.
-- `failed` routes to Orchestrator or Janitor instead of recursive self-recovery.
-- repeated identical role/ticket/need decisions on the same ticket-state hash
-  route to Orchestrator or stop with a loop-guard reason.
+- Non-Orchestrator dispositions route to the configured `orchestrator` role.
+- Orchestrator dispositions honor `suggested_role` after validating that the
+  role exists in the manifest.
+- Manifests without an `orchestrator` keep deterministic fallback routing for
+  compatibility.
+- Repeated identical role/ticket/need decisions on the same ticket-state hash
+  route back to Orchestrator or stop with a loop-guard reason.
 
 The manifest remains the executable role registry. The engine never invents a
 role that is absent from the repo manifest.
@@ -134,8 +125,8 @@ SQLite liveness state:
 - live SSE events for dispositions, dispatch decisions, and enqueued dispatch
   jobs
 
-The existing Pipeline view remains the legacy chain view. It is still useful for
-legacy repos and for understanding the default happy path.
+The Pipeline view renders dispatch repos as a hub-and-spoke Orchestrator view
+and keeps the legacy chain rendering only for legacy repos.
 
 ## Tool Creation Rationale
 
@@ -153,8 +144,8 @@ executor or session integration that the scaffold cannot express.
 
 | Assumption | Risk | Mitigation |
 | --- | --- | --- |
-| Existing repos still need the linear chain. | Breaking deployed harnesses would violate plug-and-play. | `legacy` remains the default; dispatch is opt-in per manifest. |
-| LLM orchestrator calls should not sit on every handoff. | Extra latency, cost, and unstable routing. | Deterministic router handles common statuses; LLM Orchestrator is only a role fallback for ambiguous or repeated loops. |
+| Existing repos still need the linear chain. | Breaking deployed harnesses would violate plug-and-play. | `legacy` remains supported for existing manifests, while new generated harnesses default to dispatch. |
+| Orchestrator on every handoff adds another job. | Extra latency compared with deterministic direct chaining. | The routing truth is clearer: roles return dispositions, Orchestrator owns next-role selection, and loop guards still prevent repeated churn. |
 | Ticket docs and SQLite can diverge. | Dashboard or agents could trust stale liveness state. | Ticket docs remain completion truth; SQLite records operational liveness. Janitor and dashboard surface stale/missing records instead of treating SQLite as a release gate. |
 | Backward routing can create loops. | Engineer/QA or CTO/COO loops can burn queue capacity. | Decisions record ticket-state hashes; repeated identical decisions route to Orchestrator/Janitor or stop. |
 | Blocked work needs a truthful home. | A new `blocked/` directory would split existing drain behavior. | V1 keeps blocked tickets in `in-progress/` with explicit blocker metadata. |
@@ -165,13 +156,14 @@ executor or session integration that the scaffold cannot express.
 
 ## Migration Strategy
 
-1. Keep existing target manifests on `legacy`.
-2. Add `docs/tickets/in-review/` during init/upgrade and ticket listing.
-3. Update role allowlists and prompts for dispatch-mode targets so terminal
+1. Keep existing target manifests on their declared mode during upgrade.
+2. Generate new target manifests with `orchestration_mode: dispatch`.
+3. Add `docs/tickets/in-review/` during init/upgrade and ticket listing.
+4. Update role allowlists and prompts for dispatch-mode targets so terminal
    roles can call `job_disposition_record`.
-4. Enable `orchestration_mode: dispatch` only after the target manifest has an
-   Orchestrator or Janitor fallback role and updated role prompts.
-5. Use Janitor to reconcile stale checkouts, missing dispositions, unresolved
+5. Enable `orchestration_mode: dispatch` only after the target manifest has an
+   Orchestrator fallback role and updated role prompts.
+6. Use Janitor to reconcile stale checkouts, missing dispositions, unresolved
    approvals, blocked tickets without `next_action`, and work products without
    ticket links.
 
@@ -181,8 +173,8 @@ The dispatch layer must be covered by:
 
 - org store CRUD and disposition validation
 - manifest parsing for `orchestration_mode`
-- deterministic routing for completed, blocked, in-review, no-work, failed, and
-  loop-guard cases
+- Orchestrator-return routing, Orchestrator suggested-role routing, deterministic
+  fallback routing, and loop-guard cases
 - ticket gate behavior for `in-review`
 - executor validation that dispatch-mode successes record dispositions
 - chaining tests proving legacy mode remains unchanged and dispatch mode bypasses

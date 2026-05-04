@@ -19,7 +19,16 @@ var content embed.FS
 // ChainNode represents a single role in the pipeline visualization.
 type ChainNode struct {
 	Name   string
+	Domain string
+	Mode   string
 	Active bool
+}
+
+// PipelineView describes how the dashboard should render role routing.
+type PipelineView struct {
+	Mode        string
+	Description string
+	Nodes       []ChainNode
 }
 
 // ControlCallbacks groups the server methods exposed through the
@@ -46,10 +55,11 @@ type RepoInfoDTO struct {
 
 // Config controls the dashboard.
 type Config struct {
-	Addr          string       // default ":9090"
-	EmergencyStop func() []error
-	ChainProvider func() []ChainNode // returns the live pipeline chain from manifest
-	Controls      ControlCallbacks
+	Addr             string // default ":9090"
+	EmergencyStop    func() []error
+	ChainProvider    func() []ChainNode // returns the live pipeline chain from manifest
+	PipelineProvider func() PipelineView
+	Controls         ControlCallbacks
 }
 
 const eventBufferSize = 200
@@ -137,6 +147,7 @@ type pageData struct {
 	ActiveNav  string
 	Now        string
 	ChainNodes []ChainNode
+	Pipeline   PipelineView
 }
 
 func (d *Dashboard) handlePage(name, title string) http.HandlerFunc {
@@ -147,8 +158,14 @@ func (d *Dashboard) handlePage(name, title string) http.HandlerFunc {
 			Now:       time.Now().Format(time.RFC3339),
 		}
 
-		if name == "pipeline" && d.cfg.ChainProvider != nil {
-			data.ChainNodes = d.cfg.ChainProvider()
+		if name == "pipeline" {
+			if d.cfg.PipelineProvider != nil {
+				data.Pipeline = d.cfg.PipelineProvider()
+				data.ChainNodes = data.Pipeline.Nodes
+			} else if d.cfg.ChainProvider != nil {
+				data.ChainNodes = d.cfg.ChainProvider()
+				data.Pipeline = PipelineView{Mode: "legacy", Nodes: data.ChainNodes}
+			}
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

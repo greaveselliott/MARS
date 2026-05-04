@@ -16,7 +16,7 @@ import (
 func setupTicketDir(t *testing.T) (string, Root) {
 	t.Helper()
 	dir := t.TempDir()
-	for _, sub := range []string{"docs/tickets/backlog", "docs/tickets/in-progress", "docs/tickets/done"} {
+	for _, sub := range []string{"docs/tickets/backlog", "docs/tickets/in-progress", "docs/tickets/in-review", "docs/tickets/done"} {
 		require.NoError(t, os.MkdirAll(filepath.Join(dir, sub), 0o755))
 	}
 	root, err := NewRoot(dir)
@@ -359,11 +359,12 @@ func TestScanExistingTickets_findsAcrossStatuses(t *testing.T) {
 	dir, _ := setupTicketDir(t)
 	writeTicket(t, dir, "backlog", "T-001-alpha.md", "Alpha")
 	writeTicket(t, dir, "in-progress", "T-002-beta.md", "Beta")
-	writeTicket(t, dir, "done", "T-003-gamma.md", "Gamma")
+	writeTicket(t, dir, "in-review", "T-003-gamma.md", "Gamma")
+	writeTicket(t, dir, "done", "T-004-delta.md", "Delta")
 
 	tickets, err := scanExistingTickets(dir)
 	require.NoError(t, err)
-	assert.Len(t, tickets, 3)
+	assert.Len(t, tickets, 4)
 
 	statuses := map[string]bool{}
 	for _, tk := range tickets {
@@ -371,6 +372,7 @@ func TestScanExistingTickets_findsAcrossStatuses(t *testing.T) {
 	}
 	assert.True(t, statuses["backlog"])
 	assert.True(t, statuses["in-progress"])
+	assert.True(t, statuses["in-review"])
 	assert.True(t, statuses["done"])
 }
 

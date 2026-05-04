@@ -69,11 +69,23 @@
     </div>
 
     <div class="card">
-      <h2>Pipeline Chain</h2>
+      <h2>{{if eq .Pipeline.Mode "dispatch"}}Dispatch Routing{{else}}Pipeline Chain{{end}}</h2>
+      {{if .Pipeline.Description}}<p class="muted">{{.Pipeline.Description}}</p>{{end}}
+      {{if eq .Pipeline.Mode "dispatch"}}
+      <div class="pipeline-dispatch">
+        <div class="hub-node">Orchestrator</div>
+        <div class="dispatch-return">terminal dispositions return here</div>
+        <div class="spoke-row">
+          {{range .ChainNodes}}<span class="spoke-node" title="{{.Domain}} / {{.Mode}}">{{.Name}}</span>{{end}}
+          {{if not .ChainNodes}}<span class="chain-node">No roles configured</span>{{end}}
+        </div>
+      </div>
+      {{else}}
       <div class="pipeline-chain">
         {{range $i, $node := .ChainNodes}}{{if $i}}<span class="chain-arrow">&rarr;</span>{{end}}<span class="chain-node{{if $node.Active}} active{{end}}">{{$node.Name}}</span>{{end}}
         {{if not .ChainNodes}}<span class="chain-node">No roles configured</span>{{end}}
       </div>
+      {{end}}
     </div>
   </main>
 

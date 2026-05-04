@@ -13,7 +13,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | --- | --- | --- |
 | Install and setup | installed `mars-harness` command, `mars-harness setup`, `mars-harness path setup`, config, model and binary cache | Run the harness from any directory, configure the user's shell PATH automatically, detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
 | Target harness | `mars-harness init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
-| Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, visible run state, opt-in dispatch orchestration, and narrow self-healing for stale recovery jobs. |
+| Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, visible run state, default dispatch orchestration, and narrow self-healing for stale recovery jobs. |
 | Delivery model | `docs/goals/`, `docs/features/`, one active exec plan, BDD scenario evidence, ticket completion gates, org liveness state | Align work to goals, define feature completeness before implementation, route work to the next best role when linear handoff is wrong, and ship only scenarios with real E2E/integration evidence. |
 | Learning loop | `scores`, `trust`, `docs/QUALITY_SCORE.md`, telemetry triage, skills, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, reusable workflow skills, prompt or process improvements, repo-visible grades, and safety controls. |
 | Generated references | `docs/generated/` | Provide reproducible, cataloged source-harness maps when generator commands exist. |
@@ -34,7 +34,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |
 | `mars-harness run <role> --repo <path>` | Implemented | Loads manifest, guardrails, knowledge routes, context, tools, local model endpoint, and runs one role with terminal-result truth. |
 | `mars-harness start --repo <path>` | Implemented | Initializes if needed, registers the repo, seeds the CEO role, and runs the per-repo autonomous pipeline with isolated database state and recovery-queue self-healing. |
-| `mars-harness serve` | Implemented | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, workers, recovery-queue self-heal watchdog, native survey loop for unattended ticket/check/telemetry/score/dogfood/no-op/stuck-work signals, and opt-in dispatch-mode organization layer against the configured database. |
+| `mars-harness serve` | Implemented | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, workers, recovery-queue self-heal watchdog, native survey loop for unattended ticket/check/telemetry/score/dogfood/no-op/stuck-work signals, and dispatch-mode organization layer against the configured database. |
 | `mars-harness register --repo <path>` | Implemented | Registers a repo and creates the per-repo database path when one is not supplied. |
 | `mars-harness doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, guardrail/workflow health, mirrored operating-model health, active-plan hygiene, and optional integration configuration. |
 | `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
@@ -118,8 +118,8 @@ The product contract is:
 
 - Six canonical operating domains describe role memory and routing vocabulary: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, and Orchestrator.
 - Explicit manifest role keys remain the executable units; optional `domain` and `mode` metadata classify why the role runs without changing trust, scoring, tool, or guardrail policy.
-- `orchestration_mode: legacy` preserves manifest `then` and `idle_then` chains.
-- `orchestration_mode: dispatch` routes completed jobs through recorded job dispositions and deterministic next-role decisions while keeping the queue, manifest roles, tickets, BDD evidence, scoring, traces, and trust policy as the runtime backbone.
+- `orchestration_mode: dispatch` is the generated default: completed jobs record dispositions, return to the Orchestrator, and let it choose the next best manifest role while keeping the queue, tickets, BDD evidence, scoring, traces, and trust policy as the runtime backbone.
+- `orchestration_mode: legacy` remains supported for repos that deliberately preserve manifest `then` and `idle_then` chains.
 - Planner roles create scoped, deduplicated work.
 - CEO owns goals, BDD feature contracts, scenario schedule, tradeoffs, and the active exec plan.
 - CTO validates the hypothesis, architecture fit, and whether the walking skeleton is real.

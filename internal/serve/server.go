@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -219,9 +220,9 @@ func New(cfg Config) (*Server, error) {
 		dashAddr = ":9090"
 	}
 	dash, err := dashboard.New(dashboard.Config{
-		Addr:          dashAddr,
-		EmergencyStop: func() []error { return s.estop.Execute(context.Background()) },
-		ChainProvider: s.buildPipelineChain,
+		Addr:             dashAddr,
+		EmergencyStop:    func() []error { return s.estop.Execute(context.Background()) },
+		PipelineProvider: s.buildPipelineView,
 		Controls: dashboard.ControlCallbacks{
 			Pause:    func() { s.Pause() },
 			Resume:   func() { s.Resume() },
@@ -972,10 +973,19 @@ func (s *Server) handleThroughputAPI(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleOrchestrationAPI(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	type roleSummary struct {
+		Name     string   `json:"name"`
+		Domain   string   `json:"domain"`
+		Mode     string   `json:"mode"`
+		Model    string   `json:"model"`
+		Schedule string   `json:"schedule"`
+		Tools    []string `json:"tools"`
+	}
 	type repoSummary struct {
-		ID                string `json:"id"`
-		Path              string `json:"path"`
-		OrchestrationMode string `json:"orchestration_mode"`
+		ID                string        `json:"id"`
+		Path              string        `json:"path"`
+		OrchestrationMode string        `json:"orchestration_mode"`
+		Roles             []roleSummary `json:"roles"`
 	}
 	type apiResponse struct {
 		Repos        []repoSummary          `json:"repos"`
@@ -988,10 +998,24 @@ func (s *Server) handleOrchestrationAPI(w http.ResponseWriter, r *http.Request) 
 		if err == nil {
 			for _, repo := range repos {
 				mode := "legacy"
-				if manifest, mErr := bundle.Load(repo.Path); mErr == nil && manifest.DispatchMode() {
-					mode = "dispatch"
+				var roles []roleSummary
+				if manifest, mErr := bundle.Load(repo.Path); mErr == nil {
+					if manifest.DispatchMode() {
+						mode = "dispatch"
+					}
+					for _, node := range dashboardRoleNodes(manifest, false) {
+						role := manifest.Roles[node.Name]
+						roles = append(roles, roleSummary{
+							Name:     node.Name,
+							Domain:   role.Domain,
+							Mode:     role.Mode,
+							Model:    role.Model,
+							Schedule: role.Schedule,
+							Tools:    role.Tools,
+						})
+					}
 				}
-				resp.Repos = append(resp.Repos, repoSummary{ID: repo.ID, Path: repo.Path, OrchestrationMode: mode})
+				resp.Repos = append(resp.Repos, repoSummary{ID: repo.ID, Path: repo.Path, OrchestrationMode: mode, Roles: roles})
 			}
 		}
 	}
@@ -1092,11 +1116,9 @@ func (s *Server) handleEvent(event gh.Event) {
 }
 
 // handleJobComplete is the OnComplete callback for the worker pool.
-// It resolves the `then` field from the completed role's manifest and
-// enqueues follow-up jobs for each chained role. If a self-chain is
-// skipped (role finished too fast, meaning no work was found), the
-// `idle_then` roles are triggered instead — this is the bridge between
-// the delivery loop and the strategy chain.
+// In dispatch mode it returns the terminal disposition to the Orchestrator
+// routing path. Legacy manifests still resolve `then` and `idle_then` chains so
+// existing deployed harnesses do not break.
 func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
 
@@ -1298,7 +1320,7 @@ func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec
 		RepoID:         job.RepoID,
 		Role:           decision.NextRole,
 		Trigger:        string(triggerJSON),
-		IdempotencyKey: fmt.Sprintf("dispatch:%s:%s:%s", decision.ID, job.RepoID, decision.NextRole),
+		IdempotencyKey: fmt.Sprintf("dispatch:%s:%s:%s", job.ID, job.RepoID, decision.NextRole),
 	}
 	jobID, err := s.queue.Enqueue(ctx, dispatchJob)
 	if err != nil {
@@ -1575,6 +1597,34 @@ func (s *Server) enqueueRetry(evt telemetry.Event, reason string) {
 	}
 }
 
+func (s *Server) buildPipelineView() dashboard.PipelineView {
+	repos, err := s.repos.List(context.Background())
+	if err != nil || len(repos) == 0 {
+		return dashboard.PipelineView{Mode: "none", Description: "No repositories registered."}
+	}
+
+	manifest, err := bundle.Load(repos[0].Path)
+	if err != nil {
+		return dashboard.PipelineView{Mode: "unknown", Description: "Unable to load manifest."}
+	}
+
+	if manifest.DispatchMode() {
+		nodes := dashboardRoleNodes(manifest, true)
+		return dashboard.PipelineView{
+			Mode:        "dispatch",
+			Description: "Each role records a disposition, returns to Orchestrator, and Orchestrator chooses the next best role.",
+			Nodes:       nodes,
+		}
+	}
+
+	nodes := s.buildPipelineChain()
+	return dashboard.PipelineView{
+		Mode:        "legacy",
+		Description: "Legacy mode follows manifest then/idle_then chains.",
+		Nodes:       nodes,
+	}
+}
+
 // buildPipelineChain walks the manifest's `then` chains starting from CEO
 // and returns an ordered list of chain nodes for the dashboard.
 func (s *Server) buildPipelineChain() []dashboard.ChainNode {
@@ -1644,6 +1694,54 @@ func (s *Server) buildPipelineChain() []dashboard.ChainNode {
 	}
 
 	return nodes
+}
+
+func dashboardRoleNodes(manifest *bundle.Manifest, excludeOrchestrator bool) []dashboard.ChainNode {
+	if manifest == nil {
+		return nil
+	}
+	names := make([]string, 0, len(manifest.Roles))
+	for name := range manifest.Roles {
+		if excludeOrchestrator && name == "orchestrator" {
+			continue
+		}
+		names = append(names, name)
+	}
+	sort.Slice(names, func(i, j int) bool {
+		left := roleDashboardOrder(names[i])
+		right := roleDashboardOrder(names[j])
+		if left == right {
+			return names[i] < names[j]
+		}
+		return left < right
+	})
+	nodes := make([]dashboard.ChainNode, 0, len(names))
+	for _, name := range names {
+		role := manifest.Roles[name]
+		nodes = append(nodes, dashboard.ChainNode{Name: name, Domain: role.Domain, Mode: role.Mode})
+	}
+	return nodes
+}
+
+func roleDashboardOrder(role string) int {
+	order := map[string]int{
+		"ceo":                10,
+		"cto-weekly":         20,
+		"coo":                30,
+		"engineer":           40,
+		"qa":                 50,
+		"security":           60,
+		"dependency-manager": 70,
+		"release-manager":    80,
+		"dogfood":            90,
+		"pipeline-fixer":     100,
+		"janitor":            110,
+		"orchestrator":       120,
+	}
+	if n, ok := order[role]; ok {
+		return n
+	}
+	return 1000
 }
 
 func (s *Server) registerCronSchedules(repos []RepoRecord) {

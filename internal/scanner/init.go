@@ -295,7 +295,7 @@ func EnsureHarness(repoRoot string, force bool) (didInit bool, err error) {
 func defaultManifest(projectName string) string {
 	return fmt.Sprintf(`name: %s
 description: Starter autonomous AI pipeline for %s — strict trunk, configurable roles
-orchestration_mode: legacy
+orchestration_mode: dispatch
 
 roles:
   # ── Strategy ─────────────────────────────────────────────
@@ -305,7 +305,6 @@ roles:
     mode: strategy
     model: reasoning
     schedule: "0 20 * * 0"
-    then: [cto-weekly]
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
@@ -315,7 +314,6 @@ roles:
     domain: planner
     mode: ticket-breakdown
     model: reasoning
-    then: [engineer]
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
     tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
@@ -327,7 +325,6 @@ roles:
     mode: architecture-planning
     model: reasoning
     schedule: "0 21 * * 0"
-    then: [coo]
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
@@ -339,8 +336,6 @@ roles:
     mode: ticket-delivery
     model: coding
     schedule: "0 0,6,12,18 * * 1-5"
-    then: [qa, engineer, dogfood]
-    idle_then: [ceo, janitor]
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record]
@@ -352,7 +347,6 @@ roles:
     mode: quality-review
     model: fast
     max_turns: 20
-    then: [security]
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
     tools: [file_read, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit]
@@ -364,7 +358,6 @@ roles:
     model: reasoning
     max_turns: 20
     schedule: "0 22 * * 0"
-    then: [dependency-manager]
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, git_status, git_commit, git_push]
@@ -411,7 +404,6 @@ roles:
     model: coding
     triggers:
       - workflow_run.conclusion == "failure"
-    then: [qa]
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
     tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
@@ -809,8 +801,8 @@ of backlog work. Blocked in-progress tickets do not cause infinite retries, but
 they must point to a dependency ticket or carry a blocker note clear enough for
 Janitor, Doctor, and the next Engineer run to recover state.
 
-Repos that opt into ` + "`orchestration_mode: dispatch`" + ` keep the same ticket
-source of truth, but roles also record terminal outcomes with
+Dispatch-mode repos keep the same ticket source of truth, but roles also record
+terminal outcomes with
 ` + "`job_disposition_record`" + `. Use ` + "`in-review/`" + ` only when a ticket is waiting on a
 reviewer, approval, or requested-change loop. Dispositions and approvals support
 routing; they do not replace BDD evidence or ticket movement rules.
@@ -1814,11 +1806,11 @@ REPO LEARNINGS context block.
 - **Schedule:** Sunday 8pm UTC
 - **Bootstrap:** First run on a new project (via mars-harness start)
 
-## CTO handoff
+## Orchestrator handoff
 
-When your run completes, the orchestrator automatically triggers the CTO.
-The CTO reviews your priorities for architectural feasibility, then the COO
-creates tickets from your "This week" section.
+When your run completes, record a disposition. The Orchestrator receives that
+disposition and chooses whether CTO, COO, Engineer, Janitor, or no follow-up is
+the next truthful role.
 
 ## Prompt
 
@@ -1948,13 +1940,13 @@ context block.
 
 ## Trigger
 
-- **Chain:** Runs after CTO completes (CTO → COO → Engineer chain)
+- **Dispatch:** Runs when the Orchestrator decides ticket shaping is the next best step
 - **Event:** CEO priorities committed to main
 
-## Engineer handoff
+## Orchestrator handoff
 
-When your run completes, the orchestrator automatically triggers the Engineer,
-who picks up the highest-priority ticket you created.
+When your run completes, record a disposition. The Orchestrator receives that
+disposition and chooses the next best role.
 
 ## Prompt
 
@@ -2067,13 +2059,14 @@ REPO LEARNINGS context block.
 
 ## Trigger
 
-- **Chain:** Runs after CEO completes (CEO → CTO → COO chain)
+- **Dispatch:** Runs when the Orchestrator decides architecture review is the next best step
 - **Schedule:** Weekly audit (Sunday 9pm UTC)
 
-## COO handoff
+## Orchestrator handoff
 
-When your weekly run completes, the orchestrator triggers the COO to create
-tickets from the CEO's priorities that you've validated.
+When your weekly run completes, record a disposition. The Orchestrator receives
+that disposition and chooses whether ticket shaping, engineering, or more
+planning is next.
 
 ## Prompt
 
@@ -2155,16 +2148,17 @@ update docs/design-docs/.
 
 ## Trigger
 
-- **Chain:** Runs after COO creates tickets (COO → Engineer chain)
-- **Self-chain:** After completing a ticket, the orchestrator re-enqueues you
-  to process the next one. You will keep running until the backlog is empty.
+- **Dispatch:** Runs when the Orchestrator decides implementation or rework is the next best step
+- **Continuation:** After completing or blocking a ticket, record a disposition.
+  The Orchestrator decides whether another Engineer run, QA, Dogfood, Janitor,
+  planning, or no follow-up is next.
 - **Schedule:** 4x daily on weekdays (00:00, 06:00, 12:00, 18:00 UTC)
 
-## QA handoff
+## Orchestrator handoff
 
-When your run completes, the orchestrator triggers both QA (to review your
-changes) and another engineer run (to pick up the next ticket). This creates
-a continuous delivery loop: Engineer → QA + Engineer → QA + Engineer → ...
+When your run completes, record a disposition. The Orchestrator receives that
+disposition and chooses whether QA, another Engineer run, Dogfood, Janitor,
+planning, or no follow-up is next.
 
 ## Prompt
 
@@ -2337,11 +2331,13 @@ context block.
 
 ## Trigger
 
-- **Chain:** Runs after Engineer completes (Engineer → QA chain)
+- **Dispatch:** Runs when the Orchestrator decides evidence review is the next best step
 
-## Security handoff
+## Orchestrator handoff
 
-When your review completes, the orchestrator triggers the Security reviewer.
+When your review completes, record a disposition. The Orchestrator receives
+that disposition and chooses whether security review, implementation rework,
+dogfood, or no follow-up is next.
 
 ## Prompt
 
@@ -2428,12 +2424,14 @@ context block.
 
 ## Trigger
 
-- **Chain:** Runs after QA completes (QA → Security → Dependency Manager chain)
+- **Dispatch:** Runs when the Orchestrator decides security review is the next best step
 - **Schedule:** Weekly full audit (Sunday 10pm UTC)
 
-## Dependency Manager handoff
+## Orchestrator handoff
 
-When your review completes, the orchestrator triggers the Dependency Manager.
+When your review completes, record a disposition. The Orchestrator receives
+that disposition and chooses whether dependency maintenance, engineering,
+release, or no follow-up is next.
 
 ## Prompt
 
@@ -2495,7 +2493,7 @@ REPO LEARNINGS context block.
 
 ## Trigger
 
-- **Chain:** Runs after Security review (Security → Dependency Manager)
+- **Dispatch:** Runs when the Orchestrator decides dependency maintenance is the next best step
 - **Schedule:** Weekly dependency review (Sunday 11pm UTC)
 
 ## Prompt
@@ -2728,7 +2726,7 @@ context block.
 ## Trigger
 
 - **Event:** CI workflow fails
-- **Chain:** After fix, triggers QA review
+- **Dispatch:** After the fix, record a disposition so the Orchestrator can choose QA review or another repair step
 
 ## Prompt
 
@@ -2757,9 +2755,9 @@ changes, commit and push them. An agent run that leaves dirty state is a failed 
 
 ## Role
 
-You are the dispatch coordinator. You run when deterministic routing cannot
-truthfully choose the next role, or when repeated loops show that the normal
-handoff path is stuck.
+You are the dispatch coordinator. You run after terminal job dispositions and
+choose the next best manifest role from current evidence, ticket state, goals,
+and trace context.
 
 ## Prompt
 
@@ -2789,6 +2787,7 @@ Record exactly one disposition before finishing with job_disposition_record:
 
 Do not modify product code. Do not invent roles not present in the manifest.
 If state is contradictory, record a durable decision and choose Janitor or stop.
+Do not assume a fixed linear handoff; the disposition is the routing contract.
 `,
 
 	"janitor": `# Backlog Janitor

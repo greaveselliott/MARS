@@ -92,6 +92,29 @@ func TestFileWritePolicyBlocksTicketRootMarkdown(t *testing.T) {
 	}
 }
 
+func TestShellExecPolicyBlocksTicketRootMarkdown(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+
+	err := preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"shell_command":"touch docs/tickets/T-002-root-ticket.md"}`))
+	if err == nil {
+		t.Fatal("expected root ticket shell_exec to be blocked")
+	}
+	if !strings.Contains(err.Error(), "ticket markdown must live under docs/tickets/backlog") {
+		t.Fatalf("expected lifecycle path policy error, got %v", err)
+	}
+}
+
+func TestShellExecPolicyAllowsTicketLifecycleMove(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+
+	err := preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"shell_command":"git mv docs/tickets/backlog/T-001-existing.md docs/tickets/in-progress/"}`))
+	if err != nil {
+		t.Fatalf("expected lifecycle ticket move to pass, got %v", err)
+	}
+}
+
 func TestFileWritePolicyBlocksNewTicketMarkdownInLifecycleDir(t *testing.T) {
 	t.Parallel()
 	_, root := setupPolicyTicketRepo(t)

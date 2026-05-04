@@ -312,10 +312,43 @@ func checkShellPolicy(raw json.RawMessage) error {
 	if strings.TrimSpace(args.ShellCommand) != "" {
 		cmd = args.ShellCommand
 	}
+	if err := checkShellTicketPathPolicy(cmd); err != nil {
+		return err
+	}
 	if operation, ok := forbiddenShellOperation(cmd); ok {
 		return fmt.Errorf("policy: shell_exec command contains forbidden operation %q", operation)
 	}
 	return nil
+}
+
+func checkShellTicketPathPolicy(cmd string) error {
+	for _, field := range shellFields(cmd) {
+		rel := cleanShellPathToken(field)
+		if rel == "" {
+			continue
+		}
+		lowerRel := strings.ToLower(cleanRepoPath(rel))
+		if lowerRel == "" || lowerRel == "docs/tickets/readme.md" {
+			continue
+		}
+		if !strings.HasPrefix(lowerRel, "docs/tickets/") || !strings.HasSuffix(lowerRel, ".md") {
+			continue
+		}
+		parts := strings.Split(lowerRel, "/")
+		if len(parts) < 4 || !isTicketLifecycleDir(parts[2]) {
+			return fmt.Errorf("policy: ticket markdown must live under docs/tickets/backlog, docs/tickets/in-progress, docs/tickets/in-review, or docs/tickets/done; use ticket_create for new tickets instead of shell_exec to %s", rel)
+		}
+	}
+	return nil
+}
+
+func cleanShellPathToken(field string) string {
+	field = strings.TrimSpace(field)
+	field = strings.TrimPrefix(field, "1>")
+	field = strings.TrimPrefix(field, "2>")
+	field = strings.TrimLeft(field, "><")
+	field = strings.TrimPrefix(field, "./")
+	return strings.Trim(field, `"'`)
 }
 
 func shellExecReadOnly(raw json.RawMessage) bool {

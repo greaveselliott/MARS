@@ -25,6 +25,7 @@ func TestFoundationAcceptanceFreshBootstrapHappyPath(t *testing.T) {
 	repo := setupFoundationTarget(t, false)
 	fake := newFakeChatServer(t,
 		fakeToolResponse("write-probe", "file_write", `{"path":"docs/probe.txt","content":"foundation gate passed\n"}`),
+		fakeToolResponse("record-disposition", "job_disposition_record", `{"status":"completed","reason":"foundation acceptance probe completed"}`),
 		fakeTextResponse("Done."),
 	)
 
@@ -34,7 +35,7 @@ func TestFoundationAcceptanceFreshBootstrapHappyPath(t *testing.T) {
 	require.NoError(t, exec.Execute(ctx, job))
 	srv.handleJobComplete(ctx, job)
 
-	require.Equal(t, 2, fake.RequestCount())
+	require.Equal(t, 3, fake.RequestCount())
 	data, err := os.ReadFile(filepath.Join(repo, "docs", "probe.txt"))
 	require.NoError(t, err)
 	require.Equal(t, "foundation gate passed\n", string(data))
@@ -85,7 +86,9 @@ func TestFoundationAcceptanceDirtyWorktreeContainmentSkipsLLMAndRecovery(t *test
 
 	require.Equal(t, 0, fake.RequestCount(), "dirty preflight must happen before LLM invocation")
 	require.Equal(t, 1, countInterventionDebtTickets(t, repo))
-	require.Equal(t, 0, countJobsByStatus(t, srv, "pending"), "deterministic containment failure should not enqueue same-role recovery")
+	require.Equal(t, 1, countJobsByStatus(t, srv, "pending"), "deterministic containment failure should enqueue a single dispatch review")
+	require.Equal(t, 1, countJobsByStatusAndRole(t, srv, "pending", "orchestrator"), "dispatch review should return to Orchestrator")
+	require.Equal(t, 0, countJobsByStatusAndRole(t, srv, "pending", "engineer"), "deterministic containment failure should not enqueue same-role recovery")
 }
 
 func setupFoundationTarget(t *testing.T, withTicket bool) string {

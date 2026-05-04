@@ -96,7 +96,7 @@ type existingTicket struct {
 	DedupeKey string
 	Number    int
 	Path      string // relative to repo root, e.g. "docs/tickets/done/T-001-foo.md"
-	Status    string // "backlog", "in-progress", or "done"
+	Status    string // "backlog", "in-progress", "in-review", or "done"
 }
 
 var ticketNumberRe = regexp.MustCompile(`T-(\d+)`)
@@ -112,7 +112,7 @@ func registerTicketCreate(r *Registry) error {
 	return r.Register(
 		"ticket_create",
 		"Create a ticket in docs/tickets/backlog/ with automatic deduplication. "+
-			"If a ticket with the same topic already exists (in backlog, in-progress, or done), "+
+			"If a ticket with the same topic already exists (in backlog, in-progress, in-review, or done), "+
 			"the tool returns the existing ticket path instead of creating a duplicate.",
 		json.RawMessage(ticketCreateSchema),
 		handleTicketCreate,
@@ -314,7 +314,7 @@ func yamlInlineList(values []string) string {
 
 func scanExistingTickets(repoRoot string) ([]existingTicket, error) {
 	ticketsDir := filepath.Join(repoRoot, "docs", "tickets")
-	statuses := []string{"backlog", "in-progress", "done"}
+	statuses := []string{"backlog", "in-progress", "in-review", "done"}
 
 	var tickets []existingTicket
 	for _, status := range statuses {

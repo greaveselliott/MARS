@@ -120,6 +120,26 @@ func (m Manifest) DispatchMode() bool {
 	return strings.TrimSpace(m.OrchestrationMode) == "dispatch"
 }
 
+// DisplayHandoff returns the role handoff label shown to operators. Dispatch
+// mode routes terminal dispositions through the Orchestrator rather than
+// exposing legacy role-to-role chains as the next hop.
+func (m Manifest) DisplayHandoff(roleName string) []string {
+	role, ok := m.Roles[roleName]
+	if !ok {
+		return nil
+	}
+	if m.DispatchMode() {
+		if roleName == "orchestrator" {
+			return []string{"selected role"}
+		}
+		if _, ok := m.Roles["orchestrator"]; ok {
+			return []string{"orchestrator"}
+		}
+		return nil
+	}
+	return role.Then
+}
+
 var schedulePresets = map[string]bool{
 	"hourly":  true,
 	"daily":   true,
