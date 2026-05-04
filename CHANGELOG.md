@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.14] - 2026-05-04
+<!-- mars-harness-release: version=0.24.14 commit=1bf62cd85b50 -->
+
+### Why This Release Matters
+It makes the harness easier to understand and operate through work to define mirrored skill glossary in harness.
+
+### Documentation
+- **harness:** Define mirrored skill glossary (1bf62cd)
+
 ## [0.24.13] - 2026-05-04
 <!-- mars-harness-release: version=0.24.13 commit=4a6370f43596 -->
 
