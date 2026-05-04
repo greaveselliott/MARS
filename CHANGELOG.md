@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.30.0] - 2026-05-04
+<!-- mars-harness-release: version=0.30.0 commit=ae9ac01bc65e -->
+
+### Impact
+- **cli:** Operators and agents now have a release-blocking operating model for keeping the `mars-harness` CLI, the mirrored `mars_harness_cli` tool, generated target guidance, and CLI-related skills synchronized. A command can no longer quietly land while agents keep reading stale tool reference text or stale workflow skills.
+- **cli:** The `mars_harness_cli` repo shortcut now recognizes the repo-aware command paths that had drifted from the CLI surface, including `release backfill-notes`, `docsync audit`, `models evaluate`, `models override`, `scores`, and `trust`.
+
+### Why
+- **cli:** The CLI is the foundation control plane, but agents usually discover it through mirrored tools and generated skills. Without an explicit sync model and tests, every CLI change created a chance that target agents would keep invoking old commands, miss new repo flags, or choose generic shell execution over the intended tool path.
+- **cli:** The previous documentation-sync model made code-to-doc ownership explicit, but it did not specifically cover the CLI-to-tool-and-skill mirrors that agents depend on when operating a deployed harness.
+
+### What Changed
+- **cli:** Added AD-103 in `docs/design-docs/cli-tool-skill-sync.md`, documenting the architecture, universal operating model, required mirrors, evidence commands, invariants, and failure mitigations for CLI tool/skill synchronization (ae9ac01).
+- **cli:** Added command-tree tests that compare the live Cobra command graph with the `mars_harness_cli` reference and repo shortcut map, then exported the reference/shortcut helpers so the CLI package can enforce that mirror without stringly guessing (ae9ac01).
+- **cli:** Mirrored the model into generated target harnesses with a new `cli-tool-sync` skill, generated AD-103 docs, knowledge routes, AGENTS guidance, F-001 scenario coverage, scanner assertions, and doctrine-sync checks (ae9ac01).
+
+### Features
+- **cli:** Enforce tool skill sync (ae9ac01)
+
 ## [0.29.1] - 2026-05-04
 <!-- mars-harness-release: version=0.29.1 commit=8a718debfcbc -->
 
