@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.28.3] - 2026-05-04
+<!-- mars-harness-release: version=0.28.3 commit=970e1659b42e -->
+
+### Impact
+- **release:** Operators see improved reliability because remove unused commit group helper.
+
+### Why
+- **release:** This matters because remove unused commit group helper closes a failure mode or degraded path.
+
+### What Changed
+- **release:** Changed remove unused commit group helper (970e165).
+
+### Fixes
+- **release:** Remove unused commit group helper (970e165)
+
 ## [0.28.2] - 2026-05-04
 <!-- mars-harness-release: version=0.28.2 commit=4d26d7c9bf43 -->
 
