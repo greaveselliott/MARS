@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.26.2] - 2026-05-04
+<!-- mars-harness-release: version=0.26.2 commit=1dcd96de5bf9 -->
+
+### Why This Release Matters
+It makes the harness easier to understand and operate through work to add no stale documentation rule in operating-model.
+
+### Documentation
+- **operating-model:** Add no stale documentation rule (1dcd96d)
+
 ## [0.26.1] - 2026-05-04
 <!-- mars-harness-release: version=0.26.1 commit=dad878a5206c -->
 
