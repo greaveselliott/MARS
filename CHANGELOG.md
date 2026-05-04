@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.32.0] - 2026-05-04
+<!-- mars-harness-release: version=0.32.0 commit=bcf54eda8895 -->
+
+### Impact
+- **roles:** Operators gain new capability: add optional head of strategy agent.
+
+### Why
+- **roles:** This matters because add optional head of strategy agent was missing from the shipped capability set.
+
+### What Changed
+- **roles:** Changed add optional head of strategy agent (bcf54ed).
+
+### Features
+- **roles:** Add optional head of strategy agent (bcf54ed)
+
 ## [0.31.1] - 2026-05-04
 <!-- mars-harness-release: version=0.31.1 commit=5c2af02c10ea -->
 
