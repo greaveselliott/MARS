@@ -153,7 +153,7 @@ func (s *SQLiteStore) UpsertPattern(ctx context.Context, pattern AggregatedPatte
 	if err != nil {
 		return fmt.Errorf("foundation telemetry: begin pattern upsert: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	if strings.TrimSpace(pattern.ReportHash) != "" {
 		reportDelta = 0
