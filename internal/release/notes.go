@@ -55,6 +55,12 @@ type Commit struct {
 	Breaking bool
 }
 
+type releaseNarrativeProfile struct {
+	Impact string
+	Why    string
+	What   string
+}
+
 type Result struct {
 	PreviousVersion SemVer
 	NextVersion     SemVer
@@ -284,6 +290,9 @@ func releaseImpactLine(commit Commit) string {
 	if value := commitNarrativeField(commit, "impact"); value != "" {
 		return scopedNarrative(commit, value)
 	}
+	if profile, ok := releaseProfile(commit); ok {
+		return scopedNarrative(commit, profile.Impact)
+	}
 	change := releaseChangePhrase(commit)
 	if commit.Breaking {
 		return scopedNarrative(commit, "Operators may need to account for compatibility-changing work: "+change+".")
@@ -308,6 +317,9 @@ func releaseWhyLine(commit Commit) string {
 	if value := commitNarrativeField(commit, "why"); value != "" {
 		return scopedNarrative(commit, value)
 	}
+	if profile, ok := releaseProfile(commit); ok {
+		return scopedNarrative(commit, profile.Why)
+	}
 	change := releaseChangePhrase(commit)
 	switch {
 	case commit.Breaking:
@@ -331,7 +343,91 @@ func releaseWhatLine(commit Commit) string {
 	if value := commitNarrativeField(commit, "what"); value != "" {
 		return scopedNarrative(commit, fmt.Sprintf("%s (%s).", strings.TrimSuffix(ensureSentence(value), "."), commit.Short))
 	}
+	if profile, ok := releaseProfile(commit); ok {
+		return scopedNarrative(commit, fmt.Sprintf("%s (%s).", strings.TrimSuffix(ensureSentence(profile.What), "."), commit.Short))
+	}
 	return scopedNarrative(commit, fmt.Sprintf("Changed %s (%s).", releaseChangePhrase(commit), commit.Short))
+}
+
+func releaseProfile(commit Commit) (releaseNarrativeProfile, bool) {
+	text := normalizedReleaseText(commit)
+	scope := strings.ToLower(strings.TrimSpace(commit.Scope))
+
+	switch {
+	case isStructuredDispatchChange(scope, text):
+		return releaseNarrativeProfile{
+			Impact: "Operators and agents get a more reliable delivery loop because handoff and feedback now travel as first-class runtime data through Orchestrator dispatch.",
+			Why:    "This matters because operating-model shifts lose value when the next owner, expected correction, or supporting evidence only exists in free-form transcript text.",
+			What:   "Dispatch triggers now carry the source disposition, including status, next need, ticket ID, reason, evidence links, trace ID, handoff, and feedback, so Orchestrator can validate one target owner before enqueueing follow-up work.",
+		}, true
+	case isPersonaOperatingModelChange(scope, text):
+		return releaseNarrativeProfile{
+			Impact: "Agents get clearer role ownership because foundation personas now spell out boundaries, feedback shape, stop conditions, and Orchestrator handoff expectations.",
+			Why:    "This matters because autonomous routing depends on explicit ownership contracts; prompt prose alone leaves downstream roles guessing who should act next.",
+			What:   "Canonical persona definitions now render checked role manuals and prompt Personal Guides so generated guidance, reviews, and dispatch handoffs share the same source of truth.",
+		}, true
+	case isDocumentationSyncChange(scope, text):
+		return releaseNarrativeProfile{
+			Impact: "Operators and agents get stronger no-stale-docs enforcement because documentation sync is described and validated as part of the delivery workflow.",
+			Why:    "This matters because behavior changes become risky when code, BDD contracts, design docs, generated target guidance, and release notes drift apart.",
+			What:   "The release documentation path now ties changed source files to associated docs, docsync evidence, and generated target doctrine instead of treating docs as an after-the-fact checklist.",
+		}, true
+	case isCLIToolSkillSyncChange(scope, text):
+		return releaseNarrativeProfile{
+			Impact: "Operators and agents get a more trustworthy CLI surface because command behavior, mirrored tool docs, repo shortcuts, generated target guidance, and skills stay synchronized.",
+			Why:    "This matters because CLI changes can otherwise ship while agents continue using stale tool contracts or workflow instructions.",
+			What:   "The release workflow now treats CLI tool and skill synchronization as required release evidence whenever command flags, outputs, or workflows change.",
+		}, true
+	case isOperatingModelChange(scope, text):
+		return releaseNarrativeProfile{
+			Impact: "Operators and future agents get clearer delivery behavior because an operating-model rule, boundary, or workflow contract is now explicit in repo-owned guidance.",
+			Why:    "This matters because autonomous work needs durable routing, evidence, and ownership rules rather than relying on chat memory or implicit handoffs.",
+			What:   "The operating-model guidance was updated so adjacent docs, roles, tools, evidence paths, and generated target defaults describe the new workflow consistently.",
+		}, true
+	default:
+		return releaseNarrativeProfile{}, false
+	}
+}
+
+func normalizedReleaseText(commit Commit) string {
+	parts := []string{commit.Type, commit.Scope, commit.Message, commit.Subject, commit.Body}
+	return strings.ToLower(strings.Join(parts, "\n"))
+}
+
+func isStructuredDispatchChange(scope, text string) bool {
+	return (scope == "orchestration" || strings.Contains(text, "orchestrator") || strings.Contains(text, "dispatch")) &&
+		((strings.Contains(text, "structured") && strings.Contains(text, "handoff")) ||
+			strings.Contains(text, "source_disposition") ||
+			(strings.Contains(text, "handoff") && strings.Contains(text, "feedback") && strings.Contains(text, "dispatch")))
+}
+
+func isPersonaOperatingModelChange(scope, text string) bool {
+	return scope == "personas" ||
+		strings.Contains(text, "persona manual") ||
+		strings.Contains(text, "personal guide") ||
+		strings.Contains(text, "foundation agent manual")
+}
+
+func isDocumentationSyncChange(scope, text string) bool {
+	return scope == "docsync" ||
+		strings.Contains(text, "documentation sync") ||
+		strings.Contains(text, "docsync") ||
+		strings.Contains(text, "marsdocsync") ||
+		strings.Contains(text, "no stale documentation")
+}
+
+func isCLIToolSkillSyncChange(scope, text string) bool {
+	return (scope == "cli" || strings.Contains(text, "mars_harness_cli")) &&
+		((strings.Contains(text, "tool") && strings.Contains(text, "skill") && strings.Contains(text, "sync")) ||
+			strings.Contains(text, "repo-shortcut"))
+}
+
+func isOperatingModelChange(scope, text string) bool {
+	return scope == "operating-model" ||
+		strings.Contains(text, "operating model") ||
+		strings.Contains(text, "bdd-led") ||
+		strings.Contains(text, "business logic is first-class bdd") ||
+		strings.Contains(text, "symbiotic workflow")
 }
 
 func releaseChangePhrase(commit Commit) string {

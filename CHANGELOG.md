@@ -21,13 +21,13 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 <!-- mars-harness-release: version=0.33.1 commit=c436460e5357 -->
 
 ### Impact
-- **orchestration:** Operators see improved reliability because carry structured handoff through dispatch.
+- **orchestration:** Operators and agents get a more reliable delivery loop because handoff and feedback now travel as first-class runtime data through Orchestrator dispatch.
 
 ### Why
-- **orchestration:** This matters because carry structured handoff through dispatch closes a failure mode or degraded path.
+- **orchestration:** This matters because operating-model shifts lose value when the next owner, expected correction, or supporting evidence only exists in free-form transcript text.
 
 ### What Changed
-- **orchestration:** Changed carry structured handoff through dispatch (c436460).
+- **orchestration:** Dispatch triggers now carry the source disposition, including status, next need, ticket ID, reason, evidence links, trace ID, handoff, and feedback, so Orchestrator can validate one target owner before enqueueing follow-up work (c436460).
 
 ### Fixes
 - **orchestration:** Carry structured handoff through dispatch (c436460)

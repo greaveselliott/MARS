@@ -91,6 +91,26 @@ func TestRenderReleaseNarrativeUsesImpactWhyAndWhat(t *testing.T) {
 	require.Contains(t, summary, "Changed cover changelog generation (bbb222).")
 }
 
+func TestRenderReleaseNarrativeProfilesStructuredDispatch(t *testing.T) {
+	t.Parallel()
+	commits := []Commit{
+		{
+			Short:   "c436460",
+			Type:    "fix",
+			Scope:   "orchestration",
+			Message: "carry structured handoff through dispatch",
+			Subject: "fix(orchestration): carry structured handoff through dispatch",
+		},
+	}
+
+	summary := renderReleaseNarrative(commits)
+
+	require.Contains(t, summary, "**orchestration:** Operators and agents get a more reliable delivery loop because handoff and feedback now travel as first-class runtime data through Orchestrator dispatch.")
+	require.Contains(t, summary, "**orchestration:** This matters because operating-model shifts lose value when the next owner, expected correction, or supporting evidence only exists in free-form transcript text.")
+	require.Contains(t, summary, "**orchestration:** Dispatch triggers now carry the source disposition, including status, next need, ticket ID, reason, evidence links, trace ID, handoff, and feedback, so Orchestrator can validate one target owner before enqueueing follow-up work (c436460).")
+	require.NotContains(t, summary, "Operators see improved reliability because carry structured handoff through dispatch.")
+}
+
 func TestPrepareUsesChangelogMarkerAsBase(t *testing.T) {
 	t.Parallel()
 	dir := initGitRepo(t)

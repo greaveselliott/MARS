@@ -39,7 +39,10 @@ generated release entry must provide complete user-facing text for:
 
 Commit bodies may include `Impact:`, `Why:`, and `What:` lines for richer
 release text. When those fields are absent, the generator produces conservative
-fallback prose from semantic commit type, scope, and message.
+fallback prose from semantic commit type, scope, and message. Structural
+delivery changes use stronger topic-aware fallback profiles, so operating-model,
+structured dispatch, persona, documentation-sync, and CLI/tool-sync releases
+explain the workflow shift instead of repeating a thin commit subject.
 
 ### AD-100: Historical Release Notes Are Backfilled Through The Release Tool
 

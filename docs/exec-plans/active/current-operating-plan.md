@@ -91,7 +91,7 @@ plans to decide what to do next.
 | F-002-S004 | Passing | Shell profile updates are idempotent and covered by tests. |
 | F-002-S005 | Passing | Unsupported shells return explicit manual remediation without writing profile files. |
 | F-006-S009 | Passing | `go test ./internal/serve -run TestOrchestratorSurvey` and `go test ./internal/queue -run 'TestQueue_concurrencyGroupSerialization|TestQueue_dailyCapConstrainsRepeatedScheduling|TestQueue_claimDoesNotResetHealthyRunningJob|TestQueue_failStuckRunningJobs'` cover native survey routing, ownership metadata, daily caps, telemetry/score triage, no-op detection, and stuck-job safety. |
-| F-009-S008 | Passing | `go test ./internal/release -run TestRenderReleaseNarrativeUsesImpactWhyAndWhat` covers generated Impact, Why, and What Changed narrative. |
+| F-009-S008 | Passing | `go test ./internal/release -run 'TestRenderReleaseNarrative(UsesImpactWhyAndWhat|ProfilesStructuredDispatch)'` covers generated Impact, Why, What Changed, and topic-aware structured-dispatch fallback narrative. |
 
 ## Quality State
 

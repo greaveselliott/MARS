@@ -76,6 +76,7 @@ Then they include the same version, changelog, release-note, and release guidanc
 Given semantic commits exist after the current release marker
 When release notes are generated
 Then the changelog entry includes complete `Impact`, `Why`, and `What Changed` narrative before semantic commit buckets, using commit-body narrative fields when available and conservative generated prose otherwise
+And structural delivery changes such as operating-model, structured dispatch, persona, documentation-sync, and CLI/tool-sync work use topic-aware fallback prose instead of merely restating the commit subject
 
 ### F-009-S009: Historical Release Narrative Backfill
 
@@ -109,6 +110,6 @@ None.
 - F-009-S005: `go test ./internal/scanner -run TestUpgrade_preservesUserConfiguredManifestAndPrompts`
 - F-009-S006: `go test ./internal/selfupdate -run TestVerifyReleaseAssetsReportsMissingAssets`
 - F-009-S007: `go test ./internal/scanner -run TestInit_success` and docs-consistency checks for release guidance
-- F-009-S008: `go test ./internal/release -run TestRenderReleaseNarrativeUsesImpactWhyAndWhat`
+- F-009-S008: `go test ./internal/release -run 'TestRenderReleaseNarrative(UsesImpactWhyAndWhat|ProfilesStructuredDispatch)'`
 - F-009-S009: `go test ./internal/release -run TestBackfillNotes` and `go test ./cmd/mars-harness -run TestReleaseBackfillNotesCommandChecksAndWrites`
 - F-009-S010: `go test ./cmd/mars-harness -run TestVersionEntrypointsPrintSameVersionLine`

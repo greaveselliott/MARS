@@ -1135,7 +1135,7 @@ Architectural decisions and design documents for this project.
 | AD-087 | Universal mirrored tools are exposed through ` + "`mars-harness mcp serve`" + ` for MCP-compatible clients and local harness agents without depending on a model provider. | 2026-05-03 | Accepted |
 | AD-097 | Business logic is first-class BDD and belongs step by step under ` + "`docs/features/`" + `. | 2026-05-04 | Accepted |
 | AD-098 | No stale documentation: code changes carry top-of-file ` + "`MarsDocSync`" + ` metadata with a ` + "`docs:`" + ` array listing associated docs, and those docs are updated or explicitly checked as current. | 2026-05-04 | Accepted |
-| AD-099 | Generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. | 2026-05-04 | Accepted |
+| AD-099 | Generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets, with topic-aware fallback prose for structural delivery changes. | 2026-05-04 | Accepted |
 | AD-100 | Historical release entries are backfilled through ` + "`mars-harness release backfill-notes`" + ` from marker-backed commit ranges. | 2026-05-04 | Accepted |
 | AD-101 | Source metadata maps code files to associated architecture docs and BDD feature contracts, then ` + "`docsync audit`" + ` checks coverage. | 2026-05-04 | Accepted |
 | AD-102 | Documentation Sync is a universal operating model: agents read changed-file ` + "`MarsDocSync`" + ` docs, classify documentation impact, update or verify associated docs, run docsync evidence, and mirror the model into generated targets. | 2026-05-04 | Accepted |
@@ -2347,7 +2347,10 @@ buckets remain as an audit index, not the only release text.
 
 Commit bodies may include ` + "`Impact:`" + `, ` + "`Why:`" + `, and ` + "`What:`" + ` lines for richer
 release text. When those fields are absent, the generator produces conservative
-fallback prose from semantic commit type, scope, and message.
+fallback prose from semantic commit type, scope, and message. Structural
+delivery changes use stronger topic-aware fallback profiles, so operating-model,
+structured dispatch, persona, documentation-sync, and CLI/tool-sync releases
+explain the workflow shift instead of repeating a thin commit subject.
 
 Historical marker-backed entries must stay on the same standard. Use
 ` + "`mars-harness release backfill-notes`" + ` to derive each old entry from adjacent
