@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.30.1] - 2026-05-04
+<!-- mars-harness-release: version=0.30.1 commit=074a9e5391af -->
+
+### Impact
+- **orchestration:** Freshly initialized target repos no longer get pulled into CEO/Orchestrator loops when the local model emits function-tag tool calls or when a slugged feature contract already exists. Bootstrap can keep moving from plan to feature contract to ticket shaping instead of manufacturing intervention-debt churn.
+
+### Why
+- **orchestration:** A simple README-only project exposed three connected reliability gaps: function-tag tool calls were treated as final prose, Orchestrator looked for exact `docs/features/F-001.md` paths even though generated contracts are slugged, and repeated dispatch decisions could enqueue Orchestrator again instead of stopping. The combined effect created noisy telemetry and intervention-debt tickets before product delivery had even started.
+
+### What Changed
+- **orchestration:** The agent parser now normalizes `<function=name>` and `<parameter=arg>` blocks into normal tool calls, dispatch loop guards stop repeated Orchestrator-originated routes without ticket-state changes, and generated CEO/COO/Orchestrator guidance resolves BDD features through `docs/features/F-NNN*.md` slug matches (074a9e5).
+
+### Fixes
+- **orchestration:** Stop bootstrap dispatch loops (074a9e5)
+
 ## [0.30.0] - 2026-05-04
 <!-- mars-harness-release: version=0.30.0 commit=ae9ac01bc65e -->
 
