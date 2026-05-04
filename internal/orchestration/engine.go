@@ -37,7 +37,7 @@ func Decide(in Input) (orgstate.Decision, error) {
 
 	nextRole, kind, reason, stop := route(in)
 	if nextRole != "" {
-		validated, vReason := validateRole(in.Manifest, nextRole)
+		canonical, validated, vReason := validateRole(in.Manifest, nextRole)
 		if !validated {
 			nextRole = fallbackRole(in.Manifest)
 			kind = "ambiguous"
@@ -45,6 +45,8 @@ func Decide(in Input) (orgstate.Decision, error) {
 			if nextRole == "" {
 				stop = "no orchestrator role configured for ambiguous route"
 			}
+		} else {
+			nextRole = canonical
 		}
 	}
 
@@ -180,14 +182,20 @@ func defaultCompletionRoute(role string) string {
 	}
 }
 
-func validateRole(m *bundle.Manifest, role string) (bool, string) {
+func validateRole(m *bundle.Manifest, role string) (string, bool, string) {
 	if strings.TrimSpace(role) == "" {
-		return true, ""
+		return "", true, ""
 	}
 	if _, ok := m.Roles[role]; !ok {
-		return false, fmt.Sprintf("role %q is not defined in manifest", role)
+		normalized := normalize(role)
+		for existing := range m.Roles {
+			if normalize(existing) == normalized {
+				return existing, true, ""
+			}
+		}
+		return "", false, fmt.Sprintf("role %q is not defined in manifest", role)
 	}
-	return true, ""
+	return role, true, ""
 }
 
 func fallbackRole(m *bundle.Manifest) string {

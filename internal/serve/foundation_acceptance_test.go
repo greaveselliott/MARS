@@ -72,7 +72,7 @@ func TestFoundationAcceptancePolicyBlockSuppressesTicketGateFallout(t *testing.T
 
 	require.FileExists(t, filepath.Join(repo, "src", "keep.txt"))
 	require.Equal(t, 2, fake.RequestCount())
-	require.Equal(t, 1, countInterventionDebtTickets(t, repo), "policy block should create one ticket and ticket-gate fallout should not create another")
+	require.Equal(t, 0, countInterventionDebtTickets(t, repo), "foundation-owned policy and ticket-gate fallout should stay out of the target backlog")
 	require.Equal(t, 1, countTelemetryByCategory(t, srv, "guardrail_block"))
 	require.Equal(t, 1, countTelemetryByCategory(t, srv, "ticket_gate"))
 }
@@ -93,7 +93,7 @@ func TestFoundationAcceptanceDirtyWorktreeContainmentSkipsLLMAndRecovery(t *test
 	srv.handleJobFailed(ctx, job, err)
 
 	require.Equal(t, 0, fake.RequestCount(), "dirty preflight must happen before LLM invocation")
-	require.Equal(t, 1, countInterventionDebtTickets(t, repo))
+	require.Equal(t, 0, countInterventionDebtTickets(t, repo), "foundation-owned containment failures should stay out of the target backlog")
 	require.Equal(t, 1, countJobsByStatus(t, srv, "pending"), "deterministic containment failure should enqueue a single dispatch review")
 	require.Equal(t, 1, countJobsByStatusAndRole(t, srv, "pending", "orchestrator"), "dispatch review should return to Orchestrator")
 	require.Equal(t, 0, countJobsByStatusAndRole(t, srv, "pending", "engineer"), "deterministic containment failure should not enqueue same-role recovery")

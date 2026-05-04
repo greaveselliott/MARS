@@ -26,6 +26,7 @@ const (
 	CategoryBudgetExceeded   FailureCategory = "budget_exceeded"
 	CategoryManifestError    FailureCategory = "manifest_error"
 	CategoryTicketGate       FailureCategory = "ticket_gate"
+	CategoryDispatchProtocol FailureCategory = "dispatch_protocol"
 	CategoryGuardrailBlock   FailureCategory = "guardrail_block"
 	CategoryHumanFollowup    FailureCategory = "human_followup"
 	CategoryRevertedCommit   FailureCategory = "reverted_commit"
@@ -108,6 +109,11 @@ func Classify(errMsg string) FailureCategory {
 		return CategoryTicketGate
 	case strings.Contains(lower, "cannot hand off") && strings.Contains(lower, "docs/tickets/in-progress"):
 		return CategoryTicketGate
+
+	case strings.Contains(lower, "dispatch mode requires") && strings.Contains(lower, "job_disposition_record"):
+		return CategoryDispatchProtocol
+	case strings.Contains(lower, "suggested route rejected"):
+		return CategoryDispatchProtocol
 
 	case strings.Contains(lower, "guardrails: blocked"):
 		return CategoryGuardrailBlock

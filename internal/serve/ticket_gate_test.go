@@ -15,7 +15,30 @@ import (
 	"testing"
 
 	"github.com/greaveselliott/mars-harness/internal/scanner"
+	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 )
+
+func TestTicketSnapshotRoutingHashIgnoresDeferredInterventionDebt(t *testing.T) {
+	base := ticketSnapshot{
+		Backlog: []string{"T-001-feature.md"},
+		Details: map[string]ticketstate.Ticket{
+			"T-001-feature.md": {ID: "T-001", Name: "T-001-feature.md", Status: ticketstate.StatusBacklog, Kind: "standard"},
+		},
+	}
+	withDeferred := ticketSnapshot{
+		Backlog: []string{"T-001-feature.md", "T-002-intervention.md"},
+		Details: map[string]ticketstate.Ticket{
+			"T-001-feature.md":      {ID: "T-001", Name: "T-001-feature.md", Status: ticketstate.StatusBacklog, Kind: "standard"},
+			"T-002-intervention.md": {ID: "T-002", Name: "T-002-intervention.md", Status: ticketstate.StatusBacklog, Kind: "intervention-debt", Priority: "medium"},
+		},
+	}
+	if base.routingHash() != withDeferred.routingHash() {
+		t.Fatalf("expected deferred intervention-debt to be ignored in routing hash")
+	}
+	if base.hash() == withDeferred.hash() {
+		t.Fatalf("full ticket hash should still reflect deferred intervention-debt")
+	}
+}
 
 func TestValidateEngineerTicketGate_allowsCompletedTicket(t *testing.T) {
 	before := ticketSnapshot{

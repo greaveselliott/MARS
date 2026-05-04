@@ -79,6 +79,24 @@ func TestDecide_orchestratorSuggestedRoleRoutesNext(t *testing.T) {
 	require.Contains(t, decision.Reason, "suggested_role")
 }
 
+func TestDecide_orchestratorSuggestedRoleCanonicalizesCase(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "engineer"),
+		Disposition: orgstate.Disposition{
+			JobID:         "job-2",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			SuggestedRole: "Engineer",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "engineer", decision.NextRole)
+	require.Equal(t, "orchestrator", decision.DecisionKind)
+}
+
 func TestDecide_invalidOrchestratorSuggestedRoleFallsBackToOrchestrator(t *testing.T) {
 	t.Parallel()
 

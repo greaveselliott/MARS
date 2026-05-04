@@ -3,8 +3,10 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/cli-tool-skill-sync.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-012-self-improvement-loop.md
 */
 package tools
 
@@ -245,6 +247,8 @@ func marsHarnessCommandSupportsRepo(args []string) bool {
 		return sub == "evaluate" || sub == "override"
 	case "scores":
 		return sub == "" || sub == "export"
+	case "telemetry":
+		return sub == "status" || sub == "preview" || sub == "export" || sub == "send" || sub == "triage-foundation"
 	case "trust":
 		return sub == ""
 	default:
@@ -409,6 +413,36 @@ Global command surface:
     Export repo quality score from telemetry/scoring evidence.
     Flags: --repo <path>, --db <path>, --window-days <n>, --no-ticket
     Example: ["scores", "export", "--repo", ".", "--window-days", "30"]
+
+  telemetry status
+    Show anonymous foundation telemetry reporting state and local outbox counts.
+    Flags: --repo <path>, --db <path>
+    Example: ["telemetry", "status", "--repo", "."]
+
+  telemetry preview
+    Print the exact sanitized anonymous aggregate payload without sending it.
+    Flags: --repo <path>, --db <path>
+    Example: ["telemetry", "preview", "--repo", "."]
+
+  telemetry export
+    Enqueue a sanitized anonymous aggregate payload in the local outbox.
+    Flags: --repo <path>, --db <path>, --anonymous
+    Example: ["telemetry", "export", "--repo", ".", "--anonymous"]
+
+  telemetry send
+    Send pending anonymous telemetry reports only when config telemetry.reporting is anonymous.
+    Flags: --repo <path>, --db <path>
+    Example: ["telemetry", "send", "--repo", "."]
+
+  telemetry collect
+    Run a local foundation telemetry collector.
+    Flags: --addr <addr>, --storage sqlite, --db <path>
+    Example: ["telemetry", "collect", "--addr", ":9092", "--storage", "sqlite", "--db", "~/.mars-harness/db/foundation-telemetry/intake.db"]
+
+  telemetry triage-foundation
+    Create Mars Harness source tickets from repeated anonymous collector patterns.
+    Flags: --db <path>, --repo <path>, --window-days <n>
+    Example: ["telemetry", "triage-foundation", "--db", "~/.mars-harness/db/foundation-telemetry/intake.db", "--repo", "."]
 
   trust
     Show progressive autonomy trust levels.

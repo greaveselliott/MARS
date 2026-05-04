@@ -248,7 +248,7 @@ func TestCreateInterventionDebtTicketFromConfiguredSignals(t *testing.T) {
 	}
 }
 
-func TestHandleJobFailedCreatesDedupedInterventionDebtTicket(t *testing.T) {
+func TestHandleJobFailedKeepsFoundationOwnedFailuresOutOfTargetBacklog(t *testing.T) {
 	srv, repoID := newRecoveryTestServer(t)
 	ctx := context.Background()
 	require.NoError(t, srv.traceStore.Save(ctx, "job-1", "tr-job-1", "{}", "{}"))
@@ -265,16 +265,13 @@ func TestHandleJobFailedCreatesDedupedInterventionDebtTicket(t *testing.T) {
 	rec, err := srv.repos.FindByID(ctx, repoID)
 	require.NoError(t, err)
 	entries, err := os.ReadDir(filepath.Join(rec.Path, "docs", "tickets", "backlog"))
-	require.NoError(t, err)
-	require.Len(t, entries, 1)
-
-	data, err := os.ReadFile(filepath.Join(rec.Path, "docs", "tickets", "backlog", entries[0].Name()))
-	require.NoError(t, err)
-	text := string(data)
-	require.Contains(t, text, "Category: max_turns")
-	require.Contains(t, text, "Trace ID: tr-job-1")
-	require.Contains(t, text, "Outcome: failed")
-	require.Contains(t, text, "## Latest Triage Update", "same signal should update the existing ticket")
+	if os.IsNotExist(err) {
+		entries = nil
+	} else {
+		require.NoError(t, err)
+	}
+	require.Empty(t, entries)
+	require.GreaterOrEqual(t, len(srv.telemetry.Events()), 2)
 }
 
 func TestHandleJobFailedSuppressesSecondaryTicketGateAfterPolicyBlock(t *testing.T) {
@@ -322,7 +319,7 @@ func TestRecordInterventionDebtFailureRecordsTelemetry(t *testing.T) {
 	require.Contains(t, events[0].Message, "intervention debt ticket creation failed")
 }
 
-func TestCheckEvolutionCreatesInterventionDebtTicketFromTelemetry(t *testing.T) {
+func TestCheckEvolutionKeepsFoundationTelemetryOutOfTargetBacklog(t *testing.T) {
 	t.Parallel()
 	repo := setupInterventionDebtRepo(t)
 	require.NoError(t, os.MkdirAll(filepath.Join(repo, ".harness", "roles"), 0o755))
@@ -346,20 +343,12 @@ func TestCheckEvolutionCreatesInterventionDebtTicketFromTelemetry(t *testing.T) 
 	}
 
 	for i := 0; i < telemetry.PatternThreshold; i++ {
-		srv.telemetry.Record("job-1", repoID, "engineer", "agent stopped: max_turns reached")
+		srv.telemetry.Record("job-"+string(rune('a'+i)), repoID, "engineer", "agent stopped: max_turns reached")
 	}
 
 	srv.checkEvolution(context.Background(), "engineer", repoID)
 
 	entries, err := os.ReadDir(filepath.Join(repo, "docs", "tickets", "backlog"))
 	require.NoError(t, err)
-	require.Len(t, entries, 1)
-	require.Contains(t, entries[0].Name(), "intervention-debt")
-
-	data, err := os.ReadFile(filepath.Join(repo, "docs", "tickets", "backlog", entries[0].Name()))
-	require.NoError(t, err)
-	text := string(data)
-	require.Contains(t, text, "kind: intervention-debt")
-	require.Contains(t, text, "Category: max_turns")
-	require.Contains(t, text, "Origin job: job-1")
+	require.Empty(t, entries)
 }

@@ -476,7 +476,7 @@ func BuildTicketIndex(repoPath string) string {
 	var inProgressBlocked []string
 	var inReview []string
 	var backlogInterventionPreemptive []string
-	var backlogInterventionDeferred []string
+	var deferredInterventionCount int
 	var backlog []string
 	var done []string
 	for _, t := range all {
@@ -495,7 +495,7 @@ func BuildTicketIndex(repoPath string) string {
 				if interventionDebtPreemptsBacklog(t) {
 					backlogInterventionPreemptive = append(backlogInterventionPreemptive, line)
 				} else {
-					backlogInterventionDeferred = append(backlogInterventionDeferred, line)
+					deferredInterventionCount++
 				}
 			} else {
 				backlog = append(backlog, line)
@@ -507,12 +507,11 @@ func BuildTicketIndex(repoPath string) string {
 		}
 	}
 	var lines []string
-	header := fmt.Sprintf("Existing tickets (%d total). Eligible in-progress tickets are the Engineer front of queue; high-priority intervention-debt preempts ordinary backlog, while medium/low intervention-debt stays visible without blocking product progress. Complete the lowest-numbered eligible in-progress ticket before claiming backlog work. Blocked in-progress tickets must name blocker, blocked_by, trace_id, and next_action metadata and do not block backlog work.\n", len(all))
+	header := fmt.Sprintf("Existing tickets (%d total). Eligible in-progress tickets are the Engineer front of queue; high-priority intervention-debt preempts ordinary backlog. Medium/low intervention-debt is deferred outside ordinary delivery context (%d hidden) so product progress stays visible. Complete the lowest-numbered eligible in-progress ticket before claiming backlog work. Blocked in-progress tickets must name blocker, blocked_by, trace_id, and next_action metadata and do not block backlog work.\n", len(all), deferredInterventionCount)
 	lines = append(lines, inProgressInterventionEligible...)
 	lines = append(lines, inProgressEligible...)
 	lines = append(lines, backlogInterventionPreemptive...)
 	lines = append(lines, backlog...)
-	lines = append(lines, backlogInterventionDeferred...)
 	lines = append(lines, inReview...)
 	lines = append(lines, inProgressBlocked...)
 	lines = append(lines, done...)

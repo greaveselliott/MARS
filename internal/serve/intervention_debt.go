@@ -80,6 +80,25 @@ func (s *Server) recordInterventionDebtSignal(ctx context.Context, signal interv
 		ToolName:       strings.TrimSpace(signal.ToolName),
 		Message:        strings.TrimSpace(signal.Message),
 	}
+	if interventionDebtBelongsToFoundation(proposal) || signal.Category == telemetry.CategoryManualStop {
+		slog.Info("serve: foundation-owned intervention signal kept out of target backlog",
+			"repo_id", signal.RepoID,
+			"role", signal.Role,
+			"target", proposal.Target,
+			"category", proposal.Category,
+		)
+		if s.dash != nil {
+			payload, _ := json.Marshal(map[string]string{
+				"repo_id":  signal.RepoID,
+				"role":     signal.Role,
+				"target":   string(proposal.Target),
+				"category": interventionDebtCategory(proposal),
+				"result":   "local telemetry only; eligible for anonymous foundation reporting",
+			})
+			s.dash.BroadcastEvent("foundation_telemetry_signal", string(payload))
+		}
+		return
+	}
 	s.recordInterventionDebtTicket(ctx, signal.RepoID, proposal, origin)
 	s.offerInterventionDebtEvolution(ctx, signal.RepoID, proposal, "signal_"+interventionDebtCategory(proposal))
 }
@@ -89,6 +108,25 @@ func (s *Server) recordInterventionDebtTicket(ctx context.Context, repoID string
 		proposal.RepoID = repoID
 	}
 	if strings.TrimSpace(proposal.RepoID) == "" || s.repos == nil {
+		return
+	}
+	if interventionDebtBelongsToFoundation(proposal) {
+		slog.Info("serve: foundation-owned telemetry pattern kept out of target backlog",
+			"repo_id", proposal.RepoID,
+			"role", proposal.Role,
+			"target", proposal.Target,
+			"category", proposal.Category,
+		)
+		if s.dash != nil {
+			payload, _ := json.Marshal(map[string]string{
+				"repo_id":  proposal.RepoID,
+				"role":     proposal.Role,
+				"target":   string(proposal.Target),
+				"category": interventionDebtCategory(proposal),
+				"result":   "local telemetry only; eligible for anonymous foundation reporting",
+			})
+			s.dash.BroadcastEvent("foundation_telemetry_signal", string(payload))
+		}
 		return
 	}
 
@@ -177,7 +215,7 @@ func createInterventionDebtTicket(repoPath string, proposal telemetry.Improvemen
 func interventionDebtProposalFromSignal(signal interventionDebtSignal) telemetry.ImprovementProposal {
 	count := signal.Count
 	if count <= 0 {
-		count = telemetry.PatternThreshold
+		count = 1
 	}
 	window := interventionDebtSignalWindow(signal)
 	proposal := telemetry.TriagePattern(telemetry.Pattern{
@@ -192,6 +230,10 @@ func interventionDebtProposalFromSignal(signal interventionDebtSignal) telemetry
 		proposal.Evidence = evidence
 	}
 	return proposal
+}
+
+func interventionDebtBelongsToFoundation(proposal telemetry.ImprovementProposal) bool {
+	return telemetry.ReportableFoundationCategory(proposal.Category)
 }
 
 func interventionDebtSignalWindow(signal interventionDebtSignal) string {

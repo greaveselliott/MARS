@@ -6,11 +6,13 @@ docs:
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/release-versioning.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/product-specs/product-surface.md
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-002-zero-config-shell-path.md
 - docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-012-self-improvement-loop.md
 */
 package main
 
@@ -24,7 +26,9 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/greaveselliott/mars-harness/internal/foundationtelemetry"
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
@@ -261,6 +265,61 @@ func TestScoresCommandFormatsWindowColumn(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), "engineer")
 	require.NotContains(t, out.String(), "30      d")
+}
+
+func TestTelemetryTriageFoundationRequiresDistinctInstallOrVersion(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	dbPath := filepath.Join(t.TempDir(), "intake.db")
+	store, err := foundationtelemetry.OpenSQLiteStore(dbPath)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = store.Close() })
+
+	now := time.Now().UTC()
+	upsert := func(hash, version string) {
+		t.Helper()
+		require.NoError(t, store.UpsertPattern(ctx, foundationtelemetry.AggregatedPattern{
+			Signature:       "sig-foundation",
+			ReportHash:      hash,
+			ReportKey:       "rk-one-install",
+			FirstSeen:       now.Add(-time.Hour),
+			LastSeen:        now,
+			ReportCount:     1,
+			HarnessVersions: []string{version},
+			Category:        "max_turns",
+			Target:          "skill",
+			Severity:        "medium",
+		}))
+	}
+	upsert("hash-one", "0.30.1")
+	upsert("hash-two", "0.30.1")
+	upsert("hash-three", "0.30.1")
+
+	repoDir := t.TempDir()
+	cmd := telemetryTriageFoundationCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--db", dbPath, "--repo", repoDir})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "Triaged 0 foundation telemetry pattern(s).")
+	require.NoDirExists(t, filepath.Join(repoDir, "docs", "tickets", "backlog"))
+
+	upsert("hash-four", "0.30.2")
+	cmd = telemetryTriageFoundationCmd()
+	out.Reset()
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--db", dbPath, "--repo", repoDir})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "Triaged 1 foundation telemetry pattern(s).")
+	entries, err := os.ReadDir(filepath.Join(repoDir, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	data, err := os.ReadFile(filepath.Join(repoDir, "docs", "tickets", "backlog", entries[0].Name()))
+	require.NoError(t, err)
+	require.Contains(t, string(data), "foundation-telemetry:sig-foundation")
+	require.Contains(t, string(data), "kind: intervention-debt")
 }
 
 func TestTrustCommandMissingDBDirectoryIsActionable(t *testing.T) {

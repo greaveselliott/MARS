@@ -8,6 +8,7 @@ docs:
 package telemetry
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -134,6 +135,7 @@ func TestClassify_interventionSignals(t *testing.T) {
 func TestClassify_unknown(t *testing.T) {
 	t.Parallel()
 	require.Equal(t, CategoryUnknown, Classify("something completely different"))
+	require.Equal(t, CategoryDispatchProtocol, Classify("executor: dispatch mode requires ceo to call job_disposition_record before completing"))
 }
 
 func TestRetryable(t *testing.T) {
@@ -258,7 +260,7 @@ func TestDetectPatternsFromStoreGroupsByRepoRoleCategory(t *testing.T) {
 
 	c := NewCollector(nil, store)
 	for i := 0; i < PatternThreshold; i++ {
-		c.Record("job-a", "repo-1", "engineer", "agent stopped: max_turns reached")
+		c.Record(fmt.Sprintf("job-a-%d", i), "repo-1", "engineer", "agent stopped: max_turns reached")
 	}
 	c.Record("job-b", "repo-2", "engineer", "agent stopped: max_turns reached")
 
@@ -268,6 +270,21 @@ func TestDetectPatternsFromStoreGroupsByRepoRoleCategory(t *testing.T) {
 	require.Equal(t, "engineer", patterns[0].Role)
 	require.Equal(t, CategoryMaxTurns, patterns[0].Category)
 	require.Equal(t, PatternThreshold, patterns[0].Count)
+}
+
+func TestDetectPatternsFromStoreCountsDistinctJobs(t *testing.T) {
+	t.Parallel()
+	store, err := OpenStore(filepath.Join(t.TempDir(), "telemetry.db"))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = store.Close() })
+
+	c := NewCollector(nil, store)
+	for i := 0; i < PatternThreshold; i++ {
+		c.Record("same-job", "repo-1", "engineer", "agent stopped: max_turns reached")
+	}
+
+	patterns := c.DetectPatternsFromStore()
+	require.Empty(t, patterns)
 }
 
 func TestStore_LatestByRoleCategory(t *testing.T) {

@@ -156,6 +156,9 @@ func TestWriteDefaultConfigStep_execute(t *testing.T) {
 	assert.Contains(t, string(data), "models_dir")
 	assert.Contains(t, string(data), "performance_profile: auto")
 	assert.Contains(t, string(data), "llama_parallel: 1")
+	assert.Contains(t, string(data), "telemetry:")
+	assert.Contains(t, string(data), "reporting: \"off\"")
+	assert.Contains(t, string(data), "report_interval: 24h")
 }
 
 func TestDetectHardwareStep_execute(t *testing.T) {

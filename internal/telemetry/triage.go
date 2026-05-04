@@ -55,7 +55,7 @@ type ScoreSnapshot struct {
 func TriagePattern(p Pattern) ImprovementProposal {
 	count := p.Count
 	if count <= 0 {
-		count = PatternThreshold
+		count = 1
 	}
 	window := p.Window
 	if window == "" {
@@ -121,6 +121,16 @@ func TriagePattern(p Pattern) ImprovementProposal {
 			fmt.Sprintf(".harness/roles/%s.md", p.Role),
 			".harness/manifest.yaml",
 			"docs/tickets/in-progress/",
+		}
+		proposal.Confidence = 0.85
+
+	case CategoryDispatchProtocol:
+		proposal.Target = TargetProcess
+		proposal.Title = "Fix dispatch protocol compliance"
+		proposal.Suggestion = fmt.Sprintf("Role %q failed the dispatch protocol; inspect tool-call parsing, role completion guidance, and job_disposition_record availability before creating target backlog work.", p.Role)
+		proposal.CandidateFiles = []string{
+			fmt.Sprintf(".harness/roles/%s.md", p.Role),
+			".harness/manifest.yaml",
 		}
 		proposal.Confidence = 0.85
 

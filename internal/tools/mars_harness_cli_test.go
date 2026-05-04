@@ -3,8 +3,10 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/cli-tool-skill-sync.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-012-self-improvement-loop.md
 */
 package tools
 
@@ -32,6 +34,7 @@ func TestMarsHarnessCLI_reference(t *testing.T) {
 		"setup", "init", "eject", "upgrade", "start", "serve", "register", "run <role>",
 		"scan", "doctor", "update check", "update tool", "update harness",
 		"path setup", "release notes", "release backfill-notes", "release verify-assets", "scores", "scores export",
+		"telemetry status", "telemetry preview", "telemetry export", "telemetry send", "telemetry collect", "telemetry triage-foundation",
 		"docsync audit", "trust", "trust set", "models evaluate", "models list", "models override",
 		"tools list", "tools run <name>", "mcp serve",
 	} {
@@ -46,6 +49,8 @@ func TestMarsHarnessCLI_repoShortcutAppendsRepoFlagForSyncedCommands(t *testing.
 		{"models", "evaluate", "--json"},
 		{"models", "override", "--tier", "coding", "--provider", "ollama", "--model", "qwen"},
 		{"scores"},
+		{"telemetry", "preview"},
+		{"telemetry", "triage-foundation", "--db", "intake.db"},
 		{"trust"},
 	} {
 		t.Run(strings.Join(args[:min(2, len(args))], "_"), func(t *testing.T) {

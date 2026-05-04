@@ -51,6 +51,8 @@ Self-reflection must create durable work, not only dashboard signals or evolutio
 
 The dedupe key is repo, role, target, category, and evidence window. This keeps repeated failures from creating ticket storms while still letting a new evidence window reopen durable work when the issue returns. Tickets carry role, repo, target, category, severity, confidence, source event, trace ID, score snapshot, commit, outcome, evidence, recommendation, candidate files, and acceptance criteria when those fields are available locally.
 
+Target repo intervention-debt tickets are only the right durable work item when the remediation belongs to the target repository. Harness-owned failures such as dispatch protocol failures, loop/max-turn failures, guardrail/tool-policy workflow failures, context or inference failures, manifest/tool-policy gaps, and unknown terminal failures remain local telemetry first and are eligible for anonymous foundation telemetry reporting instead of being written into the target backlog.
+
 Direct evolution remains bounded. Process, product, unknown, or unsafe changes default to intervention-debt tickets; autonomous evolution can only happen after the ticketed evidence is constrained by trust, allowlists, and regression checks.
 
 ### AD-072: Quality Scores Are Generated Repo Artifacts
@@ -74,6 +76,31 @@ scores with at least five samples create or update deduped
 Dashboard quality links point back to this generated artifact; the dashboard is
 not the source of truth.
 
+### AD-104: Foundation Telemetry Uses Opt-In Anonymous Reports Through a Pluggable Collector
+
+Raw deployed-harness telemetry remains local in the repo-specific SQLite
+database. A deployed harness may derive sanitized aggregate reports into a local
+outbox, but it never uploads raw traces, prompts, repo paths, remotes, ticket
+text, command output, file paths, commit SHAs, usernames, source content, or raw
+error messages.
+
+Anonymous foundation telemetry is opt-in. A deployed harness sends only
+allowlisted aggregate envelopes to a configured collector endpoint. The collector
+owns the foundation telemetry database. For local dogfood, the collector stores
+reports in SQLite. For broader public operation, the same collector API can use
+a hosted Postgres-compatible backend such as Neon without changing the
+deployed-harness protocol.
+
+The write path is:
+
+1. raw local telemetry: `~/.mars-harness/db/{repo-name}/mars.db`
+2. local anonymous outbox: `telemetry_report_outbox` in the same repo DB
+3. collector intake: local SQLite for dogfood, hosted Postgres-compatible storage later
+4. foundation triage: repeated anonymous patterns across distinct anonymous report keys or harness versions become Mars Harness source work, not target repo intervention debt
+
+Remote reporting defaults to off, disabled reporting is healthy, and send
+failures never block local harness operation.
+
 ## Current Implementation
 
 `internal/telemetry` now exposes triage functions that convert recurring failure patterns, terminal failure signals, guardrail blocks, human follow-up, reverted commits, stale ticket state, manual stops, and low score snapshots into improvement proposals. `serve.checkEvolution`, failed-job handling, tool-policy reporting, and quality-score export consume those proposals, create or update intervention-debt tickets, emit dashboard events with ticket links, and record bounded evolution reviews with concrete suggestions and candidate files when confidence and allowlisted paths make direct review safe.
@@ -91,6 +118,8 @@ The first implementation is deliberately small:
 - stale in-progress tickets point at Engineer and Janitor ticket-drain behavior
 - manual stops point at role stop conditions, timeout policy, recovery, or escalation behavior
 - low scores point at process triage across prompt, skill, guardrail, tool, model, and intervention debt
+- harness-owned telemetry patterns stay out of target backlogs and can be
+  exported as opt-in anonymous aggregate reports through `mars-harness telemetry`
 - `mars-harness scores export --repo <path>` refreshes `docs/QUALITY_SCORE.md`
   from live evidence, creates deduped low-score/outcome/ticket-state
   intervention debt, and preserves manual notes

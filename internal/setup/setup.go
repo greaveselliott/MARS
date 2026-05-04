@@ -191,6 +191,10 @@ func writeDefaultConfigStep(baseDir string) Step {
 				PerformanceProfile:  "auto",
 				LlamaParallel:       1,
 				LlamaFlashAttention: "auto",
+				Telemetry: config.TelemetryConfig{
+					Reporting:      "off",
+					ReportInterval: "24h",
+				},
 			}
 			data, err := yaml.Marshal(&cfg)
 			if err != nil {

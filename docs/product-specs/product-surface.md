@@ -40,6 +40,9 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, guardrail/workflow health, mirrored operating-model health, active-plan hygiene, and optional integration configuration. |
 | `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
 | `mars-harness scores export --repo <path>` | Implemented | Refreshes `docs/QUALITY_SCORE.md` from live score, telemetry, ticket, dogfood, guardrail, check, no-op, and human follow-up evidence while preserving manual notes and creating deduped low-score intervention-debt tickets. |
+| `mars-harness telemetry status\|preview\|export\|send` | Implemented | Keeps raw telemetry local, previews the exact anonymous aggregate payload, writes sanitized reports to the local outbox, and sends only when anonymous reporting is explicitly enabled. |
+| `mars-harness telemetry collect --storage sqlite` | Implemented | Runs a local anonymous foundation telemetry collector backed by SQLite; the collector API is designed so hosted Postgres-compatible storage can be added later without changing deployed harnesses. |
+| `mars-harness telemetry triage-foundation` | Implemented | Reads collector aggregates and creates Mars Harness source intervention-debt work only for repeated anonymous foundation-owned patterns. |
 | `mars-harness trust [--repo <path>]` | Implemented | Shows role trust levels. |
 | `mars-harness trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
 | `mars-harness models list [--provider registry\|ollama]` | Implemented | Lists pinned medium-profile registry defaults or locally installed Ollama models. Ollama listing is a catalog/evaluation surface, not default promotion. |
@@ -149,7 +152,7 @@ The product contract is:
 - Engineer roles complete one ticket per run.
 - Engineer roles provide scenario evidence before closing feature tickets.
 - In-progress tickets are highest priority.
-- Intervention-debt tickets are generated from repeated telemetry failures or low score snapshots and outrank ordinary backlog work.
+- Target-owned intervention-debt tickets are generated from repeated local telemetry failures or low score snapshots and outrank ordinary backlog work; foundation-owned failures stay local or flow through optional anonymous foundation telemetry.
 - Blocked work is documented and proactively unblocked when the fix is in scope.
 - Dogfood and QA roles produce reproducible evidence.
 - Janitor and orchestrator roles keep ticket state truthful.
@@ -208,6 +211,13 @@ Manual tuning remains available, but the normal path should require none.
 Mars Harness is complete without a remote-code-host integration. Optional integration exists for telemetry and coordination: webhooks, statuses, comments, and check-run style reporting.
 
 The product must never describe optional integration as complete unless credentials, webhook delivery, and status/comment behavior have actually been validated.
+
+Local telemetry and dashboard evidence remain the default. Anonymous foundation
+telemetry is a separate opt-in integration: deployed harnesses keep raw events
+in their repo-specific SQLite database, derive sanitized aggregate reports into a
+local outbox, and send only allowlisted fields to a configured collector. Local
+dogfood uses the built-in SQLite collector; public operation can later host the
+same collector against a Postgres-compatible backend such as Neon.
 
 ## Known Hardening Areas
 

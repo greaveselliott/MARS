@@ -6,15 +6,18 @@ docs:
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/release-versioning.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/product-specs/product-surface.md
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-002-zero-config-shell-path.md
 - docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-012-self-improvement-loop.md
 */
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -22,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -40,6 +44,7 @@ import (
 	ctx "github.com/greaveselliott/mars-harness/internal/context"
 	"github.com/greaveselliott/mars-harness/internal/docsync"
 	"github.com/greaveselliott/mars-harness/internal/doctor"
+	"github.com/greaveselliott/mars-harness/internal/foundationtelemetry"
 	"github.com/greaveselliott/mars-harness/internal/guardrails"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
@@ -55,6 +60,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/serve"
 	"github.com/greaveselliott/mars-harness/internal/setup"
 	"github.com/greaveselliott/mars-harness/internal/shellpath"
+	"github.com/greaveselliott/mars-harness/internal/telemetry"
 	"github.com/greaveselliott/mars-harness/internal/tools"
 	"github.com/greaveselliott/mars-harness/internal/trace"
 	"github.com/greaveselliott/mars-harness/internal/trust"
@@ -99,6 +105,7 @@ func newRootCommand() *cobra.Command {
 	root.AddCommand(registerCmd())
 	root.AddCommand(doctorCmd())
 	root.AddCommand(scoresCmd())
+	root.AddCommand(telemetryCmd())
 	root.AddCommand(trustCmd())
 	root.AddCommand(toolsCmd())
 	root.AddCommand(mcpCmd())
@@ -2077,6 +2084,445 @@ func scoresExportCmd() *cobra.Command {
 	cmd.Flags().IntVar(&windowDays, "window-days", 30, "Scoring and telemetry evidence window in days")
 	cmd.Flags().BoolVar(&noTicket, "no-ticket", false, "Do not create or update low-score intervention-debt tickets")
 	return cmd
+}
+
+func telemetryCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "telemetry",
+		Short: "Inspect and exchange anonymous foundation telemetry",
+		Long: `Inspect local telemetry state, preview anonymous aggregate reports,
+enqueue reports into the local outbox, send pending reports to a configured
+collector, or run a local foundation telemetry collector.`,
+	}
+	cmd.AddCommand(telemetryStatusCmd())
+	cmd.AddCommand(telemetryPreviewCmd())
+	cmd.AddCommand(telemetryExportCmd())
+	cmd.AddCommand(telemetrySendCmd())
+	cmd.AddCommand(telemetryCollectCmd())
+	cmd.AddCommand(telemetryTriageFoundationCmd())
+	return cmd
+}
+
+func telemetryStatusCmd() *cobra.Command {
+	var repoPath string
+	var dbPath string
+	cmd := &cobra.Command{
+		Use:   "status",
+		Short: "Show anonymous telemetry reporting status",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Load(config.DefaultPath())
+			if err != nil {
+				return err
+			}
+			_, resolvedDB, _, err := resolveQualityExportPaths(repoPath, dbPath)
+			if err != nil {
+				return err
+			}
+			store, err := telemetry.OpenStore(resolvedDB)
+			if err != nil {
+				return err
+			}
+			defer store.Close()
+			stats, err := store.OutboxStats(cmd.Context())
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Anonymous telemetry reporting: %s\n", defaultStringCLI(cfg.Telemetry.Reporting, "off"))
+			if cfg.Telemetry.Endpoint != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Collector endpoint: %s\n", cfg.Telemetry.Endpoint)
+			} else {
+				fmt.Fprintln(cmd.OutOrStdout(), "Collector endpoint: not configured")
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Local DB: %s\n", resolvedDB)
+			fmt.Fprintf(cmd.OutOrStdout(), "Outbox: pending=%d sent=%d failed=%d\n", stats["pending"], stats["sent"], stats["failed"])
+			if strings.TrimSpace(cfg.Telemetry.Reporting) == "" || strings.EqualFold(cfg.Telemetry.Reporting, "off") {
+				fmt.Fprintln(cmd.OutOrStdout(), "Status: disabled by default; no network calls will be made.")
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	return cmd
+}
+
+func telemetryPreviewCmd() *cobra.Command {
+	var repoPath string
+	var dbPath string
+	cmd := &cobra.Command{
+		Use:   "preview",
+		Short: "Preview the exact anonymous telemetry payload",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			report, _, closeFn, err := buildAnonymousTelemetryReport(cmd.Context(), repoPath, dbPath)
+			if closeFn != nil {
+				defer closeFn()
+			}
+			if err != nil {
+				return err
+			}
+			return writeJSON(cmd.OutOrStdout(), report)
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	return cmd
+}
+
+func telemetryExportCmd() *cobra.Command {
+	var repoPath string
+	var dbPath string
+	var anonymous bool
+	cmd := &cobra.Command{
+		Use:   "export",
+		Short: "Enqueue an anonymous telemetry report in the local outbox",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if !anonymous {
+				return fmt.Errorf("telemetry export: pass --anonymous to export the sanitized aggregate report")
+			}
+			report, store, closeFn, err := buildAnonymousTelemetryReport(cmd.Context(), repoPath, dbPath)
+			if closeFn != nil {
+				defer closeFn()
+			}
+			if err != nil {
+				return err
+			}
+			rec, err := store.EnqueueAnonymousReport(cmd.Context(), report)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Enqueued anonymous telemetry report %s (%s)\n", rec.ID, rec.PayloadHash)
+			return writeJSON(cmd.OutOrStdout(), report)
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().BoolVar(&anonymous, "anonymous", false, "Export sanitized anonymous aggregate telemetry")
+	return cmd
+}
+
+func telemetrySendCmd() *cobra.Command {
+	var repoPath string
+	var dbPath string
+	cmd := &cobra.Command{
+		Use:   "send",
+		Short: "Send pending anonymous telemetry reports to the configured collector",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Load(config.DefaultPath())
+			if err != nil {
+				return err
+			}
+			if !strings.EqualFold(strings.TrimSpace(cfg.Telemetry.Reporting), "anonymous") {
+				fmt.Fprintln(cmd.OutOrStdout(), "Anonymous telemetry reporting is off; no network calls made.")
+				return nil
+			}
+			if strings.TrimSpace(cfg.Telemetry.Endpoint) == "" {
+				return fmt.Errorf("telemetry send: telemetry.endpoint is required when telemetry.reporting is anonymous")
+			}
+			report, store, closeFn, err := buildAnonymousTelemetryReport(cmd.Context(), repoPath, dbPath)
+			if closeFn != nil {
+				defer closeFn()
+			}
+			if err != nil {
+				return err
+			}
+			if _, err := store.EnqueueAnonymousReport(cmd.Context(), report); err != nil {
+				return err
+			}
+			pending, err := store.PendingReports(cmd.Context(), time.Now().UTC(), 25)
+			if err != nil {
+				return err
+			}
+			sent := 0
+			for _, rec := range pending {
+				if err := sendAnonymousTelemetryReport(cmd.Context(), cfg, rec); err != nil {
+					_ = store.MarkReportFailed(cmd.Context(), rec.ID, time.Now().UTC().Add(time.Hour), err)
+					fmt.Fprintf(cmd.OutOrStderr(), "Warning: send %s failed: %v\n", rec.ID, err)
+					continue
+				}
+				if err := store.MarkReportSent(cmd.Context(), rec.ID); err != nil {
+					return err
+				}
+				sent++
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Sent %d anonymous telemetry report(s).\n", sent)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	return cmd
+}
+
+func telemetryCollectCmd() *cobra.Command {
+	var addr string
+	var storage string
+	var dbPath string
+	cmd := &cobra.Command{
+		Use:   "collect",
+		Short: "Run a local anonymous foundation telemetry collector",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if strings.TrimSpace(addr) == "" {
+				addr = ":9092"
+			}
+			switch strings.ToLower(strings.TrimSpace(storage)) {
+			case "", "sqlite":
+			default:
+				return fmt.Errorf("telemetry collect: storage %q is not implemented in v1; use sqlite", storage)
+			}
+			if dbPath == "" {
+				home, _ := os.UserHomeDir()
+				dbPath = filepath.Join(home, ".mars-harness", "db", "foundation-telemetry", "intake.db")
+			}
+			store, err := foundationtelemetry.OpenSQLiteStore(dbPath)
+			if err != nil {
+				return err
+			}
+			defer store.Close()
+
+			srv := &http.Server{Addr: addr, Handler: foundationtelemetry.Handler(store)}
+			go func() {
+				<-cmd.Context().Done()
+				shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				_ = srv.Shutdown(shutdownCtx)
+			}()
+			fmt.Fprintf(cmd.OutOrStdout(), "Foundation telemetry collector listening on %s, db=%s\n", addr, dbPath)
+			err = srv.ListenAndServe()
+			if errors.Is(err, http.ErrServerClosed) {
+				return nil
+			}
+			return err
+		},
+	}
+	cmd.Flags().StringVar(&addr, "addr", ":9092", "Collector listen address")
+	cmd.Flags().StringVar(&storage, "storage", "sqlite", "Collector storage backend (v1: sqlite)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Collector SQLite database path")
+	return cmd
+}
+
+func telemetryTriageFoundationCmd() *cobra.Command {
+	var dbPath string
+	var repoPath string
+	var windowDays int
+	cmd := &cobra.Command{
+		Use:   "triage-foundation",
+		Short: "Create Mars Harness source tickets from repeated anonymous telemetry patterns",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if dbPath == "" {
+				return fmt.Errorf("telemetry triage-foundation: --db is required")
+			}
+			if repoPath == "" {
+				repoPath = "."
+			}
+			absRepo, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("telemetry triage-foundation: resolve repo: %w", err)
+			}
+			store, err := foundationtelemetry.OpenSQLiteStore(dbPath)
+			if err != nil {
+				return err
+			}
+			defer store.Close()
+			since := time.Now().UTC().AddDate(0, 0, -windowDays)
+			patterns, err := store.PatternsSince(cmd.Context(), since)
+			if err != nil {
+				return err
+			}
+			root, err := tools.NewRoot(absRepo)
+			if err != nil {
+				return err
+			}
+			created := 0
+			for _, pattern := range patterns {
+				if pattern.InstallWindowCount < 2 && len(pattern.HarnessVersions) < 2 {
+					continue
+				}
+				result, err := tools.CreateTicket(root, tools.TicketInput{
+					Title:      fmt.Sprintf("Foundation telemetry: %s %s %s", pattern.Category, pattern.Target, pattern.Signature),
+					Priority:   foundationTelemetryPriority(pattern.Severity),
+					Complexity: "medium",
+					Kind:       "intervention-debt",
+					DedupeKey:  "foundation-telemetry:" + pattern.Signature,
+					Source:     "foundation-telemetry:" + pattern.Signature,
+					Metadata: map[string]string{
+						"target":               pattern.Target,
+						"category":             pattern.Category,
+						"severity":             pattern.Severity,
+						"signature":            pattern.Signature,
+						"report_count":         fmt.Sprintf("%d", pattern.ReportCount),
+						"install_window_count": fmt.Sprintf("%d", pattern.InstallWindowCount),
+					},
+					Body: foundationTelemetryTicketBody(pattern),
+				})
+				if err != nil {
+					return err
+				}
+				fmt.Fprintln(cmd.OutOrStdout(), result.Output)
+				created++
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Triaged %d foundation telemetry pattern(s).\n", created)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&dbPath, "db", "", "Foundation collector SQLite database path")
+	cmd.Flags().StringVar(&repoPath, "repo", ".", "Mars Harness source repository path")
+	cmd.Flags().IntVar(&windowDays, "window-days", 30, "Foundation telemetry lookback window")
+	return cmd
+}
+
+func buildAnonymousTelemetryReport(ctx context.Context, repoPath, dbPath string) (foundationtelemetry.AnonymousReport, *telemetry.Store, func(), error) {
+	repoAbs, resolvedDB, repoID, err := resolveQualityExportPaths(repoPath, dbPath)
+	if err != nil {
+		return foundationtelemetry.AnonymousReport{}, nil, nil, err
+	}
+	store, err := telemetry.OpenStore(resolvedDB)
+	if err != nil {
+		return foundationtelemetry.AnonymousReport{}, nil, nil, err
+	}
+	closeFn := func() { _ = store.Close() }
+	cfg, err := config.Load(config.DefaultPath())
+	if err != nil {
+		closeFn()
+		return foundationtelemetry.AnonymousReport{}, nil, nil, err
+	}
+	interval := telemetryReportInterval(cfg)
+	windowEnd := time.Now().UTC()
+	windowStart := windowEnd.Add(-interval)
+	seed, err := telemetry.LoadOrCreateReportKeySeed(filepath.Dir(config.DefaultPath()))
+	if err != nil {
+		closeFn()
+		return foundationtelemetry.AnonymousReport{}, nil, nil, err
+	}
+	hw := hardware.Detect()
+	roles, orchestrationMode := anonymousRoleMetadata(repoAbs)
+	generatedVersion := ""
+	if metadata, err := scanner.ReadHarnessMetadata(repoAbs); err == nil {
+		generatedVersion = metadata.GeneratorVersion
+	}
+	report, err := store.BuildAnonymousReport(telemetry.AnonymousReportOptions{
+		RepoID:                  repoID,
+		ReportKeySeed:           seed,
+		HarnessVersion:          version,
+		GeneratedHarnessVersion: generatedVersion,
+		OS:                      runtime.GOOS,
+		Arch:                    runtime.GOARCH,
+		HardwareTier:            string(hw.Profile),
+		OrchestrationMode:       orchestrationMode,
+		WindowStart:             windowStart,
+		WindowEnd:               windowEnd,
+		Roles:                   roles,
+	})
+	if err != nil {
+		closeFn()
+		return foundationtelemetry.AnonymousReport{}, nil, nil, err
+	}
+	_ = ctx
+	return report, store, closeFn, nil
+}
+
+func telemetryReportInterval(cfg config.Config) time.Duration {
+	interval, err := time.ParseDuration(strings.TrimSpace(cfg.Telemetry.ReportInterval))
+	if err != nil || interval <= 0 {
+		return 24 * time.Hour
+	}
+	return interval
+}
+
+func anonymousRoleMetadata(repoAbs string) (map[string]telemetry.RoleMetadata, string) {
+	roles := map[string]telemetry.RoleMetadata{}
+	orchestrationMode := "unknown"
+	manifest, err := bundle.Load(repoAbs)
+	if err != nil {
+		return roles, orchestrationMode
+	}
+	orchestrationMode = strings.TrimSpace(manifest.OrchestrationMode)
+	if orchestrationMode == "" {
+		orchestrationMode = "legacy"
+	}
+	for name, role := range manifest.Roles {
+		roles[name] = telemetry.RoleMetadata{
+			Domain: role.Domain,
+			Mode:   role.Mode,
+		}
+	}
+	return roles, orchestrationMode
+}
+
+func sendAnonymousTelemetryReport(ctx context.Context, cfg config.Config, rec telemetry.OutboxRecord) error {
+	endpoint := strings.TrimRight(strings.TrimSpace(cfg.Telemetry.Endpoint), "/") + foundationtelemetry.ReportsPath
+	body := []byte(fmt.Sprintf(`{"reports":[%s]}`, rec.PayloadJSON))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("telemetry send: create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if token := strings.TrimSpace(cfg.Telemetry.Token); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("telemetry send: post report: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("telemetry send: collector returned %s: %s", resp.Status, strings.TrimSpace(string(data)))
+	}
+	return nil
+}
+
+func foundationTelemetryPriority(severity string) string {
+	switch strings.ToLower(strings.TrimSpace(severity)) {
+	case "critical", "high":
+		return "high"
+	case "medium":
+		return "medium"
+	default:
+		return "low"
+	}
+}
+
+func foundationTelemetryTicketBody(pattern foundationtelemetry.AggregatedPattern) string {
+	return fmt.Sprintf(`## Context
+
+Anonymous deployed-harness telemetry reported a repeated foundation-owned failure pattern. Raw target telemetry remains local; this ticket is created from sanitized aggregate collector data only.
+
+## Triage Metadata
+
+- Signature: %s
+- Category: %s
+- Target: %s
+- Severity: %s
+- Report count: %d
+- Install-window count: %d
+- First seen: %s
+- Last seen: %s
+- Harness versions: %s
+
+## Acceptance Criteria
+
+- [ ] Root cause is classified against the Mars Harness foundation surface.
+- [ ] The fix lands in source harness code, generated target doctrine, prompt/skill/tool policy, or docs as appropriate.
+- [ ] New evidence proves target repos no longer need to create local intervention-debt tickets for this failure pattern.
+`,
+		pattern.Signature,
+		pattern.Category,
+		pattern.Target,
+		pattern.Severity,
+		pattern.ReportCount,
+		pattern.InstallWindowCount,
+		pattern.FirstSeen.Format(time.RFC3339),
+		pattern.LastSeen.Format(time.RFC3339),
+		strings.Join(pattern.HarnessVersions, ", "),
+	)
+}
+
+func defaultStringCLI(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
 }
 
 func trustCmd() *cobra.Command {

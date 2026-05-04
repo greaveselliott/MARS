@@ -528,14 +528,20 @@ func TestBuildTicketIndex_onlyHighInterventionDebtPreemptsOrdinaryBacklog(t *tes
 	if !strings.Contains(idx, "high-priority intervention-debt preempts ordinary backlog") {
 		t.Errorf("expected intervention-debt priority guidance, got: %s", idx)
 	}
+	if !strings.Contains(idx, "1 hidden") {
+		t.Errorf("expected hidden deferred intervention-debt count, got: %s", idx)
+	}
 	highInterventionPos := strings.Index(idx, "[backlog][intervention-debt] MH-012-high-intervention.md")
 	ordinaryPos := strings.Index(idx, "[backlog] MH-010-ordinary.md")
 	mediumInterventionPos := strings.Index(idx, "[backlog][intervention-debt] MH-011-medium-intervention.md")
-	if highInterventionPos < 0 || ordinaryPos < 0 || mediumInterventionPos < 0 {
+	if highInterventionPos < 0 || ordinaryPos < 0 {
 		t.Fatalf("expected both backlog entries, got: %s", idx)
 	}
-	if !(highInterventionPos < ordinaryPos && ordinaryPos < mediumInterventionPos) {
-		t.Fatalf("expected only high intervention-debt before ordinary backlog, got: %s", idx)
+	if mediumInterventionPos >= 0 {
+		t.Fatalf("expected deferred medium intervention-debt to be hidden, got: %s", idx)
+	}
+	if !(highInterventionPos < ordinaryPos) {
+		t.Fatalf("expected high intervention-debt before ordinary backlog, got: %s", idx)
 	}
 }
 
@@ -761,7 +767,7 @@ func TestOrchestratorSurveyTriagesTelemetryAndLowScores(t *testing.T) {
 		t.Fatalf("surveyOrchestrator: %v", err)
 	}
 	if report.TicketsTriaged < 2 {
-		t.Fatalf("expected telemetry and score intervention-debt triage, got %+v", report)
+		t.Fatalf("expected telemetry and score triage signals, got %+v", report)
 	}
 
 	entries, err := os.ReadDir(filepath.Join(repo, "docs", "tickets", "backlog"))
@@ -778,8 +784,8 @@ func TestOrchestratorSurveyTriagesTelemetryAndLowScores(t *testing.T) {
 			interventionDebt++
 		}
 	}
-	if interventionDebt < 2 {
-		t.Fatalf("expected at least two intervention-debt tickets, got %d", interventionDebt)
+	if interventionDebt != 1 {
+		t.Fatalf("expected only score intervention-debt ticket in target backlog, got %d", interventionDebt)
 	}
 }
 

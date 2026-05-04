@@ -1277,7 +1277,7 @@ func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec
 	snap, snapErr := snapshotTickets(rec.Path)
 	ticketHash := ""
 	if snapErr == nil {
-		ticketHash = snap.hash()
+		ticketHash = snap.routingHash()
 	} else {
 		log.Warn("serve: dispatch ticket snapshot failed", "err", snapErr)
 	}

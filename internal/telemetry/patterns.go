@@ -96,12 +96,16 @@ func (c *Collector) DetectPatternsFromStore() []Pattern {
 	var patterns []Pattern
 
 	for _, rc := range counts {
-		if rc.Count >= PatternThreshold {
+		count := rc.DistinctJobs
+		if count <= 0 {
+			count = rc.Count
+		}
+		if count >= PatternThreshold {
 			patterns = append(patterns, Pattern{
 				RepoID:    rc.RepoID,
 				Role:      rc.Role,
 				Category:  rc.Category,
-				Count:     rc.Count,
+				Count:     count,
 				Window:    "24h",
 				FirstSeen: rc.FirstSeen,
 				LastSeen:  rc.LastSeen,
@@ -110,7 +114,7 @@ func (c *Collector) DetectPatternsFromStore() []Pattern {
 				"repo_id", rc.RepoID,
 				"role", rc.Role,
 				"category", string(rc.Category),
-				"count", rc.Count,
+				"count", count,
 			)
 		}
 	}

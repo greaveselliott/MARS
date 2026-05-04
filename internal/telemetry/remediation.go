@@ -39,6 +39,7 @@ func Remediate(cat FailureCategory) RemediationAction {
 		CategoryBudgetExceeded,
 		CategoryManifestError,
 		CategoryTicketGate,
+		CategoryDispatchProtocol,
 		CategoryUnknown:
 		return ActionNone
 

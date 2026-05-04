@@ -19,21 +19,30 @@ import (
 // Config holds the top-level user configuration (AD-015).
 // Loaded from ~/.mars-harness/config.yaml, with MARS_HARNESS_ env overrides.
 type Config struct {
-	ModelsDir           string `yaml:"models_dir"`
-	BinDir              string `yaml:"bin_dir"`
-	TracesDir           string `yaml:"traces_dir"`
-	LogFormat           string `yaml:"log_format"`
-	GitHubToken         string `yaml:"github_token"`
-	WebhookPort         int    `yaml:"webhook_port"`
-	DashboardPort       int    `yaml:"dashboard_port"`
-	PerformanceProfile  string `yaml:"performance_profile"`
-	LlamaParallel       int    `yaml:"llama_parallel"`
-	LlamaThreads        int    `yaml:"llama_threads"`
-	LlamaThreadsBatch   int    `yaml:"llama_threads_batch"`
-	LlamaBatchSize      int    `yaml:"llama_batch_size"`
-	LlamaUBatchSize     int    `yaml:"llama_ubatch_size"`
-	LlamaFlashAttention string `yaml:"llama_flash_attention"`
-	LlamaMLock          bool   `yaml:"llama_mlock"`
+	ModelsDir           string          `yaml:"models_dir"`
+	BinDir              string          `yaml:"bin_dir"`
+	TracesDir           string          `yaml:"traces_dir"`
+	LogFormat           string          `yaml:"log_format"`
+	GitHubToken         string          `yaml:"github_token"`
+	WebhookPort         int             `yaml:"webhook_port"`
+	DashboardPort       int             `yaml:"dashboard_port"`
+	PerformanceProfile  string          `yaml:"performance_profile"`
+	LlamaParallel       int             `yaml:"llama_parallel"`
+	LlamaThreads        int             `yaml:"llama_threads"`
+	LlamaThreadsBatch   int             `yaml:"llama_threads_batch"`
+	LlamaBatchSize      int             `yaml:"llama_batch_size"`
+	LlamaUBatchSize     int             `yaml:"llama_ubatch_size"`
+	LlamaFlashAttention string          `yaml:"llama_flash_attention"`
+	LlamaMLock          bool            `yaml:"llama_mlock"`
+	Telemetry           TelemetryConfig `yaml:"telemetry"`
+}
+
+// TelemetryConfig controls optional anonymous foundation telemetry reporting.
+type TelemetryConfig struct {
+	Reporting      string `yaml:"reporting"`
+	Endpoint       string `yaml:"endpoint"`
+	Token          string `yaml:"token"`
+	ReportInterval string `yaml:"report_interval"`
 }
 
 // DefaultPath returns the conventional config file location.
@@ -74,6 +83,10 @@ func defaults() Config {
 		PerformanceProfile:  "auto",
 		LlamaParallel:       1,
 		LlamaFlashAttention: "auto",
+		Telemetry: TelemetryConfig{
+			Reporting:      "off",
+			ReportInterval: "24h",
+		},
 	}
 }
 
@@ -86,6 +99,10 @@ func applyEnv(cfg *Config) {
 		"MARS_HARNESS_GITHUB_TOKEN":          &cfg.GitHubToken,
 		"MARS_HARNESS_PERFORMANCE_PROFILE":   &cfg.PerformanceProfile,
 		"MARS_HARNESS_LLAMA_FLASH_ATTENTION": &cfg.LlamaFlashAttention,
+		"MARS_HARNESS_TELEMETRY_REPORTING":   &cfg.Telemetry.Reporting,
+		"MARS_HARNESS_TELEMETRY_ENDPOINT":    &cfg.Telemetry.Endpoint,
+		"MARS_HARNESS_TELEMETRY_TOKEN":       &cfg.Telemetry.Token,
+		"MARS_HARNESS_TELEMETRY_INTERVAL":    &cfg.Telemetry.ReportInterval,
 	}
 	for k, ptr := range envMap {
 		if v := os.Getenv(k); strings.TrimSpace(v) != "" {

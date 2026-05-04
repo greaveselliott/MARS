@@ -28,6 +28,16 @@ type ticketSnapshot struct {
 }
 
 func (s ticketSnapshot) hash() string {
+	return s.hashWithFilter(nil)
+}
+
+func (s ticketSnapshot) routingHash() string {
+	return s.hashWithFilter(func(t ticketstate.Ticket) bool {
+		return t.Kind == "intervention-debt" && !interventionDebtPreemptsBacklog(t)
+	})
+}
+
+func (s ticketSnapshot) hashWithFilter(skip func(ticketstate.Ticket) bool) string {
 	var lines []string
 	names := append([]string{}, s.Backlog...)
 	names = append(names, s.InProgress...)
@@ -35,6 +45,9 @@ func (s ticketSnapshot) hash() string {
 	names = append(names, s.Done...)
 	for _, name := range names {
 		t := s.Details[name]
+		if skip != nil && skip(t) {
+			continue
+		}
 		lines = append(lines, fmt.Sprintf("%s|%s|%s|%s|%s|%s", t.Status, name, t.ID, t.Blocker, strings.Join(t.BlockedBy, ","), t.NextAction))
 	}
 	sort.Strings(lines)
