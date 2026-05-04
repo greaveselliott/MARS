@@ -333,26 +333,6 @@ func releaseWhatLine(commit Commit) string {
 	return scopedNarrative(commit, fmt.Sprintf("Changed %s (%s).", releaseChangePhrase(commit), commit.Short))
 }
 
-func commitGroup(commit Commit) string {
-	if commit.Breaking {
-		return "Breaking Changes"
-	}
-	switch commit.Type {
-	case "feat":
-		return "Features"
-	case "fix", "perf":
-		return "Fixes"
-	case "docs":
-		return "Documentation"
-	case "test":
-		return "Tests"
-	case "chore", "build", "ci", "refactor", "style":
-		return "Maintenance"
-	default:
-		return "Other"
-	}
-}
-
 func releaseChangePhrase(commit Commit) string {
 	message := strings.TrimSpace(commit.Message)
 	if message == "" {
