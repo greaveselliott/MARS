@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.28.0] - 2026-05-04
+<!-- mars-harness-release: version=0.28.0 commit=2c912e4e3425 -->
+
+### Impact
+- **release:** Operators can bring every historical changelog entry onto the current Impact, Why, and What Changed release-note standard with a reusable checked command.
+
+### Why
+- **release:** Historical release notes were still on mixed narrative formats, which made the changelog a stale and uneven source of product communication.
+
+### What Changed
+- **release:** Added release backfill-notes with dry-run, check, and version-range support; backfilled 0.1.0 through 0.26.2; documented the BDD feature audit; and added consistency tests for changelog narrative sections (2c912e4).
+
+### Features
+- **release:** Backfill historical release narratives (2c912e4)
+
 ## [0.27.0] - 2026-05-04
 <!-- mars-harness-release: version=0.27.0 commit=7d285a8ca7ad -->
 
