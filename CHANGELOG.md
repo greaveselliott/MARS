@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.33.1] - 2026-05-04
+<!-- mars-harness-release: version=0.33.1 commit=c436460e5357 -->
+
+### Impact
+- **orchestration:** Operators see improved reliability because carry structured handoff through dispatch.
+
+### Why
+- **orchestration:** This matters because carry structured handoff through dispatch closes a failure mode or degraded path.
+
+### What Changed
+- **orchestration:** Changed carry structured handoff through dispatch (c436460).
+
+### Fixes
+- **orchestration:** Carry structured handoff through dispatch (c436460)
+
 ## [0.33.0] - 2026-05-04
 <!-- mars-harness-release: version=0.33.0 commit=6fbc203cea94 -->
 
