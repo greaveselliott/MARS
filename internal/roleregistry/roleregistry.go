@@ -320,7 +320,7 @@ var defaultEntries = []Entry{
 		Mode:               "dogfood-validation",
 		TriggerSources:     "schedule; chain from engineer",
 		Schedule:           "0 10 * * 1-5",
-		Tools:              "file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record",
+		Tools:              "file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record",
 		TrustLevel:         "progressive tester write for bounded evidence and fixes",
 		Guardrails:         "real command evidence, blast-radius containment, trust, and git discipline",
 		ModelRouting:       "coding",

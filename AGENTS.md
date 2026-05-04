@@ -315,6 +315,7 @@ golangci-lint run
 6. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
 7. **Feed conversations back.** Significant conversations must update the owning repo artifact in the same direct commit to `main`: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
 8. **Avoid docs churn for trivial replies.** Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
+9. **Use the ticket lifecycle directories.** New tickets are created with `ticket_create` in `docs/tickets/backlog/`. Do not hand-write ticket markdown directly under `docs/tickets/`; ticket files belong only in `backlog/`, `in-progress/`, `in-review/`, or `done/`.
 
 ## Pointers
 

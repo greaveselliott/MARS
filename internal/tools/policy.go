@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -40,7 +41,7 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 
 	switch name {
 	case "file_write":
-		return checkFileWritePolicy(session, hasSession, raw)
+		return checkFileWritePolicy(root, session, hasSession, raw)
 	case "ticket_create":
 		return checkTicketCreatePolicy(root, session, hasSession, raw)
 	case "git_commit":
@@ -218,12 +219,15 @@ func joinTicketNames(tickets []ticketstate.Ticket) string {
 	return strings.Join(names, ", ")
 }
 
-func checkFileWritePolicy(session Session, hasSession bool, raw json.RawMessage) error {
-	if !hasSession {
-		return nil
-	}
+func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.RawMessage) error {
 	var args fileWriteArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
+		return nil
+	}
+	if err := checkTicketFileWritePolicy(root, args.Path); err != nil {
+		return err
+	}
+	if !hasSession {
 		return nil
 	}
 	if session.Guardrails != nil {
@@ -235,6 +239,46 @@ func checkFileWritePolicy(session Session, hasSession bool, raw json.RawMessage)
 		return fmt.Errorf("policy: secret scanner blocked %s:%d (%s)", hits[0].File, hits[0].Line, hits[0].Pattern)
 	}
 	return nil
+}
+
+func checkTicketFileWritePolicy(root Root, rel string) error {
+	rel = cleanRepoPath(rel)
+	lowerRel := strings.ToLower(rel)
+	if rel == "" || lowerRel == "docs/tickets/readme.md" {
+		return nil
+	}
+	if !strings.HasPrefix(lowerRel, "docs/tickets/") || !strings.HasSuffix(lowerRel, ".md") {
+		return nil
+	}
+	parts := strings.Split(rel, "/")
+	if len(parts) < 4 || !isTicketLifecycleDir(parts[2]) {
+		return fmt.Errorf("policy: ticket markdown must live under docs/tickets/backlog, docs/tickets/in-progress, docs/tickets/in-review, or docs/tickets/done; use ticket_create for new tickets instead of file_write to %s", rel)
+	}
+	abs, err := root.ResolvePath(rel)
+	if err != nil {
+		return nil
+	}
+	if _, err := os.Stat(abs); os.IsNotExist(err) {
+		return fmt.Errorf("policy: new ticket files must be created with ticket_create so numbering, backlog placement, and dedupe are enforced; attempted file_write to %s", rel)
+	}
+	return nil
+}
+
+func cleanRepoPath(rel string) string {
+	rel = strings.TrimSpace(strings.ReplaceAll(rel, "\\", "/"))
+	if rel == "" {
+		return ""
+	}
+	return filepath.ToSlash(filepath.Clean(rel))
+}
+
+func isTicketLifecycleDir(dir string) bool {
+	switch dir {
+	case "backlog", "in-progress", "in-review", "done":
+		return true
+	default:
+		return false
+	}
 }
 
 func checkGitPushPolicy(ctx context.Context, root Root, raw json.RawMessage) error {

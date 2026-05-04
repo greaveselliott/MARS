@@ -79,10 +79,57 @@ func TestTicketCreatePolicyCapsDogfoodBySeverityAndDedupe(t *testing.T) {
 	}
 }
 
+func TestFileWritePolicyBlocksTicketRootMarkdown(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+
+	err := preToolPolicy(context.Background(), root, "file_write", []byte(`{"path":"docs/tickets/T-002-root-ticket.md","content":"# Bad\n"}`))
+	if err == nil {
+		t.Fatal("expected root ticket file_write to be blocked")
+	}
+	if !strings.Contains(err.Error(), "ticket markdown must live under docs/tickets/backlog") {
+		t.Fatalf("expected lifecycle path policy error, got %v", err)
+	}
+}
+
+func TestFileWritePolicyBlocksNewTicketMarkdownInLifecycleDir(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+
+	err := preToolPolicy(context.Background(), root, "file_write", []byte(`{"path":"docs/tickets/backlog/T-002-new-ticket.md","content":"# Bad\n"}`))
+	if err == nil {
+		t.Fatal("expected new backlog ticket file_write to be blocked")
+	}
+	if !strings.Contains(err.Error(), "new ticket files must be created with ticket_create") {
+		t.Fatalf("expected ticket_create policy error, got %v", err)
+	}
+}
+
+func TestFileWritePolicyAllowsTicketReadmeAndExistingTicketUpdates(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyTicket(t, dir, "backlog", "T-001-existing.md", `---
+id: T-001
+title: Existing
+---
+
+# Existing
+`)
+
+	for _, raw := range [][]byte{
+		[]byte(`{"path":"docs/tickets/README.md","content":"# Tickets\n"}`),
+		[]byte(`{"path":"docs/tickets/backlog/T-001-existing.md","content":"# Existing updated\n"}`),
+	} {
+		if err := preToolPolicy(context.Background(), root, "file_write", raw); err != nil {
+			t.Fatalf("expected file_write to pass for %s: %v", raw, err)
+		}
+	}
+}
+
 func setupPolicyTicketRepo(t *testing.T) (string, Root) {
 	t.Helper()
 	dir := t.TempDir()
-	for _, status := range []string{"backlog", "in-progress", "done"} {
+	for _, status := range []string{"backlog", "in-progress", "in-review", "done"} {
 		if err := os.MkdirAll(filepath.Join(dir, "docs", "tickets", status), 0o755); err != nil {
 			t.Fatalf("mkdir tickets: %v", err)
 		}

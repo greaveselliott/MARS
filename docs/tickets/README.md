@@ -111,6 +111,11 @@ Janitor, Doctor, and the next Engineer run to recover state.
 
 `MH-NNN-short-description.md` where NNN is a zero-padded sequential number.
 
+New tickets are created with `ticket_create`, not `file_write`. Ticket markdown
+belongs only in `backlog/`, `in-progress/`, `in-review/`, or `done/`; root-level
+files such as `docs/tickets/MH-001-example.md` are invalid and should be moved
+to the lifecycle directory that reflects their state.
+
 ## Lifecycle
 
 1. Ticket created in `backlog/`

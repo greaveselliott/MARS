@@ -26,7 +26,7 @@ roles:
     mode: ticket-breakdown
     model: reasoning
     then: [engineer]
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, ticket_create]
 
   engineer:
     prompt: roles/engineer-delivery.md
@@ -78,7 +78,7 @@ roles:
     model: coding
     schedule: "0 10 * * 1-5"
     max_turns: 40
-    tools: [file_read, file_write, shell_exec, grep, record_decision]
+    tools: [file_read, file_write, shell_exec, grep, record_decision, ticket_create]
 
   pipeline-fixer:
     prompt: roles/pipeline-fixer.md

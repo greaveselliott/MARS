@@ -666,3 +666,42 @@ block product backlog progress by default.
   guardrails.
 - Intervention debt keeps its escalation power for high-severity failures while
   lower-severity process observations stop starving product work.
+
+---
+
+### AD-095: Ticket Creation Is Tool-Owned
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Author:** Codex (sample-target ticket-path review)
+
+### Context
+
+The live `../sample-target` harness created product tickets directly under
+`docs/tickets/` while intervention-debt tickets landed correctly under
+`docs/tickets/backlog/`. The canonical `ticket_create` tool already wrote new
+tickets to the backlog and deduped them, but Dogfood was allowed to create
+findings without that tool. Direct `file_write` made it possible to bypass both
+backlog placement and dedupe.
+
+### Decision
+
+New ticket markdown is owned by `ticket_create`. `file_write` blocks direct
+ticket markdown at `docs/tickets/*.md` and blocks new markdown files inside
+ticket lifecycle directories. Existing tickets in `backlog/`, `in-progress/`,
+`in-review/`, and `done/` can still be edited in place for blocker metadata,
+completion notes, and evidence updates.
+
+Dogfood now has `ticket_create` in the generated manifest and role registry,
+and its prompt tells it to call `ticket_create` for findings instead of
+hand-writing ticket files. Generated target ticket guidance and tool guidance
+state that root-level ticket markdown is invalid.
+
+### Consequences
+
+- New product, dogfood, dependency, and intervention-debt tickets enter the same
+  backlog path with numbering and dedupe.
+- Agents can still update real lifecycle tickets without losing the ability to
+  record blockers or evidence.
+- Misplaced root tickets become an obvious policy violation instead of hidden
+  backlog state.

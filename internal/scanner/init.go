@@ -401,7 +401,7 @@ roles:
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -679,6 +679,11 @@ Tickets live in:
 - ` + "`docs/tickets/in-review/`" + ` for tickets waiting on approval or requested changes
 - ` + "`docs/tickets/done/`" + ` for completed tickets
 
+New tickets are created with ` + "`ticket_create`" + ` in
+` + "`docs/tickets/backlog/`" + `. Do not hand-write ticket markdown directly
+under ` + "`docs/tickets/`" + `; ticket files belong only in ` + "`backlog/`" + `,
+` + "`in-progress/`" + `, ` + "`in-review/`" + `, or ` + "`done/`" + `.
+
 In-progress tickets are priority work. Do not leave a ticket in progress unless
 work is actively continuing and the next action is clear.
 `,
@@ -762,6 +767,12 @@ Source: current-operating-plan.md — core gameplay mechanics (Week 1).
 
 T-NNN-short-description.md where NNN is a zero-padded sequential number.
 The ticket_create tool assigns the next available number automatically.
+
+New tickets must be created with ` + "`ticket_create`" + `, not ` + "`file_write`" + `.
+Ticket markdown belongs only in ` + "`backlog/`" + `, ` + "`in-progress/`" + `,
+` + "`in-review/`" + `, or ` + "`done/`" + `. Direct files such as
+` + "`docs/tickets/T-001-example.md`" + ` are invalid; move misplaced tickets into
+the lifecycle directory that reflects their state.
 
 ## Lifecycle
 
@@ -1480,7 +1491,7 @@ tools are added, removed, renamed, or materially change behavior.
 | Tool | Use When | Notes |
 | --- | --- | --- |
 | ` + "`file_read`" + ` | Read a known file path from the repository. | Non-mutating. Use before editing or reviewing code. |
-| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. |
+| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. |
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
 | ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
@@ -1516,7 +1527,9 @@ tools are added, removed, renamed, or materially change behavior.
 - Need to run or prepare the whole release ritual: use ` + "`release_orchestrate`" + `,
   ` + "`git_release_guard`" + `, and ` + "`github_release_status`" + ` before mutating state.
 - Need a durable repo-owned note: use ` + "`record_decision`" + `.
-- Need backlog or intervention-debt work item creation: use ` + "`ticket_create`" + `.
+- Need backlog, dogfood, dependency, or intervention-debt work item creation:
+  use ` + "`ticket_create`" + `. Do not hand-write new ticket markdown with
+  ` + "`file_write`" + `.
 - Need dispatch-mode routing to know the terminal role outcome: use
   ` + "`job_disposition_record`" + `.
 - Need a new deterministic capability: use ` + "`tool_create`" + `, then finish the code
@@ -2664,18 +2677,12 @@ Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix.
 
 ### Phase 4 — Report
 
-15. For each failure, create a ticket in docs/tickets/backlog/ with [Dogfood] prefix:
-    ---
-    id: T-NNN
-    title: "[Dogfood] [issue description]"
-    priority: high | medium
-    complexity: small
-    source: dogfood test [date]
-    created: [date]
-    depends_on: []
-    ---
-    Include: what was tested, expected vs actual, reproduction steps, and the
-    exact error output. Pre-flight failures get priority: high.
+15. For each failure, call ticket_create (NOT file_write) with a [Dogfood]
+    title prefix. Include priority high | medium, complexity small,
+    work_type enabler unless the failure maps to a BDD feature scenario,
+    bdd_scenarios when applicable, source "dogfood test [date]", and a body
+    with what was tested, expected vs actual, reproduction steps, and the exact
+    error output. Pre-flight failures get priority: high.
 
 16. Record any decisions made during testing via record_decision tool
     (e.g. "App requires Node 22", "Port 3001 conflicts, used 3002")

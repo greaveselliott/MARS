@@ -45,7 +45,7 @@ tools are added, removed, renamed, or materially change behavior.
 | Tool | Use When | Notes |
 | --- | --- | --- |
 | `file_read` | Read a known file path from the repository. | Non-mutating. Use before editing or reviewing code. |
-| `file_write` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. |
+| `file_write` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use `ticket_create`. |
 | `file_search` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | `grep` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
 | `shell_exec` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
@@ -81,7 +81,9 @@ tools are added, removed, renamed, or materially change behavior.
 - Need to run or prepare the whole release ritual: use `release_orchestrate`,
   `git_release_guard`, and `github_release_status` before mutating state.
 - Need a durable repo-owned note: use `record_decision`.
-- Need backlog or intervention-debt work item creation: use `ticket_create`.
+- Need backlog, dogfood, dependency, or intervention-debt work item creation:
+  use `ticket_create`. Do not hand-write new ticket markdown with
+  `file_write`.
 - Need a dispatch-mode handoff, blocker, review request, no-work outcome, or
   completed-work signal: use `job_disposition_record`.
 - Need a new deterministic capability: use `tool_create`, then finish the code

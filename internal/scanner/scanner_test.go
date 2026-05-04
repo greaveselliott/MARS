@@ -390,6 +390,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, manifestStr, "mars_harness_cli", "manifest should expose mars_harness_cli as a mirrored tool")
 	assert.Contains(t, manifestStr, "tool_create", "manifest should expose tool_create as a mirrored tool")
 	assert.Contains(t, manifestStr, "record_decision, tool_create, task_trace_summarize, git_status", "implementation roles should allow tool_create before git tools")
+	assert.Contains(t, manifestStr, "record_decision, ticket_create, tool_create, task_trace_summarize", "dogfood should create findings through ticket_create")
 	assert.Contains(t, manifestStr, "release_orchestrate", "release role should expose release orchestration")
 	assert.Contains(t, manifestStr, "architecture_audit", "review roles should expose architecture audit")
 	assert.Contains(t, manifestStr, "tool_creation_guard", "review roles should expose tool creation guard")
