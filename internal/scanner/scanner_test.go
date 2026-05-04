@@ -3,8 +3,10 @@ MarsDocSync:
 - AGENTS.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/harness-glossary.md
+- docs/design-docs/release-versioning.md
 - docs/features/README.md
 - docs/features/F-001-delivery-operating-model.md
+- docs/features/F-009-release-update-lifecycle.md
 */
 package scanner
 
@@ -537,6 +539,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(designIndex), "AD-087")
 	assert.Contains(t, string(designIndex), "AD-097")
 	assert.Contains(t, string(designIndex), "AD-098")
+	assert.Contains(t, string(designIndex), "AD-099")
 
 	conversationRecord, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "conversation-as-system-record.md"))
 	require.NoError(t, err)
@@ -652,12 +655,17 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(releaseDoc), "GitHub Release")
 	assert.Contains(t, string(releaseDoc), "vX.Y.Z")
 	assert.Contains(t, string(releaseDoc), "notes-only GitHub")
+	assert.Contains(t, string(releaseDoc), "Impact")
+	assert.Contains(t, string(releaseDoc), "Why")
+	assert.Contains(t, string(releaseDoc), "What Changed")
 
 	releasePrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "release-manager.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(releasePrompt), "Treat every non-release semantic commit")
 	assert.Contains(t, string(releasePrompt), "Do not generate another version")
 	assert.Contains(t, string(releasePrompt), "Separate shipped feature scenarios from enabler work")
+	assert.Contains(t, string(releasePrompt), "Impact")
+	assert.Contains(t, string(releasePrompt), "What Changed")
 	assert.Contains(t, string(releasePrompt), "publish or update GitHub Release")
 	assert.Contains(t, string(releasePrompt), "notes-only release is a blocker")
 }

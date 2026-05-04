@@ -45,7 +45,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness models list [--provider registry\|ollama]` | Implemented | Lists pinned medium-profile registry defaults or locally installed Ollama models. Ollama listing is a catalog/evaluation surface, not default promotion. |
 | `mars-harness models evaluate [--endpoint <url> --model <name>]` | Implemented | Prints the model-refresh plan or runs benchmark probes with tool-call JSON, strict triage JSON, and repo-backed ticket-completion JSON. Live reports include provider, model, endpoint, hardware profile, timing, token counts, failures, promotion status, and are persisted under `docs/generated/model-evaluations/` by default. `--provider ollama --model <name>` targets local Ollama's OpenAI-compatible endpoint. |
 | `mars-harness models override --repo <path> (--tier <tier>\|--role <role>) --provider <provider> --model <name>` | Implemented | Writes `.harness/model-overrides.yaml` so a repo can explicitly route one tier or role to an Ollama or OpenAI-compatible model without changing default registry entries. |
-| `mars-harness release notes --repo <path> --bump auto` | Implemented | Generates semantic-versioned patch notes from commits, updates `VERSION`, and prepends `CHANGELOG.md`. |
+| `mars-harness release notes --repo <path> --bump auto` | Implemented | Generates semantic-versioned patch notes from commits, updates `VERSION`, prepends `CHANGELOG.md`, and explains impact, why, and what changed before semantic commit buckets. |
 | `mars-harness release verify-assets [--version <tag>]` | Implemented | Fails a release check unless all four platform binaries and `checksums.txt` are attached to the GitHub Release. |
 
 ## Generated Target Harness
@@ -111,6 +111,8 @@ Mars Harness and initialized target repos use the same release contract:
 
 - `VERSION` contains `MAJOR.MINOR.PATCH`
 - `CHANGELOG.md` contains generated patch notes
+- generated release-note entries explain `Impact`, `Why`, and `What Changed`
+  before listing semantic commit buckets
 - `mars-harness release notes --repo . --bump auto` infers the next version from semantic commits
 - release-note commits themselves are ignored in the next generated entry
 - generated entries include a marker so tags are useful but not required for the next diff

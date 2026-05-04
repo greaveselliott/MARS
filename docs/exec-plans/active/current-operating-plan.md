@@ -6,11 +6,11 @@
 **Blocks:** Plan promotions until this file names the next slice
 **Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049
 **Goals:** G-001, G-002, G-003, G-004
-**BDD Feature:** F-001, F-002, F-006
+**BDD Feature:** F-001, F-002, F-006, F-009
 **Hypothesis:** Zero-config CLI availability removes the first-run `Unknown command: mars-harness` failure mode while the BDD-led operating loop keeps completion evidence-based, and native Orchestrator surveys prevent unattended failure states from silently stalling work.
 **Success Evidence:** `make install`, `mars-harness setup`, and `mars-harness update tool` configure supported user shell profiles idempotently, F-001 remains passing including first-class BDD and no-stale-documentation checks, and `F-006-S009` has survey-to-queue tests for stale tickets, failed checks, no-op outcomes, telemetry patterns, low scores, queue ownership, payload modes, concurrency groups, daily caps, and stuck-job watchdog behavior.
 **Falsification Evidence:** Fish, Zsh, Bash, or POSIX shell users still need manual PATH edits after install/update/setup, or stale ticket/check/telemetry/score/no-op signals remain unrouted until a human or GitHub event intervenes.
-**Scenario Schedule:** F-001-S007, F-001-S008, F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005, F-006-S009
+**Scenario Schedule:** F-001-S007, F-001-S008, F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005, F-006-S009, F-009-S008
 **Current Failing Scenario:** None for F-002 or F-006-S009; continue the Mars parity backlog with deterministic remediation.
 **Walking Skeleton Slice:** Use one shellpath package across source install, first-run setup, update-tool reinstall, and an explicit `mars-harness path setup` command; use one native Orchestrator survey path across ticket ownership, telemetry triage, failed checks, dogfood failures, no-op outcomes, queue caps, and stuck-job watchdogs.
 **Learning Or MVP Outcome:** Users can install or update once and run `mars-harness` from new terminals across common shells without hand-written shell setup; as of 2026-05-03, unattended harness failure states become bounded queue work or deduped intervention-debt tickets.
@@ -32,7 +32,7 @@ plans to decide what to do next.
 - Current source version is recorded in `VERSION`.
 - Current branch: `main`
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
-- BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, the current install/setup feature is `F-002`, and the current queue/orchestration survey scenario is `F-006-S009`.
+- BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, the current install/setup feature is `F-002`, the current queue/orchestration survey scenario is `F-006-S009`, and detailed release-note narrative is `F-009-S008`.
 - Ticket state:
   - `docs/tickets/in-progress/` is empty.
   - `docs/tickets/backlog/` contains `MH-048` and `MH-049`.
@@ -91,6 +91,7 @@ plans to decide what to do next.
 | F-002-S004 | Passing | Shell profile updates are idempotent and covered by tests. |
 | F-002-S005 | Passing | Unsupported shells return explicit manual remediation without writing profile files. |
 | F-006-S009 | Passing | `go test ./internal/serve -run TestOrchestratorSurvey` and `go test ./internal/queue -run 'TestQueue_concurrencyGroupSerialization|TestQueue_dailyCapConstrainsRepeatedScheduling|TestQueue_claimDoesNotResetHealthyRunningJob|TestQueue_failStuckRunningJobs'` cover native survey routing, ownership metadata, daily caps, telemetry/score triage, no-op detection, and stuck-job safety. |
+| F-009-S008 | Passing | `go test ./internal/release -run TestRenderReleaseNarrativeUsesImpactWhyAndWhat` covers generated Impact, Why, and What Changed narrative. |
 
 ## Quality State
 

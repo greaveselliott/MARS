@@ -1,3 +1,9 @@
+/*
+MarsDocSync:
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+- docs/product-specs/product-surface.md
+*/
 package release
 
 import (
@@ -27,6 +33,7 @@ var (
 	ErrNoChanges = errors.New("release: no commits found since the last release marker")
 	markerRE     = regexp.MustCompile(`<!-- mars-harness-release: version=([^ ]+) commit=([0-9a-fA-F]+) -->`)
 	subjectRE    = regexp.MustCompile(`^([a-zA-Z0-9_-]+)(\([^)]+\))?(!)?:\s+(.+)$`)
+	narrativeRE  = regexp.MustCompile(`(?i)^\s*(impact|why|what|what changed)\s*:\s*(.*)$`)
 )
 
 type Config struct {
@@ -229,7 +236,7 @@ func renderEntry(repoRoot string, version SemVer, now time.Time, head string, co
 	fmt.Fprintf(&buf, "## [%s] - %s\n", version.String(), now.Format("2006-01-02"))
 	fmt.Fprintf(&buf, "<!-- mars-harness-release: version=%s commit=%s -->\n\n", version.String(), strings.TrimSpace(head))
 
-	if summary := renderImportanceSummary(commits); summary != "" {
+	if summary := renderReleaseNarrative(commits); summary != "" {
 		buf.WriteString(summary)
 		buf.WriteString("\n\n")
 	}
@@ -259,55 +266,184 @@ func renderEntry(repoRoot string, version SemVer, now time.Time, head string, co
 	return strings.TrimRight(buf.String(), "\n") + "\n"
 }
 
-func renderImportanceSummary(commits []Commit) string {
+func renderReleaseNarrative(commits []Commit) string {
 	if len(commits) == 0 {
 		return ""
 	}
-	type section struct {
-		group string
-		intro string
-	}
-	sections := []section{
-		{group: "Breaking Changes", intro: "This release includes compatibility-changing work to %s."},
-		{group: "Features", intro: "This release matters because it gives operators new capability through work to %s."},
-		{group: "Fixes", intro: "It improves reliability through work to %s."},
-		{group: "Documentation", intro: "It makes the harness easier to understand and operate through work to %s."},
-		{group: "Maintenance", intro: "It keeps the project healthier through work to %s."},
-		{group: "Tests", intro: "It raises confidence in the code through work to %s."},
-		{group: "Other", intro: "It also includes work to %s."},
-	}
 
 	groups := groupCommits(commits)
-	var lines []string
-	for _, section := range sections {
-		items := groups[section.group]
+	groupOrder := []string{"Breaking Changes", "Features", "Fixes", "Documentation", "Maintenance", "Tests", "Other"}
+	ordered := make([]Commit, 0, len(commits))
+	for _, group := range groupOrder {
+		items := groups[group]
 		if len(items) == 0 {
 			continue
 		}
 		sort.SliceStable(items, func(i, j int) bool { return items[i].Short < items[j].Short })
-		phrases := make([]string, 0, len(items))
-		for _, commit := range items {
-			phrases = append(phrases, importancePhrase(commit))
-		}
-		lines = append(lines, fmt.Sprintf(section.intro, humanList(phrases)))
+		ordered = append(ordered, items...)
 	}
-	if len(lines) == 0 {
+	if len(ordered) == 0 {
 		return ""
 	}
-	return "### Why This Release Matters\n" + strings.Join(lines, "\n")
+
+	var buf bytes.Buffer
+	writeNarrativeSection(&buf, "Impact", ordered, releaseImpactLine)
+	writeNarrativeSection(&buf, "Why", ordered, releaseWhyLine)
+	writeNarrativeSection(&buf, "What Changed", ordered, releaseWhatLine)
+	return strings.TrimRight(buf.String(), "\n")
 }
 
-func importancePhrase(commit Commit) string {
-	phrase := strings.TrimSpace(commit.Message)
-	if phrase == "" {
-		phrase = strings.TrimSpace(commit.Subject)
+func writeNarrativeSection(buf *bytes.Buffer, title string, commits []Commit, lineFor func(Commit) string) {
+	if len(commits) == 0 {
+		return
 	}
-	phrase = strings.TrimSuffix(phrase, ".")
-	phrase = lowerFirst(phrase)
-	if commit.Scope != "" {
-		return fmt.Sprintf("%s in %s", phrase, commit.Scope)
+	if buf.Len() > 0 {
+		buf.WriteString("\n")
 	}
-	return phrase
+	fmt.Fprintf(buf, "### %s\n", title)
+	for _, commit := range commits {
+		fmt.Fprintf(buf, "- %s\n", lineFor(commit))
+	}
+}
+
+func releaseImpactLine(commit Commit) string {
+	if value := commitNarrativeField(commit, "impact"); value != "" {
+		return scopedNarrative(commit, value)
+	}
+	change := releaseChangePhrase(commit)
+	if commit.Breaking {
+		return scopedNarrative(commit, "Operators may need to account for compatibility-changing work: "+change+".")
+	}
+	switch commit.Type {
+	case "feat":
+		return scopedNarrative(commit, "Operators gain new capability: "+change+".")
+	case "fix", "perf":
+		return scopedNarrative(commit, "Operators see improved reliability because "+change+".")
+	case "docs":
+		return scopedNarrative(commit, "Operators and future agents get clearer guidance because "+change+".")
+	case "test":
+		return scopedNarrative(commit, "The release carries stronger evidence because "+change+".")
+	case "chore", "build", "ci", "refactor", "style":
+		return scopedNarrative(commit, "Maintainers get a healthier project surface because "+change+".")
+	default:
+		return scopedNarrative(commit, "The release includes visible project movement: "+change+".")
+	}
+}
+
+func releaseWhyLine(commit Commit) string {
+	if value := commitNarrativeField(commit, "why"); value != "" {
+		return scopedNarrative(commit, value)
+	}
+	change := releaseChangePhrase(commit)
+	switch {
+	case commit.Breaking:
+		return scopedNarrative(commit, "This matters because compatibility-changing work must be called out before operators upgrade.")
+	case commit.Type == "feat":
+		return scopedNarrative(commit, "This matters because "+change+" was missing from the shipped capability set.")
+	case commit.Type == "fix" || commit.Type == "perf":
+		return scopedNarrative(commit, "This matters because "+change+" closes a failure mode or degraded path.")
+	case commit.Type == "docs":
+		return scopedNarrative(commit, "This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.")
+	case commit.Type == "test":
+		return scopedNarrative(commit, "This matters because the project needs durable evidence that the behavior keeps working.")
+	case commit.Type == "chore" || commit.Type == "build" || commit.Type == "ci" || commit.Type == "refactor" || commit.Type == "style":
+		return scopedNarrative(commit, "This matters because project health work keeps future delivery predictable.")
+	default:
+		return scopedNarrative(commit, "This matters because the release should explain why "+change+" belongs in the shipped state.")
+	}
+}
+
+func releaseWhatLine(commit Commit) string {
+	if value := commitNarrativeField(commit, "what"); value != "" {
+		return scopedNarrative(commit, fmt.Sprintf("%s (%s).", strings.TrimSuffix(ensureSentence(value), "."), commit.Short))
+	}
+	return scopedNarrative(commit, fmt.Sprintf("Changed %s (%s).", releaseChangePhrase(commit), commit.Short))
+}
+
+func commitGroup(commit Commit) string {
+	if commit.Breaking {
+		return "Breaking Changes"
+	}
+	switch commit.Type {
+	case "feat":
+		return "Features"
+	case "fix", "perf":
+		return "Fixes"
+	case "docs":
+		return "Documentation"
+	case "test":
+		return "Tests"
+	case "chore", "build", "ci", "refactor", "style":
+		return "Maintenance"
+	default:
+		return "Other"
+	}
+}
+
+func releaseChangePhrase(commit Commit) string {
+	message := strings.TrimSpace(commit.Message)
+	if message == "" {
+		message = strings.TrimSpace(commit.Subject)
+	}
+	message = strings.TrimSuffix(message, ".")
+	return lowerFirst(message)
+}
+
+func scopedNarrative(commit Commit, value string) string {
+	value = ensureSentence(value)
+	if commit.Scope == "" {
+		return value
+	}
+	return fmt.Sprintf("**%s:** %s", commit.Scope, value)
+}
+
+func commitNarrativeField(commit Commit, key string) string {
+	fields := parseNarrativeFields(commit.Body)
+	return fields[key]
+}
+
+func parseNarrativeFields(body string) map[string]string {
+	fields := make(map[string]string)
+	var current string
+	for _, line := range strings.Split(body, "\n") {
+		if match := narrativeRE.FindStringSubmatch(line); match != nil {
+			current = canonicalNarrativeKey(match[1])
+			fields[current] = strings.TrimSpace(match[2])
+			continue
+		}
+		if current == "" {
+			continue
+		}
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if fields[current] != "" {
+			fields[current] += " "
+		}
+		fields[current] += trimmed
+	}
+	return fields
+}
+
+func canonicalNarrativeKey(key string) string {
+	key = strings.ToLower(strings.TrimSpace(key))
+	if key == "what changed" {
+		return "what"
+	}
+	return key
+}
+
+func ensureSentence(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "Update."
+	}
+	last := value[len(value)-1]
+	if last == '.' || last == '!' || last == '?' {
+		return sentence(value)
+	}
+	return sentence(value) + "."
 }
 
 func lowerFirst(value string) string {
@@ -316,19 +452,6 @@ func lowerFirst(value string) string {
 		return value
 	}
 	return strings.ToLower(value[:1]) + value[1:]
-}
-
-func humanList(items []string) string {
-	switch len(items) {
-	case 0:
-		return ""
-	case 1:
-		return items[0]
-	case 2:
-		return items[0] + " and " + items[1]
-	default:
-		return strings.Join(items[:len(items)-1], ", ") + ", and " + items[len(items)-1]
-	}
 }
 
 func renderDeliveryEvidence(repoRoot string, commits []Commit) string {

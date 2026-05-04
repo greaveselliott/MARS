@@ -1,3 +1,9 @@
+/*
+MarsDocSync:
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+- docs/product-specs/product-surface.md
+*/
 package release
 
 import (
@@ -45,29 +51,43 @@ func TestPrepareGeneratesVersionAndChangelog(t *testing.T) {
 	changelog, err := os.ReadFile(filepath.Join(dir, "CHANGELOG.md"))
 	require.NoError(t, err)
 	require.Contains(t, string(changelog), "## [0.2.0] - 2026-05-02")
-	require.Contains(t, string(changelog), "### Why This Release Matters")
-	require.Contains(t, string(changelog), "This release matters because it gives operators new capability through work to add search endpoint in api.")
-	require.Contains(t, string(changelog), "It improves reliability through work to handle empty results.")
+	require.Contains(t, string(changelog), "### Impact")
+	require.Contains(t, string(changelog), "**api:** Operators gain new capability: add search endpoint.")
+	require.Contains(t, string(changelog), "Operators see improved reliability because handle empty results.")
+	require.Contains(t, string(changelog), "### Why")
+	require.Contains(t, string(changelog), "**api:** This matters because add search endpoint was missing from the shipped capability set.")
+	require.Contains(t, string(changelog), "This matters because handle empty results closes a failure mode or degraded path.")
+	require.Contains(t, string(changelog), "### What Changed")
+	require.Contains(t, string(changelog), "**api:** Changed add search endpoint")
+	require.Contains(t, string(changelog), "Changed handle empty results")
 	require.Contains(t, string(changelog), "### Features")
 	require.Contains(t, string(changelog), "**api:** Add search endpoint")
 	require.Contains(t, string(changelog), "### Fixes")
 	require.Contains(t, string(changelog), "Handle empty results")
 }
 
-func TestRenderImportanceSummaryUsesPlainEnglishAcrossCommitTypes(t *testing.T) {
+func TestRenderReleaseNarrativeUsesImpactWhyAndWhat(t *testing.T) {
 	t.Parallel()
 	commits := []Commit{
-		{Short: "aaa111", Type: "docs", Scope: "release", Message: "document release process"},
+		{Short: "aaa111", Type: "docs", Scope: "release", Message: "document release process", Body: "Impact: Operators can audit release impact.\nWhy: The changelog needs narrative context.\nWhat: Added impact, why, and what sections."},
 		{Short: "bbb222", Type: "test", Message: "cover changelog generation"},
 		{Short: "ccc333", Type: "chore", Scope: "deps", Message: "update go modules"},
 	}
 
-	summary := renderImportanceSummary(commits)
+	summary := renderReleaseNarrative(commits)
 
-	require.Contains(t, summary, "### Why This Release Matters")
-	require.Contains(t, summary, "It makes the harness easier to understand and operate through work to document release process in release.")
-	require.Contains(t, summary, "It keeps the project healthier through work to update go modules in deps.")
-	require.Contains(t, summary, "It raises confidence in the code through work to cover changelog generation.")
+	require.Contains(t, summary, "### Impact")
+	require.Contains(t, summary, "**release:** Operators can audit release impact.")
+	require.Contains(t, summary, "**deps:** Maintainers get a healthier project surface because update go modules.")
+	require.Contains(t, summary, "The release carries stronger evidence because cover changelog generation.")
+	require.Contains(t, summary, "### Why")
+	require.Contains(t, summary, "**release:** The changelog needs narrative context.")
+	require.Contains(t, summary, "**deps:** This matters because project health work keeps future delivery predictable.")
+	require.Contains(t, summary, "This matters because the project needs durable evidence that the behavior keeps working.")
+	require.Contains(t, summary, "### What Changed")
+	require.Contains(t, summary, "**release:** Added impact, why, and what sections (aaa111).")
+	require.Contains(t, summary, "**deps:** Changed update go modules (ccc333).")
+	require.Contains(t, summary, "Changed cover changelog generation (bbb222).")
 }
 
 func TestPrepareUsesChangelogMarkerAsBase(t *testing.T) {

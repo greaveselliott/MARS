@@ -19,10 +19,27 @@ Mars Harness and initialized target repos use a root `VERSION` file containing `
 
 Patch notes live in root `CHANGELOG.md`. Entries are generated from semantic commits using `mars-harness release notes`. Each generated entry includes a release marker with the version and source commit so the next run can find only new commits even when no git tag exists yet.
 
-Generated entries start with a plain-English `Why This Release Matters`
-section before the commit buckets. That section explains the operator-facing
-importance of the release so the changelog is useful to humans, not just a
-mechanical list of semantic commit subjects.
+Generated entries start with plain-English narrative before the commit buckets.
+The narrative must include `Impact`, `Why`, and `What Changed` sections so the
+changelog explains the operator-facing effect of the release, why the change
+was worth shipping, and what concrete behavior or documentation changed. The
+semantic commit buckets remain as an audit index, not the only release text.
+
+### AD-099: Release Notes Explain Impact, Why, And What
+
+Release notes are product communication, not only a commit digest. Each
+generated release entry must provide complete user-facing text for:
+
+- `Impact`: who or what is affected, including operator, agent, maintainer,
+  target-repo, compatibility, reliability, or evidence impact.
+- `Why`: the reason the change matters, the failure mode or capability gap it
+  closes, or the operating-model value it preserves.
+- `What Changed`: the concrete change that landed, with commit references for
+  traceability.
+
+Commit bodies may include `Impact:`, `Why:`, and `What:` lines for richer
+release text. When those fields are absent, the generator produces conservative
+fallback prose from semantic commit type, scope, and message.
 
 ### AD-051: Source And Target Release Behavior Mirrors
 
@@ -154,7 +171,7 @@ path is shipped.
   - other documented changes -> patch
 - Preserve strict trunk: generated version and patch-note changes are committed directly to `main` and pushed after verification.
 - Ignore release-note commits when generating later patch notes.
-- Start each generated changelog entry with a plain-English explanation of why the release matters.
+- Start each generated changelog entry with complete plain-English `Impact`, `Why`, and `What Changed` sections before semantic commit buckets.
 - Update the source harness fallback version from a repo-owned constant.
 - Generate the same VERSION/CHANGELOG/release guidance in target repos.
 - Treat source-repo versioning as part of done for every non-release semantic commit.

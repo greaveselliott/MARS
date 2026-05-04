@@ -1,3 +1,9 @@
+/*
+MarsDocSync:
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+- docs/product-specs/product-surface.md
+*/
 package docsconsistency
 
 import (
@@ -31,6 +37,13 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 		} {
 			if !strings.Contains(text, needle) {
 				t.Fatalf("%s must document automatic source versioning; missing %q", rel, needle)
+			}
+		}
+		if rel == "AGENTS.md" || rel == "docs/design-docs/release-versioning.md" {
+			for _, needle := range []string{"Impact", "Why", "What Changed"} {
+				if !strings.Contains(text, needle) {
+					t.Fatalf("%s must document detailed release note narrative; missing %q", rel, needle)
+				}
 			}
 		}
 	}

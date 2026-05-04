@@ -3,8 +3,10 @@ MarsDocSync:
 - AGENTS.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/harness-glossary.md
+- docs/design-docs/release-versioning.md
 - docs/features/README.md
 - docs/features/F-001-delivery-operating-model.md
+- docs/features/F-009-release-update-lifecycle.md
 */
 package scanner
 
@@ -646,7 +648,7 @@ Role registry: ` + "`docs/roles/ROLES.md`" + `
 - Significant conversations must update the owning repo artifact in the same direct commit to ` + "`main`" + `: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
 - Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
 - Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
-- After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
+- After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, ensure the generated entry explains ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` before commit buckets, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
 - When GitHub release credentials are configured, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets. A notes-only GitHub Release is a blocker until required assets are attached and verified. If publishing or verification is blocked, record the blocker explicitly.
 - Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
 - Check drift with ` + "`mars-harness update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars-harness update harness --repo .`" + `.
@@ -1015,6 +1017,7 @@ Architectural decisions and design documents for this project.
 | AD-087 | Universal mirrored tools are exposed through ` + "`mars-harness mcp serve`" + ` for MCP-compatible clients and local harness agents without depending on a model provider. | 2026-05-03 | Accepted |
 | AD-097 | Business logic is first-class BDD and belongs step by step under ` + "`docs/features/`" + `. | 2026-05-04 | Accepted |
 | AD-098 | No stale documentation: code changes carry top-of-file ` + "`MarsDocSync`" + ` metadata listing associated docs, and those docs are updated or explicitly checked as current. | 2026-05-04 | Accepted |
+| AD-099 | Generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. | 2026-05-04 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1878,6 +1881,18 @@ mars-harness release notes --repo . --bump auto
 
 Then verify, commit, and push the release-note update on ` + "`main`" + `.
 
+## Release Note Narrative
+
+Generated ` + "`CHANGELOG.md`" + ` entries must include complete user-facing
+` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` sections before semantic commit buckets.
+The narrative explains who or what is affected, why the change matters, and
+what concrete behavior, documentation, or evidence changed. Semantic commit
+buckets remain as an audit index, not the only release text.
+
+Commit bodies may include ` + "`Impact:`" + `, ` + "`Why:`" + `, and ` + "`What:`" + ` lines for richer
+release text. When those fields are absent, the generator produces conservative
+fallback prose from semantic commit type, scope, and message.
+
 ## Automatic Versioning Rule
 
 Every non-release semantic commit in this repository must be followed by:
@@ -1908,7 +1923,7 @@ claiming the release is complete.
 - Do not hand-edit patch-note entries when the command can generate them.
 - Use ` + "`--bump major`" + `, ` + "`--bump minor`" + `, or ` + "`--bump patch`" + ` only when auto classification is wrong.
 - Do not fabricate commit references.
-- Keep release notes concise and user-facing.
+- Keep release notes complete, user-facing, and explicit about impact, why, and what changed.
 - Use ` + "`mars-harness update check --repo .`" + ` to detect stale installed CLI or target harness metadata.
 - Use ` + "`mars-harness update harness --repo .`" + ` when generated harness-owned files need to catch up.
 `,
@@ -2812,8 +2827,9 @@ For direct commits to main:
 2. Run ` + "`mars-harness release notes --repo . --bump auto --dry-run`" + ` to preview the semantic version and patch notes
 3. If the preview is correct, run ` + "`mars-harness release notes --repo . --bump auto`" + `
 4. Do not generate another version for a ` + "`release: notes X.Y.Z`" + ` commit
-5. Separate shipped feature scenarios from enabler work in release notes; do not claim a feature unless mapped scenarios pass.
-6. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets when GitHub release credentials are configured
+5. Verify generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. If a commit subject is too thin, add richer commit-body context with ` + "`Impact:`" + `, ` + "`Why:`" + `, or ` + "`What:`" + ` before claiming the release text is good.
+6. Separate shipped feature scenarios from enabler work in release notes; do not claim a feature unless mapped scenarios pass.
+7. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets when GitHub release credentials are configured
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)

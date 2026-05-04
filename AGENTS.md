@@ -244,6 +244,8 @@ mutating tools such as `tool_create`, `file_write`, or `record_decision`.
 ### 9. Release Notes
 
 Generate semantic-versioned patch notes from commits and update `VERSION` plus `CHANGELOG.md`.
+Generated release notes must explain the complete `Impact`, `Why`, and
+`What Changed` before listing semantic commit buckets.
 
 ```bash
 mars-harness release notes --repo . --bump auto

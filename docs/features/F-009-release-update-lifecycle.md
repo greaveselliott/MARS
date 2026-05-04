@@ -22,6 +22,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 5. F-009-S005 - `update harness` refreshes deployed harness defaults through the unified update verb.
 6. F-009-S006 - `release verify-assets` fails when platform binaries or checksums are missing from a GitHub Release.
 7. F-009-S007 - Source and generated targets inherit the same versioning and release-note discipline.
+8. F-009-S008 - Generated release notes explain impact, why, and what changed before commit buckets.
 
 ## Scenarios
 
@@ -67,11 +68,18 @@ Given the source harness requires versioning after every non-release semantic co
 When target harness docs are generated
 Then they include the same version, changelog, release-note, and release guidance unless explicitly marked source-only
 
+### F-009-S008: Detailed Release Narrative
+
+Given semantic commits exist after the current release marker
+When release notes are generated
+Then the changelog entry includes complete `Impact`, `Why`, and `What Changed` narrative before semantic commit buckets, using commit-body narrative fields when available and conservative generated prose otherwise
+
 ## Out of Scope
 
 - Treating tags as the only release-note state.
 - Publishing GitHub Releases when authentication or remote capability is unavailable.
 - Runtime dependencies on npm, Postgres, Redis, or Grafana.
+- Requiring a cloud LLM to write release prose.
 
 ## Descoped Scenarios
 
@@ -86,3 +94,4 @@ None.
 - F-009-S005: `go test ./internal/scanner -run TestUpgrade_preservesUserConfiguredManifestAndPrompts`
 - F-009-S006: `go test ./internal/selfupdate -run TestVerifyReleaseAssetsReportsMissingAssets`
 - F-009-S007: `go test ./internal/scanner -run TestInit_success` and docs-consistency checks for release guidance
+- F-009-S008: `go test ./internal/release -run TestRenderReleaseNarrativeUsesImpactWhyAndWhat`
