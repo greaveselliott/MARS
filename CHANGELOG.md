@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.24.13] - 2026-05-04
+<!-- mars-harness-release: version=0.24.13 commit=4a6370f43596 -->
+
+### Why This Release Matters
+It improves reliability through work to baseline generated scaffold across entrypoints in init.
+
+### Fixes
+- **init:** Baseline generated scaffold across entrypoints (4a6370f)
+
 ## [0.24.12] - 2026-05-03
 <!-- mars-harness-release: version=0.24.12 commit=7a09c57bc3aa -->
 
