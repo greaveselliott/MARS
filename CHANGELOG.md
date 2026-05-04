@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.28.1] - 2026-05-04
+<!-- mars-harness-release: version=0.28.1 commit=830ce4782671 -->
+
+### Impact
+- **update:** Operators see improved reliability because authenticate private release asset downloads.
+
+### Why
+- **update:** This matters because authenticate private release asset downloads closes a failure mode or degraded path.
+
+### What Changed
+- **update:** Changed authenticate private release asset downloads (830ce47).
+
+### Fixes
+- **update:** Authenticate private release asset downloads (830ce47)
+
 ## [0.28.0] - 2026-05-04
 <!-- mars-harness-release: version=0.28.0 commit=2c912e4e3425 -->
 
