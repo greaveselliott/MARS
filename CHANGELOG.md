@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.33.0] - 2026-05-04
+<!-- mars-harness-release: version=0.33.0 commit=6fbc203cea94 -->
+
+### Impact
+- **personas:** Operators gain new capability: add canonical foundation agent manuals.
+
+### Why
+- **personas:** This matters because add canonical foundation agent manuals was missing from the shipped capability set.
+
+### What Changed
+- **personas:** Changed add canonical foundation agent manuals (6fbc203).
+
+### Features
+- **personas:** Add canonical foundation agent manuals (6fbc203)
+
 ## [0.32.0] - 2026-05-04
 <!-- mars-harness-release: version=0.32.0 commit=bcf54eda8895 -->
 
