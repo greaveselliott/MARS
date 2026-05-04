@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.31.1] - 2026-05-04
+<!-- mars-harness-release: version=0.31.1 commit=5c2af02c10ea -->
+
+### Impact
+- **telemetry:** Operators see improved reliability because satisfy collector rollback lint.
+
+### Why
+- **telemetry:** This matters because satisfy collector rollback lint closes a failure mode or degraded path.
+
+### What Changed
+- **telemetry:** Changed satisfy collector rollback lint (5c2af02).
+
+### Fixes
+- **telemetry:** Satisfy collector rollback lint (5c2af02)
+
 ## [0.31.0] - 2026-05-04
 <!-- mars-harness-release: version=0.31.0 commit=3953db758420 -->
 
