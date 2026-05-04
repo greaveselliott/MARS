@@ -1,7 +1,7 @@
 # Product Surface
 
 **Status:** Accepted
-**Updated:** 2026-05-03
+**Updated:** 2026-05-04
 **Owner:** Mars Harness maintainers
 **Sources:** [AGENTS.md](../../AGENTS.md), [quickstart](../quickstart.md), [design docs](../design-docs/index.md), [vision](vision.md)
 
@@ -31,6 +31,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `make install` from source checkout | Implemented for source development | Installs the dev binary into the Go bin directory and runs the installed binary's PATH setup so operators do not run stale source-root binaries or hand-edit shell config. |
 | `mars-harness init --repo <path>` | Implemented | Scaffolds the target harness: manifest, roles, guardrails, knowledge routes, compact `AGENTS.md`, goals, BDD feature contracts, tickets, exec-plan docs, design-doc index, context glossary, quality score, and references. |
 | `mars-harness upgrade --repo <path>` | Implemented, still hardening | Fills missing target harness defaults while preserving user-owned manifest, role prompts, knowledge routes, guardrails, tickets, design docs, exec plans, references, and target `AGENTS.md`. |
+| `mars-harness eject --repo <path>` | Implemented | Provides the repo-level kill switch. Dry-run is the default; `--apply --confirm <repo-name>` removes `.harness/`, generated harness docs, tickets, feature contracts, `AGENTS.md`, `VERSION`, `CHANGELOG.md`, and the associated per-repo SQLite database without rewriting git history. Aliases: `kill-switch`, `uninstall`. |
 | `mars-harness scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |
 | `mars-harness run <role> --repo <path>` | Implemented | Loads manifest, guardrails, knowledge routes, context, tools, local model endpoint, and runs one role with terminal-result truth. |
 | `mars-harness start --repo <path>` | Implemented | Initializes if needed, registers the repo, seeds the CEO role, and runs the per-repo autonomous pipeline with isolated database state and recovery-queue self-healing. |
@@ -71,6 +72,12 @@ Required generated surfaces:
 - `VERSION`, `CHANGELOG.md`, and `docs/design-docs/release-versioning.md`
 
 Generated target docs must mirror source-harness doctrine while staying project-agnostic. Existing target harness files and user-owned docs are preserved by upgrades.
+
+Generated target harnesses must also be removable. The supported removal path
+is `mars-harness eject --repo <path>`, which previews the repo-local harness
+surface and associated per-repo database before deleting anything. The command
+removes working-tree traces only; users who want git history rewritten must do
+that deliberately outside Mars Harness.
 
 Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. Any change to commit discipline, versioning, ticket flow, documentation rules, skill creation, guardrail policy, trust/scoring behavior, release behavior, or context-routing discipline must update generated target guidance and tests in the same task.
 

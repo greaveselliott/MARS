@@ -705,3 +705,43 @@ state that root-level ticket markdown is invalid.
   record blockers or evidence.
 - Misplaced root tickets become an obvious policy violation instead of hidden
   backlog state.
+
+---
+
+### AD-096: Target Harnesses Have a Dry-Run Kill Switch
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Author:** Codex (sample-target reset review)
+
+### Context
+
+Live target experimentation exposed an escape-hatch gap: once a target repo had
+been initialized, operators could stop processes and manually delete Git or
+database files, but Mars Harness had no first-class way to remove itself from a
+target directory. That made reset workflows error-prone and encouraged ad hoc
+deletion of `.harness/`, generated docs, tickets, and `~/.mars-harness/db/*`
+files without a preview of the blast radius.
+
+### Decision
+
+`mars-harness eject` is the target-harness kill switch. It is dry-run by
+default and requires `--apply --confirm <repo-name>` before deleting anything.
+The command removes the deployed harness working-tree surface:
+
+- `.harness/`
+- generated `AGENTS.md`, `VERSION`, and `CHANGELOG.md`
+- generated planning, goals, feature, ticket, role, reference, report, quality,
+  and design-doc directories/files under `docs/`
+- the associated per-repo SQLite database and its WAL/SHM sidecars
+
+The command does not rewrite git history. If pointed at the legacy shared
+database, it removes the repo registration but keeps the shared database unless
+the operator explicitly passes `--delete-shared-db`.
+
+### Consequences
+
+- Target repos can return to a pre-harness working-tree state through one
+  auditable command instead of manual deletion.
+- Dry-run and repo-name confirmation keep the destructive path deliberate.
+- Per-repo database isolation now has a matching cleanup operation.

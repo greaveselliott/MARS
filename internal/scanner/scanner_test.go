@@ -455,6 +455,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Chat summaries cannot replace those artifacts")
 	assert.Contains(t, string(agentGuide), "Trivial command responses")
 	assert.Contains(t, string(agentGuide), "Operating rules inherited from Mars Harness apply here")
+	assert.Contains(t, string(agentGuide), "mars-harness eject --repo .")
+	assert.Contains(t, string(agentGuide), "--apply --confirm <repo-name>")
 	assert.Contains(t, string(agentGuide), "publish or update GitHub Release")
 	assert.Contains(t, string(agentGuide), "notes-only GitHub Release")
 	assert.Contains(t, string(agentGuide), "Product features and user-visible behavior changes must be documented with")

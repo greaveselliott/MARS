@@ -197,7 +197,21 @@ mars-harness upgrade --repo /path/to/repo
 
 This writes only missing default files. To adopt changed starter prompts, compare the new defaults from a fresh temporary `mars-harness init` and apply the parts you want deliberately.
 
-### 6. Run
+### 6. Eject
+
+Remove Mars Harness from a target repository with a dry-run kill switch. The
+apply path removes `.harness/`, generated harness docs, tickets, feature
+contracts, root generated guidance/version files, and the associated per-repo
+SQLite database. It does not rewrite git history.
+
+```bash
+mars-harness eject --repo /path/to/repo
+mars-harness eject --repo /path/to/repo --apply --confirm repo
+```
+
+Aliases: `kill-switch`, `uninstall`.
+
+### 7. Run
 
 Manually execute a single agent role against a repository.
 
@@ -208,7 +222,7 @@ mars-harness run engineer --repo . --dry-run   # preview system prompt
 
 Flags: `--model-endpoint`, `--trace`, `--dry-run`, `--budget`, `--max-turns`
 
-### 7. Universal Tools
+### 8. Universal Tools
 
 Expose the same registered Mars Harness tool surface to operators and external
 LLM clients.
@@ -223,7 +237,7 @@ Use `mcp serve` for any MCP-compatible client or local harness agent.
 Use `--trust contributor` only when the client should be allowed to call
 mutating tools such as `tool_create`, `file_write`, or `record_decision`.
 
-### 8. Release Notes
+### 9. Release Notes
 
 Generate semantic-versioned patch notes from commits and update `VERSION` plus `CHANGELOG.md`.
 

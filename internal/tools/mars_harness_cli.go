@@ -221,7 +221,7 @@ func marsHarnessCommandSupportsRepo(args []string) bool {
 		sub = args[1]
 	}
 	switch command {
-	case "init", "upgrade", "scan", "doctor", "register", "start", "run":
+	case "init", "eject", "kill-switch", "uninstall", "upgrade", "scan", "doctor", "register", "start", "run":
 		return true
 	case "mcp":
 		return sub == "serve"
@@ -281,6 +281,15 @@ Global command surface:
     Fill missing generated target harness defaults while preserving target-owned files.
     Flags: --repo <path>
     Example: ["upgrade", "--repo", "."]
+
+  eject
+    Dry-run or apply the kill switch for a target repo: remove .harness/,
+    generated harness docs, tickets, feature contracts, AGENTS.md, VERSION,
+    CHANGELOG.md, and the associated per-repo SQLite database. Aliases:
+    kill-switch, uninstall. Does not rewrite git history.
+    Flags: --repo <path>, --db <path>, --apply, --confirm <repo-name>, --keep-db, --delete-shared-db
+    Example: ["eject", "--repo", "."]
+    Destructive example: ["eject", "--repo", ".", "--apply", "--confirm", "my-repo"]
 
   start
     Auto-init/register and run the autonomous orchestrator for one target repo.

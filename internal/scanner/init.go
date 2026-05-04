@@ -636,6 +636,7 @@ Role registry: ` + "`docs/roles/ROLES.md`" + `
 - When GitHub release credentials are configured, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets. A notes-only GitHub Release is a blocker until required assets are attached and verified. If publishing or verification is blocked, record the blocker explicitly.
 - Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
 - Check drift with ` + "`mars-harness update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars-harness update harness --repo .`" + `.
+- To remove Mars Harness from this repo, run ` + "`mars-harness eject --repo .`" + ` for a dry-run; applying the kill switch requires ` + "`--apply --confirm <repo-name>`" + ` and removes working-tree harness artifacts plus the per-repo database without rewriting git history.
 - Convert repeated human recovery steps into compact scoped skills rather than growing role prompts.
 
 ## Context Discipline

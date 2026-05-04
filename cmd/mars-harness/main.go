@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -68,6 +69,7 @@ func main() {
 	root.AddCommand(runCmd())
 	root.AddCommand(setupCmd())
 	root.AddCommand(initCmd())
+	root.AddCommand(ejectCmd())
 	root.AddCommand(upgradeCmd())
 	root.AddCommand(scanCmd())
 	root.AddCommand(serveCmd())
@@ -1454,6 +1456,224 @@ func initCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&force, "force", false, "Refresh missing scaffold and rewrite manifest if .harness/ already exists")
 
 	return cmd
+}
+
+type ejectDBResult struct {
+	DBPath       string
+	Removed      []string
+	Missing      []string
+	Pruned       []string
+	Unregistered bool
+	KeptShared   bool
+}
+
+func ejectCmd() *cobra.Command {
+	var (
+		repoPath       string
+		dbPath         string
+		apply          bool
+		confirm        string
+		keepDB         bool
+		deleteSharedDB bool
+	)
+
+	cmd := &cobra.Command{
+		Use:     "eject",
+		Aliases: []string{"kill-switch", "uninstall"},
+		Short:   "Remove Mars Harness from a target repo",
+		Long: `Remove the deployed Mars Harness surface from a target repository and
+delete its associated per-repo SQLite database. The command is a dry run by
+default; destructive removal requires --apply and --confirm <repo-name>.
+
+This removes working-tree harness traces such as .harness/, generated planning
+docs, tickets, feature contracts, AGENTS.md, VERSION, and CHANGELOG.md. It does
+not rewrite git history.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repoPath == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("eject: cannot determine working directory: %w", err)
+				}
+			}
+			absPath, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("eject: resolve path: %w", err)
+			}
+			repoName := filepath.Base(absPath)
+			if apply && strings.TrimSpace(confirm) != repoName {
+				return fmt.Errorf("eject: destructive apply requires --confirm %s", repoName)
+			}
+
+			result, err := scanner.Eject(absPath, scanner.EjectOptions{Apply: apply})
+			if err != nil {
+				return err
+			}
+			dbResult := ejectDBResult{}
+			if !keepDB {
+				dbResult, err = ejectDatabase(cmd.Context(), absPath, dbPath, apply, deleteSharedDB)
+				if err != nil {
+					return err
+				}
+			}
+
+			printEjectResult(cmd.OutOrStdout(), result, dbResult, apply, keepDB, repoName)
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to associated SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().BoolVar(&apply, "apply", false, "Actually remove files and database artifacts; default is dry-run")
+	cmd.Flags().StringVar(&confirm, "confirm", "", "Required with --apply; must equal the target repo directory name")
+	cmd.Flags().BoolVar(&keepDB, "keep-db", false, "Remove repo files but leave the associated database untouched")
+	cmd.Flags().BoolVar(&deleteSharedDB, "delete-shared-db", false, "Allow deleting the legacy shared ~/.mars-harness/db/mars.db database")
+	return cmd
+}
+
+func ejectDatabase(ctx context.Context, repoAbs, dbPath string, apply, deleteSharedDB bool) (ejectDBResult, error) {
+	if dbPath == "" {
+		dbPath = defaultDBPath(repoAbs)
+	}
+	absDB, err := filepath.Abs(dbPath)
+	if err != nil {
+		return ejectDBResult{}, fmt.Errorf("eject: resolve db path: %w", err)
+	}
+	result := ejectDBResult{DBPath: absDB}
+
+	legacyAbs, _ := filepath.Abs(legacyDBPath())
+	if filepath.Clean(absDB) == filepath.Clean(legacyAbs) && !deleteSharedDB {
+		result.KeptShared = true
+		if apply {
+			removed, err := unregisterRepoFromDB(ctx, repoAbs, absDB)
+			if err != nil {
+				return result, err
+			}
+			result.Unregistered = removed
+		}
+		return result, nil
+	}
+
+	for _, path := range []string{absDB, absDB + "-shm", absDB + "-wal"} {
+		if _, err := os.Lstat(path); os.IsNotExist(err) {
+			result.Missing = append(result.Missing, path)
+			continue
+		} else if err != nil {
+			return result, fmt.Errorf("eject: inspect database artifact %s: %w", path, err)
+		}
+		result.Removed = append(result.Removed, path)
+		if apply {
+			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+				return result, fmt.Errorf("eject: remove database artifact %s: %w", path, err)
+			}
+		}
+	}
+
+	if apply {
+		dir := filepath.Dir(absDB)
+		pruned, err := removeDirIfEmpty(dir)
+		if err != nil {
+			return result, fmt.Errorf("eject: prune database directory %s: %w", dir, err)
+		}
+		if pruned {
+			result.Pruned = append(result.Pruned, dir)
+		}
+	}
+	return result, nil
+}
+
+func unregisterRepoFromDB(ctx context.Context, repoAbs, dbPath string) (bool, error) {
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		return false, nil
+	} else if err != nil {
+		return false, fmt.Errorf("eject: inspect shared database %s: %w", dbPath, err)
+	}
+	db, err := openDB(dbPath)
+	if err != nil {
+		return false, err
+	}
+	defer db.Close()
+	registry, err := serve.NewRepoRegistry(db)
+	if err != nil {
+		return false, err
+	}
+	repos, err := registry.List(ctx)
+	if err != nil {
+		return false, err
+	}
+	for _, rec := range repos {
+		if rec.Path == repoAbs {
+			return true, registry.Remove(ctx, rec.ID)
+		}
+	}
+	return false, nil
+}
+
+func removeDirIfEmpty(path string) (bool, error) {
+	entries, err := os.ReadDir(path)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if len(entries) > 0 {
+		return false, nil
+	}
+	if err := os.Remove(path); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func printEjectResult(w io.Writer, result scanner.EjectResult, dbResult ejectDBResult, apply, keepDB bool, repoName string) {
+	mode := "dry-run"
+	action := "Would remove"
+	if apply {
+		mode = "applied"
+		action = "Removed"
+	}
+	fmt.Fprintf(w, "Mars Harness eject %s for %s\n", mode, result.RepoRoot)
+	fmt.Fprintf(w, "\nRepo artifacts\n")
+	printPathList(w, action, result.Removed)
+	if len(result.Pruned) > 0 {
+		printPathList(w, "Pruned empty directory", result.Pruned)
+	}
+	if len(result.Missing) > 0 {
+		printPathList(w, "Already absent", result.Missing)
+	}
+
+	fmt.Fprintf(w, "\nDatabase artifacts\n")
+	if keepDB {
+		fmt.Fprintln(w, "  Kept database because --keep-db was set")
+	} else if dbResult.KeptShared {
+		fmt.Fprintf(w, "  Kept shared database %s; pass --delete-shared-db to delete it\n", dbResult.DBPath)
+		if apply && dbResult.Unregistered {
+			fmt.Fprintln(w, "  Removed this repo from the shared registry")
+		}
+	} else {
+		printPathList(w, action, dbResult.Removed)
+		if len(dbResult.Pruned) > 0 {
+			printPathList(w, "Pruned empty directory", dbResult.Pruned)
+		}
+		if len(dbResult.Missing) > 0 {
+			printPathList(w, "Already absent", dbResult.Missing)
+		}
+	}
+
+	if !apply {
+		fmt.Fprintf(w, "\nRun with --apply --confirm %s to delete these artifacts.\n", repoName)
+	}
+}
+
+func printPathList(w io.Writer, label string, paths []string) {
+	if len(paths) == 0 {
+		fmt.Fprintf(w, "  %s: none\n", label)
+		return
+	}
+	for _, path := range paths {
+		fmt.Fprintf(w, "  %s: %s\n", label, path)
+	}
 }
 
 func upgradeCmd() *cobra.Command {

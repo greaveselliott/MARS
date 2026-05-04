@@ -58,6 +58,16 @@ mars-harness update harness --repo /path/to/target-repo
 development channels remain available with `mars-harness update tool --source
 --version main`.
 
+Remove Mars Harness from a target repo with a dry-run kill switch:
+
+```bash
+mars-harness eject --repo /path/to/target-repo
+mars-harness eject --repo /path/to/target-repo --apply --confirm sample-target
+```
+
+The apply path removes generated harness artifacts and the associated per-repo
+SQLite database, but does not rewrite git history.
+
 Generate semantic-versioned patch notes from commits:
 
 ```bash

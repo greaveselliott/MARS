@@ -271,6 +271,74 @@ func TestInitCommandCommitsGeneratedHarnessBaseline(t *testing.T) {
 	require.Empty(t, strings.TrimSpace(runMainTestGit(t, repoDir, "status", "--short")))
 }
 
+func TestEjectCommandDryRunLeavesRepoAndDBUntouched(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	require.NoError(t, scanner.Init(repoDir, false))
+	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	require.NoError(t, os.WriteFile(dbPath, []byte("db\n"), 0o644))
+
+	cmd := ejectCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--repo", repoDir, "--db", dbPath})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "Mars Harness eject dry-run")
+	require.Contains(t, out.String(), "Run with --apply --confirm")
+	require.FileExists(t, filepath.Join(repoDir, ".harness", "manifest.yaml"))
+	require.FileExists(t, dbPath)
+}
+
+func TestEjectCommandApplyRequiresConfirmation(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	require.NoError(t, scanner.Init(repoDir, false))
+
+	cmd := ejectCmd()
+	cmd.SetArgs([]string{"--repo", repoDir, "--apply", "--confirm", "wrong"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "destructive apply requires --confirm")
+	require.FileExists(t, filepath.Join(repoDir, ".harness", "manifest.yaml"))
+}
+
+func TestEjectCommandApplyRemovesRepoAndDBArtifacts(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	require.NoError(t, scanner.Init(repoDir, false))
+	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	for _, path := range []string{dbPath, dbPath + "-shm", dbPath + "-wal"} {
+		require.NoError(t, os.WriteFile(path, []byte("db\n"), 0o644))
+	}
+
+	cmd := ejectCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{
+		"--repo", repoDir,
+		"--db", dbPath,
+		"--apply",
+		"--confirm", filepath.Base(repoDir),
+	})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "Mars Harness eject applied")
+	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
+	require.NoFileExists(t, filepath.Join(repoDir, "AGENTS.md"))
+	require.NoDirExists(t, filepath.Join(repoDir, "docs", "tickets"))
+	require.NoFileExists(t, dbPath)
+	require.NoFileExists(t, dbPath+"-shm")
+	require.NoFileExists(t, dbPath+"-wal")
+}
+
 func TestRunCommandAutoInitCommitsGeneratedHarnessBaseline(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not in PATH")
