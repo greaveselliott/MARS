@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.27.0] - 2026-05-04
+<!-- mars-harness-release: version=0.27.0 commit=7d285a8ca7ad -->
+
+### Impact
+- **release:** Operators and maintainers get release notes that explain the actual impact of a change before the commit buckets.
+
+### Why
+- **release:** The previous generated summary was too thin for humans to understand why a release mattered or what changed without rereading the commits.
+
+### What Changed
+- **release:** Added generated Impact, Why, and What Changed sections, documented the universal release-note rule, and mirrored the guidance into target defaults (7d285a8).
+
+### Features
+- **release:** Generate detailed release narratives (7d285a8)
+
 ## [0.26.2] - 2026-05-04
 <!-- mars-harness-release: version=0.26.2 commit=1dcd96de5bf9 -->
 
