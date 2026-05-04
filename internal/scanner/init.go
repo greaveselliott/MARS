@@ -808,7 +808,7 @@ routing; they do not replace BDD evidence or ticket movement rules.
 
 Use ` + "`kind: intervention-debt`" + ` for work created from repeated telemetry failures, non-success terminal agent results, guardrail or tool-policy blocks, repeated tool loops, manual stops, timeouts, score regressions, dogfood failures, stale ticket state, human follow-up, or reverted agent commits.
 
-Intervention-debt tickets include role, repo, target, category, severity, confidence, evidence, and origin metadata. Origin metadata should link trace IDs, score snapshots, commits, outcomes, tools, jobs, telemetry events, and source messages when available locally; missing optional GitHub metadata must not block local ticket creation. They are deduped by repo, role, target, category, and evidence window. Prioritise them ahead of ordinary backlog work because they fix the harness process that produces future work.
+Intervention-debt tickets include role, repo, target, category, severity, confidence, evidence, and origin metadata. Origin metadata should link trace IDs, score snapshots, commits, outcomes, tools, jobs, telemetry events, and source messages when available locally; missing optional GitHub metadata must not block local ticket creation. They are deduped by repo, role, target, category, and evidence window. Prioritise high-priority intervention debt ahead of ordinary backlog work because it fixes harness process failures that can damage future delivery. Medium and low intervention debt remains visible durable work, but it does not block ordinary product backlog progress.
 
 Eligible in-progress tickets are always the front of the queue. Engineer runs cannot create ordinary backlog tickets while eligible in-progress tickets remain. Dependency tickets are allowed only when deduped and linked back to the blocked ticket through metadata such as ` + "`metadata.blocks`" + `. Dogfood ticket creation is capped per run by total count, severity, group, and repeated dedupe key.
 `,
@@ -2194,7 +2194,9 @@ TICKET SELECTION:
    ` + "`blocked_by`" + `, ` + "`trace_id`" + `, and ` + "`next_action`" + ` before ending.
 2. If no eligible in-progress tickets exist, select the highest-priority ticket from
    backlog/ where all dependencies are satisfied (depends_on tickets must be
-   in done/)
+   in done/). High-priority intervention debt can preempt ordinary backlog work;
+   medium/low intervention debt stays visible but should not block product
+   backlog progress.
 3. If multiple tickets share the same priority, pick the lowest number
 4. If no eligible tickets exist, report "no eligible tickets" and finish
 

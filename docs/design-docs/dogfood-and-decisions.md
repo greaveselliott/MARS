@@ -618,3 +618,51 @@ repeated signals do not inflate later prompts.
   runs.
 - Read-only investigation stays possible without amplifying intervention debt.
 - Repeated intervention signals remain visible but bounded.
+
+---
+
+### AD-094: File Count Is Not a Default Blast-Radius Gate
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Author:** Codex (sample-target intervention-debt review)
+
+### Context
+
+The live `../sample-target` bootstrap produced a medium-priority
+intervention-debt ticket after `cto-weekly` hit `MaxFilesPerJob` with 11 changed
+files against a limit of 10. The underlying work was a small documentation and
+harness-context sweep, not a destructive code rewrite. The file-count cap made
+ordinary progress look unsafe and promoted a non-urgent self-improvement ticket
+ahead of product work.
+
+The original tenets already emphasized line volume, deletion safety, secret
+scanning, trunk discipline, and emergency stop. File count alone proved too
+noisy to be a default safety signal.
+
+### Decision
+
+`MaxFilesPerJob` is disabled by default. Repositories that explicitly want a
+file-count cap can still configure a positive value, and the safety checker will
+enforce it.
+
+Default blast-radius containment relies on stronger signals:
+
+- secret scanning
+- per-file line volume
+- total line volume
+- deletion blocking
+- strict trunk push policy
+
+Only high-priority intervention-debt tickets preempt ordinary backlog work.
+Medium and low intervention debt remains durable and visible, but it does not
+block product backlog progress by default.
+
+### Consequences
+
+- Small multi-file documentation, harness, and planning updates no longer stop
+  role progress just because they touch more than 10 files.
+- Large rewrites, secret leaks, and deletions remain blocked by more meaningful
+  guardrails.
+- Intervention debt keeps its escalation power for high-severity failures while
+  lower-severity process observations stop starving product work.

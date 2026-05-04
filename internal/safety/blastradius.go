@@ -14,10 +14,12 @@ type Limits struct {
 	ForbidDelete      bool // prevent file deletions
 }
 
-// DefaultLimits returns conservative defaults.
+// DefaultLimits returns conservative defaults. File-count caps are opt-in
+// because file count is a weak proxy for risk; line volume and deletions are
+// better default blast-radius signals.
 func DefaultLimits() Limits {
 	return Limits{
-		MaxFilesPerJob:    10,
+		MaxFilesPerJob:    0,
 		MaxLinesPerFile:   500,
 		MaxTotalLines:     2000,
 		MaxOpenPRsPerRepo: 3,

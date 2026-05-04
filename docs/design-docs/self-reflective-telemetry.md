@@ -98,7 +98,7 @@ The first implementation is deliberately small:
   interval. The survey consumes ticket state, recent scored outcomes, telemetry
   patterns, low score snapshots, active recovery jobs, and stuck running jobs
   even when no new agent job finishes. It routes stale and blocked tickets to
-  Janitor, eligible in-progress and intervention-debt work to Engineer, failed
+  Janitor, eligible in-progress and high-priority intervention-debt work to Engineer, failed
   checks to Pipeline Fixer, dogfood failures to Engineer, and no-op outcomes to
   Janitor with payload-mode, concurrency-group, and daily-cap queue metadata.
   Recurring telemetry and low scores create or update the same deduped

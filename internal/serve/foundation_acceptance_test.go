@@ -71,9 +71,7 @@ func TestFoundationAcceptancePolicyBlockSuppressesTicketGateFallout(t *testing.T
 func TestFoundationAcceptanceDirtyWorktreeContainmentSkipsLLMAndRecovery(t *testing.T) {
 	ctx := context.Background()
 	repo := setupFoundationTarget(t, true)
-	for i := 0; i < 12; i++ {
-		require.NoError(t, os.WriteFile(filepath.Join(repo, fmt.Sprintf("dirty-%02d.txt", i)), []byte("dirty\n"), 0o644))
-	}
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "dirty-large.txt"), []byte(strings.Repeat("dirty\n", 600)), 0o644))
 	fake := newFakeChatServer(t, fakeTextResponse("should not be called"))
 	srv, repoID, exec := setupFoundationServer(t, repo, fake.URL())
 	job := &queue.Job{ID: "job-dirty", RepoID: repoID, Role: "engineer", Trigger: `{"type":"acceptance"}`}

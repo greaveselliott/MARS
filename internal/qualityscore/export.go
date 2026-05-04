@@ -767,7 +767,7 @@ func (ev evidence) rollupRows(overall string) []rollupRow {
 			area:     "Ticket flow and intervention debt",
 			grade:    ticketGrade(ev.tickets),
 			evidence: fmt.Sprintf("%d backlog, %d in-progress, %d done, %d open intervention-debt", ev.tickets.Backlog, ev.tickets.InProgress, ev.tickets.Done, ev.tickets.OpenInterventionDebt),
-			next:     "Drain in-progress and intervention-debt tickets before ordinary backlog work.",
+			next:     "Drain in-progress and high-priority intervention debt before ordinary backlog work; keep medium/low intervention debt visible without blocking product progress.",
 		},
 		{
 			area:     "Telemetry and dogfood",
@@ -926,7 +926,7 @@ func (ev evidence) improvementTargets(grade string, outcomes outcomeSummary) []s
 		targets = append(targets, fmt.Sprintf("Drain %d in-progress ticket(s) before starting new backlog work.", ev.tickets.InProgress))
 	}
 	if ev.tickets.OpenInterventionDebt > 0 {
-		targets = append(targets, fmt.Sprintf("Resolve or explicitly downgrade %d open intervention-debt ticket(s).", ev.tickets.OpenInterventionDebt))
+		targets = append(targets, fmt.Sprintf("Resolve, downgrade, or leave non-blocking evidence for %d open intervention-debt ticket(s).", ev.tickets.OpenInterventionDebt))
 	}
 	if outcomes.byType[scoring.OutcomeChecksFailed] > 0 {
 		targets = append(targets, fmt.Sprintf("Investigate %d failed check outcome(s).", outcomes.byType[scoring.OutcomeChecksFailed]))

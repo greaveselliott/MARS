@@ -178,7 +178,7 @@ func (s *Server) surveyTicketState(ctx context.Context, rec RepoRecord, manifest
 		if t, ok := firstBacklogInterventionDebt(all); ok {
 			if s.enqueueSurveyJob(ctx, rec, "engineer", "intervention_debt", surveyJobSpec{
 				Signal:           "intervention_debt_backlog",
-				Reason:           "intervention-debt backlog is prioritized ahead of ordinary backlog",
+				Reason:           "high-priority intervention-debt backlog is prioritized ahead of ordinary backlog",
 				Tickets:          []ticketstate.Ticket{t},
 				Source:           source,
 				IdempotencyKey:   fmt.Sprintf("survey:intervention-debt:%s:%s", rec.ID, ticketKey(t)),
@@ -412,7 +412,7 @@ func surveyTicketPayload(tickets []ticketstate.Ticket) []map[string]string {
 
 func firstBacklogInterventionDebt(tickets []ticketstate.Ticket) (ticketstate.Ticket, bool) {
 	for _, t := range tickets {
-		if t.Status == ticketstate.StatusBacklog && t.Kind == "intervention-debt" {
+		if t.Status == ticketstate.StatusBacklog && interventionDebtPreemptsBacklog(t) {
 			return t, true
 		}
 	}

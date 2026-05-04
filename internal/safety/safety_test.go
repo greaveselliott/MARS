@@ -19,13 +19,26 @@ func TestCheck_withinLimits(t *testing.T) {
 	}
 }
 
-func TestCheck_exceedsFileCount(t *testing.T) {
+func TestCheck_defaultAllowsManySmallFiles(t *testing.T) {
+	stats := DiffStats{
+		FilesChanged: 100,
+		LinesPerFile: map[string]int{},
+		TotalLines:   100,
+	}
+	if err := Check(stats, DefaultLimits()); err != nil {
+		t.Fatalf("expected default file-count cap to be disabled, got %v", err)
+	}
+}
+
+func TestCheck_exceedsFileCountWhenConfigured(t *testing.T) {
 	stats := DiffStats{
 		FilesChanged: 20,
 		LinesPerFile: map[string]int{},
 		TotalLines:   100,
 	}
-	err := Check(stats, DefaultLimits())
+	limits := DefaultLimits()
+	limits.MaxFilesPerJob = 10
+	err := Check(stats, limits)
 	if err == nil {
 		t.Fatal("expected error for exceeding file count")
 	}
@@ -261,8 +274,8 @@ func TestEmergencyStop_emptyExecute(t *testing.T) {
 
 func TestDefaultLimits(t *testing.T) {
 	limits := DefaultLimits()
-	if limits.MaxFilesPerJob != 10 {
-		t.Errorf("expected MaxFilesPerJob=10, got %d", limits.MaxFilesPerJob)
+	if limits.MaxFilesPerJob != 0 {
+		t.Errorf("expected MaxFilesPerJob=0, got %d", limits.MaxFilesPerJob)
 	}
 	if limits.MaxLinesPerFile != 500 {
 		t.Errorf("expected MaxLinesPerFile=500, got %d", limits.MaxLinesPerFile)

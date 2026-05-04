@@ -28,7 +28,7 @@ This file is the repo-visible quality artifact for Mars Harness evidence. It is 
 | --- | --- | --- | --- |
 | Role health | A | 10 scored samples, weighted score 0.90 | Keep recording terminal outcomes for every role run. |
 | Terminal outcomes and checks | A | 9 positive, 1 negative, 10 total | Investigate failed checks, guardrail blocks, no-op runs, and human follow-up. |
-| Ticket flow and intervention debt | B | 3 backlog, 0 in-progress, 47 done, 3 open intervention-debt | Drain in-progress and intervention-debt tickets before ordinary backlog work. |
+| Ticket flow and intervention debt | B | 3 backlog, 0 in-progress, 47 done, 3 open intervention-debt | Drain in-progress and high-priority intervention debt before ordinary backlog work; keep medium/low intervention debt visible without blocking product progress. |
 | Telemetry and dogfood | A | No telemetry triage targets; None recorded | Promote recurring telemetry and dogfood failures into bounded remediation. |
 | Evidence coverage | B | SQLite score and telemetry evidence available. | Run harness jobs with scoring enabled when evidence is insufficient. |
 
@@ -57,7 +57,7 @@ This file is the repo-visible quality artifact for Mars Harness evidence. It is 
 
 ## Top Improvement Targets
 
-1. Resolve or explicitly downgrade 3 open intervention-debt ticket(s).
+1. Resolve, downgrade, or leave non-blocking evidence for 3 open intervention-debt ticket(s).
 
 ## Source And Target Contract
 

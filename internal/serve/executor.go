@@ -445,7 +445,8 @@ func BuildTicketIndex(repoPath string) string {
 	var inProgressEligible []string
 	var inProgressBlocked []string
 	var inReview []string
-	var backlogIntervention []string
+	var backlogInterventionPreemptive []string
+	var backlogInterventionDeferred []string
 	var backlog []string
 	var done []string
 	for _, t := range all {
@@ -461,7 +462,11 @@ func BuildTicketIndex(repoPath string) string {
 			}
 		case ticketstate.StatusBacklog:
 			if t.Kind == "intervention-debt" {
-				backlogIntervention = append(backlogIntervention, line)
+				if interventionDebtPreemptsBacklog(t) {
+					backlogInterventionPreemptive = append(backlogInterventionPreemptive, line)
+				} else {
+					backlogInterventionDeferred = append(backlogInterventionDeferred, line)
+				}
 			} else {
 				backlog = append(backlog, line)
 			}
@@ -472,15 +477,28 @@ func BuildTicketIndex(repoPath string) string {
 		}
 	}
 	var lines []string
-	header := fmt.Sprintf("Existing tickets (%d total). Eligible in-progress tickets are the Engineer front of queue; intervention-debt is prioritised ahead of ordinary backlog work. Complete the lowest-numbered eligible in-progress ticket before claiming backlog work. Blocked in-progress tickets must name blocker, blocked_by, trace_id, and next_action metadata and do not block backlog work.\n", len(all))
+	header := fmt.Sprintf("Existing tickets (%d total). Eligible in-progress tickets are the Engineer front of queue; high-priority intervention-debt preempts ordinary backlog, while medium/low intervention-debt stays visible without blocking product progress. Complete the lowest-numbered eligible in-progress ticket before claiming backlog work. Blocked in-progress tickets must name blocker, blocked_by, trace_id, and next_action metadata and do not block backlog work.\n", len(all))
 	lines = append(lines, inProgressInterventionEligible...)
 	lines = append(lines, inProgressEligible...)
-	lines = append(lines, backlogIntervention...)
+	lines = append(lines, backlogInterventionPreemptive...)
 	lines = append(lines, backlog...)
+	lines = append(lines, backlogInterventionDeferred...)
 	lines = append(lines, inReview...)
 	lines = append(lines, inProgressBlocked...)
 	lines = append(lines, done...)
 	return header + strings.Join(lines, "\n")
+}
+
+func interventionDebtPreemptsBacklog(t ticketstate.Ticket) bool {
+	if t.Kind != "intervention-debt" {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(t.Priority)) {
+	case "critical", "high", "p0", "p1":
+		return true
+	default:
+		return false
+	}
 }
 
 func ticketIndexLine(t ticketstate.Ticket) string {

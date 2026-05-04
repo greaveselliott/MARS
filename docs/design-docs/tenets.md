@@ -142,7 +142,7 @@ Two input signals, one evolution system:
 
 **Configurable limits (in manifest, with safe defaults):**
 
-- Max changed files per job: default 20.
+- Max changed files per job: disabled by default because file count is a weak risk signal; set `MaxFilesPerJob` only for repos that explicitly want that cap.
 - Max lines changed per commit: default 500.
 - Max commits per hour per repo: default 5.
 - File deletion requires explicit allowlist per role. Default: no deletions.

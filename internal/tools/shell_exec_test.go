@@ -178,7 +178,8 @@ func TestShellExecReadOnlyAllowedInDirtyRepo(t *testing.T) {
 }
 
 func TestShellExecUnknownCommandBlockedBeforeExecutionInDirtyRepo(t *testing.T) {
-	dir, root := setupDirtyGitRepo(t, 12)
+	dir, root := setupDirtyGitRepo(t, 1)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "dirty-00.txt"), []byte(strings.Repeat("dirty\n", 600)), 0o644))
 	reg, err := DefaultRegistry()
 	require.NoError(t, err)
 	ex := NewExecutor(reg)

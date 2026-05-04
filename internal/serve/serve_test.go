@@ -15,6 +15,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
+	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 )
 
 func testDBPath(t *testing.T) string {
@@ -497,25 +498,48 @@ func TestBuildTicketIndex_findsTickets(t *testing.T) {
 	}
 }
 
-func TestBuildTicketIndex_prioritizesInterventionDebtAheadOfOrdinaryBacklog(t *testing.T) {
+func TestBuildTicketIndex_onlyHighInterventionDebtPreemptsOrdinaryBacklog(t *testing.T) {
 	dir := t.TempDir()
 	for _, sub := range []string{"docs/tickets/backlog", "docs/tickets/in-progress", "docs/tickets/done"} {
 		mustMkdirAll(t, filepath.Join(dir, sub))
 	}
 	mustWriteFile(t, filepath.Join(dir, "docs/tickets/backlog/MH-010-ordinary.md"), []byte("# Ordinary\n"))
-	mustWriteFile(t, filepath.Join(dir, "docs/tickets/backlog/MH-011-intervention.md"), []byte("---\nkind: intervention-debt\n---\n# Intervention\n"))
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/backlog/MH-011-medium-intervention.md"), []byte("---\nkind: intervention-debt\npriority: medium\n---\n# Medium Intervention\n"))
+	mustWriteFile(t, filepath.Join(dir, "docs/tickets/backlog/MH-012-high-intervention.md"), []byte("---\nkind: intervention-debt\npriority: high\n---\n# High Intervention\n"))
 
 	idx := BuildTicketIndex(dir)
-	if !strings.Contains(idx, "intervention-debt is prioritised") {
-		t.Errorf("expected intervention-debt guidance, got: %s", idx)
+	if !strings.Contains(idx, "high-priority intervention-debt preempts ordinary backlog") {
+		t.Errorf("expected intervention-debt priority guidance, got: %s", idx)
 	}
-	interventionPos := strings.Index(idx, "[backlog][intervention-debt] MH-011-intervention.md")
+	highInterventionPos := strings.Index(idx, "[backlog][intervention-debt] MH-012-high-intervention.md")
 	ordinaryPos := strings.Index(idx, "[backlog] MH-010-ordinary.md")
-	if interventionPos < 0 || ordinaryPos < 0 {
+	mediumInterventionPos := strings.Index(idx, "[backlog][intervention-debt] MH-011-medium-intervention.md")
+	if highInterventionPos < 0 || ordinaryPos < 0 || mediumInterventionPos < 0 {
 		t.Fatalf("expected both backlog entries, got: %s", idx)
 	}
-	if interventionPos > ordinaryPos {
-		t.Fatalf("expected intervention-debt backlog before ordinary backlog, got: %s", idx)
+	if !(highInterventionPos < ordinaryPos && ordinaryPos < mediumInterventionPos) {
+		t.Fatalf("expected only high intervention-debt before ordinary backlog, got: %s", idx)
+	}
+}
+
+func TestFirstBacklogInterventionDebtOnlyReturnsPreemptivePriority(t *testing.T) {
+	tickets := []ticketstate.Ticket{
+		{ID: "T-001", Status: ticketstate.StatusBacklog, Kind: "intervention-debt", Priority: "medium"},
+		{ID: "T-002", Status: ticketstate.StatusBacklog, Kind: "standard", Priority: "high"},
+		{ID: "T-003", Status: ticketstate.StatusBacklog, Kind: "intervention-debt", Priority: "high"},
+	}
+
+	ticket, ok := firstBacklogInterventionDebt(tickets)
+	if !ok {
+		t.Fatal("expected a high-priority intervention-debt ticket")
+	}
+	if ticket.ID != "T-003" {
+		t.Fatalf("expected T-003, got %s", ticket.ID)
+	}
+
+	_, ok = firstBacklogInterventionDebt(tickets[:2])
+	if ok {
+		t.Fatal("expected medium-priority intervention-debt to stay non-preemptive")
 	}
 }
 

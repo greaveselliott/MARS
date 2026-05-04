@@ -14,7 +14,7 @@
 5. F-006-S005 - `start` initializes, registers, seeds, and runs a single-repo pipeline.
 6. F-006-S006 - `serve` runs the multi-repo orchestrator, dashboard, webhook receiver, scheduler, workers, and control plane.
 7. F-006-S007 - Recovery jobs are bounded, idempotent, self-healed when stale or duplicated, and suppressed for deterministic failures.
-8. F-006-S008 - In-progress and intervention-debt ticket priority controls what engineers claim next.
+8. F-006-S008 - In-progress and high-priority intervention-debt ticket priority controls what engineers claim next.
 9. F-006-S009 - Native Orchestrator surveys route unattended failure states into bounded jobs or intervention-debt tickets.
 
 ## Scenarios
@@ -63,9 +63,9 @@ Then the system creates at most one active recovery job per repo/role key for tr
 
 ### F-006-S008: Ticket Claim Priority
 
-Given tickets exist in in-progress, intervention-debt, and ordinary backlog states
+Given tickets exist in in-progress, high-priority intervention-debt, medium-priority intervention-debt, and ordinary backlog states
 When engineer context is assembled
-Then existing in-progress and intervention-debt work are prioritized ahead of ordinary backlog claims
+Then existing in-progress work is prioritized first, high-priority intervention debt can preempt ordinary backlog claims, and medium/low intervention debt remains visible without blocking ordinary product backlog progress
 
 ### F-006-S009: Native Orchestrator Survey
 
@@ -92,5 +92,5 @@ None.
 - F-006-S005: `go test ./cmd/mars-harness -run 'Test(Start|Init|Run|Register|Scan).*GeneratedHarnessBaseline'`
 - F-006-S006: `go test ./internal/serve -run TestServer`
 - F-006-S007: `go test ./internal/serve -run 'TestHandleJobFailed|TestSelfHealRecoveryQueue'` and `go test ./internal/queue -run TestQueue_repairActiveRecoveryJobs`
-- F-006-S008: `go test ./internal/serve -run 'TestValidateEngineerTicketGate|TestBuildTicketIndex'`
+- F-006-S008: `go test ./internal/serve -run 'TestValidateEngineerTicketGate|TestBuildTicketIndex|TestFirstBacklogInterventionDebt'`
 - F-006-S009: `go test ./internal/serve -run TestOrchestratorSurvey` and `go test ./internal/queue -run 'TestQueue_concurrencyGroupSerialization|TestQueue_dailyCapConstrainsRepeatedScheduling|TestQueue_claimDoesNotResetHealthyRunningJob|TestQueue_failStuckRunningJobs'`

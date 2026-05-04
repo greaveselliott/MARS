@@ -130,7 +130,7 @@ Eligible in-progress tickets are always the front of the queue. If multiple tick
 
 Engineer runs cannot create ordinary backlog tickets while eligible in-progress tickets remain. Dependency tickets are allowed only when deduped and linked back to the blocked ticket through metadata such as `metadata.blocks`. Dogfood ticket creation is capped per run by total count, severity, group, and repeated dedupe key.
 
-Intervention-debt tickets are prioritised ahead of ordinary backlog work because they represent a failure in the harness process, prompts, skills, guardrails, context routing, inference setup, or tool policy. Existing matching intervention-debt tickets are updated rather than duplicated.
+High-priority intervention-debt tickets are prioritised ahead of ordinary backlog work because they represent a failure in the harness process, prompts, skills, guardrails, context routing, inference setup, or tool policy that can damage future delivery. Medium and low intervention-debt tickets remain visible durable work, but they do not block ordinary product backlog progress. Existing matching intervention-debt tickets are updated rather than duplicated.
 
 ## Dispatch-Orchestration Metadata
 
