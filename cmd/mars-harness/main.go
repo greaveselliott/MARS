@@ -84,13 +84,22 @@ func main() {
 }
 
 func newRootCommand() *cobra.Command {
+	var showVersion bool
 	root := &cobra.Command{
 		Use:           "mars-harness",
 		Short:         "Autonomous AI delivery system",
 		Long:          "Mars Harness — self-hosted autonomous AI delivery. Run setup to get started.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if showVersion {
+				printVersion(cmd.OutOrStdout())
+				return nil
+			}
+			return cmd.Help()
+		},
 	}
+	root.Flags().BoolVarP(&showVersion, "version", "v", false, "Print version, OS, and architecture")
 
 	root.AddCommand(versionCmd())
 	root.AddCommand(updateCmd())
@@ -755,9 +764,17 @@ func versionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print version, OS, and architecture",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("mars-harness %s %s/%s commit=%s built=%s\n", version, runtime.GOOS, runtime.GOARCH, commit, date)
+			printVersion(cmd.OutOrStdout())
 		},
 	}
+}
+
+func printVersion(out io.Writer) {
+	fmt.Fprintln(out, versionLine())
+}
+
+func versionLine() string {
+	return fmt.Sprintf("mars-harness %s %s/%s commit=%s built=%s", version, runtime.GOOS, runtime.GOARCH, commit, date)
 }
 
 func updateCmd() *cobra.Command {

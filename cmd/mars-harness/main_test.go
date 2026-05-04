@@ -119,6 +119,27 @@ func TestToolsRunObserverBlocksMutatingTool(t *testing.T) {
 	require.NoFileExists(t, filepath.Join(dir, "x.txt"))
 }
 
+func TestVersionEntrypointsPrintSameVersionLine(t *testing.T) {
+	t.Parallel()
+	for _, args := range [][]string{
+		{"version"},
+		{"--version"},
+		{"-v"},
+	} {
+		args := args
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			t.Parallel()
+			cmd := newRootCommand()
+			var out bytes.Buffer
+			cmd.SetOut(&out)
+			cmd.SetArgs(args)
+
+			require.NoError(t, cmd.Execute())
+			require.Equal(t, versionLine()+"\n", out.String())
+		})
+	}
+}
+
 func TestMarsHarnessCLIToolReferenceTracksCommandTree(t *testing.T) {
 	t.Parallel()
 	reference := harnesstools.MarsHarnessCLIReference()

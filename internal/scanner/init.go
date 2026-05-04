@@ -577,7 +577,7 @@ contract, repo behavior, or recurring CLI workflow.
 
 ## Workflow
 
-1. Inspect the changed command path and flags.
+1. Inspect the changed command path, aliases, shortcuts, and flags.
 2. Read ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `.
 3. Update the ` + "`mars_harness_cli`" + ` reference and repo shortcut behavior when the
    command surface changes.

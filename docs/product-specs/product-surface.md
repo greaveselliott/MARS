@@ -23,6 +23,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 
 | Command | Status | Product behavior |
 | --- | --- | --- |
+| `mars-harness version`, `mars-harness --version`, `mars-harness -v` | Implemented | Prints the installed binary version, OS/architecture, commit, and build date through either the explicit command or root-level version flags. |
 | `mars-harness setup` | Implemented, still hardening | Creates `~/.mars-harness/`, configures supported shell profiles for the installed command, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
 | `mars-harness update check --repo <path>` | Implemented | Reports whether the installed CLI, deployed target `.harness/` metadata, or mirrored operating-model artifacts are behind, with JSON output for automation and unknown-but-nonfatal remote status when release lookup fails. |
 | `mars-harness update tool` | Implemented | Downloads the latest platform release asset, verifies `checksums.txt`, atomically replaces the installed command, and configures shell PATH. Source-development updates remain available with `--source` or `--version main`. |

@@ -288,6 +288,7 @@ Tool arguments:
 Global command surface:
   version
     Print version, OS/architecture, commit, and build date.
+    Root shortcuts: ["--version"], ["-v"]
     Example: ["version"]
 
   setup
