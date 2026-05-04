@@ -146,6 +146,55 @@ func TestRunLatestReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
 	require.Equal(t, payload, got)
 }
 
+func TestRunTaggedReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
+	t.Setenv("GH_TOKEN", "ghs_testtoken")
+	installDir := t.TempDir()
+	asset := "mars-harness-" + runtime.GOOS + "-" + runtime.GOARCH
+	payload := []byte("#!/bin/sh\necho tagged-private-release\n")
+	sum := sha256.Sum256(payload)
+
+	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
+		require.Equal(t, "Bearer ghs_testtoken", r.Header.Get("Authorization"))
+		switch r.URL.Path {
+		case "/repos/greaveselliott/mars-harness/releases/tags/v1.2.5":
+			return textResponse(http.StatusOK, fmt.Sprintf(`{
+				"tag_name":"v1.2.5",
+				"assets":[
+					{"name":%q,"url":"https://api.example.test/assets/bin","browser_download_url":"https://github.example.test/download/bin"},
+					{"name":"checksums.txt","url":"https://api.example.test/assets/checksums","browser_download_url":"https://github.example.test/download/checksums.txt"},
+					{"name":"mars-harness-linux-amd64"},
+					{"name":"mars-harness-linux-arm64"},
+					{"name":"mars-harness-darwin-amd64"},
+					{"name":"mars-harness-darwin-arm64"}
+				]
+			}`, asset)), nil
+		case "/assets/bin":
+			require.Equal(t, "application/octet-stream", r.Header.Get("Accept"))
+			return textResponse(http.StatusOK, string(payload)), nil
+		case "/assets/checksums":
+			require.Equal(t, "application/octet-stream", r.Header.Get("Accept"))
+			return textResponse(http.StatusOK, fmt.Sprintf("%x  %s\n", sum, asset)), nil
+		default:
+			return textResponse(http.StatusNotFound, "not found"), nil
+		}
+	})
+
+	plan, err := Run(context.Background(), Config{
+		Version:       "v1.2.5",
+		InstallDir:    installDir,
+		SkipShellPath: true,
+		HTTPClient:    client,
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, "1.2.5", plan.Version)
+	require.Equal(t, "https://api.example.test/assets/bin", plan.DownloadURL)
+	require.Equal(t, "https://api.example.test/assets/checksums", plan.ChecksumsURL)
+	got, err := os.ReadFile(filepath.Join(installDir, DefaultBinary))
+	require.NoError(t, err)
+	require.Equal(t, payload, got)
+}
+
 func TestRunReleaseAssetsRejectsChecksumMismatchWithoutReplacingBinary(t *testing.T) {
 	t.Parallel()
 	installDir := t.TempDir()

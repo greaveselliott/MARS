@@ -181,8 +181,8 @@ func runReleaseAssets(ctx context.Context, cfg Config, plan Plan) (Plan, error) 
 		}
 		return plan, nil
 	}
-	if plan.Version == DefaultVersion {
-		resolved, err := resolveLatestAssetPlan(ctx, client, cfg, plan)
+	if shouldResolveReleaseAssetInfo(cfg, plan) {
+		resolved, err := resolveReleaseAssetPlan(ctx, client, cfg, plan)
 		if err != nil {
 			return Plan{}, err
 		}
@@ -239,8 +239,19 @@ func runReleaseAssets(ctx context.Context, cfg Config, plan Plan) (Plan, error) 
 	return plan, nil
 }
 
-func resolveLatestAssetPlan(ctx context.Context, client *http.Client, cfg Config, plan Plan) (Plan, error) {
-	release, err := LatestReleaseInfo(ctx, client, cfg.LatestReleaseURL)
+func shouldResolveReleaseAssetInfo(cfg Config, plan Plan) bool {
+	if plan.Version == DefaultVersion {
+		return true
+	}
+	return strings.TrimSpace(cfg.ReleaseBaseURL) == ""
+}
+
+func resolveReleaseAssetPlan(ctx context.Context, client *http.Client, cfg Config, plan Plan) (Plan, error) {
+	releaseURL := cfg.LatestReleaseURL
+	if plan.Version != DefaultVersion {
+		releaseURL = ReleaseAPIURL(DefaultRepoFullName, plan.ReleaseTag)
+	}
+	release, err := LatestReleaseInfo(ctx, client, releaseURL)
 	if err != nil {
 		return Plan{}, err
 	}
