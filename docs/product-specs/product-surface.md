@@ -81,6 +81,11 @@ that deliberately outside Mars Harness.
 
 Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. Any change to commit discipline, versioning, ticket flow, documentation rules, skill creation, guardrail policy, trust/scoring behavior, release behavior, or context-routing discipline must update generated target guidance and tests in the same task.
 
+Any `mars-harness` CLI command or flag change must also update the mirrored
+`mars_harness_cli` tool reference, repo-shortcut behavior, generated target
+guidance, and any affected skills per
+[../design-docs/cli-tool-skill-sync.md](../design-docs/cli-tool-skill-sync.md).
+
 Architecture changes and product features must carry rationale in repo-owned docs: what changed, why it changed, and which behavior future agents should preserve. Source harness changes use design docs and product specs; initialized target repos inherit the same rule through generated `AGENTS.md`, using their design docs and, when present, product specs.
 
 Documentation must not go stale. Code written or materially changed by agents

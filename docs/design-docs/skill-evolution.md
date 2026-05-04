@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-05-02
 **Sources:** User direction, [tenets](tenets.md), [self-improvement](self-improvement.md), [self-reflective telemetry](self-reflective-telemetry.md), [mirrored harness and context glossary](mirrored-harness-and-context-glossary.md)
+**Related:** [cli-tool-skill-sync.md](cli-tool-skill-sync.md)
 
 ## Context
 
@@ -64,6 +65,14 @@ The evolution loop uses this decision matrix:
 ### AD-055: Mirrored Target Harnesses Need Skill Guidance
 
 Initialized target repos must receive the same skill-evolution doctrine. The source harness and generated target harness should both teach agents when to add `.harness/skills/<name>/SKILL.md`, because target-specific skills are one of the safest ways to reduce future human intervention without bloating prompts.
+
+### CLI Workflow Skills Stay Synchronized
+
+When a `mars-harness` CLI change affects a reusable workflow, the skill that
+teaches that workflow changes in the same commit as the CLI and tool mapping.
+The source operating model for this is
+[cli-tool-skill-sync.md](cli-tool-skill-sync.md). Skills remain compact, but they
+must not point agents at stale commands, flags, examples, or tool choices.
 
 ## Current Implementation
 

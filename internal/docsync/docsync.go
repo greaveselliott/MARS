@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/features/F-001-delivery-operating-model.md
@@ -230,7 +231,7 @@ func ExpectedDocs(rel string) []string {
 func Rules() []Rule {
 	return []Rule{
 		{Prefix: ".github/workflows/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/features/F-009-release-update-lifecycle.md"}},
-		{Prefix: "cmd/mars-harness/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/delivery-operating-model.md", "docs/design-docs/documentation-sync-architecture.md", "docs/design-docs/release-versioning.md", "docs/product-specs/product-surface.md", "docs/features/F-001-delivery-operating-model.md", "docs/features/F-002-zero-config-shell-path.md", "docs/features/F-004-target-harness-lifecycle.md", "docs/features/F-009-release-update-lifecycle.md"}},
+		{Prefix: "cmd/mars-harness/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/cli-tool-skill-sync.md", "docs/design-docs/delivery-operating-model.md", "docs/design-docs/documentation-sync-architecture.md", "docs/design-docs/release-versioning.md", "docs/product-specs/product-surface.md", "docs/features/F-001-delivery-operating-model.md", "docs/features/F-002-zero-config-shell-path.md", "docs/features/F-004-target-harness-lifecycle.md", "docs/features/F-009-release-update-lifecycle.md"}},
 		{Prefix: "examples/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/role-customization.md", "docs/features/F-004-target-harness-lifecycle.md"}},
 		{Prefix: "internal/agent/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/agent-runtime.md", "docs/features/F-005-agent-execution-runtime.md"}},
 		{Prefix: "internal/buildinfo/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/features/F-009-release-update-lifecycle.md"}},

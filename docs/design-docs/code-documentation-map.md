@@ -43,7 +43,7 @@ field is a list of repo-relative documentation paths.
 | Source Prefix | Architecture / Product Docs | Feature Contracts |
 | --- | --- | --- |
 | `.github/workflows/` | `docs/design-docs/release-versioning.md` | `docs/features/F-009-release-update-lifecycle.md` |
-| `cmd/mars-harness/` | `docs/product-specs/product-surface.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, `docs/design-docs/release-versioning.md` | F-001, F-002, F-004, F-009 |
+| `cmd/mars-harness/` | `docs/product-specs/product-surface.md`, `docs/design-docs/cli-tool-skill-sync.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, `docs/design-docs/release-versioning.md` | F-001, F-002, F-004, F-009 |
 | `examples/` | `docs/design-docs/role-customization.md` | F-004 |
 | `internal/agent/` | `docs/design-docs/agent-runtime.md` | F-005 |
 | `internal/buildinfo/` | `docs/design-docs/release-versioning.md` | F-009 |
@@ -100,12 +100,19 @@ Notable cross-boundary files:
   feature docs, so their metadata lists those extra docs directly.
 - `internal/tools/formalized_workflows.go` and its tests own `docsync_audit`,
   so their metadata also points to the delivery operating model and F-001.
+- `internal/tools/mars_harness_cli.go` and its tests mirror the CLI command
+  tree into tool reference and repo-shortcut behavior, so their metadata points
+  to [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
+- `internal/scanner/init.go` also mirrors CLI/tool/skill sync doctrine into
+  generated target guidance and skills.
 
 ## Maintenance Rules
 
 - `docsync audit` is the mechanical source-code coverage gate.
 - The universal operating model and architecture live in
   [documentation-sync-architecture.md](documentation-sync-architecture.md).
+- CLI changes also follow the tool/skill synchronization model in
+  [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 - If a source prefix moves, update this document, `internal/docsync`, and the
   affected file metadata in the same change.
 - If a code change alters business behavior, update the referenced BDD feature

@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/release-versioning.md
@@ -20,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -27,6 +29,8 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
 	"github.com/greaveselliott/mars-harness/internal/serve"
+	harnesstools "github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -109,6 +113,26 @@ func TestToolsRunObserverBlocksMutatingTool(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "observer cannot run mutating tool")
 	require.NoFileExists(t, filepath.Join(dir, "x.txt"))
+}
+
+func TestMarsHarnessCLIToolReferenceTracksCommandTree(t *testing.T) {
+	t.Parallel()
+	reference := harnesstools.MarsHarnessCLIReference()
+	for _, path := range runnableCommandPaths(newRootCommand()) {
+		require.Truef(t, commandReferenceContainsPath(reference, path), "mars_harness_cli reference must document CLI command %q", path)
+	}
+}
+
+func TestMarsHarnessCLIRepoShortcutTracksRepoPathFlags(t *testing.T) {
+	t.Parallel()
+	for _, cmd := range runnableCommands(newRootCommand()) {
+		path := commandPathWithoutRoot(cmd)
+		if hasWorkspaceRepoFlag(cmd) {
+			require.Truef(t, harnesstools.MarsHarnessCommandSupportsRepo(strings.Fields(path)), "mars_harness_cli repo shortcut must support %q because it has a workspace --repo flag", path)
+			continue
+		}
+		require.Falsef(t, harnesstools.MarsHarnessCommandSupportsRepo(strings.Fields(path)), "mars_harness_cli repo shortcut should not append a workspace --repo path to %q", path)
+	}
 }
 
 func TestMCPServeCommand(t *testing.T) {
@@ -504,6 +528,65 @@ func writeToolRunRepoFile(t *testing.T, root, rel, content string) {
 	path := filepath.Join(root, rel)
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+}
+
+func runnableCommands(root *cobra.Command) []*cobra.Command {
+	var commands []*cobra.Command
+	var walk func(*cobra.Command)
+	walk = func(cmd *cobra.Command) {
+		for _, child := range cmd.Commands() {
+			if child.Name() == "help" || child.Hidden {
+				continue
+			}
+			if child.Runnable() {
+				commands = append(commands, child)
+			}
+			walk(child)
+		}
+	}
+	walk(root)
+	sort.Slice(commands, func(i, j int) bool {
+		return commandPathWithoutRoot(commands[i]) < commandPathWithoutRoot(commands[j])
+	})
+	return commands
+}
+
+func runnableCommandPaths(root *cobra.Command) []string {
+	commands := runnableCommands(root)
+	paths := make([]string, 0, len(commands))
+	for _, cmd := range commands {
+		paths = append(paths, commandPathWithoutRoot(cmd))
+	}
+	return paths
+}
+
+func commandPathWithoutRoot(cmd *cobra.Command) string {
+	return strings.TrimPrefix(cmd.CommandPath(), "mars-harness ")
+}
+
+func commandReferenceContainsPath(reference, path string) bool {
+	for _, line := range strings.Split(reference, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == path || strings.HasPrefix(trimmed, path+" <") {
+			return true
+		}
+	}
+	return false
+}
+
+func hasWorkspaceRepoFlag(cmd *cobra.Command) bool {
+	flag := cmd.Flags().Lookup("repo")
+	if flag == nil {
+		return false
+	}
+	usage := strings.ToLower(flag.Usage)
+	if strings.Contains(usage, "owner/name") {
+		return false
+	}
+	return strings.Contains(usage, "path") ||
+		strings.Contains(usage, "repo root") ||
+		strings.Contains(usage, "repository") ||
+		strings.Contains(usage, "target repo")
 }
 
 func runMainTestGit(t *testing.T, dir string, args ...string) string {

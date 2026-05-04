@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/release-versioning.md
@@ -69,6 +70,14 @@ var (
 )
 
 func main() {
+	root := newRootCommand()
+	if err := root.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func newRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "mars-harness",
 		Short:         "Autonomous AI delivery system",
@@ -98,10 +107,7 @@ func main() {
 	root.AddCommand(docsyncCmd())
 	root.AddCommand(pathCmd())
 
-	if err := root.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
+	return root
 }
 
 func docsyncCmd() *cobra.Command {

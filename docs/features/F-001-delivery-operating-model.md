@@ -25,6 +25,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 8. F-001-S008 - Code changes declare associated documentation and keep it current.
 9. F-001-S009 - Source-wide docsync audit maps code to architecture and feature documentation.
 10. F-001-S010 - Documentation sync has a universal operating model for source and generated targets.
+11. F-001-S011 - CLI changes synchronize mirrored tools, repo shortcuts, generated doctrine, and skills.
 
 ## Scenarios
 
@@ -88,6 +89,12 @@ Given an agent changes source, tools, generated target defaults, role behavior, 
 When the agent prepares completion evidence
 Then it follows the documented documentation-sync operating model: read changed-file `MarsDocSync` metadata, classify the documentation impact, update or verify the listed docs, repair metadata or the canonical map when ownership changes, run docsync evidence, and record which docs changed or remained current
 
+### F-001-S011: CLI Tool And Skill Synchronization
+
+Given a `mars-harness` CLI command, flag, output contract, repo behavior, mutability expectation, or recurring workflow changes
+When the change is prepared for completion
+Then the `mars_harness_cli` reference, repo shortcut map, generated target doctrine, and any skills that name the affected workflow are updated or explicitly checked as current, and CLI sync evidence is recorded
+
 ## Out of Scope
 
 - Custom Gherkin parsing.
@@ -110,3 +117,4 @@ None.
 - F-001-S008: `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata`
 - F-001-S009: `go test ./internal/docsync ./internal/docsconsistency -run 'TestDocSync|TestOperatingModelCodeFilesDeclareDocSyncMetadata'` and `mars-harness docsync audit --repo .`
 - F-001-S010: `go test ./internal/docsconsistency -run TestAD074OperatingModelArtifactsExist` verifies the architecture and universal operating model are documented.
+- F-001-S011: `go test ./cmd/mars-harness -run TestMarsHarnessCLI` verifies the live Cobra command tree, `mars_harness_cli` reference, and repo shortcut map stay synchronized.

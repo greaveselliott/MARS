@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
 */
@@ -9,6 +10,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -29,11 +31,41 @@ func TestMarsHarnessCLI_reference(t *testing.T) {
 	for _, command := range []string{
 		"setup", "init", "eject", "upgrade", "start", "serve", "register", "run <role>",
 		"scan", "doctor", "update check", "update tool", "update harness",
-		"path setup", "release notes", "release backfill-notes", "release verify-assets", "scores export",
-		"docsync audit", "trust set", "models evaluate", "models list", "models override",
+		"path setup", "release notes", "release backfill-notes", "release verify-assets", "scores", "scores export",
+		"docsync audit", "trust", "trust set", "models evaluate", "models list", "models override",
 		"tools list", "tools run <name>", "mcp serve",
 	} {
 		require.Contains(t, res.Output, command)
+	}
+}
+
+func TestMarsHarnessCLI_repoShortcutAppendsRepoFlagForSyncedCommands(t *testing.T) {
+	for _, args := range [][]string{
+		{"release", "backfill-notes", "--dry-run"},
+		{"docsync", "audit"},
+		{"models", "evaluate", "--json"},
+		{"models", "override", "--tier", "coding", "--provider", "ollama", "--model", "qwen"},
+		{"scores"},
+		{"trust"},
+	} {
+		t.Run(strings.Join(args[:min(2, len(args))], "_"), func(t *testing.T) {
+			dir := t.TempDir()
+			root, err := NewRoot(dir)
+			require.NoError(t, err)
+			bin := writeFakeMarsHarnessBinary(t, dir)
+			t.Setenv("MARS_HARNESS_CLI_BIN", bin)
+
+			raw, err := json.Marshal(marsHarnessCLIArgs{
+				Mode:           "run",
+				Args:           args,
+				Repo:           ".",
+				TimeoutSeconds: 5,
+			})
+			require.NoError(t, err)
+			res, err := handleMarsHarnessCLI(context.Background(), root, raw)
+			require.NoError(t, err)
+			require.Contains(t, res.Output, "--repo "+root.Abs())
+		})
 	}
 }
 

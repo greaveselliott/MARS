@@ -50,6 +50,7 @@ harness and deployed harnesses.
 | Universal skills | Skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable Mars Harness operating doctrine. |
 | Foundation skills | Skills used by agents operating on `mars-harness` itself to evolve, validate, release, or maintain the software factory. |
 | Deployed skills | Skills stored in a target project's `.harness/skills/` directory and used by that deployed harness to capture project-specific reusable procedures. |
+| CLI tool/skill sync | Foundational operating rule that any `mars-harness` CLI change must update the mirrored `mars_harness_cli` tool reference, repo-shortcut map, generated target guidance, and any skills that name the affected CLI workflow. |
 | Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
 | First-class harness definition | Context that should always be included in the top-level `AGENTS.md`. |
 | Contextual harness definition | Situational context routed through the harness glossary with the form: `When doing X include this: <path to document.md>`. |
@@ -99,7 +100,9 @@ refactors. If an agent bypasses `tool_create`, it must first use
 scaffolding, implement the handler, register it in
 `internal/tools/register_default.go`, update trust policy if the tool mutates
 state, extend `docs/design-docs/tools-glossary.md`, and add tests before
-exposing new tools in any role allowlist.
+exposing new tools in any role allowlist. When a CLI change affects the
+`mars_harness_cli` tool or a skill that invokes the CLI, also include
+`docs/design-docs/cli-tool-skill-sync.md`.
 
 ### When changing context routes include this: `.harness/knowledge/context-glossary.yaml`
 

@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/harness-glossary.md
@@ -462,12 +463,14 @@ var defaultHarnessFiles = map[string]string{
     paths: docs/goals/README.md, docs/goals/active.md, docs/features/README.md, docs/exec-plans/README.md, docs/tickets/README.md
   - when: goals, BDD, feature contracts, planning, feedback, or quality evidence
     paths: docs/goals/README.md, docs/goals/active.md, docs/goals/observations.md, docs/features/README.md, docs/exec-plans/active/current-operating-plan.md, docs/QUALITY_SCORE.md
-  - when: implementation, architecture, tests, local commands, source documentation metadata, or no-stale-documentation checks
-    paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md, docs/design-docs/code-documentation-map.md, docs/design-docs/documentation-sync-architecture.md, docs/features/README.md
+  - when: implementation, architecture, tests, local commands, CLI commands, command flags, source documentation metadata, no-stale-documentation checks, or CLI tool/skill sync
+    paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md, docs/design-docs/code-documentation-map.md, docs/design-docs/documentation-sync-architecture.md, docs/design-docs/cli-tool-skill-sync.md, docs/features/README.md
   - when: release planning, semantic versioning, changelog, patch notes, or tags
     paths: VERSION, CHANGELOG.md, docs/design-docs/release-versioning.md
   - when: self-improvement, repeated failures, telemetry triage, human intervention, or deciding whether to create a skill
     paths: docs/design-docs/skill-evolution.md, .harness/skills/self-improvement/SKILL.md
+  - when: CLI workflow, mars-harness command, command flag, mars_harness_cli, repo shortcut, generated tool guidance, or CLI-related skill sync
+    paths: docs/design-docs/cli-tool-skill-sync.md, docs/design-docs/tools-glossary.md, .harness/skills/cli-tool-sync/SKILL.md
   - when: agent-first workflow, repository memory, or why this harness exists
     paths: docs/references/harness-engineering-agent-first.md
 `,
@@ -497,6 +500,37 @@ Use this when a failure, repeated handoff, human follow-up, low score, or dogfoo
 - Scope narrowly unless the workflow is useful to every role.
 - Link a design decision when the skill changes workflow doctrine.
 - Commit and push the skill change on ` + "`main`" + ` with the triggering job, ticket, or telemetry evidence.
+`,
+
+	"skills/cli-tool-sync/SKILL.md": `---
+name: cli-tool-sync
+scope: all
+---
+
+# CLI Tool Sync Skill
+
+Use this when a task changes a ` + "`mars-harness`" + ` command, flag, output
+contract, repo behavior, or recurring CLI workflow.
+
+## Workflow
+
+1. Inspect the changed command path and flags.
+2. Read ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `.
+3. Update the ` + "`mars_harness_cli`" + ` reference and repo shortcut behavior when the
+   command surface changes.
+4. Update generated target guidance, knowledge routes, tools glossary, product
+   docs, feature contracts, and release docs when the CLI behavior is
+   user-facing or inherited by agents.
+5. Update any skill that names the affected CLI workflow.
+6. Run the CLI sync evidence named by the design doc before claiming done.
+
+## Evidence
+
+- Name the command or flag changed.
+- Name the tool reference, repo shortcut, generated doctrine, and skills
+  updated or checked as current.
+- Include ` + "`go test ./cmd/mars-harness -run TestMarsHarnessCLI`" + ` or the
+  equivalent target-specific evidence.
 `,
 }
 
@@ -610,6 +644,7 @@ would otherwise live only in chat.
 - **Universal skills** — skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable Mars Harness operating doctrine.
 - **Foundation skills** — skills used by agents operating on ` + "`mars-harness`" + ` itself to evolve, validate, release, or maintain the software factory.
 - **Deployed skills** — skills stored in this target application's ` + "`.harness/skills/`" + ` directory and used by this deployed harness to capture project-specific reusable procedures.
+- **CLI tool/skill sync** — foundational operating rule that any ` + "`mars-harness`" + ` CLI change must update the mirrored ` + "`mars_harness_cli`" + ` tool reference, repo-shortcut map, generated target guidance, and any skills that name the affected CLI workflow.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level ` + "`AGENTS.md`" + `.
 - **Contextual harness definition** — situational context routed through the harness glossary with the form: ` + "`When doing X include this: <path to document.md>`" + `.
@@ -619,6 +654,7 @@ Tools glossary: ` + "`docs/design-docs/tools-glossary.md`" + `
 Role model: ` + "`docs/design-docs/harness-operating-model.md`" + `
 Role registry: ` + "`docs/roles/ROLES.md`" + `
 Documentation sync architecture: ` + "`docs/design-docs/documentation-sync-architecture.md`" + `
+CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 
 ## Start Here
 
@@ -636,6 +672,7 @@ Documentation sync architecture: ` + "`docs/design-docs/documentation-sync-archi
 12. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
 13. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
 14. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
+15. Read ` + "`docs/design-docs/cli-tool-skill-sync.md`" + ` before changing ` + "`mars-harness`" + ` CLI behavior or skills/tools that invoke it.
 
 ## Workflow
 
@@ -646,6 +683,7 @@ Documentation sync architecture: ` + "`docs/design-docs/documentation-sync-archi
 - BDD feature contracts define feature completeness; walking skeleton is the implementation strategy: make the next failing scenario pass through the thinnest real end-to-end path.
 - Business logic is first-class BDD: every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, or user-visible outcome must be documented step by step in ` + "`docs/features/`" + ` before or alongside implementation.
 - No stale documentation: when writing or materially changing code, add or update the top-of-file ` + "`MarsDocSync`" + ` comment block with a ` + "`docs:`" + ` list of associated docs, run or satisfy the docsync audit where applicable, then update those docs in the same commit or record why no doc change was needed.
+- CLI tool/skill sync: when ` + "`mars-harness`" + ` CLI commands, flags, output contracts, repo behavior, or workflows change, update ` + "`mars_harness_cli`" + ` reference and repo-shortcut behavior, generated target doctrine, and affected skills in the same change.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
 - Prefer eligible in-progress tickets before backlog work; a ticket is eligible when it has no meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata.
 - Complete one coherent step at a time.
@@ -1006,6 +1044,7 @@ Architectural decisions and design documents for this project.
 | [tools-glossary.md](tools-glossary.md) | Accepted | First-class mirrored tool availability, selection, and use-case context. |
 | [code-documentation-map.md](code-documentation-map.md) | Accepted | Source metadata map for keeping code, architecture docs, and BDD feature contracts in sync. |
 | [documentation-sync-architecture.md](documentation-sync-architecture.md) | Accepted | Architecture and universal operating model for ` + "`MarsDocSync`" + `, docsync audit, generated target mirroring, and stale-doc prevention. |
+| [cli-tool-skill-sync.md](cli-tool-skill-sync.md) | Accepted | Foundational operating model for keeping ` + "`mars_harness_cli`" + `, repo shortcuts, generated target doctrine, and skills synchronized with CLI changes. |
 | [tenets.md](tenets.md) | Accepted | Foundational rules the deployed harness inherits from Mars Harness. |
 | [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and deployed harness doctrine mirroring rules. |
 | [release-versioning.md](release-versioning.md) | Seed | Semantic versioning and generated patch-note policy for this repo. |
@@ -1029,6 +1068,7 @@ Architectural decisions and design documents for this project.
 | AD-100 | Historical release entries are backfilled through ` + "`mars-harness release backfill-notes`" + ` from marker-backed commit ranges. | 2026-05-04 | Accepted |
 | AD-101 | Source metadata maps code files to associated architecture docs and BDD feature contracts, then ` + "`docsync audit`" + ` checks coverage. | 2026-05-04 | Accepted |
 | AD-102 | Documentation Sync is a universal operating model: agents read changed-file ` + "`MarsDocSync`" + ` docs, classify documentation impact, update or verify associated docs, run docsync evidence, and mirror the model into generated targets. | 2026-05-04 | Accepted |
+| AD-103 | CLI tool/skill sync is a foundational operating model: every CLI command or flag change updates ` + "`mars_harness_cli`" + `, repo-shortcut routing, generated target doctrine, and any affected skills before completion. | 2026-05-04 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1278,6 +1318,14 @@ surface, workflow, architecture, generated output, or operating doctrine
 changes, the same commit updates the relevant docs. If the docs are still
 correct, the ticket, plan, review, or commit evidence says they were checked
 and remain current.
+
+## AD-103: CLI Tool And Skill Synchronization
+
+Whenever ` + "`mars-harness`" + ` CLI commands, flags, output contracts, repo
+behavior, mutability expectations, or recurring workflows change, update the
+` + "`mars_harness_cli`" + ` reference, repo shortcut behavior, generated target
+doctrine, and any skill that names the affected workflow in the same change.
+The full model lives in [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 `,
 
 	"docs/design-docs/code-documentation-map.md": `# Code Documentation Map
@@ -1296,6 +1344,8 @@ metadata with a ` + "`docs`" + ` array. When an agent changes a file, the listed
 docs are the minimum documentation review set for that change.
 The architecture and universal operating model live in
 [documentation-sync-architecture.md](documentation-sync-architecture.md).
+CLI workflow changes also follow
+[cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 
 Check the map with:
 
@@ -1414,6 +1464,68 @@ mars-harness tools run docsync_audit --repo . --args-json '{}'
 
 The audit proves metadata coverage and real doc paths. It does not replace
 human or agent judgment over whether the prose itself is complete.
+`,
+
+	"docs/design-docs/cli-tool-skill-sync.md": `# AD-103: CLI Tool And Skill Synchronization Operating Model
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Owner:** Project maintainers
+**Related:** AD-079, AD-101, AD-102, F-001, F-005
+
+## Context
+
+The ` + "`mars-harness`" + ` CLI is the control plane for this deployed harness, and
+agents normally discover it through the mirrored ` + "`mars_harness_cli`" + ` tool,
+generated role allowlists, knowledge routes, tools glossary, and compact skills.
+If a CLI workflow changes but those mirrors do not, agents can keep following
+stale commands or flags.
+
+## Decision
+
+CLI tool/skill sync is a foundational operating model. Whenever a
+` + "`mars-harness`" + ` command, flag, output contract, repo behavior, mutability
+expectation, or recurring workflow changes, the same change updates or checks:
+
+- the ` + "`mars_harness_cli`" + ` reference;
+- the ` + "`mars_harness_cli`" + ` repo shortcut behavior;
+- generated target guidance and knowledge routes;
+- tools glossary and tool-selection rules;
+- any skill that names the affected CLI workflow;
+- product, feature, release, or architecture docs that describe the command.
+
+## Architecture
+
+The command tree is the source of truth. Tool references, role allowlists,
+knowledge routes, skills, and docs are mirrors that make the command usable by
+agents without falling back to stale shell conventions.
+
+## Universal Operating Model
+
+1. Classify whether the change affects a CLI command, flag, output, repo
+   behavior, safety expectation, or recurring workflow.
+2. Read this document and the changed file's ` + "`MarsDocSync`" + ` docs.
+3. Update ` + "`mars_harness_cli`" + ` reference text and repo shortcut behavior if the
+   command surface changed.
+4. Update generated doctrine, tools glossary, and knowledge routes when target
+   agents inherit the workflow.
+5. Update any affected skill under ` + "`.harness/skills/`" + `.
+6. Update product, BDD, release, or architecture docs for user-facing behavior.
+7. Run CLI sync, docsync, and generated-target evidence before claiming done.
+
+## Evidence
+
+Use source-equivalent or target-specific evidence:
+
+` + "```" + `bash
+go test ./cmd/mars-harness -run TestMarsHarnessCLI
+go test ./internal/tools -run TestMarsHarnessCLI
+go test ./internal/scanner -run TestInit_success
+mars-harness docsync audit --repo .
+` + "```" + `
+
+For generated doctrine or skill changes, also run ` + "`harness_doctrine_sync`" + `
+when available.
 `,
 
 	"docs/goals/README.md": `# Goals
@@ -1536,6 +1648,11 @@ mars-harness tools run docsync_audit --repo . --args-json '{}'
 The architecture and universal operating model for this process live in
 [../design-docs/documentation-sync-architecture.md](../design-docs/documentation-sync-architecture.md).
 
+CLI changes have an additional foundational operating model: keep the
+` + "`mars_harness_cli`" + ` reference, repo-shortcut map, generated doctrine, and
+affected skills synchronized using
+[../design-docs/cli-tool-skill-sync.md](../design-docs/cli-tool-skill-sync.md).
+
 ## Required Fields
 
 - Feature ID
@@ -1596,6 +1713,7 @@ their evidence before claiming the feature is complete.
 5. F-001-S005 — code changes declare associated documentation and keep it current
 6. F-001-S006 — source-wide docsync audit maps code to architecture and feature documentation
 7. F-001-S007 — documentation sync has a universal operating model for source and generated targets
+8. F-001-S008 — CLI changes synchronize mirrored tools, repo shortcuts, generated doctrine, and skills
 
 ## Scenarios
 
@@ -1641,6 +1759,12 @@ Given an agent changes source, tools, generated defaults, role behavior, CLI beh
 When the agent prepares completion evidence
 Then it follows the documented documentation-sync operating model: read changed-file ` + "`MarsDocSync`" + ` metadata, classify the documentation impact, update or verify the listed docs, repair metadata or the canonical map when ownership changes, run docsync evidence, and record which docs changed or remained current
 
+### F-001-S008: CLI Tool And Skill Synchronization
+
+Given a ` + "`mars-harness`" + ` CLI command, flag, output contract, repo behavior, mutability expectation, or recurring workflow changes
+When the change is prepared for completion
+Then the ` + "`mars_harness_cli`" + ` reference, repo shortcut map, generated target doctrine, and any skills that name the affected workflow are updated or explicitly checked as current, and CLI sync evidence is recorded
+
 ## Out of Scope
 
 - A custom Gherkin parser
@@ -1657,6 +1781,7 @@ None.
 - F-001-S005: ` + "`go test ./internal/scanner -run TestInit_success`" + ` verifies generated doctrine includes no-stale-documentation metadata guidance.
 - F-001-S006: ` + "`mars-harness docsync audit --repo .`" + ` or ` + "`mars-harness tools run docsync_audit --repo . --args-json '{}'`" + `.
 - F-001-S007: ` + "`docs/design-docs/documentation-sync-architecture.md`" + ` documents the universal operating model.
+- F-001-S008: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + ` documents CLI tool/skill sync; source harness verifies this with ` + "`go test ./cmd/mars-harness -run TestMarsHarnessCLI`" + `.
 `,
 
 	"docs/design-docs/context-glossary.md": `# Context Glossary
@@ -1760,6 +1885,7 @@ harness and deployed harnesses.
 | Universal skills | Skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable Mars Harness operating doctrine. |
 | Foundation skills | Skills used by agents operating on ` + "`mars-harness`" + ` itself to evolve, validate, release, or maintain the software factory. |
 | Deployed skills | Skills stored in this target application's ` + "`.harness/skills/`" + ` directory and used by this deployed harness to capture project-specific reusable procedures. |
+| CLI tool/skill sync | Foundational operating rule that any ` + "`mars-harness`" + ` CLI change must update the mirrored ` + "`mars_harness_cli`" + ` tool reference, repo-shortcut map, generated target guidance, and any skills that name the affected CLI workflow. |
 | Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
 | First-class harness definition | Context that should always be included in the top-level ` + "`AGENTS.md`" + `. |
 | Contextual harness definition | Situational context routed through the harness glossary with the form: ` + "`When doing X include this: <path to document.md>`" + `. |
@@ -1807,7 +1933,9 @@ and deployed harness role allowlists. New built-in tools must originate through
 refactors. If an agent bypasses ` + "`tool_create`" + `, it must first use
 ` + "`record_decision`" + ` to record why, then add design-doc rationale. Every newly
 created tool must extend ` + "`docs/design-docs/tools-glossary.md`" + ` in the same
-change that implements or exposes it.
+change that implements or exposes it. When a CLI change affects the
+` + "`mars_harness_cli`" + ` tool or a skill that invokes the CLI, also include
+` + "`docs/design-docs/cli-tool-skill-sync.md`" + `.
 
 ### When changing context routes include this: ` + "`.harness/knowledge/context-glossary.yaml`" + `
 
@@ -1864,7 +1992,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
 | ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
-| ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. |
+| ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
 | ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before successful dispatch-mode jobs complete. |
@@ -1887,6 +2015,9 @@ tools are added, removed, renamed, or materially change behavior.
 
 - Need Mars Harness behavior, versioning, setup, release, score, trust, or target
   harness lifecycle operations: use ` + "`mars_harness_cli`" + `.
+- Need to add, remove, rename, or change a ` + "`mars-harness`" + ` CLI command or flag:
+  update ` + "`mars_harness_cli`" + `, generated skills, generated doctrine, and product
+  docs using [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 - Need to discover or invoke the universal tool surface from an operator shell:
   use ` + "`mars-harness tools list`" + ` and
   ` + "`mars-harness tools run <name> --args-json '{...}'`" + `. Add
@@ -2149,6 +2280,10 @@ Do not create a skill for one-off product work. Use a ticket for product work,
 a guardrail for non-negotiable enforcement, a tool for deterministic actions,
 a prompt change for role identity or stop conditions, and a knowledge route for
 where-to-look context.
+
+When a ` + "`mars-harness`" + ` CLI workflow changes, update any skill that names the
+affected command or flags in the same change as the CLI/tool mapping. See
+[cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 
 ## Required Shape
 

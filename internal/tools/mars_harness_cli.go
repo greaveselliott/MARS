@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
 */
@@ -237,15 +238,26 @@ func marsHarnessCommandSupportsRepo(args []string) bool {
 	case "update":
 		return sub == "check" || sub == "harness"
 	case "release":
-		return sub == "notes"
+		return sub == "notes" || sub == "backfill-notes"
+	case "docsync":
+		return sub == "audit"
+	case "models":
+		return sub == "evaluate" || sub == "override"
 	case "scores":
 		return sub == "" || sub == "export"
+	case "trust":
+		return sub == ""
 	default:
 		return false
 	}
 }
 
 func marsHarnessCLIReference() string {
+	return MarsHarnessCLIReference()
+}
+
+// MarsHarnessCLIReference returns the reference text exposed by the mars_harness_cli tool.
+func MarsHarnessCLIReference() string {
 	return strings.TrimSpace(`mars_harness_cli reference
 
 Purpose:
@@ -388,10 +400,20 @@ Global command surface:
     Flags: --repo <path>, --json
     Example: ["docsync", "audit", "--repo", "."]
 
+  scores
+    Show trunk-native accuracy scores.
+    Flags: --repo <path>, --db <path>
+    Example: ["scores", "--repo", "."]
+
   scores export
     Export repo quality score from telemetry/scoring evidence.
     Flags: --repo <path>, --db <path>, --window-days <n>, --no-ticket
     Example: ["scores", "export", "--repo", ".", "--window-days", "30"]
+
+  trust
+    Show progressive autonomy trust levels.
+    Flags: --repo <path>, --db <path>
+    Example: ["trust", "--repo", "."]
 
   trust set <role> <repo> <observer|contributor|autonomous>
     Override a role trust level for a repo.
@@ -420,4 +442,10 @@ Operational guidance:
   Use background:true only for serve/start or deliberate long-running processes.
   This tool is mutating because many mars-harness commands can write files,
   update trust, start workers, or change release state; observer trust blocks it.`)
+}
+
+// MarsHarnessCommandSupportsRepo reports whether the mars_harness_cli repo shortcut
+// can append a workspace --repo path for the provided mars-harness argv.
+func MarsHarnessCommandSupportsRepo(args []string) bool {
+	return marsHarnessCommandSupportsRepo(args)
 }

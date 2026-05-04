@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/features/F-001-delivery-operating-model.md
 */
@@ -46,6 +47,52 @@ func TestOperatingRulesMirrorTargetHarnesses(t *testing.T) {
 		} {
 			if !strings.Contains(lower, needle) {
 				t.Fatalf("%s must document rationale-bearing architecture/product changes; missing %q", rel, needle)
+			}
+		}
+	}
+}
+
+func TestCLIToolSkillSyncIsDocumented(t *testing.T) {
+	root := repoRoot(t)
+	required := map[string][]string{
+		"AGENTS.md": {
+			"CLI tool/skill sync",
+			"mars_harness_cli",
+			"repo-shortcut map",
+		},
+		"docs/design-docs/cli-tool-skill-sync.md": {
+			"AD-103",
+			"mars_harness_cli",
+			"repo shortcut map",
+			"generated target doctrine",
+			"skills",
+			"go test ./cmd/mars-harness -run TestMarsHarnessCLI",
+		},
+		"docs/design-docs/tools-glossary.md": {
+			"cli-tool-skill-sync.md",
+			"mars_harness_cli",
+			"repo-shortcut map",
+		},
+		"docs/design-docs/skill-evolution.md": {
+			"cli-tool-skill-sync.md",
+			"Skills remain compact",
+		},
+		"internal/scanner/init.go": {
+			"cli-tool-skill-sync.md",
+			"CLI tool/skill sync",
+			"mars_harness_cli",
+		},
+	}
+
+	for rel, needles := range required {
+		data, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		text := string(data)
+		for _, needle := range needles {
+			if !strings.Contains(text, needle) {
+				t.Fatalf("%s must document CLI tool/skill sync; missing %q", rel, needle)
 			}
 		}
 	}

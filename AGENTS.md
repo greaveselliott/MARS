@@ -45,6 +45,7 @@ would otherwise live only in chat.
 - **Universal skills** — skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable Mars Harness operating doctrine.
 - **Foundation skills** — skills used by agents operating on `mars-harness` itself to evolve, validate, release, or maintain the software factory.
 - **Deployed skills** — skills stored in a target project's `.harness/skills/` directory and used by that deployed harness to capture project-specific reusable procedures.
+- **CLI tool/skill sync** — foundational operating rule that any `mars-harness` CLI change must update the mirrored `mars_harness_cli` tool reference, repo-shortcut map, generated target guidance, and any skills that name the affected CLI workflow.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level `AGENTS.md`.
 - **Contextual harness definition** — situational context routed through the harness glossary with the form: `When doing X include this: <path to document.md>`.
@@ -55,6 +56,7 @@ Tools glossary: [docs/design-docs/tools-glossary.md](docs/design-docs/tools-glos
 Role model: [docs/design-docs/harness-operating-model.md](docs/design-docs/harness-operating-model.md)
 Role registry: [docs/roles/ROLES.md](docs/roles/ROLES.md)
 Documentation sync architecture: [docs/design-docs/documentation-sync-architecture.md](docs/design-docs/documentation-sync-architecture.md)
+CLI tool/skill sync: [docs/design-docs/cli-tool-skill-sync.md](docs/design-docs/cli-tool-skill-sync.md)
 
 Agents always operate on a target project. The harness is never the target of its own agents (no self-modification during runs).
 
@@ -347,6 +349,7 @@ golangci-lint run
 9. **Feed conversations back.** Significant conversations must update the owning repo artifact in the same direct commit to `main`: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
 10. **Avoid docs churn for trivial replies.** Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
 11. **Use the ticket lifecycle directories.** New tickets are created with `ticket_create` in `docs/tickets/backlog/`. Do not hand-write ticket markdown directly under `docs/tickets/`; ticket files belong only in `backlog/`, `in-progress/`, `in-review/`, or `done/`.
+12. **Keep CLI tools and skills synchronized.** Whenever `cmd/mars-harness` changes a command, flag, output contract, repo behavior, or workflow, update the `mars_harness_cli` reference and repo-shortcut map, generated target doctrine, and any affected skills in the same change. Run the CLI sync tests named in `docs/design-docs/cli-tool-skill-sync.md`.
 
 ## Pointers
 
@@ -360,5 +363,6 @@ golangci-lint run
 - **BDD feature contracts:** [docs/features/README.md](docs/features/README.md)
 - **Role registry:** [docs/roles/ROLES.md](docs/roles/ROLES.md)
 - **Model research:** [docs/references/model-landscape-may-2026.md](docs/references/model-landscape-may-2026.md)
+- **CLI tool/skill sync:** [docs/design-docs/cli-tool-skill-sync.md](docs/design-docs/cli-tool-skill-sync.md)
 - **Tech debt:** [docs/exec-plans/tech-debt.md](docs/exec-plans/tech-debt.md)
 - **Tickets:** [docs/tickets/](docs/tickets/)

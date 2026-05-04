@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/tools-glossary.md
@@ -205,12 +206,13 @@ func handleHarnessDoctrineSync(_ context.Context, root Root, raw json.RawMessage
 		path  string
 		terms []string
 	}{
-		{"AGENTS.md", []string{"Operating model", "Mirrored tools", "docs/design-docs/tools-glossary.md", "docs/design-docs/documentation-sync-architecture.md"}},
+		{"AGENTS.md", []string{"Operating model", "Mirrored tools", "docs/design-docs/tools-glossary.md", "docs/design-docs/documentation-sync-architecture.md", "docs/design-docs/cli-tool-skill-sync.md"}},
 		{"docs/design-docs/harness-glossary.md", []string{"Symbiotic operating-model change", "Formalized tool creation trigger"}},
 		{"docs/design-docs/tools-glossary.md", []string{"release_orchestrate", "docsync_audit", "tool_creation_guard", "tool_inventory_audit", "task_trace_summarize"}},
-		{"docs/design-docs/delivery-operating-model.md", []string{"formalized tools", "repeated process", "docsync_audit", "documentation-sync-architecture.md"}},
+		{"docs/design-docs/delivery-operating-model.md", []string{"formalized tools", "repeated process", "docsync_audit", "documentation-sync-architecture.md", "cli-tool-skill-sync.md"}},
 		{"docs/design-docs/documentation-sync-architecture.md", []string{"AD-102", "Universal Operating Model", "docsync_audit"}},
-		{"internal/scanner/init.go", []string{"release_orchestrate", "docsync_audit", "documentation-sync-architecture.md", "Formalized tool creation trigger"}},
+		{"docs/design-docs/cli-tool-skill-sync.md", []string{"AD-103", "mars_harness_cli", "repo shortcut map", "skills"}},
+		{"internal/scanner/init.go", []string{"release_orchestrate", "docsync_audit", "documentation-sync-architecture.md", "cli-tool-skill-sync.md", "Formalized tool creation trigger"}},
 	} {
 		checks = append(checks, checkContains(item.path, readOptional(root, item.path), item.terms)...)
 	}

@@ -284,3 +284,37 @@ near the top of the file before implementation declarations.
   files lack metadata, reference missing docs, or drift from the code map.
 - Generated target harnesses inherit the same documentation-sync doctrine.
 - Agents treat docs updates as part of implementation, not as optional cleanup.
+
+## AD-103: CLI Tool And Skill Synchronization
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The CLI is a foundation control plane, but agents usually discover it through
+mirrored tools, generated target doctrine, role allowlists, and compact skills.
+If the CLI changes without synchronizing those mirrors, agents can keep using
+stale command references, miss new repo-aware commands, or follow old workflow
+steps even though the source command tree changed.
+
+### Decision
+
+Whenever `cmd/mars-harness` changes a command, flag, output contract, repo
+behavior, mutability expectation, or recurring workflow, the same change updates
+the `mars_harness_cli` reference, the `mars_harness_cli` repo shortcut map,
+tool-selection guidance, generated target doctrine, and any skills that name the
+affected CLI workflow. The full architecture and evidence model live in
+[cli-tool-skill-sync.md](cli-tool-skill-sync.md).
+
+### Consequences
+
+- CLI work is not complete until agent-facing tool and skill surfaces are
+  current.
+- Tests compare the Cobra command tree with the mirrored CLI reference and repo
+  shortcut map.
+- Generated targets inherit the same rule so deployed harnesses do not drift
+  from foundation CLI behavior.
+- CLI release notes explain both operator impact and agent/tool synchronization
+  impact.

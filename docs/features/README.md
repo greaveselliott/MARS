@@ -41,6 +41,11 @@ mars-harness tools run docsync_audit --repo . --args-json '{}'
 The architecture and universal operating model for this process live in
 [../design-docs/documentation-sync-architecture.md](../design-docs/documentation-sync-architecture.md).
 
+CLI changes have an additional foundational operating model: keep the
+`mars_harness_cli` reference, repo-shortcut map, generated doctrine, and
+affected skills synchronized using
+[../design-docs/cli-tool-skill-sync.md](../design-docs/cli-tool-skill-sync.md).
+
 ## Contract Rules
 
 - Feature contracts come after the active exec plan: the plan names the feature

@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/features/F-001-delivery-operating-model.md
@@ -27,10 +28,11 @@ func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 		"docs/goals/active.md":                                {"G-001", "Status: active", "Hypothesis"},
 		"docs/goals/observations.md":                          {"weak/noisy evidence"},
 		"docs/goals/superseded.md":                            {"Superseded Goals"},
-		"docs/design-docs/code-documentation-map.md":          {"Code Documentation Map", "MarsDocSync", "docsync audit", "Package Map", "documentation-sync-architecture.md"},
+		"docs/design-docs/code-documentation-map.md":          {"Code Documentation Map", "MarsDocSync", "docsync audit", "Package Map", "documentation-sync-architecture.md", "cli-tool-skill-sync.md"},
+		"docs/design-docs/cli-tool-skill-sync.md":             {"AD-103", "CLI Tool And Skill Synchronization", "Universal Operating Model", "mars_harness_cli", "repo shortcut map"},
 		"docs/design-docs/documentation-sync-architecture.md": {"AD-102", "Documentation Sync", "Universal Operating Model", "Architecture", "docsync_audit", "Generated Target Layer"},
-		"docs/features/README.md":                             {"BDD Feature Contracts", "Business Logic Is First-Class BDD", "No Stale Documentation", "Given/When/Then", "Scenario Schedule"},
-		"docs/features/F-001-delivery-operating-model.md":     {"Feature ID: F-001", "Scenario Schedule", "F-001-S008", "F-001-S009", "F-001-S010", "No Stale Documentation", "Given", "When", "Then"},
+		"docs/features/README.md":                             {"BDD Feature Contracts", "Business Logic Is First-Class BDD", "No Stale Documentation", "cli-tool-skill-sync.md", "Given/When/Then", "Scenario Schedule"},
+		"docs/features/F-001-delivery-operating-model.md":     {"Feature ID: F-001", "Scenario Schedule", "F-001-S008", "F-001-S009", "F-001-S010", "F-001-S011", "No Stale Documentation", "Given", "When", "Then"},
 		"docs/tickets/README.md":                              {"work_type", "bdd_scenarios", "end_to_end_evidence", "verified_by"},
 		"docs/QUALITY_SCORE.md":                               {"shipped feature scenarios", "enabler work"},
 	}

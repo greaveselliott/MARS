@@ -49,7 +49,7 @@ tools are added, removed, renamed, or materially change behavior.
 | `file_search` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | `grep` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
 | `shell_exec` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
-| `mars_harness_cli` | Read exhaustive CLI reference or run `mars-harness` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. |
+| `mars_harness_cli` | Read exhaustive CLI reference or run `mars-harness` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | `record_decision` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | `ticket_create` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
 | `job_disposition_record` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before successful dispatch-mode jobs complete. |
@@ -72,6 +72,9 @@ tools are added, removed, renamed, or materially change behavior.
 
 - Need Mars Harness behavior, versioning, setup, release, score, trust, or target
   harness lifecycle operations: use `mars_harness_cli`.
+- Need to add, remove, rename, or change a `mars-harness` CLI command or flag:
+  update `mars_harness_cli`, generated skills, generated doctrine, and product
+  docs using [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 - Need to discover or invoke the universal tool surface from an operator shell
   or external LLM context: use `mars-harness tools list` and
   `mars-harness tools run <name> --args-json '{...}'`. Add
