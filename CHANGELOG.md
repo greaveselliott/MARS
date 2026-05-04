@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.33.3] - 2026-05-04
+<!-- mars-harness-release: version=0.33.3 commit=914cf98f13ee -->
+
+### Impact
+- **release:** Operators and future agents get release notes that explain structural delivery shifts instead of repeating thin commit subjects.
+
+### Why
+- **release:** Operating-model, orchestration, persona, documentation-sync, and CLI/tool-sync releases need durable context because the changelog becomes the upgrade narrative.
+
+### What Changed
+- **release:** Added topic-aware fallback profiles, covered structured dispatch regression, documented the rule, and backfilled 0.33.1 (914cf98).
+
+### Fixes
+- **release:** Enrich structural release-note fallbacks (914cf98)
+
 ## [0.33.2] - 2026-05-04
 <!-- mars-harness-release: version=0.33.2 commit=67aa3f109904 -->
 
