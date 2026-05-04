@@ -2,6 +2,15 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.26.0] - 2026-05-04
+<!-- mars-harness-release: version=0.26.0 commit=38c1627fb039 -->
+
+### Why This Release Matters
+This release matters because it gives operators new capability through work to add target harness eject kill switch in cli.
+
+### Features
+- **cli:** Add target harness eject kill switch (38c1627)
+
 ## [0.25.1] - 2026-05-04
 <!-- mars-harness-release: version=0.25.1 commit=42393b327478 -->
 
