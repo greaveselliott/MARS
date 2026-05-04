@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.33.2] - 2026-05-04
+<!-- mars-harness-release: version=0.33.2 commit=67aa3f109904 -->
+
+### Impact
+- **cli:** Operators see improved reliability because add root version shortcuts.
+
+### Why
+- **cli:** This matters because add root version shortcuts closes a failure mode or degraded path.
+
+### What Changed
+- **cli:** Changed add root version shortcuts (67aa3f1).
+
+### Fixes
+- **cli:** Add root version shortcuts (67aa3f1)
+
 ## [0.33.1] - 2026-05-04
 <!-- mars-harness-release: version=0.33.1 commit=c436460e5357 -->
 
