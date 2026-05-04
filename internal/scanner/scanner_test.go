@@ -536,10 +536,13 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(operatingModel), "without handoff gaps")
 	assert.Contains(t, string(operatingModel), "repeated process promotion to formalized tools")
 	assert.Contains(t, string(operatingModel), "Built-in tool creation must dogfood the meta-tool path")
+	assert.Contains(t, string(operatingModel), "active exec plan first, then feature contract, then")
 
 	execPlanReadme, err := os.ReadFile(filepath.Join(dir, "docs", "exec-plans", "README.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(execPlanReadme), "only one active exec plan")
+	assert.Contains(t, string(execPlanReadme), "## Planning Order")
+	assert.Contains(t, string(execPlanReadme), "exec plan, feature contract, ticket, delivery")
 	assert.Contains(t, string(execPlanReadme), "active/current-operating-plan.md")
 	assert.Contains(t, string(execPlanReadme), "backlog plans")
 	assert.Contains(t, string(execPlanReadme), "**Depends On**")
@@ -578,6 +581,25 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(featureContract), "Given")
 	assert.Contains(t, string(featureContract), "When")
 	assert.Contains(t, string(featureContract), "Then")
+
+	featuresReadme, err := os.ReadFile(filepath.Join(dir, "docs", "features", "README.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(featuresReadme), "Feature contracts come after the active exec plan")
+
+	ticketsReadme, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "README.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(ticketsReadme), "Tickets come after planning and feature contracts")
+
+	assert.Contains(t, string(agentGuide), "Bootstrap and delivery order is strict")
+
+	ceoPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "ceo.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(ceoPrompt), "BOOTSTRAP ORDER IS STRICT")
+	assert.Contains(t, string(ceoPrompt), "Do not write `docs/features/`")
+
+	cooPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "coo.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(cooPrompt), "Do NOT derive")
 
 	releaseDoc, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	require.NoError(t, err)

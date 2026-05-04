@@ -68,6 +68,9 @@ func postToolPolicy(ctx context.Context, root Root, name string, raw json.RawMes
 		return nil
 	}
 	session, _ := SessionFromContext(ctx)
+	if name == "file_write" {
+		recordFileWriteOrder(session, raw)
+	}
 	switch name {
 	case "git_commit", "git_push":
 		return nil
@@ -100,6 +103,9 @@ func checkTicketCreatePolicy(root Root, session Session, hasSession bool, raw js
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return nil
 	}
+	if err := checkTicketCreatePlanningOrder(root, args); err != nil {
+		return err
+	}
 	role := strings.ToLower(strings.TrimSpace(session.Role))
 	switch role {
 	case "engineer":
@@ -130,6 +136,66 @@ func checkEngineerTicketCreatePolicy(root Root, args ticketCreateArgs) error {
 
 func isInterventionDebtTicket(args ticketCreateArgs) bool {
 	return strings.TrimSpace(args.Kind) == "intervention-debt" || strings.TrimSpace(args.WorkType) == "intervention-debt"
+}
+
+func checkTicketCreatePlanningOrder(root Root, args ticketCreateArgs) error {
+	if isInterventionDebtTicket(args) {
+		return nil
+	}
+	if !repoFileExists(root, filepath.Join("docs", "exec-plans", "active", "current-operating-plan.md")) {
+		return fmt.Errorf("policy: ticket_create requires docs/exec-plans/active/current-operating-plan.md first; planning order is exec plan, feature contract, ticket, delivery")
+	}
+
+	workType := normalizeWorkType(args.Kind, args.WorkType)
+	if workType != "feature" {
+		return nil
+	}
+	featureIDs := featureIDsFromScenarios(args.BDDScenarios)
+	if len(featureIDs) == 0 {
+		return fmt.Errorf("policy: feature ticket_create requires bdd_scenarios from an existing docs/features contract; planning order is exec plan, feature contract, ticket, delivery")
+	}
+	for _, id := range featureIDs {
+		if !featureContractExists(root, id) {
+			return fmt.Errorf("policy: feature ticket_create references %s before a docs/features/%s*.md contract exists; planning order is exec plan, feature contract, ticket, delivery", id, id)
+		}
+	}
+	return nil
+}
+
+func featureIDsFromScenarios(scenarios []string) []string {
+	seen := make(map[string]bool)
+	var ids []string
+	for _, scenario := range scenarios {
+		parts := strings.Split(strings.TrimSpace(strings.ToUpper(scenario)), "-")
+		if len(parts) < 2 || parts[0] != "F" || parts[1] == "" {
+			continue
+		}
+		id := "F-" + parts[1]
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+func featureContractExists(root Root, featureID string) bool {
+	featuresDir, err := root.ResolvePath(filepath.Join("docs", "features"))
+	if err != nil {
+		return false
+	}
+	matches, err := filepath.Glob(filepath.Join(featuresDir, featureID+"*.md"))
+	return err == nil && len(matches) > 0
+}
+
+func repoFileExists(root Root, rel string) bool {
+	abs, err := root.ResolvePath(rel)
+	if err != nil {
+		return false
+	}
+	info, err := os.Stat(abs)
+	return err == nil && !info.IsDir()
 }
 
 func isDependencyTicketForEligibleWork(args ticketCreateArgs, eligible []ticketstate.Ticket) bool {
@@ -230,6 +296,9 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 	if !hasSession {
 		return nil
 	}
+	if err := checkFeatureFileWritePlanningOrder(session, args.Path); err != nil {
+		return err
+	}
 	if session.Guardrails != nil {
 		if err := session.Guardrails.CheckFile(session.Role, args.Path, args.Content); err != nil {
 			return err
@@ -239,6 +308,35 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 		return fmt.Errorf("policy: secret scanner blocked %s:%d (%s)", hits[0].File, hits[0].Line, hits[0].Pattern)
 	}
 	return nil
+}
+
+const ceoCurrentPlanWriteKey = "ceo:file_write:current-operating-plan"
+
+func checkFeatureFileWritePlanningOrder(session Session, rel string) error {
+	if strings.ToLower(strings.TrimSpace(session.Role)) != "ceo" {
+		return nil
+	}
+	rel = strings.ToLower(cleanRepoPath(rel))
+	if !strings.HasPrefix(rel, "docs/features/") || !strings.HasSuffix(rel, ".md") {
+		return nil
+	}
+	if session.ToolCounts != nil && session.ToolCounts[ceoCurrentPlanWriteKey] > 0 {
+		return nil
+	}
+	return fmt.Errorf("policy: CEO must write docs/exec-plans/active/current-operating-plan.md before docs/features changes; planning order is exec plan, feature contract, ticket, delivery")
+}
+
+func recordFileWriteOrder(session Session, raw json.RawMessage) {
+	if strings.ToLower(strings.TrimSpace(session.Role)) != "ceo" || session.ToolCounts == nil {
+		return
+	}
+	var args fileWriteArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return
+	}
+	if strings.ToLower(cleanRepoPath(args.Path)) == "docs/exec-plans/active/current-operating-plan.md" {
+		session.ToolCounts[ceoCurrentPlanWriteKey]++
+	}
 }
 
 func checkTicketFileWritePolicy(root Root, rel string) error {

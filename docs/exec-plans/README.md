@@ -22,6 +22,20 @@ Plan priority never overrides dependencies. A P1 plan with an unresolved
 dependency waits behind a lower-risk unblocked slice or creates the dependency
 ticket first.
 
+## Planning Order
+
+Bootstrap and delivery order is strict:
+
+1. Update `docs/exec-plans/active/current-operating-plan.md`.
+2. Create or update the `docs/features/F-NNN-*.md` contract named by the plan.
+3. Create tickets from the current failing scenario or scenario group.
+4. Deliver one ticket with evidence.
+
+In shorthand: exec plan, feature contract, ticket, delivery.
+
+Feature contracts, tickets, and implementation work without an active plan
+pointer are drift. Repair the exec plan first.
+
 ## Plan Metadata
 
 Active and backlog plans require:

@@ -2107,8 +2107,9 @@ func startCmd() *cobra.Command {
 		Use:   "start",
 		Short: "Bootstrap and run the full autonomous pipeline",
 		Long: `Initialise .harness/ if needed, register the repo, seed the CEO agent,
-and start the orchestrator. The CEO plans strategy, hands off to CTO,
-then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
+and start the orchestrator. Bootstrap order is exec plan first, then feature
+contracts, then tickets, then delivery. Dispatch returns each role disposition
+to Orchestrator so the next agent is selected from current evidence.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tw := ui.NewTraceWriter(cmd.OutOrStdout(), false, false)
 
@@ -2207,7 +2208,7 @@ then COO creates tickets, the engineer builds, QA reviews — the full chain.`,
 				tw.WriteError(fmt.Sprintf("seed CEO: %v", err))
 				return err
 			}
-			tw.WriteAssistant(fmt.Sprintf("Seeded CEO agent (job %s) — pipeline will cascade: CEO → CTO → COO → Engineer → QA → Security → Deps", jobID))
+			tw.WriteAssistant(fmt.Sprintf("Seeded CEO agent (job %s) — bootstrap order: exec plan → features → tickets → delivery; Orchestrator selects each next role", jobID))
 
 			if exitAfterSeed {
 				return srv.Stop(context.Background())

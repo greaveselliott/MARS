@@ -9,6 +9,8 @@ there is evidence that Markdown plus Go integration/E2E tests is not enough.
 
 ## Contract Rules
 
+- Feature contracts come after the active exec plan: the plan names the feature
+  and scenario schedule before tickets or delivery begin.
 - BDD defines the full feature before implementation.
 - The schedule is the ordered list of failing BDD scenarios or scenario groups.
 - Tickets implement only the current failing scenario or scenario group.

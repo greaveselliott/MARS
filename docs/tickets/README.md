@@ -116,6 +116,10 @@ belongs only in `backlog/`, `in-progress/`, `in-review/`, or `done/`; root-level
 files such as `docs/tickets/MH-001-example.md` are invalid and should be moved
 to the lifecycle directory that reflects their state.
 
+Tickets come after planning and feature contracts. Before creating ordinary
+feature tickets, the active exec plan must name the current scenario and the
+corresponding `docs/features/F-NNN-*.md` contract must exist.
+
 ## Lifecycle
 
 1. Ticket created in `backlog/`

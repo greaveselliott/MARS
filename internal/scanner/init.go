@@ -620,6 +620,9 @@ Role registry: ` + "`docs/roles/ROLES.md`" + `
 ## Workflow
 
 - Work on ` + "`main`" + `. Use strict trunk for normal delivery.
+- Bootstrap and delivery order is strict: exec plan first, then feature contract,
+  then tickets, then implementation delivery. Do not create feature contracts,
+  tickets, or delivery work until the active exec plan names the current slice.
 - BDD feature contracts define feature completeness; walking skeleton is the implementation strategy: make the next failing scenario pass through the thinnest real end-to-end path.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
 - Prefer eligible in-progress tickets before backlog work; a ticket is eligible when it has no meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata.
@@ -766,6 +769,10 @@ Ticket markdown belongs only in ` + "`backlog/`" + `, ` + "`in-progress/`" + `,
 ` + "`docs/tickets/T-001-example.md`" + ` are invalid; move misplaced tickets into
 the lifecycle directory that reflects their state.
 
+Tickets come after planning and feature contracts. Before creating ordinary
+feature tickets, the active exec plan must name the current scenario and the
+corresponding ` + "`docs/features/F-NNN-*.md`" + ` contract must exist.
+
 ## Lifecycle
 
 1. A ticket is created in backlog/ with frontmatter and acceptance criteria
@@ -832,6 +839,20 @@ Backlog plans must carry ` + "`**Priority:**`" + `, ` + "`**Depends On:**`" + `,
 ` + "`**Success Evidence:**`" + `, ` + "`**Falsification Evidence:**`" + `, ` + "`**Scenario Schedule:**`" + `,
 ` + "`**Current Failing Scenario:**`" + `, ` + "`**Walking Skeleton Slice:**`" + `, and
 ` + "`**Learning Or MVP Outcome:**`" + ` metadata and wait their turn like backlog tickets.
+
+## Planning Order
+
+The order is strict:
+
+1. Update ` + "`docs/exec-plans/active/current-operating-plan.md`" + ` so the current slice, scenario schedule, and walking skeleton are explicit.
+2. Create or update the ` + "`docs/features/F-NNN-*.md`" + ` contract named by the plan.
+3. Create tickets from the current failing scenario or scenario group.
+4. Deliver one ticket with evidence.
+
+In shorthand: exec plan, feature contract, ticket, delivery.
+
+If a feature contract, ticket, or implementation idea exists without an active
+plan pointer, fix the exec plan first.
 
 ## Format
 
@@ -905,9 +926,10 @@ not create another active exec plan; move waiting plans to
 
 ## Current Priority Order
 
-1. Establish the project build, test, lint, and run commands in ` + "`docs/design-docs/context-glossary.md`" + `.
-2. Convert the first coherent product slice into tickets.
-3. Complete in-progress tickets before claiming new backlog work.
+1. Refresh this active exec plan from README, active goals, and real repo state.
+2. Create or update the feature contract named by ` + "`**BDD Feature:**`" + `.
+3. Convert the current failing scenario into tickets.
+4. Deliver one ticket with evidence before widening scope.
 
 ## Plan Backlog
 
@@ -1083,6 +1105,11 @@ the implementation strategy: make the next failing scenario pass through the
 thinnest real end-to-end path. The schedule is the ordered list of failing BDD
 scenarios in the active exec plan.
 
+Planning order is strict: active exec plan first, then feature contract, then
+tickets, then implementation delivery. A project that has feature docs or
+tickets without a current plan has lost the control plane; repair the plan
+before widening scope.
+
 No feature ships until its in-scope scenarios pass or the CEO explicitly
 descopes or supersedes them. Enabler work may complete without shipping a
 feature, but it must be labelled as enabler work and must not be described as a
@@ -1115,7 +1142,8 @@ exception context.
 ## Consequences
 
 - Goals can be user-authored or created from structured evidence.
-- The CEO aligns one active exec plan to active goals and feature contracts.
+- The CEO aligns one active exec plan first, then creates or updates the feature
+  contracts named by that plan.
 - The COO creates tickets only from the current failing scenario or scenario group.
 - The Engineer implements one ticket and provides scenario evidence before done.
 - QA and Dogfood validate behavior against the BDD scenarios.
@@ -1235,6 +1263,8 @@ commands execute the behavior.
 
 ## Rules
 
+- Feature contracts come after the active exec plan: the plan names the feature
+  and scenario schedule before tickets or delivery begin.
 - BDD defines the full feature before implementation.
 - Walking skeleton is the implementation strategy, not the feature definition.
 - The schedule is the ordered list of failing scenarios.
@@ -1817,6 +1847,16 @@ the next truthful role.
 You are the CEO. Your job is to assess the project state and produce a
 multi-week prioritised backlog with a clear "This week (Week 1)" slice.
 
+BOOTSTRAP ORDER IS STRICT:
+1. Exec plan first: write ` + "`docs/exec-plans/active/current-operating-plan.md`" + `.
+2. Feature contract second: only after the plan write succeeds, create or
+   update the ` + "`docs/features/F-NNN-*.md`" + ` contract named by the plan.
+3. Tickets third: COO creates tickets from the current failing scenario.
+4. Delivery fourth: Engineer implements one ticket with evidence.
+
+Do not create tickets or start implementation. Do not write ` + "`docs/features/`" + `
+before the active exec plan has been written in this run.
+
 STEP 1 — Read README.md first. This is the source of truth for the project.
 
 STEP 2 — Check if docs/exec-plans/active/current-operating-plan.md exists.
@@ -1835,7 +1875,7 @@ STEP 3 (returning projects only):
 9. docs/design-docs/ (architectural decisions)
 10. Recent commit history: git log --oneline -20
 
-TASK: Update docs/exec-plans/active/current-operating-plan.md using file_write.
+TASK 1: Update docs/exec-plans/active/current-operating-plan.md using file_write.
 CRITICAL: You MUST write the FULL document content. Do NOT create empty files.
 The file must contain all sections shown in the structure below.
 It must remain the only markdown file in ` + "`docs/exec-plans/active/`" + `.
@@ -1907,8 +1947,15 @@ SCENARIO RULES:
 - Work comes only from the current failing scenario or scenario group.
 - Do not mark a feature shipped until in-scope scenarios pass or are explicitly descoped.
 
-After writing priorities, commit and push your changes:
-  git add docs/exec-plans/active/current-operating-plan.md
+TASK 2: After the exec plan write succeeds, make sure the feature contract named
+by **BDD Feature** exists in ` + "`docs/features/`" + `. If it is missing or stale,
+write the full ` + "`docs/features/F-NNN-*.md`" + ` contract with:
+- Feature ID, goals, owner, status, scenario schedule, out of scope, descoped scenarios, and evidence.
+- Given/When/Then scenarios matching the active plan schedule.
+- A clear note that tickets may only target the current failing scenario or scenario group.
+
+After writing the plan and any feature contract updates, commit and push your changes:
+  git add docs/exec-plans/active/current-operating-plan.md docs/features
   git commit -m "vision: update current operating plan [date]"
   git push
 
@@ -1916,6 +1963,7 @@ After writing priorities, commit and push your changes:
 
 - Every backlog item must cite a specific source (README goal, exec plan task, ticket).
 - The active plan references at least one active goal and one BDD feature contract.
+- The active exec plan was written before any ` + "`docs/features/`" + ` changes.
 - "This week" items have at most 7 entries with full detail.
 - Full backlog capped at 20 items.
 - If the project is healthy and no high-priority work exists, say so.
@@ -1957,9 +2005,9 @@ scenario group named in the active plan.
 STEP 1 — Read docs/exec-plans/active/current-operating-plan.md.
   - If it exists: use "Current Failing Scenario", "Scenario Schedule", and
     "This week (Week 1)" as your ticket source.
-  - If it does NOT exist: read README.md instead and derive tickets directly
-    from the project spec / build order in the README. This happens on brand
-    new projects where the CEO has not yet produced priorities.
+  - If it does NOT exist or does not name a current failing scenario: stop.
+    Record a blocked disposition with suggested_role "ceo". Do NOT derive
+    tickets directly from README.md.
 
 STEP 2 — Check the TICKET INDEX in your system prompt. It lists every
   existing ticket across backlog/, in-progress/, and done/. If the TICKET
@@ -1967,8 +2015,9 @@ STEP 2 — Check the TICKET INDEX in your system prompt. It lists every
   to discover existing tickets.
 
 STEP 3 — Read docs/goals/active.md and the BDD feature contract named in the
-  active plan. If either is missing, create an enabler ticket to restore the
-  operating model before creating feature work.
+  active plan. If either is missing, stop and record a blocked disposition
+  with suggested_role "ceo" or "janitor". Do NOT create tickets until the
+  active exec plan and feature contract exist.
 
 STEP 4 — For each current failing scenario priority, check the TICKET INDEX. If a ticket
   covering the same topic already exists in ANY status, SKIP it. Do NOT
@@ -1976,8 +2025,8 @@ STEP 4 — For each current failing scenario priority, check the TICKET INDEX. I
   materially adds scope not already covered.
 
 SCOPE: Create tickets ONLY for the current failing scenario or scenario group
-(or, on a new project, the first logical batch of work from the README). Do not
-create tickets for future scenarios beyond the first batch.
+named by the active exec plan. Do not create tickets for future scenarios beyond
+the first batch.
 
 TICKET CREATION — use the ticket_create tool (NOT file_write):
 
@@ -2018,6 +2067,8 @@ For each "This week" priority that has no existing ticket:
 CONSTRAINTS:
 - ALWAYS use ticket_create for new tickets — it enforces deduplication
   mechanically. Do NOT use file_write for ticket files.
+- Tickets come after exec plans and feature contracts. If either is missing,
+  stop and route back to Orchestrator instead of inventing tickets.
 - Every ticket MUST have structured acceptance criteria (not flat two-line AC)
 - Every ticket MUST link to a design doc or note that one is needed first
 - Every feature ticket MUST name BDD scenario IDs and ` + "`end_to_end_evidence: required`" + `

@@ -93,6 +93,11 @@ backlog plans must name goals, BDD feature contracts, hypothesis, success and
 falsification evidence, scenario schedule, current failing scenario, walking
 skeleton slice, and learning or MVP outcome.
 
+Planning order is strict: active exec plan first, then feature contract, then
+tickets, then implementation delivery. A project that has feature docs or
+tickets without a current plan has lost the control plane; repair the plan
+before widening scope.
+
 Tickets live in `docs/tickets/` and carry `work_type`, `bdd_scenarios`,
 `end_to_end_evidence`, `evidence_links`, and `verified_by`. Feature tickets
 require scenario evidence before done. Enabler tickets can complete without
@@ -104,8 +109,8 @@ Role responsibilities use explicit starter role names here because those roles
 remain the executable manifest units. Their canonical domain and mode mapping
 lives in [harness-operating-model.md](harness-operating-model.md).
 
-The CEO owns goals, BDD feature contracts, scenario schedule, tradeoffs, and the
-single active exec plan.
+The CEO updates the single active exec plan first, then creates or updates the
+feature contracts and scenario schedule named by that plan.
 
 The CTO validates the plan hypothesis, architecture fit, and whether the
 walking skeleton is a real end-to-end path rather than scaffold-only work.
