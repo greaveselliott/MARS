@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.28.2] - 2026-05-04
+<!-- mars-harness-release: version=0.28.2 commit=4d26d7c9bf43 -->
+
+### Impact
+- **update:** Operators see improved reliability because resolve tagged private release assets.
+
+### Why
+- **update:** This matters because resolve tagged private release assets closes a failure mode or degraded path.
+
+### What Changed
+- **update:** Changed resolve tagged private release assets (4d26d7c).
+
+### Fixes
+- **update:** Resolve tagged private release assets (4d26d7c)
+
 ## [0.28.1] - 2026-05-04
 <!-- mars-harness-release: version=0.28.1 commit=830ce4782671 -->
 
