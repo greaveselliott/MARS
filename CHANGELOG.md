@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.31.0] - 2026-05-04
+<!-- mars-harness-release: version=0.31.0 commit=3953db758420 -->
+
+### Impact
+- **telemetry:** Operators gain new capability: add anonymous foundation telemetry collector.
+
+### Why
+- **telemetry:** This matters because add anonymous foundation telemetry collector was missing from the shipped capability set.
+
+### What Changed
+- **telemetry:** Changed add anonymous foundation telemetry collector (3953db7).
+
+### Features
+- **telemetry:** Add anonymous foundation telemetry collector (3953db7)
+
 ## [0.30.1] - 2026-05-04
 <!-- mars-harness-release: version=0.30.1 commit=074a9e5391af -->
 
