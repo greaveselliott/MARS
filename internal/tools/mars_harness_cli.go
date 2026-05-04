@@ -1,8 +1,9 @@
 /*
 MarsDocSync:
-- docs/design-docs/release-versioning.md
-- docs/features/F-009-release-update-lifecycle.md
+docs:
+- docs/design-docs/code-documentation-map.md
 - docs/design-docs/tools-glossary.md
+- docs/features/F-005-agent-execution-runtime.md
 */
 package tools
 
@@ -381,6 +382,11 @@ Global command surface:
     Verify release metadata/assets for the updater.
     Flags: --repo <owner/name>, --version <latest|tag>, --release-url <url>, --json
     Example: ["release", "verify-assets", "--version", "latest", "--json"]
+
+  docsync audit
+    Audit source-file MarsDocSync metadata and associated documentation pointers.
+    Flags: --repo <path>, --json
+    Example: ["docsync", "audit", "--repo", "."]
 
   scores export
     Export repo quality score from telemetry/scoring evidence.

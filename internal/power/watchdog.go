@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/features/F-006-queue-and-orchestration.md
+- docs/product-specs/product-surface.md
+*/
 package power
 
 import (
@@ -11,7 +18,7 @@ import (
 type WakeCallback func(gap time.Duration)
 
 const (
-	watchdogTick     = 5 * time.Second
+	watchdogTick      = 5 * time.Second
 	sleepGapThreshold = 30 * time.Second
 )
 

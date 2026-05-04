@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/features/F-011-optional-github-integration.md
+- docs/product-specs/product-surface.md
+*/
 package github
 
 import (
@@ -122,9 +129,9 @@ func (c *Client) CreatePR(ctx context.Context, owner, repo, title, body, head, b
 // CreateCheckRun creates a check run on the given commit SHA.
 func (c *Client) CreateCheckRun(ctx context.Context, owner, repo, name, sha string, status CheckStatus) (*CheckRun, error) {
 	payload := map[string]string{
-		"name":    name,
+		"name":     name,
 		"head_sha": sha,
-		"status":  string(status),
+		"status":   string(status),
 	}
 	path := fmt.Sprintf("/repos/%s/%s/check-runs", owner, repo)
 	var cr CheckRun

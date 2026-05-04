@@ -1,3 +1,11 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/pipeline-engine.md
+- docs/design-docs/orchestrated-organization-layer.md
+- docs/features/F-006-queue-and-orchestration.md
+*/
 package serve
 
 import (
@@ -56,8 +64,8 @@ func TestTriggerRouter_Match(t *testing.T) {
 	require.NoError(t, router.Rebuild([]RepoRecord{repo}))
 
 	tests := []struct {
-		name     string
-		event    gh.Event
+		name      string
+		event     gh.Event
 		wantRoles []string
 	}{
 		{

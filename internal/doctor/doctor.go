@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/features/F-004-target-harness-lifecycle.md
+- docs/product-specs/product-surface.md
+*/
 package doctor
 
 import (

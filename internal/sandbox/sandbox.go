@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/guardrails.md
+- docs/features/F-007-guardrails-and-safety.md
+*/
 package sandbox
 
 import (

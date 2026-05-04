@@ -1,12 +1,16 @@
 /*
 MarsDocSync:
-- AGENTS.md
+docs:
+- docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/harness-glossary.md
+- docs/design-docs/harness-operating-model.md
 - docs/design-docs/release-versioning.md
-- docs/features/README.md
+- docs/design-docs/tools-glossary.md
 - docs/features/F-001-delivery-operating-model.md
+- docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/roles/ROLES.md
 */
 package scanner
 
@@ -389,8 +393,9 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, manifestStr, "mode: ticket-delivery", "manifest should include role mode metadata")
 	assert.Contains(t, manifestStr, "mars_harness_cli", "manifest should expose mars_harness_cli as a mirrored tool")
 	assert.Contains(t, manifestStr, "tool_create", "manifest should expose tool_create as a mirrored tool")
-	assert.Contains(t, manifestStr, "record_decision, tool_create, task_trace_summarize, git_status", "implementation roles should allow tool_create before git tools")
-	assert.Contains(t, manifestStr, "record_decision, ticket_create, tool_create, task_trace_summarize", "dogfood should create findings through ticket_create")
+	assert.Contains(t, manifestStr, "docsync_audit", "manifest should expose docsync_audit as a mirrored documentation tool")
+	assert.Contains(t, manifestStr, "record_decision, tool_create, task_trace_summarize, docsync_audit, git_status", "implementation roles should allow tool_create and docsync before git tools")
+	assert.Contains(t, manifestStr, "record_decision, ticket_create, tool_create, task_trace_summarize, docsync_audit", "dogfood should create findings through ticket_create and audit docs")
 	assert.Contains(t, manifestStr, "release_orchestrate", "release role should expose release orchestration")
 	assert.Contains(t, manifestStr, "architecture_audit", "review roles should expose architecture audit")
 	assert.Contains(t, manifestStr, "tool_creation_guard", "review roles should expose tool creation guard")
@@ -410,6 +415,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(glossary), "docs/design-docs/harness-operating-model.md")
 	assert.Contains(t, string(glossary), "docs/roles/ROLES.md")
 	assert.Contains(t, string(glossary), "docs/design-docs/tools-glossary.md")
+	assert.Contains(t, string(glossary), "docs/design-docs/code-documentation-map.md")
 	assert.Contains(t, string(glossary), "tool availability")
 	assert.Contains(t, string(glossary), "docs/design-docs/release-versioning.md")
 	assert.Contains(t, string(glossary), "docs/design-docs/skill-evolution.md")
@@ -451,6 +457,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Universal tool surface")
 	assert.Contains(t, string(agentGuide), "mars-harness mcp serve")
 	assert.Contains(t, string(agentGuide), "mars_harness_cli")
+	assert.Contains(t, string(agentGuide), "docsync_audit")
 	assert.Contains(t, string(agentGuide), "job_disposition_record")
 	assert.Contains(t, string(agentGuide), "tool_create")
 	assert.Contains(t, string(agentGuide), "Skills")
@@ -465,6 +472,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Business logic is first-class BDD")
 	assert.Contains(t, string(agentGuide), "No stale documentation")
 	assert.Contains(t, string(agentGuide), "MarsDocSync")
+	assert.Contains(t, string(agentGuide), "docs:")
 	assert.Contains(t, string(agentGuide), "walking skeleton")
 	assert.Contains(t, string(agentGuide), "exactly one active exec plan")
 	assert.Contains(t, string(agentGuide), "After every non-release semantic commit")
@@ -499,6 +507,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(harnessGlossary), "Tool creation path")
 	assert.Contains(t, string(harnessGlossary), "Universal tool surface")
 	assert.Contains(t, string(harnessGlossary), "mars_harness_cli")
+	assert.Contains(t, string(harnessGlossary), "docsync_audit")
 	assert.Contains(t, string(harnessGlossary), "job_disposition_record")
 	assert.Contains(t, string(harnessGlossary), "Skills")
 	assert.Contains(t, string(harnessGlossary), "Universal skills")
@@ -517,6 +526,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(toolsGlossary), "release_orchestrate")
 	assert.Contains(t, string(toolsGlossary), "job_disposition_record")
 	assert.Contains(t, string(toolsGlossary), "harness_doctrine_sync")
+	assert.Contains(t, string(toolsGlossary), "docsync_audit")
 	assert.Contains(t, string(toolsGlossary), "tool_creation_guard")
 	assert.Contains(t, string(toolsGlossary), "task_trace_summarize")
 	assert.Contains(t, string(toolsGlossary), "mars-harness mcp serve")
@@ -546,6 +556,14 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(designIndex), "AD-098")
 	assert.Contains(t, string(designIndex), "AD-099")
 	assert.Contains(t, string(designIndex), "AD-100")
+	assert.Contains(t, string(designIndex), "AD-101")
+
+	codeDocMap, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "code-documentation-map.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(codeDocMap), "Code Documentation Map")
+	assert.Contains(t, string(codeDocMap), "MarsDocSync")
+	assert.Contains(t, string(codeDocMap), "docs:")
+	assert.Contains(t, string(codeDocMap), "docsync audit")
 
 	conversationRecord, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "conversation-as-system-record.md"))
 	require.NoError(t, err)
@@ -569,6 +587,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(operatingModel), "Business logic is first-class BDD")
 	assert.Contains(t, string(operatingModel), "AD-098: No Stale Documentation")
 	assert.Contains(t, string(operatingModel), "MarsDocSync")
+	assert.Contains(t, string(operatingModel), "code-documentation-map.md")
+	assert.Contains(t, string(operatingModel), "docsync_audit")
 
 	execPlanReadme, err := os.ReadFile(filepath.Join(dir, "docs", "exec-plans", "README.md"))
 	require.NoError(t, err)
@@ -616,7 +636,9 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(featureContract), "## Step-By-Step Behavior")
 	assert.Contains(t, string(featureContract), "Business Logic Is First-Class BDD")
 	assert.Contains(t, string(featureContract), "F-001-S005: No Stale Documentation")
+	assert.Contains(t, string(featureContract), "F-001-S006: Source-Wide Docsync Audit")
 	assert.Contains(t, string(featureContract), "MarsDocSync")
+	assert.Contains(t, string(featureContract), "docs:")
 	assert.Contains(t, string(featureContract), "Given")
 	assert.Contains(t, string(featureContract), "When")
 	assert.Contains(t, string(featureContract), "Then")
@@ -626,6 +648,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(featuresReadme), "Business Logic Is First-Class BDD")
 	assert.Contains(t, string(featuresReadme), "No Stale Documentation")
 	assert.Contains(t, string(featuresReadme), "MarsDocSync")
+	assert.Contains(t, string(featuresReadme), "docsync audit")
 	assert.Contains(t, string(featuresReadme), "Business logic is documented step by step")
 	assert.Contains(t, string(featuresReadme), "Feature contracts come after the active exec plan")
 

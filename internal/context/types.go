@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/context-efficiency.md
+- docs/features/F-005-agent-execution-runtime.md
+*/
 package context
 
 // Guardrail is one scoped policy block (YAML parsing is MH-014; callers pass structs).

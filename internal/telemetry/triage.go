@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/self-reflective-telemetry.md
+- docs/features/F-012-self-improvement-loop.md
+*/
 package telemetry
 
 import "fmt"

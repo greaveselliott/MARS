@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/scoring-system.md
+- docs/features/F-008-scoring-trust-quality.md
+*/
 package qualityscore
 
 import (

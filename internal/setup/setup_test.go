@@ -1,3 +1,11 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/local-inference.md
+- docs/features/F-002-zero-config-shell-path.md
+- docs/features/F-003-local-inference-lifecycle.md
+*/
 package setup
 
 import (

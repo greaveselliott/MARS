@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/dashboard.md
+- docs/features/F-010-dashboard-control-plane.md
+*/
 (function () {
   "use strict";
 

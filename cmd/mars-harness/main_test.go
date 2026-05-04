@@ -1,6 +1,13 @@
 /*
 MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/delivery-operating-model.md
 - docs/design-docs/release-versioning.md
+- docs/product-specs/product-surface.md
+- docs/features/F-001-delivery-operating-model.md
+- docs/features/F-002-zero-config-shell-path.md
+- docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-009-release-update-lifecycle.md
 */
 package main
@@ -144,6 +151,32 @@ func TestReleaseBackfillNotesCommandChecksAndWrites(t *testing.T) {
 	require.Contains(t, string(changelog), "### Why")
 	require.Contains(t, string(changelog), "### What Changed")
 	require.NotContains(t, string(changelog), "### Why This Release Matters")
+}
+
+func TestDocSyncAuditCommandReportsStatus(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeToolRunRepoFile(t, dir, "docs/design-docs/code-documentation-map.md", "map")
+	writeToolRunRepoFile(t, dir, "docs/design-docs/release-versioning.md", "release")
+	writeToolRunRepoFile(t, dir, "docs/features/F-009-release-update-lifecycle.md", "feature")
+	writeToolRunRepoFile(t, dir, "internal/release/notes.go", `/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+*/
+package release
+`)
+
+	cmd := docsyncAuditCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--repo", dir})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "docsync: checked 1 files, findings 0")
+	require.Contains(t, out.String(), "Status: ok")
 }
 
 func TestScoresCommandMissingDBDirectoryIsActionable(t *testing.T) {

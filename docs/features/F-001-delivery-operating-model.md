@@ -23,6 +23,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 6. F-001-S006 - Telemetry can create or update goals/observations from structured evidence.
 7. F-001-S007 - Business logic is documented step by step in feature contracts.
 8. F-001-S008 - Code changes declare associated documentation and keep it current.
+9. F-001-S009 - Source-wide docsync audit maps code to architecture and feature documentation.
 
 ## Scenarios
 
@@ -72,14 +73,19 @@ Then the matching `docs/features/F-NNN-*.md` contract documents the behavior ste
 
 Given code is created or materially changed
 When an agent prepares the change for review or commit
-Then the changed code carries a top-of-file `MarsDocSync` metadata block listing associated documentation, and those docs are updated in the same change or explicitly checked as still current
+Then the changed code carries a top-of-file `MarsDocSync` metadata block with a `docs:` array listing associated documentation, and those docs are updated in the same change or explicitly checked as still current
+
+### F-001-S009: Source-Wide Docsync Audit
+
+Given a foundation or deployed harness source tree is audited
+When `mars-harness docsync audit --repo .` or the mirrored `docsync_audit` tool runs
+Then every source file under the audited source roots declares a top-of-file `MarsDocSync` block with a `docs:` array, every referenced doc exists, and every file includes the documentation required by the canonical code map
 
 ## Out of Scope
 
 - Custom Gherkin parsing.
 - Fully autonomous goal scoring and weighting.
 - Overwriting user-owned target docs during update.
-- Retrofitting `MarsDocSync` metadata onto every historical code file in one sweep.
 
 ## Descoped Scenarios
 
@@ -95,3 +101,4 @@ None.
 - F-001-S006: `go test ./internal/telemetry -run TestRecordGoalFromProposal`
 - F-001-S007: `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields`
 - F-001-S008: `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata`
+- F-001-S009: `go test ./internal/docsync ./internal/docsconsistency -run 'TestDocSync|TestOperatingModelCodeFilesDeclareDocSyncMetadata'` and `mars-harness docsync audit --repo .`

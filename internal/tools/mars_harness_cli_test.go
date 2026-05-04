@@ -1,8 +1,9 @@
 /*
 MarsDocSync:
-- docs/design-docs/release-versioning.md
-- docs/features/F-009-release-update-lifecycle.md
+docs:
+- docs/design-docs/code-documentation-map.md
 - docs/design-docs/tools-glossary.md
+- docs/features/F-005-agent-execution-runtime.md
 */
 package tools
 
@@ -29,7 +30,7 @@ func TestMarsHarnessCLI_reference(t *testing.T) {
 		"setup", "init", "eject", "upgrade", "start", "serve", "register", "run <role>",
 		"scan", "doctor", "update check", "update tool", "update harness",
 		"path setup", "release notes", "release backfill-notes", "release verify-assets", "scores export",
-		"trust set", "models evaluate", "models list", "models override",
+		"docsync audit", "trust set", "models evaluate", "models list", "models override",
 		"tools list", "tools run <name>", "mcp serve",
 	} {
 		require.Contains(t, res.Output, command)

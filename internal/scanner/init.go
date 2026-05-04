@@ -1,12 +1,16 @@
 /*
 MarsDocSync:
-- AGENTS.md
+docs:
+- docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/harness-glossary.md
+- docs/design-docs/harness-operating-model.md
 - docs/design-docs/release-versioning.md
-- docs/features/README.md
+- docs/design-docs/tools-glossary.md
 - docs/features/F-001-delivery-operating-model.md
+- docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/roles/ROLES.md
 */
 package scanner
 
@@ -337,7 +341,7 @@ roles:
     schedule: "0 21 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -348,7 +352,7 @@ roles:
     schedule: "0 0,6,12,18 * * 1-5"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -359,7 +363,7 @@ roles:
     max_turns: 20
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit]
+    tools: [file_read, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit]
 
   security:
     prompt: roles/security.md
@@ -370,7 +374,7 @@ roles:
     schedule: "0 22 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
@@ -381,7 +385,7 @@ roles:
     schedule: "0 23 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
 
   # ── Release ──────────────────────────────────────────────
   release-manager:
@@ -392,7 +396,7 @@ roles:
     schedule: "0 8 * * 1"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, docsync_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
   dogfood:
@@ -404,7 +408,7 @@ roles:
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, tool_create, task_trace_summarize, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, tool_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -416,7 +420,7 @@ roles:
       - workflow_run.conclusion == "failure"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Dispatch coordination ───────────────────────────────
   orchestrator:
@@ -441,7 +445,7 @@ roles:
     max_turns: 30
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, docsync_audit, git_status, git_diff, git_commit, git_push]
 `, projectName, projectName)
 }
 
@@ -457,8 +461,8 @@ var defaultHarnessFiles = map[string]string{
     paths: docs/goals/README.md, docs/goals/active.md, docs/features/README.md, docs/exec-plans/README.md, docs/tickets/README.md
   - when: goals, BDD, feature contracts, planning, feedback, or quality evidence
     paths: docs/goals/README.md, docs/goals/active.md, docs/goals/observations.md, docs/features/README.md, docs/exec-plans/active/current-operating-plan.md, docs/QUALITY_SCORE.md
-  - when: implementation, architecture, tests, or local commands
-    paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md
+  - when: implementation, architecture, tests, local commands, source documentation metadata, or no-stale-documentation checks
+    paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md, docs/design-docs/code-documentation-map.md, docs/features/README.md
   - when: release planning, semantic versioning, changelog, patch notes, or tags
     paths: VERSION, CHANGELOG.md, docs/design-docs/release-versioning.md
   - when: self-improvement, repeated failures, telemetry triage, human intervention, or deciding whether to create a skill
@@ -587,8 +591,8 @@ would otherwise live only in chat.
 - **Operating model** — the documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops.
 - **BDD feature contract** — a Markdown feature artifact in ` + "`docs/features/`" + ` that defines feature completeness, business logic, step-by-step behavior, scenarios, and evidence.
 - **Business logic** — product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, release classification, and user-visible outcomes; business logic is documented step by step in BDD feature contracts before or alongside implementation.
-- **No stale documentation** — all durable docs are updated as behavior changes; code carries top-of-file ` + "`MarsDocSync`" + ` metadata listing associated documentation so reviewers and automation know which docs must be checked.
-- **MarsDocSync block** — a top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and containing repo-relative documentation paths, usually feature contracts, design docs, product specs, ticket guidance, or README surfaces touched by that code.
+- **No stale documentation** — all durable docs are updated as behavior changes; code carries top-of-file ` + "`MarsDocSync`" + ` metadata with a ` + "`docs`" + ` array listing associated documentation so reviewers and automation know which docs must be checked.
+- **MarsDocSync block** — a top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and containing a ` + "`docs:`" + ` list of repo-relative documentation paths, usually feature contracts, design docs, product specs, ticket guidance, or README surfaces touched by that code.
 - **Canonical operating domain** — one of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator.
 - **Role mode** — a lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `.
 - **Foundation operating model** — the operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
@@ -596,7 +600,7 @@ would otherwise live only in chat.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
 - **Universal tool surface** — the mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + ` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale.
@@ -639,7 +643,7 @@ Role registry: ` + "`docs/roles/ROLES.md`" + `
   tickets, or delivery work until the active exec plan names the current slice.
 - BDD feature contracts define feature completeness; walking skeleton is the implementation strategy: make the next failing scenario pass through the thinnest real end-to-end path.
 - Business logic is first-class BDD: every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, or user-visible outcome must be documented step by step in ` + "`docs/features/`" + ` before or alongside implementation.
-- No stale documentation: when writing or materially changing code, add or update the top-of-file ` + "`MarsDocSync`" + ` comment block listing associated docs, then update those docs in the same commit or record why no doc change was needed.
+- No stale documentation: when writing or materially changing code, add or update the top-of-file ` + "`MarsDocSync`" + ` comment block with a ` + "`docs:`" + ` list of associated docs, run or satisfy the docsync audit where applicable, then update those docs in the same commit or record why no doc change was needed.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
 - Prefer eligible in-progress tickets before backlog work; a ticket is eligible when it has no meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata.
 - Complete one coherent step at a time.
@@ -776,7 +780,7 @@ Source: current-operating-plan.md — core gameplay mechanics (Week 1).
 
 ### Observability, docs, and regressions
 - [ ] Docs or regressions to watch for
-- [ ] New or materially changed code files include ` + "`MarsDocSync`" + ` metadata listing docs reviewed for this ticket
+- [ ] New or materially changed code files include ` + "`MarsDocSync`" + ` metadata with a ` + "`docs:`" + ` array listing docs reviewed for this ticket
 ` + "```" + `
 
 ## Naming Convention
@@ -818,7 +822,7 @@ include the step-by-step BDD behavior before the ticket moves to ` + "`done/`" +
 Tickets must not be the only stale-doc checkpoint either. If code changes for a
 ticket affect behavior, public surface, workflow, architecture, generated
 output, or operating doctrine, the changed code files should carry top-of-file
-` + "`MarsDocSync`" + ` metadata listing the docs reviewed. Update those docs before
+` + "`MarsDocSync`" + ` metadata with a ` + "`docs:`" + ` array listing the docs reviewed. Update those docs before
 moving the ticket to ` + "`done/`" + `, or record why they remain current.
 
 Enabler, research, docs, and intervention-debt tickets use
@@ -998,6 +1002,7 @@ Architectural decisions and design documents for this project.
 | [context-glossary.md](context-glossary.md) | Seed | Compact glossary and context map used by agents to find the right docs without loading everything. |
 | [harness-glossary.md](harness-glossary.md) | Accepted | First-class and contextual harness definitions mirrored from the foundation harness. |
 | [tools-glossary.md](tools-glossary.md) | Accepted | First-class mirrored tool availability, selection, and use-case context. |
+| [code-documentation-map.md](code-documentation-map.md) | Accepted | Source metadata map for keeping code, architecture docs, and BDD feature contracts in sync. |
 | [tenets.md](tenets.md) | Accepted | Foundational rules the deployed harness inherits from Mars Harness. |
 | [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and deployed harness doctrine mirroring rules. |
 | [release-versioning.md](release-versioning.md) | Seed | Semantic versioning and generated patch-note policy for this repo. |
@@ -1016,9 +1021,10 @@ Architectural decisions and design documents for this project.
 | AD-086 | Significant conversations must become durable repo artifacts when they change plans, decisions, investigations, quality evidence, or completed-work state. | 2026-05-03 | Accepted |
 | AD-087 | Universal mirrored tools are exposed through ` + "`mars-harness mcp serve`" + ` for MCP-compatible clients and local harness agents without depending on a model provider. | 2026-05-03 | Accepted |
 | AD-097 | Business logic is first-class BDD and belongs step by step under ` + "`docs/features/`" + `. | 2026-05-04 | Accepted |
-| AD-098 | No stale documentation: code changes carry top-of-file ` + "`MarsDocSync`" + ` metadata listing associated docs, and those docs are updated or explicitly checked as current. | 2026-05-04 | Accepted |
+| AD-098 | No stale documentation: code changes carry top-of-file ` + "`MarsDocSync`" + ` metadata with a ` + "`docs:`" + ` array listing associated docs, and those docs are updated or explicitly checked as current. | 2026-05-04 | Accepted |
 | AD-099 | Generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. | 2026-05-04 | Accepted |
 | AD-100 | Historical release entries are backfilled through ` + "`mars-harness release backfill-notes`" + ` from marker-backed commit ranges. | 2026-05-04 | Accepted |
+| AD-101 | Source metadata maps code files to associated architecture docs and BDD feature contracts, then ` + "`docsync audit`" + ` checks coverage. | 2026-05-04 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1165,11 +1171,15 @@ is the durable source of truth. Feature contracts must include ` + "`Business Lo
 evidence.
 
 No stale documentation is a universal operating-model rule. All durable docs
-are live system artifacts. When code is created or materially changed, the file
-must carry a top-of-file ` + "`MarsDocSync`" + ` metadata comment block listing the
-repo-relative docs that describe, constrain, or explain that code. The same
-change updates those docs, or records in ticket, plan, review, or commit
-evidence why the listed docs were checked and did not need content changes.
+are live system artifacts. Source files and newly created or materially changed
+code files must carry a top-of-file ` + "`MarsDocSync`" + ` metadata comment block
+with a ` + "`docs:`" + ` list of repo-relative docs that describe, constrain, or
+explain that code. The code map lives in
+` + "`docs/design-docs/code-documentation-map.md`" + ` and can be checked with
+` + "`mars-harness docsync audit --repo .`" + ` or the mirrored ` + "`docsync_audit`" + ` tool.
+The same change updates those docs, or records in ticket, plan, review, or
+commit evidence why the listed docs were checked and did not need content
+changes.
 
 Planning order is strict: active exec plan first, then feature contract, then
 tickets, then implementation delivery. A project that has feature docs or
@@ -1242,18 +1252,20 @@ of truth.
 
 ## AD-098: No Stale Documentation
 
-All documentation is kept current as the system changes. Every newly created or
-materially changed code file includes a top-of-file ` + "`MarsDocSync`" + ` metadata
-comment block that lists repo-relative documentation paths associated with
-that code.
+All documentation is kept current as the system changes. Source files and every
+newly created or materially changed code file include a top-of-file
+` + "`MarsDocSync`" + ` metadata comment block with a ` + "`docs:`" + ` list of
+repo-relative documentation paths associated with that code.
 
 The canonical shape is:
 
 ` + "```" + `text
 /*
 MarsDocSync:
-- docs/features/F-001-delivery-operating-model.md
+docs:
+- docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
+- docs/features/F-001-delivery-operating-model.md
 */
 ` + "```" + `
 
@@ -1262,6 +1274,55 @@ surface, workflow, architecture, generated output, or operating doctrine
 changes, the same commit updates the relevant docs. If the docs are still
 correct, the ticket, plan, review, or commit evidence says they were checked
 and remain current.
+`,
+
+	"docs/design-docs/code-documentation-map.md": `# Code Documentation Map
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Owner:** Project maintainers
+**Decision:** AD-101
+
+## Purpose
+
+This map is the durable bridge between source files, architecture, and BDD
+feature contracts. Every source file carries top-of-file ` + "`MarsDocSync`" + `
+metadata with a ` + "`docs`" + ` array. When an agent changes a file, the listed
+docs are the minimum documentation review set for that change.
+
+Check the map with:
+
+` + "```" + `bash
+mars-harness docsync audit --repo .
+mars-harness tools run docsync_audit --repo . --args-json '{}'
+` + "```" + `
+
+## Metadata Shape
+
+Go, JavaScript, and CSS files use block comments:
+
+` + "```" + `go
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/features/F-001-delivery-operating-model.md
+*/
+` + "```" + `
+
+YAML files use ` + "`#`" + ` comments and HTML templates use ` + "`<!-- ... -->`" + `.
+Generated, framework, or license headers may stay first, but the ` + "`MarsDocSync`" + `
+block must be near the top before implementation declarations.
+
+## Maintenance Rules
+
+- ` + "`docsync audit`" + ` is the mechanical source-code coverage gate.
+- When a code file changes behavior, update the docs listed in its
+  ` + "`MarsDocSync`" + ` block or record why they remain current.
+- If a source prefix moves, update this map, source metadata, and any local
+  docsync configuration in the same change.
+- If a file crosses package or feature boundaries, add the additional docs
+  directly in that file's metadata.
 `,
 
 	"docs/goals/README.md": `# Goals
@@ -1368,11 +1429,18 @@ or return to planning before expanding implementation.
 ## No Stale Documentation
 
 All documentation is live. When code is written or materially changed, the code
-file should carry a top-of-file ` + "`MarsDocSync`" + ` comment block listing the
-feature contracts, design docs, product specs, README surfaces, ticket guidance,
-or other durable docs associated with that behavior. The listed docs must be
-reviewed and updated in the same change, or the ticket, plan, review, or commit
-evidence must state why they remain current.
+file carries a top-of-file ` + "`MarsDocSync`" + ` comment block with a ` + "`docs:`" + `
+array listing the feature contracts, design docs, product specs, README
+surfaces, ticket guidance, or other durable docs associated with that behavior.
+The listed docs must be reviewed and updated in the same change, or the ticket,
+plan, review, or commit evidence must state why they remain current.
+
+The source-wide gate is:
+
+` + "```" + `bash
+mars-harness docsync audit --repo .
+mars-harness tools run docsync_audit --repo . --args-json '{}'
+` + "```" + `
 
 ## Required Fields
 
@@ -1395,7 +1463,8 @@ evidence must state why they remain current.
 - Business logic is documented step by step under the feature contract, not
   only in tickets, code comments, or release notes.
 - Code files that implement or constrain behavior carry ` + "`MarsDocSync`" + ` metadata
-  pointing at the docs that must stay current with that behavior.
+  with a ` + "`docs:`" + ` array pointing at the docs that must stay current with that
+  behavior.
 - Walking skeleton is the implementation strategy, not the feature definition.
 - The schedule is the ordered list of failing scenarios.
 - No feature ships until in-scope scenarios pass or are explicitly descoped.
@@ -1431,6 +1500,7 @@ their evidence before claiming the feature is complete.
 3. F-001-S003 — quality and release notes distinguish shipped scenarios from enabler work
 4. F-001-S004 — business logic is documented step by step in feature contracts
 5. F-001-S005 — code changes declare associated documentation and keep it current
+6. F-001-S006 — source-wide docsync audit maps code to architecture and feature documentation
 
 ## Scenarios
 
@@ -1462,13 +1532,18 @@ Then the matching ` + "`docs/features/F-NNN-*.md`" + ` contract documents the be
 
 Given code is created or materially changed
 When an agent prepares the change for review or commit
-Then the changed code carries a top-of-file ` + "`MarsDocSync`" + ` metadata block listing associated documentation, and those docs are updated in the same change or explicitly checked as still current
+Then the changed code carries a top-of-file ` + "`MarsDocSync`" + ` metadata block with a ` + "`docs:`" + ` array listing associated documentation, and those docs are updated in the same change or explicitly checked as still current
+
+### F-001-S006: Source-Wide Docsync Audit
+
+Given the deployed harness source tree is audited
+When ` + "`mars-harness docsync audit --repo .`" + ` or the mirrored ` + "`docsync_audit`" + ` tool runs
+Then every audited source file declares a top-of-file ` + "`MarsDocSync`" + ` block with a ` + "`docs:`" + ` array, every referenced doc exists, and every file includes the documentation required by ` + "`docs/design-docs/code-documentation-map.md`" + `
 
 ## Out of Scope
 
 - A custom Gherkin parser
 - Automatic scenario execution beyond explicit integration/E2E tests and evidence commands
-- Retrofitting ` + "`MarsDocSync`" + ` metadata onto every historical code file in one sweep
 
 ## Descoped Scenarios
 
@@ -1479,6 +1554,7 @@ None.
 - Pending target-specific integration/E2E commands.
 - F-001-S004: ` + "`go test ./internal/scanner -run TestInit_success`" + ` verifies generated feature contracts include first-class business-logic sections.
 - F-001-S005: ` + "`go test ./internal/scanner -run TestInit_success`" + ` verifies generated doctrine includes no-stale-documentation metadata guidance.
+- F-001-S006: ` + "`mars-harness docsync audit --repo .`" + ` or ` + "`mars-harness tools run docsync_audit --repo . --args-json '{}'`" + `.
 `,
 
 	"docs/design-docs/context-glossary.md": `# Context Glossary
@@ -1508,8 +1584,8 @@ loading every document.
 | Goal | Outcome and priority signal used by the CEO to align the active plan. | ` + "`docs/goals/README.md`" + `, ` + "`docs/goals/active.md`" + ` |
 | BDD feature contract | Markdown Given/When/Then contract that defines feature completeness. | ` + "`docs/features/README.md`" + ` |
 | Business logic | Product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, and user-visible outcomes; document these step by step in feature contracts. | ` + "`docs/features/README.md`" + ` |
-| No stale documentation | Code and docs change together; code lists associated docs in top-of-file ` + "`MarsDocSync`" + ` metadata so reviewers know what must stay current. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
-| MarsDocSync block | Top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and listing repo-relative documentation paths. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
+| No stale documentation | Code and docs change together; code lists associated docs in top-of-file ` + "`MarsDocSync`" + ` metadata with a ` + "`docs:`" + ` array so reviewers know what must stay current. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
+| MarsDocSync block | Top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and listing repo-relative documentation paths under ` + "`docs:`" + `. | ` + "`docs/design-docs/code-documentation-map.md`" + ` |
 | Walking skeleton | The thinnest real end-to-end path that makes the next failing BDD scenario pass. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
 | Canonical role domain | One of Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Role mode | A lower-kebab-case purpose inside a role domain, such as ticket-delivery or quality-review. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
@@ -1563,8 +1639,8 @@ harness and deployed harnesses.
 | Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
 | BDD feature contract | A Markdown feature artifact in ` + "`docs/features/`" + ` that defines feature completeness, business logic, step-by-step behavior, scenarios, and evidence. |
 | Business logic | Product rules, workflow branches, state transitions, validations, permissions, scoring/trust behavior, routing rules, release classification, and user-visible outcomes; business logic is documented step by step in BDD feature contracts before or alongside implementation. |
-| No stale documentation | All durable docs are updated as behavior changes; code carries top-of-file ` + "`MarsDocSync`" + ` metadata listing associated documentation so reviewers and automation know which docs must be checked. |
-| MarsDocSync block | A top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and containing repo-relative documentation paths, usually feature contracts, design docs, product specs, ticket guidance, or README surfaces touched by that code. |
+| No stale documentation | All durable docs are updated as behavior changes; code carries top-of-file ` + "`MarsDocSync`" + ` metadata with a ` + "`docs:`" + ` array listing associated documentation so reviewers and automation know which docs must be checked. |
+| MarsDocSync block | A top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and containing a ` + "`docs:`" + ` list of repo-relative documentation paths, usually feature contracts, design docs, product specs, ticket guidance, or README surfaces touched by that code. |
 | Canonical operating domain | One of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. |
 | Role mode | A lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `. |
 | Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. |
@@ -1573,7 +1649,7 @@ harness and deployed harnesses.
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, release/status/audit workflow tools, and git tools. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
 | Universal tool surface | The mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + `, so any MCP-compatible client or local harness agent can use the same tools through a model-provider-agnostic tool mechanism. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
@@ -1695,6 +1771,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`github_release_status`" + ` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
 | ` + "`architecture_audit`" + ` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
 | ` + "`harness_doctrine_sync`" + ` | Check mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency. | Non-mutating. Use when changing operating doctrine or mirrored definitions. |
+| ` + "`docsync_audit`" + ` | Audit source files for ` + "`MarsDocSync`" + ` metadata and associated documentation pointers. | Non-mutating. Use before commits that touch code or when validating the no-stale-docs operating model. |
 | ` + "`git_release_guard`" + ` | Check git, tag, version, and release-note invariants around the release flow. | Non-mutating. Use before and after release-note generation. |
 | ` + "`tool_inventory_audit`" + ` | Compare registered tools, mutating policy, tools glossary, generated target guidance, and role exposure. | Non-mutating. Use whenever tools are added, removed, renamed, or reclassified. |
 | ` + "`tool_creation_guard`" + ` | Audit whether built-in tool creation followed the governed ` + "`tool_create`" + ` and ` + "`record_decision`" + ` path. | Non-mutating. Use when reviewing new tool work or exception handling. |
@@ -1728,8 +1805,11 @@ tools are added, removed, renamed, or materially change behavior.
 - Need to decide whether repeated work deserves a tool: use
   ` + "`task_trace_summarize`" + `, then create or update a ticket or tool.
 - Need to keep documentation, doctrine, and tools mirrored: use
-  ` + "`architecture_audit`" + `, ` + "`harness_doctrine_sync`" + `, ` + "`tool_creation_guard`" + `,
-  and ` + "`tool_inventory_audit`" + `.
+  ` + "`docsync_audit`" + `, ` + "`architecture_audit`" + `, ` + "`harness_doctrine_sync`" + `,
+  ` + "`tool_creation_guard`" + `, and ` + "`tool_inventory_audit`" + `.
+- Need to know which docs must be checked after touching a code file: read the
+  file's ` + "`MarsDocSync`" + ` block and run ` + "`docsync_audit`" + ` or
+  ` + "`mars-harness docsync audit --repo .`" + `.
 - Need ordinary repository inspection: use ` + "`file_search`" + `, ` + "`grep`" + `, ` + "`file_read`" + `,
   ` + "`git_status`" + `, or ` + "`git_diff`" + `.
 - Need ordinary repository mutation: use ` + "`file_write`" + `, ` + "`git_commit`" + `, and
@@ -2432,9 +2512,11 @@ STANDARD:
   validations, permissions, scoring/trust behavior, routing, and user-visible
   outcomes cannot live only in code or ticket text
 - No stale documentation: every new or materially changed code file must carry
-  a top-of-file ` + "`MarsDocSync`" + ` metadata comment block listing associated docs.
+  a top-of-file ` + "`MarsDocSync`" + ` metadata comment block with a ` + "`docs:`" + `
+  array listing associated docs.
   Review and update those docs in the same change, or record why they remain
-  current before committing
+  current before committing. Run ` + "`docsync_audit`" + ` or
+  ` + "`mars-harness docsync audit --repo .`" + ` before claiming code/docs are in sync.
 - Follow the project's existing code style and conventions
 - Handle errors explicitly, no magic numbers, use named constants
 - COMMIT AFTER EVERY SEMANTIC CHANGE — this is non-negotiable. Use the
@@ -2661,9 +2743,11 @@ REVIEW CHECKLIST:
    - Are ` + "`docs/features/`" + ` Business Logic and Step-By-Step Behavior sections
      updated when business behavior changed?
    - Do new or materially changed code files include top-of-file ` + "`MarsDocSync`" + `
-     metadata listing associated docs?
+     metadata with a ` + "`docs:`" + ` array listing associated docs?
    - Were the docs listed by ` + "`MarsDocSync`" + ` updated, or did the review evidence
      state why they remain current?
+   - Does ` + "`docsync_audit`" + ` or ` + "`mars-harness docsync audit --repo .`" + ` pass for
+     the changed source tree?
    - Are goal, feature, ticket, and quality evidence links updated when feature status changed?
 
 OUTPUT:

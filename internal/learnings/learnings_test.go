@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/dogfood-and-decisions.md
+- docs/features/F-012-self-improvement-loop.md
+*/
 package learnings
 
 import (

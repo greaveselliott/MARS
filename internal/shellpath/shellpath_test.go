@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/release-versioning.md
+- docs/features/F-002-zero-config-shell-path.md
+*/
 package shellpath
 
 import (

@@ -1,3 +1,8 @@
+# MarsDocSync:
+# docs:
+# - docs/design-docs/code-documentation-map.md
+# - docs/design-docs/role-customization.md
+# - docs/features/F-004-target-harness-lifecycle.md
 name: mars
 description: Full Mars Harness sample pipeline - strict trunk, 11 explicit roles with canonical domains and modes
 

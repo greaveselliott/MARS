@@ -1,8 +1,8 @@
 /*
 MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
-- docs/design-docs/harness-glossary.md
-- docs/features/README.md
 - docs/features/F-001-delivery-operating-model.md
 */
 package docsconsistency
@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/greaveselliott/mars-harness/internal/docsync"
 )
 
 func TestAD074OperatingModelArtifactsExist(t *testing.T) {
@@ -24,8 +26,9 @@ func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 		"docs/goals/active.md":                              {"G-001", "Status: active", "Hypothesis"},
 		"docs/goals/observations.md":                        {"weak/noisy evidence"},
 		"docs/goals/superseded.md":                          {"Superseded Goals"},
+		"docs/design-docs/code-documentation-map.md":        {"Code Documentation Map", "MarsDocSync", "docsync audit", "Package Map"},
 		"docs/features/README.md":                           {"BDD Feature Contracts", "Business Logic Is First-Class BDD", "No Stale Documentation", "Given/When/Then", "Scenario Schedule"},
-		"docs/features/F-001-delivery-operating-model.md":   {"Feature ID: F-001", "Scenario Schedule", "F-001-S008", "No Stale Documentation", "Given", "When", "Then"},
+		"docs/features/F-001-delivery-operating-model.md":   {"Feature ID: F-001", "Scenario Schedule", "F-001-S008", "F-001-S009", "No Stale Documentation", "Given", "When", "Then"},
 		"docs/tickets/README.md":                            {"work_type", "bdd_scenarios", "end_to_end_evidence", "verified_by"},
 		"docs/QUALITY_SCORE.md":                             {"shipped feature scenarios", "enabler work"},
 	}
@@ -45,38 +48,22 @@ func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 
 func TestOperatingModelCodeFilesDeclareDocSyncMetadata(t *testing.T) {
 	root := repoRoot(t)
-	required := map[string][]string{
-		"internal/docsconsistency/operating_model_test.go": {
-			"docs/design-docs/delivery-operating-model.md",
-			"docs/features/F-001-delivery-operating-model.md",
-		},
-		"internal/scanner/init.go": {
-			"docs/design-docs/delivery-operating-model.md",
-			"docs/features/F-001-delivery-operating-model.md",
-		},
-		"internal/scanner/scanner_test.go": {
-			"docs/design-docs/delivery-operating-model.md",
-			"docs/features/F-001-delivery-operating-model.md",
-		},
+	report, err := docsync.Audit(docsync.Config{RepoRoot: root})
+	if err != nil {
+		t.Fatalf("docsync audit: %v", err)
 	}
-	for rel, docs := range required {
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
-		if err != nil {
-			t.Fatalf("read %s: %v", rel, err)
-		}
-		prefix := string(data)
-		if len(prefix) > 1200 {
-			prefix = prefix[:1200]
-		}
-		if !strings.Contains(prefix, "MarsDocSync:") {
-			t.Fatalf("%s must declare top-of-file MarsDocSync metadata", rel)
-		}
-		for _, doc := range docs {
-			if !strings.Contains(prefix, doc) {
-				t.Fatalf("%s MarsDocSync metadata must reference %s", rel, doc)
-			}
-		}
+	if report.OK() {
+		return
 	}
+	var lines []string
+	for i, finding := range report.Findings {
+		if i >= 20 {
+			lines = append(lines, "...")
+			break
+		}
+		lines = append(lines, finding.Path+": "+finding.Message)
+	}
+	t.Fatalf("docsync audit failed:\n%s", strings.Join(lines, "\n"))
 }
 
 func TestActivePlanReferencesActiveGoalAndFeatureContract(t *testing.T) {

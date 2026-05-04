@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/agent-runtime.md
+- docs/features/F-005-agent-execution-runtime.md
+*/
 package agent
 
 import (
@@ -10,12 +17,12 @@ import (
 type EndReason string
 
 const (
-	EndCompleted        EndReason = "completed"
-	EndBudgetExceeded   EndReason = "budget_exceeded"
-	EndTimeout          EndReason = "timeout"
-	EndMaxTurns         EndReason = "max_turns"
-	EndMaxToolCalls     EndReason = "max_tool_calls"
-	EndEmptyResponse    EndReason = "empty_response"
+	EndCompleted      EndReason = "completed"
+	EndBudgetExceeded EndReason = "budget_exceeded"
+	EndTimeout        EndReason = "timeout"
+	EndMaxTurns       EndReason = "max_turns"
+	EndMaxToolCalls   EndReason = "max_tool_calls"
+	EndEmptyResponse  EndReason = "empty_response"
 	EndLLMUnreachable EndReason = "llm_unreachable"
 	EndCircleDetected EndReason = "circle_detected"
 )

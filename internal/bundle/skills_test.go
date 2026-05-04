@@ -1,3 +1,12 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/context-efficiency.md
+- docs/design-docs/role-customization.md
+- docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-005-agent-execution-runtime.md
+*/
 package bundle
 
 import (

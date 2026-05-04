@@ -1,3 +1,12 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/delivery-operating-model.md
+- docs/design-docs/tools-glossary.md
+- docs/features/F-001-delivery-operating-model.md
+- docs/features/F-005-agent-execution-runtime.md
+*/
 package tools
 
 import (
@@ -8,6 +17,8 @@ import (
 	"slices"
 	"sort"
 	"strings"
+
+	"github.com/greaveselliott/mars-harness/internal/docsync"
 )
 
 const simpleWorkflowSchema = `{
@@ -57,6 +68,15 @@ func registerHarnessDoctrineSync(r *Registry) error {
 		"Audit mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency.",
 		json.RawMessage(simpleWorkflowSchema),
 		handleHarnessDoctrineSync,
+	)
+}
+
+func registerDocSyncAudit(r *Registry) error {
+	return r.Register(
+		"docsync_audit",
+		"Audit source files for MarsDocSync metadata and associated documentation freshness pointers.",
+		json.RawMessage(simpleWorkflowSchema),
+		handleDocSyncAudit,
 	)
 }
 
@@ -186,13 +206,32 @@ func handleHarnessDoctrineSync(_ context.Context, root Root, raw json.RawMessage
 	}{
 		{"AGENTS.md", []string{"Operating model", "Mirrored tools", "docs/design-docs/tools-glossary.md"}},
 		{"docs/design-docs/harness-glossary.md", []string{"Symbiotic operating-model change", "Formalized tool creation trigger"}},
-		{"docs/design-docs/tools-glossary.md", []string{"release_orchestrate", "tool_creation_guard", "tool_inventory_audit", "task_trace_summarize"}},
-		{"docs/design-docs/delivery-operating-model.md", []string{"formalized tools", "repeated process"}},
-		{"internal/scanner/init.go", []string{"release_orchestrate", "Formalized tool creation trigger"}},
+		{"docs/design-docs/tools-glossary.md", []string{"release_orchestrate", "docsync_audit", "tool_creation_guard", "tool_inventory_audit", "task_trace_summarize"}},
+		{"docs/design-docs/delivery-operating-model.md", []string{"formalized tools", "repeated process", "docsync_audit"}},
+		{"internal/scanner/init.go", []string{"release_orchestrate", "docsync_audit", "Formalized tool creation trigger"}},
 	} {
 		checks = append(checks, checkContains(item.path, readOptional(root, item.path), item.terms)...)
 	}
 	return ToolResult{Output: renderAudit("harness_doctrine_sync", checks)}, nil
+}
+
+func handleDocSyncAudit(_ context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
+	if _, err := parseSimpleWorkflowArgs(raw); err != nil {
+		return ToolResult{}, fmt.Errorf("docsync_audit: %w", err)
+	}
+	report, err := docsync.Audit(docsync.Config{RepoRoot: root.Abs()})
+	if err != nil {
+		return ToolResult{}, err
+	}
+	var lines []string
+	lines = append(lines, "# docsync_audit", "", report.Summary())
+	for _, finding := range report.Findings {
+		lines = append(lines, "FAIL: "+finding.Path+": "+finding.Message)
+	}
+	if report.OK() {
+		lines = append(lines, "Status: ok")
+	}
+	return ToolResult{Output: strings.Join(lines, "\n")}, nil
 }
 
 func handleGitReleaseGuard(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
@@ -358,6 +397,7 @@ func isMirroredWorkflowTool(name string) bool {
 		"github_release_status",
 		"architecture_audit",
 		"harness_doctrine_sync",
+		"docsync_audit",
 		"git_release_guard",
 		"tool_creation_guard",
 		"tool_inventory_audit",

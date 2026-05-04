@@ -1,8 +1,9 @@
 /*
 MarsDocSync:
-- docs/design-docs/release-versioning.md
-- docs/features/F-009-release-update-lifecycle.md
-- docs/product-specs/product-surface.md
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/delivery-operating-model.md
+- docs/features/F-001-delivery-operating-model.md
 */
 package docsconsistency
 

@@ -1,6 +1,13 @@
 /*
 MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/delivery-operating-model.md
 - docs/design-docs/release-versioning.md
+- docs/product-specs/product-surface.md
+- docs/features/F-001-delivery-operating-model.md
+- docs/features/F-002-zero-config-shell-path.md
+- docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-009-release-update-lifecycle.md
 */
 package main
@@ -29,6 +36,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/bundle"
 	"github.com/greaveselliott/mars-harness/internal/config"
 	ctx "github.com/greaveselliott/mars-harness/internal/context"
+	"github.com/greaveselliott/mars-harness/internal/docsync"
 	"github.com/greaveselliott/mars-harness/internal/doctor"
 	"github.com/greaveselliott/mars-harness/internal/guardrails"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
@@ -86,12 +94,63 @@ func main() {
 	root.AddCommand(mcpCmd())
 	root.AddCommand(modelsCmd())
 	root.AddCommand(releaseCmd())
+	root.AddCommand(docsyncCmd())
 	root.AddCommand(pathCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func docsyncCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "docsync",
+		Short: "Audit code-to-documentation metadata",
+		Long: `Audit source files for top-of-file MarsDocSync metadata and verify
+that associated documentation paths exist and match the universal code map.`,
+	}
+	cmd.AddCommand(docsyncAuditCmd())
+	return cmd
+}
+
+func docsyncAuditCmd() *cobra.Command {
+	var (
+		repoPath string
+		jsonOut  bool
+	)
+	cmd := &cobra.Command{
+		Use:   "audit",
+		Short: "Check MarsDocSync metadata on source files",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repoPath == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("docsync audit: cannot determine working directory: %w", err)
+				}
+			}
+			report, err := docsync.Audit(docsync.Config{RepoRoot: repoPath})
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return writeJSON(cmd.OutOrStdout(), report)
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), report.Summary())
+			for _, finding := range report.Findings {
+				fmt.Fprintf(cmd.OutOrStdout(), "FAIL: %s: %s\n", finding.Path, finding.Message)
+			}
+			if !report.OK() {
+				return fmt.Errorf("docsync audit: %d findings", len(report.Findings))
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "Status: ok")
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write audit report as JSON")
+	return cmd
 }
 
 func mcpCmd() *cobra.Command {
@@ -591,7 +650,7 @@ func modelsOverrideCmd() *cobra.Command {
 	return cmd
 }
 
-func writeJSON(w *os.File, v any) error {
+func writeJSON(w io.Writer, v any) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)

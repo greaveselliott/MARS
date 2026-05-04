@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/agent-runtime.md
+- docs/features/F-005-agent-execution-runtime.md
+*/
 package trace
 
 import (
@@ -156,18 +163,18 @@ func (r *Recorder) Finalize(jobID, outcome string, wall time.Duration, llmCalls,
 		errStr = runErr.Error()
 	}
 	return Summary{
-		TraceID:            r.traceID,
-		JobID:              jobID,
-		Outcome:            outcome,
-		WallMs:             wall.Milliseconds(),
-		TotalTokens:        sumTok,
-		ToolsCalled:        tools,
-		TurnCount:          len(r.turns),
-		ToolCallMessages:   countToolCalls(r.turns),
-		ToolInvocations:    toolInvocations,
-		LLMCalls:           llmCalls,
-		Error:              errStr,
-		CreatedAt:          time.Now().UTC().Format(time.RFC3339Nano),
+		TraceID:          r.traceID,
+		JobID:            jobID,
+		Outcome:          outcome,
+		WallMs:           wall.Milliseconds(),
+		TotalTokens:      sumTok,
+		ToolsCalled:      tools,
+		TurnCount:        len(r.turns),
+		ToolCallMessages: countToolCalls(r.turns),
+		ToolInvocations:  toolInvocations,
+		LLMCalls:         llmCalls,
+		Error:            errStr,
+		CreatedAt:        time.Now().UTC().Format(time.RFC3339Nano),
 	}
 }
 

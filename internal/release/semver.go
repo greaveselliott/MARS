@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+*/
 package release
 
 import (

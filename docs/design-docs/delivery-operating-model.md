@@ -53,12 +53,12 @@ Logic`, `Step-By-Step Behavior`, scenario schedule, Given/When/Then scenarios,
 and evidence.
 
 No stale documentation is a universal operating-model rule. All durable docs
-are live system artifacts, not retrospective notes. When code is created or
-materially changed, the file must carry a top-of-file `MarsDocSync` metadata
-comment block listing the repo-relative docs that describe, constrain, or
-explain that code. The same change updates those docs, or records in the ticket,
-plan, review, or commit evidence why the listed docs were checked and did not
-need content changes.
+are live system artifacts, not retrospective notes. Source files and newly
+created or materially changed code files must carry a top-of-file
+`MarsDocSync` metadata comment block with a `docs:` list of repo-relative docs
+that describe, constrain, or explain that code. The same change updates those
+docs, or records in the ticket, plan, review, or commit evidence why the listed
+docs were checked and did not need content changes.
 
 Operating-model changes must be **symbiotic** with the existing system. A new
 rule, artifact, role behavior, tool, gate, or automation must fit the closed
@@ -243,18 +243,23 @@ needs attention.
 
 ### Decision
 
-All documentation is kept current as the system changes. Every newly created or
-materially changed code file must include a top-of-file metadata comment block
-named `MarsDocSync` that lists repo-relative documentation paths associated
-with that code.
+All documentation is kept current as the system changes. Every source file and
+every newly created or materially changed code file must include a top-of-file
+metadata comment block named `MarsDocSync` that lists repo-relative
+documentation paths associated with that code. The source-to-documentation map
+lives in [code-documentation-map.md](code-documentation-map.md), is implemented
+by `internal/docsync`, and is checked by `mars-harness docsync audit --repo .`
+or the mirrored `docsync_audit` tool.
 
 The canonical shape is:
 
 ```text
 /*
 MarsDocSync:
-- docs/features/F-001-delivery-operating-model.md
+docs:
+- docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
+- docs/features/F-001-delivery-operating-model.md
 */
 ```
 
@@ -271,6 +276,7 @@ near the top of the file before implementation declarations.
 ### Consequences
 
 - Code review can identify associated docs without guessing.
-- Automation has a stable marker for future stale-doc checks.
+- Automation has a stable marker for stale-doc checks and fails when source
+  files lack metadata, reference missing docs, or drift from the code map.
 - Generated target harnesses inherit the same documentation-sync doctrine.
 - Agents treat docs updates as part of implementation, not as optional cleanup.

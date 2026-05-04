@@ -1,3 +1,12 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/delivery-operating-model.md
+- docs/design-docs/tools-glossary.md
+- docs/features/F-001-delivery-operating-model.md
+- docs/features/F-005-agent-execution-runtime.md
+*/
 package tools
 
 import (
@@ -18,6 +27,7 @@ func TestFormalizedWorkflowTools_registered(t *testing.T) {
 		"github_release_status",
 		"architecture_audit",
 		"harness_doctrine_sync",
+		"docsync_audit",
 		"git_release_guard",
 		"tool_creation_guard",
 		"tool_inventory_audit",
@@ -26,6 +36,38 @@ func TestFormalizedWorkflowTools_registered(t *testing.T) {
 		_, _, ok := reg.Lookup(name)
 		require.True(t, ok, "%s should be registered", name)
 	}
+}
+
+func TestDocSyncAudit_reportsMetadataStatus(t *testing.T) {
+	root := newWorkflowToolRoot(t)
+	writeWorkflowFile(t, root.Abs(), "docs/design-docs/code-documentation-map.md", "map")
+	writeWorkflowFile(t, root.Abs(), "docs/design-docs/delivery-operating-model.md", "delivery")
+	writeWorkflowFile(t, root.Abs(), "docs/design-docs/release-versioning.md", "release")
+	writeWorkflowFile(t, root.Abs(), "docs/features/F-009-release-update-lifecycle.md", "release feature")
+	writeWorkflowFile(t, root.Abs(), "docs/features/F-004-target-harness-lifecycle.md", "target feature")
+	writeWorkflowFile(t, root.Abs(), "internal/scanner/init.go", `/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/delivery-operating-model.md
+- docs/features/F-004-target-harness-lifecycle.md
+*/
+package scanner
+`)
+	writeWorkflowFile(t, root.Abs(), "internal/release/notes.go", `/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+*/
+package release
+`)
+
+	res, err := handleDocSyncAudit(context.Background(), root, json.RawMessage(`{}`))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "docsync: checked")
+	require.Contains(t, res.Output, "Status: ok")
 }
 
 func TestTaskTraceSummarize_suggestsFormalTools(t *testing.T) {
@@ -71,6 +113,7 @@ it does not clone a fresh working directory per job
 `+"`github_release_status`"+`
 `+"`architecture_audit`"+`
 `+"`harness_doctrine_sync`"+`
+`+"`docsync_audit`"+`
 `+"`git_release_guard`"+`
 `+"`tool_creation_guard`"+`
 `+"`tool_inventory_audit`"+`
@@ -90,8 +133,8 @@ it does not clone a fresh working directory per job
 `+"`git_push`"+`
 `)
 	writeWorkflowFile(t, dir, "docs/design-docs/harness-glossary.md", "Symbiotic operating-model change\nFormalized tool creation trigger\n")
-	writeWorkflowFile(t, dir, "docs/design-docs/delivery-operating-model.md", "formalized tools\nrepeated process\n")
-	writeWorkflowFile(t, dir, "internal/scanner/init.go", "release_orchestrate\nFormalized tool creation trigger\n")
+	writeWorkflowFile(t, dir, "docs/design-docs/delivery-operating-model.md", "formalized tools\nrepeated process\ndocsync_audit\n")
+	writeWorkflowFile(t, dir, "internal/scanner/init.go", "release_orchestrate\ndocsync_audit\nFormalized tool creation trigger\n")
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
 	return root

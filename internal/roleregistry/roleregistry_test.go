@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/harness-operating-model.md
+- docs/features/F-001-delivery-operating-model.md
+*/
 package roleregistry_test
 
 import (

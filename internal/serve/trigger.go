@@ -1,3 +1,11 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/pipeline-engine.md
+- docs/design-docs/orchestrated-organization-layer.md
+- docs/features/F-006-queue-and-orchestration.md
+*/
 package serve
 
 import (
@@ -214,4 +222,3 @@ func nestedFieldEquals(data map[string]json.RawMessage, fields []string, expecte
 	}
 	return nestedFieldEquals(nested, fields[1:], expected)
 }
-

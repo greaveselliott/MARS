@@ -67,7 +67,7 @@ created: 2026-04-11
 
 ### Observability, docs, and regressions
 - [ ] Docs updated if behaviour changed
-- [ ] New or materially changed code files include `MarsDocSync` metadata listing docs reviewed for this ticket
+- [ ] New or materially changed code files include `MarsDocSync` metadata with a `docs:` array listing docs reviewed for this ticket
 - [ ] Tests cover the new functionality
 
 ## Notes
@@ -98,7 +98,7 @@ include the step-by-step BDD behavior before the ticket moves to `done/`.
 Tickets must not be the only stale-doc checkpoint either. If code changes for a
 ticket affect behavior, public surface, workflow, architecture, generated
 output, or operating doctrine, the changed code files should carry top-of-file
-`MarsDocSync` metadata listing the docs reviewed. Update those docs before
+`MarsDocSync` metadata with a `docs:` array listing the docs reviewed. Update those docs before
 moving the ticket to `done/`, or record why they remain current.
 
 Intervention-debt tickets must include role, repo, target, category, severity, confidence, evidence, and origin metadata when generated mechanically. Origin metadata should link trace IDs, score snapshots, commits, outcomes, tools, jobs, telemetry events, and source messages when available locally; missing optional GitHub metadata must not block local ticket creation. They are deduped by repo, role, target, category, and evidence window.

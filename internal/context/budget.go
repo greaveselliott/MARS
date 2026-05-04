@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/context-efficiency.md
+- docs/features/F-005-agent-execution-runtime.md
+*/
 package context
 
 // BudgetPartition splits a total token budget across the three main consumers (M1.4.4).

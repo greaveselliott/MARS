@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/pipeline-engine.md
+- docs/features/F-006-queue-and-orchestration.md
+*/
 package scheduler
 
 import (

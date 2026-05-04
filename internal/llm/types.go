@@ -1,14 +1,23 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/agent-runtime.md
+- docs/design-docs/local-inference.md
+- docs/features/F-003-local-inference-lifecycle.md
+- docs/features/F-005-agent-execution-runtime.md
+*/
 package llm
 
 // Message is one chat completion message in OpenAI-compatible form.
 // Content is always serialized (no omitempty) because llama.cpp requires
 // the field to be present on all messages, even when empty.
 type Message struct {
-	Role       string      `json:"role"`
-	Content    string      `json:"content"`
-	Name       string      `json:"name,omitempty"`
-	ToolCalls  []ToolCall  `json:"tool_calls,omitempty"`
-	ToolCallID string      `json:"tool_call_id,omitempty"`
+	Role       string     `json:"role"`
+	Content    string     `json:"content"`
+	Name       string     `json:"name,omitempty"`
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
 }
 
 // ToolDefinition describes a callable tool (JSON Schema parameters).

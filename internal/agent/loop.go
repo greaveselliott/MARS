@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/agent-runtime.md
+- docs/features/F-005-agent-execution-runtime.md
+*/
 package agent
 
 import (
@@ -334,8 +341,8 @@ func finish(msgs []llm.Message, defs []llm.ToolDefinition, reason EndReason, llm
 		EndReason:        reason,
 		LLMCalls:         llmCalls,
 		ToolInvocations:  tools,
-		TokenEstimate:      llm.EstimateTokens(msgs, defs),
-		WallTime:           time.Since(start),
+		TokenEstimate:    llm.EstimateTokens(msgs, defs),
+		WallTime:         time.Since(start),
 		CircleDiagnostic: circle,
 	}
 }

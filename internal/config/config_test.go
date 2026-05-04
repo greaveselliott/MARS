@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/product-specs/product-surface.md
+- docs/features/F-003-local-inference-lifecycle.md
+*/
 package config
 
 import (

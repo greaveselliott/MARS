@@ -25,11 +25,18 @@ expanding implementation.
 ## No Stale Documentation
 
 All documentation is live. When code is written or materially changed, the code
-file should carry a top-of-file `MarsDocSync` comment block listing the
-feature contracts, design docs, product specs, README surfaces, ticket guidance,
-or other durable docs associated with that behavior. The listed docs must be
-reviewed and updated in the same change, or the ticket, plan, review, or commit
-evidence must state why they remain current.
+file carries a top-of-file `MarsDocSync` comment block with a `docs:` array
+listing the feature contracts, design docs, product specs, README surfaces,
+ticket guidance, or other durable docs associated with that behavior. The listed
+docs must be reviewed and updated in the same change, or the ticket, plan,
+review, or commit evidence must state why they remain current.
+
+The source-wide gate is:
+
+```bash
+mars-harness docsync audit --repo .
+mars-harness tools run docsync_audit --repo . --args-json '{}'
+```
 
 ## Contract Rules
 
@@ -39,7 +46,8 @@ evidence must state why they remain current.
 - Business logic is documented step by step under the feature contract, not
   only in tickets, code comments, or release notes.
 - Code files that implement or constrain behavior carry `MarsDocSync` metadata
-  pointing at the docs that must stay current with that behavior.
+  with a `docs:` array pointing at the docs that must stay current with that
+  behavior.
 - The schedule is the ordered list of failing BDD scenarios or scenario groups.
 - Tickets implement only the current failing scenario or scenario group.
 - No feature ships until in-scope scenarios pass or are explicitly descoped.

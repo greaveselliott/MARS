@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/features/F-011-optional-github-integration.md
+- docs/product-specs/product-surface.md
+*/
 package github
 
 import (

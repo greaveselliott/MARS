@@ -1,3 +1,10 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/delivery-operating-model.md
+- docs/features/F-004-target-harness-lifecycle.md
+*/
 package scanner
 
 import (
