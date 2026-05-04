@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.29.0] - 2026-05-04
+<!-- mars-harness-release: version=0.29.0 commit=cb59e75cacf2 -->
+
+### Impact
+- **docsync:** Operators and agents now have a repo-wide source-to-documentation map. Every audited source file carries `MarsDocSync` metadata that points to the feature contracts, design docs, product specs, role docs, or release docs that must be checked when that file changes.
+- **docsync:** The new `mars-harness docsync audit --repo .` command and mirrored `docsync_audit` tool turn no-stale-documentation from guidance into a repeatable quality gate.
+
+### Why
+- **docsync:** Documentation drift was still possible because a reviewer had to infer which docs belonged to a changed file. The new map makes that relationship explicit and lets automation fail when source files lack metadata, reference missing docs, or drift from the canonical package map.
+- **docsync:** Generated target harnesses need the same universal operating model, so the scaffolded guidance, role allowlists, tools glossary, role registry, and F-001 feature contract now teach agents to run docsync before claiming code and docs are in sync.
+
+### What Changed
+- **docsync:** Added the `internal/docsync` package, `mars-harness docsync audit`, and the mirrored `docsync_audit` workflow tool, with tests for metadata parsing, missing-doc failures, CLI behavior, and docs-consistency enforcement (cb59e75).
+- **docsync:** Added `docs/design-docs/code-documentation-map.md` as AD-101, extended F-001 with the source-wide docsync audit scenario, and updated no-stale-documentation doctrine to require a structured `docs:` array (cb59e75).
+- **docsync:** Seeded `MarsDocSync` metadata across all audited source roots and updated generated target defaults so implementation, review, release, dogfood, and maintenance roles can use `docsync_audit` before git handoff (cb59e75).
+
+### Features
+- **docsync:** Map source files to documentation (cb59e75)
+
 ## [0.28.3] - 2026-05-04
 <!-- mars-harness-release: version=0.28.3 commit=970e1659b42e -->
 
