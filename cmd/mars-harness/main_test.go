@@ -254,6 +254,63 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	require.Empty(t, strings.TrimSpace(status))
 }
 
+func TestInitCommandCommitsGeneratedHarnessBaseline(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	cmd := initCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--repo", repoDir})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "Initialized .harness/")
+	require.Contains(t, out.String(), "Committed generated harness baseline")
+	require.Contains(t, runMainTestGit(t, repoDir, "log", "--oneline", "-1"), "chore(harness): initialize mars harness")
+	require.Empty(t, strings.TrimSpace(runMainTestGit(t, repoDir, "status", "--short")))
+}
+
+func TestRunCommandAutoInitCommitsGeneratedHarnessBaseline(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	cmd := runCmd()
+	cmd.SetArgs([]string{"ceo", "--repo", repoDir, "--dry-run"})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, runMainTestGit(t, repoDir, "log", "--oneline", "-1"), "chore(harness): initialize mars harness")
+	require.Empty(t, strings.TrimSpace(runMainTestGit(t, repoDir, "status", "--short")))
+}
+
+func TestRegisterCommandAutoInitCommitsGeneratedHarnessBaseline(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	cmd := registerCmd()
+	cmd.SetArgs([]string{"--repo", repoDir, "--db", dbPath})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, runMainTestGit(t, repoDir, "log", "--oneline", "-1"), "chore(harness): initialize mars harness")
+	require.Empty(t, strings.TrimSpace(runMainTestGit(t, repoDir, "status", "--short")))
+}
+
+func TestScanCommandAutoInitCommitsGeneratedHarnessBaseline(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	cmd := scanCmd()
+	cmd.SetArgs([]string{"--repo", repoDir})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, runMainTestGit(t, repoDir, "log", "--oneline", "-1"), "chore(harness): initialize mars harness")
+	require.Empty(t, strings.TrimSpace(runMainTestGit(t, repoDir, "status", "--short")))
+}
+
 func TestCommitGeneratedHarnessBaselineLeavesExistingChangesUnstaged(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not in PATH")

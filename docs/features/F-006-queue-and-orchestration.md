@@ -47,7 +47,7 @@ Then matching roles are enqueued and invalid manifests do not take down the rout
 
 Given a user runs `mars-harness start --repo <path>`
 When the target needs scaffolding or registration
-Then the harness initializes if needed, commits only the generated scaffold baseline, registers the repo, seeds the CEO role, and runs with repo-scoped state
+Then the harness initializes if needed through the same committed generated-scaffold baseline used by `init`, `run`, `register`, and `scan`, registers the repo, seeds the CEO role, and runs with repo-scoped state
 
 ### F-006-S006: Serve Orchestrator
 
@@ -89,7 +89,7 @@ None.
 - F-006-S002: `go test ./internal/queue -run TestQueue`
 - F-006-S003: `go test ./internal/queue -run TestWorkerPool`
 - F-006-S004: `go test ./internal/serve -run 'TestTriggerRouter|TestResolveSchedule|TestHandleJobComplete'`
-- F-006-S005: `go test ./cmd/mars-harness -run TestStartCommandInitializesRegistersSeedsAndStops`
+- F-006-S005: `go test ./cmd/mars-harness -run 'Test(Start|Init|Run|Register|Scan).*GeneratedHarnessBaseline'`
 - F-006-S006: `go test ./internal/serve -run TestServer`
 - F-006-S007: `go test ./internal/serve -run 'TestHandleJobFailed|TestSelfHealRecoveryQueue'` and `go test ./internal/queue -run TestQueue_repairActiveRecoveryJobs`
 - F-006-S008: `go test ./internal/serve -run 'TestValidateEngineerTicketGate|TestBuildTicketIndex'`

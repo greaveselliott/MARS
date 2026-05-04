@@ -1082,6 +1082,12 @@ func executeRun(opts runOpts) error {
 		return fmt.Errorf("run: resolve repo path: %w", err)
 	}
 
+	preInitChanges, err := gitChangedPaths(absRepo)
+	if err != nil {
+		tw.WriteError(fmt.Sprintf("inspect pre-init git status: %v", err))
+		return err
+	}
+
 	didInit, err := scanner.EnsureHarness(absRepo, false)
 	if err != nil {
 		tw.WriteError(err.Error())
@@ -1089,6 +1095,14 @@ func executeRun(opts runOpts) error {
 	}
 	if didInit {
 		tw.WriteAssistant("Auto-initialised .harness/ with default pipeline — continuing.")
+		committed, err := commitGeneratedHarnessBaseline(absRepo, preInitChanges)
+		if err != nil {
+			tw.WriteError(fmt.Sprintf("commit generated harness baseline: %v", err))
+			return err
+		}
+		if committed {
+			tw.WriteAssistant("Committed generated harness baseline so the role starts from a clean scaffold.")
+		}
 	}
 
 	manifest, err := bundle.Load(absRepo)
@@ -1411,10 +1425,26 @@ func initCmd() *cobra.Command {
 					return fmt.Errorf("init: cannot determine working directory: %w", err)
 				}
 			}
-			if err := scanner.Init(repoPath, force); err != nil {
+			absPath, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("init: resolve path: %w", err)
+			}
+			preInitChanges, err := gitChangedPaths(absPath)
+			if err != nil {
+				return fmt.Errorf("init: inspect pre-init git status: %w", err)
+			}
+			if err := scanner.Init(absPath, force); err != nil {
 				return err
 			}
-			fmt.Printf("Initialized .harness/ in %s\n", repoPath)
+			out := cmd.OutOrStdout()
+			fmt.Fprintf(out, "Initialized .harness/ in %s\n", absPath)
+			committed, err := commitGeneratedHarnessBaseline(absPath, preInitChanges)
+			if err != nil {
+				return fmt.Errorf("init: commit generated harness baseline: %w", err)
+			}
+			if committed {
+				fmt.Fprintf(out, "Committed generated harness baseline in %s\n", absPath)
+			}
 			return nil
 		},
 	}
@@ -1494,8 +1524,22 @@ If .harness/manifest.yaml is missing, mars-harness scaffolds it first (same as i
 			if err != nil {
 				return fmt.Errorf("scan: resolve path: %w", err)
 			}
-			if _, err := scanner.EnsureHarness(absPath, false); err != nil {
+			preInitChanges, err := gitChangedPaths(absPath)
+			if err != nil {
+				return fmt.Errorf("scan: inspect pre-init git status: %w", err)
+			}
+			didInit, err := scanner.EnsureHarness(absPath, false)
+			if err != nil {
 				return fmt.Errorf("scan: %w", err)
+			}
+			if didInit {
+				committed, err := commitGeneratedHarnessBaseline(absPath, preInitChanges)
+				if err != nil {
+					return fmt.Errorf("scan: commit generated harness baseline: %w", err)
+				}
+				if committed {
+					fmt.Printf("Committed generated harness baseline in %s\n", absPath)
+				}
 			}
 
 			parentCtx := cmd.Context()
@@ -1861,12 +1905,24 @@ If .harness/manifest.yaml is missing, mars-harness runs the same scaffold as
 				return fmt.Errorf("register: resolve path: %w", err)
 			}
 
+			preInitChanges, err := gitChangedPaths(absPath)
+			if err != nil {
+				return fmt.Errorf("register: inspect pre-init git status: %w", err)
+			}
+
 			didInit, err := scanner.EnsureHarness(absPath, false)
 			if err != nil {
 				return fmt.Errorf("register: %w", err)
 			}
 			if didInit {
 				fmt.Fprintf(os.Stderr, "Auto-initialised .harness/ in %s\n", absPath)
+				committed, err := commitGeneratedHarnessBaseline(absPath, preInitChanges)
+				if err != nil {
+					return fmt.Errorf("register: commit generated harness baseline: %w", err)
+				}
+				if committed {
+					fmt.Fprintf(os.Stderr, "Committed generated harness baseline in %s\n", absPath)
+				}
 			}
 
 			if dbPath == "" {

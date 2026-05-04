@@ -59,9 +59,9 @@ must prove:
 
 - a clean initialized target baseline can run a generated starter role with
   contributor trust and controlled mutation
-- `start` commits only the generated harness scaffold before seeding the first
-  bootstrap role, so blank-repo initialization is not misclassified as dirty
-  target state
+- `init` and auto-init commands commit only the generated harness scaffold
+  before a bootstrap role can run, so blank-repo initialization is not
+  misclassified as dirty target state
 - destructive shell commands are blocked before execution
 - dirty worktrees that already exceed blast radius are contained before LLM
   invocation
