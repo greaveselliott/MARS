@@ -24,6 +24,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 7. F-006-S007 - Recovery jobs are bounded, idempotent, self-healed when stale or duplicated, and suppressed for deterministic failures.
 8. F-006-S008 - In-progress and high-priority intervention-debt ticket priority controls what engineers claim next.
 9. F-006-S009 - Native Orchestrator surveys route unattended failure states into bounded jobs or intervention-debt tickets.
+10. F-006-S010 - Dispatch-mode jobs return terminal dispositions to Orchestrator, which chooses the next role instead of relying on fixed linear handoffs.
 
 ## Scenarios
 
@@ -81,6 +82,16 @@ Given queue, ticket, score, telemetry, and recent outcome signals exist
 When the Orchestrator survey runs
 Then stale tickets, blocked tickets, failed checks, dogfood failures, no-op outcomes, telemetry patterns, and low scores create bounded queue work or deduped intervention-debt tickets with payload mode, concurrency group, and daily cap metadata
 
+### F-006-S010: Dispatch-Mode Orchestration
+
+Given a generated target manifest uses `orchestration_mode: dispatch`
+When a non-Orchestrator role completes successfully
+Then it must record a terminal `job_disposition_record`, the executor returns that disposition to Orchestrator, and Orchestrator selects the next role from manifest state, ticket state, loop guards, and the disposition rather than following a fixed role-to-role chain
+
+Given a dispatch-mode role finishes without a disposition
+When the executor validates completion
+Then the job fails closed with an actionable error so the pipeline cannot silently skip orchestration
+
 ## Out of Scope
 
 - External queue systems such as Redis.
@@ -102,3 +113,4 @@ None.
 - F-006-S007: `go test ./internal/serve -run 'TestHandleJobFailed|TestSelfHealRecoveryQueue'` and `go test ./internal/queue -run TestQueue_repairActiveRecoveryJobs`
 - F-006-S008: `go test ./internal/serve -run 'TestValidateEngineerTicketGate|TestBuildTicketIndex|TestFirstBacklogInterventionDebt'`
 - F-006-S009: `go test ./internal/serve -run TestOrchestratorSurvey` and `go test ./internal/queue -run 'TestQueue_concurrencyGroupSerialization|TestQueue_dailyCapConstrainsRepeatedScheduling|TestQueue_claimDoesNotResetHealthyRunningJob|TestQueue_failStuckRunningJobs'`
+- F-006-S010: `go test ./internal/orchestration ./internal/orgstate` and `go test ./internal/serve -run TestFoundationAcceptance`

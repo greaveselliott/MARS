@@ -41,6 +41,24 @@ Commit bodies may include `Impact:`, `Why:`, and `What:` lines for richer
 release text. When those fields are absent, the generator produces conservative
 fallback prose from semantic commit type, scope, and message.
 
+### AD-100: Historical Release Notes Are Backfilled Through The Release Tool
+
+Release-note standards apply to the whole changelog, not only the newest entry.
+When the narrative standard changes, maintainers use `mars-harness release
+backfill-notes` to rewrite existing marker-backed entries from their historical
+commit ranges. The command treats each `mars-harness-release` marker as the
+authoritative release boundary, ignores `release:` commits, preserves existing
+semantic buckets and delivery evidence, and replaces legacy narrative sections
+with generated `Impact`, `Why`, and `What Changed` prose. If old git topology is
+non-linear, the tool falls back to the commit hashes already present in that
+entry's semantic buckets.
+
+The command supports `--dry-run` for review, `--check` for docs-consistency and
+CI gates, and `--min-version` / `--max-version` for bounded historical batches.
+If a marker commit is missing or no non-release commits can be found for an
+entry, the command fails with an actionable error instead of inventing release
+history.
+
 ### AD-051: Source And Target Release Behavior Mirrors
 
 `mars-harness init` creates `VERSION`, `CHANGELOG.md`, release-versioning design guidance, and release knowledge routes in target repos. The default release-manager prompt uses the same `mars-harness release notes --repo . --bump auto` command that Mars Harness itself uses.
@@ -160,6 +178,7 @@ path is shipped.
 ## Implementation Requirements
 
 - Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
+- Add `mars-harness release backfill-notes --repo <path> [--min-version X.Y.Z] [--max-version X.Y.Z] [--dry-run] [--check]`.
 - Add `mars-harness update tool [--version <version>] [--install-dir <path>] [--dry-run]`.
 - Add `mars-harness release verify-assets [--version <tag>]`.
 - Add `mars-harness update harness --repo <path>`.
@@ -172,6 +191,7 @@ path is shipped.
 - Preserve strict trunk: generated version and patch-note changes are committed directly to `main` and pushed after verification.
 - Ignore release-note commits when generating later patch notes.
 - Start each generated changelog entry with complete plain-English `Impact`, `Why`, and `What Changed` sections before semantic commit buckets.
+- Keep all historical changelog entries on the same narrative standard through `release backfill-notes --check`.
 - Update the source harness fallback version from a repo-owned constant.
 - Generate the same VERSION/CHANGELOG/release guidance in target repos.
 - Treat source-repo versioning as part of done for every non-release semantic commit.
@@ -186,6 +206,7 @@ path is shipped.
 ## Consequences
 
 - Version and patch-note state is visible to agents and humans.
+- Historical changelog entries can be upgraded deterministically instead of hand-edited in bulk.
 - Target projects get release discipline without extra configuration.
 - Release Manager work becomes deterministic before it becomes judgment work.
 - Source-repo work cannot silently land without an accompanying semantic version and patch-note entry.

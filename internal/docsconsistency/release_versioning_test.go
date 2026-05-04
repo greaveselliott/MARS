@@ -9,9 +9,12 @@ package docsconsistency
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
+
+var changelogHeadingRE = regexp.MustCompile(`(?m)^## \[[^\]]+\] - [^\n]+`)
 
 func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 	root := repoRoot(t)
@@ -69,6 +72,62 @@ func TestReleaseWorkflowBackfillsNotesOnlyReleases(t *testing.T) {
 	} {
 		if !strings.Contains(text, needle) {
 			t.Fatalf("release workflow must support asset backfills; missing %q", needle)
+		}
+	}
+}
+
+func TestChangelogEntriesUseDetailedNarrativeSections(t *testing.T) {
+	root := repoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "CHANGELOG.md"))
+	if err != nil {
+		t.Fatalf("read CHANGELOG.md: %v", err)
+	}
+	text := string(data)
+	matches := changelogHeadingRE.FindAllStringIndex(text, -1)
+	if len(matches) == 0 {
+		t.Fatal("CHANGELOG.md must contain release entries")
+	}
+
+	buckets := []string{
+		"### Breaking Changes",
+		"### Features",
+		"### Fixes",
+		"### Documentation",
+		"### Maintenance",
+		"### Tests",
+		"### Other",
+		"### Delivery Evidence",
+	}
+	for i, match := range matches {
+		end := len(text)
+		if i+1 < len(matches) {
+			end = matches[i+1][0]
+		}
+		entry := text[match[0]:end]
+		version := strings.TrimSpace(entry[:strings.Index(entry, "\n")])
+		if strings.Contains(entry, "### Why This Release Matters") {
+			t.Fatalf("%s must use detailed narrative sections, not legacy Why This Release Matters", version)
+		}
+		impact := strings.Index(entry, "### Impact")
+		why := strings.Index(entry, "### Why")
+		what := strings.Index(entry, "### What Changed")
+		if impact < 0 || why < 0 || what < 0 {
+			t.Fatalf("%s must include Impact, Why, and What Changed sections", version)
+		}
+		if !(impact < why && why < what) {
+			t.Fatalf("%s must order narrative sections as Impact, Why, then What Changed", version)
+		}
+		firstBucket := -1
+		for _, bucket := range buckets {
+			if idx := strings.Index(entry, bucket); idx >= 0 && (firstBucket == -1 || idx < firstBucket) {
+				firstBucket = idx
+			}
+		}
+		if firstBucket == -1 {
+			t.Fatalf("%s must retain semantic commit buckets or delivery evidence after narrative sections", version)
+		}
+		if what > firstBucket {
+			t.Fatalf("%s must place Impact, Why, and What Changed before semantic commit buckets", version)
 		}
 	}
 }

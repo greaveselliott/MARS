@@ -1018,6 +1018,7 @@ Architectural decisions and design documents for this project.
 | AD-097 | Business logic is first-class BDD and belongs step by step under ` + "`docs/features/`" + `. | 2026-05-04 | Accepted |
 | AD-098 | No stale documentation: code changes carry top-of-file ` + "`MarsDocSync`" + ` metadata listing associated docs, and those docs are updated or explicitly checked as current. | 2026-05-04 | Accepted |
 | AD-099 | Generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. | 2026-05-04 | Accepted |
+| AD-100 | Historical release entries are backfilled through ` + "`mars-harness release backfill-notes`" + ` from marker-backed commit ranges. | 2026-05-04 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1881,6 +1882,14 @@ mars-harness release notes --repo . --bump auto
 
 Then verify, commit, and push the release-note update on ` + "`main`" + `.
 
+Backfill historical entries after release-note standards change:
+
+` + "```bash" + `
+mars-harness release backfill-notes --repo . --dry-run
+mars-harness release backfill-notes --repo .
+mars-harness release backfill-notes --repo . --check
+` + "```" + `
+
 ## Release Note Narrative
 
 Generated ` + "`CHANGELOG.md`" + ` entries must include complete user-facing
@@ -1892,6 +1901,13 @@ buckets remain as an audit index, not the only release text.
 Commit bodies may include ` + "`Impact:`" + `, ` + "`Why:`" + `, and ` + "`What:`" + ` lines for richer
 release text. When those fields are absent, the generator produces conservative
 fallback prose from semantic commit type, scope, and message.
+
+Historical marker-backed entries must stay on the same standard. Use
+` + "`mars-harness release backfill-notes`" + ` to derive each old entry from adjacent
+release markers, replace legacy narrative sections, preserve semantic buckets
+and delivery evidence, fall back to commit hashes already present in semantic
+buckets for non-linear old history, and fail rather than invent history when a
+marker is missing.
 
 ## Automatic Versioning Rule
 
@@ -1924,6 +1940,7 @@ claiming the release is complete.
 - Use ` + "`--bump major`" + `, ` + "`--bump minor`" + `, or ` + "`--bump patch`" + ` only when auto classification is wrong.
 - Do not fabricate commit references.
 - Keep release notes complete, user-facing, and explicit about impact, why, and what changed.
+- Use ` + "`mars-harness release backfill-notes --repo . --check`" + ` when auditing historical changelog compliance.
 - Use ` + "`mars-harness update check --repo .`" + ` to detect stale installed CLI or target harness metadata.
 - Use ` + "`mars-harness update harness --repo .`" + ` when generated harness-owned files need to catch up.
 `,

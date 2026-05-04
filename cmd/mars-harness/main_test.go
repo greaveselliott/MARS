@@ -1,3 +1,8 @@
+/*
+MarsDocSync:
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+*/
 package main
 
 import (
@@ -109,6 +114,36 @@ func TestMCPServeCommand(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), `"tools"`)
 	require.Contains(t, out.String(), `"tool_create"`)
+}
+
+func TestReleaseBackfillNotesCommandChecksAndWrites(t *testing.T) {
+	t.Parallel()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	dir := initReleaseBackfillCommandRepo(t)
+
+	checkCmd := releaseBackfillNotesCmd()
+	var checkOut bytes.Buffer
+	checkCmd.SetOut(&checkOut)
+	checkCmd.SetArgs([]string{"--repo", dir, "--check"})
+	err := checkCmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, checkOut.String(), "Release backfill-notes: checked 1 entries, changed 1")
+
+	writeCmd := releaseBackfillNotesCmd()
+	var writeOut bytes.Buffer
+	writeCmd.SetOut(&writeOut)
+	writeCmd.SetArgs([]string{"--repo", dir, "--min-version", "0.1.0", "--max-version", "0.1.0"})
+	require.NoError(t, writeCmd.Execute())
+	require.Contains(t, writeOut.String(), "Updated files:")
+
+	changelog, err := os.ReadFile(filepath.Join(dir, "CHANGELOG.md"))
+	require.NoError(t, err)
+	require.Contains(t, string(changelog), "### Impact")
+	require.Contains(t, string(changelog), "### Why")
+	require.Contains(t, string(changelog), "### What Changed")
+	require.NotContains(t, string(changelog), "### Why This Release Matters")
 }
 
 func TestScoresCommandMissingDBDirectoryIsActionable(t *testing.T) {
@@ -402,6 +437,32 @@ func TestCommitGeneratedHarnessBaselineLeavesExistingChangesUnstaged(t *testing.
 	tracked := runMainTestGit(t, repoDir, "ls-files")
 	require.Contains(t, tracked, ".harness/manifest.yaml")
 	require.NotContains(t, tracked, "scratch.txt")
+}
+
+func initReleaseBackfillCommandRepo(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	runMainTestGit(t, dir, "init")
+	runMainTestGit(t, dir, "config", "user.email", "test@example.com")
+	runMainTestGit(t, dir, "config", "user.name", "Test User")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "feature.txt"), []byte("feature"), 0o644))
+	runMainTestGit(t, dir, "add", "-A")
+	runMainTestGit(t, dir, "commit", "-m", "feat(cli): add command backfill")
+	head := strings.TrimSpace(runMainTestGit(t, dir, "rev-parse", "--short=12", "HEAD"))
+	short := strings.TrimSpace(runMainTestGit(t, dir, "rev-parse", "--short=7", "HEAD"))
+	changelog := `# Changelog
+
+## [0.1.0] - 2026-05-01
+<!-- mars-harness-release: version=0.1.0 commit=` + head + ` -->
+
+### Why This Release Matters
+Old narrative.
+
+### Features
+- **cli:** Add command backfill (` + short + `)
+`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte(changelog), 0o644))
+	return dir
 }
 
 func writeToolRunRepoFile(t *testing.T, root, rel, content string) {

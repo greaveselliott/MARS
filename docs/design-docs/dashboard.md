@@ -24,13 +24,14 @@ V1 uses a server-side layered layout algorithm (roles grouped by trigger depth: 
 
 Full auto-layout (dagre or similar) is a v2 improvement if custom role topologies need better rendering.
 
-## Five Pages
+## Dashboard Pages
 
 1. **Pipeline Flow (home):** Live DAG of roles with state, scores, trust levels, next trigger. SSE updates node state on job start/complete.
-2. **Role Health:** Per-role detail — outcome history, accuracy trend (30d chart with evolution annotations), context usage, guardrail violations.
-3. **Throughput:** System metrics — job stats, inference performance (tokens/sec, GPU util, latency percentiles), GitHub API usage, pipeline output counts.
-4. **Debug:** Job timeline (segmented bars), execution trace viewer (live and replay), webhook delivery log, error log.
-5. **Evolution History:** Self-improvement timeline with before/after score analysis, guardrail inventory with staleness flags.
+2. **Orchestration:** Live orchestration mode, role topology, dispatch status, and recent Orchestrator decisions so dispatch-mode repos are not represented as a static linear pipeline.
+3. **Role Health:** Per-role detail — outcome history, accuracy trend (30d chart with evolution annotations), context usage, guardrail violations.
+4. **Throughput:** System metrics — job stats, inference performance (tokens/sec, GPU util, latency percentiles), GitHub API usage, pipeline output counts.
+5. **Debug:** Job timeline (segmented bars), execution trace viewer (live and replay), webhook delivery log, error log.
+6. **Evolution History:** Self-improvement timeline with before/after score analysis, guardrail inventory with staleness flags.
 
 ### AD-027: Interactive control surface (CLI + dashboard)
 
@@ -53,6 +54,8 @@ Operators need to pause, restart, scan, stop, and force-run individual roles wit
 | GET | `/api/status` | JSON status snapshot |
 | GET | `/api/repos` | List registered repos |
 | GET | `/api/repo-roles` | List roles for a repo |
+| GET | `/api/orchestration` | Live orchestration mode and role topology per repo |
+| GET | `/api/orchestration/decisions` | Recent dispatch decisions and stop reasons |
 
 **Design choices:**
 - Pause stops claiming, not killing. Running jobs complete. Prevents data loss.

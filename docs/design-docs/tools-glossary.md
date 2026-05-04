@@ -79,7 +79,9 @@ tools are added, removed, renamed, or materially change behavior.
   as native tools: configure it to launch
   `mars-harness mcp serve --repo <path> --trust observer|contributor`.
 - Need to run or prepare the whole release ritual: use `release_orchestrate`,
-  `git_release_guard`, and `github_release_status` before mutating state.
+  `git_release_guard`, and `github_release_status` before mutating state; use
+  `mars_harness_cli` with `release backfill-notes --check` when auditing
+  historical changelog narrative compliance.
 - Need a durable repo-owned note: use `record_decision`.
 - Need backlog, dogfood, dependency, or intervention-debt work item creation:
   use `ticket_create`. Do not hand-write new ticket markdown with

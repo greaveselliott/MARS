@@ -22,6 +22,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 5. F-010-S005 - Emergency stop is available through the dashboard and reports callback errors.
 6. F-010-S006 - Empty states explain missing modules or data without crashing the dashboard.
 7. F-010-S007 - CLI interactive controls and dashboard controls remain behaviorally aligned.
+8. F-010-S008 - The orchestration page and APIs show dispatch-mode routing state instead of a static linear pipeline.
 
 ## Scenarios
 
@@ -67,6 +68,16 @@ Given serve or start is running with interactive controls
 When an operator uses CLI keys or dashboard buttons
 Then pause, resume, restart, scan, stop, and run-role semantics stay aligned
 
+### F-010-S008: Orchestration State View
+
+Given registered repos use legacy chains or dispatch-mode orchestration
+When an operator opens `/orchestration` or calls `/api/orchestration`
+Then the dashboard reports each repo's orchestration mode, role topology, and dispatch status from live server state instead of showing a static or purely linear pipeline model
+
+Given orchestration decisions have been recorded
+When `/api/orchestration/decisions` is called or dispatch events are broadcast
+Then the dashboard exposes recent decisions so operators can see why Orchestrator selected the next role or stopped dispatch
+
 ## Out of Scope
 
 - React, npm, or externally hosted dashboard assets.
@@ -86,3 +97,4 @@ None.
 - F-010-S005: `go test ./internal/dashboard -run TestDashboard_emergencyStop`
 - F-010-S006: `go test ./internal/dashboard -run TestDashboard_missingModuleEmptyState`
 - F-010-S007: planned E2E evidence comparing CLI key listener and HTTP controls
+- F-010-S008: `go test ./internal/dashboard -run TestDashboard_missingModuleEmptyState`; API decision-history evidence remains planned

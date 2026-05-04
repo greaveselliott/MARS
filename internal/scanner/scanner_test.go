@@ -428,6 +428,11 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(changelog), "mars-harness release notes")
 
+	releaseDoc, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(releaseDoc), "mars-harness release backfill-notes")
+	assert.Contains(t, string(releaseDoc), "--check")
+
 	agentGuide, err := os.ReadFile(filepath.Join(dir, "AGENTS.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(agentGuide), "docs/QUALITY_SCORE.md")
@@ -540,6 +545,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(designIndex), "AD-097")
 	assert.Contains(t, string(designIndex), "AD-098")
 	assert.Contains(t, string(designIndex), "AD-099")
+	assert.Contains(t, string(designIndex), "AD-100")
 
 	conversationRecord, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "conversation-as-system-record.md"))
 	require.NoError(t, err)
@@ -648,7 +654,7 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(qaPrompt), "MarsDocSync")
 
-	releaseDoc, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
+	releaseDoc, err = os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(releaseDoc), "Every non-release semantic commit")
 	assert.Contains(t, string(releaseDoc), "release: notes X.Y.Z")

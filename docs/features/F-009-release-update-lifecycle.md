@@ -23,6 +23,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 6. F-009-S006 - `release verify-assets` fails when platform binaries or checksums are missing from a GitHub Release.
 7. F-009-S007 - Source and generated targets inherit the same versioning and release-note discipline.
 8. F-009-S008 - Generated release notes explain impact, why, and what changed before commit buckets.
+9. F-009-S009 - Historical release entries are backfilled to the current narrative standard from marker ranges.
 
 ## Scenarios
 
@@ -74,6 +75,12 @@ Given semantic commits exist after the current release marker
 When release notes are generated
 Then the changelog entry includes complete `Impact`, `Why`, and `What Changed` narrative before semantic commit buckets, using commit-body narrative fields when available and conservative generated prose otherwise
 
+### F-009-S009: Historical Release Narrative Backfill
+
+Given `CHANGELOG.md` contains older marker-backed release entries
+When `mars-harness release backfill-notes --repo <path>` runs
+Then each selected entry derives its non-release commits from adjacent release markers or, for non-linear old history, from existing semantic-bucket commit references, replaces legacy narrative sections with `Impact`, `Why`, and `What Changed`, preserves semantic commit buckets and delivery evidence, and reports missing markers or empty release ranges instead of inventing history
+
 ## Out of Scope
 
 - Treating tags as the only release-note state.
@@ -95,3 +102,4 @@ None.
 - F-009-S006: `go test ./internal/selfupdate -run TestVerifyReleaseAssetsReportsMissingAssets`
 - F-009-S007: `go test ./internal/scanner -run TestInit_success` and docs-consistency checks for release guidance
 - F-009-S008: `go test ./internal/release -run TestRenderReleaseNarrativeUsesImpactWhyAndWhat`
+- F-009-S009: `go test ./internal/release -run TestBackfillNotes` and `go test ./cmd/mars-harness -run TestReleaseBackfillNotesCommandChecksAndWrites`

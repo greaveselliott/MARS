@@ -176,34 +176,7 @@ func readCommits(ctx context.Context, repoRoot, baseRef string) ([]Commit, error
 	if err != nil {
 		return nil, err
 	}
-	out = strings.TrimRight(out, "\x1e\n")
-	if strings.TrimSpace(out) == "" {
-		return nil, nil
-	}
-	records := strings.Split(out, "\x1e")
-	commits := make([]Commit, 0, len(records))
-	for _, record := range records {
-		record = strings.Trim(record, "\n")
-		if record == "" {
-			continue
-		}
-		fields := strings.SplitN(record, "\x1f", 4)
-		if len(fields) < 4 {
-			continue
-		}
-		commit := Commit{
-			Hash:    strings.TrimSpace(fields[0]),
-			Short:   strings.TrimSpace(fields[1]),
-			Subject: strings.TrimSpace(fields[2]),
-			Body:    strings.TrimSpace(fields[3]),
-		}
-		commit.Type, commit.Scope, commit.Message, commit.Breaking = parseSubject(commit.Subject, commit.Body)
-		if commit.Type == "release" {
-			continue
-		}
-		commits = append(commits, commit)
-	}
-	return commits, nil
+	return parseGitLogCommits(out), nil
 }
 
 func parseSubject(subject, body string) (typ, scope, message string, breaking bool) {

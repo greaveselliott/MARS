@@ -1,3 +1,8 @@
+/*
+MarsDocSync:
+- docs/design-docs/dashboard.md
+- docs/features/F-010-dashboard-control-plane.md
+*/
 package dashboard
 
 import (
@@ -558,7 +563,7 @@ func TestDashboard_missingModuleEmptyState(t *testing.T) {
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
-	pages := []string{"/pipeline", "/roles", "/throughput", "/debug", "/evolution"}
+	pages := []string{"/pipeline", "/roles", "/throughput", "/debug", "/evolution", "/orchestration"}
 
 	for _, page := range pages {
 		t.Run(page, func(t *testing.T) {

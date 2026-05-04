@@ -83,15 +83,32 @@ evidence must state why they remain current.
 | F-001 | [Delivery Operating Model](F-001-delivery-operating-model.md) | passing | Goals, BDD, plans, tickets, evidence, target mirroring |
 | F-002 | [Zero-Config Shell PATH](F-002-zero-config-shell-path.md) | passing | Source install, setup, self-update PATH setup |
 | F-003 | [Local Inference Lifecycle](F-003-local-inference-lifecycle.md) | partially-passing | Hardware profiles, model downloads, llama.cpp supervision, model evaluation |
-| F-004 | [Target Harness Lifecycle](F-004-target-harness-lifecycle.md) | partially-passing | Init, upgrade, update check, doctor drift reporting |
+| F-004 | [Target Harness Lifecycle](F-004-target-harness-lifecycle.md) | partially-passing | Init, upgrade, update check, doctor drift reporting, eject kill switch |
 | F-005 | [Agent Execution Runtime](F-005-agent-execution-runtime.md) | partially-passing | Context assembly, tool calls, traces, budgets, run command |
-| F-006 | [Queue And Orchestration](F-006-queue-and-orchestration.md) | partially-passing | Register, start, serve, scheduler, chains, recovery |
+| F-006 | [Queue And Orchestration](F-006-queue-and-orchestration.md) | partially-passing | Register, start, serve, scheduler, chains, dispatch, recovery |
 | F-007 | [Guardrails And Safety](F-007-guardrails-and-safety.md) | partially-passing | Hard guardrails, secret scanning, sandbox, blast radius, emergency stop |
 | F-008 | [Scoring Trust And Quality](F-008-scoring-trust-quality.md) | partially-passing | Role scores, trust levels, quality score export, intervention debt |
-| F-009 | [Release And Update Lifecycle](F-009-release-update-lifecycle.md) | partially-passing | Versioning, changelog, GitHub releases, release assets, update tool |
-| F-010 | [Dashboard And Control Plane](F-010-dashboard-control-plane.md) | partially-passing | Dashboard pages, status APIs, pause/resume/restart/scan/run-role controls |
+| F-009 | [Release And Update Lifecycle](F-009-release-update-lifecycle.md) | partially-passing | Versioning, changelog, historical backfills, GitHub releases, release assets, update tool |
+| F-010 | [Dashboard And Control Plane](F-010-dashboard-control-plane.md) | partially-passing | Dashboard pages, status APIs, orchestration state, pause/resume/restart/scan/run-role controls |
 | F-011 | [Optional GitHub Integration](F-011-optional-github-integration.md) | partially-passing | GitHub App setup, webhooks, statuses, comments |
 | F-012 | [Self-Improvement Loop](F-012-self-improvement-loop.md) | partially-passing | Telemetry, intervention detection, skills, tool creation, bounded evolution |
+
+## Historical Feature Audit
+
+Historical release entries and semantic `feat:` commits map to the feature
+contracts above. The audit keeps broad shipped capability surfaces under BDD
+instead of letting old release notes become the only description of behavior.
+
+| Historical Surface | Owning Contract | Coverage Note |
+| --- | --- | --- |
+| Local LLM client, model download, llama.cpp supervision, model routing, performance tuning, benchmark-backed model workflows | F-003 | Covered by setup, download, supervision, routing, missing-model, evaluation, and provider scenarios. |
+| Agent loop, context assembly, tool execution, traces, budgets, run command, universal CLI/MCP tools | F-005 | Covered by role-scoped context, multi-turn tool loop, containment, traces, budgets, run, and tool-surface scenarios. |
+| Queue, scheduler, trigger chains, start/serve, recovery, intervention-debt priority, native Orchestrator survey, dispatch-mode organization | F-006 | Covered by lifecycle, trigger, recovery, priority, survey, and dispatch scenarios. |
+| Init, upgrade, update check, doctor target health, auto-scaffold, mirrored doctrine, target eject kill switch | F-004 | Eject coverage added as F-004-S008 during the historical release audit. |
+| Dashboard pages, live event stream, controls, emergency stop, throughput, orchestration state | F-010 | Orchestration-state coverage added as F-010-S008; API decision-history evidence remains planned. |
+| Semantic release notes, release assets, updater, update harness/check, detailed release narratives, historical backfills | F-009 | Historical backfill coverage added as F-009-S009 with release package and CLI evidence. |
+| Scoring, trust, quality exports, intervention-debt creation and sparse-evidence handling | F-008 | Covered by scoring, trust, export, intervention-debt, release/quality classification, and evidence scenarios. |
+| Telemetry triage, self-improvement, skills, tool creation, bounded evolution | F-012 | Covered by classification, triage, goal/ticket creation, intervention detection, bounded evolution, skills, and mirroring scenarios. |
 
 ## Scenario Evidence Discipline
 

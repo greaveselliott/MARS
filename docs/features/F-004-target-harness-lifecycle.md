@@ -22,6 +22,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 5. F-004-S005 - `doctor --repo` reports target harness health and active-plan hygiene.
 6. F-004-S006 - Auto-harness scaffolding runs before register, scan, run, or start when the manifest is missing.
 7. F-004-S007 - Generated target doctrine stays mirrored when source operating rules change.
+8. F-004-S008 - `mars-harness eject` removes generated harness artifacts and the associated per-repo database only after explicit confirmation.
 
 ## Scenarios
 
@@ -67,6 +68,16 @@ Given a source operating rule changes
 When the change applies to initialized target harnesses
 Then source docs, generated defaults, role guidance, knowledge routes, and tests are updated in the same task or the blocker is recorded
 
+### F-004-S008: Target Harness Eject Kill Switch
+
+Given a target repo has generated Mars Harness artifacts and a repo-scoped SQLite database
+When `mars-harness eject --repo <path>` runs without `--apply`
+Then the command reports the files and database it would remove without mutating the target
+
+Given the same target repo
+When `mars-harness eject --repo <path> --apply --confirm repo` runs
+Then `.harness/`, generated harness docs, generated ticket/feature/release defaults, root generated guidance/version files, and the associated per-repo database are removed without rewriting git history
+
 ## Out of Scope
 
 - Silently overwriting target-owner prompt or manifest edits.
@@ -86,3 +97,4 @@ None.
 - F-004-S005: `go test ./internal/doctor -run TestCheck`
 - F-004-S006: `go test ./internal/scanner -run TestEnsureHarness`
 - F-004-S007: `go test ./internal/docsconsistency ./internal/operatingmodel`
+- F-004-S008: `go test ./internal/scanner -run TestEject`

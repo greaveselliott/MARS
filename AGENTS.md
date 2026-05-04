@@ -254,6 +254,14 @@ mars-harness release notes --repo . --bump auto --dry-run
 
 This same command is generated into target repo release guidance by `mars-harness init`.
 
+Backfill historical changelog entries after release-note standards change:
+
+```bash
+mars-harness release backfill-notes --repo . --dry-run
+mars-harness release backfill-notes --repo .
+mars-harness release backfill-notes --repo . --check
+```
+
 For this source repo, run it automatically after every non-release semantic commit, commit the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes with `release: notes X.Y.Z`, then push `main`.
 
 After pushing the release-note commit, create or update tag `vX.Y.Z` at that commit and push the tag so the Release workflow publishes the generated changelog entry and binary assets. If a GitHub Release exists without assets, backfill it by running the Release workflow for that version. Verify with `mars-harness release verify-assets --version vX.Y.Z`. If publishing or asset verification is blocked by missing credentials, missing remote, CI failure, or API failure, record that blocker before ending the task.

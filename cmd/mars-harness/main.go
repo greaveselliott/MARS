@@ -1,3 +1,8 @@
+/*
+MarsDocSync:
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+*/
 package main
 
 import (
@@ -917,9 +922,76 @@ func releaseCmd() *cobra.Command {
 		Use:   "release",
 		Short: "Manage semantic versions and patch notes",
 	}
+	cmd.AddCommand(releaseBackfillNotesCmd())
 	cmd.AddCommand(releaseNotesCmd())
 	cmd.AddCommand(releaseVerifyAssetsCmd())
 	return cmd
+}
+
+func releaseBackfillNotesCmd() *cobra.Command {
+	var (
+		repoPath   string
+		minVersion string
+		maxVersion string
+		dryRun     bool
+		check      bool
+	)
+	cmd := &cobra.Command{
+		Use:   "backfill-notes",
+		Short: "Backfill historical release narrative sections",
+		Long: `Backfill existing CHANGELOG.md entries that have mars-harness release
+markers so historical releases use the current Impact, Why, and What Changed
+narrative format. Marker commits define each release range. Use --dry-run to
+preview without writing and --check to fail when CHANGELOG.md is stale.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repoPath == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("release backfill-notes: cannot determine working directory: %w", err)
+				}
+			}
+			result, err := release.BackfillNotes(cmd.Context(), release.BackfillConfig{
+				RepoRoot:   repoPath,
+				MinVersion: minVersion,
+				MaxVersion: maxVersion,
+				DryRun:     dryRun,
+				Check:      check,
+			})
+			if err != nil && len(result.Entries) == 0 && len(result.Changed) == 0 {
+				return err
+			}
+			printReleaseBackfillResult(cmd.OutOrStdout(), result, dryRun, check)
+			return err
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
+	cmd.Flags().StringVar(&minVersion, "min-version", "", "Minimum release version to backfill, inclusive")
+	cmd.Flags().StringVar(&maxVersion, "max-version", "", "Maximum release version to backfill, inclusive")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview backfill without writing CHANGELOG.md")
+	cmd.Flags().BoolVar(&check, "check", false, "Fail if any selected release entries need backfill")
+	return cmd
+}
+
+func printReleaseBackfillResult(out io.Writer, result release.BackfillResult, dryRun, check bool) {
+	fmt.Fprintf(out, "Release backfill-notes: checked %d entries, changed %d\n", len(result.Entries), len(result.Changed))
+	if len(result.Changed) > 0 {
+		fmt.Fprintln(out, "Changed releases:")
+		for _, version := range result.Changed {
+			fmt.Fprintf(out, "  %s\n", version)
+		}
+	}
+	switch {
+	case check && len(result.Changed) == 0:
+		fmt.Fprintln(out, "Status: ok")
+	case dryRun:
+		fmt.Fprintln(out, "Dry run: no files written")
+	case len(result.UpdatedFiles) > 0:
+		fmt.Fprintln(out, "Updated files:")
+		for _, path := range result.UpdatedFiles {
+			fmt.Fprintf(out, "  %s\n", path)
+		}
+	}
 }
 
 func releaseNotesCmd() *cobra.Command {

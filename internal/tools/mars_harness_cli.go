@@ -1,3 +1,9 @@
+/*
+MarsDocSync:
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+- docs/design-docs/tools-glossary.md
+*/
 package tools
 
 import (
@@ -365,6 +371,11 @@ Global command surface:
     Generate semantic version patch notes, update VERSION, CHANGELOG.md, and buildinfo.
     Flags: --repo <path>, --bump <auto|major|minor|patch>, --dry-run
     Example: ["release", "notes", "--repo", ".", "--bump", "auto"]
+
+  release backfill-notes
+    Backfill historical CHANGELOG.md entries to the current Impact, Why, and What Changed format.
+    Flags: --repo <path>, --min-version <X.Y.Z>, --max-version <X.Y.Z>, --dry-run, --check
+    Example: ["release", "backfill-notes", "--repo", ".", "--max-version", "0.26.2", "--dry-run"]
 
   release verify-assets
     Verify release metadata/assets for the updater.
