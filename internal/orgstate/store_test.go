@@ -43,9 +43,9 @@ func TestStoreRecordsDispositionAndDecision(t *testing.T) {
 			SuccessEvidence: []string{"review note"},
 		},
 		Feedback: Feedback{
-			ForRole:         "engineer",
+			ForRole:         "qa",
 			Summary:         "missing evidence",
-			RequestedChange: "attach test output before QA",
+			RequestedChange: "verify attached test output before approval",
 			Severity:        "revision_requested",
 			EvidenceLinks:   []string{"docs/tickets/in-progress/MH-001.md"},
 		},
@@ -58,7 +58,7 @@ func TestStoreRecordsDispositionAndDecision(t *testing.T) {
 	require.Equal(t, "qa_review", got.NextNeed)
 	require.Equal(t, []string{"go test ./..."}, got.EvidenceLinks)
 	require.Equal(t, "qa", got.Handoff.TargetRole)
-	require.Equal(t, "attach test output before QA", got.Feedback.RequestedChange)
+	require.Equal(t, "verify attached test output before approval", got.Feedback.RequestedChange)
 
 	dispositions, err := store.RecentDispositions(ctx, "repo-1", 10)
 	require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestValidateDispositionRequiresBlockedNextStep(t *testing.T) {
 		Reason: "needs help",
 	})
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "blocked disposition requires next_need or suggested_role")
+	require.Contains(t, err.Error(), "blocked disposition requires next_need, suggested_role, handoff.target_role, or feedback.for_role")
 }
 
 func TestValidateDispositionAllowsApprovedWithoutReason(t *testing.T) {
@@ -132,6 +132,24 @@ func TestValidateDispositionRejectsInvalidStructuredHandoffAndFeedback(t *testin
 	invalidSeverity := base
 	invalidSeverity.Feedback = Feedback{ForRole: "engineer", RequestedChange: "fix tests", Severity: "urgent"}
 	require.ErrorContains(t, ValidateDisposition(invalidSeverity), "feedback.severity")
+
+	conflictingSuggested := base
+	conflictingSuggested.SuggestedRole = "engineer"
+	conflictingSuggested.Handoff = Handoff{TargetRole: "cto-weekly", Ask: "reshape the ticket"}
+	require.ErrorContains(t, ValidateDisposition(conflictingSuggested), "suggested_role")
+	require.ErrorContains(t, ValidateDisposition(conflictingSuggested), "handoff.target_role")
+
+	conflictingFeedback := base
+	conflictingFeedback.Handoff = Handoff{TargetRole: "engineer", Ask: "fix the implementation"}
+	conflictingFeedback.Feedback = Feedback{ForRole: "cto-weekly", RequestedChange: "reshape the ticket", Severity: "blocking"}
+	require.ErrorContains(t, ValidateDisposition(conflictingFeedback), "handoff.target_role")
+	require.ErrorContains(t, ValidateDisposition(conflictingFeedback), "feedback.for_role")
+
+	ambiguousConflict := base
+	ambiguousConflict.Status = "ambiguous"
+	ambiguousConflict.Handoff = Handoff{TargetRole: "engineer", Ask: "fix the implementation"}
+	ambiguousConflict.Feedback = Feedback{ForRole: "cto-weekly", RequestedChange: "reshape the ticket", Severity: "blocking"}
+	require.NoError(t, ValidateDisposition(ambiguousConflict))
 }
 
 func TestOpenStoreMigratesExistingDispositionsWithoutStructuredFields(t *testing.T) {

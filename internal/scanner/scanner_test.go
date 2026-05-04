@@ -757,6 +757,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(orchestratorPrompt), "treat slugged matches")
 	assert.Contains(t, string(orchestratorPrompt), "without ticket-state change")
 	assert.Contains(t, string(orchestratorPrompt), "ticket_shaping")
+	assert.Contains(t, string(orchestratorPrompt), "source_disposition")
 	assert.Contains(t, string(orchestratorPrompt), "CEO -> COO -> CTO -> Engineer")
 
 	engineerPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "engineer.md"))

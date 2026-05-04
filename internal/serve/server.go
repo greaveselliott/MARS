@@ -1315,15 +1315,11 @@ func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec
 		return
 	}
 
-	triggerJSON, _ := json.Marshal(map[string]string{
-		"type":               "dispatch",
-		"source_role":        job.Role,
-		"source_job":         job.ID,
-		"decision_id":        decision.ID,
-		"disposition_status": disposition.Status,
-		"ticket_id":          disposition.TicketID,
-		"reason":             decision.Reason,
-	})
+	triggerJSON, err := json.Marshal(newDispatchTriggerPayload(job, decision, *disposition))
+	if err != nil {
+		log.Error("serve: failed to marshal dispatch trigger", "target_role", decision.NextRole, "err", err)
+		return
+	}
 	dispatchJob := queue.Job{
 		RepoID:         job.RepoID,
 		Role:           decision.NextRole,

@@ -448,9 +448,11 @@ func appendDispatchCompletionInstruction(rolePrompt string) string {
 
 Before finishing this autonomous server job, call job_disposition_record exactly
 once. Set status, next_need, suggested_role when you have a concrete suggestion,
-ticket_id when applicable, reason, and evidence_links. The Orchestrator consumes
-that disposition and decides the next best role; do not assume a fixed linear
-handoff.`
+ticket_id when applicable, reason, and evidence_links. Include handoff when
+another role should continue with a concrete ask, and feedback when a previous
+role must correct or clarify work. The Orchestrator receives this structured
+disposition as source_disposition, translates it into the next role handoff,
+and decides the next best role; do not assume a fixed linear handoff.`
 }
 
 func (e *Executor) broadcastEvent(eventType string, payload map[string]string) {

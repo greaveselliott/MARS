@@ -110,7 +110,11 @@ Then Orchestrator routes to CEO instead of inventing an absent role or blocking 
 
 Given a role records `handoff` or `feedback` in `job_disposition_record`
 When Orchestrator selects the next role
-Then the disposition stores those objects durably and the next ask names the target role, requested change or action, context, constraints, expected output, and evidence instead of relying on implicit handoff prose
+Then the disposition stores those objects durably, the dispatch trigger carries them in `source_disposition`, and the next ask names the target role, requested change or action, context, constraints, expected output, and evidence instead of relying on implicit handoff prose
+
+Given Orchestrator records `suggested_role`, `handoff.target_role`, or `feedback.for_role`
+When more than one structured target is present
+Then the targets must agree or the disposition is rejected with an actionable error instead of guessing the next owner
 
 Given Orchestrator receives `ticket`, `ticket_shaping`, or `ticket_breakdown`
 When the target manifest contains `cto-weekly`

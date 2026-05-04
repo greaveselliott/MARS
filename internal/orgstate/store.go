@@ -270,13 +270,20 @@ func ValidateDisposition(d Disposition) error {
 	if strings.TrimSpace(d.Reason) == "" && d.Status != "completed" && d.Status != "approved" {
 		return fmt.Errorf("orgstate: disposition reason is required for status %q", d.Status)
 	}
-	if d.Status == "blocked" && strings.TrimSpace(d.NextNeed) == "" && strings.TrimSpace(d.SuggestedRole) == "" {
-		return fmt.Errorf("orgstate: blocked disposition requires next_need or suggested_role")
+	if d.Status == "blocked" &&
+		strings.TrimSpace(d.NextNeed) == "" &&
+		strings.TrimSpace(d.SuggestedRole) == "" &&
+		strings.TrimSpace(d.Handoff.TargetRole) == "" &&
+		strings.TrimSpace(d.Feedback.ForRole) == "" {
+		return fmt.Errorf("orgstate: blocked disposition requires next_need, suggested_role, handoff.target_role, or feedback.for_role")
 	}
 	if err := validateHandoff(d.Handoff); err != nil {
 		return err
 	}
 	if err := validateFeedback(d.Feedback); err != nil {
+		return err
+	}
+	if err := validateDispositionTargetConsistency(d); err != nil {
 		return err
 	}
 	return nil
@@ -311,6 +318,28 @@ func validateFeedback(f Feedback) error {
 	default:
 		return fmt.Errorf("orgstate: disposition feedback.severity must be info, revision_requested, or blocking")
 	}
+}
+
+func validateDispositionTargetConsistency(d Disposition) error {
+	suggested := canonicalRoleKey(d.SuggestedRole)
+	handoffTarget := canonicalRoleKey(d.Handoff.TargetRole)
+	feedbackTarget := canonicalRoleKey(d.Feedback.ForRole)
+	if suggested != "" && handoffTarget != "" && suggested != handoffTarget {
+		return fmt.Errorf("orgstate: disposition suggested_role %q conflicts with handoff.target_role %q; choose one next owner or make these fields match", d.SuggestedRole, d.Handoff.TargetRole)
+	}
+	if suggested != "" && feedbackTarget != "" && suggested != feedbackTarget {
+		return fmt.Errorf("orgstate: disposition suggested_role %q conflicts with feedback.for_role %q; choose one next owner or make these fields match", d.SuggestedRole, d.Feedback.ForRole)
+	}
+	if strings.TrimSpace(d.Status) != "ambiguous" && handoffTarget != "" && feedbackTarget != "" && handoffTarget != feedbackTarget {
+		return fmt.Errorf("orgstate: disposition handoff.target_role %q conflicts with feedback.for_role %q; choose one next owner or use status ambiguous for unresolved routing", d.Handoff.TargetRole, d.Feedback.ForRole)
+	}
+	return nil
+}
+
+func canonicalRoleKey(value string) string {
+	value = strings.TrimSpace(strings.ToLower(value))
+	value = strings.ReplaceAll(value, "_", "-")
+	return value
 }
 
 func emptyHandoff(h Handoff) bool {

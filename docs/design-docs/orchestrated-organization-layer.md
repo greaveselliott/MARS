@@ -70,6 +70,13 @@ Dispositions may also carry structured `handoff` and `feedback` objects so the
 next role gets an explicit ask and the prior role gets explicit correction
 rather than implicit prose.
 
+Dispatch jobs carry a typed trigger payload. The payload includes the source
+role, source job, orchestration decision, selected target role, and a
+routing-safe `source_disposition` containing status, next need, ticket ID,
+reason, evidence links, trace ID, handoff, and feedback. The Orchestrator reads
+that packet first, translates it into a cleaned target handoff, and records its
+own disposition before the chosen role runs.
+
 ## Ticket State
 
 Ticket docs remain the inspectable source of delivery truth:
@@ -113,8 +120,10 @@ views can land without another database migration shape change.
 The orchestration engine uses these rules:
 
 - Non-Orchestrator dispositions route to the configured `orchestrator` role.
-- Orchestrator dispositions honor `suggested_role` after validating that the
-  role exists in the manifest.
+- Orchestrator dispositions honor `suggested_role`, then
+  `handoff.target_role`, then `feedback.for_role`, after validating that the
+  selected role exists in the manifest and that structured target fields do not
+  conflict.
 - Strategy advisory needs (`strategy_advice`, `executive_narrative`,
   `tradeoff_analysis`, and `goal_conflict`) route to the optional
   `head-of-strategy` role when the manifest defines it, and otherwise fall back

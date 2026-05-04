@@ -97,6 +97,52 @@ func TestDecide_orchestratorSuggestedRoleCanonicalizesCase(t *testing.T) {
 	require.Equal(t, "orchestrator", decision.DecisionKind)
 }
 
+func TestDecide_orchestratorHandoffTargetRoutesNext(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "cto-weekly"),
+		Disposition: orgstate.Disposition{
+			JobID:  "job-2",
+			RepoID: "repo-1",
+			Role:   "orchestrator",
+			Status: "completed",
+			Handoff: orgstate.Handoff{
+				TargetRole: "cto-weekly",
+				Ask:        "shape implementation tickets",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "cto-weekly", decision.NextRole)
+	require.Equal(t, "orchestrator", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "handoff.target_role")
+}
+
+func TestDecide_orchestratorFeedbackForRoleRoutesNext(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "coo"),
+		Disposition: orgstate.Disposition{
+			JobID:  "job-2",
+			RepoID: "repo-1",
+			Role:   "orchestrator",
+			Status: "changes_requested",
+			Reason: "plan needs correction",
+			Feedback: orgstate.Feedback{
+				ForRole:         "coo",
+				RequestedChange: "clarify the current failing scenario",
+				Severity:        "blocking",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "coo", decision.NextRole)
+	require.Equal(t, "orchestrator", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "feedback.for_role")
+}
+
 func TestDecide_invalidOrchestratorSuggestedRoleFallsBackToOrchestrator(t *testing.T) {
 	t.Parallel()
 
@@ -115,6 +161,50 @@ func TestDecide_invalidOrchestratorSuggestedRoleFallsBackToOrchestrator(t *testi
 	require.Equal(t, "orchestrator", decision.NextRole)
 	require.Equal(t, "ambiguous", decision.DecisionKind)
 	require.Contains(t, decision.Reason, "suggested route rejected")
+}
+
+func TestDecide_nonOrchestratorFeedbackReturnsToOrchestratorFirst(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "qa", "cto-weekly"),
+		Disposition: orgstate.Disposition{
+			JobID:  "job-1",
+			RepoID: "repo-1",
+			Role:   "qa",
+			Status: "changes_requested",
+			Reason: "ticket is under-specified",
+			Feedback: orgstate.Feedback{
+				ForRole:         "cto-weekly",
+				RequestedChange: "split implementation scope",
+				Severity:        "blocking",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "orchestrator", decision.NextRole)
+	require.Equal(t, "orchestrator_review", decision.DecisionKind)
+}
+
+func TestDecide_rejectsConflictingStructuredTargets(t *testing.T) {
+	t.Parallel()
+
+	_, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "engineer", "cto-weekly"),
+		Disposition: orgstate.Disposition{
+			JobID:         "job-1",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			SuggestedRole: "engineer",
+			Handoff: orgstate.Handoff{
+				TargetRole: "cto-weekly",
+				Ask:        "reshape ticket",
+			},
+		},
+	})
+	require.ErrorContains(t, err, "suggested_role")
+	require.ErrorContains(t, err, "handoff.target_role")
 }
 
 func TestDecide_strategyAdviceRoutesToHeadOfStrategyWhenConfigured(t *testing.T) {

@@ -34,6 +34,9 @@ func Decide(in Input) (orgstate.Decision, error) {
 	if d.JobID == "" || d.RepoID == "" || d.Role == "" {
 		return orgstate.Decision{}, fmt.Errorf("orchestration: disposition job_id, repo_id, and role are required")
 	}
+	if err := orgstate.ValidateDisposition(d); err != nil {
+		return orgstate.Decision{}, fmt.Errorf("orchestration: invalid disposition: %w", err)
+	}
 
 	nextRole, kind, reason, stop := route(in)
 	if nextRole != "" {
@@ -91,6 +94,12 @@ func route(in Input) (nextRole, kind, reason, stop string) {
 
 	if suggested != "" {
 		return suggested, "orchestrator", "using Orchestrator suggested_role", ""
+	}
+	if target := strings.TrimSpace(d.Handoff.TargetRole); target != "" {
+		return target, "orchestrator", "using Orchestrator handoff.target_role", ""
+	}
+	if target := strings.TrimSpace(d.Feedback.ForRole); target != "" {
+		return target, "orchestrator", "using Orchestrator feedback.for_role", ""
 	}
 
 	switch status {

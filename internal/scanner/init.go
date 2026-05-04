@@ -1141,6 +1141,7 @@ Architectural decisions and design documents for this project.
 | AD-102 | Documentation Sync is a universal operating model: agents read changed-file ` + "`MarsDocSync`" + ` docs, classify documentation impact, update or verify associated docs, run docsync evidence, and mirror the model into generated targets. | 2026-05-04 | Accepted |
 | AD-103 | CLI tool/skill sync is a foundational operating model: every CLI command or flag change updates ` + "`mars_harness_cli`" + `, repo-shortcut routing, generated target doctrine, and any affected skills before completion. | 2026-05-04 | Accepted |
 | AD-105 | Foundation agents use canonical persona manuals for ownership, feedback, and handoff; Go structs in ` + "`internal/personas`" + ` render checked docs and prompt Personal Guides. | 2026-05-04 | Accepted |
+| AD-106 | Structured disposition packets travel through Orchestrator so handoff and feedback are visible, validated, and forwarded at runtime. | 2026-05-04 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1293,6 +1294,19 @@ technical implementation tickets.
 ` + "`job_disposition_record`" + ` accepts optional ` + "`handoff`" + ` and ` + "`feedback`" + ` objects so
 agents can make expectations explicit instead of relying on implied handoff
 context.
+
+## AD-106: Structured Disposition Packets
+
+Dispatch-mode routing treats handoff and feedback as runtime data. When a
+non-Orchestrator role completes, the server sends Orchestrator a typed dispatch
+trigger with ` + "`source_disposition`" + ` containing status, next need, ticket ID, reason,
+evidence links, trace ID, handoff, and feedback. Orchestrator reads that packet
+first, chooses one next owner, and records a cleaned handoff for the selected
+target role.
+
+For Orchestrator-owned dispositions, routing honors ` + "`suggested_role`" + `, then
+` + "`handoff.target_role`" + `, then ` + "`feedback.for_role`" + `, then ` + "`next_need`" + `. Structured
+target fields must agree when more than one is supplied.
 
 ## Follow-Up
 
@@ -3481,17 +3495,20 @@ and trace context.
 ## Prompt
 
 START by reading:
-1. The current trigger payload and latest trace summary if available
-2. The persona manual for the source role and likely target role under
+1. The current trigger payload. In dispatch mode, read ` + "`source_disposition`" + `
+   first: it carries the prior role's status, next_need, ticket_id, reason,
+   evidence_links, trace_id, handoff, and feedback.
+2. The latest trace summary if available
+3. The persona manual for the source role and likely target role under
    ` + "`docs/roles/personas/`" + `, because ownership and feedback expectations are canonical there
-3. docs/tickets/README.md
-4. docs/tickets/in-progress/, docs/tickets/in-review/, docs/tickets/backlog/
-5. docs/goals/active.md and docs/exec-plans/active/current-operating-plan.md
-6. For BDD feature IDs in the plan, search ` + "`docs/features/F-NNN*.md`" + ` and
+4. docs/tickets/README.md
+5. docs/tickets/in-progress/, docs/tickets/in-review/, docs/tickets/backlog/
+6. docs/goals/active.md and docs/exec-plans/active/current-operating-plan.md
+7. For BDD feature IDs in the plan, search ` + "`docs/features/F-NNN*.md`" + ` and
    treat slugged matches such as ` + "`docs/features/F-001-delivery-operating-model.md`" + `
    as the existing contract. Do not block only because ` + "`docs/features/F-NNN.md`" + `
    is absent.
-7. Relevant design docs for the blocker or review loop
+8. Relevant design docs for the blocker or review loop
 
 DECIDE THE NEXT BEST ROLE:
 - Choose CEO when vision, goals, final scope, or goal conflicts need a decision.
@@ -3517,6 +3534,11 @@ Record exactly one disposition before finishing with job_disposition_record:
   when a role should continue work
 - feedback: for_role, summary, requested_change, severity, and evidence_links
   when a role must correct or clarify prior work
+
+When ` + "`source_disposition`" + ` contains handoff or feedback, translate it into a
+cleaned Orchestrator-owned handoff for the chosen target role. Preserve the
+actionable ask, constraints, evidence links, ticket ID, and trace ID instead of
+summarising them away.
 
 Do not modify product code. Do not invent roles not present in the manifest.
 If state is contradictory, record a durable decision and choose Janitor or stop.

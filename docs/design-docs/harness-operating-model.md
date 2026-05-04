@@ -138,6 +138,25 @@ the prior role must make. The Orchestrator uses those fields with persona
 manuals to avoid implicit feedback, role ping-pong, and intervention-debt
 floods.
 
+## AD-106: Structured Disposition Packets Travel Through Orchestrator
+
+**Status:** Accepted
+**Date:** 2026-05-04
+**Owner:** Mars Harness maintainers
+
+Dispatch-mode routing treats `handoff` and `feedback` as runtime data, not
+decorative transcript text. When a non-Orchestrator role completes, the server
+enqueues Orchestrator with a typed dispatch trigger containing a routing-safe
+`source_disposition`: status, next need, ticket ID, reason, evidence links,
+trace ID, handoff, and feedback. Orchestrator reads that packet first, chooses
+one next owner, and records its own cleaned disposition for the target role.
+
+For Orchestrator-owned dispositions, routing precedence is:
+`suggested_role`, then `handoff.target_role`, then `feedback.for_role`, then
+`next_need`, then the default completion route. Structured target fields must
+agree when more than one is supplied; conflicting owners fail validation with an
+actionable error instead of being guessed.
+
 ## Trigger Routing
 
 Trigger orchestration routes to explicit role keys first, then uses domain and

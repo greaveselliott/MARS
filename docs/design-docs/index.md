@@ -13,7 +13,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [pipeline-engine.md](pipeline-engine.md) | Draft | Job queue (SQLite), worker dispatcher, cron scheduler, sandbox. AD-009 (SQLite), AD-010 (repo_id from day one) |
 | [dashboard.md](dashboard.md) | Draft | 5-page dashboard: pipeline flow, role health, throughput, debug, evolution history. AD-011 (htmx + Chart.js embedded) |
 | [context-efficiency.md](context-efficiency.md) | Draft | Context assembly, budgets, knowledge routing, guardrail scoping |
-| [harness-operating-model.md](harness-operating-model.md) | Accepted | Canonical six-domain operating model with explicit role mode metadata, checked role registry, and strict-trunk migration path. AD-084, AD-085. |
+| [harness-operating-model.md](harness-operating-model.md) | Accepted | Canonical six-domain operating model with explicit role mode metadata, checked role registry, persona manuals, and structured dispatch handoffs. AD-084, AD-085, AD-105, AD-106. |
 | [conversation-as-system-record.md](conversation-as-system-record.md) | Accepted | Significant conversations must become durable repo artifacts for plans, decisions, investigations, quality evidence, and completed work. AD-086. |
 | [harness-glossary.md](harness-glossary.md) | Accepted | First-class and contextual harness definitions mirrored between the foundation harness and deployed harnesses. |
 | [tools-glossary.md](tools-glossary.md) | Accepted | First-class mirrored tool availability, selection, and use-case context for foundation and deployed harnesses. |
@@ -140,5 +140,6 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-103 | CLI tool/skill sync is a foundational operating model: every CLI command or flag change updates `mars_harness_cli`, repo-shortcut routing, generated target doctrine, and any affected skills before completion. | cli-tool-skill-sync.md | Operating model |
 | AD-104 | Foundation telemetry uses opt-in anonymous aggregate reports through a pluggable collector: local SQLite for dogfood, hosted Postgres-compatible storage later. | self-reflective-telemetry.md | Telemetry |
 | AD-105 | Foundation agents use canonical persona manuals for ownership, feedback, and handoff; Go structs in `internal/personas` render checked docs and prompt Personal Guides. | harness-operating-model.md | Roles |
+| AD-106 | Structured disposition packets travel through Orchestrator: dispatch triggers carry routing-safe source dispositions, and Orchestrator-owned routing honors validated structured targets. | harness-operating-model.md | Roles |
 | AD-099 | Generated release notes must include complete user-facing `Impact`, `Why`, and `What Changed` narrative before semantic commit buckets. | release-versioning.md | Release |
 | AD-100 | Historical marker-backed release notes are backfilled through `mars-harness release backfill-notes`, preserving release buckets while updating narrative sections from commit ranges. | release-versioning.md | Release |

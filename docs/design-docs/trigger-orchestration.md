@@ -95,16 +95,26 @@ The default strict-trunk pipeline as it maps to manifest configuration:
 
 ```mermaid
 flowchart TD
-    CEO["CEO\n schedule: 0 20 * * 0"] -->|"priorities committed to main"| CTO["CTO\n schedule: 0 21 * * 0"]
-    CTO -->|"then: coo"| COO["COO\n creates tickets"]
-    COO -->|"then: engineer"| Engineer["Engineer\n schedule: 0 0,6,12,18 * * 1-5"]
-    Engineer -->|"commit and push main"| QA["QA\n then: security"]
-    QA -->|"review report"| Security["Security\n schedule: 0 22 * * 0"]
-    Security -->|"then: dependency-manager"| DepMgr["Dependency Mgr\n schedule: 0 23 * * 0"]
+    Orchestrator["Orchestrator\n dispatch broker"]
+    CEO["CEO\n goals and scope"] -->|"structured disposition"| Orchestrator
+    COO["COO\n exec plan and BDD"] -->|"structured disposition"| Orchestrator
+    CTO["CTO\n technical tickets"] -->|"structured disposition"| Orchestrator
+    Engineer["Engineer\n ticket delivery"] -->|"structured disposition"| Orchestrator
+    QA["QA\n evidence review"] -->|"structured disposition"| Orchestrator
+    Security["Security\n risk review"] -->|"structured disposition"| Orchestrator
+    DepMgr["Dependency Manager\n package health"] -->|"structured disposition"| Orchestrator
+    Release["Release Manager\n version and assets"] -->|"structured disposition"| Orchestrator
+    Orchestrator -->|"goal decision"| CEO
+    Orchestrator -->|"exec_plan / feature_contract"| COO
+    Orchestrator -->|"ticket_breakdown / architecture_review"| CTO
+    Orchestrator -->|"implementation"| Engineer
+    Orchestrator -->|"qa_review"| QA
+    Orchestrator -->|"security_review"| Security
+    Orchestrator -->|"dependency_maintenance"| DepMgr
+    Orchestrator -->|"release_review"| Release
     CI["CI Workflow"] -->|failure| Fixer["Pipeline Fixer\n trigger: workflow_run failure"]
-    Fixer -->|"then: qa"| QA
-    Release["Release Manager\n schedule: 0 8 * * 1"]
-    Dogfood["Dogfood Tester\n schedule: 0 10 * * 1-5"] -->|"failure ticket"| Engineer
+    Fixer -->|"structured disposition"| Orchestrator
+    Dogfood["Dogfood Tester\n validation support"] -->|"structured disposition"| Orchestrator
 ```
 
 Solid arrows are runtime data flow. Every mutating role commits and pushes directly to `main` within trust and safety limits.
