@@ -61,6 +61,36 @@ func TestToolCallsFromAssistantMessage_markdownFence(t *testing.T) {
 	require.Equal(t, "file_read", calls[0].Function.Name)
 }
 
+func TestToolCallsFromAssistantMessage_functionTags(t *testing.T) {
+	t.Parallel()
+	raw := `I'll inspect the repo.
+
+<function=file_read>
+<parameter=path>
+README.md
+</parameter>
+</function>
+</tool_call>`
+	calls, err := ToolCallsFromAssistantMessage(llm.Message{Role: "assistant", Content: raw})
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
+	require.Equal(t, "file_read", calls[0].Function.Name)
+	require.JSONEq(t, `{"path":"README.md"}`, calls[0].Function.Arguments)
+}
+
+func TestToolCallsFromAssistantMessage_multipleFunctionTags(t *testing.T) {
+	t.Parallel()
+	raw := `<function=file_read><parameter=path>README.md</parameter></function>
+<function=grep><parameter=pattern>F-001</parameter><parameter=glob>docs/features/*.md</parameter></function>`
+	calls, err := ToolCallsFromAssistantMessage(llm.Message{Role: "assistant", Content: raw})
+	require.NoError(t, err)
+	require.Len(t, calls, 2)
+	require.Equal(t, "file_read", calls[0].Function.Name)
+	require.JSONEq(t, `{"path":"README.md"}`, calls[0].Function.Arguments)
+	require.Equal(t, "grep", calls[1].Function.Name)
+	require.JSONEq(t, `{"pattern":"F-001","glob":"docs/features/*.md"}`, calls[1].Function.Arguments)
+}
+
 func TestToolCallsFromAssistantMessage_pythonBooleans(t *testing.T) {
 	t.Parallel()
 	raw := `[{"name":"noop","id":"c1","arguments":"{\"active\": True, \"ok\": False}"}]`

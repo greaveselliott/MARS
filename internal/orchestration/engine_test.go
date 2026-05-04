@@ -99,7 +99,7 @@ func TestDecide_invalidOrchestratorSuggestedRoleFallsBackToOrchestrator(t *testi
 	require.Contains(t, decision.Reason, "suggested route rejected")
 }
 
-func TestDecide_repeatedRouteFallsBackToOrchestrator(t *testing.T) {
+func TestDecide_repeatedOrchestratorRouteStopsDispatch(t *testing.T) {
 	t.Parallel()
 
 	decision, err := Decide(Input{
@@ -115,14 +115,15 @@ func TestDecide_repeatedRouteFallsBackToOrchestrator(t *testing.T) {
 		},
 		TicketStateHash: "same-state",
 		RecentDecisions: []orgstate.Decision{
-			{RepoID: "repo-1", TicketID: "MH-001", NextNeed: "qa_review", NextRole: "qa", TicketStateHash: "same-state"},
-			{RepoID: "repo-1", TicketID: "MH-001", NextNeed: "qa_review", NextRole: "qa", TicketStateHash: "same-state"},
+			{RepoID: "repo-1", SourceRole: "orchestrator", TicketID: "MH-001", NextNeed: "qa_review", NextRole: "qa", TicketStateHash: "same-state"},
+			{RepoID: "repo-1", SourceRole: "orchestrator", TicketID: "MH-001", NextNeed: "qa_review", NextRole: "qa", TicketStateHash: "same-state"},
 		},
 	})
 	require.NoError(t, err)
-	require.Equal(t, "orchestrator", decision.NextRole)
+	require.Empty(t, decision.NextRole)
 	require.Equal(t, "ambiguous", decision.DecisionKind)
 	require.Contains(t, decision.Reason, "loop guard")
+	require.Contains(t, decision.StopReason, "loop guard")
 }
 
 func TestDecide_noWorkStopsDispatch(t *testing.T) {

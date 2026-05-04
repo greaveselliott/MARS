@@ -108,7 +108,13 @@ The orchestration engine uses these rules:
 - Manifests without an `orchestrator` keep deterministic fallback routing for
   compatibility.
 - Repeated identical role/ticket/need decisions on the same ticket-state hash
-  route back to Orchestrator or stop with a loop-guard reason.
+  route back to Orchestrator or stop with a loop-guard reason. If the repeated
+  route already originated from Orchestrator, dispatch stops instead of
+  enqueueing Orchestrator again.
+- Generated role guidance resolves BDD feature IDs by `docs/features/F-NNN*.md`
+  so slugged feature contracts count as present. Missing exact paths such as
+  `docs/features/F-001.md` must not override an existing
+  `docs/features/F-001-delivery-operating-model.md` contract.
 
 The manifest remains the executable role registry. The engine never invents a
 role that is absent from the repo manifest.

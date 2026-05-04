@@ -703,10 +703,18 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(ceoPrompt), "BOOTSTRAP ORDER IS STRICT")
 	assert.Contains(t, string(ceoPrompt), "Do not write `docs/features/`")
+	assert.Contains(t, string(ceoPrompt), "docs/features/F-NNN*.md")
+	assert.Contains(t, string(ceoPrompt), "do not require or")
 
 	cooPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "coo.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(cooPrompt), "Do NOT derive")
+	assert.Contains(t, string(cooPrompt), "docs/features/F-NNN*.md")
+
+	orchestratorPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "orchestrator.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(orchestratorPrompt), "treat slugged matches")
+	assert.Contains(t, string(orchestratorPrompt), "without ticket-state change")
 
 	engineerPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "engineer.md"))
 	require.NoError(t, err)

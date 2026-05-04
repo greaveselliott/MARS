@@ -29,6 +29,9 @@ func ToolCallsFromAssistantMessage(msg llm.Message) ([]llm.ToolCall, error) {
 	if raw == "" {
 		return nil, nil
 	}
+	if calls, ok, err := parseFunctionTagToolCalls(raw); ok || err != nil {
+		return calls, err
+	}
 	calls, err := parseToolCallsFromText(raw)
 	if err != nil && looksLikeToolJSON(raw) {
 		return nil, err
@@ -155,6 +158,43 @@ func parseToolCallsFromText(src string) ([]llm.ToolCall, error) {
 			Arguments: args,
 		},
 	}}, nil
+}
+
+func parseFunctionTagToolCalls(src string) ([]llm.ToolCall, bool, error) {
+	functionRe := regexp.MustCompile(`(?s)<function=([A-Za-z0-9_.-]+)>(.*?)</function>`)
+	paramRe := regexp.MustCompile(`(?s)<parameter=([A-Za-z0-9_.-]+)>(.*?)</parameter>`)
+	matches := functionRe.FindAllStringSubmatch(src, -1)
+	if len(matches) == 0 {
+		return nil, false, nil
+	}
+	out := make([]llm.ToolCall, 0, len(matches))
+	for i, match := range matches {
+		name := strings.TrimSpace(match[1])
+		if name == "" {
+			return nil, true, fmt.Errorf("agent: function tag missing name")
+		}
+		args := map[string]string{}
+		for _, param := range paramRe.FindAllStringSubmatch(match[2], -1) {
+			key := strings.TrimSpace(param[1])
+			if key == "" {
+				return nil, true, fmt.Errorf("agent: function tag parameter missing name")
+			}
+			args[key] = strings.TrimSpace(param[2])
+		}
+		argBytes, err := json.Marshal(args)
+		if err != nil {
+			return nil, true, fmt.Errorf("agent: encode function tag arguments for %q: %w", name, err)
+		}
+		out = append(out, llm.ToolCall{
+			ID:   fmt.Sprintf("call_tag_%d", i),
+			Type: "function",
+			Function: llm.FunctionCall{
+				Name:      name,
+				Arguments: string(argBytes),
+			},
+		})
+	}
+	return out, true, nil
 }
 
 func stripMarkdownFences(s string) string {

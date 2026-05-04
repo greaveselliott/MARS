@@ -2462,8 +2462,12 @@ SCENARIO RULES:
 - Do not mark a feature shipped until in-scope scenarios pass or are explicitly descoped.
 
 TASK 2: After the exec plan write succeeds, make sure the feature contract named
-by **BDD Feature** exists in ` + "`docs/features/`" + `. If it is missing or stale,
-write the full ` + "`docs/features/F-NNN-*.md`" + ` contract with:
+by **BDD Feature** exists in ` + "`docs/features/`" + `. Resolve feature IDs with
+` + "`docs/features/F-NNN*.md`" + `, including slugged paths such as
+` + "`docs/features/F-001-delivery-operating-model.md`" + `; do not require or
+invent an exact ` + "`docs/features/F-NNN.md`" + ` path when a slugged contract exists.
+If the matching contract is missing or stale, write the full
+` + "`docs/features/F-NNN-*.md`" + ` contract with:
 - Feature ID, goals, owner, status, Business Logic, Step-By-Step Behavior,
   scenario schedule, out of scope, descoped scenarios, and evidence.
 - Product rules, workflow branches, state transitions, validations,
@@ -2533,7 +2537,9 @@ STEP 2 — Check the TICKET INDEX in your system prompt. It lists every
   to discover existing tickets.
 
 STEP 3 — Read docs/goals/active.md and the BDD feature contract named in the
-  active plan. If either is missing, stop and record a blocked disposition
+  active plan. Resolve feature IDs by searching ` + "`docs/features/F-NNN*.md`" + `;
+  a slugged contract such as ` + "`docs/features/F-001-delivery-operating-model.md`" + `
+  satisfies BDD Feature ` + "`F-001`" + `. If either is missing, stop and record a blocked disposition
   with suggested_role "ceo" or "janitor". Do NOT create tickets until the
   active exec plan and feature contract exist.
 
@@ -3373,7 +3379,11 @@ START by reading:
 2. docs/tickets/README.md
 3. docs/tickets/in-progress/, docs/tickets/in-review/, docs/tickets/backlog/
 4. docs/goals/active.md and docs/exec-plans/active/current-operating-plan.md
-5. Relevant design docs for the blocker or review loop
+5. For BDD feature IDs in the plan, search ` + "`docs/features/F-NNN*.md`" + ` and
+   treat slugged matches such as ` + "`docs/features/F-001-delivery-operating-model.md`" + `
+   as the existing contract. Do not block only because ` + "`docs/features/F-NNN.md`" + `
+   is absent.
+6. Relevant design docs for the blocker or review loop
 
 DECIDE THE NEXT BEST ROLE:
 - Choose CEO when portfolio intent, goals, priorities, or active plan direction is missing.
@@ -3394,6 +3404,8 @@ Record exactly one disposition before finishing with job_disposition_record:
 
 Do not modify product code. Do not invent roles not present in the manifest.
 If state is contradictory, record a durable decision and choose Janitor or stop.
+If the same role/need has already repeated without ticket-state change, stop
+with no suggested_role instead of dispatching the same role again.
 Do not assume a fixed linear handoff; the disposition is the routing contract.
 `,
 

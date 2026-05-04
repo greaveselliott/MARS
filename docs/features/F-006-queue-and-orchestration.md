@@ -92,6 +92,14 @@ Given a dispatch-mode role finishes without a disposition
 When the executor validates completion
 Then the job fails closed with an actionable error so the pipeline cannot silently skip orchestration
 
+Given Orchestrator repeatedly chooses the same next role and next need without a ticket-state change
+When the loop guard evaluates the new dispatch decision
+Then dispatch stops with a loop-guard reason instead of enqueueing Orchestrator or the same target role again
+
+Given an active plan names a BDD feature ID such as `F-001`
+When generated planner, ticketing, or Orchestrator prompts check for the feature contract
+Then they search `docs/features/F-001*.md`, treat slugged contracts as present, and do not block solely because `docs/features/F-001.md` is absent
+
 ## Out of Scope
 
 - External queue systems such as Redis.

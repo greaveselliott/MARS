@@ -37,6 +37,10 @@ Given an LLM response includes tool calls and later a completion signal
 When the agent loop runs
 Then tool calls execute in order, tool results are returned to the model, and the job ends with a classified outcome
 
+Given a local model emits a tool call as `<function=name>` with nested `<parameter=arg>` blocks instead of structured JSON
+When the parser inspects assistant content
+Then the runtime converts the tagged call into the same function-call shape and executes it rather than treating the reply as final prose
+
 ### F-005-S003: Tool Execution Containment
 
 Given a role has an allowlist and trust level

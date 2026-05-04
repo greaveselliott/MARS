@@ -49,11 +49,15 @@ func Decide(in Input) (orgstate.Decision, error) {
 	}
 
 	if nextRole != "" && repeatedRoute(in, nextRole) {
-		if orch := fallbackRole(in.Manifest); orch != "" && orch != nextRole {
-			kind = "ambiguous"
-			reason = "loop guard detected repeated route without ticket-state change; routing to Orchestrator"
+		kind = "ambiguous"
+		reason = "loop guard detected repeated route without ticket-state change"
+		if orch := fallbackRole(in.Manifest); orch != "" && orch != nextRole && d.Role != orch {
+			reason += "; routing to Orchestrator"
 			nextRole = orch
 			stop = ""
+		} else {
+			nextRole = ""
+			stop = "loop guard stopped repeated route without ticket-state change"
 		}
 	}
 
@@ -217,6 +221,7 @@ func repeatedRoute(in Input, nextRole string) bool {
 	d := in.Disposition
 	for _, prev := range in.RecentDecisions {
 		if prev.RepoID == d.RepoID &&
+			prev.SourceRole == d.Role &&
 			prev.TicketID == d.TicketID &&
 			prev.NextNeed == d.NextNeed &&
 			prev.NextRole == nextRole &&
