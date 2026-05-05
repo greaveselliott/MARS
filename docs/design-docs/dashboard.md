@@ -37,7 +37,9 @@ Full auto-layout (dagre or similar) is a v2 improvement if custom role topologie
 
 Operators need to pause, restart, scan, stop, and force-run individual roles without killing the process. Two control surfaces share identical backend methods on `Server`:
 
-**CLI (terminal):** Raw terminal mode key listener (`internal/ui/keylistener.go`) plus a persistent ANSI status bar (`internal/ui/statusbar.go`). Keys: `p` (pause/resume), `r` (warm restart), `s` (re-scan), `q` (graceful stop), `h` (help). Activated automatically during `mars-harness serve` and `mars-harness start`.
+**CLI (terminal):** Interactive TTYs use a full-screen ANSI dashboard (`internal/ui/dashboard_tty.go`) plus the raw terminal key listener (`internal/ui/keylistener.go`). The dashboard redraws current state, repo, web dashboard URL, durable command log path, active jobs, current role/model, turn and tool counts, recent events, blocker summaries, and control hints. Keys: `p` (pause/resume), `r` (warm restart), `s` (re-scan), `q` (graceful stop), `h` (help). Activated automatically during `mars-harness serve` and `mars-harness start`; `mars-harness run` uses the same dashboard without key bindings beyond Ctrl+C cancellation.
+
+**CLI debug mode:** `run`, `start`, and `serve` accept `--debug` to restore verbose inline trace/log streaming. `run --trace` remains as a compatibility alias for debug-style trace detail. All three commands write slog output to `~/.mars-harness/traces/logs/YYYYMMDD-HHMMSS-<command>.log` unless `--log-file` is supplied. Non-TTY output falls back to concise plain progress and never enters alternate-screen mode.
 
 **Dashboard (localhost:9090):** Control bar in the sidebar with buttons for pause/resume, restart, stop, scan, and run-role. Repo and role selectors populated from `/api/repos` and `/api/repo-roles`. State updates flow via SSE `status_change` events.
 

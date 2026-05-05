@@ -2,10 +2,12 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/dashboard.md
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-012-self-improvement-loop.md
 */
 package serve
@@ -43,6 +45,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
 	"github.com/greaveselliott/mars-harness/internal/trace"
 	"github.com/greaveselliott/mars-harness/internal/trust"
+	"github.com/greaveselliott/mars-harness/internal/ui"
 )
 
 const (
@@ -62,6 +65,7 @@ type Config struct {
 	RepoScope          string // if set, only operate on repos whose path matches this absolute path
 	PerformanceProfile string
 	InferenceTuning    inference.ServerTuning
+	JobViews           ui.JobViewFactory
 }
 
 func (c Config) concurrency() int {
@@ -184,6 +188,9 @@ func New(cfg Config) (*Server, error) {
 	}
 
 	executor := NewExecutor(repoLookup, router, traceStore, trustStore)
+	if cfg.JobViews != nil {
+		executor.SetJobViewFactory(cfg.JobViews)
+	}
 
 	sched := scheduler.New(jobQueue)
 

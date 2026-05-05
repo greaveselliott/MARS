@@ -3,8 +3,11 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/guardrails.md
+- docs/design-docs/dashboard.md
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
+- docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-007-guardrails-and-safety.md
 - docs/features/F-006-queue-and-orchestration.md
 */
@@ -54,6 +57,7 @@ type Executor struct {
 	orgStore   *orgstate.Store
 	dash       *dashboard.Dashboard
 	onSignal   func(context.Context, interventionDebtSignal)
+	jobViews   ui.JobViewFactory
 }
 
 // NewExecutor creates an executor bound to a repo lookup function and inference router.
@@ -64,6 +68,7 @@ func NewExecutor(lookupRepo RepoLookup, router *inference.Router, traceStore *tr
 		router:     router,
 		traceStore: traceStore,
 		trustStore: trustStore,
+		jobViews:   ui.NewDebugJobViewFactory(os.Stdout, false, false),
 	}
 }
 
@@ -83,6 +88,13 @@ func (e *Executor) SetInterventionSignalHandler(handler func(context.Context, in
 	e.onSignal = handler
 }
 
+// SetJobViewFactory wires terminal job views for role execution.
+func (e *Executor) SetJobViewFactory(factory ui.JobViewFactory) {
+	if factory != nil {
+		e.jobViews = factory
+	}
+}
+
 func roleDefaultTrustLevel(role bundle.RoleConfig) trust.Level {
 	if level, ok := trust.ParseLevel(role.TrustLevel); ok {
 		return level
@@ -99,7 +111,11 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	}
 
 	log := slog.With("job_id", job.ID, "repo_id", job.RepoID, "role", job.Role)
-	tw := ui.NewTraceWriter(os.Stdout, false, false)
+	tw := e.jobViews.NewJobView(ui.JobViewMeta{
+		JobID:  job.ID,
+		RepoID: job.RepoID,
+		Role:   job.Role,
+	})
 
 	repoPath, err := e.lookupRepo(ctx, job.RepoID)
 	if err != nil {

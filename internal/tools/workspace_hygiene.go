@@ -144,6 +144,19 @@ var generatedDirIgnoreHints = map[string][]string{
 	"__pycache__":  {"__pycache__/"},
 }
 
+var generatedDependencyMetadataFiles = map[string]bool{
+	"bun.lock":          true,
+	"bun.lockb":         true,
+	"Cargo.lock":        true,
+	"composer.lock":     true,
+	"Gemfile.lock":      true,
+	"go.sum":            true,
+	"package-lock.json": true,
+	"pnpm-lock.yaml":    true,
+	"poetry.lock":       true,
+	"yarn.lock":         true,
+}
+
 // GeneratedWorkspaceDirs returns directories that are treated as generated
 // dependency or build output for context and hygiene checks.
 func GeneratedWorkspaceDirs() []string {
@@ -165,6 +178,17 @@ func IsGeneratedWorkspacePath(rel string) bool {
 		}
 	}
 	return false
+}
+
+// IsGeneratedDependencyMetadataPath reports whether rel is a dependency
+// lock/checksum file whose generated line churn should not count as source-file
+// blast radius. The file remains git-visible and secret-scanned.
+func IsGeneratedDependencyMetadataPath(rel string) bool {
+	rel = cleanRepoPath(rel)
+	if rel == "" || rel == "." || strings.Contains(rel, "/") {
+		return false
+	}
+	return generatedDependencyMetadataFiles[rel]
 }
 
 // AuditWorkspaceHygiene inspects repo-visible state for generated dependency

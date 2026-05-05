@@ -26,20 +26,27 @@ type Controller interface {
 	ScanAllRepos(ctx context.Context) error
 }
 
+// StatusNotifier receives key-listener feedback.
+type StatusNotifier interface {
+	Flash(msg string)
+	Redraw()
+	PrintAbove(msg string)
+}
+
 // KeyListener reads single keystrokes from stdin while the terminal
 // is in raw mode and dispatches to the Controller.
 type KeyListener struct {
-	ctrl      Controller
-	cancel    context.CancelFunc
-	stopFunc  func() // called when the user presses 'q'
-	statusBar *StatusBar
+	ctrl     Controller
+	cancel   context.CancelFunc
+	stopFunc func() // called when the user presses 'q'
+	notifier StatusNotifier
 }
 
 // NewKeyListener creates a key listener that dispatches to ctrl.
 // stopFunc is called when the user presses 'q' to request a graceful shutdown.
-// An optional StatusBar is updated after each action.
-func NewKeyListener(ctrl Controller, stopFunc func(), sb *StatusBar) *KeyListener {
-	return &KeyListener{ctrl: ctrl, stopFunc: stopFunc, statusBar: sb}
+// An optional StatusNotifier is updated after each action.
+func NewKeyListener(ctrl Controller, stopFunc func(), notifier StatusNotifier) *KeyListener {
+	return &KeyListener{ctrl: ctrl, stopFunc: stopFunc, notifier: notifier}
 }
 
 // Start begins reading keystrokes in a goroutine. It sets the terminal
@@ -132,14 +139,14 @@ func (kl *KeyListener) dispatch(ctx context.Context, key byte) {
 		kl.printHelp()
 	}
 
-	if kl.statusBar != nil {
-		kl.statusBar.Redraw()
+	if kl.notifier != nil {
+		kl.notifier.Redraw()
 	}
 }
 
 func (kl *KeyListener) notify(msg string) {
-	if kl.statusBar != nil {
-		kl.statusBar.Flash(msg)
+	if kl.notifier != nil {
+		kl.notifier.Flash(msg)
 	} else {
 		fmt.Fprintf(os.Stderr, "\r\033[K  → %s\n", msg)
 	}

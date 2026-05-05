@@ -5,12 +5,15 @@ docs:
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/dashboard.md
 - docs/design-docs/release-versioning.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/product-specs/product-surface.md
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-002-zero-config-shell-path.md
 - docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-012-self-improvement-loop.md
 */
@@ -1320,6 +1323,8 @@ func runCmd() *cobra.Command {
 		repoPath      string
 		modelEndpoint string
 		traceFlag     bool
+		debug         bool
+		logFile       string
 		dryRun        bool
 		budget        int
 		maxTurns      int
@@ -1340,6 +1345,8 @@ is applied automatically (requires a git repository).`,
 				repoPath:      repoPath,
 				modelEndpoint: modelEndpoint,
 				trace:         traceFlag,
+				debug:         debug,
+				logFile:       logFile,
 				dryRun:        dryRun,
 				budget:        budget,
 				maxTurns:      maxTurns,
@@ -1349,7 +1356,9 @@ is applied automatically (requires a git repository).`,
 
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (required)")
 	cmd.Flags().StringVar(&modelEndpoint, "model-endpoint", "", "Override LLM endpoint (e.g. http://127.0.0.1:8080)")
-	cmd.Flags().BoolVar(&traceFlag, "trace", false, "Enable verbose execution trace output")
+	cmd.Flags().BoolVar(&traceFlag, "trace", false, "Enable verbose execution trace output (compatibility alias for --debug on run)")
+	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
+	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-run.log)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print assembled system prompt and exit without calling the LLM")
 	cmd.Flags().IntVar(&budget, "budget", 0, "Token budget (0 = unlimited)")
 	cmd.Flags().IntVar(&maxTurns, "max-turns", 50, "Maximum LLM round-trips")
@@ -1363,19 +1372,130 @@ type runOpts struct {
 	repoPath      string
 	modelEndpoint string
 	trace         bool
+	debug         bool
+	logFile       string
 	dryRun        bool
 	budget        int
 	maxTurns      int
 }
 
-func executeRun(opts runOpts) error {
-	tw := ui.NewTraceWriter(os.Stdout, false, false)
+type runtimeDisplay struct {
+	out       io.Writer
+	dashboard *ui.TerminalDashboard
+	jobViews  ui.JobViewFactory
+	logger    *ui.InstalledLogger
+	debug     bool
+}
 
+func newRuntimeDisplay(command, logFile string, debug bool, out, logInline io.Writer, provider ui.StatusProvider, opts ui.DashboardOptions) (*runtimeDisplay, error) {
+	path := strings.TrimSpace(logFile)
+	if path == "" {
+		var err error
+		path, err = ui.DefaultLogPath(command, time.Now())
+		if err != nil {
+			return nil, err
+		}
+	}
+	if opts.Command == "" {
+		opts.Command = command
+	}
+	opts.LogPath = path
+	dash := ui.NewTerminalDashboard(out, provider, opts)
+
+	display := &runtimeDisplay{out: out, dashboard: dash, debug: debug}
+	switch {
+	case debug:
+		display.jobViews = ui.NewDebugJobViewFactory(out, false, false)
+	case dash.Active():
+		display.jobViews = dash
+	default:
+		display.jobViews = ui.NewPlainJobViewFactory(out)
+	}
+
+	var logDash *ui.TerminalDashboard
+	if !debug && dash.Active() {
+		logDash = dash
+	}
+	logger, err := ui.InstallCommandLogger(ui.LoggingConfig{
+		Command:   command,
+		LogPath:   path,
+		Debug:     debug,
+		Inline:    logInline,
+		Dashboard: logDash,
+	})
+	if err != nil {
+		return nil, err
+	}
+	display.logger = logger
+	return display, nil
+}
+
+func (d *runtimeDisplay) Start() {
+	if d != nil && d.dashboard != nil && d.dashboard.Active() && !d.debug {
+		d.dashboard.Start()
+	}
+}
+
+func (d *runtimeDisplay) Close() error {
+	if d == nil {
+		return nil
+	}
+	if d.dashboard != nil && d.dashboard.Active() && !d.debug {
+		d.dashboard.Stop()
+	}
+	if d.logger != nil {
+		return d.logger.Close()
+	}
+	return nil
+}
+
+func (d *runtimeDisplay) Event(kind, msg string) {
+	if d == nil {
+		return
+	}
+	if d.dashboard != nil && d.dashboard.Active() && !d.debug {
+		d.dashboard.AddEvent(kind, msg)
+		return
+	}
+	fmt.Fprintf(d.out, "mars-harness: %s\n", msg)
+}
+
+func (d *runtimeDisplay) Error(msg string) {
+	if d == nil {
+		return
+	}
+	if d.dashboard != nil && d.dashboard.Active() && !d.debug {
+		d.dashboard.AddWarning(msg)
+		return
+	}
+	fmt.Fprintf(d.out, "mars-harness: error: %s\n", msg)
+}
+
+func executeRun(opts runOpts) error {
 	absRepo, err := filepath.Abs(opts.repoPath)
 	if err != nil {
+		tw := ui.NewTraceWriter(os.Stdout, false, false)
 		tw.WriteError(err.Error())
 		return fmt.Errorf("run: resolve repo path: %w", err)
 	}
+
+	debug := opts.debug || opts.trace
+	display, err := newRuntimeDisplay("run", opts.logFile, debug, os.Stdout, os.Stderr, nil, ui.DashboardOptions{
+		Title:    "Mars Harness",
+		RepoPath: absRepo,
+		Controls: "Ctrl+C cancel",
+	})
+	if err != nil {
+		return err
+	}
+	display.Start()
+	defer display.Close()
+	tw := display.jobViews.NewJobView(ui.JobViewMeta{
+		JobID:    fmt.Sprintf("run-%s", opts.roleName),
+		RepoID:   absRepo,
+		RepoPath: absRepo,
+		Role:     opts.roleName,
+	})
 
 	preInitChanges, err := gitChangedPaths(absRepo)
 	if err != nil {
@@ -1487,6 +1607,9 @@ func executeRun(opts runOpts) error {
 	}
 
 	if opts.dryRun {
+		_ = display.Close()
+		display.dashboard = nil
+		display.logger = nil
 		fmt.Println("── dry-run: assembled system prompt ──")
 		fmt.Println(systemPrompt)
 		fmt.Println("── end system prompt ──")
@@ -2762,6 +2885,8 @@ func serveCmd() *cobra.Command {
 		webhookAddr string
 		concurrency int
 		dbPath      string
+		debug       bool
+		logFile     string
 	)
 
 	cmd := &cobra.Command{
@@ -2789,6 +2914,16 @@ func serveCmd() *cobra.Command {
 			webhookSecret := os.Getenv("MARS_HARNESS_WEBHOOK_SECRET")
 			dashboardAddr := fmt.Sprintf(":%d", cfg.DashboardPort)
 
+			display, err := newRuntimeDisplay("serve", logFile, debug, cmd.ErrOrStderr(), cmd.ErrOrStderr(), nil, ui.DashboardOptions{
+				Title:        "Mars Harness",
+				DashboardURL: "http://localhost" + dashboardAddr,
+				Controls:     "[p] pause  [r] restart  [s] scan  [q] quit  [h] help",
+			})
+			if err != nil {
+				return err
+			}
+			defer display.Close()
+
 			serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
 
 			srv, err := serve.New(serve.Config{
@@ -2801,10 +2936,16 @@ func serveCmd() *cobra.Command {
 				DashboardAddr:      dashboardAddr,
 				PerformanceProfile: cfg.PerformanceProfile,
 				InferenceTuning:    inferenceTuningFromConfig(cfg),
+				JobViews:           display.jobViews,
 			})
 			if err != nil {
 				return err
 			}
+			if display.dashboard != nil {
+				display.dashboard.SetStatusProvider(srv)
+			}
+			display.Start()
+			display.Event("info", "orchestrator starting")
 
 			parentCtx := cmd.Context()
 			if parentCtx == nil {
@@ -2813,11 +2954,17 @@ func serveCmd() *cobra.Command {
 			sigCtx, stop := signal.NotifyContext(parentCtx, os.Interrupt)
 			defer stop()
 
-			sb := ui.NewStatusBar(os.Stderr, srv)
-			sb.Start()
-			defer sb.Stop()
+			var notifier ui.StatusNotifier
+			if display.dashboard != nil && display.dashboard.Active() && !debug {
+				notifier = display.dashboard
+			} else if ui.IsTerminal(os.Stderr) {
+				sb := ui.NewStatusBar(os.Stderr, srv)
+				sb.Start()
+				defer sb.Stop()
+				notifier = sb
+			}
 
-			kl := ui.NewKeyListener(srv, stop, sb)
+			kl := ui.NewKeyListener(srv, stop, notifier)
 			kl.Start(sigCtx)
 			defer kl.Stop()
 
@@ -2828,6 +2975,8 @@ func serveCmd() *cobra.Command {
 	cmd.Flags().StringVar(&webhookAddr, "addr", "", "Address to listen on (default from config webhook_port)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 2, "Number of concurrent agent workers")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/mars.db)")
+	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
+	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-serve.log)")
 
 	return cmd
 }
@@ -3056,6 +3205,8 @@ func startCmd() *cobra.Command {
 		dbPath        string
 		force         bool
 		exitAfterSeed bool
+		debug         bool
+		logFile       string
 	)
 
 	cmd := &cobra.Command{
@@ -3066,8 +3217,6 @@ and start the orchestrator. Bootstrap order is exec plan first, then feature
 contracts, then tickets, then delivery. Dispatch returns each role disposition
 to Orchestrator so the next agent is selected from current evidence.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tw := ui.NewTraceWriter(cmd.OutOrStdout(), false, false)
-
 			if repoPath == "" {
 				var err error
 				repoPath, err = os.Getwd()
@@ -3080,26 +3229,36 @@ to Orchestrator so the next agent is selected from current evidence.`,
 				return fmt.Errorf("start: resolve path: %w", err)
 			}
 
+			display, err := newRuntimeDisplay("start", logFile, debug, cmd.OutOrStdout(), cmd.ErrOrStderr(), nil, ui.DashboardOptions{
+				Title:    "Mars Harness",
+				RepoPath: absPath,
+				Controls: "[p] pause  [r] restart  [s] scan  [q] quit  [h] help",
+			})
+			if err != nil {
+				return err
+			}
+			defer display.Close()
+
 			preInitChanges, err := gitChangedPaths(absPath)
 			if err != nil {
-				tw.WriteError(fmt.Sprintf("inspect pre-init git status: %v", err))
+				display.Error(fmt.Sprintf("inspect pre-init git status: %v", err))
 				return err
 			}
 
 			didInit, err := scanner.EnsureHarness(absPath, force)
 			if err != nil {
-				tw.WriteError(fmt.Sprintf("init failed: %v", err))
+				display.Error(fmt.Sprintf("init failed: %v", err))
 				return err
 			}
 			if didInit {
-				tw.WriteAssistant("No .harness/ found — initialised with default pipeline...")
+				display.Event("init", "No .harness/ found — initialised with default pipeline...")
 				committed, err := commitGeneratedHarnessBaseline(absPath, preInitChanges)
 				if err != nil {
-					tw.WriteError(fmt.Sprintf("commit generated harness baseline: %v", err))
+					display.Error(fmt.Sprintf("commit generated harness baseline: %v", err))
 					return err
 				}
 				if committed {
-					tw.WriteAssistant("Committed generated harness baseline so bootstrap agents start from a clean scaffold.")
+					display.Event("git", "Committed generated harness baseline so bootstrap agents start from a clean scaffold.")
 				}
 			}
 
@@ -3137,10 +3296,18 @@ to Orchestrator so the next agent is selected from current evidence.`,
 				RepoScope:          absPath,
 				PerformanceProfile: cfg.PerformanceProfile,
 				InferenceTuning:    inferenceTuningFromConfig(cfg),
+				JobViews:           display.jobViews,
 			})
 			if err != nil {
-				tw.WriteError(fmt.Sprintf("orchestrator init: %v", err))
+				display.Error(fmt.Sprintf("orchestrator init: %v", err))
 				return err
+			}
+			if display.dashboard != nil {
+				display.dashboard.SetStatusProvider(srv)
+			}
+			display.Start()
+			if display.dashboard != nil && display.dashboard.Active() {
+				display.dashboard.AddEvent("info", "dashboard http://localhost"+dashboardAddr)
 			}
 
 			parentCtx := cmd.Context()
@@ -3152,28 +3319,34 @@ to Orchestrator so the next agent is selected from current evidence.`,
 
 			repoID, err := srv.Repos().Register(sigCtx, absPath, "", "main")
 			if err != nil {
-				tw.WriteError(fmt.Sprintf("register: %v", err))
+				display.Error(fmt.Sprintf("register: %v", err))
 				return err
 			}
-			tw.WriteAssistant(fmt.Sprintf("Registered repo %s (ID: %s)", filepath.Base(absPath), repoID))
+			display.Event("repo", fmt.Sprintf("Registered repo %s (ID: %s)", filepath.Base(absPath), repoID))
 
 			triggerJSON := `{"type":"bootstrap","source":"mars-harness start"}`
 			jobID, err := srv.SeedJob(sigCtx, repoID, "ceo", triggerJSON)
 			if err != nil {
-				tw.WriteError(fmt.Sprintf("seed CEO: %v", err))
+				display.Error(fmt.Sprintf("seed CEO: %v", err))
 				return err
 			}
-			tw.WriteAssistant(fmt.Sprintf("Seeded CEO agent (job %s) — bootstrap order: exec plan → features → tickets → delivery; Orchestrator selects each next role", jobID))
+			display.Event("queue", fmt.Sprintf("Seeded CEO agent (job %s) — bootstrap order: exec plan → features → tickets → delivery; Orchestrator selects each next role", jobID))
 
 			if exitAfterSeed {
 				return srv.Stop(context.Background())
 			}
 
-			sb := ui.NewStatusBar(os.Stderr, srv)
-			sb.Start()
-			defer sb.Stop()
+			var notifier ui.StatusNotifier
+			if display.dashboard != nil && display.dashboard.Active() && !debug {
+				notifier = display.dashboard
+			} else if ui.IsTerminal(os.Stderr) {
+				sb := ui.NewStatusBar(os.Stderr, srv)
+				sb.Start()
+				defer sb.Stop()
+				notifier = sb
+			}
 
-			kl := ui.NewKeyListener(srv, stop, sb)
+			kl := ui.NewKeyListener(srv, stop, notifier)
 			kl.Start(sigCtx)
 			defer kl.Stop()
 
@@ -3185,6 +3358,8 @@ to Orchestrator so the next agent is selected from current evidence.`,
 	cmd.Flags().IntVar(&concurrency, "concurrency", 1, "Number of concurrent agent workers (1 = sequential pipeline)")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
 	cmd.Flags().BoolVar(&force, "force", false, "Force re-init .harness/ even if it exists")
+	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
+	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-start.log)")
 	cmd.Flags().BoolVar(&exitAfterSeed, "exit-after-seed", false, "Exit after init/register/seed; intended for deterministic smoke tests")
 	_ = cmd.Flags().MarkHidden("exit-after-seed")
 

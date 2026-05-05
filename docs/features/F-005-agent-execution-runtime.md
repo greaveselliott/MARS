@@ -66,6 +66,14 @@ Given a user runs `mars-harness run <role> --repo <path>`
 When manifest, context, tools, and inference endpoint are available
 Then exactly one role run executes against the target repo and reports the terminal result
 
+Given the same command is attached to an interactive TTY
+When the role runs without `--debug`
+Then the console uses a full-screen terminal dashboard, writes verbose logs to a command log file, and does not stream raw tool results into scrollback
+
+Given the user passes `--debug` or legacy `--trace`
+When the role runs
+Then verbose trace and log output streams inline while the same command log file is still written
+
 ### F-005-S007: Mirrored Built-In Tools
 
 Given a recurring deterministic harness operation exists
@@ -95,6 +103,6 @@ None.
 - F-005-S003: `go test ./internal/tools -run 'TestExecutor|TestShellExec'` and `go test ./internal/serve -run TestFoundationAcceptance`
 - F-005-S004: `go test ./internal/agent -run TestRun_persistsTraceToSQLite`
 - F-005-S005: `go test ./internal/agent -run 'TestRun_(max|token|wall|circle|empty)'`
-- F-005-S006: covered by command-level run behavior and planned broader E2E dogfood evidence
+- F-005-S006: `go test ./cmd/mars-harness -run 'TestRunStartServeExposeDebugAndLogFileFlags'` and planned broader E2E dogfood evidence
 - F-005-S007: `go test ./internal/tools -run 'TestToolCreate|TestMarsHarnessCLI'`
 - F-005-S008: `go test ./internal/tools -run TestPersonaCreate` and `go test ./internal/personas`

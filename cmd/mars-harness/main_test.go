@@ -3,6 +3,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/cli-tool-skill-sync.md
+- docs/design-docs/dashboard.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/release-versioning.md
@@ -11,6 +12,8 @@ docs:
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-002-zero-config-shell-path.md
 - docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-012-self-improvement-loop.md
 */
@@ -396,12 +399,24 @@ func TestTrustCommandUnavailableDBIsActionable(t *testing.T) {
 	require.NotContains(t, out.String(), "(14)")
 }
 
+func TestRunStartServeExposeDebugAndLogFileFlags(t *testing.T) {
+	for name, cmd := range map[string]*cobra.Command{
+		"run":   runCmd(),
+		"start": startCmd(),
+		"serve": serveCmd(),
+	} {
+		require.NotNil(t, cmd.Flags().Lookup("debug"), "%s missing --debug", name)
+		require.NotNil(t, cmd.Flags().Lookup("log-file"), "%s missing --log-file", name)
+	}
+}
+
 func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not in PATH")
 	}
 	repoDir := t.TempDir()
 	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	logPath := filepath.Join(t.TempDir(), "start.log")
 	t.Setenv("MARS_HARNESS_WEBHOOK_PORT", "0")
 	t.Setenv("MARS_HARNESS_DASHBOARD_PORT", "0")
 	t.Setenv("MARS_HARNESS_SKIP_START_CLEANUP", "1")
@@ -412,6 +427,7 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	cmd.SetArgs([]string{
 		"--repo", repoDir,
 		"--db", dbPath,
+		"--log-file", logPath,
 		"--exit-after-seed",
 	})
 
@@ -421,6 +437,7 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	require.Contains(t, out.String(), "Committed generated harness baseline")
 	require.FileExists(t, filepath.Join(repoDir, ".harness", "manifest.yaml"))
 	require.FileExists(t, dbPath)
+	require.FileExists(t, logPath)
 
 	db, err := openDB(dbPath)
 	require.NoError(t, err)

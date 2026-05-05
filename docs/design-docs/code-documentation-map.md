@@ -43,7 +43,7 @@ field is a list of repo-relative documentation paths.
 | Source Prefix | Architecture / Product Docs | Feature Contracts |
 | --- | --- | --- |
 | `.github/workflows/` | `docs/design-docs/release-versioning.md` | `docs/features/F-009-release-update-lifecycle.md` |
-| `cmd/mars-harness/` | `docs/product-specs/product-surface.md`, `docs/design-docs/cli-tool-skill-sync.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, `docs/design-docs/release-versioning.md`, `docs/design-docs/self-reflective-telemetry.md` | F-001, F-002, F-004, F-009, F-012 |
+| `cmd/mars-harness/` | `docs/product-specs/product-surface.md`, `docs/design-docs/cli-tool-skill-sync.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, `docs/design-docs/release-versioning.md`, `docs/design-docs/self-reflective-telemetry.md`, `docs/design-docs/dashboard.md` | F-001, F-002, F-004, F-005, F-009, F-010, F-012 |
 | `examples/` | `docs/design-docs/role-customization.md` | F-004 |
 | `internal/agent/` | `docs/design-docs/agent-runtime.md` | F-005 |
 | `internal/buildinfo/` | `docs/design-docs/release-versioning.md` | F-009 |
@@ -81,7 +81,7 @@ field is a list of repo-relative documentation paths.
 | `internal/scheduler/` | `docs/design-docs/pipeline-engine.md` | F-006 |
 | `internal/scoring/` | `docs/design-docs/scoring-system.md` | F-008 |
 | `internal/selfupdate/` | `docs/design-docs/release-versioning.md` | F-009 |
-| `internal/serve/` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/orchestrated-organization-layer.md` | F-006 |
+| `internal/serve/` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/orchestrated-organization-layer.md`, `docs/design-docs/dashboard.md` | F-006, F-010 |
 | `internal/setup/` | `docs/design-docs/local-inference.md`, `docs/design-docs/release-versioning.md` | F-002, F-003, F-009 |
 | `internal/shellpath/` | `docs/design-docs/release-versioning.md` | F-002 |
 | `internal/telemetry/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
@@ -89,7 +89,7 @@ field is a list of repo-relative documentation paths.
 | `internal/tools/` | `docs/design-docs/tools-glossary.md` | F-005 |
 | `internal/trace/` | `docs/design-docs/agent-runtime.md` | F-005 |
 | `internal/trust/` | `docs/design-docs/scoring-system.md` | F-008 |
-| `internal/ui/` | `docs/design-docs/agent-runtime.md` | F-005 |
+| `internal/ui/` | `docs/design-docs/agent-runtime.md`, `docs/design-docs/dashboard.md` | F-005, F-010 |
 | `internal/updatecheck/` | `docs/design-docs/release-versioning.md` | F-004 |
 | `pkg/testutil/` | `docs/design-docs/agent-runtime.md` | F-005 |
 

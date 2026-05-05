@@ -28,11 +28,13 @@ server runs `workspace_hygiene` before model loading, package-manager mutation
 must flow through `dependency_sync`, and raw install/fetch commands in
 `shell_exec` are blocked. Blast-radius checks classify generated paths
 separately from implementation paths so ignored dependency trees do not masquerade
-as source-risk. When missing generated-directory ignore policy is safely
-inferable, `serve` appends the ignore entry and commits only `.gitignore`
-before the model starts. Blocking results are otherwise actionable recipe
-outputs, not automatic cleanup: the harness reports the generated path, recipe
-ID, and next action, then waits for an explicit source/tracking fix.
+as source-risk. Root package-manager lockfiles and checksum files are generated
+dependency metadata for line-count blast-radius purposes, while remaining
+git-visible and secret-scanned. When missing generated-directory ignore policy
+is safely inferable, `serve` appends the ignore entry and commits only
+`.gitignore` before the model starts. Blocking results are otherwise actionable
+recipe outputs, not automatic cleanup: the harness reports the generated path,
+recipe ID, and next action, then waits for an explicit source/tracking fix.
 
 The gate treats missing generated-directory ignores, tracked generated
 directories, dirty generated output, large generated diffs, and file deletions

@@ -23,6 +23,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 6. F-010-S006 - Empty states explain missing modules or data without crashing the dashboard.
 7. F-010-S007 - CLI interactive controls and dashboard controls remain behaviorally aligned.
 8. F-010-S008 - The orchestration page and APIs show dispatch-mode routing state instead of a static linear pipeline.
+9. F-010-S009 - Interactive CLI sessions use a full-screen terminal dashboard with durable debug logs.
 
 ## Scenarios
 
@@ -68,6 +69,18 @@ Given serve or start is running with interactive controls
 When an operator uses CLI keys or dashboard buttons
 Then pause, resume, restart, scan, stop, and run-role semantics stay aligned
 
+Given `serve`, `start`, or `run` is attached to an interactive TTY
+When the command runs without `--debug`
+Then the terminal redraws a dashboard-style view with state, current work, recent events, blocker summaries, controls, dashboard URL when available, and command log path
+
+Given the same commands run without a TTY
+When output is piped or captured
+Then the command prints concise plain progress instead of entering alternate-screen mode
+
+Given an operator passes `--debug`
+When the command runs
+Then verbose trace and slog output streams inline while all slog records still write to the command log file
+
 ### F-010-S008: Orchestration State View
 
 Given registered repos use legacy chains or dispatch-mode orchestration
@@ -96,5 +109,6 @@ None.
 - F-010-S004: `go test ./internal/dashboard -run TestDashboard_sseConnection`
 - F-010-S005: `go test ./internal/dashboard -run TestDashboard_emergencyStop`
 - F-010-S006: `go test ./internal/dashboard -run TestDashboard_missingModuleEmptyState`
-- F-010-S007: planned E2E evidence comparing CLI key listener and HTTP controls
+- F-010-S007: `go test ./internal/ui` and planned E2E evidence comparing CLI key listener and HTTP controls
 - F-010-S008: `go test ./internal/dashboard -run TestDashboard_missingModuleEmptyState`; API decision-history evidence remains planned
+- F-010-S009: `go test ./internal/ui` and `go test ./cmd/mars-harness -run 'TestRunStartServeExposeDebugAndLogFileFlags|TestStartCommandInitializesRegistersSeedsAndStops'`

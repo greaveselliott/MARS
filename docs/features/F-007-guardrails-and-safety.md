@@ -73,7 +73,7 @@ Then all registered stop callbacks execute and failures are collected rather tha
 
 Given a role is about to commit or push changes
 When the safety layer evaluates the diff and configured limits
-Then excessive file count, line count, or forbidden path changes are blocked or require explicit escalation
+Then excessive file count, line count, or forbidden path changes are blocked or require explicit escalation, while root dependency lock/checksum files remain git-visible and secret-scanned without counting generated line churn as source-file blast radius
 
 ### F-007-S009: Workspace Hygiene Gates
 
@@ -100,5 +100,5 @@ None.
 - F-007-S005: `go test ./internal/safety -run TestScanForSecrets` and `go test ./internal/tools -run TestExecutor_secretScannerBlocksFileWrite`
 - F-007-S006: `go test ./internal/sandbox`
 - F-007-S007: `go test ./internal/safety -run TestEmergencyStop` and `go test ./internal/dashboard -run TestDashboard_emergencyStop`
-- F-007-S008: `go test ./internal/safety -run TestCheck`
+- F-007-S008: `go test ./internal/safety -run TestCheck` and `go test ./internal/tools -run TestValidateRepoDiffIgnoresGeneratedDependencyMetadataLineChurn`
 - F-007-S009: `go test ./internal/tools -run 'TestWorkspaceHygiene|TestDependencySync|TestShellPolicyBlocksRawDependencyMutationCommands'` and `go test ./internal/serve -run TestHandleJobFailedDoesNotRecoverDeterministicFailures`

@@ -188,6 +188,11 @@ func (tw *TraceWriter) color(code string) string {
 }
 
 func isTTY(w io.Writer) bool {
+	return IsTerminal(w)
+}
+
+// IsTerminal reports whether w is attached to an interactive terminal.
+func IsTerminal(w io.Writer) bool {
 	f, ok := w.(*os.File)
 	if !ok {
 		return false

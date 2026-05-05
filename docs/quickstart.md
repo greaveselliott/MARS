@@ -187,7 +187,9 @@ mars-harness run pipeline-fixer --repo ~/my-project --dry-run
 |------|-------------|
 | `--repo` | Path to the target repository (required) |
 | `--dry-run` | Print system prompt and exit |
-| `--trace` | Enable verbose trace output |
+| `--debug` | Stream verbose trace and logs inline instead of the default TTY dashboard |
+| `--log-file` | Write verbose command logs to a specific path |
+| `--trace` | Compatibility alias for debug-style trace detail on `run` |
 | `--model-endpoint` | Override LLM endpoint URL |
 | `--max-turns` | Maximum LLM round-trips (default: 50) |
 | `--budget` | Token budget (0 = unlimited) |

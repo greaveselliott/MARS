@@ -960,7 +960,7 @@ func diffStats(ctx context.Context, root Root) (safety.DiffStats, error) {
 		added := atoiDiffField(fields[0])
 		deleted := atoiDiffField(fields[1])
 		path := strings.Join(fields[2:], " ")
-		if IsGeneratedWorkspacePath(path) {
+		if IsGeneratedWorkspacePath(path) || IsGeneratedDependencyMetadataPath(path) {
 			continue
 		}
 		lines := added + deleted

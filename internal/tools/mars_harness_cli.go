@@ -3,9 +3,11 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/cli-tool-skill-sync.md
+- docs/design-docs/dashboard.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-012-self-improvement-loop.md
 */
 package tools
@@ -317,13 +319,13 @@ Global command surface:
 
   start
     Auto-init/register and run the autonomous orchestrator for one target repo.
-    Flags: --repo <path>, --concurrency <n>, --db <path>, --force
+    Flags: --repo <path>, --concurrency <n>, --db <path>, --force, --debug, --log-file <path>
     Long-running; use background:true when starting it from an agent.
     Example: ["start", "--repo", ".", "--concurrency", "1"]
 
   serve
     Run multi-repo orchestrator, dashboard, webhooks, scheduler, and workers.
-    Flags: --addr <host:port>, --concurrency <n>, --db <path>
+    Flags: --addr <host:port>, --concurrency <n>, --db <path>, --debug, --log-file <path>
     Long-running; use background:true when starting it from an agent.
     Example: ["serve", "--addr", ":9091", "--concurrency", "2"]
 
@@ -334,7 +336,8 @@ Global command surface:
 
   run <role>
     Manually execute one role against a target repository.
-    Flags: --repo <path>, --model-endpoint <url>, --trace, --dry-run, --budget <tokens>, --max-turns <n>
+    Flags: --repo <path>, --model-endpoint <url>, --debug, --log-file <path>, --trace, --dry-run, --budget <tokens>, --max-turns <n>
+    Default TTY output is a full-screen dashboard; --debug streams verbose trace/log output inline. --trace is kept as a run-only compatibility alias for debug-style trace detail.
     Example: ["run", "engineer", "--repo", ".", "--dry-run"]
 
   scan
