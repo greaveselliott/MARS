@@ -357,7 +357,7 @@ docs:
       .then(function (resp) {
         if (resp.ok) {
           btn.textContent = "Stopped";
-          btn.style.background = "#16a34a";
+          btn.style.background = "var(--success)";
           updateStatusUI("stopped");
         } else {
           btn.textContent = "Failed";

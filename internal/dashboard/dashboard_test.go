@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -284,7 +285,66 @@ func TestDashboard_staticAssets(t *testing.T) {
 			if resp.StatusCode != http.StatusOK {
 				t.Errorf("GET %s: got status %d, want 200", tc.path, resp.StatusCode)
 			}
+			ct := resp.Header.Get("Content-Type")
+			if !strings.Contains(ct, tc.contentType) {
+				t.Errorf("GET %s: got Content-Type %q, want %s", tc.path, ct, tc.contentType)
+			}
 		})
+	}
+}
+
+func TestDashboard_themeAvoidsLegacyBluePalette(t *testing.T) {
+	files := []string{
+		"static/style.css",
+		"templates/evolution.html",
+		"templates/throughput.html",
+	}
+	legacyTokens := []string{
+		"#0f172a",
+		"#1e293b",
+		"#334155",
+		"#e2e8f0",
+		"#94a3b8",
+		"#3b82f6",
+		"#2563eb",
+		"15, 23, 42",
+		"51, 65, 85",
+		"59, 130, 246",
+	}
+
+	for _, path := range files {
+		t.Run(path, func(t *testing.T) {
+			data, err := content.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read %s: %v", path, err)
+			}
+			body := string(data)
+			for _, token := range legacyTokens {
+				if strings.Contains(body, token) {
+					t.Fatalf("%s still contains legacy dashboard palette token %q", path, token)
+				}
+			}
+		})
+	}
+
+	d := newTestDashboard(t)
+	srv := httptest.NewServer(d.Handler())
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/static/style.css")
+	if err != nil {
+		t.Fatalf("GET /static/style.css: %v", err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read /static/style.css: %v", err)
+	}
+	css := string(body)
+	for _, token := range []string{"--primary: #f97316;", "--accent: #14b8a6;", "--surface-raised: #23241f;"} {
+		if !strings.Contains(css, token) {
+			t.Fatalf("style.css missing current dashboard theme token %q", token)
+		}
 	}
 }
 

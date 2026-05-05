@@ -32,6 +32,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 Given the server is running
 When a user opens the dashboard routes
 Then all pages return successfully and static assets are served without external frontend dependencies
+And dashboard theme assets use the current tokenized operations palette rather than hard-coded legacy palette values
 
 ### F-010-S002: Status APIs
 
@@ -103,7 +104,7 @@ None.
 
 ## Evidence
 
-- F-010-S001: `go test ./internal/dashboard -run 'TestDashboard_allPagesReturn200|TestDashboard_staticAssets'`
+- F-010-S001: `go test ./internal/dashboard -run 'TestDashboard_allPagesReturn200|TestDashboard_staticAssets|TestDashboard_themeAvoidsLegacyBluePalette'`
 - F-010-S002: `go test ./internal/dashboard -run 'TestDashboard_statusEndpoint|TestDashboard_reposEndpoint'` and `go test ./internal/serve -run TestServer_qualityScoreAPIServesRepoArtifact`
 - F-010-S003: `go test ./internal/dashboard -run 'TestDashboard_(pause|resume|restart|stop|scan|runRole)Endpoint'`
 - F-010-S004: `go test ./internal/dashboard -run TestDashboard_sseConnection`

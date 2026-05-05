@@ -24,6 +24,10 @@ V1 uses a server-side layered layout algorithm (roles grouped by trigger depth: 
 
 Full auto-layout (dagre or similar) is a v2 improvement if custom role topologies need better rendering.
 
+### Visual theme tokens
+
+The web dashboard uses a neutral operations theme with semantic CSS tokens for background, surface, border, text, primary, accent, success, warning, and danger colors. Chart configuration reads those same tokens where possible, so refreshed dashboard styling is embedded consistently across HTML, CSS, and Chart.js surfaces instead of preserving hard-coded legacy palette values.
+
 ## Dashboard Pages
 
 1. **Pipeline Flow (home):** Live DAG of roles with state, scores, trust levels, next trigger. SSE updates node state on job start/complete.

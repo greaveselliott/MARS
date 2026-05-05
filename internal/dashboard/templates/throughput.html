@@ -86,6 +86,11 @@ docs:
   <script>
   (function() {
     var throughputChart = null;
+    var rootStyle = getComputedStyle(document.documentElement);
+
+    function themeVar(name, fallback) {
+      return rootStyle.getPropertyValue(name).trim() || fallback;
+    }
 
     function loadThroughputData() {
       fetch("/api/throughput")
@@ -144,16 +149,16 @@ docs:
             {
               label: "Completed",
               data: completedData,
-              backgroundColor: "rgba(34, 197, 94, 0.7)",
-              borderColor: "rgba(34, 197, 94, 1)",
+              backgroundColor: "rgba(34, 197, 94, 0.72)",
+              borderColor: themeVar("--success", "#22c55e"),
               borderWidth: 1,
               borderRadius: 3
             },
             {
               label: "Failed",
               data: failedData,
-              backgroundColor: "rgba(239, 68, 68, 0.7)",
-              borderColor: "rgba(239, 68, 68, 1)",
+              backgroundColor: "rgba(244, 63, 94, 0.72)",
+              borderColor: themeVar("--danger", "#f43f5e"),
               borderWidth: 1,
               borderRadius: 3
             }
@@ -166,25 +171,25 @@ docs:
           scales: {
             x: {
               stacked: true,
-              ticks: { color: "#94a3b8", maxRotation: 45, font: { size: 11 } },
-              grid: { color: "rgba(51, 65, 85, 0.5)" }
+              ticks: { color: themeVar("--text-muted", "#a7a59a"), maxRotation: 45, font: { size: 11 } },
+              grid: { color: themeVar("--chart-grid", "rgba(70, 71, 62, 0.52)") }
             },
             y: {
               stacked: true,
               beginAtZero: true,
-              ticks: { color: "#94a3b8", stepSize: 1, font: { size: 11 } },
-              grid: { color: "rgba(51, 65, 85, 0.5)" }
+              ticks: { color: themeVar("--text-muted", "#a7a59a"), stepSize: 1, font: { size: 11 } },
+              grid: { color: themeVar("--chart-grid", "rgba(70, 71, 62, 0.52)") }
             }
           },
           plugins: {
             legend: {
-              labels: { color: "#e2e8f0", usePointStyle: true, pointStyle: "rectRounded" }
+              labels: { color: themeVar("--text", "#f4f1e8"), usePointStyle: true, pointStyle: "rectRounded" }
             },
             tooltip: {
-              backgroundColor: "#1e293b",
-              titleColor: "#e2e8f0",
-              bodyColor: "#94a3b8",
-              borderColor: "#334155",
+              backgroundColor: themeVar("--surface-raised", "#23241f"),
+              titleColor: themeVar("--text", "#f4f1e8"),
+              bodyColor: themeVar("--text-muted", "#a7a59a"),
+              borderColor: themeVar("--border", "#3b3c34"),
               borderWidth: 1
             }
           }

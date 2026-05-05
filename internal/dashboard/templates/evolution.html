@@ -68,6 +68,11 @@ docs:
   <script>
   (function() {
     var failureChart = null;
+    var rootStyle = getComputedStyle(document.documentElement);
+
+    function themeVar(name, fallback) {
+      return rootStyle.getPropertyValue(name).trim() || fallback;
+    }
 
     function loadEvolutionData() {
       fetch("/api/evolution")
@@ -148,8 +153,14 @@ docs:
       var labels = Object.keys(counts);
       var values = labels.map(function(k) { return counts[k]; });
       var colors = [
-        "#ef4444", "#f97316", "#eab308", "#22c55e",
-        "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280"
+        themeVar("--danger", "#f43f5e"),
+        themeVar("--primary", "#f97316"),
+        themeVar("--warning", "#eab308"),
+        themeVar("--success", "#22c55e"),
+        themeVar("--accent", "#14b8a6"),
+        themeVar("--violet", "#a78bfa"),
+        "#ec4899",
+        "#71717a"
       ];
 
       var ctx = document.getElementById("failure-chart");
@@ -170,7 +181,19 @@ docs:
         },
         options: {
           responsive: true,
-          plugins: { legend: { position: "right" } }
+          plugins: {
+            legend: {
+              position: "right",
+              labels: { color: themeVar("--text", "#f4f1e8") }
+            },
+            tooltip: {
+              backgroundColor: themeVar("--surface-raised", "#23241f"),
+              titleColor: themeVar("--text", "#f4f1e8"),
+              bodyColor: themeVar("--text-muted", "#a7a59a"),
+              borderColor: themeVar("--border", "#3b3c34"),
+              borderWidth: 1
+            }
+          }
         }
       });
     }

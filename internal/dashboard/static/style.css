@@ -14,16 +14,27 @@ docs:
 }
 
 :root {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --border: #334155;
-  --text: #e2e8f0;
-  --text-muted: #94a3b8;
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
+  --bg: #11110f;
+  --surface: #1b1c19;
+  --surface-raised: #23241f;
+  --border: #3b3c34;
+  --text: #f4f1e8;
+  --text-muted: #a7a59a;
+  --primary: #f97316;
+  --primary-hover: #ea580c;
+  --accent: #14b8a6;
   --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --warning: #eab308;
+  --danger: #f43f5e;
+  --violet: #a78bfa;
+  --bg-soft: rgba(17, 17, 15, 0.62);
+  --primary-soft: rgba(249, 115, 22, 0.14);
+  --primary-strong: rgba(249, 115, 22, 0.22);
+  --success-soft: rgba(34, 197, 94, 0.16);
+  --warning-soft: rgba(234, 179, 8, 0.16);
+  --danger-soft: rgba(244, 63, 94, 0.16);
+  --white-soft: rgba(244, 241, 232, 0.1);
+  --chart-grid: rgba(70, 71, 62, 0.52);
   --font: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -70,12 +81,12 @@ body {
 
 .nav-item:hover {
   color: var(--text);
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--primary-soft);
 }
 
 .nav-item.active {
   color: var(--primary);
-  background: rgba(59, 130, 246, 0.15);
+  background: var(--primary-strong);
   border-right: 2px solid var(--primary);
 }
 
@@ -100,7 +111,7 @@ body {
 }
 
 .estop-btn:hover {
-  background: #dc2626;
+  background: #e11d48;
 }
 
 .content {
@@ -127,7 +138,7 @@ body {
 }
 
 .card {
-  background: var(--surface);
+  background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 20px;
@@ -177,7 +188,7 @@ body {
   margin-bottom: 6px;
   font-size: 13px;
   border-radius: 0 4px 4px 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--bg-soft);
 }
 
 .event-entry.job_start {
@@ -221,7 +232,7 @@ body {
 }
 
 .chain-node {
-  background: rgba(59, 130, 246, 0.15);
+  background: var(--primary-soft);
   border: 1px solid var(--primary);
   color: var(--primary);
   padding: 6px 14px;
@@ -236,7 +247,7 @@ body {
 }
 
 .chain-node.done {
-  background: rgba(34, 197, 94, 0.15);
+  background: var(--success-soft);
   border-color: var(--success);
   color: var(--success);
 }
@@ -268,7 +279,7 @@ body {
   padding: 10px 18px;
   border: 1px solid var(--primary);
   border-radius: 6px;
-  background: rgba(59, 130, 246, 0.22);
+  background: var(--primary-strong);
   color: var(--text);
   font-weight: 700;
 }
@@ -286,7 +297,7 @@ body {
   padding: 7px 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--bg-soft);
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 600;
@@ -312,7 +323,7 @@ body {
   padding: 10px 12px;
   border-left: 3px solid var(--primary);
   border-radius: 0 6px 6px 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--bg-soft);
   font-size: 13px;
 }
 
@@ -328,7 +339,7 @@ body {
 }
 
 .role-card {
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--bg-soft);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 14px;
@@ -383,12 +394,12 @@ body {
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
-  background: rgba(59, 130, 246, 0.2);
+  background: var(--primary-soft);
   color: var(--primary);
 }
 
 .badge.success {
-  background: rgba(34, 197, 94, 0.2);
+  background: var(--success-soft);
   color: var(--success);
 }
 
@@ -398,7 +409,7 @@ body {
   margin-bottom: 6px;
   font-size: 13px;
   border-radius: 0 4px 4px 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: var(--bg-soft);
 }
 
 .event-entry.telemetry {
@@ -410,7 +421,7 @@ body {
 }
 
 .event-entry.evolution {
-  border-left-color: #8b5cf6;
+  border-left-color: var(--violet);
 }
 
 .event-entry.remedied {
@@ -431,7 +442,7 @@ body {
 .score-bar {
   flex: 1;
   height: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--white-soft);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -524,12 +535,12 @@ body {
 
 .job-table td {
   padding: 7px 10px;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+  border-bottom: 1px solid var(--chart-grid);
   color: var(--text);
 }
 
 .job-table tr:hover td {
-  background: rgba(59, 130, 246, 0.05);
+  background: var(--primary-soft);
 }
 
 .job-table .mono {
@@ -556,22 +567,22 @@ body {
 }
 
 .status-pill.success {
-  background: rgba(34, 197, 94, 0.15);
+  background: var(--success-soft);
   color: var(--success);
 }
 
 .status-pill.danger {
-  background: rgba(239, 68, 68, 0.15);
+  background: var(--danger-soft);
   color: var(--danger);
 }
 
 .status-pill.primary {
-  background: rgba(59, 130, 246, 0.15);
+  background: var(--primary-soft);
   color: var(--primary);
 }
 
 .status-pill.warning {
-  background: rgba(245, 158, 11, 0.15);
+  background: var(--warning-soft);
   color: var(--warning);
 }
 
@@ -637,7 +648,7 @@ body {
 
 .ctrl-btn:hover {
   color: var(--text);
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--primary-soft);
   border-color: var(--primary);
 }
 
@@ -648,7 +659,7 @@ body {
 
 .ctrl-btn .key-hint {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(244, 241, 232, 0.08);
   border-radius: 3px;
   padding: 1px 5px;
   font-size: 11px;
@@ -658,12 +669,12 @@ body {
 
 .ctrl-btn.warn:hover {
   border-color: var(--warning);
-  background: rgba(245, 158, 11, 0.1);
+  background: var(--warning-soft);
 }
 
 .ctrl-btn.danger:hover {
   border-color: var(--danger);
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--danger-soft);
 }
 
 .ctrl-select {
