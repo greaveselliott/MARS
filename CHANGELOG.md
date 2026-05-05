@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.36.2] - 2026-05-05
+<!-- mars-harness-release: version=0.36.2 commit=cf60686d77fa -->
+
+### Impact
+- **ui:** The release carries stronger evidence because avoid dashboard buffer race.
+
+### Why
+- **ui:** This matters because the project needs durable evidence that the behavior keeps working.
+
+### What Changed
+- **ui:** Changed avoid dashboard buffer race (cf60686).
+
+### Tests
+- **ui:** Avoid dashboard buffer race (cf60686)
+
 ## [0.36.1] - 2026-05-05
 <!-- mars-harness-release: version=0.36.1 commit=7c350a8321a8 -->
 
