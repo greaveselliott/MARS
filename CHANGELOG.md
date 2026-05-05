@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.35.0] - 2026-05-05
+<!-- mars-harness-release: version=0.35.0 commit=ec917142c353 -->
+
+### Impact
+- **auth:** Operators and agents get a first-class private release auth path with setup/check commands, doctor readiness, setup gating, update guidance, a universal github_auth_check tool, and mirrored getting-started docs.
+
+### Why
+- **auth:** Private GitHub Release access was a hidden prerequisite for update tool and release asset workflows, which made version drift and install repair feel like mysterious token failures instead of an explicit onboarding step.
+
+### What Changed
+- **auth:** Added the githubauth resolver with GH_TOKEN, GITHUB_TOKEN, GitHub CLI, then local config precedence; wired auth github setup/check into the CLI, setup, doctor, self-update, tool registry, role allowlists, generated target guidance, docs, skills, and tests while preserving token redaction (ec91714).
+
+### Features
+- **auth:** Add private release auth setup model (ec91714)
+
 ## [0.34.1] - 2026-05-05
 <!-- mars-harness-release: version=0.34.1 commit=8d96adccffe2 -->
 
