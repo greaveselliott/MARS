@@ -1,0 +1,36 @@
+---
+name: github-private-release-auth
+scope: all
+---
+
+# GitHub Private Release Auth Skill
+
+Use this before update, release verification, install repair, version-drift
+remediation, or any workflow that needs private Mars Harness GitHub Release
+assets.
+
+## Workflow
+
+1. Run `mars-harness auth github check` or the `github_auth_check` tool.
+2. If auth is missing, ask the operator to run `gh auth login`, then
+   `mars-harness auth github setup`.
+3. For headless installs, use `GH_TOKEN`, `GITHUB_TOKEN`, or
+   `mars-harness auth github setup --token <token>` with repository contents
+   read access.
+4. Retry the blocked update or release command only after the auth check is
+   `ok`.
+
+## Security Rules
+
+- Never paste token values into chat, docs, commits, traces, tickets, logs, or
+  tool output.
+- Prefer GitHub CLI auth over storing a local token.
+- If local token storage is required, it belongs under `~/.mars-harness/`, never
+  in a target repository.
+
+## Stop Conditions
+
+- Stop and return a blocker when the token is rejected, SSO authorization is
+  required, or the authenticated account cannot see the private release repo.
+- Stop and record a release blocker when asset verification depends on missing
+  credentials.

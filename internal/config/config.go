@@ -2,8 +2,10 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/release-versioning.md
 - docs/product-specs/product-surface.md
 - docs/features/F-003-local-inference-lifecycle.md
+- docs/features/F-009-release-update-lifecycle.md
 */
 package config
 
@@ -68,6 +70,25 @@ func Load(path string) (Config, error) {
 	}
 	applyEnv(&cfg)
 	return cfg, nil
+}
+
+// Save writes the YAML config file with owner-only permissions because the
+// config may contain optional local credentials.
+func Save(path string, cfg Config) error {
+	if strings.TrimSpace(path) == "" {
+		path = DefaultPath()
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return fmt.Errorf("config: create %s: %w", filepath.Dir(path), err)
+	}
+	data, err := yaml.Marshal(&cfg)
+	if err != nil {
+		return fmt.Errorf("config: marshal %s: %w", path, err)
+	}
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		return fmt.Errorf("config: write %s: %w", path, err)
+	}
+	return nil
 }
 
 func defaults() Config {

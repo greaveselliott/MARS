@@ -45,6 +45,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/docsync"
 	"github.com/greaveselliott/mars-harness/internal/doctor"
 	"github.com/greaveselliott/mars-harness/internal/foundationtelemetry"
+	"github.com/greaveselliott/mars-harness/internal/githubauth"
 	"github.com/greaveselliott/mars-harness/internal/guardrails"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
@@ -122,6 +123,7 @@ func newRootCommand() *cobra.Command {
 	root.AddCommand(releaseCmd())
 	root.AddCommand(docsyncCmd())
 	root.AddCommand(pathCmd())
+	root.AddCommand(authCmd())
 
 	return root
 }
@@ -924,6 +926,135 @@ func pathCmd() *cobra.Command {
 	return cmd
 }
 
+func authCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "auth",
+		Short: "Configure and check external authentication used by Mars Harness",
+	}
+	cmd.AddCommand(authGitHubCmd())
+	return cmd
+}
+
+func authGitHubCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "github",
+		Short: "Configure and check GitHub auth for private Mars Harness releases",
+	}
+	cmd.AddCommand(authGitHubCheckCmd())
+	cmd.AddCommand(authGitHubSetupCmd())
+	return cmd
+}
+
+func authGitHubCheckCmd() *cobra.Command {
+	var (
+		configPath string
+		jsonOut    bool
+	)
+	cmd := &cobra.Command{
+		Use:   "check",
+		Short: "Check GitHub auth for private Mars Harness release assets",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			report := githubauth.Check(cmd.Context(), githubauth.Options{ConfigPath: configPath})
+			if jsonOut {
+				if err := writeJSON(cmd.OutOrStdout(), report); err != nil {
+					return err
+				}
+			} else {
+				printGitHubAuthReport(cmd.OutOrStdout(), report)
+			}
+			if report.Status != githubauth.StatusOK {
+				return fmt.Errorf("auth github check: %s — %s", report.Message, report.NextAction)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars-harness/config.yaml)")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func authGitHubSetupCmd() *cobra.Command {
+	var (
+		configPath string
+		token      string
+		jsonOut    bool
+	)
+	cmd := &cobra.Command{
+		Use:   "setup",
+		Short: "Prepare GitHub auth for private Mars Harness release assets",
+		Long: `Prepare GitHub auth for private Mars Harness release assets.
+
+The recommended path is to authenticate GitHub CLI once with "gh auth login",
+then run this command. Headless installs may pass --token or set GH_TOKEN or
+GITHUB_TOKEN instead. Token values are never printed.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts := githubauth.Options{ConfigPath: configPath}
+			if strings.TrimSpace(token) != "" {
+				path := strings.TrimSpace(configPath)
+				if path == "" {
+					path = config.DefaultPath()
+				}
+				cfg, err := config.Load(path)
+				if err != nil {
+					return err
+				}
+				opts = githubauth.Options{
+					ConfigPath:   path,
+					ConfigToken:  strings.TrimSpace(token),
+					DisableGHCLI: true,
+					Env:          func(string) string { return "" },
+				}
+				report := githubauth.Check(cmd.Context(), opts)
+				if report.Status == githubauth.StatusOK {
+					cfg.GitHubToken = strings.TrimSpace(token)
+					if err := config.Save(path, cfg); err != nil {
+						return err
+					}
+				}
+				if jsonOut {
+					if err := writeJSON(cmd.OutOrStdout(), report); err != nil {
+						return err
+					}
+				} else {
+					printGitHubAuthReport(cmd.OutOrStdout(), report)
+				}
+				if report.Status != githubauth.StatusOK {
+					return fmt.Errorf("auth github setup: %s — %s", report.Message, report.NextAction)
+				}
+				return nil
+			}
+			report := githubauth.Check(cmd.Context(), opts)
+			if jsonOut {
+				if err := writeJSON(cmd.OutOrStdout(), report); err != nil {
+					return err
+				}
+			} else {
+				printGitHubAuthReport(cmd.OutOrStdout(), report)
+			}
+			if report.Status != githubauth.StatusOK {
+				return fmt.Errorf("auth github setup: %s — %s", report.Message, report.NextAction)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars-harness/config.yaml)")
+	cmd.Flags().StringVar(&token, "token", "", "Persist a GitHub token in ~/.mars-harness/config.yaml for headless installs; prefer GitHub CLI auth when possible")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func printGitHubAuthReport(w io.Writer, report githubauth.Report) {
+	fmt.Fprintln(w, "GitHub private release auth")
+	fmt.Fprintf(w, "Status: %s\n", report.Status)
+	fmt.Fprintf(w, "Auth source: %s\n", report.AuthSource)
+	fmt.Fprintf(w, "Repo access: %s\n", report.RepoAccess)
+	fmt.Fprintf(w, "Release access: %s\n", report.ReleaseAccess)
+	fmt.Fprintf(w, "Message: %s\n", report.Message)
+	if report.NextAction != "" {
+		fmt.Fprintf(w, "Next action: %s\n", report.NextAction)
+	}
+}
+
 func pathSetupCmd() *cobra.Command {
 	var (
 		installDir string
@@ -1537,6 +1668,7 @@ func inferenceTuningFromConfig(cfg config.Config) inference.ServerTuning {
 func setupCmd() *cobra.Command {
 	var (
 		skipDownload bool
+		skipGitHub   bool
 		enableGitHub bool
 		testMode     bool
 		dryRun       bool
@@ -1550,6 +1682,7 @@ func setupCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			result, err := setup.Run(setup.Config{
 				SkipDownload: skipDownload,
+				SkipGitHub:   skipGitHub,
 				EnableGitHub: enableGitHub,
 				TestMode:     testMode,
 				DryRun:       dryRun,
@@ -1564,6 +1697,7 @@ func setupCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&skipDownload, "skip-download", false, "Skip model download")
+	cmd.Flags().BoolVar(&skipGitHub, "skip-github", false, "Skip GitHub private release auth and optional GitHub integration checks")
 	cmd.Flags().BoolVar(&enableGitHub, "github", false, "Configure optional GitHub status/check integration")
 	cmd.Flags().BoolVar(&testMode, "test-mode", false, "Skip downloads and external services")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print steps without executing")

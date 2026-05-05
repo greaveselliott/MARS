@@ -48,6 +48,7 @@ func TestToolsListCommandIncludesUniversalTools(t *testing.T) {
 
 	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
 	require.Contains(t, lines, "mars_harness_cli")
+	require.Contains(t, lines, "github_auth_check")
 	require.Contains(t, lines, "tool_create")
 	require.Contains(t, lines, "tool_creation_guard")
 }
@@ -138,6 +139,26 @@ func TestVersionEntrypointsPrintSameVersionLine(t *testing.T) {
 			require.Equal(t, versionLine()+"\n", out.String())
 		})
 	}
+}
+
+func TestAuthGitHubCheckCommandReportsMissingAuthWithoutSecrets(t *testing.T) {
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("MARS_HARNESS_GITHUB_TOKEN", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("PATH", t.TempDir())
+
+	cmd := authGitHubCheckCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--json"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, out.String(), `"auth_source": "none"`)
+	require.Contains(t, out.String(), "mars-harness auth github setup")
+	require.NotContains(t, out.String(), "Bearer")
+	require.NotContains(t, out.String(), "ghs_")
 }
 
 func TestMarsHarnessCLIToolReferenceTracksCommandTree(t *testing.T) {

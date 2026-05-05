@@ -48,7 +48,7 @@ field is a list of repo-relative documentation paths.
 | `internal/agent/` | `docs/design-docs/agent-runtime.md` | F-005 |
 | `internal/buildinfo/` | `docs/design-docs/release-versioning.md` | F-009 |
 | `internal/bundle/` | `docs/design-docs/context-efficiency.md`, `docs/design-docs/role-customization.md` | F-004, F-005 |
-| `internal/config/` | `docs/product-specs/product-surface.md` | F-003 |
+| `internal/config/` | `docs/product-specs/product-surface.md`, `docs/design-docs/release-versioning.md` | F-003, F-009 |
 | `internal/context/` | `docs/design-docs/context-efficiency.md` | F-005 |
 | `internal/dashboard/` | `docs/design-docs/dashboard.md` | F-010 |
 | `internal/docsconsistency/` | `docs/design-docs/delivery-operating-model.md` | F-001 |
@@ -57,6 +57,7 @@ field is a list of repo-relative documentation paths.
 | `internal/evolution/` | `docs/design-docs/self-improvement.md` | F-012 |
 | `internal/foundationtelemetry/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
 | `internal/github/` | `docs/product-specs/product-surface.md` | F-011 |
+| `internal/githubauth/` | `docs/design-docs/release-versioning.md`, `docs/product-specs/product-surface.md` | F-009 |
 | `internal/guardrails/` | `docs/design-docs/guardrails.md` | F-007 |
 | `internal/hardware/` | `docs/design-docs/local-inference.md` | F-003 |
 | `internal/inference/` | `docs/design-docs/local-inference.md` | F-003 |
@@ -81,7 +82,7 @@ field is a list of repo-relative documentation paths.
 | `internal/scoring/` | `docs/design-docs/scoring-system.md` | F-008 |
 | `internal/selfupdate/` | `docs/design-docs/release-versioning.md` | F-009 |
 | `internal/serve/` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/orchestrated-organization-layer.md` | F-006 |
-| `internal/setup/` | `docs/design-docs/local-inference.md` | F-002, F-003 |
+| `internal/setup/` | `docs/design-docs/local-inference.md`, `docs/design-docs/release-versioning.md` | F-002, F-003, F-009 |
 | `internal/shellpath/` | `docs/design-docs/release-versioning.md` | F-002 |
 | `internal/telemetry/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
 | `internal/tickets/` | `docs/design-docs/delivery-operating-model.md` | F-001 |

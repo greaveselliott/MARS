@@ -113,11 +113,26 @@ asset, verifies `checksums.txt`, and atomically replaces the binary in the
 directory containing the currently running command. This avoids requiring Go or a
 source checkout for ordinary upgrades.
 
-Private release repositories use the same checksum-verified path when
-`GH_TOKEN` or `GITHUB_TOKEN` is exported with repository contents read access.
+Private release repositories use the same checksum-verified path through the
+Getting Started private release auth operating model. Operators run
+`mars-harness auth github setup` once, then `mars-harness update tool` resolves
+auth in this order: `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth from
+`gh auth token`, then an optional local token stored under `~/.mars-harness/`
+with owner-only permissions. Token values are never printed, written to target
+repos, or included in traces, telemetry, doctor output, JSON, errors, tickets,
+or docs.
+
 When release metadata exposes GitHub asset API URLs, the updater downloads from
 those authenticated API URLs instead of browser download URLs so private assets
-do not fail behind a misleading 404.
+do not fail behind a misleading 404. Missing or invalid auth points to
+`mars-harness auth github setup`; headless installs may use `GH_TOKEN`,
+`GITHUB_TOKEN`, or `mars-harness auth github setup --token <token>`.
+
+`mars-harness setup` includes a private-release auth check before ordinary
+runtime setup. `--skip-github` and `--test-mode` skip that external auth check.
+`mars-harness doctor` reports private-release auth readiness with a concrete
+fix, and agents can use the read-only `github_auth_check` tool before update,
+release verification, install repair, or version-drift remediation.
 
 Source-development updates remain available through `mars-harness update tool
 --source` or `mars-harness update tool --version main`. That path uses `go

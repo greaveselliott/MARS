@@ -25,6 +25,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 8. F-009-S008 - Generated release notes explain impact, why, and what changed before commit buckets.
 9. F-009-S009 - Historical release entries are backfilled to the current narrative standard from marker ranges.
 10. F-009-S010 - The installed CLI reports its version through the explicit command and root-level version flags.
+11. F-009-S011 - Private release auth is a first-class Getting Started operating model.
 
 ## Scenarios
 
@@ -51,7 +52,9 @@ Then shipped feature scenarios are named separately from enabler work
 Given a release asset and `checksums.txt` are available
 When `mars-harness update tool` installs the tool
 Then checksum mismatch prevents replacement and valid assets atomically replace the installed binary
-And private releases are authenticated with `GH_TOKEN` or `GITHUB_TOKEN` and downloaded through GitHub asset API URLs when release metadata provides them
+And private releases are authenticated through the Getting Started auth resolver in this order: `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth, then optional local config token
+And private release assets are downloaded through GitHub asset API URLs when release metadata provides them
+And missing or invalid auth points to `mars-harness auth github setup`
 
 ### F-009-S005: Unified Harness Update
 
@@ -89,6 +92,16 @@ Then each selected entry derives its non-release commits from adjacent release m
 Given a user wants to confirm the installed Mars Harness binary version
 When `mars-harness version`, `mars-harness --version`, or `mars-harness -v` runs
 Then each entrypoint prints the same version, OS/architecture, commit, and build date line
+
+### F-009-S011: Private Release Auth Getting Started
+
+Given Mars Harness release assets live in a private GitHub Release repository
+When a user follows Getting Started
+Then the documented sequence includes `mars-harness auth github setup`, `mars-harness setup`, `mars-harness doctor`, and `mars-harness update tool`
+And `mars-harness auth github check` reports `status`, `auth_source`, `repo_access`, `release_access`, `message`, and `next_action` without printing token values
+And `mars-harness setup` checks private-release auth unless `--skip-github` or `--test-mode` is used
+And `mars-harness doctor` reports private-release auth readiness with a concrete fix
+And agents can use the read-only `github_auth_check` tool before update, release verification, install repair, or version-drift remediation
 
 ## Out of Scope
 

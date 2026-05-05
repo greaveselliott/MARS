@@ -351,7 +351,7 @@ roles:
     schedule: "0 20 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
 
   head-of-strategy:
     prompt: roles/head-of-strategy.md
@@ -360,7 +360,7 @@ roles:
     model: reasoning
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, grep, workspace_hygiene, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push]
 
   coo:
     prompt: roles/coo.md
@@ -369,7 +369,7 @@ roles:
     model: reasoning
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
   cto-weekly:
@@ -380,7 +380,7 @@ roles:
     schedule: "0 21 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, ticket_create, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, ticket_create, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -391,7 +391,7 @@ roles:
     schedule: "0 0,6,12,18 * * 1-5"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -402,7 +402,7 @@ roles:
     max_turns: 20
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, grep, workspace_hygiene, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit]
+    tools: [file_read, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit]
 
   security:
     prompt: roles/security.md
@@ -413,7 +413,7 @@ roles:
     schedule: "0 22 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
@@ -424,7 +424,7 @@ roles:
     schedule: "0 23 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
 
   # ── Release ──────────────────────────────────────────────
   release-manager:
@@ -435,7 +435,7 @@ roles:
     schedule: "0 8 * * 1"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, docsync_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, docsync_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
   dogfood:
@@ -447,7 +447,7 @@ roles:
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -459,7 +459,7 @@ roles:
       - workflow_run.conclusion == "failure"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Dispatch coordination ───────────────────────────────
   orchestrator:
@@ -470,7 +470,7 @@ roles:
     max_turns: 20
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, grep, workspace_hygiene, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff]
+    tools: [file_read, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff]
 
   # ── Backlog entropy management ─────────────────────────
   janitor:
@@ -484,7 +484,7 @@ roles:
     max_turns: 30
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, docsync_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_diff, git_commit, git_push]
 `, projectName, projectName)
 }
 
@@ -504,6 +504,8 @@ var defaultHarnessFiles = map[string]string{
     paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md, docs/design-docs/code-documentation-map.md, docs/design-docs/documentation-sync-architecture.md, docs/design-docs/cli-tool-skill-sync.md, docs/features/README.md
   - when: release planning, semantic versioning, changelog, patch notes, or tags
     paths: VERSION, CHANGELOG.md, docs/design-docs/release-versioning.md
+  - when: private release auth, GH_TOKEN, GITHUB_TOKEN, GitHub CLI auth, update tool auth, release asset auth, or version-drift auth repair
+    paths: docs/design-docs/release-versioning.md, .harness/skills/github-private-release-auth/SKILL.md
   - when: self-improvement, repeated failures, telemetry triage, human intervention, or deciding whether to create a skill
     paths: docs/design-docs/skill-evolution.md, .harness/skills/self-improvement/SKILL.md
   - when: creating or revising agent personas, role manuals, role ownership, feedback contracts, or handoff expectations
@@ -539,6 +541,44 @@ Use this when a failure, repeated handoff, human follow-up, low score, or dogfoo
 - Scope narrowly unless the workflow is useful to every role.
 - Link a design decision when the skill changes workflow doctrine.
 - Commit and push the skill change on ` + "`main`" + ` with the triggering job, ticket, or telemetry evidence.
+`,
+
+	"skills/github-private-release-auth/SKILL.md": `---
+name: github-private-release-auth
+scope: all
+---
+
+# GitHub Private Release Auth Skill
+
+Use this before update, release verification, install repair, version-drift
+remediation, or any workflow that needs private Mars Harness GitHub Release
+assets.
+
+## Workflow
+
+1. Run ` + "`mars-harness auth github check`" + ` or the ` + "`github_auth_check`" + ` tool.
+2. If auth is missing, ask the operator to run ` + "`gh auth login`" + `, then
+   ` + "`mars-harness auth github setup`" + `.
+3. For headless installs, use ` + "`GH_TOKEN`" + `, ` + "`GITHUB_TOKEN`" + `, or
+   ` + "`mars-harness auth github setup --token <token>`" + ` with repository contents
+   read access.
+4. Retry the blocked update or release command only after the auth check is
+   ` + "`ok`" + `.
+
+## Security Rules
+
+- Never paste token values into chat, docs, commits, traces, tickets, logs, or
+  tool output.
+- Prefer GitHub CLI auth over storing a local token.
+- If local token storage is required, it belongs under ` + "`~/.mars-harness/`" + `, never
+  in a target repository.
+
+## Stop Conditions
+
+- Stop and return a blocker when the token is rejected, SSO authorization is
+  required, or the authenticated account cannot see the private release repo.
+- Stop and record a release blocker when asset verification depends on missing
+  credentials.
 `,
 
 	"skills/persona-design/SKILL.md": `---
@@ -704,7 +744,7 @@ would otherwise live only in chat.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
 - **Universal tool surface** — the mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + ` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale.
@@ -763,6 +803,7 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
 - After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, ensure the generated entry explains ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` before commit buckets, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
 - When GitHub release credentials are configured, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets. A notes-only GitHub Release is a blocker until required assets are attached and verified. If publishing or verification is blocked, record the blocker explicitly.
+- Private Mars Harness release access is part of getting started and version-drift repair. Run ` + "`mars-harness auth github check`" + ` or the read-only ` + "`github_auth_check`" + ` tool before ` + "`mars-harness update tool`" + `, release asset verification, install repair, or update troubleshooting. Configure access with ` + "`mars-harness auth github setup`" + `; never paste tokens into chat, docs, commits, tickets, traces, logs, or target repo files.
 - Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
 - Check drift with ` + "`mars-harness update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars-harness update harness --repo .`" + `.
 - To remove Mars Harness from this repo, run ` + "`mars-harness eject --repo .`" + ` for a dry-run; applying the kill switch requires ` + "`--apply --confirm <repo-name>`" + ` and removes working-tree harness artifacts plus the per-repo database without rewriting git history.
@@ -2007,7 +2048,7 @@ harness and deployed harnesses.
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
 | Universal tool surface | The mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + `, so any MCP-compatible client or local harness agent can use the same tools through a model-provider-agnostic tool mechanism. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
@@ -2124,6 +2165,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
 | ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
 | ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading. |
+| ` + "`github_auth_check`" + ` | Check private Mars Harness GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
 | ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe ` + "`.gitignore`" + `-only repair when needed. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
 | ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
@@ -2150,6 +2192,9 @@ tools are added, removed, renamed, or materially change behavior.
 
 - Need Mars Harness behavior, versioning, setup, release, score, trust, or target
   harness lifecycle operations: use ` + "`mars_harness_cli`" + `.
+- Need to verify private Mars Harness release access before update, release
+  verification, install repair, or version-drift remediation: use
+  ` + "`github_auth_check`" + ` or ` + "`mars-harness auth github check`" + `.
 - Need to add, remove, rename, or change a ` + "`mars-harness`" + ` CLI command or flag:
   update ` + "`mars_harness_cli`" + `, generated skills, generated doctrine, and product
   docs using [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
@@ -2393,6 +2438,29 @@ If the repo has no GitHub remote, no release credentials, or the GitHub publish
 step fails, record the blocker and create or update follow-up work instead of
 claiming the release is complete.
 
+## Private Release Auth
+
+Mars Harness tool updates use private GitHub Release assets. Private release
+auth is a first-class getting-started step, not an ad hoc export:
+
+` + "```bash" + `
+mars-harness auth github setup
+mars-harness auth github check
+mars-harness update tool
+` + "```" + `
+
+The auth resolver tries ` + "`GH_TOKEN`" + `, then ` + "`GITHUB_TOKEN`" + `, then
+GitHub CLI auth from ` + "`gh auth token`" + `, then the optional local token stored
+under ` + "`~/.mars-harness/`" + `. GitHub CLI auth is preferred. Headless installs
+may set ` + "`GH_TOKEN`" + ` or use ` + "`mars-harness auth github setup --token <token>`" + `
+with repository contents read access.
+
+Never write tokens to this repo or any target repo. Never print token values in
+logs, traces, telemetry, doctor output, JSON, errors, tickets, or docs. Agents
+should use the read-only ` + "`github_auth_check`" + ` tool or
+` + "`mars-harness auth github check`" + ` before update, release verification, install
+repair, and version-drift remediation.
+
 ## Agent Rules
 
 - Do not hand-edit patch-note entries when the command can generate them.
@@ -2400,6 +2468,7 @@ claiming the release is complete.
 - Do not fabricate commit references.
 - Keep release notes complete, user-facing, and explicit about impact, why, and what changed.
 - Use ` + "`mars-harness release backfill-notes --repo . --check`" + ` when auditing historical changelog compliance.
+- Use ` + "`github_auth_check`" + ` or ` + "`mars-harness auth github check`" + ` before any workflow that depends on private Mars Harness release assets.
 - Use ` + "`mars-harness update check --repo .`" + ` to detect stale installed CLI or target harness metadata.
 - Use ` + "`mars-harness update harness --repo .`" + ` when generated harness-owned files need to catch up.
 `,

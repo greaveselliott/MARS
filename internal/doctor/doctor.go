@@ -3,7 +3,9 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/guardrails.md
+- docs/design-docs/release-versioning.md
 - docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-007-guardrails-and-safety.md
 - docs/product-specs/product-surface.md
 */
@@ -23,6 +25,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/internal/githubauth"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/operatingmodel"
 	"github.com/greaveselliott/mars-harness/internal/planhygiene"
@@ -72,6 +75,7 @@ func Run(cfg Config) []CheckResult {
 		checkDBAccessible,
 		checkLlamaServer,
 		checkDiskSpace,
+		checkPrivateReleaseAuth,
 		checkVersionDrift,
 		checkOperatingModelHealth,
 		checkRoleRegistryHealth,
@@ -95,6 +99,37 @@ func Run(cfg Config) []CheckResult {
 		results = append(results, result)
 	}
 	return results
+}
+
+func checkPrivateReleaseAuth(cfg Config) CheckResult {
+	start := time.Now()
+	name := "private-release-auth"
+	if cfg.SkipRemote {
+		return CheckResult{
+			Name:     name,
+			Status:   statusOK,
+			Message:  "remote private release auth check skipped",
+			Duration: nonZeroDurationSince(start),
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	report := githubauth.Check(ctx, githubauth.Options{})
+	if report.Status == githubauth.StatusOK {
+		return CheckResult{
+			Name:     name,
+			Status:   statusOK,
+			Message:  fmt.Sprintf("%s via %s", report.Message, report.AuthSource),
+			Duration: nonZeroDurationSince(start),
+		}
+	}
+	return CheckResult{
+		Name:     name,
+		Status:   statusWarn,
+		Message:  report.Message,
+		Duration: nonZeroDurationSince(start),
+		Fix:      report.NextAction,
+	}
 }
 
 func checkWorkspaceHygieneHealth(cfg Config) CheckResult {

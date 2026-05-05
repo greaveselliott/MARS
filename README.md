@@ -26,8 +26,11 @@ Full text: [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
 # Install
 curl -sSL https://get.mars-harness.dev | sh
 
-# Setup (auto-detects GPU, downloads pinned models, optional GitHub integration)
+# Private release auth and setup
+mars-harness auth github setup
 mars-harness setup
+mars-harness doctor
+mars-harness update tool
 
 # Run a single role against a repo
 mars-harness run pipeline-fixer --repo /path/to/your/repo
@@ -54,11 +57,13 @@ mars-harness update tool
 mars-harness update harness --repo /path/to/target-repo
 ```
 
-`update tool` uses checksum-verified GitHub Release assets by default. Source
-development channels remain available with `mars-harness update tool --source
---version main`. For private release repositories, authenticate the release
-asset lookup with `GH_TOKEN` or `GITHUB_TOKEN`, for example:
-`GH_TOKEN="$(gh auth token)" mars-harness update tool`.
+`update tool` uses checksum-verified private GitHub Release assets by default.
+Run `mars-harness auth github setup` once during getting started so update,
+version-drift, and release-asset workflows can reuse the same auth model. The
+resolver tries `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth from `gh auth token`,
+then an optional local token stored under `~/.mars-harness/`. Source development
+channels remain available with `mars-harness update tool --source --version
+main`.
 
 Remove Mars Harness from a target repo with a dry-run kill switch:
 

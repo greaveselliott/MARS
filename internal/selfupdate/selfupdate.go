@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/internal/githubauth"
 	"github.com/greaveselliott/mars-harness/internal/shellpath"
 )
 
@@ -54,18 +55,20 @@ type Config struct {
 
 // Plan is the resolved update action.
 type Plan struct {
-	Method       UpdateMethod     `json:"method"`
-	Package      string           `json:"package,omitempty"`
-	Version      string           `json:"version"`
-	ReleaseTag   string           `json:"release_tag,omitempty"`
-	InstallDir   string           `json:"install_dir"`
-	BinaryPath   string           `json:"binary_path"`
-	AssetName    string           `json:"asset_name,omitempty"`
-	DownloadURL  string           `json:"download_url,omitempty"`
-	ChecksumsURL string           `json:"checksums_url,omitempty"`
-	Command      []string         `json:"command,omitempty"`
-	ShellPath    shellpath.Result `json:"shell_path"`
-	DryRun       bool             `json:"dry_run"`
+	Method             UpdateMethod     `json:"method"`
+	Package            string           `json:"package,omitempty"`
+	Version            string           `json:"version"`
+	ReleaseTag         string           `json:"release_tag,omitempty"`
+	InstallDir         string           `json:"install_dir"`
+	BinaryPath         string           `json:"binary_path"`
+	AssetName          string           `json:"asset_name,omitempty"`
+	DownloadURL        string           `json:"download_url,omitempty"`
+	ChecksumsURL       string           `json:"checksums_url,omitempty"`
+	RequiresGitHubAuth bool             `json:"requires_github_auth,omitempty"`
+	AuthSource         string           `json:"auth_source,omitempty"`
+	Command            []string         `json:"command,omitempty"`
+	ShellPath          shellpath.Result `json:"shell_path"`
+	DryRun             bool             `json:"dry_run"`
 }
 
 // ResolvePlan computes the update action without executing it.
@@ -122,6 +125,7 @@ func ResolvePlan(cfg Config) (Plan, error) {
 		plan.AssetName = asset
 		plan.DownloadURL = releaseDownloadURL(cfg.ReleaseBaseURL, plan.ReleaseTag, asset)
 		plan.ChecksumsURL = releaseDownloadURL(cfg.ReleaseBaseURL, plan.ReleaseTag, "checksums.txt")
+		plan.RequiresGitHubAuth = true
 	default:
 		return Plan{}, fmt.Errorf("update tool: unknown update method %q", method)
 	}
@@ -176,6 +180,7 @@ func runReleaseAssets(ctx context.Context, cfg Config, plan Plan) (Plan, error) 
 	if client == nil {
 		client = &http.Client{Timeout: 30 * time.Second}
 	}
+	plan.AuthSource = githubauth.ResolveToken(ctx, githubauth.Options{}).Token.Source
 	if cfg.DryRun {
 		pathResult, pathErr := shellpath.Ensure(shellpath.Config{InstallDir: plan.InstallDir, DryRun: true})
 		if pathErr == nil {

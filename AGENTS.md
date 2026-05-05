@@ -36,7 +36,7 @@ would otherwise live only in chat.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `mars_harness_cli`, `grep`, `workspace_hygiene`, `dependency_sync`, `record_decision`, `ticket_create`, `tool_create`, `persona_create`, `docsync_audit`, release/status/audit workflow tools, and git tools.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `mars_harness_cli`, `grep`, `workspace_hygiene`, `github_auth_check`, `dependency_sync`, `record_decision`, `ticket_create`, `tool_create`, `persona_create`, `docsync_audit`, release/status/audit workflow tools, and git tools.
 - **Universal tool surface** — the mirrored Mars Harness tool registry exposed through agent role allowlists, `mars-harness tools run`, and `mars-harness mcp serve` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through `tool_create`; bypassing it requires a prior `record_decision` entry and design-doc rationale.
@@ -154,13 +154,21 @@ Mars Harness is controllable by any AI agent via CLI commands. These are the cor
 
 ### 1. Setup
 
-First-time install: hardware detection, llama-server binary, model download.
+First-time install: private release auth, hardware detection, llama-server binary, model download.
 
 ```bash
+mars-harness auth github setup
 mars-harness setup
 ```
 
-Flags: `--skip-download`, `--github`, `--test-mode`, `--dry-run`
+Flags: `--skip-download`, `--skip-github`, `--github`, `--test-mode`, `--dry-run`
+
+Private release auth is part of Getting Started because `update tool` reads
+private GitHub Release assets. The resolver tries `GH_TOKEN`, `GITHUB_TOKEN`,
+GitHub CLI auth from `gh auth token`, then the optional local config token. Use
+`mars-harness auth github check` or the `github_auth_check` tool before update,
+release verification, install repair, or version-drift remediation. Never paste
+token values into chat, docs, commits, traces, tickets, logs, or tool output.
 
 ### 2. Serve
 
@@ -310,6 +318,7 @@ Upgrade or reinstall the installed command without changing into this repo:
 
 ```bash
 mars-harness update check --repo /path/to/target-repo
+mars-harness auth github check
 mars-harness update tool
 mars-harness update harness --repo /path/to/target-repo
 ```

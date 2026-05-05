@@ -86,6 +86,7 @@ func TestBuildSteps_testModeSkipsDownloadAndGitHub(t *testing.T) {
 	}
 	assert.NotContains(t, names, "install-llama-server")
 	assert.NotContains(t, names, "download-models")
+	assert.NotContains(t, names, "github-private-release-auth")
 	assert.NotContains(t, names, "github-setup")
 }
 
@@ -101,8 +102,21 @@ func TestBuildSteps_fullMode(t *testing.T) {
 	assert.Contains(t, names, "write-config")
 	assert.Contains(t, names, "detect-hardware")
 	assert.Contains(t, names, "configure-shell-path")
+	assert.Contains(t, names, "github-private-release-auth")
 	assert.Contains(t, names, "install-llama-server")
 	assert.Contains(t, names, "download-models")
+	assert.NotContains(t, names, "github-setup")
+}
+
+func TestBuildSteps_skipGitHubSkipsPrivateReleaseAuth(t *testing.T) {
+	t.Parallel()
+	steps := buildSteps("/tmp/test-mars", Config{SkipGitHub: true})
+
+	names := make([]string, len(steps))
+	for i, s := range steps {
+		names[i] = s.Name
+	}
+	assert.NotContains(t, names, "github-private-release-auth")
 	assert.NotContains(t, names, "github-setup")
 }
 

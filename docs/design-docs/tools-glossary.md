@@ -50,6 +50,7 @@ tools are added, removed, renamed, or materially change behavior.
 | `grep` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
 | `shell_exec` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
 | `workspace_hygiene` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns `status`, `blocking`, `auto_repairable`, `findings`, `recipe_id`, `message`, and `next_action`; `serve` can auto-commit safe `.gitignore`-only repairs before model loading. |
+| `github_auth_check` | Check private Mars Harness GitHub Release auth readiness. | Non-mutating. Returns `status`, `auth_source`, `repo_access`, `release_access`, `message`, and `next_action` without revealing token values. |
 | `dependency_sync` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe `.gitignore`-only repair when needed. Use instead of raw `npm install`, `npm ci`, `pnpm install`, `yarn install`, `bun install`, `go mod download`, `cargo fetch`, `pip install`, `bundle install`, or `composer install`. |
 | `mars_harness_cli` | Read exhaustive CLI reference or run `mars-harness` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | `record_decision` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
@@ -76,6 +77,9 @@ tools are added, removed, renamed, or materially change behavior.
 
 - Need Mars Harness behavior, versioning, setup, release, score, trust, or target
   harness lifecycle operations: use `mars_harness_cli`.
+- Need to verify private Mars Harness release access before update, release
+  verification, install repair, or version-drift remediation: use
+  `github_auth_check` or `mars-harness auth github check`.
 - Need to add, remove, rename, or change a `mars-harness` CLI command or flag:
   update `mars_harness_cli`, generated skills, generated doctrine, and product
   docs using [cli-tool-skill-sync.md](cli-tool-skill-sync.md).

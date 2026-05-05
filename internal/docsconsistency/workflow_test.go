@@ -36,7 +36,6 @@ var forbiddenWorkflowPhrases = []forbiddenWorkflowPhrase{
 	{label: "no direct push", re: regexp.MustCompile(`(?i)\bno direct push\b`)},
 	{label: "default branch", re: regexp.MustCompile(`(?i)\bdefault branch\b`)},
 	{label: "release branch", re: regexp.MustCompile(`(?i)\brelease branches?\b`)},
-	{label: "skip github flag", re: regexp.MustCompile(`--skip-github`)},
 }
 
 func TestStrictTrunkWorkflowDocs(t *testing.T) {

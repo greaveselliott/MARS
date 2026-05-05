@@ -3,8 +3,10 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/local-inference.md
+- docs/design-docs/release-versioning.md
 - docs/features/F-002-zero-config-shell-path.md
 - docs/features/F-003-local-inference-lifecycle.md
+- docs/features/F-009-release-update-lifecycle.md
 */
 package setup
 
@@ -18,6 +20,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/config"
+	"github.com/greaveselliott/mars-harness/internal/githubauth"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/models"
 	"github.com/greaveselliott/mars-harness/internal/shellpath"
@@ -105,6 +108,10 @@ func buildSteps(baseDir string, cfg Config) []Step {
 		configureShellPathStep(cfg),
 	}
 
+	if !cfg.SkipGitHub && !cfg.TestMode {
+		steps = append(steps, githubPrivateReleaseAuthStep())
+	}
+
 	if !cfg.SkipDownload && !cfg.TestMode {
 		steps = append(steps, installLlamaServerStep(baseDir))
 		steps = append(steps, downloadModelsStep(baseDir))
@@ -115,6 +122,24 @@ func buildSteps(baseDir string, cfg Config) []Step {
 	}
 
 	return steps
+}
+
+func githubPrivateReleaseAuthStep() Step {
+	return Step{
+		Name: "github-private-release-auth",
+		Check: func() (bool, error) {
+			report := githubauth.Check(context.Background(), githubauth.Options{})
+			return report.Status == githubauth.StatusOK, nil
+		},
+		Execute: func() error {
+			report := githubauth.Check(context.Background(), githubauth.Options{})
+			if report.Status == githubauth.StatusOK {
+				slog.Info("setup: GitHub private release auth ready", "auth_source", report.AuthSource)
+				return nil
+			}
+			return fmt.Errorf("%s — %s", report.Message, report.NextAction)
+		},
+	}
 }
 
 func configureShellPathStep(cfg Config) Step {

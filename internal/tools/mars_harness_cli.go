@@ -343,9 +343,21 @@ Global command surface:
     Example: ["scan", "--repo", ".", "--tickets"]
 
   doctor
-    Diagnose config, models, database, repo, and operating-model health.
+    Diagnose config, models, database, private release auth, repo, and operating-model health.
     Flags: --config <path>, --db <path>, --repo <path>, --skip-remote, --json
     Example: ["doctor", "--repo", ".", "--json"]
+
+  auth github check
+    Check whether private Mars Harness GitHub Release auth is ready without
+    printing token values.
+    Flags: --config <path>, --json
+    Example: ["auth", "github", "check", "--json"]
+
+  auth github setup
+    Prepare private release auth for update tool. Prefer gh auth login, then
+    run this command; headless installs may pass --token.
+    Flags: --config <path>, --token <token>, --json
+    Example: ["auth", "github", "setup"]
 
   tools list
     List every registered built-in tool. This is the universal tool catalog for
@@ -371,7 +383,9 @@ Global command surface:
     Example: ["update", "check", "--repo", ".", "--json"]
 
   update tool
-    Reinstall or upgrade the installed mars-harness binary.
+    Reinstall or upgrade the installed mars-harness binary. Private release
+    auth is checked with GH_TOKEN, GITHUB_TOKEN, GitHub CLI auth, then local
+    config; run auth github setup when access is missing.
     Flags: --version <latest|tag|branch>, --install-dir <dir>, --source, --dry-run, --json
     Example: ["update", "tool", "--dry-run", "--json"]
 

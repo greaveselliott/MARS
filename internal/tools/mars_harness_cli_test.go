@@ -32,7 +32,7 @@ func TestMarsHarnessCLI_reference(t *testing.T) {
 	require.Contains(t, res.Output, "mars_harness_cli reference")
 	for _, command := range []string{
 		"setup", "init", "eject", "upgrade", "start", "serve", "register", "run <role>",
-		"scan", "doctor", "update check", "update tool", "update harness",
+		"scan", "doctor", "auth github check", "auth github setup", "update check", "update tool", "update harness",
 		"path setup", "release notes", "release backfill-notes", "release verify-assets", "scores", "scores export",
 		"telemetry status", "telemetry preview", "telemetry export", "telemetry send", "telemetry collect", "telemetry triage-foundation",
 		"docsync audit", "trust", "trust set", "models evaluate", "models list", "models override",

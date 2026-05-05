@@ -41,6 +41,28 @@ mars-harness version
 # mars-harness v1.0.0 linux/amd64 commit=abc123 built=2026-04-12T00:00:00Z
 ```
 
+## Private Release Auth
+
+Mars Harness currently updates from private GitHub Release assets. Configure
+release auth once as part of getting started:
+
+```bash
+gh auth login
+mars-harness auth github setup
+mars-harness auth github check
+```
+
+`mars-harness` resolves auth in this order: `GH_TOKEN`, `GITHUB_TOKEN`, GitHub
+CLI auth from `gh auth token`, then an optional local token stored under
+`~/.mars-harness/`. Prefer GitHub CLI auth for laptops. For headless installs,
+set `GH_TOKEN` or `GITHUB_TOKEN`, or run:
+
+```bash
+mars-harness auth github setup --token <token>
+```
+
+Token values are never printed and must never be committed to target repos.
+
 ## Upgrade The Command
 
 Upgrade or reinstall the installed command without changing into the source checkout:
@@ -50,9 +72,10 @@ mars-harness update check --repo ~/my-project
 mars-harness update tool
 ```
 
-By default this downloads the latest platform release asset, verifies
+By default this downloads the latest private platform release asset, verifies
 `checksums.txt`, atomically replaces the current `mars-harness` binary, and
-refreshes shell PATH setup for that directory. For source-development channels:
+refreshes shell PATH setup for that directory. If auth is missing or expired,
+run `mars-harness auth github setup`. For source-development channels:
 
 ```bash
 mars-harness update tool --source --version main
@@ -81,13 +104,18 @@ mars-harness update check --repo ~/my-project --json
 
 ## Setup
 
-Run the first-time wizard. This detects your GPU, downloads a model, and creates `~/.mars-harness/`.
+Run the first-time wizard. This checks private-release auth, detects your GPU,
+downloads a model, and creates `~/.mars-harness/`.
 
 ```bash
+mars-harness auth github setup
 mars-harness setup
 ```
 
-Use `--skip-download` to skip model download if you already have a compatible GGUF model. Use `--skip-github` to skip GitHub App configuration.
+Use `--skip-download` to skip model download if you already have a compatible
+GGUF model. Use `--skip-github` to skip private-release auth and optional
+GitHub integration checks. Use `--test-mode` for local dry setup paths that
+avoid downloads and external services.
 
 ### Local inference speed
 

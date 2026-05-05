@@ -39,11 +39,20 @@ func TestRun_returnsResults(t *testing.T) {
 	assert.True(t, names["database"])
 	assert.True(t, names["llama-server"])
 	assert.True(t, names["disk-space"])
+	assert.True(t, names["private-release-auth"])
 	assert.True(t, names["version-drift"])
 	assert.True(t, names["operating-model"])
 	assert.True(t, names["role-registry"])
 	assert.True(t, names["active-plan-hygiene"])
 	assert.True(t, names["ticket-drain"])
+}
+
+func TestCheckPrivateReleaseAuthSkipsWithSkipRemote(t *testing.T) {
+	t.Parallel()
+	result := checkPrivateReleaseAuth(Config{SkipRemote: true})
+	assert.Equal(t, "private-release-auth", result.Name)
+	assert.Equal(t, statusOK, result.Status)
+	assert.Contains(t, result.Message, "skipped")
 }
 
 func TestCheckGoVersion_findsGo(t *testing.T) {

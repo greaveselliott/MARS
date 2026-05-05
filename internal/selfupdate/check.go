@@ -12,11 +12,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/greaveselliott/mars-harness/internal/githubauth"
 )
 
 const (
@@ -131,19 +132,13 @@ func setGitHubDownloadHeaders(req *http.Request, userAgent string) {
 }
 
 func setGitHubAuth(req *http.Request) {
-	if token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN")); token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-		return
-	}
-	if token := strings.TrimSpace(os.Getenv("GH_TOKEN")); token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
+	githubauth.Apply(req, githubauth.Options{})
 }
 
 func githubAuthHint(statusCode int) string {
 	switch statusCode {
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return "\nAuthenticate private releases by exporting GH_TOKEN or GITHUB_TOKEN with repository contents read access. With GitHub CLI auth, run `GH_TOKEN=\"$(gh auth token)\" mars-harness update tool`."
+		return "\nprivate releases require auth. Run `mars-harness auth github setup`, or set GH_TOKEN/GITHUB_TOKEN with repository contents read access for headless installs."
 	default:
 		return ""
 	}
