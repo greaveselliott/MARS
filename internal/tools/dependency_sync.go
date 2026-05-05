@@ -61,15 +61,16 @@ func handleDependencySync(ctx context.Context, root Root, raw json.RawMessage) (
 
 // DependencySyncReport captures the command run and deterministic hygiene result.
 type DependencySyncReport struct {
-	Action         string                 `json:"action"`
-	PackageManager string                 `json:"package_manager"`
-	Frozen         bool                   `json:"frozen"`
-	Command        []string               `json:"command,omitempty"`
-	ExitCode       int                    `json:"exit_code"`
-	Stdout         string                 `json:"stdout,omitempty"`
-	Stderr         string                 `json:"stderr,omitempty"`
-	Hygiene        WorkspaceHygieneReport `json:"hygiene"`
-	Message        string                 `json:"message"`
+	Action         string                        `json:"action"`
+	PackageManager string                        `json:"package_manager"`
+	Frozen         bool                          `json:"frozen"`
+	Command        []string                      `json:"command,omitempty"`
+	ExitCode       int                           `json:"exit_code"`
+	Stdout         string                        `json:"stdout,omitempty"`
+	Stderr         string                        `json:"stderr,omitempty"`
+	Repair         *WorkspaceHygieneRepairResult `json:"repair,omitempty"`
+	Hygiene        WorkspaceHygieneReport        `json:"hygiene"`
+	Message        string                        `json:"message"`
 }
 
 type dependencyCommand struct {
@@ -103,11 +104,22 @@ func RunDependencySync(ctx context.Context, root Root, args dependencySyncArgs) 
 		return DependencySyncReport{Action: action, PackageManager: manager, Frozen: frozen, Message: "reason is required when frozen is false"}, fmt.Errorf("dependency_sync: reason is required when frozen is false")
 	}
 
+	report := DependencySyncReport{Action: action, PackageManager: manager, Frozen: frozen}
+	repair, err := RepairWorkspaceHygieneIgnorePolicy(ctx, root)
+	if err != nil {
+		report.Message = err.Error()
+		return report, err
+	}
+	if repair.Changed || repair.Committed {
+		report.Repair = &repair
+	}
+
 	pre, err := AuditWorkspaceHygiene(ctx, root, WorkspaceHygieneOptions{Mode: workspaceHygieneModePreDependency})
 	if err != nil {
-		return DependencySyncReport{Action: action, PackageManager: manager, Frozen: frozen, Hygiene: pre}, err
+		report.Hygiene = pre
+		return report, err
 	}
-	report := DependencySyncReport{Action: action, PackageManager: manager, Frozen: frozen, Hygiene: pre}
+	report.Hygiene = pre
 	if pre.Blocking {
 		report.Message = pre.Message
 		return report, fmt.Errorf("dependency_sync: workspace hygiene preflight blocked: %s", pre.Message)

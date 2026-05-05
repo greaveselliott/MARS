@@ -2123,8 +2123,8 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
 | ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
-| ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `. |
-| ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
+| ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading. |
+| ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe ` + "`.gitignore`" + `-only repair when needed. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
 | ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
@@ -2177,8 +2177,10 @@ tools are added, removed, renamed, or materially change behavior.
 - Need to keep documentation, doctrine, and tools mirrored: use
   ` + "`docsync_audit`" + `, ` + "`architecture_audit`" + `, ` + "`harness_doctrine_sync`" + `,
   ` + "`tool_creation_guard`" + `, and ` + "`tool_inventory_audit`" + `.
-- Need to inspect or repair generated dependency/build churn before a job,
-  commit, or package-manager operation: use ` + "`workspace_hygiene`" + `.
+- Need to inspect generated dependency/build churn before a job, commit, or
+  package-manager operation: use ` + "`workspace_hygiene`" + `. Missing ignore policy may
+  be auto-repaired by ` + "`serve`" + ` as a ` + "`.gitignore`" + `-only commit when generated paths
+  are untracked and ` + "`.gitignore`" + ` has no user changes.
 - Need dependency setup or package fetch/install: use ` + "`dependency_sync`" + `, not raw
   package-manager commands through ` + "`shell_exec`" + `.
 - Need to know which docs must be checked after touching a code file: read the

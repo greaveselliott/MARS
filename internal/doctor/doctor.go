@@ -140,6 +140,16 @@ func checkWorkspaceHygieneHealth(cfg Config) CheckResult {
 	if report.Blocking {
 		status = statusFail
 	}
+	if report.Blocking && report.AutoRepairable {
+		status = statusWarn
+		return CheckResult{
+			Name:     name,
+			Status:   status,
+			Message:  report.Message + " (auto-repairable .gitignore policy)",
+			Duration: nonZeroDurationSince(start),
+			Fix:      "mars-harness start will commit a .gitignore-only hygiene repair before loading the model; or add the missing generated ignore entries manually",
+		}
+	}
 	return CheckResult{
 		Name:     name,
 		Status:   status,

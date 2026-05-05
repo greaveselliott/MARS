@@ -103,13 +103,22 @@ they must not run package-manager install/fetch commands through raw
 
 1. `workspace_hygiene` audits `.gitignore`, tracked generated paths, dirty
    generated directories, large generated diffs, and forbidden deletions.
-2. `dependency_sync` performs package-manager install/fetch only after hygiene
-   preflight passes, using frozen lockfile-respecting commands when lockfiles
-   exist.
-3. Postflight hygiene blocks when generated artifacts dirty the worktree and
+2. Before model loading, `serve` may make one safe policy repair: append
+   missing generated-directory entries such as `node_modules/` to `.gitignore`
+   and commit only `.gitignore`. This repair is allowed only when generated
+   paths are untracked and `.gitignore` has no user changes; it never deletes
+   generated files, stages implementation files, or rewrites package state.
+3. Blast-radius checks classify generated dependency/build paths separately
+   from implementation files. Generated churn is handled by workspace hygiene;
+   implementation changes remain subject to file, line, deletion, and secret
+   limits.
+4. `dependency_sync` performs the same safe ignore-policy repair before package
+   install/fetch, then runs hygiene preflight using frozen lockfile-respecting
+   commands when lockfiles exist.
+5. Postflight hygiene blocks when generated artifacts dirty the worktree and
    returns a recipe ID plus exact next action. It does not automatically clean
    or unstage user work.
-4. `serve` runs a pre-job hygiene gate before model loading so dirty
+6. `serve` runs a pre-job hygiene gate before model loading so dirty
    `node_modules/`, build output, generated diffs, or deletion state become
    deterministic blockers instead of repeated LLM, guardrail, and Orchestrator
    loops.

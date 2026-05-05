@@ -79,7 +79,7 @@ Then excessive file count, line count, or forbidden path changes are blocked or 
 
 Given a repository has missing generated-directory ignore policy, tracked generated dependency output, dirty generated build output, large generated diffs, or deletion state
 When an agent job starts or a dependency install/fetch is requested
-Then `workspace_hygiene` reports a deterministic recipe with `recipe_id` and `next_action`, raw package-manager mutation through `shell_exec` is blocked, and `dependency_sync` performs package-manager work only after preflight passes
+Then generated paths are classified separately from implementation files, safely inferable missing ignore entries are committed as a `.gitignore`-only repair before model loading, `workspace_hygiene` reports a deterministic recipe with `recipe_id` and `next_action` for non-repairable cases, raw package-manager mutation through `shell_exec` is blocked, and `dependency_sync` performs package-manager work only after preflight passes
 
 ## Out of Scope
 

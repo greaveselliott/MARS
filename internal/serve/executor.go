@@ -294,6 +294,13 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		return fmt.Errorf("executor: create sandbox root for %q: %w", repoPath, err)
 	}
 
+	repair, err := tools.RepairWorkspaceHygieneIgnorePolicy(ctx, root)
+	if err != nil {
+		log.Warn("executor: workspace hygiene ignore auto-repair failed", "err", err)
+	} else if repair.Committed {
+		log.Info("executor: workspace hygiene ignore auto-repaired", "commit", repair.Commit, "missing_ignores", repair.MissingIgnores)
+	}
+
 	hygiene, err := tools.AuditWorkspaceHygiene(ctx, root, tools.WorkspaceHygieneOptions{Mode: "pre_job"})
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("workspace hygiene: %v", err))

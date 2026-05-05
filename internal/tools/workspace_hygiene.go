@@ -71,13 +71,14 @@ type WorkspaceHygieneOptions struct {
 // WorkspaceHygieneReport is the shared report shape used by the tool, doctor,
 // scanner, dependency sync, and server pre-job gate.
 type WorkspaceHygieneReport struct {
-	Status     string                    `json:"status"`
-	Mode       string                    `json:"mode"`
-	Blocking   bool                      `json:"blocking"`
-	Findings   []WorkspaceHygieneFinding `json:"findings"`
-	RecipeID   string                    `json:"recipe_id,omitempty"`
-	Message    string                    `json:"message"`
-	NextAction string                    `json:"next_action,omitempty"`
+	Status         string                    `json:"status"`
+	Mode           string                    `json:"mode"`
+	Blocking       bool                      `json:"blocking"`
+	AutoRepairable bool                      `json:"auto_repairable,omitempty"`
+	Findings       []WorkspaceHygieneFinding `json:"findings"`
+	RecipeID       string                    `json:"recipe_id,omitempty"`
+	Message        string                    `json:"message"`
+	NextAction     string                    `json:"next_action,omitempty"`
 }
 
 // WorkspaceHygieneFinding describes one deterministic workspace hygiene issue.
@@ -90,6 +91,23 @@ type WorkspaceHygieneFinding struct {
 	RecipeID   string   `json:"recipe_id,omitempty"`
 	NextAction string   `json:"next_action,omitempty"`
 	Paths      []string `json:"paths,omitempty"`
+}
+
+// WorkspaceHygieneRepairPlan explains whether missing ignore policy can be
+// safely repaired without touching user source changes or generated files.
+type WorkspaceHygieneRepairPlan struct {
+	Repairable     bool     `json:"repairable"`
+	MissingIgnores []string `json:"missing_ignores,omitempty"`
+	Reason         string   `json:"reason,omitempty"`
+}
+
+// WorkspaceHygieneRepairResult describes a deterministic hygiene repair.
+type WorkspaceHygieneRepairResult struct {
+	Changed        bool     `json:"changed"`
+	Committed      bool     `json:"committed"`
+	Commit         string   `json:"commit,omitempty"`
+	MissingIgnores []string `json:"missing_ignores,omitempty"`
+	Message        string   `json:"message"`
 }
 
 const (
@@ -170,6 +188,12 @@ func AuditWorkspaceHygiene(ctx context.Context, root Root, opts WorkspaceHygiene
 		return report, err
 	}
 	findings = append(findings, gitFindings...)
+	if len(scope) == 0 {
+		plan, planErr := WorkspaceHygieneIgnoreRepairPlan(ctx, root)
+		if planErr == nil {
+			report.AutoRepairable = plan.Repairable
+		}
+	}
 	sort.SliceStable(findings, func(i, j int) bool {
 		if findings[i].Blocking != findings[j].Blocking {
 			return findings[i].Blocking
@@ -199,6 +223,96 @@ func AuditWorkspaceHygiene(ctx context.Context, root Root, opts WorkspaceHygiene
 		report.Message = fmt.Sprintf("workspace hygiene has %d non-blocking finding(s)", len(findings))
 	}
 	return report, nil
+}
+
+// WorkspaceHygieneIgnoreRepairPlan returns a conservative policy-only repair
+// plan. It is repairable only when the missing ignore entries are required by
+// detected project conventions, .gitignore is not already user-modified, and no
+// generated files are tracked by git.
+func WorkspaceHygieneIgnoreRepairPlan(ctx context.Context, root Root) (WorkspaceHygieneRepairPlan, error) {
+	missing := missingRequiredGeneratedIgnoreDirs(root)
+	if len(missing) == 0 {
+		return WorkspaceHygieneRepairPlan{Reason: "generated ignore policy is already present"}, nil
+	}
+	dirty, err := gitignoreDirty(ctx, root)
+	if err != nil {
+		return WorkspaceHygieneRepairPlan{}, err
+	}
+	if dirty {
+		return WorkspaceHygieneRepairPlan{
+			MissingIgnores: missing,
+			Reason:         ".gitignore already has uncommitted user changes",
+		}, nil
+	}
+	tracked, err := trackedGeneratedRoots(ctx, root)
+	if err != nil {
+		return WorkspaceHygieneRepairPlan{}, err
+	}
+	if len(tracked) > 0 {
+		return WorkspaceHygieneRepairPlan{
+			MissingIgnores: missing,
+			Reason:         fmt.Sprintf("generated paths are already tracked by git: %s", strings.Join(tracked, ", ")),
+		}, nil
+	}
+	return WorkspaceHygieneRepairPlan{
+		Repairable:     true,
+		MissingIgnores: missing,
+		Reason:         "missing generated ignore policy can be committed without touching generated files",
+	}, nil
+}
+
+// RepairWorkspaceHygieneIgnorePolicy appends missing generated-directory ignore
+// entries and commits only .gitignore. It never deletes generated files, stages
+// source files, or edits package lockfiles.
+func RepairWorkspaceHygieneIgnorePolicy(ctx context.Context, root Root) (WorkspaceHygieneRepairResult, error) {
+	plan, err := WorkspaceHygieneIgnoreRepairPlan(ctx, root)
+	if err != nil {
+		return WorkspaceHygieneRepairResult{}, err
+	}
+	if !plan.Repairable {
+		return WorkspaceHygieneRepairResult{
+			MissingIgnores: plan.MissingIgnores,
+			Message:        plan.Reason,
+		}, nil
+	}
+	if err := appendGeneratedGitignoreEntries(root, plan.MissingIgnores); err != nil {
+		return WorkspaceHygieneRepairResult{}, err
+	}
+	add, err := runGit(ctx, root, "add", ".gitignore")
+	if err != nil {
+		return WorkspaceHygieneRepairResult{}, err
+	}
+	if add.ExitCode != 0 {
+		return WorkspaceHygieneRepairResult{}, fmt.Errorf("workspace_hygiene: stage .gitignore: %s", strings.TrimSpace(add.Stderr))
+	}
+	diff, err := runGit(ctx, root, "diff", "--cached", "--quiet", "--", ".gitignore")
+	if err != nil {
+		return WorkspaceHygieneRepairResult{}, err
+	}
+	if diff.ExitCode == 0 {
+		return WorkspaceHygieneRepairResult{
+			MissingIgnores: plan.MissingIgnores,
+			Message:        "generated ignore policy was already staged",
+		}, nil
+	}
+	commit, err := runGit(ctx, root, "commit", "-m", "chore(hygiene): ignore generated workspace output", "--", ".gitignore")
+	if err != nil {
+		return WorkspaceHygieneRepairResult{}, err
+	}
+	if commit.ExitCode != 0 {
+		return WorkspaceHygieneRepairResult{}, fmt.Errorf("workspace_hygiene: commit .gitignore repair: %s", strings.TrimSpace(commit.Stderr))
+	}
+	sha, err := runGit(ctx, root, "rev-parse", "--short", "HEAD")
+	if err != nil {
+		return WorkspaceHygieneRepairResult{}, err
+	}
+	return WorkspaceHygieneRepairResult{
+		Changed:        true,
+		Committed:      true,
+		Commit:         strings.TrimSpace(sha.Output),
+		MissingIgnores: plan.MissingIgnores,
+		Message:        fmt.Sprintf("committed generated ignore policy for %s", strings.Join(plan.MissingIgnores, ", ")),
+	}, nil
 }
 
 func normalizeWorkspaceHygieneMode(mode string) string {
@@ -250,14 +364,13 @@ func hygienePathInScope(rel string, scope []string) bool {
 }
 
 func missingIgnoreFindings(root Root, mode string, scope []string) []WorkspaceHygieneFinding {
-	required := requiredGeneratedIgnores(root)
+	required := missingRequiredGeneratedIgnoreDirs(root)
 	if len(required) == 0 {
 		return nil
 	}
-	ignored := loadGitignoreCoverage(root)
 	var findings []WorkspaceHygieneFinding
 	for _, dir := range required {
-		if !hygienePathInScope(dir, scope) || ignoreCoversGeneratedDir(ignored, dir) {
+		if !hygienePathInScope(dir, scope) {
 			continue
 		}
 		exists := pathExists(root, dir)
@@ -279,6 +392,21 @@ func missingIgnoreFindings(root Root, mode string, scope []string) []WorkspaceHy
 		})
 	}
 	return findings
+}
+
+func missingRequiredGeneratedIgnoreDirs(root Root) []string {
+	required := requiredGeneratedIgnores(root)
+	if len(required) == 0 {
+		return nil
+	}
+	ignored := loadGitignoreCoverage(root)
+	var missing []string
+	for _, dir := range required {
+		if !ignoreCoversGeneratedDir(ignored, dir) {
+			missing = append(missing, dir)
+		}
+	}
+	return compactStrings(missing)
 }
 
 func requiredGeneratedIgnores(root Root) []string {
@@ -321,6 +449,61 @@ func loadGitignoreCoverage(root Root) []string {
 		lines = append(lines, line)
 	}
 	return lines
+}
+
+func appendGeneratedGitignoreEntries(root Root, dirs []string) error {
+	abs, err := root.ResolvePath(".gitignore")
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(abs)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	content := string(data)
+	var b strings.Builder
+	b.WriteString(content)
+	if content != "" && !strings.HasSuffix(content, "\n") {
+		b.WriteString("\n")
+	}
+	if !strings.Contains(content, "Mars Harness workspace hygiene") {
+		if b.Len() > 0 && !strings.HasSuffix(b.String(), "\n\n") {
+			b.WriteString("\n")
+		}
+		b.WriteString("# Mars Harness workspace hygiene\n")
+	}
+	ignored := loadGitignoreCoverage(root)
+	for _, dir := range dirs {
+		if ignoreCoversGeneratedDir(ignored, dir) {
+			continue
+		}
+		hints := generatedDirIgnoreHints[dir]
+		if len(hints) == 0 {
+			hints = []string{strings.Trim(dir, "/") + "/"}
+		}
+		b.WriteString(hints[0])
+		b.WriteString("\n")
+	}
+	return os.WriteFile(abs, []byte(b.String()), 0o644)
+}
+
+func gitignoreDirty(ctx context.Context, root Root) (bool, error) {
+	status, err := runGit(ctx, root, "status", "--porcelain", "--", ".gitignore")
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(status.Output) != "", nil
+}
+
+func trackedGeneratedRoots(ctx context.Context, root Root) ([]string, error) {
+	tracked, err := runGit(ctx, root, "ls-files")
+	if err != nil {
+		return nil, err
+	}
+	if tracked.ExitCode != 0 {
+		return nil, nil
+	}
+	return generatedPathsFromLines(tracked.Output, nil), nil
 }
 
 func ignoreCoversGeneratedDir(ignoreLines []string, dir string) bool {

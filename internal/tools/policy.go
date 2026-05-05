@@ -921,7 +921,7 @@ func changedFiles(ctx context.Context, root Root) ([]string, error) {
 	if tr.ExitCode == 0 {
 		for _, line := range strings.Split(tr.Output, "\n") {
 			line = strings.TrimSpace(line)
-			if line != "" && !seen[line] {
+			if line != "" && !IsGeneratedWorkspacePath(line) && !seen[line] {
 				seen[line] = true
 				files = append(files, line)
 			}
@@ -934,7 +934,7 @@ func changedFiles(ctx context.Context, root Root) ([]string, error) {
 	if untracked.ExitCode == 0 {
 		for _, line := range strings.Split(untracked.Output, "\n") {
 			line = strings.TrimSpace(line)
-			if line != "" && !seen[line] {
+			if line != "" && !IsGeneratedWorkspacePath(line) && !seen[line] {
 				seen[line] = true
 				files = append(files, line)
 			}
@@ -960,6 +960,9 @@ func diffStats(ctx context.Context, root Root) (safety.DiffStats, error) {
 		added := atoiDiffField(fields[0])
 		deleted := atoiDiffField(fields[1])
 		path := strings.Join(fields[2:], " ")
+		if IsGeneratedWorkspacePath(path) {
+			continue
+		}
 		lines := added + deleted
 		stats.FilesChanged++
 		stats.LinesPerFile[path] = lines
@@ -973,7 +976,13 @@ func diffStats(ctx context.Context, root Root) (safety.DiffStats, error) {
 		return stats, nil
 	}
 	for _, line := range strings.Split(status.Output, "\n") {
-		if strings.HasPrefix(strings.TrimSpace(line), "D") {
+		trimmed := strings.TrimSpace(line)
+		fields := strings.Fields(trimmed)
+		path := ""
+		if len(fields) > 1 {
+			path = fields[len(fields)-1]
+		}
+		if strings.HasPrefix(trimmed, "D") && !IsGeneratedWorkspacePath(path) {
 			stats.Deletions++
 		}
 	}
@@ -984,7 +993,7 @@ func diffStats(ctx context.Context, root Root) (safety.DiffStats, error) {
 	if untracked.ExitCode == 0 {
 		for _, rel := range strings.Split(untracked.Output, "\n") {
 			rel = strings.TrimSpace(rel)
-			if rel == "" {
+			if rel == "" || IsGeneratedWorkspacePath(rel) {
 				continue
 			}
 			abs, err := root.ResolvePath(rel)

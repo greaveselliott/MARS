@@ -242,6 +242,20 @@ func TestShellExecUnknownCommandBlockedBeforeExecutionInDirtyRepo(t *testing.T) 
 	require.Equal(t, "pre", policyEvents[0].Stage)
 }
 
+func TestValidateRepoDiffIgnoresGeneratedUntrackedFiles(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "node_modules", "huge"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "node_modules", "huge", "index.js"), []byte(strings.Repeat("generated\n", 1200)), 0o644))
+
+	err := ValidateRepoDiff(context.Background(), root, Session{SafetyLimits: safety.DefaultLimits()})
+	require.NoError(t, err)
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "implementation.js"), []byte(strings.Repeat("source\n", 1200)), 0o644))
+	err = ValidateRepoDiff(context.Background(), root, Session{SafetyLimits: safety.DefaultLimits()})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "implementation.js")
+}
+
 func setupDirtyGitRepo(t *testing.T, changedFiles int) (string, Root) {
 	t.Helper()
 	dir := t.TempDir()

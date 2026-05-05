@@ -13,6 +13,7 @@ package tools
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -89,6 +90,44 @@ func TestWorkspaceHygieneDetectsLargeGeneratedDiff(t *testing.T) {
 	require.True(t, foundLarge)
 }
 
+func TestWorkspaceHygieneRepairCommitsMissingGeneratedIgnorePolicy(t *testing.T) {
+	dir, root := setupWorkspaceHygieneRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"scripts":{"test":"node test.js"}}`), 0o644))
+	runTestGit(t, dir, "add", "package.json")
+	runTestGit(t, dir, "commit", "-m", "add package manifest")
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "node_modules", "pkg"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "node_modules", "pkg", "index.js"), []byte("module.exports = {}\n"), 0o644))
+
+	repair, err := RepairWorkspaceHygieneIgnorePolicy(context.Background(), root)
+	require.NoError(t, err)
+	require.True(t, repair.Committed)
+	require.Contains(t, repair.MissingIgnores, "node_modules")
+	gitignore, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
+	require.NoError(t, err)
+	require.Contains(t, string(gitignore), "node_modules/")
+	require.Contains(t, gitLog(t, dir, "-1", "--pretty=%s"), "chore(hygiene): ignore generated workspace output")
+	require.Empty(t, strings.TrimSpace(testGitOutput(t, dir, "status", "--porcelain", "-uall")))
+
+	report, err := AuditWorkspaceHygiene(context.Background(), root, WorkspaceHygieneOptions{Mode: "pre_job"})
+	require.NoError(t, err)
+	require.False(t, report.Blocking)
+}
+
+func TestWorkspaceHygieneRepairSkipsTrackedGeneratedPaths(t *testing.T) {
+	dir, root := setupWorkspaceHygieneRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"scripts":{"test":"node test.js"}}`), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "node_modules", "pkg"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "node_modules", "pkg", "index.js"), []byte("module.exports = {}\n"), 0o644))
+	runTestGit(t, dir, "add", "package.json", "node_modules/pkg/index.js")
+	runTestGit(t, dir, "commit", "-m", "track generated")
+
+	repair, err := RepairWorkspaceHygieneIgnorePolicy(context.Background(), root)
+	require.NoError(t, err)
+	require.False(t, repair.Committed)
+	require.Contains(t, repair.Message, "generated paths are already tracked")
+	require.NoFileExists(t, filepath.Join(dir, ".gitignore"))
+}
+
 func setupWorkspaceHygieneRepo(t *testing.T) (string, Root) {
 	t.Helper()
 	dir := t.TempDir()
@@ -101,4 +140,17 @@ func setupWorkspaceHygieneRepo(t *testing.T) (string, Root) {
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
 	return dir, root
+}
+
+func gitLog(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	return testGitOutput(t, dir, append([]string{"log"}, args...)...)
+}
+
+func testGitOutput(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(out))
+	return string(out)
 }

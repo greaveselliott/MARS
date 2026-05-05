@@ -21,14 +21,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDependencySyncRefusesNodeInstallWhenNodeModulesNotIgnored(t *testing.T) {
+func TestDependencySyncRepairsMissingNodeModulesIgnoreBeforeInstall(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fake shell executable uses POSIX sh")
+	}
 	dir, root := setupWorkspaceHygieneRepo(t)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name":"demo"}`), 0o644))
+	runTestGit(t, dir, "add", "package.json")
+	runTestGit(t, dir, "commit", "-m", "node project")
+	bin := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(bin, "npm"), []byte("#!/bin/sh\nprintf '%s\\n' \"$@\" > npm-args.txt\n"), 0o755))
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	report, err := RunDependencySync(context.Background(), root, dependencySyncArgs{Action: "install", PackageManager: "npm"})
-	require.Error(t, err)
-	require.True(t, report.Hygiene.Blocking)
-	require.Equal(t, workspaceRecipeAddIgnore, report.Hygiene.RecipeID)
+	require.NoError(t, err)
+	require.NotNil(t, report.Repair)
+	require.True(t, report.Repair.Committed)
+	require.Contains(t, report.Repair.MissingIgnores, "node_modules")
+	require.Contains(t, string(mustReadFile(t, filepath.Join(dir, ".gitignore"))), "node_modules/")
+	require.False(t, report.Hygiene.Blocking)
 }
 
 func TestDependencySyncUsesFrozenNpmInstallWhenLockfileExists(t *testing.T) {
@@ -87,4 +98,11 @@ func TestDependencySyncBlocksPostInstallGeneratedPollution(t *testing.T) {
 	require.Error(t, err)
 	require.True(t, report.Hygiene.Blocking)
 	require.Contains(t, strings.ToLower(report.Message), "dist")
+}
+
+func mustReadFile(t *testing.T, path string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	return data
 }

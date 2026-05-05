@@ -26,14 +26,21 @@ Generated dependency and build output is a hard guardrail surface because it
 can overwhelm blast-radius checks, context windows, and dispatch recovery. The
 server runs `workspace_hygiene` before model loading, package-manager mutation
 must flow through `dependency_sync`, and raw install/fetch commands in
-`shell_exec` are blocked. Blocking results are actionable recipe outputs, not
-automatic cleanup: the harness reports the generated path, recipe ID, and next
-action, then waits for an explicit source/ignore/tracking fix.
+`shell_exec` are blocked. Blast-radius checks classify generated paths
+separately from implementation paths so ignored dependency trees do not masquerade
+as source-risk. When missing generated-directory ignore policy is safely
+inferable, `serve` appends the ignore entry and commits only `.gitignore`
+before the model starts. Blocking results are otherwise actionable recipe
+outputs, not automatic cleanup: the harness reports the generated path, recipe
+ID, and next action, then waits for an explicit source/tracking fix.
 
 The gate treats missing generated-directory ignores, tracked generated
 directories, dirty generated output, large generated diffs, and file deletions
 as deterministic workspace problems. It keeps target-owned repo hygiene in the
 target backlog rather than classifying it as a foundation-only telemetry issue.
+Auto-repair is deliberately narrow: it never removes files, unstages user work,
+or commits package manifests, lockfiles, source files, or tracked generated
+trees.
 
 ### Open topics
 
