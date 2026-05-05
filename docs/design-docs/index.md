@@ -31,7 +31,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | [role-customization.md](role-customization.md) | Accepted | Shipped roles as configurable starter agents; target manifests, prompts, knowledge routes, and guardrails are user-owned after init. AD-046 through AD-048. |
 | [release-versioning.md](release-versioning.md) | Accepted | Semantic versioning, detailed generated patch notes, historical release-note backfills, mirrored source/target release behavior, automatic versioning after non-release commits, GitHub Release publication when configured, self-update, release assets, and shell PATH setup. AD-049 through AD-051, AD-056 through AD-057, AD-059, AD-068 through AD-070, AD-075, AD-078, AD-099 through AD-100. |
 | [skill-evolution.md](skill-evolution.md) | Accepted | Skills as a first-class self-improvement target and the decision matrix for prompt, skill, tool, guardrail, or knowledge-route changes. AD-052 through AD-055. |
-| [delivery-operating-model.md](delivery-operating-model.md) | Accepted | BDD-led goal-driven walking-skeleton delivery as the source and generated target operating model. AD-074, AD-081. |
+| [delivery-operating-model.md](delivery-operating-model.md) | Accepted | BDD-led goal-driven walking-skeleton delivery as the source and generated target operating model, including remote trunk freshness and immediate publishing. AD-074, AD-081, AD-108. |
 
 ## Architecture Decision Log
 
@@ -142,5 +142,6 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | AD-105 | Foundation agents use canonical persona manuals for ownership, feedback, and handoff; Go structs in `internal/personas` render checked docs and prompt Personal Guides. | harness-operating-model.md | Roles |
 | AD-106 | Structured disposition packets travel through Orchestrator: dispatch triggers carry routing-safe source dispositions, and Orchestrator-owned routing honors validated structured targets. | harness-operating-model.md | Roles |
 | AD-107 | Workspace hygiene gates generated dependency/build churn before model work and package-manager mutation; dependency setup uses `dependency_sync` instead of raw `shell_exec`. | guardrails.md | Safety |
+| AD-108 | Agents fetch and fast-forward from `origin/main` before non-trivial work, then push validated commits and release tags to remote trunk as soon as they are ready. | delivery-operating-model.md | Operating model |
 | AD-099 | Generated release notes must include complete user-facing `Impact`, `Why`, and `What Changed` narrative before semantic commit buckets, with topic-aware fallback prose for structural delivery changes. | release-versioning.md | Release |
 | AD-100 | Historical marker-backed release notes are backfilled through `mars-harness release backfill-notes`, preserving release buckets while updating narrative sections from commit ranges. | release-versioning.md | Release |

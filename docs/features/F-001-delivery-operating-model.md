@@ -26,6 +26,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 9. F-001-S009 - Source-wide docsync audit maps code to architecture and feature documentation.
 10. F-001-S010 - Documentation sync has a universal operating model for source and generated targets.
 11. F-001-S011 - CLI changes synchronize mirrored tools, repo shortcuts, generated doctrine, and skills.
+12. F-001-S012 - Agents start from `origin/main` and push ready work to `origin main` promptly.
 
 ## Scenarios
 
@@ -95,6 +96,12 @@ Given a `mars-harness` CLI command, flag, output contract, repo behavior, mutabi
 When the change is prepared for completion
 Then the `mars_harness_cli` reference, repo shortcut map, generated target doctrine, and any skills that name the affected workflow are updated or explicitly checked as current, and CLI sync evidence is recorded
 
+### F-001-S012: Remote Trunk Freshness And Immediate Publishing
+
+Given a foundation or deployed harness repo has an `origin/main` remote
+When an agent starts non-trivial work or finishes a validated semantic commit, release-note commit, or release tag
+Then it fetches `origin main`, works only from local `main` at or fast-forwarded to `origin/main`, pushes ready commits to `origin main` before unrelated work, and records a blocker when dirty state, divergence, missing remote access, or push rejection prevents that flow
+
 ## Out of Scope
 
 - Custom Gherkin parsing.
@@ -118,3 +125,4 @@ None.
 - F-001-S009: `go test ./internal/docsync ./internal/docsconsistency -run 'TestDocSync|TestOperatingModelCodeFilesDeclareDocSyncMetadata'` and `mars-harness docsync audit --repo .`
 - F-001-S010: `go test ./internal/docsconsistency -run TestAD074OperatingModelArtifactsExist` verifies the architecture and universal operating model are documented.
 - F-001-S011: `go test ./cmd/mars-harness -run TestMarsHarnessCLI` verifies the live Cobra command tree, `mars_harness_cli` reference, and repo shortcut map stay synchronized.
+- F-001-S012: `go test ./internal/docsconsistency -run TestRemoteTrunkOperatingModelIsDocumented` verifies source and generated target doctrine include the remote-trunk workflow.

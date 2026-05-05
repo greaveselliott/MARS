@@ -52,6 +52,56 @@ func TestOperatingRulesMirrorTargetHarnesses(t *testing.T) {
 	}
 }
 
+func TestRemoteTrunkOperatingModelIsDocumented(t *testing.T) {
+	root := repoRoot(t)
+	required := map[string][]string{
+		"AGENTS.md": {
+			"Start from remote trunk",
+			"git fetch origin main",
+			"origin/main",
+			"Push ready commits immediately",
+			"origin main",
+		},
+		"docs/design-docs/delivery-operating-model.md": {
+			"AD-108",
+			"Remote Trunk Freshness And Immediate Publishing",
+			"origin/main",
+			"origin main",
+			"offline or local-only work",
+		},
+		"docs/features/F-001-delivery-operating-model.md": {
+			"F-001-S012",
+			"Remote Trunk Freshness And Immediate Publishing",
+			"origin/main",
+			"pushes ready commits to `origin main`",
+		},
+		"docs/product-specs/product-surface.md": {
+			"remote-trunk freshness",
+			"push timing",
+			"work starting from `origin/main`",
+		},
+		"internal/scanner/init.go": {
+			"git fetch origin main",
+			"origin/main",
+			"origin main",
+			"Remote Trunk Freshness And Immediate Publishing",
+		},
+	}
+
+	for rel, needles := range required {
+		data, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		text := string(data)
+		for _, needle := range needles {
+			if !strings.Contains(text, needle) {
+				t.Fatalf("%s must document remote-trunk freshness; missing %q", rel, needle)
+			}
+		}
+	}
+}
+
 func TestCLIToolSkillSyncIsDocumented(t *testing.T) {
 	root := repoRoot(t)
 	required := map[string][]string{

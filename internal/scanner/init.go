@@ -716,8 +716,9 @@ _No manual notes recorded. Keep human context here; ` + "`scores export`" + ` pr
 ## What This Repo Is
 
 This repository is managed by Mars Harness. Agents work directly on ` + "`main`" + `,
-make small semantic commits, and push after each completed step. The repo is
-the system of record for plans, decisions, tickets, traces, and completed work.
+fetch ` + "`origin/main`" + ` before non-trivial work when that remote exists, make
+small semantic commits, and push after each completed step. The repo is the
+system of record for plans, decisions, tickets, traces, and completed work.
 
 ## Harness Glossary
 
@@ -786,6 +787,11 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 ## Workflow
 
 - Work on ` + "`main`" + `. Use strict trunk for normal delivery.
+- Before non-trivial work, run ` + "`git fetch origin main`" + ` when ` + "`origin/main`" + `
+  exists and make sure local ` + "`main`" + ` is at or fast-forwarded to
+  ` + "`origin/main`" + ` before editing. If dirty state, divergence, missing remote
+  access, or push rejection prevents that flow, record the blocker and next
+  action unless the user explicitly requested offline or local-only work.
 - Bootstrap and delivery order is strict: exec plan first, then feature contract,
   then tickets, then implementation delivery. Do not create feature contracts,
   tickets, or delivery work until the active exec plan names the current slice.
@@ -797,7 +803,8 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - Prefer eligible in-progress tickets before backlog work; a ticket is eligible when it has no meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata.
 - Complete one coherent step at a time.
 - If blocked, record ` + "`blocker`" + `, ` + "`blocked_by`" + `, ` + "`trace_id`" + `, and ` + "`next_action`" + `, create or update the dependency/intervention-debt ticket, and return the ticket to a non-misleading state.
-- Commit and push after each completed step.
+- Commit and push after each completed step. Push validated semantic commits and
+  release-note commits to ` + "`origin main`" + ` before starting unrelated work.
 - Significant conversations must update the owning repo artifact in the same direct commit to ` + "`main`" + `: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
 - Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
 - Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
@@ -1148,7 +1155,7 @@ Architectural decisions and design documents for this project.
 
 | Document | Status | Purpose |
 | --- | --- | --- |
-| [delivery-operating-model.md](delivery-operating-model.md) | Seed | BDD-led goal-driven walking-skeleton delivery model used by goals, plans, tickets, evidence, and quality scoring. |
+| [delivery-operating-model.md](delivery-operating-model.md) | Seed | BDD-led goal-driven walking-skeleton delivery model used by goals, plans, tickets, evidence, quality scoring, remote trunk freshness, and immediate publishing. |
 | [harness-operating-model.md](harness-operating-model.md) | Seed | Canonical six-domain role model with optional domain and mode metadata for explicit manifest roles. |
 | [conversation-as-system-record.md](conversation-as-system-record.md) | Seed | Significant conversations must become durable repo artifacts for plans, decisions, investigations, quality evidence, and completed work. |
 | [context-glossary.md](context-glossary.md) | Seed | Compact glossary and context map used by agents to find the right docs without loading everything. |
@@ -1183,6 +1190,7 @@ Architectural decisions and design documents for this project.
 | AD-103 | CLI tool/skill sync is a foundational operating model: every CLI command or flag change updates ` + "`mars_harness_cli`" + `, repo-shortcut routing, generated target doctrine, and any affected skills before completion. | 2026-05-04 | Accepted |
 | AD-105 | Foundation agents use canonical persona manuals for ownership, feedback, and handoff; Go structs in ` + "`internal/personas`" + ` render checked docs and prompt Personal Guides. | 2026-05-04 | Accepted |
 | AD-106 | Structured disposition packets travel through Orchestrator so handoff and feedback are visible, validated, and forwarded at runtime. | 2026-05-04 | Accepted |
+| AD-108 | Agents fetch and fast-forward from ` + "`origin/main`" + ` before non-trivial work, then push validated commits and release tags to remote trunk as soon as they are ready. | 2026-05-05 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1413,6 +1421,15 @@ tickets, roles, evidence, release, scoring, or self-improvement, update the
 affected artifacts, generated defaults, role prompts, routes, and tests in the
 same task.
 
+Remote trunk freshness is an operating-model gate. For repos with
+` + "`origin/main`" + `, agents fetch ` + "`origin main`" + ` before non-trivial work and
+make sure local ` + "`main`" + ` is at or fast-forwarded to ` + "`origin/main`" + `
+before editing. Dirty state, divergence, missing remote access, network
+failure, or rejected pushes are blockers unless the user explicitly requests
+offline/local-only work. Validated semantic commits, release-note commits, and
+release tags are pushed to ` + "`origin main`" + ` or the tag remote as soon as
+they are ready.
+
 A repeated process promotion to formalized tools is part of the operating model.
 When agents or humans use a
 multi-step process that is likely to recur, is risky to perform manually, needs
@@ -1454,6 +1471,7 @@ exception context.
 | Enabler work is misrepresented as shipped value | Tickets, release notes, and quality score use ` + "`work_type`" + ` and scenario evidence. |
 | Autonomous goals create thrash | Weak/noisy signals go to observations; actionable goals need source, confidence, dedupe key, and review trigger. |
 | Source and target diverge | ` + "`update check`" + ` and ` + "`doctor --repo`" + ` report operating-model drift; update writes missing defaults only. |
+| Agents build on stale trunk or strand ready commits locally | Fetch ` + "`origin/main`" + ` before editing; push validated commits and tags promptly; record blockers for divergence, dirty state, unavailable remotes, or rejected pushes. |
 | Operating-model additions create handoff gaps | Treat operating-model changes as system changes: update the whole affected workflow in one task or record the blocker before merging. |
 
 ## AD-097: Business Logic Is First-Class BDD
@@ -1498,6 +1516,17 @@ behavior, mutability expectations, or recurring workflows change, update the
 ` + "`mars_harness_cli`" + ` reference, repo shortcut behavior, generated target
 doctrine, and any skill that names the affected workflow in the same change.
 The full model lives in [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
+
+## AD-108: Remote Trunk Freshness And Immediate Publishing
+
+Repos with ` + "`origin/main`" + ` start non-trivial work from remote trunk:
+fetch ` + "`origin main`" + `, ensure local ` + "`main`" + ` is at or fast-forwarded to
+` + "`origin/main`" + `, then edit. Dirty state, diverged history, missing remote
+access, network failures, and rejected pushes are blockers unless the user
+explicitly requests offline/local-only work. Validated semantic commits,
+release-note commits, and release tags are pushed to ` + "`origin main`" + ` or
+the tag remote as soon as they are ready; force-push and shared-history rewrites
+remain outside normal policy.
 `,
 
 	"docs/design-docs/code-documentation-map.md": `# Code Documentation Map
@@ -1886,6 +1915,7 @@ their evidence before claiming the feature is complete.
 6. F-001-S006 — source-wide docsync audit maps code to architecture and feature documentation
 7. F-001-S007 — documentation sync has a universal operating model for source and generated targets
 8. F-001-S008 — CLI changes synchronize mirrored tools, repo shortcuts, generated doctrine, and skills
+9. F-001-S009 — agents start from ` + "`origin/main`" + ` and push ready work to ` + "`origin main`" + ` promptly
 
 ## Scenarios
 
@@ -1937,6 +1967,12 @@ Given a ` + "`mars-harness`" + ` CLI command, flag, output contract, repo behavi
 When the change is prepared for completion
 Then the ` + "`mars_harness_cli`" + ` reference, repo shortcut map, generated target doctrine, and any skills that name the affected workflow are updated or explicitly checked as current, and CLI sync evidence is recorded
 
+### F-001-S009: Remote Trunk Freshness And Immediate Publishing
+
+Given this repo has an ` + "`origin/main`" + ` remote
+When an agent starts non-trivial work or finishes a validated commit or release tag
+Then it fetches ` + "`origin main`" + `, works only from local ` + "`main`" + ` at or fast-forwarded to ` + "`origin/main`" + `, pushes ready commits to ` + "`origin main`" + ` before unrelated work, and records a blocker when dirty state, divergence, missing remote access, or push rejection prevents that flow
+
 ## Out of Scope
 
 - A custom Gherkin parser
@@ -1954,6 +1990,7 @@ None.
 - F-001-S006: ` + "`mars-harness docsync audit --repo .`" + ` or ` + "`mars-harness tools run docsync_audit --repo . --args-json '{}'`" + `.
 - F-001-S007: ` + "`docs/design-docs/documentation-sync-architecture.md`" + ` documents the universal operating model.
 - F-001-S008: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + ` documents CLI tool/skill sync; source harness verifies this with ` + "`go test ./cmd/mars-harness -run TestMarsHarnessCLI`" + `.
+- F-001-S009: source harness verifies this with ` + "`go test ./internal/docsconsistency -run TestRemoteTrunkOperatingModelIsDocumented`" + `.
 `,
 
 	"docs/design-docs/context-glossary.md": `# Context Glossary

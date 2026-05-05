@@ -21,7 +21,7 @@ import (
 func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 	root := repoRoot(t)
 	required := map[string][]string{
-		"docs/design-docs/delivery-operating-model.md":        {"AD-074", "BDD-Led Goal-Driven Walking-Skeleton", "AD-097", "Business logic is first-class BDD", "AD-098", "No stale documentation", "MarsDocSync"},
+		"docs/design-docs/delivery-operating-model.md":        {"AD-074", "BDD-Led Goal-Driven Walking-Skeleton", "AD-097", "Business logic is first-class BDD", "AD-098", "No stale documentation", "AD-108", "Remote Trunk Freshness And Immediate Publishing", "origin/main", "MarsDocSync"},
 		"docs/design-docs/harness-operating-model.md":         {"AD-084", "Planner", "End-to-End Tester", "`domain`", "`mode`"},
 		"docs/design-docs/conversation-as-system-record.md":   {"AD-086", "Conversation As System Record", "Chat summaries can help humans catch up", "active-plan hygiene checker"},
 		"docs/goals/README.md":                                {"Goal Schema", "Autonomous Goal Rule", "Dedupe Key"},
@@ -32,7 +32,7 @@ func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 		"docs/design-docs/cli-tool-skill-sync.md":             {"AD-103", "CLI Tool And Skill Synchronization", "Universal Operating Model", "mars_harness_cli", "repo shortcut map"},
 		"docs/design-docs/documentation-sync-architecture.md": {"AD-102", "Documentation Sync", "Universal Operating Model", "Architecture", "docsync_audit", "Generated Target Layer"},
 		"docs/features/README.md":                             {"BDD Feature Contracts", "Business Logic Is First-Class BDD", "No Stale Documentation", "cli-tool-skill-sync.md", "Given/When/Then", "Scenario Schedule"},
-		"docs/features/F-001-delivery-operating-model.md":     {"Feature ID: F-001", "Scenario Schedule", "F-001-S008", "F-001-S009", "F-001-S010", "F-001-S011", "No Stale Documentation", "Given", "When", "Then"},
+		"docs/features/F-001-delivery-operating-model.md":     {"Feature ID: F-001", "Scenario Schedule", "F-001-S008", "F-001-S009", "F-001-S010", "F-001-S011", "F-001-S012", "Remote Trunk Freshness And Immediate Publishing", "No Stale Documentation", "Given", "When", "Then"},
 		"docs/tickets/README.md":                              {"work_type", "bdd_scenarios", "end_to_end_evidence", "verified_by"},
 		"docs/QUALITY_SCORE.md":                               {"shipped feature scenarios", "enabler work"},
 	}

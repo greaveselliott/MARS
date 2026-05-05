@@ -71,6 +71,16 @@ self-improvement, the same change must update the affected artifacts, generated
 target defaults, role prompts, knowledge routes, and tests so agents have one
 coherent path to follow.
 
+Remote trunk freshness is a foundation operating-model gate. For any repository
+with `origin/main`, agents start non-trivial work by fetching `origin main` and
+ensuring local `main` is at or fast-forwarded to `origin/main` before editing.
+Dirty local state, diverged history, rejected pushes, or unavailable remotes are
+blockers that must be recorded with a next action unless the user explicitly
+requests offline or local-only work. Once a semantic commit, release-note
+commit, or required release tag is validated, it is pushed to `origin main` or
+the tag remote immediately before unrelated work begins. Work should not sit in
+local-only commits when the remote can accept it.
+
 No feature is shipped until its in-scope BDD scenarios pass or the CEO
 explicitly descopes, supersedes, or invalidates them. Enabler work may complete
 without shipping a feature, but it must be labelled as enabler work and must
@@ -202,6 +212,7 @@ and release notes.
 | CEO ranks by vibes | Goals are ambiguous or incomparable | CEO ranks by value, urgency, confidence, unblock potential, and falsification risk. |
 | Competing goals blur strategy | Multiple goals pull in different directions | Goals declare `Competes With`; active plan records tradeoffs and deferred goals. |
 | Source and target harness diverge | Init gets new doctrine but old targets keep stale docs | `update check` and `doctor --repo` report drift; `update harness` writes missing defaults only; stale user-owned files become migration tickets. |
+| Agents build on stale trunk or strand ready work locally | Work starts before fetching `origin/main`, or validated commits are not pushed promptly | Treat remote trunk freshness and immediate push as operating-model gates; fetch before editing, fast-forward or record blockers, push ready commits and tags before unrelated work. |
 | Unit tests give false confidence | Operating-model bugs appear only in full loops | BDD E2E/integration is default acceptance; unit and docs tests support deterministic helpers. |
 | Lean becomes endless learning | Hypotheses never close | Exec plans require success and falsification evidence; inconclusive plans are revised, superseded, or split. |
 | Operating-model additions create handoff gaps | New rules are added without updating the adjacent artifacts, roles, tools, or evidence path | Treat operating-model changes as system changes: update the whole affected workflow in one task or record the blocker before merging. |
@@ -356,3 +367,44 @@ affected CLI workflow. The full architecture and evidence model live in
   from foundation CLI behavior.
 - CLI release notes explain both operator impact and agent/tool synchronization
   impact.
+
+## AD-108: Remote Trunk Freshness And Immediate Publishing
+
+**Status:** Accepted
+**Date:** 2026-05-05
+**Owner:** Mars Harness maintainers
+
+### Context
+
+Strict trunk loses its safety properties when agents begin from a stale local
+checkout or leave validated work only on disk. Recent local worktree drift made
+the installed harness and the source checkout disagree until the changes were
+manually replayed onto current `main`. The operating model needs to make remote
+trunk freshness and prompt publishing explicit, not implied by "strict trunk".
+
+### Decision
+
+For any foundation or deployed harness repository with an `origin/main` remote,
+non-trivial work begins by fetching `origin main` and proving local `main` is at
+or fast-forwarded to `origin/main` before edits. Dirty worktrees, unpushed local
+commits, diverged histories, missing remotes, network failures, or push
+rejections are blockers. Agents record the blocker and next action unless the
+user explicitly requests offline or local-only work.
+
+Validated semantic commits are pushed to `origin main` as soon as they are
+ready. Source harness release-note commits and release tags are pushed as soon
+as their generated files and local checks pass. If a push is rejected, the agent
+fetches, rebases or resolves deliberately, reruns relevant checks, and pushes
+before starting unrelated work. Force-push and shared-history rewrites remain
+outside normal operating policy.
+
+### Consequences
+
+- Agents start from the latest remote truth instead of whichever worktree
+  happens to be open.
+- Ready work is visible to the remote, CI, release automation, other agents, and
+  the user as soon as it is safe to share.
+- Local-only commits are treated as incomplete work unless the repo lacks
+  `origin/main` or the user deliberately requested offline work.
+- Generated target harnesses inherit the same remote-trunk rule, with missing
+  or unavailable remotes reported as blockers rather than silently ignored.
