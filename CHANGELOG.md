@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.34.1] - 2026-05-05
+<!-- mars-harness-release: version=0.34.1 commit=8d96adccffe2 -->
+
+### Impact
+- **guardrails:** The blast-radius guard now evaluates implementation changes separately from generated dependency/build output, so untracked `node_modules`-style churn no longer blocks the guardrail before hygiene can repair repo policy.
+- **workspace hygiene:** `serve` and `dependency_sync` can safely append missing generated-directory ignores and commit only `.gitignore` before model work or package installs continue.
+
+### Why
+- **guardrails:** Missing ignore policy is usually a deterministic repo hygiene issue, not a reason to send hundreds of dependency files into blast-radius accounting or context. The harness should fix the policy when it can prove the generated files are untracked.
+- **workspace hygiene:** Auto-repair must stay narrow: no generated-file deletion, no unstaging user work, no source/lockfile commits, and no tracked generated tree cleanup without an explicit human-reviewed change.
+
+### What Changed
+- **guardrails:** `ValidateRepoDiff` now omits generated workspace paths from generic file, line, deletion, and secret-scan accounting, leaving those paths to the workspace hygiene operating model (8d96adc).
+- **workspace hygiene:** Added repair planning and `.gitignore`-only commits for safe missing ignore entries, surfaced `auto_repairable` in hygiene reports, taught doctor to downgrade repairable hygiene failures to warnings, and made `dependency_sync` perform the same safe repair before install/fetch preflight (8d96adc).
+
+### Fixes
+- **guardrails:** Auto-repair generated ignore policy (8d96adc)
+
 ## [0.34.0] - 2026-05-05
 <!-- mars-harness-release: version=0.34.0 commit=1518a9e53593 -->
 
