@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.36.3] - 2026-05-05
+<!-- mars-harness-release: version=0.36.3 commit=4fc0c2a7c5e9 -->
+
+### Impact
+- **dashboard:** Operators no longer see the legacy blue dashboard in freshly installed harness binaries. The embedded web dashboard now presents the current neutral operations theme consistently across navigation, cards, controls, status pills, and chart surfaces.
+
+### Why
+- **dashboard:** The dashboard is an operator trust surface. Reintroducing the old hard-coded slate/blue palette made target runs such as `paul-demo` look stale even when the binary was freshly installed, so the visual contract needed a regression check instead of relying on manual inspection.
+
+### What Changed
+- **dashboard:** Replaced the legacy palette with semantic operations-theme CSS tokens, routed Chart.js colors through those tokens, documented the theme contract, and added a dashboard regression test that fails if the old blue palette literals return (4fc0c2a).
+
+### Fixes
+- **dashboard:** Refresh embedded operations theme (4fc0c2a)
+
 ## [0.36.2] - 2026-05-05
 <!-- mars-harness-release: version=0.36.2 commit=cf60686d77fa -->
 
