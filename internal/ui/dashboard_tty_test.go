@@ -31,7 +31,6 @@ func TestTerminalDashboardRendersJobStateAndSuppressesRawToolOutput(t *testing.T
 		Force:    true,
 	})
 	dash.Start()
-	defer dash.Stop()
 
 	view := dash.NewJobView(JobViewMeta{JobID: "job-1", Role: "engineer", Model: "coding"})
 	view.WriteHeader("engineer", "coding", []string{"shell_exec"}, nil)
@@ -41,6 +40,7 @@ func TestTerminalDashboardRendersJobStateAndSuppressesRawToolOutput(t *testing.T
 	view.WriteToolResult("shell_exec", strings.Repeat("raw dependency output ", 20))
 	view.WriteError("workspace hygiene blocked")
 
+	dash.Stop()
 	out := buf.String()
 	require.Contains(t, out, "\033[?1049h")
 	require.Contains(t, out, "engineer")
@@ -70,7 +70,6 @@ func TestInstallCommandLoggerWritesFileAndDashboardWarnings(t *testing.T) {
 	logPath := filepath.Join(t.TempDir(), "mars.log")
 	dash := NewTerminalDashboard(&buf, &fakeStatusProvider{healthy: true}, DashboardOptions{Force: true})
 	dash.Start()
-	defer dash.Stop()
 
 	logger, err := InstallCommandLogger(LoggingConfig{
 		Command:   "serve",
@@ -81,6 +80,7 @@ func TestInstallCommandLoggerWritesFileAndDashboardWarnings(t *testing.T) {
 	defer logger.Close()
 
 	slog.Warn("operator-visible warning", "role", "engineer")
+	dash.Stop()
 
 	data, err := os.ReadFile(logPath)
 	require.NoError(t, err)
