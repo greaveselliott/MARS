@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.34.0] - 2026-05-05
+<!-- mars-harness-release: version=0.34.0 commit=1518a9e53593 -->
+
+### Impact
+- **guardrails:** Agents now stop before model loading when dependency/build artifacts pollute a target worktree, avoiding the dirty `node_modules`, blast-radius, oversized diff, context overflow, and repeated Orchestrator recovery loop seen during dogfood.
+- **tools:** All roles can audit workspace hygiene through `workspace_hygiene`, while dependency-changing roles must use `dependency_sync` for package installs/fetches so ignore policy, lockfile intent, and post-run git state are checked deterministically.
+
+### Why
+- **guardrails:** Raw dependency commands are a common autonomous-agent failure mode: they mutate generated trees, then ordinary diff/search tools stuff those generated files into context and recovery keeps retrying the same dirty state.
+- **tools:** Making dependency mutation a governed tool preserves user work by blocking with an exact remediation recipe instead of silently cleaning, unstaging, or deleting generated artifacts.
+
+### What Changed
+- **guardrails:** Added pre-job hygiene gating, shell policy blocks for raw package-manager install/fetch commands, generated-directory exclusions for broad context tools, scanner/doctor findings for missing ignores and tracked generated trees, and `workspace_hygiene` telemetry that can become target intervention debt (1518a9e).
+- **tools:** Added `workspace_hygiene` and `dependency_sync`, updated role allowlists and generated target guidance, documented the accepted operating-model decision, and covered the workflow with unit, policy, serve, scanner, doctor, telemetry, docs consistency, and full-suite tests (1518a9e).
+
+### Features
+- **guardrails:** Add workspace hygiene dependency gates (1518a9e)
+
 ## [0.33.3] - 2026-05-04
 <!-- mars-harness-release: version=0.33.3 commit=914cf98f13ee -->
 
