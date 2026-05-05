@@ -15,7 +15,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -45,10 +44,7 @@ func handleWorkspaceHygiene(ctx context.Context, root Root, raw json.RawMessage)
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return ToolResult{}, fmt.Errorf("workspace_hygiene: parse arguments: %w", err)
 	}
-	report, err := AuditWorkspaceHygiene(ctx, root, WorkspaceHygieneOptions{
-		Mode:  args.Mode,
-		Paths: args.Paths,
-	})
+	report, err := AuditWorkspaceHygiene(ctx, root, WorkspaceHygieneOptions(args))
 	if err != nil {
 		return ToolResult{}, err
 	}
@@ -746,23 +742,4 @@ func generatedPathspecExcludes() []string {
 		excludes = append(excludes, ":(exclude)"+dir)
 	}
 	return excludes
-}
-
-func filterGeneratedPaths(paths []string) (kept []string, generated []string) {
-	for _, path := range paths {
-		path = cleanRepoPath(path)
-		if path == "" {
-			continue
-		}
-		if IsGeneratedWorkspacePath(path) {
-			generated = append(generated, path)
-			continue
-		}
-		kept = append(kept, path)
-	}
-	return kept, generated
-}
-
-func isGeneratedDirName(name string) bool {
-	return slices.Contains(generatedWorkspaceDirs, strings.Trim(name, "/"))
 }
