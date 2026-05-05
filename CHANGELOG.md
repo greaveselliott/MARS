@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.35.1] - 2026-05-05
+<!-- mars-harness-release: version=0.35.1 commit=7ef248d424fd -->
+
+### Impact
+- **tools:** Main CI can complete after the private release auth change because the workspace hygiene helper code no longer trips golangci-lint.
+
+### Why
+- **tools:** The prior workspace hygiene change left unused helpers and a simplifiable struct conversion that tests allowed but CI lint rejected.
+
+### What Changed
+- **tools:** Removed unused generated-path helper functions and the slices import, and converted workspace_hygiene arguments directly into WorkspaceHygieneOptions (7ef248d).
+
+### Fixes
+- **tools:** Satisfy workspace hygiene lint (7ef248d)
+
 ## [0.35.0] - 2026-05-05
 <!-- mars-harness-release: version=0.35.0 commit=ec917142c353 -->
 
