@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.36.0] - 2026-05-05
+<!-- mars-harness-release: version=0.36.0 commit=8bcb789067b1 -->
+
+### Impact
+- **cli:** Operators gain new capability: add tty dashboard logging.
+
+### Why
+- **cli:** This matters because add tty dashboard logging was missing from the shipped capability set.
+
+### What Changed
+- **cli:** Changed add tty dashboard logging (8bcb789).
+
+### Features
+- **cli:** Add tty dashboard logging (8bcb789)
+
 ## [0.35.1] - 2026-05-05
 <!-- mars-harness-release: version=0.35.1 commit=7ef248d424fd -->
 
