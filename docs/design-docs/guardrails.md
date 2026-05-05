@@ -20,6 +20,21 @@ Rules are loaded from the repo’s `.harness/` tree so teams can customize polic
 
 “Hard” means a failing check blocks promotion or fails the job per [pipeline-engine.md](pipeline-engine.md) policy hooks.
 
+### AD-107: Workspace Hygiene Gates Generated Churn Before LLM Work
+
+Generated dependency and build output is a hard guardrail surface because it
+can overwhelm blast-radius checks, context windows, and dispatch recovery. The
+server runs `workspace_hygiene` before model loading, package-manager mutation
+must flow through `dependency_sync`, and raw install/fetch commands in
+`shell_exec` are blocked. Blocking results are actionable recipe outputs, not
+automatic cleanup: the harness reports the generated path, recipe ID, and next
+action, then waits for an explicit source/ignore/tracking fix.
+
+The gate treats missing generated-directory ignores, tracked generated
+directories, dirty generated output, large generated diffs, and file deletions
+as deterministic workspace problems. It keeps target-owned repo hygiene in the
+target backlog rather than classifying it as a foundation-only telemetry issue.
+
 ### Open topics
 
 - **Advisory vs hard tiers:** advisory rules surface warnings in traces and UI; hard rules fail the job or block merge paths per policy; same schema with a `severity` field is the likely shape.

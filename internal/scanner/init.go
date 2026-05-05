@@ -351,7 +351,7 @@ roles:
     schedule: "0 20 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
 
   head-of-strategy:
     prompt: roles/head-of-strategy.md
@@ -360,7 +360,7 @@ roles:
     model: reasoning
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, grep, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, grep, workspace_hygiene, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push]
 
   coo:
     prompt: roles/coo.md
@@ -369,7 +369,7 @@ roles:
     model: reasoning
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
   cto-weekly:
@@ -380,7 +380,7 @@ roles:
     schedule: "0 21 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, ticket_create, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -391,7 +391,7 @@ roles:
     schedule: "0 0,6,12,18 * * 1-5"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -402,7 +402,7 @@ roles:
     max_turns: 20
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit]
+    tools: [file_read, grep, workspace_hygiene, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit]
 
   security:
     prompt: roles/security.md
@@ -413,7 +413,7 @@ roles:
     schedule: "0 22 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
@@ -424,7 +424,7 @@ roles:
     schedule: "0 23 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
 
   # ── Release ──────────────────────────────────────────────
   release-manager:
@@ -435,7 +435,7 @@ roles:
     schedule: "0 8 * * 1"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, docsync_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, docsync_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
   dogfood:
@@ -447,7 +447,7 @@ roles:
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── CI repair ────────────────────────────────────────────
   pipeline-fixer:
@@ -459,7 +459,7 @@ roles:
       - workflow_run.conclusion == "failure"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Dispatch coordination ───────────────────────────────
   orchestrator:
@@ -470,7 +470,7 @@ roles:
     max_turns: 20
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, grep, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff]
+    tools: [file_read, grep, workspace_hygiene, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff]
 
   # ── Backlog entropy management ─────────────────────────
   janitor:
@@ -484,7 +484,7 @@ roles:
     max_turns: 30
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, record_decision, job_disposition_record, docsync_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, record_decision, job_disposition_record, docsync_audit, git_status, git_diff, git_commit, git_push]
 `, projectName, projectName)
 }
 
@@ -704,7 +704,7 @@ would otherwise live only in chat.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
 - **Universal tool surface** — the mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + ` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale.
@@ -2007,7 +2007,7 @@ harness and deployed harnesses.
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
 | Universal tool surface | The mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + `, so any MCP-compatible client or local harness agent can use the same tools through a model-provider-agnostic tool mechanism. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
@@ -2123,6 +2123,8 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
 | ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
+| ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `. |
+| ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
 | ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
@@ -2141,6 +2143,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`git_status`" + ` | Inspect repository state. | Non-mutating. Use before commits or risky operations. |
 | ` + "`git_diff`" + ` | Inspect unstaged or staged changes. | Non-mutating. Use before review, commit, and release notes. |
 | ` + "`git_commit`" + ` | Stage files and create a semantic commit. | Mutating. Requires meaningful diff and strict-trunk discipline. |
+| ` + "`git_branch`" + ` | Create or switch a local branch. | Mutating. Use only for explicit branch workflows; trunk-based delivery normally stays on ` + "`main`" + `. |
 | ` + "`git_push`" + ` | Push committed changes. | Mutating. Strict trunk allows pushing ` + "`main`" + `. |
 
 ## Selection Guide
@@ -2174,6 +2177,10 @@ tools are added, removed, renamed, or materially change behavior.
 - Need to keep documentation, doctrine, and tools mirrored: use
   ` + "`docsync_audit`" + `, ` + "`architecture_audit`" + `, ` + "`harness_doctrine_sync`" + `,
   ` + "`tool_creation_guard`" + `, and ` + "`tool_inventory_audit`" + `.
+- Need to inspect or repair generated dependency/build churn before a job,
+  commit, or package-manager operation: use ` + "`workspace_hygiene`" + `.
+- Need dependency setup or package fetch/install: use ` + "`dependency_sync`" + `, not raw
+  package-manager commands through ` + "`shell_exec`" + `.
 - Need to know which docs must be checked after touching a code file: read the
   file's ` + "`MarsDocSync`" + ` block and run ` + "`docsync_audit`" + ` or
   ` + "`mars-harness docsync audit --repo .`" + `.
@@ -3026,6 +3033,8 @@ DON'T:
 - NEVER finish a run with uncommitted changes. Always check git_status at the end.
 - For long-running processes (dev servers, watchers, next dev, npm start), ALWAYS use
   shell_exec with background:true so they run as a background process and don't block your run.
+- NEVER run raw dependency install/fetch commands through shell_exec. Use
+  workspace_hygiene first, then dependency_sync.
 - NEVER run find, ls, grep, or cat on directories without excluding node_modules, .git, vendor,
   dist, build, and other large generated directories. Use targeted file reads instead.
 - NEVER close a ticket without running the build. "It looks right" is not verification.
@@ -3350,7 +3359,8 @@ FOR ALL NODE.JS PROJECTS (package.json exists):
   a) Read package.json scripts section
   b) MUST have a "dev" or "start" script — if missing, file a ticket immediately
   c) If framework is Next.js, MUST have a "build" script
-  d) Verify node_modules/ exists — if not, run the package manager install first
+  d) Run workspace_hygiene. If dependency setup is needed, use dependency_sync;
+     never run raw npm/pnpm/yarn/bun install commands through shell_exec.
 
 FOR NEXT.JS APP ROUTER (next in dependencies + src/app/ or app/ exists):
   a) Root layout MUST exist: src/app/layout.tsx (or app/layout.tsx)

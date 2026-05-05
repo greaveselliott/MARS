@@ -145,6 +145,17 @@ func TriagePattern(p Pattern) ImprovementProposal {
 		}
 		proposal.Confidence = 0.8
 
+	case CategoryWorkspaceHygiene:
+		proposal.Target = TargetProcess
+		proposal.Title = "Repair workspace hygiene"
+		proposal.Suggestion = fmt.Sprintf("Role %q was blocked by generated dependency/build churn or missing ignore policy; run workspace_hygiene, apply the reported recipe, and use dependency_sync for package-manager setup before retrying ordinary agent work.", p.Role)
+		proposal.CandidateFiles = []string{
+			".gitignore",
+			"package.json",
+			"docs/tickets/in-progress/",
+		}
+		proposal.Confidence = 0.85
+
 	case CategoryHumanFollowup:
 		proposal.Target = TargetProcess
 		proposal.Title = "Reduce human follow-up"

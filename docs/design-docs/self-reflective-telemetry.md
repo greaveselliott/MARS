@@ -26,6 +26,13 @@ Raw telemetry is not enough. Recurring patterns and low scores are classified in
 - tool policy
 - unknown
 
+`workspace_hygiene` is a separate failure category for generated dependency or
+build churn, missing ignore policy, tracked generated directories, and
+pre-job/post-dependency hygiene blockers. Unlike context overflow, inference,
+dispatch, or generic guardrail policy, workspace hygiene normally belongs to
+the target repo because the remediation is usually `.gitignore`, dependency
+tracking, or generated-output cleanup policy in that repository.
+
 Each triage output includes role, repo, evidence, severity, confidence, suggestion, and candidate files when a bounded evolution can safely inspect or edit them.
 
 ### AD-038: Scores Are Control Signals, Not Vanity Metrics
@@ -114,6 +121,9 @@ The first implementation is deliberately small:
 - manifest failures point at `.harness/manifest.yaml`
 - ticket-gate failures point at the role's ticket completion workflow, trust level, and target ticket state; self-chain auto-recovery does not retry them unchanged
 - guardrail and tool-policy blocks point at guardrail calibration, trust level, and role guidance without weakening enforcement first
+- workspace hygiene failures point at `.gitignore`, package manager manifests,
+  tracked generated paths, and the `workspace_hygiene`/`dependency_sync`
+  recipe output before any retry
 - human follow-up and reverted commits point at the role workflow, reusable skills, and guardrails that should have prevented the correction
 - stale in-progress tickets point at Engineer and Janitor ticket-drain behavior
 - manual stops point at role stop conditions, timeout policy, recovery, or escalation behavior

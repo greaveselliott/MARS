@@ -2,7 +2,9 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/guardrails.md
 - docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-007-guardrails-and-safety.md
 - docs/product-specs/product-surface.md
 */
 package doctor
@@ -26,6 +28,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/planhygiene"
 	"github.com/greaveselliott/mars-harness/internal/roleregistry"
 	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
+	"github.com/greaveselliott/mars-harness/internal/tools"
 	"github.com/greaveselliott/mars-harness/internal/updatecheck"
 )
 
@@ -74,6 +77,7 @@ func Run(cfg Config) []CheckResult {
 		checkRoleRegistryHealth,
 		checkActivePlanHygiene,
 		checkTicketDrainHealth,
+		checkWorkspaceHygieneHealth,
 	}
 
 	results := make([]CheckResult, 0, len(checks))
@@ -91,6 +95,58 @@ func Run(cfg Config) []CheckResult {
 		results = append(results, result)
 	}
 	return results
+}
+
+func checkWorkspaceHygieneHealth(cfg Config) CheckResult {
+	start := time.Now()
+	name := "workspace-hygiene"
+	if strings.TrimSpace(cfg.RepoPath) == "" {
+		return CheckResult{
+			Name:     name,
+			Status:   statusOK,
+			Message:  "repo not supplied; workspace hygiene skipped",
+			Duration: nonZeroDurationSince(start),
+		}
+	}
+	root, err := tools.NewRoot(cfg.RepoPath)
+	if err != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  err.Error(),
+			Duration: nonZeroDurationSince(start),
+			Fix:      "run doctor with --repo pointing at a valid repository root",
+		}
+	}
+	report, err := tools.AuditWorkspaceHygiene(context.Background(), root, tools.WorkspaceHygieneOptions{Mode: "pre_job"})
+	if err != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  err.Error(),
+			Duration: nonZeroDurationSince(start),
+			Fix:      "run 'mars-harness tools run workspace_hygiene --repo <path> --trust contributor' for a detailed recipe",
+		}
+	}
+	if len(report.Findings) == 0 {
+		return CheckResult{
+			Name:     name,
+			Status:   statusOK,
+			Message:  "workspace hygiene is clean",
+			Duration: nonZeroDurationSince(start),
+		}
+	}
+	status := statusWarn
+	if report.Blocking {
+		status = statusFail
+	}
+	return CheckResult{
+		Name:     name,
+		Status:   status,
+		Message:  report.Message,
+		Duration: nonZeroDurationSince(start),
+		Fix:      report.NextAction,
+	}
 }
 
 func checkTicketDrainHealth(cfg Config) CheckResult {

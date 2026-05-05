@@ -1295,6 +1295,26 @@ func TestScan_hasGitignore(t *testing.T) {
 	}
 }
 
+func TestScan_reportsWorkspaceHygieneMissingGeneratedIgnore(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("dist/\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name":"demo"}`), 0o644))
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+
+	found := false
+	for _, f := range result.Findings {
+		if f.Type == "workspace_hygiene" && strings.Contains(f.Description, "node_modules") {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected workspace hygiene finding for missing node_modules ignore")
+}
+
 func TestUpgrade_preservesUserConfiguredManifestAndPrompts(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

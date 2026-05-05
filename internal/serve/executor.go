@@ -2,8 +2,10 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/guardrails.md
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
+- docs/features/F-007-guardrails-and-safety.md
 - docs/features/F-006-queue-and-orchestration.md
 */
 package serve
@@ -290,6 +292,16 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("sandbox root: %v", err))
 		return fmt.Errorf("executor: create sandbox root for %q: %w", repoPath, err)
+	}
+
+	hygiene, err := tools.AuditWorkspaceHygiene(ctx, root, tools.WorkspaceHygieneOptions{Mode: "pre_job"})
+	if err != nil {
+		tw.WriteError(fmt.Sprintf("workspace hygiene: %v", err))
+		return fmt.Errorf("executor: workspace hygiene pre-job check failed before role %q run: %w", job.Role, err)
+	}
+	if hygiene.Blocking {
+		tw.WriteError(fmt.Sprintf("workspace hygiene: %s", hygiene.Message))
+		return fmt.Errorf("executor: workspace_hygiene_blocked before role %q run: %s — next action: %s", job.Role, hygiene.Message, hygiene.NextAction)
 	}
 
 	if err := tools.ValidateRepoDiff(ctx, root, tools.Session{

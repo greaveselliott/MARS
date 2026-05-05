@@ -2,8 +2,10 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/guardrails.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-007-guardrails-and-safety.md
 */
 package tools
 
@@ -22,6 +24,7 @@ import (
 
 var mutatingTools = map[string]bool{
 	"file_write":          true,
+	"dependency_sync":     true,
 	"shell_exec":          true,
 	"mars_harness_cli":    true,
 	"git_commit":          true,
@@ -424,7 +427,102 @@ func checkShellPolicy(raw json.RawMessage) error {
 	if operation, ok := forbiddenShellOperation(cmd); ok {
 		return fmt.Errorf("policy: shell_exec command contains forbidden operation %q", operation)
 	}
+	if operation, ok := dependencyShellOperation(cmd); ok {
+		return fmt.Errorf("policy: shell_exec command %q mutates dependency state; use dependency_sync so workspace hygiene preflight and postflight run", operation)
+	}
+	if operation, ok := broadGeneratedTraversal(cmd); ok {
+		return fmt.Errorf("policy: shell_exec command %q may flood context with generated dependency/build output; use file_search, grep, or add explicit generated-directory excludes", operation)
+	}
 	return nil
+}
+
+func dependencyShellOperation(cmd string) (string, bool) {
+	fields := shellFields(cmd)
+	if len(fields) == 0 {
+		return "", false
+	}
+	for i, field := range fields {
+		switch filepathBase(field) {
+		case "npm":
+			if nextTokenIs(fields, i, "install") || nextTokenIs(fields, i, "i") || nextTokenIs(fields, i, "ci") {
+				return "npm " + fields[i+1], true
+			}
+		case "pnpm", "yarn", "bun":
+			if nextTokenIs(fields, i, "install") || nextTokenIs(fields, i, "i") {
+				return filepathBase(field) + " " + fields[i+1], true
+			}
+		case "go":
+			if i+2 < len(fields) && fields[i+1] == "mod" && fields[i+2] == "download" {
+				return "go mod download", true
+			}
+		case "cargo":
+			if nextTokenIs(fields, i, "fetch") {
+				return "cargo fetch", true
+			}
+		case "pip", "pip3":
+			if nextTokenIs(fields, i, "install") {
+				return filepathBase(field) + " install", true
+			}
+		case "python", "python3":
+			if i+3 < len(fields) && fields[i+1] == "-m" && fields[i+2] == "pip" && fields[i+3] == "install" {
+				return filepathBase(field) + " -m pip install", true
+			}
+		case "bundle":
+			if nextTokenIs(fields, i, "install") {
+				return "bundle install", true
+			}
+		case "composer":
+			if nextTokenIs(fields, i, "install") {
+				return "composer install", true
+			}
+		}
+	}
+	return "", false
+}
+
+func nextTokenIs(fields []string, index int, token string) bool {
+	return index+1 < len(fields) && fields[index+1] == token
+}
+
+func broadGeneratedTraversal(cmd string) (string, bool) {
+	fields := shellFields(cmd)
+	if len(fields) == 0 || hasGeneratedExcludeToken(fields) {
+		return "", false
+	}
+	for i, field := range fields {
+		switch filepathBase(field) {
+		case "find":
+			if i+1 < len(fields) && (fields[i+1] == "." || fields[i+1] == "./") {
+				return "find .", true
+			}
+		case "ls":
+			if hasToken(fields[i+1:], "-r") {
+				for _, token := range fields[i+1:] {
+					if token == "." || token == "./" {
+						return "ls recursive/broad root", true
+					}
+				}
+			}
+		case "cat":
+			for _, token := range fields[i+1:] {
+				if token == "." || token == "./" {
+					return "cat .", true
+				}
+			}
+		}
+	}
+	return "", false
+}
+
+func hasGeneratedExcludeToken(fields []string) bool {
+	for _, field := range fields {
+		for _, dir := range generatedWorkspaceDirs {
+			if strings.Contains(field, dir) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func checkShellTicketPathPolicy(cmd string) error {

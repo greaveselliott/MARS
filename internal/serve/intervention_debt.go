@@ -251,6 +251,8 @@ func interventionDebtSignalKind(signal interventionDebtSignal) string {
 	switch signal.Category {
 	case telemetry.CategoryGuardrailBlock:
 		return "guardrail_block"
+	case telemetry.CategoryWorkspaceHygiene:
+		return "workspace_hygiene_block"
 	case telemetry.CategoryHumanFollowup:
 		return "human_followup_commit"
 	case telemetry.CategoryRevertedCommit:

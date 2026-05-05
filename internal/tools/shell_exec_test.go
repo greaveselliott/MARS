@@ -161,6 +161,38 @@ func TestShellExecReadOnlyClassification(t *testing.T) {
 	}
 }
 
+func TestShellPolicyBlocksRawDependencyMutationCommands(t *testing.T) {
+	t.Parallel()
+	cases := []string{
+		`{"argv":["npm","install"]}`,
+		`{"argv":["npm","ci"]}`,
+		`{"argv":["pnpm","install"]}`,
+		`{"argv":["yarn","install"]}`,
+		`{"argv":["bun","install"]}`,
+		`{"argv":["go","mod","download"]}`,
+		`{"argv":["cargo","fetch"]}`,
+		`{"argv":["pip","install","-r","requirements.txt"]}`,
+		`{"argv":["python","-m","pip","install","-r","requirements.txt"]}`,
+		`{"argv":["bundle","install"]}`,
+		`{"argv":["composer","install"]}`,
+	}
+	for _, raw := range cases {
+		err := checkShellPolicy(json.RawMessage(raw))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "dependency_sync")
+	}
+}
+
+func TestShellPolicyBlocksBroadFindWithoutGeneratedExcludes(t *testing.T) {
+	t.Parallel()
+	err := checkShellPolicy(json.RawMessage(`{"argv":["find",".","-name","*.js"]}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "generated-directory excludes")
+
+	err = checkShellPolicy(json.RawMessage(`{"argv":["find",".","-path","./node_modules","-prune","-o","-name","*.js"]}`))
+	require.NoError(t, err)
+}
+
 func TestShellExecReadOnlyAllowedInDirtyRepo(t *testing.T) {
 	dir, root := setupDirtyGitRepo(t, 12)
 	reg, err := DefaultRegistry()

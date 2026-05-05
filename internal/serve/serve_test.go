@@ -309,6 +309,7 @@ func TestHandleJobFailedDoesNotRecoverDeterministicFailures(t *testing.T) {
 		err  errTest
 	}{
 		{name: "guardrail", err: "executor: dirty worktree containment: blast radius exceeded: 12 files changed (limit 10)"},
+		{name: "workspace hygiene", err: "executor: workspace_hygiene_blocked before role \"engineer\" run: generated dependency output is dirty"},
 		{name: "context overflow", err: "executor: agent loop error (llm_unreachable): llm: context size exceeded (non-retryable)"},
 		{name: "model unavailable", err: "inference: local model for tier reasoning is missing"},
 		{name: "max turns", err: "executor: agent ended with max_turns"},

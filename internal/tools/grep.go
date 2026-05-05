@@ -81,6 +81,11 @@ func handleGrep(_ context.Context, root Root, raw json.RawMessage) (ToolResult, 
 		if matchCount >= max {
 			break
 		}
+		rel, _ := filepath.Rel(root.Abs(), file)
+		rel = filepath.ToSlash(rel)
+		if IsGeneratedWorkspacePath(rel) {
+			continue
+		}
 		fi, err := os.Stat(file)
 		if err != nil || fi.IsDir() {
 			continue
@@ -98,7 +103,6 @@ func handleGrep(_ context.Context, root Root, raw json.RawMessage) (ToolResult, 
 			_ = f.Close()
 			continue
 		}
-		rel, _ := filepath.Rel(root.Abs(), file)
 		r := io.MultiReader(bytes.NewReader(head[:n]), f)
 		sc := bufio.NewScanner(r)
 		scanBuf := make([]byte, 0, 64*1024)
@@ -115,7 +119,7 @@ func handleGrep(_ context.Context, root Root, raw json.RawMessage) (ToolResult, 
 				continue
 			}
 			matchCount++
-			entry := fmt.Sprintf("%s:%d:%s\n", filepath.ToSlash(rel), lineNo, string(line))
+			entry := fmt.Sprintf("%s:%d:%s\n", rel, lineNo, string(line))
 			if buf.Len()+len(entry) > maxBytes {
 				truncated = true
 				_ = f.Close()

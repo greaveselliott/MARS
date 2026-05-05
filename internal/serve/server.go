@@ -4,7 +4,9 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-012-self-improvement-loop.md
 */
 package serve
 
@@ -1356,7 +1358,7 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 	switch cat {
 	case telemetry.CategoryToolTimeout, telemetry.CategoryContextOverflow:
 		outcomeType = scoring.OutcomeTimeout
-	case telemetry.CategoryGuardrailBlock:
+	case telemetry.CategoryGuardrailBlock, telemetry.CategoryWorkspaceHygiene:
 		outcomeType = scoring.OutcomeGuardrailBlocked
 	}
 	if s.scoreStore != nil {
@@ -1424,6 +1426,12 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 				Reason:  jobErr.Error(),
 				TraceID: s.latestTraceID(ctx, job.ID),
 			})
+			if cat == telemetry.CategoryWorkspaceHygiene {
+				log.Warn("serve: not dispatching workspace hygiene failure; deterministic recipe must be applied before retry",
+					"error", jobErr,
+				)
+				return
+			}
 			s.handleDispatchComplete(ctx, job, rec, manifest)
 		}
 		return

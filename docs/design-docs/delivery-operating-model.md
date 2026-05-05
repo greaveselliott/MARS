@@ -96,6 +96,32 @@ implementation and any later refactor into shared helper files. Bypassing
 exception context. Completing the artifact shape without the governed creation
 path is not a complete operating-model change.
 
+Workspace hygiene is a universal operating-model gate. Agents must not expose
+generated dependency or build churn to the model as ordinary source diff, and
+they must not run package-manager install/fetch commands through raw
+`shell_exec`. The deterministic path is:
+
+1. `workspace_hygiene` audits `.gitignore`, tracked generated paths, dirty
+   generated directories, large generated diffs, and forbidden deletions.
+2. `dependency_sync` performs package-manager install/fetch only after hygiene
+   preflight passes, using frozen lockfile-respecting commands when lockfiles
+   exist.
+3. Postflight hygiene blocks when generated artifacts dirty the worktree and
+   returns a recipe ID plus exact next action. It does not automatically clean
+   or unstage user work.
+4. `serve` runs a pre-job hygiene gate before model loading so dirty
+   `node_modules/`, build output, generated diffs, or deletion state become
+   deterministic blockers instead of repeated LLM, guardrail, and Orchestrator
+   loops.
+
+Raw dependency mutation commands such as `npm install`, `npm ci`,
+`pnpm install`, `yarn install`, `bun install`, `go mod download`,
+`cargo fetch`, `pip install`, `bundle install`, and `composer install` are
+blocked by tool policy with guidance to use `dependency_sync`. Target repos own
+their hygiene policy: missing ignores, tracked generated dependency trees, or
+dirty generated output become target workspace-hygiene intervention debt unless
+the project deliberately documents and tests an exception.
+
 ## Artifact Ownership
 
 Goals live in `docs/goals/`. Active goals may come from user chat, product

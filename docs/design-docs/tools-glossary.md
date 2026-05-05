@@ -49,6 +49,8 @@ tools are added, removed, renamed, or materially change behavior.
 | `file_search` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | `grep` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
 | `shell_exec` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
+| `workspace_hygiene` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns `status`, `blocking`, `findings`, `recipe_id`, `message`, and `next_action`. |
+| `dependency_sync` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Use instead of raw `npm install`, `npm ci`, `pnpm install`, `yarn install`, `bun install`, `go mod download`, `cargo fetch`, `pip install`, `bundle install`, or `composer install`. |
 | `mars_harness_cli` | Read exhaustive CLI reference or run `mars-harness` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | `record_decision` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | `ticket_create` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
@@ -67,6 +69,7 @@ tools are added, removed, renamed, or materially change behavior.
 | `git_status` | Inspect repository state. | Non-mutating. Use before commits or risky operations. |
 | `git_diff` | Inspect unstaged or staged changes. | Non-mutating. Use before review, commit, and release notes. |
 | `git_commit` | Stage files and create a semantic commit. | Mutating. Requires meaningful diff and strict-trunk discipline. |
+| `git_branch` | Create or switch a local branch. | Mutating. Use only for explicit branch workflows; trunk-based delivery normally stays on `main`. |
 | `git_push` | Push committed changes. | Mutating. Strict trunk allows pushing `main`. |
 
 ## Selection Guide
@@ -103,6 +106,10 @@ tools are added, removed, renamed, or materially change behavior.
 - Need to keep documentation, doctrine, and tools mirrored: use
   `docsync_audit`, `architecture_audit`, `harness_doctrine_sync`,
   `tool_creation_guard`, and `tool_inventory_audit`.
+- Need to inspect or repair generated dependency/build churn before a job,
+  commit, or package-manager operation: use `workspace_hygiene`.
+- Need dependency setup or package fetch/install: use `dependency_sync`, not raw
+  package-manager commands through `shell_exec`.
 - Need to know which docs must be checked after touching a code file: read the
   file's `MarsDocSync` block and run `docsync_audit` or
   `mars-harness docsync audit --repo .`.

@@ -28,6 +28,7 @@ const (
 	CategoryTicketGate       FailureCategory = "ticket_gate"
 	CategoryDispatchProtocol FailureCategory = "dispatch_protocol"
 	CategoryGuardrailBlock   FailureCategory = "guardrail_block"
+	CategoryWorkspaceHygiene FailureCategory = "workspace_hygiene"
 	CategoryHumanFollowup    FailureCategory = "human_followup"
 	CategoryRevertedCommit   FailureCategory = "reverted_commit"
 	CategoryStaleTicket      FailureCategory = "stale_in_progress_ticket"
@@ -129,6 +130,13 @@ func Classify(errMsg string) FailureCategory {
 		return CategoryGuardrailBlock
 	case strings.Contains(lower, "policy: strict trunk only allows"):
 		return CategoryGuardrailBlock
+
+	case strings.Contains(lower, "workspace_hygiene_blocked"):
+		return CategoryWorkspaceHygiene
+	case strings.Contains(lower, "workspace hygiene") && strings.Contains(lower, "blocked"):
+		return CategoryWorkspaceHygiene
+	case strings.Contains(lower, "dependency_sync") && strings.Contains(lower, "workspace hygiene"):
+		return CategoryWorkspaceHygiene
 
 	case strings.Contains(lower, "human_followup"):
 		return CategoryHumanFollowup

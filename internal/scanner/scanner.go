@@ -3,7 +3,9 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
+- docs/design-docs/guardrails.md
 - docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-007-guardrails-and-safety.md
 */
 package scanner
 
@@ -163,6 +165,7 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 		})
 	}
 
+	result.Findings = append(result.Findings, findWorkspaceHygieneIssues(ctx, cfg.RepoRoot)...)
 	result.Findings = append(result.Findings, checkBootability(cfg.RepoRoot, allFiles, result.Framework)...)
 	result.Findings = append(result.Findings, findUntestedPackages(cfg.RepoRoot, allFiles)...)
 	result.Findings = append(result.Findings, findLargeFunctions(ctx, cfg.RepoRoot, allFiles, cfg.MaxPackages)...)
@@ -176,6 +179,30 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 		"files_scanned", len(allFiles),
 	)
 	return result, nil
+}
+
+func findWorkspaceHygieneIssues(ctx context.Context, repoRoot string) []Finding {
+	root, err := tools.NewRoot(repoRoot)
+	if err != nil {
+		return nil
+	}
+	report, err := tools.AuditWorkspaceHygiene(ctx, root, tools.WorkspaceHygieneOptions{Mode: "audit"})
+	if err != nil {
+		return nil
+	}
+	var findings []Finding
+	for _, f := range report.Findings {
+		switch f.Type {
+		case "missing_generated_ignore", "tracked_generated_path", "generated_dirty_worktree", "large_generated_diff":
+			findings = append(findings, Finding{
+				Type:        "workspace_hygiene",
+				Path:        f.Path,
+				Description: f.Message + " — " + f.NextAction,
+				Severity:    f.Severity,
+			})
+		}
+	}
+	return findings
 }
 
 func shouldSkipDir(name, rel string, patterns []string) bool {

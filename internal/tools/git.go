@@ -123,6 +123,9 @@ func handleGitDiff(ctx context.Context, root Root, raw json.RawMessage) (ToolRes
 		if strings.TrimSpace(p) == "" {
 			continue
 		}
+		if IsGeneratedWorkspacePath(p) {
+			return ToolResult{Output: fmt.Sprintf("workspace hygiene: diff for generated path %q omitted; use workspace_hygiene to inspect generated dependency/build churn", p)}, nil
+		}
 		abs, err := root.ResolvePath(p)
 		if err != nil {
 			return ToolResult{}, fmt.Errorf("git_diff: %w", err)
@@ -130,7 +133,7 @@ func handleGitDiff(ctx context.Context, root Root, raw json.RawMessage) (ToolRes
 		cmd = append(cmd, abs)
 	}
 	if len(cmd) == 2 {
-		cmd = []string{"diff"}
+		cmd = append([]string{"diff", "--", "."}, generatedPathspecExcludes()...)
 	}
 	tr, err := runGit(ctx, root, cmd...)
 	if err != nil {

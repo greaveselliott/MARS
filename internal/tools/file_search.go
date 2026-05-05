@@ -55,7 +55,11 @@ func handleFileSearch(_ context.Context, root Root, raw json.RawMessage) (ToolRe
 		if err != nil || strings.HasPrefix(rel, "..") {
 			continue
 		}
-		rels = append(rels, filepath.ToSlash(rel))
+		rel = filepath.ToSlash(rel)
+		if IsGeneratedWorkspacePath(rel) {
+			continue
+		}
+		rels = append(rels, rel)
 	}
 	if len(rels) == 0 {
 		return ToolResult{Output: "(no matches)"}, nil

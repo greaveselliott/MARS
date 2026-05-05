@@ -23,6 +23,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 6. F-007-S006 - Sandbox execution enforces working directory, timeouts, and process isolation.
 7. F-007-S007 - Emergency stop is available from runtime and dashboard controls.
 8. F-007-S008 - Blast-radius limits are checked before commit and push workflows.
+9. F-007-S009 - Workspace hygiene blocks generated dependency/build churn before model work and package-manager mutation.
 
 ## Scenarios
 
@@ -74,6 +75,12 @@ Given a role is about to commit or push changes
 When the safety layer evaluates the diff and configured limits
 Then excessive file count, line count, or forbidden path changes are blocked or require explicit escalation
 
+### F-007-S009: Workspace Hygiene Gates
+
+Given a repository has missing generated-directory ignore policy, tracked generated dependency output, dirty generated build output, large generated diffs, or deletion state
+When an agent job starts or a dependency install/fetch is requested
+Then `workspace_hygiene` reports a deterministic recipe with `recipe_id` and `next_action`, raw package-manager mutation through `shell_exec` is blocked, and `dependency_sync` performs package-manager work only after preflight passes
+
 ## Out of Scope
 
 - AST-level semantic policy enforcement in v1.
@@ -94,3 +101,4 @@ None.
 - F-007-S006: `go test ./internal/sandbox`
 - F-007-S007: `go test ./internal/safety -run TestEmergencyStop` and `go test ./internal/dashboard -run TestDashboard_emergencyStop`
 - F-007-S008: `go test ./internal/safety -run TestCheck`
+- F-007-S009: `go test ./internal/tools -run 'TestWorkspaceHygiene|TestDependencySync|TestShellPolicyBlocksRawDependencyMutationCommands'` and `go test ./internal/serve -run TestHandleJobFailedDoesNotRecoverDeterministicFailures`

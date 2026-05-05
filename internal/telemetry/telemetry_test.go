@@ -121,6 +121,8 @@ func TestClassify_interventionSignals(t *testing.T) {
 		{`post tool policy blocked shell_exec: blast radius exceeded: 127 files changed (limit 10)`, CategoryGuardrailBlock},
 		{`pre tool policy blocked git_commit: blast radius exceeded: 127 files changed (limit 10)`, CategoryGuardrailBlock},
 		{`policy: trust level observer cannot run mutating tool "file_write"`, CategoryGuardrailBlock},
+		{`executor: workspace_hygiene_blocked before role "engineer" run: generated output is dirty`, CategoryWorkspaceHygiene},
+		{`dependency_sync: workspace hygiene preflight blocked: generated directory node_modules is not ignored`, CategoryWorkspaceHygiene},
 		{`human follow-up commit fixed agent output`, CategoryHumanFollowup},
 		{`reverted agent commit abc123`, CategoryRevertedCommit},
 		{`stale in-progress ticket docs/tickets/in-progress/T-001.md`, CategoryStaleTicket},
@@ -157,6 +159,7 @@ func TestRetryable(t *testing.T) {
 		CategoryManifestError,
 		CategoryTicketGate,
 		CategoryGuardrailBlock,
+		CategoryWorkspaceHygiene,
 		CategoryHumanFollowup,
 		CategoryRevertedCommit,
 		CategoryStaleTicket,
@@ -178,6 +181,7 @@ func TestRemediate_actions(t *testing.T) {
 	require.Equal(t, ActionNone, Remediate(CategoryCircleDetected))
 	require.Equal(t, ActionNone, Remediate(CategoryMaxTurns))
 	require.Equal(t, ActionNone, Remediate(CategoryTicketGate))
+	require.Equal(t, ActionNone, Remediate(CategoryWorkspaceHygiene))
 	require.Equal(t, ActionNone, Remediate(CategoryUnknown))
 }
 
@@ -405,6 +409,7 @@ func TestTriagePattern_interventionSignalTargets(t *testing.T) {
 		title    string
 	}{
 		{CategoryGuardrailBlock, TargetGuardrail, "Calibrate guardrail workflow"},
+		{CategoryWorkspaceHygiene, TargetProcess, "Repair workspace hygiene"},
 		{CategoryHumanFollowup, TargetProcess, "Reduce human follow-up"},
 		{CategoryRevertedCommit, TargetProcess, "Prevent reverted agent commits"},
 		{CategoryStaleTicket, TargetProcess, "Drain stale in-progress work"},
