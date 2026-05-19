@@ -1730,3 +1730,38 @@ secret-scanned, but their generated line count does not count as source-file
 blast radius. Product source files still count normally, so the guardrail keeps
 blocking oversized implementation files while allowing normal package-manager
 lockfile creation to accompany a bounded product slice.
+
+### Follow-up `demo-123` Replay: Shell Syntax Must Not Burn Completion Turns
+
+After untracked lockfile blast-radius hardening, another clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, and Engineer stayed on the Space Invaders product lane.
+- CTO created ordinary product ticket T-001 for player movement.
+- Engineer produced and committed product artifacts for ship movement and a
+  browser test page.
+- The prior package-lock blast-radius loop did not recur, the target worktree
+  ended clean, and no target intervention-debt tickets were created.
+
+Residual finding:
+
+- Engineer then spent late turns calling `shell_exec` with shell-only syntax in
+  `argv`, including `: > src/test.html`, `: > /dev/null`, an empty argv call,
+  and `> /dev/null`. The tool returned low-level process errors such as
+  `exec: ":" not found`, so the model repeated the shape until `max_turns`
+  fired before moving T-001 to done.
+
+Decision: `shell_exec` argv mode now rejects shell syntax before process
+execution. Redirection, pipes, control operators, command substitution, and
+shell builtins produce one actionable error that explains argv is not shell
+parsed and directs the role to `shell_command` or file tools. The aim is not to
+make shell use broader; it is to turn an observed completion-window turn sink
+into an immediate same-run correction.

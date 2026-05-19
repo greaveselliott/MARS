@@ -88,6 +88,10 @@ Given the COO role has shell access in an existing target manifest
 When it attempts a mutating `shell_exec`
 Then tool policy blocks the command so shell access cannot bypass the planning-only ownership boundary
 
+Given a role calls `shell_exec` with `argv`
+When the argv tokens contain shell-only syntax such as redirection, pipes, control operators, command substitution, or shell builtins
+Then the tool fails before process execution with an actionable instruction to use `shell_command` for shell syntax or file tools for content changes
+
 ### F-005-S004: Auditable Trace
 
 Given an agent job runs

@@ -90,11 +90,63 @@ func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 	if hasArgv && args.Argv[0] == "" {
 		return ToolResult{}, fmt.Errorf("shell_exec: argv[0] must be non-empty")
 	}
+	if hasArgv {
+		if err := validateShellExecArgv(args.Argv); err != nil {
+			return ToolResult{}, err
+		}
+	}
 
 	if args.Background {
 		return execBackground(root, args)
 	}
 	return execForeground(ctx, root, args)
+}
+
+func validateShellExecArgv(argv []string) error {
+	if len(argv) == 0 {
+		return nil
+	}
+	program := strings.Trim(filepathBase(strings.TrimSpace(argv[0])), `"'`)
+	if shellArgvBuiltin(program) {
+		return shellArgvSyntaxError(argv[0])
+	}
+	for _, arg := range argv {
+		token := strings.Trim(strings.TrimSpace(arg), `"'`)
+		if token == "" {
+			continue
+		}
+		if shellArgvControlToken(token) || shellArgvLooksLikeRedirection(token) || strings.Contains(token, "$(") || strings.Contains(token, "`") || strings.Contains(token, "\n") {
+			return shellArgvSyntaxError(arg)
+		}
+	}
+	return nil
+}
+
+func shellArgvBuiltin(program string) bool {
+	switch strings.ToLower(program) {
+	case ":", ".", "cd", "source", "alias", "export", "unset", "set", "ulimit", "jobs", "fg", "bg", "dirs", "pushd", "popd":
+		return true
+	default:
+		return false
+	}
+}
+
+func shellArgvControlToken(token string) bool {
+	switch token {
+	case "|", "||", "&&", ";", "&", "(", ")":
+		return true
+	default:
+		return false
+	}
+}
+
+func shellArgvLooksLikeRedirection(token string) bool {
+	token = strings.TrimLeft(token, "0123456789")
+	return strings.HasPrefix(token, ">") || strings.HasPrefix(token, "<")
+}
+
+func shellArgvSyntaxError(token string) error {
+	return fmt.Errorf("shell_exec: argv mode cannot run shell syntax token %q; argv runs one executable without shell parsing, so redirection, pipes, control operators, and shell builtins will not work. Use shell_command when shell syntax is required, or use file_write/file_read for file content changes", token)
 }
 
 func execForeground(ctx context.Context, root Root, args shellExecArgs) (ToolResult, error) {

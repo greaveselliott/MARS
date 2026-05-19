@@ -65,6 +65,34 @@ func TestShellExec_mutexArgs(t *testing.T) {
 	require.Contains(t, err.Error(), "exactly one")
 }
 
+func TestShellExecArgvRejectsShellSyntax(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		raw  string
+	}{
+		{name: "shell builtin truncate", raw: `{"argv":[":",">","src/test.html"]}`},
+		{name: "redirection as executable", raw: `{"argv":[">","/dev/null"]}`},
+		{name: "redirection argument", raw: `{"argv":["echo","ok",">","out.txt"]}`},
+		{name: "file descriptor redirection", raw: `{"argv":["echo","ok","2>/dev/null"]}`},
+		{name: "pipeline argument", raw: `{"argv":["cat","README.md","|","wc","-l"]}`},
+		{name: "command substitution", raw: `{"argv":["echo","$(pwd)"]}`},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			root, err := NewRoot(dir)
+			require.NoError(t, err)
+			_, err = handleShellExec(context.Background(), root, []byte(tt.raw))
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "argv mode cannot run shell syntax")
+			require.Contains(t, err.Error(), "Use shell_command")
+		})
+	}
+}
+
 func TestShellPolicyBlocksDestructiveVariants(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
