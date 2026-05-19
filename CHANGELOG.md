@@ -2,6 +2,26 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.2] - 2026-05-19
+<!-- mars-harness-release: version=0.41.2 commit=f7ff1f0ca2b2 -->
+
+### Impact
+- **tools:** Agent runs recover faster when a model accidentally passes shell
+  redirection or control syntax through structured `argv` instead of a shell.
+
+### Why
+- **tools:** Live `demo-123` validation showed an Engineer burning completion
+  turns on low-level `exec` failures such as `exec: ":" not found` after useful
+  product commits had already landed.
+
+### What Changed
+- **tools:** `shell_exec` now rejects shell-only argv tokens before process
+  execution and points the role to `shell_command` or file tools for the
+  intended operation (f7ff1f0).
+
+### Fixes
+- **tools:** Reject shell syntax in argv mode (f7ff1f0)
+
 ## [0.41.1] - 2026-05-19
 <!-- mars-harness-release: version=0.41.1 commit=b18aed669531 -->
 
