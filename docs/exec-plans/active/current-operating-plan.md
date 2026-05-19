@@ -57,9 +57,14 @@ plans to decide what to do next.
   2026-05-19, but CI and Release workflow jobs were not started because GitHub
   reported recent account payment failure or a spending-limit increase
   requirement.
-  `mars-harness release verify-assets --version v0.41.8` is blocked because the
-  tag release returns `404 Not Found` until the workflow can publish assets or a
-  release backfill is run after the billing blocker is cleared.
+  Notes-only GitHub Releases for `v0.36.4` through `v0.41.8` were created from
+  the generated changelog entries on 2026-05-19 so the Releases page is no
+  longer stale at `v0.36.3`. `mars-harness release verify-assets --version
+  v0.41.8` is still blocked because the `v0.41.8` release is missing
+  `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
+  `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
+  `checksums.txt` until the workflow can publish assets or a release backfill is
+  run after the billing blocker is cleared.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
