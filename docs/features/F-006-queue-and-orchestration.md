@@ -93,6 +93,10 @@ Given queue, ticket, score, telemetry, and recent outcome signals exist
 When the Orchestrator survey runs
 Then stale tickets, blocked tickets, failed checks, dogfood failures, and no-op outcomes create bounded queue work, while runtime telemetry patterns and low scores stay quarantined as foundation telemetry unless deliberately materialized
 
+Given an eligible in-progress ticket remains after a same-role runtime failure such as Engineer `max_turns`
+When the Orchestrator survey runs within the runtime-failure cooldown window
+Then ticket-owner routing pauses instead of immediately enqueueing another same-role ticket-delivery job, leaving the failure as foundation telemetry or operator retry evidence
+
 ### F-006-S010: Dispatch-Mode Orchestration
 
 Given a generated target manifest uses `orchestration_mode: dispatch`
@@ -168,6 +172,10 @@ Then generated role guidance tells it to update ticket evidence/lifecycle metada
 Given a non-Orchestrator dispatch-mode job fails with a runtime-owned failure such as max turns, context overflow, inference/model availability, tool timeout, guardrail block, manifest error, manual stop, or unknown terminal failure
 When failure handling records telemetry
 Then the server keeps the signal as foundation telemetry and does not enqueue Orchestrator, CTO ticket shaping, Engineer retry, or target backlog intervention debt by default
+
+Given the same ticket is still eligible in `docs/tickets/in-progress/`
+When the native survey loop sees that ticket before the runtime-failure cooldown expires
+Then the survey also refrains from same-role ticket-owner retry so runtime-failure containment cannot be bypassed by the watchdog
 
 Given QA or another dispatch-mode role exits without recording `job_disposition_record`
 When the model first tries to finish with prose only

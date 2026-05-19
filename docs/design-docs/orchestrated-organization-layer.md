@@ -187,6 +187,10 @@ The orchestration engine uses these rules:
 - Pending Engineer survey jobs for in-progress tickets are cancelled when a
   successful Engineer completion leaves none of their referenced tickets
   eligible in `docs/tickets/in-progress/`.
+- Ticket-owner survey routing pauses after a recent same-role runtime failure,
+  including `max_turns`, so the survey watchdog does not immediately retry the
+  same eligible in-progress ticket that failure handling deliberately left as
+  foundation telemetry.
 - Approved or completed QA and Security handoffs move forward through the
   product validation chain. QA routes to Security; Security routes to Dogfood
   when that role exists, or stops when no forward product validation owner

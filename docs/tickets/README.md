@@ -123,6 +123,11 @@ meaningful `blocker` or `blocked_by`. Eligible in-progress work is always ahead
 of backlog work. Blocked in-progress tickets do not cause infinite retries, but
 they must point to a dependency ticket or carry a blocker note clear enough for
 Janitor, Doctor, and the next Engineer run to recover state.
+If an Engineer or other ticket owner just failed with a runtime-owned failure
+such as max turns, context overflow, tool timeout, or guardrail-loop failure,
+the native survey loop pauses same-role ticket-owner retry for its cooldown
+window. Resume deliberately by fixing the root cause, adding blocker metadata,
+or invoking a new operator run.
 
 ## Naming Convention
 
@@ -152,7 +157,7 @@ corresponding `docs/features/F-NNN-*.md` contract must exist.
 
 ## Priority Rules
 
-Eligible in-progress tickets are always the front of the queue. If multiple tickets are already in progress, drain the lowest-numbered eligible in-progress ticket first and fix blockers proactively in the same run.
+Eligible in-progress tickets are always the front of the queue, subject to the runtime-failure cooldown above. If multiple tickets are already in progress, drain the lowest-numbered eligible in-progress ticket first and fix blockers proactively in the same run.
 
 Engineer runs cannot create ordinary backlog tickets while eligible in-progress tickets remain. Dependency tickets are allowed only when deduped and linked back to the blocked ticket through metadata such as `metadata.blocks`. Dogfood ticket creation is capped per run by total count, severity, group, and repeated dedupe key.
 

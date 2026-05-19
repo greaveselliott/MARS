@@ -682,6 +682,70 @@ blocked_by: []
 	assertSurveyJob(t, srv, repoID, "janitor", "ticket_hygiene", "stale_in_progress_ticket")
 }
 
+func TestOrchestratorSurveyPausesTicketOwnerAfterRecentRuntimeFailure(t *testing.T) {
+	ctx := context.Background()
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir .git: %v", err)
+	}
+	if err := scanner.Init(repo, false); err != nil {
+		t.Fatalf("init target harness: %v", err)
+	}
+	writeTicketGateContent(t, repo, "in-progress", "T-001-active.md", `---
+id: T-001
+title: Active
+last_attempt: "`+time.Now().UTC().Format("2006-01-02")+`"
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+	repoID, err := srv.Repos().Register(ctx, repo, "", "main")
+	if err != nil {
+		t.Fatalf("register repo: %v", err)
+	}
+
+	jobID, err := srv.queue.Enqueue(ctx, queue.Job{RepoID: repoID, Role: "engineer"})
+	if err != nil {
+		t.Fatalf("enqueue failed engineer: %v", err)
+	}
+	claimed, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("claim failed engineer: %v", err)
+	}
+	if claimed == nil || claimed.ID != jobID {
+		t.Fatalf("expected to claim failed engineer seed job, got %+v", claimed)
+	}
+	if err := srv.queue.MarkRunning(ctx, claimed.ID); err != nil {
+		t.Fatalf("mark running: %v", err)
+	}
+	if err := srv.queue.Fail(ctx, claimed.ID, "executor: agent ended with max_turns"); err != nil {
+		t.Fatalf("fail engineer: %v", err)
+	}
+
+	report, err := srv.surveyOrchestrator(ctx, "test")
+	if err != nil {
+		t.Fatalf("surveyOrchestrator: %v", err)
+	}
+	if report.JobsRouted != 0 {
+		t.Fatalf("expected recent runtime failure to pause ticket-owner routing, got %+v", report)
+	}
+	if got := countJobsByStatusAndRole(t, srv, "pending", "engineer"); got != 0 {
+		t.Fatalf("expected no immediate engineer retry after max_turns, got %d", got)
+	}
+}
+
 func TestOrchestratorSurveyRoutesFailedChecksAndNoops(t *testing.T) {
 	ctx := context.Background()
 	repo := t.TempDir()

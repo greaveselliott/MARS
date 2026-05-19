@@ -1197,6 +1197,11 @@ meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + `. Eligible in-progress w
 of backlog work. Blocked in-progress tickets do not cause infinite retries, but
 they must point to a dependency ticket or carry a blocker note clear enough for
 Janitor, Doctor, and the next Engineer run to recover state.
+If an Engineer or other ticket owner just failed with a runtime-owned failure
+such as max turns, context overflow, tool timeout, or guardrail-loop failure,
+the native survey loop pauses same-role ticket-owner retry for its cooldown
+window. Resume deliberately by fixing the root cause, adding blocker metadata,
+or invoking a new operator run.
 
 Dispatch-mode repos keep the same ticket source of truth, but roles also record
 terminal outcomes with
@@ -1212,7 +1217,12 @@ Intervention-debt tickets include role, repo, target, category, severity, confid
 
 Harness-owned failures such as dispatch protocol failures, loop/max-turn failures, guardrail or tool-policy workflow failures, context or inference failures, manifest/tool-policy gaps, and unknown terminal failures remain raw local telemetry first. They do not create target backlog tickets by default. If anonymous foundation telemetry is explicitly enabled, the harness may derive sanitized aggregate reports for a configured collector; raw traces, prompts, repo paths, remotes, ticket text, command output, raw error messages, commit SHAs, usernames, file paths, and source content never leave this machine.
 
-Eligible in-progress tickets are always the front of the queue. Engineer runs cannot create ordinary backlog tickets while eligible in-progress tickets remain. Dependency tickets are allowed only when deduped and linked back to the blocked ticket through metadata such as ` + "`metadata.blocks`" + `. Dogfood ticket creation is capped per run by total count, severity, group, and repeated dedupe key.
+Eligible in-progress tickets are always the front of the queue, subject to the
+runtime-failure cooldown above. Engineer runs cannot create ordinary backlog
+tickets while eligible in-progress tickets remain. Dependency tickets are
+allowed only when deduped and linked back to the blocked ticket through metadata
+such as ` + "`metadata.blocks`" + `. Dogfood ticket creation is capped per run by total count,
+severity, group, and repeated dedupe key.
 `,
 
 	"docs/exec-plans/README.md": `# Execution Plans

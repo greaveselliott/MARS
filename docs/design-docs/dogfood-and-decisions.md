@@ -1799,3 +1799,37 @@ heading lines and explain that Scenario Schedule references are allowed. This
 keeps the invariant mechanical while making the recovery step concrete: read
 the file, replace the existing scenario section once, and do not append another
 heading with the same ID.
+
+### Follow-up `demo-123` Replay: Survey Retry Must Respect Runtime Failure Stops
+
+After duplicate-scenario recovery hardening, another clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- The duplicate-scenario loop did not recur: Engineer had two guardrail blocks
+  instead of nine before landing product commits.
+- The target had a clean worktree after the first Engineer's product commits.
+- No target intervention-debt tickets were created for runtime or guardrail
+  signals.
+
+Residual finding:
+
+- The first Engineer still hit `max_turns` with T-001 left in
+  `docs/tickets/in-progress/`.
+- Failure handling correctly kept the `max_turns` signal out of Orchestrator,
+  CTO, and target intervention debt, but the native survey watchdog immediately
+  saw an eligible in-progress ticket and enqueued another Engineer
+  `ticket_delivery` job from `eligible_in_progress_ticket`.
+
+Decision: ticket-owner survey routing must respect runtime-failure containment.
+After a recent same-role runtime failure such as `max_turns`, the survey loop
+pauses same-role ticket-owner retry for a cooldown window. Eligible in-progress
+tickets still outrank backlog work, but the watchdog cannot bypass the
+foundation-telemetry stop by immediately retrying the same failed role.

@@ -25,10 +25,11 @@ import (
 )
 
 const (
-	orchestratorSurveyInterval       = 15 * time.Minute
-	orchestratorSurveyStuckAfter     = 6 * time.Hour
-	orchestratorSurveyEvidenceWindow = 24 * time.Hour
-	orchestratorSurveyDailyCap       = 3
+	orchestratorSurveyInterval               = 15 * time.Minute
+	orchestratorSurveyStuckAfter             = 6 * time.Hour
+	orchestratorSurveyEvidenceWindow         = 24 * time.Hour
+	orchestratorSurveyRuntimeFailureCooldown = time.Hour
+	orchestratorSurveyDailyCap               = 3
 )
 
 type orchestratorSurveyReport struct {
@@ -127,7 +128,14 @@ func (s *Server) surveyTicketState(ctx context.Context, rec RepoRecord, manifest
 		slog.Warn("serve: orchestrator survey ticket ownership skipped", "repo_id", rec.ID, "err", err)
 	} else if len(eligible) > 0 && hasManifestRole(manifest, "engineer") {
 		t := eligible[0]
-		if s.enqueueSurveyJob(ctx, rec, "engineer", "ticket_delivery", surveyJobSpec{
+		if reason, ok := s.recentRuntimeFailureBlocksTicketOwnerSurvey(ctx, rec.ID, "engineer", time.Now().UTC().Add(-orchestratorSurveyRuntimeFailureCooldown)); ok {
+			slog.Info("serve: ticket-owner survey paused after recent runtime failure",
+				"repo_id", rec.ID,
+				"role", "engineer",
+				"ticket", ticketKey(t),
+				"reason", reason,
+			)
+		} else if s.enqueueSurveyJob(ctx, rec, "engineer", "ticket_delivery", surveyJobSpec{
 			Signal:           "eligible_in_progress_ticket",
 			Reason:           "eligible in-progress ticket needs an owning engineer workspace",
 			Tickets:          []ticketstate.Ticket{t},
@@ -200,6 +208,41 @@ func (s *Server) surveyTicketState(ctx context.Context, rec RepoRecord, manifest
 	}
 
 	return routed
+}
+
+func (s *Server) recentRuntimeFailureBlocksTicketOwnerSurvey(ctx context.Context, repoID, role string, since time.Time) (string, bool) {
+	if s == nil || s.db == nil {
+		return "", false
+	}
+	rows, err := s.db.QueryContext(ctx, `
+SELECT error_msg
+FROM jobs
+WHERE repo_id = ?
+  AND role = ?
+  AND status = 'failed'
+  AND completed_at >= ?
+ORDER BY completed_at DESC
+LIMIT 5`, repoID, role, since.Unix())
+	if err != nil {
+		slog.Warn("serve: recent runtime failure lookup failed", "repo_id", repoID, "role", role, "err", err)
+		return "", false
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var msg string
+		if err := rows.Scan(&msg); err != nil {
+			slog.Warn("serve: recent runtime failure scan failed", "repo_id", repoID, "role", role, "err", err)
+			return "", false
+		}
+		if dispatchRuntimeFailureStops(telemetry.Classify(msg)) {
+			return msg, true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		slog.Warn("serve: recent runtime failure rows failed", "repo_id", repoID, "role", role, "err", err)
+	}
+	return "", false
 }
 
 func (s *Server) cancelStaleTicketOwnerSurveyJobs(ctx context.Context, rec RepoRecord) int {

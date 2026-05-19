@@ -82,6 +82,10 @@ extra ownership metadata:
   class, dogfood failure, no-op signal, or release-style global lane.
 - `daily_cap` bounds repeated retry storms even when the source signal remains
   present across surveys.
+- Recent same-role runtime failures such as `max_turns` pause ticket-owner
+  survey routing for the cooldown window, so an eligible in-progress ticket does
+  not bypass runtime-failure containment by immediately spawning another
+  Engineer job.
 
 Running jobs are no longer reset by normal claim polling. Claimed jobs can
 still be reclaimed after a short lease timeout, while running jobs are only
