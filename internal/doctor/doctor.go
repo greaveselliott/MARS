@@ -4,9 +4,11 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/guardrails.md
 - docs/design-docs/release-versioning.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-007-guardrails-and-safety.md
+- docs/features/F-012-self-improvement-loop.md
 - docs/product-specs/product-surface.md
 */
 package doctor
@@ -78,6 +80,7 @@ func Run(cfg Config) []CheckResult {
 		checkPrivateReleaseAuth,
 		checkVersionDrift,
 		checkOperatingModelHealth,
+		checkDeterministicRemediationHealth,
 		checkRoleRegistryHealth,
 		checkActivePlanHygiene,
 		checkTicketDrainHealth,

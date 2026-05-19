@@ -2,7 +2,9 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-012-self-improvement-loop.md
 - docs/product-specs/product-surface.md
 */
 package doctor
@@ -42,6 +44,7 @@ func TestRun_returnsResults(t *testing.T) {
 	assert.True(t, names["private-release-auth"])
 	assert.True(t, names["version-drift"])
 	assert.True(t, names["operating-model"])
+	assert.True(t, names["deterministic-remediation"])
 	assert.True(t, names["role-registry"])
 	assert.True(t, names["active-plan-hygiene"])
 	assert.True(t, names["ticket-drain"])
@@ -151,6 +154,42 @@ func TestCheckOperatingModelHealth_reportsDrift(t *testing.T) {
 	assert.Equal(t, statusWarn, result.Status)
 	assert.Contains(t, result.Message, "operating model drift")
 	assert.Contains(t, result.Fix, "update harness")
+}
+
+func TestCheckDeterministicRemediationHealthReportsMissingHarness(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	result := checkDeterministicRemediationHealth(Config{RepoPath: dir})
+	assert.Equal(t, "deterministic-remediation", result.Name)
+	assert.Equal(t, statusWarn, result.Status)
+	assert.Contains(t, result.Message, "manifest:validate-or-init")
+	assert.Contains(t, result.Fix, "mars-harness init")
+}
+
+func TestCheckDeterministicRemediationHealthReportsMissingMetadata(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".harness"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".harness", "manifest.yaml"), []byte("name: test\nroles: {}\n"), 0o644))
+
+	result := checkDeterministicRemediationHealth(Config{RepoPath: dir})
+	assert.Equal(t, "deterministic-remediation", result.Name)
+	assert.Equal(t, statusWarn, result.Status)
+	assert.Contains(t, result.Message, "generated-docs:update-missing-defaults")
+	assert.Contains(t, result.Fix, "update harness")
+}
+
+func TestCheckDeterministicRemediationHealthPassesGeneratedHarness(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, scanner.Init(dir, false))
+
+	result := checkDeterministicRemediationHealth(Config{RepoPath: dir})
+	assert.Equal(t, "deterministic-remediation", result.Name)
+	assert.Equal(t, statusOK, result.Status)
+	assert.Contains(t, result.Message, "deterministic remediation recipes")
 }
 
 func TestCheckRoleRegistryHealthPassesGeneratedRegistry(t *testing.T) {

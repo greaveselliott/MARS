@@ -132,6 +132,9 @@ The first implementation is deliberately small:
   `scanner.Upgrade` API, not a shell runner. Outcome details record whether the
   update applied files, no-oped, or failed before the generic retry path is
   considered.
+- `doctor --repo` includes a deterministic-remediation check that surfaces
+  known recipe IDs and fixes for missing target harness scaffolds, manifests,
+  and generated metadata before a run has to fail and rediscover the same issue.
 - recurring context/budget failures point at glossary and role prompt scope
 - inference failures point at model/server tuning and doctor checks
 - tool timeouts point at tool policy and role command guidance
@@ -166,6 +169,8 @@ The first implementation is deliberately small:
 
 - Add similarly narrow internal executors before any additional recipe becomes
   auto-safe; recipes without an executor must stay planned or skipped.
+- Promote repeated successful recipes into doctor or setup checks by naming the
+  stable recipe ID and a concrete remediation command before a target run fails.
 - Add richer dashboard/API views for improvement proposals beyond the current event stream.
 - Extend triage with dogfood-specific signal detail and richer commit metadata when optional GitHub evidence is configured.
 - Add scanner-generated glossary and command-route updates when triage repeatedly identifies context gaps.

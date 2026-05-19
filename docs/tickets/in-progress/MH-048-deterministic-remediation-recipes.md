@@ -59,6 +59,10 @@ reserved for judgment work.
   remediation execution evidence with applied/noop/failed status and updated
   files. Additional recipes remain planned/skipped until they have narrow
   internal executors.
+- 2026-05-19: Promoted manifest and generated-docs remediation into
+  `doctor --repo` health output. The new deterministic-remediation doctor check
+  names stable recipe IDs and concrete fix commands before the same issue
+  reaches agent runtime.
 
 ## Affected Files
 
@@ -79,7 +83,7 @@ reserved for judgment work.
 - [x] A remediation registry can list known recipes and their applicability.
 - [x] The generated-docs auto-safe recipe runs before generic LLM retry where configured.
 - [x] Recipe attempts are trace-linked and scored.
-- [ ] Doctor or setup can adopt repeated successful recipes as permanent checks.
+- [x] Doctor or setup can adopt repeated successful recipes as permanent checks.
 
 ### Edge cases and negative paths
 
@@ -91,9 +95,9 @@ reserved for judgment work.
 
 ### Observability, docs, and regressions
 
-- [ ] Tests cover recipe selection, skipped unsafe recipes, trace recording, and
+- [x] Tests cover recipe selection, skipped unsafe recipes, trace recording, and
       known remediation output.
-- [ ] Docs explain deterministic-first repair and how recipes graduate into
+- [x] Docs explain deterministic-first repair and how recipes graduate into
       checks.
 - [ ] Quality export can include remediation attempt summaries once `MH-037`
       lands.

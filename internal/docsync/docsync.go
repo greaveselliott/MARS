@@ -241,7 +241,7 @@ func Rules() []Rule {
 		{Prefix: "internal/dashboard/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/dashboard.md", "docs/features/F-010-dashboard-control-plane.md"}},
 		{Prefix: "internal/docsconsistency/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/delivery-operating-model.md", "docs/features/F-001-delivery-operating-model.md"}},
 		{Prefix: "internal/docsync/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/delivery-operating-model.md", "docs/design-docs/documentation-sync-architecture.md", "docs/features/F-001-delivery-operating-model.md"}},
-		{Prefix: "internal/doctor/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/features/F-004-target-harness-lifecycle.md", "docs/product-specs/product-surface.md"}},
+		{Prefix: "internal/doctor/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/self-reflective-telemetry.md", "docs/features/F-004-target-harness-lifecycle.md", "docs/features/F-012-self-improvement-loop.md", "docs/product-specs/product-surface.md"}},
 		{Prefix: "internal/evolution/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/self-improvement.md", "docs/features/F-012-self-improvement-loop.md"}},
 		{Prefix: "internal/foundationtelemetry/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/self-reflective-telemetry.md", "docs/features/F-012-self-improvement-loop.md"}},
 		{Prefix: "internal/github/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/features/F-011-optional-github-integration.md", "docs/product-specs/product-surface.md"}},

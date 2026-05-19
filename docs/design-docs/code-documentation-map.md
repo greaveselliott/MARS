@@ -53,7 +53,7 @@ field is a list of repo-relative documentation paths.
 | `internal/dashboard/` | `docs/design-docs/dashboard.md` | F-010 |
 | `internal/docsconsistency/` | `docs/design-docs/delivery-operating-model.md` | F-001 |
 | `internal/docsync/` | `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, this map | F-001 |
-| `internal/doctor/` | `docs/product-specs/product-surface.md` | F-004 |
+| `internal/doctor/` | `docs/product-specs/product-surface.md`, `docs/design-docs/self-reflective-telemetry.md` | F-004, F-012 |
 | `internal/evolution/` | `docs/design-docs/self-improvement.md` | F-012 |
 | `internal/foundationtelemetry/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
 | `internal/github/` | `docs/product-specs/product-surface.md` | F-011 |

@@ -131,7 +131,7 @@ Checks recorded during the 2026-05-02 review:
 - `MH-048`: deterministic remediation recipes are in progress. The first
   completed slices add the remediation registry, applicability planner, and
   trace-linked score evidence in `serve`; as of 2026-05-19, the generated-docs
-  auto-safe recipe executes through `scanner.Upgrade`. The next slice should
-  add narrow internal executors only for recipes that can be proven
-  non-destructive.
+  auto-safe recipe executes through `scanner.Upgrade`, and `doctor --repo`
+  reports manifest/generated-docs recipe IDs before runtime. The next slice
+  should decide whether MH-048 is complete or needs another permanent check.
 - Next active-plan refresh: promote the deterministic-first repair scenario group.
