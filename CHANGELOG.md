@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.16] - 2026-05-19
+<!-- mars-harness-release: version=0.41.16 commit=cb0ef00bb9ce -->
+
+### Impact
+- **dogfood:** The release carries stronger evidence because broaden foundation validation loop.
+
+### Why
+- **dogfood:** This matters because the project needs durable evidence that the behavior keeps working.
+
+### What Changed
+- **dogfood:** Changed broaden foundation validation loop (cb0ef00).
+
+### Tests
+- **dogfood:** Broaden foundation validation loop (cb0ef00)
+
 ## [0.41.15] - 2026-05-19
 <!-- mars-harness-release: version=0.41.15 commit=b67f96729a99 -->
 
