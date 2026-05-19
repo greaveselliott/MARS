@@ -51,12 +51,13 @@ plans to decide what to do next.
   `go run ./cmd/mars-harness release verify-assets --version v0.23.0` is
   blocked because GitHub returned `404 Not Found` for the tag release
   immediately after the tag push.
-- `v0.36.4`, `v0.36.5`, and `v0.36.6` release notes and tags were pushed on 2026-05-19,
-  but CI and Release workflow jobs were not started because GitHub reported
-  recent account payment failure or a spending-limit increase requirement.
-  `mars-harness release verify-assets --version v0.36.6` is blocked because
-  the tag release returns `404 Not Found` until the workflow can publish
-  assets or a release backfill is run after the billing blocker is cleared.
+- `v0.36.4`, `v0.36.5`, `v0.36.6`, and `v0.37.0` release notes and tags were
+  pushed on 2026-05-19, but CI and Release workflow jobs were not started
+  because GitHub reported recent account payment failure or a spending-limit
+  increase requirement. `mars-harness release verify-assets --version v0.37.0`
+  is blocked because the tag release returns `404 Not Found` until the workflow
+  can publish assets or a release backfill is run after the billing blocker is
+  cleared.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
