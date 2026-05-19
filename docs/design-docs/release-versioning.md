@@ -56,6 +56,11 @@ with generated `Impact`, `Why`, and `What Changed` prose. If old git topology is
 non-linear, the tool falls back to the commit hashes already present in that
 entry's semantic buckets.
 
+Backfill fills missing or legacy narrative; it must not downgrade entries that
+already contain complete current `Impact`, `Why`, and `What Changed` sections.
+Those entries may be richer than the commit-subject fallback the tool would
+generate today, so the checker treats them as compliant release history.
+
 The command supports `--dry-run` for review, `--check` for docs-consistency and
 CI gates, and `--min-version` / `--max-version` for bounded historical batches.
 If a marker commit is missing or no non-release commits can be found for an
@@ -73,8 +78,11 @@ Every non-release semantic commit to this source repository must be followed by 
 1. commit the coherent source/doc/test change
 2. run `mars-harness release notes --repo . --bump auto`
 3. verify the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes
-4. commit them as `release: notes X.Y.Z`
-5. push `main`
+4. run `mars-harness release backfill-notes --repo . --check`; if it reports
+   legacy entries, run `mars-harness release backfill-notes --repo .` and
+   include that changelog correction in the same release-note commit
+5. commit them as `release: notes X.Y.Z`
+6. push `main`
 
 The `release: notes X.Y.Z` commit itself is exempt. The release generator ignores release-note commits so the workflow does not create an infinite version loop.
 
@@ -84,10 +92,18 @@ Initialized target repositories use the same operating rule. `mars-harness init`
 
 1. `mars-harness release notes --repo . --bump auto`
 2. verification of generated `VERSION` and `CHANGELOG.md`
-3. a `release: notes X.Y.Z` commit
-4. push to `main`
+3. `mars-harness release backfill-notes --repo . --check`, with any required
+   historical backfill included before commit
+4. a `release: notes X.Y.Z` commit
+5. push to `main`
 
 Target repos do not have `internal/buildinfo/version.go` unless their own project defines one. The mirrored rule is the workflow contract, not a requirement for target repos to copy Mars Harness internals.
+
+Dispatch-mode target lifecycles do not leave this rule to the weekly release
+schedule alone. When Dogfood approves or completes validation after product
+work, deterministic dispatch routes to `release-manager` when that role exists,
+so versioning and release blockers become part of the same autonomous product
+delivery chain.
 
 ### AD-059: Versioned Releases Are Published To GitHub When Configured
 

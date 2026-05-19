@@ -23,11 +23,14 @@ roles, tools, tickets, traces, scores, and dashboard. It is not a second
 scheduler and it does not replace repo-owned tickets, goals, exec plans, or BDD
 evidence.
 
-The corrected foundation-agent ownership spine is now:
+The corrected foundation-agent ownership spine for product delivery is now:
 
-`CEO -> COO -> CTO -> Engineer -> QA -> Security -> Dependency Manager -> Release Manager`
+`CEO -> COO -> CTO -> Engineer -> QA -> Security -> Dogfood -> Release Manager`
 
-with Orchestrator between every active role.
+with Orchestrator reserved for ambiguous or governance-heavy handoffs rather
+than inserted between every deterministic role. Dependency Manager remains a
+scheduled or explicit maintenance owner rather than the default fresh-product
+handoff.
 
 ## Decision
 
@@ -51,6 +54,9 @@ forward handoff. Direct dispatch stops with a same-role reason unless the role
 provides an explicit structured target for another owner. This keeps roles such
 as COO from finishing with `next_need: exec_plan` and immediately enqueueing
 another COO job instead of completing planning or handing to CTO.
+Review roles are the exception: if QA, Security, or Dogfood completes and names
+its own review category, dispatch treats that as completed review evidence and
+routes to the next configured review or release owner.
 
 ## Runtime Contract
 
@@ -197,12 +203,12 @@ The orchestration engine uses these rules:
   including `max_turns`, so the survey watchdog does not immediately retry the
   same eligible in-progress ticket that failure handling deliberately left as
   foundation telemetry.
-- Approved or completed QA and Security handoffs move forward through the
-  product validation chain. QA routes to Security; Security routes to Dogfood
-  when that role exists, or stops when no forward product validation owner
-  remains. Dependency Manager and Release Manager remain routable when a role
-  explicitly asks for dependency or release work, but they are no longer
-  automatic review-chain defaults for fresh target product slices.
+- Approved or completed QA, Security, and Dogfood handoffs move forward through
+  the product validation and versioning chain. QA routes to Security, Security
+  routes to Dogfood when that role exists or Release Manager when it does not,
+  and Dogfood routes to Release Manager when configured. Dependency Manager
+  remains routable when a role explicitly asks for dependency work, but it is
+  not the default fresh-product handoff.
 - The completed-Engineer/no-open-ticket guard is pre-review only. It can rewrite
   Orchestrator fallback decisions to QA before review, but after QA approves
   with a forward validation need the runtime honors QA's current disposition and

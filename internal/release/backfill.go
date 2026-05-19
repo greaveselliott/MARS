@@ -114,16 +114,21 @@ func BackfillNotes(ctx context.Context, cfg BackfillConfig) (BackfillResult, err
 			return BackfillResult{}, fmt.Errorf("release backfill-notes: release %s has no non-release commits in marker range", entry.Version)
 		}
 
-		next := buildBackfilledEntry(entry, renderReleaseNarrative(commits))
-		changed := strings.TrimSpace(next) != strings.TrimSpace(entry.Raw)
-		rebuilt[i] = next
 		item := BackfillEntryResult{
 			Version:     entry.Version,
 			BaseRef:     shortRef(base),
 			HeadRef:     shortRef(head),
 			CommitCount: len(commits),
-			Changed:     changed,
 		}
+		if hasCompleteCurrentNarrative(entry.Body) {
+			result.Entries = append(result.Entries, item)
+			continue
+		}
+
+		next := buildBackfilledEntry(entry, renderReleaseNarrative(commits))
+		changed := strings.TrimSpace(next) != strings.TrimSpace(entry.Raw)
+		item.Changed = changed
+		rebuilt[i] = next
 		result.Entries = append(result.Entries, item)
 		if changed {
 			result.Changed = append(result.Changed, entry.Version)
@@ -328,6 +333,36 @@ func buildBackfilledEntry(entry changelogEntry, narrative string) string {
 		parts = append(parts, "", rest)
 	}
 	return strings.Join(parts, "\n") + "\n\n"
+}
+
+func hasCompleteCurrentNarrative(body string) bool {
+	sections := map[string]*strings.Builder{
+		"impact":       &strings.Builder{},
+		"why":          &strings.Builder{},
+		"what changed": &strings.Builder{},
+	}
+	current := ""
+	for _, line := range strings.Split(body, "\n") {
+		if strings.HasPrefix(line, "### ") {
+			title := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(line, "### ")))
+			if _, ok := sections[title]; ok {
+				current = title
+			} else {
+				current = ""
+			}
+			continue
+		}
+		if current != "" {
+			sections[current].WriteString(line)
+			sections[current].WriteByte('\n')
+		}
+	}
+	for _, title := range []string{"impact", "why", "what changed"} {
+		if strings.TrimSpace(sections[title].String()) == "" {
+			return false
+		}
+	}
+	return true
 }
 
 func stripLeadingNarrativeSections(body string) string {

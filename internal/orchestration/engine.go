@@ -3,7 +3,9 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/orchestrated-organization-layer.md
+- docs/design-docs/release-versioning.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-009-release-update-lifecycle.md
 */
 package orchestration
 
@@ -176,6 +178,9 @@ func directDeterministicRoute(in Input, status, nextNeed, suggested string) (nex
 		}
 		if role := roleForNeedInManifest(in.Manifest, nextNeed); role != "" {
 			if sameRole(d.Role, role) {
+				if forward := nextReviewLifecycleRoleForRole(in.Manifest, d.Role); forward != "" {
+					return direct(forward, "current review next_need already belongs to source role; routing to next review owner without Orchestrator detour")
+				}
 				return "", "deterministic", "next_need resolves to the current role; stopping direct dispatch to avoid a same-role loop", "same-role next_need has no forward owner", true
 			}
 			return direct(role, "routing completed work by next_need without Orchestrator detour")
@@ -343,13 +348,21 @@ func nextReviewLifecycleRole(m *bundle.Manifest, sourceRank int) string {
 	if m == nil {
 		return ""
 	}
-	roles := []string{"qa", "security", "dogfood"}
+	roles := []string{"qa", "security", "dogfood", "release-manager"}
 	for i := sourceRank + 1; i < len(roles); i++ {
 		if _, ok := m.Roles[roles[i]]; ok {
 			return roles[i]
 		}
 	}
 	return ""
+}
+
+func nextReviewLifecycleRoleForRole(m *bundle.Manifest, role string) string {
+	rank, ok := reviewLifecycleRank(role)
+	if !ok {
+		return ""
+	}
+	return nextReviewLifecycleRole(m, rank)
 }
 
 func roleForNeedInManifest(m *bundle.Manifest, nextNeed string) string {
@@ -410,6 +423,8 @@ func defaultCompletionRoute(role string) string {
 		return "security"
 	case "security":
 		return "dogfood"
+	case "dogfood":
+		return "release-manager"
 	case "dependency-manager":
 		return "release-manager"
 	default:

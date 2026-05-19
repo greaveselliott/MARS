@@ -215,8 +215,10 @@ Dogfood validates the real build, run, user, or agent path.
 The Janitor detects stale goals, stale scenarios, false done, missing evidence,
 duplicate work, and misleading in-progress state.
 
-The Release Manager separates shipped scenarios from enablers in patch notes
-and release notes.
+The Release Manager runs after successful product validation as well as on its
+schedule. It separates shipped scenarios from enablers in patch notes and
+release notes, verifies historical backfill compliance, and records release
+asset blockers before the lifecycle stops.
 
 ## Failure Modes And Mitigations
 
@@ -236,6 +238,7 @@ and release notes.
 | Unit tests give false confidence | Operating-model bugs appear only in full loops | BDD E2E/integration is default acceptance; unit and docs tests support deterministic helpers. |
 | Source stabilization passes tests but still fails in practice | The changed behavior only appears when the installed harness runs against a real target lifecycle | Treat live-experience verification against `demo-123` or another representative target as a source-harness gate, then rerun after bounded source changes and push confirmed work to remote trunk before claiming improvement. |
 | Live demos become endless observation | Findings are gathered without forcing a small action and a rerun | Use the run, review, act, rerun loop: one clean run, one evidence review, one or two bounded fixes, one clean replay, and a recorded next blocker if the replay still stalls. |
+| Release discipline is documented but not executed | Product validation stops at Dogfood while semantic target commits remain unreleased | Route approved or completed Dogfood dispositions to Release Manager when configured, and require release backfill compliance before the release-note commit. |
 | Lean becomes endless learning | Hypotheses never close | Exec plans require success and falsification evidence; inconclusive plans are revised, superseded, or split. |
 | Operating-model additions create handoff gaps | New rules are added without updating the adjacent artifacts, roles, tools, or evidence path | Treat operating-model changes as system changes: update the whole affected workflow in one task or record the blocker before merging. |
 

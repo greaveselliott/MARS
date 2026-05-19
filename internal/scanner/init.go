@@ -2657,7 +2657,9 @@ Historical marker-backed entries must stay on the same standard. Use
 release markers, replace legacy narrative sections, preserve semantic buckets
 and delivery evidence, fall back to commit hashes already present in semantic
 buckets for non-linear old history, and fail rather than invent history when a
-marker is missing.
+marker is missing. Backfill fills missing or legacy narrative; it must not
+downgrade entries that already contain complete current ` + "`Impact`" + `, ` + "`Why`" + `, and
+` + "`What Changed`" + ` sections.
 
 ## Automatic Versioning Rule
 
@@ -2665,10 +2667,18 @@ Every non-release semantic commit in this repository must be followed by:
 
 1. ` + "`mars-harness release notes --repo . --bump auto`" + `
 2. verification of generated ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `
-3. a ` + "`release: notes X.Y.Z`" + ` commit
-4. push to ` + "`main`" + `
+3. ` + "`mars-harness release backfill-notes --repo . --check`" + `, with any required
+   historical backfill included before commit
+4. a ` + "`release: notes X.Y.Z`" + ` commit
+5. push to ` + "`main`" + `
 
 The ` + "`release: notes X.Y.Z`" + ` commit itself is exempt so the workflow does not create an infinite version loop.
+
+Dispatch-mode target lifecycles do not leave this rule to the weekly release
+schedule alone. When Dogfood approves or completes validation after product
+work, deterministic dispatch routes to ` + "`release-manager`" + ` when that role exists,
+so versioning and release blockers become part of the same autonomous product
+delivery chain.
 
 ## GitHub Release Rule
 
@@ -3718,6 +3728,7 @@ REPO LEARNINGS context block.
 
 ## Trigger
 
+- **Dispatch:** Runs after product validation approves or completes work that may have unreleased semantic commits
 - **Schedule:** Weekly release check (Monday 8am UTC)
 
 ## Prompt
@@ -3741,7 +3752,8 @@ For direct commits to main:
 4. Do not generate another version for a ` + "`release: notes X.Y.Z`" + ` commit
 5. Verify generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. If a commit subject is too thin, add richer commit-body context with ` + "`Impact:`" + `, ` + "`Why:`" + `, or ` + "`What:`" + ` before claiming the release text is good.
 6. Separate shipped feature scenarios from enabler work in release notes; do not claim a feature unless mapped scenarios pass.
-7. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets when GitHub release credentials are configured
+7. Run ` + "`mars-harness release backfill-notes --repo . --check`" + ` after release notes are generated. If the check reports legacy entries, run ` + "`mars-harness release backfill-notes --repo .`" + ` and include the backfill in the same release-note commit.
+8. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets when GitHub release credentials are configured
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
@@ -3911,7 +3923,9 @@ server, or edit product/package files after a failed pre-flight.
     ticket markdown and do not edit product files.
 
 18. Before finishing, record exactly one job_disposition_record:
-    - status approved or no_work when validation passes and no follow-up is needed
+    - status approved with next_need release_review when validation passes
+      after product or ticket commits, so Release Manager can generate version notes
+    - status no_work when validation passes and no release/version follow-up is needed
     - status changes_requested with next_need implementation_rework when a
       target-owned product defect or pre-flight issue needs Engineer work
     - status blocked when validation cannot proceed because of a

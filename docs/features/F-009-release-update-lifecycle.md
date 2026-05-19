@@ -26,6 +26,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 9. F-009-S009 - Historical release entries are backfilled to the current narrative standard from marker ranges.
 10. F-009-S010 - The installed CLI reports its version through the explicit command and root-level version flags.
 11. F-009-S011 - Private release auth is a first-class Getting Started operating model.
+12. F-009-S012 - Approved product validation enters release review automatically in generated target lifecycles.
 
 ## Scenarios
 
@@ -86,6 +87,7 @@ And structural delivery changes such as operating-model, structured dispatch, pe
 Given `CHANGELOG.md` contains older marker-backed release entries
 When `mars-harness release backfill-notes --repo <path>` runs
 Then each selected entry derives its non-release commits from adjacent release markers or, for non-linear old history, from existing semantic-bucket commit references, replaces legacy narrative sections with `Impact`, `Why`, and `What Changed`, preserves semantic commit buckets and delivery evidence, and reports missing markers or empty release ranges instead of inventing history
+And entries that already contain complete current `Impact`, `Why`, and `What Changed` sections are preserved rather than flattened into generic regenerated prose
 
 ### F-009-S010: Version Shortcut Parity
 
@@ -102,6 +104,13 @@ And `mars-harness auth github check` reports `status`, `auth_source`, `repo_acce
 And `mars-harness setup` checks private-release auth unless `--skip-github` or `--test-mode` is used
 And `mars-harness doctor` reports private-release auth readiness with a concrete fix
 And agents can use the read-only `github_auth_check` tool before update, release verification, install repair, or version-drift remediation
+
+### F-009-S012: Dispatch-To-Release Review
+
+Given a generated target lifecycle has completed product planning, implementation, QA, security, and dogfood validation
+When Dogfood records an approved or completed disposition after product or ticket commits
+Then dispatch routes to Release Manager before stopping so generated target `VERSION` and `CHANGELOG.md` are updated from unreleased semantic commits
+And Release Manager runs `mars-harness release backfill-notes --repo . --check` so legacy release entries are found deliberately instead of being missed during routine versioning
 
 ## Out of Scope
 
@@ -126,3 +135,4 @@ None.
 - F-009-S008: `go test ./internal/release -run 'TestRenderReleaseNarrative(UsesImpactWhyAndWhat|ProfilesStructuredDispatch)'`
 - F-009-S009: `go test ./internal/release -run TestBackfillNotes` and `go test ./cmd/mars-harness -run TestReleaseBackfillNotesCommandChecksAndWrites`
 - F-009-S010: `go test ./cmd/mars-harness -run TestVersionEntrypointsPrintSameVersionLine`
+- F-009-S012: `go test ./internal/orchestration -run TestDecide_dogfoodApprovalRoutesDirectlyToReleaseManager` and `go test ./internal/scanner -run TestInit_success`

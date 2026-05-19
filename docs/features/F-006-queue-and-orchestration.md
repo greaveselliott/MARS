@@ -28,6 +28,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 11. F-006-S011 - Review rework reuses the existing product ticket instead of creating duplicate planning work.
 12. F-006-S012 - Feature tickets cannot move to done before required BDD evidence is populated.
 13. F-006-S013 - Runtime failures stop as foundation telemetry instead of restarting product planning loops.
+14. F-006-S014 - Product validation routes into release review instead of stopping before versioning.
 
 ## Scenarios
 
@@ -111,6 +112,10 @@ Given a non-Orchestrator dispatch-mode role records a completed or no-work dispo
 When no explicit structured target role points to a different owner
 Then direct dispatch stops with an operator-visible same-role reason instead of enqueueing a same-role handoff loop
 
+Given a review role records approved or completed work with a `next_need` that names its own review category
+When a later review or release owner is configured
+Then dispatch treats that as completed review evidence and routes to the next review owner instead of applying the planning-role same-role stop
+
 Given a non-Orchestrator dispatch-mode role records an ambiguous, blocked, failed, or conflicting disposition
 When the route is not deterministic enough for the runtime to select safely
 Then dispatch routes to the configured Orchestrator fallback for synthesis or stops with an operator-visible reason when no safe fallback exists
@@ -150,6 +155,10 @@ Then dispatch routes QA review instead of routing back to Engineer, CTO ticket s
 Given QA approves a completed ordinary product ticket with `next_need: dogfood_validation`
 When the QA dispatch trigger still carries the original completed Engineer source disposition for that ticket
 Then dispatch honors QA's current approval and routes forward to Dogfood instead of reapplying the pre-review Engineer ticket guard and enqueueing QA again
+
+Given Dogfood approves or completes validation after product work
+When the manifest includes a `release-manager` role
+Then dispatch routes directly to Release Manager so `VERSION`, `CHANGELOG.md`, tags, and release blockers are handled as part of the same lifecycle rather than relying on a later weekly schedule
 
 Given Engineer fails a ticket gate such as missing BDD scenario evidence on a done ticket
 When dispatch-mode failure handling records the failure

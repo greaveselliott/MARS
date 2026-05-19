@@ -17,9 +17,10 @@ go test ./...
 4. Commit with a semantic message referencing the milestone if applicable
 5. Run `mars-harness release notes --repo . --bump auto`
 6. Verify the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes
-7. Commit them as `release: notes X.Y.Z`
-8. Push `main`
-9. Publish or update GitHub Release `vX.Y.Z` with the generated changelog entry when GitHub release credentials are configured, then run any repo-required asset backfill or verification
+7. Run `mars-harness release backfill-notes --repo . --check`; if it reports legacy entries, run `mars-harness release backfill-notes --repo .` and include those changelog corrections
+8. Commit them as `release: notes X.Y.Z`
+9. Push `main`
+10. Publish or update GitHub Release `vX.Y.Z` with the generated changelog entry when GitHub release credentials are configured, then run any repo-required asset backfill or verification
 
 Every non-release semantic commit must follow this versioning step. Release-note commits are the only exception: do not run the release generator again for a `release: notes X.Y.Z` commit.
 

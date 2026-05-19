@@ -3,7 +3,9 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/orchestrated-organization-layer.md
+- docs/design-docs/release-versioning.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-009-release-update-lifecycle.md
 */
 package orchestration
 
@@ -118,6 +120,27 @@ func TestDecide_nonOrchestratorNextNeedSameRoleStopsDirectDispatch(t *testing.T)
 	require.Equal(t, "deterministic", decision.DecisionKind)
 	require.Contains(t, decision.Reason, "current role")
 	require.Contains(t, decision.StopReason, "same-role")
+}
+
+func TestDecide_reviewNextNeedSameRoleRoutesForward(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("security", "dogfood", "release-manager", "orchestrator"),
+		Disposition: orgstate.Disposition{
+			JobID:    "security-job",
+			RepoID:   "repo-1",
+			Role:     "security",
+			Status:   "completed",
+			NextNeed: "security_review",
+			TicketID: "T-001",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "dogfood", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "next review owner")
+	require.Empty(t, decision.StopReason)
 }
 
 func TestDecide_nonOrchestratorNoWorkNextNeedSameRoleStopsDirectDispatch(t *testing.T) {
@@ -436,6 +459,7 @@ func TestDecide_defaultCompletionRouteMatchesOwnershipSpine(t *testing.T) {
 		{"engineer", "qa"},
 		{"qa", "security"},
 		{"security", "dogfood"},
+		{"dogfood", "release-manager"},
 		{"dependency-manager", "release-manager"},
 	}
 	for _, tt := range tests {
@@ -537,7 +561,7 @@ func TestDecide_orchestratorRoutesSecurityApprovalToDogfoodBeforeGovernance(t *t
 	require.Contains(t, decision.Reason, "routing forward")
 }
 
-func TestDecide_orchestratorStopsAfterSecurityApprovalWhenDogfoodAbsent(t *testing.T) {
+func TestDecide_orchestratorRoutesSecurityApprovalToReleaseWhenDogfoodAbsent(t *testing.T) {
 	t.Parallel()
 
 	source := orgstate.Disposition{
@@ -561,12 +585,32 @@ func TestDecide_orchestratorStopsAfterSecurityApprovalWhenDogfoodAbsent(t *testi
 		},
 	})
 	require.NoError(t, err)
-	require.Empty(t, decision.NextRole)
+	require.Equal(t, "release-manager", decision.NextRole)
 	require.Equal(t, "deterministic", decision.DecisionKind)
-	require.Equal(t, "review chain complete", decision.StopReason)
+	require.Contains(t, decision.Reason, "routing forward")
 }
 
-func TestDecide_orchestratorStopsAfterCompletedReviewChain(t *testing.T) {
+func TestDecide_dogfoodApprovalRoutesDirectlyToReleaseManager(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "dogfood", "release-manager"),
+		Disposition: orgstate.Disposition{
+			JobID:    "dogfood-job",
+			RepoID:   "repo-1",
+			Role:     "dogfood",
+			Status:   "approved",
+			TicketID: "T-001",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "release-manager", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "without Orchestrator detour")
+	require.Empty(t, decision.StopReason)
+}
+
+func TestDecide_orchestratorRoutesCompletedReviewChainToReleaseManager(t *testing.T) {
 	t.Parallel()
 
 	source := orgstate.Disposition{
@@ -590,6 +634,8 @@ func TestDecide_orchestratorStopsAfterCompletedReviewChain(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	require.Empty(t, decision.NextRole)
-	require.Equal(t, "review chain complete", decision.StopReason)
+	require.Equal(t, "release-manager", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "routing forward")
+	require.Empty(t, decision.StopReason)
 }

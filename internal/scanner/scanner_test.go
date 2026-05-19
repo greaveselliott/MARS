@@ -858,6 +858,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(dogfoodPrompt), "FOR STATIC HTML/CSS/JS PROJECTS")
 	assert.Contains(t, string(dogfoodPrompt), "python3 -m http.server")
 	assert.Contains(t, string(dogfoodPrompt), "package files just to run this smoke test")
+	assert.Contains(t, string(dogfoodPrompt), "next_need release_review")
 
 	releaseDoc, err = os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	require.NoError(t, err)
@@ -872,8 +873,10 @@ func TestInit_success(t *testing.T) {
 
 	releasePrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "release-manager.md"))
 	require.NoError(t, err)
+	assert.Contains(t, string(releasePrompt), "Runs after product validation approves or completes work")
 	assert.Contains(t, string(releasePrompt), "Treat every non-release semantic commit")
 	assert.Contains(t, string(releasePrompt), "Do not generate another version")
+	assert.Contains(t, string(releasePrompt), "release backfill-notes --repo . --check")
 	assert.Contains(t, string(releasePrompt), "Separate shipped feature scenarios from enabler work")
 	assert.Contains(t, string(releasePrompt), "Impact")
 	assert.Contains(t, string(releasePrompt), "What Changed")

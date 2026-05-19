@@ -69,6 +69,38 @@ func TestBackfillNotesCheckReportsStaleAndPassesAfterRewrite(t *testing.T) {
 	require.Empty(t, result.Changed)
 }
 
+func TestBackfillNotesPreservesCompleteCurrentNarrative(t *testing.T) {
+	t.Parallel()
+	dir := initGitRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs.txt"), []byte("docs"), 0o644))
+	gitCommit(t, dir, "docs(release): document release handoff")
+	head := gitOutput(t, dir, "rev-parse", "--short=12", "HEAD")
+	short := gitOutput(t, dir, "rev-parse", "--short=7", "HEAD")
+	changelog := `# Changelog
+
+## [0.1.0] - 2026-05-02
+<!-- mars-harness-release: version=0.1.0 commit=` + head + ` -->
+
+### Impact
+- **release:** Operators retain the richer release explanation already written for this version.
+
+### Why
+- **release:** This matters because historical backfill should fill gaps without flattening human-quality release history.
+
+### What Changed
+- **release:** The entry already explains dispatch, evidence, and operator-visible behavior.
+
+### Documentation
+- **release:** Document release handoff (` + short + `)
+`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte(changelog), 0o644))
+
+	result, err := BackfillNotes(context.Background(), BackfillConfig{RepoRoot: dir, Check: true})
+	require.NoError(t, err)
+	require.Empty(t, result.Changed)
+	require.Equal(t, changelog, readChangelog(t, dir))
+}
+
 func TestBackfillNotesHonorsVersionRange(t *testing.T) {
 	t.Parallel()
 	dir, _, _ := backfillFixture(t)

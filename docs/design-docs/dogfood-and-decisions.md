@@ -1908,3 +1908,46 @@ that maps back to the same role is not forward progress. Dispatch now stops
 with a same-role reason instead of enqueueing the same role again, and
 generated COO guidance explicitly forbids finishing with planning `next_need`
 values that route back to COO.
+
+### Follow-up `demo-123` Replay: Release Notes Must Be In The Live Chain
+
+After same-role handoff containment, a clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- The same-role COO loop was fixed: one COO job handed directly to CTO, and the
+  target had product-specific planning, feature-contract, and implementation
+  ticket commits.
+- The target produced semantic commits such as `CEO: Define scope...`,
+  `plan: update active scenario schedule...`, and `tickets: create
+  implementation ticket...`.
+
+Residual finding:
+
+- `VERSION` remained `0.1.0` and target `CHANGELOG.md` still contained only
+  the generated header after semantic target commits. The release/versioning
+  rule existed in generated docs and the Release Manager prompt, but the
+  dispatch chain stopped at product validation rather than enqueueing Release
+  Manager.
+- The same replay also exposed the review-role variant of the same-role guard:
+  Security completed with `next_need: security_review`, which mapped to
+  Security and stopped before Dogfood. Review roles need to interpret their own
+  review `next_need` as completed evidence and move forward to the next review
+  or release owner.
+- Source `release backfill-notes --check` also reported historical entries
+  needing backfill, but the first write pass showed the tool could downgrade
+  already-rich entries into generic fallback prose.
+
+Decision: release discipline must be executed by the lifecycle, not left as
+passive doctrine. Dogfood approval/completion now routes to Release Manager
+when configured, review roles with self-named review needs route forward rather
+than stopping, Release Manager guidance runs `release backfill-notes --check`
+after generated notes, and the backfill tool preserves complete current
+narrative entries instead of flattening them.
