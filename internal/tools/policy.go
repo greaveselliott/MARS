@@ -667,11 +667,11 @@ func checkJobDispositionRecordPolicy(ctx context.Context, root Root, session Ses
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return nil
 	}
-	if !successfulDispositionStatus(args.Status) {
-		return nil
-	}
 	if err := checkEngineerDispositionTicketState(root, session, args.Status, args.TicketID); err != nil {
 		return err
+	}
+	if !dispositionRequiresCleanTree(args.Status) {
+		return nil
 	}
 	files, err := changedFiles(ctx, root)
 	if err != nil {
@@ -734,6 +734,15 @@ func dispositionBlockingFiles(files []string) []string {
 func successfulDispositionStatus(status string) bool {
 	switch strings.ToLower(strings.TrimSpace(status)) {
 	case "completed", "approved", "in_review", "no_work":
+		return true
+	default:
+		return false
+	}
+}
+
+func dispositionRequiresCleanTree(status string) bool {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "completed", "approved", "in_review", "no_work", "changes_requested", "blocked", "failed":
 		return true
 	default:
 		return false

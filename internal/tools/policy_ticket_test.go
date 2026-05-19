@@ -598,6 +598,58 @@ func TestJobDispositionPolicyRequiresCleanTreeForSuccessfulNonOrchestratorHandof
 	}
 }
 
+func TestJobDispositionPolicyRequiresCleanTreeForChangesRequestedHandoff(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatalf("NewRoot: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("demo\n"), 0o644); err != nil {
+		t.Fatalf("write readme: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "add", "README.md"); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "commit", "-m", "init"); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	_, err = CreateTicket(root, TicketInput{
+		Title:      "[Dogfood][Pre-flight] Missing game loop",
+		Priority:   "high",
+		Complexity: "small",
+		WorkType:   "enabler",
+		Source:     "dogfood test 2026-05-19",
+		Body:       "## Context\nDogfood found missing behavior.\n\n## Requirements\nAdd it.\n\n## Acceptance criteria\n- [ ] Rework is claimable",
+	})
+	if err != nil {
+		t.Fatalf("create ticket: %v", err)
+	}
+
+	ctx := WithSession(context.Background(), Session{Role: "dogfood", ToolCounts: map[string]int{}})
+	raw := []byte(`{"status":"changes_requested","next_need":"implementation_rework","ticket_id":"T-001"}`)
+	err = preToolPolicy(ctx, root, "job_disposition_record", raw)
+	if err == nil {
+		t.Fatal("expected changes_requested disposition to be blocked while ticket_create output is uncommitted")
+	}
+	if !strings.Contains(err.Error(), "docs/tickets/backlog/T-001-dogfood-pre-flight-missing-game-loop.md") {
+		t.Fatalf("expected uncommitted ticket path in error, got %v", err)
+	}
+
+	if err := runGitExit0(context.Background(), root, "add", "docs/tickets/backlog/T-001-dogfood-pre-flight-missing-game-loop.md"); err != nil {
+		t.Fatalf("git add ticket: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "commit", "-m", "dogfood: E2E validation findings 2026-05-19"); err != nil {
+		t.Fatalf("git commit ticket: %v", err)
+	}
+	if err := preToolPolicy(ctx, root, "job_disposition_record", raw); err != nil {
+		t.Fatalf("expected changes_requested disposition to pass after committing ticket, got %v", err)
+	}
+}
+
 func TestJobDispositionPolicyIgnoresRuntimeLearningsOnlyDirtyState(t *testing.T) {
 	t.Parallel()
 	requireGit(t)

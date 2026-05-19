@@ -1640,6 +1640,21 @@ process work.
   ticket evidence update, and observation-first Dogfood validation over
   package-manager, container, or repeated shell-edit churn that does not match
   the target's shape.
+- Target-owned findings produced during validation must be committed before
+  handoff. The `demo-123-run5` replay showed that an uncommitted Dogfood
+  `ticket_create` result can strand Engineer behind claim guardrails because
+  `git mv` cannot move an untracked ticket. Terminal dispositions that approve,
+  request changes, block, or fail now require a clean tree for non-Orchestrator
+  roles, while runtime-only `.harness/learnings.yaml` updates remain
+  non-blocking by themselves.
+- Failed validation jobs can still leave target-owned artifacts behind if the
+  final tool call creates a ticket and the role then hits `max_turns`. The
+  `demo-123-run6` replay showed the direct runtime-failure dispatch was
+  quarantined correctly, but the later orchestrator survey routed Engineer for
+  `dogfood_failure` while `T-002` was uncommitted. Survey routing now pauses
+  for dirty target workspaces, excluding runtime-only `.harness/learnings.yaml`,
+  so failed-role cleanup ends as an operator-visible blocker instead of an
+  autonomous dirty-tree handoff.
 - The next loop targets are allowed to stay explicit. After the current
   improvement, remaining findings such as Engineer tool/turn bloat or Dogfood
   continuation behavior should be addressed by another bounded run-review-act

@@ -2427,7 +2427,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. The resolver prefers ` + "`MARS_HARNESS_CLI_BIN`" + `, then the active harness executable, then ` + "`PATH`" + `, and stale binaries produce actionable update guidance. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
-| ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before successful dispatch-mode jobs complete. Non-Orchestrator roles must commit repo changes before successful terminal dispositions. |
+| ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before dispatch-mode jobs complete. Non-Orchestrator roles must commit repo changes before terminal dispositions that approve, complete, request changes, block, fail, or otherwise hand off work. |
 | ` + "`tool_create`" + ` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
 | ` + "`persona_create`" + ` | Scaffold a repo-local persona manual, role prompt, registry row, and optional manifest role. | Mutating. Use for universal, foundation, or deployed persona proposals; foundation defaults still require adding the canonical Go entry in ` + "`internal/personas`" + `. |
 | ` + "`release_orchestrate`" + ` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with ` + "`mars_harness_cli`" + ` and git tools. |
@@ -3881,8 +3881,9 @@ FOR PROJECTS USING TAILWIND CSS:
   d) Verify tailwindcss is in dependencies or devDependencies — if missing, file a ticket
 
 If ANY pre-flight check fails, file tickets for ALL failures before proceeding.
-Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix. Then
-record job_disposition_record with status changes_requested,
+Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix. Commit
+the created tickets with git_commit, call git_push, then record
+job_disposition_record with status changes_requested,
 next_need implementation_rework, ticket_id when applicable, and evidence_links
 naming the created ticket(s). Do not build, install dependencies, start a dev
 server, or edit product/package files after a failed pre-flight.
@@ -3963,7 +3964,14 @@ server, or edit product/package files after a failed pre-flight.
     docs/reports/dogfood/. Use ticket_create for new findings; do not hand-write
     ticket markdown and do not edit product files.
 
-18. Before finishing, record exactly one job_disposition_record:
+18. COMMIT AND PUSH findings or evidence you produced before handoff:
+    Use git_status to inspect changes. Commit target-owned tickets and
+    docs/reports/dogfood evidence with git_commit using message
+    "dogfood: E2E validation findings [date]". Then call git_push. If the
+    target repo has no remote, git_push reports a clean local skip; do not loop
+    on that.
+
+19. Before finishing, record exactly one job_disposition_record:
     - status approved with next_need release_review when validation passes
       after product or ticket commits, so Release Manager can generate version notes
     - status no_work when validation passes and no release/version follow-up is needed
@@ -3973,12 +3981,6 @@ server, or edit product/package files after a failed pre-flight.
       foundation/runtime/tool/model/guardrail/timeout failure
     Include evidence_links with commands, report paths, tickets, or trace IDs.
 
-19. COMMIT AND PUSH only findings or evidence you produced:
-    Use git_commit with message "dogfood: E2E validation findings [date]"
-    Then call git_push. If the target repo has no remote, git_push reports a
-    clean local skip; do not loop on that.
-    An agent run that leaves uncommitted product/package changes is a failed run.
-
 20. CLEANUP (critical):
     - Container: podman stop dogfood-{project} && podman rm dogfood-{project}
     - Native: background processes are cleaned up automatically by the harness
@@ -3987,8 +3989,9 @@ COMMIT GATE — run before finishing:
    git_status to verify the working tree is clean. If there are ANY uncommitted
    product, package, config, or lockfile changes, do not commit them as Dogfood;
    record a blocked disposition because validation mutated the target and needs
-   foundation/operator triage. Commit only target-owned tickets and
-   docs/reports/dogfood evidence with git_commit and git_push.
+   foundation/operator triage. Commit target-owned tickets and
+   docs/reports/dogfood evidence with git_commit and git_push before calling
+   job_disposition_record.
 
 DON'T:
 - NEVER edit package.json, lockfiles, application source, build config, or

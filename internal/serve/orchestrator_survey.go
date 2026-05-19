@@ -111,6 +111,13 @@ func (s *Server) surveyOrchestrator(ctx context.Context, source string) (orchest
 			continue
 		}
 		report.ReposTriaged++
+		if reason, ok := repoHasUncommittedSurveyBlocker(ctx, rec.Path); ok {
+			slog.Info("serve: orchestrator survey paused for dirty target workspace",
+				"repo_id", rec.ID,
+				"reason", reason,
+			)
+			continue
+		}
 		report.JobsRouted += s.surveyTicketState(ctx, rec, manifest, source)
 		report.JobsRouted += s.surveyRecentOutcomes(ctx, rec, manifest, source)
 		report.TicketsTriaged += s.surveyTelemetryPatterns(ctx, rec, source)
@@ -118,6 +125,33 @@ func (s *Server) surveyOrchestrator(ctx context.Context, source string) (orchest
 	}
 
 	return report, nil
+}
+
+func repoHasUncommittedSurveyBlocker(ctx context.Context, repoPath string) (string, bool) {
+	status, err := runGitCommand(ctx, repoPath, "status", "--porcelain", "--untracked-files=all")
+	if err != nil {
+		slog.Warn("serve: orchestrator survey workspace status failed", "repo", repoPath, "err", err)
+		return "", false
+	}
+	lines := nonEmptyLines(status)
+	if len(lines) == 0 {
+		return "", false
+	}
+	var blocking []string
+	for _, line := range lines {
+		path := porcelainPath(line)
+		if path == ".harness/learnings.yaml" {
+			continue
+		}
+		blocking = append(blocking, path)
+	}
+	if len(blocking) == 0 {
+		return "", false
+	}
+	if len(blocking) > 3 {
+		blocking = append(blocking[:3], fmt.Sprintf("and %d more", len(blocking)-3))
+	}
+	return strings.Join(blocking, ", "), true
 }
 
 func (s *Server) surveyTicketState(ctx context.Context, rec RepoRecord, manifest *bundle.Manifest, source string) int {

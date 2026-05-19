@@ -71,11 +71,11 @@ When a role attempts to create any second `docs/features/F-001*.md` contract wit
 Then the tool policy blocks the write and instructs the role to update the canonical feature contract
 
 Given a non-Orchestrator role has uncommitted repo changes
-When it attempts to record a successful terminal `job_disposition_record`
+When it attempts to record a terminal `job_disposition_record` that approves, completes, requests changes, blocks, fails, or hands off work
 Then the tool policy blocks the disposition, names the dirty paths, and instructs the role to run `git_status`, commit with `git_commit`, and record the disposition after the tree is clean
 
 Given the only uncommitted path is the runtime-managed `.harness/learnings.yaml`
-When a non-Orchestrator role records a successful terminal `job_disposition_record`
+When a non-Orchestrator role records a terminal `job_disposition_record`
 Then the disposition is allowed because runtime convention-learning metadata is not product work, the server may commit that runtime-only metadata after the job, and any additional product or documentation dirty path still blocks the handoff
 
 Given the COO role is shaping the first product slice

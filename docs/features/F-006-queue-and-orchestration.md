@@ -98,6 +98,10 @@ Given an eligible in-progress ticket remains after a same-role runtime failure s
 When the Orchestrator survey runs within the runtime-failure cooldown window
 Then ticket-owner routing pauses instead of immediately enqueueing another same-role ticket-delivery job, leaving the failure as foundation telemetry or operator retry evidence
 
+Given a target repo has uncommitted non-runtime changes such as a Dogfood-created backlog ticket or evidence file
+When the Orchestrator survey runs
+Then autonomous survey routing pauses for that repo until the dirty target work is committed or cleaned, while runtime-only `.harness/learnings.yaml` remains non-blocking
+
 ### F-006-S010: Dispatch-Mode Orchestration
 
 Given a generated target manifest uses `orchestration_mode: dispatch`
@@ -129,7 +133,7 @@ When the executor validates completion
 Then the job fails closed with an actionable error so the pipeline cannot silently skip orchestration
 
 Given a non-Orchestrator dispatch-mode role changed target files
-When it records a successful terminal disposition before committing those changes
+When it records a terminal disposition before committing those changes
 Then the tool policy rejects the disposition so the role must commit the produced work before Orchestrator can route the next handoff
 
 Given Orchestrator repeatedly chooses the same next role and next need without a ticket-state change
@@ -193,6 +197,10 @@ Then the server keeps the signal as foundation telemetry and does not enqueue Or
 Given the same ticket is still eligible in `docs/tickets/in-progress/`
 When the native survey loop sees that ticket before the runtime-failure cooldown expires
 Then the survey also refrains from same-role ticket-owner retry so runtime-failure containment cannot be bypassed by the watchdog
+
+Given a runtime-owned failed role leaves uncommitted target-owned artifacts behind before hitting a terminal failure
+When the native survey loop sees recent dogfood failures, failed checks, stale tickets, or other survey signals for that repo
+Then the survey records the dirty workspace as an operator-visible pause and does not route Engineer, Orchestrator, Janitor, or other autonomous follow-up until those target artifacts are committed or deliberately cleaned
 
 Given QA or another dispatch-mode role exits without recording `job_disposition_record`
 When the model first tries to finish with prose only

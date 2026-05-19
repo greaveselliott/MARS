@@ -824,6 +824,58 @@ blocked_by: []
 	}
 }
 
+func TestOrchestratorSurveyPausesDirtyTargetAfterDogfoodFailure(t *testing.T) {
+	ctx := context.Background()
+	repo := t.TempDir()
+	if _, err := runGitCommand(ctx, repo, "init"); err != nil {
+		t.Fatalf("git init: %v", err)
+	}
+	if err := scanner.Init(repo, false); err != nil {
+		t.Fatalf("init target harness: %v", err)
+	}
+	if _, err := runGitCommand(ctx, repo, "add", "."); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if _, err := runGitCommand(ctx, repo, "-c", "user.email=test@example.com", "-c", "user.name=Test", "commit", "-m", "test: baseline"); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+	mustWriteFile(t, filepath.Join(repo, "docs/tickets/backlog/T-002-dogfood-finding.md"), []byte(`---
+id: T-002
+title: Dogfood finding
+---
+
+# T-002
+`))
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+	repoID, err := srv.Repos().Register(ctx, repo, "", "main")
+	if err != nil {
+		t.Fatalf("register repo: %v", err)
+	}
+	if err := srv.scoreStore.RecordOutcome(ctx, scoring.Outcome{JobID: "dogfood-1", RepoID: repoID, Role: "dogfood", Type: scoring.OutcomeFailed}); err != nil {
+		t.Fatalf("record dogfood outcome: %v", err)
+	}
+
+	report, err := srv.surveyOrchestrator(ctx, "test")
+	if err != nil {
+		t.Fatalf("surveyOrchestrator: %v", err)
+	}
+	if report.JobsRouted != 0 {
+		t.Fatalf("expected dirty target to pause dogfood recovery routing, got %+v", report)
+	}
+	if got := countJobsByStatusAndRole(t, srv, "pending", "engineer"); got != 0 {
+		t.Fatalf("expected no engineer survey job while dogfood ticket is uncommitted, got %d", got)
+	}
+}
+
 func TestOrchestratorSurveyRoutesFailedChecksAndNoops(t *testing.T) {
 	ctx := context.Background()
 	repo := t.TempDir()

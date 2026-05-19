@@ -4,15 +4,15 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-006, F-009, F-012
-**Hypothesis:** Treating factory pace as measured intervention debt before the next replay will reduce avoidable turns without hiding productive long-running work.
-**Success Evidence:** `T-011` records a dated pace baseline, target thresholds, implementation changes, and before/after trace or dogfood evidence.
-**Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, or runs still hit `max_turns` without actionable turn-sink evidence.
+**Hypothesis:** Treating factory pace as measured intervention debt, using the `demo-123-run6` Dogfood turn waste as concrete evidence, will reduce avoidable turns without hiding productive long-running work.
+**Success Evidence:** The 2026-05-20 `demo-123-run6` replay confirmed terminal clean-tree handoffs during CEO/COO/CTO/Engineer flow, and the patched dirty-target `serve` replay paused watchdog routing while uncommitted `T-002` existed.
+**Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, a future clean target replay still routes autonomous follow-up while target-owned artifacts are uncommitted, or Dogfood turn/tool waste prevents useful validation from reaching a terminal outcome.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** As of 2026-05-19, high-priority `T-011` is the next backlog ticket; it should establish a measured factory-pace baseline before optimizing turn limits or role flow.
-**Walking Skeleton Slice:** Claim `T-011`, measure current pace from durable trace/job evidence, then implement the smallest evidence-backed speed improvement. Return to a clean `demo-123`-style lifecycle validation after the intervention-debt queue is drained.
+**Current Failing Scenario:** As of 2026-05-20, high-priority `T-011` should measure factory pace; `demo-123-run6` supplies concrete turn-sink evidence where Dogfood reached product findings but spent excessive turns on static server setup and hit `max_turns`.
+**Walking Skeleton Slice:** Claim `T-011`, measure current pace from durable trace/job evidence, and use `T-013` as the Dogfood/static-serving follow-up slice if the evidence confirms it is the smallest useful speed improvement.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -35,9 +35,9 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains no tickets.
-  - `docs/tickets/backlog/` contains `T-010` and `T-011`.
+  - `docs/tickets/backlog/` contains `T-010`, `T-011`, and `T-013`.
   - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
-    through `T-009`.
+    through `T-009`, plus `T-012`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -108,11 +108,13 @@ plans to decide what to do next.
 
 1. **Factory pace intervention debt (`T-011`)**: Measure current role pace from
    durable traces and job outcomes, define target thresholds, and implement the
-   smallest evidence-backed change that reduces avoidable turns without hiding
-   productive long-running work.
+   smallest evidence-backed change that reduces avoidable turns. Use
+   `demo-123-run6` Dogfood/static-serving behavior and `T-013` as concrete
+   candidate evidence.
 2. **Live lifecycle replay**: Run a clean `demo-123`-style target lifecycle and
    record product progress, queue health, intervention-debt count, quality
-   export behavior, release-note behavior, and stop/shutdown behavior.
+   export behavior, release-note behavior, stop/shutdown behavior, and whether
+   Dogfood reaches a terminal disposition without dirty watchdog routing.
 3. **Mars parity continuation**: Use
    [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
@@ -217,3 +219,19 @@ Checks recorded during the 2026-05-02 review:
   reports insufficient live score evidence without creating tickets, and tests
   assert outcome signals need explicit `--create-intervention-debt` before
   materializing backlog work.
+- `T-012`: done as of 2026-05-20. The `demo-123-run5` live lifecycle
+  replay found that Dogfood-created target tickets must be committed before
+  `changes_requested` handoff, otherwise Engineer receives an untracked ticket
+  and gets trapped behind claim guardrails. The `demo-123-run6` replay confirmed
+  terminal clean-tree handoffs help normal role completion, but found that
+  Dogfood can still create a target-owned ticket on its final turn, hit
+  `max_turns`, and let the watchdog route Engineer while the ticket is
+  uncommitted. As of 2026-05-20, the bounded fix pauses orchestrator survey
+  routing for dirty target workspaces except runtime-only
+  `.harness/learnings.yaml`, and the patched `run6` replay confirmed no new
+  Engineer job was routed while `T-002` was uncommitted.
+- `T-013`: backlog as of 2026-05-20. The `demo-123-run6` replay found
+  Dogfood/static-serving turn waste: repeated root-server retries, broad process
+  inspection, broad find attempts, and final-turn ticket creation before
+  `max_turns`. Use this as concrete candidate input for `T-011` factory pace
+  measurement.

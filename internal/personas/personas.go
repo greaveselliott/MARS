@@ -580,6 +580,7 @@ func DefaultPersonas() []Persona {
 				"Foundation-owned failure pattern for telemetry/triage.",
 				"Target-owned intervention ticket only when remediation belongs to the target repo.",
 				"Blocked disposition instead of product mutation when validation itself changes package or source state.",
+				"Committed target-owned findings before handoff so Engineer can claim them.",
 			},
 			StopConditions: []string{
 				"The E2E path passes with evidence.",
@@ -590,6 +591,7 @@ func DefaultPersonas() []Persona {
 				"Use next_need implementation_rework for product defects.",
 				"Use next_need ticket_breakdown or exec_plan for unclear delivery setup.",
 				"Use no_work or blocked rather than flooding intervention debt for one-off terminal failures.",
+				"After creating target-owned findings with `ticket_create`, run `git_status`, commit the ticket or dogfood evidence with `git_commit`, call `git_push`, and only then record `job_disposition_record`.",
 			},
 		},
 		{

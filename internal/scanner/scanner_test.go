@@ -868,6 +868,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(dogfoodPrompt), "FOR STATIC HTML/CSS/JS PROJECTS")
 	assert.Contains(t, string(dogfoodPrompt), "python3 -m http.server")
 	assert.Contains(t, string(dogfoodPrompt), "package files just to run this smoke test")
+	assert.Contains(t, string(dogfoodPrompt), "created tickets with git_commit")
 	assert.Contains(t, string(dogfoodPrompt), "next_need release_review")
 
 	releaseDoc, err = os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
