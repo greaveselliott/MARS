@@ -494,6 +494,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(glossary), "docs/design-docs/skill-evolution.md")
 	assert.Contains(t, string(glossary), "operating model")
 	assert.Contains(t, string(glossary), "goals, BDD, feature contracts, planning, feedback, or quality evidence")
+	assert.Contains(t, string(glossary), "foundation/deployed architecture")
+	assert.Contains(t, string(glossary), "runtime feedback routing")
 
 	skill, err := os.ReadFile(filepath.Join(dir, ".harness", "skills", "self-improvement", "SKILL.md"))
 	require.NoError(t, err)
@@ -620,6 +622,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(harnessGlossary), "Deployed skills")
 	assert.Contains(t, string(harnessGlossary), "CLI tool/skill sync")
 	assert.Contains(t, string(harnessGlossary), "When changing operating doctrine include this")
+	assert.Contains(t, string(harnessGlossary), "When changing foundation/deployed boundaries include this")
+	assert.Contains(t, string(harnessGlossary), "source-only mechanics and deployed-target requirements")
 	assert.Contains(t, string(harnessGlossary), "When choosing, creating, or changing tools include this")
 	assert.Contains(t, string(harnessGlossary), "`tool_create` is a mirrored tool")
 	assert.Contains(t, string(harnessGlossary), "docs/design-docs/tools-glossary.md")
@@ -666,6 +670,11 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(mirroredGlossary), "AD-076")
 	assert.Contains(t, string(mirroredGlossary), "AD-080")
 	assert.Contains(t, string(mirroredGlossary), "AD-082")
+	assert.Contains(t, string(mirroredGlossary), "AD-139")
+	assert.Contains(t, string(mirroredGlossary), "This deployed harness mirrors the reusable core")
+	assert.Contains(t, string(mirroredGlossary), "release asset")
+	assert.Contains(t, string(mirroredGlossary), "publication")
+	assert.NotContains(t, string(mirroredGlossary), "mars-harness-linux-amd64")
 
 	designIndex, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "index.md"))
 	require.NoError(t, err)
@@ -682,6 +691,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(designIndex), "AD-103")
 	assert.Contains(t, string(designIndex), "AD-108")
 	assert.Contains(t, string(designIndex), "AD-138")
+	assert.Contains(t, string(designIndex), "AD-139")
 
 	codeDocMap, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "code-documentation-map.md"))
 	require.NoError(t, err)

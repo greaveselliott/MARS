@@ -67,6 +67,13 @@ Operating doctrine includes commit discipline, versioning, ticket flow,
 documentation rules, skill creation, guardrail policy, trust/scoring behavior,
 release behavior, or context-routing discipline.
 
+### When changing foundation/deployed boundaries include this: `docs/design-docs/foundation-deployed-harness-architecture.md`
+
+Use the foundation/deployed architecture when a change touches mirrored
+operating doctrine, generated target guidance, recursive improvement
+boundaries, doctrine drift, tool/skill authority, runtime feedback routing, or
+the line between source-only mechanics and deployed-target requirements.
+
 ### When changing foundational rules include this: `docs/design-docs/tenets.md`
 
 The tenets are the non-negotiable product and operating rules shared by the

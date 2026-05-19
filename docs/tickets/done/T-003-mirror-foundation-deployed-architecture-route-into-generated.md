@@ -6,14 +6,14 @@ complexity: medium
 work_type: enabler
 bdd_scenarios: ["F-004-S007", "F-012-S007"]
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
-owner: "TBD"
-last_attempt: "TBD"
+evidence_links: ["go test ./internal/scanner -run TestInit_success", "go test ./internal/docsconsistency ./internal/docsync"]
+verified_by: "command"
+owner: "Codex"
+last_attempt: "2026-05-19"
 blocker: "none"
 blocked_by: ["T-002"]
 trace_id: "TBD"
-next_action: "Update generated target glossary/context routes after the source architecture doc lands."
+next_action: "Done; use T-004 for drift review."
 dedupe_key: "public-example"
 metadata:
   category: "doctrine_mirroring"
@@ -52,18 +52,18 @@ The foundation/deployed architecture doc should not remain source-only if its re
 ## Acceptance Criteria
 
 ### Functional
-- [ ] Generated target guidance includes the reusable foundation/deployed architecture route or core doctrine.
-- [ ] Source-only release asset mechanics remain marked source-only and are not copied as target requirements.
-- [ ] The mirrored-harness design doc points to the new architecture doc as the deeper view.
+- [x] Generated target guidance includes the reusable foundation/deployed architecture route or core doctrine.
+- [x] Source-only release asset mechanics remain marked source-only and are not copied as target requirements.
+- [x] The mirrored-harness design doc points to the new architecture doc as the deeper view.
 
 ### Edge cases and negative paths
-- [ ] Existing target upgrades remain non-destructive.
-- [ ] Generated doctrine does not duplicate the full source architecture doc when a route is enough.
+- [x] Existing target upgrades remain non-destructive.
+- [x] Generated doctrine does not duplicate the full source architecture doc when a route is enough.
 
 ### Non-goals
 - Adding a new tool or skill.
 - Rewriting target prompts beyond the route/core doctrine needed for this slice.
 
 ### Observability, docs, and regressions
-- [ ] Scanner tests cover the generated target route/core doctrine.
-- [ ] docsconsistency remains green.
+- [x] Scanner tests cover the generated target route/core doctrine.
+- [x] docsconsistency remains green.

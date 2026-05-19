@@ -96,5 +96,5 @@ None.
 - F-004-S004: `go test ./internal/updatecheck`
 - F-004-S005: `go test ./internal/doctor -run TestCheck`
 - F-004-S006: `go test ./internal/scanner -run TestEnsureHarness`
-- F-004-S007: `go test ./internal/docsconsistency ./internal/operatingmodel`
+- F-004-S007: `go test ./internal/scanner -run TestInit_success` and `go test ./internal/docsconsistency`
 - F-004-S008: `go test ./internal/scanner -run TestEject`

@@ -81,6 +81,27 @@ New built-in tools must originate through `tool_create`. Bypassing
 treated as complete. Shared implementation files are a refactor after
 scaffolding, not a reason to skip the governed path.
 
+### AD-139: Foundation And Deployed Harness Architecture
+
+Foundation and deployed harnesses share reusable operating doctrine, but they
+do not share every implementation duty. The foundation harness owns the
+`mars-harness` source repo, generated defaults, software-factory release
+discipline, and runtime improvement loop. The deployed harness owns target
+planning, target feature contracts, target tickets, target-specific skills, and
+target product evidence.
+
+The runtime substrate is the compiled `mars-harness` binary and its internal
+packages. It executes orchestration for both contexts, but it does not decide
+doctrine by itself and it must not turn the source harness into the target of
+its own agents during a target run.
+
+Generated target guidance should mirror the reusable core: evidence-driven
+planning, BDD contracts, ticket truth, feedback routing, tool/skill selection,
+and the generic run-review-act-rerun improvement loop. Source-only mechanics,
+including `demo-123` as the named source replay and `mars-harness` binary
+release asset publication, stay foundation-only unless a target deliberately
+adopts an equivalent local policy.
+
 ### AD-036: Workflow Contracts Belong In The Repo
 
 Symphony's `WORKFLOW.md` idea maps to Mars Harness as repo-owned workflow artifacts:

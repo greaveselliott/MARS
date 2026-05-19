@@ -11,8 +11,8 @@
 **Success Evidence:** A glossary-grounded design doc explains why the foundation/deployed split exists, how feedback is collected and routed, how doctrine is maintained as the system evolves, and how generated target guidance mirrors only the reusable core; docsconsistency, docsync, and scanner checks pass for the mirrored surfaces that change.
 **Falsification Evidence:** Agents still have to infer whether a rule is foundation-only or deployed, feedback still becomes target backlog churn when it is foundation-owned, generated target guidance imports source-only release asset mechanics, or doctrine changes can land without updating the owning docs/routes/tests.
 **Scenario Schedule:** F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** F-004-S007 lacks generated target routing for the reusable foundation/deployed doctrine core after the source architecture doc landed.
-**Walking Skeleton Slice:** Mirror only the reusable route/core doctrine into generated target guidance, then run a doctrine drift review before deciding whether the recursive improvement loop should become a skill.
+**Current Failing Scenario:** F-001-S015 and F-004-S007 need a recorded doctrine drift review after the source architecture doc and generated target route landed.
+**Walking Skeleton Slice:** Run the doctrine drift review, record any remaining mismatch as follow-up work, then decide whether the recursive improvement loop should become a skill.
 **Learning Or MVP Outcome:** Future foundation and deployed agents can tell where doctrine lives, how feedback becomes durable work, when skills/tools/guardrails are the right evolution surface, and how release/publication rules stay visible without confusing source-only binary asset mechanics with target project release discipline.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -36,8 +36,9 @@ plans to decide what to do next.
 - Ticket state:
   - `docs/tickets/in-progress/` contains `MH-048`.
   - `docs/tickets/backlog/` contains `MH-049`, `MH-050`, `T-001`, and
-    `T-003` through `T-005`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-047` and `T-002`.
+    `T-004` through `T-005`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-047`, `T-002`, and
+    `T-003`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -107,9 +108,9 @@ plans to decide what to do next.
 | F-001-S007 | Passing | `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields` checks feature contracts include first-class business-logic sections. |
 | F-001-S008 | Passing | `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata` checks operating-model code files carry associated documentation metadata. |
 | F-001-S015 | Passing | [foundation-deployed-harness-architecture.md](../../design-docs/foundation-deployed-harness-architecture.md) records the foundation/deployed doctrine boundary, feedback routing, tool/skill/runtime split, generated-target implications, and doctrine-maintenance duties. |
-| F-004-S007 | Planned | Generated target mirroring ticket will update applicable target guidance after the source architecture doc lands. |
+| F-004-S007 | Passing | `go test ./internal/scanner -run TestInit_success` verifies generated targets receive the foundation/deployed route and AD-139 core doctrine without source binary asset names. |
 | F-012-S006 | Planned | Skill/tool evaluation ticket will decide whether the recursive improvement loop should become a universal skill, foundation skill, deployed skill pattern, or remain design doctrine. |
-| F-012-S007 | Planned | Generated target mirroring ticket will carry reusable self-improvement doctrine only after source wording stabilizes. |
+| F-012-S007 | Passing | Generated target knowledge routes and mirrored harness docs carry the reusable feedback and improvement-loop doctrine after the AD-139 source doc. |
 | F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.11 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.11` records the separate missing-asset blocker. |
 
 ## Quality State
@@ -152,6 +153,8 @@ Checks recorded during the 2026-05-02 review:
   should decide whether MH-048 is complete or needs another permanent check.
 - `T-002`: foundation/deployed architecture source doc is done and should be
   used as the input for mirroring and drift review.
-- `T-003` through `T-005`: foundation/deployed architecture follow-up ticket
+- `T-003`: generated target mirroring is done and should be used as input for
+  the drift review.
+- `T-004` through `T-005`: foundation/deployed architecture follow-up ticket
   set. Complete in dependency order, then refresh this plan back to Mars parity
   work.

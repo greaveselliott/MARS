@@ -5,8 +5,10 @@ docs:
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/foundation-deployed-harness-architecture.md
 - docs/design-docs/harness-glossary.md
 - docs/design-docs/harness-operating-model.md
+- docs/design-docs/mirrored-harness-and-context-glossary.md
 - docs/design-docs/release-versioning.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-001-delivery-operating-model.md
@@ -687,6 +689,8 @@ var defaultHarnessFiles = map[string]string{
     paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/conversation-as-system-record.md, docs/design-docs/index.md
   - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, operating model, role domains, role modes, tools, tool availability, tool use cases, tool selection, tool allowlists, tenets, first-class definitions, or contextual definitions
     paths: AGENTS.md, docs/roles/ROLES.md, docs/design-docs/harness-glossary.md, docs/design-docs/harness-operating-model.md, docs/design-docs/tools-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
+  - when: foundation/deployed architecture, mirrored operating doctrine, recursive improvement boundaries, doctrine drift, source-only rules, deployed-only rules, runtime feedback routing, or tool/skill authority
+    paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/mirrored-harness-and-context-glossary.md, docs/design-docs/tools-glossary.md, docs/design-docs/skill-evolution.md
   - when: role routing, role model, domains, modes, schedules, chains, trigger routing, handoff, feedback, persona manuals, or manifest role behavior
     paths: .harness/manifest.yaml, docs/roles/ROLES.md, docs/roles/personas, docs/design-docs/harness-operating-model.md, docs/design-docs/context-glossary.md
   - when: planning, ticket creation, in-progress work, blocked work, or completion status
@@ -1399,6 +1403,7 @@ Architectural decisions and design documents for this project.
 | AD-106 | Structured disposition packets travel through Orchestrator so handoff and feedback are visible, validated, and forwarded at runtime. | 2026-05-04 | Accepted |
 | AD-108 | Agents fetch and fast-forward from ` + "`origin/main`" + ` before non-trivial work, then push validated commits and release tags to remote trunk as soon as they are ready. | 2026-05-05 | Accepted |
 | AD-138 | Product lifecycle improvements use a live evidence loop: observe a real path, review findings, make bounded target-owned changes, rerun, merge or fast-forward to trunk, push to the remote, and claim improvement only from rerun evidence. | 2026-05-19 | Accepted |
+| AD-139 | Foundation and deployed harness architecture separates source doctrine, runtime substrate, generated target doctrine, target project ownership, feedback routing, tool/skill authority, and source-only release mechanics. | 2026-05-19 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -2318,6 +2323,13 @@ Operating doctrine includes commit discipline, versioning, ticket flow,
 documentation rules, skill creation, guardrail policy, trust/scoring behavior,
 release behavior, or context-routing discipline.
 
+### When changing foundation/deployed boundaries include this: ` + "`docs/design-docs/mirrored-harness-and-context-glossary.md`" + `
+
+Use the mirrored harness architecture route when a change touches generated
+target guidance, mirrored operating doctrine, recursive improvement boundaries,
+doctrine drift, tool/skill authority, runtime feedback routing, or the line
+between source-only mechanics and deployed-target requirements.
+
 ### When changing foundational rules include this: ` + "`docs/design-docs/tenets.md`" + `
 
 The tenets are the non-negotiable product and operating rules shared by the
@@ -2563,6 +2575,27 @@ New built-in tools must originate through ` + "`tool_create`" + `. Bypassing
 ` + "`record_decision`" + ` and backed by design-doc rationale before implementation is
 treated as complete. Shared implementation files are a refactor after
 scaffolding, not a reason to skip the governed path.
+
+### AD-139: Foundation And Deployed Harness Architecture
+
+Foundation and deployed harnesses share reusable operating doctrine, but they
+do not share every implementation duty. The foundation harness owns the
+` + "`mars-harness`" + ` source repo, generated defaults, software-factory release
+discipline, and runtime improvement loop. This deployed harness owns target
+planning, target feature contracts, target tickets, target-specific skills, and
+target product evidence.
+
+The runtime substrate is the compiled ` + "`mars-harness`" + ` binary and its internal
+packages. It executes orchestration for both contexts, but it does not decide
+doctrine by itself and it must not turn the foundation harness into the target
+of its own agents during a target run.
+
+This deployed harness mirrors the reusable core: evidence-driven planning, BDD
+contracts, ticket truth, feedback routing, tool/skill selection, and the generic
+run-review-act-rerun improvement loop. Source-only mechanics, including the
+named source ` + "`demo-123`" + ` replay and ` + "`mars-harness`" + ` binary release asset
+publication, stay foundation-only unless this target deliberately adopts an
+equivalent local policy.
 
 ## Maintenance Rules
 
