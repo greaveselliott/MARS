@@ -99,6 +99,48 @@ func TestDecide_noWorkWithNextNeedRoutesDirectly(t *testing.T) {
 	require.Contains(t, decision.Reason, "no-work")
 }
 
+func TestDecide_nonOrchestratorNextNeedSameRoleStopsDirectDispatch(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("coo", "cto-weekly", "orchestrator"),
+		Disposition: orgstate.Disposition{
+			JobID:    "job-coo",
+			RepoID:   "repo-1",
+			Role:     "coo",
+			Status:   "completed",
+			NextNeed: "exec_plan",
+			Reason:   "planning is still needed",
+		},
+	})
+	require.NoError(t, err)
+	require.Empty(t, decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "current role")
+	require.Contains(t, decision.StopReason, "same-role")
+}
+
+func TestDecide_nonOrchestratorNoWorkNextNeedSameRoleStopsDirectDispatch(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("coo", "cto-weekly", "orchestrator"),
+		Disposition: orgstate.Disposition{
+			JobID:    "job-coo",
+			RepoID:   "repo-1",
+			Role:     "coo",
+			Status:   "no_work",
+			NextNeed: "feature_contract",
+			Reason:   "contract still needs COO work",
+		},
+	})
+	require.NoError(t, err)
+	require.Empty(t, decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "no-work")
+	require.Contains(t, decision.StopReason, "same-role")
+}
+
 func TestDecide_orchestratorSuggestedRoleCanonicalizesCase(t *testing.T) {
 	t.Parallel()
 

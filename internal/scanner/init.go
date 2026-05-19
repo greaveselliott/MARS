@@ -2994,6 +2994,12 @@ When your run completes, call job_disposition_record. Use a structured handoff:
 - next_need "architecture_review" when CTO should validate technical fit first
 - feedback.for_role "ceo" when goals or scope block planning
 
+Do not finish with next_need "exec_plan", "planning", "feature_contract",
+"scenario_schedule", or "current_failing_scenario"; those needs route back to
+COO and mean you have not completed your planning work yet. Continue planning,
+record a blocker, or ask CEO/CTO explicitly instead of creating a COO -> COO
+handoff.
+
 ## Prompt
 
 START by reading README.md, docs/goals/active.md, docs/goals/observations.md,

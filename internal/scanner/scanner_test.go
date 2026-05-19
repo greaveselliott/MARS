@@ -831,6 +831,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(cooPrompt), "Do not create or edit application source files")
 	assert.Contains(t, string(cooPrompt), "docs/features/F-NNN*.md")
 	assert.Contains(t, string(cooPrompt), "target_role: cto-weekly")
+	assert.Contains(t, string(cooPrompt), "Do not finish with next_need \"exec_plan\"")
+	assert.Contains(t, string(cooPrompt), "COO -> COO")
 
 	orchestratorPrompt, err := os.ReadFile(filepath.Join(dir, ".harness", "roles", "orchestrator.md"))
 	require.NoError(t, err)

@@ -1872,3 +1872,39 @@ evidence with one full-file replacement. Dogfood should skip package-manager
 and container-build expectations that do not apply to no-manifest static
 targets, start static servers only in background mode, and keep validation
 evidence bounded.
+
+### Follow-up `demo-123` Replay: Same-Role Planning Handoffs Must Stop
+
+After static-target role guidance, a clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, QA, Security, and Dogfood all completed.
+- T-001 reached `docs/tickets/done/`; QA, Security, and Dogfood approved; the
+  target worktree ended clean.
+- No intervention-debt tickets were created. Runtime guardrail blocks stayed
+  foundation telemetry.
+- Engineer improved from 48 calls to 35, and Dogfood improved from 32 calls to
+  21 while validating the same static game shape.
+
+Residual finding:
+
+- The first COO job completed with `next_need: exec_plan`, no structured
+  target owner, and no work products. Direct dispatch interpreted that
+  deterministic need literally and enqueued a second COO job. The second COO
+  eventually committed the plan and feature contract and routed CTO, so product
+  progress survived, but the extra same-role pass was avoidable lifecycle
+  noise.
+
+Decision: a direct non-Orchestrator dispatch whose only route is a `next_need`
+that maps back to the same role is not forward progress. Dispatch now stops
+with a same-role reason instead of enqueueing the same role again, and
+generated COO guidance explicitly forbids finishing with planning `next_need`
+values that route back to COO.

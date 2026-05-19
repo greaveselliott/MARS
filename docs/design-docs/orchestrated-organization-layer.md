@@ -46,6 +46,12 @@ failed, conflicting, or governance-heavy handoffs. `legacy` remains supported
 for existing repos that deliberately want `then` and `idle_then` runtime
 behavior.
 
+A `next_need` that resolves to the same role that just completed is not a
+forward handoff. Direct dispatch stops with a same-role reason unless the role
+provides an explicit structured target for another owner. This keeps roles such
+as COO from finishing with `next_need: exec_plan` and immediately enqueueing
+another COO job instead of completing planning or handing to CTO.
+
 ## Runtime Contract
 
 In dispatch mode, successful roles must record a job disposition before they

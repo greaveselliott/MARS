@@ -175,6 +175,9 @@ func directDeterministicRoute(in Input, status, nextNeed, suggested string) (nex
 			return direct(target, "using role feedback.for_role without Orchestrator detour")
 		}
 		if role := roleForNeedInManifest(in.Manifest, nextNeed); role != "" {
+			if sameRole(d.Role, role) {
+				return "", "deterministic", "next_need resolves to the current role; stopping direct dispatch to avoid a same-role loop", "same-role next_need has no forward owner", true
+			}
 			return direct(role, "routing completed work by next_need without Orchestrator detour")
 		}
 		if role := defaultCompletionRoute(d.Role); role != "" {
@@ -197,6 +200,9 @@ func directDeterministicRoute(in Input, status, nextNeed, suggested string) (nex
 			return direct(target, "using no-work feedback.for_role without Orchestrator detour")
 		}
 		if role := roleForNeedInManifest(in.Manifest, nextNeed); role != "" {
+			if sameRole(d.Role, role) {
+				return "", "deterministic", "next_need resolves to the current role; stopping direct no-work dispatch to avoid a same-role loop", "same-role next_need has no forward owner", true
+			}
 			return direct(role, "routing no-work disposition by next_need without Orchestrator detour")
 		}
 		if d.Role == "engineer" {
@@ -206,6 +212,10 @@ func directDeterministicRoute(in Input, status, nextNeed, suggested string) (nex
 	default:
 		return "", "", "", "", false
 	}
+}
+
+func sameRole(a, b string) bool {
+	return normalize(a) == normalize(b)
 }
 
 func enforceDirectReviewProgression(in Input, candidateRole, kind, reason string) (nextRole, nextKind, nextReason, stop string) {
