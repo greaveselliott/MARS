@@ -211,6 +211,30 @@ mirrored into generated targets in a follow-up slice:
 Existing target repos remain user-owned. `upgrade` should fill missing defaults
 without overwriting deliberate local policy.
 
+## Drift Review Evidence
+
+### 2026-05-19 Doctrine Review
+
+T-004 reviewed the foundation and generated target doctrine surfaces after
+AD-139 and the generated route landed.
+
+| Surface | Result | Evidence |
+| --- | --- | --- |
+| Source `AGENTS.md` | Consistent. It keeps first-class foundation/deployed glossary terms, marks target projects as separate from the software factory, and states that agents never make the harness the target of its own active target runs. | `rg` inspection of glossary, target-project, release, and live-demo loop entries. |
+| Source harness glossary | Consistent. It now routes foundation/deployed boundary changes to this document instead of bloating first-class glossary text. | `docs/design-docs/harness-glossary.md` contextual route. |
+| Source mirrored-harness doctrine | Consistent. It includes an AD-139 summary separating foundation ownership, runtime substrate, deployed ownership, target product evidence, mirrored core doctrine, and source-only mechanics. | `docs/design-docs/mirrored-harness-and-context-glossary.md`. |
+| Tools glossary | Consistent. It keeps the universal tool surface model-provider-agnostic and describes tools as mirrored capabilities without claiming that skills grant tool authority. | `docs/design-docs/tools-glossary.md`. |
+| Release doctrine | Consistent with one explicit boundary. Source `release-versioning.md` contains `mars-harness` binary asset and `checksums.txt` details for the source release workflow; generated target release guidance keeps the GitHub Release object and asset gates generic for repositories that publish their own assets. | `docs/design-docs/release-versioning.md`, `internal/scanner/init.go`. |
+| Generated target knowledge route | Consistent. New targets receive a route for foundation/deployed architecture, mirrored operating doctrine, recursive improvement boundaries, doctrine drift, source-only rules, deployed-only rules, runtime feedback routing, and tool/skill authority. | `internal/scanner/init.go`; `go test ./internal/scanner -run TestInit_success`. |
+| Generated target harness glossary | Consistent. New targets receive a contextual route to the mirrored harness doc rather than a full copy of the source architecture doc. | `internal/scanner/init.go`; scanner assertions. |
+| Generated mirrored-harness doc | Consistent. New targets receive the reusable AD-139 core and explicitly keep `demo-123` and `mars-harness` binary release asset publication foundation-only unless a target adopts an equivalent local policy. | `internal/scanner/init.go`; scanner assertions. |
+| Generated target tests | Consistent. Scanner coverage checks the new route, AD-139 mirror, design-index entry, and absence of source binary asset names such as `mars-harness-linux-amd64`. | `internal/scanner/scanner_test.go`. |
+
+No unowned doctrine mismatch was found in this review. The remaining open item
+is T-005: decide whether the recursive improvement loop should become a
+universal skill, a foundation skill, a deployed skill pattern, or remain design
+doctrine.
+
 ## Consequences
 
 - Agents get stable language for the split between source doctrine, executable

@@ -6,14 +6,14 @@ complexity: medium
 work_type: enabler
 bdd_scenarios: ["F-001-S015", "F-004-S007"]
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
-owner: "TBD"
-last_attempt: "TBD"
+evidence_links: ["docs/design-docs/foundation-deployed-harness-architecture.md#drift-review-evidence", "go test ./internal/scanner", "go test ./internal/docsconsistency ./internal/docsync"]
+verified_by: "command"
+owner: "Codex"
+last_attempt: "2026-05-19"
 blocker: "none"
 blocked_by: ["T-002", "T-003"]
 trace_id: "TBD"
-next_action: "Run a doctrine consistency review after the architecture doc and generated target route land."
+next_action: "Done; use T-005 for skill/tool evaluation."
 dedupe_key: "public-example"
 metadata:
   category: "drift_review"
@@ -42,6 +42,7 @@ The failure class this architecture slice is trying to prevent is doctrine exist
 
 ## Affected Files
 - AGENTS.md
+- docs/design-docs/foundation-deployed-harness-architecture.md
 - docs/design-docs/harness-glossary.md
 - docs/design-docs/mirrored-harness-and-context-glossary.md
 - docs/design-docs/tools-glossary.md
@@ -57,16 +58,16 @@ The failure class this architecture slice is trying to prevent is doctrine exist
 ## Acceptance Criteria
 
 ### Functional
-- [ ] The review records whether source and generated target doctrine agree.
-- [ ] Any mismatch has a fix or a follow-up ticket.
-- [ ] Source-only rules are visibly marked source-only.
+- [x] The review records whether source and generated target doctrine agree.
+- [x] Any mismatch has a fix or a follow-up ticket.
+- [x] Source-only rules are visibly marked source-only.
 
 ### Edge cases and negative paths
-- [ ] The review does not silently broaden target doctrine with foundation-only mechanics.
-- [ ] The review does not treat docs as current without checking generated target output.
+- [x] The review does not silently broaden target doctrine with foundation-only mechanics.
+- [x] The review does not treat docs as current without checking generated target output.
 
 ### Non-goals
 - Implementing every follow-up drift fix in this ticket.
 
 ### Observability, docs, and regressions
-- [ ] docsconsistency, docsync, and scanner checks pass or blockers are recorded with exact commands.
+- [x] docsconsistency, docsync, and scanner checks pass or blockers are recorded with exact commands.

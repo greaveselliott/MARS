@@ -11,8 +11,8 @@
 **Success Evidence:** A glossary-grounded design doc explains why the foundation/deployed split exists, how feedback is collected and routed, how doctrine is maintained as the system evolves, and how generated target guidance mirrors only the reusable core; docsconsistency, docsync, and scanner checks pass for the mirrored surfaces that change.
 **Falsification Evidence:** Agents still have to infer whether a rule is foundation-only or deployed, feedback still becomes target backlog churn when it is foundation-owned, generated target guidance imports source-only release asset mechanics, or doctrine changes can land without updating the owning docs/routes/tests.
 **Scenario Schedule:** F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** F-001-S015 and F-004-S007 need a recorded doctrine drift review after the source architecture doc and generated target route landed.
-**Walking Skeleton Slice:** Run the doctrine drift review, record any remaining mismatch as follow-up work, then decide whether the recursive improvement loop should become a skill.
+**Current Failing Scenario:** F-012-S006 needs a recorded decision on whether the recursive improvement loop should become a universal skill, foundation skill, deployed skill pattern, or remain design doctrine.
+**Walking Skeleton Slice:** Decide the skill/tool/doctrine surface for the recursive improvement loop, then refresh this plan back to Mars parity work.
 **Learning Or MVP Outcome:** Future foundation and deployed agents can tell where doctrine lives, how feedback becomes durable work, when skills/tools/guardrails are the right evolution surface, and how release/publication rules stay visible without confusing source-only binary asset mechanics with target project release discipline.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -35,10 +35,9 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains `MH-048`.
-  - `docs/tickets/backlog/` contains `MH-049`, `MH-050`, `T-001`, and
-    `T-004` through `T-005`.
+  - `docs/tickets/backlog/` contains `MH-049`, `MH-050`, `T-001`, and `T-005`.
   - `docs/tickets/done/` contains `MH-001` through `MH-047`, `T-002`, and
-    `T-003`.
+    `T-003` through `T-004`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -107,7 +106,7 @@ plans to decide what to do next.
 | F-001-S006 | Passing | Telemetry proposals can create or update active goals/observations with dedupe evidence. |
 | F-001-S007 | Passing | `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields` checks feature contracts include first-class business-logic sections. |
 | F-001-S008 | Passing | `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata` checks operating-model code files carry associated documentation metadata. |
-| F-001-S015 | Passing | [foundation-deployed-harness-architecture.md](../../design-docs/foundation-deployed-harness-architecture.md) records the foundation/deployed doctrine boundary, feedback routing, tool/skill/runtime split, generated-target implications, and doctrine-maintenance duties. |
+| F-001-S015 | Passing | [foundation-deployed-harness-architecture.md](../../design-docs/foundation-deployed-harness-architecture.md) records the foundation/deployed doctrine boundary, feedback routing, tool/skill/runtime split, generated-target implications, doctrine-maintenance duties, and 2026-05-19 drift review. |
 | F-004-S007 | Passing | `go test ./internal/scanner -run TestInit_success` verifies generated targets receive the foundation/deployed route and AD-139 core doctrine without source binary asset names. |
 | F-012-S006 | Planned | Skill/tool evaluation ticket will decide whether the recursive improvement loop should become a universal skill, foundation skill, deployed skill pattern, or remain design doctrine. |
 | F-012-S007 | Passing | Generated target knowledge routes and mirrored harness docs carry the reusable feedback and improvement-loop doctrine after the AD-139 source doc. |
@@ -155,6 +154,8 @@ Checks recorded during the 2026-05-02 review:
   used as the input for mirroring and drift review.
 - `T-003`: generated target mirroring is done and should be used as input for
   the drift review.
-- `T-004` through `T-005`: foundation/deployed architecture follow-up ticket
-  set. Complete in dependency order, then refresh this plan back to Mars parity
-  work.
+- `T-004`: doctrine drift review is done and found no unowned mismatch across
+  source and generated target surfaces.
+- `T-005`: evaluate whether the recursive improvement loop should become a
+  universal skill, foundation skill, deployed skill pattern, or remain design
+  doctrine, then refresh this plan back to Mars parity work.
