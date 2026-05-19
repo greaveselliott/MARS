@@ -4,7 +4,7 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-006, F-009, F-012
 **Hypothesis:** Returning to the Mars parity remediation lane after the persistent-store fixture slice will keep the factory improving the runtime paths that most reduce wasted model turns and recovery loops.
@@ -35,7 +35,7 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains no tickets.
-  - `docs/tickets/backlog/` contains `T-001`.
+  - `docs/tickets/backlog/` contains `T-001` and `T-010`.
   - `docs/tickets/done/` contains `MH-001` through `MH-050`, `T-002`, and
     `T-003` through `T-009`.
 - Exec-plan state:
@@ -57,24 +57,25 @@ plans to decide what to do next.
   `v0.41.4`, `v0.41.5`, `v0.41.6`, `v0.41.7`, `v0.41.8`, `v0.41.9`,
   `v0.41.10`, `v0.41.11`, `v0.41.12`, `v0.41.13`, `v0.41.14`,
   `v0.41.15`, `v0.41.16`, `v0.41.17`, `v0.41.18`, `v0.41.19`, `v0.41.20`,
-  `v0.41.21`, `v0.41.22`, `v0.41.23`, `v0.41.24`, and `v0.41.25` release notes
-  and tags were pushed on 2026-05-19, but CI and Release workflow jobs were not
-  started because GitHub reported recent account payment failure or a
-  spending-limit increase requirement.
-  Notes-only GitHub Releases for `v0.36.4` through `v0.41.25` were created from
+  `v0.41.21`, `v0.41.22`, `v0.41.23`, `v0.41.24`, `v0.41.25`, and `v0.41.26`
+  release notes and tags were pushed on 2026-05-19, but CI and Release workflow
+  jobs were not started because GitHub reported recent account payment failure
+  or a spending-limit increase requirement.
+  Notes-only GitHub Releases for `v0.36.4` through `v0.41.26` were created from
   the generated changelog entries on 2026-05-19 so the Releases page is no
   longer stale at `v0.36.3`. `mars-harness release verify-assets --version
-  v0.41.25` is still blocked because the `v0.41.25` release is missing
+  v0.41.26` is still blocked because the `v0.41.26` release is missing
   `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
   `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
-  `checksums.txt`; GitHub Actions runs `26129025297` and `26129039207` failed
-  with "recent account payments have failed or your spending limit needs to be
-  increased" before assets could be built. The `v0.41.25` main-branch CI run
-  `26129007788` hit the same runner-start billing blocker. `v0.41.16`,
+  `checksums.txt`; GitHub Actions Release run `26129336033` failed with
+  "recent account payments have failed or your spending limit needs to be
+  increased" before assets could be built. The `v0.41.26` main-branch CI run
+  `26129320642` hit the same runner-start billing blocker. `v0.41.16`,
   `v0.41.17`, `v0.41.18`, `v0.41.19`, `v0.41.20`, `v0.41.21`, `v0.41.22`,
-  `v0.41.23`, and `v0.41.24` have the same missing-asset blocker via runs
+  `v0.41.23`, `v0.41.24`, and `v0.41.25` have the same missing-asset blocker via runs
   `26126035892`, `26126035944`, `26126461151`, `26127153189`, `26127529878`,
-  `26127808895`, `26128342280`, `26128605770`, and `26128778584`.
+  `26127808895`, `26128342280`, `26128605770`, `26128778584`, and
+  `26129025297`.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
@@ -115,7 +116,7 @@ plans to decide what to do next.
 | F-004-S007 | Passing | `go test ./internal/scanner -run TestInit_success` verifies generated targets receive the foundation/deployed route and AD-139 core doctrine without source binary asset names. |
 | F-012-S006 | Passing | [skill-evolution.md](../../design-docs/skill-evolution.md) AD-140 keeps the recursive improvement loop as operating doctrine and creates `T-006` for a foundation Release Manager skill. |
 | F-012-S007 | Passing | Generated target knowledge routes and mirrored harness docs carry the reusable feedback and improvement-loop doctrine after the AD-139 source doc. |
-| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.25 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.25` records the separate missing-asset blocker. |
+| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.26 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.26` records the separate missing-asset blocker. |
 | F-010-S003 | Passing | `go test ./internal/serve -run 'TestServer_(dashboardStopEndpointStopsStart|startStop)'`, `go test ./internal/dashboard -run 'TestDashboard_(stopEndpoint|controlEndpoints_methodNotAllowed|controlEndpoints_nilCallbacks)'`, and the 2026-05-19 clean `demo-123-stop-check2` replay verify dashboard stop returns success and exits `start` without manual kill. |
 | F-005-S006 | Passing | `go test ./cmd/mars-harness -run 'TestRunCommand(NoInit|AutoInit|RejectsRepoLocalLogFile)|TestMarsHarnessCLI'` and `go run ./cmd/mars-harness run engineer --repo /path/to/local-redacted --dry-run --trace --no-init` verify observer-safe dry-run exits without scaffolding an uninitialized target. |
 | F-006-S001 | Passing | `go test ./pkg/testutil ./internal/queue ./internal/telemetry ./internal/foundationtelemetry ./internal/trace ./internal/scoring ./internal/trust ./internal/evolution ./internal/orgstate ./internal/serve`, `go test ./internal/docsconsistency ./internal/docsync`, and `go test ./...` verify legacy SQLite fixture coverage across persistent stores. |
