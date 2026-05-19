@@ -1695,3 +1695,38 @@ Generated Dogfood guidance now stops after pre-flight failures, records a
 structured disposition, forbids editing product files to make validation pass,
 and treats foundation/runtime failures as telemetry or blocked dispositions by
 default. `git_push` also skips cleanly when a throwaway demo repo has no remote.
+
+### Follow-up `demo-123` Replay: New Lockfiles Must Not Trap Product Delivery
+
+After score-export remediation visibility, another clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, and Engineer stayed on the Space Invaders product lane.
+- No target intervention-debt tickets were created for CEO, COO, or Engineer
+  guardrail blocks.
+- CTO created ordinary product ticket T-001 for player movement, and Engineer
+  claimed it before producing browser-game source and tests.
+
+Residual finding:
+
+- Engineer generated a new root `package-lock.json` with 2,012 lines while
+  adding test support. Tracked root lockfile churn was already exempt from
+  source-file blast-radius line counts, but new untracked root lockfiles were
+  still counted as ordinary source files. The role then repeated the same
+  blocked commit attempt, producing ten Engineer guardrail telemetry events
+  while product files sat uncommitted.
+
+Decision: untracked root dependency metadata must use the same blast-radius
+treatment as tracked dependency metadata. Root lockfiles remain git-visible and
+secret-scanned, but their generated line count does not count as source-file
+blast radius. Product source files still count normally, so the guardrail keeps
+blocking oversized implementation files while allowing normal package-manager
+lockfile creation to accompany a bounded product slice.

@@ -273,6 +273,20 @@ func TestValidateRepoDiffIgnoresGeneratedDependencyMetadataLineChurn(t *testing.
 	require.NotContains(t, err.Error(), "package-lock.json")
 }
 
+func TestValidateRepoDiffIgnoresUntrackedGeneratedDependencyMetadataLineChurn(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package-lock.json"), []byte(strings.Repeat("lock\n", 1200)), 0o644))
+
+	err := ValidateRepoDiff(context.Background(), root, Session{SafetyLimits: safety.DefaultLimits()})
+	require.NoError(t, err)
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "implementation.js"), []byte(strings.Repeat("source\n", 1200)), 0o644))
+	err = ValidateRepoDiff(context.Background(), root, Session{SafetyLimits: safety.DefaultLimits()})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "implementation.js")
+	require.NotContains(t, err.Error(), "package-lock.json")
+}
+
 func setupDirtyGitRepo(t *testing.T, changedFiles int) (string, Root) {
 	t.Helper()
 	dir := t.TempDir()

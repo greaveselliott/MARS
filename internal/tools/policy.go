@@ -1615,7 +1615,7 @@ func diffStats(ctx context.Context, root Root) (safety.DiffStats, error) {
 	if untracked.ExitCode == 0 {
 		for _, rel := range untrackedPaths {
 			rel = strings.TrimSpace(rel)
-			if rel == "" || IsGeneratedWorkspacePath(rel) {
+			if rel == "" || IsGeneratedWorkspacePath(rel) || IsGeneratedDependencyMetadataPath(rel) {
 				continue
 			}
 			abs, err := root.ResolvePath(rel)
