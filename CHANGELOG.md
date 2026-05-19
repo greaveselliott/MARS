@@ -2,6 +2,28 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.4] - 2026-05-19
+<!-- mars-harness-release: version=0.41.4 commit=9db85c479fec -->
+
+### Impact
+- **serve:** The native survey loop no longer turns an Engineer `max_turns`
+  failure into an immediate same-role retry just because the ticket remains
+  in progress.
+
+### Why
+- **serve:** Live `demo-123` validation showed failure handling correctly
+  quarantining `max_turns` as foundation telemetry, while the survey watchdog
+  immediately re-enqueued another `ticket_delivery` Engineer for the same
+  in-progress ticket.
+
+### What Changed
+- **serve:** Ticket-owner survey routing now pauses after recent same-role
+  runtime failures during a cooldown window, preserving in-progress ticket
+  priority without bypassing runtime-failure containment (9db85c4).
+
+### Fixes
+- **serve:** Pause ticket-owner survey after runtime failure (9db85c4)
+
 ## [0.41.3] - 2026-05-19
 <!-- mars-harness-release: version=0.41.3 commit=acba3ebe8d2f -->
 
