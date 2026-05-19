@@ -10,6 +10,7 @@ External documents, source research, and inherited Mars references that influenc
 | [model-landscape-april-2026.md](model-landscape-april-2026.md) | Research | Local model and hardware research for default inference choices. |
 | [model-landscape-may-2026.md](model-landscape-may-2026.md) | Research | May 2026 model refresh shortlist and benchmark promotion gate for future defaults. |
 | [openharness-comparator.md](openharness-comparator.md) | Comparator | Audit of OpenHarness ideas worth adopting into Mars Harness and the runtime/plugin patterns to reject. |
+| [openharness-review-may-2026.md](openharness-review-may-2026.md) | Comparator | Follow-up review of OpenHarness repo strengths, autopilot overlap, Mars differentiators, safety concerns, and later-action candidates. |
 | [open-source-codex-orchestration-symphony.md](open-source-codex-orchestration-symphony.md) | Article | OpenAI Symphony article. Reference for issue/ticket-driven orchestration, per-task workspaces, workflow contracts, retries, and structured observability. |
 | [ui-design-brain.md](ui-design-brain.md) | Skill reference | Structured UI component knowledge model for future generated frontend target guidance. |
 | [vercel-composition-patterns.md](vercel-composition-patterns.md) | Skill reference | React composition rule patterns for generated target repos and future frontend guardrail bundles. |
