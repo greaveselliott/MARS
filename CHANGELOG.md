@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.36.4] - 2026-05-19
+<!-- mars-harness-release: version=0.36.4 commit=533e532eabdf -->
+
+### Impact
+- **lifecycle:** Operators see improved reliability because prioritize product progress before intervention debt.
+
+### Why
+- **lifecycle:** This matters because prioritize product progress before intervention debt closes a failure mode or degraded path.
+
+### What Changed
+- **lifecycle:** Changed prioritize product progress before intervention debt (533e532).
+
+### Fixes
+- **lifecycle:** Prioritize product progress before intervention debt (533e532)
+
 ## [0.36.3] - 2026-05-05
 <!-- mars-harness-release: version=0.36.3 commit=4fc0c2a7c5e9 -->
 
