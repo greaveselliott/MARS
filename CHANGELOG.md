@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.21] - 2026-05-19
+<!-- mars-harness-release: version=0.41.21 commit=9f18594b5806 -->
+
+### Impact
+- **skills:** Operators and future agents get clearer guidance because add release publication workflow.
+
+### Why
+- **skills:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **skills:** Changed add release publication workflow (9f18594).
+
+### Documentation
+- **skills:** Add release publication workflow (9f18594)
+
 ## [0.41.20] - 2026-05-19
 <!-- mars-harness-release: version=0.41.20 commit=eb701aa57e76 -->
 
