@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.29] - 2026-05-20
+<!-- mars-harness-release: version=0.41.29 commit=29cafc75b953 -->
+
+### Impact
+- Operators and future agents get clearer guidance because correct unsupported Homebrew install guidance.
+
+### Why
+- This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- Changed correct unsupported Homebrew install guidance (29cafc7).
+
+### Documentation
+- Correct unsupported Homebrew install guidance (29cafc7)
+
 ## [0.41.28] - 2026-05-19
 <!-- mars-harness-release: version=0.41.28 commit=353ad7daa350 -->
 
