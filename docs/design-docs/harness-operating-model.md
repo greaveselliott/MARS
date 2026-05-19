@@ -65,10 +65,12 @@ integrations; normal roles make semantic commits to `main` and push directly.
 | `janitor` | Orchestrator | `ticket-hygiene` | Drains stale state, misleading in-progress work, and backlog entropy. |
 
 For Mars Harness source stabilization, the End-to-End Tester domain also owns
-live-experience verification against representative target repos. `demo-123`
-is the canonical small first-run lifecycle replay: it should show whether a
-source change actually improves the operator path from brief to product plan,
-feature contract, product ticket, or implementation without intervention-debt
+the live demo improvement loop against representative target repos. `demo-123`
+is the canonical small first-run lifecycle replay: run the clean target, review
+the findings, help select bounded source actions, and rerun before claiming
+improvement. The replay should show whether a source change actually improves
+the operator path from brief to product plan, feature contract, product ticket,
+implementation, review, or dogfood evidence without intervention-debt
 starvation. When the live check cannot run, the owning role records the exact
 blocker and replay steps instead of treating deterministic tests as sufficient.
 

@@ -102,6 +102,59 @@ func TestRemoteTrunkOperatingModelIsDocumented(t *testing.T) {
 	}
 }
 
+func TestLiveDemoImprovementLoopIsDocumented(t *testing.T) {
+	root := repoRoot(t)
+	required := map[string][]string{
+		"AGENTS.md": {
+			"Source improvements use the live demo loop",
+			"run a representative clean target such as `demo-123`",
+			"claim improvement only from the rerun evidence",
+		},
+		"docs/design-docs/delivery-operating-model.md": {
+			"AD-138",
+			"Live Demo Improvement Loop",
+			"run a clean representative target",
+			"review the findings",
+			"one or two bounded source actions",
+			"claim improvement only from rerun evidence",
+		},
+		"docs/design-docs/harness-operating-model.md": {
+			"live demo improvement loop",
+			"`demo-123`",
+			"rerun before claiming",
+		},
+		"docs/design-docs/harness-glossary.md": {
+			"Live demo improvement loop",
+			"run a clean representative target such as `demo-123`",
+			"claim improvement only from rerun evidence",
+		},
+		"docs/features/F-001-delivery-operating-model.md": {
+			"F-001-S014",
+			"Continuous Live Demo Improvement Loop",
+			"selects one or two bounded source actions",
+			"claims improvement only when the rerun shows better product progress",
+		},
+		"internal/scanner/init.go": {
+			"Product lifecycle improvements use a live evidence loop",
+			"claim improvement only from rerun evidence",
+			"source-only shorthand",
+		},
+	}
+
+	for rel, needles := range required {
+		data, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		text := string(data)
+		for _, needle := range needles {
+			if !strings.Contains(text, needle) {
+				t.Fatalf("%s must document live demo improvement loop; missing %q", rel, needle)
+			}
+		}
+	}
+}
+
 func TestCLIToolSkillSyncIsDocumented(t *testing.T) {
 	root := repoRoot(t)
 	required := map[string][]string{

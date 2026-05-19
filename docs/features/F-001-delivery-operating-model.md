@@ -28,6 +28,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 11. F-001-S011 - CLI changes synchronize mirrored tools, repo shortcuts, generated doctrine, and skills.
 12. F-001-S012 - Agents start from `origin/main` and push ready work to `origin main` promptly.
 13. F-001-S013 - Source-harness lifecycle improvements are checked against a live target experience or record a blocker.
+14. F-001-S014 - Source-harness lifecycle stabilization follows a run, review, act, and rerun loop.
 
 ## Scenarios
 
@@ -109,6 +110,12 @@ Given a Mars Harness source change claims to improve first-run lifecycle, orches
 When the agent prepares completion evidence
 Then the evidence includes a representative live target run such as `demo-123`, with exact command, target repo, branch/ref or binary, runtime artifact paths, observed lifecycle events, product progress, and remaining blockers; if the run cannot be performed, the blocker records the intended replay steps and why the live check is unavailable
 
+### F-001-S014: Continuous Live Demo Improvement Loop
+
+Given a live target run such as `demo-123` exposes a lifecycle, orchestration, intervention-debt, runtime, generated-target, model/provider, scoring, safety, dashboard, or update/release issue
+When the agent stabilizes Mars Harness source behavior
+Then the agent records the run evidence, reviews the findings, selects one or two bounded source actions tied to that evidence, implements and tests those actions, reruns a clean representative target, and claims improvement only when the rerun shows better product progress or a clearly smaller remaining blocker
+
 ## Out of Scope
 
 - Custom Gherkin parsing.
@@ -134,3 +141,4 @@ None.
 - F-001-S011: `go test ./cmd/mars-harness -run TestMarsHarnessCLI` verifies the live Cobra command tree, `mars_harness_cli` reference, and repo shortcut map stay synchronized.
 - F-001-S012: `go test ./internal/docsconsistency -run TestRemoteTrunkOperatingModelIsDocumented` verifies source and generated target doctrine include the remote-trunk workflow.
 - F-001-S013: source-harness lifecycle changes include a `demo-123` or equivalent live-experience transcript, or an explicit blocker with replay steps.
+- F-001-S014: `go test ./internal/docsconsistency -run TestLiveDemoImprovementLoopIsDocumented` verifies the run, review, act, and rerun loop is documented in source and generated target doctrine.
