@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.40.0] - 2026-05-19
+<!-- mars-harness-release: version=0.40.0 commit=1930ae4e340b -->
+
+### Impact
+- **doctor:** Operators gain new capability: surface deterministic remediation checks.
+
+### Why
+- **doctor:** This matters because surface deterministic remediation checks was missing from the shipped capability set.
+
+### What Changed
+- **doctor:** Changed surface deterministic remediation checks (1930ae4).
+
+### Features
+- **doctor:** Surface deterministic remediation checks (1930ae4)
+
 ## [0.39.0] - 2026-05-19
 <!-- mars-harness-release: version=0.39.0 commit=5f2adf60661f -->
 
