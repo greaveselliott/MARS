@@ -2,6 +2,34 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.11] - 2026-05-19
+<!-- mars-harness-release: version=0.41.11 commit=c8b5968f4913 -->
+
+### Impact
+- **architecture:** Operators and future agents now have a single architecture
+  reference for separating the foundation harness, runtime substrate, deployed
+  harness, target project ownership, mirrored doctrine, and source-only release
+  mechanics.
+
+### Why
+- **architecture:** The recursive improvement loop was proving useful, but it
+  made the layer split more important: the binary executes orchestration, the
+  foundation harness evolves the software factory, and deployed harnesses
+  should inherit only the reusable operating core unless a rule is explicitly
+  mirrored.
+
+### What Changed
+- **architecture:** Added AD-139 with boundary tables, architecture and
+  doctrine-flow diagrams, feedback collection/routing rules, tool/skill/binary
+  authority levels, generated-target implications, and doctrine-maintenance
+  duties.
+- **planning:** Closed `T-002`, marked `F-001-S015` passing, and advanced the
+  active plan toward `T-003` generated-target mirroring as the next failing
+  scenario.
+
+### Documentation
+- **architecture:** Document foundation deployed harness boundary (c8b5968)
+
 ## [0.41.10] - 2026-05-19
 <!-- mars-harness-release: version=0.41.10 commit=a81fccee532c -->
 
