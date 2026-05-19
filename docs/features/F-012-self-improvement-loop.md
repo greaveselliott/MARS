@@ -94,7 +94,8 @@ Then it creates Mars Harness source work rather than intervention-debt tickets i
 
 Given a failure signal names dirty workspace state, stale in-progress tickets, missing or invalid manifest state, missing generated docs, known doctor remediation, repeated scanner duplicates, missing dependency setup, or model artifact checksum mismatch
 When deterministic remediation planning runs
-Then the registry returns applicable recipes with stable IDs, candidate commands, safety classification, skipped reasons for operator or approval-required repairs, and next actions that can be recorded before any LLM repair job is enqueued
+Then the registry returns applicable recipes with stable IDs, candidate commands, safety classification, skipped reasons for operator or approval-required repairs, and next actions that are recorded in failed outcome details with trace IDs before generic telemetry retry is considered
+And a ready auto-safe deterministic recipe defers the generic telemetry retry path so the deterministic repair lane can run first
 
 ## Out of Scope
 
@@ -117,4 +118,4 @@ None.
 - F-012-S007: `go test ./internal/scanner -run TestInit_success` and `go test ./internal/docsconsistency`
 - F-012-S008: `go test ./internal/telemetry -run TestBuildAnonymousReport` and `go test ./internal/config -run TestLoad_envTelemetryOverrides`
 - F-012-S009: `go test ./internal/foundationtelemetry`
-- F-012-S010: `go test ./internal/remediation`
+- F-012-S010: `go test ./internal/remediation` and `go test ./internal/serve -run 'TestHandle(JobFailedRecordsDeterministicRemediation|Remediation)'`

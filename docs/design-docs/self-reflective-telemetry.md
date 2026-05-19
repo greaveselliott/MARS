@@ -123,6 +123,11 @@ The first implementation is deliberately small:
   or invalid manifests, missing generated docs, known doctor remediations,
   repeated scanner duplicate tickets, missing dependency setup, and model
   artifact checksum mismatches.
+- `internal/serve` records applicable remediation attempts in failed outcome
+  details with trace IDs before generic telemetry remediation runs. Auto-safe
+  ready recipes defer generic retry jobs so deterministic repair can run first;
+  operator-required and approval-required recipes remain visible evidence while
+  preserving the existing retry behavior.
 - recurring context/budget failures point at glossary and role prompt scope
 - inference failures point at model/server tuning and doctor checks
 - tool timeouts point at tool policy and role command guidance
@@ -155,8 +160,8 @@ The first implementation is deliberately small:
 
 ## Required Next Steps
 
-- Wire the remediation registry into `serve` so safe recipes can run before
-  LLM repair jobs and skipped recipes are trace-linked.
+- Execute auto-safe remediation recipes from `serve` under explicit guardrail
+  policy, then record command outcomes alongside the trace-linked plan.
 - Add richer dashboard/API views for improvement proposals beyond the current event stream.
 - Extend triage with dogfood-specific signal detail and richer commit metadata when optional GitHub evidence is configured.
 - Add scanner-generated glossary and command-route updates when triage repeatedly identifies context gaps.

@@ -129,7 +129,7 @@ Checks recorded during the 2026-05-02 review:
 ## Next Ticket Work
 
 - `MH-048`: deterministic remediation recipes are in progress. The first
-  completed slice adds the remediation registry and applicability planner; the
-  next slice should run safe recipes before LLM repair jobs and record attempts
-  in traces/scores.
+  completed slices add the remediation registry, applicability planner, and
+  trace-linked score evidence in `serve`; the next slice should execute
+  approved auto-safe recipes before LLM repair jobs.
 - Next active-plan refresh: promote the deterministic-first repair scenario group.

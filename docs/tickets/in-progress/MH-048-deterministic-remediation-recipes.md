@@ -48,6 +48,12 @@ reserved for judgment work.
   classifications, candidate commands/files, skipped reasons, and next actions
   for the initial known recipe catalog. Next slice should wire safe recipes into
   `serve` before LLM repair jobs and record attempts in trace/score surfaces.
+- 2026-05-19: Wired deterministic remediation planning into `serve` failure
+  handling. Failed scoring outcomes now include JSON remediation evidence with
+  trace IDs, applicable recipe attempts, safety status, skipped reasons,
+  commands, and next actions. Ready auto-safe recipes defer generic telemetry
+  retries so the deterministic repair lane can run first. Next slice should
+  execute approved auto-safe commands and persist command outcomes.
 
 ## Affected Files
 
@@ -67,7 +73,7 @@ reserved for judgment work.
 
 - [x] A remediation registry can list known recipes and their applicability.
 - [ ] Safe recipes run before LLM repair where configured.
-- [ ] Recipe attempts are trace-linked and scored.
+- [x] Recipe attempts are trace-linked and scored.
 - [ ] Doctor or setup can adopt repeated successful recipes as permanent checks.
 
 ### Edge cases and negative paths

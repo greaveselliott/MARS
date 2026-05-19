@@ -268,6 +268,7 @@ func Rules() []Rule {
 		{Prefix: "internal/scheduler/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/pipeline-engine.md", "docs/features/F-006-queue-and-orchestration.md"}},
 		{Prefix: "internal/scoring/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/scoring-system.md", "docs/features/F-008-scoring-trust-quality.md"}},
 		{Prefix: "internal/selfupdate/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/features/F-009-release-update-lifecycle.md"}},
+		{Prefix: "internal/serve/remediation", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/pipeline-engine.md", "docs/design-docs/self-reflective-telemetry.md", "docs/features/F-006-queue-and-orchestration.md", "docs/features/F-012-self-improvement-loop.md"}},
 		{Prefix: "internal/serve/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/pipeline-engine.md", "docs/design-docs/orchestrated-organization-layer.md", "docs/features/F-006-queue-and-orchestration.md"}},
 		{Prefix: "internal/setup/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/local-inference.md", "docs/features/F-002-zero-config-shell-path.md", "docs/features/F-003-local-inference-lifecycle.md"}},
 		{Prefix: "internal/shellpath/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/features/F-002-zero-config-shell-path.md"}},

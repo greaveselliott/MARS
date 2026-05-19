@@ -1,0 +1,163 @@
+/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/pipeline-engine.md
+- docs/design-docs/self-reflective-telemetry.md
+- docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-012-self-improvement-loop.md
+*/
+package serve
+
+import (
+	"context"
+	"encoding/json"
+	"strings"
+	"testing"
+
+	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars-harness/internal/remediation"
+	"github.com/greaveselliott/mars-harness/internal/telemetry"
+)
+
+func TestHandleJobFailedRecordsDeterministicRemediationInScoreDetails(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/remediation-score", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+	if err := srv.traceStore.Save(ctx, "job-remediation-score", "trace-remediation-score", "{}", "{}"); err != nil {
+		t.Fatalf("save trace: %v", err)
+	}
+
+	failedJob := queueJob("job-remediation-score", repoID, "engineer")
+	srv.handleJobFailed(ctx, &failedJob, errTest("executor: workspace_hygiene_blocked before role \"engineer\" run: dirty working tree containment exceeded"))
+
+	var details string
+	if err := srv.db.QueryRow(`SELECT details FROM outcomes WHERE job_id = ?`, failedJob.ID).Scan(&details); err != nil {
+		t.Fatalf("query outcome details: %v", err)
+	}
+
+	var evidence remediationPlanEvidence
+	if err := json.Unmarshal([]byte(details), &evidence); err != nil {
+		t.Fatalf("outcome details should be JSON: %v\n%s", err, details)
+	}
+	if evidence.TraceID != "trace-remediation-score" {
+		t.Fatalf("expected trace id in outcome details, got %q", evidence.TraceID)
+	}
+	if !strings.Contains(evidence.Error, "workspace_hygiene_blocked") {
+		t.Fatalf("expected original failure in outcome details, got %q", evidence.Error)
+	}
+	if !remediationEvidenceIncludes(evidence.Attempts, "dirty-worktree:blocker") {
+		t.Fatalf("expected dirty-worktree remediation attempt, got %#v", evidence.Attempts)
+	}
+}
+
+func TestHandleRemediationReadyRecipeSuppressesGenericRetry(t *testing.T) {
+	_, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	srv.remediators = remediation.NewRegistry([]remediation.Recipe{{
+		ID:         "tool-timeout:auto-safe",
+		Title:      "Auto-safe Timeout Repair",
+		Summary:    "Test-only deterministic repair.",
+		Target:     "tools",
+		Categories: []telemetry.FailureCategory{telemetry.CategoryToolTimeout},
+		Safety:     remediation.SafetyAutoSafe,
+		NextAction: "Run deterministic repair before retrying the role.",
+	}})
+
+	srv.handleRemediation(telemetry.Event{
+		ID:       "evt-ready-recipe",
+		JobID:    "job-ready-recipe",
+		RepoID:   "repo-ready",
+		Role:     "engineer",
+		Category: telemetry.CategoryToolTimeout,
+		Message:  "tool timed out",
+		Action:   string(telemetry.ActionRetryLonger),
+		Remedied: true,
+	})
+
+	claimed, err := srv.queue.Claim(context.Background(), "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if claimed != nil {
+		t.Fatalf("expected ready deterministic recipe to suppress generic retry, got %#v", claimed)
+	}
+}
+
+func TestHandleRemediationOperatorRecipeDoesNotSuppressGenericRetry(t *testing.T) {
+	_, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	srv.remediators = remediation.NewRegistry([]remediation.Recipe{{
+		ID:         "tool-timeout:operator",
+		Title:      "Operator Timeout Repair",
+		Summary:    "Test-only deterministic repair.",
+		Target:     "tools",
+		Categories: []telemetry.FailureCategory{telemetry.CategoryToolTimeout},
+		Safety:     remediation.SafetyOperatorRequired,
+		NextAction: "Keep the operator-visible action but still allow generic retry.",
+	}})
+
+	srv.handleRemediation(telemetry.Event{
+		ID:       "evt-operator-recipe",
+		JobID:    "job-operator-recipe",
+		RepoID:   "repo-operator",
+		Role:     "engineer",
+		Category: telemetry.CategoryToolTimeout,
+		Message:  "tool timed out",
+		Action:   string(telemetry.ActionRetryLonger),
+		Remedied: true,
+	})
+
+	claimed, err := srv.queue.Claim(context.Background(), "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if claimed == nil {
+		t.Fatal("expected operator-required recipe to leave generic retry enabled")
+	}
+	if claimed.Role != "engineer" {
+		t.Fatalf("expected retry role engineer, got %q", claimed.Role)
+	}
+}
+
+func queueJob(id, repoID, role string) queue.Job {
+	return queue.Job{ID: id, RepoID: repoID, Role: role}
+}
+
+func remediationEvidenceIncludes(attempts []remediationAttemptEvidence, recipeID string) bool {
+	for _, attempt := range attempts {
+		if attempt.RecipeID == recipeID {
+			return true
+		}
+	}
+	return false
+}

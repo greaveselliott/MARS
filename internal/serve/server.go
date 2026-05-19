@@ -38,6 +38,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/orgstate"
 	"github.com/greaveselliott/mars-harness/internal/power"
 	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars-harness/internal/remediation"
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scheduler"
@@ -102,6 +103,7 @@ type Server struct {
 	evoStore    *evolution.Store
 	trustStore  *trust.Store
 	orgStore    *orgstate.Store
+	remediators remediation.Registry
 
 	mu        sync.Mutex
 	started   bool
@@ -202,23 +204,24 @@ func New(cfg Config) (*Server, error) {
 	telem := telemetry.NewCollector(nil, telemStore)
 
 	s := &Server{
-		cfg:        cfg,
-		mux:        http.NewServeMux(),
-		estop:      safety.NewEmergencyStop(),
-		db:         db,
-		repos:      repos,
-		triggers:   triggerRouter,
-		queue:      jobQueue,
-		scheduler:  sched,
-		router:     router,
-		executor:   executor,
-		telemetry:  telem,
-		telemStore: telemStore,
-		traceStore: traceStore,
-		scoreStore: scoreStore,
-		evoStore:   evoStore,
-		trustStore: trustStore,
-		orgStore:   orgStore,
+		cfg:         cfg,
+		mux:         http.NewServeMux(),
+		estop:       safety.NewEmergencyStop(),
+		db:          db,
+		repos:       repos,
+		triggers:    triggerRouter,
+		queue:       jobQueue,
+		scheduler:   sched,
+		router:      router,
+		executor:    executor,
+		telemetry:   telem,
+		telemStore:  telemStore,
+		traceStore:  traceStore,
+		scoreStore:  scoreStore,
+		evoStore:    evoStore,
+		trustStore:  trustStore,
+		orgStore:    orgStore,
+		remediators: remediation.DefaultRegistry(),
 	}
 
 	telem.SetRemediator(s.handleRemediation)
@@ -1392,13 +1395,15 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 	case telemetry.CategoryGuardrailBlock, telemetry.CategoryWorkspaceHygiene:
 		outcomeType = scoring.OutcomeGuardrailBlocked
 	}
+	traceID := s.latestTraceID(ctx, job.ID)
+	plan := s.planJobFailureRemediation(ctx, job, cat, jobErr.Error(), traceID, true)
 	if s.scoreStore != nil {
 		_ = s.scoreStore.RecordOutcome(ctx, scoring.Outcome{
 			JobID:   job.ID,
 			RepoID:  job.RepoID,
 			Role:    job.Role,
 			Type:    outcomeType,
-			Details: jobErr.Error(),
+			Details: remediationOutcomeDetails(jobErr.Error(), traceID, plan),
 		})
 	}
 
@@ -1415,7 +1420,7 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 			Category:       cat,
 			EvidenceWindow: "24h",
 			Event:          &evt,
-			TraceID:        s.latestTraceID(ctx, job.ID),
+			TraceID:        traceID,
 			Outcome:        string(outcomeType),
 			Message:        jobErr.Error(),
 		})
@@ -1455,7 +1460,7 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 				Role:    job.Role,
 				Status:  "failed",
 				Reason:  jobErr.Error(),
-				TraceID: s.latestTraceID(ctx, job.ID),
+				TraceID: traceID,
 			})
 			if cat == telemetry.CategoryWorkspaceHygiene {
 				log.Warn("serve: not dispatching workspace hygiene failure; deterministic recipe must be applied before retry",
@@ -1872,6 +1877,14 @@ func isAutoRecoverTrigger(trigger string) bool {
 // the auto-fix action determined by the classifier.
 func (s *Server) handleRemediation(evt telemetry.Event) {
 	log := slog.With("event_id", evt.ID, "job_id", evt.JobID, "role", evt.Role, "action", evt.Action)
+	traceID := s.latestTraceID(context.Background(), evt.JobID)
+	plan := s.planEventRemediation(context.Background(), evt, traceID, false)
+	if remediationPlanHasReadyAttempt(plan) {
+		log.Info("telemetry: generic remediation deferred because deterministic recipe is ready",
+			"attempts", len(plan.Attempts),
+		)
+		return
+	}
 
 	switch telemetry.RemediationAction(evt.Action) {
 	case telemetry.ActionRestartInference:
