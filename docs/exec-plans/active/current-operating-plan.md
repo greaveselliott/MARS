@@ -4,15 +4,15 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-006, F-009, F-012
-**Hypothesis:** With the open intervention-debt queue drained, the next continuous-build step should return to a clean live target replay and let runtime evidence select the next bounded improvement.
-**Success Evidence:** `T-001` closed with refreshed `docs/QUALITY_SCORE.md`, a focused regression assertion that outcome signals do not create tickets by default, and docsconsistency/docsync checks.
-**Falsification Evidence:** The next clean target replay creates intervention-debt churn before product work, score exports create tickets without explicit opt-in, or completed remediation work remains in the active plan instead of returning to live validation.
+**Hypothesis:** Treating factory pace as measured intervention debt before the next replay will reduce avoidable turns without hiding productive long-running work.
+**Success Evidence:** `T-011` records a dated pace baseline, target thresholds, implementation changes, and before/after trace or dogfood evidence.
+**Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, or runs still hit `max_turns` without actionable turn-sink evidence.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** As of 2026-05-19, no backlog ticket is selected; the factory should run a fresh live dogfood replay to discover the next concrete failure with evidence.
-**Walking Skeleton Slice:** Run a clean `demo-123`-style lifecycle validation next and materialize any discovered work through the ticket path.
+**Current Failing Scenario:** As of 2026-05-19, high-priority `T-011` is the next backlog ticket; it should establish a measured factory-pace baseline before optimizing turn limits or role flow.
+**Walking Skeleton Slice:** Claim `T-011`, measure current pace from durable trace/job evidence, then implement the smallest evidence-backed speed improvement. Return to a clean `demo-123`-style lifecycle validation after the intervention-debt queue is drained.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -35,7 +35,7 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains no tickets.
-  - `docs/tickets/backlog/` contains `T-010`.
+  - `docs/tickets/backlog/` contains `T-010` and `T-011`.
   - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
     through `T-009`.
 - Exec-plan state:
@@ -77,6 +77,12 @@ plans to decide what to do next.
   `26126035892`, `26126035944`, `26126461151`, `26127153189`, `26127529878`,
   `26127808895`, `26128342280`, `26128605770`, `26128778584`, and
   `26129025297`, and `26129336033`.
+- `v0.41.28` release notes and tag were pushed on 2026-05-19 for `T-011`, but
+  `mars-harness release verify-assets --version v0.41.28` is blocked because
+  GitHub returned `404 Not Found` for the tag release after Release workflow
+  run `26130558543` failed with the same "recent account payments have failed
+  or your spending limit needs to be increased" runner-start blocker before
+  assets or a release object could be created.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
@@ -92,10 +98,14 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Live lifecycle replay**: Run a clean `demo-123`-style target lifecycle and
+1. **Factory pace intervention debt (`T-011`)**: Measure current role pace from
+   durable traces and job outcomes, define target thresholds, and implement the
+   smallest evidence-backed change that reduces avoidable turns without hiding
+   productive long-running work.
+2. **Live lifecycle replay**: Run a clean `demo-123`-style target lifecycle and
    record product progress, queue health, intervention-debt count, quality
    export behavior, release-note behavior, and stop/shutdown behavior.
-2. **Mars parity continuation**: Use
+3. **Mars parity continuation**: Use
    [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.
