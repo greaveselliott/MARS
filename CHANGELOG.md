@@ -2,6 +2,30 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.13] - 2026-05-19
+<!-- mars-harness-release: version=0.41.13 commit=dc18ff12ecc5 -->
+
+### Impact
+- **review:** Operators and future agents now have explicit evidence that the
+  source architecture, generated target route, glossary, tools, release
+  doctrine, and scanner tests agree on the foundation/deployed boundary.
+
+### Why
+- **review:** Mirroring AD-139 into generated targets was not enough by itself.
+  The operating model needed a recorded drift pass so future work can trust the
+  source-only versus mirrored split without rereading every generated default.
+
+### What Changed
+- **review:** Added a 2026-05-19 drift review table to AD-139 covering source
+  `AGENTS.md`, the harness glossary, mirrored doctrine, tools glossary, release
+  doctrine, generated knowledge routes, generated glossary routes, generated
+  mirrored docs, and scanner assertions.
+- **planning:** Closed `T-004`, found no unowned doctrine mismatch, and advanced
+  the active plan to `T-005` for the remaining skill/tool/doctrine decision.
+
+### Documentation
+- **review:** Record foundation deployed doctrine drift review (dc18ff1)
+
 ## [0.41.12] - 2026-05-19
 <!-- mars-harness-release: version=0.41.12 commit=f84abcd3a978 -->
 
