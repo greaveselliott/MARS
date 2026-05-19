@@ -2,6 +2,34 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.15] - 2026-05-19
+<!-- mars-harness-release: version=0.41.15 commit=b67f96729a99 -->
+
+### Impact
+- **remediation:** Deterministic repair is safer and more honest at the edges:
+  dirty target worktrees remain operator-visible blockers, destructive repair
+  recipes stay approval-gated, and missing optional tools become setup/skip
+  guidance instead of false success.
+
+### Why
+- **remediation:** The live `demo-123` feedback loop showed that product-first
+  bootstrap depends on runtime failures staying out of target backlog unless
+  the target owns the cause. Closing the remaining `MH-048` edge cases keeps
+  remediation evidence useful without letting it mutate user work or hide
+  missing local tooling.
+
+### What Changed
+- **remediation:** Added an explicit `optional-tool:install-guidance` recipe,
+  tests that destructive recipes never auto-ready without approval, and tests
+  that dirty worktrees route to `git status --short` blocker guidance rather
+  than cleanup commands.
+- **planning:** Moved `MH-048` to done, recorded a clean `demo-123` replay
+  through product-specific planning and feature-contract creation, and advanced
+  the active plan to `MH-049` for broader dogfood matrix evidence.
+
+### Fixes
+- **remediation:** Close deterministic recipe edge cases (b67f967)
+
 ## [0.41.14] - 2026-05-19
 <!-- mars-harness-release: version=0.41.14 commit=11433811939f -->
 
