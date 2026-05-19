@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -87,13 +88,8 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 		recordPolicyEvent(runCtx, "pre", name, err)
 		return ToolResult{Duration: time.Since(start)}, err
 	}
-	res, err := h(runCtx, root, raw)
-	res.Duration = time.Since(start)
+	res, err := executeHandlerWithTimeout(runCtx, start, ttl, name, root, raw, h)
 	if err != nil {
-		return res, err
-	}
-	if err := postToolPolicy(runCtx, root, name, raw); err != nil {
-		recordPolicyEvent(runCtx, "post", name, err)
 		return res, err
 	}
 	if res.Output != "" || res.Stderr != "" {
@@ -108,6 +104,40 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 		}
 	}
 	return res, nil
+}
+
+type handlerResult struct {
+	result ToolResult
+	err    error
+}
+
+func executeHandlerWithTimeout(ctx context.Context, start time.Time, ttl time.Duration, name string, root Root, raw json.RawMessage, h Handler) (ToolResult, error) {
+	done := make(chan handlerResult, 1)
+	slog.Debug("tools: executing tool", "tool", name, "ttl", ttl)
+	go func() {
+		res, err := h(ctx, root, raw)
+		res.Duration = time.Since(start)
+		if err == nil {
+			if postErr := postToolPolicy(ctx, root, name, raw); postErr != nil {
+				recordPolicyEvent(ctx, "post", name, postErr)
+				err = postErr
+			}
+		}
+		done <- handlerResult{result: res, err: err}
+	}()
+
+	select {
+	case out := <-done:
+		slog.Debug("tools: tool finished", "tool", name, "duration", out.result.Duration, "err", out.err != nil)
+		return out.result, out.err
+	case <-ctx.Done():
+		duration := time.Since(start)
+		slog.Warn("tools: tool timed out", "tool", name, "duration", duration, "ttl", ttl, "err", ctx.Err())
+		return ToolResult{
+			Duration: duration,
+			ExitCode: -1,
+		}, fmt.Errorf("tools: tool %q timed out after %s; the harness stopped waiting so the agent can record a blocker instead of hanging", name, ttl.Round(time.Second))
+	}
 }
 
 func recordPolicyEvent(ctx context.Context, stage, toolName string, err error) {

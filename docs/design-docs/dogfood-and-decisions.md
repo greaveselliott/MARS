@@ -1951,3 +1951,34 @@ when configured, review roles with self-named review needs route forward rather
 than stopping, Release Manager guidance runs `release backfill-notes --check`
 after generated notes, and the backfill tool preserves complete current
 narrative entries instead of flattening them.
+
+### Follow-up `demo-123` Replay: Stuck Tools Must Not Strand Engineer
+
+After the release-chain fix, a clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- CEO, COO, and CTO each completed once and routed directly through the product
+  delivery path.
+- Engineer created concrete Space Invaders source files under `src/`, showing
+  product implementation had started rather than intervention-debt churn.
+
+Residual finding:
+
+- Engineer then went quiet with uncommitted `src/` files, no new llama-server
+  activity, and the queue row still marked `running`. The nominal tool timeout
+  did not return control to the loop, so the process had to be stopped by the
+  operator.
+
+Decision: tool execution needs a hard executor timeout around handlers, not
+only context propagation. A stuck or context-ignoring handler must return an
+actionable timeout error to the model so the role can record a blocker or fail
+closed, and the server can classify the outcome instead of leaving a target
+repo dirty forever.

@@ -28,6 +28,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 11. F-005-S011 - COO mutating tools are limited to planning artifacts before CTO ticketing.
 12. F-005-S012 - Git push remains terminal-safe in local demo repositories without remotes.
 13. F-005-S013 - Generated role guidance uses bounded, project-appropriate validation evidence instead of shell-heavy churn.
+14. F-005-S014 - A stuck tool handler times out and returns control to the agent loop.
 
 ## Scenarios
 
@@ -104,6 +105,10 @@ Then trace storage records enough context to diagnose what happened after the ru
 Given a model loops, exceeds budget, calls too many tools, or exceeds wall time
 When the agent loop reaches the configured limit
 Then the run stops with a non-success outcome that telemetry can classify
+
+Given a tool handler does not return before the executor TTL
+When the timeout expires
+Then the executor stops waiting, returns an actionable timeout error to the model, records duration evidence, and lets the agent record a blocker or failure instead of stranding the job indefinitely
 
 ### F-005-S006: Manual Role Run
 
@@ -198,3 +203,4 @@ None.
 - F-005-S011: `go test ./internal/tools -run 'TestCOO(FileWrite|ShellExec)Policy|TestDogfoodFileWritePolicyBlocksProductMutation'`
 - F-005-S012: `go test ./internal/tools -run TestGitPush_noRemote`
 - F-005-S013: `go test ./internal/scanner -run TestInit_success`
+- F-005-S014: `go test ./internal/tools -run TestExecutor_toolHandlerHardTimeout`

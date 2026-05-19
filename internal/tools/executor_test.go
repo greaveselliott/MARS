@@ -9,8 +9,10 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -61,6 +63,26 @@ func TestExecutor_emptyAllowlistFailsClosed(t *testing.T) {
 	_, err = ex.Execute(context.Background(), root, nil, "file_read", `{"path":"README.md"}`)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no tools are allowed")
+}
+
+func TestExecutor_toolHandlerHardTimeout(t *testing.T) {
+	t.Parallel()
+	reg := NewRegistry()
+	require.NoError(t, reg.Register("slow_tool", "test slow tool", json.RawMessage(`{"type":"object"}`), func(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
+		time.Sleep(250 * time.Millisecond)
+		return ToolResult{Output: "late"}, nil
+	}))
+	ex := NewExecutor(reg)
+	ex.DefaultTTL = 20 * time.Millisecond
+	root, err := NewRoot(t.TempDir())
+	require.NoError(t, err)
+
+	start := time.Now()
+	res, err := ex.Execute(context.Background(), root, []string{"slow_tool"}, "slow_tool", `{}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "timed out")
+	require.Equal(t, -1, res.ExitCode)
+	require.Less(t, time.Since(start), 150*time.Millisecond)
 }
 
 func TestExecutor_observerCannotMutate(t *testing.T) {
