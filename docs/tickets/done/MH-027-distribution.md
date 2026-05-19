@@ -1,13 +1,18 @@
 ---
 id: MH-027
-title: Cross-compile releases curl installer Homebrew and GoReleaser
+title: Cross-compile releases curl installer and release assets
 priority: medium
 complexity: medium
 source: delivery-schedule M10
 created: 2026-04-11
 ---
 
-# MH-027: Distribution — linux/darwin amd64/arm64, curl|sh, Homebrew, GitHub Releases
+# MH-027: Distribution — linux/darwin amd64/arm64, curl|sh, GitHub Releases
+
+> Correction 2026-05-19: the original record over-claimed Homebrew and
+> GoReleaser completion. Current supported install paths are the GitHub Release
+> installer script and source `make install`; no Homebrew tap or formula is
+> published for Mars Harness yet.
 
 ## Context
 
@@ -15,10 +20,10 @@ Adoption hinges on fast installs matching developer laptops and CI images. M10 d
 
 ## Requirements
 
-- GoReleaser configuration building `linux`/`darwin` × `amd64`/`arm64` with version, commit, date embedded via `-ldflags`
+- Release workflow building `linux`/`darwin` x `amd64`/`arm64` with version, commit, date embedded via `-ldflags`
 - GitHub Releases workflow attaching checksums (`checksums.txt`) and SBOM optional stub
 - `curl | sh` installer script: pinned version default, verifies checksum against published file, supports `VERSION=` override
-- Homebrew tap formula (third-party tap repo or inline in org) installing binary from release artifacts
+- Future Homebrew tap formula (third-party tap repo or inline in org) installing binary from release artifacts
 - CI gate: release draft on tag `v*`; no manual binary uploads
 
 ## Acceptance Criteria
@@ -26,7 +31,7 @@ Adoption hinges on fast installs matching developer laptops and CI images. M10 d
 ### Functional (happy path)
 - [x] Tagged release produces all four artifacts plus checksums verified locally
 - [x] Installer script installs to prefix and prints `mars-harness version` matching tag
-- [x] `brew install …/mars-harness` succeeds on Apple Silicon and amd64 macOS smoke VMs (documented matrix)
+- [ ] `brew install .../mars-harness` succeeds on Apple Silicon and amd64 macOS smoke VMs (not implemented; stale completion claim corrected on 2026-05-19)
 
 ### Edge cases and negative paths
 - [x] Checksum mismatch aborts install with non-zero exit and no partial binary

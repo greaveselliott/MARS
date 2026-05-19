@@ -23,8 +23,8 @@ Full text: [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
 ## Quick Start
 
 ```bash
-# Install
-curl -sSL https://get.mars-harness.dev | sh
+# Install from published GitHub Release assets
+curl -sSfL https://raw.githubusercontent.com/greaveselliott/mars-harness/main/scripts/install.sh | bash
 
 # Private release auth and setup
 mars-harness auth github setup
@@ -38,6 +38,9 @@ mars-harness run pipeline-fixer --repo /path/to/your/repo
 # Start the full autonomous pipeline
 mars-harness start --repo /path/to/your/repo
 ```
+
+Homebrew is not a supported install path yet; use the release installer above
+or the source-development path below until a tap is published.
 
 When working from a source checkout, install the dev binary once instead of running `./mars-harness` from the repo root:
 

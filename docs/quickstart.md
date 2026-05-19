@@ -22,6 +22,9 @@ Or pin a specific version:
 VERSION=v1.0.0 curl -sSfL https://raw.githubusercontent.com/greaveselliott/mars-harness/main/scripts/install.sh | bash
 ```
 
+Homebrew is not currently published for Mars Harness. The supported install
+paths are the release installer above and the source-development build below.
+
 **Option B — Build from source:**
 
 ```bash
