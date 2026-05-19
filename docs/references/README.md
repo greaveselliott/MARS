@@ -4,6 +4,7 @@ External documents, source research, and inherited Mars references that influenc
 
 | File | Type | Purpose |
 | --- | --- | --- |
+| [archon-comparator.md](archon-comparator.md) | Comparator | Audit of Archon workflow-engine ideas worth adopting into Mars Harness and the cloud-agent, PR-first, or arbitrary-script patterns to reject. |
 | [harness-engineering-agent-first.md](harness-engineering-agent-first.md) | Article | OpenAI Harness Engineering article. Foundational reference for agent-first development, repo-as-system-record, progressive disclosure, mechanical guardrails, and failure feedback loops. |
 | [mars-meta-harness-relevance-audit.md](mars-meta-harness-relevance-audit.md) | Audit | Audit of Mars rules and documentation, identifying which pieces should inform Mars Harness parity work. |
 | [model-landscape-april-2026.md](model-landscape-april-2026.md) | Research | Local model and hardware research for default inference choices. |
