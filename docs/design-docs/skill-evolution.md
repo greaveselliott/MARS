@@ -66,6 +66,40 @@ The evolution loop uses this decision matrix:
 
 Initialized target repos must receive the same skill-evolution doctrine. The source harness and generated target harness should both teach agents when to add `.harness/skills/<name>/SKILL.md`, because target-specific skills are one of the safest ways to reduce future human intervention without bloating prompts.
 
+### AD-140: Recursive Improvement Loop Stays Doctrine, Release Publication Becomes A Foundation Skill
+
+The recursive improvement loop is a foundation operating-model rule, not a
+single skill. The full loop spans live target replay, evidence review, bounded
+source action, deterministic tests, rerun evidence, trunk publication, release
+notes, GitHub Release publication, and blocker recording. Because it crosses
+several roles, tools, gates, and doctrine surfaces, it remains design doctrine
+in [delivery-operating-model.md](delivery-operating-model.md) and
+[foundation-deployed-harness-architecture.md](foundation-deployed-harness-architecture.md)
+rather than becoming a universal skill.
+
+The release-publication ritual is different. It is a repeated, judgment-heavy
+Release Manager procedure with clear stop conditions: generate release notes,
+push the release commit and tag, confirm the GitHub Release object, create a
+notes-only fallback release when the tag workflow cannot publish one, run asset
+verification, and record a blocker when assets are missing. That procedure is
+well suited to a compact **foundation skill** before a new deterministic
+release-publish tool exists.
+
+Decision:
+
+- Keep the recursive improvement loop as operating doctrine and generated
+  target guidance.
+- Create a follow-up foundation Release Manager skill for GitHub release
+  publication and missing-asset blocker recording.
+- Do not create a universal skill yet; target repos already receive generic
+  release discipline, and target release workflows may not publish binaries.
+- Do not create a new release-publish tool yet; existing release, GitHub, and
+  git surfaces cover the deterministic actions, while the brittle part is
+  procedural judgment around workflow failure, notes-only fallback, and blocker
+  truth.
+- Reconsider a deterministic tool only after the foundation skill proves a
+  stable argument shape and repeated manual failure mode.
+
 ### CLI Workflow Skills Stay Synchronized
 
 When a `mars-harness` CLI change affects a reusable workflow, the skill that

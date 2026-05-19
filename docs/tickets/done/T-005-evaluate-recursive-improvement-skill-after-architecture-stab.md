@@ -6,14 +6,14 @@ complexity: small
 work_type: research
 bdd_scenarios: ["F-012-S006"]
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
-owner: "TBD"
-last_attempt: "TBD"
+evidence_links: ["docs/design-docs/skill-evolution.md#ad-140-recursive-improvement-loop-stays-doctrine-release-publication-becomes-a-foundation-skill", "docs/tickets/backlog/T-006-create-foundation-release-publication-skill.md", "go test ./internal/docsconsistency ./internal/docsync"]
+verified_by: "command"
+owner: "Codex"
+last_attempt: "2026-05-19"
 blocker: "none"
 blocked_by: ["T-002", "T-004"]
 trace_id: "TBD"
-next_action: "Decide whether the shared recursive improvement loop should become a universal skill, foundation skill, deployed skill pattern, or remain design doctrine."
+next_action: "Done; implement T-006 when ready."
 dedupe_key: "public-example"
 metadata:
   category: "skill_tool_decision"
@@ -52,16 +52,16 @@ After the foundation/deployed architecture is documented and drift-checked, the 
 ## Acceptance Criteria
 
 ### Functional
-- [ ] The research records a clear skill/tool/guardrail/doctrine decision.
-- [ ] The decision distinguishes universal, foundation, and deployed skill scope.
-- [ ] Release Manager skill needs are evaluated separately from any future deterministic release-publish tool.
+- [x] The research records a clear skill/tool/guardrail/doctrine decision.
+- [x] The decision distinguishes universal, foundation, and deployed skill scope.
+- [x] Release Manager skill needs are evaluated separately from any future deterministic release-publish tool.
 
 ### Edge cases and negative paths
-- [ ] The research does not create a skill before the architecture and drift review are complete.
-- [ ] The research does not choose a tool for judgment-heavy procedure or a skill for deterministic enforcement.
+- [x] The research does not create a skill before the architecture and drift review are complete.
+- [x] The research does not choose a tool for judgment-heavy procedure or a skill for deterministic enforcement.
 
 ### Non-goals
 - Implementing the skill or tool in this ticket unless a later ticket explicitly claims that work.
 
 ### Observability, docs, and regressions
-- [ ] The decision is captured in a durable repo artifact, not only chat.
+- [x] The decision is captured in a durable repo artifact, not only chat.

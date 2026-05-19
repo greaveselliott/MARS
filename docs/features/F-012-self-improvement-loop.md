@@ -117,7 +117,7 @@ None.
 - F-012-S003: `go test ./internal/telemetry -run TestRecordGoalFromProposal`, `go test ./internal/serve -run TestCreateInterventionDebt`, and `go test ./internal/tools -run TestTicketCreate_interventionDebtDedupeCompactsRepeatedUpdates`
 - F-012-S004: `go test ./internal/evolution -run TestDetect`
 - F-012-S005: `go test ./internal/evolution -run 'TestCanReview|TestValidateReviewResult|TestRecordEvolution|TestStore'`
-- F-012-S006: `go test ./internal/tools -run TestToolCreate` plus docs-consistency checks for skill and tools glossary updates
+- F-012-S006: [skill-evolution.md](../design-docs/skill-evolution.md) AD-140, [T-006](../tickets/backlog/T-006-create-foundation-release-publication-skill.md), and `go test ./internal/docsconsistency ./internal/docsync`
 - F-012-S007: `go test ./internal/scanner -run TestInit_success` and `go test ./internal/docsconsistency`
 - F-012-S008: `go test ./internal/telemetry -run TestBuildAnonymousReport` and `go test ./internal/config -run TestLoad_envTelemetryOverrides`
 - F-012-S009: `go test ./internal/foundationtelemetry`

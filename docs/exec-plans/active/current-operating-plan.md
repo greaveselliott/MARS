@@ -4,16 +4,16 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, T-002, T-003, T-004, T-005
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, T-002, T-003, T-004, T-005, T-006
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-009, F-012
-**Hypothesis:** Naming the foundation/deployed harness architecture will reduce doctrine drift by making clear which feedback belongs to the foundation harness, which belongs to a deployed harness, which rules mirror, and which source-only release or runtime mechanics must not leak into target guidance.
-**Success Evidence:** A glossary-grounded design doc explains why the foundation/deployed split exists, how feedback is collected and routed, how doctrine is maintained as the system evolves, and how generated target guidance mirrors only the reusable core; docsconsistency, docsync, and scanner checks pass for the mirrored surfaces that change.
-**Falsification Evidence:** Agents still have to infer whether a rule is foundation-only or deployed, feedback still becomes target backlog churn when it is foundation-owned, generated target guidance imports source-only release asset mechanics, or doctrine changes can land without updating the owning docs/routes/tests.
-**Scenario Schedule:** F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** F-012-S006 needs a recorded decision on whether the recursive improvement loop should become a universal skill, foundation skill, deployed skill pattern, or remain design doctrine.
-**Walking Skeleton Slice:** Decide the skill/tool/doctrine surface for the recursive improvement loop, then refresh this plan back to Mars parity work.
-**Learning Or MVP Outcome:** Future foundation and deployed agents can tell where doctrine lives, how feedback becomes durable work, when skills/tools/guardrails are the right evolution surface, and how release/publication rules stay visible without confusing source-only binary asset mechanics with target project release discipline.
+**Hypothesis:** Returning to the Mars parity remediation lane after the foundation/deployed doctrine slice will keep the factory improving the runtime paths that most reduce wasted model turns and recovery loops.
+**Success Evidence:** `MH-048` either closes with its remaining negative-path acceptance criteria satisfied or records a concrete blocker; relevant remediation, doctor, serve, quality-score, docsconsistency, and docsync checks pass for the slice touched.
+**Falsification Evidence:** Deterministic remediation still hides destructive or missing-tool edge cases, dirty user worktrees get unsafe repair behavior, or completed doctrine work remains in the active plan instead of returning to the parity queue.
+**Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
+**Current Failing Scenario:** F-012-S010 still has open `MH-048` edge acceptance around destructive git operations, dirty user worktrees, and missing optional tools.
+**Walking Skeleton Slice:** Finish or explicitly block the current `MH-048` deterministic remediation ticket, then take the next highest-priority parity or release-skill ticket.
+**Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
 **Source:** Exec-plan review and repository state audit on 2026-05-02
@@ -35,9 +35,9 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains `MH-048`.
-  - `docs/tickets/backlog/` contains `MH-049`, `MH-050`, `T-001`, and `T-005`.
+  - `docs/tickets/backlog/` contains `MH-049`, `MH-050`, `T-001`, and `T-006`.
   - `docs/tickets/done/` contains `MH-001` through `MH-047`, `T-002`, and
-    `T-003` through `T-004`.
+    `T-003` through `T-005`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -82,17 +82,14 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Foundation/deployed doctrine architecture**: Complete the ticket-backed
-   mirroring and drift-review slice that follows the accepted source
-   architecture doc, then return to the Mars parity queue.
-   The operator explicitly selected this architecture work on 2026-05-19
-   because the recursive improvement loop is changing how the foundation and
-   deployed operating models should be understood.
-2. **Mars parity execution**: Continue deterministic remediation (`MH-048`,
+1. **Mars parity execution**: Continue deterministic remediation (`MH-048`,
    claimed under `docs/tickets/in-progress/` on 2026-05-19), then the dogfood
    matrix (`MH-049`). Use [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.
+2. **Foundation release publication skill**: Implement `T-006` after the
+   in-progress remediation ticket is no longer eligible, unless the operator
+   explicitly prioritizes release-skill work first.
 
 ## Scenario Schedule
 
@@ -106,9 +103,10 @@ plans to decide what to do next.
 | F-001-S006 | Passing | Telemetry proposals can create or update active goals/observations with dedupe evidence. |
 | F-001-S007 | Passing | `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields` checks feature contracts include first-class business-logic sections. |
 | F-001-S008 | Passing | `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata` checks operating-model code files carry associated documentation metadata. |
+| F-012-S010 | Planned | `MH-048` remains in progress with deterministic remediation edge acceptance still open. |
 | F-001-S015 | Passing | [foundation-deployed-harness-architecture.md](../../design-docs/foundation-deployed-harness-architecture.md) records the foundation/deployed doctrine boundary, feedback routing, tool/skill/runtime split, generated-target implications, doctrine-maintenance duties, and 2026-05-19 drift review. |
 | F-004-S007 | Passing | `go test ./internal/scanner -run TestInit_success` verifies generated targets receive the foundation/deployed route and AD-139 core doctrine without source binary asset names. |
-| F-012-S006 | Planned | Skill/tool evaluation ticket will decide whether the recursive improvement loop should become a universal skill, foundation skill, deployed skill pattern, or remain design doctrine. |
+| F-012-S006 | Passing | [skill-evolution.md](../../design-docs/skill-evolution.md) AD-140 keeps the recursive improvement loop as operating doctrine and creates `T-006` for a foundation Release Manager skill. |
 | F-012-S007 | Passing | Generated target knowledge routes and mirrored harness docs carry the reusable feedback and improvement-loop doctrine after the AD-139 source doc. |
 | F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.13 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.13` records the separate missing-asset blocker. |
 
@@ -156,6 +154,8 @@ Checks recorded during the 2026-05-02 review:
   the drift review.
 - `T-004`: doctrine drift review is done and found no unowned mismatch across
   source and generated target surfaces.
-- `T-005`: evaluate whether the recursive improvement loop should become a
-  universal skill, foundation skill, deployed skill pattern, or remain design
-  doctrine, then refresh this plan back to Mars parity work.
+- `T-005`: skill/tool/doctrine evaluation is done; the recursive improvement
+  loop remains operating doctrine and `T-006` captures the foundation Release
+  Manager skill implementation.
+- `T-006`: create the foundation release publication skill after `MH-048`
+  drains or if the operator explicitly prioritizes release-skill work.
