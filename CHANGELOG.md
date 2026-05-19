@@ -2,6 +2,35 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.14] - 2026-05-19
+<!-- mars-harness-release: version=0.41.14 commit=11433811939f -->
+
+### Impact
+- **skills:** Operators and future agents now have a clear boundary: the broad
+  recursive improvement loop remains operating doctrine, while the repeated
+  GitHub release-publication ritual becomes a queued foundation Release Manager
+  skill instead of an immediate tool.
+
+### Why
+- **skills:** The live improvement loop crosses roles, tools, tests, target
+  replay, trunk publication, release notes, and blocker evidence, so turning the
+  whole loop into a skill would hide system-level doctrine inside procedural
+  memory. Release publication is narrower and judgment-heavy enough to benefit
+  from compact skill guidance before a deterministic release-publish tool is
+  justified.
+
+### What Changed
+- **skills:** Added AD-140 to `skill-evolution.md`, keeping recursive
+  improvement as doctrine and selecting a foundation Release Manager skill for
+  GitHub release object publication, notes-only fallback, asset verification,
+  and missing-asset blocker recording.
+- **planning:** Closed `T-005`, created tool-backed `T-006` for the foundation
+  release publication skill, and returned the active plan to the Mars parity
+  remediation lane.
+
+### Documentation
+- **skills:** Decide recursive improvement skill boundary (1143381)
+
 ## [0.41.13] - 2026-05-19
 <!-- mars-harness-release: version=0.41.13 commit=dc18ff12ecc5 -->
 
