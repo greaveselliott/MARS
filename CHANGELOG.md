@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.26] - 2026-05-19
+<!-- mars-harness-release: version=0.41.26 commit=6e1a8572d841 -->
+
+### Impact
+- **tickets:** Operators and future agents get clearer guidance because add shadcn dashboard replacement ticket.
+
+### Why
+- **tickets:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **tickets:** Changed add shadcn dashboard replacement ticket (6e1a857).
+
+### Documentation
+- **tickets:** Add shadcn dashboard replacement ticket (6e1a857)
+
 ## [0.41.25] - 2026-05-19
 <!-- mars-harness-release: version=0.41.25 commit=6e69bfa5ea47 -->
 
