@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.0] - 2026-05-19
+<!-- mars-harness-release: version=0.41.0 commit=53bbb5e8170d -->
+
+### Impact
+- **qualityscore:** Operators gain new capability: summarize remediation evidence.
+
+### Why
+- **qualityscore:** This matters because summarize remediation evidence was missing from the shipped capability set.
+
+### What Changed
+- **qualityscore:** Changed summarize remediation evidence (53bbb5e).
+
+### Features
+- **qualityscore:** Summarize remediation evidence (53bbb5e)
+
 ## [0.40.1] - 2026-05-19
 <!-- mars-harness-release: version=0.40.1 commit=aae9b0640ca4 -->
 
