@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.38.0] - 2026-05-19
+<!-- mars-harness-release: version=0.38.0 commit=be6cd0f2174a -->
+
+### Impact
+- **serve:** Operators gain new capability: record deterministic remediation plans.
+
+### Why
+- **serve:** This matters because record deterministic remediation plans was missing from the shipped capability set.
+
+### What Changed
+- **serve:** Changed record deterministic remediation plans (be6cd0f).
+
+### Features
+- **serve:** Record deterministic remediation plans (be6cd0f)
+
 ## [0.37.0] - 2026-05-19
 <!-- mars-harness-release: version=0.37.0 commit=24f0aa60f2a3 -->
 
