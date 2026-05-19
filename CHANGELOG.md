@@ -2,6 +2,32 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.6] - 2026-05-19
+<!-- mars-harness-release: version=0.41.6 commit=ec88640bbb88 -->
+
+### Impact
+- **orchestration:** Direct dispatch no longer turns a role's own unfinished
+  work signal into an immediate same-role job.
+
+### Why
+- **orchestration:** The `v0.41.5` clean `demo-123` replay completed end to
+  end, but the first COO job finished with `next_need: exec_plan`, which mapped
+  right back to COO and added an avoidable second planning pass before CTO. That
+  is forward progress, but it is still autonomous loop noise.
+
+### What Changed
+- **orchestration:** Non-Orchestrator completed and no-work dispositions now
+  stop when their only direct route is a `next_need` that resolves back to the
+  same role.
+- **scanner:** Generated COO guidance now tells COO not to finish with planning
+  `next_need` values that route back to COO; it must continue planning, record a
+  blocker, or hand off to another owner.
+- **docs:** The live demo evidence trail records the same-role COO replay
+  finding and the new dispatch rule.
+
+### Fixes
+- **orchestration:** Stop same-role next-need loops (ec88640)
+
 ## [0.41.5] - 2026-05-19
 <!-- mars-harness-release: version=0.41.5 commit=1df263c139c3 -->
 
