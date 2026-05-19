@@ -1620,6 +1620,12 @@ process work.
   the target advances from brief to product plan, feature contract, ticket,
   implementation, review, or dogfood evidence before governance or
   intervention-debt work takes over.
+- Performance and evidence-cost findings are valid loop inputs once product
+  progress is healthy. For intentionally static HTML/CSS/JS targets, generated
+  role guidance should prefer bounded static HTTP smoke evidence, one full-file
+  ticket evidence update, and observation-first Dogfood validation over
+  package-manager, container, or repeated shell-edit churn that does not match
+  the target's shape.
 - The next loop targets are allowed to stay explicit. After the current
   improvement, remaining findings such as Engineer tool/turn bloat or Dogfood
   continuation behavior should be addressed by another bounded run-review-act

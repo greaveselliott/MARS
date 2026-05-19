@@ -844,10 +844,18 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(engineerPrompt), "No stale documentation")
 	assert.Contains(t, string(engineerPrompt), "MarsDocSync")
+	assert.Contains(t, string(engineerPrompt), "intentionally static HTML/CSS/JS")
+	assert.Contains(t, string(engineerPrompt), "one file_read + file_write replacement")
 
 	qaPrompt, err = os.ReadFile(filepath.Join(dir, ".harness", "roles", "qa.md"))
 	require.NoError(t, err)
 	assert.Contains(t, string(qaPrompt), "MarsDocSync")
+
+	dogfoodPrompt, err = os.ReadFile(filepath.Join(dir, ".harness", "roles", "dogfood.md"))
+	require.NoError(t, err)
+	assert.Contains(t, string(dogfoodPrompt), "FOR STATIC HTML/CSS/JS PROJECTS")
+	assert.Contains(t, string(dogfoodPrompt), "python3 -m http.server")
+	assert.Contains(t, string(dogfoodPrompt), "package files just to run this smoke test")
 
 	releaseDoc, err = os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	require.NoError(t, err)

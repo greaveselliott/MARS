@@ -27,6 +27,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 10. F-005-S010 - Mutating tool policy preserves canonical feature-contract paths and clean terminal handoffs.
 11. F-005-S011 - COO mutating tools are limited to planning artifacts before CTO ticketing.
 12. F-005-S012 - Git push remains terminal-safe in local demo repositories without remotes.
+13. F-005-S013 - Generated role guidance uses bounded, project-appropriate validation evidence instead of shell-heavy churn.
 
 ## Scenarios
 
@@ -166,6 +167,12 @@ Given a local throwaway repository has commits on `main` but no configured `orig
 When an agent calls `git_push`
 Then the tool returns a successful skipped-push result explaining that the commit remains local instead of causing push retry loops
 
+### F-005-S013: Bounded Static Demo Validation
+
+Given a generated target is intentionally static HTML/CSS/JS with no package manifest
+When Engineer closes a product ticket or Dogfood validates the product path
+Then generated role guidance accepts a bounded static HTTP smoke test as build/run evidence, instructs Engineer to update ticket evidence with one full-file replacement instead of repeated shell substitutions, instructs Dogfood to skip package-manager and container-build expectations that do not apply, and keeps Dogfood observation-first without product/package mutation
+
 ## Out of Scope
 
 - Parallel tool execution inside a single agent turn.
@@ -190,3 +197,4 @@ None.
 - F-005-S010: `go test ./internal/tools -run 'TestJobDispositionPolicy|TestEngineerDispositionPolicyRequiresTicketDoneBeforeSuccess|TestEngineerClaimPolicyRequiresInProgressBeforeProductMutation'`
 - F-005-S011: `go test ./internal/tools -run 'TestCOO(FileWrite|ShellExec)Policy|TestDogfoodFileWritePolicyBlocksProductMutation'`
 - F-005-S012: `go test ./internal/tools -run TestGitPush_noRemote`
+- F-005-S013: `go test ./internal/scanner -run TestInit_success`

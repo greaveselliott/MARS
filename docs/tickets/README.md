@@ -92,6 +92,10 @@ Tool policy blocks `git mv`/`mv` moves into `docs/tickets/done/` and
 `file_write` updates to done tickets when those required feature evidence
 fields are still empty, so the same role must repair the evidence before the
 ticket can leave in-progress.
+Agents should update ticket evidence with one full ticket rewrite after
+reading the current file, not repeated shell substitutions against frontmatter
+fields. Evidence updates are product lifecycle state, so they should be easy to
+review in one diff.
 
 Feature tickets must not be the only place business logic is described. If a
 ticket changes product rules, workflow branches, state transitions,

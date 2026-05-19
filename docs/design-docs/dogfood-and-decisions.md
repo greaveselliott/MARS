@@ -1833,3 +1833,42 @@ After a recent same-role runtime failure such as `max_turns`, the survey loop
 pauses same-role ticket-owner retry for a cooldown window. Eligible in-progress
 tickets still outrank backlog work, but the watchdog cannot bypass the
 foundation-telemetry stop by immediately retrying the same failed role.
+
+### Follow-up `demo-123` Replay: Healthy Lifecycle Still Needs Cheaper Evidence
+
+After survey retry containment, another clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, QA, Security, and Dogfood all completed.
+- T-001 reached `docs/tickets/done/`, QA and Security approved, Dogfood
+  validated, and the target worktree ended clean.
+- No target intervention-debt tickets were created. The remaining guardrail
+  blocks stayed foundation evidence.
+- The previous same-role retry loop did not recur; the run had no `max_turns`
+  failure.
+
+Residual finding:
+
+- The product lifecycle is now progressing, but it is still too expensive for a
+  tiny static HTML demo. Engineer used 48 calls and roughly 1.63M trace tokens;
+  Dogfood used 32 calls and roughly 772k trace tokens.
+- Engineer repeatedly edited ticket metadata through shell substitutions after
+  product work was done, and Dogfood performed broad shell discovery plus
+  package/container-oriented checks before settling on a static server smoke
+  test.
+
+Decision: generated role guidance should make static target validation and
+ticket evidence updates explicit. Engineer should accept a bounded static HTTP
+smoke test for intentionally static HTML/CSS/JS targets and update ticket
+evidence with one full-file replacement. Dogfood should skip package-manager
+and container-build expectations that do not apply to no-manifest static
+targets, start static servers only in background mode, and keep validation
+evidence bounded.
