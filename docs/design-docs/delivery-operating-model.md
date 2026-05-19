@@ -1225,11 +1225,14 @@ the default product validation spine. A no-work disposition with no named need
 still stops. Orchestrator remains the fallback for ambiguous, blocked, failed,
 conflicting, or governance-heavy handoffs.
 
-Direct dispatch does not treat a `next_need` that maps back to the source role
-as progress. If a non-Orchestrator role records completed or no-work and the
-only route is a same-role `next_need`, dispatch stops with a same-role reason
-instead of enqueueing the role again. Roles must continue their own work,
-record a blocker, or provide an explicit structured handoff to another owner.
+Direct dispatch does not enqueue a same-role handoff loop when `next_need` maps
+back to the source role. If a non-Orchestrator role records completed and the
+role has a default forward owner, dispatch treats the completed status as
+evidence that local work is done and routes to that forward owner. If the role
+records no-work and the only route is a same-role `next_need`, dispatch stops
+with a same-role reason instead of pretending no-work is progress. Roles must
+continue their own work, record a blocker, or provide an explicit structured
+handoff when neither completed-forward routing nor a clear target applies.
 
 The direct path still uses the same role validation, ticket prerequisites,
 review-chain progression, repeated-route loop guard, durable decision record,

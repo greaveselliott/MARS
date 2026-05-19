@@ -108,9 +108,13 @@ Given a non-Orchestrator dispatch-mode role records a completed, approved, in-re
 When the route can be selected from `suggested_role`, `handoff.target_role`, `feedback.for_role`, `next_need`, or the default product validation spine
 Then dispatch enqueues that target role directly without an Orchestrator LLM detour, while preserving role validation, ticket prerequisites, review-chain progression, and loop guards
 
-Given a non-Orchestrator dispatch-mode role records a completed or no-work disposition whose `next_need` maps back to the same role
+Given a non-Orchestrator dispatch-mode role records a completed disposition whose `next_need` maps back to the same planning role
 When no explicit structured target role points to a different owner
-Then direct dispatch stops with an operator-visible same-role reason instead of enqueueing a same-role handoff loop
+Then direct dispatch treats the role's completed status as evidence that local planning is done and routes to the default forward owner instead of enqueueing a same-role handoff loop
+
+Given a non-Orchestrator dispatch-mode role records a no-work disposition whose `next_need` maps back to the same role
+When no explicit structured target role points to a different owner
+Then direct dispatch stops with an operator-visible same-role reason instead of pretending no-work is progress
 
 Given a review role records approved or completed work with a `next_need` that names its own review category
 When a later review or release owner is configured

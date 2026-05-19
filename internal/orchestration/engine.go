@@ -181,6 +181,9 @@ func directDeterministicRoute(in Input, status, nextNeed, suggested string) (nex
 				if forward := nextReviewLifecycleRoleForRole(in.Manifest, d.Role); forward != "" {
 					return direct(forward, "current review next_need already belongs to source role; routing to next review owner without Orchestrator detour")
 				}
+				if forward := defaultCompletionRoute(d.Role); forward != "" {
+					return direct(forward, "completed same-role next_need already belongs to source role; routing to default forward owner without Orchestrator detour")
+				}
 				return "", "deterministic", "next_need resolves to the current role; stopping direct dispatch to avoid a same-role loop", "same-role next_need has no forward owner", true
 			}
 			return direct(role, "routing completed work by next_need without Orchestrator detour")

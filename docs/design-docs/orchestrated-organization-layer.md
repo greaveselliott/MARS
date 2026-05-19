@@ -50,10 +50,13 @@ for existing repos that deliberately want `then` and `idle_then` runtime
 behavior.
 
 A `next_need` that resolves to the same role that just completed is not a
-forward handoff. Direct dispatch stops with a same-role reason unless the role
-provides an explicit structured target for another owner. This keeps roles such
-as COO from finishing with `next_need: exec_plan` and immediately enqueueing
-another COO job instead of completing planning or handing to CTO.
+same-role handoff loop. If the role recorded completed work and has a default
+forward owner, direct dispatch moves to that owner; for example, a completed COO
+planning job that still names `feature_contract` routes to CTO ticket
+breakdown. If the role recorded no-work, direct dispatch stops with a same-role
+reason unless the role provides an explicit structured target for another
+owner. This keeps roles such as COO from immediately enqueueing another COO job
+while still allowing completed planning work to continue toward implementation.
 Review roles are the exception: if QA, Security, or Dogfood completes and names
 its own review category, dispatch treats that as completed review evidence and
 routes to the next configured review or release owner.

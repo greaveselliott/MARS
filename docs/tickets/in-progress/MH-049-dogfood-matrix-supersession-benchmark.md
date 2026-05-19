@@ -7,7 +7,7 @@ kind: intervention-debt
 work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: []
+evidence_links: ["docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md"]
 verified_by: TBD
 dedupe_key: "public-example"
 source: Mars parity workstream I
@@ -54,14 +54,21 @@ trusted.
   `scan`, destructive shell preflight block, dirty-worktree containment,
   read-only shell inspection behavior, intervention-debt dedupe, ticket-gate
   fallout suppression, scoring, and bounded triage updates.
-- Remaining in this ticket: broader matrix coverage, full dogfood loop evidence,
-  `../mars` observer profile/trial, contributor-mode graduation criteria, and a
-  completed validation report.
+- Remaining in this ticket: `../mars` observer profile/trial and the observer
+  validation report. The broader demo target lifecycle now has source-owned
+  validation evidence.
 - 2026-05-19: Claimed the next foundation build slice. Added broader fake-LLM
   dogfood coverage for dogfood report writing, bounded test execution,
   deduped ticket creation, direct-main commit, no-remote push attempt, scoring
   outcome, and `scores export` quality hook. Added observer-trust coverage that
   blocks mutating writes before Mars contributor-mode graduation.
+- 2026-05-19: Ran a live `demo-123` Space Invaders target from a clean repo.
+  The first replay found a completed COO `feature_contract` handoff that
+  stopped dispatch before product tickets. The source fix routes completed
+  same-role planning needs to the role's default forward owner. A fresh replay
+  reached CEO, COO, CTO, Engineer, QA, Security, Dogfood, and Release Manager,
+  created and closed ordinary product ticket `T-001`, and recorded the next
+  source-owned blockers as `T-007` and `T-008`.
 
 ## Affected Files
 
@@ -96,7 +103,7 @@ trusted.
 
 - [x] Dogfood against `../mars` cannot write to Mars without contributor-mode
       trust and guardrail approval.
-- [ ] Optional GitHub paths are skipped honestly when credentials are missing.
+- [x] Optional GitHub paths are skipped honestly when credentials are missing.
 - [x] Failed fast-gate dogfood creates or updates deduped intervention-debt
       tickets without secondary ticket-gate amplification.
 - [x] Broader failed dogfood runs create or update deduped intervention-debt
@@ -107,4 +114,7 @@ trusted.
 - [x] Tests prove the fast fake-LLM containment loop is deterministic in CI.
 - [x] Tests or dry-runs prove the broader fake-LLM loop is deterministic in CI.
 - [x] Design docs explain where dogfood evidence is stored.
-- [ ] A completed exec-plan report records the first observer-mode trial results.
+- [x] A completed validation report records the live `demo-123` lifecycle
+      results.
+- [ ] A completed validation report records the first observer-mode `../mars`
+      trial results.

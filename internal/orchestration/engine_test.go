@@ -101,7 +101,7 @@ func TestDecide_noWorkWithNextNeedRoutesDirectly(t *testing.T) {
 	require.Contains(t, decision.Reason, "no-work")
 }
 
-func TestDecide_nonOrchestratorNextNeedSameRoleStopsDirectDispatch(t *testing.T) {
+func TestDecide_nonOrchestratorCompletedNextNeedSameRoleRoutesForward(t *testing.T) {
 	t.Parallel()
 
 	decision, err := Decide(Input{
@@ -116,10 +116,10 @@ func TestDecide_nonOrchestratorNextNeedSameRoleStopsDirectDispatch(t *testing.T)
 		},
 	})
 	require.NoError(t, err)
-	require.Empty(t, decision.NextRole)
+	require.Equal(t, "cto-weekly", decision.NextRole)
 	require.Equal(t, "deterministic", decision.DecisionKind)
-	require.Contains(t, decision.Reason, "current role")
-	require.Contains(t, decision.StopReason, "same-role")
+	require.Contains(t, decision.Reason, "default forward owner")
+	require.Empty(t, decision.StopReason)
 }
 
 func TestDecide_reviewNextNeedSameRoleRoutesForward(t *testing.T) {
