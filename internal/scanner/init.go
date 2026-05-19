@@ -935,7 +935,7 @@ would otherwise live only in chat.
 - **Foundation operating model** — the operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
 - **Deployed operating model** — the operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
-- **Live evidence improvement loop** — the product stabilization loop inherited from the foundation operating model: observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, and claim improvement only from rerun evidence.
+- **Live evidence improvement loop** — the product stabilization loop inherited from the foundation operating model: observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, and claim improvement only after rerun evidence is confirmed, merged or fast-forwarded to trunk, and pushed to the remote.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
@@ -993,7 +993,7 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - No stale documentation: when writing or materially changing code, add or update the top-of-file ` + "`MarsDocSync`" + ` comment block with a ` + "`docs:`" + ` list of associated docs, run or satisfy the docsync audit where applicable, then update those docs in the same commit or record why no doc change was needed.
 - CLI tool/skill sync: when ` + "`mars-harness`" + ` CLI commands, flags, output contracts, repo behavior, or workflows change, update ` + "`mars_harness_cli`" + ` reference and repo-shortcut behavior, generated target doctrine, and affected skills in the same change.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
-- Product lifecycle improvements use a live evidence loop: observe a real product path, review findings, make one or two bounded target-owned changes, rerun the same path, and claim improvement only from rerun evidence.
+- Product lifecycle improvements use a live evidence loop: observe a real product path, review findings, make one or two bounded target-owned changes, rerun the same path, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence.
 - Prefer eligible in-progress tickets before backlog work; a ticket is eligible when it has no meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata.
 - Complete one coherent step at a time.
 - If blocked, record ` + "`blocker`" + `, ` + "`blocked_by`" + `, ` + "`trace_id`" + `, and ` + "`next_action`" + `, create or update the dependency/intervention-debt ticket, and return the ticket to a non-misleading state.
@@ -1387,7 +1387,7 @@ Architectural decisions and design documents for this project.
 | AD-105 | Foundation agents use canonical persona manuals for ownership, feedback, and handoff; Go structs in ` + "`internal/personas`" + ` render checked docs and prompt Personal Guides. | 2026-05-04 | Accepted |
 | AD-106 | Structured disposition packets travel through Orchestrator so handoff and feedback are visible, validated, and forwarded at runtime. | 2026-05-04 | Accepted |
 | AD-108 | Agents fetch and fast-forward from ` + "`origin/main`" + ` before non-trivial work, then push validated commits and release tags to remote trunk as soon as they are ready. | 2026-05-05 | Accepted |
-| AD-138 | Product lifecycle improvements use a live evidence loop: observe a real path, review findings, make bounded target-owned changes, rerun, and claim improvement only from rerun evidence. | 2026-05-19 | Accepted |
+| AD-138 | Product lifecycle improvements use a live evidence loop: observe a real path, review findings, make bounded target-owned changes, rerun, merge or fast-forward to trunk, push to the remote, and claim improvement only from rerun evidence. | 2026-05-19 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1664,11 +1664,13 @@ they are ready.
 
 Product lifecycle improvements use the same evidence loop as delivery work:
 observe a real build, run, dogfood, user, or agent path; review the findings;
-make one or two bounded target-owned changes; rerun the same path; and claim
-improvement only from rerun evidence. If the rerun cannot happen, record the
-blocker and exact replay command in the owning ticket, plan, report, or
-decision. The source-harness ` + "`demo-123`" + ` replay is source-only shorthand; target
-repos choose their own representative product path.
+make one or two bounded target-owned changes; rerun the same path; merge or
+fast-forward the confirmed fix to trunk; push it to the remote; and claim
+improvement only from rerun evidence. If the rerun or remote push cannot
+happen, record the blocker and exact replay, merge, and push commands in the
+owning ticket, plan, report, or decision. The source-harness ` + "`demo-123`" + ` replay is
+source-only shorthand; target repos choose their own representative product
+path.
 
 A repeated process promotion to formalized tools is part of the operating model.
 When agents or humans use a
@@ -2219,7 +2221,7 @@ loading every document.
 | Canonical role domain | One of Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Role mode | A lower-kebab-case purpose inside a role domain, such as ticket-delivery or quality-review. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. | ` + "`docs/roles/ROLES.md`" + ` |
-| Live evidence improvement loop | Observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, and claim improvement only from rerun evidence. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
+| Live evidence improvement loop | Observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
 | Conversation system record | Durable artifact rule for significant agent conversations that affect plans, decisions, investigations, quality findings, or completed-work state. | ` + "`docs/design-docs/conversation-as-system-record.md`" + ` |
 | Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
 | Release | A semantic version plus patch-note entry generated from commits. | ` + "`docs/design-docs/release-versioning.md`" + ` |
@@ -2277,7 +2279,7 @@ harness and deployed harnesses.
 | Foundation operating model | The operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
 | Deployed operating model | The operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
-| Live evidence improvement loop | The product stabilization loop inherited from the foundation operating model: observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, and claim improvement only from rerun evidence. |
+| Live evidence improvement loop | The product stabilization loop inherited from the foundation operating model: observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence. |
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |

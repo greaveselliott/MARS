@@ -108,7 +108,8 @@ func TestLiveDemoImprovementLoopIsDocumented(t *testing.T) {
 		"AGENTS.md": {
 			"Source improvements use the live demo loop",
 			"run a representative clean target such as `demo-123`",
-			"claim improvement only from the rerun evidence",
+			"claim improvement only after the rerun evidence confirms the fix",
+			"merged or fast-forwarded to trunk and pushed to the remote",
 		},
 		"docs/design-docs/delivery-operating-model.md": {
 			"AD-138",
@@ -116,7 +117,9 @@ func TestLiveDemoImprovementLoopIsDocumented(t *testing.T) {
 			"run a clean representative target",
 			"review the findings",
 			"one or two bounded source actions",
-			"claim improvement only from rerun evidence",
+			"Merge or fast-forward the confirmed fix",
+			"push it to the remote",
+			"claim improvement only after rerun evidence confirms the fix",
 		},
 		"docs/design-docs/harness-operating-model.md": {
 			"live demo improvement loop",
@@ -126,16 +129,21 @@ func TestLiveDemoImprovementLoopIsDocumented(t *testing.T) {
 		"docs/design-docs/harness-glossary.md": {
 			"Live demo improvement loop",
 			"run a clean representative target such as `demo-123`",
-			"claim improvement only from rerun evidence",
+			"merged or fast-forwarded to trunk",
+			"pushed to the remote",
 		},
 		"docs/features/F-001-delivery-operating-model.md": {
 			"F-001-S014",
 			"Continuous Live Demo Improvement Loop",
 			"selects one or two bounded source actions",
+			"merges or fast-forwards the confirmed fix to trunk",
+			"pushes it to the remote",
 			"claims improvement only when the rerun shows better product progress",
 		},
 		"internal/scanner/init.go": {
 			"Product lifecycle improvements use a live evidence loop",
+			"merge or fast-forward the confirmed fix to trunk",
+			"push it to the remote",
 			"claim improvement only from rerun evidence",
 			"source-only shorthand",
 		},

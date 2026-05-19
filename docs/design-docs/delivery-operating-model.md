@@ -93,10 +93,11 @@ harness actually behaves better against a fresh or known-problem target. The
 live check starts the continuous improvement loop: run a clean representative
 target, review the findings, select one or two bounded actions tied to those
 findings, implement and test them, rerun a clean representative target, and
-claim improvement only from rerun evidence. The evidence should record the
-exact target repo, command, branch/ref or binary used, database/log paths,
-observed lifecycle events, product progress, chosen actions, rerun result, and
-any remaining operator action.
+claim improvement only after rerun evidence confirms the fix and the work is
+merged or fast-forwarded to trunk and pushed to the remote. The evidence should
+record the exact target repo, command, branch/ref or binary used, database/log
+paths, observed lifecycle events, product progress, chosen actions, rerun
+result, remote ref, and any remaining operator action.
 
 No feature is shipped until its in-scope BDD scenarios pass or the CEO
 explicitly descopes, supersedes, or invalidates them. Enabler work may complete
@@ -233,7 +234,7 @@ and release notes.
 | Source and target harness diverge | Init gets new doctrine but old targets keep stale docs | `update check` and `doctor --repo` report drift; `update harness` writes missing defaults only; stale user-owned files become migration tickets. |
 | Agents build on stale trunk or strand ready work locally | Work starts before fetching `origin/main`, or validated commits are not pushed promptly | Treat remote trunk freshness and immediate push as operating-model gates; fetch before editing, fast-forward or record blockers, push ready commits and tags before unrelated work. |
 | Unit tests give false confidence | Operating-model bugs appear only in full loops | BDD E2E/integration is default acceptance; unit and docs tests support deterministic helpers. |
-| Source stabilization passes tests but still fails in practice | The changed behavior only appears when the installed harness runs against a real target lifecycle | Treat live-experience verification against `demo-123` or another representative target as a source-harness gate, then rerun after bounded source changes before claiming improvement. |
+| Source stabilization passes tests but still fails in practice | The changed behavior only appears when the installed harness runs against a real target lifecycle | Treat live-experience verification against `demo-123` or another representative target as a source-harness gate, then rerun after bounded source changes and push confirmed work to remote trunk before claiming improvement. |
 | Live demos become endless observation | Findings are gathered without forcing a small action and a rerun | Use the run, review, act, rerun loop: one clean run, one evidence review, one or two bounded fixes, one clean replay, and a recorded next blocker if the replay still stalls. |
 | Lean becomes endless learning | Hypotheses never close | Exec plans require success and falsification evidence; inconclusive plans are revised, superseded, or split. |
 | Operating-model additions create handoff gaps | New rules are added without updating the adjacent artifacts, roles, tools, or evidence path | Treat operating-model changes as system changes: update the whole affected workflow in one task or record the blocker before merging. |
@@ -252,7 +253,9 @@ features, but the named `demo-123` replay rule applies to Mars Harness source
 changes because the product being validated is the harness lifecycle itself.
 Generated target repos inherit the generic evidence loop: observe a real
 product path, review findings, make bounded target-owned changes, rerun the
-same path, and claim improvement only from rerun evidence.
+same path, and claim improvement only after rerun evidence is confirmed,
+merged or fast-forwarded to the target's trunk policy, and pushed to the
+remote.
 
 Generated targets receive goal docs, feature-contract docs, this design
 decision seed, updated exec-plan and ticket templates, updated role prompts,
@@ -1595,6 +1598,9 @@ Source lifecycle stabilization uses a continuous live demo improvement loop:
 8. Claim improvement only from rerun evidence: better product progress, fewer
    autonomous loops, fewer target intervention-debt tickets, clearer operator
    blockers, or a smaller remaining failure class.
+9. Merge or fast-forward the confirmed fix according to the repo's trunk policy
+   and push it to the remote before closing the loop. Branch-only or local-only
+   confirmed fixes are incomplete.
 
 This loop can repeat indefinitely. Each cycle should leave the repo with a
 durable evidence trail and one narrower next problem, not a widening backlog of
@@ -1604,6 +1610,9 @@ process work.
 
 - Live target runs are not a one-time proof; they are the foundation operating
   model for stabilizing the harness lifecycle.
+- Confirmation includes remote publication. A local green replay does not count
+  as complete until the work is on the remote trunk or the remote blocker is
+  recorded with replay and push steps.
 - `demo-123` remains source-only shorthand for the canonical first-run replay.
   Generated targets inherit the generic product evidence loop, not the specific
   demo name.

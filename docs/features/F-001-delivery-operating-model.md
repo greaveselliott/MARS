@@ -114,7 +114,7 @@ Then the evidence includes a representative live target run such as `demo-123`, 
 
 Given a live target run such as `demo-123` exposes a lifecycle, orchestration, intervention-debt, runtime, generated-target, model/provider, scoring, safety, dashboard, or update/release issue
 When the agent stabilizes Mars Harness source behavior
-Then the agent records the run evidence, reviews the findings, selects one or two bounded source actions tied to that evidence, implements and tests those actions, reruns a clean representative target, and claims improvement only when the rerun shows better product progress or a clearly smaller remaining blocker
+Then the agent records the run evidence, reviews the findings, selects one or two bounded source actions tied to that evidence, implements and tests those actions, reruns a clean representative target, merges or fast-forwards the confirmed fix to trunk, pushes it to the remote, and claims improvement only when the rerun shows better product progress or a clearly smaller remaining blocker
 
 ## Out of Scope
 
@@ -141,4 +141,4 @@ None.
 - F-001-S011: `go test ./cmd/mars-harness -run TestMarsHarnessCLI` verifies the live Cobra command tree, `mars_harness_cli` reference, and repo shortcut map stay synchronized.
 - F-001-S012: `go test ./internal/docsconsistency -run TestRemoteTrunkOperatingModelIsDocumented` verifies source and generated target doctrine include the remote-trunk workflow.
 - F-001-S013: source-harness lifecycle changes include a `demo-123` or equivalent live-experience transcript, or an explicit blocker with replay steps.
-- F-001-S014: `go test ./internal/docsconsistency -run TestLiveDemoImprovementLoopIsDocumented` verifies the run, review, act, and rerun loop is documented in source and generated target doctrine.
+- F-001-S014: `go test ./internal/docsconsistency -run TestLiveDemoImprovementLoopIsDocumented` verifies the run, review, act, rerun, merge, and push loop is documented in source and generated target doctrine.
