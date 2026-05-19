@@ -56,20 +56,20 @@ plans to decide what to do next.
   `v0.40.0`, `v0.40.1`, `v0.41.0`, `v0.41.1`, `v0.41.2`, `v0.41.3`,
   `v0.41.4`, `v0.41.5`, `v0.41.6`, `v0.41.7`, `v0.41.8`, `v0.41.9`,
   `v0.41.10`, `v0.41.11`, `v0.41.12`, `v0.41.13`, `v0.41.14`,
-  `v0.41.15`, `v0.41.16`, and `v0.41.17` release notes and tags were pushed on
+  `v0.41.15`, `v0.41.16`, `v0.41.17`, and `v0.41.18` release notes and tags were pushed on
   2026-05-19, but CI and Release workflow jobs were not started because GitHub
   reported recent account payment failure or a spending-limit increase
   requirement.
-  Notes-only GitHub Releases for `v0.36.4` through `v0.41.17` were created from
+  Notes-only GitHub Releases for `v0.36.4` through `v0.41.18` were created from
   the generated changelog entries on 2026-05-19 so the Releases page is no
   longer stale at `v0.36.3`. `mars-harness release verify-assets --version
-  v0.41.17` is still blocked because the `v0.41.17` release is missing
+  v0.41.18` is still blocked because the `v0.41.18` release is missing
   `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
   `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
-  `checksums.txt`; GitHub Actions run `26126035944` failed with "recent account
+  `checksums.txt`; GitHub Actions run `26126461151` failed with "recent account
   payments have failed or your spending limit needs to be increased" before
-  assets could be built. `v0.41.16` has the same missing-asset blocker via run
-  `26126035892`.
+  assets could be built. `v0.41.16` and `v0.41.17` have the same missing-asset
+  blocker via runs `26126035892` and `26126035944`.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
@@ -112,7 +112,7 @@ plans to decide what to do next.
 | F-004-S007 | Passing | `go test ./internal/scanner -run TestInit_success` verifies generated targets receive the foundation/deployed route and AD-139 core doctrine without source binary asset names. |
 | F-012-S006 | Passing | [skill-evolution.md](../../design-docs/skill-evolution.md) AD-140 keeps the recursive improvement loop as operating doctrine and creates `T-006` for a foundation Release Manager skill. |
 | F-012-S007 | Passing | Generated target knowledge routes and mirrored harness docs carry the reusable feedback and improvement-loop doctrine after the AD-139 source doc. |
-| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.17 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.17` records the separate missing-asset blocker. |
+| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.18 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.18` records the separate missing-asset blocker. |
 
 ## Quality State
 
