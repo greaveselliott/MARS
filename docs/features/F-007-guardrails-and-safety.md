@@ -89,7 +89,7 @@ Then the mutation is blocked and the role is told to use one `git mv` lifecycle 
 
 Given a role writes a feature contract
 When the file contains duplicate scenario heading IDs such as two `F-001-S001` headings
-Then tool policy blocks the write and tells the role to revise the existing scenario instead of appending another duplicate ID
+Then tool policy blocks the write, names the duplicate heading line numbers, tells the role to revise the existing scenario instead of appending another duplicate ID, and clarifies that Scenario Schedule list references do not count as duplicate headings
 
 Given a successful dispatch disposition is being recorded
 When the target worktree contains only runtime-managed `.harness/learnings.yaml` convention metadata

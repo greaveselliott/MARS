@@ -1765,3 +1765,37 @@ shell builtins produce one actionable error that explains argv is not shell
 parsed and directs the role to `shell_command` or file tools. The aim is not to
 make shell use broader; it is to turn an observed completion-window turn sink
 into an immediate same-run correction.
+
+### Follow-up `demo-123` Replay: Duplicate-Scenario Recovery Needs Exact Lines
+
+After shell argv hardening, another clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, QA, Security, and Dogfood all completed.
+- The target produced a Space Invaders walking-skeleton implementation, moved
+  T-001 to `docs/tickets/done/`, passed QA and Security review, and ended with
+  a clean worktree.
+- No target intervention-debt tickets were created; guardrail findings stayed
+  foundation telemetry.
+
+Residual finding:
+
+- Engineer completed but needed 43 LLM calls and nine guardrail blocks. The
+  dominant loop was duplicate `F-001-S001` scenario-heading writes. The role
+  used `grep` and saw both the real scenario heading and the Scenario Schedule
+  list entry, then repeatedly tried full-file rewrites, created a `.bak`
+  sidecar, and attempted a forbidden `rm` cleanup before finally recovering.
+
+Decision: duplicate-scenario guardrail errors must include exact duplicate
+heading lines and explain that Scenario Schedule references are allowed. This
+keeps the invariant mechanical while making the recovery step concrete: read
+the file, replace the existing scenario section once, and do not append another
+heading with the same ID.

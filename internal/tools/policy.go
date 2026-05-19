@@ -544,29 +544,62 @@ func checkTicketDoneContentPolicy(root Root, rel, content string) error {
 
 var featureScenarioHeadingRe = regexp.MustCompile(`(?m)^#{3,6}\s+(F-\d{3}-S\d{3})\b`)
 
+type featureScenarioDuplicate struct {
+	ID    string
+	Lines []int
+}
+
 func checkFeatureScenarioIDPolicy(rel, content string) error {
 	rel = cleanRepoPath(rel)
 	lowerRel := strings.ToLower(rel)
 	if !strings.HasPrefix(lowerRel, "docs/features/") || !strings.HasSuffix(lowerRel, ".md") {
 		return nil
 	}
-	seen := make(map[string]bool)
-	var dupes []string
-	for _, match := range featureScenarioHeadingRe.FindAllStringSubmatch(content, -1) {
+	dupes := duplicateFeatureScenarioHeadings(content)
+	if len(dupes) == 0 {
+		return nil
+	}
+	return fmt.Errorf(
+		"policy: feature contract %s has duplicate scenario ID heading(s): %s; each scenario heading such as `### F-001-S001` may appear once. Read the current file and replace the existing scenario section in one full-file write; do not append a second heading. Scenario Schedule list entries may repeat the ID and are not the duplicate.",
+		rel,
+		formatFeatureScenarioDuplicates(dupes),
+	)
+}
+
+func duplicateFeatureScenarioHeadings(content string) []featureScenarioDuplicate {
+	seen := make(map[string][]int)
+	var order []string
+	for lineNumber, line := range strings.Split(content, "\n") {
+		match := featureScenarioHeadingRe.FindStringSubmatch(line)
 		if len(match) < 2 {
 			continue
 		}
 		id := strings.ToUpper(strings.TrimSpace(match[1]))
-		if seen[id] {
-			dupes = append(dupes, id)
-			continue
+		if len(seen[id]) == 0 {
+			order = append(order, id)
 		}
-		seen[id] = true
+		seen[id] = append(seen[id], lineNumber+1)
 	}
-	if len(dupes) == 0 {
-		return nil
+	var dupes []featureScenarioDuplicate
+	for _, id := range order {
+		lines := seen[id]
+		if len(lines) > 1 {
+			dupes = append(dupes, featureScenarioDuplicate{ID: id, Lines: lines})
+		}
 	}
-	return fmt.Errorf("policy: feature contract %s has duplicate scenario ID heading(s): %s; update or replace the existing scenario instead of appending another with the same ID", rel, strings.Join(uniqueStringsPreserveOrder(dupes), ", "))
+	return dupes
+}
+
+func formatFeatureScenarioDuplicates(dupes []featureScenarioDuplicate) string {
+	formatted := make([]string, 0, len(dupes))
+	for _, dupe := range dupes {
+		lineParts := make([]string, 0, len(dupe.Lines))
+		for _, line := range dupe.Lines {
+			lineParts = append(lineParts, strconv.Itoa(line))
+		}
+		formatted = append(formatted, fmt.Sprintf("%s (heading lines %s)", dupe.ID, strings.Join(lineParts, ", ")))
+	}
+	return strings.Join(formatted, ", ")
 }
 
 func checkFeatureFileWritePolicy(root Root, rel string) error {

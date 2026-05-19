@@ -88,6 +88,10 @@ into `docs/tickets/done/` and `file_write` saves to done feature tickets are
 blocked while required BDD evidence fields remain empty. This turns a late
 post-run ticket-gate failure into an immediate tool error that the active role
 can repair before it records disposition or triggers a separate repair job.
+Feature-contract scenario uniqueness uses the same recovery shape: duplicate
+scenario-heading errors name the duplicate heading line numbers and clarify
+that Scenario Schedule list references are allowed, so roles can replace the
+existing scenario section instead of repeatedly appending another heading.
 
 Dogfood observation is also a hard tool-policy boundary. Dogfood may create
 target-owned findings through `ticket_create` and write bounded evidence under

@@ -326,6 +326,12 @@ func TestFileWritePolicyBlocksDuplicateFeatureScenarioHeadings(t *testing.T) {
 	if !strings.Contains(err.Error(), "duplicate scenario ID") {
 		t.Fatalf("expected duplicate scenario ID error, got %v", err)
 	}
+	if !strings.Contains(err.Error(), "heading lines 3, 7") {
+		t.Fatalf("expected duplicate heading line numbers, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "Scenario Schedule list entries may repeat the ID") {
+		t.Fatalf("expected schedule guidance, got %v", err)
+	}
 }
 
 func TestCEOFileWritePolicyAllowsStrategyDocsAndBlocksPlanningArtifacts(t *testing.T) {
