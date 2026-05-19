@@ -181,12 +181,19 @@ Preview the assembled system prompt without calling the LLM:
 mars-harness run pipeline-fixer --repo ~/my-project --dry-run
 ```
 
+Inspect an uninitialized target without scaffolding `.harness/`:
+
+```bash
+mars-harness run pipeline-fixer --repo ~/legacy-project --dry-run --no-init
+```
+
 ### Common flags
 
 | Flag | Description |
 |------|-------------|
 | `--repo` | Path to the target repository (required) |
 | `--dry-run` | Print system prompt and exit |
+| `--no-init` | Do not auto-initialize a missing target harness; pair with `--dry-run` for observer-safe inspection |
 | `--debug` | Stream verbose trace and logs inline instead of the default TTY dashboard |
 | `--log-file` | Write verbose command logs to a specific path |
 | `--trace` | Compatibility alias for debug-style trace detail on `run` |

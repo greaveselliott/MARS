@@ -2029,3 +2029,21 @@ fresh product-first lifecycle through product planning and feature-contract
 creation. The next continuous-build loop should claim `MH-049` and broaden the
 dogfood evidence far enough to observe ticket creation, implementation,
 quality-score export, release notes, and release publication behavior.
+
+### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
+
+The first Mars observer validation against
+`/path/to/local-redacted` proved that `doctor`, `update check`,
+read-only tools, and observer-trust mutation blocks can inspect the real Mars
+checkout without writing to it. It also found that normal `run --dry-run`
+auto-initializes `.harness/` before context assembly, which is correct for
+plug-and-play delivery but unsafe for an observer-mode supersession benchmark
+against an uninitialized legacy target.
+
+Decision: normal `run` keeps auto-initialization as the product default, and
+observer validation opts into `--no-init`. When `.harness/manifest.yaml` is
+missing and `--dry-run --no-init` is supplied, the command reports the
+missing-harness boundary, states that no files were written, and exits before
+scaffolding or LLM execution. This lets the factory keep running live observer
+checks against real targets without blurring the foundation/deployed write
+boundary.

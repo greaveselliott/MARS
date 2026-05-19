@@ -13,15 +13,14 @@ Run from this repo with the target path resolved explicitly:
 ```bash
 mars-harness doctor --repo ../mars --json
 mars-harness update check --repo ../mars --skip-remote --json
-mars-harness run engineer --repo ../mars --dry-run --trace
+mars-harness run engineer --repo ../mars --dry-run --trace --no-init
 mars-harness tools run git_status --repo ../mars --trust observer
 ```
 
-Do not run `mars-harness run ... --dry-run` against the real target when
-`.harness/manifest.yaml` is missing. Current `run` behavior auto-initializes
-missing harness scaffolds before assembling the prompt, which violates observer
-mode. Use a temporary clone for this profile step until the CLI has a
-non-mutating observer dry-run path.
+Use `--no-init` for the dry-run step when `.harness/manifest.yaml` is missing.
+The normal `run` command intentionally auto-initializes missing harness
+scaffolds for plug-and-play execution; observer validation must opt out so the
+real target remains unchanged.
 
 The first validation pass must not call `file_write`, `shell_exec`,
 `mars_harness_cli`, `git_commit`, `git_push`, `record_decision`,

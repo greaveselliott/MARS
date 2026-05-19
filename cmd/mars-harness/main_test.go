@@ -555,6 +555,35 @@ func TestRunCommandRejectsRepoLocalLogFile(t *testing.T) {
 	require.NoFileExists(t, logPath)
 }
 
+func TestRunCommandNoInitDryRunDoesNotWriteUninitializedTarget(t *testing.T) {
+	repoDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "README.md"), []byte("# Observer target\n"), 0o644))
+	logPath := filepath.Join(t.TempDir(), "run.log")
+
+	cmd := runCmd()
+	cmd.SetArgs([]string{"engineer", "--repo", repoDir, "--log-file", logPath, "--dry-run", "--no-init"})
+
+	require.NoError(t, cmd.Execute())
+	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
+	require.NoFileExists(t, logPath)
+}
+
+func TestRunCommandNoInitWithoutDryRunFailsClosed(t *testing.T) {
+	repoDir := t.TempDir()
+	logPath := filepath.Join(t.TempDir(), "run.log")
+
+	cmd := runCmd()
+	cmd.SetArgs([]string{"engineer", "--repo", repoDir, "--log-file", logPath, "--no-init"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), ".harness/manifest.yaml is missing")
+	require.Contains(t, err.Error(), "--no-init")
+	require.Contains(t, err.Error(), "no files were written")
+	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
+	require.NoFileExists(t, logPath)
+}
+
 func TestInitCommandCommitsGeneratedHarnessBaseline(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not in PATH")

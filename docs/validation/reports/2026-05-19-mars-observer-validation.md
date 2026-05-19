@@ -8,7 +8,7 @@
 - Target commit: `aa79b0039e7a2fb75c539fa427c02160ff2a33b9`
 - Target branch state: `main...origin/main`
 - Trust mode: `observer`
-- Harness version: `0.41.19`
+- Harness version: `0.41.21` plus the `T-009` observer-safe dry-run patch
 
 The relative `../mars` profile target does not exist next to this Codex
 worktree. The trial used the canonical local Mars checkout under
@@ -25,6 +25,8 @@ stayed clean.
 | `go run ./cmd/mars-harness tools run git_status --repo /path/to/local-redacted --trust observer --json` | Passed | Observer-trust read-only tool returned exit code 0 with empty output. |
 | `go run ./cmd/mars-harness tools run file_write --repo /path/to/local-redacted --trust observer ...` | Blocked | Policy rejected `file_write` with `trust level observer cannot run mutating tool "file_write"` before writing. `observer-proof.txt` was not created. |
 | `go run ./cmd/mars-harness run engineer --repo <validation-root> --dry-run --trace` | Passed on temp clone only | The real target was not used because `run --dry-run` auto-initializes missing `.harness/`. The temp clone proved context assembly, but also confirmed the command is not observer-safe for uninitialized real targets. |
+| `go run ./cmd/mars-harness run engineer --repo /path/to/local-redacted --dry-run --trace --no-init` | Passed | The command reported the missing `.harness/manifest.yaml` boundary, stated that no files were written, and exited without scaffolding the real Mars checkout. |
+| `git -C /path/to/local-redacted status --short --branch` after `--no-init` | Passed | Target remained `main...origin/main` with no changed files after the observer-safe dry-run. |
 
 ## Findings
 
@@ -37,12 +39,14 @@ stayed clean.
 - The current profile command `run engineer --dry-run --trace` is unsafe against
   an uninitialized observer target because normal `run` auto-initializes the
   target before assembling the prompt.
+- The patched profile command `run engineer --dry-run --trace --no-init`
+  provides a non-mutating missing-harness explanation path for real observer
+  targets.
 
 ## Follow-Up
 
-- `T-009`: add a non-mutating observer dry-run or context-preview path for
-  uninitialized targets so future observer reports do not need a temporary
-  clone.
+- `T-009`: completed by adding `--no-init` for `run` and updating the Mars
+  observer profile to use it on uninitialized real targets.
 - A source-side maintainer must explicitly accept this observer report before
   any contributor-mode Mars trial.
 
@@ -50,6 +54,7 @@ stayed clean.
 
 The first observer trial is safe but not a graduation pass. It proves the
 read-only inspection and trust-enforcement boundary, and it leaves the real
-Mars checkout clean. It also identifies the next product gap: dry-run context
-preview needs an observer-safe no-init mode before Mars Harness can claim a
-clean observer validation path for uninitialized legacy targets.
+Mars checkout clean. The follow-up `--no-init` replay closes the immediate
+observer-mode dry-run gap for uninitialized legacy targets; contributor-mode
+graduation is still blocked on explicit maintainer acceptance and the target's
+missing harness/drift findings.

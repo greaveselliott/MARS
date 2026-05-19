@@ -5,15 +5,15 @@ priority: medium
 complexity: small
 work_type: intervention-debt
 bdd_scenarios: []
-end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
-owner: "TBD"
-last_attempt: "TBD"
+end_to_end_evidence: "go run ./cmd/mars-harness run engineer --repo /path/to/local-redacted --dry-run --trace --no-init"
+evidence_links: ["docs/validation/reports/2026-05-19-mars-observer-validation.md"]
+verified_by: "go test ./cmd/mars-harness -run 'TestRunCommand(NoInit|AutoInit|RejectsRepoLocalLogFile)|TestMarsHarnessCLI'; go run ./cmd/mars-harness run engineer --repo /path/to/local-redacted --dry-run --trace --no-init; git -C /path/to/local-redacted status --short --branch"
+owner: "Codex"
+last_attempt: "2026-05-19"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "TBD"
+next_action: "Done. Continue Mars observer graduation only after source-side maintainer acceptance."
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -35,6 +35,6 @@ The first Mars observer trial found that `mars-harness run engineer --repo <targ
 - Preserve the existing auto-init behavior for normal `run` workflows unless an observer-safe flag is selected.
 
 ## Acceptance criteria
-- [ ] A command can assemble or explain role context for an uninitialized target without writing `.harness/` or docs into the target.
-- [ ] Tests prove the observer-safe path leaves the target worktree clean.
-- [ ] Mars observer profile no longer needs a temporary clone for the dry-run context check.
+- [x] A command can assemble or explain role context for an uninitialized target without writing `.harness/` or docs into the target.
+- [x] Tests prove the observer-safe path leaves the target worktree clean.
+- [x] Mars observer profile no longer needs a temporary clone for the dry-run context check.

@@ -1326,6 +1326,7 @@ func runCmd() *cobra.Command {
 		debug         bool
 		logFile       string
 		dryRun        bool
+		noInit        bool
 		budget        int
 		maxTurns      int
 	)
@@ -1336,7 +1337,9 @@ func runCmd() *cobra.Command {
 		Long: `Load the .harness/ bundle from --repo and execute the named role.
 
 If .harness/manifest.yaml is missing, the same scaffold as 'mars-harness init'
-is applied automatically (requires a git repository).`,
+is applied automatically (requires a git repository). Use --no-init with
+--dry-run when inspecting an uninitialized target without writing harness
+scaffolding.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			roleName := args[0]
@@ -1348,6 +1351,7 @@ is applied automatically (requires a git repository).`,
 				debug:         debug,
 				logFile:       logFile,
 				dryRun:        dryRun,
+				noInit:        noInit,
 				budget:        budget,
 				maxTurns:      maxTurns,
 			})
@@ -1360,6 +1364,7 @@ is applied automatically (requires a git repository).`,
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
 	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-run.log)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print assembled system prompt and exit without calling the LLM")
+	cmd.Flags().BoolVar(&noInit, "no-init", false, "Do not auto-initialize missing .harness/ before running; useful with --dry-run for observer-safe previews")
 	cmd.Flags().IntVar(&budget, "budget", 0, "Token budget (0 = unlimited)")
 	cmd.Flags().IntVar(&maxTurns, "max-turns", 50, "Maximum LLM round-trips")
 	_ = cmd.MarkFlagRequired("repo")
@@ -1375,6 +1380,7 @@ type runOpts struct {
 	debug         bool
 	logFile       string
 	dryRun        bool
+	noInit        bool
 	budget        int
 	maxTurns      int
 }
@@ -1482,6 +1488,24 @@ func executeRun(opts runOpts) error {
 		return err
 	}
 
+	manifestPath := filepath.Join(absRepo, ".harness", "manifest.yaml")
+	if opts.noInit {
+		if _, err := os.Stat(manifestPath); err != nil {
+			if !os.IsNotExist(err) {
+				return fmt.Errorf("run: inspect harness manifest at %s: %w", manifestPath, err)
+			}
+			msg := fmt.Sprintf("run: .harness/manifest.yaml is missing in %s and --no-init was set; no files were written. Run `mars-harness init --repo %s` to scaffold the target, or rerun without --no-init when initialization is intended.", absRepo, absRepo)
+			if opts.dryRun {
+				fmt.Println("── dry-run: observer-safe no-init ──")
+				fmt.Println(msg)
+				fmt.Printf("Role: %s\n", opts.roleName)
+				fmt.Println("── end dry-run ──")
+				return nil
+			}
+			return errors.New(msg)
+		}
+	}
+
 	debug := opts.debug || opts.trace
 	display, err := newRuntimeDisplay("run", opts.logFile, debug, os.Stdout, os.Stderr, nil, ui.DashboardOptions{
 		Title:    "Mars Harness",
@@ -1500,26 +1524,28 @@ func executeRun(opts runOpts) error {
 		Role:     opts.roleName,
 	})
 
-	preInitChanges, err := gitChangedPaths(absRepo)
-	if err != nil {
-		tw.WriteError(fmt.Sprintf("inspect pre-init git status: %v", err))
-		return err
-	}
-
-	didInit, err := scanner.EnsureHarness(absRepo, false)
-	if err != nil {
-		tw.WriteError(err.Error())
-		return err
-	}
-	if didInit {
-		tw.WriteAssistant("Auto-initialised .harness/ with default pipeline — continuing.")
-		committed, err := commitGeneratedHarnessBaseline(absRepo, preInitChanges)
+	if !opts.noInit {
+		preInitChanges, err := gitChangedPaths(absRepo)
 		if err != nil {
-			tw.WriteError(fmt.Sprintf("commit generated harness baseline: %v", err))
+			tw.WriteError(fmt.Sprintf("inspect pre-init git status: %v", err))
 			return err
 		}
-		if committed {
-			tw.WriteAssistant("Committed generated harness baseline so the role starts from a clean scaffold.")
+
+		didInit, err := scanner.EnsureHarness(absRepo, false)
+		if err != nil {
+			tw.WriteError(err.Error())
+			return err
+		}
+		if didInit {
+			tw.WriteAssistant("Auto-initialised .harness/ with default pipeline — continuing.")
+			committed, err := commitGeneratedHarnessBaseline(absRepo, preInitChanges)
+			if err != nil {
+				tw.WriteError(fmt.Sprintf("commit generated harness baseline: %v", err))
+				return err
+			}
+			if committed {
+				tw.WriteAssistant("Committed generated harness baseline so the role starts from a clean scaffold.")
+			}
 		}
 	}
 

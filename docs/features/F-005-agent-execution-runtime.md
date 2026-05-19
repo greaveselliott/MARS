@@ -124,6 +124,10 @@ Given the user passes `--debug` or legacy `--trace`
 When the role runs
 Then verbose trace and log output streams inline while the same command log file is still written
 
+Given the target has no `.harness/manifest.yaml`
+When the user passes `--dry-run --no-init`
+Then the command reports the missing harness boundary, writes no target harness files, and exits without calling the LLM
+
 ### F-005-S007: Mirrored Built-In Tools
 
 Given a recurring deterministic harness operation exists

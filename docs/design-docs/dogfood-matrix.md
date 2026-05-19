@@ -40,7 +40,7 @@ Evidence is stored in three places:
 | init/upgrade | `mars-harness init --repo <temp repo>` then `mars-harness update harness --repo <temp repo>` | `.harness/`, goals, BDD docs, role registry, quality score, release docs | Target-harness drift ticket |
 | register/start | `mars-harness start --repo <temp repo> --db <temp db outside repo>` with deterministic shutdown | Per-repo DB, registered repo, one idempotent CEO bootstrap job | Queue/orchestrator telemetry |
 | serve/control plane | `mars-harness serve --db <temp db> --addr :0` plus API control calls | Health, pause/resume/restart/scan/run-role endpoints respond | Control-plane ticket |
-| run/dry-run | `mars-harness run engineer --repo <temp repo> --dry-run --trace` | Assembled prompt includes role, tools, guardrails, tickets, routes | Context or bundle ticket |
+| run/dry-run | `mars-harness run engineer --repo <temp repo> --dry-run --trace`; for uninitialized observer targets use `--dry-run --no-init` | Assembled prompt includes role, tools, guardrails, tickets, routes, or the command explicitly reports the no-init missing-harness boundary without writing | Context or bundle ticket |
 | scan/tickets | `mars-harness scan --repo <temp repo> --tickets` | Deduped backlog tickets | Scanner ticket |
 | doctor/update | `mars-harness doctor --repo <temp repo> --json` and `mars-harness update check --repo <temp repo> --skip-remote --json` | Actionable OK/warn/fail output | Doctor/update ticket |
 | scores/trust/quality | `mars-harness scores --repo <temp repo>`, `mars-harness trust --repo <temp repo>`, `mars-harness scores export --repo <temp repo>` | Empty or live evidence is actionable; quality score refreshes | Scoring/trust ticket |

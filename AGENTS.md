@@ -236,9 +236,10 @@ Manually execute a single agent role against a repository.
 ```bash
 mars-harness run <role> --repo /path/to/repo
 mars-harness run engineer --repo . --dry-run   # preview system prompt
+mars-harness run engineer --repo /path/to/legacy-repo --dry-run --no-init   # observer-safe missing-harness check
 ```
 
-Flags: `--model-endpoint`, `--trace`, `--dry-run`, `--budget`, `--max-turns`
+Flags: `--model-endpoint`, `--trace`, `--dry-run`, `--no-init`, `--budget`, `--max-turns`
 
 ### 8. Universal Tools
 

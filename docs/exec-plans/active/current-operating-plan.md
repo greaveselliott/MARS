@@ -4,15 +4,15 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, T-002, T-003, T-004, T-005, T-006
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-002, T-003, T-004, T-005, T-006, T-009
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-009, F-012
-**Hypothesis:** Returning to the Mars parity remediation lane after the foundation/deployed doctrine slice will keep the factory improving the runtime paths that most reduce wasted model turns and recovery loops.
-**Success Evidence:** `MH-048` closed with its remaining negative-path acceptance criteria satisfied; relevant remediation, doctor, serve, quality-score, docsconsistency, docsync, full repo tests, and clean `demo-123` bootstrap/stop replays passed for the slice touched.
-**Falsification Evidence:** The next parity slice fails to broaden dogfood evidence, clean target replays create intervention-debt churn before product work, or completed remediation work remains in the active plan instead of returning to the parity queue.
+**Hypothesis:** Returning to the Mars parity remediation lane after the observer-safe dry-run slice will keep the factory improving the runtime paths that most reduce wasted model turns and recovery loops.
+**Success Evidence:** `T-009` closed with focused CLI tests, docs/tool-reference sync, and a live observer-safe dry-run against `/path/to/local-redacted` that left the real target clean.
+**Falsification Evidence:** The next parity slice fails to broaden dogfood evidence, clean target replays create intervention-debt churn before product work, persistent store upgrades remain fixture-light, or completed remediation work remains in the active plan instead of returning to the parity queue.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** The Mars observer profile still needs an observer-safe dry-run/context-preview path that does not scaffold uninitialized targets.
-**Walking Skeleton Slice:** Claim `T-009` next unless the operator explicitly prioritizes older parity backlog.
+**Current Failing Scenario:** Persistent SQLite stores still lack broad legacy-schema upgrade fixtures beyond the queue regression that originally exposed `concurrency_group` migration ordering.
+**Walking Skeleton Slice:** Claim `MH-050` next unless the operator explicitly prioritizes a live dogfood replay first.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -35,9 +35,9 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains no tickets.
-  - `docs/tickets/backlog/` contains `MH-050`, `T-001`, and `T-009`.
+  - `docs/tickets/backlog/` contains `MH-050` and `T-001`.
   - `docs/tickets/done/` contains `MH-001` through `MH-049`, `T-002`, and
-    `T-003` through `T-008`.
+    `T-003` through `T-009`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -87,8 +87,9 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Observer-safe dry-run gap**: Implement `T-009` so the Mars observer
-   profile can preview role context without a temporary clone.
+1. **Persistent store upgrade fixtures**: Implement `MH-050` so every
+   persistent SQLite store has legacy-schema fixture coverage and migration
+   ordering checks.
 2. **Mars parity continuation**: Use
    [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
@@ -113,6 +114,7 @@ plans to decide what to do next.
 | F-012-S007 | Passing | Generated target knowledge routes and mirrored harness docs carry the reusable feedback and improvement-loop doctrine after the AD-139 source doc. |
 | F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.21 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.21` records the separate missing-asset blocker. |
 | F-010-S003 | Passing | `go test ./internal/serve -run 'TestServer_(dashboardStopEndpointStopsStart|startStop)'`, `go test ./internal/dashboard -run 'TestDashboard_(stopEndpoint|controlEndpoints_methodNotAllowed|controlEndpoints_nilCallbacks)'`, and the 2026-05-19 clean `demo-123-stop-check2` replay verify dashboard stop returns success and exits `start` without manual kill. |
+| F-005-S006 | Passing | `go test ./cmd/mars-harness -run 'TestRunCommand(NoInit|AutoInit|RejectsRepoLocalLogFile)|TestMarsHarnessCLI'` and `go run ./cmd/mars-harness run engineer --repo /path/to/local-redacted --dry-run --trace --no-init` verify observer-safe dry-run exits without scaffolding an uninitialized target. |
 
 ## Quality State
 
@@ -177,6 +179,9 @@ Checks recorded during the 2026-05-02 review:
   verification, token safety, and blocker recording. Generated target mirroring
   is deferred with rationale because target publication modes differ from the
   source binary-release workflow.
-- `T-009`: add an observer-safe dry-run/context-preview path after the Mars
-  observer report showed `run --dry-run` auto-initializes uninitialized
-  targets before assembling the prompt.
+- `T-009`: observer-safe dry-run is done as of 2026-05-19. `run --dry-run
+  --no-init` reports the missing-harness boundary without writing `.harness/`,
+  the Mars observer profile uses it, and the live Mars checkout stayed clean.
+- `MH-050`: next parity slice. Add persistent store upgrade fixtures so legacy
+  SQLite schemas are exercised across queue, telemetry, trace, scoring, trust,
+  evolution, orgstate, and any other store initialization path.
