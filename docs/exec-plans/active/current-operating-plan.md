@@ -53,11 +53,11 @@ plans to decide what to do next.
   immediately after the tag push.
 - `v0.36.4`, `v0.36.5`, `v0.36.6`, `v0.37.0`, `v0.38.0`, `v0.39.0`,
   `v0.40.0`, `v0.40.1`, `v0.41.0`, `v0.41.1`, `v0.41.2`, `v0.41.3`, and
-  `v0.41.4`, `v0.41.5`, and `v0.41.6` release notes and tags were pushed on
+  `v0.41.4`, `v0.41.5`, `v0.41.6`, and `v0.41.7` release notes and tags were pushed on
   2026-05-19, but CI and Release workflow jobs were not started because GitHub
   reported recent account payment failure or a spending-limit increase
   requirement.
-  `mars-harness release verify-assets --version v0.41.6` is blocked because the
+  `mars-harness release verify-assets --version v0.41.7` is blocked because the
   tag release returns `404 Not Found` until the workflow can publish assets or a
   release backfill is run after the billing blocker is cleared.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
