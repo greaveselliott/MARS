@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.20] - 2026-05-19
+<!-- mars-harness-release: version=0.41.20 commit=eb701aa57e76 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because record mars observer trial.
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed record mars observer trial (eb701aa).
+
+### Documentation
+- **validation:** Record mars observer trial (eb701aa)
+
 ## [0.41.19] - 2026-05-19
 <!-- mars-harness-release: version=0.41.19 commit=7ed38e599deb -->
 
