@@ -55,14 +55,14 @@ plans to decide what to do next.
 - `v0.36.4`, `v0.36.5`, `v0.36.6`, `v0.37.0`, `v0.38.0`, `v0.39.0`,
   `v0.40.0`, `v0.40.1`, `v0.41.0`, `v0.41.1`, `v0.41.2`, `v0.41.3`,
   `v0.41.4`, `v0.41.5`, `v0.41.6`, `v0.41.7`, `v0.41.8`, `v0.41.9`,
-  `v0.41.10`, `v0.41.11`, `v0.41.12`, and `v0.41.13` release notes and tags were pushed on
+  `v0.41.10`, `v0.41.11`, `v0.41.12`, `v0.41.13`, and `v0.41.14` release notes and tags were pushed on
   2026-05-19, but CI and Release workflow jobs were not started because GitHub
   reported recent account payment failure or a spending-limit increase
   requirement.
-  Notes-only GitHub Releases for `v0.36.4` through `v0.41.13` were created from
+  Notes-only GitHub Releases for `v0.36.4` through `v0.41.14` were created from
   the generated changelog entries on 2026-05-19 so the Releases page is no
   longer stale at `v0.36.3`. `mars-harness release verify-assets --version
-  v0.41.13` is still blocked because the `v0.41.13` release is missing
+  v0.41.14` is still blocked because the `v0.41.14` release is missing
   `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
   `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
   `checksums.txt` until the workflow can publish assets or a release backfill is
@@ -108,7 +108,7 @@ plans to decide what to do next.
 | F-004-S007 | Passing | `go test ./internal/scanner -run TestInit_success` verifies generated targets receive the foundation/deployed route and AD-139 core doctrine without source binary asset names. |
 | F-012-S006 | Passing | [skill-evolution.md](../../design-docs/skill-evolution.md) AD-140 keeps the recursive improvement loop as operating doctrine and creates `T-006` for a foundation Release Manager skill. |
 | F-012-S007 | Passing | Generated target knowledge routes and mirrored harness docs carry the reusable feedback and improvement-loop doctrine after the AD-139 source doc. |
-| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.13 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.13` records the separate missing-asset blocker. |
+| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.14 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.14` records the separate missing-asset blocker. |
 
 ## Quality State
 
