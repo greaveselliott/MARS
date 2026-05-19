@@ -120,16 +120,15 @@ func (s *Server) executeReadyRemediation(ctx context.Context, plan remediation.P
 		if attempt.Status != remediation.AttemptReady {
 			continue
 		}
-		switch attempt.RecipeID {
-		case "generated-docs:update-missing-defaults":
+		if remediationAttemptHasExecutor(attempt) {
 			executions = append(executions, s.executeGeneratedDocsUpdate(ctx, plan.Signal, attempt))
-		default:
-			executions = append(executions, remediationExecutionEvidence{
-				RecipeID: attempt.RecipeID,
-				Status:   "skipped_no_executor",
-				Error:    "no deterministic executor is registered for this auto-safe recipe",
-			})
+			continue
 		}
+		executions = append(executions, remediationExecutionEvidence{
+			RecipeID: attempt.RecipeID,
+			Status:   "skipped_no_executor",
+			Error:    "no deterministic executor is registered for this auto-safe recipe",
+		})
 	}
 	return executions
 }
@@ -202,11 +201,15 @@ func remediationAttemptEvidenceList(attempts []remediation.Attempt) []remediatio
 	return out
 }
 
-func remediationPlanHasReadyAttempt(plan remediation.Plan) bool {
+func remediationPlanHasExecutableReadyAttempt(plan remediation.Plan) bool {
 	for _, attempt := range plan.Attempts {
-		if attempt.Status == remediation.AttemptReady {
+		if attempt.Status == remediation.AttemptReady && remediationAttemptHasExecutor(attempt) {
 			return true
 		}
 	}
 	return false
+}
+
+func remediationAttemptHasExecutor(attempt remediation.Attempt) bool {
+	return attempt.RecipeID == "generated-docs:update-missing-defaults"
 }

@@ -104,7 +104,39 @@ func TestHandleJobFailedExecutesGeneratedDocsAutoSafeRemediation(t *testing.T) {
 	}
 }
 
-func TestHandleRemediationReadyRecipeSuppressesGenericRetry(t *testing.T) {
+func TestHandleRemediationExecutableReadyRecipeSuppressesGenericRetry(t *testing.T) {
+	_, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	srv.handleRemediation(telemetry.Event{
+		ID:       "evt-executable-recipe",
+		JobID:    "job-executable-recipe",
+		RepoID:   "repo-executable",
+		Role:     "engineer",
+		Category: telemetry.CategoryUnknown,
+		Message:  "missing generated docs and operating-model drift",
+		Action:   string(telemetry.ActionRetryLonger),
+		Remedied: true,
+	})
+
+	claimed, err := srv.queue.Claim(context.Background(), "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if claimed != nil {
+		t.Fatalf("expected ready deterministic recipe to suppress generic retry, got %#v", claimed)
+	}
+}
+
+func TestHandleRemediationAutoSafeWithoutExecutorDoesNotSuppressGenericRetry(t *testing.T) {
 	_, dbPath := setupDispatchFixture(t)
 
 	srv, err := New(Config{
@@ -118,17 +150,17 @@ func TestHandleRemediationReadyRecipeSuppressesGenericRetry(t *testing.T) {
 	srv.remediators = remediation.NewRegistry([]remediation.Recipe{{
 		ID:         "tool-timeout:auto-safe",
 		Title:      "Auto-safe Timeout Repair",
-		Summary:    "Test-only deterministic repair.",
+		Summary:    "Test-only deterministic repair without a serve executor.",
 		Target:     "tools",
 		Categories: []telemetry.FailureCategory{telemetry.CategoryToolTimeout},
 		Safety:     remediation.SafetyAutoSafe,
-		NextAction: "Run deterministic repair before retrying the role.",
+		NextAction: "Do not suppress generic retry until an executor exists.",
 	}})
 
 	srv.handleRemediation(telemetry.Event{
-		ID:       "evt-ready-recipe",
-		JobID:    "job-ready-recipe",
-		RepoID:   "repo-ready",
+		ID:       "evt-ready-no-executor",
+		JobID:    "job-ready-no-executor",
+		RepoID:   "repo-ready-no-executor",
 		Role:     "engineer",
 		Category: telemetry.CategoryToolTimeout,
 		Message:  "tool timed out",
@@ -140,8 +172,11 @@ func TestHandleRemediationReadyRecipeSuppressesGenericRetry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Claim: %v", err)
 	}
-	if claimed != nil {
-		t.Fatalf("expected ready deterministic recipe to suppress generic retry, got %#v", claimed)
+	if claimed == nil {
+		t.Fatal("expected generic retry when auto-safe recipe has no executor")
+	}
+	if claimed.Role != "engineer" {
+		t.Fatalf("expected retry role engineer, got %q", claimed.Role)
 	}
 }
 

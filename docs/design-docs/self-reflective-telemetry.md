@@ -132,6 +132,10 @@ The first implementation is deliberately small:
   `scanner.Upgrade` API, not a shell runner. Outcome details record whether the
   update applied files, no-oped, or failed before the generic retry path is
   considered.
+- Auto-safe planning alone is not enough to suppress generic telemetry retry.
+  `serve` suppresses retry only when the ready recipe has a registered
+  deterministic executor, preventing future catalog additions from creating a
+  no-progress stall.
 - `doctor --repo` includes a deterministic-remediation check that surfaces
   known recipe IDs and fixes for missing target harness scaffolds, manifests,
   and generated metadata before a run has to fail and rediscover the same issue.

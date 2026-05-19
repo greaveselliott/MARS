@@ -1880,8 +1880,8 @@ func (s *Server) handleRemediation(evt telemetry.Event) {
 	log := slog.With("event_id", evt.ID, "job_id", evt.JobID, "role", evt.Role, "action", evt.Action)
 	traceID := s.latestTraceID(context.Background(), evt.JobID)
 	plan := s.planEventRemediation(context.Background(), evt, traceID, false)
-	if remediationPlanHasReadyAttempt(plan) {
-		log.Info("telemetry: generic remediation deferred because deterministic recipe is ready",
+	if remediationPlanHasExecutableReadyAttempt(plan) {
+		log.Info("telemetry: generic remediation deferred because executable deterministic recipe is ready",
 			"attempts", len(plan.Attempts),
 		)
 		return

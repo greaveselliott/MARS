@@ -63,6 +63,10 @@ reserved for judgment work.
   `doctor --repo` health output. The new deterministic-remediation doctor check
   names stable recipe IDs and concrete fix commands before the same issue
   reaches agent runtime.
+- 2026-05-19: Tightened `serve` retry suppression so auto-safe recipes only
+  defer generic telemetry retry when a deterministic executor is registered.
+  Future auto-safe catalog entries without executors remain visible evidence
+  but cannot create no-progress stalls.
 
 ## Affected Files
 
@@ -84,6 +88,7 @@ reserved for judgment work.
 - [x] The generated-docs auto-safe recipe runs before generic LLM retry where configured.
 - [x] Recipe attempts are trace-linked and scored.
 - [x] Doctor or setup can adopt repeated successful recipes as permanent checks.
+- [x] Auto-safe recipes without registered executors do not suppress generic retry.
 
 ### Edge cases and negative paths
 
