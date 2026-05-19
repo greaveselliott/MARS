@@ -61,7 +61,7 @@ var requiredArtifacts = []requiredArtifact{
 	{path: "docs/goals/observations.md", needles: []string{"weak/noisy evidence"}},
 	{path: "docs/goals/superseded.md", needles: []string{"Superseded Goals"}},
 	{path: "docs/features/README.md", needles: []string{"BDD Feature Contracts", "Scenario Schedule", "Given/When/Then"}},
-	{path: "docs/features/F-001-delivery-operating-model.md", needles: []string{"Feature ID: F-001", "Scenario Schedule", "Given", "When", "Then"}},
+	{path: "docs/features/F-001-product-walking-skeleton.md", needles: []string{"Feature ID: F-001", "Product Walking Skeleton", "Scenario Schedule", "Given", "When", "Then"}},
 	{path: "docs/exec-plans/README.md", needles: []string{"**Goals:**", "**BDD Feature:**", "**Scenario Schedule:**", "**Walking Skeleton Slice:**"}},
 	{path: "docs/exec-plans/active/current-operating-plan.md", needles: []string{"**Goals:**", "**BDD Feature:**", "**Current Failing Scenario:**"}},
 	{path: "docs/tickets/README.md", needles: []string{"work_type", "bdd_scenarios", "end_to_end_evidence", "verified_by"}},

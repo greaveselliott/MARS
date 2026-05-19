@@ -177,6 +177,31 @@ func TestQueue_perRepoSerialization(t *testing.T) {
 	assert.Equal(t, "repo-A", job2.RepoID)
 }
 
+func TestQueue_claimPrioritizesDispatchBeforeScheduledWork(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	scheduledID, err := q.Enqueue(ctx, Job{
+		RepoID:         "repo-1",
+		Role:           "engineer",
+		IdempotencyKey: "sched:repo-1:engineer:1779148800",
+	})
+	require.NoError(t, err)
+	dispatchID, err := q.Enqueue(ctx, Job{
+		RepoID:         "repo-1",
+		Role:           "orchestrator",
+		IdempotencyKey: "dispatch:coo-job:repo-1:orchestrator",
+	})
+	require.NoError(t, err)
+	require.NotEqual(t, scheduledID, dispatchID)
+
+	job, err := q.Claim(ctx, "w-1")
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	assert.Equal(t, dispatchID, job.ID)
+	assert.Equal(t, "orchestrator", job.Role)
+}
+
 func TestQueue_concurrencyGroupSerialization(t *testing.T) {
 	q := tempQueue(t)
 	ctx := context.Background()

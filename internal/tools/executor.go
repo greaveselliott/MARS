@@ -21,6 +21,10 @@ type Executor struct {
 	MaxOutput  int // defaults to DefaultMaxToolOutputBytes when zero
 	DefaultTTL time.Duration
 	Session    *Session
+
+	// StopAfterTool lets callers make specific tool calls terminal for an agent
+	// loop. It is checked after a successful tool result has been traced.
+	StopAfterTool func() bool
 }
 
 // NewExecutor returns an executor backed by reg.

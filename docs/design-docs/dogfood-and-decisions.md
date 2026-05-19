@@ -654,9 +654,9 @@ Default blast-radius containment relies on stronger signals:
 - deletion blocking
 - strict trunk push policy
 
-Only high-priority intervention-debt tickets preempt ordinary backlog work.
-Medium and low intervention debt remains durable and visible, but it does not
-block product backlog progress by default.
+Intervention debt remains durable and visible, but product backlog progress is
+the default priority unless an active product ticket explicitly names the debt
+as a blocker. AD-109 supersedes the earlier high-priority preemption rule.
 
 ### Consequences
 
@@ -664,8 +664,7 @@ block product backlog progress by default.
   role progress just because they touch more than 10 files.
 - Large rewrites, secret leaks, and deletions remain blocked by more meaningful
   guardrails.
-- Intervention debt keeps its escalation power for high-severity failures while
-  lower-severity process observations stop starving product work.
+- Intervention debt remains visible without starving product work by default.
 
 ---
 
@@ -745,3 +744,954 @@ the operator explicitly passes `--delete-shared-db`.
   auditable command instead of manual deletion.
 - Dry-run and repo-name confirmation keep the destructive path deliberate.
 - Per-repo database isolation now has a matching cleanup operation.
+
+---
+
+### AD-109: Product Progress Comes Before Intervention Debt
+
+**Status:** Accepted
+**Date:** 2026-05-19
+**Author:** Codex (demo-123 lifecycle stabilization)
+
+### Context
+
+A fresh `demo-123` Space Invaders dogfood run on `main` exposed the same failure
+shape as older `sample-target` runs: harness/runtime problems became target
+backlog or orchestration work before the target product made progress.
+
+Observed `demo-123` evidence:
+
+- a retry after a bind failure seeded a second active CEO bootstrap job
+- two CEO jobs and two Orchestrator jobs ran before any game implementation
+  ticket or code appeared
+- Orchestrator drifted into operating-model work rather than product-specific
+  Space Invaders planning
+- repo-local runtime DB/WAL/log artifacts could trip dirty-worktree and
+  blast-radius containment
+- downstream roles then failed repeatedly, and loop guard stopped the cycle
+  without useful product progress
+
+Older runs showed the companion failure mode: repeated guardrail, ticket-gate,
+score, and telemetry signals created intervention-debt tickets that starved the
+actual project backlog.
+
+### Decision
+
+Automatic harness/runtime failures are quarantined as local telemetry and
+foundation evidence by default. Target backlog intervention-debt tickets are
+reserved for target-owned causes such as stale target tickets, human follow-up
+on target work, reverted target agent commits, or explicit operator/tool-driven
+ticket creation.
+
+Intervention debt no longer preempts ordinary product backlog by default. It
+stays visible in quality and status evidence, but Engineer context does not put
+high-priority intervention debt ahead of product tickets unless an active
+product ticket explicitly names that intervention debt in `blocked_by`.
+
+`mars-harness scores export` is non-mutating with respect to tickets by
+default. It refreshes `docs/QUALITY_SCORE.md` and reports improvement targets;
+operators must pass `--create-intervention-debt` to materialize score/outcome
+signals as tickets.
+
+Fresh generated target plans and feature contracts start from the target
+README, active goals, and product brief. The starter F-001 is a product walking
+skeleton, not the source harness delivery operating model.
+
+Runtime artifacts are not allowed inside target repos. `start` and `register`
+reject repo-local `--db` paths, and `start`/`run` reject repo-local
+`--log-file` paths before those files can dirty the worktree.
+
+Bootstrap seeding is idempotent by repo/role/bootstrap key so retrying `start`
+cannot duplicate the first CEO job.
+
+Deterministic containment failures stop with one operator-visible blocker
+instead of dispatching Orchestrator loops.
+
+### Consequences
+
+- Fresh target runs should reach product planning or product tickets before
+  intervention-debt work.
+- Harness/runtime instability remains observable without polluting the target
+  backlog.
+- Operators can still opt into intervention-debt ticket materialization when
+  they deliberately want it.
+- Repo-local DB/WAL/log mistakes fail early with actionable remediation instead
+  of becoming blast-radius noise.
+- Source-harness lifecycle fixes must be replayed against a live target
+  experience such as `demo-123`, or record the exact blocker and replay steps,
+  before the improvement is treated as complete.
+
+### Current Verification State
+
+As of 2026-05-19, deterministic package tests and generated-scaffold checks
+passed, and a live replay was run against a clean `<validation-root>`
+target with a Space Invaders README brief using a patched binary, external
+SQLite DB, and external log file:
+
+```bash
+go build -o <validation-root> ./cmd/mars-harness
+MARS_HARNESS_WEBHOOK_PORT=19091 MARS_HARNESS_DASHBOARD_PORT=19090 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+The replay improved the original failure class but did not fully prove the
+desired first lifecycle. Positive evidence:
+
+- bootstrap seeding produced exactly one active CEO bootstrap job with the
+  stable `seed:<repo_id>:ceo:bootstrap` idempotency key
+- CEO, Orchestrator, and COO stayed product-specific and named the Space
+  Invaders walking skeleton instead of source-harness doctrine
+- generated goal, active plan, and `F-001-product-walking-skeleton.md` were
+  derived from the README brief
+- repo-local runtime DB/WAL/log artifacts were not created in the target repo
+- guardrail and inference failures were recorded in telemetry and kept out of
+  `docs/tickets/`
+- no target intervention-debt tickets were created; `docs/tickets/` still only
+  contained its README
+
+Residual blockers found by the replay:
+
+- the hourly Engineer schedule fired while COO was still shaping the product
+  ticket, so Engineer claimed work before the queued Orchestrator handoff could
+  run
+- Engineer had product context but no ordinary product ticket, attempted to
+  write `docs/tickets/backlog/T-001-...` directly, and was correctly blocked by
+  the `ticket_create` policy gate
+- Engineer then recorded `no_work/ticket_shaping` repeatedly instead of exiting
+  promptly, showing a remaining no-work termination problem
+- the run reached product-specific plan and feature-contract state, but did not
+  create an ordinary product ticket or Space Invaders implementation before the
+  operator stopped the process
+
+Verdict: the stabilization meaningfully reduces intervention-debt starvation,
+runtime artifact noise, and generic harness-doctrine drift, but the first-run
+lifecycle is still incomplete. The next fix should prevent scheduled Engineer
+jobs from preempting bootstrap handoff work and should make no-ticket Engineer
+runs terminate after one clear disposition.
+
+### Follow-up `demo-123` Replay: Product-First, Then CTO Fan-Out
+
+After queue priority and terminal-disposition fixes, a second live replay used a
+clean `<validation-root>` target and external runtime state:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=19191 MARS_HARNESS_DASHBOARD_PORT=19190 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- exactly one CEO bootstrap job was seeded
+- CEO and Orchestrator completed through accepted terminal dispositions
+- COO produced Space Invaders-specific planning and
+  `docs/features/F-001-product-walking-skeleton.md`, then committed the target
+  change as `b83c767 plan: update active scenario schedule and feature contract
+  for Space Invaders`
+- no repo-local runtime DB/WAL/log artifacts appeared in the target repo
+- no target intervention-debt tickets were created
+- Orchestrator routed the next need to technical planning rather than
+  implementation without a product ticket
+
+Residual blocker:
+
+- `cto-weekly` opened with governance/audit context before product ticketing
+  and then created several independent backlog tickets for the same
+  `F-001-S001` scenario:
+  `T-001-create-basic-html-structure-with-game-container.md`,
+  `T-002-implement-player-ship-movement-controls.md`,
+  `T-003-implement-basic-projectile-firing-mechanics.md`,
+  `T-004-implement-alien-targets-with-grid-formation.md`,
+  `T-005-implement-basic-score-and-lives-display-system.md`, and
+  `T-006-implement-basic-game-loop-and-state-management.md`
+- the run still had no CTO commit or implementation handoff after more than
+  six minutes, and operator shutdown recorded only foundation-local telemetry
+  for the cancellation
+
+Decision: first-run technical planning is now explicitly bounded. Generated CTO
+guidance creates or confirms one current-scenario implementation ticket before
+handoff, the generated CTO allowlist removes broad audit and shell/Mars CLI
+tools from the default first-run surface, and `ticket_create` dedupes
+independent feature-ticket fan-out for the same BDD scenario unless `depends_on`
+makes the decomposition explicit.
+
+### Follow-up `demo-123` Replay: Bounded CTO Reaches Engineer
+
+After narrowing CTO and adding BDD-scenario ticket dedupe, a third clean
+`demo-123` replay used an external runtime directory:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=19291 MARS_HARNESS_DASHBOARD_PORT=19290 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- the retry after an initial local bind failure did not create a duplicate CEO
+  bootstrap job; the DB contained one completed CEO job
+- no intervention rows were recorded and no intervention-debt ticket appeared
+  in the target backlog
+- COO produced Space Invaders planning and a slugged
+  `docs/features/F-001-product-walking-skeleton.md`
+- CTO ran with the narrowed 13-tool surface, did not call broad audit,
+  docsync, shell, or Mars CLI tools, and created exactly one ordinary product
+  ticket for `F-001-S001`
+- Orchestrator routed to Engineer, so the run reached implementation rather
+  than stalling in planning or intervention debt
+
+Residual findings:
+
+- COO and CTO recorded successful dispositions while their target changes were
+  still uncommitted
+- CTO also created duplicate `docs/features/F-001.md` even though the slugged
+  F-001 contract already existed
+- Orchestrator still spent 18 tool calls inspecting the expected dirty
+  planning/ticket state before routing Engineer
+- the operator stopped the run after Engineer began; the DB retained the
+  Engineer job as running, which should be treated as shutdown recovery
+  evidence rather than product failure
+
+Decision: the next stabilization makes clean handoff mechanical. `file_write`
+now blocks creation of duplicate `docs/features/F-NNN*.md` contracts that share
+the same feature ID, and successful non-Orchestrator `job_disposition_record`
+calls are rejected until repo-visible changes are committed. This should turn
+the next replay's COO/CTO boundary into committed plan/ticket evidence before
+Engineer starts.
+
+### Follow-up `demo-123` Replay: Clean Handoff Exposes Canonicalization
+
+After adding successful-disposition commit gates, a fourth clean `demo-123`
+replay used another external runtime directory:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=19391 MARS_HARNESS_DASHBOARD_PORT=19390 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- CEO attempted to finish while dirty, was blocked by `job_disposition_record`,
+  then ran `git_status`, committed
+  `8435b7a feat: Record decision for Demo 123 initial goal`, and recorded a
+  successful disposition.
+- COO produced Space Invaders planning and a product feature contract, committed
+  `2712c3d plan: update active scenario schedule and feature contract for Demo
+  123 Space Invaders game`, and left the target tree clean.
+- No intervention-debt tickets were created, and runtime DB/log artifacts
+  stayed outside the target repo.
+
+Residual findings:
+
+- COO created a second slugged `F-001` contract
+  (`docs/features/F-001-S001-project-brief-becomes-visible-product-slice.md`)
+  even though `docs/features/F-001-product-walking-skeleton.md` already
+  existed.
+- Orchestrator then recorded `suggested_role: cto`; because the executable
+  generated manifest role is `cto-weekly`, dispatch queued another Orchestrator
+  job instead of running CTO.
+- The run reached committed product planning but still did not create the
+  ordinary product ticket before operator shutdown.
+
+Decision: canonicalization is now enforced mechanically. `file_write` blocks
+any new feature contract path when another `docs/features/F-NNN*.md` file with
+the same feature ID exists, and dispatch routing normalizes small canonical role
+aliases (`cto`, `architecture`, `release`, `dependency`) to generated manifest
+role keys when present.
+
+### Follow-up `demo-123` Replay: Clean Handoff Exposes Orchestrator Recovery
+
+After feature-contract canonicalization and role alias routing, a fifth clean
+`demo-123` replay used another external runtime directory:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=19491 MARS_HARNESS_DASHBOARD_PORT=19490 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- retrying `start` after a bind failure did not leave a second active CEO job
+- CEO and COO both hit the successful-disposition clean-worktree gate, ran
+  `git_status`, committed their product planning work, and only then recorded
+  terminal dispositions
+- the target retained a single canonical
+  `docs/features/F-001-product-walking-skeleton.md` file; no duplicate F-001
+  feature contract was created
+- the target tree was clean after COO, runtime DB/log artifacts stayed outside
+  the repo, and no intervention-debt rows or target intervention-debt tickets
+  were created
+
+Residual finding:
+
+- the Orchestrator job after COO reached max turns before recording a
+  disposition; failure recovery then treated the failed Orchestrator as the
+  source disposition and enqueued another Orchestrator, even though the original
+  COO handoff already said `next_need: ticket_breakdown`
+
+Decision: failed Orchestrator recovery is now non-recursive. If the failed
+Orchestrator trigger carries a non-Orchestrator source disposition with a
+deterministic routing signal, dispatch falls forward from that source handoff
+to the target role, such as `cto-weekly` for `ticket_breakdown`. If the source
+handoff is absent or would route Orchestrator again, dispatch records a stopped
+decision and creates no recursive Orchestrator job.
+
+### Follow-up `demo-123` Replay: Product Implementation Exposes Ticket Move Guard
+
+After non-recursive Orchestrator recovery, the next clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=19591 MARS_HARNESS_DASHBOARD_PORT=19590 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- the lifecycle reached product implementation: CEO, Orchestrator, COO, CTO,
+  Orchestrator, and Engineer all ran in order without intervention-debt tickets
+- CTO created exactly one ordinary product ticket,
+  `docs/tickets/backlog/T-001-implement-first-visible-product-slice-with-player-ship-alien.md`,
+  and committed it as `ef91601`
+- Engineer created real browser game files under `src/`, including
+  `index.html`, `style.css`, and `game.js`
+- repeated guardrail blocks stayed foundation-owned telemetry; the target
+  backlog still had zero intervention-debt tickets
+
+Residual finding:
+
+- Engineer moved T-001 from backlog to done, which produced one deleted ticket
+  path and one new done ticket path; blast-radius deletion policy treated the
+  legitimate lifecycle move as a forbidden deletion and trapped the job in
+  repeated guardrail blocks before it could commit or hand off to QA
+
+Decision: ticket lifecycle moves are now a bounded deletion exception. The
+blast-radius diff policy ignores the deletion side only when the same ticket ID
+appears as a new ticket markdown file in another lifecycle directory in the same
+diff. Arbitrary deletions and unpaired ticket deletions remain blocked.
+
+### Follow-up `demo-123` Replay: No-Ticket Engineer Dispatch
+
+After the ticket lifecycle move patch, another clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=19691 MARS_HARNESS_DASHBOARD_PORT=19690 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- CEO committed a product-specific first-slice decision and no
+  intervention-debt tickets appeared
+- Orchestrator and CTO stayed on product delivery surfaces rather than
+  foundation intervention debt
+- the earlier ticket lifecycle deletion problem is covered by deterministic
+  tests before this replay
+
+Residual finding:
+
+- this run skipped COO, CTO completed without creating an ordinary product
+  ticket, and Orchestrator still routed Engineer; Engineer then began writing
+  `index.html` without any backlog or in-progress product ticket
+
+Decision: Engineer dispatch is now ticket-backed. If dispatch selects Engineer
+while no ordinary product ticket exists in `docs/tickets/backlog/` or
+`docs/tickets/in-progress/`, the runtime rewrites the handoff to `cto-weekly`
+for ticket shaping. Intervention-debt tickets do not satisfy this prerequisite.
+
+### Follow-up `demo-123` Replay: Completed Ticket Needs QA, Not New Ticket Shaping
+
+The next clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=19791 MARS_HARNESS_DASHBOARD_PORT=19790 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- CTO created one ordinary product ticket and committed it
+- Engineer claimed T-001, committed product files, moved T-001 to
+  `docs/tickets/done/`, and the ticket lifecycle deletion exception allowed the
+  commit
+- no intervention-debt tickets were created
+
+Residual finding:
+
+- the Orchestrator after Engineer hit max turns; deterministic fallback
+  preserved the source handoff, but the Engineer disposition still said
+  `next_need: implementation`, so the no-open-ticket prerequisite routed back
+  to CTO instead of QA
+
+Decision: completed Engineer source dispositions override stale implementation
+wording. If Engineer completed the product ticket and no open product ticket
+remains, dispatch routes QA review rather than returning to Engineer or CTO
+ticket shaping.
+
+### Follow-up `demo-123` Replay: Ticket-Gate Repair Before Orchestration
+
+The next clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=19891 MARS_HARNESS_DASHBOARD_PORT=19890 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, and Engineer progressed on the Space Invaders product lane
+- CTO created an ordinary product ticket and Engineer implemented visible game
+  files before attempting ticket completion
+- no intervention-debt tickets were created
+
+Residual finding:
+
+- Engineer moved the ticket to done with empty `evidence_links`, so the ticket
+  gate rejected completion with a missing BDD evidence error; dispatch then
+  routed the failed Engineer job through Orchestrator, which hit max turns
+  instead of repairing the narrow evidence defect
+
+Decision: ticket-gate failures after Engineer progress now receive one bounded
+Engineer `ticket_gate_repair` job. The repair trigger carries the gate error and
+is intended to fix ticket evidence, lifecycle placement, or handoff metadata.
+If that repair fails the gate again, the runtime records telemetry and stops
+without recursive Orchestrator dispatch or another repair job.
+
+### Follow-up `demo-123` Replay: QA Protocol And Stale Survey Cleanup
+
+The next clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=19991 MARS_HARNESS_DASHBOARD_PORT=19990 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, and the bounded Engineer repair all stayed on the
+  Space Invaders product lane
+- the repair job was enqueued with trigger type `ticket_gate_repair`, moved
+  T-001 to `docs/tickets/done/`, filled `evidence_links`, and handed to
+  Orchestrator
+- Orchestrator routed the completed Engineer ticket to QA, not back to CTO or
+  Engineer
+- no target intervention-debt tickets were created
+
+Residual findings:
+
+- while T-001 was briefly in progress, the orchestrator survey enqueued a
+  separate pending Engineer ticket-owner job; after the repair moved T-001 to
+  done, that pending job became stale
+- generated QA guidance still described writing a review file even though the
+  default QA role is read-only; QA replied in prose, skipped
+  `job_disposition_record`, and failed the dispatch protocol
+
+Decision: dispatch protocol failures are now contained as foundation telemetry
+and do not route through Orchestrator. Generated QA guidance now treats
+disposition output as the durable read-only review handoff. Successful Engineer
+completion also cancels stale pending ticket-owner survey jobs whose referenced
+tickets are no longer eligible in-progress work.
+
+### Follow-up `demo-123` Replay: Repair Prompt Is Too Broad
+
+The next replay showed the bounded repair path again, but exposed a narrower
+performance issue: the repair job received a missing evidence failure after the
+ticket had already been moved to `docs/tickets/done/`, then spent several
+minutes running as a broad Engineer job without editing the clean working tree.
+
+Decision: `ticket_gate_repair` now carries an explicit
+`ticket_lifecycle_and_evidence_only` repair scope, and generated Engineer
+guidance has a fast path for that trigger. The repair should update the ticket
+evidence/lifecycle metadata, commit, and hand off to QA instead of restarting
+implementation reasoning unless the gate reason says product code is invalid.
+
+### Follow-up `demo-123` Replay: Security Approval Routed Backward
+
+The next replay showed the product-first path working through CEO, COO, CTO,
+Engineer, bounded ticket-gate repair, QA, and Security without creating target
+intervention-debt tickets. The remaining lifecycle defect appeared after
+Security approved T-001: Orchestrator suggested QA again for the same ticket,
+and the duplicated read-only QA job failed the dispatch protocol.
+
+Decision: completed or approved review handoffs now move forward through the
+review chain. When Orchestrator suggests an earlier reviewer after QA,
+Security, Dependency Manager, or Release Manager has approved/completed its
+stage, deterministic dispatch rewrites to the next forward review owner in the
+manifest or stops if none remains.
+
+### Follow-up `demo-123` Replay: Runtime Learnings Blocked Repair Handoff
+
+The next clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=20191 MARS_HARNESS_DASHBOARD_PORT=20190 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- exactly one CEO bootstrap job was seeded
+- CEO and CTO stayed product-first, and CTO created one ordinary product ticket
+  for the Space Invaders game
+- Engineer produced real product files under `src/`
+- the ticket-gate failure created one bounded `ticket_gate_repair` Engineer job
+  and no target intervention-debt tickets
+
+Residual finding:
+
+- the repair job was blocked while recording a successful disposition because
+  runtime convention learning left `.harness/learnings.yaml` dirty; the target
+  had no remaining product dirty path, but the clean-handoff policy still
+  treated the learning metadata as uncommitted product work
+
+Decision: runtime-managed `.harness/learnings.yaml` metadata no longer blocks a
+successful `job_disposition_record` by itself. Product, ticket, documentation,
+and source dirty paths still block clean handoff and must be committed before a
+successful disposition.
+
+### Follow-up `demo-123` Replay: COO Implemented Before Ticketing
+
+After the runtime-learning handoff patch, another clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=20291 MARS_HARNESS_DASHBOARD_PORT=20290 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- exactly one CEO bootstrap job was seeded
+- runtime `.harness/learnings.yaml` no longer blocked CEO's successful handoff
+  after the actual goal-doc changes were committed
+- no target intervention-debt tickets were created
+- the lifecycle advanced from CEO to Orchestrator to COO
+
+Residual finding:
+
+- COO wrote and committed root `index.html` as
+  `feat: add walking skeleton HTML for Space Invaders game demo` before CTO
+  created any ordinary product ticket; COO also committed
+  `.harness/learnings.yaml`, proving product code could still bypass the
+  intended COO -> CTO -> Engineer boundary
+
+Decision: COO is now planning-only at the tool-policy layer. COO `file_write`
+may update exec plans, feature contracts, backlog plans, and goal observations,
+but implementation paths are blocked. Mutating `shell_exec` is blocked for COO,
+and generated COO manifests no longer expose `shell_exec` by default.
+
+### Follow-up `demo-123` Replay: Engineer Done Still Looped To CTO
+
+After the COO planning-only boundary, another clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=20391 MARS_HARNESS_DASHBOARD_PORT=20390 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, and Engineer ran in order on the Space Invaders product lane
+- COO stayed planning-only and created no product source files before CTO
+  ticketing
+- CTO created an ordinary product ticket, and Engineer created real browser
+  game files under `src/`, added `package.json`, and moved T-001 to `done/`
+- no target intervention-debt tickets were created
+
+Residual finding:
+
+- after Engineer completed T-001 and no open ordinary product ticket remained,
+  Orchestrator selected `cto-weekly` twice instead of routing QA review; the
+  prior no-ticket gate only rewrote direct Engineer redispatches, not CTO
+  planning handoffs selected by Orchestrator
+
+Decision: a completed Engineer source disposition with no remaining open
+ordinary product ticket is a QA-review boundary. The runtime now rewrites any
+Orchestrator-selected pre-review follow-up, including CTO ticket shaping, to QA
+before further planning or implementation.
+
+### Follow-up `demo-123` Replay: QA Rework Should Not Create A New Ticket
+
+After the QA-before-planning boundary, another clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=20491 MARS_HARNESS_DASHBOARD_PORT=20490 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, the bounded ticket-gate repair, and QA all stayed on
+  the Space Invaders product lane
+- CTO created one ordinary product ticket, Engineer committed browser game
+  files, and the ticket-gate repair filled missing ticket evidence before QA
+- the Orchestrator decision after completed Engineer work routed to QA with the
+  QA-boundary reason instead of returning to CTO
+- no target intervention-debt tickets were created
+
+Residual finding:
+
+- QA requested implementation rework on T-001, but T-001 was already in
+  `docs/tickets/done/`; the no-open-ticket prerequisite treated that as a fresh
+  no-ticket implementation attempt and rewrote the handoff back to CTO, where a
+  duplicate ticket-creation path began
+
+Decision: review rework now reuses the existing product ticket. If a reviewer
+records `changes_requested` for an ordinary product ticket and the next need is
+implementation rework or an Engineer fix, dispatch allows Engineer to repair
+that same ticket even when it currently lives in `done/` or `in-review/`.
+Fresh implementation without a backlog or in-progress product ticket still
+routes to CTO ticket shaping.
+
+### Follow-up `demo-123` Replay: Ticket Move Deletions Need Tracked Counterparts
+
+After the review-rework routing patch, another clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=20591 MARS_HARNESS_DASHBOARD_PORT=20590 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, and Engineer all stayed on the Space Invaders product lane
+- CTO created one ordinary product ticket, and Engineer committed visible
+  browser game files before ticket lifecycle cleanup
+- the first ticket-gate failure was quarantined as foundation telemetry and
+  produced one bounded `ticket_gate_repair` job, not intervention-debt backlog
+  churn
+- no target intervention-debt tickets were created
+
+Residual finding:
+
+- Engineer and the bounded repair job attempted ordinary ticket lifecycle
+  cleanup, but the blast-radius deletion exception only recognized an untracked
+  destination file; a normal staged `git mv`, or cleanup after a tracked
+  duplicate ticket already existed in another lifecycle directory, still looked
+  like a forbidden deletion and trapped the repair loop
+
+Decision: the ticket lifecycle deletion exception now recognizes staged
+`git mv` destinations and already-present lifecycle counterparts for the same
+ticket ID, in addition to untracked destination files. Arbitrary deletions and
+unpaired ticket deletions remain blocked.
+
+### Follow-up `demo-123` Replay: QA Needs Runtime Terminal-Tool Recovery
+
+After ticket lifecycle move handling was widened, another clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=20691 MARS_HARNESS_DASHBOARD_PORT=20690 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- bind-failure retry kept a single CEO bootstrap job with idempotency key
+  `seed:<repoID>:ceo:bootstrap`
+- CEO, COO, CTO, Engineer, bounded ticket-gate repair, Orchestrator, and QA
+  stayed on the Space Invaders product lane
+- CTO created one ordinary product ticket, Engineer committed visible browser
+  game files, and the bounded ticket-gate repair moved T-001 to done with
+  scenario evidence metadata
+- ticket-gate and guardrail signals remained foundation telemetry; no target
+  intervention-debt tickets were created
+
+Residual finding:
+
+- QA reached the review stage but replied in prose without calling
+  `job_disposition_record`; the generated QA prompt already required the tool,
+  so this is a runtime tool-discipline failure rather than just missing role
+  documentation
+
+Decision: dispatch-mode jobs now pass `job_disposition_record` as a required
+terminal tool to the agent loop. Prose-only completion gets an in-band corrective
+turn requiring the tool call. If the role still finishes without the disposition
+after that correction, the existing dispatch-protocol failure path records
+foundation telemetry and stops without Orchestrator recovery or target backlog
+debt.
+
+### Follow-up `demo-123` Replay: QA Must Inspect Repo Files Before Liveness Blocking
+
+After terminal-tool recovery was added, another clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=20791 MARS_HARNESS_DASHBOARD_PORT=20790 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- CEO, Orchestrator, CTO, QA, Engineer, bounded ticket-gate repair, QA rework,
+  and Engineer rework all stayed on the Space Invaders product lane
+- QA called `job_disposition_record`; the prior prose-only protocol failure did
+  not recur
+- Orchestrator corrected the premature pre-implementation QA block to Engineer,
+  and later routed QA `changes_requested` feedback back to Engineer on the same
+  T-001 ticket
+- no target intervention-debt tickets were created
+
+Residual finding:
+
+- after Engineer rework, QA blocked with `next_need: liveness` because source
+  code was not in the trigger context, even though the target repo contained the
+  completed ticket, recent commits, `index.html`, `script.js`, `style.css`, and
+  validation scripts; Orchestrator then routed that QA inspection miss back to
+  CTO planning
+
+Decision: QA generated guidance now requires reading the ticket, recent commits,
+and named implementation files before using a missing-context or liveness block.
+Dispatch also rewrites QA trigger-context blocks away from CTO/COO/CEO/Janitor
+and back to QA for one repo-inspection retry, so missing trigger prose does not
+become planning churn.
+
+### Follow-up `demo-123` Replay: Inline Tool Calls Need Parsing
+
+After QA repo-inspection hardening, another clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=20891 MARS_HARNESS_DASHBOARD_PORT=20890 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, QA, Engineer rework, Orchestrator, and second QA all
+  stayed on the Space Invaders product lane
+- QA no longer blocked because source was missing from trigger context; it
+  inspected the repo and requested a legitimate product fix for missing
+  life-decrement and game-over behavior
+- Engineer rework committed `feat(game): implement complete life management and
+  damage logic for Space Invaders (T-001)`
+- guardrail and dispatch-protocol signals remained foundation telemetry; no
+  target intervention-debt tickets were created
+
+Residual finding:
+
+- the second QA job attempted repo inspection and terminal disposition using
+  inline `<tool_call>name{...}</tool_call>` text; because the parser did not
+  recognize that syntax, both attempts were treated as prose and the job failed
+  the dispatch protocol
+
+Decision: the agent parser now recognizes inline `<tool_call>` tags with
+unquoted-key arguments, `<|"|>` sentinel strings, arrays, and nested objects.
+That keeps tool syntax compatibility in the runtime and allows fast local
+models to execute intended tool calls instead of generating false prose-only
+protocol failures.
+
+### Follow-up `demo-123` Replay: Product Approval Drifted Into Governance
+
+After inline tool-call parsing, the next clean replay used:
+
+```bash
+MARS_HARNESS_WEBHOOK_PORT=20991 MARS_HARNESS_DASHBOARD_PORT=20990 \
+  <validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --concurrency 1
+```
+
+Positive evidence:
+
+- one CEO bootstrap job was seeded, then Orchestrator routed the product lane
+- CTO created T-001, Engineer committed a playable Space Invaders walking
+  skeleton, and Engineer moved T-001 to done with BDD evidence
+- QA approved T-001, Security completed with no critical or high findings, and
+  no target intervention-debt tickets were created
+- the previous inline `<tool_call>` protocol failure did not recur
+
+Residual finding:
+
+- after Security, automatic review progression routed into Dependency Manager,
+  which hit `max_turns`; later Orchestrator/CTO repeated ticket-shaping attempts
+  without ticket-state change until the loop guard stopped them
+- `.harness/learnings.yaml` remained modified in the target repo after runtime
+  convention detection
+
+Decision: automatic post-approval review progression now routes QA to Security
+and Security to Dogfood when available, then stops unless a role explicitly asks
+for dependency or release work. Fresh target product validation should prove the
+slice is runnable before broader governance resumes. Runtime-only
+`.harness/learnings.yaml` changes are also auto-committed when they are the sole
+dirty target path, keeping the dogfood target clean without hiding product
+changes.
+
+### Follow-up `demo-123` Replay: Done Evidence Must Fail Before Move
+
+After QA tool-tier hardening, another clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- one CEO bootstrap job was seeded; CEO, COO, CTO, and Engineer stayed on the
+  Space Invaders product lane
+- CTO created ordinary product ticket T-001 for player-ship movement
+- Engineer produced real browser-game artifacts (`index.html`, `style.css`,
+  `script.js`, test files, README updates), committed them, and moved T-001 to
+  `docs/tickets/done/`
+- guardrail and ticket-gate signals stayed foundation telemetry; no target
+  intervention-debt tickets were created
+
+Residual finding:
+
+- Engineer moved T-001 to `done/` while `evidence_links` and `verified_by`
+  were still empty, so the post-run ticket gate failed the otherwise productive
+  job and enqueued a bounded `ticket_gate_repair` Engineer job
+- the repair path was bounded, but it still spent another model run on a
+  metadata issue the original Engineer should fix before the lifecycle move
+
+Decision: feature-ticket done evidence now fails at tool preflight. `shell_exec`
+blocks `git mv`/`mv` into `docs/tickets/done/` while required evidence fields
+are empty, and `file_write` blocks saving a done feature ticket with missing
+evidence. The live replay loop therefore turns this class from late repair work
+into an immediate, actionable same-run correction.
+
+### Follow-up `demo-123` Replay: Runtime Loops Must Stop After Product Progress
+
+After done-evidence preflight, another clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, and Engineer stayed on the Space Invaders product lane with no
+  target intervention-debt tickets.
+- Engineer committed browser-game implementation, package scripts, ticket
+  evidence, and workspace hygiene changes.
+- Guardrail blocks for duplicate feature-contract paths and missing done-ticket
+  evidence remained foundation telemetry.
+
+Residual finding:
+
+- COO appended duplicate `F-001-S001` through `F-001-S003` headings to the
+  generated feature contract instead of replacing the starter scenarios.
+- CTO's ticket body duplicated the canonical ticket heading.
+- Engineer copied T-001 into `docs/tickets/done/` while leaving the backlog
+  copy in place, then hit `max_turns`; failure handling routed to Orchestrator,
+  which selected CTO ticket shaping even though product implementation had
+  already landed.
+
+Decision: runtime failures such as non-Orchestrator `max_turns` now stop as
+foundation telemetry instead of being routed through Orchestrator. Ticket
+completion is also tightened: copying a ticket into `done/` is blocked so
+completion must be a single `git mv`, multiline evidence fields count as valid
+preflight evidence, and feature files reject duplicate scenario IDs. The
+`ticket_create` tool strips duplicate leading ticket-title headings from model
+provided bodies.
+
+### Follow-up `demo-123` Replay: Dogfood Must Not Become Product Mutation
+
+After runtime failure containment, another clean replay used:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root>
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, bounded Engineer repair, QA, and Security stayed on
+  the Space Invaders product lane.
+- The run produced a product-specific plan, BDD feature contract, ordinary
+  product ticket, browser-game implementation commits, ticket completion, QA
+  approval, and security review.
+- Guardrail, ticket-gate, and Dogfood `max_turns` failures remained foundation
+  telemetry; no target intervention-debt tickets were created.
+
+Residual finding:
+
+- Dogfood spent 40 turns on shell-heavy validation, hit `max_turns`, and left
+  `package.json` plus `package-lock.json` dirty after trying to add dev/start
+  support itself.
+- This was not the original intervention-debt starvation, but it was the same
+  class of role-boundary failure: validation work turned into target mutation
+  before the validator produced bounded evidence or a disposition.
+
+Decision: Dogfood is now observation-first. It may write bounded reports under
+`docs/reports/dogfood/` and create target-owned findings through
+`ticket_create`, but tool policy blocks direct product/package `file_write`.
+Generated Dogfood guidance now stops after pre-flight failures, records a
+structured disposition, forbids editing product files to make validation pass,
+and treats foundation/runtime failures as telemetry or blocked dispositions by
+default. `git_push` also skips cleanly when a throwaway demo repo has no remote.

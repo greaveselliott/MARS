@@ -21,6 +21,10 @@ type Input struct {
 	Manifest        *bundle.Manifest
 	RecentDecisions []orgstate.Decision
 	TicketStateHash string
+	// SourceDisposition is populated for Orchestrator dispatch jobs so the
+	// deterministic router can reject lifecycle regressions in the handoff the
+	// Orchestrator just selected.
+	SourceDisposition *orgstate.Disposition
 }
 
 // Decide routes a disposition to the Orchestrator, the Orchestrator-selected
@@ -87,19 +91,22 @@ func route(in Input) (nextRole, kind, reason, stop string) {
 	suggested := strings.TrimSpace(d.SuggestedRole)
 
 	if d.Role != "orchestrator" {
+		if nextRole, kind, reason, stop, ok := directDeterministicRoute(in, status, nextNeed, suggested); ok {
+			return nextRole, kind, reason, stop
+		}
 		if orch := orchestratorRole(in.Manifest); orch != "" {
 			return orch, "orchestrator_review", "terminal disposition returned to Orchestrator for next-role selection", ""
 		}
 	}
 
 	if suggested != "" {
-		return suggested, "orchestrator", "using Orchestrator suggested_role", ""
+		return enforceOrchestratorCandidate(in, suggested, "orchestrator", "using Orchestrator suggested_role")
 	}
 	if target := strings.TrimSpace(d.Handoff.TargetRole); target != "" {
-		return target, "orchestrator", "using Orchestrator handoff.target_role", ""
+		return enforceOrchestratorCandidate(in, target, "orchestrator", "using Orchestrator handoff.target_role")
 	}
 	if target := strings.TrimSpace(d.Feedback.ForRole); target != "" {
-		return target, "orchestrator", "using Orchestrator feedback.for_role", ""
+		return enforceOrchestratorCandidate(in, target, "orchestrator", "using Orchestrator feedback.for_role")
 	}
 
 	switch status {
@@ -126,7 +133,7 @@ func route(in Input) (nextRole, kind, reason, stop string) {
 		return "", "deterministic", "no work disposition stops dispatch", "no actionable work"
 	case "approved":
 		if role := roleForNeedInManifest(in.Manifest, nextNeed); role != "" {
-			return role, "deterministic", "routing approved work by next_need", ""
+			return enforceReviewProgression(in, role, "deterministic", "routing approved work by next_need")
 		}
 		if role := defaultCompletionRoute(d.Role); role != "" {
 			return role, "deterministic", "routing approved work by default role responsibility", ""
@@ -134,7 +141,7 @@ func route(in Input) (nextRole, kind, reason, stop string) {
 		return "release-manager", "deterministic", "approved work is ready for release review", ""
 	case "completed":
 		if role := roleForNeedInManifest(in.Manifest, nextNeed); role != "" {
-			return role, "deterministic", "routing completed work by next_need", ""
+			return enforceReviewProgression(in, role, "deterministic", "routing completed work by next_need")
 		}
 		if role := defaultCompletionRoute(d.Role); role != "" {
 			return role, "deterministic", "routing completed work by default role responsibility", ""
@@ -143,6 +150,196 @@ func route(in Input) (nextRole, kind, reason, stop string) {
 	default:
 		return fallbackRole(in.Manifest), "ambiguous", fmt.Sprintf("unknown disposition status %q", d.Status), ""
 	}
+}
+
+func directDeterministicRoute(in Input, status, nextNeed, suggested string) (nextRole, kind, reason, stop string, ok bool) {
+	d := in.Disposition
+	direct := func(candidateRole, candidateReason string) (string, string, string, string, bool) {
+		candidateRole = strings.TrimSpace(candidateRole)
+		if candidateRole == "" {
+			return "", "", "", "", false
+		}
+		nextRole, nextKind, nextReason, nextStop := enforceDirectReviewProgression(in, candidateRole, "deterministic", candidateReason)
+		return nextRole, nextKind, nextReason, nextStop, true
+	}
+
+	switch status {
+	case "completed", "approved":
+		if suggested != "" {
+			return direct(suggested, "using role suggested_role without Orchestrator detour")
+		}
+		if target := strings.TrimSpace(d.Handoff.TargetRole); target != "" {
+			return direct(target, "using role handoff.target_role without Orchestrator detour")
+		}
+		if target := strings.TrimSpace(d.Feedback.ForRole); target != "" {
+			return direct(target, "using role feedback.for_role without Orchestrator detour")
+		}
+		if role := roleForNeedInManifest(in.Manifest, nextNeed); role != "" {
+			return direct(role, "routing completed work by next_need without Orchestrator detour")
+		}
+		if role := defaultCompletionRoute(d.Role); role != "" {
+			return direct(role, "routing completed work by default role responsibility without Orchestrator detour")
+		}
+		return "", "deterministic", "completed work has no required follow-up", "completed with no follow-up", true
+	case "in_review":
+		if suggested != "" {
+			return direct(suggested, "routing in-review ticket to requested reviewer without Orchestrator detour")
+		}
+		return direct("qa", "routing in-review ticket to QA without Orchestrator detour")
+	case "no_work":
+		if suggested != "" {
+			return direct(suggested, "using no-work suggested_role without Orchestrator detour")
+		}
+		if target := strings.TrimSpace(d.Handoff.TargetRole); target != "" {
+			return direct(target, "using no-work handoff.target_role without Orchestrator detour")
+		}
+		if target := strings.TrimSpace(d.Feedback.ForRole); target != "" {
+			return direct(target, "using no-work feedback.for_role without Orchestrator detour")
+		}
+		if role := roleForNeedInManifest(in.Manifest, nextNeed); role != "" {
+			return direct(role, "routing no-work disposition by next_need without Orchestrator detour")
+		}
+		if d.Role == "engineer" {
+			return direct("ceo", "engineer found no actionable work; returning to planning without Orchestrator detour")
+		}
+		return "", "deterministic", "no work disposition stops dispatch", "no actionable work", true
+	default:
+		return "", "", "", "", false
+	}
+}
+
+func enforceDirectReviewProgression(in Input, candidateRole, kind, reason string) (nextRole, nextKind, nextReason, stop string) {
+	candidateRole = strings.TrimSpace(candidateRole)
+	if candidateRole == "" {
+		return "", kind, reason, ""
+	}
+	source := in.Disposition
+	sourceStatus := normalize(source.Status)
+	if sourceStatus != "approved" && sourceStatus != "completed" {
+		return candidateRole, kind, reason, ""
+	}
+	sourceRank, sourceOK := reviewLifecycleRank(source.Role)
+	candidateRank, candidateOK := reviewLifecycleRank(candidateRole)
+	if !sourceOK || !candidateOK || candidateRank > sourceRank {
+		return candidateRole, kind, reason, ""
+	}
+	if forward := nextReviewLifecycleRole(in.Manifest, sourceRank); forward != "" {
+		return forward,
+			"deterministic",
+			fmt.Sprintf("%s already completed review; routing forward to %s instead of repeating %s", source.Role, forward, candidateRole),
+			""
+	}
+	return "",
+		"deterministic",
+		fmt.Sprintf("%s already completed review; no forward review role remains after %s", source.Role, candidateRole),
+		"review chain complete"
+}
+
+func enforceOrchestratorCandidate(in Input, candidateRole, kind, reason string) (nextRole, nextKind, nextReason, stop string) {
+	nextRole, nextKind, nextReason, stop = enforceReviewProgression(in, candidateRole, kind, reason)
+	if stop != "" || strings.TrimSpace(nextRole) == "" {
+		return nextRole, nextKind, nextReason, stop
+	}
+	return enforceQAInspectionBlock(in, nextRole, nextKind, nextReason)
+}
+
+func enforceQAInspectionBlock(in Input, candidateRole, kind, reason string) (nextRole, nextKind, nextReason, stop string) {
+	if in.SourceDisposition == nil || normalize(in.Disposition.Role) != "orchestrator" {
+		return candidateRole, kind, reason, ""
+	}
+	source := *in.SourceDisposition
+	if normalize(source.Role) != "qa" || normalize(source.Status) != "blocked" {
+		return candidateRole, kind, reason, ""
+	}
+	if !qaBlockedOnRepoInspection(source) || !planningOrHygieneRole(candidateRole) {
+		return candidateRole, kind, reason, ""
+	}
+	if _, ok := in.Manifest.Roles["qa"]; !ok {
+		return candidateRole, kind, reason, ""
+	}
+	return "qa",
+		"deterministic",
+		"QA blocked on trigger-provided context instead of repository inspection; retrying QA with the existing repo-read tool contract before planning",
+		""
+}
+
+func qaBlockedOnRepoInspection(d orgstate.Disposition) bool {
+	text := normalize(strings.Join([]string{d.NextNeed, d.Reason, d.Handoff.Ask, d.Handoff.Context, d.Feedback.Summary}, " "))
+	if strings.Contains(text, "source_code") ||
+		strings.Contains(text, "implementation_source") ||
+		strings.Contains(text, "trigger_context") ||
+		strings.Contains(text, "not_provided") ||
+		strings.Contains(text, "missing_context") ||
+		strings.Contains(text, "cannot_inspect") {
+		return true
+	}
+	return normalize(d.NextNeed) == "liveness"
+}
+
+func planningOrHygieneRole(role string) bool {
+	switch normalize(role) {
+	case "ceo", "coo", "cto_weekly", "cto", "architecture", "janitor":
+		return true
+	default:
+		return false
+	}
+}
+
+func enforceReviewProgression(in Input, candidateRole, kind, reason string) (nextRole, nextKind, nextReason, stop string) {
+	candidateRole = strings.TrimSpace(candidateRole)
+	if candidateRole == "" || in.SourceDisposition == nil || normalize(in.Disposition.Role) != "orchestrator" {
+		return candidateRole, kind, reason, ""
+	}
+	source := *in.SourceDisposition
+	sourceStatus := normalize(source.Status)
+	if sourceStatus != "approved" && sourceStatus != "completed" {
+		return candidateRole, kind, reason, ""
+	}
+	sourceRank, sourceOK := reviewLifecycleRank(source.Role)
+	candidateRank, candidateOK := reviewLifecycleRank(candidateRole)
+	if !sourceOK || !candidateOK || candidateRank > sourceRank {
+		return candidateRole, kind, reason, ""
+	}
+	if forward := nextReviewLifecycleRole(in.Manifest, sourceRank); forward != "" {
+		return forward,
+			"deterministic",
+			fmt.Sprintf("%s already completed review; routing forward to %s instead of repeating %s", source.Role, forward, candidateRole),
+			""
+	}
+	return "",
+		"deterministic",
+		fmt.Sprintf("%s already completed review; no forward review role remains after %s", source.Role, candidateRole),
+		"review chain complete"
+}
+
+func reviewLifecycleRank(role string) (int, bool) {
+	switch normalize(role) {
+	case "qa", "qa_review", "evidence_review", "review":
+		return 0, true
+	case "security", "security_review":
+		return 1, true
+	case "dogfood", "dogfood_validation", "e2e", "end_to_end":
+		return 2, true
+	case "dependency", "dependency_manager", "dependency_maintenance":
+		return 3, true
+	case "release", "release_manager", "release_review", "release_blocked":
+		return 4, true
+	default:
+		return 0, false
+	}
+}
+
+func nextReviewLifecycleRole(m *bundle.Manifest, sourceRank int) string {
+	if m == nil {
+		return ""
+	}
+	roles := []string{"qa", "security", "dogfood"}
+	for i := sourceRank + 1; i < len(roles); i++ {
+		if _, ok := m.Roles[roles[i]]; ok {
+			return roles[i]
+		}
+	}
+	return ""
 }
 
 func roleForNeedInManifest(m *bundle.Manifest, nextNeed string) string {
@@ -178,7 +375,7 @@ func roleForNeed(nextNeed string) string {
 		return "head-of-strategy"
 	case "goal", "goals", "goal_decision", "vision", "scope_decision", "strategy", "strategy_review":
 		return "ceo"
-	case "dogfood", "e2e", "end_to_end":
+	case "dogfood", "dogfood_validation", "e2e", "end_to_end":
 		return "dogfood"
 	case "janitor", "liveness", "stale_checkout":
 		return "janitor"
@@ -202,7 +399,7 @@ func defaultCompletionRoute(role string) string {
 	case "qa":
 		return "security"
 	case "security":
-		return "dependency-manager"
+		return "dogfood"
 	case "dependency-manager":
 		return "release-manager"
 	default:
@@ -215,6 +412,9 @@ func validateRole(m *bundle.Manifest, role string) (string, bool, string) {
 		return "", true, ""
 	}
 	if _, ok := m.Roles[role]; !ok {
+		if alias, ok := manifestRoleAlias(m, role); ok {
+			return alias, true, ""
+		}
 		normalized := normalize(role)
 		for existing := range m.Roles {
 			if normalize(existing) == normalized {
@@ -224,6 +424,25 @@ func validateRole(m *bundle.Manifest, role string) (string, bool, string) {
 		return "", false, fmt.Sprintf("role %q is not defined in manifest", role)
 	}
 	return role, true, ""
+}
+
+func manifestRoleAlias(m *bundle.Manifest, role string) (string, bool) {
+	if m == nil {
+		return "", false
+	}
+	normalized := normalize(role)
+	aliases := map[string][]string{
+		"cto":          {"cto-weekly"},
+		"architecture": {"cto-weekly"},
+		"release":      {"release-manager"},
+		"dependency":   {"dependency-manager"},
+	}
+	for _, candidate := range aliases[normalized] {
+		if _, ok := m.Roles[candidate]; ok {
+			return candidate, true
+		}
+	}
+	return "", false
 }
 
 func fallbackRole(m *bundle.Manifest) string {

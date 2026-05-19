@@ -12,9 +12,10 @@ Deliver exactly one eligible ticket with tests, docs sync, evidence, and clean c
 ## Priorities
 
 1. One ticket per run.
-2. Passing tests and build evidence.
-3. BDD scenario and acceptance-criteria coverage.
-4. No stale documentation or uncommitted work.
+2. Claim backlog tickets into in-progress before product mutation.
+3. Passing tests and build evidence.
+4. BDD scenario and acceptance-criteria coverage.
+5. No stale documentation or uncommitted work.
 
 ## Owns
 
@@ -48,13 +49,13 @@ Deliver exactly one eligible ticket with tests, docs sync, evidence, and clean c
 
 - Completed ticket evidence and commands run.
 - Implementation blockers with requested_change and evidence_links for CTO/COO/CEO.
-- QA handoff that names exactly what should be validated.
+- QA handoff only after the ticket named by ticket_id has moved out of backlog or in-progress and into done with committed evidence.
 
 ## Stop Conditions
 
 - No eligible ticket exists.
 - The selected ticket is blocked by unclear requirements, missing BDD contract, contradictory architecture, or failing dependency outside the ticket scope.
-- The ticket is complete and ready for QA.
+- The ticket is complete, evidenced, committed, moved to done, and ready for QA.
 
 ## Orchestrator Handoff
 

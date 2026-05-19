@@ -97,13 +97,15 @@ type TicketInput struct {
 }
 
 type existingTicket struct {
-	ID        string
-	Title     string
-	Kind      string
-	DedupeKey string
-	Number    int
-	Path      string // relative to repo root, e.g. "docs/tickets/done/T-001-foo.md"
-	Status    string // "backlog", "in-progress", "in-review", or "done"
+	ID           string
+	Title        string
+	Kind         string
+	WorkType     string
+	BDDScenarios []string
+	DedupeKey    string
+	Number       int
+	Path         string // relative to repo root, e.g. "docs/tickets/done/T-001-foo.md"
+	Status       string // "backlog", "in-progress", "in-review", or "done"
 }
 
 var ticketNumberRe = regexp.MustCompile(`T-(\d+)`)
@@ -175,6 +177,13 @@ func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
 				Output: fmt.Sprintf("DUPLICATE: ticket %q already exists at %s (status: %s). Skipping creation.", dup.Title, dup.Path, dup.Status),
 			}, nil
 		}
+	}
+
+	if dup := findDuplicateByBDDScenario(input, existing); dup != nil {
+		scenarios := strings.Join(normalizedScenarioSet(input.BDDScenarios), ", ")
+		return ToolResult{
+			Output: fmt.Sprintf("DUPLICATE: feature ticket for BDD scenario(s) %s already exists at %s (status: %s). Add depends_on or a distinct scenario if this really needs another ticket.", scenarios, dup.Path, dup.Status),
+		}, nil
 	}
 
 	nextNum := 1
@@ -256,7 +265,7 @@ func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
 	fmt.Fprintf(&content, "depends_on: %s\n", deps)
 	fmt.Fprintf(&content, "---\n\n")
 	fmt.Fprintf(&content, "# %s: %s\n\n", id, title)
-	fmt.Fprintf(&content, "%s\n", strings.TrimSpace(input.Body))
+	fmt.Fprintf(&content, "%s\n", sanitizeTicketBody(input.Body, id, title))
 
 	absPath, err := root.ResolvePath(relPath)
 	if err != nil {
@@ -272,6 +281,34 @@ func CreateTicket(root Root, input TicketInput) (ToolResult, error) {
 	return ToolResult{
 		Output: fmt.Sprintf("created ticket %s at %s", id, relPath),
 	}, nil
+}
+
+func sanitizeTicketBody(body, id, title string) string {
+	lines := strings.Split(strings.TrimSpace(body), "\n")
+	for len(lines) > 0 {
+		trimmed := strings.TrimSpace(lines[0])
+		if trimmed == "" || duplicateTicketHeading(trimmed, id, title) {
+			lines = lines[1:]
+			continue
+		}
+		break
+	}
+	return strings.TrimSpace(strings.Join(lines, "\n"))
+}
+
+func duplicateTicketHeading(line, id, title string) bool {
+	line = strings.TrimSpace(line)
+	if !strings.HasPrefix(line, "# ") || strings.HasPrefix(line, "## ") {
+		return false
+	}
+	heading := strings.TrimSpace(strings.TrimPrefix(line, "# "))
+	if strings.EqualFold(heading, title) || strings.EqualFold(heading, id+": "+title) {
+		return true
+	}
+	if prefix, rest, ok := strings.Cut(heading, ":"); ok && strings.HasPrefix(strings.ToUpper(strings.TrimSpace(prefix)), "T-") {
+		return strings.EqualFold(strings.TrimSpace(rest), title)
+	}
+	return false
 }
 
 func normalizeWorkType(kind, workType string) string {
@@ -354,6 +391,8 @@ func scanExistingTickets(repoRoot string) ([]existingTicket, error) {
 				t.Title = titleFromFilename(e.Name())
 			}
 			t.Kind = frontmatter["kind"]
+			t.WorkType = frontmatter["work_type"]
+			t.BDDScenarios = parseYAMLInlineList(frontmatter["bdd_scenarios"])
 			t.DedupeKey = frontmatter["dedupe_key"]
 
 			tickets = append(tickets, t)
@@ -393,6 +432,28 @@ func readTicketFrontmatter(path string) map[string]string {
 			continue
 		}
 		out[strings.TrimSpace(key)] = unquoteYAMLString(strings.TrimSpace(value))
+	}
+	return out
+}
+
+func parseYAMLInlineList(value string) []string {
+	value = strings.TrimSpace(value)
+	if value == "" || value == "[]" {
+		return nil
+	}
+	value = strings.TrimPrefix(value, "[")
+	value = strings.TrimSuffix(value, "]")
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	var out []string
+	for _, part := range strings.Split(value, ",") {
+		part = strings.TrimSpace(part)
+		part = unquoteYAMLString(part)
+		if part == "" {
+			continue
+		}
+		out = append(out, part)
 	}
 	return out
 }
@@ -439,6 +500,54 @@ func findDuplicateByDedupe(dedupeKey string, existing []existingTicket) *existin
 		}
 	}
 	return nil
+}
+
+func findDuplicateByBDDScenario(input TicketInput, existing []existingTicket) *existingTicket {
+	if strings.TrimSpace(input.Kind) == "intervention-debt" || len(input.DependsOn) > 0 {
+		return nil
+	}
+	if normalizeWorkType(input.Kind, input.WorkType) != "feature" {
+		return nil
+	}
+	proposed := normalizedScenarioSet(input.BDDScenarios)
+	if len(proposed) == 0 {
+		return nil
+	}
+	proposedKey := strings.Join(proposed, "\x00")
+	for i := range existing {
+		if existing[i].Kind == "intervention-debt" {
+			continue
+		}
+		existingWorkType := strings.TrimSpace(existing[i].WorkType)
+		if existingWorkType != "" && existingWorkType != "feature" {
+			continue
+		}
+		existingScenarios := normalizedScenarioSet(existing[i].BDDScenarios)
+		if len(existingScenarios) == 0 {
+			continue
+		}
+		if strings.Join(existingScenarios, "\x00") == proposedKey {
+			return &existing[i]
+		}
+	}
+	return nil
+}
+
+func normalizedScenarioSet(values []string) []string {
+	set := map[string]bool{}
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		set[value] = true
+	}
+	out := make([]string, 0, len(set))
+	for value := range set {
+		out = append(out, value)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func updateExistingTicket(root Root, existing existingTicket, input TicketInput) (bool, error) {

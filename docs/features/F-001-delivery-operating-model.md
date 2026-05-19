@@ -27,6 +27,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 10. F-001-S010 - Documentation sync has a universal operating model for source and generated targets.
 11. F-001-S011 - CLI changes synchronize mirrored tools, repo shortcuts, generated doctrine, and skills.
 12. F-001-S012 - Agents start from `origin/main` and push ready work to `origin main` promptly.
+13. F-001-S013 - Source-harness lifecycle improvements are checked against a live target experience or record a blocker.
 
 ## Scenarios
 
@@ -102,6 +103,12 @@ Given a foundation or deployed harness repo has an `origin/main` remote
 When an agent starts non-trivial work or finishes a validated semantic commit, release-note commit, or release tag
 Then it fetches `origin main`, works only from local `main` at or fast-forwarded to `origin/main`, pushes ready commits to `origin main` before unrelated work, and records a blocker when dirty state, divergence, missing remote access, or push rejection prevents that flow
 
+### F-001-S013: Source Live-Experience Verification
+
+Given a Mars Harness source change claims to improve first-run lifecycle, orchestration, intervention-debt routing, generated target scaffolding, model or provider behavior, dashboard/control-plane behavior, scoring, update/release, or safety/guardrail behavior
+When the agent prepares completion evidence
+Then the evidence includes a representative live target run such as `demo-123`, with exact command, target repo, branch/ref or binary, runtime artifact paths, observed lifecycle events, product progress, and remaining blockers; if the run cannot be performed, the blocker records the intended replay steps and why the live check is unavailable
+
 ## Out of Scope
 
 - Custom Gherkin parsing.
@@ -126,3 +133,4 @@ None.
 - F-001-S010: `go test ./internal/docsconsistency -run TestAD074OperatingModelArtifactsExist` verifies the architecture and universal operating model are documented.
 - F-001-S011: `go test ./cmd/mars-harness -run TestMarsHarnessCLI` verifies the live Cobra command tree, `mars_harness_cli` reference, and repo shortcut map stay synchronized.
 - F-001-S012: `go test ./internal/docsconsistency -run TestRemoteTrunkOperatingModelIsDocumented` verifies source and generated target doctrine include the remote-trunk workflow.
+- F-001-S013: source-harness lifecycle changes include a `demo-123` or equivalent live-experience transcript, or an explicit blocker with replay steps.

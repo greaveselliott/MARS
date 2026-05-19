@@ -5,6 +5,7 @@ docs:
 - docs/design-docs/guardrails.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-007-guardrails-and-safety.md
 */
 package tools
@@ -15,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -40,6 +42,7 @@ const (
 	dogfoodTicketCreateLimitTotal       = 5
 	dogfoodTicketCreateLimitPerSeverity = 3
 	dogfoodTicketCreateLimitPerGroup    = 2
+	runtimeLearningsPath                = ".harness/learnings.yaml"
 )
 
 func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMessage) error {
@@ -52,10 +55,26 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 
 	switch name {
 	case "file_write":
-		return checkFileWritePolicy(root, session, hasSession, raw)
+		if err := checkFileWritePolicy(root, session, hasSession, raw); err != nil {
+			return err
+		}
+		return checkEngineerClaimBeforeProductMutation(root, session, hasSession, name, raw)
 	case "ticket_create":
 		return checkTicketCreatePolicy(root, session, hasSession, raw)
+	case "job_disposition_record":
+		return checkJobDispositionRecordPolicy(ctx, root, session, hasSession, raw)
+	case "dependency_sync", "mars_harness_cli":
+		return checkEngineerClaimBeforeProductMutation(root, session, hasSession, name, raw)
 	case "git_commit":
+		if err := checkEngineerClaimBeforeProductMutation(root, session, hasSession, name, raw); err != nil {
+			return err
+		}
+		var args gitCommitArgs
+		if err := json.Unmarshal(raw, &args); err == nil {
+			if err := checkGitCommitGeneratedWorkspacePolicy(ctx, root, args); err != nil {
+				return err
+			}
+		}
 		return validateRepoDiff(ctx, root, session)
 	case "git_push":
 		return checkGitPushPolicy(ctx, root, raw)
@@ -63,7 +82,16 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 		if err := checkShellPolicy(raw); err != nil {
 			return err
 		}
+		if err := checkShellTicketDoneEvidencePolicy(root, raw); err != nil {
+			return err
+		}
+		if hasSession && strings.ToLower(strings.TrimSpace(session.Role)) == "coo" && !shellExecReadOnly(raw) {
+			return fmt.Errorf("policy: coo cannot run mutating shell_exec; update planning docs with file_write and use git tools for commit/push, while implementation stays behind CTO tickets and Engineer delivery")
+		}
 		if !shellExecReadOnly(raw) {
+			if err := checkEngineerClaimBeforeProductMutation(root, session, hasSession, name, raw); err != nil {
+				return err
+			}
 			if err := validateRepoDiff(ctx, root, session); err != nil {
 				return fmt.Errorf("policy: shell_exec command may mutate while repository is already outside blast-radius limits: %w", err)
 			}
@@ -79,9 +107,6 @@ func postToolPolicy(ctx context.Context, root Root, name string, raw json.RawMes
 		return nil
 	}
 	session, _ := SessionFromContext(ctx)
-	if name == "file_write" {
-		recordFileWriteOrder(session, raw)
-	}
 	switch name {
 	case "git_commit", "git_push":
 		return nil
@@ -296,6 +321,77 @@ func joinTicketNames(tickets []ticketstate.Ticket) string {
 	return strings.Join(names, ", ")
 }
 
+func checkEngineerClaimBeforeProductMutation(root Root, session Session, hasSession bool, toolName string, raw json.RawMessage) error {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
+		return nil
+	}
+	if !engineerToolRequiresClaim(toolName, raw) {
+		return nil
+	}
+	if engineerToolIsTicketOnlyMutation(toolName, raw) {
+		return nil
+	}
+	inProgress, err := ticketstate.ListStatus(root.Abs(), ticketstate.StatusInProgress)
+	if err != nil {
+		return fmt.Errorf("policy: inspect in-progress tickets before %s: %w", toolName, err)
+	}
+	if len(inProgress) > 0 {
+		return nil
+	}
+	backlog, err := ticketstate.ListStatus(root.Abs(), ticketstate.StatusBacklog)
+	if err != nil {
+		return fmt.Errorf("policy: inspect backlog tickets before %s: %w", toolName, err)
+	}
+	backlog = ordinaryProductTickets(backlog)
+	if len(backlog) == 0 {
+		return nil
+	}
+	return fmt.Errorf(
+		"policy: engineer must claim a product ticket before %s mutates product files; move %s from %s to docs/tickets/in-progress/ with git mv, commit the claim, then continue",
+		toolName,
+		backlog[0].ID,
+		backlog[0].RelPath,
+	)
+}
+
+func engineerToolRequiresClaim(toolName string, raw json.RawMessage) bool {
+	switch toolName {
+	case "file_write", "dependency_sync", "mars_harness_cli", "git_commit":
+		return true
+	case "shell_exec":
+		return !shellExecReadOnly(raw)
+	default:
+		return false
+	}
+}
+
+func engineerToolIsTicketOnlyMutation(toolName string, raw json.RawMessage) bool {
+	switch toolName {
+	case "file_write":
+		var args fileWriteArgs
+		if err := json.Unmarshal(raw, &args); err != nil {
+			return false
+		}
+		rel := strings.ToLower(cleanRepoPath(args.Path))
+		return rel == "docs/tickets/readme.md" || strings.HasPrefix(rel, "docs/tickets/")
+	case "shell_exec":
+		return shellExecMovesBacklogTicketToInProgress(raw)
+	default:
+		return false
+	}
+}
+
+func ordinaryProductTickets(tickets []ticketstate.Ticket) []ticketstate.Ticket {
+	var out []ticketstate.Ticket
+	for _, t := range tickets {
+		if strings.EqualFold(strings.TrimSpace(t.Kind), "intervention-debt") || strings.EqualFold(strings.TrimSpace(t.WorkType), "intervention-debt") {
+			continue
+		}
+		out = append(out, t)
+	}
+	return out
+}
+
 func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.RawMessage) error {
 	var args fileWriteArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
@@ -304,11 +400,23 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 	if err := checkTicketFileWritePolicy(root, args.Path); err != nil {
 		return err
 	}
+	if err := checkTicketDoneContentPolicy(root, args.Path, args.Content); err != nil {
+		return err
+	}
+	if err := checkFeatureFileWritePolicy(root, args.Path); err != nil {
+		return err
+	}
+	if err := checkFeatureScenarioIDPolicy(args.Path, args.Content); err != nil {
+		return err
+	}
+	if err := checkPlannerFileWritePolicy(session, hasSession, args.Path); err != nil {
+		return err
+	}
+	if err := checkDogfoodFileWritePolicy(session, hasSession, args.Path); err != nil {
+		return err
+	}
 	if !hasSession {
 		return nil
-	}
-	if err := checkFeatureFileWritePlanningOrder(session, args.Path); err != nil {
-		return err
 	}
 	if session.Guardrails != nil {
 		if err := session.Guardrails.CheckFile(session.Role, args.Path, args.Content); err != nil {
@@ -321,32 +429,69 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 	return nil
 }
 
-const ceoCurrentPlanWriteKey = "ceo:file_write:current-operating-plan"
-
-func checkFeatureFileWritePlanningOrder(session Session, rel string) error {
-	if strings.ToLower(strings.TrimSpace(session.Role)) != "ceo" {
+func checkDogfoodFileWritePolicy(session Session, hasSession bool, rel string) error {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "dogfood" {
 		return nil
 	}
-	rel = strings.ToLower(cleanRepoPath(rel))
-	if !strings.HasPrefix(rel, "docs/features/") || !strings.HasSuffix(rel, ".md") {
+	rel = cleanRepoPath(rel)
+	if dogfoodEvidenceWritePath(rel) {
 		return nil
 	}
-	if session.ToolCounts != nil && session.ToolCounts[ceoCurrentPlanWriteKey] > 0 {
-		return nil
-	}
-	return fmt.Errorf("policy: CEO must write docs/exec-plans/active/current-operating-plan.md before docs/features changes; planning order is exec plan, feature contract, ticket, delivery")
+	return fmt.Errorf("policy: dogfood is observation-first and cannot write product or package files such as %s; record validation evidence under docs/reports/dogfood or create a target-owned finding with ticket_create", rel)
 }
 
-func recordFileWriteOrder(session Session, raw json.RawMessage) {
-	if strings.ToLower(strings.TrimSpace(session.Role)) != "ceo" || session.ToolCounts == nil {
-		return
+func dogfoodEvidenceWritePath(rel string) bool {
+	rel = filepath.ToSlash(strings.TrimSpace(rel))
+	return strings.HasPrefix(rel, "docs/reports/dogfood/") && strings.HasSuffix(strings.ToLower(rel), ".md")
+}
+
+func checkPlannerFileWritePolicy(session Session, hasSession bool, rel string) error {
+	if !hasSession {
+		return nil
 	}
-	var args fileWriteArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
-		return
+	rel = cleanRepoPath(rel)
+	switch strings.ToLower(strings.TrimSpace(session.Role)) {
+	case "coo":
+		if cooPlanningWritePath(rel) {
+			return nil
+		}
+		return fmt.Errorf("policy: coo may only write planning artifacts under docs/exec-plans, docs/features, or docs/goals/observations.md; implementation path %s belongs behind CTO tickets and Engineer delivery", rel)
+	case "ceo":
+		if ceoStrategyWritePath(rel) {
+			return nil
+		}
+		return fmt.Errorf("policy: ceo may only write strategy artifacts under docs/goals/active.md, docs/goals/observations.md, docs/product-specs/vision.md, or docs/reports/strategy/; planning path %s belongs to COO/CTO handoff", rel)
+	default:
+		return nil
 	}
-	if strings.ToLower(cleanRepoPath(args.Path)) == "docs/exec-plans/active/current-operating-plan.md" {
-		session.ToolCounts[ceoCurrentPlanWriteKey]++
+}
+
+func cooPlanningWritePath(rel string) bool {
+	rel = filepath.ToSlash(strings.TrimSpace(rel))
+	if rel == filepath.ToSlash(filepath.Join("docs", "goals", "observations.md")) {
+		return true
+	}
+	if rel == filepath.ToSlash(filepath.Join("docs", "exec-plans", "active", "current-operating-plan.md")) {
+		return true
+	}
+	if strings.HasPrefix(rel, "docs/exec-plans/backlog/") && strings.HasSuffix(strings.ToLower(rel), ".md") {
+		return true
+	}
+	if strings.HasPrefix(rel, "docs/features/") && strings.HasSuffix(strings.ToLower(rel), ".md") {
+		return true
+	}
+	return false
+}
+
+func ceoStrategyWritePath(rel string) bool {
+	rel = filepath.ToSlash(strings.TrimSpace(rel))
+	switch rel {
+	case filepath.ToSlash(filepath.Join("docs", "goals", "active.md")),
+		filepath.ToSlash(filepath.Join("docs", "goals", "observations.md")),
+		filepath.ToSlash(filepath.Join("docs", "product-specs", "vision.md")):
+		return true
+	default:
+		return strings.HasPrefix(rel, "docs/reports/strategy/") && strings.HasSuffix(strings.ToLower(rel), ".md")
 	}
 }
 
@@ -371,6 +516,202 @@ func checkTicketFileWritePolicy(root Root, rel string) error {
 		return fmt.Errorf("policy: new ticket files must be created with ticket_create so numbering, backlog placement, and dedupe are enforced; attempted file_write to %s", rel)
 	}
 	return nil
+}
+
+func checkTicketDoneContentPolicy(root Root, rel, content string) error {
+	rel = cleanRepoPath(rel)
+	_, state, ok := ticketLifecyclePathIdentity(rel)
+	if !ok || state != "done" {
+		return nil
+	}
+	missing := missingFeatureTicketEvidence(parseTicketPolicyFrontmatter(content))
+	if len(missing) == 0 {
+		if dupes := ticketLifecycleDuplicatesOutsideState(root, rel, "done"); len(dupes) > 0 {
+			return fmt.Errorf(
+				"policy: feature ticket %s cannot be copied into docs/tickets/done while the same ticket still exists at %s; update evidence in the current lifecycle file, then use git mv to move that exact file to done",
+				filepath.Base(rel),
+				strings.Join(dupes, ", "),
+			)
+		}
+		return nil
+	}
+	return fmt.Errorf(
+		"policy: feature ticket %s cannot be saved in docs/tickets/done without BDD scenario evidence: missing %s; update the ticket evidence before moving or saving it as done",
+		filepath.Base(rel),
+		strings.Join(missing, ", "),
+	)
+}
+
+var featureScenarioHeadingRe = regexp.MustCompile(`(?m)^#{3,6}\s+(F-\d{3}-S\d{3})\b`)
+
+func checkFeatureScenarioIDPolicy(rel, content string) error {
+	rel = cleanRepoPath(rel)
+	lowerRel := strings.ToLower(rel)
+	if !strings.HasPrefix(lowerRel, "docs/features/") || !strings.HasSuffix(lowerRel, ".md") {
+		return nil
+	}
+	seen := make(map[string]bool)
+	var dupes []string
+	for _, match := range featureScenarioHeadingRe.FindAllStringSubmatch(content, -1) {
+		if len(match) < 2 {
+			continue
+		}
+		id := strings.ToUpper(strings.TrimSpace(match[1]))
+		if seen[id] {
+			dupes = append(dupes, id)
+			continue
+		}
+		seen[id] = true
+	}
+	if len(dupes) == 0 {
+		return nil
+	}
+	return fmt.Errorf("policy: feature contract %s has duplicate scenario ID heading(s): %s; update or replace the existing scenario instead of appending another with the same ID", rel, strings.Join(uniqueStringsPreserveOrder(dupes), ", "))
+}
+
+func checkFeatureFileWritePolicy(root Root, rel string) error {
+	rel = cleanRepoPath(rel)
+	lowerRel := strings.ToLower(rel)
+	if !strings.HasPrefix(lowerRel, "docs/features/") || !strings.HasSuffix(lowerRel, ".md") {
+		return nil
+	}
+	base := filepath.Base(rel)
+	featureID, ok := featureContractIDFromName(base)
+	if !ok {
+		return nil
+	}
+	abs, err := root.ResolvePath(rel)
+	if err != nil {
+		return nil
+	}
+	if _, err := os.Stat(abs); err == nil {
+		return nil
+	}
+	featuresDir, err := root.ResolvePath(filepath.Join("docs", "features"))
+	if err != nil {
+		return nil
+	}
+	matches, err := filepath.Glob(filepath.Join(featuresDir, featureID+"*.md"))
+	if err != nil || len(matches) == 0 {
+		return nil
+	}
+	cleanAbs := filepath.Clean(abs)
+	for _, match := range matches {
+		if filepath.Clean(match) == cleanAbs {
+			return nil
+		}
+	}
+	existing := filepath.ToSlash(filepath.Join("docs", "features", filepath.Base(matches[0])))
+	return fmt.Errorf("policy: feature contract %s already exists as %s; update the canonical contract instead of creating duplicate feature path %s", featureID, existing, rel)
+}
+
+func featureContractIDFromName(base string) (string, bool) {
+	lower := strings.ToLower(strings.TrimSpace(base))
+	if !strings.HasPrefix(lower, "f-") || !strings.HasSuffix(lower, ".md") {
+		return "", false
+	}
+	id := strings.TrimSuffix(lower, ".md")
+	parts := strings.Split(id, "-")
+	if len(parts) < 2 || len(parts[1]) != 3 {
+		return "", false
+	}
+	for _, r := range parts[1] {
+		if r < '0' || r > '9' {
+			return "", false
+		}
+	}
+	return "F-" + strings.ToUpper(parts[1]), true
+}
+
+func checkJobDispositionRecordPolicy(ctx context.Context, root Root, session Session, hasSession bool, raw json.RawMessage) error {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) == "orchestrator" {
+		return nil
+	}
+	var args struct {
+		Status   string `json:"status"`
+		TicketID string `json:"ticket_id"`
+	}
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return nil
+	}
+	if !successfulDispositionStatus(args.Status) {
+		return nil
+	}
+	if err := checkEngineerDispositionTicketState(root, session, args.Status, args.TicketID); err != nil {
+		return err
+	}
+	files, err := changedFiles(ctx, root)
+	if err != nil {
+		return nil
+	}
+	files = dispositionBlockingFiles(files)
+	if len(files) == 0 {
+		return nil
+	}
+	return fmt.Errorf("policy: job_disposition_record cannot complete while repository has uncommitted changes: %s. Run git_status, commit the changed work with git_commit, then record the disposition", summarizeChangedFiles(files))
+}
+
+func checkEngineerDispositionTicketState(root Root, session Session, status, ticketID string) error {
+	if strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
+		return nil
+	}
+	if strings.ToLower(strings.TrimSpace(status)) == "no_work" && strings.TrimSpace(ticketID) == "" {
+		return nil
+	}
+	ticketID = strings.ToUpper(strings.TrimSpace(ticketID))
+	if ticketID == "" {
+		tickets, err := ticketstate.List(root.Abs())
+		if err == nil && len(ordinaryProductTickets(tickets)) > 0 {
+			return fmt.Errorf("policy: engineer successful disposition must name ticket_id for the completed product ticket; if no eligible ticket exists, use status no_work")
+		}
+		return nil
+	}
+	tickets, err := ticketstate.List(root.Abs())
+	if err != nil {
+		return nil
+	}
+	found := false
+	for _, t := range tickets {
+		if strings.ToUpper(strings.TrimSpace(t.ID)) != ticketID {
+			continue
+		}
+		found = true
+		if t.Status == ticketstate.StatusDone {
+			continue
+		}
+		return fmt.Errorf("policy: engineer cannot record a successful disposition for %s while it remains in %s; update evidence, move the ticket to docs/tickets/done/ with git mv, commit the lifecycle move, then record qa_review", ticketID, t.RelPath)
+	}
+	if !found {
+		return fmt.Errorf("policy: engineer cannot record a successful disposition for missing ticket_id %s; move the selected ticket to docs/tickets/done/ with evidence, commit it, then record qa_review", ticketID)
+	}
+	return nil
+}
+
+func dispositionBlockingFiles(files []string) []string {
+	var blocking []string
+	for _, file := range files {
+		if filepath.ToSlash(strings.TrimSpace(file)) == runtimeLearningsPath {
+			continue
+		}
+		blocking = append(blocking, file)
+	}
+	return blocking
+}
+
+func successfulDispositionStatus(status string) bool {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "completed", "approved", "in_review", "no_work":
+		return true
+	default:
+		return false
+	}
+}
+
+func summarizeChangedFiles(files []string) string {
+	if len(files) <= 6 {
+		return strings.Join(files, ", ")
+	}
+	return strings.Join(files[:6], ", ") + fmt.Sprintf(", and %d more", len(files)-6)
 }
 
 func cleanRepoPath(rel string) string {
@@ -434,6 +775,262 @@ func checkShellPolicy(raw json.RawMessage) error {
 		return fmt.Errorf("policy: shell_exec command %q may flood context with generated dependency/build output; use file_search, grep, or add explicit generated-directory excludes", operation)
 	}
 	return nil
+}
+
+func checkShellTicketDoneEvidencePolicy(root Root, raw json.RawMessage) error {
+	var args shellExecArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return nil
+	}
+	fields := args.Argv
+	if strings.TrimSpace(args.ShellCommand) != "" {
+		fields = shellFields(args.ShellCommand)
+	}
+	if copies := ticketDoneCopySources(fields); len(copies) > 0 {
+		return fmt.Errorf(
+			"policy: feature ticket %s cannot be copied into docs/tickets/done; update evidence in the current lifecycle file, then use git mv so only one lifecycle copy exists",
+			filepath.Base(copies[0]),
+		)
+	}
+	for _, source := range ticketDoneMoveSources(fields) {
+		abs, err := root.ResolvePath(source)
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(abs)
+		if err != nil {
+			continue
+		}
+		missing := missingFeatureTicketEvidence(parseTicketPolicyFrontmatter(string(data)))
+		if len(missing) == 0 {
+			continue
+		}
+		return fmt.Errorf(
+			"policy: feature ticket %s cannot move to docs/tickets/done without BDD scenario evidence: missing %s; update evidence_links and verified_by before moving it",
+			filepath.Base(source),
+			strings.Join(missing, ", "),
+		)
+	}
+	return nil
+}
+
+func ticketDoneCopySources(fields []string) []string {
+	var sources []string
+	for i, field := range fields {
+		if filepathBase(field) != "cp" {
+			continue
+		}
+		if source, dest, ok := ticketMoveOperands(fields[i+1:]); ok && ticketMoveTargetsDone(source, dest) {
+			sources = append(sources, cleanShellPathToken(source))
+		}
+	}
+	return sources
+}
+
+func ticketDoneMoveSources(fields []string) []string {
+	var sources []string
+	for i, field := range fields {
+		switch filepathBase(field) {
+		case "git":
+			if i+1 >= len(fields) || strings.ToLower(strings.TrimSpace(fields[i+1])) != "mv" {
+				continue
+			}
+			if source, dest, ok := ticketMoveOperands(fields[i+2:]); ok && ticketMoveTargetsDone(source, dest) {
+				sources = append(sources, cleanShellPathToken(source))
+			}
+		case "mv":
+			if i > 0 && filepathBase(fields[i-1]) == "git" {
+				continue
+			}
+			if source, dest, ok := ticketMoveOperands(fields[i+1:]); ok && ticketMoveTargetsDone(source, dest) {
+				sources = append(sources, cleanShellPathToken(source))
+			}
+		}
+	}
+	return sources
+}
+
+func shellExecMovesBacklogTicketToInProgress(raw json.RawMessage) bool {
+	var args shellExecArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return false
+	}
+	fields := args.Argv
+	if strings.TrimSpace(args.ShellCommand) != "" {
+		fields = shellFields(args.ShellCommand)
+	}
+	for i, field := range fields {
+		if filepathBase(field) != "git" {
+			continue
+		}
+		if i+1 >= len(fields) || strings.ToLower(strings.TrimSpace(fields[i+1])) != "mv" {
+			continue
+		}
+		source, dest, ok := ticketMoveOperands(fields[i+2:])
+		if ok && ticketMoveTargetsInProgress(source, dest) {
+			return true
+		}
+	}
+	return false
+}
+
+func ticketMoveOperands(fields []string) (source, dest string, ok bool) {
+	operands := make([]string, 0, 2)
+	for _, field := range fields {
+		field = strings.TrimSpace(field)
+		if field == "" || strings.HasPrefix(field, "-") {
+			continue
+		}
+		operands = append(operands, field)
+		if len(operands) == 2 {
+			break
+		}
+	}
+	if len(operands) < 2 {
+		return "", "", false
+	}
+	return operands[0], operands[1], true
+}
+
+func ticketMoveTargetsInProgress(source, dest string) bool {
+	source = cleanRepoPath(cleanShellPathToken(source))
+	dest = cleanRepoPath(cleanShellPathToken(dest))
+	if dest == filepath.ToSlash(filepath.Join("docs", "tickets", "in-progress")) {
+		_, sourceState, sourceOK := ticketLifecyclePathIdentity(source)
+		return sourceOK && sourceState == "backlog"
+	}
+	_, destState, destOK := ticketLifecyclePathIdentity(dest)
+	_, sourceState, sourceOK := ticketLifecyclePathIdentity(source)
+	return destOK && destState == "in-progress" && sourceOK && sourceState == "backlog"
+}
+
+func ticketMoveTargetsDone(source, dest string) bool {
+	source = cleanRepoPath(cleanShellPathToken(source))
+	dest = cleanRepoPath(cleanShellPathToken(dest))
+	if dest == filepath.ToSlash(filepath.Join("docs", "tickets", "done")) {
+		_, sourceState, sourceOK := ticketLifecyclePathIdentity(source)
+		return sourceOK && sourceState != "done"
+	}
+	_, destState, destOK := ticketLifecyclePathIdentity(dest)
+	_, sourceState, sourceOK := ticketLifecyclePathIdentity(source)
+	return destOK && destState == "done" && sourceOK && sourceState != "done"
+}
+
+func parseTicketPolicyFrontmatter(text string) map[string]string {
+	fields := make(map[string]string)
+	lines := strings.Split(text, "\n")
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+		return fields
+	}
+	currentKey := ""
+	for _, line := range lines[1:] {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "---" {
+			break
+		}
+		if strings.HasPrefix(trimmed, "- ") && currentKey != "" {
+			item := strings.TrimSpace(strings.TrimPrefix(trimmed, "- "))
+			if item == "" {
+				continue
+			}
+			if fields[currentKey] == "" {
+				fields[currentKey] = item
+			} else {
+				fields[currentKey] += "\n" + item
+			}
+			continue
+		}
+		if trimmed == "" || !strings.Contains(line, ":") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		currentKey = strings.TrimSpace(key)
+		fields[currentKey] = unquoteYAMLString(strings.TrimSpace(value))
+	}
+	return fields
+}
+
+func missingFeatureTicketEvidence(frontmatter map[string]string) []string {
+	workType := strings.Trim(strings.ToLower(frontmatter["work_type"]), `"'`)
+	endToEndEvidence := strings.Trim(strings.ToLower(frontmatter["end_to_end_evidence"]), `"'`)
+	if workType != "feature" && endToEndEvidence != "required" {
+		return nil
+	}
+	var missing []string
+	if workType != "feature" {
+		missing = append(missing, "work_type: feature")
+	}
+	if endToEndEvidence != "required" {
+		missing = append(missing, "end_to_end_evidence: required")
+	}
+	if ticketEvidenceFieldEmpty(frontmatter["bdd_scenarios"]) {
+		missing = append(missing, "bdd_scenarios")
+	}
+	if ticketEvidenceFieldEmpty(frontmatter["evidence_links"]) {
+		missing = append(missing, "evidence_links")
+	}
+	if ticketEvidenceFieldEmpty(frontmatter["verified_by"]) {
+		missing = append(missing, "verified_by")
+	}
+	return missing
+}
+
+func ticketEvidenceFieldEmpty(value string) bool {
+	value = strings.Trim(strings.TrimSpace(value), `"'`)
+	switch strings.ToLower(value) {
+	case "", "[]", "none", "null", "nil", "tbd", "todo":
+		return true
+	default:
+		return false
+	}
+}
+
+func ticketLifecycleDuplicatesOutsideState(root Root, rel, state string) []string {
+	id, _, ok := ticketLifecyclePathIdentity(rel)
+	if !ok {
+		return nil
+	}
+	var dupes []string
+	for _, candidateState := range []string{"backlog", "in-progress", "in-review", "done"} {
+		if candidateState == state {
+			continue
+		}
+		dir, err := root.ResolvePath(filepath.Join("docs", "tickets", candidateState))
+		if err != nil {
+			continue
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			candidateRel := filepath.ToSlash(filepath.Join("docs", "tickets", candidateState, entry.Name()))
+			candidateID, _, candidateOK := ticketLifecyclePathIdentity(candidateRel)
+			if candidateOK && strings.EqualFold(candidateID, id) {
+				dupes = append(dupes, candidateRel)
+			}
+		}
+	}
+	return dupes
+}
+
+func uniqueStringsPreserveOrder(values []string) []string {
+	seen := make(map[string]bool)
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if seen[value] {
+			continue
+		}
+		seen[value] = true
+		out = append(out, value)
+	}
+	return out
 }
 
 func dependencyShellOperation(cmd string) (string, bool) {
@@ -968,6 +1565,20 @@ func diffStats(ctx context.Context, root Root) (safety.DiffStats, error) {
 		stats.LinesPerFile[path] = lines
 		stats.TotalLines += lines
 	}
+	untracked, err := runGit(ctx, root, "ls-files", "--others", "--exclude-standard")
+	if err != nil {
+		return stats, err
+	}
+	var untrackedPaths []string
+	if untracked.ExitCode == 0 {
+		for _, rel := range strings.Split(untracked.Output, "\n") {
+			rel = strings.TrimSpace(rel)
+			if rel == "" {
+				continue
+			}
+			untrackedPaths = append(untrackedPaths, rel)
+		}
+	}
 	status, err := runGit(ctx, root, "diff", "--name-status", "HEAD", "--")
 	if err != nil {
 		return stats, err
@@ -975,23 +1586,34 @@ func diffStats(ctx context.Context, root Root) (safety.DiffStats, error) {
 	if status.ExitCode != 0 {
 		return stats, nil
 	}
+	var lifecycleCounterpartPaths []string
+	lifecycleCounterpartPaths = append(lifecycleCounterpartPaths, untrackedPaths...)
 	for _, line := range strings.Split(status.Output, "\n") {
 		trimmed := strings.TrimSpace(line)
 		fields := strings.Fields(trimmed)
-		path := ""
-		if len(fields) > 1 {
-			path = fields[len(fields)-1]
+		code := ""
+		if len(fields) > 0 {
+			code = fields[0]
 		}
-		if strings.HasPrefix(trimmed, "D") && !IsGeneratedWorkspacePath(path) {
-			stats.Deletions++
+		for _, path := range diffNameStatusAddedPaths(fields) {
+			if _, _, ok := ticketLifecyclePathIdentity(path); ok {
+				lifecycleCounterpartPaths = append(lifecycleCounterpartPaths, path)
+			}
 		}
-	}
-	untracked, err := runGit(ctx, root, "ls-files", "--others", "--exclude-standard")
-	if err != nil {
-		return stats, err
+		if !strings.HasPrefix(code, "D") || len(fields) < 2 {
+			continue
+		}
+		path := fields[len(fields)-1]
+		if IsGeneratedWorkspacePath(path) {
+			continue
+		}
+		if isTicketLifecycleMoveDeletion(root, path, lifecycleCounterpartPaths) {
+			continue
+		}
+		stats.Deletions++
 	}
 	if untracked.ExitCode == 0 {
-		for _, rel := range strings.Split(untracked.Output, "\n") {
+		for _, rel := range untrackedPaths {
 			rel = strings.TrimSpace(rel)
 			if rel == "" || IsGeneratedWorkspacePath(rel) {
 				continue
@@ -1014,6 +1636,98 @@ func diffStats(ctx context.Context, root Root) (safety.DiffStats, error) {
 		}
 	}
 	return stats, nil
+}
+
+func diffNameStatusAddedPaths(fields []string) []string {
+	if len(fields) < 2 {
+		return nil
+	}
+	code := fields[0]
+	switch {
+	case strings.HasPrefix(code, "A"):
+		return []string{fields[len(fields)-1]}
+	case strings.HasPrefix(code, "R"), strings.HasPrefix(code, "C"):
+		if len(fields) >= 3 {
+			return []string{fields[len(fields)-1]}
+		}
+	}
+	return nil
+}
+
+func isTicketLifecycleMoveDeletion(root Root, deletedPath string, candidatePaths []string) bool {
+	deletedID, deletedState, ok := ticketLifecyclePathIdentity(deletedPath)
+	if !ok {
+		return false
+	}
+	if ticketLifecycleCounterpartInCandidates(deletedPath, deletedID, deletedState, candidatePaths) {
+		return true
+	}
+	return ticketLifecycleCounterpartExists(root, deletedPath, deletedID, deletedState)
+}
+
+func ticketLifecycleCounterpartInCandidates(deletedPath, deletedID, deletedState string, candidatePaths []string) bool {
+	for _, rel := range candidatePaths {
+		rel = filepath.ToSlash(strings.TrimSpace(rel))
+		if rel == "" || rel == filepath.ToSlash(deletedPath) {
+			continue
+		}
+		addedID, addedState, ok := ticketLifecyclePathIdentity(rel)
+		if !ok {
+			continue
+		}
+		if addedID == deletedID && addedState != deletedState {
+			return true
+		}
+	}
+	return false
+}
+
+func ticketLifecycleCounterpartExists(root Root, deletedPath, deletedID, deletedState string) bool {
+	pattern := filepath.Join(root.Abs(), "docs", "tickets", "*", "*.md")
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return false
+	}
+	deletedPath = filepath.ToSlash(deletedPath)
+	for _, match := range matches {
+		rel, err := filepath.Rel(root.Abs(), match)
+		if err != nil {
+			continue
+		}
+		rel = filepath.ToSlash(rel)
+		if rel == deletedPath {
+			continue
+		}
+		id, state, ok := ticketLifecyclePathIdentity(rel)
+		if ok && id == deletedID && state != deletedState {
+			return true
+		}
+	}
+	return false
+}
+
+func ticketLifecyclePathIdentity(rel string) (id, state string, ok bool) {
+	rel = filepath.ToSlash(strings.TrimSpace(rel))
+	parts := strings.Split(rel, "/")
+	if len(parts) != 4 || parts[0] != "docs" || parts[1] != "tickets" {
+		return "", "", false
+	}
+	state = parts[2]
+	switch state {
+	case "backlog", "in-progress", "in-review", "done":
+	default:
+		return "", "", false
+	}
+	base := parts[3]
+	if !strings.HasSuffix(strings.ToLower(base), ".md") || strings.EqualFold(base, "README.md") {
+		return "", "", false
+	}
+	name := strings.TrimSuffix(base, filepath.Ext(base))
+	idParts := strings.Split(name, "-")
+	if len(idParts) < 2 || idParts[0] == "" || idParts[1] == "" {
+		return "", "", false
+	}
+	return idParts[0] + "-" + idParts[1], state, true
 }
 
 func atoiDiffField(s string) int {

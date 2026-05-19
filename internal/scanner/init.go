@@ -101,6 +101,7 @@ func Init(repoRoot string, force bool) error {
 		filepath.Join(repoRoot, "docs", "reports", "qa"),
 		filepath.Join(repoRoot, "docs", "reports", "security"),
 		filepath.Join(repoRoot, "docs", "reports", "dependencies"),
+		filepath.Join(repoRoot, "docs", "reports", "dogfood"),
 		filepath.Join(repoRoot, "docs", "reports", "strategy"),
 	}
 	for _, d := range dirs {
@@ -111,6 +112,7 @@ func Init(repoRoot string, force bool) error {
 	}
 
 	projectName := filepath.Base(repoRoot)
+	brief := readProjectBrief(repoRoot, projectName)
 
 	manifestPath := filepath.Join(harnessPath, "manifest.yaml")
 	if err := os.WriteFile(manifestPath, []byte(defaultManifest(projectName)), 0o644); err != nil {
@@ -149,6 +151,7 @@ func Init(repoRoot string, force bool) error {
 	}
 
 	for name, content := range defaultDocs {
+		content = renderDefaultDoc(name, content, brief)
 		docPath := filepath.Join(repoRoot, name)
 		if _, err := os.Stat(docPath); err == nil {
 			slog.Debug("init: preserving existing doc", "path", name)
@@ -264,6 +267,195 @@ func defaultRolePrompt(name, content string) string {
 	return content[:idx+2] + manual + "\n" + content[idx+2:]
 }
 
+type projectBrief struct {
+	Name    string
+	Summary string
+	Slug    string
+	Source  string
+}
+
+func readProjectBrief(repoRoot, projectName string) projectBrief {
+	name := humanizeProjectName(projectName)
+	summary := "the product described by README and active goals"
+	source := "mars-harness init"
+	for _, candidate := range []string{"README.md", "README.markdown", "README"} {
+		data, err := os.ReadFile(filepath.Join(repoRoot, candidate))
+		if err != nil {
+			continue
+		}
+		if readmeName, readmeSummary := summarizeReadme(data, name); readmeSummary != "" {
+			name = readmeName
+			summary = readmeSummary
+			source = candidate
+			break
+		}
+	}
+	return projectBrief{Name: name, Summary: summary, Slug: slugify(name), Source: source}
+}
+
+func summarizeReadme(data []byte, fallbackName string) (string, string) {
+	var title string
+	var paragraph string
+	inFence := false
+	for _, raw := range strings.Split(string(data), "\n") {
+		line := strings.TrimSpace(raw)
+		if strings.HasPrefix(line, "```") || strings.HasPrefix(line, "~~~") {
+			inFence = !inFence
+			continue
+		}
+		if inFence || line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "#") && title == "" {
+			title = cleanBriefLine(line)
+			continue
+		}
+		if paragraph == "" {
+			paragraph = cleanBriefLine(line)
+		}
+		if title != "" && paragraph != "" {
+			break
+		}
+	}
+	if title == "" {
+		title = fallbackName
+	}
+	switch {
+	case paragraph == "":
+		return title, title
+	case strings.EqualFold(paragraph, title):
+		return title, title
+	default:
+		return title, truncateBrief(title+": "+paragraph, 240)
+	}
+}
+
+func cleanBriefLine(line string) string {
+	line = strings.TrimSpace(line)
+	line = strings.TrimLeft(line, "#>-*+0123456789. \t")
+	line = strings.Trim(line, "`*_ ")
+	return strings.Join(strings.Fields(line), " ")
+}
+
+func truncateBrief(text string, limit int) string {
+	if len(text) <= limit {
+		return text
+	}
+	cut := strings.LastIndex(text[:limit], " ")
+	if cut < 80 {
+		cut = limit
+	}
+	return strings.TrimSpace(text[:cut]) + "..."
+}
+
+func humanizeProjectName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "Product"
+	}
+	name = strings.ReplaceAll(name, "_", " ")
+	name = strings.ReplaceAll(name, "-", " ")
+	return strings.Join(strings.Fields(name), " ")
+}
+
+func slugify(name string) string {
+	var b strings.Builder
+	lastHyphen := false
+	for _, r := range strings.ToLower(name) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			lastHyphen = false
+			continue
+		}
+		if !lastHyphen {
+			b.WriteByte('-')
+			lastHyphen = true
+		}
+	}
+	slug := strings.Trim(b.String(), "-")
+	if slug == "" {
+		return "product"
+	}
+	return slug
+}
+
+func renderDefaultDoc(name, content string, brief projectBrief) string {
+	switch name {
+	case "docs/goals/active.md":
+		return renderActiveGoalsDoc(brief)
+	case "docs/exec-plans/active/current-operating-plan.md":
+		return renderActivePlanDoc(content, brief)
+	case "docs/features/F-001-product-walking-skeleton.md":
+		return renderProductWalkingSkeletonDoc(content, brief)
+	default:
+		return content
+	}
+}
+
+func renderActiveGoalsDoc(brief projectBrief) string {
+	return fmt.Sprintf(`# Active Goals
+
+## G-001: Deliver first visible product slice
+
+- ID: G-001
+- Status: active
+- Category: product
+- Priority: P0
+- Confidence: medium
+- Source: %s
+- Dedupe Key: product-walking-skeleton:%s
+- Product Brief: %s
+- Hypothesis: The smallest visible slice of %s will validate the first useful user outcome before governance or intervention-debt work expands.
+- Success Evidence: A user can run, open, or inspect the first product behavior, and the linked feature scenario has integration, E2E, or manual run evidence.
+- Falsification Evidence: Agents create harness-governance work, intervention debt, or scaffold-only output before product behavior is planned and ticketed.
+- Competes With: None
+- Supports: F-001
+- Last Reviewed: 2026-05-19
+- Review Trigger: When the first product ticket completes, a dogfood run fails, or the quality score changes.
+- Owner: CEO
+`, brief.Source, brief.Slug, brief.Summary, brief.Summary)
+}
+
+func renderActivePlanDoc(content string, brief projectBrief) string {
+	content = strings.Replace(content, "**BDD Feature:** F-001\n", "**BDD Feature:** F-001\n**Project Brief:** "+brief.Summary+"\n", 1)
+	content = strings.Replace(content,
+		"**Hypothesis:** A product-specific walking skeleton derived from README and active goals will prove the smallest useful user outcome before governance work expands.",
+		"**Hypothesis:** A product-specific walking skeleton for "+brief.Summary+" will prove the smallest useful user outcome before governance work expands.",
+		1,
+	)
+	content = strings.Replace(content,
+		"**Walking Skeleton Slice:** Turn the project brief into the thinnest real product behavior a user can run or inspect.",
+		"**Walking Skeleton Slice:** Turn "+brief.Summary+" into the thinnest real product behavior a user can run or inspect.",
+		1,
+	)
+	content = strings.Replace(content,
+		"**Learning Or MVP Outcome:** Learn the target project's build/test/run path while shipping the smallest verified product loop.",
+		"**Learning Or MVP Outcome:** Learn the build/test/run path for "+brief.Name+" while shipping the smallest verified product loop.",
+		1,
+	)
+	return content
+}
+
+func renderProductWalkingSkeletonDoc(content string, brief projectBrief) string {
+	content = strings.Replace(content, "- Owner: CEO\n", "- Owner: CEO\n- Product Brief: "+brief.Summary+"\n", 1)
+	content = strings.Replace(content,
+		"This starter contract must become specific to the product described by README\nand active goals.",
+		"This starter contract is seeded from README and active goals for "+brief.Summary+".",
+		1,
+	)
+	content = strings.Replace(content,
+		"Then the active plan and this feature contract name the smallest visible product behavior instead of generic harness operations",
+		"Then the active plan and this feature contract name the smallest visible product behavior for "+brief.Summary+" instead of generic harness operations",
+		1,
+	)
+	content = strings.Replace(content,
+		"Then a user can run, open, or inspect the behavior described by the product brief",
+		"Then a user can run, open, or inspect the behavior described by "+brief.Name,
+		1,
+	)
+	return content
+}
+
 // ReadHarnessMetadata loads .harness/metadata.yaml from a target repository.
 func ReadHarnessMetadata(repoRoot string) (HarnessMetadata, error) {
 	path := filepath.Join(filepath.Clean(repoRoot), harnessDir, harnessMetadataFile)
@@ -369,7 +561,7 @@ roles:
     model: reasoning
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, file_search, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, file_search, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
   cto-weekly:
@@ -380,7 +572,7 @@ roles:
     schedule: "0 21 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, ticket_create, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, grep, workspace_hygiene, github_auth_check, record_decision, ticket_create, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -398,11 +590,11 @@ roles:
     prompt: roles/qa.md
     domain: reviewer
     mode: quality-review
-    model: fast
+    model: reasoning
     max_turns: 20
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit]
+    tools: [file_read, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff]
 
   security:
     prompt: roles/security.md
@@ -706,7 +898,7 @@ _No manual notes recorded. Keep human context here; ` + "`scores export`" + ` pr
 - Prefer evidence from tests, traces, tickets, dogfood results, guardrail blocks, and human follow-up.
 - Do not raise a grade for a feature that is only described but not working.
 - Separate shipped feature scenarios from enabler work. Enabler work can improve the grade for process or readiness, but must not be described as a shipped user feature unless the mapped BDD scenarios pass.
-- Refresh live evidence with ` + "`mars-harness scores export --repo .`" + `; the command preserves the manual notes block and creates deduped intervention-debt tickets for low-score regressions.
+- Refresh live evidence with ` + "`mars-harness scores export --repo .`" + `; the command preserves the manual notes block and records low-score regressions as improvement targets. Use ` + "`--create-intervention-debt`" + ` only when ticket materialization is deliberate.
 `,
 
 	"AGENTS.md": `# Agent Guide
@@ -960,7 +1152,9 @@ corresponding ` + "`docs/features/F-NNN-*.md`" + ` contract must exist.
 1. A ticket is created in backlog/ with frontmatter and acceptance criteria
 2. The highest-priority ticket is picked up and moved to in-progress/
 3. An unfinished in-progress ticket must end as completed, returned to backlog with ` + "`blocker`" + ` and ` + "`next_action`" + `, left in in-progress with ` + "`blocked_by`" + ` pointing at a dependency ticket, or guardrail-blocked with ` + "`blocked_by`" + ` pointing at intervention debt.
-4. On completion, the ticket moves to done/
+4. On completion, the ticket moves to done/ only after required evidence fields
+   are populated. Feature-ticket moves to ` + "`done/`" + ` are blocked before the move if
+   ` + "`evidence_links`" + ` or ` + "`verified_by`" + ` are still empty.
 
 Feature tickets cannot move to ` + "`done/`" + ` without BDD scenario evidence:
 
@@ -1012,7 +1206,7 @@ routing; they do not replace BDD evidence or ticket movement rules.
 
 Use ` + "`kind: intervention-debt`" + ` for work created from repeated telemetry failures, score regressions, dogfood failures, stale ticket state, human follow-up, reverted agent commits, or other actionable remediation that belongs to this target repository.
 
-Intervention-debt tickets include role, repo, target, category, severity, confidence, evidence, and origin metadata. Origin metadata should link trace IDs, score snapshots, commits, outcomes, tools, jobs, telemetry events, and source messages when available locally; missing optional GitHub metadata must not block local ticket creation. They are deduped by repo, role, target, category, and evidence window. Prioritise high-priority intervention debt ahead of ordinary backlog work because it fixes process failures that can damage future delivery. Medium and low intervention debt is deferred outside ordinary delivery context so product progress stays visible.
+Intervention-debt tickets include role, repo, target, category, severity, confidence, evidence, and origin metadata. Origin metadata should link trace IDs, score snapshots, commits, outcomes, tools, jobs, telemetry events, and source messages when available locally; missing optional GitHub metadata must not block local ticket creation. They are deduped by repo, role, target, category, and evidence window. Intervention debt stays visible in quality and status evidence, but ordinary product backlog stays ahead unless an active product ticket explicitly names the intervention debt in ` + "`blocked_by`" + `.
 
 Harness-owned failures such as dispatch protocol failures, loop/max-turn failures, guardrail or tool-policy workflow failures, context or inference failures, manifest/tool-policy gaps, and unknown terminal failures remain raw local telemetry first. They do not create target backlog tickets by default. If anonymous foundation telemetry is explicitly enabled, the harness may derive sanitized aggregate reports for a configured collector; raw traces, prompts, repo paths, remotes, ticket text, command output, raw error messages, commit SHAs, usernames, file paths, and source content never leave this machine.
 
@@ -1107,13 +1301,13 @@ with absolute dates, concrete blockers, or durable source-of-truth pointers.
 **Related Tickets:** None yet
 **Goals:** G-001
 **BDD Feature:** F-001
-**Hypothesis:** A goal-driven BDD contract plus one active plan will reduce half-finished work by forcing every ticket to map to a scenario and evidence.
-**Success Evidence:** The next feature ticket carries a BDD scenario ID and passes E2E/integration evidence before done.
-**Falsification Evidence:** Tickets move to done without evidence, multiple plans compete, or scenarios disappear from the plan.
+**Hypothesis:** A product-specific walking skeleton derived from README and active goals will prove the smallest useful user outcome before governance work expands.
+**Success Evidence:** The next ordinary product ticket carries a BDD scenario ID and creates visible product behavior with integration, E2E, or manual run evidence before done.
+**Falsification Evidence:** Agents create intervention-debt or harness-governance work before a product plan, feature contract, or product ticket exists.
 **Scenario Schedule:** F-001-S001, F-001-S002, F-001-S003
 **Current Failing Scenario:** F-001-S001
-**Walking Skeleton Slice:** Record the first project goal, feature contract, active plan, ticket, evidence link, and done state through real repo files.
-**Learning Or MVP Outcome:** Learn the target project's build/test path while shipping the smallest verified operating loop.
+**Walking Skeleton Slice:** Turn the project brief into the thinnest real product behavior a user can run or inspect.
+**Learning Or MVP Outcome:** Learn the target project's build/test/run path while shipping the smallest verified product loop.
 **Created:** 2026-05-02
 **Owner:** Project maintainers
 **Source:** mars-harness init
@@ -1136,9 +1330,9 @@ not create another active exec plan; move waiting plans to
 ## Current Priority Order
 
 1. Refresh this active exec plan from README, active goals, and real repo state.
-2. Create or update the feature contract named by ` + "`**BDD Feature:**`" + `.
-3. Convert the current failing scenario into tickets.
-4. Deliver one ticket with evidence before widening scope.
+2. Replace the starter feature contract with product-specific behavior when the README names a product brief.
+3. Convert the current failing scenario into one ordinary product ticket.
+4. Deliver visible product behavior with evidence before widening governance or intervention-debt work.
 
 ## Plan Backlog
 
@@ -1357,6 +1551,41 @@ For Orchestrator-owned dispositions, routing honors ` + "`suggested_role`" + `, 
 ` + "`handoff.target_role`" + `, then ` + "`feedback.for_role`" + `, then ` + "`next_need`" + `. Structured
 target fields must agree when more than one is supplied.
 
+Common domain shorthands are normalized when the matching generated role
+exists: ` + "`cto`" + ` and ` + "`architecture`" + ` route to ` + "`cto-weekly`" + `, ` + "`release`" + `
+routes to ` + "`release-manager`" + `, and ` + "`dependency`" + ` routes to
+` + "`dependency-manager`" + `.
+
+If an Orchestrator job fails before recording a disposition, dispatch must not
+enqueue Orchestrator again from that failed Orchestrator disposition. When the
+trigger still carries a non-Orchestrator source disposition with deterministic
+routing signal, fall forward to that target role using the original source
+handoff. If the source handoff is missing or would route Orchestrator again,
+stop with one clear blocker.
+
+Engineer implementation dispatch requires an ordinary product ticket in
+` + "`docs/tickets/backlog/`" + ` or ` + "`docs/tickets/in-progress/`" + `. If Orchestrator
+selects Engineer while no open product ticket exists, dispatch routes to
+` + "`cto-weekly`" + ` for ticket shaping instead of allowing free-floating
+implementation work. If the source disposition came from Engineer with status
+completed and the ticket has moved to ` + "`docs/tickets/done/`" + `, route QA
+review even when stale handoff text still says implementation.
+
+If Engineer fails a ticket gate after making product progress, the runtime may
+enqueue one bounded Engineer ` + "`ticket_gate_repair`" + ` job with the gate error in the
+trigger. That repair exists only to fix ticket evidence, lifecycle placement, or
+handoff metadata and commit the correction. A repeated repair failure stops
+without another autonomous repair or Orchestrator loop.
+
+Dispatch protocol failures, such as a role completing without
+` + "`job_disposition_record`" + `, stop as telemetry rather than routing through
+Orchestrator. Fix the role guidance, tool call, or retry conditions before
+running that role again.
+
+When an Engineer completion leaves a ticket in ` + "`docs/tickets/done/`" + `, pending
+ticket-owner survey jobs for the same no-longer-in-progress ticket are stale
+and should be cancelled rather than claimed as new implementation work.
+
 ## Follow-Up
 
 Future role-registry and payload-routing work should check and use this
@@ -1499,7 +1728,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/delivery-operating-model.md
-- docs/features/F-001-delivery-operating-model.md
+- docs/features/F-001-product-walking-skeleton.md
 */
 ` + "```" + `
 
@@ -1564,7 +1793,7 @@ Go, JavaScript, and CSS files use block comments:
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
-- docs/features/F-001-delivery-operating-model.md
+- docs/features/F-001-product-walking-skeleton.md
 */
 ` + "```" + `
 
@@ -1883,7 +2112,7 @@ affected skills synchronized using
 - Every feature needs at least one integration/E2E evidence link mapped to scenario IDs.
 `,
 
-	"docs/features/F-001-delivery-operating-model.md": `# F-001: Delivery Operating Model
+	"docs/features/F-001-product-walking-skeleton.md": `# F-001: Product Walking Skeleton
 
 - Feature ID: F-001
 - Goals: G-001
@@ -1892,91 +2121,49 @@ affected skills synchronized using
 
 ## Business Logic
 
-This feature contract is the durable home for business logic in this area.
-Product rules, workflow branches, state transitions, validations, permissions,
-scoring decisions, routing rules, and user-visible outcomes must be documented
-here before or alongside implementation. Do not rely on ticket text or code
-comments as the only description of behavior.
+This starter contract must become specific to the product described by README
+and active goals. Product rules, workflow branches, state transitions,
+validations, permissions, scoring decisions, routing rules, and user-visible
+outcomes belong here before or alongside implementation. Do not let generic
+harness governance become the first product slice.
 
 ## Step-By-Step Behavior
 
-The scenarios below are the step-by-step BDD contract for this feature. Each
-scenario describes the starting state, the action or event, and the observable
-outcome. When implementation changes business logic, update these steps and
-their evidence before claiming the feature is complete.
+The scenarios below are the initial product-first walking skeleton. Replace
+placeholder nouns with the real product terms from README during the first COO
+planning pass, then keep each scenario tied to runnable or inspectable evidence.
 
 ## Scenario Schedule
 
-1. F-001-S001 — goal to feature to active plan is visible
-2. F-001-S002 — feature ticket requires scenario evidence before done
-3. F-001-S003 — quality and release notes distinguish shipped scenarios from enabler work
-4. F-001-S004 — business logic is documented step by step in feature contracts
-5. F-001-S005 — code changes declare associated documentation and keep it current
-6. F-001-S006 — source-wide docsync audit maps code to architecture and feature documentation
-7. F-001-S007 — documentation sync has a universal operating model for source and generated targets
-8. F-001-S008 — CLI changes synchronize mirrored tools, repo shortcuts, generated doctrine, and skills
-9. F-001-S009 — agents start from ` + "`origin/main`" + ` and push ready work to ` + "`origin main`" + ` promptly
+1. F-001-S001 — project brief becomes a visible product slice
+2. F-001-S002 — user can run or inspect the first product behavior
+3. F-001-S003 — product evidence is captured before wider automation work
 
 ## Scenarios
 
-### F-001-S001: Goal aligned to feature and plan
+### F-001-S001: Project Brief Becomes A Visible Product Slice
 
-Given an active goal exists
-When the COO updates the current operating plan from the CEO goal decision
-Then the plan references the goal, the BDD feature contract, the current failing scenario, and the walking skeleton slice
+Given README or active goals describe the product to build
+When the first planning pass runs
+Then the active plan and this feature contract name the smallest visible product behavior instead of generic harness operations
 
-### F-001-S002: Feature ticket cannot close without evidence
+### F-001-S002: First Product Behavior Is Runnable Or Inspectable
 
-Given a feature ticket maps to a BDD scenario
-When the engineer attempts to move it to done
-Then the ticket includes scenario IDs, required end-to-end evidence, evidence links, and a verifier
+Given the first product scenario is selected
+When Engineer completes the first ordinary product ticket
+Then a user can run, open, or inspect the behavior described by the product brief
 
-### F-001-S003: Enabler work is not shipped feature value
+### F-001-S003: Product Evidence Comes Before Governance Expansion
 
-Given an enabler ticket completes
-When release notes or quality score are updated
-Then they classify it as enabler work and do not claim shipped feature scenarios
-
-### F-001-S004: Business Logic Is First-Class BDD
-
-Given business logic changes through a product rule, workflow branch, state transition, validation, permission, scoring rule, routing rule, or user-visible outcome
-When a planner, engineer, reviewer, or maintainer records or implements that behavior
-Then the matching ` + "`docs/features/F-NNN-*.md`" + ` contract documents the behavior step by step with Business Logic, Step-By-Step Behavior, Given/When/Then scenarios, and evidence before the feature is claimed complete
-
-### F-001-S005: No Stale Documentation
-
-Given code is created or materially changed
-When an agent prepares the change for review or commit
-Then the changed code carries a top-of-file ` + "`MarsDocSync`" + ` metadata block with a ` + "`docs:`" + ` array listing associated documentation, and those docs are updated in the same change or explicitly checked as still current
-
-### F-001-S006: Source-Wide Docsync Audit
-
-Given the deployed harness source tree is audited
-When ` + "`mars-harness docsync audit --repo .`" + ` or the mirrored ` + "`docsync_audit`" + ` tool runs
-Then every audited source file declares a top-of-file ` + "`MarsDocSync`" + ` block with a ` + "`docs:`" + ` array, every referenced doc exists, and every file includes the documentation required by ` + "`docs/design-docs/code-documentation-map.md`" + `
-
-### F-001-S007: Universal Documentation Sync Operating Model
-
-Given an agent changes source, tools, generated defaults, role behavior, CLI behavior, architecture, or business logic
-When the agent prepares completion evidence
-Then it follows the documented documentation-sync operating model: read changed-file ` + "`MarsDocSync`" + ` metadata, classify the documentation impact, update or verify the listed docs, repair metadata or the canonical map when ownership changes, run docsync evidence, and record which docs changed or remained current
-
-### F-001-S008: CLI Tool And Skill Synchronization
-
-Given a ` + "`mars-harness`" + ` CLI command, flag, output contract, repo behavior, mutability expectation, or recurring workflow changes
-When the change is prepared for completion
-Then the ` + "`mars_harness_cli`" + ` reference, repo shortcut map, generated target doctrine, and any skills that name the affected workflow are updated or explicitly checked as current, and CLI sync evidence is recorded
-
-### F-001-S009: Remote Trunk Freshness And Immediate Publishing
-
-Given this repo has an ` + "`origin/main`" + ` remote
-When an agent starts non-trivial work or finishes a validated commit or release tag
-Then it fetches ` + "`origin main`" + `, works only from local ` + "`main`" + ` at or fast-forwarded to ` + "`origin/main`" + `, pushes ready commits to ` + "`origin main`" + ` before unrelated work, and records a blocker when dirty state, divergence, missing remote access, or push rejection prevents that flow
+Given harness telemetry or intervention debt exists
+When no visible product behavior has been delivered yet
+Then product planning and ordinary product tickets stay ahead of automatic intervention-debt work unless a product ticket explicitly names the blocker
 
 ## Out of Scope
 
-- A custom Gherkin parser
-- Automatic scenario execution beyond explicit integration/E2E tests and evidence commands
+- Building every product feature in the first slice
+- Treating harness self-improvement as the first target product feature
+- Closing feature tickets without evidence
 
 ## Descoped Scenarios
 
@@ -1985,12 +2172,7 @@ None.
 ## Evidence
 
 - Pending target-specific integration/E2E commands.
-- F-001-S004: ` + "`go test ./internal/scanner -run TestInit_success`" + ` verifies generated feature contracts include first-class business-logic sections.
-- F-001-S005: ` + "`go test ./internal/scanner -run TestInit_success`" + ` verifies generated doctrine includes no-stale-documentation metadata guidance.
-- F-001-S006: ` + "`mars-harness docsync audit --repo .`" + ` or ` + "`mars-harness tools run docsync_audit --repo . --args-json '{}'`" + `.
-- F-001-S007: ` + "`docs/design-docs/documentation-sync-architecture.md`" + ` documents the universal operating model.
-- F-001-S008: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + ` documents CLI tool/skill sync; source harness verifies this with ` + "`go test ./cmd/mars-harness -run TestMarsHarnessCLI`" + `.
-- F-001-S009: source harness verifies this with ` + "`go test ./internal/docsconsistency -run TestRemoteTrunkOperatingModelIsDocumented`" + `.
+- First product run command, screenshot, trace, test output, or manual acceptance notes go here.
 `,
 
 	"docs/design-docs/context-glossary.md": `# Context Glossary
@@ -2197,7 +2379,7 @@ tools are added, removed, renamed, or materially change behavior.
 | Tool | Use When | Notes |
 | --- | --- | --- |
 | ` + "`file_read`" + ` | Read a known file path from the repository. | Non-mutating. Use before editing or reviewing code. |
-| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. |
+| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. |
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
 | ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
@@ -2207,7 +2389,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
-| ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before successful dispatch-mode jobs complete. |
+| ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before successful dispatch-mode jobs complete. Non-Orchestrator roles must commit repo changes before successful terminal dispositions. |
 | ` + "`tool_create`" + ` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
 | ` + "`persona_create`" + ` | Scaffold a repo-local persona manual, role prompt, registry row, and optional manifest role. | Mutating. Use for universal, foundation, or deployed persona proposals; foundation defaults still require adding the canonical Go entry in ` + "`internal/personas`" + `. |
 | ` + "`release_orchestrate`" + ` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with ` + "`mars_harness_cli`" + ` and git tools. |
@@ -2249,7 +2431,8 @@ tools are added, removed, renamed, or materially change behavior.
   use ` + "`ticket_create`" + `. Do not hand-write new ticket markdown with
   ` + "`file_write`" + `.
 - Need dispatch-mode routing to know the terminal role outcome: use
-  ` + "`job_disposition_record`" + `.
+  ` + "`job_disposition_record`" + ` after ` + "`git_status`" + ` is clean or after
+  committing the produced work with ` + "`git_commit`" + `.
 - Need a new deterministic capability: use ` + "`tool_create`" + `, then finish the code
   and tests manually.
 - Need a new or revised agent persona: use ` + "`persona_create`" + `, then add canonical
@@ -2613,6 +2796,10 @@ When your run completes, call job_disposition_record. Use a structured handoff:
   BDD feature contract, scenario schedule, and current failing scenario
 - next_need "strategy_advice" when Head of Strategy should sharpen options
   before you decide
+- during fresh bootstrap, prefer exec_plan over strategy_advice when README and
+  active goals already define a visible first product slice
+- status "completed" when you changed goals or made a decision that needs
+  downstream work
 - status "no_work" when goals remain valid and no decision is needed
 
 ## Prompt
@@ -2635,9 +2822,9 @@ Goal entries must include ID, status, category, priority, confidence, source,
 dedupe key, owner, desired outcome, constraints, and evidence expectations.
 
 Do not write docs/exec-plans/active/current-operating-plan.md, do not create or
-edit docs/features contracts, and do not create tickets. If an exec plan or BDD
-contract is needed, route to COO. If technical decomposition or tickets are
-needed, route to CTO.
+edit docs/features contracts, and do not create tickets. Tool policy enforces
+this boundary. If an exec plan or BDD contract is needed, route to COO. If
+technical decomposition or tickets are needed, route to CTO.
 
 ## Quality Bar
 
@@ -2756,7 +2943,8 @@ documents you changed.
 
 You are the COO. You own the active exec plan, BDD feature contracts, scenario
 schedule, current failing scenario, and walking skeleton slice. You do not
-create technical tickets; that is CTO ownership.
+create technical tickets or implementation files; those are CTO and Engineer
+ownership boundaries.
 
 ## Decision Recording
 
@@ -2818,6 +3006,10 @@ The contract must document:
 - A clear note that CTO tickets may only target the current failing scenario or
   scenario group
 
+When updating an existing generated starter contract, replace or revise the
+starter scenario headings instead of appending duplicate ` + "`F-NNN-SMMM`" + ` IDs.
+Every scenario heading ID in a feature file must be unique.
+
 TASK 3 — Handoff to CTO.
 
 Do not use ticket_create. Instead, pass a handoff to CTO with:
@@ -2834,11 +3026,20 @@ COMMIT GATE:
 Use git_status. If you changed docs, commit and push them with a planning
 message such as "plan: update active scenario schedule [date]".
 
+ROLE BOUNDARY:
+
+Only write planning artifacts under docs/exec-plans, docs/features, or
+docs/goals/observations.md. Do not create or edit application source files,
+root HTML/CSS/JS, package manifests, tests, build scripts, or implementation
+artifacts. Product code starts after CTO creates a ticket and Engineer claims
+it.
+
 ## Quality Bar
 
 - The active plan and BDD contract agree on feature ID and scenario IDs.
 - The current failing scenario is explicit and small enough for ticketing.
 - No technical tickets are created by COO.
+- No implementation files are created or edited by COO.
 - The disposition gives CTO a concrete ask, context, constraints, expected
   output, and success evidence.
 `,
@@ -2887,6 +3088,22 @@ START by reading:
 6. docs/tickets/README.md and the TICKET INDEX if present
 7. Any structured handoff or feedback from the Orchestrator
 
+DISPATCH-BOOTSTRAP FAST PATH:
+
+When this run is Orchestrator-dispatched after CEO/COO planning, fresh
+bootstrap, or an empty product backlog, keep the run intentionally narrow:
+
+- Do not run broad governance, doctrine, docsync, tool-inventory, dependency,
+  release, or architecture-audit workflows before product tickets exist.
+- Create at most one ordinary feature ticket for the current failing scenario.
+  The first ticket should be a walking-skeleton implementation slice that can
+  make visible product progress, even if it spans a few small files.
+- If a ticket already exists for the current BDD scenario, do not create
+  another independent ticket. Record a disposition with next_need
+  "implementation" and suggested_role "engineer".
+- After creating or confirming that one current-scenario ticket exists, commit
+  the ticket change, record job_disposition_record, and stop.
+
 TASK 1 — Architecture fit.
 
 Validate that the active plan and current failing scenario are technically
@@ -2901,7 +3118,10 @@ coherent:
 TASK 2 — Technical ticket creation.
 
 Use ticket_create, not file_write, for implementation tickets. Create tickets
-only for the current failing scenario or scenario group. Each ticket must have:
+only for the current failing scenario. On fresh bootstrap or an empty product
+backlog, create exactly one engineer-ready ticket for the walking skeleton; do
+not decompose the same BDD scenario into several independent backlog tickets
+before the first implementation evidence exists. Each ticket must have:
 
 - A concise action-oriented title
 - priority, complexity, work_type, bdd_scenarios, end_to_end_evidence,
@@ -2917,6 +3137,8 @@ only for the current failing scenario or scenario group. Each ticket must have:
 The ticket_create tool assigns ticket numbers and dedupes mechanically. If a
 matching ticket already exists, update your disposition rather than creating a
 duplicate.
+Do not include a duplicate top-level ` + "`# T-NNN: ...`" + ` heading in the ticket
+body; ticket_create adds the canonical title heading.
 
 TASK 3 — Feedback upstream when tickets are not safe.
 
@@ -2985,6 +3207,25 @@ are the front of the queue; a ticket is eligible when it has no meaningful
 one explicit blocked outcome. The orchestrator handles re-queuing — do not try
 to process multiple tickets in a single run.
 
+TICKET-GATE REPAIR FAST PATH:
+If the trigger type is ` + "`ticket_gate_repair`" + `, do not restart broad implementation.
+Read the trigger reason first and repair only the failed ticket lifecycle or
+evidence condition. Typical repairs are:
+- fill non-empty ` + "`evidence_links`" + ` with concrete proof paths, commands, reports,
+  traces, or inspected files
+- set ` + "`verified_by`" + ` to engineer, qa, dogfood, command, or a specific verifier
+- update the ticket's BDD Evidence section and acceptance boxes to match the
+  implemented and inspected work
+- move the ticket between in-progress, done, or in-review only when that is the
+  named gate failure
+- commit the ticket evidence/lifecycle correction and record
+  job_disposition_record
+
+For ` + "`ticket_gate_repair`" + `, do not edit product code unless the gate reason
+explicitly says the code state is invalid. If the ticket is already in
+` + "`docs/tickets/done/`" + ` and only evidence metadata is missing, update that done
+ticket directly, commit it, and hand off to QA.
+
 STANDARD:
 - Write complete tests that validate every feature you build
 - Every acceptance criterion is covered by at least one test
@@ -3025,11 +3266,11 @@ TICKET SELECTION:
    failing test, dependency issue, unclear local convention, or guardrail,
    either fix that blocker proactively in this same run or record ` + "`blocker`" + `,
    ` + "`blocked_by`" + `, ` + "`trace_id`" + `, and ` + "`next_action`" + ` before ending.
-2. If no eligible in-progress tickets exist, select the highest-priority ticket from
-   backlog/ where all dependencies are satisfied (depends_on tickets must be
-   in done/). High-priority intervention debt can preempt ordinary backlog work;
-   medium/low intervention debt stays visible but should not block product
-   backlog progress.
+2. If no eligible in-progress tickets exist, select the highest-priority ordinary
+   product ticket from backlog/ where all dependencies are satisfied
+   (depends_on tickets must be in done/). Intervention debt remains visible but
+   does not preempt product backlog unless the selected product ticket names it
+   in ` + "`blocked_by`" + `.
 3. If multiple tickets share the same priority, pick the lowest number
 4. If no eligible tickets exist, report "no eligible tickets" and finish
 
@@ -3049,6 +3290,9 @@ IMPLEMENTATION:
       git_commit: message "chore(tickets): claim T-NNN"
       git_push
    If the selected ticket was already in in-progress/, do not move it. Resume it.
+   Product mutation tools are blocked until at least one ticket is in
+   ` + "`docs/tickets/in-progress/`" + `. Claim first, then edit source, package,
+   config, feature, or build files.
 
 2. PLAN BEFORE CODING
    - Which files will be created or modified?
@@ -3059,7 +3303,9 @@ IMPLEMENTATION:
    Follow working discipline: use git_commit and git_push after every completed
    step. Never leave changes uncommitted between steps.
    Format: "feat(scope): description (T-NNN step N)"
-   Always call git_push after each git_commit so work is never lost.
+   Always call git_push after each git_commit so work is never lost. If the
+   target repo has no configured remote, git_push reports a clean local skip;
+   do not treat that as a product blocker in throwaway demos.
 
 4. WRITE TESTS
    - Map each acceptance criterion to at least one test
@@ -3106,6 +3352,10 @@ IMPLEMENTATION:
    shell_exec: git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
    git_commit: message "chore(tickets): move T-NNN to done"
    git_push
+   Do not call job_disposition_record with status completed/approved/in_review
+   unless the ticket named by ticket_id lives in docs/tickets/done/.
+   Never copy a ticket into done and then delete the source. Ticket lifecycle
+   completion must be one atomic ` + "`git mv`" + ` from its current lifecycle directory.
 
 8. FINAL VERIFICATION
    Run the full test suite. Ensure everything passes.
@@ -3119,10 +3369,16 @@ IMPLEMENTATION:
    - no_work when no eligible ticket existed or no repo change was needed
 
 COMMIT GATE — MANDATORY before finishing (every run, no exceptions):
-   a) If you implemented code for a ticket, move it to done/ FIRST:
+   a) If you implemented code for a ticket, update feature-ticket evidence
+      first, then move it to done/:
+      - fill ` + "`evidence_links`" + ` with concrete command output, report paths, trace IDs,
+        test files, or inspected proof paths
+      - set ` + "`verified_by`" + ` to engineer, qa, dogfood, command, or a specific verifier
       shell_exec: git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
       git_commit: message "chore(tickets): move T-NNN to done"
       git_push
+      Only then call job_disposition_record with ticket_id T-NNN and
+      next_need qa_review.
    b) git_status to verify the working tree is clean. If there are ANY
       uncommitted changes, commit them now.
    c) If multiple tickets were already in in-progress/ at the start, it is
@@ -3184,12 +3440,32 @@ dogfood, or no follow-up is next.
 
 You are a QA engineer reviewing recent changes.
 
-START by reading:
-1. Recent commits: git log --oneline -10
-2. Recent diffs: git diff HEAD~5..HEAD (or appropriate range)
-3. docs/tickets/done/ (recently completed tickets to understand intent)
-4. docs/features/README.md and feature contracts referenced by completed tickets
-5. README.md (project conventions)
+START with an allowed read-only tool call, not a prose preamble:
+1. git_status to check repository state
+2. git_diff to inspect uncommitted review-relevant changes when present
+3. grep or file_read for docs/tickets/done/ and the ticket path from the TICKET INDEX
+4. file_read for docs/features/README.md and feature contracts referenced by completed tickets
+5. file_read for README.md (project conventions)
+6. file_read for the completed ticket named by the handoff, plus every implementation file
+   named in its Affected Files or evidence links, using file_read or grep
+
+QA does not have shell_exec in the default read-only manifest. Do not narrate
+shell commands such as git log, npm, or browser checks unless another role has
+already provided that evidence or the manifest explicitly grants the tool needed
+to run them. If runnable evidence is missing, request Engineer or Dogfood
+follow-up through job_disposition_record instead of completing in prose.
+
+Ticket lookup rules:
+- Tickets live only under docs/tickets/backlog/, docs/tickets/in-progress/,
+  docs/tickets/in-review/, or docs/tickets/done/. Do not assume a ticket lives
+  at docs/tickets/T-001-...md.
+- When the handoff names a ticket without a path, use the TICKET INDEX path
+  first. If no path is present, search the lifecycle directories above before
+  claiming ticket documentation is missing.
+- docs/tickets/README.md contains conventions and examples, not the live
+  ticket being reviewed.
+- If grep with a docs/**/*.md glob misses expected nested files, retry with a
+  broader read-only search because tool globbing may not treat ** recursively.
 
 REVIEW CHECKLIST:
 
@@ -3234,30 +3510,37 @@ REVIEW CHECKLIST:
    - Are goal, feature, ticket, and quality evidence links updated when feature status changed?
 
 OUTPUT:
-Write your review as a file: docs/reports/qa/qa-review-[date].md
+Default QA is read-only. Do not write review files or natural-language-only
+answers unless the manifest explicitly grants file_write and git tools. Use
+file_read, grep, git_status, git_diff, workspace_hygiene, docsync_audit, and
+the handoff evidence to make the quality decision.
 
-Format:
-# QA Review — [date]
+Do not block only because implementation source or diffs were absent from the
+trigger context. The target repository is available to you. Before using status
+` + "`blocked`" + ` for missing liveness or source context, inspect the relevant ticket,
+recent commits, and named files with file_read or grep. If the files exist but
+evidence is weak, use ` + "`changes_requested`" + ` for Engineer with exact missing
+commands, file paths, reports, or browser evidence. Use ` + "`blocked`" + ` only when
+the repo files or required artifacts truly cannot be read after trying the
+available read-only tools.
+If the exact ticket file is missing but the feature contract, recent commits,
+and implementation files can be read, prefer ` + "`changes_requested`" + ` with exact
+missing documentation or evidence over ` + "`blocked`" + `/liveness.
 
-## Commits reviewed
-[list of commits]
+Before finishing, record exactly one job_disposition_record:
+- Use status ` + "`approved`" + ` when the ticket satisfies the BDD scenarios and evidence
+  is credible. Include ticket_id, evidence_links, and next_need
+  ` + "`security_review`" + `, ` + "`dogfood_validation`" + `, or ` + "`no_need`" + ` based on the
+  handoff and project risk.
+- Use status ` + "`changes_requested`" + ` when Engineer rework is needed. Include
+  feedback.for_role ` + "`engineer`" + `, a specific requested_change, severity, and
+  evidence_links.
+- Use status ` + "`blocked`" + ` when evidence cannot be inspected because setup,
+  permissions, or missing artifacts block review. Include blocker,
+  blocked_by when known, and next_action.
 
-## Findings
-
-### [Finding title]
-- **Severity:** critical | warning | suggestion
-- **File:** [path]
-- **Issue:** [description]
-- **Suggestion:** [how to fix]
-
-## Summary
-- Findings: N critical, N warning, N suggestion
-- Verdict: PASS | NEEDS_FIXES
-
-Commit and push your review:
-  git add docs/reports/qa/qa-review-*.md
-  git commit -m "qa: review [date]"
-  git push
+A prose response without job_disposition_record fails the dispatch protocol and
+does not count as QA review.
 `,
 
 	"security": `# Security — Audit
@@ -3293,6 +3576,9 @@ START by reading:
 1. Recent commits: git log --oneline -10
 2. Recent diffs: git diff HEAD~5..HEAD
 3. All files for secrets: grep -r "password\|secret\|api_key\|token" --include="*.{js,ts,go,py,yaml,yml,json,env}" .
+4. Current date: shell_exec date +%F. Use that exact date in file names,
+   headings, commit messages, and disposition evidence. Do not invent a future
+   date.
 
 REVIEW CHECKLIST:
 
@@ -3304,6 +3590,8 @@ REVIEW CHECKLIST:
 
 OUTPUT:
 Write your audit as: docs/reports/security/security-audit-[date].md
+The Summary counts must exactly match the Findings section. If every finding is
+low severity, the Summary must say N low and 0 critical/high/medium.
 
 Format:
 # Security Audit — [date]
@@ -3440,7 +3728,11 @@ GitHub publication:
 
 You are the dogfood tester. You build, run, and validate this project in an
 isolated environment (Podman container when available, native fallback otherwise)
-and file tickets for every issue found.
+and record bounded evidence for the real user path. You are observation-first:
+do not edit product source, package manifests, lockfiles, config, or harness
+scaffold to make validation pass. Create target-owned tickets for product
+defects, and leave foundation/runtime failures as telemetry or blocked
+dispositions rather than product backlog work.
 
 ## Decision Recording
 
@@ -3456,7 +3748,9 @@ the REPO LEARNINGS context block.
 ## Prompt
 
 You are the dogfood tester. Your job is to validate this project end-to-end:
-build it, run it, test it, and file tickets for anything broken.
+build it, run it, test it, and file tickets only for target-owned product
+defects. Runtime, tool, model, guardrail, workspace, dispatch, timeout,
+max-turn, or harness failures are foundation evidence by default.
 
 ### Phase 0 — Pre-flight Structural Checks (run BEFORE attempting to build)
 
@@ -3466,6 +3760,7 @@ viable structure. Read .harness/learnings.yaml for the framework, then check:
 FOR ALL NODE.JS PROJECTS (package.json exists):
   a) Read package.json scripts section
   b) MUST have a "dev" or "start" script — if missing, file a ticket immediately
+     and stop validation. Do not add scripts yourself.
   c) If framework is Next.js, MUST have a "build" script
   d) Run workspace_hygiene. If dependency setup is needed, use dependency_sync;
      never run raw npm/pnpm/yarn/bun install commands through shell_exec.
@@ -3485,7 +3780,11 @@ FOR PROJECTS USING TAILWIND CSS:
   d) Verify tailwindcss is in dependencies or devDependencies — if missing, file a ticket
 
 If ANY pre-flight check fails, file tickets for ALL failures before proceeding.
-Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix.
+Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix. Then
+record job_disposition_record with status changes_requested,
+next_need implementation_rework, ticket_id when applicable, and evidence_links
+naming the created ticket(s). Do not build, install dependencies, start a dev
+server, or edit product/package files after a failed pre-flight.
 
 ### Phase 1 — Environment Setup
 
@@ -3498,7 +3797,10 @@ Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix.
    b) Build: shell_exec podman build -t dogfood-{project} -f .harness/Containerfile .
    c) If build fails, record the error and fall through to native path.
 5. NATIVE PATH (no Podman or container build failed):
-   a) Install dependencies using the detected package manager
+   a) Install dependencies using dependency_sync only after pre-flight passes.
+      Do not use file_write to modify package.json, package-lock.json, source,
+      config, or scripts. If validation needs a missing script or dependency,
+      create a target-owned ticket instead.
    b) Run the build command (npm run build / go build / equivalent)
    c) If build fails, capture the FULL error output and file a ticket with the error.
       Do NOT skip to Phase 2 — a failed build is a blocking issue.
@@ -3506,7 +3808,9 @@ Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix.
 ### Phase 2 — Run
 
 6. CONTAINER: shell_exec podman run -d --name dogfood-{project} -p {port}:{port} dogfood-{project}
-7. NATIVE: Use shell_exec with background:true to start the dev server
+7. NATIVE: Use shell_exec with background:true to start the dev server.
+   Never run foreground dev servers, watchers, ` + "`npm start`" + `, ` + "`npm run dev`" + `,
+   ` + "`npx serve`" + `, or equivalent long-running commands.
 8. Wait for readiness: poll curl -s -o /dev/null -w '%%{http_code}' http://localhost:{port}/
    every 3 seconds, up to 60 seconds. If 60s pass without a 200, file a ticket and stop.
 9. If the dev server crashes immediately (process exits within 5 seconds), capture
@@ -3534,26 +3838,45 @@ Pre-flight tickets are priority: high with [Dogfood][Pre-flight] prefix.
     work_type enabler unless the failure maps to a BDD feature scenario,
     bdd_scenarios when applicable, source "dogfood test [date]", and a body
     with what was tested, expected vs actual, reproduction steps, and the exact
-    error output. Pre-flight failures get priority: high.
+    error output. Pre-flight failures get priority: high. Do not create
+    intervention-debt tickets for foundation/runtime failures unless an
+    operator explicitly asked for ticket materialization.
 
 16. Record any decisions made during testing via record_decision tool
     (e.g. "App requires Node 22", "Port 3001 conflicts, used 3002")
 
-17. COMMIT AND PUSH all findings (non-negotiable):
-    Use git_commit with message "dogfood: E2E validation findings [date]"
-    Then call git_push.
-    An agent run that leaves uncommitted changes is a failed run.
+17. If you write a dogfood evidence report, write only under
+    docs/reports/dogfood/. Use ticket_create for new findings; do not hand-write
+    ticket markdown and do not edit product files.
 
-18. CLEANUP (critical):
+18. Before finishing, record exactly one job_disposition_record:
+    - status approved or no_work when validation passes and no follow-up is needed
+    - status changes_requested with next_need implementation_rework when a
+      target-owned product defect or pre-flight issue needs Engineer work
+    - status blocked when validation cannot proceed because of a
+      foundation/runtime/tool/model/guardrail/timeout failure
+    Include evidence_links with commands, report paths, tickets, or trace IDs.
+
+19. COMMIT AND PUSH only findings or evidence you produced:
+    Use git_commit with message "dogfood: E2E validation findings [date]"
+    Then call git_push. If the target repo has no remote, git_push reports a
+    clean local skip; do not loop on that.
+    An agent run that leaves uncommitted product/package changes is a failed run.
+
+20. CLEANUP (critical):
     - Container: podman stop dogfood-{project} && podman rm dogfood-{project}
     - Native: background processes are cleaned up automatically by the harness
 
 COMMIT GATE — run before finishing:
    git_status to verify the working tree is clean. If there are ANY uncommitted
-   changes (tickets, learnings, config fixes), commit them now with git_commit
-   and git_push. An agent run that leaves uncommitted changes is a failed run.
+   product, package, config, or lockfile changes, do not commit them as Dogfood;
+   record a blocked disposition because validation mutated the target and needs
+   foundation/operator triage. Commit only target-owned tickets and
+   docs/reports/dogfood evidence with git_commit and git_push.
 
 DON'T:
+- NEVER edit package.json, lockfiles, application source, build config, or
+  harness scaffold to make a dogfood run pass.
 - NEVER finish a run with uncommitted changes. Always check git_status at the end.
 - NEVER leave containers running after the job ends
 - NEVER expose ports below 1024
@@ -3626,10 +3949,17 @@ START by reading:
 5. docs/tickets/in-progress/, docs/tickets/in-review/, docs/tickets/backlog/
 6. docs/goals/active.md and docs/exec-plans/active/current-operating-plan.md
 7. For BDD feature IDs in the plan, search ` + "`docs/features/F-NNN*.md`" + ` and
-   treat slugged matches such as ` + "`docs/features/F-001-delivery-operating-model.md`" + `
+   treat slugged matches such as ` + "`docs/features/F-001-product-walking-skeleton.md`" + `
    as the existing contract. Do not block only because ` + "`docs/features/F-NNN.md`" + `
    is absent.
 8. Relevant design docs for the blocker or review loop
+
+Use the first eight turns to inspect only the state needed to route the source
+disposition. If ` + "`source_disposition.next_need`" + ` is ` + "`ticket_breakdown`" + `,
+` + "`ticket_shaping`" + `, ` + "`technical_ticket`" + `, or ` + "`architecture_review`" + `, route
+` + "`cto-weekly`" + ` immediately after confirming the role exists. Record a
+disposition by turn twelve instead of exhausting the job budget on extra
+reading.
 
 DECIDE THE NEXT BEST ROLE:
 - Choose CEO when vision, goals, final scope, or goal conflicts need a decision.
@@ -3637,14 +3967,29 @@ DECIDE THE NEXT BEST ROLE:
   strategy_advice, executive_narrative, tradeoff_analysis, or goal_conflict.
 - Choose COO when exec_plan, planning, feature_contract, scenario_schedule, or
   current_failing_scenario is needed.
-- Choose CTO when ticket, ticket_shaping, ticket_breakdown, technical_ticket,
-  implementation_ticket, architecture_review, or architecture fit is needed.
-- Choose Engineer when implementation, requested changes, or blocker removal is the next action.
+- Choose CTO using manifest role ` + "`cto-weekly`" + ` when ticket, ticket_shaping,
+  ticket_breakdown, technical_ticket, implementation_ticket,
+  architecture_review, or architecture fit is needed.
+- Choose Engineer using manifest role ` + "`engineer`" + ` when implementation,
+  requested changes, or blocker removal is the next action and an ordinary
+  product ticket exists in ` + "`docs/tickets/backlog/`" + ` or
+  ` + "`docs/tickets/in-progress/`" + `. If no product ticket exists, choose
+  ` + "`cto-weekly`" + ` to create or confirm one first, unless the source role is
+  Engineer and the completed ticket is already in ` + "`docs/tickets/done/`" + `;
+  then choose QA.
 - Choose QA when evidence review or approval is pending.
-- Choose Security or Dependency Manager when their specialized review owns the risk.
-- Choose Release Manager when versioning, changelog, tags, or release assets are the next action.
-- Choose Dogfood when end-to-end validation is missing.
-- Choose Janitor when ticket state, stale work, orphaned review, or missing work-product metadata must be reconciled.
+- Choose Security using manifest role ` + "`security`" + ` or Dependency Manager using
+  manifest role ` + "`dependency-manager`" + ` when their specialized review owns
+  the risk.
+- When ` + "`source_disposition`" + ` is an approved or completed QA, Security,
+  Dependency Manager, or Release Manager review, do not route backward to an
+  earlier reviewer for the same ticket. Route to the next forward reviewer in
+  the chain, or stop if no forward owner remains.
+- Choose Release Manager using manifest role ` + "`release-manager`" + ` when
+  versioning, changelog, tags, or release assets are the next action.
+- Choose Dogfood using manifest role ` + "`dogfood`" + ` when end-to-end validation is missing.
+- Choose Janitor using manifest role ` + "`janitor`" + ` when ticket state, stale work,
+  orphaned review, or missing work-product metadata must be reconciled.
 
 Record exactly one disposition before finishing with job_disposition_record:
 - status: completed

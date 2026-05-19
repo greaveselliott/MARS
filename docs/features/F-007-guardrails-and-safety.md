@@ -75,6 +75,34 @@ Given a role is about to commit or push changes
 When the safety layer evaluates the diff and configured limits
 Then excessive file count, line count, or forbidden path changes are blocked or require explicit escalation, while root dependency lock/checksum files remain git-visible and secret-scanned without counting generated line churn as source-file blast radius
 
+Given a role moves a ticket between `docs/tickets/backlog/`, `docs/tickets/in-progress/`, `docs/tickets/in-review/`, and `docs/tickets/done/`
+When the same ticket ID appears as a new, staged, or already-present ticket markdown file in another lifecycle directory
+Then the deletion side of that ticket lifecycle move does not count as a forbidden file deletion, while unpaired ticket deletions and arbitrary file deletions remain blocked
+
+Given a role moves or writes a feature ticket under `docs/tickets/done/`
+When required BDD evidence fields such as `evidence_links` or `verified_by` are empty
+Then tool policy blocks the mutation before the post-run ticket gate and reports the missing evidence fields
+
+Given a role copies a ticket into `docs/tickets/done/` or writes a done-ticket copy while the same ticket ID remains in another lifecycle directory
+When tool policy evaluates the mutation
+Then the mutation is blocked and the role is told to use one `git mv` lifecycle transition instead of copy-and-delete cleanup
+
+Given a role writes a feature contract
+When the file contains duplicate scenario heading IDs such as two `F-001-S001` headings
+Then tool policy blocks the write and tells the role to revise the existing scenario instead of appending another duplicate ID
+
+Given a successful dispatch disposition is being recorded
+When the target worktree contains only runtime-managed `.harness/learnings.yaml` convention metadata
+Then the clean-handoff guardrail allows the disposition and the server may commit that runtime-only metadata after the job, but still blocks if any product, ticket, documentation, or source path is dirty alongside that runtime metadata
+
+Given a planner role has a narrow ownership boundary
+When COO tries to create product implementation files or run a mutating shell command before CTO ticketing
+Then the tool guardrail blocks the action and leaves implementation to ticket-backed Engineer work
+
+Given Dogfood is running observation-first validation
+When it attempts to write product source, package manifests, lockfiles, config, or harness scaffold
+Then the tool guardrail blocks the mutation while still allowing bounded evidence reports under `docs/reports/dogfood/`
+
 ### F-007-S009: Workspace Hygiene Gates
 
 Given a repository has missing generated-directory ignore policy, tracked generated dependency output, dirty generated build output, large generated diffs, or deletion state
@@ -100,5 +128,5 @@ None.
 - F-007-S005: `go test ./internal/safety -run TestScanForSecrets` and `go test ./internal/tools -run TestExecutor_secretScannerBlocksFileWrite`
 - F-007-S006: `go test ./internal/sandbox`
 - F-007-S007: `go test ./internal/safety -run TestEmergencyStop` and `go test ./internal/dashboard -run TestDashboard_emergencyStop`
-- F-007-S008: `go test ./internal/safety -run TestCheck` and `go test ./internal/tools -run TestValidateRepoDiffIgnoresGeneratedDependencyMetadataLineChurn`
+- F-007-S008: `go test ./internal/safety -run TestCheck`, `go test ./internal/tools -run TestValidateRepoDiffIgnoresGeneratedDependencyMetadataLineChurn`, `go test ./internal/tools -run TestJobDispositionPolicyIgnoresRuntimeLearningsOnlyDirtyState`, `go test ./internal/tools -run 'TestCOO(FileWrite|ShellExec)Policy|TestDogfoodFileWritePolicyBlocksProductMutation'`, and `go test ./internal/tools -run 'TestShellExecPolicy.*FeatureTicketDone(Move|Copy)|TestFileWritePolicyBlocks(DoneFeatureTicket|DuplicateFeatureScenario)'`
 - F-007-S009: `go test ./internal/tools -run 'TestWorkspaceHygiene|TestDependencySync|TestShellPolicyBlocksRawDependencyMutationCommands'` and `go test ./internal/serve -run TestHandleJobFailedDoesNotRecoverDeterministicFailures`

@@ -30,12 +30,13 @@ const (
 
 // Options controls quality score export.
 type Options struct {
-	RepoPath              string
-	RepoID                string
-	DBPath                string
-	WindowDays            int
-	Now                   time.Time
-	DisableTicketCreation bool
+	RepoPath               string
+	RepoID                 string
+	DBPath                 string
+	WindowDays             int
+	Now                    time.Time
+	CreateInterventionDebt bool
+	DisableTicketCreation  bool
 }
 
 // Report summarizes an export run.
@@ -118,7 +119,7 @@ func Export(ctx context.Context, opts Options) (Report, error) {
 	if err := ev.collect(ctx); err != nil {
 		return Report{}, err
 	}
-	if !opts.DisableTicketCreation {
+	if opts.CreateInterventionDebt && !opts.DisableTicketCreation {
 		var changed []string
 		regressionTickets, err := createRegressionTickets(repoPath, ev.repoID, ev.scores)
 		if err != nil {
@@ -728,7 +729,7 @@ func (ev evidence) render(grade string) string {
 	fmt.Fprintf(&b, "- The export reads role scores, terminal outcomes, tickets, telemetry, dogfood, guardrail blocks, no-op runs, human follow-up, and check outcomes from the same evidence used by dashboard quality views.\n")
 	fmt.Fprintf(&b, "- The dashboard may link to or display this data, but `docs/QUALITY_SCORE.md` remains the repo-visible source of truth for quality claims.\n")
 	fmt.Fprintf(&b, "- The quality score separates shipped feature scenarios from enabler work; feature claims still require mapped BDD evidence.\n")
-	fmt.Fprintf(&b, "- Low role scores with at least five samples create or update deduped `kind: intervention-debt` tickets.\n")
+	fmt.Fprintf(&b, "- Low role scores and recurring failures are reported as improvement targets by default; pass `--create-intervention-debt` when ticket materialization is deliberately wanted.\n")
 	fmt.Fprintf(&b, "- Missing optional telemetry leaves an explicit evidence warning instead of failing the export.\n\n")
 
 	fmt.Fprintf(&b, "## Manual Notes\n\n")

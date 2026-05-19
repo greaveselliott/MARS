@@ -44,6 +44,58 @@ Auto-repair is deliberately narrow: it never removes files, unstages user work,
 or commits package manifests, lockfiles, source files, or tracked generated
 trees.
 
+### AD-115: Ticket Lifecycle Moves Are A Bounded Deletion Exception
+
+**Status:** Accepted
+**Date:** 2026-05-19
+
+Blast-radius deletion checks still block arbitrary file deletion by default,
+but ticket lifecycle moves are an explicit bounded exception. Moving the same
+ticket ID between `docs/tickets/backlog/`, `docs/tickets/in-progress/`,
+`docs/tickets/in-review/`, and `docs/tickets/done/` is required for normal
+delivery truth. The diff-stat policy therefore ignores the deletion side of a
+ticket move only when the same ticket ID appears as a new ticket markdown file
+in another lifecycle directory in the same worktree diff, as a staged
+`git mv` destination, or as an already-present lifecycle counterpart being kept
+while a duplicate old-state ticket is removed.
+
+This keeps destructive deletion containment intact while allowing agents to
+claim, review, and complete tickets without being trapped by the deletion guard.
+Unpaired ticket deletions, root ticket markdown churn, and arbitrary source or
+doc deletions remain blocked by the normal blast-radius policy.
+
+The related successful-disposition clean-tree gate remains strict for product,
+ticket, source, and documentation paths, but it does not count the
+runtime-managed `.harness/learnings.yaml` file by itself. That file can be
+updated by convention detection while a job runs; treating it as product work
+caused repair and review handoffs to fail despite a clean user-facing target
+diff. When that runtime file is the only dirty path after a server job, the
+executor commits it as a `chore(learnings)` update; mixed dirty trees remain
+visible and blocked by the normal clean-handoff rule. The exception is
+intentionally local to runtime-owned learning metadata; secret scanning,
+blast-radius checks, and ordinary product dirty paths still apply.
+
+Planner ownership is also a hard tool-policy surface. COO is allowed to write
+the active exec plan, feature contracts, backlog plans, and goal observations,
+but attempts to create implementation files or run mutating shell commands are
+blocked before mutation. This keeps first-run product code behind CTO ticketing
+and Engineer delivery even when an existing target manifest still exposes broad
+tools to COO.
+
+Feature ticket completion evidence is now enforced at the same pre-mutation
+layer. A role may still move tickets through the lifecycle, but `git mv`/`mv`
+into `docs/tickets/done/` and `file_write` saves to done feature tickets are
+blocked while required BDD evidence fields remain empty. This turns a late
+post-run ticket-gate failure into an immediate tool error that the active role
+can repair before it records disposition or triggers a separate repair job.
+
+Dogfood observation is also a hard tool-policy boundary. Dogfood may create
+target-owned findings through `ticket_create` and write bounded evidence under
+`docs/reports/dogfood/`, but direct `file_write` changes to product source,
+package manifests, lockfiles, config, or harness scaffold are blocked. A
+validator that needs those changes must report a finding or blocked disposition
+instead of silently becoming an implementation role.
+
 ### Open topics
 
 - **Advisory vs hard tiers:** advisory rules surface warnings in traces and UI; hard rules fail the job or block merge paths per policy; same schema with a `severity` field is the likely shape.

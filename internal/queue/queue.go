@@ -282,7 +282,14 @@ WHERE status = 'pending'
       WHERE status IN ('claimed','running') AND concurrency_group != ''
     )
   )
-ORDER BY created_at ASC
+ORDER BY
+  CASE
+    WHEN idempotency_key LIKE 'seed:%' THEN 0
+    WHEN idempotency_key LIKE 'dispatch:%' THEN 1
+    WHEN idempotency_key LIKE 'sched:%' THEN 3
+    ELSE 2
+  END,
+  created_at ASC
 LIMIT 1`)
 
 	job, err := scanJob(row)

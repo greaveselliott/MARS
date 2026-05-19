@@ -10,6 +10,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -139,6 +140,158 @@ func TestRun_multiToolThenComplete(t *testing.T) {
 	require.Equal(t, EndCompleted, res.EndReason)
 	require.GreaterOrEqual(t, len(res.Messages), 4)
 	require.Equal(t, 2, res.LLMCalls)
+}
+
+func TestRun_stopsAfterTerminalTool(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	ex.StopAfterTool = func() bool { return true }
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_write", "t1", `{"path":"out.txt","content":"hello"}`),
+		textResp("this response should not be requested"),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:    mock,
+		Registry:     reg,
+		Executor:     ex,
+		Root:         root,
+		Allowlist:    []string{"file_write"},
+		SystemPrompt: "You are a test harness.",
+		UserMessage:  "Write a file then stop.",
+		Config:       LoopConfig{Model: "test", MaxTurns: 10},
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 1, res.LLMCalls)
+	require.Equal(t, 1, res.ToolInvocations)
+	require.Equal(t, 1, mock.i)
+}
+
+func TestRun_requiredTerminalToolRepromptsProseCompletion(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "evidence.txt"), []byte("ok\n"), 0o644))
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	ex.StopAfterTool = func() bool { return true }
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		textResp("The review is approved."),
+		toolResp("file_read", "terminal", `{"path":"evidence.txt"}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read"},
+		SystemPrompt:         "You are a test harness.",
+		UserMessage:          "Finish with the terminal tool.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 10},
+		RequiredTerminalTool: "file_read",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 2, res.LLMCalls)
+	require.Equal(t, 1, res.ToolInvocations)
+	require.Equal(t, 2, mock.i)
+
+	var reminderFound bool
+	for _, msg := range res.Messages {
+		if msg.Role == "user" &&
+			strings.Contains(msg.Content, "cannot finish with prose only") &&
+			strings.Contains(msg.Content, "`file_read`") &&
+			strings.Contains(msg.Content, "If more inspection or verification is still needed") &&
+			strings.Contains(msg.Content, "call an allowed non-terminal tool now") {
+			reminderFound = true
+		}
+	}
+	require.True(t, reminderFound, "loop should add a terminal-tool reminder after prose-only completion")
+}
+
+func TestRun_inlineToolCallTagExecutesThroughLoop(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "evidence.txt"), []byte("ok\n"), 0o644))
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	ex.StopAfterTool = func() bool { return true }
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		textResp(`<tool_call>file_read{path:<|"|>evidence.txt<|"|>}</tool_call>`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read"},
+		SystemPrompt:         "You are a test harness.",
+		UserMessage:          "Finish with the terminal tool.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 10},
+		RequiredTerminalTool: "file_read",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 1, res.LLMCalls)
+	require.Equal(t, 1, res.ToolInvocations)
+	require.Equal(t, 1, mock.i)
+}
+
+func TestRun_requiredTerminalToolOnlyRepromptsOnce(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		textResp("The review is approved."),
+		textResp("Still approved."),
+		toolResp("file_read", "unused", `{"path":"missing.txt"}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read"},
+		SystemPrompt:         "You are a test harness.",
+		UserMessage:          "Finish with the terminal tool.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 10},
+		RequiredTerminalTool: "file_read",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 2, res.LLMCalls)
+	require.Equal(t, 0, res.ToolInvocations)
+	require.Equal(t, 2, mock.i)
+
+	var reminders int
+	for _, msg := range res.Messages {
+		if msg.Role == "user" && strings.Contains(msg.Content, "cannot finish with prose only") {
+			reminders++
+		}
+	}
+	require.Equal(t, 1, reminders, "loop should avoid spending the job budget on repeated terminal-tool reminders")
 }
 
 func TestRun_threeToolCallsHappyPath(t *testing.T) {

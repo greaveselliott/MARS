@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -186,7 +187,7 @@ func (s *Server) surveyTicketState(ctx context.Context, rec RepoRecord, manifest
 		if t, ok := firstBacklogInterventionDebt(all); ok {
 			if s.enqueueSurveyJob(ctx, rec, "engineer", "intervention_debt", surveyJobSpec{
 				Signal:           "intervention_debt_backlog",
-				Reason:           "high-priority intervention-debt backlog is prioritized ahead of ordinary backlog",
+				Reason:           "intervention-debt backlog is explicitly blocking product work",
 				Tickets:          []ticketstate.Ticket{t},
 				Source:           source,
 				IdempotencyKey:   fmt.Sprintf("survey:intervention-debt:%s:%s", rec.ID, ticketKey(t)),
@@ -199,6 +200,96 @@ func (s *Server) surveyTicketState(ctx context.Context, rec RepoRecord, manifest
 	}
 
 	return routed
+}
+
+func (s *Server) cancelStaleTicketOwnerSurveyJobs(ctx context.Context, rec RepoRecord) int {
+	if s == nil || s.db == nil {
+		return 0
+	}
+	eligible, err := ticketstate.EligibleInProgress(rec.Path)
+	if err != nil {
+		slog.Warn("serve: stale ticket-owner survey cleanup skipped", "repo_id", rec.ID, "err", err)
+		return 0
+	}
+	eligibleKeys := make(map[string]bool, len(eligible))
+	for _, t := range eligible {
+		eligibleKeys[ticketKey(t)] = true
+	}
+
+	rows, err := s.db.QueryContext(ctx, `
+SELECT id, trigger_payload
+FROM jobs
+WHERE repo_id = ?
+  AND role = 'engineer'
+  AND status = 'pending'
+  AND trigger_payload LIKE '%"signal":"eligible_in_progress_ticket"%'`, rec.ID)
+	if err != nil {
+		slog.Warn("serve: stale ticket-owner survey query failed", "repo_id", rec.ID, "err", err)
+		return 0
+	}
+	var staleIDs []string
+	for rows.Next() {
+		var id, raw string
+		if err := rows.Scan(&id, &raw); err != nil {
+			_ = rows.Close()
+			slog.Warn("serve: stale ticket-owner survey scan failed", "repo_id", rec.ID, "err", err)
+			return 0
+		}
+		if ticketOwnerSurveyPayloadStale(raw, eligibleKeys) {
+			staleIDs = append(staleIDs, id)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		slog.Warn("serve: stale ticket-owner survey rows failed", "repo_id", rec.ID, "err", err)
+		return 0
+	}
+	if err := rows.Close(); err != nil {
+		slog.Warn("serve: stale ticket-owner survey close failed", "repo_id", rec.ID, "err", err)
+		return 0
+	}
+
+	cancelled := 0
+	for _, id := range staleIDs {
+		if err := s.queue.Cancel(ctx, id); err != nil {
+			slog.Warn("serve: stale ticket-owner survey cancel failed", "repo_id", rec.ID, "job_id", id, "err", err)
+			continue
+		}
+		cancelled++
+	}
+	if cancelled > 0 {
+		slog.Info("serve: cancelled stale ticket-owner survey jobs", "repo_id", rec.ID, "count", cancelled)
+	}
+	return cancelled
+}
+
+func ticketOwnerSurveyPayloadStale(raw string, eligibleKeys map[string]bool) bool {
+	var payload struct {
+		Signal  string `json:"signal"`
+		Tickets []struct {
+			ID   string `json:"id"`
+			Path string `json:"path"`
+		} `json:"tickets"`
+	}
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return false
+	}
+	if payload.Signal != "eligible_in_progress_ticket" {
+		return false
+	}
+	if len(payload.Tickets) == 0 {
+		return true
+	}
+	for _, ticket := range payload.Tickets {
+		key := strings.TrimSpace(ticket.ID)
+		if key == "" {
+			key = strings.TrimSuffix(filepath.Base(strings.TrimSpace(ticket.Path)), filepath.Ext(strings.TrimSpace(ticket.Path)))
+		}
+		if eligibleKeys[normalizeDedupePart(key)] {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Server) surveyRecentOutcomes(ctx context.Context, rec RepoRecord, manifest *bundle.Manifest, source string) int {

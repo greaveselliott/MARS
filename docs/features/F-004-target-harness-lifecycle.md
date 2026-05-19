@@ -30,7 +30,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 
 Given a user points Mars Harness at a git checkout without `.harness/manifest.yaml`
 When `mars-harness init --repo <path>` runs
-Then the repo receives a usable target harness with manifest, metadata, role prompts, guardrails, knowledge routes, docs, ticket directories, quality score, version, and changelog
+Then the repo receives a usable target harness with manifest, metadata, role prompts, guardrails, knowledge routes, docs, ticket directories, quality score, dogfood evidence report directory, version, and changelog
 
 ### F-004-S002: Init Mirrors Doctrine
 
@@ -76,7 +76,7 @@ Then the command reports the files and database it would remove without mutating
 
 Given the same target repo
 When `mars-harness eject --repo <path> --apply --confirm repo` runs
-Then `.harness/`, generated harness docs, generated ticket/feature/release defaults, root generated guidance/version files, and the associated per-repo database are removed without rewriting git history
+Then `.harness/`, generated harness docs, generated ticket/feature/release/report defaults including dogfood reports, root generated guidance/version files, and the associated per-repo database are removed without rewriting git history
 
 ## Out of Scope
 

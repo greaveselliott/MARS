@@ -32,6 +32,9 @@ func ToolCallsFromAssistantMessage(msg llm.Message) ([]llm.ToolCall, error) {
 	if calls, ok, err := parseFunctionTagToolCalls(raw); ok || err != nil {
 		return calls, err
 	}
+	if calls, ok, err := parseInlineToolCallTags(raw); ok || err != nil {
+		return calls, err
+	}
 	calls, err := parseToolCallsFromText(raw)
 	if err != nil && looksLikeToolJSON(raw) {
 		return nil, err
@@ -195,6 +198,227 @@ func parseFunctionTagToolCalls(src string) ([]llm.ToolCall, bool, error) {
 		})
 	}
 	return out, true, nil
+}
+
+func parseInlineToolCallTags(src string) ([]llm.ToolCall, bool, error) {
+	const (
+		openTag  = "<tool_call>"
+		closeTag = "</tool_call>"
+	)
+	var out []llm.ToolCall
+	rest := src
+	for {
+		start := strings.Index(rest, openTag)
+		if start < 0 {
+			break
+		}
+		afterOpen := rest[start+len(openTag):]
+		end := strings.Index(afterOpen, closeTag)
+		if end < 0 {
+			return nil, true, fmt.Errorf("agent: inline tool_call tag missing closing tag")
+		}
+		inner := strings.TrimSpace(afterOpen[:end])
+		rest = afterOpen[end+len(closeTag):]
+		if inner == "" {
+			return nil, true, fmt.Errorf("agent: inline tool_call tag is empty")
+		}
+		brace := strings.Index(inner, "{")
+		if brace <= 0 {
+			return nil, true, fmt.Errorf("agent: inline tool_call missing name or arguments")
+		}
+		name := strings.TrimSpace(inner[:brace])
+		if name == "" {
+			return nil, true, fmt.Errorf("agent: inline tool_call missing name")
+		}
+		argEnd := findMatchingBrace(inner, brace)
+		if argEnd <= brace {
+			return nil, true, fmt.Errorf("agent: inline tool_call arguments are not balanced for %q", name)
+		}
+		args, err := parseInlineToolArgs(inner[brace+1 : argEnd])
+		if err != nil {
+			return nil, true, fmt.Errorf("agent: parse inline tool_call arguments for %q: %w", name, err)
+		}
+		argBytes, err := json.Marshal(args)
+		if err != nil {
+			return nil, true, fmt.Errorf("agent: encode inline tool_call arguments for %q: %w", name, err)
+		}
+		out = append(out, llm.ToolCall{
+			ID:   fmt.Sprintf("call_inline_%d", len(out)),
+			Type: "function",
+			Function: llm.FunctionCall{
+				Name:      name,
+				Arguments: string(argBytes),
+			},
+		})
+	}
+	if len(out) == 0 {
+		return nil, false, nil
+	}
+	return out, true, nil
+}
+
+func parseInlineToolArgs(src string) (map[string]any, error) {
+	args := map[string]any{}
+	for _, part := range splitInlineTopLevel(src, ',') {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		idx := indexInlineTopLevel(part, ':')
+		if idx <= 0 {
+			return nil, fmt.Errorf("argument %q is missing ':'", part)
+		}
+		key := strings.Trim(strings.TrimSpace(part[:idx]), `"'`)
+		if key == "" {
+			return nil, fmt.Errorf("argument %q has empty key", part)
+		}
+		value, err := parseInlineToolValue(part[idx+1:])
+		if err != nil {
+			return nil, fmt.Errorf("argument %q: %w", key, err)
+		}
+		args[key] = value
+	}
+	return args, nil
+}
+
+func parseInlineToolValue(src string) (any, error) {
+	s := normalizeInlineSentinel(strings.TrimSpace(src))
+	if s == "" {
+		return "", nil
+	}
+	if strings.HasPrefix(s, `<|"|>`) {
+		if !strings.HasSuffix(s, `<|"|>`) || len(s) < len(`<|"|>`)*2 {
+			return nil, fmt.Errorf("unterminated sentinel string")
+		}
+		return strings.TrimSuffix(strings.TrimPrefix(s, `<|"|>`), `<|"|>`), nil
+	}
+	if strings.HasPrefix(s, "[") && strings.HasSuffix(s, "]") {
+		inner := strings.TrimSpace(s[1 : len(s)-1])
+		if inner == "" {
+			return []any{}, nil
+		}
+		items := splitInlineTopLevel(inner, ',')
+		out := make([]any, 0, len(items))
+		for _, item := range items {
+			value, err := parseInlineToolValue(item)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, value)
+		}
+		return out, nil
+	}
+	if strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}") {
+		return parseInlineToolArgs(s[1 : len(s)-1])
+	}
+	if strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`) {
+		var out string
+		if err := json.Unmarshal([]byte(s), &out); err != nil {
+			return nil, err
+		}
+		return out, nil
+	}
+	switch s {
+	case "true", "True":
+		return true, nil
+	case "false", "False":
+		return false, nil
+	case "null", "None":
+		return nil, nil
+	}
+	var decoded any
+	if json.Unmarshal([]byte(s), &decoded) == nil {
+		return decoded, nil
+	}
+	return strings.Trim(s, `"'`), nil
+}
+
+func splitInlineTopLevel(src string, sep rune) []string {
+	var out []string
+	start := 0
+	depthSquare := 0
+	depthCurly := 0
+	inString := false
+	for i := 0; i < len(src); {
+		if strings.HasPrefix(src[i:], `<|"|>`) || strings.HasPrefix(src[i:], `<|\"|>`) {
+			if strings.HasPrefix(src[i:], `<|\"|>`) {
+				i += len(`<|\"|>`)
+			} else {
+				i += len(`<|"|>`)
+			}
+			inString = !inString
+			continue
+		}
+		r := rune(src[i])
+		if !inString {
+			switch r {
+			case '[':
+				depthSquare++
+			case ']':
+				if depthSquare > 0 {
+					depthSquare--
+				}
+			case '{':
+				depthCurly++
+			case '}':
+				if depthCurly > 0 {
+					depthCurly--
+				}
+			default:
+				if r == sep && depthSquare == 0 && depthCurly == 0 {
+					out = append(out, src[start:i])
+					start = i + 1
+				}
+			}
+		}
+		i++
+	}
+	out = append(out, src[start:])
+	return out
+}
+
+func indexInlineTopLevel(src string, sep rune) int {
+	depthSquare := 0
+	depthCurly := 0
+	inString := false
+	for i := 0; i < len(src); {
+		if strings.HasPrefix(src[i:], `<|"|>`) || strings.HasPrefix(src[i:], `<|\"|>`) {
+			if strings.HasPrefix(src[i:], `<|\"|>`) {
+				i += len(`<|\"|>`)
+			} else {
+				i += len(`<|"|>`)
+			}
+			inString = !inString
+			continue
+		}
+		r := rune(src[i])
+		if !inString {
+			switch r {
+			case '[':
+				depthSquare++
+			case ']':
+				if depthSquare > 0 {
+					depthSquare--
+				}
+			case '{':
+				depthCurly++
+			case '}':
+				if depthCurly > 0 {
+					depthCurly--
+				}
+			default:
+				if r == sep && depthSquare == 0 && depthCurly == 0 {
+					return i
+				}
+			}
+		}
+		i++
+	}
+	return -1
+}
+
+func normalizeInlineSentinel(s string) string {
+	return strings.ReplaceAll(s, `<|\"|>`, `<|"|>`)
 }
 
 func stripMarkdownFences(s string) string {

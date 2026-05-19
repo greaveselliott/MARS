@@ -52,6 +52,13 @@ type interventionDebtSignal struct {
 	Message        string
 }
 
+type interventionDebtRoute string
+
+const (
+	interventionDebtRouteFoundationTelemetry interventionDebtRoute = "foundation_telemetry"
+	interventionDebtRouteTargetBacklog       interventionDebtRoute = "target_backlog"
+)
+
 func (s *Server) recordInterventionDebtSignal(ctx context.Context, signal interventionDebtSignal) {
 	signal.RepoID = strings.TrimSpace(signal.RepoID)
 	signal.Role = strings.TrimSpace(signal.Role)
@@ -80,7 +87,7 @@ func (s *Server) recordInterventionDebtSignal(ctx context.Context, signal interv
 		ToolName:       strings.TrimSpace(signal.ToolName),
 		Message:        strings.TrimSpace(signal.Message),
 	}
-	if interventionDebtBelongsToFoundation(proposal) || signal.Category == telemetry.CategoryManualStop {
+	if interventionDebtRouting(proposal) == interventionDebtRouteFoundationTelemetry {
 		slog.Info("serve: foundation-owned intervention signal kept out of target backlog",
 			"repo_id", signal.RepoID,
 			"role", signal.Role,
@@ -110,7 +117,7 @@ func (s *Server) recordInterventionDebtTicket(ctx context.Context, repoID string
 	if strings.TrimSpace(proposal.RepoID) == "" || s.repos == nil {
 		return
 	}
-	if interventionDebtBelongsToFoundation(proposal) {
+	if interventionDebtRouting(proposal) == interventionDebtRouteFoundationTelemetry {
 		slog.Info("serve: foundation-owned telemetry pattern kept out of target backlog",
 			"repo_id", proposal.RepoID,
 			"role", proposal.Role,
@@ -234,6 +241,17 @@ func interventionDebtProposalFromSignal(signal interventionDebtSignal) telemetry
 
 func interventionDebtBelongsToFoundation(proposal telemetry.ImprovementProposal) bool {
 	return telemetry.ReportableFoundationCategory(proposal.Category)
+}
+
+func interventionDebtRouting(proposal telemetry.ImprovementProposal) interventionDebtRoute {
+	switch proposal.Category {
+	case telemetry.CategoryHumanFollowup, telemetry.CategoryRevertedCommit, telemetry.CategoryStaleTicket:
+		return interventionDebtRouteTargetBacklog
+	}
+	if interventionDebtBelongsToFoundation(proposal) || proposal.Category == "" || proposal.Category == telemetry.CategoryManualStop {
+		return interventionDebtRouteFoundationTelemetry
+	}
+	return interventionDebtRouteFoundationTelemetry
 }
 
 func interventionDebtSignalWindow(signal interventionDebtSignal) string {

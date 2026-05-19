@@ -41,7 +41,7 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | `mars-harness register --repo <path>` | Implemented | Registers a repo and creates the per-repo database path when one is not supplied. |
 | `mars-harness doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, private-release auth readiness, guardrail/workflow health, mirrored operating-model health, active-plan hygiene, and optional integration configuration. |
 | `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
-| `mars-harness scores export --repo <path>` | Implemented | Refreshes `docs/QUALITY_SCORE.md` from live score, telemetry, ticket, dogfood, guardrail, check, no-op, and human follow-up evidence while preserving manual notes and creating deduped low-score intervention-debt tickets. |
+| `mars-harness scores export --repo <path>` | Implemented | Refreshes `docs/QUALITY_SCORE.md` from live score, telemetry, ticket, dogfood, guardrail, check, no-op, and human follow-up evidence while preserving manual notes. Low scores become improvement targets by default; deduped intervention-debt tickets are created only with `--create-intervention-debt` or clearly target-owned evidence. |
 | `mars-harness telemetry status\|preview\|export\|send` | Implemented | Keeps raw telemetry local, previews the exact anonymous aggregate payload, writes sanitized reports to the local outbox, and sends only when anonymous reporting is explicitly enabled. |
 | `mars-harness telemetry collect --storage sqlite` | Implemented | Runs a local anonymous foundation telemetry collector backed by SQLite; the collector API is designed so hosted Postgres-compatible storage can be added later without changing deployed harnesses. |
 | `mars-harness telemetry triage-foundation` | Implemented | Reads collector aggregates and creates Mars Harness source intervention-debt work only for repeated anonymous foundation-owned patterns. |
@@ -145,7 +145,7 @@ The product contract is:
 
 - Six canonical operating domains describe role memory and routing vocabulary: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, and Orchestrator.
 - Explicit manifest role keys remain the executable units; optional `domain` and `mode` metadata classify why the role runs without changing trust, scoring, tool, or guardrail policy.
-- `orchestration_mode: dispatch` is the generated default: completed jobs record dispositions, return to the Orchestrator, and let it choose the next best manifest role while keeping the queue, tickets, BDD evidence, scoring, traces, and trust policy as the runtime backbone.
+- `orchestration_mode: dispatch` is the generated default: completed jobs record dispositions, deterministic handoffs route directly, and Orchestrator handles ambiguous or governance-heavy follow-up while keeping the queue, tickets, BDD evidence, scoring, traces, and trust policy as the runtime backbone.
 - `orchestration_mode: legacy` remains supported for repos that deliberately preserve manifest `then` and `idle_then` chains.
 - Planner roles have explicit ownership boundaries.
 - CEO owns vision, active goals, tradeoffs, and final strategy/scope decisions.
@@ -154,7 +154,7 @@ The product contract is:
 - Engineer roles complete one ticket per run.
 - Engineer roles provide scenario evidence before closing feature tickets.
 - In-progress tickets are highest priority.
-- Target-owned intervention-debt tickets are generated from repeated local telemetry failures or low score snapshots and outrank ordinary backlog work; foundation-owned failures stay local or flow through optional anonymous foundation telemetry.
+- Target-owned intervention-debt tickets are generated only from clearly target-owned repeated local telemetry failures, explicit operator requests, or opt-in score export; they do not outrank ordinary product backlog unless a product ticket explicitly names them in `blocked_by`. Foundation-owned failures stay local or flow through optional anonymous foundation telemetry.
 - Blocked work is documented and proactively unblocked when the fix is in scope.
 - Dogfood and QA roles produce reproducible evidence.
 - Janitor and orchestrator roles keep ticket state truthful.
@@ -175,7 +175,7 @@ Scores are based on real outcomes: completed work, commits, checks, guardrail bl
 
 `docs/QUALITY_SCORE.md` is refreshed with `mars-harness scores export --repo <path>`. The generated artifact is the quality source of truth for agents; dashboard quality views link to the same file and database-derived signals instead of becoming a separate grading surface. Missing SQLite evidence is explicitly graded as insufficient evidence.
 
-When scores or telemetry show repeated workflow confusion, the harness creates or updates intervention-debt tickets first, then chooses the bounded improvement surface. Prefer a scoped skill over bloating a role prompt. Use guardrails for non-negotiable enforcement and tools for deterministic actions.
+When scores or telemetry show repeated workflow confusion, the harness records improvement targets first, then chooses the bounded improvement surface. Prefer a scoped skill over bloating a role prompt. Use guardrails for non-negotiable enforcement and tools for deterministic actions. Intervention-debt tickets require target ownership or explicit operator opt-in.
 
 ## Guardrails And Safety
 

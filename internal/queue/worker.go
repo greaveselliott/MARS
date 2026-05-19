@@ -34,6 +34,8 @@ type WorkerPool struct {
 	paused atomic.Bool
 }
 
+const finalStatusTimeout = 5 * time.Second
+
 // NewWorkerPool creates a worker pool that pulls jobs from q.
 func NewWorkerPool(q *Queue, cfg WorkerConfig) *WorkerPool {
 	if cfg.Concurrency <= 0 {
@@ -133,17 +135,24 @@ func (wp *WorkerPool) poll(ctx context.Context, workerID string) {
 
 	if err := wp.cfg.OnJob(ctx, job); err != nil {
 		slog.Error("queue: job failed", "job", job.ID, "error", err)
-		_ = wp.q.Fail(ctx, job.ID, err.Error())
+		statusCtx, cancel := context.WithTimeout(context.Background(), finalStatusTimeout)
+		if failErr := wp.q.Fail(statusCtx, job.ID, err.Error()); failErr != nil {
+			slog.Error("queue: fail status update failed", "job", job.ID, "error", failErr)
+		}
+		cancel()
 		if wp.cfg.OnFail != nil {
 			wp.cfg.OnFail(ctx, job, err)
 		}
 		return
 	}
 
-	if err := wp.q.Complete(ctx, job.ID); err != nil {
+	statusCtx, cancel := context.WithTimeout(context.Background(), finalStatusTimeout)
+	if err := wp.q.Complete(statusCtx, job.ID); err != nil {
 		slog.Error("queue: complete failed", "job", job.ID, "error", err)
+		cancel()
 		return
 	}
+	cancel()
 
 	if wp.cfg.OnComplete != nil {
 		wp.cfg.OnComplete(ctx, job)

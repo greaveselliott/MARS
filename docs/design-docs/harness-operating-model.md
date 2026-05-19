@@ -53,8 +53,8 @@ integrations; normal roles make semantic commits to `main` and push directly.
 | --- | --- | --- | --- |
 | `ceo` | Planner | `strategy` | Owns vision, active goals, and final strategy/scope decisions. |
 | `head-of-strategy` | Planner | `strategy-advisory` | Optional dispatch/manual advisor for strategy memos, tradeoffs, executive narrative, and goal conflicts; CEO owns the final decision. |
-| `coo` | Planner | `execution-planning` | Owns active exec plans, BDD feature contracts, scenario schedule, and current failing scenario. |
-| `cto-weekly` | Planner | `technical-planning` | Owns architecture fit, technical decomposition, and implementation tickets. |
+| `coo` | Planner | `execution-planning` | Owns active exec plans, BDD feature contracts, scenario schedule, and current failing scenario; planning-only, with implementation routed behind CTO tickets and Engineer delivery. |
+| `cto-weekly` | Planner | `technical-planning` | Owns architecture fit, bounded technical decomposition, and implementation tickets. |
 | `engineer` | Engineer | `ticket-delivery` | Implements one ticket and records evidence. |
 | `pipeline-fixer` | Engineer | `pipeline-repair` | Repairs failing build or check paths through bounded commits. |
 | `qa` | Reviewer | `quality-review` | Reviews behavior and evidence against ticket and BDD contracts. |
@@ -63,6 +63,14 @@ integrations; normal roles make semantic commits to `main` and push directly.
 | `release-manager` | Maintainer | `release-management` | Runs version, changelog, tag, and release evidence flow. |
 | `dogfood` | End-to-End Tester | `dogfood-validation` | Exercises real target setup, build, run, and user/agent paths. |
 | `janitor` | Orchestrator | `ticket-hygiene` | Drains stale state, misleading in-progress work, and backlog entropy. |
+
+For Mars Harness source stabilization, the End-to-End Tester domain also owns
+live-experience verification against representative target repos. `demo-123`
+is the canonical small first-run lifecycle replay: it should show whether a
+source change actually improves the operator path from brief to product plan,
+feature contract, product ticket, or implementation without intervention-debt
+starvation. When the live check cannot run, the owning role records the exact
+blocker and replay steps instead of treating deterministic tests as sufficient.
 
 ## Mode Boundaries
 
@@ -129,14 +137,27 @@ Routing ownership is intentionally hard-cut:
 
 COO no longer receives `ticket_create`; COO owns execution planning and BDD
 contracts. CTO receives `ticket_create`; CTO owns technical decomposition and
-implementation tickets. New generated target harnesses inherit this split, while
-existing target upgrades preserve user-owned prompts and manifests.
+implementation tickets. During fresh bootstrap or an empty product backlog, CTO
+must keep technical planning product-first: no broad governance, docsync,
+tool-inventory, dependency, release, or architecture-audit passes run before a
+current-scenario ticket exists. CTO creates or confirms at most one independent
+ordinary feature ticket for the current BDD scenario, records implementation as
+the next need, and stops. Further decomposition of the same scenario must either
+wait for first implementation evidence or be explicitly modeled with
+`depends_on`. New generated target harnesses inherit this split, while existing
+target upgrades preserve user-owned prompts and manifests.
 
 `job_disposition_record` accepts optional `handoff` and `feedback` objects so
 agents can state exactly what they expect from the next role or what correction
 the prior role must make. The Orchestrator uses those fields with persona
 manuals to avoid implicit feedback, role ping-pong, and intervention-debt
 floods.
+
+Successful non-Orchestrator dispositions require a clean target worktree. A
+role that produced plans, contracts, tickets, code, or learning files must
+commit those changes before `job_disposition_record` can complete. Orchestrator
+is allowed to route dirty state left by a prior role so recovery remains
+possible, but ordinary forward handoffs cannot hide uncommitted work.
 
 ## AD-106: Structured Disposition Packets Travel Through Orchestrator
 
@@ -156,6 +177,24 @@ For Orchestrator-owned dispositions, routing precedence is:
 `next_need`, then the default completion route. Structured target fields must
 agree when more than one is supplied; conflicting owners fail validation with an
 actionable error instead of being guessed.
+
+Orchestrator routing validates against executable manifest role keys. Common
+domain shorthands are normalized when the matching generated role exists:
+`cto` and `architecture` route to `cto-weekly`, `release` routes to
+`release-manager`, and `dependency` routes to `dependency-manager`. This keeps
+reasonable role-language from causing another Orchestrator pass while still
+rejecting unknown roles that have no manifest owner.
+
+If Orchestrator itself fails before recording a disposition, the runtime does
+not turn that failed Orchestrator result into another Orchestrator job. It may
+fall forward from the original non-Orchestrator source disposition when the
+trigger still carries deterministic routing signal, and otherwise records a
+stopped decision so recovery is visible without becoming recursive work.
+
+If any dispatch-mode role fails the protocol by completing without
+`job_disposition_record`, the runtime records telemetry and stops rather than
+asking Orchestrator to reason about a missing tool call. The fix belongs in
+role guidance, tooling, or operator retry conditions.
 
 ## Trigger Routing
 

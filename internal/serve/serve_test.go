@@ -496,14 +496,20 @@ func TestBuildTicketIndex_findsTickets(t *testing.T) {
 	if !strings.Contains(idx, "3 total") {
 		t.Errorf("expected 3 total, got: %s", idx)
 	}
-	if !strings.Contains(idx, "Eligible in-progress tickets are the Engineer front of queue") {
+	if !strings.Contains(idx, "Eligible product in-progress tickets are the Engineer front of queue") {
 		t.Errorf("expected in-progress priority guidance, got: %s", idx)
 	}
 	if !strings.Contains(idx, "[backlog] T-002-beta.md") {
 		t.Errorf("expected backlog ticket, got: %s", idx)
 	}
+	if !strings.Contains(idx, "path: docs/tickets/backlog/T-002-beta.md") {
+		t.Errorf("expected backlog ticket path, got: %s", idx)
+	}
 	if !strings.Contains(idx, "[in-progress] T-003-gamma.md") {
 		t.Errorf("expected in-progress ticket, got: %s", idx)
+	}
+	if !strings.Contains(idx, "path: docs/tickets/in-progress/T-003-gamma.md") {
+		t.Errorf("expected in-progress ticket path, got: %s", idx)
 	}
 	if strings.Index(idx, "[in-progress] T-003-gamma.md") > strings.Index(idx, "[backlog] T-002-beta.md") {
 		t.Errorf("expected in-progress tickets before backlog, got: %s", idx)
@@ -511,12 +517,15 @@ func TestBuildTicketIndex_findsTickets(t *testing.T) {
 	if !strings.Contains(idx, "[done] T-001-alpha.md") {
 		t.Errorf("expected done ticket, got: %s", idx)
 	}
+	if !strings.Contains(idx, "path: docs/tickets/done/T-001-alpha.md") {
+		t.Errorf("expected done ticket path, got: %s", idx)
+	}
 	if strings.Contains(idx, "README.md") {
 		t.Errorf("README.md should be excluded")
 	}
 }
 
-func TestBuildTicketIndex_onlyHighInterventionDebtPreemptsOrdinaryBacklog(t *testing.T) {
+func TestBuildTicketIndex_interventionDebtDoesNotPreemptOrdinaryBacklog(t *testing.T) {
 	dir := t.TempDir()
 	for _, sub := range []string{"docs/tickets/backlog", "docs/tickets/in-progress", "docs/tickets/done"} {
 		mustMkdirAll(t, filepath.Join(dir, sub))
@@ -526,44 +535,33 @@ func TestBuildTicketIndex_onlyHighInterventionDebtPreemptsOrdinaryBacklog(t *tes
 	mustWriteFile(t, filepath.Join(dir, "docs/tickets/backlog/MH-012-high-intervention.md"), []byte("---\nkind: intervention-debt\npriority: high\n---\n# High Intervention\n"))
 
 	idx := BuildTicketIndex(dir)
-	if !strings.Contains(idx, "high-priority intervention-debt preempts ordinary backlog") {
+	if !strings.Contains(idx, "intervention-debt tickets stay visible") {
 		t.Errorf("expected intervention-debt priority guidance, got: %s", idx)
 	}
-	if !strings.Contains(idx, "1 hidden") {
+	if !strings.Contains(idx, "2 hidden") {
 		t.Errorf("expected hidden deferred intervention-debt count, got: %s", idx)
 	}
 	highInterventionPos := strings.Index(idx, "[backlog][intervention-debt] MH-012-high-intervention.md")
 	ordinaryPos := strings.Index(idx, "[backlog] MH-010-ordinary.md")
 	mediumInterventionPos := strings.Index(idx, "[backlog][intervention-debt] MH-011-medium-intervention.md")
-	if highInterventionPos < 0 || ordinaryPos < 0 {
-		t.Fatalf("expected both backlog entries, got: %s", idx)
+	if ordinaryPos < 0 {
+		t.Fatalf("expected ordinary backlog entry, got: %s", idx)
 	}
-	if mediumInterventionPos >= 0 {
-		t.Fatalf("expected deferred medium intervention-debt to be hidden, got: %s", idx)
-	}
-	if !(highInterventionPos < ordinaryPos) {
-		t.Fatalf("expected high intervention-debt before ordinary backlog, got: %s", idx)
+	if highInterventionPos >= 0 || mediumInterventionPos >= 0 {
+		t.Fatalf("expected intervention-debt backlog to be deferred behind product work, got: %s", idx)
 	}
 }
 
-func TestFirstBacklogInterventionDebtOnlyReturnsPreemptivePriority(t *testing.T) {
+func TestFirstBacklogInterventionDebtDoesNotPreemptProductBacklog(t *testing.T) {
 	tickets := []ticketstate.Ticket{
 		{ID: "T-001", Status: ticketstate.StatusBacklog, Kind: "intervention-debt", Priority: "medium"},
 		{ID: "T-002", Status: ticketstate.StatusBacklog, Kind: "standard", Priority: "high"},
 		{ID: "T-003", Status: ticketstate.StatusBacklog, Kind: "intervention-debt", Priority: "high"},
 	}
 
-	ticket, ok := firstBacklogInterventionDebt(tickets)
-	if !ok {
-		t.Fatal("expected a high-priority intervention-debt ticket")
-	}
-	if ticket.ID != "T-003" {
-		t.Fatalf("expected T-003, got %s", ticket.ID)
-	}
-
-	_, ok = firstBacklogInterventionDebt(tickets[:2])
+	_, ok := firstBacklogInterventionDebt(tickets)
 	if ok {
-		t.Fatal("expected medium-priority intervention-debt to stay non-preemptive")
+		t.Fatal("expected intervention-debt backlog to stay non-preemptive")
 	}
 }
 
@@ -785,8 +783,8 @@ func TestOrchestratorSurveyTriagesTelemetryAndLowScores(t *testing.T) {
 			interventionDebt++
 		}
 	}
-	if interventionDebt != 1 {
-		t.Fatalf("expected only score intervention-debt ticket in target backlog, got %d", interventionDebt)
+	if interventionDebt != 0 {
+		t.Fatalf("expected telemetry and score survey to stay out of target backlog by default, got %d intervention-debt ticket(s)", interventionDebt)
 	}
 }
 

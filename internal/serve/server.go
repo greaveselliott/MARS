@@ -1073,6 +1073,17 @@ func (s *Server) Repos() *RepoRegistry { return s.repos }
 // first agent (typically CEO) before the server loop begins.
 func (s *Server) SeedJob(ctx context.Context, repoID, role, trigger string) (string, error) {
 	idempotencyKey := fmt.Sprintf("seed:%s:%s:%d", repoID, role, time.Now().UnixNano())
+	return s.seedJob(ctx, repoID, role, trigger, idempotencyKey)
+}
+
+// SeedBootstrapJob enqueues the first bootstrap job with a stable key so
+// restarting `mars-harness start` cannot duplicate an already-active pipeline.
+func (s *Server) SeedBootstrapJob(ctx context.Context, repoID, role, trigger string) (string, error) {
+	idempotencyKey := fmt.Sprintf("seed:%s:%s:bootstrap", repoID, role)
+	return s.seedJob(ctx, repoID, role, trigger, idempotencyKey)
+}
+
+func (s *Server) seedJob(ctx context.Context, repoID, role, trigger, idempotencyKey string) (string, error) {
 	job := queue.Job{
 		RepoID:         repoID,
 		Role:           role,
@@ -1133,9 +1144,10 @@ func (s *Server) handleEvent(event gh.Event) {
 }
 
 // handleJobComplete is the OnComplete callback for the worker pool.
-// In dispatch mode it returns the terminal disposition to the Orchestrator
-// routing path. Legacy manifests still resolve `then` and `idle_then` chains so
-// existing deployed harnesses do not break.
+// In dispatch mode it records a decision from the terminal disposition,
+// routing deterministic handoffs directly and using Orchestrator as the
+// ambiguous fallback. Legacy manifests still resolve `then` and `idle_then`
+// chains so existing deployed harnesses do not break.
 func (s *Server) handleJobComplete(ctx context.Context, job *queue.Job) {
 	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
 
@@ -1272,6 +1284,9 @@ func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec
 		log.Warn("serve: dispatch mode unavailable — orgstate store is nil")
 		return
 	}
+	if job.Role == "engineer" {
+		s.cancelStaleTicketOwnerSurveyJobs(ctx, *rec)
+	}
 
 	disposition, err := s.orgStore.GetDisposition(ctx, job.ID)
 	if err != nil {
@@ -1296,15 +1311,24 @@ func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec
 		log.Warn("serve: recent decisions unavailable", "err", err)
 	}
 
+	var source *orgstate.Disposition
+	if sourceDisposition, ok := sourceDispositionFromDispatchTrigger(job.RepoID, job.Trigger); ok {
+		source = &sourceDisposition
+	}
+
 	decision, err := orchestration.Decide(orchestration.Input{
-		Disposition:     *disposition,
-		Manifest:        manifest,
-		RecentDecisions: recent,
-		TicketStateHash: ticketHash,
+		Disposition:       *disposition,
+		Manifest:          manifest,
+		RecentDecisions:   recent,
+		TicketStateHash:   ticketHash,
+		SourceDisposition: source,
 	})
 	if err != nil {
 		log.Warn("serve: dispatch decision failed", "err", err)
 		return
+	}
+	if snapErr == nil {
+		decision = enforceEngineerTicketPrerequisite(decision, snap, manifest, source)
 	}
 	decision, err = s.orgStore.RecordDecision(ctx, decision)
 	if err != nil {
@@ -1439,6 +1463,43 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 				)
 				return
 			}
+			if deterministicContainmentFailure(cat, jobErr.Error()) {
+				log.Warn("serve: not dispatching deterministic containment failure; operator must restore workspace below blast-radius limits before retry",
+					"error", jobErr,
+				)
+				return
+			}
+			if cat == telemetry.CategoryDispatchProtocol {
+				log.Warn("serve: not dispatching protocol failure through Orchestrator; role prompt or tool usage must be corrected before retry",
+					"error", jobErr,
+				)
+				return
+			}
+			if cat == telemetry.CategoryTicketGate {
+				if job.Role == "engineer" && !isTicketGateRepairTrigger(job.Trigger) {
+					s.enqueueTicketGateRepair(ctx, job, jobErr)
+				} else {
+					log.Warn("serve: not dispatching ticket-gate failure through Orchestrator",
+						"error", jobErr,
+					)
+				}
+				return
+			}
+			if job.Role != "orchestrator" && dispatchRuntimeFailureStops(cat) {
+				log.Warn("serve: not dispatching runtime failure through Orchestrator; foundation telemetry or operator retry must resolve it first",
+					"category", cat,
+					"error", jobErr,
+				)
+				return
+			}
+			if job.Role == "orchestrator" {
+				if !s.dispatchFallbackAfterOrchestratorFailure(ctx, job, rec, manifest, jobErr) {
+					log.Warn("serve: not dispatching failed Orchestrator without deterministic source handoff",
+						"error", jobErr,
+					)
+				}
+				return
+			}
 			s.handleDispatchComplete(ctx, job, rec, manifest)
 		}
 		return
@@ -1507,6 +1568,256 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 	log.Info("serve: recovery job enqueued", "recovery_job_id", jobID)
 
 	go s.checkEvolution(context.Background(), job.Role, job.RepoID)
+}
+
+func (s *Server) enqueueTicketGateRepair(ctx context.Context, job *queue.Job, jobErr error) {
+	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+	triggerJSON, _ := json.Marshal(map[string]string{
+		"type":         "ticket_gate_repair",
+		"source_job":   job.ID,
+		"reason":       jobErr.Error(),
+		"repair_scope": "ticket_lifecycle_and_evidence_only",
+		"ask":          "Repair only the failed ticket lifecycle or evidence condition, commit the correction, then record job_disposition_record. Do not restart broad implementation unless the gate error explicitly names invalid code.",
+	})
+	repairJob := queue.Job{
+		RepoID:         job.RepoID,
+		Role:           job.Role,
+		Trigger:        string(triggerJSON),
+		IdempotencyKey: fmt.Sprintf("ticket-gate:%s:%s:%s", job.ID, job.RepoID, job.Role),
+	}
+	jobID, err := s.queue.Enqueue(ctx, repairJob)
+	if err != nil {
+		log.Error("serve: failed to enqueue ticket-gate repair job", "err", err)
+		return
+	}
+	log.Info("serve: ticket-gate repair job enqueued", "repair_job_id", jobID)
+	if s.dash != nil {
+		payload, _ := json.Marshal(map[string]string{
+			"job_id":     jobID,
+			"role":       job.Role,
+			"repo":       job.RepoID,
+			"source_job": job.ID,
+			"reason":     jobErr.Error(),
+		})
+		s.dash.BroadcastEvent("ticket_gate_repair_enqueued", string(payload))
+	}
+}
+
+func (s *Server) dispatchFallbackAfterOrchestratorFailure(ctx context.Context, job *queue.Job, rec *RepoRecord, manifest *bundle.Manifest, jobErr error) bool {
+	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+	var trigger dispatchTriggerPayload
+	if err := json.Unmarshal([]byte(job.Trigger), &trigger); err != nil {
+		log.Warn("serve: failed Orchestrator trigger is not dispatch JSON; stopping dispatch recovery", "err", err)
+		s.recordStoppedOrchestratorFallback(ctx, job, rec, orgstate.Disposition{}, "failed Orchestrator trigger was not usable dispatch JSON", jobErr)
+		return true
+	}
+	if trigger.Type != "dispatch" ||
+		strings.TrimSpace(trigger.SourceRole) == "" ||
+		strings.TrimSpace(trigger.SourceJob) == "" ||
+		strings.EqualFold(strings.TrimSpace(trigger.SourceRole), "orchestrator") {
+		log.Warn("serve: failed Orchestrator trigger lacks a usable source handoff; stopping dispatch recovery",
+			"source_role", trigger.SourceRole,
+			"source_job", trigger.SourceJob,
+		)
+		s.recordStoppedOrchestratorFallback(ctx, job, rec, orgstate.Disposition{}, "failed Orchestrator trigger lacked a non-Orchestrator source handoff", jobErr)
+		return true
+	}
+
+	sourceDisposition := orgstate.Disposition{
+		JobID:         strings.TrimSpace(trigger.SourceJob),
+		RepoID:        job.RepoID,
+		Role:          strings.TrimSpace(trigger.SourceRole),
+		Status:        strings.TrimSpace(trigger.SourceDisposition.Status),
+		NextNeed:      strings.TrimSpace(trigger.SourceDisposition.NextNeed),
+		SuggestedRole: strings.TrimSpace(trigger.SourceDisposition.SuggestedRole),
+		TicketID:      strings.TrimSpace(trigger.SourceDisposition.TicketID),
+		Reason:        strings.TrimSpace(trigger.SourceDisposition.Reason),
+		EvidenceLinks: append([]string{}, trigger.SourceDisposition.EvidenceLinks...),
+		TraceID:       strings.TrimSpace(trigger.SourceDisposition.TraceID),
+		Handoff:       trigger.SourceDisposition.Handoff,
+		Feedback:      trigger.SourceDisposition.Feedback,
+	}
+	if sourceDisposition.Status == "" {
+		sourceDisposition.Status = "completed"
+	}
+
+	hasRoutingSignal := sourceDisposition.NextNeed != "" ||
+		sourceDisposition.SuggestedRole != "" ||
+		strings.TrimSpace(sourceDisposition.Handoff.TargetRole) != "" ||
+		strings.TrimSpace(sourceDisposition.Feedback.ForRole) != ""
+	fallbackStatus := "completed"
+	if !hasRoutingSignal {
+		switch sourceDisposition.Status {
+		case "changes_requested", "in_review":
+			fallbackStatus = sourceDisposition.Status
+		default:
+			s.recordStoppedOrchestratorFallback(ctx, job, rec, sourceDisposition, "failed Orchestrator source handoff had no deterministic routing signal", jobErr)
+			return true
+		}
+	}
+
+	fallbackDisposition := sourceDisposition
+	fallbackDisposition.JobID = job.ID
+	fallbackDisposition.Role = "orchestrator"
+	fallbackDisposition.Status = fallbackStatus
+	fallbackDisposition.Reason = strings.TrimSpace(fmt.Sprintf("deterministic fallback after Orchestrator failed: %s; source role %s said: %s", jobErr.Error(), sourceDisposition.Role, sourceDisposition.Reason))
+	fallbackDisposition.TraceID = s.latestTraceID(ctx, job.ID)
+	if fallbackDisposition.TraceID == "" {
+		fallbackDisposition.TraceID = sourceDisposition.TraceID
+	}
+
+	snap, snapErr := snapshotTickets(rec.Path)
+	ticketHash := ""
+	if snapErr == nil {
+		ticketHash = snap.routingHash()
+	} else {
+		log.Warn("serve: dispatch fallback ticket snapshot failed", "err", snapErr)
+	}
+
+	recent, err := s.orgStore.RecentDecisions(ctx, job.RepoID, 20)
+	if err != nil {
+		log.Warn("serve: dispatch fallback recent decisions unavailable", "err", err)
+	}
+
+	decision, err := orchestration.Decide(orchestration.Input{
+		Disposition:       fallbackDisposition,
+		Manifest:          manifest,
+		RecentDecisions:   recent,
+		TicketStateHash:   ticketHash,
+		SourceDisposition: &sourceDisposition,
+	})
+	if err != nil {
+		log.Warn("serve: dispatch fallback decision failed", "err", err)
+		return false
+	}
+	decision.Reason = strings.TrimSpace(decision.Reason + "; deterministic fallback after failed Orchestrator")
+	if snapErr == nil {
+		decision = enforceEngineerTicketPrerequisite(decision, snap, manifest, &sourceDisposition)
+	}
+	if strings.EqualFold(strings.TrimSpace(decision.NextRole), "orchestrator") {
+		log.Warn("serve: dispatch fallback refused recursive Orchestrator route",
+			"reason", decision.Reason,
+		)
+		decision.NextRole = ""
+		decision.DecisionKind = "deterministic_fallback"
+		decision.StopReason = "failed Orchestrator recovery stopped without recursive dispatch"
+		decision.Reason += "; refused recursive Orchestrator route"
+	}
+	decision, err = s.orgStore.RecordDecision(ctx, decision)
+	if err != nil {
+		log.Warn("serve: record dispatch fallback decision failed", "err", err)
+		return false
+	}
+
+	if s.dash != nil {
+		decisionPayload, _ := json.Marshal(decision)
+		s.dash.BroadcastEvent("orchestration_decision", string(decisionPayload))
+	}
+
+	if strings.TrimSpace(decision.NextRole) == "" {
+		log.Info("serve: dispatch fallback stopped", "reason", decision.StopReason)
+		return true
+	}
+
+	triggerJSON, err := json.Marshal(newDispatchTriggerPayloadForSource(trigger.SourceRole, trigger.SourceJob, decision, sourceDisposition))
+	if err != nil {
+		log.Error("serve: failed to marshal dispatch fallback trigger", "target_role", decision.NextRole, "err", err)
+		return false
+	}
+	dispatchJob := queue.Job{
+		RepoID:         job.RepoID,
+		Role:           decision.NextRole,
+		Trigger:        string(triggerJSON),
+		IdempotencyKey: fmt.Sprintf("dispatch:%s:%s:%s:fallback", job.ID, job.RepoID, decision.NextRole),
+	}
+	jobID, err := s.queue.Enqueue(ctx, dispatchJob)
+	if err != nil {
+		log.Error("serve: failed to enqueue dispatch fallback job", "target_role", decision.NextRole, "err", err)
+		return false
+	}
+	log.Info("serve: dispatch fallback job enqueued", "target_role", decision.NextRole, "dispatch_job_id", jobID)
+	if s.dash != nil {
+		payload, _ := json.Marshal(map[string]string{
+			"decision_id": decision.ID,
+			"job_id":      jobID,
+			"role":        decision.NextRole,
+			"repo":        job.RepoID,
+			"reason":      decision.Reason,
+		})
+		s.dash.BroadcastEvent("dispatch_enqueued", string(payload))
+	}
+	return true
+}
+
+func (s *Server) recordStoppedOrchestratorFallback(ctx context.Context, job *queue.Job, rec *RepoRecord, source orgstate.Disposition, reason string, jobErr error) {
+	if s == nil || s.orgStore == nil {
+		return
+	}
+	ticketHash := ""
+	if rec != nil {
+		if snap, err := snapshotTickets(rec.Path); err == nil {
+			ticketHash = snap.routingHash()
+		}
+	}
+	decision := orgstate.Decision{
+		JobID:           job.ID,
+		RepoID:          job.RepoID,
+		SourceRole:      "orchestrator",
+		TicketID:        source.TicketID,
+		NextNeed:        source.NextNeed,
+		DecisionKind:    "deterministic_fallback",
+		Reason:          strings.TrimSpace(fmt.Sprintf("%s after error: %s", reason, jobErr.Error())),
+		StopReason:      "failed Orchestrator recovery stopped without recursive dispatch",
+		TicketStateHash: ticketHash,
+	}
+	if _, err := s.orgStore.RecordDecision(ctx, decision); err != nil {
+		slog.Warn("serve: record stopped Orchestrator fallback decision failed",
+			"job_id", job.ID,
+			"repo_id", job.RepoID,
+			"err", err,
+		)
+	}
+}
+
+func deterministicContainmentFailure(cat telemetry.FailureCategory, msg string) bool {
+	if cat == telemetry.CategoryWorkspaceHygiene {
+		return true
+	}
+	if cat != telemetry.CategoryGuardrailBlock {
+		return false
+	}
+	lower := strings.ToLower(msg)
+	return strings.Contains(lower, "dirty worktree containment") ||
+		strings.Contains(lower, "blast radius exceeded")
+}
+
+func dispatchRuntimeFailureStops(cat telemetry.FailureCategory) bool {
+	switch cat {
+	case telemetry.CategoryContextOverflow,
+		telemetry.CategoryLLMUnreachable,
+		telemetry.CategoryInferenceCrash,
+		telemetry.CategoryModelUnavailable,
+		telemetry.CategoryToolTimeout,
+		telemetry.CategoryCircleDetected,
+		telemetry.CategoryMaxTurns,
+		telemetry.CategoryBudgetExceeded,
+		telemetry.CategoryManifestError,
+		telemetry.CategoryGuardrailBlock,
+		telemetry.CategoryDispatchProtocol,
+		telemetry.CategoryManualStop,
+		telemetry.CategoryUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+func isTicketGateRepairTrigger(raw string) bool {
+	var trigger map[string]string
+	if err := json.Unmarshal([]byte(raw), &trigger); err != nil {
+		return false
+	}
+	return trigger["type"] == "ticket_gate_repair"
 }
 
 func (s *Server) jobHadPolicyBlock(jobID string) bool {
@@ -1631,7 +1942,7 @@ func (s *Server) buildPipelineView() dashboard.PipelineView {
 		nodes := dashboardRoleNodes(manifest, true)
 		return dashboard.PipelineView{
 			Mode:        "dispatch",
-			Description: "Each role records a disposition, returns to Orchestrator, and Orchestrator chooses the next best role.",
+			Description: "Each role records a disposition; deterministic handoffs route directly and Orchestrator handles ambiguous follow-up.",
 			Nodes:       nodes,
 		}
 	}

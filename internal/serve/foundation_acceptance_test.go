@@ -32,7 +32,8 @@ func TestFoundationAcceptanceFreshBootstrapHappyPath(t *testing.T) {
 	ctx := context.Background()
 	repo := setupFoundationTarget(t, false)
 	fake := newFakeChatServer(t,
-		fakeToolResponse("write-probe", "file_write", `{"path":"docs/probe.txt","content":"foundation gate passed\n"}`),
+		fakeToolResponse("write-probe", "file_write", `{"path":"docs/exec-plans/backlog/foundation-acceptance-probe.md","content":"foundation gate passed\n"}`),
+		fakeToolResponse("commit-probe", "git_commit", `{"message":"test: commit foundation acceptance probe"}`),
 		fakeToolResponse("record-disposition", "job_disposition_record", `{"status":"completed","reason":"foundation acceptance probe completed"}`),
 		fakeTextResponse("Done."),
 	)
@@ -43,12 +44,35 @@ func TestFoundationAcceptanceFreshBootstrapHappyPath(t *testing.T) {
 	require.NoError(t, exec.Execute(ctx, job))
 	srv.handleJobComplete(ctx, job)
 
-	require.Equal(t, 3, fake.RequestCount())
-	data, err := os.ReadFile(filepath.Join(repo, "docs", "probe.txt"))
+	require.Equal(t, 3, fake.RequestCount(), "job_disposition_record is terminal in dispatch mode")
+	data, err := os.ReadFile(filepath.Join(repo, "docs", "exec-plans", "backlog", "foundation-acceptance-probe.md"))
 	require.NoError(t, err)
 	require.Equal(t, "foundation gate passed\n", string(data))
 	require.Equal(t, 0, countInterventionDebtTickets(t, repo))
 	require.Equal(t, 1, countOutcomes(t, srv, "coo", "passed"))
+}
+
+func TestFoundationAcceptanceDispatchProseCompletionRepromptsForDisposition(t *testing.T) {
+	ctx := context.Background()
+	repo := setupFoundationTarget(t, false)
+	fake := newFakeChatServer(t,
+		fakeTextResponse("QA approves the change."),
+		fakeToolResponse("record-disposition", "job_disposition_record", `{"status":"approved","next_need":"no_need","reason":"QA approved after reviewing the available evidence.","evidence_links":["git log --oneline -10"]}`),
+		fakeTextResponse("Done."),
+	)
+
+	srv, repoID, exec := setupFoundationServer(t, repo, fake.URL())
+	job := &queue.Job{ID: "job-qa-prose", RepoID: repoID, Role: "qa", Trigger: `{"type":"acceptance"}`}
+
+	require.NoError(t, exec.Execute(ctx, job))
+
+	require.Equal(t, 2, fake.RequestCount(), "prose-only QA completion should be reprompted until job_disposition_record is called")
+	disposition, err := srv.orgStore.GetDisposition(ctx, job.ID)
+	require.NoError(t, err)
+	require.NotNil(t, disposition)
+	require.Equal(t, "approved", disposition.Status)
+	require.Equal(t, "no_need", disposition.NextNeed)
+	require.Equal(t, []string{"git log --oneline -10"}, disposition.EvidenceLinks)
 }
 
 func TestFoundationAcceptancePolicyBlockSuppressesTicketGateFallout(t *testing.T) {
@@ -71,7 +95,7 @@ func TestFoundationAcceptancePolicyBlockSuppressesTicketGateFallout(t *testing.T
 	srv.handleJobFailed(ctx, job, err)
 
 	require.FileExists(t, filepath.Join(repo, "src", "keep.txt"))
-	require.Equal(t, 2, fake.RequestCount())
+	require.Equal(t, 3, fake.RequestCount(), "dispatch protocol should give one terminal-disposition reminder, then fail through the existing ticket gate")
 	require.Equal(t, 0, countInterventionDebtTickets(t, repo), "foundation-owned policy and ticket-gate fallout should stay out of the target backlog")
 	require.Equal(t, 1, countTelemetryByCategory(t, srv, "guardrail_block"))
 	require.Equal(t, 1, countTelemetryByCategory(t, srv, "ticket_gate"))
@@ -94,8 +118,8 @@ func TestFoundationAcceptanceDirtyWorktreeContainmentSkipsLLMAndRecovery(t *test
 
 	require.Equal(t, 0, fake.RequestCount(), "dirty preflight must happen before LLM invocation")
 	require.Equal(t, 0, countInterventionDebtTickets(t, repo), "foundation-owned containment failures should stay out of the target backlog")
-	require.Equal(t, 1, countJobsByStatus(t, srv, "pending"), "deterministic containment failure should enqueue a single dispatch review")
-	require.Equal(t, 1, countJobsByStatusAndRole(t, srv, "pending", "orchestrator"), "dispatch review should return to Orchestrator")
+	require.Equal(t, 0, countJobsByStatus(t, srv, "pending"), "deterministic containment failure should not enqueue dispatch loops")
+	require.Equal(t, 0, countJobsByStatusAndRole(t, srv, "pending", "orchestrator"), "deterministic containment should wait for operator cleanup")
 	require.Equal(t, 0, countJobsByStatusAndRole(t, srv, "pending", "engineer"), "deterministic containment failure should not enqueue same-role recovery")
 }
 

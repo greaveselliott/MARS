@@ -1478,6 +1478,9 @@ func executeRun(opts runOpts) error {
 		tw.WriteError(err.Error())
 		return fmt.Errorf("run: resolve repo path: %w", err)
 	}
+	if err := validateRuntimeArtifactPathOutsideRepo("run", "--log-file", opts.logFile, absRepo, "default ~/.mars-harness/traces/logs/<timestamp>-run.log"); err != nil {
+		return err
+	}
 
 	debug := opts.debug || opts.trace
 	display, err := newRuntimeDisplay("run", opts.logFile, debug, os.Stdout, os.Stderr, nil, ui.DashboardOptions{
@@ -2323,6 +2326,7 @@ func scoresExportCmd() *cobra.Command {
 	var repoPath string
 	var dbPath string
 	var windowDays int
+	var createInterventionDebt bool
 	var noTicket bool
 	cmd := &cobra.Command{
 		Use:   "export",
@@ -2333,11 +2337,12 @@ func scoresExportCmd() *cobra.Command {
 				return err
 			}
 			report, err := qualityscore.Export(cmd.Context(), qualityscore.Options{
-				RepoPath:              repoAbs,
-				RepoID:                repoID,
-				DBPath:                resolvedDB,
-				WindowDays:            windowDays,
-				DisableTicketCreation: noTicket,
+				RepoPath:               repoAbs,
+				RepoID:                 repoID,
+				DBPath:                 resolvedDB,
+				WindowDays:             windowDays,
+				CreateInterventionDebt: createInterventionDebt,
+				DisableTicketCreation:  noTicket,
 			})
 			if err != nil {
 				return err
@@ -2356,7 +2361,9 @@ func scoresExportCmd() *cobra.Command {
 	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
 	cmd.Flags().IntVar(&windowDays, "window-days", 30, "Scoring and telemetry evidence window in days")
-	cmd.Flags().BoolVar(&noTicket, "no-ticket", false, "Do not create or update low-score intervention-debt tickets")
+	cmd.Flags().BoolVar(&createInterventionDebt, "create-intervention-debt", false, "Create or update deduped intervention-debt tickets from score and outcome evidence")
+	cmd.Flags().BoolVar(&noTicket, "no-ticket", false, "Deprecated: ticket creation is disabled by default unless --create-intervention-debt is set")
+	_ = cmd.Flags().MarkHidden("no-ticket")
 	return cmd
 }
 
@@ -3009,6 +3016,22 @@ If .harness/manifest.yaml is missing, mars-harness runs the same scaffold as
 			if err != nil {
 				return fmt.Errorf("register: resolve path: %w", err)
 			}
+			usingDefaultDBPath := strings.TrimSpace(dbPath) == ""
+			if usingDefaultDBPath {
+				dbPath = defaultDBPath(absPath)
+			} else {
+				dbPath = strings.TrimSpace(dbPath)
+			}
+			if err := validateRuntimeArtifactPathOutsideRepo("register", "--db", dbPath, absPath, defaultDBPath(absPath)); err != nil {
+				return err
+			}
+			if usingDefaultDBPath {
+				if _, err := os.Stat(legacyDBPath()); err == nil {
+					if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+						slog.Warn("register: legacy shared database exists at " + legacyDBPath() + " but per-repo DB does not yet exist — starting fresh. Copy the legacy DB to " + dbPath + " if you want to preserve history.")
+					}
+				}
+			}
 
 			preInitChanges, err := gitChangedPaths(absPath)
 			if err != nil {
@@ -3030,14 +3053,6 @@ If .harness/manifest.yaml is missing, mars-harness runs the same scaffold as
 				}
 			}
 
-			if dbPath == "" {
-				dbPath = defaultDBPath(absPath)
-				if _, err := os.Stat(legacyDBPath()); err == nil {
-					if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-						slog.Warn("register: legacy shared database exists at " + legacyDBPath() + " but per-repo DB does not yet exist — starting fresh. Copy the legacy DB to " + dbPath + " if you want to preserve history.")
-					}
-				}
-			}
 			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 				return fmt.Errorf("register: create db directory: %w", err)
 			}
@@ -3117,6 +3132,29 @@ func defaultDBPath(repoAbsPath string) string {
 	home, _ := os.UserHomeDir()
 	repoSlug := filepath.Base(repoAbsPath)
 	return filepath.Join(home, ".mars-harness", "db", repoSlug, "mars.db")
+}
+
+func validateRuntimeArtifactPathOutsideRepo(command, flag, path, repoAbsPath, suggested string) error {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return nil
+	}
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("%s: resolve %s path: %w", command, flag, err)
+	}
+	absRepo, err := filepath.Abs(repoAbsPath)
+	if err != nil {
+		return fmt.Errorf("%s: resolve target repo path: %w", command, err)
+	}
+	rel, err := filepath.Rel(absRepo, absPath)
+	if err != nil {
+		return fmt.Errorf("%s: compare %s path to target repo: %w", command, flag, err)
+	}
+	if rel == "." || (!strings.HasPrefix(rel, ".."+string(filepath.Separator)) && rel != ".." && !filepath.IsAbs(rel)) {
+		return fmt.Errorf("%s: %s path %s is inside target repo %s; use %s or pass a writable path outside the repo so runtime artifacts cannot dirty the project worktree", command, flag, absPath, absRepo, suggested)
+	}
+	return nil
 }
 
 func resolveRepoDBAndID(repoArg, dbPath string) (string, string, error) {
@@ -3214,8 +3252,8 @@ func startCmd() *cobra.Command {
 		Short: "Bootstrap and run the full autonomous pipeline",
 		Long: `Initialise .harness/ if needed, register the repo, seed the CEO agent,
 and start the orchestrator. Bootstrap order is exec plan first, then feature
-contracts, then tickets, then delivery. Dispatch returns each role disposition
-to Orchestrator so the next agent is selected from current evidence.`,
+contracts, then tickets, then delivery. Dispatch routes deterministic role
+dispositions directly and uses Orchestrator for ambiguous handoffs.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if repoPath == "" {
 				var err error
@@ -3227,6 +3265,25 @@ to Orchestrator so the next agent is selected from current evidence.`,
 			absPath, err := filepath.Abs(repoPath)
 			if err != nil {
 				return fmt.Errorf("start: resolve path: %w", err)
+			}
+			if err := validateRuntimeArtifactPathOutsideRepo("start", "--log-file", logFile, absPath, "default ~/.mars-harness/traces/logs/<timestamp>-start.log"); err != nil {
+				return err
+			}
+			usingDefaultDBPath := strings.TrimSpace(dbPath) == ""
+			if usingDefaultDBPath {
+				dbPath = defaultDBPath(absPath)
+			} else {
+				dbPath = strings.TrimSpace(dbPath)
+			}
+			if err := validateRuntimeArtifactPathOutsideRepo("start", "--db", dbPath, absPath, defaultDBPath(absPath)); err != nil {
+				return err
+			}
+			if usingDefaultDBPath {
+				if _, err := os.Stat(legacyDBPath()); err == nil {
+					if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+						slog.Warn("start: legacy shared database exists at " + legacyDBPath() + " but per-repo DB does not yet exist — starting fresh. Copy the legacy DB to " + dbPath + " if you want to preserve history.")
+					}
+				}
 			}
 
 			display, err := newRuntimeDisplay("start", logFile, debug, cmd.OutOrStdout(), cmd.ErrOrStderr(), nil, ui.DashboardOptions{
@@ -3267,14 +3324,6 @@ to Orchestrator so the next agent is selected from current evidence.`,
 				slog.Warn("config load failed, using defaults", "err", err)
 			}
 
-			if dbPath == "" {
-				dbPath = defaultDBPath(absPath)
-				if _, err := os.Stat(legacyDBPath()); err == nil {
-					if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-						slog.Warn("start: legacy shared database exists at " + legacyDBPath() + " but per-repo DB does not yet exist — starting fresh. Copy the legacy DB to " + dbPath + " if you want to preserve history.")
-					}
-				}
-			}
 			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 				return fmt.Errorf("start: create db directory: %w", err)
 			}
@@ -3325,7 +3374,7 @@ to Orchestrator so the next agent is selected from current evidence.`,
 			display.Event("repo", fmt.Sprintf("Registered repo %s (ID: %s)", filepath.Base(absPath), repoID))
 
 			triggerJSON := `{"type":"bootstrap","source":"mars-harness start"}`
-			jobID, err := srv.SeedJob(sigCtx, repoID, "ceo", triggerJSON)
+			jobID, err := srv.SeedBootstrapJob(sigCtx, repoID, "ceo", triggerJSON)
 			if err != nil {
 				display.Error(fmt.Sprintf("seed CEO: %v", err))
 				return err

@@ -129,6 +129,96 @@ func TestWorkerPool_OnComplete_does_not_fire_on_failure(t *testing.T) {
 	wp.Stop()
 }
 
+func TestWorkerPool_failureFinalizesAfterContextCancelled(t *testing.T) {
+	q := testQueue(t)
+
+	id, err := q.Enqueue(context.Background(), Job{
+		RepoID:         "repo-1",
+		Role:           "dogfood",
+		Trigger:        `{"type":"test"}`,
+		IdempotencyKey: "cancelled-failure",
+	})
+	if err != nil {
+		t.Fatalf("Enqueue: %v", err)
+	}
+
+	processed := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+	wp := NewWorkerPool(q, WorkerConfig{
+		Concurrency:  1,
+		PollInterval: 10 * time.Millisecond,
+		OnJob: func(_ context.Context, _ *Job) error {
+			cancel()
+			close(processed)
+			return context.Canceled
+		},
+	})
+	wp.Start(ctx)
+
+	select {
+	case <-processed:
+	case <-time.After(2 * time.Second):
+		t.Fatal("job was not processed within 2 seconds")
+	}
+	wp.Stop()
+
+	got, err := q.Get(context.Background(), id)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if got.Status != StatusFailed {
+		t.Fatalf("expected failed status after cancelled failure, got %s", got.Status)
+	}
+	if got.CompletedAt == nil {
+		t.Fatal("expected completed_at to be set for failed job")
+	}
+}
+
+func TestWorkerPool_successFinalizesAfterContextCancelled(t *testing.T) {
+	q := testQueue(t)
+
+	id, err := q.Enqueue(context.Background(), Job{
+		RepoID:         "repo-1",
+		Role:           "qa",
+		Trigger:        `{"type":"test"}`,
+		IdempotencyKey: "cancelled-success",
+	})
+	if err != nil {
+		t.Fatalf("Enqueue: %v", err)
+	}
+
+	processed := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+	wp := NewWorkerPool(q, WorkerConfig{
+		Concurrency:  1,
+		PollInterval: 10 * time.Millisecond,
+		OnJob: func(_ context.Context, _ *Job) error {
+			cancel()
+			close(processed)
+			return nil
+		},
+	})
+	wp.Start(ctx)
+
+	select {
+	case <-processed:
+	case <-time.After(2 * time.Second):
+		t.Fatal("job was not processed within 2 seconds")
+	}
+	wp.Stop()
+
+	got, err := q.Get(context.Background(), id)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if got.Status != StatusCompleted {
+		t.Fatalf("expected completed status after cancelled success, got %s", got.Status)
+	}
+	if got.CompletedAt == nil {
+		t.Fatal("expected completed_at to be set for completed job")
+	}
+}
+
 func TestWorkerPool_Pause_blocks_new_claims(t *testing.T) {
 	q := testQueue(t)
 

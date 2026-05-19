@@ -42,6 +42,7 @@ var ejectHarnessPaths = []string{
 	"docs/reports/qa",
 	"docs/reports/security",
 	"docs/reports/dependencies",
+	"docs/reports/dogfood",
 	"docs/reports/strategy",
 	"docs/design-docs",
 }

@@ -91,6 +91,53 @@ func TestToolCallsFromAssistantMessage_multipleFunctionTags(t *testing.T) {
 	require.JSONEq(t, `{"pattern":"F-001","glob":"docs/features/*.md"}`, calls[1].Function.Arguments)
 }
 
+func TestToolCallsFromAssistantMessage_inlineToolCallTags(t *testing.T) {
+	t.Parallel()
+	raw := `I will read the ticket.
+
+<tool_call>file_read{path:<|"|>docs/tickets/done/T-001.md<|"|>}</tool_call>`
+	calls, err := ToolCallsFromAssistantMessage(llm.Message{Role: "assistant", Content: raw})
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
+	require.Equal(t, "file_read", calls[0].Function.Name)
+	require.JSONEq(t, `{"path":"docs/tickets/done/T-001.md"}`, calls[0].Function.Arguments)
+}
+
+func TestToolCallsFromAssistantMessage_inlineDispositionTag(t *testing.T) {
+	t.Parallel()
+	raw := `<tool_call>job_disposition_record{blocked_by:[<|"|>T-001<|"|>],evidence_links:[<|"|>docs/tickets/done/T-001.md<|"|>,<|"|>src/game.js<|"|>],next_need:<|"|>liveness<|"|>,reason:<|"|>Cannot begin QA review until the ticket is readable.<|"|>,status:<|"|>blocked<|"|>}</tool_call>`
+	calls, err := ToolCallsFromAssistantMessage(llm.Message{Role: "assistant", Content: raw})
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
+	require.Equal(t, "job_disposition_record", calls[0].Function.Name)
+	require.JSONEq(t, `{
+		"blocked_by":["T-001"],
+		"evidence_links":["docs/tickets/done/T-001.md","src/game.js"],
+		"next_need":"liveness",
+		"reason":"Cannot begin QA review until the ticket is readable.",
+		"status":"blocked"
+	}`, calls[0].Function.Arguments)
+}
+
+func TestToolCallsFromAssistantMessage_inlineDispositionNestedFeedback(t *testing.T) {
+	t.Parallel()
+	raw := `<tool_call>job_disposition_record{status:<|"|>changes_requested<|"|>,ticket_id:<|"|>T-001<|"|>,feedback:{for_role:<|"|>engineer<|"|>,requested_change:<|"|>Add browser evidence, then rerun QA.<|"|>,severity:<|"|>medium<|"|>},evidence_links:[]}</tool_call>`
+	calls, err := ToolCallsFromAssistantMessage(llm.Message{Role: "assistant", Content: raw})
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
+	require.Equal(t, "job_disposition_record", calls[0].Function.Name)
+	require.JSONEq(t, `{
+		"status":"changes_requested",
+		"ticket_id":"T-001",
+		"feedback":{
+			"for_role":"engineer",
+			"requested_change":"Add browser evidence, then rerun QA.",
+			"severity":"medium"
+		},
+		"evidence_links":[]
+	}`, calls[0].Function.Arguments)
+}
+
 func TestToolCallsFromAssistantMessage_pythonBooleans(t *testing.T) {
 	t.Parallel()
 	raw := `[{"name":"noop","id":"c1","arguments":"{\"active\": True, \"ok\": False}"}]`

@@ -37,17 +37,22 @@ Add a manifest field:
 orchestration_mode: legacy | dispatch
 ```
 
-`dispatch` is the generated default. Each role records a terminal disposition,
-returns that disposition to the configured `orchestrator` role, and the
-Orchestrator chooses the next best manifest role or stops. `legacy` remains
-supported for existing repos that deliberately want `then` and `idle_then`
-runtime behavior.
+`dispatch` is the generated default. Each role records a terminal disposition.
+The server routes completed, approved, in-review, and no-work dispositions
+directly when the next role is deterministic from `suggested_role`,
+`handoff.target_role`, `feedback.for_role`, `next_need`, or the product
+validation spine. Orchestrator remains the fallback for ambiguous, blocked,
+failed, conflicting, or governance-heavy handoffs. `legacy` remains supported
+for existing repos that deliberately want `then` and `idle_then` runtime
+behavior.
 
 ## Runtime Contract
 
 In dispatch mode, successful roles must record a job disposition before they
-complete. The executor rejects a dispatch-mode job that finishes without a
-recorded disposition.
+complete. `job_disposition_record` is terminal: after the tool succeeds, the
+agent loop stops instead of letting the model continue to spend turns after it
+has already declared the job outcome. The executor rejects a dispatch-mode job
+that finishes without a recorded disposition.
 
 Supported dispositions:
 
@@ -70,12 +75,17 @@ Dispositions may also carry structured `handoff` and `feedback` objects so the
 next role gets an explicit ask and the prior role gets explicit correction
 rather than implicit prose.
 
+Dispatch handoff jobs outrank scheduled cron jobs when the queue claims work.
+Cron schedules remain a safety net for unattended operation, but they must not
+preempt an active bootstrap or product handoff chain.
+
 Dispatch jobs carry a typed trigger payload. The payload includes the source
 role, source job, orchestration decision, selected target role, and a
 routing-safe `source_disposition` containing status, next need, ticket ID,
-reason, evidence links, trace ID, handoff, and feedback. The Orchestrator reads
-that packet first, translates it into a cleaned target handoff, and records its
-own disposition before the chosen role runs.
+reason, evidence links, trace ID, handoff, and feedback. Direct deterministic
+handoffs pass that packet to the selected target role. Ambiguous handoffs pass
+it to Orchestrator first, where Orchestrator translates it into a cleaned target
+handoff and records its own disposition before the chosen role runs.
 
 ## Ticket State
 
@@ -95,6 +105,15 @@ forking the ticket lifecycle into a second blocked queue.
 Feature tickets still require BDD evidence before `done/`. Work products,
 approvals, and dispositions are supporting liveness state, not substitutes for
 BDD completion evidence.
+
+Engineer dispatch is ticket-backed, but review rework reuses the ticket under
+review. A fresh implementation handoff to Engineer requires an ordinary product
+ticket in backlog or in progress. If QA or another reviewer records
+`changes_requested` for an existing ordinary product ticket and the next need is
+implementation rework, dispatch may route Engineer to the same ticket even when
+the ticket currently lives in `done/` or `in-review/`. The runtime must not send
+that case back to CTO for a duplicate ticket unless the review explicitly asks
+for ticket breakdown instead of rework.
 
 ## Data Model
 
@@ -119,7 +138,11 @@ views can land without another database migration shape change.
 
 The orchestration engine uses these rules:
 
-- Non-Orchestrator dispositions route to the configured `orchestrator` role.
+- Completed, approved, in-review, and no-work non-Orchestrator dispositions
+  route directly when the target role is deterministic from `suggested_role`,
+  `handoff.target_role`, `feedback.for_role`, `next_need`, or the default
+  product validation spine. Ambiguous, blocked, failed, or conflicting
+  dispositions route to the configured `orchestrator` role.
 - Orchestrator dispositions honor `suggested_role`, then
   `handoff.target_role`, then `feedback.for_role`, after validating that the
   selected role exists in the manifest and that structured target fields do not
@@ -134,13 +157,60 @@ The orchestration engine uses these rules:
   failing scenarios route to COO.
 - Tickets, ticket shaping, ticket breakdown, technical tickets, implementation
   tickets, and architecture review route to CTO.
+- During fresh bootstrap or an empty ordinary product backlog, CTO routing is a
+  bounded ticket-shaping stop: create or confirm one current-scenario
+  implementation ticket, record implementation as the next need, and return to
+  Orchestrator before any broad governance or audit work.
 - Implementation routes to Engineer; QA and evidence review route to QA.
+- Engineer implementation dispatch requires an ordinary product ticket in
+  `docs/tickets/backlog/` or `docs/tickets/in-progress/`. If Orchestrator
+  selects Engineer while no open product ticket exists, the runtime rewrites
+  the dispatch to `cto-weekly` for ticket shaping instead of allowing
+  free-floating implementation work.
+- When no open product ticket remains after a completed Engineer source
+  disposition, the next dispatch is QA review before any further CTO planning
+  or implementation handoff, even if Orchestrator selects ticket shaping.
+- Engineer ticket-gate failures are repaired by one bounded Engineer
+  `ticket_gate_repair` job that carries the gate error in its trigger. A repair
+  job that fails the gate again stops instead of routing through Orchestrator or
+  enqueueing another repair.
+- Dispatch protocol completion is backed by the agent loop: when a dispatch job
+  tries to finish with prose only, the runtime gives one corrective prompt for
+  the required `job_disposition_record` tool call instead of ending the job
+  immediately. If the role still finishes without a disposition, the
+  deterministic protocol failure is recorded as telemetry and stops instead of
+  routing through Orchestrator.
+- QA liveness blocks caused by missing trigger-provided source context do not
+  route backward into CTO, COO, CEO, or Janitor. The repo is the review context:
+  dispatch retries QA with a repository-inspection handoff so it reads the
+  ticket, recent commits, and named implementation files before blocking.
+- Pending Engineer survey jobs for in-progress tickets are cancelled when a
+  successful Engineer completion leaves none of their referenced tickets
+  eligible in `docs/tickets/in-progress/`.
+- Approved or completed QA and Security handoffs move forward through the
+  product validation chain. QA routes to Security; Security routes to Dogfood
+  when that role exists, or stops when no forward product validation owner
+  remains. Dependency Manager and Release Manager remain routable when a role
+  explicitly asks for dependency or release work, but they are no longer
+  automatic review-chain defaults for fresh target product slices.
+- The completed-Engineer/no-open-ticket guard is pre-review only. It can rewrite
+  Orchestrator fallback decisions to QA before review, but after QA approves
+  with a forward validation need the runtime honors QA's current disposition and
+  does not loop the same ticket back into QA because of stale Engineer trigger
+  context.
 - Manifests without an `orchestrator` keep deterministic fallback routing for
   compatibility.
 - Repeated identical role/ticket/need decisions on the same ticket-state hash
   route back to Orchestrator or stop with a loop-guard reason. If the repeated
   route already originated from Orchestrator, dispatch stops instead of
   enqueueing Orchestrator again.
+- If an Orchestrator job itself fails before recording a disposition, the
+  runtime never routes that failed Orchestrator disposition back into
+  Orchestrator. When the dispatch trigger still carries a non-Orchestrator
+  source disposition with a deterministic routing signal, the runtime falls
+  forward to that target role using the original source handoff. When the
+  source handoff is missing, ambiguous, or would select Orchestrator again,
+  dispatch records a stopped decision and leaves one operator-visible blocker.
 - Generated role guidance resolves BDD feature IDs by `docs/features/F-NNN*.md`
   so slugged feature contracts count as present. Missing exact paths such as
   `docs/features/F-001.md` must not override an existing
@@ -181,7 +251,7 @@ executor or session integration that the scaffold cannot express.
 | Assumption | Risk | Mitigation |
 | --- | --- | --- |
 | Existing repos still need the linear chain. | Breaking deployed harnesses would violate plug-and-play. | `legacy` remains supported for existing manifests, while new generated harnesses default to dispatch. |
-| Orchestrator on every handoff adds another job. | Extra latency compared with deterministic direct chaining. | The routing truth is clearer: roles return dispositions, Orchestrator owns next-role selection, and loop guards still prevent repeated churn. |
+| Orchestrator on every handoff adds another job. | Extra latency compared with deterministic direct chaining. | Deterministic product handoffs route directly; Orchestrator remains the fallback for ambiguous, blocked, failed, conflicting, or governance-heavy handoffs. |
 | Ticket docs and SQLite can diverge. | Dashboard or agents could trust stale liveness state. | Ticket docs remain completion truth; SQLite records operational liveness. Janitor and dashboard surface stale/missing records instead of treating SQLite as a release gate. |
 | Backward routing can create loops. | Engineer/QA or CTO/COO loops can burn queue capacity. | Decisions record ticket-state hashes; repeated identical decisions route to Orchestrator/Janitor or stop. |
 | Blocked work needs a truthful home. | A new `blocked/` directory would split existing drain behavior. | V1 keeps blocked tickets in `in-progress/` with explicit blocker metadata. |
@@ -209,8 +279,8 @@ The dispatch layer must be covered by:
 
 - org store CRUD and disposition validation
 - manifest parsing for `orchestration_mode`
-- Orchestrator-return routing, Orchestrator suggested-role routing, deterministic
-  fallback routing, and loop-guard cases
+- direct deterministic role routing, Orchestrator-return routing, Orchestrator
+  suggested-role routing, deterministic fallback routing, and loop-guard cases
 - ticket gate behavior for `in-review`
 - executor validation that dispatch-mode successes record dispositions
 - chaining tests proving legacy mode remains unchanged and dispatch mode bypasses

@@ -111,9 +111,9 @@ func TestGitPush_noRemote(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, runGitExit0(context.Background(), root, "add", "f.txt"))
 	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "init"))
-	_, err = handleGitPush(context.Background(), root, []byte(`{}`))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "git_push")
+	res, err := handleGitPush(context.Background(), root, []byte(`{}`))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "remote \"origin\" is not configured")
 }
 
 func TestGitPushPolicyAllowsOnlyMain(t *testing.T) {
@@ -145,4 +145,53 @@ func TestGitCommitPolicyBlocksSecretsInDirtyDiff(t *testing.T) {
 	err = preToolPolicy(context.Background(), root, "git_commit", json.RawMessage(`{"message":"commit secret"}`))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "secret scanner")
+}
+
+func TestGitCommitBlocksGeneratedWorkspaceOutput(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	testutil.WriteFile(t, filepath.Join(dir, "README.md"), "initial\n")
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "README.md"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "init"))
+
+	testutil.WriteFile(t, filepath.Join(dir, "dist", "bundle.js"), "compiled\n")
+	testutil.WriteFile(t, filepath.Join(dir, "src", "index.js"), "console.log('ship')\n")
+
+	_, err = handleGitCommit(context.Background(), root, []byte(`{"message":"stage all"}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "generated workspace paths would be staged: dist")
+
+	_, err = handleGitCommit(context.Background(), root, []byte(`{"message":"explicit dist","paths":["dist/bundle.js"]}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "generated workspace paths cannot be committed: dist")
+
+	_, err = handleGitCommit(context.Background(), root, []byte(`{"message":"source only","paths":["src/index.js"]}`))
+	require.NoError(t, err)
+
+	ls, err := runGit(context.Background(), root, "ls-files", "dist")
+	require.NoError(t, err)
+	require.Equal(t, "", strings.TrimSpace(ls.Output))
+}
+
+func TestGitCommitBlocksAlreadyStagedGeneratedWorkspaceOutput(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	testutil.WriteFile(t, filepath.Join(dir, "README.md"), "initial\n")
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "README.md"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "init"))
+
+	testutil.WriteFile(t, filepath.Join(dir, "dist", "bundle.js"), "compiled\n")
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "dist/bundle.js"))
+
+	_, err = handleGitCommit(context.Background(), root, []byte(`{"message":"normal file","paths":["README.md"]}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "generated workspace paths are staged: dist")
 }

@@ -37,4 +37,4 @@ Foreign keys and indexes should be designed assuming **many repos** even when th
 
 ## Discoveries
 
-_(None yet.)_
+- 2026-05-19: Live `demo-123` validation showed that operator shutdown during an active Dogfood job could cancel the worker context before the queue wrote the terminal failure state. The TUI showed the job as blocked, but SQLite still reported it as `running`. Worker finalization now uses a short fresh context for `completed`/`failed` state writes while leaving shutdown-canceled callbacks unable to enqueue more work.

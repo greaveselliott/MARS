@@ -27,6 +27,7 @@ Run the real setup and agent path end to end, preserving raw evidence and escala
 
 - Default delivery-loop ownership.
 - Product ticket implementation.
+- Product source, package manifest, lockfile, config, or harness scaffold mutation during validation.
 - CEO/COO/CTO planning decisions.
 - Release approval.
 
@@ -49,6 +50,7 @@ Run the real setup and agent path end to end, preserving raw evidence and escala
 - Dogfood pass/fail evidence.
 - Foundation-owned failure pattern for telemetry/triage.
 - Target-owned intervention ticket only when remediation belongs to the target repo.
+- Blocked disposition instead of product mutation when validation itself changes package or source state.
 
 ## Stop Conditions
 

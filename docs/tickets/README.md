@@ -88,6 +88,10 @@ Feature tickets require non-empty `bdd_scenarios`, `end_to_end_evidence: require
 non-empty `evidence_links`, and a real `verified_by` value before moving to
 `done/`. Enabler, research, docs, and intervention-debt tickets normally use
 `end_to_end_evidence: not_applicable` and must not claim a shipped feature.
+Tool policy blocks `git mv`/`mv` moves into `docs/tickets/done/` and
+`file_write` updates to done tickets when those required feature evidence
+fields are still empty, so the same role must repair the evidence before the
+ticket can leave in-progress.
 
 Feature tickets must not be the only place business logic is described. If a
 ticket changes product rules, workflow branches, state transitions,
@@ -152,7 +156,7 @@ Eligible in-progress tickets are always the front of the queue. If multiple tick
 
 Engineer runs cannot create ordinary backlog tickets while eligible in-progress tickets remain. Dependency tickets are allowed only when deduped and linked back to the blocked ticket through metadata such as `metadata.blocks`. Dogfood ticket creation is capped per run by total count, severity, group, and repeated dedupe key.
 
-High-priority intervention-debt tickets are prioritised ahead of ordinary backlog work because they represent a failure in the harness process, prompts, skills, guardrails, context routing, inference setup, or tool policy that can damage future delivery. Medium and low intervention-debt tickets remain visible durable work, but they do not block ordinary product backlog progress. Existing matching intervention-debt tickets are updated rather than duplicated.
+Intervention-debt tickets remain visible durable work, but they do not preempt ordinary product backlog by default. Work them ahead of product tickets only when an active product ticket explicitly names the intervention debt in `blocked_by`, or when an operator deliberately chooses to materialize and prioritize the remediation. Existing matching intervention-debt tickets are updated rather than duplicated.
 
 ## Dispatch-Orchestration Metadata
 

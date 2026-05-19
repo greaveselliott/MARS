@@ -428,8 +428,8 @@ Global command surface:
     Example: ["scores", "--repo", "."]
 
   scores export
-    Export repo quality score from telemetry/scoring evidence.
-    Flags: --repo <path>, --db <path>, --window-days <n>, --no-ticket
+    Export repo quality score from telemetry/scoring evidence. Ticket materialization is opt-in.
+    Flags: --repo <path>, --db <path>, --window-days <n>, --create-intervention-debt
     Example: ["scores", "export", "--repo", ".", "--window-days", "30"]
 
   telemetry status

@@ -29,6 +29,7 @@ Turn CEO goals into a single active operating plan, BDD feature contract, scenar
 - Technical ticket creation.
 - Architecture approval.
 - Implementation or QA approval.
+- Application source, package, test, build, or root product-file edits.
 
 ## Best Feedback Format
 
@@ -55,6 +56,7 @@ Turn CEO goals into a single active operating plan, BDD feature contract, scenar
 - Goals or scope are unresolved and require CEO decision.
 - The next needed work is technical decomposition, ticket creation, implementation, QA, security, dependency, or release.
 - The BDD contract cannot be completed because required product behavior is missing.
+- A change would require editing product code instead of planning artifacts.
 
 ## Orchestrator Handoff
 

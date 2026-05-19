@@ -98,9 +98,24 @@ func TestExportCreatesDedupedRegressionTicket(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "F", report.Grade)
-	require.Len(t, report.TicketsChanged, 1)
+	require.Empty(t, report.TicketsChanged)
 
 	entries, err := os.ReadDir(filepath.Join(repo, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Empty(t, entries)
+
+	report, err = Export(ctx, Options{
+		RepoPath:               repo,
+		RepoID:                 "repo-1",
+		DBPath:                 dbPath,
+		Now:                    now,
+		WindowDays:             30,
+		CreateInterventionDebt: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, report.TicketsChanged, 1)
+
+	entries, err = os.ReadDir(filepath.Join(repo, "docs", "tickets", "backlog"))
 	require.NoError(t, err)
 	require.Len(t, entries, 1)
 	require.True(t, strings.HasPrefix(entries[0].Name(), "T-001-"))
@@ -113,11 +128,12 @@ func TestExportCreatesDedupedRegressionTicket(t *testing.T) {
 	require.Contains(t, ticketText, "dedupe_key: \"intervention-debt:repo-1:engineer:process:score:30d\"")
 
 	report, err = Export(ctx, Options{
-		RepoPath:   repo,
-		RepoID:     "repo-1",
-		DBPath:     dbPath,
-		Now:        now,
-		WindowDays: 30,
+		RepoPath:               repo,
+		RepoID:                 "repo-1",
+		DBPath:                 dbPath,
+		Now:                    now,
+		WindowDays:             30,
+		CreateInterventionDebt: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, report.TicketsChanged, 1)
@@ -162,11 +178,12 @@ func TestExportCreatesOutcomeSignalTickets(t *testing.T) {
 	require.NoError(t, store.Close())
 
 	report, err := Export(ctx, Options{
-		RepoPath:   repo,
-		RepoID:     "repo-1",
-		DBPath:     dbPath,
-		Now:        now,
-		WindowDays: 30,
+		RepoPath:               repo,
+		RepoID:                 "repo-1",
+		DBPath:                 dbPath,
+		Now:                    now,
+		WindowDays:             30,
+		CreateInterventionDebt: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, report.TicketsChanged, 4)
@@ -186,11 +203,12 @@ func TestExportCreatesOutcomeSignalTickets(t *testing.T) {
 	require.Contains(t, combined, `category: "tool_timeout"`)
 
 	report, err = Export(ctx, Options{
-		RepoPath:   repo,
-		RepoID:     "repo-1",
-		DBPath:     dbPath,
-		Now:        now,
-		WindowDays: 30,
+		RepoPath:               repo,
+		RepoID:                 "repo-1",
+		DBPath:                 dbPath,
+		Now:                    now,
+		WindowDays:             30,
+		CreateInterventionDebt: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, report.TicketsChanged, 4)
@@ -209,10 +227,11 @@ func TestExportCreatesStaleInProgressTicketSignal(t *testing.T) {
 	require.NoError(t, os.Chtimes(stalePath, staleTime, staleTime))
 
 	report, err := Export(context.Background(), Options{
-		RepoPath: repo,
-		RepoID:   "repo-1",
-		DBPath:   filepath.Join(repo, "missing.db"),
-		Now:      now,
+		RepoPath:               repo,
+		RepoID:                 "repo-1",
+		DBPath:                 filepath.Join(repo, "missing.db"),
+		Now:                    now,
+		CreateInterventionDebt: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, report.TicketsChanged, 1)

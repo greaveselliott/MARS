@@ -2,6 +2,8 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/delivery-operating-model.md
+- docs/design-docs/dogfood-and-decisions.md
 - docs/design-docs/guardrails.md
 - docs/design-docs/dashboard.md
 - docs/design-docs/pipeline-engine.md
@@ -259,6 +261,10 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 
 	rec := trace.NewRecorder(nil)
 	toolExec := tools.NewExecutor(reg)
+	terminalDispositionRecorded := false
+	toolExec.StopAfterTool = func() bool {
+		return terminalDispositionRecorded
+	}
 	toolExec.Session = &tools.Session{
 		Role:         job.Role,
 		JobID:        job.ID,
@@ -300,7 +306,11 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 			if d.TraceID == "" {
 				d.TraceID = rec.TraceID()
 			}
-			return e.orgStore.RecordDisposition(ctx, d)
+			if err := e.orgStore.RecordDisposition(ctx, d); err != nil {
+				return err
+			}
+			terminalDispositionRecorded = true
+			return nil
 		},
 	}
 
@@ -386,6 +396,9 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		TraceStore: e.traceStore,
 		UI:         tw,
 	}
+	if manifest.DispatchMode() {
+		params.RequiredTerminalTool = "job_disposition_record"
+	}
 
 	res, err := agent.Run(ctx, params)
 	if err != nil {
@@ -422,10 +435,16 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 
 	if res.Err != nil {
 		learnings.RecordJobLessons(learnStore, job.Role, res.Err.Error(), "", nil)
+		if _, _, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
+			log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+		}
 		return fmt.Errorf("executor: agent loop error (%s): %w", res.EndReason, res.Err)
 	}
 	if err := agent.NonSuccessError(res); err != nil {
 		learnings.RecordJobLessons(learnStore, job.Role, err.Error(), "", nil)
+		if _, _, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
+			log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+		}
 		return fmt.Errorf("executor: %w", err)
 	}
 
@@ -438,6 +457,9 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		if gateErr := validateEngineerTicketGateWithEvidence(repoPath, beforeTickets, afterTickets); gateErr != nil {
 			tw.WriteError(gateErr.Error())
 			learnings.RecordJobLessons(learnStore, job.Role, gateErr.Error(), "", nil)
+			if _, _, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
+				log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+			}
 			return fmt.Errorf("executor: %w", gateErr)
 		}
 	}
@@ -456,6 +478,11 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	}
 
 	learnings.RecordJobLessons(learnStore, job.Role, "", "", nil)
+	if committed, commit, commitErr := commitRuntimeLearningsIfOnlyDirty(ctx, repoPath, job.Role); commitErr != nil {
+		log.Warn("executor: runtime learnings auto-commit failed", "err", commitErr)
+	} else if committed {
+		log.Info("executor: committed runtime learnings", "commit", commit, "role", job.Role)
+	}
 
 	if manifest.DispatchMode() && job.Role != "orchestrator" {
 		e.broadcastEvent("dispatch_return", map[string]string{
@@ -502,6 +529,73 @@ func (e *Executor) broadcastEvent(eventType string, payload map[string]string) {
 	e.dash.BroadcastEvent(eventType, string(data))
 }
 
+func commitRuntimeLearningsIfOnlyDirty(ctx context.Context, repoPath, role string) (bool, string, error) {
+	const learningsPath = ".harness/learnings.yaml"
+	status, err := runGitCommand(ctx, repoPath, "status", "--porcelain", "--untracked-files=all")
+	if err != nil {
+		return false, "", fmt.Errorf("status: %w", err)
+	}
+	lines := nonEmptyLines(status)
+	if len(lines) == 0 {
+		return false, "", nil
+	}
+	for _, line := range lines {
+		path := porcelainPath(line)
+		if path != learningsPath {
+			return false, "", nil
+		}
+	}
+	if _, err := runGitCommand(ctx, repoPath, "add", learningsPath); err != nil {
+		return false, "", fmt.Errorf("stage %s: %w", learningsPath, err)
+	}
+	if _, err := runGitCommand(ctx, repoPath, "diff", "--cached", "--quiet", "--", learningsPath); err == nil {
+		return false, "", nil
+	}
+	message := fmt.Sprintf("chore(learnings): update runtime learnings for %s", strings.TrimSpace(role))
+	if strings.TrimSpace(role) == "" {
+		message = "chore(learnings): update runtime learnings"
+	}
+	if _, err := runGitCommand(ctx, repoPath, "commit", "-m", message, "--", learningsPath); err != nil {
+		return false, "", fmt.Errorf("commit %s: %w", learningsPath, err)
+	}
+	commit, err := runGitCommand(ctx, repoPath, "rev-parse", "--short", "HEAD")
+	if err != nil {
+		return true, "", nil
+	}
+	return true, strings.TrimSpace(commit), nil
+}
+
+func runGitCommand(ctx context.Context, repoPath string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd.Dir = repoPath
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out), fmt.Errorf("%v: %w\n%s", args, err, strings.TrimSpace(string(out)))
+	}
+	return string(out), nil
+}
+
+func nonEmptyLines(s string) []string {
+	var out []string
+	for _, line := range strings.Split(s, "\n") {
+		if strings.TrimSpace(line) != "" {
+			out = append(out, line)
+		}
+	}
+	return out
+}
+
+func porcelainPath(line string) string {
+	if len(line) < 4 {
+		return strings.TrimSpace(line)
+	}
+	path := strings.TrimSpace(line[3:])
+	if idx := strings.Index(path, " -> "); idx >= 0 {
+		path = strings.TrimSpace(path[idx+4:])
+	}
+	return path
+}
+
 // BuildTicketIndex scans docs/tickets/ and returns a compact inventory for context injection.
 func BuildTicketIndex(repoPath string) string {
 	all, err := ticketstate.List(repoPath)
@@ -544,27 +638,19 @@ func BuildTicketIndex(repoPath string) string {
 		}
 	}
 	var lines []string
-	header := fmt.Sprintf("Existing tickets (%d total). Eligible in-progress tickets are the Engineer front of queue; high-priority intervention-debt preempts ordinary backlog. Medium/low intervention-debt is deferred outside ordinary delivery context (%d hidden) so product progress stays visible. Complete the lowest-numbered eligible in-progress ticket before claiming backlog work. Blocked in-progress tickets must name blocker, blocked_by, trace_id, and next_action metadata and do not block backlog work.\n", len(all), deferredInterventionCount)
-	lines = append(lines, inProgressInterventionEligible...)
+	header := fmt.Sprintf("Existing tickets (%d total). Eligible product in-progress tickets are the Engineer front of queue; intervention-debt tickets stay visible in quality/status evidence but do not preempt ordinary product backlog unless an active product ticket names them in blocked_by (%d hidden). Complete the lowest-numbered eligible product ticket before claiming backlog work. Blocked in-progress tickets must name blocker, blocked_by, trace_id, and next_action metadata and do not block backlog work.\n", len(all), deferredInterventionCount)
 	lines = append(lines, inProgressEligible...)
-	lines = append(lines, backlogInterventionPreemptive...)
 	lines = append(lines, backlog...)
 	lines = append(lines, inReview...)
 	lines = append(lines, inProgressBlocked...)
+	lines = append(lines, inProgressInterventionEligible...)
+	lines = append(lines, backlogInterventionPreemptive...)
 	lines = append(lines, done...)
 	return header + strings.Join(lines, "\n")
 }
 
 func interventionDebtPreemptsBacklog(t ticketstate.Ticket) bool {
-	if t.Kind != "intervention-debt" {
-		return false
-	}
-	switch strings.ToLower(strings.TrimSpace(t.Priority)) {
-	case "critical", "high", "p0", "p1":
-		return true
-	default:
-		return false
-	}
+	return false
 }
 
 func ticketIndexLine(t ticketstate.Ticket) string {
@@ -576,6 +662,9 @@ func ticketIndexLine(t ticketstate.Ticket) string {
 		labels = append(labels, "blocked")
 	}
 	line := fmt.Sprintf("- [%s] %s", strings.Join(labels, "]["), t.Name)
+	if rel := strings.TrimSpace(t.RelPath); rel != "" {
+		line += fmt.Sprintf(" (path: %s)", rel)
+	}
 	if t.Blocked() && strings.TrimSpace(t.NextAction) != "" && !strings.EqualFold(strings.TrimSpace(t.NextAction), "TBD") {
 		line += fmt.Sprintf(" — next: %s", t.NextAction)
 	}

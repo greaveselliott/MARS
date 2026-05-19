@@ -41,7 +41,7 @@ func TestDecide_completedEngineerRoutesToQAMissingOrchestrator(t *testing.T) {
 	require.Empty(t, decision.StopReason)
 }
 
-func TestDecide_completedEngineerReturnsToOrchestrator(t *testing.T) {
+func TestDecide_completedEngineerRoutesDirectlyToQAWithOrchestratorPresent(t *testing.T) {
 	t.Parallel()
 
 	decision, err := Decide(Input{
@@ -54,9 +54,9 @@ func TestDecide_completedEngineerReturnsToOrchestrator(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	require.Equal(t, "orchestrator", decision.NextRole)
-	require.Equal(t, "orchestrator_review", decision.DecisionKind)
-	require.Contains(t, decision.Reason, "returned to Orchestrator")
+	require.Equal(t, "qa", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "without Orchestrator detour")
 }
 
 func TestDecide_orchestratorSuggestedRoleRoutesNext(t *testing.T) {
@@ -79,6 +79,26 @@ func TestDecide_orchestratorSuggestedRoleRoutesNext(t *testing.T) {
 	require.Contains(t, decision.Reason, "suggested_role")
 }
 
+func TestDecide_noWorkWithNextNeedRoutesDirectly(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("ceo", "head-of-strategy", "orchestrator"),
+		Disposition: orgstate.Disposition{
+			JobID:    "job-strategy",
+			RepoID:   "repo-1",
+			Role:     "ceo",
+			Status:   "no_work",
+			NextNeed: "strategy_advice",
+			Reason:   "planning is ready; strategy advice is next",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "head-of-strategy", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "no-work")
+}
+
 func TestDecide_orchestratorSuggestedRoleCanonicalizesCase(t *testing.T) {
 	t.Parallel()
 
@@ -94,6 +114,25 @@ func TestDecide_orchestratorSuggestedRoleCanonicalizesCase(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "engineer", decision.NextRole)
+	require.Equal(t, "orchestrator", decision.DecisionKind)
+}
+
+func TestDecide_orchestratorSuggestedRoleAliasesCanonicalRoleKey(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "cto-weekly"),
+		Disposition: orgstate.Disposition{
+			JobID:         "job-2",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			SuggestedRole: "cto",
+			Reason:        "implementation tickets are needed",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "cto-weekly", decision.NextRole)
 	require.Equal(t, "orchestrator", decision.DecisionKind)
 }
 
@@ -184,6 +223,65 @@ func TestDecide_nonOrchestratorFeedbackReturnsToOrchestratorFirst(t *testing.T) 
 	require.NoError(t, err)
 	require.Equal(t, "orchestrator", decision.NextRole)
 	require.Equal(t, "orchestrator_review", decision.DecisionKind)
+}
+
+func TestDecide_qaTriggerContextBlockRetriesQAInspection(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "qa", "cto-weekly", "engineer"),
+		Disposition: orgstate.Disposition{
+			JobID:         "job-orchestrator",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			SuggestedRole: "cto-weekly",
+			TicketID:      "T-001",
+			Reason:        "CTO should reshape the ticket because QA lacked context",
+		},
+		SourceDisposition: &orgstate.Disposition{
+			JobID:    "job-qa",
+			RepoID:   "repo-1",
+			Role:     "qa",
+			Status:   "blocked",
+			NextNeed: "liveness",
+			TicketID: "T-001",
+			Reason:   "Cannot perform quality review because the implementation source code was not provided in the trigger context.",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "qa", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "repository inspection")
+}
+
+func TestDecide_qaSubstantivePlanningBlockCanRouteCTO(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "qa", "cto-weekly"),
+		Disposition: orgstate.Disposition{
+			JobID:         "job-orchestrator",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			SuggestedRole: "cto-weekly",
+			TicketID:      "T-001",
+			Reason:        "CTO should reshape unclear acceptance criteria",
+		},
+		SourceDisposition: &orgstate.Disposition{
+			JobID:    "job-qa",
+			RepoID:   "repo-1",
+			Role:     "qa",
+			Status:   "blocked",
+			NextNeed: "ticket_breakdown",
+			TicketID: "T-001",
+			Reason:   "The ticket lacks acceptance criteria and needs technical decomposition before QA can review.",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "cto-weekly", decision.NextRole)
+	require.Equal(t, "orchestrator", decision.DecisionKind)
 }
 
 func TestDecide_rejectsConflictingStructuredTargets(t *testing.T) {
@@ -295,7 +393,7 @@ func TestDecide_defaultCompletionRouteMatchesOwnershipSpine(t *testing.T) {
 		{"cto-weekly", "engineer"},
 		{"engineer", "qa"},
 		{"qa", "security"},
-		{"security", "dependency-manager"},
+		{"security", "dogfood"},
 		{"dependency-manager", "release-manager"},
 	}
 	for _, tt := range tests {
@@ -366,4 +464,90 @@ func TestDecide_approvedUsesDefaultResponsibility(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "security", decision.NextRole)
 	require.Equal(t, "deterministic", decision.DecisionKind)
+}
+
+func TestDecide_orchestratorRoutesSecurityApprovalToDogfoodBeforeGovernance(t *testing.T) {
+	t.Parallel()
+
+	source := orgstate.Disposition{
+		JobID:    "security-job",
+		RepoID:   "repo-1",
+		Role:     "security",
+		Status:   "approved",
+		TicketID: "T-001",
+	}
+	decision, err := Decide(Input{
+		Manifest:          testManifest("orchestrator", "qa", "security", "dogfood", "dependency-manager", "release-manager"),
+		SourceDisposition: &source,
+		Disposition: orgstate.Disposition{
+			JobID:         "orchestrator-job",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			NextNeed:      "qa_review",
+			SuggestedRole: "qa",
+			TicketID:      "T-001",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "dogfood", decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "routing forward")
+}
+
+func TestDecide_orchestratorStopsAfterSecurityApprovalWhenDogfoodAbsent(t *testing.T) {
+	t.Parallel()
+
+	source := orgstate.Disposition{
+		JobID:    "security-job",
+		RepoID:   "repo-1",
+		Role:     "security",
+		Status:   "completed",
+		TicketID: "T-001",
+	}
+	decision, err := Decide(Input{
+		Manifest:          testManifest("orchestrator", "qa", "security", "release-manager"),
+		SourceDisposition: &source,
+		Disposition: orgstate.Disposition{
+			JobID:         "orchestrator-job",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			NextNeed:      "qa_review",
+			SuggestedRole: "qa",
+			TicketID:      "T-001",
+		},
+	})
+	require.NoError(t, err)
+	require.Empty(t, decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Equal(t, "review chain complete", decision.StopReason)
+}
+
+func TestDecide_orchestratorStopsAfterCompletedReviewChain(t *testing.T) {
+	t.Parallel()
+
+	source := orgstate.Disposition{
+		JobID:    "dogfood-job",
+		RepoID:   "repo-1",
+		Role:     "dogfood",
+		Status:   "completed",
+		TicketID: "T-001",
+	}
+	decision, err := Decide(Input{
+		Manifest:          testManifest("orchestrator", "qa", "security", "dogfood", "release-manager"),
+		SourceDisposition: &source,
+		Disposition: orgstate.Disposition{
+			JobID:         "orchestrator-job",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			NextNeed:      "qa_review",
+			SuggestedRole: "qa",
+			TicketID:      "T-001",
+		},
+	})
+	require.NoError(t, err)
+	require.Empty(t, decision.NextRole)
+	require.Equal(t, "review chain complete", decision.StopReason)
 }

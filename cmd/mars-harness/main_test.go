@@ -410,6 +410,11 @@ func TestRunStartServeExposeDebugAndLogFileFlags(t *testing.T) {
 	}
 }
 
+func TestScoresExportExposesCreateInterventionDebtFlag(t *testing.T) {
+	cmd := scoresExportCmd()
+	require.NotNil(t, cmd.Flags().Lookup("create-intervention-debt"))
+}
+
 func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not in PATH")
@@ -459,10 +464,95 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	require.Equal(t, repos[0].ID, jobs[0].RepoID)
 	require.Contains(t, jobs[0].Trigger, `"type":"bootstrap"`)
 
+	second := startCmd()
+	var secondOut bytes.Buffer
+	second.SetOut(&secondOut)
+	second.SetArgs([]string{
+		"--repo", repoDir,
+		"--db", dbPath,
+		"--log-file", logPath,
+		"--exit-after-seed",
+	})
+	require.NoError(t, second.Execute())
+	jobs, err = q.RecentJobs(context.Background(), 10)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1, "restarting bootstrap should reuse the active CEO job")
+
 	log := runMainTestGit(t, repoDir, "log", "--oneline", "-1")
 	require.Contains(t, log, "chore(harness): initialize mars harness")
 	status := runMainTestGit(t, repoDir, "status", "--short")
 	require.Empty(t, strings.TrimSpace(status))
+}
+
+func TestStartCommandRejectsRepoLocalDBPath(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	dbPath := filepath.Join(repoDir, "mars.db")
+	t.Setenv("MARS_HARNESS_WEBHOOK_PORT", "0")
+	t.Setenv("MARS_HARNESS_DASHBOARD_PORT", "0")
+	t.Setenv("MARS_HARNESS_SKIP_START_CLEANUP", "1")
+
+	cmd := startCmd()
+	cmd.SetArgs([]string{"--repo", repoDir, "--db", dbPath, "--exit-after-seed"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "--db path")
+	require.Contains(t, err.Error(), "inside target repo")
+	require.NoFileExists(t, dbPath)
+	require.NoFileExists(t, dbPath+"-wal")
+	require.NoFileExists(t, dbPath+"-shm")
+	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
+}
+
+func TestRegisterCommandRejectsRepoLocalDBPath(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	dbPath := filepath.Join(repoDir, "mars.db")
+
+	cmd := registerCmd()
+	cmd.SetArgs([]string{"--repo", repoDir, "--db", dbPath})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "--db path")
+	require.Contains(t, err.Error(), "inside target repo")
+	require.NoFileExists(t, dbPath)
+	require.NoFileExists(t, dbPath+"-wal")
+	require.NoFileExists(t, dbPath+"-shm")
+	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
+}
+
+func TestStartCommandRejectsRepoLocalLogFile(t *testing.T) {
+	repoDir := t.TempDir()
+	logPath := filepath.Join(repoDir, "start.log")
+
+	cmd := startCmd()
+	cmd.SetArgs([]string{"--repo", repoDir, "--log-file", logPath, "--exit-after-seed"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "--log-file path")
+	require.Contains(t, err.Error(), "inside target repo")
+	require.NoFileExists(t, logPath)
+}
+
+func TestRunCommandRejectsRepoLocalLogFile(t *testing.T) {
+	repoDir := t.TempDir()
+	logPath := filepath.Join(repoDir, "run.log")
+
+	cmd := runCmd()
+	cmd.SetArgs([]string{"ceo", "--repo", repoDir, "--log-file", logPath, "--dry-run"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "--log-file path")
+	require.Contains(t, err.Error(), "inside target repo")
+	require.NoFileExists(t, logPath)
 }
 
 func TestInitCommandCommitsGeneratedHarnessBaseline(t *testing.T) {

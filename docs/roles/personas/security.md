@@ -46,7 +46,7 @@ Review bounded security risk and either remediate narrowly or return explicit ri
 
 ## Feedback I Give
 
-- Approved security disposition or blocking risk.
+- Approved security disposition or blocking risk with report date and finding counts that match the written report.
 - Bounded remediation evidence.
 - Dependency or engineer feedback when the fix belongs elsewhere.
 

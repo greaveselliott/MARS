@@ -22,9 +22,12 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 5. F-006-S005 - `start` initializes, registers, seeds, and runs a single-repo pipeline.
 6. F-006-S006 - `serve` runs the multi-repo orchestrator, dashboard, webhook receiver, scheduler, workers, and control plane.
 7. F-006-S007 - Recovery jobs are bounded, idempotent, self-healed when stale or duplicated, and suppressed for deterministic failures.
-8. F-006-S008 - In-progress and high-priority intervention-debt ticket priority controls what engineers claim next.
+8. F-006-S008 - Product tickets stay ahead of intervention debt unless an active product ticket names the debt as a blocker.
 9. F-006-S009 - Native Orchestrator surveys route unattended failure states into bounded jobs or intervention-debt tickets.
-10. F-006-S010 - Dispatch-mode jobs return terminal dispositions to Orchestrator, which chooses the next role instead of relying on fixed linear handoffs.
+10. F-006-S010 - Dispatch-mode jobs record terminal dispositions, deterministic product handoffs route directly, and Orchestrator remains the ambiguous or governance fallback.
+11. F-006-S011 - Review rework reuses the existing product ticket instead of creating duplicate planning work.
+12. F-006-S012 - Feature tickets cannot move to done before required BDD evidence is populated.
+13. F-006-S013 - Runtime failures stop as foundation telemetry instead of restarting product planning loops.
 
 ## Scenarios
 
@@ -40,11 +43,19 @@ Given jobs are enqueued for a repo
 When workers claim, complete, cancel, expire, or prune them
 Then SQLite state changes are durable, idempotent where required, and queryable for recent job history
 
+Given scheduled role work and dispatch handoff work are both pending for the same repo
+When the worker claims the next job
+Then seed/bootstrap jobs claim first, dispatch handoffs claim before scheduled work, and cron safety-net jobs cannot preempt the active product handoff chain
+
 ### F-006-S003: Worker Controls
 
 Given the worker pool is running
 When pause, resume, or completion hooks are used
 Then new claims stop while paused, resume claims pending work, and success hooks enqueue downstream work
+
+Given an operator stop or process shutdown cancels the worker context while a job is finishing
+When the worker records the terminal job state
+Then the queue uses a short finalization context to mark the running job completed or failed, so shutdown cannot strand a claimed job in `running`
 
 ### F-006-S004: Trigger Routing
 
@@ -68,37 +79,139 @@ Then health, dashboard, webhook, scheduler, worker, recovery, and API control su
 
 Given a job fails in a recoverable or deterministic category
 When recovery is enqueued or existing recovery jobs are stale
-Then the system creates at most one active recovery job per repo/role key for transient failures, avoids recursive recovery, cancels duplicates, and routes deterministic failures to intervention debt without same-role retry
+Then the system creates at most one active recovery job per repo/role key for transient failures, avoids recursive recovery, cancels duplicates, and records deterministic runtime failures as telemetry without same-role retry or dispatch loops
 
 ### F-006-S008: Ticket Claim Priority
 
-Given tickets exist in in-progress, high-priority intervention-debt, medium-priority intervention-debt, and ordinary backlog states
+Given tickets exist in in-progress, intervention-debt, and ordinary product backlog states
 When engineer context is assembled
-Then existing in-progress work is prioritized first, high-priority intervention debt can preempt ordinary backlog claims, and medium/low intervention debt remains visible without blocking ordinary product backlog progress
+Then existing product in-progress work is prioritized first, ordinary product backlog stays ahead of intervention debt, and intervention debt remains visible without blocking product progress unless an active product ticket names it in `blocked_by`
 
 ### F-006-S009: Native Orchestrator Survey
 
 Given queue, ticket, score, telemetry, and recent outcome signals exist
 When the Orchestrator survey runs
-Then stale tickets, blocked tickets, failed checks, dogfood failures, no-op outcomes, telemetry patterns, and low scores create bounded queue work or deduped intervention-debt tickets with payload mode, concurrency group, and daily cap metadata
+Then stale tickets, blocked tickets, failed checks, dogfood failures, and no-op outcomes create bounded queue work, while runtime telemetry patterns and low scores stay quarantined as foundation telemetry unless deliberately materialized
 
 ### F-006-S010: Dispatch-Mode Orchestration
 
 Given a generated target manifest uses `orchestration_mode: dispatch`
 When a non-Orchestrator role completes successfully
-Then it must record a terminal `job_disposition_record`, the executor returns that disposition to Orchestrator, and Orchestrator selects the next role from manifest state, ticket state, loop guards, and the disposition rather than following a fixed role-to-role chain
+Then it must record a terminal `job_disposition_record`, the agent loop stops after that terminal tool result, and the executor records a dispatch decision from manifest state, ticket state, loop guards, and the disposition rather than following a fixed role-to-role chain
+
+Given a non-Orchestrator dispatch-mode role records a completed, approved, in-review, or no-work disposition with a deterministic route
+When the route can be selected from `suggested_role`, `handoff.target_role`, `feedback.for_role`, `next_need`, or the default product validation spine
+Then dispatch enqueues that target role directly without an Orchestrator LLM detour, while preserving role validation, ticket prerequisites, review-chain progression, and loop guards
+
+Given a non-Orchestrator dispatch-mode role records an ambiguous, blocked, failed, or conflicting disposition
+When the route is not deterministic enough for the runtime to select safely
+Then dispatch routes to the configured Orchestrator fallback for synthesis or stops with an operator-visible reason when no safe fallback exists
 
 Given a dispatch-mode role finishes without a disposition
 When the executor validates completion
 Then the job fails closed with an actionable error so the pipeline cannot silently skip orchestration
 
+Given a non-Orchestrator dispatch-mode role changed target files
+When it records a successful terminal disposition before committing those changes
+Then the tool policy rejects the disposition so the role must commit the produced work before Orchestrator can route the next handoff
+
 Given Orchestrator repeatedly chooses the same next role and next need without a ticket-state change
 When the loop guard evaluates the new dispatch decision
 Then dispatch stops with a loop-guard reason instead of enqueueing Orchestrator or the same target role again
 
+Given a dispatch-mode Orchestrator job fails before it records a disposition
+When its trigger carries a non-Orchestrator `source_disposition` with a deterministic routing signal such as `next_need`, `suggested_role`, `handoff.target_role`, or `feedback.for_role`
+Then the server records the failure as telemetry and falls forward to the deterministic target role using the original source handoff instead of enqueueing Orchestrator again
+
+Given a dispatch-mode Orchestrator job fails before it records a disposition
+When its trigger lacks a usable non-Orchestrator source disposition or the fallback would select Orchestrator again
+Then dispatch records a stopped decision and creates no recursive Orchestrator job
+
+Given Orchestrator selects Engineer for implementation
+When the target has no ordinary product ticket in `docs/tickets/backlog/` or `docs/tickets/in-progress/`
+Then dispatch routes to `cto-weekly` for ticket shaping instead of enqueueing Engineer with free-floating implementation work
+
+Given Orchestrator selects Engineer for implementation
+When an ordinary product ticket exists in backlog or in-progress
+Then dispatch may enqueue Engineer and the ticket gate remains responsible for claim, completion, evidence, and handoff correctness
+
+Given Engineer completed an ordinary product ticket and moved it to `docs/tickets/done/`
+When Orchestrator or deterministic Orchestrator-failure fallback attempts another implementation, CTO planning, or other pre-review handoff but no open product ticket remains
+Then dispatch routes QA review instead of routing back to Engineer, CTO ticket shaping, or another planning loop
+
+Given QA approves a completed ordinary product ticket with `next_need: dogfood_validation`
+When the QA dispatch trigger still carries the original completed Engineer source disposition for that ticket
+Then dispatch honors QA's current approval and routes forward to Dogfood instead of reapplying the pre-review Engineer ticket guard and enqueueing QA again
+
+Given Engineer fails a ticket gate such as missing BDD scenario evidence on a done ticket
+When dispatch-mode failure handling records the failure
+Then the server enqueues one bounded Engineer `ticket_gate_repair` job with the failure reason and a ticket-lifecycle/evidence-only repair scope instead of routing the failure through Orchestrator
+
+Given Engineer tries to move a feature ticket to `docs/tickets/done/`
+When `evidence_links` or `verified_by` are still empty
+Then tool policy blocks the move before the post-run ticket gate and tells Engineer to populate the missing evidence fields in the same run
+
+Given Engineer tries to copy a feature ticket into `docs/tickets/done/`
+When the same ticket remains in backlog, in-progress, or in-review
+Then tool policy blocks the copy and requires a single `git mv` lifecycle transition
+
+Given an Engineer `ticket_gate_repair` job fails the ticket gate again
+When dispatch-mode failure handling records the second failure
+Then no recursive repair or Orchestrator job is enqueued automatically
+
+Given an Engineer `ticket_gate_repair` job is triggered only because ticket evidence is missing
+When the Engineer reads the trigger
+Then generated role guidance tells it to update ticket evidence/lifecycle metadata and avoid broad product-code implementation unless the gate reason explicitly names invalid code
+
+### F-006-S013: Runtime Failure Stops
+
+Given a non-Orchestrator dispatch-mode job fails with a runtime-owned failure such as max turns, context overflow, inference/model availability, tool timeout, guardrail block, manifest error, manual stop, or unknown terminal failure
+When failure handling records telemetry
+Then the server keeps the signal as foundation telemetry and does not enqueue Orchestrator, CTO ticket shaping, Engineer retry, or target backlog intervention debt by default
+
+Given QA or another dispatch-mode role exits without recording `job_disposition_record`
+When the model first tries to finish with prose only
+Then the agent loop gives one corrective prompt for the required terminal `job_disposition_record` tool call instead of ending the job immediately
+
+Given generated QA is dispatched to review a completed implementation ticket
+When the job starts in the default target harness
+Then QA uses the `reasoning` model tier, starts with an allowed read-only inspection tool call, and has `git_status` plus `git_diff` available for repository evidence before recording `job_disposition_record`
+
+Given QA or another dispatch-mode role still exits without recording `job_disposition_record` after the corrective terminal-tool prompt
+When the executor marks the job failed with a dispatch protocol error
+Then failure handling records telemetry and does not route that deterministic protocol miss through Orchestrator
+
+Given QA blocks because implementation source or diffs were absent from the dispatch trigger
+When the Orchestrator selects CTO, COO, CEO, or Janitor even though QA has repository read tools
+Then dispatch retries QA with a repository-inspection handoff instead of turning missing trigger context into planning work
+
+Given the orchestrator survey enqueued an Engineer job for an in-progress ticket
+When a bounded repair or delivery job moves that ticket to `docs/tickets/done/` before the survey job runs
+Then the stale pending survey Engineer job is cancelled instead of being claimed after the ticket is already complete
+
+Given Security records an approved or completed dispatch disposition for a ticket
+When Orchestrator suggests QA, Security, Dependency Manager, Release Manager, CTO, or another governance role before product dogfood has run
+Then dispatch rewrites the decision to Dogfood when that role exists, or stops when no forward product validation owner remains
+
+Given Security records an approved or completed dispatch disposition for a ticket
+When Orchestrator explicitly requests Dependency Manager or Release Manager through `next_need` or `suggested_role`
+Then dispatch may route to that governance role, but dependency and release work are no longer automatic review-chain defaults for a fresh product slice
+
+Given Engineer records a successful dispatch disposition for a feature ticket
+When the named ticket still exists in `docs/tickets/backlog/`, `docs/tickets/in-progress/`, or `docs/tickets/in-review/`
+Then tool policy rejects the disposition before the server records it, forcing same-run ticket evidence and lifecycle completion instead of a later repair job
+
+Given Engineer selects an ordinary product ticket from `docs/tickets/backlog/`
+When it attempts product mutation before claiming that ticket into `docs/tickets/in-progress/`
+Then tool policy blocks the mutation so backlog work cannot become source commits without a visible ticket claim
+
 Given an active plan names a BDD feature ID such as `F-001`
 When generated planner, ticketing, or Orchestrator prompts check for the feature contract
 Then they search `docs/features/F-001*.md`, treat slugged contracts as present, and do not block solely because `docs/features/F-001.md` is absent
+
+Given a target already has a `docs/features/F-001*.md` contract
+When a planner or ticketing role tries to create a second contract path with the same `F-001` feature ID
+Then `file_write` rejects the duplicate so the target keeps one canonical feature contract per feature ID
 
 Given Orchestrator receives a next need of `strategy_advice`, `executive_narrative`, `tradeoff_analysis`, or `goal_conflict`
 When the target manifest includes the optional `head-of-strategy` role
@@ -119,6 +232,14 @@ Then the targets must agree or the disposition is rejected with an actionable er
 Given Orchestrator receives `ticket`, `ticket_shaping`, or `ticket_breakdown`
 When the target manifest contains `cto-weekly`
 Then Orchestrator routes to CTO for technical decomposition and implementation ticket creation, while `exec_plan`, `feature_contract`, `scenario_schedule`, and `current_failing_scenario` route to COO
+
+Given QA records `changes_requested` with `next_need: implementation_rework` for an existing ordinary product ticket
+When that ticket is already in `docs/tickets/done/` or `docs/tickets/in-review/` and Orchestrator selects Engineer
+Then dispatch routes Engineer to rework the same ticket instead of rewriting to CTO ticket shaping or creating a duplicate product ticket
+
+Given Orchestrator suggests a canonical role alias such as `cto`, `release`, or `dependency`
+When the target manifest contains the corresponding executable role key such as `cto-weekly`, `release-manager`, or `dependency-manager`
+Then dispatch normalizes to the manifest role key and does not fall back into another Orchestrator loop
 
 ## Out of Scope
 
@@ -142,3 +263,6 @@ None.
 - F-006-S008: `go test ./internal/serve -run 'TestValidateEngineerTicketGate|TestBuildTicketIndex|TestFirstBacklogInterventionDebt'`
 - F-006-S009: `go test ./internal/serve -run TestOrchestratorSurvey` and `go test ./internal/queue -run 'TestQueue_concurrencyGroupSerialization|TestQueue_dailyCapConstrainsRepeatedScheduling|TestQueue_claimDoesNotResetHealthyRunningJob|TestQueue_failStuckRunningJobs'`
 - F-006-S010: `go test ./internal/orchestration ./internal/orgstate` and `go test ./internal/serve -run TestFoundationAcceptance`
+- F-006-S011: `go test ./internal/serve -run TestHandleJobComplete_reviewReworkReusesExistingDoneProductTicket`
+- F-006-S012: `go test ./internal/tools -run 'TestShellExecPolicy.*FeatureTicketDone(Move|Copy)|TestFileWritePolicyBlocksDoneFeatureTicket'`
+- F-006-S013: `go test ./internal/serve -run TestHandleJobFailed_maxTurnsDoesNotRouteOrchestrator`

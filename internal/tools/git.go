@@ -153,6 +153,9 @@ func handleGitCommit(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 	if strings.TrimSpace(args.Message) == "" {
 		return ToolResult{}, fmt.Errorf("git_commit: field message is required")
 	}
+	if err := checkGitCommitGeneratedWorkspacePolicy(ctx, root, args); err != nil {
+		return ToolResult{}, err
+	}
 	if len(args.Paths) == 0 {
 		if err := runGitExit0(ctx, root, "add", "-A"); err != nil {
 			return ToolResult{}, err
@@ -167,6 +170,9 @@ func handleGitCommit(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 				return ToolResult{}, err
 			}
 		}
+	}
+	if err := checkStagedGeneratedWorkspacePaths(ctx, root); err != nil {
+		return ToolResult{}, err
 	}
 	if err := runGitExit0(ctx, root, "commit", "-m", args.Message); err != nil {
 		return ToolResult{}, err
@@ -203,6 +209,69 @@ func handleGitBranch(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 	return ToolResult{Output: fmt.Sprintf("checked out branch %q", name)}, nil
 }
 
+func checkGitCommitGeneratedWorkspacePolicy(ctx context.Context, root Root, args gitCommitArgs) error {
+	if len(args.Paths) == 0 {
+		paths, err := dirtyGeneratedWorkspaceRoots(ctx, root)
+		if err != nil {
+			return err
+		}
+		if len(paths) > 0 {
+			return fmt.Errorf("git_commit: generated workspace paths would be staged: %s. Add generated output to .gitignore or remove it before committing, or pass explicit non-generated paths; generated dependency/build output must not be committed.", strings.Join(paths, ", "))
+		}
+		return nil
+	}
+	var generated []string
+	for _, p := range args.Paths {
+		rel := cleanRepoPath(p)
+		if IsGeneratedWorkspacePath(rel) {
+			generated = append(generated, generatedRoot(rel))
+		}
+	}
+	generated = compactStrings(generated)
+	if len(generated) > 0 {
+		return fmt.Errorf("git_commit: generated workspace paths cannot be committed: %s. Commit source, docs, tickets, and lockfiles separately; keep dependency/build output ignored or removed.", strings.Join(generated, ", "))
+	}
+	return nil
+}
+
+func checkStagedGeneratedWorkspacePaths(ctx context.Context, root Root) error {
+	tr, err := runGit(ctx, root, "diff", "--cached", "--name-only", "HEAD", "--")
+	if err != nil {
+		return err
+	}
+	if tr.ExitCode != 0 {
+		return nil
+	}
+	paths := generatedPathsFromLines(tr.Output, nil)
+	if len(paths) == 0 {
+		return nil
+	}
+	return fmt.Errorf("git_commit: generated workspace paths are staged: %s. Unstage generated dependency/build output and commit only source, docs, tickets, or lockfiles.", strings.Join(paths, ", "))
+}
+
+func dirtyGeneratedWorkspaceRoots(ctx context.Context, root Root) ([]string, error) {
+	seen := map[string]bool{}
+	diff, err := runGit(ctx, root, "diff", "--name-only", "HEAD", "--")
+	if err != nil {
+		return nil, err
+	}
+	if diff.ExitCode == 0 {
+		for _, rel := range generatedPathsFromLines(diff.Output, nil) {
+			seen[rel] = true
+		}
+	}
+	untracked, err := runGit(ctx, root, "ls-files", "--others", "--exclude-standard")
+	if err != nil {
+		return nil, err
+	}
+	if untracked.ExitCode == 0 {
+		for _, rel := range generatedPathsFromLines(untracked.Output, nil) {
+			seen[rel] = true
+		}
+	}
+	return sortedKeys(seen), nil
+}
+
 func handleGitPush(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
 	var args gitPushArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
@@ -225,6 +294,15 @@ func handleGitPush(ctx context.Context, root Root, raw json.RawMessage) (ToolRes
 	}
 	if branch == "" {
 		return ToolResult{}, fmt.Errorf("git_push: could not determine current branch")
+	}
+	remoteCheck, err := runGit(ctx, root, "remote", "get-url", remote)
+	if err != nil {
+		return remoteCheck, err
+	}
+	if remoteCheck.ExitCode != 0 {
+		return ToolResult{
+			Output: fmt.Sprintf("git_push skipped: remote %q is not configured; commit remains local for this repository", remote),
+		}, nil
 	}
 	tr, err := runGit(ctx, root, "push", remote, branch)
 	if err != nil {

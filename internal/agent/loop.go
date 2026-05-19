@@ -3,6 +3,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/agent-runtime.md
+- docs/design-docs/delivery-operating-model.md
 - docs/features/F-005-agent-execution-runtime.md
 */
 package agent
@@ -85,6 +86,10 @@ type Params struct {
 	UserMessage  string
 	Config       LoopConfig
 	UI           LoopUI
+
+	// RequiredTerminalTool keeps server jobs from ending with prose when a
+	// durable terminal tool call, such as job_disposition_record, is required.
+	RequiredTerminalTool string
 
 	// Optional execution trace (MH-005). When Trace is set, each message is logged as JSONL.
 	JobID      string
@@ -191,6 +196,7 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 	llmCalls := 0
 	toolInvocations := 0
 	identicalStreak := 0
+	terminalToolReminderSent := false
 	var lastFingerprint string
 
 	for {
@@ -277,6 +283,20 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			if err := traceAppend(p, &messages, defs, llm.Message{Role: "assistant", Content: am.Content}); err != nil {
 				return LoopResult{}, err
 			}
+			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && !terminalToolReminderSent {
+				if err := traceAppend(p, &messages, defs, llm.Message{
+					Role: "user",
+					Content: fmt.Sprintf(
+						"This server job cannot finish with prose only. If your work is complete, call `%s` now with the terminal status, reason, evidence_links, and handoff or feedback fields required by the dispatch protocol. If more inspection or verification is still needed, call an allowed non-terminal tool now, then call `%s` when the work is complete. Do not narrate next steps without a tool call.",
+						required,
+						required,
+					),
+				}); err != nil {
+					return LoopResult{}, err
+				}
+				terminalToolReminderSent = true
+				continue
+			}
 			res = finish(messages, defs, EndCompleted, llmCalls, toolInvocations, start, "")
 			return res, nil
 		}
@@ -330,6 +350,10 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 				Content:    body,
 			}); err != nil {
 				return LoopResult{}, err
+			}
+			if execErr == nil && p.Executor.StopAfterTool != nil && p.Executor.StopAfterTool() {
+				res = finish(messages, defs, EndCompleted, llmCalls, toolInvocations, start, "")
+				return res, nil
 			}
 		}
 	}

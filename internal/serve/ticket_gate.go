@@ -16,6 +16,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"github.com/greaveselliott/mars-harness/internal/orgstate"
 	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 )
 
@@ -80,6 +82,129 @@ func snapshotTickets(repoPath string) (ticketSnapshot, error) {
 	sort.Strings(snap.InReview)
 	sort.Strings(snap.Done)
 	return snap, nil
+}
+
+func enforceEngineerTicketPrerequisite(decision orgstate.Decision, snap ticketSnapshot, manifest *bundle.Manifest, source *orgstate.Disposition) orgstate.Decision {
+	if sourceCompletedEngineerWithoutOpenProductTicket(decision, source, snap) {
+		decision.DecisionKind = "deterministic"
+		decision.NextNeed = "qa_review"
+		decision.Reason = strings.TrimSpace(decision.Reason + "; Engineer completed the open product ticket, so routing to QA review before further planning or implementation")
+		if manifest != nil {
+			if _, ok := manifest.Roles["qa"]; ok {
+				decision.NextRole = "qa"
+				decision.StopReason = ""
+				return decision
+			}
+		}
+		decision.NextRole = ""
+		decision.StopReason = "engineer completed product ticket and no qa role is configured"
+		return decision
+	}
+	if !strings.EqualFold(strings.TrimSpace(decision.NextRole), "engineer") {
+		return decision
+	}
+	if reviewReworkTargetsExistingProductTicket(decision, source, snap) {
+		if strings.TrimSpace(decision.NextNeed) == "" {
+			decision.NextNeed = "implementation_rework"
+		}
+		decision.Reason = strings.TrimSpace(decision.Reason + "; review requested changes for existing product ticket " + strings.TrimSpace(source.TicketID) + ", so routing Engineer to rework the same ticket instead of ticket shaping")
+		decision.StopReason = ""
+		return decision
+	}
+	if snap.hasOpenProductTicket() {
+		return decision
+	}
+	decision.DecisionKind = "deterministic"
+	decision.NextNeed = "ticket_breakdown"
+	decision.Reason = strings.TrimSpace(decision.Reason + "; Engineer dispatch requires an open ordinary product ticket, so routing to CTO for ticket shaping")
+	if manifest != nil {
+		if _, ok := manifest.Roles["cto-weekly"]; ok {
+			decision.NextRole = "cto-weekly"
+			decision.StopReason = ""
+			return decision
+		}
+	}
+	decision.NextRole = ""
+	decision.StopReason = "engineer dispatch requires an open ordinary product ticket and no cto-weekly role is configured"
+	return decision
+}
+
+func sourceCompletedEngineerWithoutOpenProductTicket(decision orgstate.Decision, source *orgstate.Disposition, snap ticketSnapshot) bool {
+	if !strings.EqualFold(strings.TrimSpace(decision.SourceRole), "orchestrator") {
+		return false
+	}
+	if source == nil {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(source.Role), "engineer") {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(source.Status), "completed") {
+		return false
+	}
+	return !snap.hasOpenProductTicket()
+}
+
+func reviewReworkTargetsExistingProductTicket(decision orgstate.Decision, source *orgstate.Disposition, snap ticketSnapshot) bool {
+	if source == nil {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(source.Status), "changes_requested") {
+		return false
+	}
+	ticketID := strings.TrimSpace(source.TicketID)
+	if ticketID == "" {
+		return false
+	}
+	if !reviewReworkNeedsEngineer(decision, source) {
+		return false
+	}
+	_, ok := snap.productTicketByID(ticketID)
+	return ok
+}
+
+func reviewReworkNeedsEngineer(decision orgstate.Decision, source *orgstate.Disposition) bool {
+	needs := strings.ToLower(strings.TrimSpace(source.NextNeed + " " + decision.NextNeed))
+	if strings.Contains(needs, "rework") || strings.Contains(needs, "fix") {
+		return true
+	}
+	if strings.EqualFold(strings.TrimSpace(source.SuggestedRole), "engineer") {
+		return true
+	}
+	if strings.EqualFold(strings.TrimSpace(source.Feedback.ForRole), "engineer") {
+		return true
+	}
+	return false
+}
+
+func (s ticketSnapshot) hasOpenProductTicket() bool {
+	for _, name := range append(append([]string{}, s.Backlog...), s.InProgress...) {
+		t, ok := s.Details[name]
+		if !ok {
+			return true
+		}
+		if t.Kind != "intervention-debt" {
+			return true
+		}
+	}
+	return false
+}
+
+func (s ticketSnapshot) productTicketByID(id string) (ticketstate.Ticket, bool) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return ticketstate.Ticket{}, false
+	}
+	for _, t := range s.Details {
+		if !strings.EqualFold(strings.TrimSpace(t.ID), id) {
+			continue
+		}
+		if t.Kind == "intervention-debt" {
+			return ticketstate.Ticket{}, false
+		}
+		return t, true
+	}
+	return ticketstate.Ticket{}, false
 }
 
 func validateEngineerTicketGate(before, after ticketSnapshot) error {
@@ -340,15 +465,30 @@ func parseTicketGateFrontmatter(text string) map[string]string {
 	if len(scanner) == 0 || strings.TrimSpace(scanner[0]) != "---" {
 		return fields
 	}
+	currentKey := ""
 	for _, line := range scanner[1:] {
-		if strings.TrimSpace(line) == "---" {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "---" {
 			break
+		}
+		if strings.HasPrefix(trimmed, "- ") && currentKey != "" {
+			item := strings.TrimSpace(strings.TrimPrefix(trimmed, "- "))
+			if item == "" {
+				continue
+			}
+			if fields[currentKey] == "" {
+				fields[currentKey] = item
+			} else {
+				fields[currentKey] += "\n" + item
+			}
+			continue
 		}
 		key, value, ok := strings.Cut(line, ":")
 		if !ok {
 			continue
 		}
-		fields[strings.TrimSpace(key)] = strings.TrimSpace(value)
+		currentKey = strings.TrimSpace(key)
+		fields[currentKey] = strings.TrimSpace(value)
 	}
 	return fields
 }

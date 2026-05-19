@@ -407,6 +407,39 @@ verified_by: "engineer"
 	}
 }
 
+func TestValidateEngineerTicketGate_allowsFeatureDoneWithMultilineBDDEvidence(t *testing.T) {
+	dir := t.TempDir()
+	for _, sub := range []string{"backlog", "in-progress", "done"} {
+		if err := os.MkdirAll(filepath.Join(dir, "docs", "tickets", sub), 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+	}
+	writeTicketGateContent(t, dir, "done", "T-001-feature.md", `---
+id: T-001
+title: Feature
+priority: high
+work_type: feature
+bdd_scenarios:
+- F-001-S001
+end_to_end_evidence: required
+evidence_links:
+- node test-game.js
+- index.html
+verified_by: "engineer"
+---
+
+# T-001: Feature
+`)
+
+	err := validateEngineerTicketGateWithEvidence(dir,
+		ticketSnapshot{Backlog: []string{"T-001-feature.md"}},
+		ticketSnapshot{Done: []string{"T-001-feature.md"}},
+	)
+	if err != nil {
+		t.Fatalf("expected multiline BDD evidence to pass, got %v", err)
+	}
+}
+
 func TestValidateEngineerTicketGate_allowsEnablerDoneWithoutBDDEvidence(t *testing.T) {
 	dir := t.TempDir()
 	for _, sub := range []string{"backlog", "in-progress", "done"} {
@@ -448,7 +481,7 @@ func TestBDDOperatingModel_goalToFeaturePlanTicketEvidenceDone(t *testing.T) {
 
 	// Given a generated target harness, the source of truth is visible before work starts.
 	assertFileContains(t, dir, "docs/goals/active.md", "G-001")
-	assertFileContains(t, dir, "docs/features/F-001-delivery-operating-model.md", "Feature ID: F-001")
+	assertFileContains(t, dir, "docs/features/F-001-product-walking-skeleton.md", "Feature ID: F-001")
 	assertFileContains(t, dir, "docs/exec-plans/active/current-operating-plan.md", "**Current Failing Scenario:** F-001-S001")
 	assertFileContains(t, dir, "docs/tickets/README.md", "bdd_scenarios")
 
@@ -476,7 +509,7 @@ verified_by: "fake-llm engineer transcript"
 	if err != nil {
 		t.Fatalf("expected BDD artifact loop to pass, got %v", err)
 	}
-	assertFileContains(t, dir, "docs/features/F-001-delivery-operating-model.md", "F-001-S002")
+	assertFileContains(t, dir, "docs/features/F-001-product-walking-skeleton.md", "F-001-S002")
 }
 
 func TestSnapshotTickets_listsMarkdownTicketsOnly(t *testing.T) {

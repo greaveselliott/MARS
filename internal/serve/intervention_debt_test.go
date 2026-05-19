@@ -274,6 +274,56 @@ func TestHandleJobFailedKeepsFoundationOwnedFailuresOutOfTargetBacklog(t *testin
 	require.GreaterOrEqual(t, len(srv.telemetry.Events()), 2)
 }
 
+func TestRecordInterventionDebtSignalQuarantinesRuntimeFailures(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+	rec, err := srv.repos.FindByID(ctx, repoID)
+	require.NoError(t, err)
+	require.NotNil(t, rec)
+
+	for _, signal := range []interventionDebtSignal{
+		{RepoID: repoID, Role: "engineer", JobID: "job-guardrail", Category: telemetry.CategoryGuardrailBlock, Message: "blast radius exceeded"},
+		{RepoID: repoID, Role: "engineer", JobID: "job-workspace", Category: telemetry.CategoryWorkspaceHygiene, Message: "workspace_hygiene_blocked"},
+		{RepoID: repoID, Role: "engineer", JobID: "job-ticket", Category: telemetry.CategoryTicketGate, Message: "ticket gate failed"},
+		{RepoID: repoID, Role: "engineer", JobID: "job-dispatch", Category: telemetry.CategoryDispatchProtocol, Message: "dispatch mode requires job_disposition_record"},
+		{RepoID: repoID, Role: "engineer", JobID: "job-max", Category: telemetry.CategoryMaxTurns, Message: "agent ended with max_turns"},
+		{RepoID: repoID, Role: "engineer", JobID: "job-context", Category: telemetry.CategoryContextOverflow, Message: "context size exceeded"},
+		{RepoID: repoID, Role: "engineer", JobID: "job-timeout", Category: telemetry.CategoryToolTimeout, Message: "timed out"},
+		{RepoID: repoID, Role: "engineer", JobID: "job-unknown", Category: telemetry.CategoryUnknown, Message: "agent failed unexpectedly"},
+	} {
+		srv.recordInterventionDebtSignal(ctx, signal)
+	}
+
+	entries, err := os.ReadDir(filepath.Join(rec.Path, "docs", "tickets", "backlog"))
+	if os.IsNotExist(err) {
+		entries = nil
+	} else {
+		require.NoError(t, err)
+	}
+	require.Empty(t, entries)
+	require.Len(t, srv.telemetry.Events(), 8)
+}
+
+func TestRecordInterventionDebtSignalAllowsTargetOwnedFailures(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+	rec, err := srv.repos.FindByID(ctx, repoID)
+	require.NoError(t, err)
+	require.NotNil(t, rec)
+
+	for _, signal := range []interventionDebtSignal{
+		{RepoID: repoID, Role: "engineer", JobID: "job-human", Category: telemetry.CategoryHumanFollowup, Message: "human follow-up commit fixed target behavior"},
+		{RepoID: repoID, Role: "engineer", JobID: "job-revert", Category: telemetry.CategoryRevertedCommit, Message: "reverted agent commit"},
+		{RepoID: repoID, Role: "engineer", JobID: "job-stale", Category: telemetry.CategoryStaleTicket, Message: "stale in-progress ticket"},
+	} {
+		srv.recordInterventionDebtSignal(ctx, signal)
+	}
+
+	entries, err := os.ReadDir(filepath.Join(rec.Path, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Len(t, entries, 3)
+}
+
 func TestHandleJobFailedSuppressesSecondaryTicketGateAfterPolicyBlock(t *testing.T) {
 	srv, repoID := newRecoveryTestServer(t)
 	ctx := context.Background()

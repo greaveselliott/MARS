@@ -109,6 +109,62 @@ func TestTicketCreate_writesBDDOperatingModelMetadata(t *testing.T) {
 	assert.Contains(t, text, `next_action: "land T-002 first"`)
 }
 
+func TestTicketCreate_stripsDuplicateBodyTitleHeading(t *testing.T) {
+	t.Parallel()
+	dir, root := setupTicketDir(t)
+
+	_, err := CreateTicket(root, TicketInput{
+		Title:    "Implement player movement",
+		Priority: "high",
+		Body:     "# T-999: Implement player movement\n\n## Context\nBuild movement.\n\n## Requirements\nMove left and right.\n\n## Acceptance criteria\n- [ ] Works",
+	})
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "backlog", "T-001-implement-player-movement.md"))
+	require.NoError(t, err)
+	require.Equal(t, 1, strings.Count(string(data), "# T-001: Implement player movement"))
+	require.NotContains(t, string(data), "# T-999: Implement player movement")
+}
+
+func TestTicketCreate_dedupesIndependentFeatureTicketsForSameBDDScenario(t *testing.T) {
+	t.Parallel()
+	dir, root := setupTicketDir(t)
+
+	first := TicketInput{
+		Title:        "Create walking skeleton shell",
+		Priority:     "high",
+		WorkType:     "feature",
+		BDDScenarios: []string{"F-001-S001"},
+		Source:       "current-operating-plan.md — scenario F-001-S001",
+		Body:         "## Context\nFirst slice.\n\n## Requirements\nBuild it.\n\n## Acceptance criteria\n- [ ] Scenario passes",
+	}
+	result, err := CreateTicket(root, first)
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "created ticket T-001")
+
+	second := TicketInput{
+		Title:        "Implement player movement",
+		Priority:     "high",
+		WorkType:     "feature",
+		BDDScenarios: []string{"F-001-S001"},
+		Source:       "current-operating-plan.md — scenario F-001-S001",
+		Body:         "## Context\nSame scenario.\n\n## Requirements\nBuild another part.\n\n## Acceptance criteria\n- [ ] Scenario passes",
+	}
+	result, err = CreateTicket(root, second)
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "DUPLICATE")
+	assert.Contains(t, result.Output, "F-001-S001")
+
+	entries, err := os.ReadDir(filepath.Join(dir, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+
+	second.DependsOn = []string{"T-001"}
+	result, err = CreateTicket(root, second)
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "created ticket T-002")
+}
+
 func TestTicketCreate_interventionDebtWritesMetadata(t *testing.T) {
 	t.Parallel()
 	dir, root := setupTicketDir(t)

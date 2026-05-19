@@ -52,15 +52,15 @@ The harness should proactively consume its own telemetry after jobs and on orche
 - process or product changes become tickets/plans unless an autonomous role has earned trust and the path is allowlisted
 - repeated worsening disables further evolution for that role/scope
 
-### AD-065: Telemetry Triage Creates Intervention-Debt Tickets
+### AD-065: Telemetry Triage Quarantines Foundation Failures By Default
 
-Self-reflection must create durable work, not only dashboard signals or evolution rows. When recurring telemetry patterns, non-success terminal agent results, guardrail or tool-policy blocks, repeated tool loops, manual stops, timeouts, low score snapshots, human follow-up, reverted agent commits, or stale in-progress tickets identify actionable improvement targets, Mars Harness creates or updates `kind: intervention-debt` tickets through the canonical ticket creation path.
+Self-reflection must create durable evidence, not only dashboard signals or evolution rows. When recurring telemetry patterns, non-success terminal agent results, guardrail or tool-policy blocks, repeated tool loops, manual stops, timeouts, low score snapshots, human follow-up, reverted agent commits, or stale in-progress tickets identify actionable improvement targets, Mars Harness records them in telemetry, quality evidence, or bounded evolution review first.
 
 The dedupe key is repo, role, target, category, and evidence window. This keeps repeated failures from creating ticket storms while still letting a new evidence window reopen durable work when the issue returns. Tickets carry role, repo, target, category, severity, confidence, source event, trace ID, score snapshot, commit, outcome, evidence, recommendation, candidate files, and acceptance criteria when those fields are available locally.
 
 Target repo intervention-debt tickets are only the right durable work item when the remediation belongs to the target repository. Harness-owned failures such as dispatch protocol failures, loop/max-turn failures, guardrail/tool-policy workflow failures, context or inference failures, manifest/tool-policy gaps, and unknown terminal failures remain local telemetry first and are eligible for anonymous foundation telemetry reporting instead of being written into the target backlog.
 
-Direct evolution remains bounded. Process, product, unknown, or unsafe changes default to intervention-debt tickets; autonomous evolution can only happen after the ticketed evidence is constrained by trust, allowlists, and regression checks.
+Direct evolution remains bounded. Harness/runtime, unknown, or unsafe changes default to foundation telemetry rather than target backlog. Target-owned human follow-up, reverted target commits, stale target tickets, and explicit operator requests may become intervention-debt tickets through the canonical ticket path.
 
 ### AD-072: Quality Scores Are Generated Repo Artifacts
 
@@ -78,10 +78,11 @@ then rewrites `docs/QUALITY_SCORE.md`. Missing SQLite data is rendered as
 `Insufficient evidence` instead of a fabricated grade.
 
 Manual edits belong only inside the preserved manual-notes block. Low role
-scores with at least five samples create or update deduped
-`kind: intervention-debt` tickets, making quality regressions durable work.
-Dashboard quality links point back to this generated artifact; the dashboard is
-not the source of truth.
+scores with at least five samples become improvement targets by default.
+Operators pass `--create-intervention-debt` only when they deliberately want
+score/outcome signals materialized as target tickets. Dashboard quality links
+point back to this generated artifact; the dashboard is not the source of
+truth.
 
 ### AD-104: Foundation Telemetry Uses Opt-In Anonymous Reports Through a Pluggable Collector
 
@@ -131,17 +132,18 @@ The first implementation is deliberately small:
 - harness-owned telemetry patterns stay out of target backlogs and can be
   exported as opt-in anonymous aggregate reports through `mars-harness telemetry`
 - `mars-harness scores export --repo <path>` refreshes `docs/QUALITY_SCORE.md`
-  from live evidence, creates deduped low-score/outcome/ticket-state
-  intervention debt, and preserves manual notes
+  from live evidence, reports low-score/outcome/ticket-state improvement
+  targets, and preserves manual notes. Ticket materialization requires
+  `--create-intervention-debt`.
 - `serve` runs a native Orchestrator survey loop on startup and a watchdog
   interval. The survey consumes ticket state, recent scored outcomes, telemetry
   patterns, low score snapshots, active recovery jobs, and stuck running jobs
   even when no new agent job finishes. It routes stale and blocked tickets to
-  Janitor, eligible in-progress and high-priority intervention-debt work to Engineer, failed
-  checks to Pipeline Fixer, dogfood failures to Engineer, and no-op outcomes to
-  Janitor with payload-mode, concurrency-group, and daily-cap queue metadata.
-  Recurring telemetry and low scores create or update the same deduped
-  intervention-debt tickets used by job-completion triage.
+  Janitor, eligible product in-progress work to Engineer, failed checks to
+  Pipeline Fixer, dogfood failures to Engineer, and no-op outcomes to Janitor
+  with payload-mode, concurrency-group, and daily-cap queue metadata. Recurring
+  runtime telemetry and low scores stay quarantined as foundation telemetry by
+  default instead of creating target backlog churn.
 
 ## Required Next Steps
 

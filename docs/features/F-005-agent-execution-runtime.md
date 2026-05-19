@@ -23,6 +23,10 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 6. F-005-S006 - `mars-harness run <role> --repo <path>` executes one role with terminal-result truth.
 7. F-005-S007 - Tool creation and CLI-operation tools are first-class mirrored harness capabilities.
 8. F-005-S008 - Persona creation tools scaffold role manuals and prompt manuals with explicit ownership and feedback sections.
+9. F-005-S009 - `ticket_create` prevents independent feature-ticket fan-out for the same BDD scenario.
+10. F-005-S010 - Mutating tool policy preserves canonical feature-contract paths and clean terminal handoffs.
+11. F-005-S011 - COO mutating tools are limited to planning artifacts before CTO ticketing.
+12. F-005-S012 - Git push remains terminal-safe in local demo repositories without remotes.
 
 ## Scenarios
 
@@ -42,11 +46,47 @@ Given a local model emits a tool call as `<function=name>` with nested `<paramet
 When the parser inspects assistant content
 Then the runtime converts the tagged call into the same function-call shape and executes it rather than treating the reply as final prose
 
+Given a local model emits a tool call as `<tool_call>name{key:<|"|>value<|"|>}</tool_call>`
+When the parser inspects assistant content
+Then the runtime converts the inline tagged call into JSON tool arguments and executes it rather than treating the reply as final prose
+
+Given a server job successfully records a terminal disposition through `job_disposition_record`
+When the tool result is traced
+Then the agent loop stops immediately with a completed outcome instead of asking the model for more turns after it has already declared the job terminal
+
+Given a server job requires a terminal tool such as `job_disposition_record`
+When the model attempts to finish with prose and no tool call
+Then the loop appends one corrective user turn requiring the terminal tool call, and if the model still finishes without the tool the executor's normal completion validation fails the job
+
 ### F-005-S003: Tool Execution Containment
 
 Given a role has an allowlist and trust level
 When it asks to call a tool
 Then unknown tools, disallowed tools, invalid JSON, observer mutations, path escapes, secret writes, destructive shell commands, and mutating shell commands in already-over-budget repos fail closed, while known read-only shell inspection remains available for diagnosis
+
+Given `docs/features/F-001-product-walking-skeleton.md` already exists
+When a role attempts to create any second `docs/features/F-001*.md` contract with `file_write`
+Then the tool policy blocks the write and instructs the role to update the canonical feature contract
+
+Given a non-Orchestrator role has uncommitted repo changes
+When it attempts to record a successful terminal `job_disposition_record`
+Then the tool policy blocks the disposition, names the dirty paths, and instructs the role to run `git_status`, commit with `git_commit`, and record the disposition after the tree is clean
+
+Given the only uncommitted path is the runtime-managed `.harness/learnings.yaml`
+When a non-Orchestrator role records a successful terminal `job_disposition_record`
+Then the disposition is allowed because runtime convention-learning metadata is not product work, the server may commit that runtime-only metadata after the job, and any additional product or documentation dirty path still blocks the handoff
+
+Given the COO role is shaping the first product slice
+When it attempts to write implementation files such as root HTML, source, package, test, or build artifacts
+Then tool policy blocks the mutation and requires the work to pass through CTO ticketing and Engineer delivery, while allowing planning writes under `docs/exec-plans`, `docs/features`, and `docs/goals/observations.md`
+
+Given the CEO role is shaping fresh product direction
+When it attempts to write COO-owned planning artifacts such as `docs/exec-plans/*` or `docs/features/*`
+Then tool policy blocks the mutation and requires CEO to update strategy artifacts only, then hand off with `next_need: exec_plan` or another explicit downstream need
+
+Given the COO role has shell access in an existing target manifest
+When it attempts a mutating `shell_exec`
+Then tool policy blocks the command so shell access cannot bypass the planning-only ownership boundary
 
 ### F-005-S004: Auditable Trace
 
@@ -86,6 +126,42 @@ Given a role persona needs to be created or revised
 When `persona_create` runs with ownership, feedback, stop-condition, and handoff sections
 Then it scaffolds a repo-local persona manual, prompt manual, role registry row, and optional manifest role, and foundation defaults still require adding the canonical entry to `internal/personas`
 
+### F-005-S009: BDD Scenario Ticket Dedupe
+
+Given a feature ticket already exists for a BDD scenario
+When a role calls `ticket_create` for another ordinary feature ticket with the same exact BDD scenario set and no `depends_on`
+Then the tool returns the existing ticket as a duplicate and creates no new backlog file
+
+Given the second ticket is an explicitly dependent decomposition
+When it carries `depends_on` metadata naming the earlier ticket
+Then `ticket_create` may create the dependent ticket with the same BDD scenario because the relationship is no longer independent fan-out
+
+### F-005-S010: Clean Terminal Handoff Policy
+
+Given an Engineer records a successful disposition for a named product ticket
+When that ticket does not live in `docs/tickets/done/`
+Then `job_disposition_record` blocks the disposition and instructs the Engineer to claim or update evidence, move the ticket to done, commit, and then request QA review
+
+Given an Engineer has an ordinary product ticket in `docs/tickets/backlog/`
+When it tries to mutate product, package, config, feature, dependency, build, or commit state before moving a ticket to `docs/tickets/in-progress/`
+Then tool policy blocks the mutation and instructs the Engineer to claim the product ticket with `git mv`, commit the claim, and then continue
+
+### F-005-S011: Role Ownership Tool Boundaries
+
+Given the Dogfood role is validating a target
+When it attempts to write product source, package manifests, lockfiles, config, or harness scaffold with `file_write`
+Then tool policy blocks the write and directs Dogfood to create target-owned tickets or write bounded evidence under `docs/reports/dogfood/`
+
+Given the COO role has shell access in an existing target manifest
+When it attempts a mutating `shell_exec`
+Then tool policy blocks the command so shell access cannot bypass the planning-only ownership boundary
+
+### F-005-S012: Local Demo Push Skip
+
+Given a local throwaway repository has commits on `main` but no configured `origin` remote
+When an agent calls `git_push`
+Then the tool returns a successful skipped-push result explaining that the commit remains local instead of causing push retry loops
+
 ## Out of Scope
 
 - Parallel tool execution inside a single agent turn.
@@ -106,3 +182,7 @@ None.
 - F-005-S006: `go test ./cmd/mars-harness -run 'TestRunStartServeExposeDebugAndLogFileFlags'` and planned broader E2E dogfood evidence
 - F-005-S007: `go test ./internal/tools -run 'TestToolCreate|TestMarsHarnessCLI'`
 - F-005-S008: `go test ./internal/tools -run TestPersonaCreate` and `go test ./internal/personas`
+- F-005-S009: `go test ./internal/tools -run TestTicketCreate_dedupesIndependentFeatureTicketsForSameBDDScenario`
+- F-005-S010: `go test ./internal/tools -run 'TestJobDispositionPolicy|TestEngineerDispositionPolicyRequiresTicketDoneBeforeSuccess|TestEngineerClaimPolicyRequiresInProgressBeforeProductMutation'`
+- F-005-S011: `go test ./internal/tools -run 'TestCOO(FileWrite|ShellExec)Policy|TestDogfoodFileWritePolicyBlocksProductMutation'`
+- F-005-S012: `go test ./internal/tools -run TestGitPush_noRemote`

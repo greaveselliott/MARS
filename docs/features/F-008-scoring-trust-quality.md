@@ -19,7 +19,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 2. F-008-S002 - Trust levels change capabilities according to observed scores and manual overrides.
 3. F-008-S003 - `scores` and `trust` commands expose repo and role state to operators.
 4. F-008-S004 - `scores export` refreshes `docs/QUALITY_SCORE.md` from database evidence while preserving manual notes.
-5. F-008-S005 - Low scores or telemetry patterns create deduped intervention-debt tickets.
+5. F-008-S005 - Low scores or telemetry patterns produce improvement targets, with intervention-debt ticket creation available only by explicit opt-in or target-owned cause.
 6. F-008-S006 - Release notes and quality score distinguish shipped feature scenarios from enabler work.
 7. F-008-S007 - Missing or sparse evidence is represented as insufficient evidence rather than healthy state.
 
@@ -49,11 +49,11 @@ Given a repo has score, telemetry, ticket, dogfood, guardrail, check, no-op, or 
 When `mars-harness scores export --repo <path>` runs
 Then `docs/QUALITY_SCORE.md` is refreshed as the repo-visible quality artifact while manual notes are preserved
 
-### F-008-S005: Intervention-Debt Creation
+### F-008-S005: Intervention-Debt Opt-In
 
 Given repeated telemetry failures or low score snapshots are detected
 When triage runs
-Then a deduped `kind: intervention-debt` ticket is created or updated through the canonical ticket path
+Then `docs/QUALITY_SCORE.md` records the improvement target without creating tickets by default, and a deduped `kind: intervention-debt` ticket is created only when the operator passes `--create-intervention-debt` or the signal is clearly target-owned
 
 ### F-008-S006: Feature Evidence Classification
 
