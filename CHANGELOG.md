@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.37.0] - 2026-05-19
+<!-- mars-harness-release: version=0.37.0 commit=24f0aa60f2a3 -->
+
+### Impact
+- **remediation:** Operators gain new capability: add deterministic recipe registry.
+
+### Why
+- **remediation:** This matters because add deterministic recipe registry was missing from the shipped capability set.
+
+### What Changed
+- **remediation:** Changed add deterministic recipe registry (24f0aa6).
+
+### Features
+- **remediation:** Add deterministic recipe registry (24f0aa6)
+
 ## [0.36.6] - 2026-05-19
 <!-- mars-harness-release: version=0.36.6 commit=1a34a002d019 -->
 
