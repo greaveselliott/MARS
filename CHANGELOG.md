@@ -2,6 +2,35 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.12] - 2026-05-19
+<!-- mars-harness-release: version=0.41.12 commit=f84abcd3a978 -->
+
+### Impact
+- **generated:** Fresh target harnesses now receive the reusable
+  foundation/deployed architecture route and core doctrine, so target agents
+  can distinguish mirrored operating rules from source-only `mars-harness`
+  release and runtime mechanics.
+
+### Why
+- **generated:** AD-139 would drift if it lived only in the foundation repo.
+  Target agents need the routing language for feedback ownership, doctrine
+  drift, tool/skill authority, and recursive improvement boundaries without
+  importing foundation-only binary asset duties.
+
+### What Changed
+- **generated:** Added a generated knowledge route and harness-glossary context
+  entry for foundation/deployed boundaries, mirrored operating doctrine,
+  runtime feedback routing, and source-only versus deployed-target
+  requirements.
+- **generated:** Mirrored the AD-139 core into generated target design docs and
+  scanner tests while asserting generated doctrine does not import source binary
+  asset names.
+- **planning:** Closed `T-003`, marked `F-004-S007` and `F-012-S007` passing,
+  and advanced the active plan to the doctrine drift review.
+
+### Documentation
+- **generated:** Mirror foundation deployed doctrine route (f84abcd)
+
 ## [0.41.11] - 2026-05-19
 <!-- mars-harness-release: version=0.41.11 commit=c8b5968f4913 -->
 
