@@ -27,6 +27,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 10. F-009-S010 - The installed CLI reports its version through the explicit command and root-level version flags.
 11. F-009-S011 - Private release auth is a first-class Getting Started operating model.
 12. F-009-S012 - Approved product validation enters release review automatically in generated target lifecycles.
+13. F-009-S013 - GitHub Release objects are created even when asset workflows are blocked.
 
 ## Scenarios
 
@@ -68,6 +69,11 @@ Then the update path refreshes missing target harness defaults without overwriti
 Given a GitHub Release exists for version `vX.Y.Z`
 When `mars-harness release verify-assets --version vX.Y.Z` runs
 Then it fails unless all required platform binaries and `checksums.txt` are attached
+
+Given a release-note commit and tag `vX.Y.Z` have been pushed
+When `gh release view vX.Y.Z` fails because the tag workflow did not create the release object
+Then Release Manager creates or updates a notes-only GitHub Release for the existing tag from the generated `CHANGELOG.md` entry
+And the release remains blocked for installer or self-update claims until `mars-harness release verify-assets --version vX.Y.Z` passes
 
 ### F-009-S007: Mirrored Release Discipline
 
@@ -112,6 +118,14 @@ When Dogfood records an approved or completed disposition after product or ticke
 Then dispatch routes to Release Manager before stopping so generated target `VERSION` and `CHANGELOG.md` are updated from unreleased semantic commits
 And Release Manager runs `mars-harness release backfill-notes --repo . --check` so legacy release entries are found deliberately instead of being missed during routine versioning
 
+### F-009-S013: Notes-Only Release Object Fallback
+
+Given GitHub release credentials are configured and the tag `vX.Y.Z` has been pushed
+When the Release workflow is blocked by CI, billing, permissions, or another workflow failure before publishing the GitHub Release object
+Then the release process must publish a notes-only GitHub Release using the generated changelog entry for `X.Y.Z`
+And the operating record must distinguish that release-object publication succeeded from the remaining asset blocker
+And asset verification remains failing until the required binaries and checksums are attached
+
 ## Out of Scope
 
 - Treating tags as the only release-note state.
@@ -136,3 +150,4 @@ None.
 - F-009-S009: `go test ./internal/release -run TestBackfillNotes` and `go test ./cmd/mars-harness -run TestReleaseBackfillNotesCommandChecksAndWrites`
 - F-009-S010: `go test ./cmd/mars-harness -run TestVersionEntrypointsPrintSameVersionLine`
 - F-009-S012: `go test ./internal/orchestration -run TestDecide_dogfoodApprovalRoutesDirectlyToReleaseManager` and `go test ./internal/scanner -run TestInit_success`
+- F-009-S013: `go test ./internal/docsconsistency -run TestSourceRepoVersioningRuleIsDocumented` and `go test ./internal/scanner -run TestInit_success`

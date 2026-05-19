@@ -1004,7 +1004,7 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
 - Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
 - After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, ensure the generated entry explains ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` before commit buckets, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
-- When GitHub release credentials are configured, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets. A notes-only GitHub Release is a blocker until required assets are attached and verified. If publishing or verification is blocked, record the blocker explicitly.
+- When GitHub release credentials are configured, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets. Confirm ` + "`gh release view vX.Y.Z`" + ` succeeds. If the tag workflow did not create the release object, create a notes-only GitHub Release from the generated ` + "`CHANGELOG.md`" + ` entry for the existing tag, then record missing assets as the remaining blocker. A notes-only GitHub Release is a blocker until required assets are attached and verified. If publishing or verification is blocked, record the blocker explicitly.
 - Private Mars Harness release access is part of getting started and version-drift repair. Run ` + "`mars-harness auth github check`" + ` or the read-only ` + "`github_auth_check`" + ` tool before ` + "`mars-harness update tool`" + `, release asset verification, install repair, or update troubleshooting. Configure access with ` + "`mars-harness auth github setup`" + `; never paste tokens into chat, docs, commits, tickets, traces, logs, or target repo files.
 - Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
 - Check drift with ` + "`mars-harness update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars-harness update harness --repo .`" + `.
@@ -2690,6 +2690,13 @@ package assets must run any release-asset workflow or backfill for that tag and
 verify those assets before claiming the release is complete. A notes-only GitHub
 Release is a blocker until the required assets are attached and verified.
 
+Publication has two gates. First, ` + "`gh release view vX.Y.Z`" + ` must confirm the
+GitHub Release object exists. If the tag workflow is blocked or fails before
+creating it, create a notes-only release from the generated ` + "`CHANGELOG.md`" + `
+entry for the existing tag so the Releases page reflects the current version.
+Second, ` + "`mars-harness release verify-assets --version vX.Y.Z`" + ` must pass
+before installer or self-update availability is claimed.
+
 If the repo has no GitHub remote, no release credentials, or the GitHub publish
 step fails, record the blocker and create or update follow-up work instead of
 claiming the release is complete.
@@ -3753,7 +3760,7 @@ For direct commits to main:
 5. Verify generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. If a commit subject is too thin, add richer commit-body context with ` + "`Impact:`" + `, ` + "`Why:`" + `, or ` + "`What:`" + ` before claiming the release text is good.
 6. Separate shipped feature scenarios from enabler work in release notes; do not claim a feature unless mapped scenarios pass.
 7. Run ` + "`mars-harness release backfill-notes --repo . --check`" + ` after release notes are generated. If the check reports legacy entries, run ` + "`mars-harness release backfill-notes --repo .`" + ` and include the backfill in the same release-note commit.
-8. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets when GitHub release credentials are configured
+8. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, confirm ` + "`gh release view vX.Y.Z`" + ` succeeds, and run any repo-required asset workflow or backfill before verifying assets when GitHub release credentials are configured. If the tag workflow does not create the release object, create a notes-only release from ` + "`CHANGELOG.md`" + ` for the existing tag before recording the remaining asset blocker.
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
@@ -3769,6 +3776,7 @@ Commit and push:
 GitHub publication:
   Create or update tag vX.Y.Z at the release-note commit.
   Push the tag, then create or update GitHub Release vX.Y.Z with the matching CHANGELOG.md entry.
+  Confirm gh release view vX.Y.Z succeeds. If the release object is missing after the tag workflow, create a notes-only GitHub Release from the generated CHANGELOG.md entry for the existing tag.
   Run any repo-required asset workflow or backfill for the tag.
   Verify any repo-required release assets before claiming the release is complete; a notes-only release is a blocker.
   If GitHub auth, API access, CI, or asset verification is unavailable, record the blocker and create or update follow-up work.

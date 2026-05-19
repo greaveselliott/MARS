@@ -38,6 +38,7 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 			"release: notes X.Y.Z",
 			"GitHub Release",
 			"vX.Y.Z",
+			"gh release view vX.Y.Z",
 		} {
 			if !strings.Contains(text, needle) {
 				t.Fatalf("%s must document automatic source versioning; missing %q", rel, needle)

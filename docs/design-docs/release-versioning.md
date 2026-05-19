@@ -115,8 +115,23 @@ After a `release: notes X.Y.Z` commit is pushed to `main`, release work must:
 2. push the tag so the release workflow builds binary assets and publishes or
    updates GitHub Release `vX.Y.Z`
 3. use the generated `CHANGELOG.md` entry for `X.Y.Z` as the release notes body
-4. verify the release is visible in GitHub and `mars-harness release
+4. verify the release object exists with `gh release view vX.Y.Z`; if the tag
+   workflow failed to create the release object, create a notes-only GitHub
+   Release for the existing tag from the generated `CHANGELOG.md` entry before
+   ending the task
+5. verify the release is visible in GitHub and `mars-harness release
    verify-assets --version vX.Y.Z` passes
+
+GitHub release publication has two independent gates:
+
+- **Release object gate:** `gh release view vX.Y.Z` must succeed. If Actions,
+  CI, billing, or workflow publication fails but the GitHub API is available,
+  Release Manager creates or updates a notes-only release from the generated
+  changelog entry so the Releases page reflects the current version.
+- **Asset gate:** `mars-harness release verify-assets --version vX.Y.Z` must
+  pass before installer or self-update availability is claimed. A notes-only
+  release is visible but still blocked for binary distribution until required
+  assets and `checksums.txt` are attached.
 
 GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the blocker and leaves a follow-up ticket instead of claiming the release is complete.
 
@@ -201,10 +216,11 @@ work without manual profile editing.
 ### AD-078: Release Assets Are Built From Tags And Verified
 
 For the source harness, `git tag vX.Y.Z && git push origin vX.Y.Z` is the
-authoritative release-publication trigger after the release-note commit is on
-`main`. Direct `gh release create` publication can still create a notes-only
-release, so it is not the default source harness release path and is incomplete
-until release assets are attached and verified.
+authoritative asset-publication trigger after the release-note commit is on
+`main`. Direct `gh release create` publication is the fallback for the release
+object gate when the tag workflow fails or cannot start. That fallback must use
+the existing tag and the generated `CHANGELOG.md` entry, and it remains
+incomplete until release assets are attached and verified.
 
 The Release workflow cross-compiles `linux/darwin` x `amd64/arm64`, writes
 `checksums.txt`, verifies all expected assets before publication, and uses the
@@ -237,6 +253,8 @@ path is shipped.
 - Treat source-repo versioning as part of done for every non-release semantic commit.
 - Treat target-repo versioning as part of done for every non-release semantic commit after `mars-harness init`.
 - Publish or update matching GitHub Releases when authenticated GitHub release capability is configured.
+- Verify `gh release view vX.Y.Z` after every tag push and create/update a
+  notes-only release object from `CHANGELOG.md` when workflow publication fails.
 - Let the installed binary reinstall itself without requiring a source checkout.
 - Verify release assets before announcing installer or self-update availability.
 - Use the same update vocabulary for binary and deployed target harness updates.

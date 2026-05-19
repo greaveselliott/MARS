@@ -13,7 +13,9 @@ completed step, and push `main` after every semantic commit.
 6. Run `mars-harness release backfill-notes --repo . --check`; if it reports legacy entries, run `mars-harness release backfill-notes --repo .`.
 7. Verify and commit the generated version files and any required changelog backfill with `release: notes X.Y.Z`.
 8. Push `main`.
-9. When GitHub release credentials are configured, publish or update GitHub Release `vX.Y.Z` with the generated changelog entry and run any repo-required asset backfill or verification.
+9. When GitHub release credentials are configured, publish or update GitHub Release `vX.Y.Z` with the generated changelog entry.
+10. Confirm `gh release view vX.Y.Z` succeeds; if the tag workflow did not create the release object, create a notes-only GitHub Release from the generated `CHANGELOG.md` entry for the existing tag.
+11. Run any repo-required asset backfill or verification and record missing assets as a blocker.
 
 `release: notes X.Y.Z` commits are exempt from generating another release-note commit.
 If GitHub release publication or asset verification is unavailable, record the blocker explicitly.

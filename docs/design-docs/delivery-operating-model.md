@@ -217,8 +217,9 @@ duplicate work, and misleading in-progress state.
 
 The Release Manager runs after successful product validation as well as on its
 schedule. It separates shipped scenarios from enablers in patch notes and
-release notes, verifies historical backfill compliance, and records release
-asset blockers before the lifecycle stops.
+release notes, verifies historical backfill compliance, ensures the GitHub
+Release object exists when release credentials are configured, and records
+release asset blockers before the lifecycle stops.
 
 ## Failure Modes And Mitigations
 
@@ -239,6 +240,7 @@ asset blockers before the lifecycle stops.
 | Source stabilization passes tests but still fails in practice | The changed behavior only appears when the installed harness runs against a real target lifecycle | Treat live-experience verification against `demo-123` or another representative target as a source-harness gate, then rerun after bounded source changes and push confirmed work to remote trunk before claiming improvement. |
 | Live demos become endless observation | Findings are gathered without forcing a small action and a rerun | Use the run, review, act, rerun loop: one clean run, one evidence review, one or two bounded fixes, one clean replay, and a recorded next blocker if the replay still stalls. |
 | Release discipline is documented but not executed | Product validation stops at Dogfood while semantic target commits remain unreleased | Route approved or completed Dogfood dispositions to Release Manager when configured, and require release backfill compliance before the release-note commit. |
+| GitHub Releases page stays stale after tags | The tag workflow cannot start or fails before creating the release object | Treat `gh release view vX.Y.Z` as a required release-object gate. If the workflow fails but the GitHub API is available, create a notes-only release from the generated changelog entry, then keep asset verification as the remaining blocker. |
 | Lean becomes endless learning | Hypotheses never close | Exec plans require success and falsification evidence; inconclusive plans are revised, superseded, or split. |
 | Operating-model additions create handoff gaps | New rules are added without updating the adjacent artifacts, roles, tools, or evidence path | Treat operating-model changes as system changes: update the whole affected workflow in one task or record the blocker before merging. |
 

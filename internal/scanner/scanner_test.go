@@ -867,6 +867,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(releaseDoc), "GitHub Release")
 	assert.Contains(t, string(releaseDoc), "vX.Y.Z")
 	assert.Contains(t, string(releaseDoc), "notes-only GitHub")
+	assert.Contains(t, string(releaseDoc), "gh release view vX.Y.Z")
+	assert.Contains(t, string(releaseDoc), "GitHub Release object")
 	assert.Contains(t, string(releaseDoc), "Impact")
 	assert.Contains(t, string(releaseDoc), "Why")
 	assert.Contains(t, string(releaseDoc), "What Changed")
@@ -881,6 +883,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(releasePrompt), "Impact")
 	assert.Contains(t, string(releasePrompt), "What Changed")
 	assert.Contains(t, string(releasePrompt), "publish or update GitHub Release")
+	assert.Contains(t, string(releasePrompt), "gh release view vX.Y.Z")
+	assert.Contains(t, string(releasePrompt), "release object")
 	assert.Contains(t, string(releasePrompt), "notes-only release is a blocker")
 }
 
