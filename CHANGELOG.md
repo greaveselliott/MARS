@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.19] - 2026-05-19
+<!-- mars-harness-release: version=0.41.19 commit=7ed38e599deb -->
+
+### Impact
+- **serve:** Operators see improved reliability because route dashboard stop through server loop.
+
+### Why
+- **serve:** This matters because route dashboard stop through server loop closes a failure mode or degraded path.
+
+### What Changed
+- **serve:** Changed route dashboard stop through server loop (7ed38e5).
+
+### Fixes
+- **serve:** Route dashboard stop through server loop (7ed38e5)
+
 ## [0.41.18] - 2026-05-19
 <!-- mars-harness-release: version=0.41.18 commit=5b2a46910435 -->
 
