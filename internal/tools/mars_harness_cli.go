@@ -147,8 +147,10 @@ func runMarsHarnessCLI(ctx context.Context, root Root, args marsHarnessCLIArgs) 
 		}
 	}
 
-	out, truncOut := capString(stdout.String(), DefaultMaxToolOutputBytes/2)
-	errOut, truncErr := capString(stderr.String(), DefaultMaxToolOutputBytes/2)
+	rawStdout := stdout.String()
+	rawStderr := decorateMarsHarnessCLIStderr(stderr.String(), argv, cliArgs, exitCode)
+	out, truncOut := capString(rawStdout, DefaultMaxToolOutputBytes/2)
+	errOut, truncErr := capString(rawStderr, DefaultMaxToolOutputBytes/2)
 	return ToolResult{
 		Output:    out,
 		Stderr:    errOut,
@@ -186,8 +188,16 @@ func normalizeMarsHarnessArgs(root Root, args marsHarnessCLIArgs) ([]string, err
 }
 
 func marsHarnessCommandArgv(root Root, args []string) ([]string, error) {
+	currentExe, currentErr := os.Executable()
+	return marsHarnessCommandArgvWithExecutable(root, args, currentExe, currentErr)
+}
+
+func marsHarnessCommandArgvWithExecutable(root Root, args []string, currentExe string, currentErr error) ([]string, error) {
 	if bin := strings.TrimSpace(os.Getenv("MARS_HARNESS_CLI_BIN")); bin != "" {
 		return append([]string{bin}, args...), nil
+	}
+	if currentErr == nil && isLikelyMarsHarnessExecutable(currentExe) {
+		return append([]string{currentExe}, args...), nil
 	}
 	if bin, err := exec.LookPath("mars-harness"); err == nil {
 		return append([]string{bin}, args...), nil
@@ -196,6 +206,35 @@ func marsHarnessCommandArgv(root Root, args []string) ([]string, error) {
 		return append([]string{"go", "run", "./cmd/mars-harness"}, args...), nil
 	}
 	return nil, fmt.Errorf("mars_harness_cli: mars-harness binary not found in PATH; install it or set MARS_HARNESS_CLI_BIN")
+}
+
+func isLikelyMarsHarnessExecutable(path string) bool {
+	base := strings.ToLower(filepath.Base(strings.TrimSpace(path)))
+	if base == "" || strings.HasSuffix(base, ".test") {
+		return false
+	}
+	return strings.Contains(base, "mars-harness")
+}
+
+func decorateMarsHarnessCLIStderr(stderr string, argv []string, cliArgs []string, exitCode int) string {
+	if exitCode == 0 || len(argv) == 0 || len(cliArgs) == 0 {
+		return stderr
+	}
+	if !strings.Contains(strings.ToLower(stderr), "unknown command") {
+		return stderr
+	}
+	command := cliArgs[0]
+	if len(cliArgs) > 1 && !strings.HasPrefix(cliArgs[1], "-") {
+		command += " " + cliArgs[1]
+	}
+	guidance := fmt.Sprintf("mars_harness_cli: resolved binary %q does not support command %q; set MARS_HARNESS_CLI_BIN to the active harness binary or run `mars-harness update tool` before retrying.", argv[0], command)
+	if strings.TrimSpace(stderr) == "" {
+		return guidance + "\n"
+	}
+	if strings.HasSuffix(stderr, "\n") {
+		return stderr + guidance + "\n"
+	}
+	return stderr + "\n" + guidance + "\n"
 }
 
 func looksLikeMarsHarnessSource(root Root) bool {
@@ -492,6 +531,10 @@ Operational guidance:
   Use repo:"." as shorthand for commands that operate on the current workspace.
   Use --dry-run before mutating setup/update/release operations when planning.
   Use background:true only for serve/start or deliberate long-running processes.
+  Binary resolution prefers MARS_HARNESS_CLI_BIN, then the active running
+  harness executable, then PATH, then source-checkout go run fallback.
+  If a resolved binary rejects a known command, update the installed tool or set
+  MARS_HARNESS_CLI_BIN to the active binary before retrying.
   This tool is mutating because many mars-harness commands can write files,
   update trust, start workers, or change release state; observer trust blocks it.`)
 }

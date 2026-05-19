@@ -11,8 +11,8 @@
 **Success Evidence:** `MH-048` closed with its remaining negative-path acceptance criteria satisfied; relevant remediation, doctor, serve, quality-score, docsconsistency, docsync, full repo tests, and a clean `demo-123` bootstrap replay passed for the slice touched.
 **Falsification Evidence:** The next parity slice fails to broaden dogfood evidence, clean target replays create intervention-debt churn before product work, or completed remediation work remains in the active plan instead of returning to the parity queue.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** The 2026-05-19 live `demo-123` replay reached Release Manager but exposed stale deployed `mars_harness_cli` binary resolution before release notes could run.
-**Walking Skeleton Slice:** Commit the completed same-role dispatch fix and live validation report, then claim `T-007` unless the operator explicitly prioritizes the remaining `../mars` observer-mode trial.
+**Current Failing Scenario:** The 2026-05-19 live `demo-123` replay showed `POST /api/stop` can stop workers and inference while leaving the `start` process alive.
+**Walking Skeleton Slice:** Claim `T-008` next unless the operator explicitly prioritizes the remaining `../mars` observer-mode trial.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -35,10 +35,9 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains `MH-049`.
-  - `docs/tickets/backlog/` contains `MH-050`, `T-001`, `T-006`, `T-007`,
-    and `T-008`.
+  - `docs/tickets/backlog/` contains `MH-050`, `T-001`, `T-006`, and `T-008`.
   - `docs/tickets/done/` contains `MH-001` through `MH-048`, `T-002`, and
-    `T-003` through `T-005`.
+    `T-003` through `T-005`, and `T-007`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -157,10 +156,11 @@ Checks recorded during the 2026-05-02 review:
   blocking, and a live `demo-123` lifecycle report that reached product
   implementation, QA, Security, Dogfood, and Release Manager. The remaining
   acceptance item is the first `../mars` observer-mode trial and report.
-- `T-007`: deployed `mars_harness_cli` binary resolution is the current live
-  release-boundary blocker found by the `demo-123` replay.
+- `T-007`: deployed `mars_harness_cli` binary resolution is done as of
+  2026-05-19. The tool prefers the active harness executable before stale PATH
+  binaries and adds actionable stale-binary guidance.
 - `T-008`: dashboard stop leaves the `start` process alive after graceful
-  worker/inference shutdown and is queued after the CLI-resolution blocker.
+  worker/inference shutdown and is the next live runtime blocker.
 - `T-002`: foundation/deployed architecture source doc is done and should be
   used as the input for mirroring and drift review.
 - `T-003`: generated target mirroring is done and should be used as input for

@@ -419,10 +419,14 @@ Add `mars_harness_cli` as a mirrored built-in tool. It provides:
   that support it
 - timeout and background support for long-running `serve` and `start`
 
-The tool resolves the installed `mars-harness` binary from `PATH`, accepts
-`MARS_HARNESS_CLI_BIN` for explicit operator/test configuration, and falls back
-to `go run ./cmd/mars-harness` only when operating inside the foundation source
-checkout.
+The tool accepts `MARS_HARNESS_CLI_BIN` for explicit operator/test
+configuration, then prefers the current running `mars-harness` executable when
+the active process is itself a harness binary, then resolves an installed
+`mars-harness` binary from `PATH`, and finally falls back to
+`go run ./cmd/mars-harness` only when operating inside the foundation source
+checkout. If a resolved binary is stale enough to reject a known command, the
+tool output names the binary and tells the operator to set `MARS_HARNESS_CLI_BIN`
+or update the installed tool.
 
 `mars_harness_cli` is classified as mutating because many CLI commands can
 write files, change trust, start workers, or change release state. Observer

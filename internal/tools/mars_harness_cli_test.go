@@ -91,6 +91,43 @@ func TestMarsHarnessCLI_runUsesStructuredArgv(t *testing.T) {
 	require.Equal(t, "fake-mars version", strings.TrimSpace(res.Output))
 }
 
+func TestMarsHarnessCLI_prefersCurrentExecutableBeforePath(t *testing.T) {
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	current := filepath.Join(dir, "mars-harness-current")
+	require.NoError(t, os.WriteFile(current, []byte("#!/bin/sh\n"), 0o755))
+	pathDir := filepath.Join(dir, "path-bin")
+	require.NoError(t, os.MkdirAll(pathDir, 0o755))
+	pathBin := writeFakeMarsHarnessBinary(t, pathDir)
+	t.Setenv("PATH", filepath.Dir(pathBin))
+
+	argv, err := marsHarnessCommandArgvWithExecutable(root, []string{"release", "notes"}, current, nil)
+	require.NoError(t, err)
+	require.Equal(t, current, argv[0])
+	require.Equal(t, []string{current, "release", "notes"}, argv)
+}
+
+func TestMarsHarnessCLI_stalePathBinaryAddsActionableGuidance(t *testing.T) {
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	bin := writeStaleMarsHarnessBinary(t, dir)
+	t.Setenv("PATH", filepath.Dir(bin))
+
+	res, err := handleMarsHarnessCLI(context.Background(), root, []byte(`{
+		"mode": "run",
+		"args": ["release", "notes", "--repo", ".", "--bump", "auto"],
+		"timeout_seconds": 5
+	}`))
+	require.NoError(t, err)
+	require.NotEqual(t, 0, res.ExitCode)
+	require.Contains(t, res.Stderr, "unknown command \"release\"")
+	require.Contains(t, res.Stderr, "resolved binary")
+	require.Contains(t, res.Stderr, "MARS_HARNESS_CLI_BIN")
+	require.Contains(t, res.Stderr, "mars-harness update tool")
+}
+
 func TestMarsHarnessCLI_repoShortcutAppendsRepoFlag(t *testing.T) {
 	dir := t.TempDir()
 	root, err := NewRoot(dir)
@@ -175,6 +212,25 @@ for arg in "$@"; do
   printf ' %s' "$arg"
 done
 printf '\n'
+`
+	require.NoError(t, os.WriteFile(path, []byte(script), 0o755))
+	return path
+}
+
+func writeStaleMarsHarnessBinary(t *testing.T, dir string) string {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("shell script fake binary is POSIX-only")
+	}
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	path := filepath.Join(dir, "mars-harness")
+	script := `#!/bin/sh
+if [ "$1" = "version" ]; then
+  echo "mars-harness 0.0.1-dev darwin/arm64 commit=unknown built=unknown"
+  exit 0
+fi
+echo "Error: unknown command \"$1\" for \"mars-harness\"" >&2
+exit 1
 `
 	require.NoError(t, os.WriteFile(path, []byte(script), 0o755))
 	return path

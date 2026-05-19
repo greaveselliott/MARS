@@ -85,6 +85,11 @@ workflow effect.
 Both mirrors must stay aligned with the Cobra command tree. The reference is a
 human-readable command catalog; the repo shortcut map is executable routing
 policy.
+The run mode must also resolve the correct harness binary: explicit
+`MARS_HARNESS_CLI_BIN` first, then the active running harness executable, then
+`PATH`, then source checkout fallback. This prevents deployed harness agents
+from accidentally using stale installed binaries during release and update
+workflows.
 
 ### 3. Skill And Doctrine Layer
 
