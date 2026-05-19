@@ -10,7 +10,7 @@
 **Hypothesis:** Zero-config CLI availability removes the first-run `Unknown command: mars-harness` failure mode while the BDD-led operating loop keeps completion evidence-based, and native Orchestrator surveys prevent unattended failure states from silently stalling work.
 **Success Evidence:** `make install`, `mars-harness setup`, and `mars-harness update tool` configure supported user shell profiles idempotently, F-001 remains passing including first-class BDD and no-stale-documentation checks, and `F-006-S009` has survey-to-queue tests for stale tickets, failed checks, no-op outcomes, telemetry patterns, low scores, queue ownership, payload modes, concurrency groups, daily caps, and stuck-job watchdog behavior.
 **Falsification Evidence:** Fish, Zsh, Bash, or POSIX shell users still need manual PATH edits after install/update/setup, or stale ticket/check/telemetry/score/no-op signals remain unrouted until a human or GitHub event intervenes.
-**Scenario Schedule:** F-001-S007, F-001-S008, F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005, F-006-S009, F-009-S008
+**Scenario Schedule:** F-001-S007, F-001-S008, F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005, F-006-S009, F-009-S008, F-009-S013
 **Current Failing Scenario:** None for F-002 or F-006-S009; continue the Mars parity backlog with deterministic remediation.
 **Walking Skeleton Slice:** Use one shellpath package across source install, first-run setup, update-tool reinstall, and an explicit `mars-harness path setup` command; use one native Orchestrator survey path across ticket ownership, telemetry triage, failed checks, dogfood failures, no-op outcomes, queue caps, and stuck-job watchdogs.
 **Learning Or MVP Outcome:** Users can install or update once and run `mars-harness` from new terminals across common shells without hand-written shell setup; as of 2026-05-03, unattended harness failure states become bounded queue work or deduped intervention-debt tickets.
@@ -52,15 +52,15 @@ plans to decide what to do next.
   blocked because GitHub returned `404 Not Found` for the tag release
   immediately after the tag push.
 - `v0.36.4`, `v0.36.5`, `v0.36.6`, `v0.37.0`, `v0.38.0`, `v0.39.0`,
-  `v0.40.0`, `v0.40.1`, `v0.41.0`, `v0.41.1`, `v0.41.2`, `v0.41.3`, and
-  `v0.41.4`, `v0.41.5`, `v0.41.6`, `v0.41.7`, and `v0.41.8` release notes and tags were pushed on
+  `v0.40.0`, `v0.40.1`, `v0.41.0`, `v0.41.1`, `v0.41.2`, `v0.41.3`,
+  `v0.41.4`, `v0.41.5`, `v0.41.6`, `v0.41.7`, `v0.41.8`, and `v0.41.9` release notes and tags were pushed on
   2026-05-19, but CI and Release workflow jobs were not started because GitHub
   reported recent account payment failure or a spending-limit increase
   requirement.
-  Notes-only GitHub Releases for `v0.36.4` through `v0.41.8` were created from
+  Notes-only GitHub Releases for `v0.36.4` through `v0.41.9` were created from
   the generated changelog entries on 2026-05-19 so the Releases page is no
   longer stale at `v0.36.3`. `mars-harness release verify-assets --version
-  v0.41.8` is still blocked because the `v0.41.8` release is missing
+  v0.41.9` is still blocked because the `v0.41.9` release is missing
   `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
   `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
   `checksums.txt` until the workflow can publish assets or a release backfill is
@@ -106,6 +106,7 @@ plans to decide what to do next.
 | F-002-S005 | Passing | Unsupported shells return explicit manual remediation without writing profile files. |
 | F-006-S009 | Passing | `go test ./internal/serve -run TestOrchestratorSurvey` and `go test ./internal/queue -run 'TestQueue_concurrencyGroupSerialization|TestQueue_dailyCapConstrainsRepeatedScheduling|TestQueue_claimDoesNotResetHealthyRunningJob|TestQueue_failStuckRunningJobs'` cover native survey routing, ownership metadata, daily caps, telemetry/score triage, no-op detection, and stuck-job safety. |
 | F-009-S008 | Passing | `go test ./internal/release -run 'TestRenderReleaseNarrative(UsesImpactWhyAndWhat|ProfilesStructuredDispatch)'` covers generated Impact, Why, What Changed, and topic-aware structured-dispatch fallback narrative. |
+| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync ./internal/scanner`, `go test ./...`, and `gh release view v0.41.9 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. Asset verification is separately blocked by missing Release workflow binaries. |
 
 ## Quality State
 
@@ -130,8 +131,12 @@ Checks recorded during the 2026-05-02 review:
   move them, or mark them with a clear status and pointer to the current plan.
 - Large strategic plans must be materialized into ticket files before agents
   are expected to execute them autonomously.
-- Every non-release semantic commit still requires generated release notes and
-  a matching release commit before pushing `main`.
+- Every non-release semantic commit still requires generated release notes, a
+  matching release commit, a pushed `vX.Y.Z` tag, `gh release view vX.Y.Z`, a
+  notes-only GitHub Release from `CHANGELOG.md` if the tag workflow did not
+  create one, and `mars-harness release verify-assets --version vX.Y.Z` before
+  release work can be claimed complete. Missing binary assets are recorded as a
+  blocker instead of allowing the GitHub Releases page to stay stale.
 
 ## Next Ticket Work
 
