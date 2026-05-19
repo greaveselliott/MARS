@@ -55,18 +55,20 @@ plans to decide what to do next.
 - `v0.36.4`, `v0.36.5`, `v0.36.6`, `v0.37.0`, `v0.38.0`, `v0.39.0`,
   `v0.40.0`, `v0.40.1`, `v0.41.0`, `v0.41.1`, `v0.41.2`, `v0.41.3`,
   `v0.41.4`, `v0.41.5`, `v0.41.6`, `v0.41.7`, `v0.41.8`, `v0.41.9`,
-  `v0.41.10`, `v0.41.11`, `v0.41.12`, `v0.41.13`, and `v0.41.14` release notes and tags were pushed on
+  `v0.41.10`, `v0.41.11`, `v0.41.12`, `v0.41.13`, `v0.41.14`, and
+  `v0.41.15` release notes and tags were pushed on
   2026-05-19, but CI and Release workflow jobs were not started because GitHub
   reported recent account payment failure or a spending-limit increase
   requirement.
-  Notes-only GitHub Releases for `v0.36.4` through `v0.41.14` were created from
+  Notes-only GitHub Releases for `v0.36.4` through `v0.41.15` were created from
   the generated changelog entries on 2026-05-19 so the Releases page is no
   longer stale at `v0.36.3`. `mars-harness release verify-assets --version
-  v0.41.14` is still blocked because the `v0.41.14` release is missing
+  v0.41.15` is still blocked because the `v0.41.15` release is missing
   `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
   `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
-  `checksums.txt` until the workflow can publish assets or a release backfill is
-  run after the billing blocker is cleared.
+  `checksums.txt`; GitHub Actions run `26123496924` failed with "recent account
+  payments have failed or your spending limit needs to be increased" before
+  assets could be built.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
