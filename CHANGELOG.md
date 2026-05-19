@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.25] - 2026-05-19
+<!-- mars-harness-release: version=0.41.25 commit=027f88681748 -->
+
+### Impact
+- **sqlite:** The release carries stronger evidence because cover legacy store fixtures.
+
+### Why
+- **sqlite:** This matters because the project needs durable evidence that the behavior keeps working.
+
+### What Changed
+- **sqlite:** Changed cover legacy store fixtures (027f886).
+
+### Tests
+- **sqlite:** Cover legacy store fixtures (027f886)
+
 ## [0.41.24] - 2026-05-19
 <!-- mars-harness-release: version=0.41.24 commit=46c58884ba6e -->
 
