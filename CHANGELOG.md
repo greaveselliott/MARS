@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.30] - 2026-05-20
+<!-- mars-harness-release: version=0.41.30 commit=1c8ff8453634 -->
+
+### Impact
+- **dispatch:** Operators see improved reliability because pause dirty target survey handoffs.
+
+### Why
+- **dispatch:** This matters because pause dirty target survey handoffs closes a failure mode or degraded path.
+
+### What Changed
+- **dispatch:** Changed pause dirty target survey handoffs (1c8ff84).
+
+### Fixes
+- **dispatch:** Pause dirty target survey handoffs (1c8ff84)
+
 ## [0.41.29] - 2026-05-20
 <!-- mars-harness-release: version=0.41.29 commit=29cafc75b953 -->
 
