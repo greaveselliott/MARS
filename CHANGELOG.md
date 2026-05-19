@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.23] - 2026-05-19
+<!-- mars-harness-release: version=0.41.23 commit=f4220fddd375 -->
+
+### Impact
+- **references:** Operators and future agents get a durable Archon comparison note that captures workflow, isolation, UX, provider-default, and adoption-boundary findings for later planning.
+
+### Why
+- **references:** This matters because Archon's workflow-engine shape overlaps Mars Harness remediation, dashboard, and execution-roadmap decisions, while some Archon defaults conflict with Mars Harness' local-first and strict-trunk doctrine.
+
+### What Changed
+- **references:** Added `docs/references/archon-comparator.md` and indexed it from `docs/references/README.md` (f4220fd).
+
+### Documentation
+- **references:** Added the Archon comparator reference note (f4220fd)
+
 ## [0.41.22] - 2026-05-19
 <!-- mars-harness-release: version=0.41.22 commit=b61c659b1f92 -->
 
