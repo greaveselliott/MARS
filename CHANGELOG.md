@@ -2,6 +2,42 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.7] - 2026-05-19
+<!-- mars-harness-release: version=0.41.7 commit=082ec783f38a -->
+
+### Impact
+- **orchestration:** Clean target lifecycles now keep moving from product
+  validation into release/versioning instead of stopping with unreleased
+  semantic commits.
+- **release:** Historical changelog backfill can be used as a compliance check
+  without flattening release entries that already have good Impact, Why, and
+  What Changed narrative.
+
+### Why
+- **orchestration:** The latest `demo-123` replay proved the release rule was
+  documented but not actually enforced by dispatch: target `VERSION` stayed
+  `0.1.0` and `CHANGELOG.md` remained a stub after semantic target commits.
+- **release:** The first retrospective backfill attempt also showed the checker
+  could mistake richer existing entries for stale entries and replace them with
+  generic commit-subject prose.
+
+### What Changed
+- **orchestration:** Review roles that complete with their own review
+  `next_need` now advance to the next review owner, and Dogfood completion
+  routes to Release Manager when that role is configured.
+- **scanner:** Generated target Dogfood and Release Manager guidance now names
+  the release-review handoff and requires `release backfill-notes --check`
+  during versioning.
+- **release:** `release backfill-notes` now preserves entries that already have
+  complete current narrative sections, while still filling legacy or missing
+  narrative when needed.
+- **docs:** The operating model, feature contracts, and live dogfood evidence
+  record release review as part of the product lifecycle rather than a weekly
+  afterthought.
+
+### Fixes
+- **orchestration:** Route validated work to release notes (082ec78)
+
 ## [0.41.6] - 2026-05-19
 <!-- mars-harness-release: version=0.41.6 commit=ec88640bbb88 -->
 
