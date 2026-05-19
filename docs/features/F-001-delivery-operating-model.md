@@ -2,7 +2,7 @@
 
 - Feature ID: F-001
 - Goals: G-001, G-002, G-003
-- Status: passing
+- Status: partially-passing
 - Owner: CEO
 
 ## Business Logic
@@ -29,6 +29,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 12. F-001-S012 - Agents start from `origin/main` and push ready work to `origin main` promptly.
 13. F-001-S013 - Source-harness lifecycle improvements are checked against a live target experience or record a blocker.
 14. F-001-S014 - Source-harness lifecycle stabilization follows a run, review, act, and rerun loop.
+15. F-001-S015 - Foundation and deployed harness architecture keeps mirrored doctrine, feedback routing, and source-only boundaries explicit as the system evolves.
 
 ## Scenarios
 
@@ -116,6 +117,12 @@ Given a live target run such as `demo-123` exposes a lifecycle, orchestration, i
 When the agent stabilizes Mars Harness source behavior
 Then the agent records the run evidence, reviews the findings, selects one or two bounded source actions tied to that evidence, implements and tests those actions, reruns a clean representative target, merges or fast-forwards the confirmed fix to trunk, pushes it to the remote, and claims improvement only when the rerun shows better product progress or a clearly smaller remaining blocker
 
+### F-001-S015: Foundation And Deployed Doctrine Boundaries
+
+Given the foundation operating model changes because source dogfood, target feedback, release evidence, telemetry, or human review reveals a recurring doctrine gap
+When the change is planned, documented, mirrored, or deliberately marked source-only
+Then the owning architecture docs name the foundation harness, deployed harness, target project, runtime substrate, feedback sources, doctrine maintenance duties, generated target implications, and source-only boundaries before tickets claim the work complete
+
 ## Out of Scope
 
 - Custom Gherkin parsing.
@@ -142,3 +149,4 @@ None.
 - F-001-S012: `go test ./internal/docsconsistency -run TestRemoteTrunkOperatingModelIsDocumented` verifies source and generated target doctrine include the remote-trunk workflow.
 - F-001-S013: source-harness lifecycle changes include a `demo-123` or equivalent live-experience transcript, or an explicit blocker with replay steps.
 - F-001-S014: `go test ./internal/docsconsistency -run TestLiveDemoImprovementLoopIsDocumented` verifies the run, review, act, rerun, merge, and push loop is documented in source and generated target doctrine.
+- F-001-S015: pending; planned by the foundation/deployed harness architecture ticket set.

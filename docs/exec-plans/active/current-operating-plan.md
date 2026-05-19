@@ -4,16 +4,16 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, T-002, T-003, T-004, T-005
 **Goals:** G-001, G-002, G-003, G-004
-**BDD Feature:** F-001, F-002, F-006, F-009
-**Hypothesis:** Zero-config CLI availability removes the first-run `Unknown command: mars-harness` failure mode while the BDD-led operating loop keeps completion evidence-based, and native Orchestrator surveys prevent unattended failure states from silently stalling work.
-**Success Evidence:** `make install`, `mars-harness setup`, and `mars-harness update tool` configure supported user shell profiles idempotently, F-001 remains passing including first-class BDD and no-stale-documentation checks, and `F-006-S009` has survey-to-queue tests for stale tickets, failed checks, no-op outcomes, telemetry patterns, low scores, queue ownership, payload modes, concurrency groups, daily caps, and stuck-job watchdog behavior.
-**Falsification Evidence:** Fish, Zsh, Bash, or POSIX shell users still need manual PATH edits after install/update/setup, or stale ticket/check/telemetry/score/no-op signals remain unrouted until a human or GitHub event intervenes.
-**Scenario Schedule:** F-001-S007, F-001-S008, F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005, F-006-S009, F-009-S008, F-009-S013
-**Current Failing Scenario:** None for F-002 or F-006-S009; continue the Mars parity backlog with deterministic remediation.
-**Walking Skeleton Slice:** Use one shellpath package across source install, first-run setup, update-tool reinstall, and an explicit `mars-harness path setup` command; use one native Orchestrator survey path across ticket ownership, telemetry triage, failed checks, dogfood failures, no-op outcomes, queue caps, and stuck-job watchdogs.
-**Learning Or MVP Outcome:** Users can install or update once and run `mars-harness` from new terminals across common shells without hand-written shell setup; as of 2026-05-03, unattended harness failure states become bounded queue work or deduped intervention-debt tickets.
+**BDD Feature:** F-001, F-004, F-009, F-012
+**Hypothesis:** Naming the foundation/deployed harness architecture will reduce doctrine drift by making clear which feedback belongs to the foundation harness, which belongs to a deployed harness, which rules mirror, and which source-only release or runtime mechanics must not leak into target guidance.
+**Success Evidence:** A glossary-grounded design doc explains why the foundation/deployed split exists, how feedback is collected and routed, how doctrine is maintained as the system evolves, and how generated target guidance mirrors only the reusable core; docsconsistency, docsync, and scanner checks pass for the mirrored surfaces that change.
+**Falsification Evidence:** Agents still have to infer whether a rule is foundation-only or deployed, feedback still becomes target backlog churn when it is foundation-owned, generated target guidance imports source-only release asset mechanics, or doctrine changes can land without updating the owning docs/routes/tests.
+**Scenario Schedule:** F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
+**Current Failing Scenario:** F-001-S015 lacks a dedicated architecture document and ticket set for foundation/deployed doctrine boundaries and feedback routing.
+**Walking Skeleton Slice:** Add one coherent foundation/deployed architecture design doc, then mirror only its reusable route/core doctrine into generated target guidance, then run a doctrine drift review before deciding whether the recursive improvement loop should become a skill.
+**Learning Or MVP Outcome:** Future foundation and deployed agents can tell where doctrine lives, how feedback becomes durable work, when skills/tools/guardrails are the right evolution surface, and how release/publication rules stay visible without confusing source-only binary asset mechanics with target project release discipline.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
 **Source:** Exec-plan review and repository state audit on 2026-05-02
@@ -32,10 +32,11 @@ plans to decide what to do next.
 - Current source version is recorded in `VERSION`.
 - Current branch: `main`
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
-- BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, the current install/setup feature is `F-002`, the current queue/orchestration survey scenario is `F-006-S009`, and detailed release-note narrative is `F-009-S008`.
+- BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains `MH-048`.
-  - `docs/tickets/backlog/` contains `MH-049`.
+  - `docs/tickets/backlog/` contains `MH-049`, `MH-050`, `T-001`, and
+    `T-002` through `T-005`.
   - `docs/tickets/done/` contains `MH-001` through `MH-047`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
@@ -80,10 +81,14 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Mars parity execution**: Continue deterministic remediation (`MH-048`,
+1. **Foundation/deployed doctrine architecture**: Create the ticket-backed docs
+   and mirroring slice for `F-001-S015`, then return to the Mars parity queue.
+   The operator explicitly selected this architecture work on 2026-05-19
+   because the recursive improvement loop is changing how the foundation and
+   deployed operating models should be understood.
+2. **Mars parity execution**: Continue deterministic remediation (`MH-048`,
    claimed under `docs/tickets/in-progress/` on 2026-05-19), then the dogfood
-   matrix (`MH-049`).
-   Use [OpenHarness comparator](../../references/openharness-comparator.md)
+   matrix (`MH-049`). Use [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.
 
@@ -99,13 +104,10 @@ plans to decide what to do next.
 | F-001-S006 | Passing | Telemetry proposals can create or update active goals/observations with dedupe evidence. |
 | F-001-S007 | Passing | `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields` checks feature contracts include first-class business-logic sections. |
 | F-001-S008 | Passing | `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata` checks operating-model code files carry associated documentation metadata. |
-| F-002-S001 | Passing | `make install` invokes `mars-harness path setup --install-dir <dir>` after `go install`. |
-| F-002-S002 | Passing | `mars-harness setup` includes a `configure-shell-path` step. |
-| F-002-S003 | Passing | `mars-harness update tool` runs shell PATH setup after reinstalling the binary. |
-| F-002-S004 | Passing | Shell profile updates are idempotent and covered by tests. |
-| F-002-S005 | Passing | Unsupported shells return explicit manual remediation without writing profile files. |
-| F-006-S009 | Passing | `go test ./internal/serve -run TestOrchestratorSurvey` and `go test ./internal/queue -run 'TestQueue_concurrencyGroupSerialization|TestQueue_dailyCapConstrainsRepeatedScheduling|TestQueue_claimDoesNotResetHealthyRunningJob|TestQueue_failStuckRunningJobs'` cover native survey routing, ownership metadata, daily caps, telemetry/score triage, no-op detection, and stuck-job safety. |
-| F-009-S008 | Passing | `go test ./internal/release -run 'TestRenderReleaseNarrative(UsesImpactWhyAndWhat|ProfilesStructuredDispatch)'` covers generated Impact, Why, What Changed, and topic-aware structured-dispatch fallback narrative. |
+| F-001-S015 | Planned | Ticket-backed architecture slice will add the foundation/deployed doctrine boundary, feedback routing, and doctrine-maintenance design doc. |
+| F-004-S007 | Planned | Generated target mirroring ticket will update applicable target guidance after the source architecture doc lands. |
+| F-012-S006 | Planned | Skill/tool evaluation ticket will decide whether the recursive improvement loop should become a universal skill, foundation skill, deployed skill pattern, or remain design doctrine. |
+| F-012-S007 | Planned | Generated target mirroring ticket will carry reusable self-improvement doctrine only after source wording stabilizes. |
 | F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync ./internal/scanner`, `go test ./...`, and `gh release view v0.41.9 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. Asset verification is separately blocked by missing Release workflow binaries. |
 
 ## Quality State
@@ -146,4 +148,6 @@ Checks recorded during the 2026-05-02 review:
   auto-safe recipe executes through `scanner.Upgrade`, and `doctor --repo`
   reports manifest/generated-docs recipe IDs before runtime. The next slice
   should decide whether MH-048 is complete or needs another permanent check.
-- Next active-plan refresh: promote the deterministic-first repair scenario group.
+- `T-002` through `T-005`: foundation/deployed architecture ticket set. Create
+  with `ticket_create`, complete in dependency order, and then refresh this
+  plan back to Mars parity work.
