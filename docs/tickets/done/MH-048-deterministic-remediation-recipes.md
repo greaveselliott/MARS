@@ -36,7 +36,8 @@ reserved for judgment work.
 - Start with recipes for dirty working tree before run, stale in-progress
   tickets, missing or invalid manifest, missing generated docs, failed doctor
   checks with known remediation, repeated scanner duplicate tickets, missing
-  dependency setup, and model artifact checksum mismatch.
+  dependency setup, missing optional tools, and model artifact checksum
+  mismatch.
 - Run safe recipes before LLM repair jobs.
 - Record recipe attempts, outcomes, and skipped reasons in traces and scores.
 - Promote repeated successful recipes into permanent doctor or setup checks.
@@ -71,6 +72,10 @@ reserved for judgment work.
   now reports remediation attempt/execution recipe IDs and statuses from
   scoring outcome details, and skipped-without-executor or failed executions can
   become improvement targets.
+- 2026-05-19: Closed the remaining negative-path slice. The registry now has
+  explicit missing-optional-tool guidance, destructive recipes stay
+  approval-gated, dirty worktrees remain operator blockers, and recipe commands
+  are covered against destructive git cleanup shortcuts.
 
 ## Affected Files
 
@@ -82,7 +87,7 @@ reserved for judgment work.
 - `internal/models/`
 - `internal/trace/`
 - `internal/scoring/`
-- `docs/design-docs/self-improvement.md`
+- `docs/design-docs/self-reflective-telemetry.md`
 
 ## Acceptance Criteria
 
@@ -96,11 +101,11 @@ reserved for judgment work.
 
 ### Edge cases and negative paths
 
-- [ ] Recipes never perform destructive git operations without explicit guardrail
+- [x] Recipes never perform destructive git operations without explicit guardrail
       approval.
-- [ ] Dirty working trees with user changes produce actionable blocker output
+- [x] Dirty working trees with user changes produce actionable blocker output
       instead of automatic reverts.
-- [ ] Missing optional tools create remediation guidance, not false success.
+- [x] Missing optional tools create remediation guidance, not false success.
 
 ### Observability, docs, and regressions
 

@@ -8,6 +8,7 @@ docs:
 package remediation
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
@@ -23,6 +24,7 @@ func TestDefaultRegistryListsKnownRecipes(t *testing.T) {
 		"generated-docs:update-missing-defaults",
 		"manifest:validate-or-init",
 		"model-artifact:checksum-mismatch",
+		"optional-tool:install-guidance",
 		"scanner:dedupe-duplicate-tickets",
 		"stale-ticket:drain-in-progress",
 	}
@@ -94,6 +96,84 @@ func TestPlanSkipsUnsafeRecipesAndMarksAutoSafeRecipesReady(t *testing.T) {
 	}
 }
 
+func TestPlanKeepsDirtyWorktreeAsOperatorBlocker(t *testing.T) {
+	registry := DefaultRegistry()
+
+	plan := registry.Plan(Signal{
+		Category: telemetry.CategoryWorkspaceHygiene,
+		Message:  "dirty working tree has user changes before run",
+	})
+	attempt := requireAttempt(t, plan, "dirty-worktree:blocker")
+	if attempt.Status != AttemptSkippedOperatorRequired {
+		t.Fatalf("expected dirty worktree to require operator confirmation, got %s", attempt.Status)
+	}
+	if attempt.Safety != SafetyOperatorRequired {
+		t.Fatalf("expected operator safety, got %s", attempt.Safety)
+	}
+	assertContains(t, attempt.Commands, "git status --short")
+	assertNotContainsText(t, strings.Join(attempt.Commands, "\n"), "git reset --hard")
+	assertNotContainsText(t, strings.Join(attempt.Commands, "\n"), "git checkout --")
+	assertNotContainsText(t, strings.Join(attempt.Commands, "\n"), "git clean -")
+	assertContainsText(t, attempt.NextAction, "separate user work")
+	assertContainsText(t, attempt.NextAction, "operator")
+}
+
+func TestPlanRequiresApprovalForDestructiveRecipes(t *testing.T) {
+	registry := DefaultRegistry()
+
+	for _, recipe := range registry.List() {
+		if !recipe.Destructive {
+			continue
+		}
+		plan := registry.Plan(Signal{
+			Category: recipe.Categories[0],
+			Message:  recipe.MessageContains[0],
+		})
+		attempt := requireAttempt(t, plan, recipe.ID)
+		if attempt.Status != AttemptSkippedApprovalRequired {
+			t.Fatalf("destructive recipe %q status = %s, want %s", recipe.ID, attempt.Status, AttemptSkippedApprovalRequired)
+		}
+		if attempt.Safety != recipe.Safety {
+			t.Fatalf("destructive recipe %q safety = %s, want %s", recipe.ID, attempt.Safety, recipe.Safety)
+		}
+		assertContainsText(t, attempt.Reason, "approval")
+	}
+}
+
+func TestDefaultRecipesDoNotOfferDestructiveGitMutations(t *testing.T) {
+	registry := DefaultRegistry()
+	destructiveGit := []string{"git reset --hard", "git checkout --", "git clean -"}
+
+	for _, recipe := range registry.List() {
+		for _, command := range recipe.Commands {
+			for _, disallowed := range destructiveGit {
+				if strings.Contains(command, disallowed) {
+					t.Fatalf("recipe %q command %q includes destructive git mutation %q", recipe.ID, command, disallowed)
+				}
+			}
+		}
+	}
+}
+
+func TestPlanTreatsMissingOptionalToolsAsGuidance(t *testing.T) {
+	registry := DefaultRegistry()
+
+	plan := registry.Plan(Signal{
+		Category: telemetry.CategoryUnknown,
+		Message:  "llama-server not found in PATH; optional tool not installed for hosted model run",
+	})
+	attempt := requireAttempt(t, plan, "optional-tool:install-guidance")
+	if attempt.Status != AttemptSkippedOperatorRequired {
+		t.Fatalf("expected optional-tool guidance to require operator confirmation, got %s", attempt.Status)
+	}
+	if attempt.Safety != SafetyOperatorRequired {
+		t.Fatalf("expected operator safety, got %s", attempt.Safety)
+	}
+	assertContains(t, attempt.Commands, "mars-harness doctor --repo <repo>")
+	assertContainsText(t, attempt.NextAction, "record a skip/blocker")
+	assertContainsText(t, attempt.NextAction, "do not mark remediation successful")
+}
+
 func assertRecipeIDs(t *testing.T, recipes []Recipe, want ...string) {
 	t.Helper()
 	if len(recipes) != len(want) {
@@ -103,5 +183,40 @@ func assertRecipeIDs(t *testing.T, recipes []Recipe, want ...string) {
 		if recipe.ID != want[i] {
 			t.Fatalf("recipe %d = %q, want %q", i, recipe.ID, want[i])
 		}
+	}
+}
+
+func requireAttempt(t *testing.T, plan Plan, id string) Attempt {
+	t.Helper()
+	for _, attempt := range plan.Attempts {
+		if attempt.RecipeID == id {
+			return attempt
+		}
+	}
+	t.Fatalf("expected attempt %q, got %#v", id, plan.Attempts)
+	return Attempt{}
+}
+
+func assertContains(t *testing.T, got []string, want string) {
+	t.Helper()
+	for _, candidate := range got {
+		if candidate == want {
+			return
+		}
+	}
+	t.Fatalf("expected %q in %v", want, got)
+}
+
+func assertContainsText(t *testing.T, got string, want string) {
+	t.Helper()
+	if !strings.Contains(got, want) {
+		t.Fatalf("expected %q to contain %q", got, want)
+	}
+}
+
+func assertNotContainsText(t *testing.T, got string, disallowed string) {
+	t.Helper()
+	if strings.Contains(got, disallowed) {
+		t.Fatalf("expected %q not to contain %q", got, disallowed)
 	}
 }

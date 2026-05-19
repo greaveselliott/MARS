@@ -92,11 +92,12 @@ Then it creates Mars Harness source work rather than intervention-debt tickets i
 
 ### F-012-S010: Deterministic Remediation Registry
 
-Given a failure signal names dirty workspace state, stale in-progress tickets, missing or invalid manifest state, missing generated docs, known doctor remediation, repeated scanner duplicates, missing dependency setup, or model artifact checksum mismatch
+Given a failure signal names dirty workspace state, stale in-progress tickets, missing or invalid manifest state, missing generated docs, known doctor remediation, repeated scanner duplicates, missing dependency setup, missing optional tools, or model artifact checksum mismatch
 When deterministic remediation planning runs
 Then the registry returns applicable recipes with stable IDs, candidate commands, safety classification, skipped reasons for operator or approval-required repairs, and next actions that are recorded in failed outcome details with trace IDs before generic telemetry retry is considered
 And a ready auto-safe generated-docs recipe executes through the non-shell harness upgrade API, records applied/noop/failed execution evidence, and defers the generic telemetry retry path so deterministic repair runs first
 And an auto-safe recipe without a registered executor does not suppress generic telemetry retry
+And dirty-worktree and missing-optional-tool failures remain operator-visible guidance instead of automatic reverts, false success, or destructive git cleanup
 And doctor reports known manifest and generated-docs recipe IDs with concrete fix commands before the same failures reach agent runtime
 And score export renders deterministic remediation attempt and execution summaries from failed outcome details
 

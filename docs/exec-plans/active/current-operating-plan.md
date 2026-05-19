@@ -8,11 +8,11 @@
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-009, F-012
 **Hypothesis:** Returning to the Mars parity remediation lane after the foundation/deployed doctrine slice will keep the factory improving the runtime paths that most reduce wasted model turns and recovery loops.
-**Success Evidence:** `MH-048` either closes with its remaining negative-path acceptance criteria satisfied or records a concrete blocker; relevant remediation, doctor, serve, quality-score, docsconsistency, and docsync checks pass for the slice touched.
-**Falsification Evidence:** Deterministic remediation still hides destructive or missing-tool edge cases, dirty user worktrees get unsafe repair behavior, or completed doctrine work remains in the active plan instead of returning to the parity queue.
+**Success Evidence:** `MH-048` closed with its remaining negative-path acceptance criteria satisfied; relevant remediation, doctor, serve, quality-score, docsconsistency, docsync, full repo tests, and a clean `demo-123` bootstrap replay passed for the slice touched.
+**Falsification Evidence:** The next parity slice fails to broaden dogfood evidence, clean target replays create intervention-debt churn before product work, or completed remediation work remains in the active plan instead of returning to the parity queue.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** F-012-S010 still has open `MH-048` edge acceptance around destructive git operations, dirty user worktrees, and missing optional tools.
-**Walking Skeleton Slice:** Finish or explicitly block the current `MH-048` deterministic remediation ticket, then take the next highest-priority parity or release-skill ticket.
+**Current Failing Scenario:** `MH-049` remains open for the broader dogfood matrix, fake-LLM loop coverage, `../mars` observer profile/trial, and contributor-mode graduation criteria.
+**Walking Skeleton Slice:** Claim the next Mars parity ticket (`MH-049`) unless the operator explicitly prioritizes the foundation Release Manager skill (`T-006`).
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -34,9 +34,9 @@ plans to decide what to do next.
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
-  - `docs/tickets/in-progress/` contains `MH-048`.
+  - `docs/tickets/in-progress/` is empty as of 2026-05-19.
   - `docs/tickets/backlog/` contains `MH-049`, `MH-050`, `T-001`, and `T-006`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-047`, `T-002`, and
+  - `docs/tickets/done/` contains `MH-001` through `MH-048`, `T-002`, and
     `T-003` through `T-005`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
@@ -82,9 +82,10 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Mars parity execution**: Continue deterministic remediation (`MH-048`,
-   claimed under `docs/tickets/in-progress/` on 2026-05-19), then the dogfood
-   matrix (`MH-049`). Use [OpenHarness comparator](../../references/openharness-comparator.md)
+1. **Mars parity execution**: As of 2026-05-19, deterministic remediation
+   (`MH-048`) moved to done.
+   Continue with the dogfood matrix (`MH-049`). Use
+   [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.
 2. **Foundation release publication skill**: Implement `T-006` after the
@@ -103,7 +104,7 @@ plans to decide what to do next.
 | F-001-S006 | Passing | Telemetry proposals can create or update active goals/observations with dedupe evidence. |
 | F-001-S007 | Passing | `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields` checks feature contracts include first-class business-logic sections. |
 | F-001-S008 | Passing | `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata` checks operating-model code files carry associated documentation metadata. |
-| F-012-S010 | Planned | `MH-048` remains in progress with deterministic remediation edge acceptance still open. |
+| F-012-S010 | Passing | `go test ./internal/remediation`, `go test ./internal/serve -run 'TestHandleJobFailed(RecordsDeterministicRemediation|ExecutesGeneratedDocs)|TestHandleRemediation(ExecutableReadyRecipe|AutoSafeWithoutExecutor|OperatorRecipe)'`, `go test ./internal/doctor -run TestCheckDeterministicRemediationHealth`, `go test ./internal/qualityscore -run TestExportRendersTelemetryAndOutcomeSignals`, `go test ./internal/docsconsistency ./internal/docsync`, `go test ./...`, and the 2026-05-19 clean `<validation-root>` replay cover the completed `MH-048` edge slice. |
 | F-001-S015 | Passing | [foundation-deployed-harness-architecture.md](../../design-docs/foundation-deployed-harness-architecture.md) records the foundation/deployed doctrine boundary, feedback routing, tool/skill/runtime split, generated-target implications, doctrine-maintenance duties, and 2026-05-19 drift review. |
 | F-004-S007 | Passing | `go test ./internal/scanner -run TestInit_success` verifies generated targets receive the foundation/deployed route and AD-139 core doctrine without source binary asset names. |
 | F-012-S006 | Passing | [skill-evolution.md](../../design-docs/skill-evolution.md) AD-140 keeps the recursive improvement loop as operating doctrine and creates `T-006` for a foundation Release Manager skill. |
@@ -142,12 +143,13 @@ Checks recorded during the 2026-05-02 review:
 
 ## Next Ticket Work
 
-- `MH-048`: deterministic remediation recipes are in progress. The first
-  completed slices add the remediation registry, applicability planner, and
-  trace-linked score evidence in `serve`; as of 2026-05-19, the generated-docs
-  auto-safe recipe executes through `scanner.Upgrade`, and `doctor --repo`
-  reports manifest/generated-docs recipe IDs before runtime. The next slice
-  should decide whether MH-048 is complete or needs another permanent check.
+- `MH-048`: deterministic remediation recipes are done. The completed slices
+  add the remediation registry, applicability planner, trace-linked score
+  evidence in `serve`, generated-docs execution through `scanner.Upgrade`,
+  doctor recipe output, score-export summaries, destructive-git negative-path
+  coverage, dirty-worktree blockers, and missing-optional-tool guidance.
+- `MH-049`: define the dogfood matrix supersession benchmark next unless the
+  operator explicitly reprioritizes `T-006`.
 - `T-002`: foundation/deployed architecture source doc is done and should be
   used as the input for mirroring and drift review.
 - `T-003`: generated target mirroring is done and should be used as input for

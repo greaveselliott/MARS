@@ -155,6 +155,18 @@ func DefaultRegistry() Registry {
 			NextAction:      "Keep the corrupt artifact for inspection unless the operator approves cache cleanup or a fresh verified download path.",
 		},
 		{
+			ID:              "optional-tool:install-guidance",
+			Title:           "Missing Optional Tool Guidance",
+			Summary:         "Surface absent optional tools as install, skip, or blocker guidance instead of false success.",
+			Target:          "tooling",
+			Categories:      []telemetry.FailureCategory{telemetry.CategoryToolTimeout, telemetry.CategoryUnknown},
+			MessageContains: []string{"missing optional tool", "optional tool", "optional dependency", "tool not found", "not found in path", "llama-server not found", "podman not found", "gh not found", "github cli not found"},
+			Commands:        []string{"mars-harness doctor --repo <repo>"},
+			CandidateFiles:  []string{"internal/doctor", "internal/setup", "docs/design-docs/self-reflective-telemetry.md"},
+			Safety:          SafetyOperatorRequired,
+			NextAction:      "Install the named optional tool only when the workflow needs it, or record a skip/blocker; do not mark remediation successful merely because the tool is optional.",
+		},
+		{
 			ID:              "scanner:dedupe-duplicate-tickets",
 			Title:           "Repeated Scanner Duplicate Tickets",
 			Summary:         "Route duplicate scanner findings through canonical ticket_create dedupe instead of creating more backlog churn.",

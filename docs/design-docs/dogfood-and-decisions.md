@@ -1982,3 +1982,46 @@ only context propagation. A stuck or context-ignoring handler must return an
 actionable timeout error to the model so the role can record a blocker or fail
 closed, and the server can classify the outcome instead of leaving a target
 repo dirty forever.
+
+### Follow-up `demo-123` Replay: Remediation Edges Stay Product-First
+
+After completing the remaining `MH-048` negative-path checks for destructive
+recipe approval, dirty-worktree blockers, and missing optional-tool guidance, a
+clean replay used:
+
+```bash
+go run ./cmd/mars-harness start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --debug
+```
+
+Positive evidence:
+
+- The target started from a clean Git repo containing only a Space Invaders
+  README brief and an initial commit.
+- `start` auto-initialized the deployed harness, committed the generated
+  baseline, registered the repo, and seeded exactly one CEO bootstrap job with
+  the stable idempotency key shape `seed:<repoID>:ceo:bootstrap`.
+- CEO read the Space Invaders brief, completed in 5 turns, and handed
+  `next_need: exec_plan` to COO.
+- COO wrote a product-specific active plan and BDD feature contract for the
+  Space Invaders game, committed them, and handed `next_need:
+  ticket_breakdown` forward.
+- The one guardrail block caused by attempting to record a disposition with
+  uncommitted plan/feature changes stayed foundation-owned telemetry; no target
+  intervention-debt tickets were created.
+
+Residual finding:
+
+- The replay was stopped manually while `cto-weekly` was reading context to
+  create implementation tickets, so the scratch DB retained one running
+  `cto-weekly` row. The routing itself matched current doctrine because
+  `ticket_breakdown` maps to CTO ticket shaping before Engineer.
+
+Decision: `MH-048` can close. The remediation edge changes did not regress the
+fresh product-first lifecycle through product planning and feature-contract
+creation. The next continuous-build loop should claim `MH-049` and broaden the
+dogfood evidence far enough to observe ticket creation, implementation,
+quality-score export, release notes, and release publication behavior.

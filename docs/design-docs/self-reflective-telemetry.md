@@ -121,8 +121,8 @@ The first implementation is deliberately small:
   commands, candidate files, skipped reasons, and next actions. The first
   catalog covers dirty worktrees before run, stale in-progress tickets, missing
   or invalid manifests, missing generated docs, known doctor remediations,
-  repeated scanner duplicate tickets, missing dependency setup, and model
-  artifact checksum mismatches.
+  repeated scanner duplicate tickets, missing dependency setup, missing
+  optional tools, and model artifact checksum mismatches.
 - `internal/serve` records applicable remediation attempts in failed outcome
   details with trace IDs before generic telemetry remediation runs. Auto-safe
   ready recipes defer generic retry jobs so deterministic repair can run first;
@@ -153,6 +153,9 @@ The first implementation is deliberately small:
 - workspace hygiene failures point at `.gitignore`, package manager manifests,
   tracked generated paths, and the `workspace_hygiene`/`dependency_sync`
   recipe output before any retry
+- missing optional tools point at doctor/install/skip guidance instead of a
+  successful repair claim, so hosted-model or reduced-tooling runs can continue
+  honestly while local-only workflows still get actionable setup instructions
 - human follow-up and reverted commits point at the role workflow, reusable skills, and guardrails that should have prevented the correction
 - stale in-progress tickets point at Engineer and Janitor ticket-drain behavior
 - manual stops point at role stop conditions, timeout policy, recovery, or escalation behavior
