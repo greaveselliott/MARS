@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.24] - 2026-05-19
+<!-- mars-harness-release: version=0.41.24 commit=46c58884ba6e -->
+
+### Impact
+- **references:** Operators and future agents get clearer guidance because add OpenHarness follow-up review.
+
+### Why
+- **references:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **references:** Changed add OpenHarness follow-up review (46c5888).
+
+### Documentation
+- **references:** Add OpenHarness follow-up review (46c5888)
+
 ## [0.41.23] - 2026-05-19
 <!-- mars-harness-release: version=0.41.23 commit=f4220fddd375 -->
 
