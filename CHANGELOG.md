@@ -2,6 +2,26 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.3] - 2026-05-19
+<!-- mars-harness-release: version=0.41.3 commit=acba3ebe8d2f -->
+
+### Impact
+- **guardrails:** Agents get a faster recovery path when a feature-contract
+  rewrite accidentally duplicates a BDD scenario heading.
+
+### Why
+- **guardrails:** Live `demo-123` validation completed, but Engineer spent 43
+  LLM calls and nine guardrail blocks partly because the duplicate-scenario
+  error did not distinguish real headings from Scenario Schedule references.
+
+### What Changed
+- **guardrails:** Duplicate feature-scenario errors now name the duplicate
+  heading line numbers and tell the role that Scenario Schedule list references
+  are allowed, keeping the fix to one targeted full-file rewrite (acba3eb).
+
+### Fixes
+- **guardrails:** Point duplicate scenario errors at headings (acba3eb)
+
 ## [0.41.2] - 2026-05-19
 <!-- mars-harness-release: version=0.41.2 commit=f7ff1f0ca2b2 -->
 
