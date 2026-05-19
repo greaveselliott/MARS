@@ -12,6 +12,8 @@ package serve
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -61,6 +63,44 @@ func TestHandleJobFailedRecordsDeterministicRemediationInScoreDetails(t *testing
 	}
 	if !remediationEvidenceIncludes(evidence.Attempts, "dirty-worktree:blocker") {
 		t.Fatalf("expected dirty-worktree remediation attempt, got %#v", evidence.Attempts)
+	}
+}
+
+func TestHandleJobFailedExecutesGeneratedDocsAutoSafeRemediation(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/remediation-execute", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := queueJob("job-remediation-execute", repoID, "engineer")
+	srv.handleJobFailed(ctx, &failedJob, errTest("missing generated docs and operating-model drift"))
+
+	if _, err := os.Stat(filepath.Join(repoRoot, ".harness", "metadata.yaml")); err != nil {
+		t.Fatalf("expected generated harness metadata after remediation execution: %v", err)
+	}
+
+	var details string
+	if err := srv.db.QueryRow(`SELECT details FROM outcomes WHERE job_id = ?`, failedJob.ID).Scan(&details); err != nil {
+		t.Fatalf("query outcome details: %v", err)
+	}
+	var evidence remediationPlanEvidence
+	if err := json.Unmarshal([]byte(details), &evidence); err != nil {
+		t.Fatalf("outcome details should be JSON: %v\n%s", err, details)
+	}
+	if !remediationExecutionIncludes(evidence.Executions, "generated-docs:update-missing-defaults", "applied") {
+		t.Fatalf("expected applied generated-docs remediation execution, got %#v", evidence.Executions)
 	}
 }
 
@@ -156,6 +196,15 @@ func queueJob(id, repoID, role string) queue.Job {
 func remediationEvidenceIncludes(attempts []remediationAttemptEvidence, recipeID string) bool {
 	for _, attempt := range attempts {
 		if attempt.RecipeID == recipeID {
+			return true
+		}
+	}
+	return false
+}
+
+func remediationExecutionIncludes(executions []remediationExecutionEvidence, recipeID, status string) bool {
+	for _, execution := range executions {
+		if execution.RecipeID == recipeID && execution.Status == status {
 			return true
 		}
 	}

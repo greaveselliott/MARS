@@ -17,6 +17,7 @@ import (
 
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/remediation"
+	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
 )
 
@@ -30,9 +31,18 @@ type remediationAttemptEvidence struct {
 }
 
 type remediationPlanEvidence struct {
-	Error    string                       `json:"error,omitempty"`
-	TraceID  string                       `json:"trace_id,omitempty"`
-	Attempts []remediationAttemptEvidence `json:"remediation_attempts,omitempty"`
+	Error      string                         `json:"error,omitempty"`
+	TraceID    string                         `json:"trace_id,omitempty"`
+	Attempts   []remediationAttemptEvidence   `json:"remediation_attempts,omitempty"`
+	Executions []remediationExecutionEvidence `json:"remediation_executions,omitempty"`
+}
+
+type remediationExecutionEvidence struct {
+	RecipeID     string   `json:"recipe_id"`
+	Status       string   `json:"status"`
+	Command      string   `json:"command,omitempty"`
+	UpdatedFiles []string `json:"updated_files,omitempty"`
+	Error        string   `json:"error,omitempty"`
 }
 
 func (s *Server) planJobFailureRemediation(ctx context.Context, job *queue.Job, cat telemetry.FailureCategory, msg, traceID string, broadcast bool) remediation.Plan {
@@ -104,11 +114,68 @@ func (s *Server) repoPathForRemediation(ctx context.Context, repoID string) stri
 	return rec.Path
 }
 
-func remediationOutcomeDetails(errMsg, traceID string, plan remediation.Plan) string {
+func (s *Server) executeReadyRemediation(ctx context.Context, plan remediation.Plan) []remediationExecutionEvidence {
+	var executions []remediationExecutionEvidence
+	for _, attempt := range plan.Attempts {
+		if attempt.Status != remediation.AttemptReady {
+			continue
+		}
+		switch attempt.RecipeID {
+		case "generated-docs:update-missing-defaults":
+			executions = append(executions, s.executeGeneratedDocsUpdate(ctx, plan.Signal, attempt))
+		default:
+			executions = append(executions, remediationExecutionEvidence{
+				RecipeID: attempt.RecipeID,
+				Status:   "skipped_no_executor",
+				Error:    "no deterministic executor is registered for this auto-safe recipe",
+			})
+		}
+	}
+	return executions
+}
+
+func (s *Server) executeGeneratedDocsUpdate(ctx context.Context, signal remediation.Signal, attempt remediation.Attempt) remediationExecutionEvidence {
+	evidence := remediationExecutionEvidence{
+		RecipeID: attempt.RecipeID,
+		Status:   "failed",
+	}
+	if len(attempt.Commands) > 0 {
+		evidence.Command = attempt.Commands[0]
+	}
+	if err := ctx.Err(); err != nil {
+		evidence.Error = err.Error()
+		return evidence
+	}
+	if strings.TrimSpace(signal.RepoPath) == "" {
+		evidence.Error = "repo path unavailable for generated harness update"
+		return evidence
+	}
+	updated, err := scanner.Upgrade(signal.RepoPath)
+	if err != nil {
+		evidence.Error = err.Error()
+		return evidence
+	}
+	evidence.UpdatedFiles = updated
+	if len(updated) == 0 {
+		evidence.Status = "noop"
+	} else {
+		evidence.Status = "applied"
+	}
+	if s.dash != nil {
+		payload, err := json.Marshal(evidence)
+		if err == nil {
+			s.dash.BroadcastEvent("remediation_execution", string(payload))
+		}
+	}
+	return evidence
+}
+
+func remediationOutcomeDetails(errMsg, traceID string, plan remediation.Plan, executions []remediationExecutionEvidence) string {
 	evidence := remediationPlanEvidence{
-		Error:    strings.TrimSpace(errMsg),
-		TraceID:  strings.TrimSpace(traceID),
-		Attempts: remediationAttemptEvidenceList(plan.Attempts),
+		Error:      strings.TrimSpace(errMsg),
+		TraceID:    strings.TrimSpace(traceID),
+		Attempts:   remediationAttemptEvidenceList(plan.Attempts),
+		Executions: executions,
 	}
 	data, err := json.Marshal(evidence)
 	if err != nil {

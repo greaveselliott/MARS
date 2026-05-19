@@ -128,6 +128,10 @@ The first implementation is deliberately small:
   ready recipes defer generic retry jobs so deterministic repair can run first;
   operator-required and approval-required recipes remain visible evidence while
   preserving the existing retry behavior.
+- The generated-docs auto-safe recipe executes through the existing
+  `scanner.Upgrade` API, not a shell runner. Outcome details record whether the
+  update applied files, no-oped, or failed before the generic retry path is
+  considered.
 - recurring context/budget failures point at glossary and role prompt scope
 - inference failures point at model/server tuning and doctor checks
 - tool timeouts point at tool policy and role command guidance
@@ -160,8 +164,8 @@ The first implementation is deliberately small:
 
 ## Required Next Steps
 
-- Execute auto-safe remediation recipes from `serve` under explicit guardrail
-  policy, then record command outcomes alongside the trace-linked plan.
+- Add similarly narrow internal executors before any additional recipe becomes
+  auto-safe; recipes without an executor must stay planned or skipped.
 - Add richer dashboard/API views for improvement proposals beyond the current event stream.
 - Extend triage with dogfood-specific signal detail and richer commit metadata when optional GitHub evidence is configured.
 - Add scanner-generated glossary and command-route updates when triage repeatedly identifies context gaps.

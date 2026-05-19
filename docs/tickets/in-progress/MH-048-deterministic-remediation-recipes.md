@@ -54,6 +54,11 @@ reserved for judgment work.
   commands, and next actions. Ready auto-safe recipes defer generic telemetry
   retries so the deterministic repair lane can run first. Next slice should
   execute approved auto-safe commands and persist command outcomes.
+- 2026-05-19: Executed the generated-docs auto-safe recipe through the existing
+  non-shell `scanner.Upgrade` API. Failed outcome details now include
+  remediation execution evidence with applied/noop/failed status and updated
+  files. Additional recipes remain planned/skipped until they have narrow
+  internal executors.
 
 ## Affected Files
 
@@ -72,7 +77,7 @@ reserved for judgment work.
 ### Functional
 
 - [x] A remediation registry can list known recipes and their applicability.
-- [ ] Safe recipes run before LLM repair where configured.
+- [x] The generated-docs auto-safe recipe runs before generic LLM retry where configured.
 - [x] Recipe attempts are trace-linked and scored.
 - [ ] Doctor or setup can adopt repeated successful recipes as permanent checks.
 

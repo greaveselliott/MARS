@@ -130,6 +130,8 @@ Checks recorded during the 2026-05-02 review:
 
 - `MH-048`: deterministic remediation recipes are in progress. The first
   completed slices add the remediation registry, applicability planner, and
-  trace-linked score evidence in `serve`; the next slice should execute
-  approved auto-safe recipes before LLM repair jobs.
+  trace-linked score evidence in `serve`; as of 2026-05-19, the generated-docs
+  auto-safe recipe executes through `scanner.Upgrade`. The next slice should
+  add narrow internal executors only for recipes that can be proven
+  non-destructive.
 - Next active-plan refresh: promote the deterministic-first repair scenario group.

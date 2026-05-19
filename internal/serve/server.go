@@ -1397,13 +1397,14 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 	}
 	traceID := s.latestTraceID(ctx, job.ID)
 	plan := s.planJobFailureRemediation(ctx, job, cat, jobErr.Error(), traceID, true)
+	executions := s.executeReadyRemediation(ctx, plan)
 	if s.scoreStore != nil {
 		_ = s.scoreStore.RecordOutcome(ctx, scoring.Outcome{
 			JobID:   job.ID,
 			RepoID:  job.RepoID,
 			Role:    job.Role,
 			Type:    outcomeType,
-			Details: remediationOutcomeDetails(jobErr.Error(), traceID, plan),
+			Details: remediationOutcomeDetails(jobErr.Error(), traceID, plan, executions),
 		})
 	}
 
