@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.40.1] - 2026-05-19
+<!-- mars-harness-release: version=0.40.1 commit=aae9b0640ca4 -->
+
+### Impact
+- **serve:** Operators see improved reliability because require executors before suppressing remediation retry.
+
+### Why
+- **serve:** This matters because require executors before suppressing remediation retry closes a failure mode or degraded path.
+
+### What Changed
+- **serve:** Changed require executors before suppressing remediation retry (aae9b06).
+
+### Fixes
+- **serve:** Require executors before suppressing remediation retry (aae9b06)
+
 ## [0.40.0] - 2026-05-19
 <!-- mars-harness-release: version=0.40.0 commit=1930ae4e340b -->
 
