@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.27] - 2026-05-19
+<!-- mars-harness-release: version=0.41.27 commit=4fd474166d7d -->
+
+### Impact
+- **qualityscore:** The release carries stronger evidence because keep outcome signals non-mutating by default.
+
+### Why
+- **qualityscore:** This matters because the project needs durable evidence that the behavior keeps working.
+
+### What Changed
+- **qualityscore:** Changed keep outcome signals non-mutating by default (4fd4741).
+
+### Tests
+- **qualityscore:** Keep outcome signals non-mutating by default (4fd4741)
+
 ## [0.41.26] - 2026-05-19
 <!-- mars-harness-release: version=0.41.26 commit=6e1a8572d841 -->
 
