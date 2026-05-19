@@ -109,6 +109,7 @@ type Server struct {
 	started   bool
 	startedAt time.Time
 	startCtx  context.Context
+	stopReq   chan struct{}
 }
 
 // New creates a Server wired with all subsystems.
@@ -221,6 +222,7 @@ func New(cfg Config) (*Server, error) {
 		evoStore:    evoStore,
 		trustStore:  trustStore,
 		orgStore:    orgStore,
+		stopReq:     make(chan struct{}, 1),
 		remediators: remediation.DefaultRegistry(),
 	}
 
@@ -247,7 +249,7 @@ func New(cfg Config) (*Server, error) {
 			Pause:    func() { s.Pause() },
 			Resume:   func() { s.Resume() },
 			Restart:  s.Restart,
-			Stop:     s.Stop,
+			Stop:     s.RequestStop,
 			Scan:     s.ScanRepo,
 			RunRole:  s.RunRole,
 			Status:   func() interface{} { return s.Status() },
@@ -390,6 +392,9 @@ func (s *Server) Start(ctx context.Context) error {
 	case <-ctx.Done():
 		slog.Info("serve: context cancelled, shutting down")
 		return s.Stop(context.Background())
+	case <-s.stopReq:
+		slog.Info("serve: dashboard stop requested, shutting down")
+		return s.Stop(context.Background())
 	case err := <-errCh:
 		s.health.Store(false)
 		return err
@@ -449,6 +454,23 @@ func (s *Server) Stop(ctx context.Context) error {
 
 	slog.Info("serve: orchestrator stopped")
 	return firstErr
+}
+
+// RequestStop asks the server's main loop to run the normal shutdown path.
+// Dashboard handlers use this instead of calling Stop directly so the dashboard
+// HTTP server is not asked to shut down while it is still serving the request.
+func (s *Server) RequestStop(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	select {
+	case s.stopReq <- struct{}{}:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("serve: request stop: %w", ctx.Err())
+	default:
+		return nil
+	}
 }
 
 // handleWake is called by the sleep watchdog when the machine resumes

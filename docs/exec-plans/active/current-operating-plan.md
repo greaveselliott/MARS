@@ -8,11 +8,11 @@
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-009, F-012
 **Hypothesis:** Returning to the Mars parity remediation lane after the foundation/deployed doctrine slice will keep the factory improving the runtime paths that most reduce wasted model turns and recovery loops.
-**Success Evidence:** `MH-048` closed with its remaining negative-path acceptance criteria satisfied; relevant remediation, doctor, serve, quality-score, docsconsistency, docsync, full repo tests, and a clean `demo-123` bootstrap replay passed for the slice touched.
+**Success Evidence:** `MH-048` closed with its remaining negative-path acceptance criteria satisfied; relevant remediation, doctor, serve, quality-score, docsconsistency, docsync, full repo tests, and clean `demo-123` bootstrap/stop replays passed for the slice touched.
 **Falsification Evidence:** The next parity slice fails to broaden dogfood evidence, clean target replays create intervention-debt churn before product work, or completed remediation work remains in the active plan instead of returning to the parity queue.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** The 2026-05-19 live `demo-123` replay showed `POST /api/stop` can stop workers and inference while leaving the `start` process alive.
-**Walking Skeleton Slice:** Claim `T-008` next unless the operator explicitly prioritizes the remaining `../mars` observer-mode trial.
+**Current Failing Scenario:** `MH-049` still needs the first `../mars` observer-mode trial and report after the 2026-05-19 `demo-123` lifecycle and stop replays.
+**Walking Skeleton Slice:** Continue `MH-049` with the remaining `../mars` observer-mode trial unless the operator explicitly prioritizes `T-006` release-skill work.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -35,9 +35,9 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains `MH-049`.
-  - `docs/tickets/backlog/` contains `MH-050`, `T-001`, `T-006`, and `T-008`.
+  - `docs/tickets/backlog/` contains `MH-050`, `T-001`, and `T-006`.
   - `docs/tickets/done/` contains `MH-001` through `MH-048`, `T-002`, and
-    `T-003` through `T-005`, and `T-007`.
+    `T-003` through `T-005`, `T-007`, and `T-008`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -113,6 +113,7 @@ plans to decide what to do next.
 | F-012-S006 | Passing | [skill-evolution.md](../../design-docs/skill-evolution.md) AD-140 keeps the recursive improvement loop as operating doctrine and creates `T-006` for a foundation Release Manager skill. |
 | F-012-S007 | Passing | Generated target knowledge routes and mirrored harness docs carry the reusable feedback and improvement-loop doctrine after the AD-139 source doc. |
 | F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.18 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.18` records the separate missing-asset blocker. |
+| F-010-S003 | Passing | `go test ./internal/serve -run 'TestServer_(dashboardStopEndpointStopsStart|startStop)'`, `go test ./internal/dashboard -run 'TestDashboard_(stopEndpoint|controlEndpoints_methodNotAllowed|controlEndpoints_nilCallbacks)'`, and the 2026-05-19 clean `demo-123-stop-check2` replay verify dashboard stop returns success and exits `start` without manual kill. |
 
 ## Quality State
 
@@ -159,8 +160,9 @@ Checks recorded during the 2026-05-02 review:
 - `T-007`: deployed `mars_harness_cli` binary resolution is done as of
   2026-05-19. The tool prefers the active harness executable before stale PATH
   binaries and adds actionable stale-binary guidance.
-- `T-008`: dashboard stop leaves the `start` process alive after graceful
-  worker/inference shutdown and is the next live runtime blocker.
+- `T-008`: dashboard stop is done as of 2026-05-19. Stop requests now route
+  through the server loop, the regression test covers `/api/stop`, and the
+  clean `demo-123-stop-check2` replay exited `start` without manual kill.
 - `T-002`: foundation/deployed architecture source doc is done and should be
   used as the input for mirroring and drift review.
 - `T-003`: generated target mirroring is done and should be used as input for

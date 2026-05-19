@@ -84,11 +84,38 @@ release-manager: failed after operator stop while investigating stale CLI
   /api/stop` stopped workers and inference but returned `dashboard shutdown:
   context deadline exceeded`, leaving the process to be killed manually.
 
+## T-008 Stop Replay
+
+After the dashboard stop fix, a fresh stop-focused replay used:
+
+- Target: `<validation-root>`
+- Harness binary: `<validation-root>`
+- DB: `<validation-root>`
+- Log: `<validation-root>`
+- Ports: webhook `19115`, dashboard `19114`
+
+The replay initialized a clean Space Invaders target, committed the generated
+harness baseline, registered the repo, seeded one CEO bootstrap job, started the
+dashboard, and accepted `POST /api/stop` with HTTP `200` and body
+`{"ok":true}`. The `start` process then exited without manual kill after
+logging `serve: dashboard stop requested, shutting down`, `queue: worker pool
+stopped gracefully`, `scheduler: stopped`, `inference router: stopped managed
+servers`, `power: sleep prevention released`, and `serve: orchestrator stopped`.
+
+Because the stop was issued while CEO was mid-turn, the CEO job ended as
+`llm_unreachable` with `context canceled`. The resulting foundation-owned
+runtime signal stayed out of the target backlog, matching the stabilization
+rule that operator/runtime stops are telemetry unless explicitly target-owned.
+The temporary target was left clean by committing `.harness/learnings.yaml` as
+`43338da`; it has no remote to push.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
 runs. The harness now reaches product-specific planning, product ticketing,
 implementation, QA, security, dogfood validation, and release review on a fresh
 Space Invaders target. The next limiting factor is no longer early planning or
-intervention-debt amplification; it is deployed CLI binary resolution at the
-release boundary, plus shutdown cleanup ergonomics.
+intervention-debt amplification. The stale deployed CLI boundary was fixed in
+`T-007`, and the dashboard stop cleanup issue was fixed in `T-008`; the
+remaining live-loop work is to keep broadening product and observer-mode
+dogfood evidence.

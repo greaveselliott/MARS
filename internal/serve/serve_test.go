@@ -2,9 +2,11 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/dashboard.md
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-010-dashboard-control-plane.md
 */
 package serve
 
@@ -12,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -29,6 +32,37 @@ import (
 func testDBPath(t *testing.T) string {
 	t.Helper()
 	return filepath.Join(t.TempDir(), "test.db")
+}
+
+func freeTCPAddr(t *testing.T) string {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen for free TCP addr: %v", err)
+	}
+	defer ln.Close()
+	return ln.Addr().String()
+}
+
+func waitForHTTPStatus(t *testing.T, url string, want int) {
+	t.Helper()
+	client := http.Client{Timeout: 100 * time.Millisecond}
+	deadline := time.Now().Add(3 * time.Second)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		resp, err := client.Get(url)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == want {
+				return
+			}
+			lastErr = fmt.Errorf("status %d", resp.StatusCode)
+		} else {
+			lastErr = err
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s to return %d: %v", url, want, lastErr)
 }
 
 func TestServer_healthHandler_healthy(t *testing.T) {
@@ -150,6 +184,50 @@ func TestServer_startStop(t *testing.T) {
 
 	if srv.Healthy() {
 		t.Error("expected server to be unhealthy after stop")
+	}
+}
+
+func TestServer_dashboardStopEndpointStopsStart(t *testing.T) {
+	webhookAddr := freeTCPAddr(t)
+	dashboardAddr := freeTCPAddr(t)
+	srv, err := New(Config{
+		WebhookAddr:   webhookAddr,
+		DashboardAddr: dashboardAddr,
+		DBPath:        testDBPath(t),
+	})
+	if err != nil {
+		t.Fatalf("New returned error: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() {
+		cancel()
+		_ = srv.Stop(context.Background())
+	})
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- srv.Start(ctx)
+	}()
+
+	waitForHTTPStatus(t, "http://"+dashboardAddr+"/api/status", http.StatusOK)
+
+	resp, err := http.Post("http://"+dashboardAddr+"/api/stop", "application/json", nil)
+	if err != nil {
+		t.Fatalf("POST /api/stop: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("POST /api/stop status = %d, want 200", resp.StatusCode)
+	}
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("expected dashboard stop to end Start cleanly, got %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("dashboard stop did not end Start within 5 seconds")
 	}
 }
 

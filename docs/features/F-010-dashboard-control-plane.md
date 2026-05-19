@@ -46,6 +46,12 @@ Given the orchestrator is running
 When dashboard controls call pause, resume, restart, stop, scan, or run-role
 Then the same server control path used by runtime controls is invoked and method errors are reported
 
+Given dashboard stop is called over HTTP
+When the stop request is accepted
+Then the handler returns success before dashboard HTTP shutdown begins
+And the server loop exits through the normal graceful shutdown path without leaving the `start` or `serve` process running
+And any shutdown failure is reported through the command/log path rather than by deadlocking the dashboard request
+
 ### F-010-S004: Live Event Stream
 
 Given dashboard clients subscribe to server-sent events
@@ -106,7 +112,7 @@ None.
 
 - F-010-S001: `go test ./internal/dashboard -run 'TestDashboard_allPagesReturn200|TestDashboard_staticAssets|TestDashboard_themeAvoidsLegacyBluePalette'`
 - F-010-S002: `go test ./internal/dashboard -run 'TestDashboard_statusEndpoint|TestDashboard_reposEndpoint'` and `go test ./internal/serve -run TestServer_qualityScoreAPIServesRepoArtifact`
-- F-010-S003: `go test ./internal/dashboard -run 'TestDashboard_(pause|resume|restart|stop|scan|runRole)Endpoint'`
+- F-010-S003: `go test ./internal/dashboard -run 'TestDashboard_(pause|resume|restart|stop|scan|runRole)Endpoint'` and `go test ./internal/serve -run TestServer_dashboardStopEndpointStopsStart`
 - F-010-S004: `go test ./internal/dashboard -run TestDashboard_sseConnection`
 - F-010-S005: `go test ./internal/dashboard -run TestDashboard_emergencyStop`
 - F-010-S006: `go test ./internal/dashboard -run TestDashboard_missingModuleEmptyState`

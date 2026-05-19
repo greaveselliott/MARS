@@ -66,9 +66,20 @@ Operators need to pause, restart, scan, stop, and force-run individual roles wit
 **Design choices:**
 - Pause stops claiming, not killing. Running jobs complete. Prevents data loss.
 - Warm restart reloads manifests and triggers within the same process. Does not rebuild the binary.
+- Dashboard stop is accepted by the HTTP handler, then routed through the
+  server's main loop before `Server.Stop` shuts down the dashboard HTTP server.
+  This avoids deadlocking the stop request against its own active connection
+  while preserving the normal `start`/`serve` shutdown path and command-level
+  error reporting.
 - `q` key cancels the signal context, triggering the same graceful shutdown path as Ctrl+C.
 
 ## Discoveries
 
 - The `pipeline.html` template uses its own full HTML structure (not `base.html`), so the control bar had to be added directly to the template sidebar rather than relying on template inheritance. Both templates should be reconciled eventually (tech debt).
 - Raw terminal mode on macOS uses `TIOCGETA`/`TIOCSETA` from `golang.org/x/sys/unix`. The key listener gracefully degrades (logs a warning and disables itself) if the process is not attached to a TTY.
+- 2026-05-19 live `demo-123` dogfood showed `POST /api/stop` could stop
+  workers, scheduler, inference, and sleep prevention but return `dashboard
+  shutdown: context deadline exceeded` because the dashboard server was asked
+  to shut down from inside the active dashboard request handler. Stop now uses
+  a buffered stop request consumed by the server loop so the handler can return
+  success before dashboard shutdown begins.
