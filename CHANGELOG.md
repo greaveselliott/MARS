@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.28] - 2026-05-19
+<!-- mars-harness-release: version=0.41.28 commit=353ad7daa350 -->
+
+### Impact
+- **tickets:** Operators and future agents get clearer guidance because add factory pace intervention debt (T-011).
+
+### Why
+- **tickets:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **tickets:** Changed add factory pace intervention debt (T-011) (353ad7d).
+
+### Documentation
+- **tickets:** Add factory pace intervention debt (T-011) (353ad7d)
+
 ## [0.41.27] - 2026-05-19
 <!-- mars-harness-release: version=0.41.27 commit=4fd474166d7d -->
 
