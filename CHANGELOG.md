@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.39.0] - 2026-05-19
+<!-- mars-harness-release: version=0.39.0 commit=5f2adf60661f -->
+
+### Impact
+- **serve:** Operators gain new capability: execute generated-docs remediation.
+
+### Why
+- **serve:** This matters because execute generated-docs remediation was missing from the shipped capability set.
+
+### What Changed
+- **serve:** Changed execute generated-docs remediation (5f2adf6).
+
+### Features
+- **serve:** Execute generated-docs remediation (5f2adf6)
+
 ## [0.38.0] - 2026-05-19
 <!-- mars-harness-release: version=0.38.0 commit=be6cd0f2174a -->
 
