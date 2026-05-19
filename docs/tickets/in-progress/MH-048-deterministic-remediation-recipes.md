@@ -41,6 +41,14 @@ reserved for judgment work.
 - Record recipe attempts, outcomes, and skipped reasons in traces and scores.
 - Promote repeated successful recipes into permanent doctor or setup checks.
 
+## Progress Notes
+
+- 2026-05-19: Claimed first bounded slice. Added `internal/remediation`
+  registry and applicability planner with stable recipe IDs, safety
+  classifications, candidate commands/files, skipped reasons, and next actions
+  for the initial known recipe catalog. Next slice should wire safe recipes into
+  `serve` before LLM repair jobs and record attempts in trace/score surfaces.
+
 ## Affected Files
 
 - `internal/remediation/`
@@ -57,7 +65,7 @@ reserved for judgment work.
 
 ### Functional
 
-- [ ] A remediation registry can list known recipes and their applicability.
+- [x] A remediation registry can list known recipes and their applicability.
 - [ ] Safe recipes run before LLM repair where configured.
 - [ ] Recipe attempts are trace-linked and scored.
 - [ ] Doctor or setup can adopt repeated successful recipes as permanent checks.

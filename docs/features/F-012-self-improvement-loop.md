@@ -24,6 +24,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 7. F-012-S007 - Source and generated target harnesses receive the same self-improvement doctrine when applicable.
 8. F-012-S008 - Deployed harnesses keep raw telemetry local and export only opt-in anonymous aggregate reports.
 9. F-012-S009 - Foundation telemetry collector intake triages repeated anonymous patterns into Mars Harness source work.
+10. F-012-S010 - Deterministic remediation recipes are registered with applicability, safety, and operator actions before LLM repair.
 
 ## Scenarios
 
@@ -31,7 +32,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 
 Given an agent run fails with context overflow, LLM unreachable, inference crash, model unavailable, tool timeout, loop, max turns, budget, manifest, ticket-gate, or unknown symptoms
 When telemetry records the failure
-Then it assigns a category and retry/remediation policy
+Then it assigns a category and retry/remediation policy, and deterministic repair candidates can be selected by a remediation registry before an LLM repair role is considered
 
 ### F-012-S002: Improvement Target Triage
 
@@ -89,6 +90,12 @@ Given repeated anonymous signatures appear across distinct anonymous report keys
 When foundation triage runs
 Then it creates Mars Harness source work rather than intervention-debt tickets in the deployed target repository
 
+### F-012-S010: Deterministic Remediation Registry
+
+Given a failure signal names dirty workspace state, stale in-progress tickets, missing or invalid manifest state, missing generated docs, known doctor remediation, repeated scanner duplicates, missing dependency setup, or model artifact checksum mismatch
+When deterministic remediation planning runs
+Then the registry returns applicable recipes with stable IDs, candidate commands, safety classification, skipped reasons for operator or approval-required repairs, and next actions that can be recorded before any LLM repair job is enqueued
+
 ## Out of Scope
 
 - Unbounded self-modification.
@@ -110,3 +117,4 @@ None.
 - F-012-S007: `go test ./internal/scanner -run TestInit_success` and `go test ./internal/docsconsistency`
 - F-012-S008: `go test ./internal/telemetry -run TestBuildAnonymousReport` and `go test ./internal/config -run TestLoad_envTelemetryOverrides`
 - F-012-S009: `go test ./internal/foundationtelemetry`
+- F-012-S010: `go test ./internal/remediation`

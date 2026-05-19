@@ -34,8 +34,8 @@ plans to decide what to do next.
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, the current install/setup feature is `F-002`, the current queue/orchestration survey scenario is `F-006-S009`, and detailed release-note narrative is `F-009-S008`.
 - Ticket state:
-  - `docs/tickets/in-progress/` is empty.
-  - `docs/tickets/backlog/` contains `MH-048` and `MH-049`.
+  - `docs/tickets/in-progress/` contains `MH-048`.
+  - `docs/tickets/backlog/` contains `MH-049`.
   - `docs/tickets/done/` contains `MH-001` through `MH-047`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
@@ -72,9 +72,9 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Mars parity execution**: `MH-047` is done; continue the tickets
-   materialized on 2026-05-03 for deterministic remediation (`MH-048`)
-   and dogfood matrix (`MH-049`).
+1. **Mars parity execution**: Continue deterministic remediation (`MH-048`,
+   claimed under `docs/tickets/in-progress/` on 2026-05-19), then the dogfood
+   matrix (`MH-049`).
    Use [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.
@@ -127,5 +127,8 @@ Checks recorded during the 2026-05-02 review:
 
 ## Next Ticket Work
 
-- `MH-048`: deterministic remediation recipes are the next backlog ticket.
+- `MH-048`: deterministic remediation recipes are in progress. The first
+  completed slice adds the remediation registry and applicability planner; the
+  next slice should run safe recipes before LLM repair jobs and record attempts
+  in traces/scores.
 - Next active-plan refresh: promote the deterministic-first repair scenario group.

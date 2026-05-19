@@ -115,6 +115,14 @@ failures never block local harness operation.
 
 The first implementation is deliberately small:
 
+- `internal/remediation` owns the first deterministic remediation registry.
+  Recipes are selected from normalized failure signals before LLM repair work
+  and include stable IDs, target area, safety classification, candidate
+  commands, candidate files, skipped reasons, and next actions. The first
+  catalog covers dirty worktrees before run, stale in-progress tickets, missing
+  or invalid manifests, missing generated docs, known doctor remediations,
+  repeated scanner duplicate tickets, missing dependency setup, and model
+  artifact checksum mismatches.
 - recurring context/budget failures point at glossary and role prompt scope
 - inference failures point at model/server tuning and doctor checks
 - tool timeouts point at tool policy and role command guidance
@@ -147,6 +155,8 @@ The first implementation is deliberately small:
 
 ## Required Next Steps
 
+- Wire the remediation registry into `serve` so safe recipes can run before
+  LLM repair jobs and skipped recipes are trace-linked.
 - Add richer dashboard/API views for improvement proposals beyond the current event stream.
 - Extend triage with dogfood-specific signal detail and richer commit metadata when optional GitHub evidence is configured.
 - Add scanner-generated glossary and command-route updates when triage repeatedly identifies context gaps.

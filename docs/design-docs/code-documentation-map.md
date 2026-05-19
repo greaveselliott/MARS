@@ -73,6 +73,7 @@ field is a list of repo-relative documentation paths.
 | `internal/power/` | `docs/product-specs/product-surface.md` | F-006 |
 | `internal/qualityscore/` | `docs/design-docs/scoring-system.md` | F-008 |
 | `internal/queue/` | `docs/design-docs/pipeline-engine.md` | F-006 |
+| `internal/remediation/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
 | `internal/release/` | `docs/design-docs/release-versioning.md` | F-009 |
 | `internal/roleregistry/` | `docs/design-docs/harness-operating-model.md` | F-001 |
 | `internal/safety/` | `docs/design-docs/guardrails.md` | F-007 |
