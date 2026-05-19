@@ -24,6 +24,16 @@ Durable validation profiles, evidence contracts, and run reports live under
 the documentation directory uses validation language so evidence artifacts are
 not tied to one role label.
 
+Evidence is stored in three places:
+
+- `docs/validation/profiles/` defines reusable target profiles and guardrails.
+- `docs/validation/reports/` stores completed cross-target validation reports
+  when a trial has operator-visible results.
+- Target-local `docs/reports/dogfood/` stores role-produced run evidence that
+  belongs to that target. Target-owned findings become deduped tickets through
+  `ticket_create`; foundation/runtime failures stay foundation telemetry or
+  source-repo work.
+
 | Surface | Evidence command | Expected artifact | Failure route |
 | --- | --- | --- | --- |
 | setup/path | `mars-harness setup --test-mode` and `mars-harness path setup --install-dir <tmp-bin>` | Config and shell-path result without duplicate profile snippets | Intervention-debt ticket for setup or shellpath |
@@ -69,6 +79,11 @@ must prove:
   dirty repo
 - repeated intervention-debt updates stay bounded so ticket context does not
   become its own context-overflow source
+- the broader fake-LLM dogfood loop can create a deduped finding through
+  `ticket_create`, run a bounded test command, commit evidence on `main`,
+  attempt `git_push` without failing when no remote exists, record a scoring
+  outcome, and invoke the `scores export` quality hook through
+  `mars_harness_cli`
 
 Broader scheduled dogfood remains useful for product coverage, but it is not a
 substitute for this fast foundation containment gate.
@@ -85,6 +100,13 @@ substitute for this fast foundation containment gate.
 
 The concrete observer contract lives in
 [docs/validation/profiles/mars-observer.md](../validation/profiles/mars-observer.md).
+
+Observer mode is mechanical, not only procedural. A Mars observer validation
+run must use observer trust so mutating tools such as `file_write`,
+`ticket_create`, `shell_exec` mutations, `git_commit`, and `git_push` are
+blocked before they can touch the target. The role may still record a blocked
+disposition and source-side evidence, because the absence of contributor-mode
+authority is itself a valid validation result.
 
 ## Consequences
 

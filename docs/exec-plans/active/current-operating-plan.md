@@ -11,8 +11,8 @@
 **Success Evidence:** `MH-048` closed with its remaining negative-path acceptance criteria satisfied; relevant remediation, doctor, serve, quality-score, docsconsistency, docsync, full repo tests, and a clean `demo-123` bootstrap replay passed for the slice touched.
 **Falsification Evidence:** The next parity slice fails to broaden dogfood evidence, clean target replays create intervention-debt churn before product work, or completed remediation work remains in the active plan instead of returning to the parity queue.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** `MH-049` remains open for the broader dogfood matrix, fake-LLM loop coverage, `../mars` observer profile/trial, and contributor-mode graduation criteria.
-**Walking Skeleton Slice:** Claim the next Mars parity ticket (`MH-049`) unless the operator explicitly prioritizes the foundation Release Manager skill (`T-006`).
+**Current Failing Scenario:** The in-progress dogfood matrix ticket remains open for optional GitHub skip evidence, the first `../mars` observer-mode trial, and a validation report artifact.
+**Walking Skeleton Slice:** Continue the dogfood matrix ticket until the Mars observer trial is either accepted or blocked with durable evidence.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -34,8 +34,8 @@ plans to decide what to do next.
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
-  - `docs/tickets/in-progress/` is empty as of 2026-05-19.
-  - `docs/tickets/backlog/` contains `MH-049`, `MH-050`, `T-001`, and `T-006`.
+  - `docs/tickets/in-progress/` contains `MH-049`.
+  - `docs/tickets/backlog/` contains `MH-050`, `T-001`, and `T-006`.
   - `docs/tickets/done/` contains `MH-001` through `MH-048`, `T-002`, and
     `T-003` through `T-005`.
 - Exec-plan state:
@@ -86,7 +86,7 @@ plans to decide what to do next.
 
 1. **Mars parity execution**: As of 2026-05-19, deterministic remediation
    (`MH-048`) moved to done.
-   Continue with the dogfood matrix (`MH-049`). Use
+   Continue with the in-progress dogfood matrix (`MH-049`). Use
    [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.
@@ -150,8 +150,10 @@ Checks recorded during the 2026-05-02 review:
   evidence in `serve`, generated-docs execution through `scanner.Upgrade`,
   doctor recipe output, score-export summaries, destructive-git negative-path
   coverage, dirty-worktree blockers, and missing-optional-tool guidance.
-- `MH-049`: define the dogfood matrix supersession benchmark next unless the
-  operator explicitly reprioritizes `T-006`.
+- `MH-049`: dogfood matrix supersession benchmark is in progress. The 2026-05-19
+  slice adds broader fake-LLM loop coverage and observer-trust mutation
+  blocking. Continue with optional GitHub skip evidence, the first `../mars`
+  observer-mode trial, and the validation report artifact.
 - `T-002`: foundation/deployed architecture source doc is done and should be
   used as the input for mirroring and drift review.
 - `T-003`: generated target mirroring is done and should be used as input for

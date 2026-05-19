@@ -22,6 +22,10 @@ The first validation pass must not call `file_write`, `shell_exec`,
 `ticket_create`, `tool_create`, or `release_orchestrate` unless the command is
 run against a temporary copy of the target repo.
 
+If an agent attempts one of those mutating tools while trust is `observer`, the
+correct result is a blocked disposition plus source-side evidence. Do not
+retry with contributor trust inside the same observer report.
+
 ## Guardrails
 
 - Trust level stays `observer`.
@@ -41,3 +45,6 @@ shows:
 - guardrails and role routes were loaded or their absence was recorded
 - all skipped optional paths have reasons
 - follow-up tickets exist for every blocker that prevents a truthful BDD claim
+- the report names the exact commit or worktree state inspected
+- at least one source-side maintainer explicitly accepts the observer report as
+  safe enough for a contributor-mode trial

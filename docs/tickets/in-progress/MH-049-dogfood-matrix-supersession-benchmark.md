@@ -57,6 +57,11 @@ trusted.
 - Remaining in this ticket: broader matrix coverage, full dogfood loop evidence,
   `../mars` observer profile/trial, contributor-mode graduation criteria, and a
   completed validation report.
+- 2026-05-19: Claimed the next foundation build slice. Added broader fake-LLM
+  dogfood coverage for dogfood report writing, bounded test execution,
+  deduped ticket creation, direct-main commit, no-remote push attempt, scoring
+  outcome, and `scores export` quality hook. Added observer-trust coverage that
+  blocks mutating writes before Mars contributor-mode graduation.
 
 ## Affected Files
 
@@ -81,25 +86,25 @@ trusted.
       telemetry, and intervention-debt routing.
 - [x] `init`, `start`, `run`, `register`, and `scan` commit the generated
       scaffold baseline without staging pre-existing target work.
-- [ ] Broader fake-LLM integration tests cover ticket creation, test, direct-main
+- [x] Broader fake-LLM integration tests cover ticket creation, test, direct-main
       commit, push attempt, scoring, and quality export hooks.
-- [ ] A `../mars` observer-mode target profile exists with guardrails and
+- [x] A `../mars` observer-mode target profile exists with guardrails and
       non-destructive behavior.
-- [ ] Contributor-mode graduation criteria are explicit and evidence-based.
+- [x] Contributor-mode graduation criteria are explicit and evidence-based.
 
 ### Edge cases and negative paths
 
-- [ ] Dogfood against `../mars` cannot write to Mars without contributor-mode
+- [x] Dogfood against `../mars` cannot write to Mars without contributor-mode
       trust and guardrail approval.
 - [ ] Optional GitHub paths are skipped honestly when credentials are missing.
 - [x] Failed fast-gate dogfood creates or updates deduped intervention-debt
       tickets without secondary ticket-gate amplification.
-- [ ] Broader failed dogfood runs create or update deduped intervention-debt
+- [x] Broader failed dogfood runs create or update deduped intervention-debt
       tickets.
 
 ### Observability, docs, and regressions
 
 - [x] Tests prove the fast fake-LLM containment loop is deterministic in CI.
-- [ ] Tests or dry-runs prove the broader fake-LLM loop is deterministic in CI.
-- [ ] Design docs explain where dogfood evidence is stored.
+- [x] Tests or dry-runs prove the broader fake-LLM loop is deterministic in CI.
+- [x] Design docs explain where dogfood evidence is stored.
 - [ ] A completed exec-plan report records the first observer-mode trial results.
