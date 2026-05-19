@@ -57,22 +57,24 @@ plans to decide what to do next.
   `v0.41.4`, `v0.41.5`, `v0.41.6`, `v0.41.7`, `v0.41.8`, `v0.41.9`,
   `v0.41.10`, `v0.41.11`, `v0.41.12`, `v0.41.13`, `v0.41.14`,
   `v0.41.15`, `v0.41.16`, `v0.41.17`, `v0.41.18`, `v0.41.19`, `v0.41.20`,
-  `v0.41.21`, `v0.41.22`, and `v0.41.23` release notes and tags were pushed on
-  2026-05-19, but CI and Release workflow jobs were not started because GitHub
-  reported recent account payment failure or a spending-limit increase
-  requirement.
-  Notes-only GitHub Releases for `v0.36.4` through `v0.41.23` were created from
+  `v0.41.21`, `v0.41.22`, `v0.41.23`, and `v0.41.24` release notes and tags
+  were pushed on 2026-05-19, but CI and Release workflow jobs were not started
+  because GitHub reported recent account payment failure or a spending-limit
+  increase requirement.
+  Notes-only GitHub Releases for `v0.36.4` through `v0.41.24` were created from
   the generated changelog entries on 2026-05-19 so the Releases page is no
   longer stale at `v0.36.3`. `mars-harness release verify-assets --version
-  v0.41.23` is still blocked because the `v0.41.23` release is missing
+  v0.41.24` is still blocked because the `v0.41.24` release is missing
   `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
   `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
-  `checksums.txt`; GitHub Actions run `26128605770` failed with "recent account
-  payments have failed or your spending limit needs to be increased" before
-  assets could be built. `v0.41.16`, `v0.41.17`, `v0.41.18`, `v0.41.19`,
-  `v0.41.20`, `v0.41.21`, and `v0.41.22` have the same missing-asset blocker via runs
+  `checksums.txt`; GitHub Actions runs `26128695343` and `26128778584` failed
+  with "recent account payments have failed or your spending limit needs to be
+  increased" before assets could be built. The `v0.41.24` main-branch CI run
+  `26128685246` hit the same runner-start billing blocker. `v0.41.16`,
+  `v0.41.17`, `v0.41.18`, `v0.41.19`, `v0.41.20`, `v0.41.21`, `v0.41.22`,
+  and `v0.41.23` have the same missing-asset blocker via runs
   `26126035892`, `26126035944`, `26126461151`, `26127153189`, `26127529878`,
-  `26127808895`, and `26128342280`.
+  `26127808895`, `26128342280`, and `26128605770`.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
