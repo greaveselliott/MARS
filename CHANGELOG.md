@@ -2,6 +2,32 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.9] - 2026-05-19
+<!-- mars-harness-release: version=0.41.9 commit=c7159e6d5484 -->
+
+### Impact
+- **release:** Operators and future agents now have a release-object gate, so
+  pushed tags and changelog entries cannot leave the GitHub Releases page stale.
+
+### Why
+- **release:** The live release loop produced tags through `v0.41.8`, but the
+  GitHub Releases page still showed `v0.36.3` because the Release workflow was
+  blocked before creating release objects. The operating model now treats that
+  visible release object as a separate gate from binary asset verification.
+
+### What Changed
+- **release:** Source workflow docs, generated target doctrine, and Release
+  Manager guidance now require `gh release view vX.Y.Z` after each tag push.
+- **release:** If the tag workflow cannot create the release object but the
+  GitHub API is available, Release Manager must create a notes-only release from
+  the generated `CHANGELOG.md` entry for the existing tag, then keep missing
+  binary assets as the remaining blocker.
+- **tests:** Docs-consistency and scanner coverage now assert the release-object
+  fallback remains present in source and generated target guidance.
+
+### Documentation
+- **release:** Require GitHub release object fallback (c7159e6)
+
 ## [0.41.8] - 2026-05-19
 <!-- mars-harness-release: version=0.41.8 commit=dd6b0035c2a8 -->
 
