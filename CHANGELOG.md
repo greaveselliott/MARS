@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.18] - 2026-05-19
+<!-- mars-harness-release: version=0.41.18 commit=5b2a46910435 -->
+
+### Impact
+- **tools:** Operators see improved reliability because prefer active harness cli binary.
+
+### Why
+- **tools:** This matters because prefer active harness cli binary closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed prefer active harness cli binary (5b2a469).
+
+### Fixes
+- **tools:** Prefer active harness cli binary (5b2a469)
+
 ## [0.41.17] - 2026-05-19
 <!-- mars-harness-release: version=0.41.17 commit=27882d6a27e6 -->
 
