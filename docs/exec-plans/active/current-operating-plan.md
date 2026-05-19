@@ -11,8 +11,8 @@
 **Success Evidence:** `MH-048` closed with its remaining negative-path acceptance criteria satisfied; relevant remediation, doctor, serve, quality-score, docsconsistency, docsync, full repo tests, and clean `demo-123` bootstrap/stop replays passed for the slice touched.
 **Falsification Evidence:** The next parity slice fails to broaden dogfood evidence, clean target replays create intervention-debt churn before product work, or completed remediation work remains in the active plan instead of returning to the parity queue.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** `MH-049` still needs the first `../mars` observer-mode trial and report after the 2026-05-19 `demo-123` lifecycle and stop replays.
-**Walking Skeleton Slice:** Continue `MH-049` with the remaining `../mars` observer-mode trial unless the operator explicitly prioritizes `T-006` release-skill work.
+**Current Failing Scenario:** The repeated release-publication loop still depends on chat memory and active-plan notes rather than a compact foundation Release Manager skill.
+**Walking Skeleton Slice:** Claim `T-006` next unless the operator explicitly prioritizes the observer-safe dry-run gap created as `T-009`.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -34,9 +34,9 @@ plans to decide what to do next.
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
-  - `docs/tickets/in-progress/` contains `MH-049`.
-  - `docs/tickets/backlog/` contains `MH-050`, `T-001`, and `T-006`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-048`, `T-002`, and
+  - `docs/tickets/in-progress/` contains no tickets.
+  - `docs/tickets/backlog/` contains `MH-050`, `T-001`, `T-006`, and `T-009`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-049`, `T-002`, and
     `T-003` through `T-005`, `T-007`, and `T-008`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
@@ -86,15 +86,14 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Mars parity execution**: As of 2026-05-19, deterministic remediation
-   (`MH-048`) moved to done.
-   Continue with the in-progress dogfood matrix (`MH-049`). Use
+1. **Foundation release publication skill**: Implement `T-006` after the
+   completed 2026-05-19 dogfood matrix and Mars observer validation.
+2. **Observer-safe dry-run gap**: Implement `T-009` so the Mars observer
+   profile can preview role context without a temporary clone.
+3. **Mars parity continuation**: Use
    [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.
-2. **Foundation release publication skill**: Implement `T-006` after the
-   in-progress remediation ticket is no longer eligible, unless the operator
-   explicitly prioritizes release-skill work first.
 
 ## Scenario Schedule
 
@@ -153,11 +152,11 @@ Checks recorded during the 2026-05-02 review:
   evidence in `serve`, generated-docs execution through `scanner.Upgrade`,
   doctor recipe output, score-export summaries, destructive-git negative-path
   coverage, dirty-worktree blockers, and missing-optional-tool guidance.
-- `MH-049`: dogfood matrix supersession benchmark is in progress. The
+- `MH-049`: dogfood matrix supersession benchmark is done as of 2026-05-19. The
   2026-05-19 slices add broader fake-LLM loop coverage, observer-trust mutation
-  blocking, and a live `demo-123` lifecycle report that reached product
-  implementation, QA, Security, Dogfood, and Release Manager. The remaining
-  acceptance item is the first `../mars` observer-mode trial and report.
+  blocking, a live `demo-123` lifecycle report that reached product
+  implementation, QA, Security, Dogfood, and Release Manager, and the first
+  Mars observer validation report. This ticket is done.
 - `T-007`: deployed `mars_harness_cli` binary resolution is done as of
   2026-05-19. The tool prefers the active harness executable before stale PATH
   binaries and adds actionable stale-binary guidance.
@@ -174,4 +173,7 @@ Checks recorded during the 2026-05-02 review:
   loop remains operating doctrine and `T-006` captures the foundation Release
   Manager skill implementation.
 - `T-006`: create the foundation release publication skill after `MH-048`
-  drains or if the operator explicitly prioritizes release-skill work.
+  and the dogfood matrix validation work.
+- `T-009`: add an observer-safe dry-run/context-preview path after the Mars
+  observer report showed `run --dry-run` auto-initializes uninitialized
+  targets before assembling the prompt.

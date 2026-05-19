@@ -17,6 +17,12 @@ mars-harness run engineer --repo ../mars --dry-run --trace
 mars-harness tools run git_status --repo ../mars --trust observer
 ```
 
+Do not run `mars-harness run ... --dry-run` against the real target when
+`.harness/manifest.yaml` is missing. Current `run` behavior auto-initializes
+missing harness scaffolds before assembling the prompt, which violates observer
+mode. Use a temporary clone for this profile step until the CLI has a
+non-mutating observer dry-run path.
+
 The first validation pass must not call `file_write`, `shell_exec`,
 `mars_harness_cli`, `git_commit`, `git_push`, `record_decision`,
 `ticket_create`, `tool_create`, or `release_orchestrate` unless the command is

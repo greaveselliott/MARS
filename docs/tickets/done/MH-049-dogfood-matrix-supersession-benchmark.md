@@ -7,8 +7,8 @@ kind: intervention-debt
 work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: ["docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md"]
-verified_by: TBD
+evidence_links: ["docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md", "docs/validation/reports/2026-05-19-mars-observer-validation.md"]
+verified_by: "go test ./...; go run ./cmd/mars-harness doctor --repo /path/to/local-redacted --json; go run ./cmd/mars-harness update check --repo /path/to/local-redacted --skip-remote --json; go run ./cmd/mars-harness tools run git_status --repo /path/to/local-redacted --trust observer --json; observer-trust file_write block; run --dry-run on <validation-root>"
 dedupe_key: "public-example"
 source: Mars parity workstream I
 created: 2026-05-03
@@ -69,6 +69,13 @@ trusted.
   reached CEO, COO, CTO, Engineer, QA, Security, Dogfood, and Release Manager,
   created and closed ordinary product ticket `T-001`, and recorded the next
   source-owned blockers as `T-007` and `T-008`.
+- 2026-05-19: Ran the first Mars observer validation against
+  `/path/to/local-redacted` at
+  `aa79b0039e7a2fb75c539fa427c02160ff2a33b9`. The real Mars target stayed
+  clean, observer trust blocked mutating `file_write`, and the report recorded
+  missing `.harness/`, operating-model drift, role-registry unavailability,
+  active-plan hygiene warnings, and the need for `T-009` because `run
+  --dry-run` auto-initializes uninitialized targets.
 
 ## Affected Files
 
@@ -116,5 +123,5 @@ trusted.
 - [x] Design docs explain where dogfood evidence is stored.
 - [x] A completed validation report records the live `demo-123` lifecycle
       results.
-- [ ] A completed validation report records the first observer-mode `../mars`
+- [x] A completed validation report records the first observer-mode `../mars`
       trial results.
