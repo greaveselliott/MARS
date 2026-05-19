@@ -57,21 +57,22 @@ plans to decide what to do next.
   `v0.41.4`, `v0.41.5`, `v0.41.6`, `v0.41.7`, `v0.41.8`, `v0.41.9`,
   `v0.41.10`, `v0.41.11`, `v0.41.12`, `v0.41.13`, `v0.41.14`,
   `v0.41.15`, `v0.41.16`, `v0.41.17`, `v0.41.18`, `v0.41.19`, `v0.41.20`,
-  and `v0.41.21` release notes and tags were pushed on
+  `v0.41.21`, and `v0.41.22` release notes and tags were pushed on
   2026-05-19, but CI and Release workflow jobs were not started because GitHub
   reported recent account payment failure or a spending-limit increase
   requirement.
-  Notes-only GitHub Releases for `v0.36.4` through `v0.41.21` were created from
+  Notes-only GitHub Releases for `v0.36.4` through `v0.41.22` were created from
   the generated changelog entries on 2026-05-19 so the Releases page is no
   longer stale at `v0.36.3`. `mars-harness release verify-assets --version
-  v0.41.21` is still blocked because the `v0.41.21` release is missing
+  v0.41.22` is still blocked because the `v0.41.22` release is missing
   `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
   `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
-  `checksums.txt`; GitHub Actions run `26127808895` failed with "recent account
+  `checksums.txt`; GitHub Actions run `26128342280` failed with "recent account
   payments have failed or your spending limit needs to be increased" before
-  assets could be built. `v0.41.16`, `v0.41.17`, `v0.41.18`, `v0.41.19`, and
-  `v0.41.20` have the same missing-asset blocker via runs `26126035892`,
-  `26126035944`, `26126461151`, `26127153189`, and `26127529878`.
+  assets could be built. `v0.41.16`, `v0.41.17`, `v0.41.18`, `v0.41.19`,
+  `v0.41.20`, and `v0.41.21` have the same missing-asset blocker via runs
+  `26126035892`, `26126035944`, `26126461151`, `26127153189`, `26127529878`,
+  and `26127808895`.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
@@ -112,7 +113,7 @@ plans to decide what to do next.
 | F-004-S007 | Passing | `go test ./internal/scanner -run TestInit_success` verifies generated targets receive the foundation/deployed route and AD-139 core doctrine without source binary asset names. |
 | F-012-S006 | Passing | [skill-evolution.md](../../design-docs/skill-evolution.md) AD-140 keeps the recursive improvement loop as operating doctrine and creates `T-006` for a foundation Release Manager skill. |
 | F-012-S007 | Passing | Generated target knowledge routes and mirrored harness docs carry the reusable feedback and improvement-loop doctrine after the AD-139 source doc. |
-| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.21 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.21` records the separate missing-asset blocker. |
+| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.22 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.22` records the separate missing-asset blocker. |
 | F-010-S003 | Passing | `go test ./internal/serve -run 'TestServer_(dashboardStopEndpointStopsStart|startStop)'`, `go test ./internal/dashboard -run 'TestDashboard_(stopEndpoint|controlEndpoints_methodNotAllowed|controlEndpoints_nilCallbacks)'`, and the 2026-05-19 clean `demo-123-stop-check2` replay verify dashboard stop returns success and exits `start` without manual kill. |
 | F-005-S006 | Passing | `go test ./cmd/mars-harness -run 'TestRunCommand(NoInit|AutoInit|RejectsRepoLocalLogFile)|TestMarsHarnessCLI'` and `go run ./cmd/mars-harness run engineer --repo /path/to/local-redacted --dry-run --trace --no-init` verify observer-safe dry-run exits without scaffolding an uninitialized target. |
 
