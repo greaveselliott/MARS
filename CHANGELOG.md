@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.1] - 2026-05-19
+<!-- mars-harness-release: version=0.41.1 commit=b18aed669531 -->
+
+### Impact
+- **guardrails:** Operators see improved reliability because ignore new lockfile line churn.
+
+### Why
+- **guardrails:** This matters because ignore new lockfile line churn closes a failure mode or degraded path.
+
+### What Changed
+- **guardrails:** Changed ignore new lockfile line churn (b18aed6).
+
+### Fixes
+- **guardrails:** Ignore new lockfile line churn (b18aed6)
+
 ## [0.41.0] - 2026-05-19
 <!-- mars-harness-release: version=0.41.0 commit=53bbb5e8170d -->
 
