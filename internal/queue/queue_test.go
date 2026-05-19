@@ -9,7 +9,6 @@ package queue
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,9 +35,7 @@ func TestQueueOpenMigratesLegacyJobsTableBeforeCreatingIndexes(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "legacy.db")
 
-	db, err := sql.Open("sqlite", dbPath)
-	require.NoError(t, err)
-	_, err = db.Exec(`
+	testutil.WriteSQLiteFixture(t, dbPath, `
 CREATE TABLE jobs (
   id              TEXT PRIMARY KEY,
   repo_id         TEXT NOT NULL,
@@ -52,22 +50,13 @@ CREATE TABLE jobs (
   error_msg       TEXT NOT NULL DEFAULT ''
 );
 `)
-	require.NoError(t, err)
-	require.NoError(t, db.Close())
 
 	q, err := Open(dbPath)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = q.Close() })
 
-	for _, column := range []string{"payload_mode", "concurrency_group", "daily_cap"} {
-		var count int
-		err := q.db.QueryRow(`
-SELECT COUNT(*)
-FROM pragma_table_info('jobs')
-WHERE name = ?`, column).Scan(&count)
-		require.NoError(t, err)
-		assert.Equal(t, 1, count, "expected jobs.%s to be backfilled", column)
-	}
+	testutil.AssertSQLiteColumns(t, q.db, "jobs", "payload_mode", "concurrency_group", "daily_cap")
+	testutil.AssertSQLiteIndexes(t, q.db, "idx_jobs_concurrency_status")
 
 	id, err := q.Enqueue(context.Background(), Job{
 		RepoID:           "repo-1",

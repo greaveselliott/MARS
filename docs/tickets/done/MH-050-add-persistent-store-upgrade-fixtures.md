@@ -6,15 +6,15 @@ complexity: medium
 kind: intervention-debt
 work_type: intervention-debt
 bdd_scenarios: []
-end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: TBD
-owner: TBD
-last_attempt: TBD
+end_to_end_evidence: "go test ./..."
+evidence_links: ["pkg/testutil/sqlite.go", "internal/queue/queue_test.go", "internal/telemetry/telemetry_test.go", "internal/foundationtelemetry/foundationtelemetry_test.go", "internal/trace/store_test.go", "internal/scoring/scoring_test.go", "internal/trust/trust_test.go", "internal/evolution/evolution_test.go", "internal/orgstate/store_test.go", "internal/serve/repos_test.go"]
+verified_by: "go test ./pkg/testutil ./internal/queue ./internal/telemetry ./internal/foundationtelemetry ./internal/trace ./internal/scoring ./internal/trust ./internal/evolution ./internal/orgstate ./internal/serve; go test ./internal/docsconsistency ./internal/docsync; go test ./..."
+owner: Codex
+last_attempt: 2026-05-19
 blocker: none
 blocked_by: []
 trace_id: TBD
-next_action: Add versioned legacy SQLite schema fixtures and CI coverage for every persistent store init path.
+next_action: Done. Continue to the next active-plan backlog ticket.
 dedupe_key: intervention-debt:persistent-store-upgrade-fixtures
 source: human-follow-up 2026-05-03 queue legacy schema regression
 created: 2026-05-03
@@ -56,22 +56,22 @@ The queue store had a compatibility column backfill, but tests only exercised fr
 ## Acceptance Criteria
 
 ### Functional
-- [ ] Every persistent SQLite store has at least one legacy-schema open test.
-- [ ] Tests fail if a migration creates an index before its dependent column exists.
-- [ ] Fixture coverage includes the queue `concurrency_group` class of failure.
+- [x] Every persistent SQLite store has at least one legacy-schema open test.
+- [x] Tests fail if a migration creates an index before its dependent column exists.
+- [x] Fixture coverage includes the queue `concurrency_group` class of failure.
 
 ### Edge cases and negative paths
-- [ ] Tests cover missing columns with defaults.
-- [ ] Tests cover existing old rows surviving migration.
-- [ ] Tests cover indexes that depend on newly added columns.
+- [x] Tests cover missing columns with defaults.
+- [x] Tests cover existing old rows surviving migration.
+- [x] Tests cover indexes that depend on newly added columns.
 
 ### Non-goals
 - Replacing SQLite with a standalone migration framework.
 - Changing runtime database paths or per-repo database isolation.
 
 ### Observability, docs, and regressions
-- [ ] Migration-ordering expectations are documented near the fixtures or store test helpers.
-- [ ] CI runs the fixture tests by default.
+- [x] Migration-ordering expectations are documented near the fixtures or store test helpers.
+- [x] CI runs the fixture tests by default.
 
 ## Notes
 This is intervention debt because a human caught a fundamental upgrade-path regression that fresh-database tests could not see.

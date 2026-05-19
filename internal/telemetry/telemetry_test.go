@@ -8,6 +8,7 @@ docs:
 package telemetry
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/pkg/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -254,6 +256,58 @@ func TestCollector_RingBufferCap(t *testing.T) {
 	}
 
 	require.Len(t, c.Events(), maxEvents)
+}
+
+func TestOpenStoreLegacyFixture(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "legacy-telemetry.db")
+	testutil.WriteSQLiteFixture(t, path, `
+CREATE TABLE telemetry_events (
+  id        TEXT PRIMARY KEY,
+  timestamp INTEGER NOT NULL,
+  job_id    TEXT NOT NULL,
+  repo_id   TEXT NOT NULL,
+  role      TEXT NOT NULL,
+  category  TEXT NOT NULL,
+  message   TEXT NOT NULL,
+  remedied  INTEGER NOT NULL DEFAULT 0,
+  action    TEXT NOT NULL DEFAULT ''
+);
+`, `
+CREATE TABLE telemetry_report_outbox (
+  id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  window_start INTEGER NOT NULL,
+  window_end INTEGER NOT NULL,
+  payload_hash TEXT NOT NULL UNIQUE,
+  payload_json TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  attempts INTEGER NOT NULL DEFAULT 0,
+  next_attempt_at INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT NOT NULL DEFAULT ''
+);
+`, `
+INSERT INTO telemetry_events(id, timestamp, job_id, repo_id, role, category, message, remedied, action)
+VALUES('evt-legacy', 1779148800, 'job-1', 'repo-1', 'engineer', 'tool_timeout', 'legacy timeout', 0, '');
+`, `
+INSERT INTO telemetry_report_outbox(id, schema_version, created_at, window_start, window_end, payload_hash, payload_json, status)
+VALUES('report-legacy', 1, 1, 1, 2, 'hash-legacy', '{}', 'pending');
+`)
+
+	store, err := OpenStore(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = store.Close() })
+	testutil.AssertSQLiteIndexes(t, store.db, "idx_telem_role_cat_ts", "idx_telem_ts", "idx_telemetry_report_outbox_status")
+
+	recent, err := store.Recent(10)
+	require.NoError(t, err)
+	require.Len(t, recent, 1)
+	require.Equal(t, "evt-legacy", recent[0].ID)
+
+	stats, err := store.OutboxStats(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 1, stats["pending"])
 }
 
 func TestDetectPatternsFromStoreGroupsByRepoRoleCategory(t *testing.T) {

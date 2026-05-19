@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/greaveselliott/mars-harness/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite"
@@ -37,6 +38,35 @@ func makeHarnessDir(t *testing.T) string {
 	manifest := []byte("name: test-repo\nroles:\n  ci-fixer:\n    prompt: prompts/ci.md\n    triggers:\n      - workflow_run.conclusion == \"failure\"\n")
 	require.NoError(t, os.WriteFile(filepath.Join(harnessDir, "manifest.yaml"), manifest, 0o644))
 	return dir
+}
+
+func TestRepoRegistryLegacyFixture(t *testing.T) {
+	t.Parallel()
+	dbPath := filepath.Join(t.TempDir(), "legacy-repos.db")
+	testutil.WriteSQLiteFixture(t, dbPath, `
+CREATE TABLE repos (
+  id TEXT PRIMARY KEY,
+  path TEXT NOT NULL UNIQUE,
+  remote TEXT NOT NULL DEFAULT '',
+  branch TEXT NOT NULL DEFAULT 'main',
+  added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+`, `
+INSERT INTO repos(id, path, remote, branch, added_at)
+VALUES('repo-legacy', '/tmp/legacy-target', 'owner/legacy', 'main', '2026-05-19 00:00:00');
+`)
+	db, err := sql.Open("sqlite", dbPath)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	reg, err := NewRepoRegistry(db)
+	require.NoError(t, err)
+	testutil.AssertSQLiteColumns(t, db, "repos", "id", "path", "remote", "branch", "added_at")
+
+	repos, err := reg.List(context.Background())
+	require.NoError(t, err)
+	require.Len(t, repos, 1)
+	require.Equal(t, "repo-legacy", repos[0].ID)
 }
 
 func TestRepoRegistry_Register_happy(t *testing.T) {

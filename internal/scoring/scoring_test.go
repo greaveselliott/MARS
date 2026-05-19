@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,6 +33,46 @@ func TestOpenStore_missingParentIsActionable(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "database directory")
 	assert.Contains(t, err.Error(), "mars-harness register --repo")
+}
+
+func TestOpenStoreLegacyFixture(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "legacy-scoring.db")
+	testutil.WriteSQLiteFixture(t, path, `
+CREATE TABLE outcomes (
+  id          TEXT PRIMARY KEY,
+  job_id      TEXT NOT NULL,
+  repo_id     TEXT NOT NULL,
+  role        TEXT NOT NULL,
+  type        TEXT NOT NULL,
+  details     TEXT NOT NULL DEFAULT '',
+  recorded_at INTEGER NOT NULL
+);
+`, `
+CREATE TABLE scores (
+  role        TEXT NOT NULL,
+  repo_id     TEXT NOT NULL,
+  value       REAL NOT NULL,
+  sample_size INTEGER NOT NULL,
+  window_days INTEGER NOT NULL,
+  formula     TEXT NOT NULL,
+  computed_at INTEGER NOT NULL,
+  PRIMARY KEY (role, repo_id)
+);
+`, `
+INSERT INTO outcomes(id, job_id, repo_id, role, type, details, recorded_at)
+VALUES('outcome-legacy', 'job-1', 'repo-1', 'engineer', 'passed', '{}', 1779148800);
+`)
+
+	s, err := OpenStore(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = s.Close() })
+	testutil.AssertSQLiteIndexes(t, s.db, "idx_outcomes_role_repo_time")
+
+	score, err := s.ComputeScore(context.Background(), "engineer", "repo-1", 30)
+	require.NoError(t, err)
+	require.Equal(t, 1, score.SampleSize)
+	require.Equal(t, 1.0, score.Value)
 }
 
 func TestComputeScore_emptyReturnsZero(t *testing.T) {

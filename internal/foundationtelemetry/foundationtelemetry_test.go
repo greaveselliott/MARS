@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/pkg/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -89,6 +90,60 @@ func TestSQLiteStoreSavesReportAndAggregatesPattern(t *testing.T) {
 	require.Equal(t, 1, patterns[0].ReportCount)
 	require.Equal(t, 1, patterns[0].InstallWindowCount)
 	require.Equal(t, []string{"0.30.1"}, patterns[0].HarnessVersions)
+}
+
+func TestSQLiteStoreLegacyFixture(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "legacy-intake.db")
+	testutil.WriteSQLiteFixture(t, path, `
+CREATE TABLE foundation_telemetry_reports (
+  id TEXT PRIMARY KEY,
+  received_at INTEGER NOT NULL,
+  schema_version INTEGER NOT NULL,
+  report_key TEXT NOT NULL,
+  payload_hash TEXT NOT NULL UNIQUE,
+  payload_json TEXT NOT NULL
+);
+`, `
+CREATE TABLE foundation_telemetry_patterns (
+  signature TEXT PRIMARY KEY,
+  first_seen INTEGER NOT NULL,
+  last_seen INTEGER NOT NULL,
+  report_count INTEGER NOT NULL,
+  install_window_count INTEGER NOT NULL,
+  harness_versions TEXT NOT NULL,
+  category TEXT NOT NULL,
+  target TEXT NOT NULL,
+  severity TEXT NOT NULL
+);
+`, `
+CREATE TABLE foundation_telemetry_pattern_reports (
+  signature TEXT NOT NULL,
+  payload_hash TEXT NOT NULL,
+  report_key TEXT NOT NULL,
+  PRIMARY KEY(signature, payload_hash)
+);
+`, `
+CREATE TABLE foundation_telemetry_pattern_report_keys (
+  signature TEXT NOT NULL,
+  report_key TEXT NOT NULL,
+  PRIMARY KEY(signature, report_key)
+);
+`, `
+INSERT INTO foundation_telemetry_patterns(signature, first_seen, last_seen, report_count, install_window_count, harness_versions, category, target, severity)
+VALUES('sig-legacy', 1, 1779148800, 2, 1, '["0.41.0"]', 'tool_timeout', 'tools', 'medium');
+`)
+
+	store, err := OpenSQLiteStore(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = store.Close() })
+	testutil.AssertSQLiteIndexes(t, store.db, "idx_foundation_telemetry_patterns_last_seen")
+
+	patterns, err := store.PatternsSince(context.Background(), time.Unix(1, 0).UTC())
+	require.NoError(t, err)
+	require.Len(t, patterns, 1)
+	require.Equal(t, "sig-legacy", patterns[0].Signature)
+	require.Equal(t, []string{"0.41.0"}, patterns[0].HarnessVersions)
 }
 
 func TestSQLiteStoreDedupesRepeatedPayloadsAndCountsDistinctReportKeys(t *testing.T) {

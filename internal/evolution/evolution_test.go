@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/pkg/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -153,6 +154,53 @@ func TestRecordEvolution_rejectsInvalidProposal(t *testing.T) {
 }
 
 // --- Store tests ---
+
+func TestOpenStoreLegacyFixture(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "legacy-evolution.db")
+	testutil.WriteSQLiteFixture(t, path, `
+CREATE TABLE interventions (
+  id          TEXT PRIMARY KEY,
+  job_id      TEXT NOT NULL,
+  repo_id     TEXT NOT NULL,
+  role        TEXT NOT NULL,
+  type        TEXT NOT NULL,
+  evidence    TEXT NOT NULL DEFAULT '',
+  detected_at INTEGER NOT NULL
+);
+`, `
+CREATE TABLE evolutions (
+  id           TEXT PRIMARY KEY,
+  role         TEXT NOT NULL,
+  repo_id      TEXT NOT NULL,
+  result       TEXT NOT NULL DEFAULT '',
+  score_before REAL NOT NULL DEFAULT 0,
+  score_after  REAL NOT NULL DEFAULT 0,
+  created_at   INTEGER NOT NULL
+);
+`, `
+INSERT INTO interventions(id, job_id, repo_id, role, type, evidence, detected_at)
+VALUES('iv-legacy', 'job-1', 'repo-1', 'engineer', 'clear', '{}', 1);
+`, `
+INSERT INTO evolutions(id, role, repo_id, result, score_before, score_after, created_at)
+VALUES('ev-legacy', 'engineer', 'repo-1', '{}', 0.4, 0.6, 1);
+`)
+
+	store, err := OpenStore(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = store.Close() })
+	testutil.AssertSQLiteIndexes(t, store.db, "idx_interventions_repo_role", "idx_evolutions_role", "idx_evolutions_role_created")
+
+	interventions, err := store.GetInterventions(context.Background(), "repo-1", "engineer", 10)
+	require.NoError(t, err)
+	require.Len(t, interventions, 1)
+	require.Equal(t, "iv-legacy", interventions[0].ID)
+
+	evolutions, err := store.GetEvolutions(context.Background(), "engineer", 10)
+	require.NoError(t, err)
+	require.Len(t, evolutions, 1)
+	require.Equal(t, "ev-legacy", evolutions[0].ID)
+}
 
 func TestStore_interventionRoundTrip(t *testing.T) {
 	t.Parallel()

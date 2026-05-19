@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/greaveselliott/mars-harness/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,6 +31,47 @@ func TestOpenStore_missingParentIsActionable(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "database directory")
 	assert.Contains(t, err.Error(), "mars-harness register --repo")
+}
+
+func TestOpenStoreLegacyFixture(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "legacy-trust.db")
+	testutil.WriteSQLiteFixture(t, path, `
+CREATE TABLE trust_entries (
+  role       TEXT NOT NULL,
+  repo_id    TEXT NOT NULL,
+  level      TEXT NOT NULL DEFAULT 'observer',
+  trial_runs INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (role, repo_id)
+);
+`, `
+CREATE TABLE trust_events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  role       TEXT NOT NULL,
+  repo_id    TEXT NOT NULL,
+  level      TEXT NOT NULL,
+  reason     TEXT NOT NULL,
+  recorded_at INTEGER NOT NULL
+);
+`, `
+INSERT INTO trust_entries(role, repo_id, level, trial_runs, updated_at)
+VALUES('engineer', 'repo-1', 'observer', 2, 1);
+`, `
+INSERT INTO trust_events(role, repo_id, level, reason, recorded_at)
+VALUES('engineer', 'repo-1', 'observer', 'legacy fixture', 1);
+`)
+
+	s, err := OpenStore(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = s.Close() })
+	testutil.AssertSQLiteColumns(t, s.db, "trust_entries", "role", "repo_id", "level", "trial_runs", "updated_at")
+
+	got, err := s.Get(context.Background(), "engineer", "repo-1")
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, LevelObserver, got.Level)
+	require.Equal(t, 2, got.TrialRuns)
 }
 
 func TestEvaluate_observerToContributor(t *testing.T) {

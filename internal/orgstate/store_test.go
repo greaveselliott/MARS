@@ -9,10 +9,10 @@ package orgstate
 
 import (
 	"context"
-	"database/sql"
 	"path/filepath"
 	"testing"
 
+	"github.com/greaveselliott/mars-harness/pkg/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -156,9 +156,7 @@ func TestOpenStoreMigratesExistingDispositionsWithoutStructuredFields(t *testing
 	t.Parallel()
 
 	dbPath := filepath.Join(t.TempDir(), "orgstate.db")
-	db, err := sql.Open("sqlite", dbPath)
-	require.NoError(t, err)
-	_, err = db.Exec(`
+	testutil.WriteSQLiteFixture(t, dbPath, `
 CREATE TABLE job_dispositions (
   job_id TEXT PRIMARY KEY,
   repo_id TEXT NOT NULL,
@@ -178,14 +176,14 @@ CREATE TABLE job_dispositions (
 INSERT INTO job_dispositions(job_id, repo_id, role, status, reason, recorded_at)
 VALUES('job-legacy', 'repo-1', 'engineer', 'completed', '', 1);
 `)
-	require.NoError(t, err)
-	require.NoError(t, db.Close())
 
 	store, err := OpenStore(dbPath)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, store.Close())
 	})
+	testutil.AssertSQLiteColumns(t, store.db, "job_dispositions", "handoff_json", "feedback_json")
+	testutil.AssertSQLiteIndexes(t, store.db, "idx_job_dispositions_repo_time", "idx_orchestration_decisions_loop")
 
 	got, err := store.GetDisposition(context.Background(), "job-legacy")
 	require.NoError(t, err)
