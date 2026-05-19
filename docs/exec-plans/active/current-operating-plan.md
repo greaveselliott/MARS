@@ -11,8 +11,8 @@
 **Success Evidence:** `MH-048` closed with its remaining negative-path acceptance criteria satisfied; relevant remediation, doctor, serve, quality-score, docsconsistency, docsync, full repo tests, and clean `demo-123` bootstrap/stop replays passed for the slice touched.
 **Falsification Evidence:** The next parity slice fails to broaden dogfood evidence, clean target replays create intervention-debt churn before product work, or completed remediation work remains in the active plan instead of returning to the parity queue.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** The repeated release-publication loop still depends on chat memory and active-plan notes rather than a compact foundation Release Manager skill.
-**Walking Skeleton Slice:** Claim `T-006` next unless the operator explicitly prioritizes the observer-safe dry-run gap created as `T-009`.
+**Current Failing Scenario:** The Mars observer profile still needs an observer-safe dry-run/context-preview path that does not scaffold uninitialized targets.
+**Walking Skeleton Slice:** Claim `T-009` next unless the operator explicitly prioritizes older parity backlog.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -35,9 +35,9 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains no tickets.
-  - `docs/tickets/backlog/` contains `MH-050`, `T-001`, `T-006`, and `T-009`.
+  - `docs/tickets/backlog/` contains `MH-050`, `T-001`, and `T-009`.
   - `docs/tickets/done/` contains `MH-001` through `MH-049`, `T-002`, and
-    `T-003` through `T-005`, `T-007`, and `T-008`.
+    `T-003` through `T-008`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -86,11 +86,9 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Foundation release publication skill**: Implement `T-006` after the
-   completed 2026-05-19 dogfood matrix and Mars observer validation.
-2. **Observer-safe dry-run gap**: Implement `T-009` so the Mars observer
+1. **Observer-safe dry-run gap**: Implement `T-009` so the Mars observer
    profile can preview role context without a temporary clone.
-3. **Mars parity continuation**: Use
+2. **Mars parity continuation**: Use
    [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.
@@ -172,8 +170,12 @@ Checks recorded during the 2026-05-02 review:
 - `T-005`: skill/tool/doctrine evaluation is done; the recursive improvement
   loop remains operating doctrine and `T-006` captures the foundation Release
   Manager skill implementation.
-- `T-006`: create the foundation release publication skill after `MH-048`
-  and the dogfood matrix validation work.
+- `T-006`: foundation release publication skill is done as of 2026-05-19.
+  `.harness/skills/release-publication/SKILL.md` covers release-note
+  commit, push, tag, GitHub Release object, notes-only fallback, asset
+  verification, token safety, and blocker recording. Generated target mirroring
+  is deferred with rationale because target publication modes differ from the
+  source binary-release workflow.
 - `T-009`: add an observer-safe dry-run/context-preview path after the Mars
   observer report showed `run --dry-run` auto-initializes uninitialized
   targets before assembling the prompt.

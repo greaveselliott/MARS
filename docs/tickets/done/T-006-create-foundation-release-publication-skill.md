@@ -6,14 +6,14 @@ complexity: small
 work_type: docs
 bdd_scenarios: ["F-012-S006", "F-009-S013"]
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
-owner: "TBD"
-last_attempt: "TBD"
+evidence_links: [".harness/skills/release-publication/SKILL.md", "docs/design-docs/skill-evolution.md", "docs/design-docs/release-versioning.md", "docs/design-docs/index.md"]
+verified_by: "go test ./internal/docsconsistency ./internal/docsync"
+owner: "Codex"
+last_attempt: "2026-05-19"
 blocker: "none"
 blocked_by: ["T-005"]
 trace_id: "TBD"
-next_action: "Create a compact foundation Release Manager skill for GitHub release publication, notes-only fallback, asset verification, and blocker recording."
+next_action: "Done."
 dedupe_key: "public-example"
 metadata:
   category: "skill_evolution"
@@ -48,18 +48,27 @@ The recursive improvement loop should remain operating doctrine, but the release
 ## Acceptance Criteria
 
 ### Functional
-- [ ] The foundation skill names when Release Manager should use it.
-- [ ] The skill gives a short ordered workflow from release-note commit through GitHub release verification and asset blocker recording.
-- [ ] The skill distinguishes release object publication from binary asset verification.
-- [ ] The skill states token safety rules and stop conditions.
+- [x] The foundation skill names when Release Manager should use it.
+- [x] The skill gives a short ordered workflow from release-note commit through GitHub release verification and asset blocker recording.
+- [x] The skill distinguishes release object publication from binary asset verification.
+- [x] The skill states token safety rules and stop conditions.
 
 ### Edge cases and negative paths
-- [ ] The skill does not replace deterministic release tools or git commands.
-- [ ] The skill does not imply notes-only releases are complete.
-- [ ] Target mirroring is either implemented generically or explicitly deferred with rationale.
+- [x] The skill does not replace deterministic release tools or git commands.
+- [x] The skill does not imply notes-only releases are complete.
+- [x] Target mirroring is either implemented generically or explicitly deferred with rationale.
 
 ### Non-goals
 - Adding a new release-publish CLI command or built-in tool.
 
 ### Observability, docs, and regressions
-- [ ] docsconsistency and relevant release or scanner checks pass.
+- [x] docsconsistency and relevant release or scanner checks pass.
+
+## Completion Notes
+
+- Added `.harness/skills/release-publication/SKILL.md` as a source-only
+  foundation Release Manager skill.
+- Updated AD-140 and AD-141 to record the doctrine boundary: recursive
+  improvement remains operating model, the repeated release-publication ritual
+  becomes a compact skill, and generated targets keep generic release guidance
+  until target publication modes have a stable contract.

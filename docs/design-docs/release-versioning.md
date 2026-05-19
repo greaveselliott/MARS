@@ -135,6 +135,25 @@ GitHub release publication has two independent gates:
 
 GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the blocker and leaves a follow-up ticket instead of claiming the release is complete.
 
+### AD-141: Foundation Release Publication Uses A Source-Only Skill
+
+The source harness release path has a repeated judgment-heavy sequence after
+each non-release semantic commit: generate release notes, commit and push them,
+tag the release, publish or repair the GitHub Release object, verify binary
+assets, and record missing-asset blockers without pretending a notes-only
+release is complete.
+
+The deterministic commands remain `mars-harness release notes`, git, GitHub
+CLI, and `mars-harness release verify-assets`. The reusable procedure lives in
+`.harness/skills/release-publication/SKILL.md` so Release Manager and Codex
+share the same ordered checklist and stop conditions.
+
+This skill is foundation-only for now. Generated targets keep the mirrored
+release docs and Release Manager prompt, but they do not receive the source
+skill because their publication surface may be different from Mars Harness
+binary releases. A generic target release skill can be added later when target
+publication modes have a stable contract.
+
 ### AD-068: The Installed Command Can Update Itself
 
 Operators should not need to `cd` into the source repository to upgrade the built binary. The installed `mars-harness` command owns its own update surface through `mars-harness update tool`.
