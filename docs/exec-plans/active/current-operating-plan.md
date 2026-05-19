@@ -7,12 +7,12 @@
 **Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-006, F-009, F-012
-**Hypothesis:** Returning to the Mars parity remediation lane after the persistent-store fixture slice will keep the factory improving the runtime paths that most reduce wasted model turns and recovery loops.
-**Success Evidence:** `MH-050` closed with shared SQLite fixture helpers, legacy-open tests across persistent stores, docs/tooling metadata, and `go test ./...`.
-**Falsification Evidence:** The next parity slice fails to broaden dogfood evidence, clean target replays create intervention-debt churn before product work, intervention-debt tickets remain unexplained, or completed remediation work remains in the active plan instead of returning to the parity queue.
+**Hypothesis:** With the open intervention-debt queue drained, the next continuous-build step should return to a clean live target replay and let runtime evidence select the next bounded improvement.
+**Success Evidence:** `T-001` closed with refreshed `docs/QUALITY_SCORE.md`, a focused regression assertion that outcome signals do not create tickets by default, and docsconsistency/docsync checks.
+**Falsification Evidence:** The next clean target replay creates intervention-debt churn before product work, score exports create tickets without explicit opt-in, or completed remediation work remains in the active plan instead of returning to live validation.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** The remaining quality-score intervention-debt ticket needs calibration evidence so guardrail workflow blocks are explained or prevented instead of staying stale.
-**Walking Skeleton Slice:** Claim `T-001` next unless the operator explicitly prioritizes a live dogfood replay first.
+**Current Failing Scenario:** As of 2026-05-19, no backlog ticket is selected; the factory should run a fresh live dogfood replay to discover the next concrete failure with evidence.
+**Walking Skeleton Slice:** Run a clean `demo-123`-style lifecycle validation next and materialize any discovered work through the ticket path.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -35,9 +35,9 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains no tickets.
-  - `docs/tickets/backlog/` contains `T-001` and `T-010`.
-  - `docs/tickets/done/` contains `MH-001` through `MH-050`, `T-002`, and
-    `T-003` through `T-009`.
+  - `docs/tickets/backlog/` contains `T-010`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
+    through `T-009`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -91,9 +91,9 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Guardrail workflow calibration**: Implement `T-001` so the quality-score
-   guardrail-block intervention signal links to evidence and either documents
-   acceptable enforcement or prevents recurrence.
+1. **Live lifecycle replay**: Run a clean `demo-123`-style target lifecycle and
+   record product progress, queue health, intervention-debt count, quality
+   export behavior, release-note behavior, and stop/shutdown behavior.
 2. **Mars parity continuation**: Use
    [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
@@ -120,6 +120,7 @@ plans to decide what to do next.
 | F-010-S003 | Passing | `go test ./internal/serve -run 'TestServer_(dashboardStopEndpointStopsStart|startStop)'`, `go test ./internal/dashboard -run 'TestDashboard_(stopEndpoint|controlEndpoints_methodNotAllowed|controlEndpoints_nilCallbacks)'`, and the 2026-05-19 clean `demo-123-stop-check2` replay verify dashboard stop returns success and exits `start` without manual kill. |
 | F-005-S006 | Passing | `go test ./cmd/mars-harness -run 'TestRunCommand(NoInit|AutoInit|RejectsRepoLocalLogFile)|TestMarsHarnessCLI'` and `go run ./cmd/mars-harness run engineer --repo /path/to/local-redacted --dry-run --trace --no-init` verify observer-safe dry-run exits without scaffolding an uninitialized target. |
 | F-006-S001 | Passing | `go test ./pkg/testutil ./internal/queue ./internal/telemetry ./internal/foundationtelemetry ./internal/trace ./internal/scoring ./internal/trust ./internal/evolution ./internal/orgstate ./internal/serve`, `go test ./internal/docsconsistency ./internal/docsync`, and `go test ./...` verify legacy SQLite fixture coverage across persistent stores. |
+| F-008-S005 | Passing | `go test ./internal/qualityscore -run 'TestExport(CreatesOutcomeSignalTickets|RendersTelemetryAndOutcomeSignals)'`, `go run ./cmd/mars-harness scores export --repo .`, and refreshed `docs/QUALITY_SCORE.md` verify guardrail outcome signals stay quality evidence by default and require `--create-intervention-debt` for ticket materialization. |
 
 ## Quality State
 
@@ -192,6 +193,8 @@ Checks recorded during the 2026-05-02 review:
   scoring, trust, evolution, orgstate, repo registry, and the shared SQLite
   fixture helper.
 - `T-001`: next intervention-debt slice. Calibrate the quality-score guardrail
-  workflow signal so the originating guardrail block has trace/commit evidence
-  and the workflow either prevents repeat noise or records why the block is
-  expected protection.
+  workflow signal is done as of 2026-05-19. The original 2026-05-03 signal is
+  stale and no longer traceable in the current local DB, current default export
+  reports insufficient live score evidence without creating tickets, and tests
+  assert outcome signals need explicit `--create-intervention-debt` before
+  materializing backlog work.

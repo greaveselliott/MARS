@@ -180,6 +180,22 @@ func TestExportCreatesOutcomeSignalTickets(t *testing.T) {
 	require.NoError(t, store.Close())
 
 	report, err := Export(ctx, Options{
+		RepoPath:   repo,
+		RepoID:     "repo-1",
+		DBPath:     dbPath,
+		Now:        now,
+		WindowDays: 30,
+	})
+	require.NoError(t, err)
+	require.Empty(t, report.TicketsChanged)
+	entries, err := os.ReadDir(filepath.Join(repo, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Empty(t, entries, "outcome signals should remain quality evidence unless ticket creation is explicitly requested")
+	qualityData, err := os.ReadFile(filepath.Join(repo, "docs", "QUALITY_SCORE.md"))
+	require.NoError(t, err)
+	require.Contains(t, string(qualityData), "| Guardrail blocks | 1 guardrail blocks |")
+
+	report, err = Export(ctx, Options{
 		RepoPath:               repo,
 		RepoID:                 "repo-1",
 		DBPath:                 dbPath,
@@ -190,7 +206,7 @@ func TestExportCreatesOutcomeSignalTickets(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, report.TicketsChanged, 4)
 
-	entries, err := os.ReadDir(filepath.Join(repo, "docs", "tickets", "backlog"))
+	entries, err = os.ReadDir(filepath.Join(repo, "docs", "tickets", "backlog"))
 	require.NoError(t, err)
 	require.Len(t, entries, 4)
 	var combined string
