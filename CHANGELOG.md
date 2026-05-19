@@ -2,6 +2,29 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.8] - 2026-05-19
+<!-- mars-harness-release: version=0.41.8 commit=dd6b0035c2a8 -->
+
+### Impact
+- **tools:** A single stuck tool handler can no longer strand an agent job
+  indefinitely with dirty target files and no new LLM activity.
+
+### Why
+- **tools:** The patched `demo-123` replay reached Engineer and produced
+  Space Invaders source files, then went quiet with the job still marked
+  `running`. The executor had a context timeout, but a non-returning handler
+  could still keep the loop from recording a blocker or failure.
+
+### What Changed
+- **tools:** Tool handlers now execute behind a hard executor TTL. If the TTL
+  expires, the executor stops waiting and returns an actionable timeout error
+  to the model instead of letting the loop hang.
+- **docs:** The runtime feature contract and dogfood evidence now record stuck
+  tool handlers as a foundation runtime failure mode with regression coverage.
+
+### Fixes
+- **tools:** Hard timeout stuck tool handlers (dd6b003)
+
 ## [0.41.7] - 2026-05-19
 <!-- mars-harness-release: version=0.41.7 commit=082ec783f38a -->
 
