@@ -6,14 +6,14 @@ complexity: medium
 work_type: docs
 bdd_scenarios: ["F-001-S015"]
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
-owner: "TBD"
-last_attempt: "TBD"
+evidence_links: ["docs/design-docs/foundation-deployed-harness-architecture.md", "go test ./internal/docsconsistency ./internal/docsync"]
+verified_by: "command"
+owner: "Codex"
+last_attempt: "2026-05-19"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Add the glossary-grounded design doc and index entry."
+next_action: "Done; use T-003 for generated target mirroring."
 dedupe_key: "public-example"
 metadata:
   category: "architecture_doctrine"
@@ -55,18 +55,18 @@ Mars Harness now has two related harness contexts: the foundation harness used t
 ## Acceptance Criteria
 
 ### Functional
-- [ ] The architecture doc explains the foundation harness, runtime substrate, deployed harness, and target project using glossary terms.
-- [ ] The doc explains why the split exists and why recursive improvement is repo-owned doctrine maintenance, not uncontrolled self-modification.
-- [ ] Foundation-only, mirrored, and deployed-only responsibilities are separated.
-- [ ] The design-doc index links to the new doc.
+- [x] The architecture doc explains the foundation harness, runtime substrate, deployed harness, and target project using glossary terms.
+- [x] The doc explains why the split exists and why recursive improvement is repo-owned doctrine maintenance, not uncontrolled self-modification.
+- [x] Foundation-only, mirrored, and deployed-only responsibilities are separated.
+- [x] The design-doc index links to the new doc.
 
 ### Edge cases and negative paths
-- [ ] The doc does not imply the harness is the target of its own agents during active runs.
-- [ ] Source-only binary release mechanics are not described as deployed-target requirements.
+- [x] The doc does not imply the harness is the target of its own agents during active runs.
+- [x] Source-only binary release mechanics are not described as deployed-target requirements.
 
 ### Non-goals
 - Adding a new CLI command, built-in tool, database table, or skill.
 
 ### Observability, docs, and regressions
-- [ ] docsconsistency and docsync checks pass.
-- [ ] The active plan and F-001 evidence point at the new architecture slice.
+- [x] docsconsistency and docsync checks pass.
+- [x] The active plan and F-001 evidence point at the new architecture slice.

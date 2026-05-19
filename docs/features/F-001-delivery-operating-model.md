@@ -149,4 +149,4 @@ None.
 - F-001-S012: `go test ./internal/docsconsistency -run TestRemoteTrunkOperatingModelIsDocumented` verifies source and generated target doctrine include the remote-trunk workflow.
 - F-001-S013: source-harness lifecycle changes include a `demo-123` or equivalent live-experience transcript, or an explicit blocker with replay steps.
 - F-001-S014: `go test ./internal/docsconsistency -run TestLiveDemoImprovementLoopIsDocumented` verifies the run, review, act, rerun, merge, and push loop is documented in source and generated target doctrine.
-- F-001-S015: pending; planned by the foundation/deployed harness architecture ticket set.
+- F-001-S015: [foundation-deployed-harness-architecture.md](../design-docs/foundation-deployed-harness-architecture.md) and `go test ./internal/docsconsistency ./internal/docsync`
