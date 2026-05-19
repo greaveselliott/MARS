@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.22] - 2026-05-19
+<!-- mars-harness-release: version=0.41.22 commit=b61c659b1f92 -->
+
+### Impact
+- **run:** Operators see improved reliability because add observer-safe no-init dry-run.
+
+### Why
+- **run:** This matters because add observer-safe no-init dry-run closes a failure mode or degraded path.
+
+### What Changed
+- **run:** Changed add observer-safe no-init dry-run (b61c659).
+
+### Fixes
+- **run:** Add observer-safe no-init dry-run (b61c659)
+
 ## [0.41.21] - 2026-05-19
 <!-- mars-harness-release: version=0.41.21 commit=9f18594b5806 -->
 
