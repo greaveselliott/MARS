@@ -2,6 +2,34 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.5] - 2026-05-19
+<!-- mars-harness-release: version=0.41.5 commit=1df263c139c3 -->
+
+### Impact
+- **scanner:** Fresh static demos should spend fewer turns on package-manager,
+  container, and ticket-metadata shell churn after the product lifecycle is
+  already healthy.
+
+### Why
+- **scanner:** The latest clean `demo-123` replay completed CEO through Dogfood
+  with no intervention-debt flood, but Engineer and Dogfood still burned
+  excessive tool calls proving a tiny static HTML game. The generated role
+  defaults now match that target shape instead of pushing every demo toward a
+  full package-managed app workflow.
+
+### What Changed
+- **scanner:** Generated Engineer guidance now treats no-manifest static
+  HTML/CSS/JS targets as valid with bounded HTTP smoke evidence and asks for
+  one full-file ticket evidence update rather than repeated shell substitutions.
+- **scanner:** Generated Dogfood guidance now skips irrelevant package/container
+  expectations for no-manifest static targets, requires background-only static
+  server smoke tests, and keeps validation evidence bounded.
+- **scanner:** The live-demo evidence trail and feature contract now capture
+  this evidence-cost stabilization loop.
+
+### Fixes
+- **scanner:** Tighten static demo role guidance (1df263c)
+
 ## [0.41.4] - 2026-05-19
 <!-- mars-harness-release: version=0.41.4 commit=9db85c479fec -->
 
