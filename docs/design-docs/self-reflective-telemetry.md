@@ -139,6 +139,10 @@ The first implementation is deliberately small:
 - `doctor --repo` includes a deterministic-remediation check that surfaces
   known recipe IDs and fixes for missing target harness scaffolds, manifests,
   and generated metadata before a run has to fail and rediscover the same issue.
+- `mars-harness scores export` reads remediation attempt and execution evidence
+  from scoring outcome details and renders deterministic-remediation summaries
+  in `docs/QUALITY_SCORE.md`, including skipped-without-executor and failed
+  execution improvement targets.
 - recurring context/budget failures point at glossary and role prompt scope
 - inference failures point at model/server tuning and doctor checks
 - tool timeouts point at tool policy and role command guidance

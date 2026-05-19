@@ -3,12 +3,15 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/scoring-system.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/features/F-008-scoring-trust-quality.md
+- docs/features/F-012-self-improvement-loop.md
 */
 package qualityscore
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -57,6 +60,7 @@ type evidence struct {
 	manualNotes     string
 	scoreDBPresent  bool
 	scores          []scoring.Score
+	outcomes        []scoring.Outcome
 	outcomeCounts   []scoring.OutcomeCount
 	telemetryCounts []telemetry.RoleCategoryCount
 	tickets         ticketSummary
@@ -234,6 +238,11 @@ func (ev *evidence) collect(ctx context.Context) error {
 		return err
 	}
 	ev.outcomeCounts = counts
+	outcomes, err := scoreStore.OutcomesSince(ctx, ev.repoID, ev.since)
+	if err != nil {
+		return err
+	}
+	ev.outcomes = outcomes
 
 	telemetryStore, err := telemetry.OpenStore(ev.dbPath)
 	if err != nil {
@@ -706,6 +715,7 @@ func (ev evidence) render(grade string) string {
 
 	fmt.Fprintf(&b, "## Evidence Signals\n\n")
 	outcomes := summarizeOutcomes(ev.outcomeCounts)
+	remediation := summarizeRemediation(ev.outcomes)
 	fmt.Fprintf(&b, "| Signal | Evidence |\n| --- | --- |\n")
 	fmt.Fprintf(&b, "| Role scores | %s |\n", roleScoreSignal(ev.scores))
 	fmt.Fprintf(&b, "| Terminal outcomes | %s |\n", terminalOutcomeSignal(outcomes))
@@ -716,6 +726,7 @@ func (ev evidence) render(grade string) string {
 	fmt.Fprintf(&b, "| Check results | %d passed, %d failed |\n", outcomes.byType[scoring.OutcomeChecksPassed], outcomes.byType[scoring.OutcomeChecksFailed])
 	fmt.Fprintf(&b, "| No-op runs | %s |\n", countSignal(outcomes.byType[scoring.OutcomeNoop], "no-op runs"))
 	fmt.Fprintf(&b, "| Human follow-up | %s |\n", countSignal(outcomes.byType[scoring.OutcomeHumanFollowup], "human follow-up outcomes"))
+	fmt.Fprintf(&b, "| Deterministic remediation | %s |\n", remediationSignal(remediation))
 	fmt.Fprintf(&b, "| Top telemetry triage targets | %s |\n\n", telemetrySignal(ev.telemetryCounts))
 
 	fmt.Fprintf(&b, "## Top Improvement Targets\n\n")
@@ -726,7 +737,7 @@ func (ev evidence) render(grade string) string {
 
 	fmt.Fprintf(&b, "## Source And Target Contract\n\n")
 	fmt.Fprintf(&b, "- Refresh this artifact with `mars-harness scores export --repo <path>`.\n")
-	fmt.Fprintf(&b, "- The export reads role scores, terminal outcomes, tickets, telemetry, dogfood, guardrail blocks, no-op runs, human follow-up, and check outcomes from the same evidence used by dashboard quality views.\n")
+	fmt.Fprintf(&b, "- The export reads role scores, terminal outcomes, tickets, telemetry, dogfood, guardrail blocks, no-op runs, human follow-up, deterministic remediation attempts, and check outcomes from the same evidence used by dashboard quality views.\n")
 	fmt.Fprintf(&b, "- The dashboard may link to or display this data, but `docs/QUALITY_SCORE.md` remains the repo-visible source of truth for quality claims.\n")
 	fmt.Fprintf(&b, "- The quality score separates shipped feature scenarios from enabler work; feature claims still require mapped BDD evidence.\n")
 	fmt.Fprintf(&b, "- Low role scores and recurring failures are reported as improvement targets by default; pass `--create-intervention-debt` when ticket materialization is deliberately wanted.\n")
@@ -800,6 +811,26 @@ type outcomeSummary struct {
 	dogfoodFailures int
 }
 
+type remediationSummary struct {
+	Attempts        map[string]int
+	Executions      map[string]int
+	TotalAttempts   int
+	TotalExecutions int
+	Failed          int
+	NoExecutor      int
+}
+
+type remediationDetails struct {
+	Attempts []struct {
+		RecipeID string `json:"recipe_id"`
+		Status   string `json:"status"`
+	} `json:"remediation_attempts"`
+	Executions []struct {
+		RecipeID string `json:"recipe_id"`
+		Status   string `json:"status"`
+	} `json:"remediation_executions"`
+}
+
 func summarizeOutcomes(counts []scoring.OutcomeCount) outcomeSummary {
 	summary := outcomeSummary{byType: map[scoring.OutcomeType]int{}}
 	for _, count := range counts {
@@ -813,6 +844,45 @@ func summarizeOutcomes(counts []scoring.OutcomeCount) outcomeSummary {
 		}
 		if isNegative(count.Type) {
 			summary.negative += count.Count
+		}
+	}
+	return summary
+}
+
+func summarizeRemediation(outcomes []scoring.Outcome) remediationSummary {
+	summary := remediationSummary{
+		Attempts:   map[string]int{},
+		Executions: map[string]int{},
+	}
+	for _, outcome := range outcomes {
+		if strings.TrimSpace(outcome.Details) == "" {
+			continue
+		}
+		var details remediationDetails
+		if err := json.Unmarshal([]byte(outcome.Details), &details); err != nil {
+			continue
+		}
+		for _, attempt := range details.Attempts {
+			key := remediationKey(attempt.RecipeID, attempt.Status)
+			if key == "" {
+				continue
+			}
+			summary.Attempts[key]++
+			summary.TotalAttempts++
+		}
+		for _, execution := range details.Executions {
+			key := remediationKey(execution.RecipeID, execution.Status)
+			if key == "" {
+				continue
+			}
+			summary.Executions[key]++
+			summary.TotalExecutions++
+			switch execution.Status {
+			case "failed":
+				summary.Failed++
+			case "skipped_no_executor":
+				summary.NoExecutor++
+			}
 		}
 	}
 	return summary
@@ -942,6 +1012,13 @@ func (ev evidence) improvementTargets(grade string, outcomes outcomeSummary) []s
 	if outcomes.byType[scoring.OutcomeNoop] > 0 {
 		targets = append(targets, fmt.Sprintf("Review %d no-op run(s) where actionable work may have existed.", outcomes.byType[scoring.OutcomeNoop]))
 	}
+	remediation := summarizeRemediation(ev.outcomes)
+	if remediation.NoExecutor > 0 {
+		targets = append(targets, fmt.Sprintf("Add deterministic executors or downgrade %d auto-safe remediation attempt(s) that skipped without an executor.", remediation.NoExecutor))
+	}
+	if remediation.Failed > 0 {
+		targets = append(targets, fmt.Sprintf("Investigate %d failed deterministic remediation execution(s).", remediation.Failed))
+	}
 	if len(targets) == 0 {
 		targets = append(targets, "Keep score export in the release checklist and refresh after material changes.")
 	}
@@ -1065,6 +1142,50 @@ func telemetrySignal(counts []telemetry.RoleCategoryCount) string {
 		}
 	}
 	return strings.Join(parts, "; ")
+}
+
+func remediationSignal(summary remediationSummary) string {
+	if summary.TotalAttempts == 0 {
+		return "No remediation attempts recorded."
+	}
+	parts := []string{fmt.Sprintf("%d attempt(s)", summary.TotalAttempts)}
+	if len(summary.Attempts) > 0 {
+		parts = append(parts, "attempts: "+topCountSignals(summary.Attempts))
+	}
+	if summary.TotalExecutions > 0 {
+		parts = append(parts, fmt.Sprintf("%d execution(s): %s", summary.TotalExecutions, topCountSignals(summary.Executions)))
+	}
+	return strings.Join(parts, "; ")
+}
+
+func topCountSignals(counts map[string]int) string {
+	keys := make([]string, 0, len(counts))
+	for key := range counts {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if counts[keys[i]] == counts[keys[j]] {
+			return keys[i] < keys[j]
+		}
+		return counts[keys[i]] > counts[keys[j]]
+	})
+	parts := make([]string, 0, min(len(keys), 3))
+	for _, key := range keys {
+		parts = append(parts, fmt.Sprintf("`%s` x%d", key, counts[key]))
+		if len(parts) == 3 {
+			break
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+func remediationKey(recipeID, status string) string {
+	recipeID = strings.TrimSpace(recipeID)
+	status = strings.TrimSpace(status)
+	if recipeID == "" || status == "" {
+		return ""
+	}
+	return recipeID + " " + status
 }
 
 func evidenceCoverageSignal(ev evidence) string {

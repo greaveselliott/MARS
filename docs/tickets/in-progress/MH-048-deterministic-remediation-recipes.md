@@ -67,6 +67,10 @@ reserved for judgment work.
   defer generic telemetry retry when a deterministic executor is registered.
   Future auto-safe catalog entries without executors remain visible evidence
   but cannot create no-progress stalls.
+- 2026-05-19: Added score-export remediation summaries. `docs/QUALITY_SCORE.md`
+  now reports remediation attempt/execution recipe IDs and statuses from
+  scoring outcome details, and skipped-without-executor or failed executions can
+  become improvement targets.
 
 ## Affected Files
 
@@ -104,5 +108,5 @@ reserved for judgment work.
       known remediation output.
 - [x] Docs explain deterministic-first repair and how recipes graduate into
       checks.
-- [ ] Quality export can include remediation attempt summaries once `MH-037`
+- [x] Quality export can include remediation attempt summaries once `MH-037`
       lands.

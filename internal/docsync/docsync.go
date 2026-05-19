@@ -257,7 +257,7 @@ func Rules() []Rule {
 		{Prefix: "internal/orgstate/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/orchestrated-organization-layer.md", "docs/features/F-006-queue-and-orchestration.md"}},
 		{Prefix: "internal/planhygiene/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/self-improvement.md", "docs/features/F-001-delivery-operating-model.md"}},
 		{Prefix: "internal/power/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/features/F-006-queue-and-orchestration.md", "docs/product-specs/product-surface.md"}},
-		{Prefix: "internal/qualityscore/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/scoring-system.md", "docs/features/F-008-scoring-trust-quality.md"}},
+		{Prefix: "internal/qualityscore/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/scoring-system.md", "docs/design-docs/self-reflective-telemetry.md", "docs/features/F-008-scoring-trust-quality.md", "docs/features/F-012-self-improvement-loop.md"}},
 		{Prefix: "internal/queue/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/pipeline-engine.md", "docs/features/F-006-queue-and-orchestration.md"}},
 		{Prefix: "internal/remediation/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/self-reflective-telemetry.md", "docs/features/F-012-self-improvement-loop.md"}},
 		{Prefix: "internal/release/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/features/F-009-release-update-lifecycle.md"}},

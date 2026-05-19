@@ -48,6 +48,7 @@ Then the command reports current role state for the requested repo
 Given a repo has score, telemetry, ticket, dogfood, guardrail, check, no-op, or human follow-up evidence
 When `mars-harness scores export --repo <path>` runs
 Then `docs/QUALITY_SCORE.md` is refreshed as the repo-visible quality artifact while manual notes are preserved
+And deterministic remediation attempts recorded in outcome details are summarized as evidence signals, with failed or skipped-without-executor remediation surfaced as improvement targets
 
 ### F-008-S005: Intervention-Debt Opt-In
 

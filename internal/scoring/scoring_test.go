@@ -191,7 +191,7 @@ func TestRoleReposWithOutcomesAndOutcomeCounts(t *testing.T) {
 
 	require.NoError(t, s.RecordOutcome(ctx, Outcome{
 		JobID: "j-1", RepoID: "repo-1", Role: "engineer",
-		Type: OutcomePassed, RecordedAt: now,
+		Type: OutcomePassed, Details: `{"remediation_attempts":[]}`, RecordedAt: now,
 	}))
 	require.NoError(t, s.RecordOutcome(ctx, Outcome{
 		JobID: "j-2", RepoID: "repo-1", Role: "engineer",
@@ -215,4 +215,16 @@ func TestRoleReposWithOutcomesAndOutcomeCounts(t *testing.T) {
 	}
 	assert.Equal(t, 1, byType[OutcomePassed])
 	assert.Equal(t, 1, byType[OutcomeFailed])
+
+	outcomes, err := s.OutcomesSince(ctx, "repo-1", now.Add(-time.Hour))
+	require.NoError(t, err)
+	require.Len(t, outcomes, 2)
+	hasDetails := false
+	for _, outcome := range outcomes {
+		assert.Equal(t, "repo-1", outcome.RepoID)
+		if outcome.Details != "" {
+			hasDetails = true
+		}
+	}
+	assert.True(t, hasDetails)
 }

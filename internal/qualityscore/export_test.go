@@ -3,7 +3,9 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/scoring-system.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/features/F-008-scoring-trust-quality.md
+- docs/features/F-012-self-improvement-loop.md
 */
 package qualityscore
 
@@ -276,6 +278,7 @@ func TestExportRendersTelemetryAndOutcomeSignals(t *testing.T) {
 			RepoID:     "repo-1",
 			Role:       role,
 			Type:       typ,
+			Details:    remediationDetailsForTest(typ),
 			RecordedAt: now.Add(-time.Hour),
 		}))
 	}
@@ -312,5 +315,13 @@ func TestExportRendersTelemetryAndOutcomeSignals(t *testing.T) {
 	require.Contains(t, text, "| Check results | 1 passed, 1 failed |")
 	require.Contains(t, text, "| No-op runs | 1 no-op runs |")
 	require.Contains(t, text, "| Human follow-up | 1 human follow-up outcomes |")
+	require.Contains(t, text, "| Deterministic remediation | 1 attempt(s); attempts: `generated-docs:update-missing-defaults ready` x1; 1 execution(s): `generated-docs:update-missing-defaults applied` x1 |")
 	require.Contains(t, text, "`repo-1/engineer` tool_timeout x3")
+}
+
+func remediationDetailsForTest(typ scoring.OutcomeType) string {
+	if typ != scoring.OutcomeGuardrailBlocked {
+		return ""
+	}
+	return `{"remediation_attempts":[{"recipe_id":"generated-docs:update-missing-defaults","status":"ready"}],"remediation_executions":[{"recipe_id":"generated-docs:update-missing-defaults","status":"applied"}]}`
 }

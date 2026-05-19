@@ -391,6 +391,37 @@ ORDER BY repo_id, role, type`, since.Unix(), repoID, repoID)
 	return counts, nil
 }
 
+// OutcomesSince returns terminal outcomes with details since the cutoff. Empty
+// repoID means all repos in the database.
+func (s *Store) OutcomesSince(ctx context.Context, repoID string, since time.Time) ([]Outcome, error) {
+	rows, err := s.db.QueryContext(ctx, `
+SELECT id, job_id, repo_id, role, type, details, recorded_at
+FROM outcomes
+WHERE recorded_at >= ? AND (? = '' OR repo_id = ?)
+ORDER BY recorded_at DESC`, since.Unix(), repoID, repoID)
+	if err != nil {
+		return nil, fmt.Errorf("scoring: outcomes since: %w", err)
+	}
+	defer rows.Close()
+
+	var outcomes []Outcome
+	for rows.Next() {
+		var outcome Outcome
+		var typ string
+		var recordedAt int64
+		if err := rows.Scan(&outcome.ID, &outcome.JobID, &outcome.RepoID, &outcome.Role, &typ, &outcome.Details, &recordedAt); err != nil {
+			return nil, fmt.Errorf("scoring: scan outcome: %w", err)
+		}
+		outcome.Type = OutcomeType(typ)
+		outcome.RecordedAt = time.Unix(recordedAt, 0).UTC()
+		outcomes = append(outcomes, outcome)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("scoring: outcomes rows: %w", err)
+	}
+	return outcomes, nil
+}
+
 func newUUID() string {
 	var buf [16]byte
 	_, _ = rand.Read(buf[:])

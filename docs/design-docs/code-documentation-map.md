@@ -71,7 +71,7 @@ field is a list of repo-relative documentation paths.
 | `internal/personas/` | `docs/design-docs/harness-operating-model.md`, `docs/roles/ROLES.md` | F-001 |
 | `internal/planhygiene/` | `docs/design-docs/self-improvement.md` | F-001 |
 | `internal/power/` | `docs/product-specs/product-surface.md` | F-006 |
-| `internal/qualityscore/` | `docs/design-docs/scoring-system.md` | F-008 |
+| `internal/qualityscore/` | `docs/design-docs/scoring-system.md`, `docs/design-docs/self-reflective-telemetry.md` | F-008, F-012 |
 | `internal/queue/` | `docs/design-docs/pipeline-engine.md` | F-006 |
 | `internal/remediation/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
 | `internal/release/` | `docs/design-docs/release-versioning.md` | F-009 |

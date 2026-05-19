@@ -10,6 +10,12 @@ How the harness measures **accuracy** and **value** of autonomous work so thresh
 
 Scores must correlate with outcomes users care about (commits to `main`, fixed CI, reduced toil) without becoming gameable noise. Signals can arrive from local git state, CI checks, guardrail blocks, optional GitHub status/check telemetry, and human follow-up commits. Low-frequency roles complicate rolling comparisons; the system still needs stable defaults for progressive autonomy (see [tenets.md](tenets.md)).
 
+Deterministic remediation evidence is part of outcome quality. When failed
+outcome details contain remediation attempts or executions, `scores export`
+summarizes those recipe IDs and statuses in `docs/QUALITY_SCORE.md` so operators
+can see whether the factory is repairing known failures, skipping recipes that
+lack executors, or producing failed deterministic repairs that need follow-up.
+
 Scores should be **explainable**: an operator can answer why a job raised or lowered a role’s rolling metric without reading raw model tokens.
 
 ## Key Design Decisions

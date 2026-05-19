@@ -98,6 +98,7 @@ Then the registry returns applicable recipes with stable IDs, candidate commands
 And a ready auto-safe generated-docs recipe executes through the non-shell harness upgrade API, records applied/noop/failed execution evidence, and defers the generic telemetry retry path so deterministic repair runs first
 And an auto-safe recipe without a registered executor does not suppress generic telemetry retry
 And doctor reports known manifest and generated-docs recipe IDs with concrete fix commands before the same failures reach agent runtime
+And score export renders deterministic remediation attempt and execution summaries from failed outcome details
 
 ## Out of Scope
 
@@ -120,4 +121,4 @@ None.
 - F-012-S007: `go test ./internal/scanner -run TestInit_success` and `go test ./internal/docsconsistency`
 - F-012-S008: `go test ./internal/telemetry -run TestBuildAnonymousReport` and `go test ./internal/config -run TestLoad_envTelemetryOverrides`
 - F-012-S009: `go test ./internal/foundationtelemetry`
-- F-012-S010: `go test ./internal/remediation`, `go test ./internal/serve -run 'TestHandleJobFailed(RecordsDeterministicRemediation|ExecutesGeneratedDocs)|TestHandleRemediation(ExecutableReadyRecipe|AutoSafeWithoutExecutor|OperatorRecipe)'`, and `go test ./internal/doctor -run TestCheckDeterministicRemediationHealth`
+- F-012-S010: `go test ./internal/remediation`, `go test ./internal/serve -run 'TestHandleJobFailed(RecordsDeterministicRemediation|ExecutesGeneratedDocs)|TestHandleRemediation(ExecutableReadyRecipe|AutoSafeWithoutExecutor|OperatorRecipe)'`, `go test ./internal/doctor -run TestCheckDeterministicRemediationHealth`, and `go test ./internal/qualityscore -run TestExportRendersTelemetryAndOutcomeSignals`
