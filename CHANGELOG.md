@@ -2,6 +2,33 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.10] - 2026-05-19
+<!-- mars-harness-release: version=0.41.10 commit=a81fccee532c -->
+
+### Impact
+- **planning:** Future foundation and deployed harness agents now have a
+  ticket-backed path for clarifying how recursive improvement, feedback
+  routing, mirrored doctrine, and source-only release mechanics fit together.
+
+### Why
+- **planning:** The live improvement loop was producing useful outcomes, but
+  the surrounding architecture was still easy to blur: the binary executes the
+  runtime, the foundation harness evolves Mars Harness doctrine, and deployed
+  harnesses inherit only the reusable core unless a rule is deliberately
+  source-only.
+
+### What Changed
+- **planning:** Added `F-001-S015` and refreshed the active plan so foundation
+  and deployed doctrine boundaries are scheduled before implementation work.
+- **planning:** Created four tool-backed backlog tickets covering the
+  architecture document, generated target mirroring, doctrine drift review, and
+  later recursive-improvement skill evaluation.
+- **docs:** Marked F-001 as partially passing until the new architecture slice
+  has durable evidence.
+
+### Documentation
+- **planning:** Materialize foundation deployed architecture tickets (a81fcce)
+
 ## [0.41.9] - 2026-05-19
 <!-- mars-harness-release: version=0.41.9 commit=c7159e6d5484 -->
 
