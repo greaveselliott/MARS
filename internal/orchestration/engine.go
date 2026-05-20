@@ -166,6 +166,11 @@ func directDeterministicRoute(in Input, status, nextNeed, suggested string) (nex
 	}
 
 	switch status {
+	case "blocked":
+		if releasePublicationBlocked(d) {
+			return "", "deterministic", "release publication blocker is operator-visible; stopping dispatch without Orchestrator detour", "release publication blocked", true
+		}
+		return "", "", "", "", false
 	case "completed", "approved":
 		if suggested != "" {
 			return direct(suggested, "using role suggested_role without Orchestrator detour")
@@ -254,11 +259,51 @@ func enforceDirectReviewProgression(in Input, candidateRole, kind, reason string
 }
 
 func enforceOrchestratorCandidate(in Input, candidateRole, kind, reason string) (nextRole, nextKind, nextReason, stop string) {
+	if sourceReleasePublicationBlocked(in) {
+		return "",
+			"deterministic",
+			"source Release Manager disposition is release_blocked; stopping instead of routing back to product validation",
+			"release publication blocked"
+	}
 	nextRole, nextKind, nextReason, stop = enforceReviewProgression(in, candidateRole, kind, reason)
 	if stop != "" || strings.TrimSpace(nextRole) == "" {
 		return nextRole, nextKind, nextReason, stop
 	}
 	return enforceQAInspectionBlock(in, nextRole, nextKind, nextReason)
+}
+
+func sourceReleasePublicationBlocked(in Input) bool {
+	if in.SourceDisposition == nil || normalize(in.Disposition.Role) != "orchestrator" {
+		return false
+	}
+	return releasePublicationBlocked(*in.SourceDisposition)
+}
+
+func releasePublicationBlocked(d orgstate.Disposition) bool {
+	if normalize(d.Role) != "release_manager" {
+		return false
+	}
+	if normalize(d.Status) != "blocked" {
+		return false
+	}
+	nextNeed := normalize(d.NextNeed)
+	if nextNeed == "release_blocked" || nextNeed == "release_publication" || nextNeed == "publication_blocked" {
+		return true
+	}
+	text := normalize(strings.Join([]string{
+		d.Reason,
+		d.Handoff.Ask,
+		d.Handoff.Context,
+		d.Handoff.ExpectedOutput,
+		d.Feedback.Summary,
+		d.Feedback.RequestedChange,
+	}, " "))
+	return strings.Contains(text, "release_blocked") ||
+		strings.Contains(text, "publication_blocked") ||
+		strings.Contains(text, "no_remote") ||
+		strings.Contains(text, "no remote") ||
+		strings.Contains(text, "missing_remote") ||
+		strings.Contains(text, "missing remote")
 }
 
 func enforceQAInspectionBlock(in Input, candidateRole, kind, reason string) (nextRole, nextKind, nextReason, stop string) {

@@ -610,6 +610,60 @@ func TestDecide_dogfoodApprovalRoutesDirectlyToReleaseManager(t *testing.T) {
 	require.Empty(t, decision.StopReason)
 }
 
+func TestDecide_releaseManagerReleaseBlockedStopsDispatch(t *testing.T) {
+	t.Parallel()
+
+	decision, err := Decide(Input{
+		Manifest: testManifest("orchestrator", "dogfood", "release-manager"),
+		Disposition: orgstate.Disposition{
+			JobID:    "release-job",
+			RepoID:   "repo-1",
+			Role:     "release-manager",
+			Status:   "blocked",
+			NextNeed: "release_blocked",
+			TicketID: "T-001",
+			Reason:   "No remote is configured, so only local release notes and tags can be verified.",
+		},
+	})
+	require.NoError(t, err)
+	require.Empty(t, decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "release publication blocker")
+	require.Equal(t, "release publication blocked", decision.StopReason)
+}
+
+func TestDecide_orchestratorCannotRouteReleaseBlockedBackToDogfood(t *testing.T) {
+	t.Parallel()
+
+	source := orgstate.Disposition{
+		JobID:    "release-job",
+		RepoID:   "repo-1",
+		Role:     "release-manager",
+		Status:   "blocked",
+		NextNeed: "release_blocked",
+		TicketID: "T-001",
+		Reason:   "No remote is configured, so publication is blocked after local release evidence.",
+	}
+	decision, err := Decide(Input{
+		Manifest:          testManifest("orchestrator", "qa", "security", "dogfood", "release-manager"),
+		SourceDisposition: &source,
+		Disposition: orgstate.Disposition{
+			JobID:         "orchestrator-job",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			SuggestedRole: "dogfood",
+			TicketID:      "T-001",
+			Reason:        "Dogfood should re-check release-blocked state.",
+		},
+	})
+	require.NoError(t, err)
+	require.Empty(t, decision.NextRole)
+	require.Equal(t, "deterministic", decision.DecisionKind)
+	require.Contains(t, decision.Reason, "release_blocked")
+	require.Equal(t, "release publication blocked", decision.StopReason)
+}
+
 func TestDecide_orchestratorRoutesCompletedReviewChainToReleaseManager(t *testing.T) {
 	t.Parallel()
 

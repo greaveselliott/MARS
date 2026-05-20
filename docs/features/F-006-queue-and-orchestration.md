@@ -168,6 +168,10 @@ Given Dogfood approves or completes validation after product work
 When the manifest includes a `release-manager` role
 Then dispatch routes directly to Release Manager so `VERSION`, `CHANGELOG.md`, tags, and release blockers are handled as part of the same lifecycle rather than relying on a later weekly schedule
 
+Given Release Manager records a blocked disposition with `next_need: release_blocked`
+When local release notes or tag evidence exists but publication is blocked by a missing remote, credentials, workflow failure, or asset publication failure
+Then dispatch stops with an operator-visible release-publication blocker and does not enqueue Orchestrator, Dogfood, or earlier product-validation roles unless product validation evidence changed
+
 Given Engineer fails a ticket gate such as missing BDD scenario evidence on a done ticket
 When dispatch-mode failure handling records the failure
 Then the server enqueues one bounded Engineer `ticket_gate_repair` job with the failure reason and a ticket-lifecycle/evidence-only repair scope instead of routing the failure through Orchestrator

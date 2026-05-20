@@ -117,6 +117,7 @@ Given a generated target lifecycle has completed product planning, implementatio
 When Dogfood records an approved or completed disposition after product or ticket commits
 Then dispatch routes to Release Manager before stopping so generated target `VERSION` and `CHANGELOG.md` are updated from unreleased semantic commits
 And Release Manager runs `mars-harness release backfill-notes --repo . --check` so legacy release entries are found deliberately instead of being missed during routine versioning
+And a Release Manager `release_blocked` publication disposition stops dispatch as operator-visible release evidence instead of routing back to Dogfood or another already-completed product validation role
 
 ### F-009-S013: Notes-Only Release Object Fallback
 
@@ -149,5 +150,5 @@ None.
 - F-009-S008: `go test ./internal/release -run 'TestRenderReleaseNarrative(UsesImpactWhyAndWhat|ProfilesStructuredDispatch)'`
 - F-009-S009: `go test ./internal/release -run TestBackfillNotes` and `go test ./cmd/mars-harness -run TestReleaseBackfillNotesCommandChecksAndWrites`
 - F-009-S010: `go test ./cmd/mars-harness -run TestVersionEntrypointsPrintSameVersionLine`
-- F-009-S012: `go test ./internal/orchestration -run TestDecide_dogfoodApprovalRoutesDirectlyToReleaseManager` and `go test ./internal/scanner -run TestInit_success`
+- F-009-S012: `go test ./internal/orchestration -run 'TestDecide_(dogfoodApprovalRoutesDirectlyToReleaseManager|releaseManagerReleaseBlockedStopsDispatch|orchestratorCannotRouteReleaseBlockedBackToDogfood)'`, `go test ./internal/serve -run TestHandleJobComplete_releaseBlockedStopsWithoutDogfoodLoop`, and `go test ./internal/scanner -run TestInit_success`
 - F-009-S013: `go test ./internal/docsconsistency -run TestSourceRepoVersioningRuleIsDocumented` and `go test ./internal/scanner -run TestInit_success`

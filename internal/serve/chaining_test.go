@@ -72,6 +72,8 @@ roles:
     prompt: roles/qa.md
   dogfood:
     prompt: roles/dogfood.md
+  release-manager:
+    prompt: roles/release-manager.md
   cto-weekly:
     prompt: roles/cto.md
   coo:
@@ -82,7 +84,7 @@ roles:
 	if err := os.WriteFile(filepath.Join(harnessDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	for _, role := range []string{"orchestrator", "qa", "dogfood", "cto", "coo", "engineer"} {
+	for _, role := range []string{"orchestrator", "qa", "dogfood", "release-manager", "cto", "coo", "engineer"} {
 		if err := os.WriteFile(filepath.Join(harnessDir, "roles", role+".md"), []byte(role+" prompt"), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -820,6 +822,61 @@ func TestHandleJobComplete_qaApprovalAfterEngineerRoutesForwardNotBackToQA(t *te
 	}
 	if dispatchJob.Role != "dogfood" {
 		t.Fatalf("expected dogfood dispatch after QA approval, got %s", dispatchJob.Role)
+	}
+}
+
+func TestHandleJobComplete_releaseBlockedStopsWithoutDogfoodLoop(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/release-blocked", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	completedJob := &queue.Job{
+		ID:     "job-release-blocked",
+		RepoID: repoID,
+		Role:   "release-manager",
+	}
+	if err := srv.orgStore.RecordDisposition(ctx, orgstate.Disposition{
+		JobID:    completedJob.ID,
+		RepoID:   repoID,
+		Role:     "release-manager",
+		Status:   "blocked",
+		NextNeed: "release_blocked",
+		TicketID: "T-001",
+		Reason:   "No remote is configured after local release notes and tag checks.",
+	}); err != nil {
+		t.Fatalf("RecordDisposition: %v", err)
+	}
+
+	srv.handleJobComplete(ctx, completedJob)
+
+	if got := countJobsByStatusAndRole(t, srv, "pending", "dogfood"); got != 0 {
+		t.Fatalf("expected no Dogfood loop for release_blocked publication, got %d", got)
+	}
+	if got := countJobsByStatusAndRole(t, srv, "pending", "orchestrator"); got != 0 {
+		t.Fatalf("expected no Orchestrator loop for release_blocked publication, got %d", got)
+	}
+	decisions, err := srv.orgStore.RecentDecisions(ctx, repoID, 1)
+	if err != nil {
+		t.Fatalf("RecentDecisions: %v", err)
+	}
+	if len(decisions) != 1 {
+		t.Fatalf("expected one stopped decision, got %d", len(decisions))
+	}
+	if decisions[0].StopReason != "release publication blocked" {
+		t.Fatalf("expected release publication blocked stop, got %+v", decisions[0])
 	}
 }
 

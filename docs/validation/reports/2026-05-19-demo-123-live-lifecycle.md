@@ -473,6 +473,66 @@ related remote mutation commands through `shell_exec`, and strengthens generated
 Release Manager guidance so no-remote targets record publication blockers
 instead of inventing remotes.
 
+## Run 11 Release-Blocked Terminal Replay — 2026-05-20
+
+The next replay used:
+
+- Target: `<validation-root>`
+- Harness binary: `<validation-root>`
+- DB: `<validation-root>`
+- Log: `<validation-root>`
+- Ports: webhook `19185`, dashboard `19184`
+
+Observed lifecycle before dashboard stop:
+
+```text
+role             status      turns  tools  wall time
+ceo              completed       7      7   28.421s
+coo              completed       9      9   32.757s
+cto-weekly       completed      15     15   66.122s
+engineer         completed      41     41  265.055s
+qa               completed      12     12   36.957s
+security         completed      12     12   56.007s
+dogfood          completed      37     37  201.970s
+release-manager  completed      26     26  166.329s
+```
+
+Observed dispatch decisions:
+
+```text
+ceo|exec_plan|coo|deterministic||using role suggested_role without Orchestrator detour
+coo|feature_contract|cto-weekly|deterministic||completed same-role next_need already belongs to source role; routing to default forward owner without Orchestrator detour
+cto-weekly|implementation|engineer|deterministic||using role suggested_role without Orchestrator detour
+engineer|qa_review|qa|deterministic||routing completed work by next_need without Orchestrator detour
+qa|security_review|security|deterministic||routing completed work by next_need without Orchestrator detour
+security|security_review|dogfood|deterministic||current review next_need already belongs to source role; routing to next review owner without Orchestrator detour
+dogfood|release_review|release-manager|deterministic||routing completed work by next_need without Orchestrator detour
+release-manager|release_blocked||deterministic|release publication blocked|release publication blocker is operator-visible; stopping dispatch without Orchestrator detour
+```
+
+Confirmed improvement:
+
+- The target reached product planning, ticketing, implementation, QA, Security,
+  Dogfood, local release notes, and local tag creation.
+- Pending/running queue count was `0` after Release Manager.
+- The target had no git remote after the run, and no fake remote was added.
+- No Orchestrator or Dogfood loop followed the `release_blocked` disposition.
+- No intervention-debt ticket files were created.
+
+Remaining live-loop findings:
+
+- `mars_harness_cli` rejected list-shaped arguments emitted as a string, e.g.
+  `{"args":"['release', 'notes', '--repo', '.', '--bump', 'auto']"}`.
+- `shell_exec` rejected Python/single-quoted list strings for `argv`, causing a
+  shell-command fallback.
+- Engineer recovered from a duplicate `F-001` creation guardrail, but static
+  source files kept `MarsDocSync` pointers to a non-existent generated feature
+  path.
+- Target `docsync_audit` reported `checked 0 files`, so stale static asset
+  metadata did not become review evidence.
+- Dogfood still spent turns discovering the static app entry directory before
+  serving `src/`.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -488,11 +548,12 @@ The dirty-target survey pause is now confirmed by a patched replay. The
 run 7 and run 8 replays confirm Dogfood can now reach a terminal disposition
 without dirty watchdog routing, and Release Manager can generate local release
 notes for a clean target. Run 9 confirms max-turn containment works without
-intervention-debt amplification, and run 10 confirms the Engineer static-path
-prompt fix turns that max-turn failure into a completed QA handoff. Factory pace
-is still dominated by avoidable tool-use recovery, shallow ticket/file discovery,
-and release-blocked routing. The remaining live-loop work is to normalize common
-structured-array payload drift, make static app serving evidence more
-deterministic, block release publication from inventing remotes, stop routing
-release-blocked publication failures back to Dogfood, and keep broadening
-product and observer-mode dogfood evidence.
+intervention-debt amplification, run 10 confirms the Engineer static-path prompt
+fix turns that max-turn failure into a completed QA handoff, and run 11 confirms
+no-remote release publication blockers now stop dispatch without remote mutation
+or a Dogfood loop. Factory pace is still dominated by avoidable tool-use
+recovery, shallow ticket/file discovery, and static app evidence discovery. The
+remaining live-loop work is to normalize common structured-array payload drift,
+make static app serving evidence more deterministic, keep static asset
+`MarsDocSync` pointers aligned with existing feature contracts, and keep
+broadening product and observer-mode dogfood evidence.
