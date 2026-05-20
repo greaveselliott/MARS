@@ -2,6 +2,30 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.3] - 2026-05-20
+<!-- mars-harness-release: version=0.42.3 commit=decb5f38231c -->
+
+### Impact
+- **scanner:** Fresh target bootstraps are less likely to stall in planning
+  because generated CEO and COO prompts now reuse the existing canonical
+  `docs/features/F-NNN*.md` contract instead of inventing a second `F-001`
+  path.
+
+### Why
+- **scanner:** The live Task Notes API canary showed the previous guidance let
+  planners hit duplicate-contract and duplicate-scenario guardrails before CTO
+  ticketing. Reusing the starter contract keeps the product-first lifecycle on
+  the CEO -> COO -> CTO path.
+
+### What Changed
+- **scanner:** Generated CEO guidance now forbids `docs/features/` writes during
+  bootstrap and asks CEO to pass the existing contract path to COO. Generated
+  COO guidance now searches `docs/features/F-NNN*.md`, edits the existing path,
+  and rewrites starter scenarios in place with unique IDs (decb5f3).
+
+### Fixes
+- **scanner:** Reuse canonical bootstrap feature contracts (decb5f3)
+
 ## [0.42.2] - 2026-05-20
 <!-- mars-harness-release: version=0.42.2 commit=1e42e219c213 -->
 
