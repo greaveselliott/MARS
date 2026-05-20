@@ -2,6 +2,33 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.13] - 2026-05-20
+<!-- mars-harness-release: version=0.42.13 commit=a95a9c0440c0 -->
+
+### Impact
+- **tools:** Fresh target runs are less likely to stall after successful live
+  validation because empty `shell_exec` argv and single `:` no-op calls now
+  redirect agents toward cleanup, ticket completion, commit, push, and
+  `job_disposition_record` instead of producing guardrail-loop failures.
+
+### Why
+- **tools:** The `demo-api-run13` canary proved the tracked-background cleanup
+  fix worked: Engineer started and killed a managed `go run` server, then
+  launched the external `/tmp` validation binary successfully. The remaining
+  failure was model-shape drift after validation had passed: empty argv and `:`
+  calls consumed turns and triggered `circle_detected` before the ticket could
+  move to done.
+
+### What Changed
+- **tools:** `shell_exec` now treats empty argv, blank argv, and single `:` calls
+  as no-op recovery hints, names active tracked background PIDs, and reminds the
+  role to stop the PID, update ticket evidence, commit, push, and record a
+  disposition. Managed background startup output and generated Engineer guidance
+  now carry the same rule (a95a9c0).
+
+### Fixes
+- **tools:** Guide shell no-op loops to completion (a95a9c0)
+
 ## [0.42.12] - 2026-05-20
 <!-- mars-harness-release: version=0.42.12 commit=7b9d8e79e8a1 -->
 
