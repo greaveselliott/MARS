@@ -461,6 +461,73 @@ func TestShellExecAllowsUntrackedGoModuleBuildArtifactCleanup(t *testing.T) {
 	require.FileExists(t, filepath.Join(dir, "go.mod"))
 }
 
+func TestShellExecBlocksGoBuildOutputInsideRepoBeforeArtifact(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":["go","build","-o","task-notes-api","main.go"]}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "go build output")
+	require.Contains(t, err.Error(), "inside the target repo")
+	require.NoFileExists(t, filepath.Join(dir, "task-notes-api"))
+}
+
+func TestShellExecAllowsGoBuildOutputOutsideRepo(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
+	output := filepath.Join(t.TempDir(), "task-notes-api")
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	res, err := ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", fmt.Sprintf(`{"argv":["go","build","-o",%q,"main.go"]}`, output))
+	require.NoError(t, err)
+	require.Equal(t, 0, res.ExitCode)
+	require.FileExists(t, output)
+}
+
+func TestShellExecMalformedArgsNotMaskedByDirtyArtifact(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))
+	artifact := "task-notes-api"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, artifact), append([]byte{0}, bytes.Repeat([]byte("binary\n"), 600)...), 0o755))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":[]}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "provide exactly one of argv")
+	require.NotContains(t, err.Error(), "blast radius exceeded")
+	require.FileExists(t, filepath.Join(dir, artifact))
+}
+
 func TestShellExecStillBlocksRemovalOfOrdinaryFiles(t *testing.T) {
 	dir, root := setupDirtyGitRepo(t, 0)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("keep me\n"), 0o644))

@@ -9,6 +9,7 @@ bdd_scenarios:
   - F-006-S015
   - F-006-S016
   - F-007-S010
+  - F-007-S011
   - F-005-S015
 end_to_end_evidence: not_applicable
 evidence_links:
@@ -17,6 +18,7 @@ evidence_links:
   - "go test ./internal/queue -run TestQueue_activeJobForRepoRole"
   - "go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'"
   - "go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess)'"
+  - "go test ./internal/tools -run 'TestShellExec(BlocksGoBuildOutputInsideRepoBeforeArtifact|AllowsGoBuildOutputOutsideRepo|MalformedArgsNotMaskedByDirtyArtifact)'"
   - "go test ./internal/scanner -run TestInit_success"
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#run-12-tool-argument-and-matrix-replay--2026-05-20
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#non-static-matrix-replay-task-notes-api---2026-05-20
@@ -24,13 +26,14 @@ evidence_links:
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#api-rerun-after-canonical-bootstrap-guidance-task-notes-api---2026-05-20
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#api-rerun-after-module-artifact-cleanup-task-notes-api---2026-05-20
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#api-rerun-after-generated-artifact-cleanup-hints-task-notes-api---2026-05-20
-verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'; go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess)'; run12, demo-api-run1 through demo-api-run6 scores exports captured live Factory Pace baselines"
+  - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#api-rerun-after-managed-background-validation-task-notes-api---2026-05-20
+verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'; go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess)'; go test ./internal/tools -run 'TestShellExec(BlocksGoBuildOutputInsideRepoBeforeArtifact|AllowsGoBuildOutputOutsideRepo|MalformedArgsNotMaskedByDirtyArtifact)'; run12, demo-api-run1 through demo-api-run7 scores exports and trace summaries captured live Factory Pace baselines"
 owner: "Codex"
-last_attempt: "2026-05-20: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45 tools and Dogfood 66 turns/32 tools. Non-static demo-api-run1 replay shows Engineer max_turns at 102 trace turns/50 tools and a duplicate scheduled Engineer queued while the first Engineer was still active; scheduler now skips same-repo same-role active work. demo-api-run2 then shows Engineer circle_detected at 89 trace turns/43 tools after repo-local Go build artifact cleanup was blocked; shell_exec permits narrow cleanup of untracked root binaries named after the repo. demo-api-run3 then showed CEO/COO duplicate F-001 feature-contract path and duplicate starter-scenario drift before CTO ticketing; generated bootstrap guidance made canonical feature-contract reuse explicit. demo-api-run4 confirmed CEO/COO/CTO reach Engineer, then exposed module-named Go build artifact cleanup as the next blocker. demo-api-run5 confirmed the exception exists but the guardrail error needs to name the exact cleanup command so Engineer discovers it. demo-api-run6 confirmed the cleanup hint works, then exposed foreground service validation and shell-background process management as the next generic turn sink."
+last_attempt: "2026-05-20: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45 tools and Dogfood 66 turns/32 tools. Non-static demo-api-run1 replay shows Engineer max_turns at 102 trace turns/50 tools and a duplicate scheduled Engineer queued while the first Engineer was still active; scheduler now skips same-repo same-role active work. demo-api-run2 then shows Engineer circle_detected at 89 trace turns/43 tools after repo-local Go build artifact cleanup was blocked; shell_exec permits narrow cleanup of untracked root binaries named after the repo. demo-api-run3 then showed CEO/COO duplicate F-001 feature-contract path and duplicate starter-scenario drift before CTO ticketing; generated bootstrap guidance made canonical feature-contract reuse explicit. demo-api-run4 confirmed CEO/COO/CTO reach Engineer, then exposed module-named Go build artifact cleanup as the next blocker. demo-api-run5 confirmed the exception exists but the guardrail error needs to name the exact cleanup command so Engineer discovers it. demo-api-run6 confirmed the cleanup hint works, then exposed foreground service validation and shell-background process management as the next generic turn sink. demo-api-run7 confirmed managed background validation works and exposed repo-local `go build -o` outputs as the next generic artifact-prevention gap."
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Rerun the non-static API canary after managed-background shell_exec hardening, confirm Engineer validates the API without leaking port 8080 or enqueueing timeout recovery work, then target the next largest generic turn sink."
+next_action: "Rerun the non-static API canary after repo-local build-output prevention, confirm Engineer validates the API without creating a root binary trap, then target the next largest generic turn sink."
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -83,11 +86,12 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 
 ## BDD Evidence
 
-- Scenario IDs: F-008-S008, F-006-S015, F-006-S016, F-007-S010, and F-005-S015.
+- Scenario IDs: F-008-S008, F-006-S015, F-006-S016, F-007-S010, F-007-S011, and F-005-S015.
 - Evidence links: `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries` covers the first quality-export pace slice.
 - Evidence links: `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole` cover the scheduled duplicate-work fix.
 - Evidence links: `go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'` covers the bounded build-artifact cleanup exception.
 - Evidence links: `go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess)'` covers managed long-running server validation tool behavior.
+- Evidence links: `go test ./internal/tools -run 'TestShellExec(BlocksGoBuildOutputInsideRepoBeforeArtifact|AllowsGoBuildOutputOutsideRepo|MalformedArgsNotMaskedByDirtyArtifact)'` covers repo-local validation binary prevention and dirty-artifact validation ordering.
 - Evidence links: `go test ./internal/scanner -run TestInit_success` covers generated CEO/COO canonical feature-contract reuse.
 - Verified by: partial; live baseline export and before/after replay evidence remain open.
 
@@ -164,9 +168,15 @@ Remaining work:
   process management left port `8080` occupied. `shell_exec` now rejects shell
   background operators, treats early `background:true` exits as boot failures,
   and generated Engineer guidance forbids `cmd & PID=$!` snippets.
+- The rerun after managed-background hardening confirmed Engineer can validate
+  the API with `background:true`, probe `/health`, and kill the managed PID.
+  The next turn sink is now validation build-output prevention: `go build -o`
+  inside the target repo created a root binary trap. `shell_exec` blocks that
+  output path before execution and keeps malformed shell payload errors visible
+  even when an existing artifact has already made the repo dirty.
 - Define calibrated thresholds after the baseline, not before it.
-- Rerun the API canary to confirm managed-background validation no longer traps
-  Engineer behind server timeouts, leaked ports, or timeout-retry queue work
-  before claiming the optimization improved the live factory.
+- Rerun the API canary to confirm validation build-output prevention keeps
+  Engineer out of root binary traps before claiming the optimization improved
+  the live factory.
 - Continue the representative validation matrix before making broad optimization
   claims.

@@ -126,6 +126,15 @@ cleanable artifacts is present, the error names the exact `rm <artifact>`
 command so the agent can recover instead of trying unrelated build or write
 operations until it reaches a turn limit.
 
+The follow-up `demo-api-run7` replay showed that cleanup hints are still a
+second-best recovery path: Engineer used managed `background:true` validation
+successfully, then created `task-notes-api` with `go build -o task-notes-api
+main.go` and got trapped after a malformed recovery call while the dirty binary
+remained present. Guardrails now prevent that class before mutation by rejecting
+explicit `go build -o <path>` outputs that resolve inside the target repo. Roles
+must put validation binaries in an external temp path, keeping the target diff
+limited to source, tests, docs, tickets, and intentional config.
+
 ### Open topics
 
 - **Advisory vs hard tiers:** advisory rules surface warnings in traces and UI; hard rules fail the job or block merge paths per policy; same schema with a `severity` field is the likely shape.

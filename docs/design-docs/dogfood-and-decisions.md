@@ -2153,6 +2153,37 @@ capture window now returns an error with initial output and exit code, so
 crashed or port-conflicted servers do not look successfully started. Generated
 Engineer guidance mirrors the same rule.
 
+### Non-Static API Replay: Validation Build Outputs Must Not Enter The Repo
+
+After managed background validation was added, a clean Task Notes API replay
+against `<validation-root>` confirmed the
+service process fix and exposed the next artifact-prevention gap.
+
+Positive evidence:
+
+- CEO, COO, and CTO each completed once and reached an ordinary product
+  implementation ticket.
+- Engineer used `shell_exec` with `background:true` for `go run main.go`,
+  successfully probed `GET /health`, and killed the managed PID. The previous
+  foreground timeout and shell-background process leak did not recur.
+- Runtime guardrail and circle-detection failures stayed foundation-owned
+  telemetry. No target intervention-debt tickets were created.
+
+Residual finding:
+
+- Engineer then ran `go build -o task-notes-api main.go`, creating an untracked
+  binary inside the target repo. Blast-radius validation correctly blocked the
+  oversized binary-shaped diff, but because the artifact already existed,
+  later malformed empty `shell_exec` calls were also masked by the dirty
+  blast-radius precheck until the role ended with `circle_detected`.
+
+Decision: validation build artifacts should be prevented, not only cleaned up
+after the fact. `shell_exec` now rejects explicit `go build -o <path>` outputs
+that resolve inside the target repo and instructs roles to use external temp
+paths for runnable validation binaries. The cleanup exception remains for
+artifacts already present, and malformed `shell_exec` payloads now surface their
+own validation error before dirty-diff containment can obscure them.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

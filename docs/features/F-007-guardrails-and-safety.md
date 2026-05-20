@@ -25,6 +25,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 8. F-007-S008 - Blast-radius limits are checked before commit and push workflows.
 9. F-007-S009 - Workspace hygiene blocks generated dependency/build churn before model work and package-manager mutation.
 10. F-007-S010 - Untracked repo-local compiled binaries named after the repo or Go module may be removed as generated build artifacts, and blast-radius errors for those artifacts name the exact cleanup command without opening arbitrary deletion.
+11. F-007-S011 - Validation build commands are blocked before execution when their explicit output path would create a compiled artifact inside the target repo.
 
 ## Scenarios
 
@@ -104,9 +105,17 @@ Given Dogfood is running observation-first validation
 When it attempts to write product source, package manifests, lockfiles, config, or harness scaffold
 Then the tool guardrail blocks the mutation while still allowing bounded evidence reports under `docs/reports/dogfood/`
 
-Given a validation command creates an untracked root-level compiled binary named after the repository
-When an agent removes that exact binary with `shell_exec` `rm <repo-name>` or `unlink <repo-name>`
-Then policy allows the cleanup only when the file is untracked, root-level, binary-looking, and named after the repo, while ordinary file removal and recursive deletion remain blocked
+### F-007-S010: Generated Build Artifact Cleanup
+
+Given a validation command creates an untracked root-level compiled binary named after the repository or the root Go module
+When an agent removes that exact binary with `shell_exec` `rm <artifact>` or `unlink <artifact>`
+Then policy allows the cleanup only when the file is untracked, root-level, binary-looking, and named after the repo or module basename, while ordinary file removal and recursive deletion remain blocked
+
+### F-007-S011: Validation Build Output Outside Repo
+
+Given a role calls `shell_exec` for `go build -o <path>` during validation
+When `<path>` resolves inside the target repository
+Then tool policy blocks the command before process execution, no compiled artifact is created, and the error instructs the role to write validation binaries to an external temp path so repository diffs stay source-only
 
 ### F-007-S009: Workspace Hygiene Gates
 
@@ -136,3 +145,4 @@ None.
 - F-007-S008: `go test ./internal/safety -run TestCheck`, `go test ./internal/tools -run TestValidateRepoDiffIgnoresGeneratedDependencyMetadataLineChurn`, `go test ./internal/tools -run TestJobDispositionPolicyIgnoresRuntimeLearningsOnlyDirtyState`, `go test ./internal/tools -run 'TestCOO(FileWrite|ShellExec)Policy|TestDogfoodFileWritePolicyBlocksProductMutation'`, and `go test ./internal/tools -run 'TestShellExecPolicy.*FeatureTicketDone(Move|Copy)|TestFileWritePolicyBlocks(DoneFeatureTicket|DuplicateFeatureScenario)'`
 - F-007-S009: `go test ./internal/tools -run 'TestWorkspaceHygiene|TestDependencySync|TestShellPolicyBlocksRawDependencyMutationCommands'` and `go test ./internal/serve -run TestHandleJobFailedDoesNotRecoverDeterministicFailures`
 - F-007-S010: `go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'`
+- F-007-S011: `go test ./internal/tools -run 'TestShellExec(BlocksGoBuildOutputInsideRepoBeforeArtifact|AllowsGoBuildOutputOutsideRepo|MalformedArgsNotMaskedByDirtyArtifact)'`

@@ -237,3 +237,4 @@ None.
 - F-005-S012: `go test ./internal/tools -run TestGitPush_noRemote`
 - F-005-S013: `go test ./internal/scanner -run TestInit_success`
 - F-005-S014: `go test ./internal/tools -run TestExecutor_toolHandlerHardTimeout`
+- F-005-S015: `go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess)'` and `demo-api-run7` live evidence

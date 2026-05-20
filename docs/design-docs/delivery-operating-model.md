@@ -1787,3 +1787,55 @@ Long-running validation is owned by the `shell_exec` tool boundary:
   not a false success that lets ticket closure proceed.
 - The next API canary should confirm Engineer can validate a service without
   leaking port `8080` or enqueueing timeout recovery work after manual stop.
+
+## AD-145: Validation Build Outputs Stay Outside Target Repositories
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run7` Task Notes API replay confirmed the managed-background
+process fix in live conditions. Engineer started `go run main.go` with
+`background:true`, probed `GET /health`, and killed the managed PID cleanly. The
+next bottleneck was not service validation; it was validation build output.
+
+Engineer ran `go build -o task-notes-api main.go`, which created an untracked
+root binary inside the target repo. Blast-radius validation correctly rejected
+the 34k-line binary-shaped diff and kept the failure as foundation telemetry,
+but the repo was already dirty. The model then emitted malformed empty
+`shell_exec` calls while the binary remained present, so pre-tool dirty-worktree
+containment masked the malformed-call error with the blast-radius blocker and
+the role ended with `circle_detected`.
+
+Cleanup exceptions are necessary, but this replay showed they are recovery, not
+prevention. A generic factory should not let validation commands create
+repo-local compiled artifacts in the first place when an external temp output
+path is sufficient.
+
+### Decision
+
+`shell_exec` now rejects `go build -o <path>` before process execution when the
+explicit output path resolves inside the target repository. The error names the
+bad output path and suggests an external temp output. Build validation that only
+needs package coverage should use `go build ./...`; validation that needs a
+runnable binary should write it outside the target repo, then run or discard it
+there.
+
+Malformed `shell_exec` invocations are also validated before the dirty-worktree
+blast-radius precheck. That keeps a bad tool payload visible as a tool-call
+shape error instead of obscuring it behind an existing generated-artifact
+blocker.
+
+### Consequences
+
+- The preferred path is prevention: generated binaries should not enter target
+  worktrees during validation.
+- The bounded cleanup exception remains for older runs, user-created artifacts,
+  and accidental binaries that already exist.
+- Generic Go, API, CLI, and service targets get the same rule; this is not a
+  Task Notes API special case.
+- The next API canary should confirm Engineer reaches validation without
+  creating a repo-local binary trap, then either commits completed ticket work
+  or exposes the next generic lifecycle bottleneck.

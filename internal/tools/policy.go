@@ -80,12 +80,19 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 	case "git_push":
 		return checkGitPushPolicy(ctx, root, raw)
 	case "shell_exec":
-		generatedArtifactCleanup, err := shellExecGeneratedArtifactCleanup(ctx, root, raw)
+		args, err := validateShellExecPolicyArgs(raw)
+		if err != nil {
+			return err
+		}
+		generatedArtifactCleanup, err := shellExecGeneratedArtifactCleanup(ctx, root, args)
 		if err != nil {
 			return err
 		}
 		if !generatedArtifactCleanup {
 			if err := checkShellPolicy(raw); err != nil {
+				return err
+			}
+			if err := checkShellBuildOutputPolicy(root, args); err != nil {
 				return err
 			}
 		}
@@ -829,11 +836,38 @@ func checkShellPolicy(raw json.RawMessage) error {
 	return nil
 }
 
-func shellExecGeneratedArtifactCleanup(ctx context.Context, root Root, raw json.RawMessage) (bool, error) {
+func validateShellExecPolicyArgs(raw json.RawMessage) (shellExecArgs, error) {
 	args, err := decodeShellExecArgs(raw)
 	if err != nil {
-		return false, nil
+		return shellExecArgs{}, fmt.Errorf("shell_exec: parse arguments: %w", err)
 	}
+	hasArgv := len(args.Argv) > 0
+	hasShell := strings.TrimSpace(args.ShellCommand) != ""
+	if hasArgv == hasShell {
+		return shellExecArgs{}, fmt.Errorf("shell_exec: provide exactly one of argv (non-empty) or shell_command")
+	}
+	if hasArgv && args.Argv[0] == "" {
+		return shellExecArgs{}, fmt.Errorf("shell_exec: argv[0] must be non-empty")
+	}
+	if hasArgv {
+		if err := validateShellExecArgv(args.Argv); err != nil {
+			return shellExecArgs{}, err
+		}
+		if err := validateShellExecGitRemoteMutation(args.Argv, "argv"); err != nil {
+			return shellExecArgs{}, err
+		}
+	} else {
+		if err := validateShellExecShellCommand(args.ShellCommand); err != nil {
+			return shellExecArgs{}, err
+		}
+		if err := validateShellExecGitRemoteMutation(strings.Fields(args.ShellCommand), "shell_command"); err != nil {
+			return shellExecArgs{}, err
+		}
+	}
+	return args, nil
+}
+
+func shellExecGeneratedArtifactCleanup(ctx context.Context, root Root, args shellExecArgs) (bool, error) {
 	paths, ok := shellRemovalPathOperands(args)
 	if !ok || len(paths) == 0 {
 		return false, nil
@@ -848,6 +882,80 @@ func shellExecGeneratedArtifactCleanup(ctx context.Context, root Root, raw json.
 		}
 	}
 	return true, nil
+}
+
+func checkShellBuildOutputPolicy(root Root, args shellExecArgs) error {
+	output, ok := goBuildOutputPath(args)
+	if !ok || strings.TrimSpace(output) == "" {
+		return nil
+	}
+	inside, err := pathResolvesInsideRepo(root, output)
+	if err != nil || !inside {
+		return err
+	}
+	suggestion := filepath.Join(os.TempDir(), filepath.Base(cleanShellPathToken(output)))
+	return fmt.Errorf("policy: go build output %q would create a build artifact inside the target repo; write validation binaries to an external temp path such as %s and keep repo diffs source-only", output, suggestion)
+}
+
+func goBuildOutputPath(args shellExecArgs) (string, bool) {
+	fields := args.Argv
+	if strings.TrimSpace(args.ShellCommand) != "" {
+		if shellCommandHasControlSyntax(args.ShellCommand) {
+			return "", false
+		}
+		fields = shellCommandFields(args.ShellCommand)
+	}
+	if len(fields) < 2 || filepathBase(fields[0]) != "go" || fields[1] != "build" {
+		return "", false
+	}
+	for i := 2; i < len(fields); i++ {
+		field := strings.TrimSpace(fields[i])
+		switch {
+		case field == "-o":
+			if i+1 < len(fields) {
+				return cleanShellPathToken(fields[i+1]), true
+			}
+			return "", true
+		case strings.HasPrefix(field, "-o="):
+			return cleanShellPathToken(strings.TrimPrefix(field, "-o=")), true
+		}
+	}
+	return "", false
+}
+
+func shellCommandFields(cmd string) []string {
+	raw := strings.Fields(cmd)
+	fields := make([]string, 0, len(raw))
+	for _, field := range raw {
+		field = strings.TrimSpace(strings.Trim(field, `"'`))
+		field = strings.TrimRight(field, ";")
+		if field != "" {
+			fields = append(fields, field)
+		}
+	}
+	return fields
+}
+
+func pathResolvesInsideRepo(root Root, path string) (bool, error) {
+	path = cleanShellPathToken(path)
+	if path == "" {
+		return false, nil
+	}
+	var abs string
+	if filepath.IsAbs(path) {
+		abs = filepath.Clean(path)
+	} else {
+		resolved, err := root.ResolvePath(path)
+		if err != nil {
+			return false, err
+		}
+		abs = filepath.Clean(resolved)
+	}
+	rel, err := filepath.Rel(root.Abs(), abs)
+	if err != nil {
+		return false, err
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))), nil
 }
 
 func shellRemovalPathOperands(args shellExecArgs) ([]string, bool) {

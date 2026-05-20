@@ -967,6 +967,68 @@ background `&` inside `shell_command`, reports `background:true` startup exits
 as tool errors with initial output, and mirrors the managed-background rule
 into generated Engineer guidance.
 
+## API Rerun After Managed Background Validation: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after managed background validation
+hardening, confirm service probing no longer leaks port `8080`, and collect the
+next generic factory bottleneck.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.6` plus the pushed managed-background fix
+  `fe2fb41 fix(tools): harden managed server validation`
+- Target local evidence commit: none; the failed run intentionally retained the
+  dirty generated binary state as evidence
+- Target remote: none
+
+Job state:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Trace-derived pace:
+
+```text
+ceo|30 turns|14 tools|14 LLM calls|61.6s|completed
+coo|32 turns|15 tools|15 LLM calls|102.6s|completed
+cto-weekly|36 turns|17 tools|17 LLM calls|78.3s|completed
+engineer|71 turns|34 tools|35 LLM calls|154.2s|circle_detected
+```
+
+Telemetry:
+
+```text
+ceo|guardrail_block|1
+coo|guardrail_block|1
+cto-weekly|guardrail_block|1
+engineer|guardrail_block|5
+engineer|circle_detected|1
+```
+
+The managed-background fix improved the live service path. Engineer started
+`go run main.go` with `background:true`, received a successful startup result,
+probed `http://localhost:8080/health`, and killed PID `43395` cleanly. The
+previous foreground timeout, shell `&` leak, port-conflicted false success, and
+malformed `:8080` cleanup loop did not recur. No target intervention-debt
+tickets were created.
+
+The next generic bottleneck is prevention of validation build artifacts.
+Engineer ran `go build -o task-notes-api main.go`, which created an untracked
+root binary inside the target repo. Blast-radius validation correctly blocked
+the 34,014-line binary-shaped diff and kept the failure as foundation telemetry,
+but the repo was already dirty. The model then emitted malformed empty
+`shell_exec` calls; those calls were masked by the dirty blast-radius precheck
+until `circle_detected`. The source fix now rejects `go build -o <path>` when
+`<path>` resolves inside the target repo, tells roles to write runnable
+validation binaries to an external temp path, and validates malformed
+`shell_exec` payloads before dirty-diff containment can obscure the true tool
+shape error.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -1004,8 +1066,10 @@ cover module-named binaries as well as repo-named binaries. Run5 confirms the
 module-named cleanup exception itself is not enough unless the guardrail error
 also names the cleanup command. Run6 confirms that cleanup hints are effective
 in real implementation and shifts the next generic bottleneck to managed
-long-running server validation. The remaining live-loop work is to rerun the
-API canary after the managed-background fix, confirm service validation does
-not leak port `8080` or enqueue timeout recovery work, tighten docsync metadata
-guidance if it remains a blocker, and keep validating against multiple
+long-running server validation. Run7 confirms managed background validation
+works in the service canary and shifts the next generic bottleneck to preventing
+repo-local validation binaries before they dirty the target. The remaining
+live-loop work is to rerun the API canary after the build-output prevention
+fix, confirm Engineer no longer creates a root binary trap, tighten docsync
+metadata guidance if it remains a blocker, and keep validating against multiple
 software archetypes before making generic lifecycle claims.
