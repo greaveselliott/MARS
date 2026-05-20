@@ -2091,6 +2091,36 @@ root-level, binary-looking files named after either the repo directory or the
 root `go.mod` module basename. Recursive removal, tracked files, ordinary
 source/docs, nested paths, and arbitrary filenames remain blocked.
 
+### Non-Static API Replay: Cleanup Must Be Discoverable
+
+After adding module-named build-artifact cleanup, a clean Task Notes API replay
+against `<validation-root>` again reached
+Engineer implementation and validation.
+
+Positive evidence:
+
+- CEO, COO, and CTO completed exactly once and reached Engineer without
+  duplicate planning artifacts or intervention-debt amplification.
+- Engineer claimed the product ticket, committed source files, added `go.mod`,
+  and reached a real `go build -o task-notes-api ...` validation attempt.
+- Runtime failures remained foundation telemetry; no target intervention-debt
+  tickets were created and no Orchestrator recovery loop was dispatched after
+  max turns.
+
+Residual finding:
+
+- The new cleanup exception was available but invisible. The blast-radius error
+  named `task-notes-api` as the oversized file but only suggested splitting
+  work or raising `MaxLinesPerFile`; Engineer never attempted `rm
+  task-notes-api` and instead kept retrying builds, writes, commits, and ticket
+  movement against the dirty repo until max turns.
+
+Decision: blast-radius validation now appends an exact cleanup hint when the
+oversized file is a cleanable generated artifact. The error keeps the normal
+blast-radius failure, then adds `Generated build artifact "<artifact>" can be
+cleaned with rm <artifact>`, preserving the narrow removal policy while making
+the recovery path model-visible.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

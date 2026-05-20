@@ -121,7 +121,10 @@ removal, tracked files, ordinary source/docs, nested paths, and arbitrary
 filenames remain blocked by the normal destructive-command policy. Post-tool
 blast-radius validation still runs after cleanup, so the exception only clears
 generated build output and does not waive review for the remaining source or
-ticket changes.
+ticket changes. When blast-radius validation fails because one of these
+cleanable artifacts is present, the error names the exact `rm <artifact>`
+command so the agent can recover instead of trying unrelated build or write
+operations until it reaches a turn limit.
 
 ### Open topics
 

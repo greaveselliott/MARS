@@ -20,13 +20,14 @@ evidence_links:
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#non-static-matrix-replay-task-notes-api---2026-05-20
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#api-rerun-after-scheduler-skip-task-notes-api---2026-05-20
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#api-rerun-after-canonical-bootstrap-guidance-task-notes-api---2026-05-20
-verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'; run12, demo-api-run1, demo-api-run2, demo-api-run3, and demo-api-run4 scores exports captured live Factory Pace baselines"
+  - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#api-rerun-after-module-artifact-cleanup-task-notes-api---2026-05-20
+verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'; run12, demo-api-run1, demo-api-run2, demo-api-run3, demo-api-run4, and demo-api-run5 scores exports captured live Factory Pace baselines"
 owner: "Codex"
-last_attempt: "2026-05-20: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45 tools and Dogfood 66 turns/32 tools. Non-static demo-api-run1 replay shows Engineer max_turns at 102 trace turns/50 tools and a duplicate scheduled Engineer queued while the first Engineer was still active; scheduler now skips same-repo same-role active work. demo-api-run2 then shows Engineer circle_detected at 89 trace turns/43 tools after repo-local Go build artifact cleanup was blocked; shell_exec permits narrow cleanup of untracked root binaries named after the repo. demo-api-run3 then showed CEO/COO duplicate F-001 feature-contract path and duplicate starter-scenario drift before CTO ticketing; generated bootstrap guidance made canonical feature-contract reuse explicit. demo-api-run4 confirmed CEO/COO/CTO reach Engineer, then exposed module-named Go build artifact cleanup as the next blocker."
+last_attempt: "2026-05-20: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45 tools and Dogfood 66 turns/32 tools. Non-static demo-api-run1 replay shows Engineer max_turns at 102 trace turns/50 tools and a duplicate scheduled Engineer queued while the first Engineer was still active; scheduler now skips same-repo same-role active work. demo-api-run2 then shows Engineer circle_detected at 89 trace turns/43 tools after repo-local Go build artifact cleanup was blocked; shell_exec permits narrow cleanup of untracked root binaries named after the repo. demo-api-run3 then showed CEO/COO duplicate F-001 feature-contract path and duplicate starter-scenario drift before CTO ticketing; generated bootstrap guidance made canonical feature-contract reuse explicit. demo-api-run4 confirmed CEO/COO/CTO reach Engineer, then exposed module-named Go build artifact cleanup as the next blocker. demo-api-run5 confirmed the exception exists but the guardrail error needs to name the exact cleanup command so Engineer discovers it."
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Rerun the non-static API canary after module-named build-artifact cleanup, confirm Engineer can clean generated binaries and continue, then target the next largest generic turn sink."
+next_action: "Rerun the non-static API canary after build-artifact cleanup hints, confirm Engineer can discover and run the safe cleanup command, then target the next largest generic turn sink."
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -148,9 +149,14 @@ Remaining work:
   binary named after the Go module (`task-notes-api`) rather than the repo
   directory. The cleanup exception now also allows untracked, binary-looking
   root artifacts named after the root `go.mod` module basename.
+- The rerun after module-named cleanup confirmed the exception is not
+  discoverable enough from generic blast-radius wording. Engineer never tried
+  `rm task-notes-api`, so blast-radius errors now append the exact cleanup
+  command when the oversized file is an untracked, root-level, binary-looking
+  repo/module artifact.
 - Define calibrated thresholds after the baseline, not before it.
-- Rerun the API canary to confirm generated module-named build artifact cleanup
-  no longer traps Engineer before claiming the optimization improved the live
+- Rerun the API canary to confirm generated build-artifact cleanup hints no
+  longer trap Engineer before claiming the optimization improved the live
   factory.
 - Continue the representative validation matrix before making broad optimization
   claims.

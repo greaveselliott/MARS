@@ -1657,13 +1657,36 @@ func validateRepoDiff(ctx context.Context, root Root, session Session) error {
 	if err != nil {
 		return err
 	}
-	return safety.Check(stats, limits)
+	if err := safety.Check(stats, limits); err != nil {
+		if hint := buildArtifactCleanupHint(ctx, root, stats, limits); hint != "" {
+			return fmt.Errorf("%w. %s", err, hint)
+		}
+		return err
+	}
+	return nil
 }
 
 // ValidateRepoDiff checks the current repository diff against the same safety
 // limits enforced after mutating tool calls.
 func ValidateRepoDiff(ctx context.Context, root Root, session Session) error {
 	return validateRepoDiff(ctx, root, session)
+}
+
+func buildArtifactCleanupHint(ctx context.Context, root Root, stats safety.DiffStats, limits safety.Limits) string {
+	if limits.MaxLinesPerFile <= 0 {
+		return ""
+	}
+	for rel, lines := range stats.LinesPerFile {
+		if lines <= limits.MaxLinesPerFile {
+			continue
+		}
+		generated, err := isUntrackedRootBuildArtifact(ctx, root, rel)
+		if err != nil || !generated {
+			continue
+		}
+		return fmt.Sprintf("Generated build artifact %q can be cleaned with `rm %s`, then rerun the blocked command", rel, rel)
+	}
+	return ""
 }
 
 func checkDiffForSecrets(ctx context.Context, root Root) error {

@@ -841,6 +841,66 @@ cleanup rule to untracked, root-level, binary-looking artifacts named after the
 root `go.mod` module basename. Ordinary deletion, tracked files, nested paths,
 and recursive removal remain blocked.
 
+## API Rerun After Module Artifact Cleanup: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after module-named build-artifact
+cleanup, confirm Engineer can continue through a generated Go binary, and
+collect the next generic factory bottleneck.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.4` plus the pushed module-named cleanup fix
+  `3e57ba1 fix(tools): allow module-named build artifact cleanup`
+- Target local evidence commit:
+  `d3ff879 chore: capture run5 cleanup discoverability evidence`
+- Target remote: none
+
+Job state:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Trace-derived pace:
+
+```text
+ceo|26 turns|12 tools|12 LLM calls|56.9s|completed
+coo|26 turns|12 tools|12 LLM calls|78.0s|completed
+cto-weekly|38 turns|18 tools|18 LLM calls|84.9s|completed
+engineer|102 turns|50 tools|50 LLM calls|232.4s|max_turns
+```
+
+Telemetry:
+
+```text
+ceo|guardrail_block|1
+engineer|guardrail_block|16
+engineer|max_turns|1
+```
+
+The module-name cleanup patch did not regress early lifecycle behavior. CEO,
+COO, and CTO completed once; COO again reused the canonical `F-001` feature
+contract; CTO created an ordinary product ticket; and Engineer claimed the
+ticket, committed product code, added a Go module, and reached validation.
+Runtime failures still stayed foundation-owned telemetry with zero target
+intervention-debt ticket amplification.
+
+The run exposed the missing ergonomics around cleanup discovery. Engineer ran
+`go build -o task-notes-api src/main.go src/api.go`, which produced an
+untracked binary that the source policy would allow to be removed with
+`rm task-notes-api`. However, the blast-radius error still only said to split
+changes or raise `MaxLinesPerFile`; it did not say that this specific
+generated artifact had a safe cleanup path. Engineer therefore kept retrying
+builds, writes, `git add`, and ticket movement against the dirty repo rather
+than trying `rm task-notes-api`, and eventually hit `max_turns`. The next fix
+keeps the removal exception narrow but makes the error actionable by appending
+the exact cleanup command when the oversized file is an untracked, root-level,
+binary-looking repo/module artifact.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -874,8 +934,10 @@ avoidable tool-use recovery, shallow ticket/file discovery, long-running process
 mistakes, build artifact cleanup gaps, feature-contract path ambiguity, and
 representative matrix coverage. The run4 API rerun confirms canonical planning
 guidance reaches CTO and Engineer, but shows generated build artifacts must
-cover module-named binaries as well as repo-named binaries. The remaining
-live-loop work is to rerun the API canary after module-named artifact cleanup,
-confirm generated build artifacts are safely cleanable during real
-implementation, tighten common shell/process ergonomics, and keep validating
+cover module-named binaries as well as repo-named binaries. Run5 confirms the
+module-named cleanup exception itself is not enough unless the guardrail error
+also names the cleanup command. The remaining live-loop work is to rerun the
+API canary after build-artifact cleanup hints, confirm generated build
+artifacts are safely cleanable during real implementation, tighten common
+shell/process ergonomics and docsync metadata guidance, and keep validating
 against multiple software archetypes before making generic lifecycle claims.

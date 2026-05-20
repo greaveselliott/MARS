@@ -24,7 +24,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 7. F-007-S007 - Emergency stop is available from runtime and dashboard controls.
 8. F-007-S008 - Blast-radius limits are checked before commit and push workflows.
 9. F-007-S009 - Workspace hygiene blocks generated dependency/build churn before model work and package-manager mutation.
-10. F-007-S010 - Untracked repo-local compiled binaries named after the repo or Go module may be removed as generated build artifacts without opening arbitrary deletion.
+10. F-007-S010 - Untracked repo-local compiled binaries named after the repo or Go module may be removed as generated build artifacts, and blast-radius errors for those artifacts name the exact cleanup command without opening arbitrary deletion.
 
 ## Scenarios
 

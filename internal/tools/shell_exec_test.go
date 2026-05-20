@@ -348,6 +348,7 @@ func TestShellExecAllowsUntrackedRootBuildArtifactCleanup(t *testing.T) {
 	err = ValidateRepoDiff(context.Background(), root, Session{SafetyLimits: safety.DefaultLimits()})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), artifact)
+	require.Contains(t, err.Error(), "rm "+artifact)
 
 	res, err := ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", fmt.Sprintf(`{"argv":["rm","%s"]}`, artifact))
 	require.NoError(t, err)
@@ -374,6 +375,7 @@ func TestShellExecAllowsUntrackedGoModuleBuildArtifactCleanup(t *testing.T) {
 	err = ValidateRepoDiff(context.Background(), root, Session{SafetyLimits: safety.DefaultLimits()})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), artifact)
+	require.Contains(t, err.Error(), "rm "+artifact)
 
 	res, err := ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", fmt.Sprintf(`{"argv":["rm","%s"]}`, artifact))
 	require.NoError(t, err)
