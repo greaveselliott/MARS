@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.34] - 2026-05-20
+<!-- mars-harness-release: version=0.41.34 commit=a5b34ae68eca -->
+
+### Impact
+- **docsync:** Operators and agents get stronger no-stale-docs enforcement because documentation sync is described and validated as part of the delivery workflow.
+
+### Why
+- **docsync:** This matters because behavior changes become risky when code, BDD contracts, design docs, generated target guidance, and release notes drift apart.
+
+### What Changed
+- **docsync:** The release documentation path now ties changed source files to associated docs, docsync evidence, and generated target doctrine instead of treating docs as an after-the-fact checklist (a5b34ae).
+
+### Fixes
+- **docsync:** Audit deployed static app roots (a5b34ae)
+
 ## [0.41.33] - 2026-05-20
 <!-- mars-harness-release: version=0.41.33 commit=bfc219a8ae48 -->
 
