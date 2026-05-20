@@ -583,6 +583,20 @@ New evidence:
   lifecycle claims should run a representative matrix across at least one
   additional project archetype.
 
+Follow-up verification for T-015:
+
+```text
+go run ./cmd/mars-harness tools run docsync_audit --repo <validation-root> --args-json '{}'
+
+# docsync_audit
+docsync: checked 3 files, findings 1
+FAIL: src/index.html: missing MarsDocSync docs metadata
+```
+
+The same run-12 target now audits static `src/` files instead of reporting
+`checked 0 files`. The remaining finding is product evidence: `src/index.html`
+needs metadata, while the inline CSS/JavaScript metadata is detected.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy

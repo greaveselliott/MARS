@@ -9,10 +9,10 @@
 ## Purpose
 
 This map is the durable bridge between source files, architecture, and BDD
-feature contracts. Every source file carries top-of-file `MarsDocSync` metadata
-with a `docs` array. When an agent changes a file, the listed docs are the
-minimum documentation review set for that change. The full architecture and
-universal operating model live in
+feature contracts. Every audited source file carries near-top `MarsDocSync`
+metadata with associated documentation paths. When an agent changes a file, the
+listed docs are the minimum documentation review set for that change. The full
+architecture and universal operating model live in
 [documentation-sync-architecture.md](documentation-sync-architecture.md).
 
 The map is maintained by `internal/docsync` and checked with:
@@ -37,6 +37,18 @@ docs:
 
 YAML files use `#` comments and HTML templates use `<!-- ... -->`. The `docs`
 field is a list of repo-relative documentation paths.
+
+Deployed static CSS and JavaScript may use a compact inline form when the doc
+list is short:
+
+```css
+/* MarsDocSync: ["docs/features/F-001-product-walking-skeleton.md"] */
+```
+
+`internal/docsync` audits both foundation roots and common deployed app roots
+such as `src/`, `app/`, `pages/`, `public/`, `web/`, and `static/`. Deployed
+app roots do not inherit this foundation package map; they must point to the
+target's local feature contracts or design docs.
 
 ## Package Map
 
@@ -119,7 +131,8 @@ Notable cross-boundary files:
 - CLI changes also follow the tool/skill synchronization model in
   [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 - If a source prefix moves, update this document, `internal/docsync`, and the
-  affected file metadata in the same change.
+  affected file metadata in the same change. If a deployed app-root prefix is
+  added or removed, update the audit roots and generated target doctrine too.
 - If a code change alters business behavior, update the referenced BDD feature
   contract before claiming the change is complete.
 - If a code change alters architecture, generated target behavior, CLI surface,

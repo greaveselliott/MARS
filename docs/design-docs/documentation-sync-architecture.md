@@ -32,9 +32,13 @@ weaker documentation discipline.
 Mars Harness uses **Documentation Sync** as a universal operating model for
 source and generated target harnesses.
 
-Every audited source file declares top-of-file `MarsDocSync` metadata with a
+Every audited source file declares near-top `MarsDocSync` metadata with a
 structured `docs:` list. The listed docs are the minimum documentation review
-set whenever that file changes. The canonical source prefix map lives in
+set whenever that file changes. Foundation source files use the full structured
+block. Deployed static assets may use a compact inline JSON form when a full
+block would be awkward, for example
+`/* MarsDocSync: ["docs/features/F-001-product-walking-skeleton.md"] */`.
+The canonical source prefix map lives in
 [code-documentation-map.md](code-documentation-map.md), while the mechanical
 audit lives in `internal/docsync` and is exposed through:
 
@@ -115,6 +119,8 @@ Language-specific rules:
 - YAML and workflows use `#` line comments.
 - HTML templates keep `<!DOCTYPE html>` first and place the metadata comment
   immediately after it.
+- Static CSS and JavaScript in deployed app roots may use the compact inline
+  JSON array form when the associated doc list is short.
 - Go build tags and generated-file headers may stay first, but the
   `MarsDocSync` block must appear before package implementation declarations.
 
@@ -138,11 +144,17 @@ architecture and feature surface. Cross-boundary files add extra docs directly
 in their metadata rather than forcing the whole package to carry unrelated
 requirements.
 
+Deployed app roots such as `src/`, `app/`, `pages/`, `public/`, `web/`, and
+`static/` are audited so target product files do not silently escape the
+no-stale-docs rule. These roots do not inherit a foundation package baseline:
+their metadata must point to the local feature contracts or design docs that
+actually own the target product behavior.
+
 ### 3. Audit Engine Layer
 
 `internal/docsync` is the deterministic audit engine. It:
 
-- walks audited source roots;
+- walks audited foundation roots and deployed app roots;
 - parses top-of-file `MarsDocSync` metadata;
 - verifies each metadata doc path points to a durable documentation artifact;
 - computes expected docs from the canonical prefix rules;
@@ -200,6 +212,8 @@ Initialized targets receive the same doctrine:
   model.
 - `docs/features/F-001-delivery-operating-model.md` includes the source-wide
   audit scenario.
+- deployed app roots are audited so static HTML, CSS, and JavaScript product
+  files must point at the local feature or design docs they implement.
 - role allowlists include `docsync_audit` where documentation freshness must be
   checked.
 - knowledge routes send implementation and docs-sync tasks to the right docs.
@@ -370,11 +384,13 @@ operating model changes:
 
 ## Invariants
 
-- Every audited source file has a top-of-file `MarsDocSync` block.
-- Every block uses structured `docs:` metadata.
+- Every audited source file has near-top `MarsDocSync` metadata.
+- Foundation source files use structured `docs:` metadata; deployed static
+  assets may use the compact inline JSON array form.
 - Every metadata path is repo-relative and points to an existing documentation
   artifact.
-- Every audited file includes the docs required by the canonical prefix map.
+- Every foundation audited file includes the docs required by the canonical
+  prefix map; deployed app-root files include their local owning docs.
 - Cross-boundary ownership is explicit in file metadata.
 - `mars-harness docsync audit --repo .` passes before code is claimed complete.
 - Business behavior changes update BDD feature contracts before completion.
@@ -391,6 +407,7 @@ operating model changes:
 | Generated targets inherit stale doctrine | Scanner tests assert target docs, role allowlists, feature scenarios, and knowledge routes. |
 | File moves create stale metadata | Moving files requires docsync audit and map review in the same change. |
 | The docs list becomes noisy | Keep prefix baselines narrow and add cross-boundary docs only where the file truly owns extra behavior. |
+| Static app assets carry metadata but are never audited | `internal/docsync` walks common deployed app roots and parses compact inline static metadata. |
 
 ## Observability And Evidence
 

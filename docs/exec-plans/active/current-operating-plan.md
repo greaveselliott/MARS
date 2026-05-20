@@ -11,8 +11,8 @@
 **Success Evidence:** The 2026-05-20 `demo-123-run11` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; release-blocked publication stopped dispatch without remote mutation or a Dogfood loop.
 **Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, future clean target replays still route autonomous follow-up after a terminal release blocker, or Dogfood/Engineer tool recovery prevents useful validation from reaching a terminal outcome.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** As of 2026-05-20, the live `demo-123-run12` loop shows that list-shaped arguments emitted as strings are a generic tool-surface issue, not only a release-tool issue, and that one static game canary is not enough evidence for broad lifecycle claims.
-**Walking Skeleton Slice:** Normalize generic list-string argument drift, define a representative live validation matrix, then tighten shallow ticket/file discovery and project-shape-specific static evidence only where the matrix says it is relevant.
+**Current Failing Scenario:** As of 2026-05-20, `T-015` closed the generic list-string argument drift and static app-root docsync invisibility found in `demo-123-run12`. The remaining failing surface is factory pace: static server-root discovery, shallow ticket/file search, and representative validation across more than one project archetype.
+**Walking Skeleton Slice:** Use the representative validation matrix as the next guardrail, then tighten shallow ticket/file discovery and project-shape-specific static evidence only where matrix evidence says it is relevant.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -34,11 +34,11 @@ plans to decide what to do next.
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
-  - `docs/tickets/in-progress/` contains `T-015`.
+  - `docs/tickets/in-progress/` is empty.
   - `docs/tickets/backlog/` contains `T-010`, `T-011`, `T-013`, and any newly
     created live-loop follow-up tickets.
   - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
-    through `T-009`, plus `T-012`, `T-014`, and `T-016`.
+    through `T-009`, plus `T-012`, `T-014`, `T-015`, and `T-016`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -147,19 +147,18 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Generic tool argument drift and validation matrix (`T-015`/`T-016`)**:
-   Use `demo-123-run12` as current evidence. `mars_harness_cli.args`,
-   `shell_exec.argv`, `workspace_hygiene.paths`, and git path filters must
-   tolerate list-shaped values emitted as strings. The next live checks should
-   use a small project-archetype matrix rather than treating the Space Invaders
-   static canary as the whole product surface.
-2. **Factory pace intervention debt (`T-011`/`T-013`)**: Continue measuring role
+1. **Factory pace intervention debt (`T-011`/`T-013`)**: Continue measuring role
    pace from durable traces and job outcomes, define target thresholds, and
    implement the smallest evidence-backed change that reduces avoidable turns.
    The 2026-05-20 runs 8-12 show the next turn sinks: shallow ticket globs,
-   broad `find .`, empty `shell_exec`, list-string tool arguments across tools,
-   static DocSync drift, and static app serving discovery.
-3. **Live lifecycle replay**: Run a clean `demo-123`-style target lifecycle and
+   broad `find .`, empty `shell_exec`, and static app serving discovery.
+   `T-015` fixed list-string tool arguments and static DocSync invisibility, so
+   the next slice should not re-litigate those unless matrix replay regresses.
+2. **Representative live validation matrix**: Apply AD-138 by checking at least
+   one non-static project archetype before claiming broad factory progress.
+   Keep `demo-123` as the static canary, but judge generic changes against the
+   small matrix from `docs/design-docs/delivery-operating-model.md`.
+3. **Live lifecycle replay**: Run a clean target lifecycle and
    record product progress, queue health, intervention-debt count, quality
    export behavior, release-note behavior, stop/shutdown behavior, and whether
    Dogfood reaches a terminal disposition without dirty watchdog routing.
@@ -180,6 +179,7 @@ plans to decide what to do next.
 | F-001-S006 | Passing | Telemetry proposals can create or update active goals/observations with dedupe evidence. |
 | F-001-S007 | Passing | `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields` checks feature contracts include first-class business-logic sections. |
 | F-001-S008 | Passing | `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata` checks operating-model code files carry associated documentation metadata. |
+| F-001-S009 | Passing | `go test ./internal/docsync ./internal/docsconsistency`, `go test ./...`, and the 2026-05-20 focused run-12 replay `go run ./cmd/mars-harness tools run docsync_audit --repo <validation-root> --args-json '{}'` verify source-wide docsync audits deployed `src/` app roots and parses compact inline static metadata. |
 | F-012-S010 | Passing | `go test ./internal/remediation`, `go test ./internal/serve -run 'TestHandleJobFailed(RecordsDeterministicRemediation|ExecutesGeneratedDocs)|TestHandleRemediation(ExecutableReadyRecipe|AutoSafeWithoutExecutor|OperatorRecipe)'`, `go test ./internal/doctor -run TestCheckDeterministicRemediationHealth`, `go test ./internal/qualityscore -run TestExportRendersTelemetryAndOutcomeSignals`, `go test ./internal/docsconsistency ./internal/docsync`, `go test ./...`, and the 2026-05-19 clean `<validation-root>` replay cover the completed `MH-048` edge slice. |
 | F-001-S015 | Passing | [foundation-deployed-harness-architecture.md](../../design-docs/foundation-deployed-harness-architecture.md) records the foundation/deployed doctrine boundary, feedback routing, tool/skill/runtime split, generated-target implications, doctrine-maintenance duties, and 2026-05-19 drift review. |
 | F-004-S007 | Passing | `go test ./internal/scanner -run TestInit_success` verifies generated targets receive the foundation/deployed route and AD-139 core doctrine without source binary asset names. |

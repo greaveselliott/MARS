@@ -1798,9 +1798,9 @@ remain outside normal policy.
 ## Purpose
 
 This map is the durable bridge between source files, architecture, and BDD
-feature contracts. Every source file carries top-of-file ` + "`MarsDocSync`" + `
-metadata with a ` + "`docs`" + ` array. When an agent changes a file, the listed
-docs are the minimum documentation review set for that change.
+feature contracts. Every audited source file carries near-top ` + "`MarsDocSync`" + `
+metadata with associated documentation paths. When an agent changes a file, the
+listed docs are the minimum documentation review set for that change.
 The architecture and universal operating model live in
 [documentation-sync-architecture.md](documentation-sync-architecture.md).
 CLI workflow changes also follow
@@ -1830,6 +1830,18 @@ YAML files use ` + "`#`" + ` comments and HTML templates use ` + "`<!-- ... -->`
 Generated, framework, or license headers may stay first, but the ` + "`MarsDocSync`" + `
 block must be near the top before implementation declarations.
 
+Static CSS and JavaScript may use a compact inline form when the doc list is
+short:
+
+` + "```" + `css
+/* MarsDocSync: ["docs/features/F-001-product-walking-skeleton.md"] */
+` + "```" + `
+
+` + "`mars-harness docsync audit`" + ` audits common app roots such as ` + "`src/`" + `,
+` + "`app/`" + `, ` + "`pages/`" + `, ` + "`public/`" + `, ` + "`web/`" + `, and ` + "`static/`" + `.
+Those app-root files must point to the local feature contracts or design docs
+that own the product behavior.
+
 ## Maintenance Rules
 
 - ` + "`docsync audit`" + ` is the mechanical source-code coverage gate.
@@ -1837,6 +1849,8 @@ block must be near the top before implementation declarations.
   ` + "`MarsDocSync`" + ` block or record why they remain current.
 - If a source prefix moves, update this map, source metadata, and any local
   docsync configuration in the same change.
+- If a deployed app-root prefix is added or removed, update the local docsync
+  doctrine and audit evidence.
 - If a file crosses package or feature boundaries, add the additional docs
   directly in that file's metadata.
 `,
@@ -1851,9 +1865,9 @@ block must be near the top before implementation declarations.
 ## Context
 
 This deployed harness treats the repository as the system of record. That means
-source changes and durable docs must move together. The ` + "`MarsDocSync`" + `
-metadata block gives every audited source file a small, local checklist of the
-docs that own its behavior. The code map gives the repo a package-level default,
+source changes and durable docs must move together. ` + "`MarsDocSync`" + `
+metadata gives every audited source file a small, local checklist of the docs
+that own its behavior. The code map gives package-level defaults where useful,
 and docsync audit checks that the checklist exists and points to real docs.
 
 ## Decision
@@ -1867,12 +1881,12 @@ docsync evidence, and record which docs changed or remained current.
 
 The model has six layers:
 
-1. Metadata layer: top-of-file ` + "`MarsDocSync`" + ` blocks with a structured ` + "`docs:`" + `
-   list.
+1. Metadata layer: near-top ` + "`MarsDocSync`" + ` metadata with a structured ` + "`docs:`" + `
+   list, or compact inline static metadata for CSS/JavaScript assets.
 2. Map layer: ` + "`docs/design-docs/code-documentation-map.md`" + ` records expected
    docs for source prefixes.
-3. Audit layer: ` + "`mars-harness docsync audit --repo .`" + ` checks metadata,
-   missing docs, and map coverage.
+3. Audit layer: ` + "`mars-harness docsync audit --repo .`" + ` checks foundation
+   roots and deployed app roots for metadata, missing docs, and map coverage.
 4. Tool layer: ` + "`docsync_audit`" + ` exposes the same check to harness agents.
 5. Evidence layer: tickets, reviews, releases, and traces record docsync output.
 6. Generated target layer: this target receives the same doctrine, feature
@@ -1906,6 +1920,9 @@ The model has six layers:
 ## Maintenance Rules
 
 - New source packages add metadata, update the code map, and run docsync.
+- Static app files under ` + "`src/`" + `, ` + "`app/`" + `, ` + "`pages/`" + `, ` + "`public/`" + `,
+  ` + "`web/`" + `, or ` + "`static/`" + ` must carry metadata pointing to local feature or
+  design docs; they do not inherit foundation package defaults.
 - Moved files re-check expected docs for the target prefix.
 - New feature contracts or design docs are added to metadata for files they own.
 - Deleted or renamed docs require metadata and map repairs before completion.
@@ -2091,9 +2108,10 @@ or return to planning before expanding implementation.
 ## No Stale Documentation
 
 All documentation is live. When code is written or materially changed, the code
-file carries a top-of-file ` + "`MarsDocSync`" + ` comment block with a ` + "`docs:`" + `
-array listing the feature contracts, design docs, product specs, README
-surfaces, ticket guidance, or other durable docs associated with that behavior.
+file carries near-top ` + "`MarsDocSync`" + ` metadata listing the feature contracts,
+design docs, product specs, README surfaces, ticket guidance, or other durable
+docs associated with that behavior. Foundation source files use the structured
+` + "`docs:`" + ` block; static CSS and JavaScript may use compact inline metadata.
 The listed docs must be reviewed and updated in the same change, or the ticket,
 plan, review, or commit evidence must state why they remain current.
 
@@ -2133,8 +2151,9 @@ affected skills synchronized using
 - Business logic is documented step by step under the feature contract, not
   only in tickets, code comments, or release notes.
 - Code files that implement or constrain behavior carry ` + "`MarsDocSync`" + ` metadata
-  with a ` + "`docs:`" + ` array pointing at the docs that must stay current with that
-  behavior.
+  pointing at the docs that must stay current with that behavior. Foundation-style
+  code uses a structured ` + "`docs:`" + ` list; compact inline static metadata is
+  acceptable for CSS and JavaScript assets.
 - Walking skeleton is the implementation strategy, not the feature definition.
 - The schedule is the ordered list of failing scenarios.
 - No feature ships until in-scope scenarios pass or are explicitly descoped.

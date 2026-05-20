@@ -99,7 +99,7 @@ func Audit(cfg Config) (Report, error) {
 
 func SourceFiles(root string) ([]string, error) {
 	var files []string
-	sourceRoots := []string{"cmd", "internal", "pkg", ".github/workflows", "examples"}
+	sourceRoots := []string{"cmd", "internal", "pkg", ".github/workflows", "examples", "src", "app", "pages", "public", "web", "static"}
 	for _, sourceRoot := range sourceRoots {
 		absSourceRoot := filepath.Join(root, filepath.FromSlash(sourceRoot))
 		if _, err := os.Stat(absSourceRoot); os.IsNotExist(err) {
@@ -156,6 +156,14 @@ func MetadataDocs(text string) []string {
 	var docs []string
 	for _, rawLine := range lines {
 		rawTrimmed := strings.TrimSpace(rawLine)
+		for _, doc := range inlineMetadataDocs(rawTrimmed) {
+			if !slices.Contains(docs, doc) {
+				docs = append(docs, doc)
+			}
+		}
+		if len(docs) > 0 && strings.Contains(rawTrimmed, "MarsDocSync:") && strings.Contains(rawTrimmed, "]") {
+			continue
+		}
 		if !inBlock {
 			switch {
 			case strings.HasPrefix(rawTrimmed, "/*"):
@@ -207,6 +215,36 @@ func MetadataDocs(text string) []string {
 	return docs
 }
 
+func inlineMetadataDocs(line string) []string {
+	idx := strings.Index(line, "MarsDocSync:")
+	if idx < 0 {
+		return nil
+	}
+	after := strings.TrimSpace(line[idx+len("MarsDocSync:"):])
+	start := strings.Index(after, "[")
+	end := strings.LastIndex(after, "]")
+	if start < 0 || end < start {
+		return nil
+	}
+	var docs []string
+	if err := json.Unmarshal([]byte(after[start:end+1]), &docs); err != nil {
+		return nil
+	}
+	return compactDocStrings(docs)
+}
+
+func compactDocStrings(values []string) []string {
+	var out []string
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" || slices.Contains(out, trimmed) {
+			continue
+		}
+		out = append(out, trimmed)
+	}
+	return out
+}
+
 func cleanCommentLine(line string) string {
 	line = strings.TrimSpace(line)
 	line = strings.TrimPrefix(line, "/*")
@@ -220,12 +258,24 @@ func cleanCommentLine(line string) string {
 }
 
 func ExpectedDocs(rel string) []string {
+	if isDeployedSourcePath(rel) {
+		return nil
+	}
 	for _, rule := range Rules() {
 		if strings.HasPrefix(rel, rule.Prefix) {
 			return append([]string{}, rule.Docs...)
 		}
 	}
 	return []string{"docs/design-docs/code-documentation-map.md", "docs/product-specs/product-surface.md"}
+}
+
+func isDeployedSourcePath(rel string) bool {
+	for _, prefix := range []string{"src/", "app/", "pages/", "public/", "web/", "static/"} {
+		if strings.HasPrefix(rel, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func Rules() []Rule {

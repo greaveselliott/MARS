@@ -54,6 +54,17 @@ docs:
 	}
 }
 
+func TestMetadataDocsParsesInlineStaticAssetComment(t *testing.T) {
+	css := `/* MarsDocSync: ["docs/features/F-001-product-walking-skeleton.md"] */
+
+body { margin: 0; }
+`
+	got := MetadataDocs(css)
+	if len(got) != 1 || got[0] != "docs/features/F-001-product-walking-skeleton.md" {
+		t.Fatalf("inline docs parsed incorrectly: %#v", got)
+	}
+}
+
 func TestAuditReportsMissingMetadataAndMissingExpectedDocs(t *testing.T) {
 	dir := t.TempDir()
 	writeDocSyncTestFile(t, dir, "docs/design-docs/code-documentation-map.md", "map")
@@ -78,6 +89,36 @@ package release
 	text := report.Summary()
 	if text != "docsync: checked 2 files, findings 3" {
 		t.Fatalf("unexpected summary %q", text)
+	}
+}
+
+func TestAuditIncludesDeployedSourceRoots(t *testing.T) {
+	dir := t.TempDir()
+	writeDocSyncTestFile(t, dir, "docs/features/F-001-product-walking-skeleton.md", "feature")
+	writeDocSyncTestFile(t, dir, "src/style.css", `/* MarsDocSync: ["docs/features/F-001-product-walking-skeleton.md"] */
+body { margin: 0; }
+`)
+	writeDocSyncTestFile(t, dir, "src/game.js", `console.log("missing metadata")
+`)
+
+	report, err := Audit(Config{RepoRoot: dir})
+	if err != nil {
+		t.Fatalf("Audit: %v", err)
+	}
+	if len(report.Files) != 2 {
+		t.Fatalf("expected src files to be audited, got %#v", report.Files)
+	}
+	if report.OK() {
+		t.Fatalf("expected missing metadata finding for src/game.js")
+	}
+	found := false
+	for _, finding := range report.Findings {
+		if finding.Path == "src/game.js" && finding.Message == "missing MarsDocSync docs metadata" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing src/game.js finding: %#v", report.Findings)
 	}
 }
 

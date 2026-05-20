@@ -79,13 +79,13 @@ Then the matching `docs/features/F-NNN-*.md` contract documents the behavior ste
 
 Given code is created or materially changed
 When an agent prepares the change for review or commit
-Then the changed code carries a top-of-file `MarsDocSync` metadata block with a `docs:` array listing associated documentation, and those docs are updated in the same change or explicitly checked as still current
+Then the changed code carries near-top `MarsDocSync` metadata listing associated documentation, using a structured `docs:` block for foundation source files or compact inline static metadata for deployed CSS/JavaScript assets, and those docs are updated in the same change or explicitly checked as still current
 
 ### F-001-S009: Source-Wide Docsync Audit
 
 Given a foundation or deployed harness source tree is audited
 When `mars-harness docsync audit --repo .` or the mirrored `docsync_audit` tool runs
-Then every source file under the audited source roots declares a top-of-file `MarsDocSync` block with a `docs:` array, every referenced doc exists, and every file includes the documentation required by the canonical code map
+Then every source file under the audited foundation and deployed app roots declares near-top `MarsDocSync` metadata, every referenced doc exists, foundation files include the documentation required by the canonical code map, and deployed app-root files point to their local owning feature or design docs
 
 ### F-001-S010: Universal Documentation Sync Operating Model
 

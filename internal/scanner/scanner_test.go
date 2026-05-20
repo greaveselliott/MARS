@@ -705,6 +705,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(codeDocMap), "docsync audit")
 	assert.Contains(t, string(codeDocMap), "documentation-sync-architecture.md")
 	assert.Contains(t, string(codeDocMap), "cli-tool-skill-sync.md")
+	assert.Contains(t, string(codeDocMap), "compact inline form")
+	assert.Contains(t, string(codeDocMap), "`src/`")
 
 	cliToolSkillSync, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "cli-tool-skill-sync.md"))
 	require.NoError(t, err)
@@ -719,6 +721,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(docSyncArchitecture), "Universal Operating Model")
 	assert.Contains(t, string(docSyncArchitecture), "docsync_audit")
 	assert.Contains(t, string(docSyncArchitecture), "Role Responsibilities")
+	assert.Contains(t, string(docSyncArchitecture), "deployed app roots")
+	assert.Contains(t, string(docSyncArchitecture), "compact inline static metadata")
 
 	conversationRecord, err := os.ReadFile(filepath.Join(dir, "docs", "design-docs", "conversation-as-system-record.md"))
 	require.NoError(t, err)
