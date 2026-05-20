@@ -135,6 +135,14 @@ explicit `go build -o <path>` outputs that resolve inside the target repo. Roles
 must put validation binaries in an external temp path, keeping the target diff
 limited to source, tests, docs, tickets, and intentional config.
 
+The follow-up `demo-api-run11` replay showed the same artifact trap through the
+implicit Go build output path: Dogfood ran `go build ./...`, which created a
+repo-root `task-notes-api` binary before post-command blast-radius validation
+could reject it. Guardrails now also reject `go build` without `-o` before
+process execution. Roles that only need compile evidence should use
+`go test ./...`; roles that need a runnable validation binary must use an
+external `-o /tmp/<name>-validation` output.
+
 The follow-up `demo-api-run9` replay showed a related scratch-file trap:
 Engineer created a root `validate.sh`, could not delete it because broad `rm`
 remains blocked, and committed the script with the ticket completion. Dogfood

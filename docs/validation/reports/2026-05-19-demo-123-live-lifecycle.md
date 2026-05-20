@@ -1192,6 +1192,71 @@ canary should confirm no stale `go run` child server leaks into the target
 validation path, then continue checking for root `validate.sh` and external
 `timeout` use.
 
+## API Rerun After Background Descendant Cleanup: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after background descendant cleanup and
+confirm stale server children no longer block product delivery.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.10` plus
+  `aafa166 fix(tools): clean background process descendants`
+- Target local evidence commit: `187725f chore: capture run11 quality evidence`
+- Target remote: none
+
+Job state at stop:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+dogfood|failed|1
+engineer|completed|1
+qa|completed|1
+security|completed|1
+```
+
+Telemetry:
+
+```text
+ceo|guardrail_block|3
+dogfood|guardrail_block|7
+dogfood|max_turns|1
+engineer|guardrail_block|6
+```
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, QA, and Security completed product-specific work with
+  one ordinary product ticket and zero target intervention-debt tickets.
+- Engineer implemented the Go `/health` endpoint, initialized the module,
+  passed `go test .`, recovered from a repo-local build-output block by using
+  `<validation-root>`, validated the live endpoint with `curl`, and moved
+  `T-001` to done.
+- Dogfood found and killed a leaked `go run` child server with `lsof`, validated
+  `GET /health` with HTTP 200 JSON evidence, confirmed a missing route returned
+  404, ran `go test -v ./...`, and committed an E2E report.
+- The Dogfood `max_turns` failure stayed in foundation telemetry and did not
+  create target intervention-debt or dispatch another autonomous recovery loop.
+
+Residual findings:
+
+- Dogfood ran `go build ./...` without `-o`; the command created the default
+  repo-root `task-notes-api` binary before post-command blast-radius validation
+  rejected it. Dogfood recovered with the allowed generated-artifact cleanup,
+  but the artifact should have been blocked before process execution.
+- Manual `kill -9 <go-run-wrapper-pid>` can still leave the compiled `go run`
+  child process alive during the same job. Dogfood recovered by killing the
+  child PID directly, and the post-run operator check confirmed port `8080` was
+  clear after cleanup.
+
+The source fix now blocks `go build` without `-o` before execution and points
+roles to `go test ./...` for compile validation or `/tmp/<name>-validation` for
+runnable validation binaries. The next API canary should confirm Dogfood no
+longer creates the implicit `task-notes-api` artifact and measure whether the
+turn budget is now sufficient for a terminal Dogfood disposition.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -1233,8 +1298,12 @@ long-running server validation. Run7 confirms managed background validation
 works in the service canary and shifts the next generic bottleneck to preventing
 repo-local validation binaries before they dirty the target. Run8 confirms the
 build-output prevention works and shifts the next generic bottleneck to
-malformed bare-port validation commands. The remaining live-loop work is to
-rerun the API canary after the bare-port command fix, confirm Engineer no longer
-loops on `:8080`, tighten docsync metadata guidance if it remains a blocker, and
-keep validating against multiple software archetypes before making generic
-lifecycle claims.
+malformed bare-port validation commands. Run9 confirms bare-port rejection and a
+full non-static lifecycle through local release notes; run10 exposes stale
+`go run` child cleanup; run11 confirms the lifecycle reaches product
+implementation, QA, Security, and Dogfood without intervention-debt
+amplification, but shows implicit `go build` outputs and wrapper-child process
+ownership still consume Dogfood turns. The remaining live-loop work is to rerun
+the API canary after default `go build` preflight blocking, confirm Dogfood no
+longer creates the implicit `task-notes-api` artifact, and keep validating
+against multiple software archetypes before making generic lifecycle claims.

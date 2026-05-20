@@ -2280,6 +2280,41 @@ leaf to root, then kills the tracked process group and process. This preserves
 the `background:true` validation contract while preventing stale dev servers
 from leaking across jobs or replay targets.
 
+### Non-Static API Replay: Default Go Build Must Not Dirty The Target
+
+The next replay used `<validation-root>` to
+validate background descendant cleanup in a fresh Task Notes API target.
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, QA, and Security completed product-specific work with
+  one ordinary product ticket and zero target intervention-debt tickets.
+- Engineer implemented the Go `/health` endpoint, passed `go test .`, recovered
+  from a repo-local build-output block by using `<validation-root>`,
+  validated the live endpoint with `curl`, and moved `T-001` to done.
+- Dogfood validated `GET /health` with HTTP 200 JSON evidence, confirmed a
+  missing route returned 404, ran `go test -v ./...`, wrote an E2E report, and
+  committed the report before hitting the turn limit.
+- Runtime failures stayed in foundation telemetry: Dogfood `max_turns` did not
+  create target intervention-debt or dispatch another autonomous recovery loop.
+
+Residual finding:
+
+- Dogfood ran `go build ./...` with no `-o`. The command created the default
+  root binary `task-notes-api` before post-command blast-radius validation
+  rejected the diff. Dogfood eventually removed the artifact, but the turn sink
+  proved that implicit Go build outputs need the same preflight protection as
+  explicit repo-local `go build -o` outputs.
+- Manual `kill -9 <go-run-wrapper-pid>` can still leave a compiled `go run`
+  child server behind during the same job. Dogfood recovered with `lsof` and a
+  targeted child kill, but the live trace shows background process ownership is
+  not yet obvious enough to roles.
+
+Decision: validation builds should never rely on Go's default repo-local output
+path. `shell_exec` now rejects `go build` without `-o` before process execution
+and tells roles to use `go test ./...` for compile validation or an external
+`-o /tmp/<name>-validation` path when a runnable binary is required.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

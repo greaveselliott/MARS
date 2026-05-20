@@ -617,6 +617,50 @@ func TestShellExecBlocksGoBuildOutputInsideRepoBeforeArtifact(t *testing.T) {
 	require.NoFileExists(t, filepath.Join(dir, "task-notes-api"))
 }
 
+func TestShellExecBlocksDefaultGoBuildInsideRepoBeforeArtifact(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "dogfood",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":["go","build","./..."]}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "go build without -o")
+	require.Contains(t, err.Error(), "/tmp/task-notes-api-validation")
+	require.NoFileExists(t, filepath.Join(dir, "task-notes-api"))
+}
+
+func TestShellExecBlocksDefaultGoBuildInShellCommandBeforeArtifact(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "dogfood",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"shell_command":"go build ./... && go test ./..."}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "go build without -o")
+	require.Contains(t, err.Error(), "/tmp/task-notes-api-validation")
+	require.NoFileExists(t, filepath.Join(dir, "task-notes-api"))
+}
+
 func TestShellExecAllowsGoBuildOutputOutsideRepo(t *testing.T) {
 	dir, root := setupDirtyGitRepo(t, 0)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))

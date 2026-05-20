@@ -114,9 +114,9 @@ Then policy allows the cleanup only when the file is untracked, root-level, bina
 
 ### F-007-S011: Validation Build Output Outside Repo
 
-Given a role calls `shell_exec` for `go build -o <path>` during validation
-When `<path>` resolves inside the target repository
-Then tool policy blocks the command before process execution, no compiled artifact is created, and the error instructs the role to write validation binaries to an external temp path so repository diffs stay source-only
+Given a role calls `shell_exec` for `go build` during validation
+When the output path is omitted or an explicit `-o <path>` resolves inside the target repository
+Then tool policy blocks the command before process execution, no compiled artifact is created, and the error instructs the role to use `go test ./...` for compile validation or write validation binaries to an external temp path so repository diffs stay source-only
 
 ### F-007-S012: Repo-Root Validation Script Prevention
 

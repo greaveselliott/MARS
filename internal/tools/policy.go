@@ -919,9 +919,13 @@ func shellExecGeneratedArtifactCleanup(ctx context.Context, root Root, args shel
 }
 
 func checkShellBuildOutputPolicy(root Root, args shellExecArgs) error {
-	output, ok := goBuildOutputPath(args)
+	output, implicit, ok := goBuildOutputPath(root, args)
 	if !ok || strings.TrimSpace(output) == "" {
 		return nil
+	}
+	if implicit {
+		suggestion := validationBinaryOutputSuggestion(output)
+		return fmt.Errorf("policy: go build without -o can create the build artifact %q inside the target repo; rerun the same build with -o %s or use go test ./... for compile validation so repository diffs stay source-only", output, suggestion)
 	}
 	inside, err := pathResolvesInsideRepo(root, output)
 	if err != nil || !inside {
@@ -939,30 +943,45 @@ func validationBinaryOutputSuggestion(output string) string {
 	return filepath.ToSlash(filepath.Join("/tmp", base+"-validation"))
 }
 
-func goBuildOutputPath(args shellExecArgs) (string, bool) {
+func goBuildOutputPath(root Root, args shellExecArgs) (string, bool, bool) {
 	fields := args.Argv
 	if strings.TrimSpace(args.ShellCommand) != "" {
-		if shellCommandHasControlSyntax(args.ShellCommand) {
-			return "", false
-		}
 		fields = shellCommandFields(args.ShellCommand)
 	}
 	if len(fields) < 2 || filepathBase(fields[0]) != "go" || fields[1] != "build" {
-		return "", false
+		return "", false, false
 	}
 	for i := 2; i < len(fields); i++ {
 		field := strings.TrimSpace(fields[i])
 		switch {
 		case field == "-o":
 			if i+1 < len(fields) {
-				return cleanShellPathToken(fields[i+1]), true
+				return cleanShellPathToken(fields[i+1]), false, true
 			}
-			return "", true
+			return "", false, true
 		case strings.HasPrefix(field, "-o="):
-			return cleanShellPathToken(strings.TrimPrefix(field, "-o=")), true
+			return cleanShellPathToken(strings.TrimPrefix(field, "-o=")), false, true
 		}
 	}
-	return "", false
+	return goBuildDefaultOutputName(root), true, true
+}
+
+func goBuildDefaultOutputName(root Root) string {
+	if data, err := os.ReadFile(filepath.Join(root.Abs(), "go.mod")); err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			fields := strings.Fields(strings.TrimSpace(line))
+			if len(fields) == 2 && fields[0] == "module" {
+				if base := filepath.Base(strings.TrimRight(fields[1], "/")); base != "" && base != "." && base != string(filepath.Separator) {
+					return base
+				}
+				break
+			}
+		}
+	}
+	if base := filepath.Base(root.Abs()); base != "" && base != "." && base != string(filepath.Separator) {
+		return base
+	}
+	return "app"
 }
 
 func shellCommandFields(cmd string) []string {

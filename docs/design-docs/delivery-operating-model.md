@@ -1816,12 +1816,13 @@ path is sufficient.
 
 ### Decision
 
-`shell_exec` now rejects `go build -o <path>` before process execution when the
-explicit output path resolves inside the target repository. The error names the
-bad output path and suggests an external temp output. Build validation that only
-needs package coverage should use `go build ./...`; validation that needs a
-runnable binary should write it outside the target repo, then run or discard it
-there.
+`shell_exec` now rejects `go build` before process execution when the output
+would be implicit inside the target repository or when an explicit
+`go build -o <path>` output path resolves inside the target repository. The
+error names the risky output and suggests an external temp output. Build
+validation that only needs compile evidence should use `go test ./...`;
+validation that needs a runnable binary should write it outside the target repo,
+then run or discard it there.
 
 Malformed `shell_exec` invocations are also validated before the dirty-worktree
 blast-radius precheck. That keeps a bad tool payload visible as a tool-call
