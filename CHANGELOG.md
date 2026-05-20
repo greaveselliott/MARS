@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.16] - 2026-05-20
+<!-- mars-harness-release: version=0.42.16 commit=b7cc36ed8138 -->
+
+### Impact
+- **dashboard:** Operators and future agents get clearer guidance because plan TanStack control plane epic.
+
+### Why
+- **dashboard:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **dashboard:** Changed plan TanStack control plane epic (b7cc36e).
+
+### Documentation
+- **dashboard:** Plan TanStack control plane epic (b7cc36e)
+
 ## [0.42.15] - 2026-05-20
 <!-- mars-harness-release: version=0.42.15 commit=1b0016acffa0 -->
 
