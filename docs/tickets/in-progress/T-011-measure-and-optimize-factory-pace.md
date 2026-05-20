@@ -4,16 +4,19 @@ title: Measure and optimize factory pace
 priority: high
 complexity: large
 work_type: intervention-debt
-bdd_scenarios: []
+bdd_scenarios:
+  - F-008-S008
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
-owner: "TBD"
-last_attempt: "TBD"
+evidence_links:
+  - "go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries"
+  - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#run-12-tool-argument-and-matrix-replay--2026-05-20
+verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; run12 scores export captured live Factory Pace baseline and target commit 438ff4b"
+owner: "Codex"
+last_attempt: "2026-05-20: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45 tools and Dogfood 66 turns/32 tools. Optimization thresholds and matrix replay remain."
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Establish the current pace baseline from traces and job outcomes, define target thresholds, then implement and test the smallest changes that materially reduce turns-to-solid-outcome without hiding runaway work."
+next_action: "Run quality export against a repo DB with live traces, record the baseline, then target the largest generic turn sink across the representative validation matrix."
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -64,9 +67,9 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 
 ## BDD Evidence
 
-- Scenario IDs: to be added to F-005 and/or F-008 before implementation changes behavior.
-- Evidence links: expected trace fixture tests, scoring/quality export tests, and a before/after dogfood or replay report that shows turns, tools, duration, retry count, and terminal outcome.
-- Verified by: TBD
+- Scenario IDs: F-008-S008.
+- Evidence links: `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries` covers the first quality-export pace slice.
+- Verified by: partial; live baseline export and before/after replay evidence remain open.
 
 ## Acceptance Criteria
 
@@ -97,3 +100,25 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 ## Notes
 
 Treat optimum as an evidence-backed operating target, not a fixed magic number. The first implementation slice should make pace visible and identify the biggest bottleneck before changing runtime limits.
+
+## 2026-05-20 Progress
+
+The first implementation slice makes pace visible without changing runtime
+limits. `mars-harness scores export` now joins terminal scoring outcomes to
+trace summaries by `job_id` and renders `docs/QUALITY_SCORE.md` Factory Pace
+rows grouped by repo and role. The rows include job count, average turns,
+average tool invocations, average LLM calls, average wall time, limit-stop
+count, and a pace signal. Missing trace rows render as missing pace evidence
+instead of implying healthy speed.
+
+Remaining work:
+
+- Run quality export against a live repo DB with recent traces and record the
+  dated baseline in the active plan or validation report. Done for
+  `demo-123-run12`; repeat across at least one non-static archetype before
+  generic optimization claims.
+- Define calibrated thresholds after the baseline, not before it.
+- Apply the representative validation matrix before making broad optimization
+  claims.
+- Implement the smallest generic turn-waste reduction that the baseline
+  identifies.

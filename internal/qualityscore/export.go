@@ -2,8 +2,10 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/agent-runtime.md
 - docs/design-docs/scoring-system.md
 - docs/design-docs/self-reflective-telemetry.md
+- docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-008-scoring-trust-quality.md
 - docs/features/F-012-self-improvement-loop.md
 */
@@ -22,6 +24,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/scoring"
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
 	"github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/greaveselliott/mars-harness/internal/trace"
 )
 
 const (
@@ -62,6 +65,7 @@ type evidence struct {
 	scores          []scoring.Score
 	outcomes        []scoring.Outcome
 	outcomeCounts   []scoring.OutcomeCount
+	paceRows        []paceRow
 	telemetryCounts []telemetry.RoleCategoryCount
 	tickets         ticketSummary
 	warnings        []string
@@ -86,6 +90,19 @@ type ticketInfo struct {
 	WorkType   string
 	DedupeKey  string
 	ModifiedAt time.Time
+}
+
+type paceRow struct {
+	RepoID          string
+	Role            string
+	JobID           string
+	Outcome         string
+	TerminalOutcome scoring.OutcomeType
+	TurnCount       int
+	ToolInvocations int
+	LLMCalls        int
+	WallMs          int64
+	LimitStop       bool
 }
 
 // Export refreshes docs/QUALITY_SCORE.md from live scoring, telemetry, and
@@ -243,6 +260,7 @@ func (ev *evidence) collect(ctx context.Context) error {
 		return err
 	}
 	ev.outcomes = outcomes
+	ev.collectPaceRows(ctx)
 
 	telemetryStore, err := telemetry.OpenStore(ev.dbPath)
 	if err != nil {
@@ -267,6 +285,65 @@ func (ev *evidence) collect(ctx context.Context) error {
 		return ev.telemetryCounts[i].Count > ev.telemetryCounts[j].Count
 	})
 	return nil
+}
+
+func (ev *evidence) collectPaceRows(ctx context.Context) {
+	if strings.TrimSpace(ev.dbPath) == "" || len(ev.outcomes) == 0 {
+		return
+	}
+	traceStore, err := trace.OpenStore(ev.dbPath)
+	if err != nil {
+		ev.warnings = append(ev.warnings, fmt.Sprintf("Trace pace evidence unavailable: %v", err))
+		return
+	}
+	defer traceStore.Close()
+
+	for _, outcome := range ev.outcomes {
+		if strings.TrimSpace(outcome.JobID) == "" {
+			continue
+		}
+		rec, err := traceStore.GetLatestByJobID(ctx, outcome.JobID)
+		if err != nil {
+			ev.warnings = append(ev.warnings, fmt.Sprintf("Trace pace evidence unavailable for job %s: %v", outcome.JobID, err))
+			continue
+		}
+		if rec == nil || strings.TrimSpace(rec.SummaryJSON) == "" {
+			continue
+		}
+		var summary trace.Summary
+		if err := json.Unmarshal([]byte(rec.SummaryJSON), &summary); err != nil {
+			ev.warnings = append(ev.warnings, fmt.Sprintf("Trace pace summary for job %s could not be parsed: %v", outcome.JobID, err))
+			continue
+		}
+		if summary.TurnCount == 0 && summary.ToolInvocations == 0 && summary.LLMCalls == 0 && summary.WallMs == 0 {
+			continue
+		}
+		jobID := strings.TrimSpace(summary.JobID)
+		if jobID == "" {
+			jobID = outcome.JobID
+		}
+		ev.paceRows = append(ev.paceRows, paceRow{
+			RepoID:          outcome.RepoID,
+			Role:            outcome.Role,
+			JobID:           jobID,
+			Outcome:         strings.TrimSpace(summary.Outcome),
+			TerminalOutcome: outcome.Type,
+			TurnCount:       summary.TurnCount,
+			ToolInvocations: summary.ToolInvocations,
+			LLMCalls:        summary.LLMCalls,
+			WallMs:          summary.WallMs,
+			LimitStop:       isLimitStop(summary.Outcome, outcome.Type),
+		})
+	}
+	sort.Slice(ev.paceRows, func(i, j int) bool {
+		if ev.paceRows[i].RepoID != ev.paceRows[j].RepoID {
+			return ev.paceRows[i].RepoID < ev.paceRows[j].RepoID
+		}
+		if ev.paceRows[i].Role != ev.paceRows[j].Role {
+			return ev.paceRows[i].Role < ev.paceRows[j].Role
+		}
+		return ev.paceRows[i].JobID < ev.paceRows[j].JobID
+	})
 }
 
 func isDatabaseEvidenceUnavailable(err error) bool {
@@ -713,11 +790,25 @@ func (ev evidence) render(grade string) string {
 		fmt.Fprintf(&b, "\n")
 	}
 
+	fmt.Fprintf(&b, "## Factory Pace\n\n")
+	pace := summarizePace(ev.paceRows)
+	if len(pace) == 0 {
+		fmt.Fprintf(&b, "No trace pace evidence was available in the selected evidence window.\n\n")
+	} else {
+		fmt.Fprintf(&b, "| Repo | Role | Jobs | Avg Turns | Avg Tool Invocations | Avg LLM Calls | Avg Wall | Limit Stops | Pace Signal |\n| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |\n")
+		for _, row := range pace {
+			fmt.Fprintf(&b, "| %s | %s | %d | %.1f | %.1f | %.1f | %s | %d | %s |\n",
+				emptyDash(row.RepoID), row.Role, row.Jobs, row.AvgTurns, row.AvgToolInvocations, row.AvgLLMCalls, formatSeconds(row.AvgWallMs), row.LimitStops, row.Signal)
+		}
+		fmt.Fprintf(&b, "\n")
+	}
+
 	fmt.Fprintf(&b, "## Evidence Signals\n\n")
 	outcomes := summarizeOutcomes(ev.outcomeCounts)
 	remediation := summarizeRemediation(ev.outcomes)
 	fmt.Fprintf(&b, "| Signal | Evidence |\n| --- | --- |\n")
 	fmt.Fprintf(&b, "| Role scores | %s |\n", roleScoreSignal(ev.scores))
+	fmt.Fprintf(&b, "| Factory pace | %s |\n", paceSignal(pace))
 	fmt.Fprintf(&b, "| Terminal outcomes | %s |\n", terminalOutcomeSignal(outcomes))
 	fmt.Fprintf(&b, "| Stuck tickets | %s |\n", stuckTicketSignal(ev.tickets))
 	fmt.Fprintf(&b, "| Failed dogfood | %s |\n", countSignal(outcomes.dogfoodFailures, "dogfood failures"))
@@ -769,12 +860,19 @@ type rollupRow struct {
 
 func (ev evidence) rollupRows(overall string) []rollupRow {
 	outcomes := summarizeOutcomes(ev.outcomeCounts)
+	pace := summarizePace(ev.paceRows)
 	return []rollupRow{
 		{
 			area:     "Role health",
 			grade:    roleHealthGrade(ev.scores),
 			evidence: roleScoreSignal(ev.scores),
 			next:     roleHealthNext(ev.scores),
+		},
+		{
+			area:     "Factory pace",
+			grade:    paceGrade(pace),
+			evidence: paceSignal(pace),
+			next:     "Use trace pace rows to target high-turn or limit-stop roles before raising runtime limits.",
 		},
 		{
 			area:     "Terminal outcomes and checks",
@@ -809,6 +907,18 @@ type outcomeSummary struct {
 	positive        int
 	negative        int
 	dogfoodFailures int
+}
+
+type paceSummary struct {
+	RepoID             string
+	Role               string
+	Jobs               int
+	AvgTurns           float64
+	AvgToolInvocations float64
+	AvgLLMCalls        float64
+	AvgWallMs          float64
+	LimitStops         int
+	Signal             string
 }
 
 type remediationSummary struct {
@@ -847,6 +957,90 @@ func summarizeOutcomes(counts []scoring.OutcomeCount) outcomeSummary {
 		}
 	}
 	return summary
+}
+
+func summarizePace(rows []paceRow) []paceSummary {
+	type acc struct {
+		repoID           string
+		role             string
+		jobs             int
+		turns            int
+		toolInvocations  int
+		llmCalls         int
+		wallMs           int64
+		limitStops       int
+		negativeOutcomes int
+	}
+	byKey := map[string]*acc{}
+	for _, row := range rows {
+		key := row.RepoID + "\x00" + row.Role
+		a := byKey[key]
+		if a == nil {
+			a = &acc{repoID: row.RepoID, role: row.Role}
+			byKey[key] = a
+		}
+		a.jobs++
+		a.turns += row.TurnCount
+		a.toolInvocations += row.ToolInvocations
+		a.llmCalls += row.LLMCalls
+		a.wallMs += row.WallMs
+		if row.LimitStop {
+			a.limitStops++
+		}
+		if isNegative(row.TerminalOutcome) {
+			a.negativeOutcomes++
+		}
+	}
+	out := make([]paceSummary, 0, len(byKey))
+	for _, a := range byKey {
+		if a.jobs == 0 {
+			continue
+		}
+		summary := paceSummary{
+			RepoID:             a.repoID,
+			Role:               a.role,
+			Jobs:               a.jobs,
+			AvgTurns:           float64(a.turns) / float64(a.jobs),
+			AvgToolInvocations: float64(a.toolInvocations) / float64(a.jobs),
+			AvgLLMCalls:        float64(a.llmCalls) / float64(a.jobs),
+			AvgWallMs:          float64(a.wallMs) / float64(a.jobs),
+			LimitStops:         a.limitStops,
+		}
+		summary.Signal = paceRowSignal(summary, a.negativeOutcomes)
+		out = append(out, summary)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].RepoID != out[j].RepoID {
+			return out[i].RepoID < out[j].RepoID
+		}
+		return out[i].Role < out[j].Role
+	})
+	return out
+}
+
+func paceRowSignal(row paceSummary, negativeOutcomes int) string {
+	switch {
+	case row.LimitStops > 0:
+		return "limit-stop evidence"
+	case row.AvgTurns >= 30 || row.AvgToolInvocations >= 20:
+		return "high-turn baseline"
+	case negativeOutcomes > 0:
+		return "negative-outcome baseline"
+	default:
+		return "trace baseline"
+	}
+}
+
+func isLimitStop(outcome string, terminal scoring.OutcomeType) bool {
+	if terminal == scoring.OutcomeTimeout {
+		return true
+	}
+	switch strings.ToLower(strings.TrimSpace(outcome)) {
+	case "max_turns", "max_tool_calls", "timeout", "circle_detected", "empty_response", "budget_exceeded":
+		return true
+	default:
+		return false
+	}
 }
 
 func summarizeRemediation(outcomes []scoring.Outcome) remediationSummary {
@@ -908,6 +1102,32 @@ func (ev evidence) overallGrade() string {
 func roleHealthGrade(scores []scoring.Score) string {
 	weighted, samples := weightedScore(scores)
 	return gradeForScore(weighted, samples)
+}
+
+func paceGrade(pace []paceSummary) string {
+	if len(pace) == 0 {
+		return "Insufficient evidence"
+	}
+	var jobs int
+	var limitStops int
+	var highTurnRows int
+	for _, row := range pace {
+		jobs += row.Jobs
+		limitStops += row.LimitStops
+		if row.AvgTurns >= 30 || row.AvgToolInvocations >= 20 {
+			highTurnRows++
+		}
+	}
+	switch {
+	case jobs == 0:
+		return "Insufficient evidence"
+	case limitStops > 0:
+		return "D"
+	case highTurnRows > 0:
+		return "C"
+	default:
+		return "B"
+	}
 }
 
 func outcomeGrade(outcomes outcomeSummary) string {
@@ -980,8 +1200,18 @@ func (ev evidence) improvementTargets(grade string, outcomes outcomeSummary) []s
 	text  string
 } {
 	var targets []string
+	pace := summarizePace(ev.paceRows)
 	if grade == "Insufficient evidence" {
 		targets = append(targets, "Run harness jobs with scoring enabled or pass `--db` for the repo-specific SQLite database.")
+	}
+	for _, row := range pace {
+		if row.LimitStops > 0 {
+			targets = append(targets, fmt.Sprintf("Review `%s/%s` pace: %d limit stop(s) with %.1f average turns.", emptyDash(row.RepoID), row.Role, row.LimitStops, row.AvgTurns))
+			continue
+		}
+		if row.AvgTurns >= 30 || row.AvgToolInvocations >= 20 {
+			targets = append(targets, fmt.Sprintf("Review `%s/%s` pace: %.1f average turns and %.1f average tool invocations.", emptyDash(row.RepoID), row.Role, row.AvgTurns, row.AvgToolInvocations))
+		}
 	}
 	for _, sc := range ev.scores {
 		if sc.SampleSize >= 5 && sc.Value < 0.5 {
@@ -1087,6 +1317,28 @@ func roleScoreSignal(scores []scoring.Score) string {
 		return "No scored role outcomes."
 	}
 	return fmt.Sprintf("%d scored samples, weighted score %.2f", samples, weighted)
+}
+
+func paceSignal(pace []paceSummary) string {
+	if len(pace) == 0 {
+		return "No trace pace evidence."
+	}
+	var jobs int
+	var limitStops int
+	var maxTurns float64
+	var slowest string
+	for _, row := range pace {
+		jobs += row.Jobs
+		limitStops += row.LimitStops
+		if row.AvgTurns > maxTurns {
+			maxTurns = row.AvgTurns
+			slowest = fmt.Sprintf("%s/%s", emptyDash(row.RepoID), row.Role)
+		}
+	}
+	if limitStops > 0 {
+		return fmt.Sprintf("%d traced job(s), %d limit stop(s), slowest average %.1f turns at `%s`", jobs, limitStops, maxTurns, slowest)
+	}
+	return fmt.Sprintf("%d traced job(s), slowest average %.1f turns at `%s`", jobs, maxTurns, slowest)
 }
 
 func roleHealthNext(scores []scoring.Score) string {
@@ -1251,6 +1503,10 @@ func emptyDash(value string) string {
 		return "-"
 	}
 	return value
+}
+
+func formatSeconds(ms float64) string {
+	return fmt.Sprintf("%.1fs", ms/1000)
 }
 
 func min(a, b int) int {

@@ -2,8 +2,10 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/agent-runtime.md
 - docs/design-docs/scoring-system.md
 - docs/design-docs/self-reflective-telemetry.md
+- docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-008-scoring-trust-quality.md
 - docs/features/F-012-self-improvement-loop.md
 */
@@ -20,6 +22,7 @@ import (
 
 	"github.com/greaveselliott/mars-harness/internal/scoring"
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
+	"github.com/greaveselliott/mars-harness/internal/trace"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,6 +65,58 @@ func TestExportMissingDatabasePreservesManualNotes(t *testing.T) {
 	require.Contains(t, text, "| Guardrail blocks | None recorded |")
 	require.Contains(t, text, "| Human follow-up | None recorded |")
 	require.Contains(t, text, "No SQLite database found")
+}
+
+func TestExportRendersFactoryPaceFromTraceSummaries(t *testing.T) {
+	t.Parallel()
+	repo := setupQualityRepo(t)
+	dbPath := filepath.Join(repo, "mars.db")
+	scoreStore, err := scoring.OpenStore(dbPath)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	now := time.Date(2026, 5, 3, 9, 0, 0, 0, time.UTC)
+	require.NoError(t, scoreStore.RecordOutcome(ctx, scoring.Outcome{
+		JobID:      "job-fast",
+		RepoID:     "repo-1",
+		Role:       "engineer",
+		Type:       scoring.OutcomePassed,
+		RecordedAt: now.Add(-time.Hour),
+	}))
+	require.NoError(t, scoreStore.RecordOutcome(ctx, scoring.Outcome{
+		JobID:      "job-limit",
+		RepoID:     "repo-1",
+		Role:       "dogfood",
+		Type:       scoring.OutcomeTimeout,
+		RecordedAt: now.Add(-time.Hour),
+	}))
+	require.NoError(t, scoreStore.Close())
+
+	traceStore, err := trace.OpenStore(dbPath)
+	require.NoError(t, err)
+	require.NoError(t, traceStore.Save(ctx, "job-fast", "trace-fast", "{}", `{"trace_id":"trace-fast","job_id":"job-fast","outcome":"completed","wall_ms":1000,"turn_count":10,"tool_invocations":4,"llm_calls":5}`))
+	require.NoError(t, traceStore.Save(ctx, "job-limit", "trace-limit", "{}", `{"trace_id":"trace-limit","job_id":"job-limit","outcome":"max_turns","wall_ms":120000,"turn_count":40,"tool_invocations":25,"llm_calls":30}`))
+	require.NoError(t, traceStore.Close())
+
+	report, err := Export(ctx, Options{
+		RepoPath:              repo,
+		RepoID:                "repo-1",
+		DBPath:                dbPath,
+		Now:                   now,
+		WindowDays:            30,
+		DisableTicketCreation: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Insufficient evidence", report.Grade)
+
+	data, err := os.ReadFile(filepath.Join(repo, "docs", "QUALITY_SCORE.md"))
+	require.NoError(t, err)
+	text := string(data)
+	require.Contains(t, text, "## Factory Pace")
+	require.Contains(t, text, "| repo-1 | engineer | 1 | 10.0 | 4.0 | 5.0 | 1.0s | 0 | trace baseline |")
+	require.Contains(t, text, "| repo-1 | dogfood | 1 | 40.0 | 25.0 | 30.0 | 120.0s | 1 | limit-stop evidence |")
+	require.Contains(t, text, "| Factory pace | 2 traced job(s), 1 limit stop(s), slowest average 40.0 turns at `repo-1/dogfood` |")
+	require.Contains(t, text, "Review `repo-1/dogfood` pace: 1 limit stop(s) with 40.0 average turns.")
 }
 
 func TestExportCreatesDedupedRegressionTicket(t *testing.T) {

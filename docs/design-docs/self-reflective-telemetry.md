@@ -71,11 +71,12 @@ top improvement targets visible to any agent before it opens SQLite or the
 dashboard.
 
 `mars-harness scores export --repo <path>` is now the deterministic refresh
-path. It reads role scores, terminal outcomes, ticket state, dogfood results,
-guardrail blocks, check outcomes, no-op runs, human follow-up, and telemetry
-triage from the repo-specific SQLite database and repo-visible ticket tree,
-then rewrites `docs/QUALITY_SCORE.md`. Missing SQLite data is rendered as
-`Insufficient evidence` instead of a fabricated grade.
+path. It reads role scores, terminal outcomes, execution trace summaries,
+ticket state, dogfood results, guardrail blocks, check outcomes, no-op runs,
+human follow-up, and telemetry triage from the repo-specific SQLite database
+and repo-visible ticket tree, then rewrites `docs/QUALITY_SCORE.md`. Missing
+SQLite data or missing trace pace evidence is rendered as `Insufficient
+evidence` instead of a fabricated grade.
 
 Manual edits belong only inside the preserved manual-notes block. Low role
 scores with at least five samples become improvement targets by default.
@@ -143,6 +144,10 @@ The first implementation is deliberately small:
   from scoring outcome details and renders deterministic-remediation summaries
   in `docs/QUALITY_SCORE.md`, including skipped-without-executor and failed
   execution improvement targets.
+- `mars-harness scores export` also joins terminal outcomes to trace summaries
+  by `job_id` and renders Factory Pace rows by repo and role. The rows show
+  average turns, tool invocations, LLM calls, wall time, and limit stops so pace
+  optimization starts from durable evidence.
 - recurring context/budget failures point at glossary and role prompt scope
 - inference failures point at model/server tuning and doctor checks
 - tool timeouts point at tool policy and role command guidance
@@ -164,8 +169,8 @@ The first implementation is deliberately small:
   exported as opt-in anonymous aggregate reports through `mars-harness telemetry`
 - `mars-harness scores export --repo <path>` refreshes `docs/QUALITY_SCORE.md`
   from live evidence, reports low-score/outcome/ticket-state improvement
-  targets, and preserves manual notes. Ticket materialization requires
-  `--create-intervention-debt`.
+  targets, reports pace bottlenecks from traces, and preserves manual notes.
+  Ticket materialization requires `--create-intervention-debt`.
 - `serve` runs a native Orchestrator survey loop on startup and a watchdog
   interval. The survey consumes ticket state, recent scored outcomes, telemetry
   patterns, low score snapshots, active recovery jobs, and stuck running jobs

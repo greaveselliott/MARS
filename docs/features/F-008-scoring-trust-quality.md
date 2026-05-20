@@ -22,6 +22,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 5. F-008-S005 - Low scores or telemetry patterns produce improvement targets, with intervention-debt ticket creation available only by explicit opt-in or target-owned cause.
 6. F-008-S006 - Release notes and quality score distinguish shipped feature scenarios from enabler work.
 7. F-008-S007 - Missing or sparse evidence is represented as insufficient evidence rather than healthy state.
+8. F-008-S008 - Factory pace is exported from trace summaries as quality evidence.
 
 ## Scenarios
 
@@ -68,6 +69,16 @@ Given database or evidence inputs are missing or sparse
 When quality score export or score evaluation runs
 Then the output says evidence is insufficient instead of implying the system is healthy
 
+### F-008-S008: Factory Pace Evidence
+
+Given scoring outcomes have matching execution trace summaries
+When `mars-harness scores export --repo <path> --db <path>` runs
+Then `docs/QUALITY_SCORE.md` includes a Factory Pace section with repo, role, job count, average turns, average tool invocations, average LLM calls, average wall time, limit-stop count, and a pace signal derived from trace and terminal outcome evidence
+
+Given scoring outcomes have no matching trace summaries
+When quality score export runs
+Then the Factory Pace section reports insufficient trace pace evidence instead of implying the factory is fast or healthy
+
 ## Out of Scope
 
 - Treating scores as vanity dashboard numbers with no behavioral effect.
@@ -87,3 +98,4 @@ None.
 - F-008-S005: `go test ./internal/serve -run TestCreateInterventionDebt` and `go test ./internal/telemetry -run TestTriage`
 - F-008-S006: `go test ./internal/release -run TestPrepareClassifiesDeliveryEvidenceFromDoneTickets`
 - F-008-S007: `go test ./internal/qualityscore -run TestExportMissingDatabasePreservesManualNotes` and `go test ./internal/scoring -run TestComputeScore_minimumSampleSize`
+- F-008-S008: `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries`

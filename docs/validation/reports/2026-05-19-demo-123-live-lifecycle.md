@@ -597,6 +597,23 @@ The same run-12 target now audits static `src/` files instead of reporting
 `checked 0 files`. The remaining finding is product evidence: `src/index.html`
 needs metadata, while the inline CSS/JavaScript metadata is detected.
 
+Factory pace baseline for T-011:
+
+```text
+go run ./cmd/mars-harness scores export --repo <validation-root> --db <validation-root>
+
+Exported quality score to <validation-root>
+Overall grade: A
+```
+
+The exported Factory Pace section captured eight traced jobs. The slowest
+averages were Engineer at 92 turns / 45 tool invocations / 269.0s, Dogfood at
+66 turns / 32 tool invocations / 192.2s, CTO at 36 turns / 17 tool invocations
+/ 89.8s, Orchestrator at 36 turns / 17 tool invocations / 91.0s, and COO at
+32 turns / 14 tool invocations / 79.7s. The demo target committed the local
+quality export as `438ff4b chore: export quality pace baseline`; the target has
+no remote.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy

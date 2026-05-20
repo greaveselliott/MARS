@@ -18,6 +18,14 @@ lack executors, or producing failed deterministic repairs that need follow-up.
 
 Scores should be **explainable**: an operator can answer why a job raised or lowered a role’s rolling metric without reading raw model tokens.
 
+Factory pace is a quality signal, not a replacement for accuracy. `scores
+export` joins terminal scoring outcomes to trace summaries by `job_id` and
+renders repo/role pace rows in `docs/QUALITY_SCORE.md`: job count, average
+turns, average tool invocations, average LLM calls, average wall time, and
+limit-stop count. The signal is intentionally descriptive first. It identifies
+roles that spend many turns, hit max-turn/tool/wall limits, or lack trace
+evidence before maintainers change budgets or prompts.
+
 ## Key Design Decisions
 
 _(No AD IDs assigned in the baseline plan; capture ADs here as they are minted.)_
@@ -31,6 +39,10 @@ _(No AD IDs assigned in the baseline plan; capture ADs here as they are minted.)
 - **Time horizon for low-frequency roles:** wider windows, minimum sample counts, or damped estimates so rare roles are not whipsawed; document chosen approach when implemented.
 - **Score-driven alerts:** thresholds for operator notification and for triggering Reviewer / evolution proposals; hysteresis or cooldown to reduce spam.
 - **Score-driven triage:** low rolling scores with enough samples feed self-reflective telemetry triage. Scores identify unhealthy roles; telemetry, traces, and ticket state decide whether the fix belongs in prompt, skill, process, guardrail, context, inference, manifest, or tool policy.
+- **Factory pace baseline:** trace pace rows are grouped by repo and role. High
+  average turns/tool invocations or limit-stop outcomes become improvement
+  targets in the quality artifact, but they do not automatically penalize
+  accuracy scores until a later formula revision defines calibrated weights.
 
 ### Relationships
 
@@ -46,3 +58,7 @@ Version any published score schema so external dashboards can migrate without si
 ## Discoveries
 
 - **2026-05-02 — Scores become control signals:** Low score snapshots now produce typed self-improvement proposals through `internal/telemetry.TriageScore`, which the serve loop records as bounded evolution reviews when rate limits allow.
+- **2026-05-20 — Factory pace becomes visible quality evidence:** Quality score
+  export now renders a Factory Pace section from trace summaries and terminal
+  outcomes so optimization work starts from a dated baseline instead of chat
+  impressions.
