@@ -33,6 +33,36 @@ func TestShellExec_argv(t *testing.T) {
 	require.Contains(t, strings.TrimSpace(res.Output), "hello")
 }
 
+func TestShellExec_normalizesModelMalformedArgv(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "json encoded argv string",
+			raw:  `{"argv":"[\"echo\",\"hello\"]","timeout_seconds":5}`,
+		},
+		{
+			name: "single simple command string in argv",
+			raw:  `{"argv":["echo hello"],"timeout_seconds":5}`,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			root, err := NewRoot(dir)
+			require.NoError(t, err)
+			res, err := handleShellExec(context.Background(), root, []byte(tt.raw))
+			require.NoError(t, err)
+			require.Equal(t, 0, res.ExitCode)
+			require.Equal(t, "hello", strings.TrimSpace(res.Output))
+		})
+	}
+}
+
 func TestShellExec_shellCommand(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -75,6 +105,7 @@ func TestShellExecArgvRejectsShellSyntax(t *testing.T) {
 		{name: "redirection as executable", raw: `{"argv":[">","/dev/null"]}`},
 		{name: "redirection argument", raw: `{"argv":["echo","ok",">","out.txt"]}`},
 		{name: "file descriptor redirection", raw: `{"argv":["echo","ok","2>/dev/null"]}`},
+		{name: "control syntax in single argv string", raw: `{"argv":["echo ok && rm nope"]}`},
 		{name: "pipeline argument", raw: `{"argv":["cat","README.md","|","wc","-l"]}`},
 		{name: "command substitution", raw: `{"argv":["echo","$(pwd)"]}`},
 	}
@@ -89,6 +120,30 @@ func TestShellExecArgvRejectsShellSyntax(t *testing.T) {
 			require.Error(t, err)
 			require.Contains(t, err.Error(), "argv mode cannot run shell syntax")
 			require.Contains(t, err.Error(), "Use shell_command")
+		})
+	}
+}
+
+func TestShellExecBlocksGitRemoteMutation(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		raw  string
+	}{
+		{name: "argv remote add", raw: `{"argv":["git","remote","add","origin","https://example.invalid/repo.git"]}`},
+		{name: "shell command remote set url", raw: `{"shell_command":"git remote set-url origin https://example.invalid/repo.git"}`},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			root, err := NewRoot(dir)
+			require.NoError(t, err)
+			_, err = handleShellExec(context.Background(), root, []byte(tt.raw))
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "git remote")
+			require.Contains(t, err.Error(), "blocked")
 		})
 	}
 }

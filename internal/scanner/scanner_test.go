@@ -469,6 +469,10 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(dogfoodPrompt), "You are observation-first")
 	assert.Contains(t, string(dogfoodPrompt), "Do not add scripts yourself")
+	assert.Contains(t, string(dogfoodPrompt), "treat the project as")
+	assert.Contains(t, string(dogfoodPrompt), "Podman check/build entirely")
+	assert.Contains(t, string(dogfoodPrompt), "do not use grep to discover file names")
+	assert.Contains(t, string(dogfoodPrompt), "Do not create throwaway validation scripts at repo root")
 	assert.Contains(t, string(dogfoodPrompt), "docs/reports/dogfood/")
 
 	metadata, err := ReadHarnessMetadata(dir)
@@ -858,6 +862,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(engineerPrompt), "MarsDocSync")
 	assert.Contains(t, string(engineerPrompt), "intentionally static HTML/CSS/JS")
 	assert.Contains(t, string(engineerPrompt), "one file_read + file_write replacement")
+	assert.Contains(t, string(engineerPrompt), "do not run npm commands")
+	assert.Contains(t, string(engineerPrompt), "do not keep rewriting source files")
 
 	qaPrompt, err = os.ReadFile(filepath.Join(dir, ".harness", "roles", "qa.md"))
 	require.NoError(t, err)
@@ -867,7 +873,7 @@ func TestInit_success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(dogfoodPrompt), "FOR STATIC HTML/CSS/JS PROJECTS")
 	assert.Contains(t, string(dogfoodPrompt), "python3 -m http.server")
-	assert.Contains(t, string(dogfoodPrompt), "package files just to run this smoke test")
+	assert.Contains(t, string(dogfoodPrompt), "static smoke path")
 	assert.Contains(t, string(dogfoodPrompt), "created tickets with git_commit")
 	assert.Contains(t, string(dogfoodPrompt), "next_need release_review")
 
@@ -897,6 +903,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(releasePrompt), "gh release view vX.Y.Z")
 	assert.Contains(t, string(releasePrompt), "release object")
 	assert.Contains(t, string(releasePrompt), "notes-only release is a blocker")
+	assert.Contains(t, string(releasePrompt), "Never add, rewrite, guess, or")
+	assert.Contains(t, string(releasePrompt), "Do not add a placeholder origin")
 }
 
 func TestDefaultHeadOfStrategyPromptIncludesPersonalGuide(t *testing.T) {

@@ -28,6 +28,19 @@ func TestFileWrite_createsFile(t *testing.T) {
 	require.Equal(t, "hi", string(b))
 }
 
+func TestFileWrite_normalizesParameterMarkerInPath(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	raw := []byte("{\"path\":\"docs/reports/security/report.md\\n<parameter=content>\\n# Report\\n\\nValidated static smoke path.\\n\"}")
+	_, err = handleFileWrite(context.Background(), root, raw)
+	require.NoError(t, err)
+	b, err := os.ReadFile(filepath.Join(dir, "docs", "reports", "security", "report.md"))
+	require.NoError(t, err)
+	require.Equal(t, "# Report\n\nValidated static smoke path.\n", string(b))
+}
+
 func TestFileWrite_rejectsEscape(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

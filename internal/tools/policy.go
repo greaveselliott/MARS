@@ -368,8 +368,8 @@ func engineerToolRequiresClaim(toolName string, raw json.RawMessage) bool {
 func engineerToolIsTicketOnlyMutation(toolName string, raw json.RawMessage) bool {
 	switch toolName {
 	case "file_write":
-		var args fileWriteArgs
-		if err := json.Unmarshal(raw, &args); err != nil {
+		args, err := decodeFileWriteArgs(raw)
+		if err != nil {
 			return false
 		}
 		rel := strings.ToLower(cleanRepoPath(args.Path))
@@ -393,8 +393,8 @@ func ordinaryProductTickets(tickets []ticketstate.Ticket) []ticketstate.Ticket {
 }
 
 func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.RawMessage) error {
-	var args fileWriteArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeFileWriteArgs(raw)
+	if err != nil {
 		return nil
 	}
 	if err := checkTicketFileWritePolicy(root, args.Path); err != nil {
@@ -796,8 +796,8 @@ func checkGitPushPolicy(ctx context.Context, root Root, raw json.RawMessage) err
 }
 
 func checkShellPolicy(raw json.RawMessage) error {
-	var args shellExecArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeShellExecArgs(raw)
+	if err != nil {
 		return nil
 	}
 	cmd := strings.Join(args.Argv, " ")
@@ -820,8 +820,8 @@ func checkShellPolicy(raw json.RawMessage) error {
 }
 
 func checkShellTicketDoneEvidencePolicy(root Root, raw json.RawMessage) error {
-	var args shellExecArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeShellExecArgs(raw)
+	if err != nil {
 		return nil
 	}
 	fields := args.Argv
@@ -1195,8 +1195,8 @@ func cleanShellPathToken(field string) string {
 }
 
 func shellExecReadOnly(raw json.RawMessage) bool {
-	var args shellExecArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeShellExecArgs(raw)
+	if err != nil {
 		return false
 	}
 	if args.Background {

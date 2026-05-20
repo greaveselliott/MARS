@@ -53,6 +53,13 @@ type shellExecArgs struct {
 	Background     bool     `json:"background"`
 }
 
+type rawShellExecArgs struct {
+	Argv           json.RawMessage `json:"argv"`
+	ShellCommand   string          `json:"shell_command"`
+	TimeoutSeconds int             `json:"timeout_seconds"`
+	Background     bool            `json:"background"`
+}
+
 // bgProcs tracks background processes started by shell_exec so they can
 // be killed when the agent job finishes.
 var (
@@ -78,8 +85,8 @@ func registerShellExec(r *Registry) error {
 }
 
 func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
-	var args shellExecArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeShellExecArgs(raw)
+	if err != nil {
 		return ToolResult{}, fmt.Errorf("shell_exec: parse arguments: %w", err)
 	}
 	hasArgv := len(args.Argv) > 0
@@ -94,12 +101,83 @@ func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 		if err := validateShellExecArgv(args.Argv); err != nil {
 			return ToolResult{}, err
 		}
+		if err := validateShellExecGitRemoteMutation(args.Argv, "argv"); err != nil {
+			return ToolResult{}, err
+		}
+	} else {
+		if err := validateShellExecGitRemoteMutation(strings.Fields(args.ShellCommand), "shell_command"); err != nil {
+			return ToolResult{}, err
+		}
 	}
 
 	if args.Background {
 		return execBackground(root, args)
 	}
 	return execForeground(ctx, root, args)
+}
+
+func decodeShellExecArgs(raw json.RawMessage) (shellExecArgs, error) {
+	var rawArgs rawShellExecArgs
+	if err := json.Unmarshal(raw, &rawArgs); err != nil {
+		return shellExecArgs{}, err
+	}
+	args := shellExecArgs{
+		ShellCommand:   rawArgs.ShellCommand,
+		TimeoutSeconds: rawArgs.TimeoutSeconds,
+		Background:     rawArgs.Background,
+	}
+	if len(rawArgs.Argv) == 0 || bytes.Equal(bytes.TrimSpace(rawArgs.Argv), []byte("null")) {
+		return args, nil
+	}
+	if err := decodeShellExecArgv(rawArgs.Argv, &args.Argv); err != nil {
+		return shellExecArgs{}, err
+	}
+	args.Argv = normalizeShellExecArgv(args.Argv)
+	return args, nil
+}
+
+func decodeShellExecArgv(raw json.RawMessage, out *[]string) error {
+	if len(bytes.TrimSpace(raw)) == 0 {
+		return nil
+	}
+	if bytes.HasPrefix(bytes.TrimSpace(raw), []byte("[")) {
+		return json.Unmarshal(raw, out)
+	}
+	var encoded string
+	if err := json.Unmarshal(raw, &encoded); err != nil {
+		return err
+	}
+	trimmed := strings.TrimSpace(encoded)
+	if trimmed == "" {
+		return nil
+	}
+	if strings.HasPrefix(trimmed, "[") {
+		return json.Unmarshal([]byte(trimmed), out)
+	}
+	*out = []string{trimmed}
+	return nil
+}
+
+func normalizeShellExecArgv(argv []string) []string {
+	if len(argv) != 1 {
+		return argv
+	}
+	only := strings.TrimSpace(argv[0])
+	if !simpleSingleArgvCommand(only) {
+		return argv
+	}
+	return strings.Fields(only)
+}
+
+func simpleSingleArgvCommand(s string) bool {
+	if !strings.ContainsAny(s, " \t") {
+		return false
+	}
+	if strings.ContainsAny(s, "\n\"'`$;&|<>") {
+		return false
+	}
+	fields := strings.Fields(s)
+	return len(fields) > 1
 }
 
 func validateShellExecArgv(argv []string) error {
@@ -115,11 +193,26 @@ func validateShellExecArgv(argv []string) error {
 		if token == "" {
 			continue
 		}
-		if shellArgvControlToken(token) || shellArgvLooksLikeRedirection(token) || strings.Contains(token, "$(") || strings.Contains(token, "`") || strings.Contains(token, "\n") {
+		if shellArgvControlToken(token) || shellArgvLooksLikeRedirection(token) || shellArgvContainsControlSyntax(token) || strings.Contains(token, "$(") || strings.Contains(token, "`") || strings.Contains(token, "\n") {
 			return shellArgvSyntaxError(arg)
 		}
 	}
 	return nil
+}
+
+func validateShellExecGitRemoteMutation(argv []string, mode string) error {
+	if len(argv) < 3 {
+		return nil
+	}
+	if argv[0] != "git" || argv[1] != "remote" {
+		return nil
+	}
+	switch argv[2] {
+	case "add", "set-url", "remove", "rm", "rename":
+		return fmt.Errorf("shell_exec: git remote %s is blocked in %s mode; agents must not invent or rewrite repository remotes. Configure remotes outside the harness, or record a release blocker when no remote is available", argv[2], mode)
+	default:
+		return nil
+	}
 }
 
 func shellArgvBuiltin(program string) bool {
@@ -129,6 +222,15 @@ func shellArgvBuiltin(program string) bool {
 	default:
 		return false
 	}
+}
+
+func shellArgvContainsControlSyntax(token string) bool {
+	for _, syntax := range []string{"&&", "||", "|", ";", ">", "<"} {
+		if strings.Contains(token, syntax) {
+			return true
+		}
+	}
+	return false
 }
 
 func shellArgvControlToken(token string) bool {

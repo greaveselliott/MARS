@@ -3394,6 +3394,10 @@ IMPLEMENTATION:
    - Map each BDD scenario ID to at least one E2E/integration test or explicit evidence command
    - Cover happy path AND edge cases listed in the ticket
    - Run tests to verify they pass
+   - For intentionally static HTML/CSS/JS projects with no package manifest,
+     do not run ` + "`npm run build`" + ` and do not create package files only to satisfy
+     this step. Use targeted file reads plus one static HTTP smoke command as
+     explicit evidence. Do not create throwaway root validation scripts.
 
 5. CHECK DOCUMENTATION SYNC
    - For every new or materially changed code file, add or update its
@@ -3406,22 +3410,24 @@ IMPLEMENTATION:
 6. BUILD VERIFICATION (mandatory before closing any ticket)
    After implementation, verify the project actually builds and starts:
    a) Read .harness/learnings.yaml for the framework and package manager
-   b) Run the build command:
+   b) Check whether a package manifest exists before choosing a build command.
+      If no package.json exists, do not run npm commands.
+   c) Run the build command:
       - Node.js/Next.js: shell_exec npm run build (or yarn build)
       - Go: shell_exec go build ./...
       - Python: shell_exec python -m py_compile [main file]
-   c) If the build fails, FIX the issue before moving on. Common problems:
+   d) If the build fails, FIX the issue before moving on. Common problems:
       - Missing scripts in package.json (add "dev", "build", "start")
       - Missing root layout.tsx for Next.js App Router
       - Missing config files (tailwind.config.js, postcss.config.js)
       - Conflicting app/ and pages/ directories at different levels
       - Deprecated config options (e.g. experimental.appDir in next.config.js)
-   d) For web projects, start the dev server briefly to verify it boots:
+   e) For web projects, start the dev server briefly to verify it boots:
       shell_exec with background:true: npm run dev (or equivalent)
       Wait 10 seconds, then check if the process is still running.
       If it crashed, read the error output and fix the issue.
       Kill the background process after verification.
-   e) If a package-managed project has no expected build or dev script, that
+   f) If a package-managed project has no expected build or dev script, that
       is a bug — add one. If the target is intentionally static HTML/CSS/JS
       with no package manifest and no build step, do NOT create package manager
       files solely to satisfy harness expectations. Instead, run one bounded
@@ -3448,7 +3454,10 @@ IMPLEMENTATION:
    completion must be one atomic ` + "`git mv`" + ` from its current lifecycle directory.
 
 8. FINAL VERIFICATION
-   Run the full test suite. Ensure everything passes.
+   Run the full test suite. For intentionally static HTML/CSS/JS projects with
+   no package manifest, the full verification suite is the targeted file
+   inspection plus the static HTTP smoke evidence already recorded. Ensure
+   everything passes, then stop editing.
 
 9. DISPATCH MODE
    If the manifest has ` + "`orchestration_mode: dispatch`" + `, call job_disposition_record before
@@ -3459,7 +3468,8 @@ IMPLEMENTATION:
    - no_work when no eligible ticket existed or no repo change was needed
 
 COMMIT GATE — MANDATORY before finishing (every run, no exceptions):
-   a) If you implemented code for a ticket, update feature-ticket evidence
+   a) If you implemented code for a ticket and have committed source plus
+      passing evidence, do not keep rewriting source files. Update feature-ticket evidence
       first with one file_read + file_write replacement, then move it to done/:
       - fill ` + "`evidence_links`" + ` with concrete command output, report paths, trace IDs,
         test files, or inspected proof paths
@@ -3491,7 +3501,9 @@ DON'T:
   workspace_hygiene first, then dependency_sync.
 - NEVER run find, ls, grep, or cat on directories without excluding node_modules, .git, vendor,
   dist, build, and other large generated directories. Use targeted file reads instead.
-- NEVER close a ticket without running the build. "It looks right" is not verification.
+- NEVER run npm build/dev commands when no package.json exists. Use the static
+  HTML/CSS/JS smoke path instead.
+- NEVER close a package-managed ticket without running the build. "It looks right" is not verification.
 
 ## Quality Bar
 
@@ -3781,7 +3793,10 @@ START by reading:
 3. docs/design-docs/release-versioning.md
 4. docs/features/ and recently completed tickets to distinguish shipped feature scenarios from enabler work
 5. Recent commits since last release marker: git log --oneline -20
-6. GitHub release state if GitHub is configured: gh release list --limit 10
+6. Existing git remotes. If no remote exists, record release publication as
+   blocked after local release notes/tag checks. Never add, rewrite, guess, or
+   remove a git remote from inside the harness.
+7. GitHub release state only when a real remote is already configured: gh release list --limit 10
 
 TASKS:
 
@@ -3808,6 +3823,9 @@ Commit and push:
 
 GitHub publication:
   Create or update tag vX.Y.Z at the release-note commit.
+  If the repo has no remote, stop after the local release-note commit/tag and
+  record a blocked disposition. Do not add a placeholder origin and do not guess
+  an owner/name remote.
   Push the tag, then create or update GitHub Release vX.Y.Z with the matching CHANGELOG.md entry.
   Confirm gh release view vX.Y.Z succeeds. If the release object is missing after the tag workflow, create a notes-only GitHub Release from the generated CHANGELOG.md entry for the existing tag.
   Run any repo-required asset workflow or backfill for the tag.
@@ -3852,11 +3870,25 @@ viable structure. Read .harness/learnings.yaml for the framework, then check:
 
 FOR STATIC HTML/CSS/JS PROJECTS (no package manifest and visible .html entry):
   a) Do not create package manager files, scripts, or lockfiles for validation.
-  b) Skip package-manager and container-build expectations unless README.md
-     explicitly requires them.
-  c) Plan one bounded native smoke test: start ` + "`python3 -m http.server`" + `
-     with background:true, curl the primary HTML/route, record evidence, and
-     rely on automatic background cleanup.
+  b) A visible HTML entry includes ` + "`index.html`" + ` or ` + "`src/index.html`" + `.
+     Use one bounded root listing, then one bounded ` + "`src/`" + ` listing if needed;
+     do not use grep to discover file names because grep searches file content.
+  c) If no repo-root Dockerfile or Containerfile exists, do not probe Podman and
+     do not attempt a container build unless README.md explicitly requires it.
+  d) Plan one bounded native smoke test: start ` + "`python3 -m http.server`" + `
+     with background:true from the directory containing the HTML entry, curl the
+     primary HTML/route once, record evidence, and rely on automatic background
+     cleanup.
+
+FOR STATIC HTML/CSS/JS PROJECTS WITH A PACKAGE MANIFEST:
+  a) If package.json has no dependencies/devDependencies and its start script is
+     a static server such as ` + "`python3 -m http.server`" + `, treat the project as
+     static for validation.
+  b) Skip Podman, dependency_sync, and package-manager build commands unless
+     README.md or the feature contract explicitly requires them.
+  c) Start the static server from the directory that contains the primary HTML
+     entry (` + "`src/`" + ` when ` + "`src/index.html`" + ` exists, otherwise repo root),
+     curl the primary route once, record evidence, and stop.
 
 FOR ALL NODE.JS PROJECTS (package.json exists):
   a) Read package.json scripts section
@@ -3895,19 +3927,24 @@ server, or edit product/package files after a failed pre-flight.
    Prefer file_read, grep, workspace_hygiene, and one bounded root listing over
    broad shell discovery. Avoid repeated ls/find/grep/cat passes unless a
    failure needs narrower evidence.
-3. Check if Podman is available: shell_exec podman --version
+3. Classify the project type from README.md, package manifests, and bounded
+   file-name listings. For static HTML/CSS/JS projects, choose the native static
+   path before checking Podman.
 4. CONTAINER PATH (Podman available):
-   If this is a static HTML/CSS/JS project with no package manifest and no
-   Containerfile/Dockerfile, skip container build and use the native static
-   smoke path.
+   If this is a static HTML/CSS/JS project with no package manifest, or a
+   static package manifest whose start script is only a static server, skip the
+   Podman check/build entirely and use the native static smoke path.
+   Only check Podman with ` + "`podman --version`" + ` after a container path is
+   actually selected.
    a) Check if .harness/Containerfile exists. If not, look for Containerfile or Dockerfile
       in the repo root. If none exist, one will be auto-generated by the harness on next run.
    b) Build: shell_exec podman build -t dogfood-{project} -f .harness/Containerfile .
    c) If build fails, record the error and fall through to native path.
 5. NATIVE PATH (no Podman or container build failed):
-   a0) If this is a static HTML/CSS/JS project with no package manifest, skip
-      dependency_sync and build commands. Use Phase 2 static HTTP smoke
-      evidence instead.
+   a0) If this is a static HTML/CSS/JS project with no package manifest, or a
+      static package manifest whose start script is only a static server, skip
+      dependency_sync and build commands. Use Phase 2 static HTTP smoke evidence
+      instead.
    a) Install dependencies using dependency_sync only after pre-flight passes.
       Do not use file_write to modify package.json, package-lock.json, source,
       config, or scripts. If validation needs a missing script or dependency,
@@ -3924,8 +3961,10 @@ server, or edit product/package files after a failed pre-flight.
    ` + "`npx serve`" + `, ` + "`python3 -m http.server`" + `, or equivalent
    long-running commands.
    For static HTML/CSS/JS targets, start ` + "`python3 -m http.server`" + ` with
-   background:true and curl the primary HTML/route. Do not add scripts or
-   package files just to run this smoke test.
+   background:true from the HTML entry directory and curl the primary HTML/route
+   once. Do not use shell loops or ` + "`sh -c`" + ` readiness scripts for this
+   static smoke path. Do not add scripts or package files just to run this smoke
+   test.
 8. Wait for readiness: poll curl -s -o /dev/null -w '%%{http_code}' http://localhost:{port}/
    every 3 seconds, up to 60 seconds. If 60s pass without a 200, file a ticket and stop.
 9. If the dev server crashes immediately (process exits within 5 seconds), capture
@@ -3945,6 +3984,10 @@ server, or edit product/package files after a failed pre-flight.
 14. BDD EVIDENCE: For feature work, read docs/features/ and verify the current
     scenario schedule against the running project. File tickets for failed
     scenarios and include scenario IDs in ` + "`bdd_scenarios`" + `.
+    Do not create throwaway validation scripts at repo root. If validation code
+    is valuable, add it intentionally under a durable tests directory and commit
+    it with the feature; otherwise use direct file_read, curl, and existing
+    test commands as evidence.
 
 ### Phase 4 — Report
 

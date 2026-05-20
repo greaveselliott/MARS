@@ -7,12 +7,12 @@
 **Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-006, F-009, F-012
-**Hypothesis:** Treating factory pace as measured intervention debt, using the `demo-123-run6` Dogfood turn waste as concrete evidence, will reduce avoidable turns without hiding productive long-running work.
-**Success Evidence:** The 2026-05-20 `demo-123-run6` replay confirmed terminal clean-tree handoffs during CEO/COO/CTO/Engineer flow, and the patched dirty-target `serve` replay paused watchdog routing while uncommitted `T-002` existed.
-**Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, a future clean target replay still routes autonomous follow-up while target-owned artifacts are uncommitted, or Dogfood turn/tool waste prevents useful validation from reaching a terminal outcome.
+**Hypothesis:** Treating factory pace as measured intervention debt, using the `demo-123` replay series as concrete evidence, will reduce avoidable turns without hiding productive long-running work.
+**Success Evidence:** The 2026-05-20 `demo-123-run10` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; the Engineer prompt fix turned the prior run 9 `max_turns` failure into a completed handoff.
+**Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, future clean target replays still route autonomous follow-up after release-blocked publication, or Dogfood/Engineer tool recovery prevents useful validation from reaching a terminal outcome.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** As of 2026-05-20, high-priority `T-011` should measure factory pace; `demo-123-run6` supplies concrete turn-sink evidence where Dogfood reached product findings but spent excessive turns on static server setup and hit `max_turns`.
-**Walking Skeleton Slice:** Claim `T-011`, measure current pace from durable trace/job evidence, and use `T-013` as the Dogfood/static-serving follow-up slice if the evidence confirms it is the smallest useful speed improvement.
+**Current Failing Scenario:** As of 2026-05-20, the live `demo-123` loop now reaches product release notes, but release-blocked publication in no-remote targets can still invent a remote and route back to Dogfood.
+**Walking Skeleton Slice:** Keep reducing the live-loop turn sinks in evidence order: block release remote mutation, stop release-blocked Dogfood rerouting, then tighten shallow ticket/file discovery.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -117,12 +117,16 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Factory pace intervention debt (`T-011`)**: Measure current role pace from
-   durable traces and job outcomes, define target thresholds, and implement the
-   smallest evidence-backed change that reduces avoidable turns. Use
-   `demo-123-run6` Dogfood/static-serving behavior and `T-013` as concrete
-   candidate evidence.
-2. **Live lifecycle replay**: Run a clean `demo-123`-style target lifecycle and
+1. **Release-blocked routing**: Use `demo-123-run10` as current evidence. A
+   no-remote target must not gain a guessed `origin`, and release-blocked
+   publication must not route back to Dogfood unless product validation evidence
+   changed.
+2. **Factory pace intervention debt (`T-011`/`T-013`)**: Continue measuring role
+   pace from durable traces and job outcomes, define target thresholds, and
+   implement the smallest evidence-backed change that reduces avoidable turns.
+   The 2026-05-20 runs 8-10 show the next turn sinks: shallow ticket globs, broad `find .`,
+   empty `shell_exec`, and release-blocked loops.
+3. **Live lifecycle replay**: Run a clean `demo-123`-style target lifecycle and
    record product progress, queue health, intervention-debt count, quality
    export behavior, release-note behavior, stop/shutdown behavior, and whether
    Dogfood reaches a terminal disposition without dirty watchdog routing.
@@ -171,8 +175,9 @@ Checks recorded during the 2026-05-02 review:
 
 - In-progress tickets are still highest priority. If any appear, drain them
   before taking backlog work.
-- Intervention-debt tickets outrank ordinary feature work unless explicitly
-  downgraded.
+- Intervention-debt tickets do not outrank ordinary product work by default;
+  surface them ahead of product backlog only when an active product ticket names
+  them in `blocked_by` or an operator explicitly asks for intervention-debt work.
 - Superseded plans should not remain silently active. Either reconcile them,
   move them, or mark them with a clear status and pointer to the current plan.
 - Large strategic plans must be materialized into ticket files before agents

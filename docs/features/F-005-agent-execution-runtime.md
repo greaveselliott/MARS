@@ -94,6 +94,18 @@ Given a role calls `shell_exec` with `argv`
 When the argv tokens contain shell-only syntax such as redirection, pipes, control operators, command substitution, or shell builtins
 Then the tool fails before process execution with an actionable instruction to use `shell_command` for shell syntax or file tools for content changes
 
+Given a local model emits a simple malformed `shell_exec` argv shape
+When `argv` is a JSON-encoded array string or a one-item simple command string with no shell syntax
+Then the tool normalizes it into executable argv tokens so the run does not spend extra turns recovering from harmless formatting drift
+
+Given a local model emits a malformed `file_write` payload with `<parameter=content>` embedded in `path`
+When the separate `content` field is empty
+Then the tool splits the marker into the intended path and content before policy checks and file creation
+
+Given a role attempts to configure repository remotes through `shell_exec`
+When the command is `git remote add`, `git remote set-url`, `git remote remove`, `git remote rm`, or `git remote rename`
+Then the tool blocks the command and instructs the role to record a release blocker instead of inventing or rewriting remotes
+
 ### F-005-S004: Auditable Trace
 
 Given an agent job runs

@@ -36,8 +36,8 @@ func registerFileWrite(r *Registry) error {
 }
 
 func handleFileWrite(_ context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
-	var args fileWriteArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeFileWriteArgs(raw)
+	if err != nil {
 		return ToolResult{}, fmt.Errorf("file_write: parse arguments: %w", err)
 	}
 	if strings.TrimSpace(args.Path) == "" {
@@ -54,4 +54,27 @@ func handleFileWrite(_ context.Context, root Root, raw json.RawMessage) (ToolRes
 		return ToolResult{}, fmt.Errorf("file_write: write %q: %w", args.Path, err)
 	}
 	return ToolResult{Output: fmt.Sprintf("wrote %d bytes to %s", len(args.Content), args.Path)}, nil
+}
+
+func decodeFileWriteArgs(raw json.RawMessage) (fileWriteArgs, error) {
+	var args fileWriteArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return fileWriteArgs{}, err
+	}
+	args = normalizeFileWriteParameterMarker(args)
+	return args, nil
+}
+
+func normalizeFileWriteParameterMarker(args fileWriteArgs) fileWriteArgs {
+	if strings.TrimSpace(args.Content) != "" {
+		return args
+	}
+	const marker = "\n<parameter=content>\n"
+	path, content, ok := strings.Cut(args.Path, marker)
+	if !ok {
+		return args
+	}
+	args.Path = strings.TrimSpace(path)
+	args.Content = content
+	return args
 }

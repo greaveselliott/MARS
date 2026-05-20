@@ -213,6 +213,266 @@ as the reason, and the DB still had zero pending Engineer jobs afterward. The
 temporary target has no remote, so the Dogfood finding was preserved locally as
 commit `ebd22a1` (`dogfood: preserve T-002 finding evidence`) and left clean.
 
+## Run 7 Factory Pace Replay — 2026-05-20
+
+The next continuous-improvement replay used:
+
+- Target: `<validation-root>`
+- Harness binary: `<validation-root>`
+- DB: `<validation-root>`
+- Log: `<validation-root>`
+- Ports: webhook `19145`, dashboard `19144`
+- Model stack: local Qwen3-Coder and Gemma GGUF models through managed
+  `llama-server`
+
+The replay validated the live loop after the dirty-target survey fix and
+produced a clearer pace baseline:
+
+```text
+role             status      turns  tools  wall time
+ceo              completed       7      7  28.815s
+coo              completed      17     17  149.301s
+cto-weekly       completed      18     18  104.133s
+engineer         completed      41     41  180.538s
+qa               completed      12     12  37.293s
+security         completed      13     13  47.683s
+dogfood          completed      21     21  112.306s
+release-manager  completed      28     28  96.791s
+janitor          failed          2      1  25.587s
+```
+
+Observed target outcome:
+
+- CEO, COO, CTO, Engineer, QA, Security, Dogfood, and Release Manager all
+  reached terminal successful dispositions.
+- The target advanced through product-specific plan, feature contract,
+  ordinary product ticket, player-movement implementation, QA approval,
+  security audit, Dogfood HTTP validation, and local release notes.
+- Intervention-debt count remained `0`.
+- Dogfood completed instead of hitting `max_turns`, and no dirty watchdog
+  routing occurred after Dogfood.
+- The dashboard stop endpoint returned `{"ok":true}` and the `start` process
+  exited cleanly.
+
+Observed telemetry:
+
+```text
+cto-weekly|guardrail_block|1
+engineer|guardrail_block|4
+release-manager|guardrail_block|1
+janitor|unknown|1
+```
+
+The replay exposed the next bounded factory-pace sinks:
+
+- Engineer spent avoidable turns on broad `find .`, build/script discovery,
+  mutation before ticket claim, and a stray `:q` command before completing a
+  small player-movement ticket.
+- Dogfood improved materially versus run 6 but still spent turns on malformed
+  `shell_exec` argv, `.harness` inspection, and a Podman probe before the
+  static HTTP smoke path.
+- Release Manager handled local release notes but still attempted GitHub
+  release commands in a target with no remote.
+- Janitor failed after passing `ls -F docs/tickets/backlog/` as a single argv
+  element and then producing an empty response.
+
+The follow-up source fix hardens `shell_exec` to normalize harmless malformed
+argv shapes and tightens generated Dogfood guidance so static package manifests
+with `python3 -m http.server` skip Podman, dependency sync, and build detours.
+
+## Run 8 Patched Replay — 2026-05-20
+
+The next replay used the patched binary from the run 7 fix:
+
+- Target: `<validation-root>`
+- Harness binary: `<validation-root>`
+- DB: `<validation-root>`
+- Log: `<validation-root>`
+- Ports: webhook `19155`, dashboard `19154`
+
+Observed lifecycle:
+
+```text
+role             status      turns  tools  wall time
+ceo              completed      11     11  57.007s
+coo              completed      14     14  116.514s
+cto-weekly       completed      15     15  97.596s
+engineer         completed      41     41  265.196s
+qa               completed      13     13  47.216s
+security         completed      18     18  181.812s
+dogfood          completed      36     36  159.548s
+release-manager  completed      20     20  68.194s
+```
+
+Observed target outcome:
+
+- The harness produced product-specific goals, an active plan, feature contract,
+  ordinary feature ticket, player movement implementation, QA approval, security
+  audit, Dogfood validation report, and local release notes.
+- Every claimed role through Release Manager completed. Dispatch then stopped
+  with `same-role next_need has no forward owner`, so Janitor did not run.
+- Intervention-debt count remained `0`.
+- The target working tree was clean at stop time.
+
+Observed telemetry:
+
+```text
+ceo|guardrail_block|1
+coo|guardrail_block|1
+engineer|guardrail_block|2
+dogfood|guardrail_block|2
+```
+
+Confirmed improvement:
+
+- The malformed `shell_exec` argv from run 7 no longer blocked `ls`-style calls.
+- The lifecycle reached a product release-note commit without dirty watchdog
+  routing or target intervention-debt amplification.
+
+Remaining pace and quality sinks:
+
+- CTO still encoded `git_commit.paths` and `job_disposition_record.evidence_links`
+  as JSON strings before recovering.
+- Engineer created a throwaway root validation script, then `rm` guardrails
+  blocked cleanup; the later ticket commit swept `test-ship-movement.js` into
+  the target history.
+- Security repeatedly emitted a malformed `file_write` payload with
+  `<parameter=content>` embedded in the path before falling back to a heredoc.
+- Dogfood still probed Podman, used one broad `find .` shape, attempted a
+  shell-loop readiness check in argv mode, and spent 36 turns validating a small
+  static page.
+- Release Manager checked GitHub release state even though the target had no
+  remote, then correctly treated publication as blocked.
+
+The follow-up source fix expands the run 7 tool normalization to `file_write`
+parameter-marker drift and tightens generated Dogfood guidance for static
+projects without package manifests: classify static projects from bounded file
+name listings, skip Podman before probing it when no container path is selected,
+avoid shell-loop readiness scripts, and avoid throwaway root validation files.
+
+## Run 9 Static Guidance Replay — 2026-05-20
+
+The next replay used:
+
+- Target: `<validation-root>`
+- Harness binary: `<validation-root>`
+- DB: `<validation-root>`
+- Log: `<validation-root>`
+- Ports: webhook `19165`, dashboard `19164`
+
+Observed lifecycle:
+
+```text
+role        status     turns  tools  wall time
+ceo         completed      6      6  23.679s
+coo         completed     13     13  80.835s
+cto-weekly  completed     16     16  76.586s
+engineer    failed        50     50  387.450s
+```
+
+Observed target outcome:
+
+- CEO, COO, and CTO stayed product-first and reached a committed product ticket.
+- Engineer implemented substantial Space Invaders behavior and committed source
+  changes, but failed with `max_turns` before moving `T-001` to done or recording
+  a terminal disposition.
+- Runtime containment worked correctly: `max_turns` was recorded as foundation
+  telemetry, no intervention-debt ticket was created, and no Orchestrator loop
+  was dispatched.
+
+Observed telemetry:
+
+```text
+coo|guardrail_block|1
+engineer|guardrail_block|3
+engineer|max_turns|1
+```
+
+New failure class:
+
+- Engineer still treated a no-manifest static project as package-managed and ran
+  `npm run build`, then spent turns on broad `find .`, empty `shell_exec` calls,
+  repeated listing/evidence commands, and source rewrites after implementation
+  evidence had already passed.
+- The next fix must move static-project validation doctrine into the Engineer
+  role, not only Dogfood: no npm commands without `package.json`, use the static
+  HTTP smoke path as the full verification suite for no-manifest static projects,
+  and stop editing once source is committed and evidence is recorded.
+
+## Run 10 Engineer Terminal Replay — 2026-05-20
+
+The next replay used:
+
+- Target: `<validation-root>`
+- Harness binary: `<validation-root>`
+- DB: `<validation-root>`
+- Log: `<validation-root>`
+- Ports: webhook `19175`, dashboard `19174`
+
+Observed lifecycle before manual stop:
+
+```text
+role             status      turns  tools  wall time
+ceo              completed       6      6  22.190s
+coo              completed      15     15  115.993s
+cto-weekly       completed      21     21  94.972s
+engineer         completed      31     31  189.343s
+qa               completed      10     10  37.212s
+security         completed       9      9  50.977s
+dogfood          completed      25     25  122.552s
+release-manager  completed      24     24  70.239s
+orchestrator     completed      16     16  68.190s
+dogfood          running         5      5  stopped manually
+```
+
+Observed target outcome:
+
+- Engineer no longer hit `max_turns`; it claimed the ticket, implemented a
+  static Space Invaders movement slice, ran a static HTTP smoke, moved `T-001`
+  to done, and handed off to QA.
+- Dogfood skipped Podman entirely when no package/container manifest existed and
+  completed with committed evidence.
+- Intervention-debt count remained `0`.
+- Release Manager generated local release notes, but then guessed and added a
+  fake GitHub remote in the throwaway target before recording release blocked.
+- Orchestrator treated the release-blocked disposition as a reason to route back
+  to Dogfood, creating an unnecessary loop edge. The run was stopped manually at
+  the second Dogfood pass.
+
+Observed telemetry:
+
+```text
+cto-weekly|guardrail_block|1
+engineer|guardrail_block|2
+dogfood|guardrail_block|1
+```
+
+Confirmed improvement:
+
+- The Engineer static-validation prompt fix turned the run 9 `max_turns` failure
+  into a completed Engineer handoff.
+- The Dogfood static prompt fix removed the Podman probe from the main Dogfood
+  pass.
+
+Remaining pace and routing sinks:
+
+- CTO still searches lifecycle tickets through shallow `docs/tickets/*` globs
+  and spends turns recovering from missing directory reads.
+- Engineer still attempts one broad `find .` and one raw `mv` before using
+  `git mv`.
+- Dogfood still attempts one broad `find .` and emits several empty
+  `shell_exec` calls.
+- Release Manager must never mutate remotes in generated targets. No-remote
+  targets should stop after local release notes/tag evidence and record a
+  release-blocked disposition.
+- Orchestrator should not route release-blocked publication failures back to
+  Dogfood unless a product validation artifact explicitly changed.
+
+The follow-up source fix blocks `git remote add`, `git remote set-url`, and
+related remote mutation commands through `shell_exec`, and strengthens generated
+Release Manager guidance so no-remote targets record publication blockers
+instead of inventing remotes.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -225,6 +485,14 @@ next limiting factors found by runs 5 and 6 are uncommitted target-ticket
 handoff after Dogfood creates a target-owned finding and watchdog recovery
 routing that can consume those uncommitted artifacts after a max-turn failure.
 The dirty-target survey pause is now confirmed by a patched replay. The
-remaining live-loop work is to reduce Dogfood turn/tool waste, make static app
-serving evidence more deterministic, and keep broadening product and
-observer-mode dogfood evidence.
+run 7 and run 8 replays confirm Dogfood can now reach a terminal disposition
+without dirty watchdog routing, and Release Manager can generate local release
+notes for a clean target. Run 9 confirms max-turn containment works without
+intervention-debt amplification, and run 10 confirms the Engineer static-path
+prompt fix turns that max-turn failure into a completed QA handoff. Factory pace
+is still dominated by avoidable tool-use recovery, shallow ticket/file discovery,
+and release-blocked routing. The remaining live-loop work is to normalize common
+structured-array payload drift, make static app serving evidence more
+deterministic, block release publication from inventing remotes, stop routing
+release-blocked publication failures back to Dogfood, and keep broadening
+product and observer-mode dogfood evidence.
