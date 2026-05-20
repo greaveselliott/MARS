@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.11] - 2026-05-20
+<!-- mars-harness-release: version=0.42.11 commit=f7b5f48aaa6e -->
+
+### Impact
+- **tools:** Operators see improved reliability because block implicit go build artifacts.
+
+### Why
+- **tools:** This matters because block implicit go build artifacts closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed block implicit go build artifacts (f7b5f48).
+
+### Fixes
+- **tools:** Block implicit go build artifacts (f7b5f48)
+
 ## [0.42.10] - 2026-05-20
 <!-- mars-harness-release: version=0.42.10 commit=aafa166a4f24 -->
 
