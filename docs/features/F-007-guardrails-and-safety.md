@@ -124,6 +124,10 @@ Given a role attempts to create a new root-level validation shell script such as
 When the write is not updating an existing project-owned script
 Then tool policy blocks the file before creation and instructs the role to use existing tests, direct build/run/curl evidence, or intentional durable validation code under a tests directory
 
+Given a role calls an external `timeout` or `gtimeout` validation command through `shell_exec`
+When tool policy rejects the non-portable wrapper before process execution
+Then telemetry classifies the event as a guardrail block, not a retryable tool timeout, so the runtime records foundation evidence without enqueueing duplicate retry work
+
 ### F-007-S009: Workspace Hygiene Gates
 
 Given a repository has missing generated-directory ignore policy, tracked generated dependency output, dirty generated build output, large generated diffs, or deletion state

@@ -157,7 +157,12 @@ actually own the target product behavior.
 - walks audited foundation roots and deployed app roots;
 - parses top-of-file `MarsDocSync` metadata;
 - verifies each metadata doc path points to a durable documentation artifact;
-- computes expected docs from the canonical prefix rules;
+- computes expected docs from the canonical prefix rules when the audited repo
+  is the foundation `mars-harness` source checkout;
+- treats deployed harness repos as product-owned source trees: their `cmd/`,
+  `internal/`, `src/`, `app/`, `web/`, and similar source files still need
+  valid `MarsDocSync` metadata, but they are not required to reference
+  foundation-only design docs such as the source code map;
 - reports missing metadata, missing docs, and missing required docs.
 
 The report is intentionally simple:
@@ -201,6 +206,10 @@ Docs-consistency tests make the operating model release-blocking:
   fails `go test ./...`.
 - `internal/scanner` tests generated target doctrine, route docs, role
   allowlists, and generated feature scenarios.
+- `job_disposition_record` tool policy rejects successful Engineer, QA,
+  Security, Dogfood, Release Manager, Dependency Manager, and Pipeline Fixer
+  dispositions when `docsync_audit` has findings, forcing fix/rework feedback
+  before approval, release, or forward dispatch.
 
 ### 6. Generated Target Layer
 
@@ -330,10 +339,10 @@ when they affect agents or operators, not as invisible internal churn.
 | CEO | Ensures goal and scope decisions name the outcome, non-goals, and evidence expectations that planning must serve. |
 | COO | Ensures active plans and BDD feature contracts name the docs that define the work before tickets are created. |
 | CTO | Checks architecture docs, code map changes, tool-policy implications, generated target mirroring, and implementation tickets that reference BDD scenarios and docsync evidence expectations. |
-| Engineer | Reads metadata before editing, updates associated docs with code, and runs docsync before commit. |
-| QA | Verifies changed files include metadata, docs were updated or explicitly checked, and docsync passes. |
-| Dogfood | Runs real harness paths and creates intervention debt when docsync or docs freshness fails repeatedly. |
-| Release Manager | Ensures release notes explain documentation-sync impact, why, and what changed. |
+| Engineer | Reads metadata before editing, updates associated docs with code, and runs docsync before commit; a completed disposition is blocked while docsync fails. |
+| QA | Verifies changed files include metadata, docs were updated or explicitly checked, and docsync passes; docsync failures require `changes_requested`, not approval. |
+| Dogfood | Runs real harness paths, validates docsync before release readiness, and creates target-owned findings only when the docsync failure belongs to the target. |
+| Release Manager | Ensures docsync passes before publication and explains documentation-sync impact, why, and what changed in release notes. |
 | Janitor | Finds stale tickets, stale docs metadata, missing evidence, and outdated maps. |
 | Orchestrator | Routes terminal dispositions to the next best role when docsync findings or stale-doc blockers appear. |
 

@@ -2379,6 +2379,48 @@ guardrail errors. When a managed background process is active, the guidance
 names the tracked PID and tells the role to stop it, update ticket evidence,
 commit, push, and record `job_disposition_record`.
 
+### Non-Static API Replay: DocSync Failures Must Block Approval
+
+The next replay used `<validation-root>` to
+validate no-op shell guidance in a fresh Task Notes API target.
+
+Positive evidence:
+
+- CEO, COO, and CTO reached product-specific planning and one ordinary product
+  ticket with zero target intervention-debt tickets.
+- Engineer claimed `T-001`, implemented the Go `/health` endpoint, added tests,
+  used managed `background:true` validation, stopped tracked PIDs, moved the
+  ticket to done, and recorded a terminal disposition.
+- The prior empty-argv/single-`:` loop did not recur. Background startup output
+  guided the role toward `kill <tracked-pid>`, ticket evidence, commit, and
+  disposition.
+- Security, Dogfood, and Release Manager progressed far enough to expose
+  downstream quality and release behavior. Release Manager generated local
+  release notes and stopped with a no-remote blocker instead of mutating
+  remotes.
+
+Residual findings:
+
+- Engineer added malformed one-line `MarsDocSync` metadata pointing at
+  `docs/features/F-001-S002.md`; `F-001-S002` is a scenario ID, not a feature
+  contract path.
+- QA and Security both ran `docsync_audit`, saw `FAIL:` findings for missing
+  metadata, and still approved. Dogfood also approved release readiness while
+  the target source failed DocSync.
+- A policy-blocked external `timeout` command during Dogfood validation was
+  classified as retryable `tool_timeout`, enqueuing a duplicate Dogfood retry
+  even though the event was a deterministic guardrail block.
+- `scores export` graded the target A from terminal outcomes despite the
+  DocSync escape, which remains a later scoring-quality follow-up.
+
+Decision: successful implementation, review, validation, and release
+dispositions now mechanically run DocSync and are rejected while findings
+exist. Deployed target repos still require valid metadata, but are not forced
+to cite foundation-only source docs. External `timeout` policy blocks classify
+as guardrail blocks rather than retryable tool timeouts. Generated role
+guidance now distinguishes scenario IDs from feature-contract paths and treats
+DocSync `FAIL:` output as a release/readiness blocker.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

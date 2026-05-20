@@ -68,6 +68,10 @@ Given a source operating rule changes
 When the change applies to initialized target harnesses
 Then source docs, generated defaults, role guidance, knowledge routes, and tests are updated in the same task or the blocker is recorded
 
+Given generated role guidance describes BDD scenarios, DocSync metadata, validation, review, dogfood, or release readiness
+When a fresh target is initialized
+Then Engineer guidance distinguishes scenario IDs from feature-contract paths, shows the structured `MarsDocSync` block form, and QA, Security, Dogfood, and Release Manager guidance treat `docsync_audit` `FAIL:` output as a blocker instead of approving stale source documentation
+
 ### F-004-S008: Target Harness Eject Kill Switch
 
 Given a target repo has generated Mars Harness artifacts and a repo-scoped SQLite database

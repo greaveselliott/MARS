@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/greaveselliott/mars-harness/internal/docsync"
 	"github.com/greaveselliott/mars-harness/internal/safety"
 	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 )
@@ -730,9 +731,59 @@ func checkJobDispositionRecordPolicy(ctx context.Context, root Root, session Ses
 	}
 	files = dispositionBlockingFiles(files)
 	if len(files) == 0 {
-		return nil
+		return checkSuccessfulDispositionDocSync(root, session, args.Status)
 	}
 	return fmt.Errorf("policy: job_disposition_record cannot complete while repository has uncommitted changes: %s. Run git_status, commit the changed work with git_commit, then record the disposition", summarizeChangedFiles(files))
+}
+
+func checkSuccessfulDispositionDocSync(root Root, session Session, status string) error {
+	if !docSyncDispositionStatus(status) || !roleRequiresDocSyncForSuccessfulDisposition(session.Role) {
+		return nil
+	}
+	report, err := docsync.Audit(docsync.Config{RepoRoot: root.Abs()})
+	if err != nil {
+		return fmt.Errorf("policy: job_disposition_record could not run docsync_audit before a successful disposition: %w", err)
+	}
+	if report.OK() {
+		return nil
+	}
+	return fmt.Errorf("policy: successful disposition blocked by docsync_audit findings: %s. Fix MarsDocSync metadata and rerun docsync_audit, or record changes_requested/blocked with feedback instead of approving", summarizeDocSyncFindings(report.Findings))
+}
+
+func docSyncDispositionStatus(status string) bool {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "completed", "approved", "in_review":
+		return true
+	default:
+		return false
+	}
+}
+
+func roleRequiresDocSyncForSuccessfulDisposition(role string) bool {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "engineer", "pipeline-fixer", "qa", "security", "dogfood", "release-manager", "dependency-manager":
+		return true
+	default:
+		return false
+	}
+}
+
+func summarizeDocSyncFindings(findings []docsync.Finding) string {
+	if len(findings) == 0 {
+		return "no findings"
+	}
+	limit := len(findings)
+	if limit > 4 {
+		limit = 4
+	}
+	parts := make([]string, 0, limit)
+	for _, finding := range findings[:limit] {
+		parts = append(parts, finding.Path+": "+finding.Message)
+	}
+	if len(findings) > limit {
+		parts = append(parts, fmt.Sprintf("and %d more", len(findings)-limit))
+	}
+	return strings.Join(parts, "; ")
 }
 
 func checkEngineerDispositionTicketState(root Root, session Session, status, ticketID string) error {

@@ -34,6 +34,10 @@ Given an agent run fails with context overflow, LLM unreachable, inference crash
 When telemetry records the failure
 Then it assigns a category and retry/remediation policy, and deterministic repair candidates can be selected by a remediation registry before an LLM repair role is considered
 
+Given a tool call is blocked by guardrail or tool policy and the error text also contains words such as `timeout`
+When telemetry classifies the failure
+Then the policy/guardrail ownership wins over generic timeout matching, so deterministic retry is not scheduled for a command the harness deliberately rejected
+
 ### F-012-S002: Improvement Target Triage
 
 Given telemetry patterns or sparse/low role scores are detected

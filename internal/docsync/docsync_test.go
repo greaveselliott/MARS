@@ -67,6 +67,7 @@ body { margin: 0; }
 
 func TestAuditReportsMissingMetadataAndMissingExpectedDocs(t *testing.T) {
 	dir := t.TempDir()
+	writeDocSyncTestFile(t, dir, "go.mod", "module github.com/greaveselliott/mars-harness\n")
 	writeDocSyncTestFile(t, dir, "docs/design-docs/code-documentation-map.md", "map")
 	writeDocSyncTestFile(t, dir, "docs/design-docs/release-versioning.md", "release")
 	writeDocSyncTestFile(t, dir, "docs/features/F-009-release-update-lifecycle.md", "feature")
@@ -95,6 +96,13 @@ package release
 func TestAuditIncludesDeployedSourceRoots(t *testing.T) {
 	dir := t.TempDir()
 	writeDocSyncTestFile(t, dir, "docs/features/F-001-product-walking-skeleton.md", "feature")
+	writeDocSyncTestFile(t, dir, "cmd/task-notes-api/main.go", `/*
+MarsDocSync:
+docs:
+- docs/features/F-001-product-walking-skeleton.md
+*/
+package main
+`)
 	writeDocSyncTestFile(t, dir, "src/style.css", `/* MarsDocSync: ["docs/features/F-001-product-walking-skeleton.md"] */
 body { margin: 0; }
 `)
@@ -105,7 +113,7 @@ body { margin: 0; }
 	if err != nil {
 		t.Fatalf("Audit: %v", err)
 	}
-	if len(report.Files) != 2 {
+	if len(report.Files) != 3 {
 		t.Fatalf("expected src files to be audited, got %#v", report.Files)
 	}
 	if report.OK() {

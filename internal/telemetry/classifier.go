@@ -56,6 +56,21 @@ func Classify(errMsg string) FailureCategory {
 	lower := strings.ToLower(errMsg)
 
 	switch {
+	case strings.Contains(lower, "guardrails: blocked"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "guardrail block"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "tool policy blocked"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "blast radius exceeded"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "policy: secret scanner blocked"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "policy: trust level observer cannot run mutating tool"):
+		return CategoryGuardrailBlock
+	case strings.Contains(lower, "policy: strict trunk only allows"):
+		return CategoryGuardrailBlock
+
 	// Tool timeout must match before context overflow because "context deadline exceeded"
 	// contains both "context" and "timeout".
 	case strings.Contains(lower, "timed out"):
@@ -115,21 +130,6 @@ func Classify(errMsg string) FailureCategory {
 		return CategoryDispatchProtocol
 	case strings.Contains(lower, "suggested route rejected"):
 		return CategoryDispatchProtocol
-
-	case strings.Contains(lower, "guardrails: blocked"):
-		return CategoryGuardrailBlock
-	case strings.Contains(lower, "guardrail block"):
-		return CategoryGuardrailBlock
-	case strings.Contains(lower, "tool policy blocked"):
-		return CategoryGuardrailBlock
-	case strings.Contains(lower, "blast radius exceeded"):
-		return CategoryGuardrailBlock
-	case strings.Contains(lower, "policy: secret scanner blocked"):
-		return CategoryGuardrailBlock
-	case strings.Contains(lower, "policy: trust level observer cannot run mutating tool"):
-		return CategoryGuardrailBlock
-	case strings.Contains(lower, "policy: strict trunk only allows"):
-		return CategoryGuardrailBlock
 
 	case strings.Contains(lower, "workspace_hygiene_blocked"):
 		return CategoryWorkspaceHygiene

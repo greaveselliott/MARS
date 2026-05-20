@@ -65,6 +65,7 @@ func Audit(cfg Config) (Report, error) {
 	if err != nil {
 		return Report{}, err
 	}
+	foundationRoot := isFoundationHarnessRoot(absRoot)
 	var report Report
 	for _, rel := range files {
 		abs := filepath.Join(absRoot, filepath.FromSlash(rel))
@@ -73,7 +74,10 @@ func Audit(cfg Config) (Report, error) {
 			return Report{}, fmt.Errorf("docsync: read %s: %w", rel, err)
 		}
 		docs := MetadataDocs(string(data))
-		expected := ExpectedDocs(rel)
+		var expected []string
+		if foundationRoot {
+			expected = ExpectedDocs(rel)
+		}
 		report.Files = append(report.Files, FileReport{Path: rel, Docs: docs, ExpectedDocs: expected})
 		if len(docs) == 0 {
 			report.Findings = append(report.Findings, Finding{Path: rel, Message: "missing MarsDocSync docs metadata"})
@@ -95,6 +99,24 @@ func Audit(cfg Config) (Report, error) {
 		}
 	}
 	return report, nil
+}
+
+func isFoundationHarnessRoot(root string) bool {
+	data, err := os.ReadFile(filepath.Join(root, "go.mod"))
+	if err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			if strings.TrimSpace(line) == "module github.com/greaveselliott/mars-harness" {
+				return true
+			}
+		}
+	}
+	if _, err := os.Stat(filepath.Join(root, "cmd", "mars-harness", "main.go")); err != nil {
+		return false
+	}
+	if _, err := os.Stat(filepath.Join(root, "internal", "scanner", "init.go")); err != nil {
+		return false
+	}
+	return true
 }
 
 func SourceFiles(root string) ([]string, error) {

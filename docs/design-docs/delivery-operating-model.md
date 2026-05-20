@@ -2038,3 +2038,59 @@ target harness teaches roles the exit path before the tool has to recover.
   softened.
 - The next API canary should confirm Engineer stops the validation binary and
   completes the ticket lifecycle rather than looping on no-op calls.
+
+## AD-150: DocSync Findings Block Successful Handoffs
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run14` replay confirmed that no-op shell guidance improved the
+live lifecycle: Engineer started, probed, and killed managed background
+servers, moved `T-001` to done, and recorded a terminal disposition. The same
+run exposed a quality escape. Engineer added malformed one-line
+`MarsDocSync` metadata pointing at `docs/features/F-001-S002.md`, QA and
+Security both ran `docsync_audit`, saw `FAIL:` findings, and still approved.
+Dogfood then approved release readiness, and Release Manager generated local
+release notes before the no-remote publication blocker stopped the chain.
+
+The run also showed that a policy-blocked external `timeout` command was
+classified as `tool_timeout` because the telemetry classifier matched
+"timeout" before "tool policy blocked". That made a deterministic policy
+rejection look retryable and enqueued a duplicate Dogfood job.
+
+### Decision
+
+Successful dispositions from implementation, review, validation, and release
+roles now run the DocSync audit mechanically before acceptance. Engineer,
+Pipeline Fixer, QA, Security, Dogfood, Release Manager, and Dependency Manager
+cannot record `completed`, `approved`, or `in_review` while `docsync_audit`
+has findings. The policy error names the failing files and tells the role to
+fix metadata/docs or record `changes_requested`/`blocked` feedback instead.
+
+`internal/docsync` now distinguishes foundation and deployed repos. The
+foundation source checkout still enforces expected-doc mappings from prefix
+rules. Deployed target repos still require valid top-of-file `MarsDocSync`
+metadata and existing documentation references, but they are not forced to
+reference foundation-only source docs. Generated Engineer, QA, Security,
+Dogfood, and Release Manager prompts now spell out that scenario IDs are not
+feature-contract paths, structured `MarsDocSync` blocks are required, and
+DocSync `FAIL:` output blocks approval/release readiness.
+
+Telemetry classification now handles guardrail/tool-policy strings before
+generic timeout matching, so a rejected external `timeout` wrapper records as
+a guardrail block rather than retryable `tool_timeout`.
+
+### Consequences
+
+- DocSync failures become hard lifecycle gates instead of optional reviewer
+  judgement calls.
+- Target Go apps under `cmd/` can satisfy DocSync with their own feature
+  contracts rather than Mars Harness source documentation.
+- Policy-blocked validation wrappers no longer enqueue duplicate Dogfood work
+  through retry remediation.
+- The next API canary should stop at Engineer rework if malformed DocSync
+  metadata appears, or proceed through QA/Security/Dogfood/Release only when
+  the target source passes DocSync.

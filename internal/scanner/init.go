@@ -3394,6 +3394,11 @@ TICKET SELECTION:
 
 Read the selected ticket fully: requirements, acceptance criteria, design docs.
 If ` + "`work_type: feature`" + `, also read the BDD scenario(s) named in ` + "`bdd_scenarios`" + `.
+` + "`bdd_scenarios`" + ` values such as ` + "`F-001-S002`" + ` are scenario IDs, not
+Markdown file paths. Find the owning feature contract by the feature prefix
+under ` + "`docs/features/`" + `, such as ` + "`docs/features/F-001-*.md`" + `, and read that
+canonical contract. Never invent a file like ` + "`docs/features/F-001-S002.md`" + `
+unless that exact file already exists.
 If the selected feature ticket changes business logic that is missing from the
 feature contract, update the contract with Business Logic, Step-By-Step
 Behavior, Given/When/Then scenarios, and evidence mapping before closing the
@@ -3438,6 +3443,16 @@ IMPLEMENTATION:
 5. CHECK DOCUMENTATION SYNC
    - For every new or materially changed code file, add or update its
      top-of-file ` + "`MarsDocSync`" + ` block with associated docs
+   - Use the structured block form for Go and other source files:
+     ` + "```" + `
+     /*
+     MarsDocSync:
+     docs:
+     - docs/features/F-001-product-walking-skeleton.md
+     */
+     ` + "```" + `
+     A one-line comment like ` + "`// MarsDocSync: docs/features/F-001-S002.md`" + `
+     is not valid metadata.
    - Before adding ` + "`MarsDocSync`" + ` to static HTML/CSS/JS files, read the
      existing ` + "`docs/features/`" + ` files and use the canonical feature
      contract named by the ticket's ` + "`bdd_scenarios`" + `. If a ` + "`F-001`" + `
@@ -3448,6 +3463,9 @@ IMPLEMENTATION:
      architecture, generated output, or operating doctrine changed
    - If the listed docs were checked and remain accurate, mention that in the
      ticket evidence or commit context
+   - Run ` + "`docsync_audit`" + ` after code changes. Any ` + "`FAIL:`" + ` line is a
+     blocker for moving the ticket to done or recording a completed disposition;
+     fix the metadata/docs first.
 
 6. BUILD VERIFICATION (mandatory before closing any ticket)
    After implementation, verify the project actually builds and starts:
@@ -3672,6 +3690,9 @@ REVIEW CHECKLIST:
      state why they remain current?
    - Does ` + "`docsync_audit`" + ` or ` + "`mars-harness docsync audit --repo .`" + ` pass for
      the changed source tree?
+     Any ` + "`FAIL:`" + ` line is a review blocker. Do not approve a ticket while
+     docsync_audit reports missing metadata, missing docs, or invalid references;
+     request Engineer rework with the exact failing files.
    - Are goal, feature, ticket, and quality evidence links updated when feature status changed?
 
 OUTPUT:
@@ -3694,7 +3715,8 @@ missing documentation or evidence over ` + "`blocked`" + `/liveness.
 
 Before finishing, record exactly one job_disposition_record:
 - Use status ` + "`approved`" + ` when the ticket satisfies the BDD scenarios and evidence
-  is credible. Include ticket_id, evidence_links, and next_need
+  is credible and docsync_audit has no ` + "`FAIL:`" + ` findings. Include ticket_id,
+  evidence_links, and next_need
   ` + "`security_review`" + `, ` + "`dogfood_validation`" + `, or ` + "`no_need`" + ` based on the
   handoff and project risk.
 - Use status ` + "`changes_requested`" + ` when Engineer rework is needed. Include
@@ -3744,6 +3766,9 @@ START by reading:
 4. Current date: shell_exec date +%F. Use that exact date in file names,
    headings, commit messages, and disposition evidence. Do not invent a future
    date.
+5. Run docsync_audit before recording an approved disposition. Missing
+   MarsDocSync metadata, missing docs, or invalid references are review blockers;
+   record NEEDS_REMEDIATION and changes_requested instead of approving.
 
 REVIEW CHECKLIST:
 
@@ -3781,6 +3806,13 @@ Commit and push:
   git add docs/reports/security/security-audit-*.md
   git commit -m "security: audit [date]"
   git push
+
+Before finishing, record exactly one job_disposition_record:
+- Use status ` + "`approved`" + ` only when security findings do not require remediation
+  and docsync_audit has no ` + "`FAIL:`" + ` findings.
+- Use status ` + "`changes_requested`" + ` with feedback.for_role ` + "`engineer`" + ` when
+  code, documentation, or MarsDocSync metadata must be fixed before release.
+- Use status ` + "`blocked`" + ` when required evidence cannot be inspected.
 `,
 
 	"dependency-manager": `# Dependency Manager
@@ -3859,7 +3891,10 @@ START by reading:
 6. Existing git remotes. If no remote exists, record release publication as
    blocked after local release notes/tag checks. Never add, rewrite, guess, or
    remove a git remote from inside the harness.
-7. GitHub release state only when a real remote is already configured: gh release list --limit 10
+7. docsync_audit. If it reports any ` + "`FAIL:`" + ` findings, do not publish or
+   approve the release. Record a blocked or changes_requested disposition with
+   the failing files and route rework before version publication.
+8. GitHub release state only when a real remote is already configured: gh release list --limit 10
 
 TASKS:
 
@@ -3877,7 +3912,7 @@ During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
 2. If yes: update VERSION and CHANGELOG.md with the command above
 3. Verify tests pass before cutting
-4. Tag and publish the GitHub Release only after the release-note commit is verified on main
+4. Tag and publish the GitHub Release only after docsync_audit passes and the release-note commit is verified on main
 
 Commit and push:
   git add VERSION CHANGELOG.md
@@ -4055,10 +4090,15 @@ server, or edit product/package files after a failed pre-flight.
     is valuable, add it intentionally under a durable tests directory and commit
     it with the feature; otherwise use direct file_read, curl, and existing
     test commands as evidence.
+15. DOCSYNC EVIDENCE: Run docsync_audit after inspecting changed source files.
+    Any ` + "`FAIL:`" + ` line means validation cannot approve release readiness.
+    Create or route a target-owned rework ticket only when the failing metadata
+    belongs to target code; otherwise record a blocked foundation/runtime
+    disposition with the trace and failing files.
 
 ### Phase 4 — Report
 
-15. For each failure, call ticket_create (NOT file_write) with a [Dogfood]
+16. For each failure, call ticket_create (NOT file_write) with a [Dogfood]
     title prefix. Include priority high | medium, complexity small,
     work_type enabler unless the failure maps to a BDD feature scenario,
     bdd_scenarios when applicable, source "dogfood test [date]", and a body
@@ -4067,23 +4107,24 @@ server, or edit product/package files after a failed pre-flight.
     intervention-debt tickets for foundation/runtime failures unless an
     operator explicitly asked for ticket materialization.
 
-16. Record any decisions made during testing via record_decision tool
+17. Record any decisions made during testing via record_decision tool
     (e.g. "App requires Node 22", "Port 3001 conflicts, used 3002")
 
-17. If you write a dogfood evidence report, write only under
+18. If you write a dogfood evidence report, write only under
     docs/reports/dogfood/. Use ticket_create for new findings; do not hand-write
     ticket markdown and do not edit product files.
 
-18. COMMIT AND PUSH findings or evidence you produced before handoff:
+19. COMMIT AND PUSH findings or evidence you produced before handoff:
     Use git_status to inspect changes. Commit target-owned tickets and
     docs/reports/dogfood evidence with git_commit using message
     "dogfood: E2E validation findings [date]". Then call git_push. If the
     target repo has no remote, git_push reports a clean local skip; do not loop
     on that.
 
-19. Before finishing, record exactly one job_disposition_record:
+20. Before finishing, record exactly one job_disposition_record:
     - status approved with next_need release_review when validation passes
-      after product or ticket commits, so Release Manager can generate version notes
+      after product or ticket commits and docsync_audit has no ` + "`FAIL:`" + `
+      findings, so Release Manager can generate version notes
     - status no_work when validation passes and no release/version follow-up is needed
     - status changes_requested with next_need implementation_rework when a
       target-owned product defect or pre-flight issue needs Engineer work
@@ -4091,7 +4132,7 @@ server, or edit product/package files after a failed pre-flight.
       foundation/runtime/tool/model/guardrail/timeout failure
     Include evidence_links with commands, report paths, tickets, or trace IDs.
 
-20. CLEANUP (critical):
+21. CLEANUP (critical):
     - Container: podman stop dogfood-{project} && podman rm dogfood-{project}
     - Native: background processes are cleaned up automatically by the harness
 

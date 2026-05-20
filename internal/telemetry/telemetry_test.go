@@ -122,6 +122,7 @@ func TestClassify_interventionSignals(t *testing.T) {
 		{`guardrails: blocked by rule "no-secrets"`, CategoryGuardrailBlock},
 		{`post tool policy blocked shell_exec: blast radius exceeded: 127 files changed (limit 10)`, CategoryGuardrailBlock},
 		{`pre tool policy blocked git_commit: blast radius exceeded: 127 files changed (limit 10)`, CategoryGuardrailBlock},
+		{`pre tool policy blocked shell_exec: shell_exec: external timeout command "timeout" is not portable inside harness-managed validation`, CategoryGuardrailBlock},
 		{`policy: trust level observer cannot run mutating tool "file_write"`, CategoryGuardrailBlock},
 		{`executor: workspace_hygiene_blocked before role "engineer" run: generated output is dirty`, CategoryWorkspaceHygiene},
 		{`dependency_sync: workspace hygiene preflight blocked: generated directory node_modules is not ignored`, CategoryWorkspaceHygiene},

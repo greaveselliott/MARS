@@ -598,6 +598,60 @@ func TestJobDispositionPolicyRequiresCleanTreeForSuccessfulNonOrchestratorHandof
 	}
 }
 
+func TestJobDispositionPolicyBlocksSuccessfulReviewWhenDocSyncFails(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatalf("NewRoot: %v", err)
+	}
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
+	if err := os.MkdirAll(filepath.Join(dir, "cmd", "task-notes-api"), 0o755); err != nil {
+		t.Fatalf("mkdir cmd: %v", err)
+	}
+	source := filepath.Join(dir, "cmd", "task-notes-api", "main.go")
+	if err := os.WriteFile(source, []byte("package main\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "add", "."); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "commit", "-m", "feat: seed source"); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+
+	ctx := WithSession(context.Background(), Session{Role: "qa", ToolCounts: map[string]int{}})
+	raw := []byte(`{"status":"approved","next_need":"security_review","ticket_id":"T-001"}`)
+	err = preToolPolicy(ctx, root, "job_disposition_record", raw)
+	if err == nil {
+		t.Fatal("expected successful disposition to be blocked by docsync findings")
+	}
+	if !strings.Contains(err.Error(), "successful disposition blocked by docsync_audit findings") {
+		t.Fatalf("expected docsync policy error, got %v", err)
+	}
+
+	if err := os.WriteFile(source, []byte(`/*
+MarsDocSync:
+docs:
+- docs/features/F-001-product-walking-skeleton.md
+*/
+package main
+`), 0o644); err != nil {
+		t.Fatalf("write source metadata: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "add", "."); err != nil {
+		t.Fatalf("git add metadata: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "commit", "-m", "docs: add docsync metadata"); err != nil {
+		t.Fatalf("git commit metadata: %v", err)
+	}
+	if err := preToolPolicy(ctx, root, "job_disposition_record", raw); err != nil {
+		t.Fatalf("expected successful disposition to pass after docsync fix, got %v", err)
+	}
+}
+
 func TestJobDispositionPolicyRequiresCleanTreeForChangesRequestedHandoff(t *testing.T) {
 	t.Parallel()
 	requireGit(t)

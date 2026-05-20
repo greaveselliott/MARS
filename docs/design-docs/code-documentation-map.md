@@ -45,10 +45,12 @@ list is short:
 /* MarsDocSync: ["docs/features/F-001-product-walking-skeleton.md"] */
 ```
 
-`internal/docsync` audits both foundation roots and common deployed app roots
-such as `src/`, `app/`, `pages/`, `public/`, `web/`, and `static/`. Deployed
-app roots do not inherit this foundation package map; they must point to the
-target's local feature contracts or design docs.
+`internal/docsync` audits both foundation roots and deployed app roots. In the
+foundation source checkout, prefix rules below define expected docs. In a
+deployed target repo, product code under common layouts such as `cmd/`,
+`internal/`, `pkg/`, `src/`, `app/`, `pages/`, `public/`, `web/`, and `static/`
+still needs valid metadata, but does not inherit this foundation package map;
+it must point to the target's local feature contracts or design docs.
 
 ## Package Map
 

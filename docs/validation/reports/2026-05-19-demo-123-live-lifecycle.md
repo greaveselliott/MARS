@@ -1393,6 +1393,81 @@ Generated Engineer guidance also forbids empty/no-op shell calls as wait
 commands. The next API canary should confirm Engineer completes the ticket
 lifecycle after validation instead of looping on no-op calls.
 
+## API Rerun After No-Op Shell Guidance: Task Notes API - 2026-05-20
+
+Fresh target:
+`<validation-root>`
+
+Harness DB:
+`<validation-root>`
+
+Target local evidence commit:
+`c423d9f chore: capture run14 quality evidence`
+
+Job state at stop:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+dogfood|completed|1
+dogfood|failed|1
+engineer|completed|1
+qa|completed|1
+release-manager|completed|1
+security|completed|1
+```
+
+Telemetry:
+
+```text
+cto-weekly|guardrail_block|1
+dogfood|guardrail_block|1
+dogfood|llm_unreachable|1
+dogfood|tool_timeout|1
+engineer|guardrail_block|2
+```
+
+Positive evidence:
+
+- CEO, COO, and CTO produced product-specific planning and a single ordinary
+  product ticket with zero target intervention-debt tickets.
+- Engineer claimed `T-001`, implemented `cmd/task-notes-api/main.go`, added
+  `cmd/task-notes-api/main_test.go`, initialized `go.mod`, passed
+  `go test ./...`, validated live `/health` responses, stopped tracked
+  background PIDs, moved the ticket to done, and recorded `qa_review`.
+- The v0.42.13 no-op shell fix worked in the live path: no empty `argv` or
+  single `:` loop recurred after validation.
+- Release Manager generated local `0.2.0` notes and stopped with an explicit
+  no-remote publication blocker rather than adding or guessing a remote.
+- No target intervention-debt tickets were created.
+
+Residual findings:
+
+- Engineer treated `F-001-S002` as if it were a feature-contract file and added
+  malformed one-line `// MarsDocSync: docs/features/F-001-S002.md` metadata.
+  `docsync_audit` correctly reported missing metadata for the implementation
+  and test files.
+- QA and Security both observed the DocSync failures and still approved, and
+  Dogfood approved release readiness. This proved the DocSync rule needed a
+  mechanical successful-disposition gate rather than relying on reviewer
+  judgement.
+- Dogfood used an external `timeout` wrapper. The shell policy rejected it, but
+  telemetry classified the event as retryable `tool_timeout` and enqueued a
+  duplicate Dogfood job.
+- `scores export` produced an overall A despite the DocSync escape, so scoring
+  still needs a later quality-signal correction after the handoff gate is
+  fixed.
+
+The source fix now blocks successful Engineer, QA, Security, Dogfood, Release
+Manager, Dependency Manager, and Pipeline Fixer dispositions while
+`docsync_audit` has findings. Deployed target repos still require valid
+metadata, but they are no longer forced to cite foundation-only source docs.
+Policy-blocked external `timeout` commands now classify as guardrail blocks so
+they do not trigger deterministic retry work. The next API canary should either
+produce valid DocSync metadata and proceed, or stop at implementation rework
+instead of approving stale documentation.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -1445,7 +1520,10 @@ same-job `kill <tracked-wrapper-pid>` still leaves a compiled `go run` child
 server behind. Run13 confirms tracked-background kill interception works and the
 `/tmp` validation binary can start without manual `lsof` cleanup or bare-port
 loops; the remaining turn sink is empty/`:` no-op shell calls after successful
-validation. The remaining live-loop work is to rerun the API canary after
-no-op shell guidance, confirm Engineer completes the ticket lifecycle, and keep
+validation. Run14 confirms no-op shell guidance lets Engineer complete the
+ticket lifecycle and shifts the next generic bottleneck to mechanical DocSync
+approval gates plus non-retryable classification for policy-blocked timeout
+wrappers. The remaining live-loop work is to rerun the API canary after the
+DocSync/timeout gate fix, confirm bad metadata cannot be approved, and keep
 validating against multiple software archetypes before making generic lifecycle
 claims.

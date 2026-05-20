@@ -31,6 +31,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 14. F-006-S014 - Product validation routes into release review instead of stopping before versioning.
 15. F-006-S015 - Scheduled triggers skip same-repo same-role work that is already pending, claimed, or running.
 16. F-006-S016 - Fresh bootstrap roles reuse canonical feature-contract paths and rewrite starter scenarios in place.
+17. F-006-S017 - Successful implementation, review, validation, and release dispositions cannot approve source with failing DocSync evidence.
 
 ## Scenarios
 
@@ -141,6 +142,10 @@ Then the job fails closed with an actionable error so the pipeline cannot silent
 Given a non-Orchestrator dispatch-mode role changed target files
 When it records a terminal disposition before committing those changes
 Then the tool policy rejects the disposition so the role must commit the produced work before Orchestrator can route the next handoff
+
+Given Engineer, QA, Security, Dogfood, Release Manager, Dependency Manager, or Pipeline Fixer records a successful disposition such as `completed`, `approved`, or `in_review`
+When `docsync_audit` finds missing `MarsDocSync` metadata, missing docs, invalid documentation references, or missing foundation expected-doc mappings
+Then tool policy rejects the disposition with the failing files, so the role must fix DocSync or record `changes_requested`/`blocked` feedback instead of approving stale documentation
 
 Given Orchestrator repeatedly chooses the same next role and next need without a ticket-state change
 When the loop guard evaluates the new dispatch decision
