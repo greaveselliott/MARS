@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.10] - 2026-05-20
+<!-- mars-harness-release: version=0.42.10 commit=aafa166a4f24 -->
+
+### Impact
+- **tools:** Live target runs are less likely to inherit stale dev servers from earlier validation jobs, reducing false port conflicts and follow-on command loops.
+
+### Why
+- **tools:** The `demo-api-run10` canary found that killing the tracked `go run` wrapper was not enough: the compiled child server could survive on port 8080 and derail the next Engineer validation. Background cleanup needs to own the whole process tree it starts.
+
+### What Changed
+- **tools:** Background cleanup now discovers known descendants, kills them from leaf to root, then terminates the tracked process group and process; coverage includes an escaped-child regression test (aafa166).
+
+### Fixes
+- **tools:** Clean background process descendants (aafa166)
+
 ## [0.42.9] - 2026-05-20
 <!-- mars-harness-release: version=0.42.9 commit=053a6e20d9c1 -->
 
