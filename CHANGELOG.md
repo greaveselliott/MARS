@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.1] - 2026-05-20
+<!-- mars-harness-release: version=0.42.1 commit=e9187f2e2049 -->
+
+### Impact
+- **scheduler:** Operators see improved reliability because skip active same-role scheduled work.
+
+### Why
+- **scheduler:** This matters because skip active same-role scheduled work closes a failure mode or degraded path.
+
+### What Changed
+- **scheduler:** Changed skip active same-role scheduled work (e9187f2).
+
+### Fixes
+- **scheduler:** Skip active same-role scheduled work (e9187f2)
+
 ## [0.42.0] - 2026-05-20
 <!-- mars-harness-release: version=0.42.0 commit=b6173231a23c -->
 
