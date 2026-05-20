@@ -1147,6 +1147,51 @@ The source fix now blocks new repo-root validation shell scripts such as
 agents to existing tests, direct build/run/curl evidence, tool
 `timeout_seconds`, and managed `background:true` probes.
 
+## API Rerun After Scratch Validation Prevention: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after scratch validation script
+prevention and external timeout rejection, then validate that portable
+background/server cleanup remains healthy.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.9` plus
+  `053a6e2 fix(tools): block scratch validation scripts`
+- Target remote: none
+
+Job state at stop:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Positive evidence:
+
+- CEO, COO, and CTO reached product-specific planning and a single ordinary
+  product ticket.
+- Engineer claimed the ticket, wrote Go source and tests, initialized the Go
+  module, and passed `go test ./...`.
+- Bare `:8080` commands were rejected as tool-shape errors and did not create
+  intervention-debt tickets.
+
+Residual finding:
+
+- The run inherited a stale server child process on port `8080` from the
+  previous replay. The previous job cleanup killed the tracked `go run` wrapper
+  but not the compiled child server. Engineer hit `listen tcp :8080: bind:
+  address already in use`, repeated `:8080` cleanup attempts despite the guard,
+  and stopped with `circle_detected`.
+
+The source fix now makes `shell_exec` background cleanup discover and kill known
+descendants before killing the tracked process group and process. The next API
+canary should confirm no stale `go run` child server leaks into the target
+validation path, then continue checking for root `validate.sh` and external
+`timeout` use.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy

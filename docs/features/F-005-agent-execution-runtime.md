@@ -123,6 +123,10 @@ Given a role starts a long-running command with `background:true`
 When the process exits during the startup capture window
 Then the tool returns an error with the initial output and exit code so the role treats the result as a boot failure instead of continuing as though the server is running
 
+Given a role starts a long-running command with `background:true`
+When the agent job ends or the harness cleans background processes
+Then the tool terminates the tracked process, its process group, and any known descendant processes so wrapper commands such as `go run` do not leave child servers occupying ports for later runs
+
 Given a role calls `shell_exec` with a bare port token such as `:8080`
 When the tool validates the command
 Then the call fails before process execution and tells the role that ports are not executable commands, to start the app with its real server command using `background:true`, and to probe separately with `curl http://localhost:8080/health` or the target route

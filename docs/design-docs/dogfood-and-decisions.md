@@ -2251,6 +2251,35 @@ Decision: scratch validation should be prevented before cleanup is needed.
 to tool `timeout_seconds` or managed `background:true` probes. Generated
 Engineer and Dogfood guidance mirrors the same rule.
 
+### Non-Static API Replay: Background Cleanup Must Kill Wrapper Children
+
+The first replay after scratch-validation prevention used
+`<validation-root>` and exposed an older
+cleanup leak before it could reach Dogfood.
+
+Positive evidence:
+
+- CEO, COO, and CTO again reached product-specific planning and a single
+  ordinary product ticket.
+- Engineer claimed the ticket, wrote Go source and tests, initialized the Go
+  module, and passed `go test ./...`.
+- Bare `:8080` commands were blocked as tool-shape errors and kept out of the
+  target backlog as foundation telemetry.
+
+Residual finding:
+
+- A `go run` child server from the previous canary still owned port `8080`.
+  The harness had killed the tracked background wrapper PID, but not the
+  compiled child process. Engineer hit `listen tcp :8080: bind: address already
+  in use`, repeated malformed `:8080` cleanup attempts, and stopped with
+  `circle_detected`.
+
+Decision: background cleanup is responsible for wrapper children, not only the
+tracked process. `shell_exec` now discovers known descendants, kills them from
+leaf to root, then kills the tracked process group and process. This preserves
+the `background:true` validation contract while preventing stale dev servers
+from leaking across jobs or replay targets.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

@@ -1939,3 +1939,46 @@ rule.
 - The next API canary should confirm Engineer no longer creates root
   `validate.sh`, and that Dogfood can validate using direct commands without
   spending turns on script portability.
+
+## AD-148: Background Cleanup Kills Wrapper Descendants
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The first `demo-api-run10` replay after `v0.42.9` found that the prior run had
+left a server child process on port `8080`. Dogfood had started `go run
+main.go` with `background:true`; when the job ended, the harness killed the
+tracked `go run` wrapper, but the compiled child process survived and kept the
+port bound. The next Engineer hit `listen tcp :8080: bind: address already in
+use`, repeatedly tried malformed `:8080` commands, and eventually stopped with
+`circle_detected`.
+
+The existing tool guards were working as containment: bare ports were rejected,
+foundation-owned guardrail telemetry stayed out of the target backlog, and the
+runtime failure did not dispatch into Orchestrator. But the source cause was
+below model behavior. A software factory should not leak child servers between
+target replays or between jobs in the same target.
+
+### Decision
+
+`shell_exec` background cleanup now snapshots tracked background processes,
+discovers known descendant PIDs from the local process table, kills descendants
+from leaf to root, then kills the tracked process group and process. This keeps
+the existing process-group cleanup while covering wrapper commands such as
+`go run` that can spawn a server child outside the wrapper's group.
+
+The cleanup remains a job-boundary runtime behavior. Agents still start
+long-running servers with `background:true`, probe with separate commands, and
+avoid shell `&` process management.
+
+### Consequences
+
+- Live target canaries should not inherit stale dev servers from previous
+  background validation jobs.
+- Port-conflict handling becomes genuine target evidence again instead of a
+  side effect of harness cleanup leakage.
+- The next API canary should start from a clean port state after harness-owned
+  cleanup and verify the scratch-validation guard without manual port cleanup.

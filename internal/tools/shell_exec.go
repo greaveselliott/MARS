@@ -16,6 +16,7 @@ import (
 	"io"
 	"log/slog"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -71,13 +72,71 @@ var (
 // by the executor when a job ends to prevent orphan dev servers.
 func KillBackgroundProcs() {
 	bgMu.Lock()
-	defer bgMu.Unlock()
+	procs := make(map[int]*exec.Cmd, len(bgProcs))
 	for pid, cmd := range bgProcs {
-		slog.Info("shell_exec: killing background process", "pid", pid)
-		_ = syscall.Kill(-pid, syscall.SIGKILL)
-		_ = cmd.Wait()
+		procs[pid] = cmd
 		delete(bgProcs, pid)
 	}
+	bgMu.Unlock()
+
+	for pid, cmd := range procs {
+		slog.Info("shell_exec: killing background process", "pid", pid)
+		killBackgroundProcessTree(pid)
+		if cmd.Process != nil {
+			_ = cmd.Process.Kill()
+		}
+	}
+}
+
+func killBackgroundProcessTree(pid int) {
+	descendants := processDescendants(pid)
+	for i := len(descendants) - 1; i >= 0; i-- {
+		killProcessGroupOrProcess(descendants[i])
+	}
+	killProcessGroupOrProcess(pid)
+}
+
+func killProcessGroupOrProcess(pid int) {
+	if pid <= 0 {
+		return
+	}
+	if err := syscall.Kill(-pid, syscall.SIGKILL); err == nil {
+		return
+	}
+	_ = syscall.Kill(pid, syscall.SIGKILL)
+}
+
+func processDescendants(pid int) []int {
+	out, err := exec.Command("ps", "-eo", "pid=,ppid=").Output()
+	if err != nil {
+		return nil
+	}
+	children := map[int][]int{}
+	for _, line := range strings.Split(string(out), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			continue
+		}
+		child, err := strconv.Atoi(fields[0])
+		if err != nil {
+			continue
+		}
+		parent, err := strconv.Atoi(fields[1])
+		if err != nil {
+			continue
+		}
+		children[parent] = append(children[parent], child)
+	}
+	var descendants []int
+	var walk func(int)
+	walk = func(parent int) {
+		for _, child := range children[parent] {
+			descendants = append(descendants, child)
+			walk(child)
+		}
+	}
+	walk(pid)
+	return descendants
 }
 
 func registerShellExec(r *Registry) error {
