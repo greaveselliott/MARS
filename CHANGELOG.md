@@ -2,6 +2,30 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.7] - 2026-05-20
+<!-- mars-harness-release: version=0.42.7 commit=e9dd4a960838 -->
+
+### Impact
+- **tools:** Go/API validation no longer dirties target repositories with
+  compiled binaries by default, so agents avoid a blast-radius trap before it
+  starts.
+
+### Why
+- **tools:** The `demo-api-run7` canary confirmed managed background service
+  validation worked, then showed Engineer creating a root `task-notes-api`
+  binary with `go build -o`. That artifact triggered blast-radius containment
+  and masked later malformed recovery calls until `circle_detected`.
+
+### What Changed
+- **tools:** `shell_exec` now blocks explicit `go build -o <path>` outputs
+  when `<path>` resolves inside the target repo, suggests an external temp
+  output, validates malformed shell payloads before dirty-diff masking, and
+  mirrors the external-validation-binary rule into generated Engineer guidance
+  (e9dd4a9).
+
+### Fixes
+- **tools:** Prevent repo-local validation binaries (e9dd4a9)
+
 ## [0.42.6] - 2026-05-20
 <!-- mars-harness-release: version=0.42.6 commit=fe2fb41d4e22 -->
 
