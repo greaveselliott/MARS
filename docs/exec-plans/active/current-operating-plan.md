@@ -294,6 +294,15 @@ plans to decide what to do next.
   `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
   `checksums.txt`. Main-branch CI run `26181405499` failed before running repo
   tests on GitHub.
+- `v0.42.15` release notes and tag were pushed on 2026-05-20 for the
+  product-first validation loop stabilization. A notes-only GitHub Release was
+  created from the generated changelog entry. The tag-push Release workflow run
+  `26187543392` failed before asset publication because GitHub did not start
+  hosted runners with the account billing/spending-limit blocker. `mars-harness
+  release verify-assets --version v0.42.15` is blocked because the notes-only
+  release is missing `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
+  `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
+  `checksums.txt`.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
