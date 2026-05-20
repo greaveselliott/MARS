@@ -1988,3 +1988,53 @@ servers with `background:true`, probe with separate commands, and avoid shell
   side effect of harness cleanup leakage.
 - The next API canary should start from a clean port state after harness-owned
   cleanup and verify the scratch-validation guard without manual port cleanup.
+
+## AD-149: No-Op Shell Calls Return Completion Guidance
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run13` replay confirmed the tracked-background cleanup fix:
+Engineer started `go run src/main.go` with `background:true`, probed
+`GET /health`, and `shell_exec` intercepted `kill -9 <tracked-pid>` to clean
+the process tree. It then built `<validation-root>`, started that
+external binary, verified the health route and negative HTTP cases, and updated
+ticket evidence.
+
+The job still failed with `circle_detected` after product validation had passed.
+The repeated tool calls were no-op shapes: empty `argv` and single `:` commands
+after a managed background process was running. Those calls did not represent
+target product defects, but the previous behavior treated them as guardrail
+errors. That created eight Engineer guardrail-block telemetry events and ended
+the job before it could stop the tracked PID, move the ticket to done, commit,
+and record a disposition.
+
+### Decision
+
+`shell_exec` now treats empty argv, blank argv, and single `:` calls as no-op
+tool calls that do not execute a process. Instead of raising a guardrail error,
+the tool returns explicit completion guidance: no-op calls do not wait for
+background processes or finish ticket work; if background processes are active,
+the output names the tracked PID(s); after probes, the role should stop the
+tracked PID, update ticket evidence, move the ticket to done when appropriate,
+commit, push, and call `job_disposition_record`.
+
+Managed background startup output also includes the same discipline: probe the
+server, stop the tracked PID when cleanup is needed, and do not use empty argv
+or `:` as wait commands. Generated Engineer guidance mirrors that rule so the
+target harness teaches roles the exit path before the tool has to recover.
+
+### Consequences
+
+- Harmless malformed no-op tool calls become a recovery hint instead of target
+  backlog work, guardrail-loop noise, or an avoidable terminal failure.
+- Active managed background PIDs remain visible to the role after a no-op call,
+  which makes cleanup discoverable without broad `ps` or `lsof` exploration.
+- Shell syntax in argv mode remains blocked when it would mutate or depend on
+  shell parsing, such as `: > file`; only the empty/single-`:` no-op shapes are
+  softened.
+- The next API canary should confirm Engineer stops the validation binary and
+  completes the ticket lifecycle rather than looping on no-op calls.

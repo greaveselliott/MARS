@@ -193,6 +193,9 @@ func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 	if err != nil {
 		return ToolResult{}, fmt.Errorf("shell_exec: parse arguments: %w", err)
 	}
+	if shellExecNoop(args) {
+		return shellExecNoopResult(), nil
+	}
 	hasArgv := len(args.Argv) > 0
 	hasShell := strings.TrimSpace(args.ShellCommand) != ""
 	if hasArgv == hasShell {
@@ -257,6 +260,55 @@ func normalizeShellExecArgv(argv []string) []string {
 		return argv
 	}
 	return strings.Fields(only)
+}
+
+func shellExecNoop(args shellExecArgs) bool {
+	if args.Background {
+		return false
+	}
+	shell := strings.TrimSpace(args.ShellCommand)
+	if shell != "" {
+		return strings.Trim(shell, `"'`) == ":"
+	}
+	var nonEmpty []string
+	for _, arg := range args.Argv {
+		arg = strings.TrimSpace(arg)
+		if arg != "" {
+			nonEmpty = append(nonEmpty, arg)
+		}
+	}
+	if len(nonEmpty) == 0 {
+		return true
+	}
+	return len(nonEmpty) == 1 && strings.Trim(nonEmpty[0], `"'`) == ":"
+}
+
+func shellExecNoopResult() ToolResult {
+	pids := trackedBackgroundPIDs()
+	var b strings.Builder
+	b.WriteString("No command was run. shell_exec no-op calls do not wait for background processes or finish ticket work.")
+	if len(pids) > 0 {
+		b.WriteString(" Active background PID(s): ")
+		for i, pid := range pids {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(strconv.Itoa(pid))
+		}
+		b.WriteString(". Probe the intended route, then stop the tracked PID with shell_exec argv [\"kill\",\"<pid>\"] before committing.")
+	}
+	b.WriteString(" If validation is complete, update ticket evidence, move the ticket to done when appropriate, commit, push, and call job_disposition_record.")
+	return ToolResult{Output: b.String()}
+}
+
+func trackedBackgroundPIDs() []int {
+	bgMu.Lock()
+	defer bgMu.Unlock()
+	pids := make([]int, 0, len(bgProcs))
+	for pid := range bgProcs {
+		pids = append(pids, pid)
+	}
+	return pids
 }
 
 func simpleSingleArgvCommand(s string) bool {
@@ -579,7 +631,7 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 
 	initial := strings.TrimSpace(outStr + "\n" + errStr)
 	return ToolResult{
-		Output:    fmt.Sprintf("Started in background (PID %d)\n%s", pid, initial),
+		Output:    fmt.Sprintf("Started in background (PID %d)\n%s\nAfter probes, stop this tracked PID with shell_exec argv [\"kill\",\"%d\"] or rely on job cleanup. Do not call shell_exec with empty argv or : as a wait command.", pid, initial, pid),
 		Truncated: truncOut || truncErr,
 	}, nil
 }

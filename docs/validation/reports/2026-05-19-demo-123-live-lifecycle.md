@@ -1318,6 +1318,81 @@ cleanup used at job end. The next API canary should confirm the `/tmp`
 validation binary can start after a targeted kill without manual `lsof` cleanup
 or bare-port loops.
 
+## API Rerun After Tracked Background Kill: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after same-job tracked-background kill
+interception and confirm the external validation binary can start without
+manual port cleanup.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.12` plus
+  `7b9d8e7 fix(tools): kill tracked background process trees`
+- Target local evidence commits:
+  `8f60e56 chore: preserve run13 failed engineer workspace` and
+  `06a2755 chore: capture run13 quality evidence`
+- Target remote: none
+
+Job state at stop:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Telemetry:
+
+```text
+ceo|guardrail_block|2
+coo|guardrail_block|1
+cto-weekly|guardrail_block|1
+engineer|circle_detected|1
+engineer|guardrail_block|8
+```
+
+Positive evidence:
+
+- CEO, COO, and CTO again produced product-specific planning, a feature
+  contract, and one ordinary product ticket with zero target intervention-debt
+  tickets.
+- COO's attempted implementation write to `main.go` was blocked by role
+  ownership policy, then COO recovered by committing only planning artifacts.
+- CTO created `T-001` and committed it before recording the implementation
+  handoff.
+- Engineer claimed `T-001`, wrote Go product code and tests, and got
+  `go test ./src` passing.
+- Repo-local `go build -o task-notes-api` was blocked before artifact creation,
+  and Engineer recovered with `<validation-root>`.
+- Same-job tracked-background cleanup worked: Engineer started
+  `go run src/main.go` with `background:true`, curled `/health`, and
+  `shell_exec` intercepted `kill -9 <tracked-pid>` with "Killed background
+  process tree", allowing the external validation binary to start on port
+  `8080`.
+- The external validation binary returned valid `/health` JSON, rejected
+  `POST /health`, and returned Not found for `/invalid`.
+- The terminal runtime failure stayed foundation-owned: no target
+  intervention-debt tickets were created and no Orchestrator recovery loop was
+  dispatched.
+
+Residual finding:
+
+- After product validation and ticket evidence updates, Engineer started the
+  external validation binary a second time and then called `shell_exec` with
+  empty `argv` and repeated single `:` commands. Those no-op calls became
+  guardrail blocks and triggered `circle_detected` before the role could stop
+  the tracked PID, move `T-001` to done, commit, and record a disposition.
+
+The source fix now treats empty `argv`, blank `argv`, and single `:` calls as
+no-op recovery hints rather than process-execution or guardrail failures. The
+tool names active tracked background PIDs and tells the role to stop the PID,
+update ticket evidence, commit, push, and record `job_disposition_record`.
+Generated Engineer guidance also forbids empty/no-op shell calls as wait
+commands. The next API canary should confirm Engineer completes the ticket
+lifecycle after validation instead of looping on no-op calls.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -1367,7 +1442,10 @@ amplification, but shows implicit `go build` outputs and wrapper-child process
 ownership still consume Dogfood turns. Run12 confirms product planning and
 ticketing remain healthy and validates the external-build recovery path, but
 same-job `kill <tracked-wrapper-pid>` still leaves a compiled `go run` child
-server behind. The remaining live-loop work is to rerun the API canary after
-tracked-background kill interception, confirm the `/tmp` validation binary can
-start without manual `lsof` cleanup or bare-port loops, and keep validating
-against multiple software archetypes before making generic lifecycle claims.
+server behind. Run13 confirms tracked-background kill interception works and the
+`/tmp` validation binary can start without manual `lsof` cleanup or bare-port
+loops; the remaining turn sink is empty/`:` no-op shell calls after successful
+validation. The remaining live-loop work is to rerun the API canary after
+no-op shell guidance, confirm Engineer completes the ticket lifecycle, and keep
+validating against multiple software archetypes before making generic lifecycle
+claims.

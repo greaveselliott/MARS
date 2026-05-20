@@ -2345,6 +2345,40 @@ job-boundary cleanup. `shell_exec` now intercepts `kill <tracked-background-pid>
 and kills the tracked process tree, including known descendants, before
 returning success. Untracked PIDs still fall through to normal `kill` behavior.
 
+### Non-Static API Replay: No-Op Shell Calls Should Exit Toward Completion
+
+The next replay used `<validation-root>` to
+validate tracked background kill interception in a fresh Task Notes API target.
+
+Positive evidence:
+
+- CEO, COO, and CTO again reached product-specific planning and ordinary
+  product ticketing with zero target intervention-debt tickets.
+- COO's implementation write attempt was blocked by ownership policy and
+  recovered into committed planning artifacts.
+- Engineer claimed `T-001`, implemented Go product code and tests, recovered
+  from the repo-local build-output block with `<validation-root>`,
+  and got `go test ./src` passing.
+- Same-job tracked PID cleanup worked: after `go run src/main.go` started with
+  `background:true`, `shell_exec` intercepted `kill -9 <tracked-pid>` and killed
+  the process tree. The external validation binary then started successfully on
+  port `8080`.
+- The terminal runtime failure stayed foundation-owned and created no target
+  intervention-debt tickets.
+
+Residual finding:
+
+- After successful live validation, Engineer restarted the external validation
+  binary and then called `shell_exec` with empty `argv` and repeated single `:`
+  commands. Those no-op calls became guardrail blocks and triggered
+  `circle_detected` before ticket completion.
+
+Decision: no-op shell calls are model-shape drift, not target defects. Empty
+`argv`, blank `argv`, and single `:` now return completion guidance instead of
+guardrail errors. When a managed background process is active, the guidance
+names the tracked PID and tells the role to stop it, update ticket evidence,
+commit, push, and record `job_disposition_record`.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

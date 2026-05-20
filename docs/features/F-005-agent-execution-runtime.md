@@ -99,6 +99,10 @@ Given a local model emits a simple malformed `shell_exec` argv shape
 When `argv` is a JSON-encoded array string, a Python-style quoted list string, or a one-item simple command string with no shell syntax
 Then the tool normalizes it into executable argv tokens so the run does not spend extra turns recovering from harmless formatting drift
 
+Given a local model emits a no-op `shell_exec` call
+When `argv` is empty, `argv` contains only blank text, or the command is a single `:`
+Then the tool does not execute a process and returns completion guidance that names any active tracked background PIDs, tells the role to stop the PID after probes, and directs the role to update ticket evidence, commit, push, and record `job_disposition_record`
+
 Given a local model emits malformed `mars_harness_cli` args
 When `args` is a JSON-encoded array string, a Python-style quoted list string, or a simple single command string
 Then the tool normalizes the command before binary resolution so release, score, trust, and update flows do not fall back to stale PATH binaries because of harmless formatting drift

@@ -236,6 +236,50 @@ func TestShellExecBackgroundReturnsPIDForLongRunningProcess(t *testing.T) {
 	res, err := handleShellExec(context.Background(), root, []byte(`{"argv":["sh","-c","sleep 5"],"background":true}`))
 	require.NoError(t, err)
 	require.Contains(t, res.Output, "Started in background (PID")
+	require.Contains(t, res.Output, "After probes, stop this tracked PID")
+	require.Contains(t, res.Output, "Do not call shell_exec with empty argv or :")
+}
+
+func TestShellExecNoopReturnsCompletionGuidance(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		raw  string
+	}{
+		{name: "empty argv", raw: `{"argv":[]}`},
+		{name: "blank argv", raw: `{"argv":["  "]}`},
+		{name: "colon argv", raw: `{"argv":[":"]}`},
+		{name: "colon shell", raw: `{"shell_command":":"}`},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			root, err := NewRoot(dir)
+			require.NoError(t, err)
+			res, err := handleShellExec(context.Background(), root, []byte(tt.raw))
+			require.NoError(t, err)
+			require.Contains(t, res.Output, "No command was run")
+			require.Contains(t, res.Output, "job_disposition_record")
+		})
+	}
+}
+
+func TestShellExecNoopAfterBackgroundListsTrackedPID(t *testing.T) {
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	defer KillBackgroundProcs()
+
+	started, err := handleShellExec(context.Background(), root, []byte(`{"argv":["sh","-c","sleep 5"],"background":true}`))
+	require.NoError(t, err)
+	pid := backgroundPIDFromOutput(t, started.Output)
+
+	res, err := handleShellExec(context.Background(), root, []byte(`{"argv":[":"]}`))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, fmt.Sprintf("Active background PID(s): %d", pid))
+	require.Contains(t, res.Output, `["kill","<pid>"]`)
 }
 
 func TestKillBackgroundProcsKillsEscapedChildProcess(t *testing.T) {
@@ -760,7 +804,7 @@ func TestShellExecAllowsGoBuildOutputOutsideRepo(t *testing.T) {
 	require.FileExists(t, output)
 }
 
-func TestShellExecMalformedArgsNotMaskedByDirtyArtifact(t *testing.T) {
+func TestShellExecNoopArgsNotMaskedByDirtyArtifact(t *testing.T) {
 	dir, root := setupDirtyGitRepo(t, 0)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))
 	artifact := "task-notes-api"
@@ -776,10 +820,9 @@ func TestShellExecMalformedArgsNotMaskedByDirtyArtifact(t *testing.T) {
 		SafetyLimits: safety.DefaultLimits(),
 	}
 
-	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":[]}`)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "provide exactly one of argv")
-	require.NotContains(t, err.Error(), "blast radius exceeded")
+	res, err := ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":[]}`)
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "No command was run")
 	require.FileExists(t, filepath.Join(dir, artifact))
 }
 

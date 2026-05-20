@@ -875,6 +875,9 @@ func validateShellExecPolicyArgs(raw json.RawMessage) (shellExecArgs, error) {
 	if err != nil {
 		return shellExecArgs{}, fmt.Errorf("shell_exec: parse arguments: %w", err)
 	}
+	if shellExecNoop(args) {
+		return args, nil
+	}
 	hasArgv := len(args.Argv) > 0
 	hasShell := strings.TrimSpace(args.ShellCommand) != ""
 	if hasArgv == hasShell {
@@ -1508,6 +1511,9 @@ func shellExecReadOnly(raw json.RawMessage) bool {
 	args, err := decodeShellExecArgs(raw)
 	if err != nil {
 		return false
+	}
+	if shellExecNoop(args) {
+		return true
 	}
 	if args.Background {
 		return false
