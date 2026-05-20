@@ -2,6 +2,30 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.8] - 2026-05-20
+<!-- mars-harness-release: version=0.42.8 commit=1aa405f613e5 -->
+
+### Impact
+- **tools:** Agents get a clearer recovery path when service validation drifts
+  into malformed port-only commands, reducing short `:8080` loops after build or
+  server errors.
+
+### Why
+- **tools:** The `demo-api-run8` canary showed the build-output guardrail
+  working, but Engineer then called `shell_exec` with `argv:[":8080"]` twice and
+  hit `circle_detected` instead of returning to a real server command or curl
+  probe.
+
+### What Changed
+- **tools:** `shell_exec` now rejects bare port tokens such as `:8080` in argv
+  and single-token shell-command mode, explains that ports are not executable
+  commands, points roles to `background:true` plus curl probes, improves the
+  repo-local build-output recovery hint, and mirrors the port-probe rule into
+  generated Engineer guidance (1aa405f).
+
+### Fixes
+- **tools:** Reject bare port validation commands (1aa405f)
+
 ## [0.42.7] - 2026-05-20
 <!-- mars-harness-release: version=0.42.7 commit=e9dd4a960838 -->
 
