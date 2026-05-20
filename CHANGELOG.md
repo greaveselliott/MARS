@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.14] - 2026-05-20
+<!-- mars-harness-release: version=0.42.14 commit=05556832502e -->
+
+### Impact
+- **orchestration:** Fresh target runs can no longer approve, dogfood, or release source code while `docsync_audit` reports missing or invalid `MarsDocSync` metadata, reducing stale-doc escapes in the autonomous lifecycle.
+- **telemetry:** Policy-blocked external `timeout` validation commands now stay as guardrail evidence instead of spawning duplicate retry work.
+
+### Why
+- **orchestration:** The `demo-api-run14` canary showed Engineer completed the product ticket successfully, but QA, Security, and Dogfood observed DocSync failures and still approved. That made documentation freshness a judgement call at exactly the point it needed to be a mechanical gate.
+- **telemetry:** The same canary showed a rejected external `timeout` wrapper classified as retryable `tool_timeout`, enqueueing a duplicate Dogfood job for a deterministic policy block.
+
+### What Changed
+- **orchestration:** Successful Engineer, Pipeline Fixer, QA, Security, Dogfood, Release Manager, and Dependency Manager dispositions now run DocSync and are rejected while findings exist; generated target guidance tells roles that scenario IDs are not feature-contract file paths and that `FAIL:` output requires rework or a blocked disposition (0555683).
+- **docsync:** The audit now distinguishes the foundation source checkout from deployed target repos, so target Go apps under layouts such as `cmd/` still need valid metadata but are not forced to cite Mars Harness foundation-only expected docs (0555683).
+- **telemetry:** Guardrail and tool-policy matches are classified before generic timeout matching, preventing policy-blocked `timeout` wrappers from entering retry remediation (0555683).
+
+### Fixes
+- **orchestration:** Block handoffs on docsync failures (0555683)
+
 ## [0.42.13] - 2026-05-20
 <!-- mars-harness-release: version=0.42.13 commit=a95a9c0440c0 -->
 
