@@ -29,6 +29,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 12. F-005-S012 - Git push remains terminal-safe in local demo repositories without remotes.
 13. F-005-S013 - Generated role guidance uses bounded, project-appropriate validation evidence instead of shell-heavy churn.
 14. F-005-S014 - A stuck tool handler times out and returns control to the agent loop.
+15. F-005-S015 - Long-running app validation uses managed background processes instead of shell-background process leaks.
 
 ## Scenarios
 
@@ -113,6 +114,14 @@ Then the tool splits the marker into the intended path and content before policy
 Given a role attempts to configure repository remotes through `shell_exec`
 When the command is `git remote add`, `git remote set-url`, `git remote remove`, `git remote rm`, or `git remote rename`
 Then the tool blocks the command and instructs the role to record a release blocker instead of inventing or rewriting remotes
+
+Given a role calls `shell_exec` with `shell_command`
+When the command uses the shell background operator `&` to emulate a long-running server
+Then the tool rejects the call before process execution and instructs the role to use `background:true`, run readiness probes separately, and avoid process leaks
+
+Given a role starts a long-running command with `background:true`
+When the process exits during the startup capture window
+Then the tool returns an error with the initial output and exit code so the role treats the result as a boot failure instead of continuing as though the server is running
 
 ### F-005-S004: Auditable Trace
 

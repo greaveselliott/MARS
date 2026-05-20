@@ -2121,6 +2121,38 @@ blast-radius failure, then adds `Generated build artifact "<artifact>" can be
 cleaned with rm <artifact>`, preserving the narrow removal policy while making
 the recovery path model-visible.
 
+### Non-Static API Replay: Server Validation Must Use Managed Background Mode
+
+After adding generated artifact cleanup hints, a clean Task Notes API replay
+against `<validation-root>` confirmed the
+cleanup path and exposed the next generic service-validation bottleneck.
+
+Positive evidence:
+
+- CEO, COO, CTO, and Engineer reached product-specific planning, ticketing,
+  ticket claim, source implementation, and build validation without target
+  intervention-debt ticket amplification.
+- The blast-radius error named `rm task-notes-api`; Engineer used that command
+  and recovered from the generated binary trap instead of reaching max turns on
+  artifact cleanup.
+
+Residual finding:
+
+- Engineer then validated the API by running `go run src/main.go` in the
+  foreground, spending a 30-second timeout. It recovered with shell syntax that
+  backgrounded `go run` inside `shell_command`; that left port `8080` occupied
+  by the compiled server process, caused a later `background:true` attempt to
+  fail with "address already in use", and produced extra malformed `:8080`
+  shell calls before the run was manually stopped.
+
+Decision: long-running application validation is a managed-tool concern, not a
+shell convention. `shell_exec` now rejects the shell background operator `&` in
+`shell_command` and tells the role to use `background:true` with separate
+readiness probes. A `background:true` process that exits during the startup
+capture window now returns an error with initial output and exit code, so
+crashed or port-conflicted servers do not look successfully started. Generated
+Engineer guidance mirrors the same rule.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

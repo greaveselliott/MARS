@@ -901,6 +901,72 @@ keeps the removal exception narrow but makes the error actionable by appending
 the exact cleanup command when the oversized file is an untracked, root-level,
 binary-looking repo/module artifact.
 
+## API Rerun After Generated Artifact Cleanup Hints: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after blast-radius errors started
+naming the exact generated-artifact cleanup command, confirm Engineer can
+recover from a module-named Go binary, and collect the next generic factory
+bottleneck.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.5` plus the pushed cleanup-hint fix
+  `1025fe7 fix(tools): hint generated artifact cleanup`
+- Target local evidence commit:
+  `ccd5367 chore: capture run6 server validation evidence`
+- Target remote: none
+
+Job state:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|2
+engineer|failed|1
+engineer|pending|1
+```
+
+Trace-derived pace:
+
+```text
+ceo|20 turns|9 tools|9 LLM calls|31.7s|completed
+coo|28 turns|13 tools|13 LLM calls|79.6s|completed
+cto-weekly|20 turns|9 tools|9 LLM calls|35.9s|completed
+cto-weekly|30 turns|14 tools|14 LLM calls|62.8s|completed
+engineer|78 turns|38 tools|38 LLM calls|282.9s|llm_unreachable after manual stop
+```
+
+Telemetry:
+
+```text
+cto-weekly|guardrail_block|1
+engineer|guardrail_block|5
+engineer|tool_timeout|1
+engineer|llm_unreachable|1
+```
+
+The cleanup-hint fix improved the real lifecycle. Engineer built the
+module-named `task-notes-api` binary, saw the blast-radius message naming
+`rm task-notes-api`, removed it, and continued instead of exhausting the run on
+artifact cleanup. Product progress remained intact: CEO and COO planned from
+the Task Notes API brief, CTO created `T-001`, Engineer claimed the ticket,
+committed a Go `GET /health` implementation, and preserved local quality
+evidence. No target intervention-debt tickets were created for runtime or
+guardrail failures.
+
+The next generic bottleneck is server validation. Engineer first ran
+`go run src/main.go` as a foreground process, which spent a 30-second timeout
+before returning a "use background:true" hint. It then tried to emulate a
+background server through shell syntax inside `shell_command`, which left port
+`8080` occupied by the compiled server process. A later tool-managed
+`background:true` attempt reported "address already in use" but still looked
+like a started background process, and the role spent more turns on malformed
+`:8080` shell calls and process inspection. The source fix now rejects shell
+background `&` inside `shell_command`, reports `background:true` startup exits
+as tool errors with initial output, and mirrors the managed-background rule
+into generated Engineer guidance.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -936,8 +1002,10 @@ representative matrix coverage. The run4 API rerun confirms canonical planning
 guidance reaches CTO and Engineer, but shows generated build artifacts must
 cover module-named binaries as well as repo-named binaries. Run5 confirms the
 module-named cleanup exception itself is not enough unless the guardrail error
-also names the cleanup command. The remaining live-loop work is to rerun the
-API canary after build-artifact cleanup hints, confirm generated build
-artifacts are safely cleanable during real implementation, tighten common
-shell/process ergonomics and docsync metadata guidance, and keep validating
-against multiple software archetypes before making generic lifecycle claims.
+also names the cleanup command. Run6 confirms that cleanup hints are effective
+in real implementation and shifts the next generic bottleneck to managed
+long-running server validation. The remaining live-loop work is to rerun the
+API canary after the managed-background fix, confirm service validation does
+not leak port `8080` or enqueue timeout recovery work, tighten docsync metadata
+guidance if it remains a blocker, and keep validating against multiple
+software archetypes before making generic lifecycle claims.

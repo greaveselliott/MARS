@@ -6,13 +6,13 @@
 **Blocks:** Plan promotions until this file names the next slice
 **Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013, T-014, T-015, T-016
 **Goals:** G-001, G-002, G-003, G-004
-**BDD Feature:** F-001, F-004, F-006, F-009, F-012
+**BDD Feature:** F-001, F-004, F-005, F-006, F-007, F-009, F-012
 **Hypothesis:** Treating factory pace as measured intervention debt, using the `demo-123` replay series as concrete evidence, will reduce avoidable turns without hiding productive long-running work.
-**Success Evidence:** The 2026-05-20 `demo-123-run11` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; release-blocked publication stopped dispatch without remote mutation or a Dogfood loop. The 2026-05-20 `demo-api-run1`, `demo-api-run2`, `demo-api-run4`, and `demo-api-run5` non-static replays reached product-specific planning, ticketing, and partial Go API implementation without intervention-debt ticket amplification.
+**Success Evidence:** The 2026-05-20 `demo-123-run11` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; release-blocked publication stopped dispatch without remote mutation or a Dogfood loop. The 2026-05-20 `demo-api-run1`, `demo-api-run2`, `demo-api-run4`, `demo-api-run5`, and `demo-api-run6` non-static replays reached product-specific planning, ticketing, and partial Go API implementation without intervention-debt ticket amplification.
 **Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, future clean target replays still route autonomous follow-up after a terminal release blocker, or Dogfood/Engineer tool recovery prevents useful validation from reaching a terminal outcome.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** As of 2026-05-20, `demo-api-run5` confirmed the module-named cleanup exception exists but is not discoverable enough: Engineer generated `task-notes-api`, received repeated blast-radius failures, and never tried the safe `rm task-notes-api` cleanup before max turns.
-**Walking Skeleton Slice:** Make blast-radius failures caused by cleanable generated build artifacts name the exact cleanup command, rerun the API canary to confirm Engineer can recover, then target the next largest matrix-backed turn sink.
+**Current Failing Scenario:** As of 2026-05-20, `demo-api-run6` confirmed cleanup hints work but long-running service validation is still tool-noisy: Engineer recovered with `rm task-notes-api`, then used foreground `go run` and shell-background `&` process management, leaving port `8080` occupied and spending turns on cleanup.
+**Walking Skeleton Slice:** Make `shell_exec` reject shell-background process management, surface early `background:true` exits as boot failures, mirror the rule into generated Engineer guidance, rerun the API canary, then target the next largest matrix-backed turn sink.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -229,7 +229,9 @@ plans to decide what to do next.
    and cleanup. The `demo-api-run3` rerun then found a prior generic planning
    ambiguity: CEO/COO guidance still allowed duplicate `F-001` paths and
    duplicate starter scenarios, so the current `T-011` slice tightens
-   canonical feature-contract reuse before the next API replay.
+   canonical feature-contract reuse before the next API replay. Later reruns
+   confirmed module-named artifact cleanup and cleanup hints, and `demo-api-run6`
+   moved the current bottleneck to managed long-running server validation.
 2. **Representative live validation matrix**: Apply AD-138 by checking at least
    one non-static project archetype before claiming broad factory progress.
    Keep `demo-123` as the static canary, but judge generic changes against the
@@ -270,6 +272,7 @@ plans to decide what to do next.
 | F-006-S015 | In progress | `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole` cover the scheduled duplicate-work prevention added after `demo-api-run1`. The `demo-api-run2` rerun preserved product progress but did not coincide with a default cron boundary, so a cron-boundary live proof remains open. |
 | F-007-S010 | In progress | `go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'` covers bounded repo/module-local build artifact cleanup; `demo-api-run5` showed the remaining gap is cleanup discoverability, so the 2026-05-20 fix makes blast-radius errors name the exact safe `rm <artifact>` remediation. |
 | F-006-S016 | Passing | `go test ./internal/scanner -run TestInit_success` covers generated CEO/COO canonical feature-contract reuse, and `demo-api-run4` confirmed the live API canary reached CTO ticketing and Engineer implementation without duplicate `F-001` paths. |
+| F-005-S015 | In progress | `demo-api-run6` confirmed cleanup hints let Engineer recover from `task-notes-api`, then exposed foreground server and shell-background process leaks during API validation. The 2026-05-20 source fix rejects shell `&` backgrounding and reports early `background:true` exits as tool errors; live rerun evidence remains open. |
 
 ## Quality State
 

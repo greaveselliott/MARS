@@ -41,7 +41,7 @@ const shellExecSchema = `{
     },
     "background": {
       "type": "boolean",
-      "description": "Start as a background process. Returns immediately with the PID and first 2 seconds of output. Use for dev servers and watchers."
+      "description": "Start as a background process. Returns after a short startup window with the PID and initial output. Use for dev servers and watchers; startup exits are reported as errors."
     }
   }
 }`
@@ -105,6 +105,9 @@ func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 			return ToolResult{}, err
 		}
 	} else {
+		if err := validateShellExecShellCommand(args.ShellCommand); err != nil {
+			return ToolResult{}, err
+		}
 		if err := validateShellExecGitRemoteMutation(strings.Fields(args.ShellCommand), "shell_command"); err != nil {
 			return ToolResult{}, err
 		}
@@ -195,6 +198,53 @@ func validateShellExecGitRemoteMutation(argv []string, mode string) error {
 	}
 }
 
+func validateShellExecShellCommand(cmd string) error {
+	if shellCommandHasBackgroundOperator(cmd) {
+		return fmt.Errorf("shell_exec: shell_command cannot use the shell background operator & because it can leak child processes after timeouts. Start the long-running command with background:true instead, then run a separate probe such as curl, and rely on harness cleanup or a targeted kill after validation")
+	}
+	return nil
+}
+
+func shellCommandHasBackgroundOperator(cmd string) bool {
+	var inSingle, inDouble, escaped bool
+	for i, r := range cmd {
+		if escaped {
+			escaped = false
+			continue
+		}
+		if r == '\\' {
+			escaped = true
+			continue
+		}
+		switch r {
+		case '\'':
+			if !inDouble {
+				inSingle = !inSingle
+			}
+		case '"':
+			if !inSingle {
+				inDouble = !inDouble
+			}
+		case '&':
+			if inSingle || inDouble {
+				continue
+			}
+			prev, next := byte(0), byte(0)
+			if i > 0 {
+				prev = cmd[i-1]
+			}
+			if i+1 < len(cmd) {
+				next = cmd[i+1]
+			}
+			if prev == '&' || next == '&' || prev == '>' || next == '>' {
+				continue
+			}
+			return true
+		}
+	}
+	return false
+}
+
 func shellArgvBuiltin(program string) bool {
 	switch strings.ToLower(program) {
 	case ":", ".", "cd", "source", "alias", "export", "unset", "set", "ulimit", "jobs", "fg", "bg", "dirs", "pushd", "popd":
@@ -244,6 +294,7 @@ func execForeground(ctx context.Context, root Root, args shellExecArgs) (ToolRes
 
 	cmd := buildCmd(runCtx, root, args)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.WaitDelay = 2 * time.Second
 	cmd.Cancel = func() error {
 		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	}
@@ -308,18 +359,20 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 	bgMu.Unlock()
 
 	// Reap in background and unregister on exit.
+	exitCh := make(chan error, 1)
 	go func() {
-		_ = cmd.Wait()
+		err := cmd.Wait()
 		bgMu.Lock()
 		delete(bgProcs, pid)
 		bgMu.Unlock()
 		slog.Debug("shell_exec: background process exited", "pid", pid)
+		exitCh <- err
 	}()
 
 	// Capture initial output for the capture window so the agent sees
 	// startup messages (e.g. "ready on http://localhost:3000").
 	var stdoutBuf, stderrBuf bytes.Buffer
-	done := make(chan struct{})
+	done := make(chan struct{}, 2)
 	go func() {
 		_, _ = io.Copy(&stdoutBuf, stdoutPipe)
 		done <- struct{}{}
@@ -332,16 +385,47 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 	timer := time.NewTimer(bgCaptureWindow)
 	defer timer.Stop()
 
+	var exitErr error
+	exited := false
 	select {
 	case <-timer.C:
-	case <-done:
+	case exitErr = <-exitCh:
+		exited = true
 	}
 
-	initial := strings.TrimSpace(stdoutBuf.String() + "\n" + stderrBuf.String())
-	outStr, _ := capString(initial, DefaultMaxToolOutputBytes/2)
+	if exited {
+		for i := 0; i < 2; i++ {
+			select {
+			case <-done:
+			case <-time.After(100 * time.Millisecond):
+				i = 2
+			}
+		}
+	}
 
+	outStr, truncOut := capString(stdoutBuf.String(), DefaultMaxToolOutputBytes/2)
+	errStr, truncErr := capString(stderrBuf.String(), DefaultMaxToolOutputBytes/2)
+	if exited {
+		exitCode := 0
+		if exitErr != nil {
+			exitCode = -1
+			var ee *exec.ExitError
+			if errors.As(exitErr, &ee) {
+				exitCode = ee.ExitCode()
+			}
+		}
+		return ToolResult{
+			Output:    strings.TrimSpace(fmt.Sprintf("Background process (PID %d) exited during startup\n%s", pid, strings.TrimSpace(outStr))),
+			Stderr:    strings.TrimSpace(errStr),
+			ExitCode:  exitCode,
+			Truncated: truncOut || truncErr,
+		}, fmt.Errorf("shell_exec: background process exited during startup with exit code %d; inspect output, fix the command, or run a long-running server with background:true and probe it separately", exitCode)
+	}
+
+	initial := strings.TrimSpace(outStr + "\n" + errStr)
 	return ToolResult{
-		Output: fmt.Sprintf("Started in background (PID %d)\n%s", pid, outStr),
+		Output:    fmt.Sprintf("Started in background (PID %d)\n%s", pid, initial),
+		Truncated: truncOut || truncErr,
 	}, nil
 }
 

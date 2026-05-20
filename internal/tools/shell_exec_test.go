@@ -78,6 +78,61 @@ func TestShellExec_shellCommand(t *testing.T) {
 	require.Equal(t, 0, res.ExitCode)
 }
 
+func TestShellExecRejectsShellCommandBackgroundOperator(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "standalone background",
+			raw:  `{"shell_command":"go run src/main.go & PID=$!"}`,
+		},
+		{
+			name: "compact background",
+			raw:  `{"shell_command":"go run src/main.go& PID=$!"}`,
+		},
+		{
+			name: "unquoted URL ampersand",
+			raw:  `{"shell_command":"curl http://localhost:8080/health?ready=1&verbose=1"}`,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			root, err := NewRoot(dir)
+			require.NoError(t, err)
+			_, err = handleShellExec(context.Background(), root, []byte(tt.raw))
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "background:true")
+			require.Contains(t, err.Error(), "leak child processes")
+		})
+	}
+}
+
+func TestShellExecAllowsShellCommandNonBackgroundAmpersands(t *testing.T) {
+	t.Parallel()
+	tests := []string{
+		`{"shell_command":"printf ok && printf done","timeout_seconds":5}`,
+		`{"shell_command":"printf ok 2>&1","timeout_seconds":5}`,
+		`{"shell_command":"printf 'a&b'","timeout_seconds":5}`,
+		`{"shell_command":"printf \"a&b\"","timeout_seconds":5}`,
+	}
+	for _, raw := range tests {
+		raw := raw
+		t.Run(raw, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			root, err := NewRoot(dir)
+			require.NoError(t, err)
+			_, err = handleShellExec(context.Background(), root, []byte(raw))
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestShellExec_timeout(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -88,6 +143,28 @@ func TestShellExec_timeout(t *testing.T) {
 	_, err = handleShellExec(ctx, root, []byte(`{"shell_command":"sleep 5","timeout_seconds":1}`))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "timed out")
+}
+
+func TestShellExecBackgroundReportsEarlyExit(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	res, err := handleShellExec(context.Background(), root, []byte(`{"shell_command":"echo boom >&2; exit 7","background":true}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "background process exited during startup")
+	require.Equal(t, 7, res.ExitCode)
+	require.Contains(t, res.Stderr, "boom")
+}
+
+func TestShellExecBackgroundReturnsPIDForLongRunningProcess(t *testing.T) {
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	defer KillBackgroundProcs()
+	res, err := handleShellExec(context.Background(), root, []byte(`{"argv":["sh","-c","sleep 5"],"background":true}`))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "Started in background (PID")
 }
 
 func TestShellExec_mutexArgs(t *testing.T) {

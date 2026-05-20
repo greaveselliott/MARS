@@ -876,6 +876,9 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(engineerPrompt), "one file_read + file_write replacement")
 	assert.Contains(t, string(engineerPrompt), "do not run npm commands")
 	assert.Contains(t, string(engineerPrompt), "do not keep rewriting source files")
+	assert.Contains(t, string(engineerPrompt), "Never use")
+	assert.Contains(t, string(engineerPrompt), "cmd & PID=$!")
+	assert.Contains(t, string(engineerPrompt), "background:true")
 
 	qaPrompt, err = os.ReadFile(filepath.Join(dir, ".harness", "roles", "qa.md"))
 	require.NoError(t, err)

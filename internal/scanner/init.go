@@ -2439,7 +2439,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. |
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
-| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use background for long-running dev servers. |
+| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Startup exits are reported as errors. |
 | ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading. |
 | ` + "`github_auth_check`" + ` | Check private Mars Harness GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
 | ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe ` + "`.gitignore`" + `-only repair when needed. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
@@ -3465,10 +3465,13 @@ IMPLEMENTATION:
       - Conflicting app/ and pages/ directories at different levels
       - Deprecated config options (e.g. experimental.appDir in next.config.js)
    e) For web projects, start the dev server briefly to verify it boots:
-      shell_exec with background:true: npm run dev (or equivalent)
-      Wait 10 seconds, then check if the process is still running.
-      If it crashed, read the error output and fix the issue.
-      Kill the background process after verification.
+      shell_exec with background:true: npm run dev (or equivalent). Never use
+      shell syntax such as ` + "`cmd & PID=$!`" + ` inside shell_command; the tool
+      rejects shell background operators because they can leak child processes.
+      If the background process exits during startup, treat the tool error and
+      startup output as evidence of a real boot failure, fix it, and retry.
+      Probe readiness with a separate command such as curl, then kill only the
+      PID or port you started if cleanup is needed.
    f) If a package-managed project has no expected build or dev script, that
       is a bug — add one. If the target is intentionally static HTML/CSS/JS
       with no package manifest and no build step, do NOT create package manager
@@ -3541,6 +3544,8 @@ DON'T:
 - NEVER finish a run with uncommitted changes. Always check git_status at the end.
 - For long-running processes (dev servers, watchers, next dev, npm start), ALWAYS use
   shell_exec with background:true so they run as a background process and don't block your run.
+- NEVER emulate background mode with shell syntax such as ` + "`cmd & PID=$!`" + `;
+  use the tool's background:true flag, then run probes as separate tool calls.
 - NEVER run raw dependency install/fetch commands through shell_exec. Use
   workspace_hygiene first, then dependency_sync.
 - NEVER run find, ls, grep, or cat on directories without excluding node_modules, .git, vendor,

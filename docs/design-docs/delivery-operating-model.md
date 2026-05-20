@@ -1731,3 +1731,59 @@ so planners avoid the guardrail instead of repeatedly discovering it.
   avoidable guardrail blocks.
 - The next live API canary can test the build-artifact cleanup fix because
   bootstrap planning should no longer stall on duplicate `F-001` contract work.
+
+## AD-144: Long-Running Validation Uses Managed Background Processes
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run6` Task Notes API replay confirmed that generated artifact
+cleanup hints work in a real service target: Engineer built `task-notes-api`,
+received the exact `rm task-notes-api` remediation, cleaned the binary, and
+continued. The next bottleneck was not product planning or artifact cleanup. It
+was server validation.
+
+Engineer first ran `go run src/main.go` as a foreground command. The command
+timed out after 30 seconds with startup logs, and a follow-up `curl` failed
+because the foreground timeout had stopped the server. Engineer then tried to
+emulate background execution inside `shell_command` with shell `&` and PID
+management. That pattern left the compiled server process listening on
+`8080`, caused a later tool-managed `background:true` start to fail with
+"address already in use", and consumed turns on malformed `:8080` commands and
+manual process cleanup.
+
+This is a generic service and web-app issue, not a Task Notes API issue. Any
+target that needs a local dev server, static server, API process, watcher, or
+health probe can hit the same failure if agents turn shell background syntax
+into their own process manager.
+
+### Decision
+
+Long-running validation is owned by the `shell_exec` tool boundary:
+
+- `shell_exec` rejects the shell background operator `&` inside
+  `shell_command`. Roles must use `background:true` for long-running servers
+  and watchers, then run readiness probes as separate tool calls.
+- `background:true` startup is no longer an unconditional success. If the
+  process exits during the startup capture window, the tool returns an error
+  with the initial output and exit code so roles treat port conflicts, crashes,
+  and missing commands as boot failures.
+- Foreground commands now set a short wait delay after timeout cancellation so
+  leaked pipes cannot strand the tool until the outer executor TTL.
+- Generated Engineer guidance explicitly forbids `cmd & PID=$!` style
+  backgrounding and tells the role to probe and clean up the managed process
+  deliberately.
+
+### Consequences
+
+- Web, API, static, and service targets share one validation rule instead of
+  relying on per-language shell snippets.
+- Agents should spend fewer turns on foreground server timeouts, broad `ps`
+  inspection, port-conflict recovery, and malformed shell attempts.
+- A crashed or port-conflicted dev server becomes immediate evidence to fix,
+  not a false success that lets ticket closure proceed.
+- The next API canary should confirm Engineer can validate a service without
+  leaking port `8080` or enqueueing timeout recovery work after manual stop.
