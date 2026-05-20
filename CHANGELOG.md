@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.2] - 2026-05-20
+<!-- mars-harness-release: version=0.42.2 commit=1e42e219c213 -->
+
+### Impact
+- **tools:** Operators see improved reliability because allow cleanup of root build artifacts.
+
+### Why
+- **tools:** This matters because allow cleanup of root build artifacts closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed allow cleanup of root build artifacts (1e42e21).
+
+### Fixes
+- **tools:** Allow cleanup of root build artifacts (1e42e21)
+
 ## [0.42.1] - 2026-05-20
 <!-- mars-harness-release: version=0.42.1 commit=e9187f2e2049 -->
 
