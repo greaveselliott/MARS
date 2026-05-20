@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.15] - 2026-05-20
+<!-- mars-harness-release: version=0.42.15 commit=1b0016acffa0 -->
+
+### Impact
+- **lifecycle:** Operators see improved reliability because stabilize product-first validation loop.
+
+### Why
+- **lifecycle:** This matters because stabilize product-first validation loop closes a failure mode or degraded path.
+
+### What Changed
+- **lifecycle:** Changed stabilize product-first validation loop (1b0016a).
+
+### Fixes
+- **lifecycle:** Stabilize product-first validation loop (1b0016a)
+
 ## [0.42.14] - 2026-05-20
 <!-- mars-harness-release: version=0.42.14 commit=05556832502e -->
 
