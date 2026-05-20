@@ -168,6 +168,9 @@ func validateShellExecArgv(argv []string) error {
 		return nil
 	}
 	program := strings.Trim(filepathBase(strings.TrimSpace(argv[0])), `"'`)
+	if shellExecExternalTimeoutCommand(program) {
+		return shellExecExternalTimeoutError(program)
+	}
 	if shellExecBarePortToken(program) {
 		return shellExecBarePortError(program)
 	}
@@ -206,6 +209,12 @@ func validateShellExecShellCommand(cmd string) error {
 		return fmt.Errorf("shell_exec: shell_command cannot use the shell background operator & because it can leak child processes after timeouts. Start the long-running command with background:true instead, then run a separate probe such as curl, and rely on harness cleanup or a targeted kill after validation")
 	}
 	fields := strings.Fields(strings.TrimSpace(cmd))
+	if len(fields) > 0 {
+		program := strings.Trim(filepathBase(strings.TrimSpace(fields[0])), `"'`)
+		if shellExecExternalTimeoutCommand(program) {
+			return shellExecExternalTimeoutError(program)
+		}
+	}
 	if len(fields) == 1 {
 		token := strings.Trim(fields[0], `"'`)
 		if shellExecBarePortToken(token) {
@@ -213,6 +222,19 @@ func validateShellExecShellCommand(cmd string) error {
 		}
 	}
 	return nil
+}
+
+func shellExecExternalTimeoutCommand(program string) bool {
+	switch strings.ToLower(strings.TrimSpace(program)) {
+	case "timeout", "gtimeout":
+		return true
+	default:
+		return false
+	}
+}
+
+func shellExecExternalTimeoutError(program string) error {
+	return fmt.Errorf("shell_exec: external timeout command %q is not portable inside harness-managed validation. Use shell_exec timeout_seconds for bounded foreground commands, or start long-running servers with background:true and probe them separately", program)
 }
 
 func shellExecBarePortToken(token string) bool {

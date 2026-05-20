@@ -432,6 +432,9 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 	if err := checkDogfoodFileWritePolicy(session, hasSession, args.Path); err != nil {
 		return err
 	}
+	if err := checkRootValidationScriptWritePolicy(root, args.Path); err != nil {
+		return err
+	}
 	if !hasSession {
 		return nil
 	}
@@ -444,6 +447,37 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 		return fmt.Errorf("policy: secret scanner blocked %s:%d (%s)", hits[0].File, hits[0].Line, hits[0].Pattern)
 	}
 	return nil
+}
+
+func checkRootValidationScriptWritePolicy(root Root, rel string) error {
+	rel = cleanRepoPath(rel)
+	if rel == "" || strings.Contains(rel, "/") || !rootValidationScriptName(rel) {
+		return nil
+	}
+	abs, err := root.ResolvePath(rel)
+	if err != nil {
+		return nil
+	}
+	if _, err := os.Stat(abs); err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return nil
+	}
+	return fmt.Errorf("policy: new repo-root validation script %s is blocked because validation scratch files become committed product noise; use existing test files, direct shell_exec build/run/curl evidence, or create durable validation code under tests/ with ticket scope", rel)
+}
+
+func rootValidationScriptName(rel string) bool {
+	base := strings.ToLower(filepath.Base(filepath.ToSlash(strings.TrimSpace(rel))))
+	if !strings.HasSuffix(base, ".sh") {
+		return false
+	}
+	stem := strings.TrimSuffix(base, ".sh")
+	switch stem {
+	case "validate", "validation", "verify", "smoke", "smoke-test", "test-server":
+		return true
+	default:
+		return strings.Contains(stem, "validation")
+	}
 }
 
 func checkDogfoodFileWritePolicy(session Session, hasSession bool, rel string) error {

@@ -879,6 +879,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(engineerPrompt), "Never use")
 	assert.Contains(t, string(engineerPrompt), "cmd & PID=$!")
 	assert.Contains(t, string(engineerPrompt), "background:true")
+	assert.Contains(t, string(engineerPrompt), "Never use external `timeout`")
+	assert.Contains(t, string(engineerPrompt), "NEVER create repo-root scratch validation scripts")
 
 	qaPrompt, err = os.ReadFile(filepath.Join(dir, ".harness", "roles", "qa.md"))
 	require.NoError(t, err)
@@ -893,6 +895,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(dogfoodPrompt), "static smoke path")
 	assert.Contains(t, string(dogfoodPrompt), "created tickets with git_commit")
 	assert.Contains(t, string(dogfoodPrompt), "next_need release_review")
+	assert.Contains(t, string(dogfoodPrompt), "Never use external `timeout`")
 
 	releaseDoc, err = os.ReadFile(filepath.Join(dir, "docs", "design-docs", "release-versioning.md"))
 	require.NoError(t, err)

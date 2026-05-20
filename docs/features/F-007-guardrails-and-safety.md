@@ -26,6 +26,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 9. F-007-S009 - Workspace hygiene blocks generated dependency/build churn before model work and package-manager mutation.
 10. F-007-S010 - Untracked repo-local compiled binaries named after the repo or Go module may be removed as generated build artifacts, and blast-radius errors for those artifacts name the exact cleanup command without opening arbitrary deletion.
 11. F-007-S011 - Validation build commands are blocked before execution when their explicit output path would create a compiled artifact inside the target repo.
+12. F-007-S012 - New repo-root validation shell scripts are blocked so scratch validation does not become committed product noise.
 
 ## Scenarios
 
@@ -116,6 +117,12 @@ Then policy allows the cleanup only when the file is untracked, root-level, bina
 Given a role calls `shell_exec` for `go build -o <path>` during validation
 When `<path>` resolves inside the target repository
 Then tool policy blocks the command before process execution, no compiled artifact is created, and the error instructs the role to write validation binaries to an external temp path so repository diffs stay source-only
+
+### F-007-S012: Repo-Root Validation Script Prevention
+
+Given a role attempts to create a new root-level validation shell script such as `validate.sh`
+When the write is not updating an existing project-owned script
+Then tool policy blocks the file before creation and instructs the role to use existing tests, direct build/run/curl evidence, or intentional durable validation code under a tests directory
 
 ### F-007-S009: Workspace Hygiene Gates
 

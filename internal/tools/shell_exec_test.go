@@ -165,6 +165,42 @@ func TestShellExecRejectsBarePortCommands(t *testing.T) {
 	}
 }
 
+func TestShellExecRejectsExternalTimeoutCommands(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "argv timeout",
+			raw:  `{"argv":["timeout","5","go","run","main.go"]}`,
+		},
+		{
+			name: "shell command timeout",
+			raw:  `{"shell_command":"timeout 5 go run main.go"}`,
+		},
+		{
+			name: "gnu timeout alias",
+			raw:  `{"argv":["gtimeout","5","go","test","./..."]}`,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			root, err := NewRoot(dir)
+			require.NoError(t, err)
+
+			_, err = handleShellExec(context.Background(), root, []byte(tt.raw))
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "external timeout command")
+			require.Contains(t, err.Error(), "timeout_seconds")
+			require.Contains(t, err.Error(), "background:true")
+		})
+	}
+}
+
 func TestShellExec_timeout(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -600,6 +636,50 @@ func TestShellExecStillBlocksGoModuleNamedTextFileRemoval(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "forbidden operation")
 	require.FileExists(t, filepath.Join(dir, "task-notes-api"))
+}
+
+func TestFileWriteBlocksNewRootValidationScript(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"file_write"}, "file_write", `{"path":"validate.sh","content":"#!/bin/sh\ngo test ./...\n"}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "repo-root validation script")
+	require.Contains(t, err.Error(), "direct shell_exec build/run/curl evidence")
+	require.NoFileExists(t, filepath.Join(dir, "validate.sh"))
+}
+
+func TestFileWriteAllowsExistingRootValidationScriptUpdate(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "validate.sh"), []byte("#!/bin/sh\nexit 0\n"), 0o755))
+	runTestGit(t, dir, "add", "validate.sh")
+	runTestGit(t, dir, "commit", "-m", "add validation script")
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	res, err := ex.Execute(context.Background(), root, []string{"file_write"}, "file_write", `{"path":"validate.sh","content":"#!/bin/sh\ngo test ./...\n"}`)
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "wrote")
+	content, err := os.ReadFile(filepath.Join(dir, "validate.sh"))
+	require.NoError(t, err)
+	require.Contains(t, string(content), "go test")
 }
 
 func TestValidateRepoDiffIgnoresGeneratedUntrackedFiles(t *testing.T) {

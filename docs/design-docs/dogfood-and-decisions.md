@@ -2214,6 +2214,43 @@ the actual server command with `background:true`, then probe with
 blocker now also names a stable external validation-binary shape such as
 `<validation-root>` so the model sees the correction directly.
 
+### Non-Static API Replay: Scratch Validation Must Stay Out Of The Target Root
+
+After bare-port rejection was added, a clean Task Notes API replay against
+`<validation-root>` confirmed the validation
+path and exposed the next source-owned turn sink.
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, QA, Security, Dogfood, and Release Manager each
+  completed once.
+- CTO created one ordinary product ticket; Engineer claimed it, implemented a
+  Go `GET /health` endpoint, added tests, moved the ticket to done, and the
+  release-manager generated local `0.2.0` release notes before stopping on the
+  expected no-remote publication blocker.
+- `go build -o task-notes-api` was blocked before creating a repo-local binary,
+  and Engineer recovered by using `<validation-root>`.
+- Dogfood proved the product with `go test ./...`, an external build output,
+  managed `background:true` server startup, `curl /health`, POST 405 evidence,
+  and cleanup.
+- Intervention-debt count remained `0`, and `scores export` graded the target
+  overall `A` while surfacing guardrail-block telemetry as improvement targets.
+
+Residual finding:
+
+- Engineer wrote a root `validate.sh` as temporary validation, then could not
+  remove it because broad `rm` is blocked. The script was committed with the
+  done-ticket move. Dogfood then ran it and exposed a portability bug:
+  `timeout` was not available on the host. QA and Security did not reject the
+  script, so a scratch validation file became accidental product surface.
+
+Decision: scratch validation should be prevented before cleanup is needed.
+`file_write` now blocks new root-level validation shell scripts such as
+`validate.sh` while allowing existing project-owned scripts to be updated.
+`shell_exec` rejects external `timeout` and `gtimeout` commands and points roles
+to tool `timeout_seconds` or managed `background:true` probes. Generated
+Engineer and Dogfood guidance mirrors the same rule.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

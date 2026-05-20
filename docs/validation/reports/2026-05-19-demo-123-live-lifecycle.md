@@ -1088,6 +1088,65 @@ fix now rejects bare port tokens such as `:8080` in `argv` or single-token
 commands, and gives the `background:true` plus `curl http://localhost:8080/health`
 validation shape.
 
+## API Rerun After Bare-Port Rejection: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after bare-port command rejection,
+confirm Engineer recovers into product validation, and collect the next generic
+turn sink without overfitting to the Space Invaders static game path.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.8` plus
+  `1aa405f fix(tools): reject bare port validation commands`
+- Target local evidence commits:
+  `2dd2597 release: notes 0.2.0` and
+  `cfcefd6 chore: capture run9 quality evidence`
+- Target remote: none
+
+Job state:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+dogfood|completed|1
+engineer|completed|1
+qa|completed|1
+release-manager|completed|1
+security|completed|1
+```
+
+Telemetry:
+
+```text
+ceo|guardrail_block|2
+coo|guardrail_block|1
+cto-weekly|guardrail_block|1
+dogfood|guardrail_block|2
+engineer|guardrail_block|5
+```
+
+The bare-port fix worked in the live service canary. Engineer did not repeat
+the `:8080` loop. After `go build -o task-notes-api` was blocked, it followed
+the hint and built `<validation-root>`. Dogfood later validated
+the shipped API with `go test ./...`, external build output, a managed
+`background:true` server, `curl /health` returning HTTP 200 with JSON, and POST
+`/health` returning HTTP 405. Release Manager generated local `0.2.0` release
+notes and stopped on the expected no-remote publication blocker. `scores export`
+reported overall grade `A`, zero open intervention-debt tickets, and Factory
+Pace rows for all eight roles.
+
+The next generic bottleneck is scratch validation pollution. Engineer created a
+repo-root `validate.sh`, then tried forbidden `rm` cleanup twice before the
+script was accidentally committed with the done-ticket move. Dogfood proved the
+script was not portable because it called the host `timeout` command, which was
+unavailable. QA and Security approved without rejecting the accidental script.
+The source fix now blocks new repo-root validation shell scripts such as
+`validate.sh` and rejects external `timeout`/`gtimeout` commands, steering
+agents to existing tests, direct build/run/curl evidence, tool
+`timeout_seconds`, and managed `background:true` probes.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy

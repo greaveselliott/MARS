@@ -127,6 +127,10 @@ Given a role calls `shell_exec` with a bare port token such as `:8080`
 When the tool validates the command
 Then the call fails before process execution and tells the role that ports are not executable commands, to start the app with its real server command using `background:true`, and to probe separately with `curl http://localhost:8080/health` or the target route
 
+Given a role calls `shell_exec` with an external `timeout` or `gtimeout` executable
+When the tool validates the command
+Then the call fails before process execution and tells the role to use `timeout_seconds` for bounded foreground commands or `background:true` with separate probes for long-running servers
+
 ### F-005-S004: Auditable Trace
 
 Given an agent job runs

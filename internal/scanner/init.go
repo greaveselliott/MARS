@@ -2436,10 +2436,10 @@ tools are added, removed, renamed, or materially change behavior.
 | Tool | Use When | Notes |
 | --- | --- | --- |
 | ` + "`file_read`" + ` | Read a known file path from the repository. | Non-mutating. Use before editing or reviewing code. |
-| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. |
+| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. New repo-root validation scripts such as ` + "`validate.sh`" + ` are blocked; use existing tests, direct build/run/curl evidence, or intentional durable tests. |
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
-| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Startup exits are reported as errors. ` + "`go build -o <path>`" + ` is blocked when ` + "`<path>`" + ` resolves inside the target repo; validation binaries belong in an external temp path. |
+| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors. ` + "`go build -o <path>`" + ` is blocked when ` + "`<path>`" + ` resolves inside the target repo; validation binaries belong in an external temp path. |
 | ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading. |
 | ` + "`github_auth_check`" + ` | Check private Mars Harness GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
 | ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe ` + "`.gitignore`" + `-only repair when needed. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
@@ -3472,6 +3472,9 @@ IMPLEMENTATION:
       shell_exec with background:true: npm run dev (or equivalent). Never use
       shell syntax such as ` + "`cmd & PID=$!`" + ` inside shell_command; the tool
       rejects shell background operators because they can leak child processes.
+      Never use external ` + "`timeout`" + ` or ` + "`gtimeout`" + ` commands; use the
+      tool's ` + "`timeout_seconds`" + ` field for bounded foreground commands, or
+      ` + "`background:true`" + ` for servers with separate curl probes.
       If the background process exits during startup, treat the tool error and
       startup output as evidence of a real boot failure, fix it, and retry.
 	      Probe readiness with a separate command such as curl, then kill only the
@@ -3558,6 +3561,9 @@ DON'T:
 - NEVER run npm build/dev commands when no package.json exists. Use the static
   HTML/CSS/JS smoke path instead.
 - NEVER close a package-managed ticket without running the build. "It looks right" is not verification.
+- NEVER create repo-root scratch validation scripts such as ` + "`validate.sh`" + `;
+  use existing tests, direct shell_exec build/run/curl evidence, or durable
+  validation code under tests/ when the ticket calls for it.
 
 ## Quality Bar
 
@@ -4016,6 +4022,8 @@ server, or edit product/package files after a failed pre-flight.
    Never run foreground dev servers, watchers, ` + "`npm start`" + `, ` + "`npm run dev`" + `,
    ` + "`npx serve`" + `, ` + "`python3 -m http.server`" + `, or equivalent
    long-running commands.
+   Never use external ` + "`timeout`" + ` or ` + "`gtimeout`" + ` commands; the harness
+   owns tool ` + "`timeout_seconds`" + ` and background-process cleanup.
    For static HTML/CSS/JS targets, start ` + "`python3 -m http.server`" + ` with
    background:true from the HTML entry directory and curl the primary HTML/route
    once. Do not use shell loops or ` + "`sh -c`" + ` readiness scripts for this
@@ -4100,6 +4108,8 @@ DON'T:
 - NEVER expose ports below 1024
 - NEVER run as root inside the container
 - For long-running processes, ALWAYS use shell_exec with background:true
+- NEVER use external ` + "`timeout`" + ` or ` + "`gtimeout`" + ` commands for validation;
+  use tool ` + "`timeout_seconds`" + ` or managed background processes.
 - NEVER run find, ls, grep, or cat on directories without excluding node_modules,
   .git, vendor, dist, build, and other large generated directories
 - NEVER report "all checks passed" without actually running the build and dev server

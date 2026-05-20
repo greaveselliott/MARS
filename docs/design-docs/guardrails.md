@@ -135,6 +135,16 @@ explicit `go build -o <path>` outputs that resolve inside the target repo. Roles
 must put validation binaries in an external temp path, keeping the target diff
 limited to source, tests, docs, tickets, and intentional config.
 
+The follow-up `demo-api-run9` replay showed a related scratch-file trap:
+Engineer created a root `validate.sh`, could not delete it because broad `rm`
+remains blocked, and committed the script with the ticket completion. Dogfood
+later proved the script was not portable because it depended on the host
+`timeout` command. Guardrails now block creation of new repo-root validation
+shell scripts such as `validate.sh` and `validation.sh` while allowing existing
+project-owned scripts to be updated. `shell_exec` also rejects external
+`timeout`/`gtimeout` executables so roles use tool `timeout_seconds` or managed
+`background:true` validation instead of platform-specific process wrappers.
+
 ### Open topics
 
 - **Advisory vs hard tiers:** advisory rules surface warnings in traces and UI; hard rules fail the job or block merge paths per policy; same schema with a `severity` field is the likely shape.

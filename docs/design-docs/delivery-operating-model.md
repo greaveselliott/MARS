@@ -1884,3 +1884,58 @@ tokens into loops.
 - The next API canary should confirm Engineer reacts to the repo-local build
   block by using an external validation binary or managed server validation,
   rather than repeating `:8080`.
+
+## AD-147: Scratch Validation Must Stay Out Of The Target Root
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run9` replay confirmed the previous `:8080` fix: Engineer did
+not repeat the bare-port command loop, followed the build-output hint, used an
+external validation binary, and the lifecycle advanced through QA, Security,
+Dogfood, and Release Manager with zero target intervention-debt tickets. The
+run also exposed the next generic validation sink.
+
+Engineer created a repo-root `validate.sh` as scratch validation, then tried to
+remove it with forbidden `rm`. Because ordinary deletion is intentionally
+blocked, the script was committed when the ticket moved to done. Dogfood later
+proved the product with direct `go test`, external build output, background
+server, and `curl`, but it also ran the committed `validate.sh` and found that
+the script depended on the non-portable `timeout` command. QA and Security did
+not reject the script because it looked like a harmless support file.
+
+This is not specific to Task Notes. Generic factory validation should avoid
+turning temporary proof scripts into product surface, especially when the
+script depends on platform utilities that the harness already owns as tool
+fields.
+
+### Decision
+
+`file_write` now blocks creation of new root-level validation shell scripts
+such as `validate.sh`, `validation.sh`, `verify.sh`, `smoke.sh`, and
+`smoke-test.sh`. Existing project-owned scripts can still be edited, but new
+scratch validation belongs in existing tests, direct `shell_exec` build/run/curl
+evidence, or intentional durable validation code under a tests directory when
+the ticket scope calls for it.
+
+`shell_exec` also rejects external `timeout` and `gtimeout` executables before
+process execution. Roles should use the tool's `timeout_seconds` field for
+bounded foreground commands, or `background:true` plus separate probes for
+long-running servers. Generated Engineer and Dogfood guidance mirrors this
+rule.
+
+### Consequences
+
+- Validation remains source-only: scratch scripts no longer sneak into target
+  commits as accidental product artifacts.
+- Blast-radius containment stays strict. The fix does not broaden `rm`; it
+  prevents the most common scratch-file trap before the file exists.
+- API, CLI, web, and static targets share the same portable validation
+  contract: existing tests, external build artifacts, managed background
+  processes, and direct probes.
+- The next API canary should confirm Engineer no longer creates root
+  `validate.sh`, and that Dogfood can validate using direct commands without
+  spending turns on script portability.
