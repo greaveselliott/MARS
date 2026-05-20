@@ -4,9 +4,9 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013, T-014, T-015, T-016
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, MH-051, MH-052, MH-053, MH-054, MH-055, MH-056, MH-057, MH-058, MH-059, MH-060, MH-061, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013, T-014, T-015, T-016
 **Goals:** G-001, G-002, G-003, G-004
-**BDD Feature:** F-001, F-004, F-005, F-006, F-007, F-009, F-012
+**BDD Feature:** F-001, F-004, F-005, F-006, F-007, F-009, F-010, F-012
 **Hypothesis:** Treating factory pace as measured intervention debt, using the `demo-123` replay series as concrete evidence, will reduce avoidable turns without hiding productive long-running work.
 **Success Evidence:** The 2026-05-20 `demo-123-run11` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; release-blocked publication stopped dispatch without remote mutation or a Dogfood loop. The 2026-05-20 `demo-api-run1`, `demo-api-run2`, `demo-api-run4`, `demo-api-run5`, `demo-api-run6`, `demo-api-run7`, `demo-api-run8`, `demo-api-run9`, `demo-api-run10`, `demo-api-run11`, `demo-api-run12`, `demo-api-run13`, `demo-api-run14`, `demo-api-run15`, `demo-api-run16`, `demo-api-run17`, `demo-api-run18`, `demo-api-run19`, and `demo-api-run20` non-static replays reached product-specific planning and ticketing without intervention-debt ticket amplification; `demo-api-run9` reached local release notes, `demo-api-run11` reached product implementation, QA, Security, Dogfood validation evidence, and quality-score export, `demo-api-run13` confirmed tracked background kill cleanup lets the `/tmp` validation binary start without manual port cleanup, `demo-api-run14` confirmed no-op shell guidance lets Engineer complete the ticket lifecycle, `demo-api-run15` confirmed runtime failures stay quarantined when Engineer fails before review, `demo-api-run16` confirmed source write DocSync metadata can be present at first write, `demo-api-run17` confirmed the handoff reaches Engineer but shell work must be mechanically claim-first, `demo-api-run18` confirmed claim-first shell policy plus source DocSync preflight recovery in the live implementation path, `demo-api-run19` confirmed managed background API validation, ticket completion, QA approval, quality-score export, and zero target intervention-debt tickets, and `demo-api-run20` confirmed bounded Security terminal evidence, Dogfood validation, target release-note generation, overall quality grade `A`, and zero target intervention-debt tickets.
 **Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, future clean target replays still route autonomous follow-up after a terminal release blocker, or Dogfood/Engineer tool recovery prevents useful validation from reaching a terminal outcome.
@@ -35,8 +35,8 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains `T-011`.
-  - `docs/tickets/backlog/` contains `T-010`, `T-013`, and any newly
-    created live-loop follow-up tickets.
+  - `docs/tickets/backlog/` contains `T-010`, `T-013`, `MH-051` through
+    `MH-061`, and any newly created live-loop follow-up tickets.
   - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
     through `T-009`, plus `T-012`, `T-014`, `T-015`, and `T-016`.
 - Exec-plan state:
@@ -312,6 +312,7 @@ plans to decide what to do next.
 | --- | --- | --- | --- | --- |
 | `active/current-operating-plan.md` | Active, P0 | None | Plan promotions until this file names the next slice | Use this file as the only top-level execution map and scenario schedule. |
 | `backlog/mars-parity-supersession-plan.md` | Backlog, P1, G-001/G-002/F-001 | Ticket materialization completed on 2026-05-03; no open blocker | Supersession readiness claims | Pull slices into tickets and this active plan before execution. |
+| `backlog/tanstack-dashboard-control-plane.md` | Backlog, P2, G-001/G-003/F-010 | Product spec and F-010 expansion registered on 2026-05-20; waits behind active P0 work | Next-generation dashboard implementation claims and broad dashboard restyle work | Promote after the active P0 slice or explicit operator reprioritization; do not treat runtime work as started while this remains backlog. |
 | `backlog/model-evaluation-refresh-plan.md` | Completed initial model-refresh slice; future P4, G-003/F-001 | Higher-priority release/quality work for any future promotion ticket | Default model registry promotion until live benchmark evidence exists | Use only to seed future model-refresh tickets. |
 | `superseded/master-execution-plan.md` | Superseded | None | Nothing | Historical baseline. Do not use its checkbox status as truth. |
 | `superseded/delivery-schedule.md` | Superseded | None | Nothing | Historical milestone schedule; kept for lineage only. |
@@ -344,7 +345,11 @@ plans to decide what to do next.
    record product progress, queue health, intervention-debt count, quality
    export behavior, release-note behavior, stop/shutdown behavior, and whether
    Dogfood reaches a terminal disposition without dirty watchdog routing.
-3. **Mars parity continuation**: Use
+4. **Dashboard control-plane backlog (`MH-051` through `MH-061`)**: On
+   2026-05-20, the TanStack dashboard work is registered as backlog only.
+   Promote the plan when the active factory-pace slice is complete or an
+   operator explicitly reprioritizes dashboard work.
+5. **Mars parity continuation**: Use
    [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.

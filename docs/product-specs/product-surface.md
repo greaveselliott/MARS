@@ -1,7 +1,7 @@
 # Product Surface
 
 **Status:** Accepted
-**Updated:** 2026-05-04
+**Updated:** 2026-05-20
 **Owner:** Mars Harness maintainers
 **Sources:** [AGENTS.md](../../AGENTS.md), [quickstart](../quickstart.md), [design docs](../design-docs/index.md), [vision](vision.md)
 
@@ -18,6 +18,14 @@ Mars Harness is a local autonomous delivery runtime with four visible layers:
 | Learning loop | `scores`, `trust`, `docs/QUALITY_SCORE.md`, telemetry triage, skills, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, reusable workflow skills, prompt or process improvements, repo-visible grades, and safety controls. |
 | Generated references | `docs/generated/` | Provide reproducible, cataloged source-harness maps when generator commands exist. |
 | Release state | `VERSION`, `CHANGELOG.md`, `release notes` | Maintain semantic versions and generated patch notes for both the source harness and target repos. |
+
+Dashboard surface status: the current web dashboard is implemented as the
+legacy/current embedded Go, htmx, Chart.js, and SSE surface. The planned
+TanStack control-plane dashboard is not implemented yet and is governed by
+[dashboard-control-plane.md](dashboard-control-plane.md). It deliberately
+changes the dashboard prerequisite model by requiring an external Node.js
+`24.x` and `pnpm@11.1.1` sidecar while preserving Go as the authoritative
+gateway, auth boundary, and runtime state owner.
 
 ## CLI Contract
 
@@ -235,3 +243,6 @@ The single active execution plan tracks the remaining work and pulls from priori
 - automatic intervention-debt ticket creation from telemetry triage
 - broader dogfood matrices and generated-app validation
 - safer upgrade previews and backups for target harness files
+- planned TanStack dashboard control plane with local-admin auth, nonblocking
+  APIs, adaptive previews, feedback, roster/model proposals, and
+  GitHub-derived DORA metrics
