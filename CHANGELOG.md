@@ -2,6 +2,30 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.6] - 2026-05-20
+<!-- mars-harness-release: version=0.42.6 commit=fe2fb41d4e22 -->
+
+### Impact
+- **tools:** Web and API target validation is less likely to leak local server
+  processes or burn turns on shell cleanup, because long-running checks must use
+  the managed `background:true` path.
+
+### Why
+- **tools:** The `demo-api-run6` canary showed Engineer could recover from
+  generated build artifacts, then got stuck validating a Go HTTP service by
+  mixing foreground `go run`, shell `&` backgrounding, port cleanup, and
+  malformed `:8080` commands.
+
+### What Changed
+- **tools:** `shell_exec` now rejects shell-background `&` inside
+  `shell_command`, reports early `background:true` exits as startup errors with
+  output and exit code, bounds foreground timeout cleanup with `WaitDelay`, and
+  mirrors the managed-background rule into generated Engineer guidance
+  (fe2fb41).
+
+### Fixes
+- **tools:** Harden managed server validation (fe2fb41)
+
 ## [0.42.5] - 2026-05-20
 <!-- mars-harness-release: version=0.42.5 commit=1025fe71d0a4 -->
 
