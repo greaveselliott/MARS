@@ -86,6 +86,10 @@ extra ownership metadata:
   survey routing for the cooldown window, so an eligible in-progress ticket does
   not bypass runtime-failure containment by immediately spawning another
   Engineer job.
+- Manifest schedules check the queue for pending, claimed, or running work with
+  the same repo and role before enqueueing. A schedule may fire every minute for
+  catch-up, but it should not stack another product worker behind an active
+  lifecycle for the same role.
 
 Running jobs are no longer reset by normal claim polling. Claimed jobs can
 still be reclaimed after a short lease timeout, while running jobs are only

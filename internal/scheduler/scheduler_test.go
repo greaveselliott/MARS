@@ -153,6 +153,40 @@ func TestScheduler_fireOnce(t *testing.T) {
 	assert.Nil(t, job2, "fire_once should prevent duplicate enqueue in same minute")
 }
 
+func TestScheduler_skipsWhenRepoRoleAlreadyActive(t *testing.T) {
+	q := tempQueue(t)
+	s := New(q)
+	ctx := context.Background()
+
+	activeID, err := q.Enqueue(ctx, queue.Job{
+		RepoID: "repo-active",
+		Role:   "engineer",
+	})
+	require.NoError(t, err)
+	active, err := q.Claim(ctx, "w-active")
+	require.NoError(t, err)
+	require.NotNil(t, active)
+	require.Equal(t, activeID, active.ID)
+	require.NoError(t, q.MarkRunning(ctx, active.ID))
+
+	now := time.Now().UTC()
+	err = s.Register(Schedule{
+		Name:    "repo-active:engineer",
+		RepoID:  "repo-active",
+		Role:    "engineer",
+		Cron:    formatMinuteHour(now.Minute(), now.Hour()),
+		Trigger: `{}`,
+	})
+	require.NoError(t, err)
+
+	s.tick(ctx)
+
+	jobs, err := q.RecentJobs(ctx, 10)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+	assert.Equal(t, activeID, jobs[0].ID)
+}
+
 func TestScheduler_registerValidation(t *testing.T) {
 	q := tempQueue(t)
 	s := New(q)

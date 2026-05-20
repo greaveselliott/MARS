@@ -29,6 +29,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 12. F-006-S012 - Feature tickets cannot move to done before required BDD evidence is populated.
 13. F-006-S013 - Runtime failures stop as foundation telemetry instead of restarting product planning loops.
 14. F-006-S014 - Product validation routes into release review instead of stopping before versioning.
+15. F-006-S015 - Scheduled triggers skip same-repo same-role work that is already pending, claimed, or running.
 
 ## Scenarios
 
@@ -63,6 +64,10 @@ Then the queue uses a short finalization context to mark the running job complet
 Given manifests define webhook, schedule, or chain triggers
 When events, cron ticks, or completed jobs occur
 Then matching roles are enqueued and invalid manifests do not take down the router
+
+Given a manifest schedule fires for a repo and role
+When that same repo and role already has a pending, claimed, or running job
+Then the scheduler records the skip and does not enqueue another same-role job for that repo, so periodic triggers cannot stack duplicate product workers behind an active lifecycle
 
 ### F-006-S005: Single-Repo Start
 
@@ -303,3 +308,4 @@ None.
 - F-006-S011: `go test ./internal/serve -run TestHandleJobComplete_reviewReworkReusesExistingDoneProductTicket`
 - F-006-S012: `go test ./internal/tools -run 'TestShellExecPolicy.*FeatureTicketDone(Move|Copy)|TestFileWritePolicyBlocksDoneFeatureTicket'`
 - F-006-S013: `go test ./internal/serve -run TestHandleJobFailed_maxTurnsDoesNotRouteOrchestrator`
+- F-006-S015: `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole`

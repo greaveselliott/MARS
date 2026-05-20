@@ -614,6 +614,62 @@ averages were Engineer at 92 turns / 45 tool invocations / 269.0s, Dogfood at
 quality export as `438ff4b chore: export quality pace baseline`; the target has
 no remote.
 
+## Non-Static Matrix Replay: Task Notes API - 2026-05-20
+
+Purpose: avoid overfitting the factory loop to the Space Invaders static app by
+running a second fresh target archetype.
+
+- Target: `<validation-root>`
+- Brief: build a tiny local HTTP JSON API for task notes with create, list,
+  complete, and health endpoints.
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Target local commits: product planning reached `9b4897b`, ticket shaping
+  reached `dc7c0a0`, first Engineer implementation reached `5f57ecf`, and the
+  interrupted duplicate Engineer evidence plus quality export were committed as
+  `8fc6909`. The target has no remote.
+
+Job state at operator stop:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+engineer|running|1
+```
+
+Trace-derived pace:
+
+```text
+ceo|16 turns|7 tools|7 LLM calls|29.0s|completed
+coo|42 turns|20 tools|20 LLM calls|210.3s|completed
+cto-weekly|34 turns|16 tools|16 LLM calls|86.5s|completed
+engineer|102 turns|50 tools|50 LLM calls|210.7s|max_turns
+```
+
+Telemetry:
+
+```text
+coo|guardrail_block|2
+engineer|guardrail_block|2
+engineer|max_turns|1
+```
+
+The good news is that the non-static replay reached product-specific planning,
+updated the canonical `F-001` feature contract, created an ordinary product
+ticket, claimed it, and produced a partial Go API implementation without
+creating target intervention-debt tickets for runtime failures. This confirms
+the stabilization is generic enough to start actual product work outside the
+static game path.
+
+The new bottleneck is scheduled duplicate work. While the first Engineer was
+still running, the minute scheduler enqueued a second Engineer for the same
+repo. After the first Engineer hit `max_turns`, the duplicate was claimed and
+started redoing implementation work. The queue serialized execution, but it did
+not prevent same-repo same-role scheduled work from stacking behind an active
+job. This became the first generic optimization target for `T-011`.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -634,10 +690,12 @@ fix turns that max-turn failure into a completed QA handoff, and run 11 confirms
 no-remote release publication blockers now stop dispatch without remote mutation
 or a Dogfood loop. Run 12 confirms structured-array payload drift is broader
 than release tooling and validates the need for a representative live validation
-matrix beyond one static Space Invaders canary. Factory pace is still dominated
-by avoidable tool-use recovery, shallow ticket/file discovery, and static app
-evidence discovery. The remaining live-loop work is to normalize common
-structured-array payload drift across path-filtered tools, make static app
-serving and static asset docsync evidence mechanical rather than prompt-only,
-and broaden live checks across multiple software archetypes before making
-generic lifecycle claims.
+matrix beyond one static Space Invaders canary. The Task Notes API replay then
+confirmed the lifecycle reaches non-static product planning and implementation,
+but exposed scheduled same-role duplication while an Engineer was already
+running. Factory pace is still dominated by avoidable tool-use recovery, shallow
+ticket/file discovery, long-running process mistakes, and now scheduled
+duplicate work. The remaining live-loop work is to prevent scheduled
+same-repo/same-role stacking, tighten common shell/process ergonomics, and keep
+validating against multiple software archetypes before making generic lifecycle
+claims.

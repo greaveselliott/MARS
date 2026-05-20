@@ -149,6 +149,19 @@ func (s *Scheduler) evaluate(ctx context.Context, sched Schedule) {
 	s.mu.Unlock()
 
 	idemKey := fmt.Sprintf("sched:%s:%d", sched.Name, nowMinute.Unix())
+	if active, activeErr := s.q.ActiveJobForRepoRole(ctx, sched.RepoID, sched.Role); activeErr != nil {
+		slog.Error("scheduler: active role check failed", "name", sched.Name, "repo_id", sched.RepoID, "role", sched.Role, "error", activeErr)
+		return
+	} else if active != nil {
+		slog.Info("scheduler: skipped active role",
+			"name", sched.Name,
+			"repo_id", sched.RepoID,
+			"role", sched.Role,
+			"active_job_id", active.ID,
+			"active_status", active.Status,
+		)
+		return
+	}
 
 	_, err = s.q.Enqueue(ctx, queue.Job{
 		RepoID:           sched.RepoID,

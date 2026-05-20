@@ -37,4 +37,11 @@ Foreign keys and indexes should be designed assuming **many repos** even when th
 
 ## Discoveries
 
+- 2026-05-20: A non-static `demo-api-run1` lifecycle replay showed the minute
+  scheduler enqueueing a second Engineer while the first Engineer was still
+  running. The queue already serialized claims per repo, but duplicate pending
+  scheduled work still restarted the same implementation path after a runtime
+  `max_turns` failure. Scheduler fire now checks for active pending, claimed, or
+  running work with the same repo and role and skips instead of stacking another
+  product worker.
 - 2026-05-19: Live `demo-123` validation showed that operator shutdown during an active Dogfood job could cancel the worker context before the queue wrote the terminal failure state. The TUI showed the job as blocked, but SQLite still reported it as `running`. Worker finalization now uses a short fresh context for `completed`/`failed` state writes while leaving shutdown-canceled callbacks unable to enqueue more work.

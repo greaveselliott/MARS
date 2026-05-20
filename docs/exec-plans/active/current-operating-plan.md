@@ -8,11 +8,11 @@
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-006, F-009, F-012
 **Hypothesis:** Treating factory pace as measured intervention debt, using the `demo-123` replay series as concrete evidence, will reduce avoidable turns without hiding productive long-running work.
-**Success Evidence:** The 2026-05-20 `demo-123-run11` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; release-blocked publication stopped dispatch without remote mutation or a Dogfood loop.
+**Success Evidence:** The 2026-05-20 `demo-123-run11` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; release-blocked publication stopped dispatch without remote mutation or a Dogfood loop. The 2026-05-20 `demo-api-run1` non-static replay reached product-specific planning, ticketing, and partial Go API implementation without intervention-debt ticket amplification.
 **Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, future clean target replays still route autonomous follow-up after a terminal release blocker, or Dogfood/Engineer tool recovery prevents useful validation from reaching a terminal outcome.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** As of 2026-05-20, `T-015` closed the generic list-string argument drift and static app-root docsync invisibility found in `demo-123-run12`. The remaining failing surface is factory pace: static server-root discovery, shallow ticket/file search, and representative validation across more than one project archetype.
-**Walking Skeleton Slice:** Use the representative validation matrix as the next guardrail, then tighten shallow ticket/file discovery and project-shape-specific static evidence only where matrix evidence says it is relevant.
+**Current Failing Scenario:** As of 2026-05-20, `demo-api-run1` broadened the matrix beyond the static game canary and exposed same-repo same-role scheduled duplication: the minute scheduler queued a second Engineer while the first Engineer was still active, then claimed it after a max-turn failure. `T-011` now targets scheduled duplicate-work prevention before rerunning the API canary.
+**Walking Skeleton Slice:** Prevent scheduled same-role work from stacking behind active lifecycle work, rerun the API canary to confirm the duplicate Engineer is gone, then target the next largest matrix-backed turn sink.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -170,10 +170,12 @@ plans to decide what to do next.
 1. **Factory pace intervention debt (`T-011`/`T-013`)**: Continue measuring role
    pace from durable traces and job outcomes, define target thresholds, and
    implement the smallest evidence-backed change that reduces avoidable turns.
-   The 2026-05-20 runs 8-12 show the next turn sinks: shallow ticket globs,
-   broad `find .`, empty `shell_exec`, and static app serving discovery.
-   `T-015` fixed list-string tool arguments and static DocSync invisibility, so
-   the next slice should not re-litigate those unless matrix replay regresses.
+   The 2026-05-20 runs 8-12 show shallow ticket globs, broad `find .`, empty
+   `shell_exec`, and static app serving discovery. The `demo-api-run1`
+   non-static replay adds a more general turn sink: scheduled same-repo
+   same-role work stacked behind an active Engineer. The 2026-05-20 `T-011`
+   slice fixes that scheduler duplication and must rerun the API canary before
+   claiming the optimization held live.
 2. **Representative live validation matrix**: Apply AD-138 by checking at least
    one non-static project archetype before claiming broad factory progress.
    Keep `demo-123` as the static canary, but judge generic changes against the
@@ -210,7 +212,8 @@ plans to decide what to do next.
 | F-005-S006 | Passing | `go test ./cmd/mars-harness -run 'TestRunCommand(NoInit|AutoInit|RejectsRepoLocalLogFile)|TestMarsHarnessCLI'` and `go run ./cmd/mars-harness run engineer --repo /path/to/local-redacted --dry-run --trace --no-init` verify observer-safe dry-run exits without scaffolding an uninitialized target. |
 | F-006-S001 | Passing | `go test ./pkg/testutil ./internal/queue ./internal/telemetry ./internal/foundationtelemetry ./internal/trace ./internal/scoring ./internal/trust ./internal/evolution ./internal/orgstate ./internal/serve`, `go test ./internal/docsconsistency ./internal/docsync`, and `go test ./...` verify legacy SQLite fixture coverage across persistent stores. |
 | F-008-S005 | Passing | `go test ./internal/qualityscore -run 'TestExport(CreatesOutcomeSignalTickets|RendersTelemetryAndOutcomeSignals)'`, `go run ./cmd/mars-harness scores export --repo .`, and refreshed `docs/QUALITY_SCORE.md` verify guardrail outcome signals stay quality evidence by default and require `--create-intervention-debt` for ticket materialization. |
-| F-008-S008 | In progress | `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries` verifies quality export renders trace-derived Factory Pace rows. The 2026-05-20 run-12 export recorded Engineer at 92 turns / 45 tool invocations and Dogfood at 66 turns / 32 tool invocations; non-static matrix replay and threshold calibration remain under `T-011`. |
+| F-008-S008 | In progress | `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries` verifies quality export renders trace-derived Factory Pace rows. The 2026-05-20 run-12 export recorded Engineer at 92 turns / 45 tool invocations and Dogfood at 66 turns / 32 tool invocations; the `demo-api-run1` export recorded Engineer at 102 trace turns / 50 tool invocations with a max-turn stop. |
+| F-006-S015 | In progress | `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole` cover the scheduled duplicate-work prevention added after `demo-api-run1`. Live rerun evidence remains open. |
 
 ## Quality State
 

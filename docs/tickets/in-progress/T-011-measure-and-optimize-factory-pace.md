@@ -6,17 +6,21 @@ complexity: large
 work_type: intervention-debt
 bdd_scenarios:
   - F-008-S008
+  - F-006-S015
 end_to_end_evidence: not_applicable
 evidence_links:
   - "go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries"
+  - "go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive"
+  - "go test ./internal/queue -run TestQueue_activeJobForRepoRole"
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#run-12-tool-argument-and-matrix-replay--2026-05-20
-verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; run12 scores export captured live Factory Pace baseline and target commit 438ff4b"
+  - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#non-static-matrix-replay-task-notes-api---2026-05-20
+verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; run12 and demo-api-run1 scores exports captured live Factory Pace baselines"
 owner: "Codex"
-last_attempt: "2026-05-20: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45 tools and Dogfood 66 turns/32 tools. Optimization thresholds and matrix replay remain."
+last_attempt: "2026-05-20: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45 tools and Dogfood 66 turns/32 tools. Non-static demo-api-run1 replay shows Engineer max_turns at 102 trace turns/50 tools and a duplicate scheduled Engineer queued while the first Engineer was still active; scheduler now skips same-repo same-role active work."
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Run quality export against a repo DB with live traces, record the baseline, then target the largest generic turn sink across the representative validation matrix."
+next_action: "Rerun the non-static API canary with the scheduler skip fix, then target the next largest generic turn sink if same-role scheduled duplication is gone."
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -67,8 +71,9 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 
 ## BDD Evidence
 
-- Scenario IDs: F-008-S008.
+- Scenario IDs: F-008-S008 and F-006-S015.
 - Evidence links: `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries` covers the first quality-export pace slice.
+- Evidence links: `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole` cover the scheduled duplicate-work fix.
 - Verified by: partial; live baseline export and before/after replay evidence remain open.
 
 ## Acceptance Criteria
@@ -115,10 +120,12 @@ Remaining work:
 
 - Run quality export against a live repo DB with recent traces and record the
   dated baseline in the active plan or validation report. Done for
-  `demo-123-run12`; repeat across at least one non-static archetype before
-  generic optimization claims.
+  `demo-123-run12` and the non-static `demo-api-run1` API canary.
+- The non-static canary identified same-repo same-role scheduled duplication as
+  the first generic optimization target. Scheduler fire now checks the queue for
+  active same-role work before enqueueing another scheduled job.
 - Define calibrated thresholds after the baseline, not before it.
-- Apply the representative validation matrix before making broad optimization
+- Rerun the API canary to confirm duplicate scheduled Engineer work is gone
+  before claiming the optimization improved the live factory.
+- Continue the representative validation matrix before making broad optimization
   claims.
-- Implement the smallest generic turn-waste reduction that the baseline
-  identifies.

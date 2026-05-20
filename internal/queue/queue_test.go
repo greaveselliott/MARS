@@ -130,6 +130,40 @@ func TestQueue_idempotency(t *testing.T) {
 	assert.NotEqual(t, id1, id3, "completed job should allow new enqueue with same key")
 }
 
+func TestQueue_activeJobForRepoRole(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	id, err := q.Enqueue(ctx, Job{RepoID: "repo-1", Role: "engineer"})
+	require.NoError(t, err)
+	_, err = q.Enqueue(ctx, Job{RepoID: "repo-1", Role: "cto-weekly"})
+	require.NoError(t, err)
+	_, err = q.Enqueue(ctx, Job{RepoID: "repo-2", Role: "engineer"})
+	require.NoError(t, err)
+
+	active, err := q.ActiveJobForRepoRole(ctx, "repo-1", "engineer")
+	require.NoError(t, err)
+	require.NotNil(t, active)
+	assert.Equal(t, id, active.ID)
+	assert.Equal(t, StatusPending, active.Status)
+
+	job, err := q.Claim(ctx, "w-1")
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.NoError(t, q.MarkRunning(ctx, job.ID))
+
+	active, err = q.ActiveJobForRepoRole(ctx, "repo-1", "engineer")
+	require.NoError(t, err)
+	require.NotNil(t, active)
+	assert.Equal(t, id, active.ID)
+	assert.Equal(t, StatusRunning, active.Status)
+
+	require.NoError(t, q.Complete(ctx, id))
+	active, err = q.ActiveJobForRepoRole(ctx, "repo-1", "engineer")
+	require.NoError(t, err)
+	assert.Nil(t, active)
+}
+
 func TestQueue_perRepoSerialization(t *testing.T) {
 	q := tempQueue(t)
 	ctx := context.Background()

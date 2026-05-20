@@ -228,6 +228,44 @@ VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 	return job.ID, nil
 }
 
+// ActiveJobForRepoRole returns a pending, claimed, or running job for the
+// repo/role pair. Callers use this to avoid enqueueing periodic duplicate work
+// while the same role is already making or waiting to make progress.
+func (q *Queue) ActiveJobForRepoRole(ctx context.Context, repoID, role string) (*Job, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	repoID = strings.TrimSpace(repoID)
+	role = strings.TrimSpace(role)
+	if repoID == "" || role == "" {
+		return nil, nil
+	}
+
+	row := q.db.QueryRowContext(ctx, `
+SELECT id, repo_id, role, trigger_payload, payload_mode, concurrency_group, daily_cap, idempotency_key, status,
+       claimed_by, created_at, updated_at, completed_at, error_msg
+FROM jobs
+WHERE repo_id = ?
+  AND role = ?
+  AND status IN ('pending','claimed','running')
+ORDER BY
+  CASE status
+    WHEN 'running' THEN 0
+    WHEN 'claimed' THEN 1
+    ELSE 2
+  END,
+  created_at ASC
+LIMIT 1`, repoID, role)
+	job, err := scanJob(row)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("queue: active job for repo %q role %q: %w", repoID, role, err)
+	}
+	return job, nil
+}
+
 func (q *Queue) dailyCapReached(ctx context.Context, group string, cap int, now time.Time) (string, bool, error) {
 	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix()
 	var count int
