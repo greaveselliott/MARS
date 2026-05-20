@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.12] - 2026-05-20
+<!-- mars-harness-release: version=0.42.12 commit=7b9d8e79e8a1 -->
+
+### Impact
+- **tools:** Operators see improved reliability because kill tracked background process trees.
+
+### Why
+- **tools:** This matters because kill tracked background process trees closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed kill tracked background process trees (7b9d8e7).
+
+### Fixes
+- **tools:** Kill tracked background process trees (7b9d8e7)
+
 ## [0.42.11] - 2026-05-20
 <!-- mars-harness-release: version=0.42.11 commit=f7b5f48aaa6e -->
 
