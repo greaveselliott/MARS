@@ -2184,6 +2184,36 @@ paths for runnable validation binaries. The cleanup exception remains for
 artifacts already present, and malformed `shell_exec` payloads now surface their
 own validation error before dirty-diff containment can obscure them.
 
+### Non-Static API Replay: Bare Port Tokens Must Be Tool-Shape Errors
+
+After repo-local build-output prevention was added, a clean Task Notes API
+replay against `<validation-root>` confirmed
+the guardrail and exposed the next malformed command pattern.
+
+Positive evidence:
+
+- CEO, COO, and CTO completed once, created product-specific planning, and
+  handed off to Engineer.
+- Engineer claimed `T-001`, committed a Go `GET /health` implementation, and
+  pushed locally with a clean no-remote skip.
+- `go build -o task-notes-api src/main.go` was blocked before process execution;
+  no `task-notes-api` binary was created in the target repo.
+- `mars-harness scores export` wrote quality evidence showing zero target
+  intervention-debt tickets, and the target was committed cleanly after the run.
+
+Residual finding:
+
+- After the build-output block, Engineer called `shell_exec` with `argv:
+  [":8080"]` twice. The runtime treated it as a missing executable, and the
+  repeated malformed call triggered `circle_detected`.
+
+Decision: bare port tokens such as `:8080` are invalid validation commands.
+`shell_exec` now rejects them before process execution and tells roles to start
+the actual server command with `background:true`, then probe with
+`curl http://localhost:8080/health` or the target route. The build-output
+blocker now also names a stable external validation-binary shape such as
+`<validation-root>` so the model sees the correction directly.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

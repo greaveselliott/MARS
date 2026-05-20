@@ -133,6 +133,38 @@ func TestShellExecAllowsShellCommandNonBackgroundAmpersands(t *testing.T) {
 	}
 }
 
+func TestShellExecRejectsBarePortCommands(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "argv",
+			raw:  `{"argv":[":8080"]}`,
+		},
+		{
+			name: "shell command",
+			raw:  `{"shell_command":":8080"}`,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			root, err := NewRoot(dir)
+			require.NoError(t, err)
+
+			_, err = handleShellExec(context.Background(), root, []byte(tt.raw))
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "is a port, not an executable command")
+			require.Contains(t, err.Error(), "background:true")
+			require.Contains(t, err.Error(), "curl http://localhost:8080/health")
+		})
+	}
+}
+
 func TestShellExec_timeout(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -480,6 +512,7 @@ func TestShellExecBlocksGoBuildOutputInsideRepoBeforeArtifact(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "go build output")
 	require.Contains(t, err.Error(), "inside the target repo")
+	require.Contains(t, err.Error(), "/tmp/task-notes-api-validation")
 	require.NoFileExists(t, filepath.Join(dir, "task-notes-api"))
 }
 

@@ -1839,3 +1839,48 @@ blocker.
 - The next API canary should confirm Engineer reaches validation without
   creating a repo-local binary trap, then either commits completed ticket work
   or exposes the next generic lifecycle bottleneck.
+
+## AD-146: Bare Port Tokens Are Invalid Validation Commands
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run8` replay confirmed the v0.42.7 build-output guardrail:
+Engineer tried `go build -o task-notes-api src/main.go`, and `shell_exec`
+blocked it before the `task-notes-api` binary appeared in the repo. The target
+worktree stayed clean after the failed job, and the product implementation
+commit was preserved.
+
+The remaining loop was a malformed validation command. After the build-output
+block, Engineer called `shell_exec` with `argv: [":8080"]` twice. That token is
+a port, not a process to execute. The runtime returned a normal exec-not-found
+error both times, and circle detection stopped the job. This is the same family
+as the earlier run6 `:8080` cleanup attempts: local models sometimes collapse
+"server on port 8080" into a command-shaped port token.
+
+### Decision
+
+`shell_exec` now rejects bare port tokens such as `:8080` in both `argv` and
+single-token `shell_command` mode before process execution. The error states
+that ports are not executable commands, instructs the role to start the app with
+the real server command using `background:true`, and gives the corresponding
+`curl http://localhost:8080/health` probe shape.
+
+The repo-local build-output blocker also gives a more direct recovery action:
+rerun the same build with `-o /tmp/<artifact>-validation` or another external
+temp path, then run or delete that external binary. The point is to keep agents
+on the validation path without turning generated artifacts or malformed port
+tokens into loops.
+
+### Consequences
+
+- API, web, static-server, CLI, and service targets get a generic recovery hint
+  when a port leaks into command position.
+- Validation errors stay tool-shape errors instead of expensive subprocess
+  failures.
+- The next API canary should confirm Engineer reacts to the repo-local build
+  block by using an external validation binary or managed server validation,
+  rather than repeating `:8080`.

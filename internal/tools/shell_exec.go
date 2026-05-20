@@ -168,6 +168,9 @@ func validateShellExecArgv(argv []string) error {
 		return nil
 	}
 	program := strings.Trim(filepathBase(strings.TrimSpace(argv[0])), `"'`)
+	if shellExecBarePortToken(program) {
+		return shellExecBarePortError(program)
+	}
 	if shellArgvBuiltin(program) {
 		return shellArgvSyntaxError(argv[0])
 	}
@@ -202,7 +205,30 @@ func validateShellExecShellCommand(cmd string) error {
 	if shellCommandHasBackgroundOperator(cmd) {
 		return fmt.Errorf("shell_exec: shell_command cannot use the shell background operator & because it can leak child processes after timeouts. Start the long-running command with background:true instead, then run a separate probe such as curl, and rely on harness cleanup or a targeted kill after validation")
 	}
+	fields := strings.Fields(strings.TrimSpace(cmd))
+	if len(fields) == 1 {
+		token := strings.Trim(fields[0], `"'`)
+		if shellExecBarePortToken(token) {
+			return shellExecBarePortError(token)
+		}
+	}
 	return nil
+}
+
+func shellExecBarePortToken(token string) bool {
+	if len(token) < 2 || token[0] != ':' {
+		return false
+	}
+	for _, r := range token[1:] {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func shellExecBarePortError(token string) error {
+	return fmt.Errorf("shell_exec: %q is a port, not an executable command. Start the app with its real server command using background:true, then probe it separately with curl http://localhost%s/health or the target route", token, token)
 }
 
 func shellCommandHasBackgroundOperator(cmd string) bool {

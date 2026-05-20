@@ -893,8 +893,16 @@ func checkShellBuildOutputPolicy(root Root, args shellExecArgs) error {
 	if err != nil || !inside {
 		return err
 	}
-	suggestion := filepath.Join(os.TempDir(), filepath.Base(cleanShellPathToken(output)))
-	return fmt.Errorf("policy: go build output %q would create a build artifact inside the target repo; write validation binaries to an external temp path such as %s and keep repo diffs source-only", output, suggestion)
+	suggestion := validationBinaryOutputSuggestion(output)
+	return fmt.Errorf("policy: go build output %q would create a build artifact inside the target repo; rerun the same build with -o %s or another external temp path, then run or delete that external binary and keep repo diffs source-only", output, suggestion)
+}
+
+func validationBinaryOutputSuggestion(output string) string {
+	base := filepath.Base(cleanShellPathToken(output))
+	if base == "" || base == "." || base == string(filepath.Separator) {
+		base = "app"
+	}
+	return filepath.ToSlash(filepath.Join("/tmp", base+"-validation"))
 }
 
 func goBuildOutputPath(args shellExecArgs) (string, bool) {

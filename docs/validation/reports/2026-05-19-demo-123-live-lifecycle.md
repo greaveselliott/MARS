@@ -1029,6 +1029,65 @@ validation binaries to an external temp path, and validates malformed
 `shell_exec` payloads before dirty-diff containment can obscure the true tool
 shape error.
 
+## API Rerun After Build Output Prevention: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after repo-local validation binaries
+were blocked before execution, confirm no root binary is created, and collect
+the next generic factory bottleneck.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.7` plus the pushed build-output prevention fix
+  `e9dd4a9 fix(tools): prevent repo-local validation binaries`
+- Target local evidence commit:
+  `1d2f256 chore: capture run8 quality evidence`
+- Target remote: none
+
+Job state:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Trace-derived pace:
+
+```text
+ceo|22 turns|10 tools|10 LLM calls|38.0s|completed
+coo|24 turns|11 tools|11 LLM calls|75.3s|completed
+cto-weekly|38 turns|18 tools|18 LLM calls|100.6s|completed
+engineer|53 turns|25 tools|26 LLM calls|69.9s|circle_detected
+```
+
+Telemetry:
+
+```text
+cto-weekly|guardrail_block|1
+engineer|guardrail_block|6
+engineer|circle_detected|1
+```
+
+The build-output prevention fix worked in the live service canary. Engineer
+claimed `T-001`, initialized the Go module, wrote `src/main.go`, committed the
+`GET /health` implementation, and then attempted
+`go build -o task-notes-api src/main.go`. `shell_exec` blocked that command
+before execution because `task-notes-api` resolved inside the target repo. A
+direct filesystem check confirmed `<validation-root>`
+does not exist. The target ended clean after committing exported quality
+evidence, and the quality score recorded zero open intervention-debt tickets.
+
+The next generic bottleneck is malformed port-token recovery. After the
+build-output block, Engineer called `shell_exec` with `argv:[":8080"]` twice.
+The runtime treated it as an executable lookup and returned "executable file not
+found"; the repeated malformed command triggered `circle_detected`. The source
+fix now rejects bare port tokens such as `:8080` in `argv` or single-token
+`shell_command` mode before process execution, states that ports are not
+commands, and gives the `background:true` plus `curl http://localhost:8080/health`
+validation shape.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -1068,8 +1127,10 @@ also names the cleanup command. Run6 confirms that cleanup hints are effective
 in real implementation and shifts the next generic bottleneck to managed
 long-running server validation. Run7 confirms managed background validation
 works in the service canary and shifts the next generic bottleneck to preventing
-repo-local validation binaries before they dirty the target. The remaining
-live-loop work is to rerun the API canary after the build-output prevention
-fix, confirm Engineer no longer creates a root binary trap, tighten docsync
-metadata guidance if it remains a blocker, and keep validating against multiple
-software archetypes before making generic lifecycle claims.
+repo-local validation binaries before they dirty the target. Run8 confirms the
+build-output prevention works and shifts the next generic bottleneck to
+malformed bare-port validation commands. The remaining live-loop work is to
+rerun the API canary after the bare-port command fix, confirm Engineer no longer
+loops on `:8080`, tighten docsync metadata guidance if it remains a blocker, and
+keep validating against multiple software archetypes before making generic
+lifecycle claims.

@@ -123,6 +123,10 @@ Given a role starts a long-running command with `background:true`
 When the process exits during the startup capture window
 Then the tool returns an error with the initial output and exit code so the role treats the result as a boot failure instead of continuing as though the server is running
 
+Given a role calls `shell_exec` with a bare port token such as `:8080`
+When the tool validates the command
+Then the call fails before process execution and tells the role that ports are not executable commands, to start the app with its real server command using `background:true`, and to probe separately with `curl http://localhost:8080/health` or the target route
+
 ### F-005-S004: Auditable Trace
 
 Given an agent job runs
@@ -237,4 +241,4 @@ None.
 - F-005-S012: `go test ./internal/tools -run TestGitPush_noRemote`
 - F-005-S013: `go test ./internal/scanner -run TestInit_success`
 - F-005-S014: `go test ./internal/tools -run TestExecutor_toolHandlerHardTimeout`
-- F-005-S015: `go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess)'` and `demo-api-run7` live evidence
+- F-005-S015: `go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|RejectsBarePortCommands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess)'`, `demo-api-run7`, and `demo-api-run8` live evidence
