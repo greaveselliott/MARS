@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.33] - 2026-05-20
+<!-- mars-harness-release: version=0.41.33 commit=bfc219a8ae48 -->
+
+### Impact
+- **tools:** Operators see improved reliability because normalize list string arguments.
+
+### Why
+- **tools:** This matters because normalize list string arguments closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed normalize list string arguments (bfc219a).
+
+### Fixes
+- **tools:** Normalize list string arguments (bfc219a)
+
 ## [0.41.32] - 2026-05-20
 <!-- mars-harness-release: version=0.41.32 commit=40d9722ec551 -->
 

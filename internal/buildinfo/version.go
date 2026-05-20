@@ -9,4 +9,4 @@ package buildinfo
 
 // DefaultVersion is the source-tree fallback used when release builds do not
 // inject a version with ldflags.
-const DefaultVersion = "0.41.32"
+const DefaultVersion = "0.41.33"
