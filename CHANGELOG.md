@@ -2,6 +2,29 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.4] - 2026-05-20
+<!-- mars-harness-release: version=0.42.4 commit=3e57ba14885d -->
+
+### Impact
+- **tools:** Fresh Go targets can recover from validation builds that leave a
+  root executable named after the module, so generated binaries no longer trap
+  Engineer behind blast-radius checks.
+
+### Why
+- **tools:** The live Task Notes API canary reached product implementation but
+  failed at max turns after `task-notes-api` was treated as a 33,970-line
+  source change. The existing cleanup exception handled repo-named binaries but
+  missed module-named artifacts.
+
+### What Changed
+- **tools:** The shell policy now allows `rm`/`unlink` for untracked,
+  root-level, binary-looking artifacts named after either the repo directory or
+  the root `go.mod` module basename, while ordinary deletion, tracked files,
+  nested paths, and text files remain blocked (3e57ba1).
+
+### Fixes
+- **tools:** Allow module-named build artifact cleanup (3e57ba1)
+
 ## [0.42.3] - 2026-05-20
 <!-- mars-harness-release: version=0.42.3 commit=decb5f38231c -->
 
