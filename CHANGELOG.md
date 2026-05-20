@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.9] - 2026-05-20
+<!-- mars-harness-release: version=0.42.9 commit=053a6e20d9c1 -->
+
+### Impact
+- **tools:** Fresh target runs are less likely to pollute product commits with throwaway validation scripts, and service validation now avoids host-specific `timeout` utilities.
+
+### Why
+- **tools:** The live Task Notes API replay reached local release notes but exposed a generic validation trap: Engineer committed a root `validate.sh` that Dogfood later proved was non-portable. The factory should keep temporary proof work in tool-managed commands or durable tests, not accidental product surface.
+
+### What Changed
+- **tools:** Blocks new repo-root validation shell scripts such as `validate.sh`, rejects external `timeout`/`gtimeout` commands, and mirrors the portable validation rule into generated Engineer and Dogfood guidance (053a6e2).
+
+### Fixes
+- **tools:** Block scratch validation scripts (053a6e2)
+
 ## [0.42.8] - 2026-05-20
 <!-- mars-harness-release: version=0.42.8 commit=1aa405f613e5 -->
 
