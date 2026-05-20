@@ -727,6 +727,58 @@ after repeated terminal disposition attempts against an in-progress ticket that
 could not be moved because the generated binary kept the repo outside safety
 limits.
 
+## API Rerun After Build-Artifact Cleanup: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after the bounded root build-artifact
+cleanup exception, and avoid treating the Space Invaders static target as the
+only proof of generic factory health.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.2` plus the pushed build-artifact cleanup fix
+  `1e42e21 fix(tools): allow cleanup of root build artifacts`
+- Target local evidence commit:
+  `b42890b chore: capture feature-contract guidance evidence`
+- Target remote: none
+
+Job state at operator stop:
+
+```text
+ceo|completed|1
+coo|running|1
+```
+
+Trace-derived pace:
+
+```text
+ceo|32 turns|15 tools|15 LLM calls|83.2s|completed
+```
+
+Telemetry:
+
+```text
+ceo|guardrail_block|2
+coo|guardrail_block|2
+```
+
+The run exposed a planning guidance bottleneck before it could exercise the
+build-artifact cleanup path. CEO correctly discovered the generated canonical
+`docs/features/F-001-product-walking-skeleton.md` contract, but also attempted
+to create a second product-specific `docs/features/F-001-task-notes-api.md`
+contract. COO then attempted the same duplicate path, and its later canonical
+contract update tried to append duplicate scenario headings. The existing
+guardrails prevented duplicate feature contracts and duplicate scenario IDs, so
+the target stayed protected and no intervention-debt tickets were created, but
+the lifecycle stopped before CTO ticketing or Engineer implementation.
+
+This is a generic fresh-bootstrap issue. The source fix now makes canonical
+feature-contract reuse explicit in generated CEO and COO guidance: CEO must not
+write `docs/features/`, and COO must search `docs/features/F-NNN*.md`, edit the
+existing path when present, and rewrite starter scenarios in place with unique
+IDs. The next API canary should confirm bootstrap planning reaches CTO and then
+exercise the build-artifact cleanup improvement.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -752,9 +804,14 @@ confirmed the lifecycle reaches non-static product planning and implementation,
 but exposed scheduled same-role duplication while an Engineer was already
 running. The follow-up API rerun kept product progress intact and exposed the
 next generic failure: repo-local compiled binaries can trap the agent behind
-blast-radius and destructive-command policy. Factory pace is still dominated by
+blast-radius and destructive-command policy. The next API rerun showed that
+first-run generated planning guidance also needs to steer CEO and COO away from
+duplicate `F-001` feature paths and duplicate starter scenarios before the
+implementation path can be assessed. Factory pace is still dominated by
 avoidable tool-use recovery, shallow ticket/file discovery, long-running process
-mistakes, build artifact cleanup gaps, and representative matrix coverage. The
-remaining live-loop work is to make generated build artifacts safely cleanable,
-tighten common shell/process ergonomics, and keep validating against multiple
-software archetypes before making generic lifecycle claims.
+mistakes, build artifact cleanup gaps, feature-contract path ambiguity, and
+representative matrix coverage. The remaining live-loop work is to rerun the
+API canary after canonical planning guidance, confirm generated build artifacts
+are safely cleanable during real implementation, tighten common shell/process
+ergonomics, and keep validating against multiple software archetypes before
+making generic lifecycle claims.

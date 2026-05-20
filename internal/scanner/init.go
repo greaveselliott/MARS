@@ -2921,6 +2921,12 @@ edit docs/features contracts, and do not create tickets. Tool policy enforces
 this boundary. If an exec plan or BDD contract is needed, route to COO. If
 technical decomposition or tickets are needed, route to CTO.
 
+Do not call file_write for docs/features/ and do not invent new feature
+contract paths such as docs/features/F-001-*.md during bootstrap. If you
+inspect feature contracts and find an existing docs/features/F-NNN*.md path,
+include the canonical feature contract path in the COO handoff and leave
+in-place contract edits to COO.
+
 ## Quality Bar
 
 - Active goals are few, coherent, and tied to user/company value.
@@ -3097,6 +3103,15 @@ TASK 2 — BDD feature contract.
 
 Create or update the docs/features/F-NNN-*.md contract named by the active
 plan. Resolve feature IDs with docs/features/F-NNN*.md, including slugged paths.
+Before writing, resolve the canonical path:
+
+- Search docs/features/F-NNN*.md for the feature ID named by the plan.
+- If any match exists, edit exactly that existing path.
+- For the generated starter F-001, the canonical path is
+  docs/features/F-001-product-walking-skeleton.md.
+- Do not create a second feature contract path for the same feature ID, even
+  when the product brief suggests a more specific slug.
+
 The contract must document:
 
 - Feature ID, goals, owner, status, out of scope, descoped scenarios, evidence
@@ -3109,7 +3124,9 @@ The contract must document:
 
 When updating an existing generated starter contract, replace or revise the
 starter scenario headings instead of appending duplicate ` + "`F-NNN-SMMM`" + ` IDs.
-Every scenario heading ID in a feature file must be unique.
+If the starter product name or scenario schedule changes, rewrite the existing
+contract in place with one unique scenario set. Every scenario heading ID in a
+feature file must be unique.
 
 TASK 3 — Handoff to CTO.
 

@@ -30,6 +30,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 13. F-006-S013 - Runtime failures stop as foundation telemetry instead of restarting product planning loops.
 14. F-006-S014 - Product validation routes into release review instead of stopping before versioning.
 15. F-006-S015 - Scheduled triggers skip same-repo same-role work that is already pending, claimed, or running.
+16. F-006-S016 - Fresh bootstrap roles reuse canonical feature-contract paths and rewrite starter scenarios in place.
 
 ## Scenarios
 
@@ -254,6 +255,16 @@ Then they search `docs/features/F-001*.md`, treat slugged contracts as present, 
 Given a target already has a `docs/features/F-001*.md` contract
 When a planner or ticketing role tries to create a second contract path with the same `F-001` feature ID
 Then `file_write` rejects the duplicate so the target keeps one canonical feature contract per feature ID
+
+### F-006-S016: Canonical Bootstrap Feature Contracts
+
+Given generated CEO runs fresh bootstrap and a product brief implies feature-contract work
+When the CEO prepares a planning handoff
+Then the CEO does not write `docs/features/` and names the existing canonical feature-contract path for COO instead of inventing a new `F-001` slug
+
+Given generated COO updates a starter `F-001` feature contract
+When `docs/features/F-001-product-walking-skeleton.md` already exists
+Then COO edits that existing path in place and replaces starter scenarios with one unique scenario set instead of appending duplicate scenario headings
 
 Given Orchestrator receives a next need of `strategy_advice`, `executive_narrative`, `tradeoff_analysis`, or `goal_conflict`
 When the target manifest includes the optional `head-of-strategy` role

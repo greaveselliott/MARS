@@ -1681,3 +1681,53 @@ service archetype before being treated as generally improved.
   improvement, remaining findings such as Engineer tool/turn bloat or Dogfood
   continuation behavior should be addressed by another bounded run-review-act
   rerun cycle.
+
+## AD-143: Bootstrap Planning Reuses Canonical Feature Contracts
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The non-static `demo-api-run3` replay used a fresh Task Notes API target after
+the scheduler and build-artifact fixes. CEO correctly found the generated
+canonical `docs/features/F-001-product-walking-skeleton.md` contract, but then
+also tried to create a more product-specific `docs/features/F-001-task-notes-api.md`
+path. Tool policy blocked that duplicate path. COO then followed the same
+ambiguous guidance: it first tried the duplicate path, then tried to update the
+canonical file by appending scenario headings that duplicated starter IDs.
+Those guardrails protected the target, but the bootstrap stalled before CTO
+ticketing or Engineer validation.
+
+This is a generic first-run issue, not an API-specific one. Any fresh project
+can suggest a better slug than the generated starter contract, and any planner
+can be tempted to append scenarios rather than rewrite the starter file.
+
+### Decision
+
+Generated bootstrap planning guidance now treats feature-contract path
+canonicalization as an explicit role duty:
+
+- CEO does not write `docs/features/` and does not invent new `F-001` feature
+  paths during bootstrap. When CEO inspects feature contracts, it names the
+  existing canonical path in the COO handoff.
+- COO resolves `docs/features/F-NNN*.md` before writing. If any match exists,
+  COO edits exactly that existing path, including the generated
+  `docs/features/F-001-product-walking-skeleton.md` starter.
+- COO may rename the product behavior inside the contract, but it does that by
+  rewriting the existing contract in place with one unique scenario set rather
+  than creating a second path or appending duplicate scenario headings.
+
+The existing tool-policy duplicate-path and duplicate-scenario checks remain as
+hard stops. The prompt change is the first layer: make the happy path obvious
+so planners avoid the guardrail instead of repeatedly discovering it.
+
+### Consequences
+
+- Fresh targets keep one canonical feature-contract path per feature ID while
+  still allowing product-specific behavior and scenario schedules.
+- First-run planning should move from CEO to COO to CTO without burning turns on
+  avoidable guardrail blocks.
+- The next live API canary can test the build-artifact cleanup fix because
+  bootstrap planning should no longer stall on duplicate `F-001` contract work.

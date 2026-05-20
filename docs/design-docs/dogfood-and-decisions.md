@@ -2030,6 +2030,36 @@ creation. The next continuous-build loop should claim `MH-049` and broaden the
 dogfood evidence far enough to observe ticket creation, implementation,
 quality-score export, release notes, and release publication behavior.
 
+### Non-Static API Replay: Canonical Feature Contract Guidance
+
+After adding scheduler duplicate-work suppression and bounded repo-local build
+artifact cleanup, a clean Task Notes API replay against
+`<validation-root>` reached CEO and COO
+planning but stalled before CTO ticketing.
+
+Positive evidence:
+
+- CEO found the generated canonical
+  `docs/features/F-001-product-walking-skeleton.md` contract and completed with
+  an `exec_plan` handoff.
+- Guardrails prevented a duplicate `docs/features/F-001-task-notes-api.md`
+  feature contract and prevented duplicate scenario headings in the canonical
+  contract.
+- No target intervention-debt tickets were created; the failure stayed as
+  foundation evidence.
+
+Residual finding:
+
+- The generated CEO/COO prompts still left enough ambiguity for both roles to
+  try product-specific `F-001` contract paths or duplicate starter scenario IDs
+  before reaching CTO ticket creation.
+
+Decision: bootstrap role guidance now names canonical feature-contract reuse as
+the happy path. CEO does not write `docs/features/` and passes the existing
+contract path to COO. COO searches `docs/features/F-NNN*.md`, edits the
+existing path when present, and rewrites starter scenarios in place with unique
+scenario IDs instead of creating a second slugged contract.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against
