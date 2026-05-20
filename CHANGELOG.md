@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.0] - 2026-05-20
+<!-- mars-harness-release: version=0.42.0 commit=b6173231a23c -->
+
+### Impact
+- **quality:** Operators gain new capability: export factory pace baselines.
+
+### Why
+- **quality:** This matters because export factory pace baselines was missing from the shipped capability set.
+
+### What Changed
+- **quality:** Changed export factory pace baselines (b617323).
+
+### Features
+- **quality:** Export factory pace baselines (b617323)
+
 ## [0.41.34] - 2026-05-20
 <!-- mars-harness-release: version=0.41.34 commit=a5b34ae68eca -->
 
