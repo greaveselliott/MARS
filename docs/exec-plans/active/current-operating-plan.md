@@ -303,6 +303,12 @@ plans to decide what to do next.
   release is missing `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
   `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
   `checksums.txt`.
+- `v0.42.16` release notes and tag were pushed on 2026-05-20 for the dashboard
+  control-plane documentation epic. The tag-push Release workflow run
+  `26188732882` failed before creating the GitHub Release or publishing assets,
+  and the main-branch CI run `26188726401` failed before running repo tests on
+  GitHub. `mars-harness release verify-assets --version v0.42.16` is blocked
+  because GitHub returned `404 Not Found` for the `v0.42.16` release object.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
