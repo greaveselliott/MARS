@@ -1257,6 +1257,67 @@ runnable validation binaries. The next API canary should confirm Dogfood no
 longer creates the implicit `task-notes-api` artifact and measure whether the
 turn budget is now sufficient for a terminal Dogfood disposition.
 
+## API Rerun After Default Go Build Preflight: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after default `go build` output
+preflight and confirm the validation path no longer creates repo-local build
+artifacts before blast-radius checks.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.11` plus
+  `f7b5f48 fix(tools): block implicit go build artifacts`
+- Target local evidence commits:
+  `c1a5170 chore: preserve run12 failed engineer workspace` and
+  `dc4a0e2 chore: capture run12 quality evidence`
+- Target remote: none
+
+Job state at stop:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Telemetry:
+
+```text
+coo|guardrail_block|1
+engineer|circle_detected|1
+engineer|guardrail_block|5
+```
+
+Positive evidence:
+
+- CEO, COO, and CTO reached product-specific planning and a single ordinary
+  product ticket with zero target intervention-debt tickets.
+- COO hit the commit-before-disposition guardrail, corrected by committing the
+  plan and feature-contract changes, and then completed.
+- Engineer claimed `T-001`, implemented the Go `/health` endpoint, recovered
+  from a foreground server timeout by using `background:true`, and validated
+  `/health`, POST method rejection, and missing-route behavior.
+- Explicit repo-local `go build -o task-notes-api` was blocked before artifact
+  creation, and Engineer recovered with `<validation-root>`.
+- The runtime failure stayed in foundation telemetry and did not create target
+  intervention-debt or dispatch an autonomous recovery loop.
+
+Residual finding:
+
+- Same-job cleanup still leaked the compiled `go run` child. Engineer called
+  `kill -TERM <tracked-wrapper-pid>` after the first live validation. The
+  wrapper died, but its child server kept port `8080` bound. The subsequent
+  `<validation-root>` binary exited during startup, and Engineer
+  repeated bare `:8080` commands until `circle_detected`.
+
+The source fix now intercepts `shell_exec` `kill <tracked-background-pid>` for
+managed background processes and applies the same descendant process-tree
+cleanup used at job end. The next API canary should confirm the `/tmp`
+validation binary can start after a targeted kill without manual `lsof` cleanup
+or bare-port loops.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -1303,7 +1364,10 @@ full non-static lifecycle through local release notes; run10 exposes stale
 `go run` child cleanup; run11 confirms the lifecycle reaches product
 implementation, QA, Security, and Dogfood without intervention-debt
 amplification, but shows implicit `go build` outputs and wrapper-child process
-ownership still consume Dogfood turns. The remaining live-loop work is to rerun
-the API canary after default `go build` preflight blocking, confirm Dogfood no
-longer creates the implicit `task-notes-api` artifact, and keep validating
+ownership still consume Dogfood turns. Run12 confirms product planning and
+ticketing remain healthy and validates the external-build recovery path, but
+same-job `kill <tracked-wrapper-pid>` still leaves a compiled `go run` child
+server behind. The remaining live-loop work is to rerun the API canary after
+tracked-background kill interception, confirm the `/tmp` validation binary can
+start without manual `lsof` cleanup or bare-port loops, and keep validating
 against multiple software archetypes before making generic lifecycle claims.

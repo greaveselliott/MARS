@@ -88,6 +88,51 @@ func KillBackgroundProcs() {
 	}
 }
 
+func maybeHandleTrackedBackgroundKill(args shellExecArgs) (bool, ToolResult) {
+	if len(args.Argv) < 2 || strings.TrimSpace(args.ShellCommand) != "" {
+		return false, ToolResult{}
+	}
+	if filepathBase(args.Argv[0]) != "kill" {
+		return false, ToolResult{}
+	}
+	var killed []string
+	for _, arg := range args.Argv[1:] {
+		arg = strings.TrimSpace(strings.Trim(arg, `"'`))
+		if arg == "" || strings.HasPrefix(arg, "-") {
+			continue
+		}
+		pid, err := strconv.Atoi(arg)
+		if err != nil {
+			continue
+		}
+		if killTrackedBackgroundPID(pid) {
+			killed = append(killed, strconv.Itoa(pid))
+		}
+	}
+	if len(killed) == 0 {
+		return false, ToolResult{}
+	}
+	return true, ToolResult{Output: fmt.Sprintf("Killed background process tree for PID(s): %s", strings.Join(killed, ", "))}
+}
+
+func killTrackedBackgroundPID(pid int) bool {
+	bgMu.Lock()
+	cmd, ok := bgProcs[pid]
+	if ok {
+		delete(bgProcs, pid)
+	}
+	bgMu.Unlock()
+	if !ok {
+		return false
+	}
+	slog.Info("shell_exec: killing tracked background process tree", "pid", pid)
+	killBackgroundProcessTree(pid)
+	if cmd.Process != nil {
+		_ = cmd.Process.Kill()
+	}
+	return true
+}
+
 func killBackgroundProcessTree(pid int) {
 	descendants := processDescendants(pid)
 	for i := len(descendants) - 1; i >= 0; i-- {
@@ -174,6 +219,9 @@ func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 
 	if args.Background {
 		return execBackground(root, args)
+	}
+	if handled, res := maybeHandleTrackedBackgroundKill(args); handled {
+		return res, nil
 	}
 	return execForeground(ctx, root, args)
 }

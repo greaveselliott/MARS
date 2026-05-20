@@ -300,6 +300,83 @@ func main() {
 	}, 3*time.Second, 50*time.Millisecond)
 }
 
+func TestShellExecKillTrackedBackgroundPIDKillsDescendant(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("process group cleanup test is unix-specific")
+	}
+	dir := t.TempDir()
+	src := filepath.Join(dir, "leaker.go")
+	bin := filepath.Join(dir, "leaker")
+	pidFile := filepath.Join(dir, "child.pid")
+	require.NoError(t, os.WriteFile(src, []byte(`package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"syscall"
+	"time"
+)
+
+func main() {
+	cmd := exec.Command("/bin/sleep", "30")
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if err := cmd.Start(); err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(os.Args[1], []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0o644); err != nil {
+		panic(err)
+	}
+	for {
+		time.Sleep(time.Hour)
+	}
+}
+`), 0o644))
+	build := exec.Command("go", "build", "-o", bin, src)
+	out, err := build.CombinedOutput()
+	require.NoError(t, err, string(out))
+
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	res, err := handleShellExec(context.Background(), root, []byte(fmt.Sprintf(`{"argv":[%q,%q],"background":true}`, bin, pidFile)))
+	require.NoError(t, err)
+	t.Cleanup(KillBackgroundProcs)
+	parentPID := backgroundPIDFromOutput(t, res.Output)
+
+	var childPID int
+	require.Eventually(t, func() bool {
+		data, err := os.ReadFile(pidFile)
+		if err != nil {
+			return false
+		}
+		pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+		if err != nil {
+			return false
+		}
+		childPID = pid
+		return syscall.Kill(childPID, 0) == nil
+	}, 3*time.Second, 50*time.Millisecond)
+
+	res, err = handleShellExec(context.Background(), root, []byte(fmt.Sprintf(`{"argv":["kill","-TERM","%d"]}`, parentPID)))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "Killed background process tree")
+	require.Eventually(t, func() bool {
+		return syscall.Kill(childPID, 0) != nil
+	}, 3*time.Second, 50*time.Millisecond)
+}
+
+func backgroundPIDFromOutput(t *testing.T, output string) int {
+	t.Helper()
+	start := strings.Index(output, "PID ")
+	require.NotEqual(t, -1, start, output)
+	start += len("PID ")
+	end := strings.Index(output[start:], ")")
+	require.NotEqual(t, -1, end, output)
+	pid, err := strconv.Atoi(output[start : start+end])
+	require.NoError(t, err)
+	return pid
+}
+
 func TestShellExec_mutexArgs(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

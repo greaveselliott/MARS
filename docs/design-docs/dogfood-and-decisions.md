@@ -2315,6 +2315,36 @@ path. `shell_exec` now rejects `go build` without `-o` before process execution
 and tells roles to use `go test ./...` for compile validation or an external
 `-o /tmp/<name>-validation` path when a runnable binary is required.
 
+### Non-Static API Replay: Same-Job Kill Must Clean Background Children
+
+The next replay used `<validation-root>` to
+validate default Go build output preflight in a fresh Task Notes API target.
+
+Positive evidence:
+
+- CEO, COO, and CTO again reached product-specific planning and a single
+  ordinary product ticket with zero target intervention-debt tickets.
+- COO corrected a commit-before-disposition guardrail block and committed the
+  updated plan and feature contract before handoff.
+- Engineer claimed `T-001`, implemented a Go `/health` endpoint under `src/`,
+  recovered from a foreground server timeout by using `background:true`, and
+  validated `/health`, POST method rejection, and missing-route behavior.
+- The explicit repo-local `go build -o task-notes-api` guardrail fired before
+  artifact creation, and Engineer recovered with `<validation-root>`.
+
+Residual finding:
+
+- Engineer killed the tracked `go run` wrapper PID after live validation, but
+  the compiled child server kept port `8080` bound during the same job. The
+  external `/tmp` validation binary then exited during startup because the port
+  was still occupied. Engineer repeated bare `:8080` commands and stopped with
+  `circle_detected`.
+
+Decision: targeted cleanup of a tracked background PID should behave like
+job-boundary cleanup. `shell_exec` now intercepts `kill <tracked-background-pid>`
+and kills the tracked process tree, including known descendants, before
+returning success. Untracked PIDs still fall through to normal `kill` behavior.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

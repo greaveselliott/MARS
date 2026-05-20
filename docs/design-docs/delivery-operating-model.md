@@ -1971,14 +1971,19 @@ from leaf to root, then kills the tracked process group and process. This keeps
 the existing process-group cleanup while covering wrapper commands such as
 `go run` that can spawn a server child outside the wrapper's group.
 
-The cleanup remains a job-boundary runtime behavior. Agents still start
-long-running servers with `background:true`, probe with separate commands, and
-avoid shell `&` process management.
+The same process-tree cleanup also applies when an agent calls
+`shell_exec` `kill <tracked-background-pid>` during a job. That makes targeted
+cleanup of a managed background server equivalent to job-boundary cleanup,
+instead of killing only the wrapper process. Agents still start long-running
+servers with `background:true`, probe with separate commands, and avoid shell
+`&` process management.
 
 ### Consequences
 
 - Live target canaries should not inherit stale dev servers from previous
   background validation jobs.
+- Same-job validation should not leave compiled `go run` child servers behind
+  after a role kills the tracked background PID.
 - Port-conflict handling becomes genuine target evidence again instead of a
   side effect of harness cleanup leakage.
 - The next API canary should start from a clean port state after harness-owned
