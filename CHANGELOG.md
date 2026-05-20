@@ -2,6 +2,28 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.5] - 2026-05-20
+<!-- mars-harness-release: version=0.42.5 commit=1025fe71d0a4 -->
+
+### Impact
+- **tools:** Agents get a direct recovery path when a generated repo/module
+  binary trips blast-radius limits, reducing max-turn loops after validation
+  builds.
+
+### Why
+- **tools:** The run5 Task Notes API canary proved the cleanup exception was
+  technically available but not discoverable: Engineer never tried
+  `rm task-notes-api` because the guardrail error only suggested splitting
+  work or raising `MaxLinesPerFile`.
+
+### What Changed
+- **tools:** `validateRepoDiff` now appends the exact `rm <artifact>` command
+  when the offending blast-radius file is an untracked, root-level,
+  binary-looking build artifact named after the repo or Go module (1025fe7).
+
+### Fixes
+- **tools:** Hint generated artifact cleanup (1025fe7)
+
 ## [0.42.4] - 2026-05-20
 <!-- mars-harness-release: version=0.42.4 commit=3e57ba14885d -->
 
