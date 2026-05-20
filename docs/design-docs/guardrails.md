@@ -107,19 +107,21 @@ instead of silently becoming an implementation role.
 
 Validation commands can create untracked root-level binaries in ordinary target
 repos. The live `demo-api-run2` replay showed `go build .` writing a binary
-named after the repo, which made blast-radius checks see tens of thousands of
-changed "lines" and then blocked the Engineer from cleaning the artifact with
-`rm`. That trapped later ticket and evidence updates behind the very guardrail
-intended to protect the repo.
+named after the repo, and the live `demo-api-run4` replay showed an Engineer
+leaving a root binary named after the Go module (`task-notes-api`). Both made
+blast-radius checks see tens of thousands of changed "lines" and then blocked
+the Engineer from cleaning the artifact with `rm`. That trapped later ticket
+and evidence updates behind the very guardrail intended to protect the repo.
 
 `shell_exec` therefore has a narrow removal exception for repo-local compiled
-artifacts: `rm <repo-name>` or `unlink <repo-name>` is allowed only when the
-path is root-level, untracked, named exactly after the repository directory, and
-binary-looking. Recursive removal, tracked files, ordinary source/docs, nested
-paths, and arbitrary filenames remain blocked by the normal destructive-command
-policy. Post-tool blast-radius validation still runs after cleanup, so the
-exception only clears generated build output and does not waive review for the
-remaining source or ticket changes.
+artifacts: `rm <artifact>` or `unlink <artifact>` is allowed only when the path
+is root-level, untracked, named exactly after the repository directory or the
+basename of the root `go.mod` module path, and binary-looking. Recursive
+removal, tracked files, ordinary source/docs, nested paths, and arbitrary
+filenames remain blocked by the normal destructive-command policy. Post-tool
+blast-radius validation still runs after cleanup, so the exception only clears
+generated build output and does not waive review for the remaining source or
+ticket changes.
 
 ### Open topics
 

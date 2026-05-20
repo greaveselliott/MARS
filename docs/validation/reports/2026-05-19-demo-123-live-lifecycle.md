@@ -779,6 +779,68 @@ existing path when present, and rewrite starter scenarios in place with unique
 IDs. The next API canary should confirm bootstrap planning reaches CTO and then
 exercise the build-artifact cleanup improvement.
 
+## API Rerun After Canonical Bootstrap Guidance: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after canonical feature-contract
+guidance, confirm the fresh lifecycle reaches CTO and Engineer, and collect the
+next generic factory bottleneck without overfitting to the Space Invaders demo.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.3` plus the pushed canonical bootstrap guidance fix
+  `decb5f3 fix(scanner): reuse canonical bootstrap feature contracts`
+- Target local evidence commit:
+  `d9b64ce chore: capture run4 module artifact evidence`
+- Target remote: none
+
+Job state:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Trace-derived pace:
+
+```text
+ceo|28 turns|13 tools|13 LLM calls|53.7s|completed
+coo|36 turns|17 tools|17 LLM calls|111.2s|completed
+cto-weekly|32 turns|15 tools|15 LLM calls|70.7s|completed
+engineer|102 turns|50 tools|50 LLM calls|357.0s|max_turns
+```
+
+Telemetry:
+
+```text
+coo|guardrail_block|1
+cto-weekly|guardrail_block|1
+engineer|guardrail_block|25
+engineer|max_turns|1
+```
+
+The canonical bootstrap guidance improved the live lifecycle. CEO, COO, and
+CTO completed exactly once, COO updated the canonical
+`docs/features/F-001-product-walking-skeleton.md` path instead of creating a
+duplicate product-specific `F-001` contract, CTO created an ordinary product
+ticket, and Engineer began implementing the Task Notes API. No target
+intervention-debt tickets were created for the runtime or guardrail failures,
+and the max-turn failure stayed foundation-owned telemetry rather than
+dispatching an Orchestrator recovery loop.
+
+The next generic bottleneck is still generated build-artifact containment, but
+with a broader artifact name. Engineer generated a root executable named
+`task-notes-api`, matching the Go module basename instead of the target repo
+directory `demo-api-run4`. The existing cleanup exception allowed only the repo
+basename, so blast-radius checks repeatedly blocked file writes,
+`record_decision`, and terminal disposition because the untracked binary looked
+like a 33,970-line source change. The source fix now extends the same bounded
+cleanup rule to untracked, root-level, binary-looking artifacts named after the
+root `go.mod` module basename. Ordinary deletion, tracked files, nested paths,
+and recursive removal remain blocked.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -810,8 +872,10 @@ duplicate `F-001` feature paths and duplicate starter scenarios before the
 implementation path can be assessed. Factory pace is still dominated by
 avoidable tool-use recovery, shallow ticket/file discovery, long-running process
 mistakes, build artifact cleanup gaps, feature-contract path ambiguity, and
-representative matrix coverage. The remaining live-loop work is to rerun the
-API canary after canonical planning guidance, confirm generated build artifacts
-are safely cleanable during real implementation, tighten common shell/process
-ergonomics, and keep validating against multiple software archetypes before
-making generic lifecycle claims.
+representative matrix coverage. The run4 API rerun confirms canonical planning
+guidance reaches CTO and Engineer, but shows generated build artifacts must
+cover module-named binaries as well as repo-named binaries. The remaining
+live-loop work is to rerun the API canary after module-named artifact cleanup,
+confirm generated build artifacts are safely cleanable during real
+implementation, tighten common shell/process ergonomics, and keep validating
+against multiple software archetypes before making generic lifecycle claims.

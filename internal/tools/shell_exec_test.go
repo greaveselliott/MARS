@@ -355,6 +355,33 @@ func TestShellExecAllowsUntrackedRootBuildArtifactCleanup(t *testing.T) {
 	require.NoFileExists(t, filepath.Join(dir, artifact))
 }
 
+func TestShellExecAllowsUntrackedGoModuleBuildArtifactCleanup(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))
+	artifact := "task-notes-api"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, artifact), append([]byte{0}, bytes.Repeat([]byte("binary\n"), 600)...), 0o755))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	err = ValidateRepoDiff(context.Background(), root, Session{SafetyLimits: safety.DefaultLimits()})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), artifact)
+
+	res, err := ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", fmt.Sprintf(`{"argv":["rm","%s"]}`, artifact))
+	require.NoError(t, err)
+	require.Equal(t, 0, res.ExitCode)
+	require.NoFileExists(t, filepath.Join(dir, artifact))
+	require.FileExists(t, filepath.Join(dir, "go.mod"))
+}
+
 func TestShellExecStillBlocksRemovalOfOrdinaryFiles(t *testing.T) {
 	dir, root := setupDirtyGitRepo(t, 0)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("keep me\n"), 0o644))
@@ -373,6 +400,27 @@ func TestShellExecStillBlocksRemovalOfOrdinaryFiles(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "forbidden operation")
 	require.FileExists(t, filepath.Join(dir, "notes.txt"))
+}
+
+func TestShellExecStillBlocksGoModuleNamedTextFileRemoval(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "task-notes-api"), []byte("keep me\n"), 0o644))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":["rm","task-notes-api"]}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "forbidden operation")
+	require.FileExists(t, filepath.Join(dir, "task-notes-api"))
 }
 
 func TestValidateRepoDiffIgnoresGeneratedUntrackedFiles(t *testing.T) {

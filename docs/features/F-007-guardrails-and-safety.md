@@ -24,7 +24,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 7. F-007-S007 - Emergency stop is available from runtime and dashboard controls.
 8. F-007-S008 - Blast-radius limits are checked before commit and push workflows.
 9. F-007-S009 - Workspace hygiene blocks generated dependency/build churn before model work and package-manager mutation.
-10. F-007-S010 - Untracked repo-local compiled binaries may be removed as generated build artifacts without opening arbitrary deletion.
+10. F-007-S010 - Untracked repo-local compiled binaries named after the repo or Go module may be removed as generated build artifacts without opening arbitrary deletion.
 
 ## Scenarios
 
@@ -135,4 +135,4 @@ None.
 - F-007-S007: `go test ./internal/safety -run TestEmergencyStop` and `go test ./internal/dashboard -run TestDashboard_emergencyStop`
 - F-007-S008: `go test ./internal/safety -run TestCheck`, `go test ./internal/tools -run TestValidateRepoDiffIgnoresGeneratedDependencyMetadataLineChurn`, `go test ./internal/tools -run TestJobDispositionPolicyIgnoresRuntimeLearningsOnlyDirtyState`, `go test ./internal/tools -run 'TestCOO(FileWrite|ShellExec)Policy|TestDogfoodFileWritePolicyBlocksProductMutation'`, and `go test ./internal/tools -run 'TestShellExecPolicy.*FeatureTicketDone(Move|Copy)|TestFileWritePolicyBlocks(DoneFeatureTicket|DuplicateFeatureScenario)'`
 - F-007-S009: `go test ./internal/tools -run 'TestWorkspaceHygiene|TestDependencySync|TestShellPolicyBlocksRawDependencyMutationCommands'` and `go test ./internal/serve -run TestHandleJobFailedDoesNotRecoverDeterministicFailures`
-- F-007-S010: `go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles)'`
+- F-007-S010: `go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'`

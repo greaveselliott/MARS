@@ -887,7 +887,7 @@ func isUntrackedRootBuildArtifact(ctx context.Context, root Root, rel string) (b
 	if rel == "" || rel == "." || strings.Contains(rel, "/") {
 		return false, nil
 	}
-	if rel != filepath.Base(root.Abs()) {
+	if !isAllowedRootBuildArtifactName(root, rel) {
 		return false, nil
 	}
 	abs, err := root.ResolvePath(rel)
@@ -906,6 +906,37 @@ func isUntrackedRootBuildArtifact(ctx context.Context, root Root, rel string) (b
 		return false, nil
 	}
 	return fileLooksBinary(abs), nil
+}
+
+func isAllowedRootBuildArtifactName(root Root, name string) bool {
+	if name == filepath.Base(root.Abs()) {
+		return true
+	}
+	return name == goModuleBinaryName(root)
+}
+
+func goModuleBinaryName(root Root) string {
+	abs, err := root.ResolvePath("go.mod")
+	if err != nil {
+		return ""
+	}
+	data, err := os.ReadFile(abs)
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		fields := strings.Fields(strings.TrimSpace(line))
+		if len(fields) < 2 || fields[0] != "module" {
+			continue
+		}
+		modulePath := strings.Trim(fields[1], `"`)
+		moduleName := filepath.Base(strings.TrimSuffix(modulePath, "/"))
+		if moduleName == "." || moduleName == string(filepath.Separator) || strings.Contains(moduleName, "/") {
+			return ""
+		}
+		return moduleName
+	}
+	return ""
 }
 
 func fileLooksBinary(abs string) bool {

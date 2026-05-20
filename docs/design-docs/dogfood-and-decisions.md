@@ -2060,6 +2060,37 @@ contract path to COO. COO searches `docs/features/F-NNN*.md`, edits the
 existing path when present, and rewrites starter scenarios in place with unique
 scenario IDs instead of creating a second slugged contract.
 
+### Non-Static API Replay: Module-Named Build Artifacts
+
+After adding canonical feature-contract guidance, a clean Task Notes API replay
+against `<validation-root>` reached CEO, COO,
+CTO, and Engineer.
+
+Positive evidence:
+
+- CEO, COO, and CTO each completed once, and the run reached ordinary
+  product-ticket implementation instead of stalling in bootstrap planning.
+- COO reused the canonical
+  `docs/features/F-001-product-walking-skeleton.md` contract instead of
+  creating a duplicate `F-001` path.
+- Guardrail and max-turn failures stayed foundation-owned telemetry. No target
+  intervention-debt tickets were created, and the failed Engineer did not
+  dispatch an Orchestrator recovery loop.
+
+Residual finding:
+
+- Engineer generated a root executable named `task-notes-api`, matching the
+  Go module basename rather than the repo directory. The cleanup exception only
+  allowed a repo-named binary, so blast-radius checks treated the untracked
+  executable as a huge source file and blocked later writes, disposition, and
+  decision recording until Engineer hit max turns.
+
+Decision: repo-local build-artifact cleanup now accepts the same bounded shape
+for module-named Go binaries. `rm`/`unlink` is allowed only for untracked,
+root-level, binary-looking files named after either the repo directory or the
+root `go.mod` module basename. Recursive removal, tracked files, ordinary
+source/docs, nested paths, and arbitrary filenames remain blocked.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against
