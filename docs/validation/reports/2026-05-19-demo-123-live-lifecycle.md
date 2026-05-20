@@ -670,6 +670,63 @@ started redoing implementation work. The queue serialized execution, but it did
 not prevent same-repo same-role scheduled work from stacking behind an active
 job. This became the first generic optimization target for `T-011`.
 
+## API Rerun After Scheduler Skip: Task Notes API - 2026-05-20
+
+Purpose: rerun the non-static API canary after the scheduler active-role skip
+fix, while continuing to collect the next generic factory bottleneck.
+
+- Target: `<validation-root>`
+- DB: `<validation-root>`
+- Binary: `<validation-root>`
+- Source version: `v0.42.1` plus the pushed scheduler fix
+  `e9187f2 fix(scheduler): skip active same-role scheduled work`
+- Target local evidence commit: `86a298a chore: capture build artifact containment evidence`
+- Target remote: none
+
+Job state:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Trace-derived pace:
+
+```text
+ceo|16 turns|7 tools|7 LLM calls|24.8s|completed
+coo|32 turns|15 tools|15 LLM calls|95.0s|completed
+cto-weekly|38 turns|18 tools|18 LLM calls|77.6s|completed
+engineer|89 turns|43 tools|44 LLM calls|354.8s|circle_detected
+```
+
+Telemetry:
+
+```text
+coo|guardrail_block|1
+cto-weekly|guardrail_block|1
+engineer|circle_detected|1
+engineer|guardrail_block|21
+```
+
+The scheduler duplicate-work fix did not regress product progress: the clean
+API canary again reached product-specific planning, ticket creation, and
+ticket-backed implementation. No target intervention-debt tickets were created
+for runtime or guardrail failures. This run did not coincide with the default
+Engineer cron boundary, so it is lifecycle health evidence plus unit-tested
+scheduler coverage rather than a live cron-boundary proof.
+
+The next generic bottleneck is repo-local compiled build artifacts. Engineer
+ran `go build .`, which produced an untracked binary named `demo-api-run2` in
+the target root. Blast-radius line counting treated that binary as a huge file,
+then blocked later file writes, tests, ticket lifecycle moves, and commits.
+Engineer correctly attempted cleanup with `rm demo-api-run2`, but destructive
+shell policy blocked all `rm` commands. The run ended with `circle_detected`
+after repeated terminal disposition attempts against an in-progress ticket that
+could not be moved because the generated binary kept the repo outside safety
+limits.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -693,9 +750,11 @@ than release tooling and validates the need for a representative live validation
 matrix beyond one static Space Invaders canary. The Task Notes API replay then
 confirmed the lifecycle reaches non-static product planning and implementation,
 but exposed scheduled same-role duplication while an Engineer was already
-running. Factory pace is still dominated by avoidable tool-use recovery, shallow
-ticket/file discovery, long-running process mistakes, and now scheduled
-duplicate work. The remaining live-loop work is to prevent scheduled
-same-repo/same-role stacking, tighten common shell/process ergonomics, and keep
-validating against multiple software archetypes before making generic lifecycle
-claims.
+running. The follow-up API rerun kept product progress intact and exposed the
+next generic failure: repo-local compiled binaries can trap the agent behind
+blast-radius and destructive-command policy. Factory pace is still dominated by
+avoidable tool-use recovery, shallow ticket/file discovery, long-running process
+mistakes, build artifact cleanup gaps, and representative matrix coverage. The
+remaining live-loop work is to make generated build artifacts safely cleanable,
+tighten common shell/process ergonomics, and keep validating against multiple
+software archetypes before making generic lifecycle claims.

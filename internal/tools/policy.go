@@ -11,6 +11,7 @@ docs:
 package tools
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -79,11 +80,20 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 	case "git_push":
 		return checkGitPushPolicy(ctx, root, raw)
 	case "shell_exec":
-		if err := checkShellPolicy(raw); err != nil {
+		generatedArtifactCleanup, err := shellExecGeneratedArtifactCleanup(ctx, root, raw)
+		if err != nil {
 			return err
+		}
+		if !generatedArtifactCleanup {
+			if err := checkShellPolicy(raw); err != nil {
+				return err
+			}
 		}
 		if err := checkShellTicketDoneEvidencePolicy(root, raw); err != nil {
 			return err
+		}
+		if generatedArtifactCleanup {
+			return nil
 		}
 		if hasSession && strings.ToLower(strings.TrimSpace(session.Role)) == "coo" && !shellExecReadOnly(raw) {
 			return fmt.Errorf("policy: coo cannot run mutating shell_exec; update planning docs with file_write and use git tools for commit/push, while implementation stays behind CTO tickets and Engineer delivery")
@@ -817,6 +827,106 @@ func checkShellPolicy(raw json.RawMessage) error {
 		return fmt.Errorf("policy: shell_exec command %q may flood context with generated dependency/build output; use file_search, grep, or add explicit generated-directory excludes", operation)
 	}
 	return nil
+}
+
+func shellExecGeneratedArtifactCleanup(ctx context.Context, root Root, raw json.RawMessage) (bool, error) {
+	args, err := decodeShellExecArgs(raw)
+	if err != nil {
+		return false, nil
+	}
+	paths, ok := shellRemovalPathOperands(args)
+	if !ok || len(paths) == 0 {
+		return false, nil
+	}
+	for _, rel := range paths {
+		generated, err := isUntrackedRootBuildArtifact(ctx, root, rel)
+		if err != nil {
+			return false, err
+		}
+		if !generated {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func shellRemovalPathOperands(args shellExecArgs) ([]string, bool) {
+	fields := args.Argv
+	if strings.TrimSpace(args.ShellCommand) != "" {
+		if shellCommandHasControlSyntax(args.ShellCommand) {
+			return nil, false
+		}
+		fields = strings.Fields(args.ShellCommand)
+	}
+	if len(fields) < 2 {
+		return nil, false
+	}
+	cmd := filepathBase(strings.Trim(fields[0], `"'`))
+	if cmd != "rm" && cmd != "unlink" {
+		return nil, false
+	}
+	var paths []string
+	for _, field := range fields[1:] {
+		field = strings.TrimSpace(strings.Trim(field, `"'`))
+		if field == "" || field == "--" {
+			continue
+		}
+		if strings.HasPrefix(field, "-") {
+			if strings.ContainsAny(field, "rR") {
+				return nil, false
+			}
+			continue
+		}
+		paths = append(paths, cleanShellPathToken(field))
+	}
+	return paths, len(paths) > 0
+}
+
+func isUntrackedRootBuildArtifact(ctx context.Context, root Root, rel string) (bool, error) {
+	rel = cleanRepoPath(rel)
+	if rel == "" || rel == "." || strings.Contains(rel, "/") {
+		return false, nil
+	}
+	if rel != filepath.Base(root.Abs()) {
+		return false, nil
+	}
+	abs, err := root.ResolvePath(rel)
+	if err != nil {
+		return false, nil
+	}
+	info, err := os.Stat(abs)
+	if err != nil || info.IsDir() {
+		return false, nil
+	}
+	ls, err := runGit(ctx, root, "ls-files", "--others", "--exclude-standard", "--", rel)
+	if err != nil {
+		return false, err
+	}
+	if ls.ExitCode != 0 || !lineListContains(ls.Output, rel) {
+		return false, nil
+	}
+	return fileLooksBinary(abs), nil
+}
+
+func fileLooksBinary(abs string) bool {
+	f, err := os.Open(abs)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	buf := make([]byte, 8192)
+	n, _ := f.Read(buf)
+	return bytes.Contains(buf[:n], []byte{0})
+}
+
+func lineListContains(output, want string) bool {
+	want = cleanRepoPath(want)
+	for _, line := range strings.Split(output, "\n") {
+		if cleanRepoPath(line) == want {
+			return true
+		}
+	}
+	return false
 }
 
 func checkShellTicketDoneEvidencePolicy(root Root, raw json.RawMessage) error {

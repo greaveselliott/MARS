@@ -7,20 +7,23 @@ work_type: intervention-debt
 bdd_scenarios:
   - F-008-S008
   - F-006-S015
+  - F-007-S010
 end_to_end_evidence: not_applicable
 evidence_links:
   - "go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries"
   - "go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive"
   - "go test ./internal/queue -run TestQueue_activeJobForRepoRole"
+  - "go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles)'"
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#run-12-tool-argument-and-matrix-replay--2026-05-20
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#non-static-matrix-replay-task-notes-api---2026-05-20
-verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; run12 and demo-api-run1 scores exports captured live Factory Pace baselines"
+  - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#api-rerun-after-scheduler-skip-task-notes-api---2026-05-20
+verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles)'; run12, demo-api-run1, and demo-api-run2 scores exports captured live Factory Pace baselines"
 owner: "Codex"
-last_attempt: "2026-05-20: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45 tools and Dogfood 66 turns/32 tools. Non-static demo-api-run1 replay shows Engineer max_turns at 102 trace turns/50 tools and a duplicate scheduled Engineer queued while the first Engineer was still active; scheduler now skips same-repo same-role active work."
+last_attempt: "2026-05-20: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45 tools and Dogfood 66 turns/32 tools. Non-static demo-api-run1 replay shows Engineer max_turns at 102 trace turns/50 tools and a duplicate scheduled Engineer queued while the first Engineer was still active; scheduler now skips same-repo same-role active work. demo-api-run2 then shows Engineer circle_detected at 89 trace turns/43 tools after repo-local Go build artifact cleanup was blocked; shell_exec now permits narrow cleanup of untracked root binaries named after the repo."
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Rerun the non-static API canary with the scheduler skip fix, then target the next largest generic turn sink if same-role scheduled duplication is gone."
+next_action: "Rerun the non-static API canary after the build-artifact cleanup exception, then target the next largest generic turn sink if artifact cleanup no longer traps Engineer."
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -71,9 +74,10 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 
 ## BDD Evidence
 
-- Scenario IDs: F-008-S008 and F-006-S015.
+- Scenario IDs: F-008-S008, F-006-S015, and F-007-S010.
 - Evidence links: `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries` covers the first quality-export pace slice.
 - Evidence links: `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole` cover the scheduled duplicate-work fix.
+- Evidence links: `go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles)'` covers the bounded build-artifact cleanup exception.
 - Verified by: partial; live baseline export and before/after replay evidence remain open.
 
 ## Acceptance Criteria
@@ -124,8 +128,12 @@ Remaining work:
 - The non-static canary identified same-repo same-role scheduled duplication as
   the first generic optimization target. Scheduler fire now checks the queue for
   active same-role work before enqueueing another scheduled job.
+- The scheduler-skip rerun identified repo-local compiled binaries as the next
+  generic containment trap. `go build .` can create an untracked root binary
+  named after the repo; shell cleanup now permits removing that exact generated
+  artifact while preserving ordinary deletion blocks.
 - Define calibrated thresholds after the baseline, not before it.
-- Rerun the API canary to confirm duplicate scheduled Engineer work is gone
-  before claiming the optimization improved the live factory.
+- Rerun the API canary to confirm generated build artifact cleanup no longer
+  traps Engineer before claiming the optimization improved the live factory.
 - Continue the representative validation matrix before making broad optimization
   claims.

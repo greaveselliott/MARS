@@ -100,6 +100,27 @@ package manifests, lockfiles, config, or harness scaffold are blocked. A
 validator that needs those changes must report a finding or blocked disposition
 instead of silently becoming an implementation role.
 
+### AD-142: Repo-Local Build Artifact Cleanup Is A Bounded Removal Exception
+
+**Status:** Accepted
+**Date:** 2026-05-20
+
+Validation commands can create untracked root-level binaries in ordinary target
+repos. The live `demo-api-run2` replay showed `go build .` writing a binary
+named after the repo, which made blast-radius checks see tens of thousands of
+changed "lines" and then blocked the Engineer from cleaning the artifact with
+`rm`. That trapped later ticket and evidence updates behind the very guardrail
+intended to protect the repo.
+
+`shell_exec` therefore has a narrow removal exception for repo-local compiled
+artifacts: `rm <repo-name>` or `unlink <repo-name>` is allowed only when the
+path is root-level, untracked, named exactly after the repository directory, and
+binary-looking. Recursive removal, tracked files, ordinary source/docs, nested
+paths, and arbitrary filenames remain blocked by the normal destructive-command
+policy. Post-tool blast-radius validation still runs after cleanup, so the
+exception only clears generated build output and does not waive review for the
+remaining source or ticket changes.
+
 ### Open topics
 
 - **Advisory vs hard tiers:** advisory rules surface warnings in traces and UI; hard rules fail the job or block merge paths per policy; same schema with a `severity` field is the likely shape.

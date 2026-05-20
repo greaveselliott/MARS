@@ -8,6 +8,7 @@ docs:
 package tools
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -327,6 +328,51 @@ func TestShellExecUnknownCommandBlockedBeforeExecutionInDirtyRepo(t *testing.T) 
 	require.NoFileExists(t, filepath.Join(dir, "should-not-exist"))
 	require.Len(t, policyEvents, 1)
 	require.Equal(t, "pre", policyEvents[0].Stage)
+}
+
+func TestShellExecAllowsUntrackedRootBuildArtifactCleanup(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	artifact := filepath.Base(dir)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, artifact), append([]byte{0}, bytes.Repeat([]byte("binary\n"), 600)...), 0o755))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	err = ValidateRepoDiff(context.Background(), root, Session{SafetyLimits: safety.DefaultLimits()})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), artifact)
+
+	res, err := ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", fmt.Sprintf(`{"argv":["rm","%s"]}`, artifact))
+	require.NoError(t, err)
+	require.Equal(t, 0, res.ExitCode)
+	require.NoFileExists(t, filepath.Join(dir, artifact))
+}
+
+func TestShellExecStillBlocksRemovalOfOrdinaryFiles(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("keep me\n"), 0o644))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":["rm","notes.txt"]}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "forbidden operation")
+	require.FileExists(t, filepath.Join(dir, "notes.txt"))
 }
 
 func TestValidateRepoDiffIgnoresGeneratedUntrackedFiles(t *testing.T) {

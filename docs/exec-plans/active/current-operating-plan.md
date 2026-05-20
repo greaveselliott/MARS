@@ -11,8 +11,8 @@
 **Success Evidence:** The 2026-05-20 `demo-123-run11` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; release-blocked publication stopped dispatch without remote mutation or a Dogfood loop. The 2026-05-20 `demo-api-run1` non-static replay reached product-specific planning, ticketing, and partial Go API implementation without intervention-debt ticket amplification.
 **Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, future clean target replays still route autonomous follow-up after a terminal release blocker, or Dogfood/Engineer tool recovery prevents useful validation from reaching a terminal outcome.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** As of 2026-05-20, `demo-api-run1` broadened the matrix beyond the static game canary and exposed same-repo same-role scheduled duplication: the minute scheduler queued a second Engineer while the first Engineer was still active, then claimed it after a max-turn failure. `T-011` now targets scheduled duplicate-work prevention before rerunning the API canary.
-**Walking Skeleton Slice:** Prevent scheduled same-role work from stacking behind active lifecycle work, rerun the API canary to confirm the duplicate Engineer is gone, then target the next largest matrix-backed turn sink.
+**Current Failing Scenario:** As of 2026-05-20, `demo-api-run2` confirmed non-static product progress after the scheduler skip fix, then exposed repo-local Go build artifact containment: `go build .` created an untracked root binary named after the repo, blast-radius policy trapped subsequent mutations, and destructive shell policy blocked cleanup. `T-011` now targets bounded cleanup for that generated artifact before rerunning the API canary.
+**Walking Skeleton Slice:** Allow narrow cleanup of untracked repo-local compiled binaries, rerun the API canary to confirm Engineer can recover and complete ticket evidence, then target the next largest matrix-backed turn sink.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -183,9 +183,10 @@ plans to decide what to do next.
    The 2026-05-20 runs 8-12 show shallow ticket globs, broad `find .`, empty
    `shell_exec`, and static app serving discovery. The `demo-api-run1`
    non-static replay adds a more general turn sink: scheduled same-repo
-   same-role work stacked behind an active Engineer. The 2026-05-20 `T-011`
-   slice fixes that scheduler duplication and must rerun the API canary before
-   claiming the optimization held live.
+   same-role work stacked behind an active Engineer. The 2026-05-20 scheduler
+   slice fixed that duplication. The `demo-api-run2` rerun found the next
+   generic turn sink: repo-local compiled binaries block blast-radius recovery
+   and cleanup, so the current `T-011` slice permits bounded artifact cleanup.
 2. **Representative live validation matrix**: Apply AD-138 by checking at least
    one non-static project archetype before claiming broad factory progress.
    Keep `demo-123` as the static canary, but judge generic changes against the
@@ -223,7 +224,8 @@ plans to decide what to do next.
 | F-006-S001 | Passing | `go test ./pkg/testutil ./internal/queue ./internal/telemetry ./internal/foundationtelemetry ./internal/trace ./internal/scoring ./internal/trust ./internal/evolution ./internal/orgstate ./internal/serve`, `go test ./internal/docsconsistency ./internal/docsync`, and `go test ./...` verify legacy SQLite fixture coverage across persistent stores. |
 | F-008-S005 | Passing | `go test ./internal/qualityscore -run 'TestExport(CreatesOutcomeSignalTickets|RendersTelemetryAndOutcomeSignals)'`, `go run ./cmd/mars-harness scores export --repo .`, and refreshed `docs/QUALITY_SCORE.md` verify guardrail outcome signals stay quality evidence by default and require `--create-intervention-debt` for ticket materialization. |
 | F-008-S008 | In progress | `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries` verifies quality export renders trace-derived Factory Pace rows. The 2026-05-20 run-12 export recorded Engineer at 92 turns / 45 tool invocations and Dogfood at 66 turns / 32 tool invocations; the `demo-api-run1` export recorded Engineer at 102 trace turns / 50 tool invocations with a max-turn stop. |
-| F-006-S015 | In progress | `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole` cover the scheduled duplicate-work prevention added after `demo-api-run1`. Live rerun evidence remains open. |
+| F-006-S015 | In progress | `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole` cover the scheduled duplicate-work prevention added after `demo-api-run1`. The `demo-api-run2` rerun preserved product progress but did not coincide with a default cron boundary, so a cron-boundary live proof remains open. |
+| F-007-S010 | In progress | `go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles)'` covers the bounded repo-local build artifact cleanup added after `demo-api-run2`; live rerun evidence remains open. |
 
 ## Quality State
 
