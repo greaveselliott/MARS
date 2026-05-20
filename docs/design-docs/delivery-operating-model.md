@@ -1595,7 +1595,8 @@ Source lifecycle stabilization uses a continuous live demo improvement loop:
 
 1. Start from remote trunk or record the trunk blocker.
 2. Run a clean representative target. For first-run lifecycle work, `demo-123`
-   with a small Space Invaders brief is the canonical replay.
+   with a small Space Invaders brief is one canonical replay, but it is not the
+   whole acceptance suite.
 3. Record evidence: exact command, target path, source ref or binary,
    database/log paths, job sequence, target commits/tickets/docs, telemetry,
    product progress, intervention-debt count, runtime artifacts, and stop
@@ -1620,6 +1621,24 @@ This loop can repeat indefinitely. Each cycle should leave the repo with a
 durable evidence trail and one narrower next problem, not a widening backlog of
 process work.
 
+The loop uses a small validation portfolio so source improvements do not
+overfit to one project shape:
+
+| Archetype | Example Brief | Catches |
+| --- | --- | --- |
+| Static browser app | `demo-123`: small browser game or utility with no package manifest. | Bootstrap, planning, product ticketing, static file creation, static smoke evidence, no-remote release handling. |
+| Package-managed frontend | A Vite/React or Next.js app with `package.json`, build/dev scripts, and dependency hygiene. | Dependency sync, build commands, dev-server lifecycle, generated output ignores, UI smoke validation. |
+| API or service | A small Go or Python HTTP service with tests and a local health endpoint. | Non-frontend project planning, service start checks, test selection, port readiness, package-free or compiled flows. |
+| CLI/tooling project | A command-line utility with flags, help text, tests, and release notes. | CLI contract updates, docsync, command-level validation, release/version workflows without browser assumptions. |
+| Existing repo maintenance | A seeded repo with pre-existing files, tickets, and one known bug or feature gap. | Resume behavior, ticket selection, dirty-worktree safety, no over-scaffolding, backward-compatible edits. |
+
+Use the smallest matrix subset that matches the source change. A narrow static
+prompt fix may replay only the static browser app. A generic tool, dispatch,
+release, docsync, guardrail, or operating-model claim should run at least two
+different archetypes or record why the second replay is blocked. Broad
+lifecycle claims should run the static canary plus one package-managed or
+service archetype before being treated as generally improved.
+
 ### Consequences
 
 - Live target runs are not a one-time proof; they are the foundation operating
@@ -1627,9 +1646,12 @@ process work.
 - Confirmation includes remote publication. A local green replay does not count
   as complete until the work is on the remote trunk or the remote blocker is
   recorded with replay and push steps.
-- `demo-123` remains source-only shorthand for the canonical first-run replay.
-  Generated targets inherit the generic product evidence loop, not the specific
-  demo name.
+- `demo-123` remains source-only shorthand for one canonical first-run replay.
+  Generated targets inherit the generic product evidence loop and validation
+  matrix idea, not the specific demo name or game domain.
+- Generic foundation fixes should be phrased and tested against tool/runtime
+  behavior across archetypes. Project-shape-specific guidance is still useful,
+  but it cannot be the only evidence for a general lifecycle claim.
 - Stabilization work stays product-first because the primary metric is whether
   the target advances from brief to product plan, feature contract, ticket,
   implementation, review, or dogfood evidence before governance or

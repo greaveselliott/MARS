@@ -95,8 +95,16 @@ When the argv tokens contain shell-only syntax such as redirection, pipes, contr
 Then the tool fails before process execution with an actionable instruction to use `shell_command` for shell syntax or file tools for content changes
 
 Given a local model emits a simple malformed `shell_exec` argv shape
-When `argv` is a JSON-encoded array string or a one-item simple command string with no shell syntax
+When `argv` is a JSON-encoded array string, a Python-style quoted list string, or a one-item simple command string with no shell syntax
 Then the tool normalizes it into executable argv tokens so the run does not spend extra turns recovering from harmless formatting drift
+
+Given a local model emits malformed `mars_harness_cli` args
+When `args` is a JSON-encoded array string, a Python-style quoted list string, or a simple single command string
+Then the tool normalizes the command before binary resolution so release, score, trust, and update flows do not fall back to stale PATH binaries because of harmless formatting drift
+
+Given a local model emits malformed path-list fields for built-in tools
+When tools such as `workspace_hygiene`, `git_diff`, or `git_commit` receive `paths` as a JSON-encoded array string or Python-style quoted list string
+Then the tool normalizes the path list before policy checks so generic recovery works across project archetypes instead of only one demo path
 
 Given a local model emits a malformed `file_write` payload with `<parameter=content>` embedded in `path`
 When the separate `content` field is empty

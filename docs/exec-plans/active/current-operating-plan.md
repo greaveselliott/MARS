@@ -4,15 +4,15 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013, T-014
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013, T-014, T-015, T-016
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-006, F-009, F-012
 **Hypothesis:** Treating factory pace as measured intervention debt, using the `demo-123` replay series as concrete evidence, will reduce avoidable turns without hiding productive long-running work.
 **Success Evidence:** The 2026-05-20 `demo-123-run11` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; release-blocked publication stopped dispatch without remote mutation or a Dogfood loop.
 **Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, future clean target replays still route autonomous follow-up after a terminal release blocker, or Dogfood/Engineer tool recovery prevents useful validation from reaching a terminal outcome.
 **Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** As of 2026-05-20, the live `demo-123` loop now reaches a terminal release-blocked state, but list-shaped tool arguments emitted as strings and static-app evidence discovery still waste role turns.
-**Walking Skeleton Slice:** Keep reducing the live-loop turn sinks in evidence order: normalize tool argument drift, align static asset DocSync pointers with existing feature contracts, then tighten shallow ticket/file discovery.
+**Current Failing Scenario:** As of 2026-05-20, the live `demo-123-run12` loop shows that list-shaped arguments emitted as strings are a generic tool-surface issue, not only a release-tool issue, and that one static game canary is not enough evidence for broad lifecycle claims.
+**Walking Skeleton Slice:** Normalize generic list-string argument drift, define a representative live validation matrix, then tighten shallow ticket/file discovery and project-shape-specific static evidence only where the matrix says it is relevant.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
 **Owner:** Mars Harness maintainers
@@ -34,11 +34,11 @@ plans to decide what to do next.
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
-  - `docs/tickets/in-progress/` contains no tickets.
+  - `docs/tickets/in-progress/` contains `T-015`.
   - `docs/tickets/backlog/` contains `T-010`, `T-011`, `T-013`, and any newly
     created live-loop follow-up tickets.
   - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
-    through `T-009`, plus `T-012` and `T-014`.
+    through `T-009`, plus `T-012`, `T-014`, and `T-016`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -137,17 +137,18 @@ plans to decide what to do next.
 
 ## Current Priority Order
 
-1. **Tool argument drift and static evidence**: Use `demo-123-run11` as current
-   evidence. `mars_harness_cli.args` and `shell_exec.argv` must tolerate
-   list-shaped values emitted as strings, and static app DocSync/evidence
-   discovery must not create stale feature pointers or spend turns finding
-   `src/index.html`.
+1. **Generic tool argument drift and validation matrix (`T-015`/`T-016`)**:
+   Use `demo-123-run12` as current evidence. `mars_harness_cli.args`,
+   `shell_exec.argv`, `workspace_hygiene.paths`, and git path filters must
+   tolerate list-shaped values emitted as strings. The next live checks should
+   use a small project-archetype matrix rather than treating the Space Invaders
+   static canary as the whole product surface.
 2. **Factory pace intervention debt (`T-011`/`T-013`)**: Continue measuring role
    pace from durable traces and job outcomes, define target thresholds, and
    implement the smallest evidence-backed change that reduces avoidable turns.
-   The 2026-05-20 runs 8-11 show the next turn sinks: shallow ticket globs,
-   broad `find .`, empty `shell_exec`, list-string tool arguments, static
-   DocSync drift, and static app serving discovery.
+   The 2026-05-20 runs 8-12 show the next turn sinks: shallow ticket globs,
+   broad `find .`, empty `shell_exec`, list-string tool arguments across tools,
+   static DocSync drift, and static app serving discovery.
 3. **Live lifecycle replay**: Run a clean `demo-123`-style target lifecycle and
    record product progress, queue health, intervention-debt count, quality
    export behavior, release-note behavior, stop/shutdown behavior, and whether

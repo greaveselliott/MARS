@@ -533,6 +533,56 @@ Remaining live-loop findings:
 - Dogfood still spent turns discovering the static app entry directory before
   serving `src/`.
 
+## Run 12 Tool-Argument And Matrix Replay — 2026-05-20
+
+The next replay used:
+
+- Target: `<validation-root>`
+- Harness binary: `<validation-root>`
+- DB: `<validation-root>`
+- Log: `<validation-root>`
+- Ports: webhook `19195`, dashboard `19194`
+
+Observed lifecycle before dashboard stop:
+
+```text
+role          status      count
+ceo           completed       1
+coo           completed       1
+cto-weekly    completed       1
+engineer      completed       1
+qa            completed       1
+security      completed       1
+dogfood       completed       1
+orchestrator  completed       1
+cto-weekly    failed          1  # operator stop during rework planning
+```
+
+Confirmed improvement:
+
+- Static source files used the canonical
+  `docs/features/F-001-product-walking-skeleton.md` path in `MarsDocSync`
+  metadata instead of inventing a second `F-001` feature contract.
+- No target intervention-debt tickets were created; guardrail and operator-stop
+  runtime signals stayed in foundation telemetry.
+- Product progress still reached planning, ticketing, implementation, QA,
+  Security, Dogfood, and a target-owned rework ticket.
+
+New evidence:
+
+- The string-list payload issue is generic. Orchestrator emitted
+  `workspace_hygiene` with `paths` as a JSON string, which failed for the same
+  reason `mars_harness_cli.args` failed in run 11.
+- Prompt-only static guidance is insufficient. Engineer and Dogfood still
+  started a repo-root static server and recovered to `src/` after seeing a
+  directory listing.
+- `docsync_audit` still reported `checked 0 files` even though static assets
+  carried `MarsDocSync` comments, so static asset metadata needs mechanical
+  detection before it can be relied on as review evidence.
+- Using only the Space Invaders static app risks overfitting. Future broad
+  lifecycle claims should run a representative matrix across at least one
+  additional project archetype.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -551,9 +601,12 @@ notes for a clean target. Run 9 confirms max-turn containment works without
 intervention-debt amplification, run 10 confirms the Engineer static-path prompt
 fix turns that max-turn failure into a completed QA handoff, and run 11 confirms
 no-remote release publication blockers now stop dispatch without remote mutation
-or a Dogfood loop. Factory pace is still dominated by avoidable tool-use
-recovery, shallow ticket/file discovery, and static app evidence discovery. The
-remaining live-loop work is to normalize common structured-array payload drift,
-make static app serving evidence more deterministic, keep static asset
-`MarsDocSync` pointers aligned with existing feature contracts, and keep
-broadening product and observer-mode dogfood evidence.
+or a Dogfood loop. Run 12 confirms structured-array payload drift is broader
+than release tooling and validates the need for a representative live validation
+matrix beyond one static Space Invaders canary. Factory pace is still dominated
+by avoidable tool-use recovery, shallow ticket/file discovery, and static app
+evidence discovery. The remaining live-loop work is to normalize common
+structured-array payload drift across path-filtered tools, make static app
+serving and static asset docsync evidence mechanical rather than prompt-only,
+and broaden live checks across multiple software archetypes before making
+generic lifecycle claims.

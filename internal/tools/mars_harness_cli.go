@@ -63,6 +63,14 @@ type marsHarnessCLIArgs struct {
 	Background     bool     `json:"background"`
 }
 
+type rawMarsHarnessCLIArgs struct {
+	Mode           string          `json:"mode"`
+	Args           json.RawMessage `json:"args"`
+	Repo           string          `json:"repo"`
+	TimeoutSeconds int             `json:"timeout_seconds"`
+	Background     bool            `json:"background"`
+}
+
 func registerMarsHarnessCLI(r *Registry) error {
 	return r.Register(
 		"mars_harness_cli",
@@ -73,8 +81,8 @@ func registerMarsHarnessCLI(r *Registry) error {
 }
 
 func handleMarsHarnessCLI(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
-	var args marsHarnessCLIArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeMarsHarnessCLIArgs(raw)
+	if err != nil {
 		return ToolResult{}, fmt.Errorf("mars_harness_cli: parse arguments: %w", err)
 	}
 	mode := strings.TrimSpace(args.Mode)
@@ -93,6 +101,28 @@ func handleMarsHarnessCLI(ctx context.Context, root Root, raw json.RawMessage) (
 	default:
 		return ToolResult{}, fmt.Errorf("mars_harness_cli: unsupported mode %q", args.Mode)
 	}
+}
+
+func decodeMarsHarnessCLIArgs(raw json.RawMessage) (marsHarnessCLIArgs, error) {
+	var rawArgs rawMarsHarnessCLIArgs
+	if err := json.Unmarshal(raw, &rawArgs); err != nil {
+		return marsHarnessCLIArgs{}, err
+	}
+	args := marsHarnessCLIArgs{
+		Mode:           rawArgs.Mode,
+		Repo:           rawArgs.Repo,
+		TimeoutSeconds: rawArgs.TimeoutSeconds,
+		Background:     rawArgs.Background,
+	}
+	if len(rawArgs.Args) == 0 || bytes.Equal(bytes.TrimSpace(rawArgs.Args), []byte("null")) {
+		return args, nil
+	}
+	cliArgs, err := decodeStringSliceArg(rawArgs.Args, "mars_harness_cli.args")
+	if err != nil {
+		return marsHarnessCLIArgs{}, err
+	}
+	args.Args = normalizeShellExecArgv(cliArgs)
+	return args, nil
 }
 
 func runMarsHarnessCLI(ctx context.Context, root Root, args marsHarnessCLIArgs) (ToolResult, error) {

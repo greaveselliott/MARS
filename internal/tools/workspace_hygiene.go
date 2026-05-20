@@ -35,13 +35,18 @@ type workspaceHygieneArgs struct {
 	Paths []string `json:"paths"`
 }
 
+type rawWorkspaceHygieneArgs struct {
+	Mode  string          `json:"mode"`
+	Paths json.RawMessage `json:"paths"`
+}
+
 func registerWorkspaceHygiene(r *Registry) error {
 	return r.Register("workspace_hygiene", "Audit repository workspace hygiene before agent jobs or dependency mutations.", json.RawMessage(workspaceHygieneSchema), handleWorkspaceHygiene)
 }
 
 func handleWorkspaceHygiene(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
-	var args workspaceHygieneArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeWorkspaceHygieneArgs(raw)
+	if err != nil {
 		return ToolResult{}, fmt.Errorf("workspace_hygiene: parse arguments: %w", err)
 	}
 	report, err := AuditWorkspaceHygiene(ctx, root, WorkspaceHygieneOptions(args))
@@ -56,6 +61,20 @@ func handleWorkspaceHygiene(ctx context.Context, root Root, raw json.RawMessage)
 		return ToolResult{Output: string(out)}, fmt.Errorf("workspace_hygiene_blocked: %s", report.Message)
 	}
 	return ToolResult{Output: string(out)}, nil
+}
+
+func decodeWorkspaceHygieneArgs(raw json.RawMessage) (workspaceHygieneArgs, error) {
+	var rawArgs rawWorkspaceHygieneArgs
+	if err := json.Unmarshal(raw, &rawArgs); err != nil {
+		return workspaceHygieneArgs{}, err
+	}
+	args := workspaceHygieneArgs{Mode: rawArgs.Mode}
+	paths, err := decodeStringSliceArg(rawArgs.Paths, "workspace_hygiene.paths")
+	if err != nil {
+		return workspaceHygieneArgs{}, err
+	}
+	args.Paths = paths
+	return args, nil
 }
 
 // WorkspaceHygieneOptions controls deterministic workspace hygiene audits.

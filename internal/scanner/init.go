@@ -3402,6 +3402,12 @@ IMPLEMENTATION:
 5. CHECK DOCUMENTATION SYNC
    - For every new or materially changed code file, add or update its
      top-of-file ` + "`MarsDocSync`" + ` block with associated docs
+   - Before adding ` + "`MarsDocSync`" + ` to static HTML/CSS/JS files, read the
+     existing ` + "`docs/features/`" + ` files and use the canonical feature
+     contract named by the ticket's ` + "`bdd_scenarios`" + `. If a ` + "`F-001`" + `
+     contract already exists, reference that exact path; never invent a second
+     ` + "`docs/features/F-001-*.md`" + ` file or leave source files pointing at a
+     non-existent feature path.
    - Update the listed docs when behavior, public surface, workflow,
      architecture, generated output, or operating doctrine changed
    - If the listed docs were checked and remain accurate, mention that in the
@@ -3432,7 +3438,9 @@ IMPLEMENTATION:
       with no package manifest and no build step, do NOT create package manager
       files solely to satisfy harness expectations. Instead, run one bounded
       static smoke test: start ` + "`python3 -m http.server`" + ` with
-      background:true, curl the primary HTML/route, record that command as
+      background:true from the directory containing ` + "`index.html`" + ` (use
+      ` + "`src/`" + ` directly when ` + "`src/index.html`" + ` exists), curl the
+      primary HTML/route, record that command as
       evidence, and stop the background process.
    Record any fixes via record_decision so future agents know the convention.
 
@@ -3873,6 +3881,8 @@ FOR STATIC HTML/CSS/JS PROJECTS (no package manifest and visible .html entry):
   b) A visible HTML entry includes ` + "`index.html`" + ` or ` + "`src/index.html`" + `.
      Use one bounded root listing, then one bounded ` + "`src/`" + ` listing if needed;
      do not use grep to discover file names because grep searches file content.
+     If ` + "`src/index.html`" + ` exists, treat ` + "`src/`" + ` as the static server root
+     immediately; do not start a repo-root server first and then recover.
   c) If no repo-root Dockerfile or Containerfile exists, do not probe Podman and
      do not attempt a container build unless README.md explicitly requires it.
   d) Plan one bounded native smoke test: start ` + "`python3 -m http.server`" + `

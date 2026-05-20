@@ -129,33 +129,13 @@ func decodeShellExecArgs(raw json.RawMessage) (shellExecArgs, error) {
 	if len(rawArgs.Argv) == 0 || bytes.Equal(bytes.TrimSpace(rawArgs.Argv), []byte("null")) {
 		return args, nil
 	}
-	if err := decodeShellExecArgv(rawArgs.Argv, &args.Argv); err != nil {
+	argv, err := decodeStringSliceArg(rawArgs.Argv, "shell_exec.argv")
+	if err != nil {
 		return shellExecArgs{}, err
 	}
+	args.Argv = argv
 	args.Argv = normalizeShellExecArgv(args.Argv)
 	return args, nil
-}
-
-func decodeShellExecArgv(raw json.RawMessage, out *[]string) error {
-	if len(bytes.TrimSpace(raw)) == 0 {
-		return nil
-	}
-	if bytes.HasPrefix(bytes.TrimSpace(raw), []byte("[")) {
-		return json.Unmarshal(raw, out)
-	}
-	var encoded string
-	if err := json.Unmarshal(raw, &encoded); err != nil {
-		return err
-	}
-	trimmed := strings.TrimSpace(encoded)
-	if trimmed == "" {
-		return nil
-	}
-	if strings.HasPrefix(trimmed, "[") {
-		return json.Unmarshal([]byte(trimmed), out)
-	}
-	*out = []string{trimmed}
-	return nil
 }
 
 func normalizeShellExecArgv(argv []string) []string {

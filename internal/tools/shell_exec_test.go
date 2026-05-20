@@ -44,6 +44,10 @@ func TestShellExec_normalizesModelMalformedArgv(t *testing.T) {
 			raw:  `{"argv":"[\"echo\",\"hello\"]","timeout_seconds":5}`,
 		},
 		{
+			name: "python style argv string",
+			raw:  `{"argv":"['echo','hello']","timeout_seconds":5}`,
+		},
+		{
 			name: "single simple command string in argv",
 			raw:  `{"argv":["echo hello"],"timeout_seconds":5}`,
 		},

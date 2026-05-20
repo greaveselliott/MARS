@@ -76,6 +76,15 @@ type gitCommitArgs struct {
 	Paths   []string `json:"paths"`
 }
 
+type rawGitDiffArgs struct {
+	Paths json.RawMessage `json:"paths"`
+}
+
+type rawGitCommitArgs struct {
+	Message string          `json:"message"`
+	Paths   json.RawMessage `json:"paths"`
+}
+
 type gitBranchArgs struct {
 	Name   string `json:"name"`
 	Create *bool  `json:"create"`
@@ -114,8 +123,8 @@ func handleGitStatus(ctx context.Context, root Root, _ json.RawMessage) (ToolRes
 }
 
 func handleGitDiff(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
-	var args gitDiffArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeGitDiffArgs(raw)
+	if err != nil {
 		return ToolResult{}, fmt.Errorf("git_diff: parse arguments: %w", err)
 	}
 	cmd := []string{"diff", "--"}
@@ -146,8 +155,8 @@ func handleGitDiff(ctx context.Context, root Root, raw json.RawMessage) (ToolRes
 }
 
 func handleGitCommit(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
-	var args gitCommitArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeGitCommitArgs(raw)
+	if err != nil {
 		return ToolResult{}, fmt.Errorf("git_commit: parse arguments: %w", err)
 	}
 	if strings.TrimSpace(args.Message) == "" {
@@ -182,6 +191,30 @@ func handleGitCommit(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 		return ToolResult{Output: "commit completed"}, nil
 	}
 	return tr, nil
+}
+
+func decodeGitDiffArgs(raw json.RawMessage) (gitDiffArgs, error) {
+	var rawArgs rawGitDiffArgs
+	if err := json.Unmarshal(raw, &rawArgs); err != nil {
+		return gitDiffArgs{}, err
+	}
+	paths, err := decodeStringSliceArg(rawArgs.Paths, "git_diff.paths")
+	if err != nil {
+		return gitDiffArgs{}, err
+	}
+	return gitDiffArgs{Paths: paths}, nil
+}
+
+func decodeGitCommitArgs(raw json.RawMessage) (gitCommitArgs, error) {
+	var rawArgs rawGitCommitArgs
+	if err := json.Unmarshal(raw, &rawArgs); err != nil {
+		return gitCommitArgs{}, err
+	}
+	paths, err := decodeStringSliceArg(rawArgs.Paths, "git_commit.paths")
+	if err != nil {
+		return gitCommitArgs{}, err
+	}
+	return gitCommitArgs{Message: rawArgs.Message, Paths: paths}, nil
 }
 
 func handleGitBranch(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {

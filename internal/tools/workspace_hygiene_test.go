@@ -32,6 +32,20 @@ func TestWorkspaceHygieneDetectsMissingNodeModulesIgnore(t *testing.T) {
 	require.Contains(t, report.NextAction, "node_modules/")
 }
 
+func TestWorkspaceHygieneNormalizesStringPaths(t *testing.T) {
+	_, root := setupWorkspaceHygieneRepo(t)
+	res, err := handleWorkspaceHygiene(context.Background(), root, []byte(`{
+		"mode": "audit",
+		"paths": "[\"docs/tickets/backlog\"]"
+	}`))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, `"status": "clean"`)
+
+	args, err := decodeWorkspaceHygieneArgs([]byte(`{"mode":"audit","paths":"['docs/tickets/backlog']"}`))
+	require.NoError(t, err)
+	require.Equal(t, []string{"docs/tickets/backlog"}, args.Paths)
+}
+
 func TestWorkspaceHygieneDetectsTrackedGeneratedDirectory(t *testing.T) {
 	dir, root := setupWorkspaceHygieneRepo(t)
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "node_modules", "pkg"), 0o755))

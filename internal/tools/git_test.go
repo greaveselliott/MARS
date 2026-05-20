@@ -70,6 +70,27 @@ func TestGitCommit_andStatus(t *testing.T) {
 	require.Equal(t, "", strings.TrimSpace(res.Output))
 }
 
+func TestGitToolsNormalizeStringPaths(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	testutil.WriteFile(t, filepath.Join(dir, "a.txt"), "v1\n")
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	_, err = handleGitCommit(context.Background(), root, []byte(`{
+		"message": "first",
+		"paths": "['a.txt']"
+	}`))
+	require.NoError(t, err)
+
+	testutil.WriteFile(t, filepath.Join(dir, "a.txt"), "v2\n")
+	res, err := handleGitDiff(context.Background(), root, []byte(`{"paths":"[\"a.txt\"]"}`))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "a.txt")
+}
+
 func TestGitBranch_create(t *testing.T) {
 	t.Parallel()
 	requireGit(t)
@@ -140,7 +161,8 @@ func TestGitCommitPolicyBlocksSecretsInDirtyDiff(t *testing.T) {
 	require.NoError(t, runGitExit0(context.Background(), root, "add", "README.md"))
 	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "init"))
 
-	testutil.WriteFile(t, filepath.Join(dir, "secret.txt"), "token = \"github-token-placeholder\"\n")
+	secret := "ghp_" + strings.Repeat("1", 36)
+	testutil.WriteFile(t, filepath.Join(dir, "secret.txt"), "token = \""+secret+"\"\n")
 
 	err = preToolPolicy(context.Background(), root, "git_commit", json.RawMessage(`{"message":"commit secret"}`))
 	require.Error(t, err)

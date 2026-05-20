@@ -91,6 +91,53 @@ func TestMarsHarnessCLI_runUsesStructuredArgv(t *testing.T) {
 	require.Equal(t, "fake-mars version", strings.TrimSpace(res.Output))
 }
 
+func TestMarsHarnessCLI_normalizesModelMalformedArgs(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "json encoded args string",
+			raw: `{
+				"mode": "run",
+				"args": "[\"version\"]",
+				"timeout_seconds": 5
+			}`,
+		},
+		{
+			name: "python style args string",
+			raw: `{
+				"mode": "run",
+				"args": "['version']",
+				"timeout_seconds": 5
+			}`,
+		},
+		{
+			name: "single simple command string",
+			raw: `{
+				"mode": "run",
+				"args": "version",
+				"timeout_seconds": 5
+			}`,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			root, err := NewRoot(dir)
+			require.NoError(t, err)
+			bin := writeFakeMarsHarnessBinary(t, dir)
+			t.Setenv("MARS_HARNESS_CLI_BIN", bin)
+
+			res, err := handleMarsHarnessCLI(context.Background(), root, []byte(tt.raw))
+			require.NoError(t, err)
+			require.Equal(t, 0, res.ExitCode)
+			require.Equal(t, "fake-mars version", strings.TrimSpace(res.Output))
+		})
+	}
+}
+
 func TestMarsHarnessCLI_prefersCurrentExecutableBeforePath(t *testing.T) {
 	dir := t.TempDir()
 	root, err := NewRoot(dir)
