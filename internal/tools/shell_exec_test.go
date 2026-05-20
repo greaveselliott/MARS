@@ -204,6 +204,48 @@ func TestShellExecRejectsExternalTimeoutCommands(t *testing.T) {
 	}
 }
 
+func TestShellExecPolicyBlocksForegroundServerCommands(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte(`package main
+
+import "net/http"
+
+func main() {
+	http.ListenAndServe(":8080", nil)
+}
+`), 0o644))
+
+	err = checkForegroundLongRunningShellPolicy(root, shellExecArgs{Argv: []string{"go", "run", "main.go"}})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "likely a long-running server or watcher")
+	require.Contains(t, err.Error(), "background:true")
+	require.Contains(t, err.Error(), "stop the tracked PID")
+
+	err = checkForegroundLongRunningShellPolicy(root, shellExecArgs{Argv: []string{"go", "run", "main.go"}, Background: true})
+	require.NoError(t, err)
+}
+
+func TestShellExecPolicyAllowsForegroundGoRunForNonServerCLI(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte(`package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("ok")
+}
+`), 0o644))
+
+	err = checkForegroundLongRunningShellPolicy(root, shellExecArgs{Argv: []string{"go", "run", "main.go"}})
+	require.NoError(t, err)
+}
+
 func TestShellExec_timeout(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -259,7 +301,8 @@ func TestShellExecNoopReturnsCompletionGuidance(t *testing.T) {
 			root, err := NewRoot(dir)
 			require.NoError(t, err)
 			res, err := handleShellExec(context.Background(), root, []byte(tt.raw))
-			require.NoError(t, err)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "no-op command cannot advance work")
 			require.Contains(t, res.Output, "No command was run")
 			require.Contains(t, res.Output, "job_disposition_record")
 		})
@@ -277,7 +320,8 @@ func TestShellExecNoopAfterBackgroundListsTrackedPID(t *testing.T) {
 	pid := backgroundPIDFromOutput(t, started.Output)
 
 	res, err := handleShellExec(context.Background(), root, []byte(`{"argv":[":"]}`))
-	require.NoError(t, err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no-op command cannot advance work")
 	require.Contains(t, res.Output, fmt.Sprintf("Active background PID(s): %d", pid))
 	require.Contains(t, res.Output, `["kill","<pid>"]`)
 }
@@ -821,7 +865,8 @@ func TestShellExecNoopArgsNotMaskedByDirtyArtifact(t *testing.T) {
 	}
 
 	res, err := ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":[]}`)
-	require.NoError(t, err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no-op command cannot advance work")
 	require.Contains(t, res.Output, "No command was run")
 	require.FileExists(t, filepath.Join(dir, artifact))
 }

@@ -83,6 +83,42 @@ func TestStoreRecordsDispositionAndDecision(t *testing.T) {
 	require.Equal(t, decision.ID, decisions[0].ID)
 }
 
+func TestDecodeDispositionNormalizesStringLists(t *testing.T) {
+	t.Parallel()
+
+	got, err := DecodeDisposition([]byte(`{
+		"status":"completed",
+		"next_need":"implementation",
+		"suggested_role":"engineer",
+		"ticket_id":"T-001",
+		"evidence_links":"['docs/exec-plans/active/current-operating-plan.md', 'docs/features/F-001-product-walking-skeleton.md']",
+		"work_product_ids":"[\"plan\", \"feature\"]",
+		"blocked_by":"manual follow-up",
+		"handoff":{
+			"target_role":"engineer",
+			"ask":"claim T-001",
+			"constraints":"['one ticket only']",
+			"success_evidence":"[\"T-001 in done\"]"
+		},
+		"feedback":{
+			"for_role":"coo",
+			"requested_change":"tighten plan",
+			"severity":"revision_requested",
+			"evidence_links":"docs/exec-plans/active/current-operating-plan.md"
+		}
+	}`))
+	require.NoError(t, err)
+	require.Equal(t, []string{
+		"docs/exec-plans/active/current-operating-plan.md",
+		"docs/features/F-001-product-walking-skeleton.md",
+	}, got.EvidenceLinks)
+	require.Equal(t, []string{"plan", "feature"}, got.WorkProductIDs)
+	require.Equal(t, []string{"manual follow-up"}, got.BlockedBy)
+	require.Equal(t, []string{"one ticket only"}, got.Handoff.Constraints)
+	require.Equal(t, []string{"T-001 in done"}, got.Handoff.SuccessEvidence)
+	require.Equal(t, []string{"docs/exec-plans/active/current-operating-plan.md"}, got.Feedback.EvidenceLinks)
+}
+
 func TestValidateDispositionRequiresBlockedNextStep(t *testing.T) {
 	t.Parallel()
 

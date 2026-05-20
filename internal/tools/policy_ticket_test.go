@@ -513,6 +513,7 @@ blocked_by: []
 func TestEngineerClaimPolicyRequiresInProgressBeforeProductMutation(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
 	writePolicyTicket(t, dir, "backlog", "T-001-ship.md", `---
 id: T-001
 title: Ship
@@ -540,6 +541,15 @@ blocked_by: []
 	if err := checkEngineerClaimBeforeProductMutation(root, session, true, "shell_exec", []byte(`{"shell_command":"git mv docs/tickets/backlog/T-001-ship.md docs/tickets/in-progress/"}`)); err != nil {
 		t.Fatalf("expected backlog-to-in-progress claim move to pass, got %v", err)
 	}
+	if err := checkEngineerClaimBeforeProductMutation(root, session, true, "shell_exec", []byte(`{"argv":"[\"git\", \"mv\", \"docs/tickets/backlog/T-001-ship.md\", \"docs/tickets/in-progress/\"]"}`)); err != nil {
+		t.Fatalf("expected JSON-string argv claim move to pass, got %v", err)
+	}
+	if err := preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["ls","docs/tickets/backlog/"]}`)); err == nil || !strings.Contains(err.Error(), "must claim T-001 before running shell_exec") {
+		t.Fatalf("expected read-only shell_exec to be blocked before claim, got %v", err)
+	}
+	if err := preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":[]}`)); err == nil || !strings.Contains(err.Error(), "must claim T-001 before running shell_exec") {
+		t.Fatalf("expected no-op shell_exec to be redirected to claim before ticket claim, got %v", err)
+	}
 
 	if err := os.Rename(
 		filepath.Join(dir, "docs", "tickets", "backlog", "T-001-ship.md"),
@@ -547,7 +557,20 @@ blocked_by: []
 	); err != nil {
 		t.Fatalf("move ticket to in-progress: %v", err)
 	}
-	if err := preToolPolicy(ctx, root, "file_write", []byte(`{"path":"src/index.html","content":"<h1>Ship</h1>\n"}`)); err != nil {
+	raw, err := json.Marshal(map[string]string{
+		"path": "src/index.html",
+		"content": `<!--
+MarsDocSync:
+docs:
+- docs/features/F-001-product-walking-skeleton.md
+-->
+<h1>Ship</h1>
+`,
+	})
+	if err != nil {
+		t.Fatalf("marshal file_write: %v", err)
+	}
+	if err := preToolPolicy(ctx, root, "file_write", raw); err != nil {
 		t.Fatalf("expected product file_write after claim to pass, got %v", err)
 	}
 }
@@ -973,6 +996,73 @@ title: Existing
 		if err := preToolPolicy(context.Background(), root, "file_write", raw); err != nil {
 			t.Fatalf("expected file_write to pass for %s: %v", raw, err)
 		}
+	}
+}
+
+func TestFileWritePolicyRequiresDocSyncForSourceFiles(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
+
+	raw, err := json.Marshal(map[string]string{
+		"path":    "src/main.go",
+		"content": "package main\n\nfunc main() {}\n",
+	})
+	if err != nil {
+		t.Fatalf("marshal raw: %v", err)
+	}
+	err = preToolPolicy(context.Background(), root, "file_write", raw)
+	if err == nil {
+		t.Fatal("expected source file without MarsDocSync metadata to be blocked")
+	}
+	if !strings.Contains(err.Error(), "must include top-of-file MarsDocSync docs metadata") {
+		t.Fatalf("expected MarsDocSync policy error, got %v", err)
+	}
+
+	raw, err = json.Marshal(map[string]string{
+		"path": "src/main.go",
+		"content": `/*
+MarsDocSync:
+docs:
+- docs/features/F-001-product-walking-skeleton.md
+*/
+package main
+
+func main() {}
+`,
+	})
+	if err != nil {
+		t.Fatalf("marshal raw: %v", err)
+	}
+	if err := preToolPolicy(context.Background(), root, "file_write", raw); err != nil {
+		t.Fatalf("expected source file with existing doc metadata to pass, got %v", err)
+	}
+}
+
+func TestFileWritePolicyRejectsSourceDocSyncMissingDoc(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+	raw, err := json.Marshal(map[string]string{
+		"path": "src/main.go",
+		"content": `/*
+MarsDocSync:
+docs:
+- docs/features/F-001-S002.md
+*/
+package main
+
+func main() {}
+`,
+	})
+	if err != nil {
+		t.Fatalf("marshal raw: %v", err)
+	}
+	err = preToolPolicy(context.Background(), root, "file_write", raw)
+	if err == nil {
+		t.Fatal("expected source file metadata pointing at a scenario ID path to be blocked")
+	}
+	if !strings.Contains(err.Error(), "references missing doc docs/features/F-001-S002.md") {
+		t.Fatalf("expected missing doc policy error, got %v", err)
 	}
 }
 

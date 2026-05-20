@@ -2094,3 +2094,242 @@ a guardrail block rather than retryable `tool_timeout`.
 - The next API canary should stop at Engineer rework if malformed DocSync
   metadata appears, or proceed through QA/Security/Dogfood/Release only when
   the target source passes DocSync.
+
+## AD-151: No-Op Shell Calls And Missing DocSync Metadata Stop At Tool Boundaries
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run15` replay validated part of AD-150: CEO, COO, and CTO again
+created product-specific planning and a single ordinary product ticket, runtime
+guardrail signals stayed out of target intervention debt, and Engineer began
+real Task Notes API implementation. The replay then exposed two earlier-boundary
+gaps:
+
+- Engineer wrote `src/main.go` and `src/main_test.go` without any
+  `MarsDocSync` metadata. The successful-disposition gate would have blocked
+  approval later, but the missing metadata was allowed into the worktree first.
+- After `go test ./...` and an external build passed, Engineer repeatedly
+  called `shell_exec` with empty `argv`. Soft no-op guidance was treated as a
+  successful tool result and the run ended with `circle_detected`.
+
+### Decision
+
+No-op `shell_exec` calls remain non-executing, but they now return a tool error
+alongside the same recovery guidance. The model sees that an empty `argv`,
+blank `argv`, or single `:` command did not advance work, while still receiving
+the tracked background PID list and the next completion steps: stop validation
+processes, update ticket evidence, move the ticket to done when appropriate,
+commit, push, and record `job_disposition_record`.
+
+`file_write` now rejects source and test files under audited source roots, plus
+root-level source files such as `main.go` or `index.html`, unless the first
+write includes valid top-of-file `MarsDocSync` metadata pointing at existing
+documentation. This catches missing metadata and scenario-ID doc paths such as
+`docs/features/F-001-S002.md` before source files are created. The audit engine
+also includes root-level source files in its source-file set so direct root
+apps receive the same documentation-sync coverage as `src/` and `cmd/` apps.
+
+### Consequences
+
+- No-op shell drift is visible to the local model as a failed action, not a
+  harmless success that can be repeated until circle detection.
+- Deployed target agents must put documentation routing into the first source
+  write, which keeps DocSync failures closer to the cause.
+- The successful-disposition DocSync gate remains the backstop for source
+  created by other mechanisms or existing files edited through shell commands.
+- The next API canary should confirm Engineer writes valid metadata before
+  source creation and exits toward ticket completion instead of empty shell
+  calls.
+
+## AD-152: Tool Policy Uses The Same Normalized Shell Args As Execution
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run16` replay confirmed the new DocSync preflight behavior:
+Engineer's first attempted source write already contained a structured
+`MarsDocSync` block pointing at the canonical feature contract. The run then
+found a policy/execution mismatch. The local model emitted the required ticket
+claim command as a JSON-encoded `argv` string:
+
+```json
+{"argv":"[\"git\", \"mv\", \"docs/tickets/backlog/T-001-implement-get-health-endpoint-for-task-notes-api.md\", \"docs/tickets/in-progress/\"]"}
+```
+
+`shell_exec` execution can normalize that shape, but the Engineer claim
+exception still decoded `argv` directly as `[]string`. The policy therefore
+blocked the exact command it had suggested, trapping Engineer behind the claim
+gate.
+
+### Decision
+
+Shell tool policy paths now decode `shell_exec` arguments through the same
+normalizing parser used by execution before evaluating the backlog-to-in-
+progress ticket-claim exception. Simple malformed argv shapes that execution
+would repair are therefore also understood by ownership and guardrail policy.
+
+### Consequences
+
+- The claim gate remains strict for unclaimed product mutations, but no longer
+  blocks the exact `git mv` claim command solely because the model encoded
+  `argv` as a JSON string.
+- Tool policy and tool execution share one interpretation of normalized shell
+  arguments, reducing local-model format drift.
+- The next API canary should confirm Engineer can claim `T-001`, write
+  DocSync-compliant source, and proceed to validation.
+
+## AD-153: Engineer Shell Work Starts After Visible Ticket Claim
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run17` replay confirmed the previous claim normalization fix
+allowed the product lifecycle to reach a committed CTO ticket and an Engineer
+handoff with zero target intervention-debt tickets. The run then exposed the
+next implementation-boundary gap. Engineer read the product ticket and feature
+contract, but used shell discovery before claiming the backlog ticket. A broad
+`find .` command was correctly blocked, but the model then repeated empty
+`shell_exec` calls until `circle_detected` stopped the job. No source was
+changed, and `T-001` remained in backlog.
+
+The same replay showed a smaller but recurring local-model formatting issue:
+COO attempted to record `job_disposition_record.evidence_links` as a string
+containing a list literal before recovering with a strict array. The strict
+schema was correct, but the extra retries spent turns without changing the
+substance of the handoff.
+
+### Decision
+
+Engineer `shell_exec` calls now have a claim-first preflight. When an ordinary
+product ticket exists in `docs/tickets/backlog/` and no ticket is already in
+`docs/tickets/in-progress/`, the only allowed Engineer shell command is the
+backlog-to-in-progress `git mv` claim. Read-only shell discovery, broad
+traversal, validation, and no-op placeholder calls are rejected with the exact
+claim command and commit message shape. Purpose-built read tools remain
+available, but shell execution cannot preempt visible ticket ownership.
+
+Dispatch disposition decoding now accepts strict arrays plus simple
+list-as-string shapes for `evidence_links`, `work_product_ids`, `blocked_by`,
+handoff constraints, handoff success evidence, and feedback evidence links.
+The recorder normalizes JSON-encoded list strings, Python-style quoted list
+strings, and single path strings before validation.
+
+### Consequences
+
+- The Engineer implementation path should move from CTO ticket handoff to
+  visible ticket ownership before spending shell turns on discovery or
+  validation.
+- No-op shell calls before claim are redirected to the claim step instead of
+  turning into repeated runtime failures.
+- Disposition evidence remains structured, but harmless list formatting drift
+  does not consume multiple role turns.
+- The next API canary should confirm Engineer claims `T-001` before any shell
+  discovery, then proceeds to source implementation with DocSync metadata.
+
+## AD-154: Server Validation Uses Managed Background Execution
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run18` replay confirmed AD-153 in the live path. Engineer first
+tried a read-only `ls` shell command before claim, policy rejected it with the
+exact `git mv` claim command, and Engineer immediately claimed and committed
+`T-001`. Engineer then recovered from the source-write DocSync preflight,
+implemented `main.go`, added `main_test.go`, ran `docsync_audit`, and passed
+`go test ./...`. This was material product progress.
+
+The same run exposed the next process-control gap. After tests and an external
+validation build passed, Engineer ran `go run main.go` in the foreground. The
+tool timed out after 30 seconds with output showing the HTTP server was
+running, then Engineer repeated empty `shell_exec` calls until
+`circle_detected`. The failure was not product logic; it was a server
+validation command that should have used managed background mode and a separate
+readiness probe.
+
+### Decision
+
+`shell_exec` now blocks likely long-running server or watcher commands before
+execution unless `background:true` is set. The first enforced shape is a Go
+server entrypoint: `go run main.go`, `go run .`, or a package target is treated
+as server-like when the referenced source contains common HTTP server markers
+such as `ListenAndServe`, `http.Handle`, or a known router constructor. The
+same preflight covers common dev-server commands such as `npm start`,
+`npm run dev`, `pnpm dev`, `python -m http.server`, `uvicorn`, `gunicorn`,
+`rails`, `vite`, and `next`.
+
+The policy error tells the role to rerun the command with `background:true`,
+probe readiness with a separate `curl` or equivalent command, and stop the
+tracked PID after validation.
+
+### Consequences
+
+- Long-running validation moves from timeout recovery into a deterministic
+  preflight.
+- CLI-style `go run` programs without server markers can still run in the
+  foreground.
+- The next API canary should confirm Engineer starts the HTTP service with
+  managed background execution, probes `/health`, stops the tracked PID, and
+  moves `T-001` to done with evidence.
+
+## AD-155: Security Review Uses Bounded Terminal Evidence
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-api-run19` replay confirmed the run18 stabilization in the live
+target path. CEO, COO, CTO, Engineer, and QA completed; Engineer claimed
+`T-001`, wrote valid DocSync metadata, ran tests, built outside the repo,
+started the external validation binary with `background:true`, probed
+`/health`, stopped the tracked PID, moved `T-001` to done, and handed off to
+QA. The target quality export recorded grade `C`, one done ticket, and zero
+open intervention-debt tickets.
+
+The next bottleneck moved downstream to Security. Security successfully
+inspected the recent commits, ran docsync, ran tests, performed a managed
+runtime smoke, and confirmed `GET /health`, but it also repeated equivalent
+validation, killed one managed process before probing it, ran `ping` as a
+liveness substitute, and hit `max_turns` before writing a report or recording
+`job_disposition_record`. That failure was correctly quarantined as
+foundation-owned telemetry and did not create target backlog work.
+
+### Decision
+
+Generated Security guidance now has a bounded review budget for feature work
+that has already passed Engineer and QA:
+
+- inspect recent diffs, scan for secrets, read the changed code and done
+  ticket, run `docsync_audit`, and run the smallest relevant test command;
+- treat `go test ./...` as enough compile evidence for ordinary Go security
+  review unless the ticket explicitly needs runtime smoke evidence;
+- when runtime smoke is needed, build outside the repo, start the exact
+  external binary with `background:true`, probe while the process is still
+  running, and then stop the tracked PID;
+- after one successful smoke probe and cleanup, write the security report,
+  commit it, push if a remote exists, and record `job_disposition_record`
+  instead of running more liveness checks.
+
+### Consequences
+
+- Security review should spend fewer turns on repeated build/start/curl
+  cycles after the product has already passed implementation and QA evidence.
+- Runtime smoke remains available for security, but the role has an explicit
+  stop condition after one successful probe.
+- The next API canary should confirm Security writes
+  `docs/reports/security/security-audit-<date>.md`, commits it, and records an
+  approved or changes-requested disposition before hitting the turn limit.

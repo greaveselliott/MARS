@@ -8,6 +8,7 @@ docs:
 package orgstate
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"database/sql"
@@ -58,6 +59,156 @@ type Feedback struct {
 	RequestedChange string   `json:"requested_change,omitempty"`
 	Severity        string   `json:"severity,omitempty"`
 	EvidenceLinks   []string `json:"evidence_links,omitempty"`
+}
+
+// DecodeDisposition accepts the strict disposition schema plus simple
+// list-as-string shapes commonly emitted by local models.
+func DecodeDisposition(raw []byte) (Disposition, error) {
+	var aux struct {
+		JobID          string          `json:"job_id"`
+		RepoID         string          `json:"repo_id"`
+		Role           string          `json:"role"`
+		Status         string          `json:"status"`
+		NextNeed       string          `json:"next_need,omitempty"`
+		SuggestedRole  string          `json:"suggested_role,omitempty"`
+		TicketID       string          `json:"ticket_id,omitempty"`
+		Reason         string          `json:"reason,omitempty"`
+		EvidenceLinks  json.RawMessage `json:"evidence_links,omitempty"`
+		ApprovalID     string          `json:"approval_id,omitempty"`
+		WorkProductIDs json.RawMessage `json:"work_product_ids,omitempty"`
+		BlockedBy      json.RawMessage `json:"blocked_by,omitempty"`
+		TraceID        string          `json:"trace_id,omitempty"`
+		Handoff        struct {
+			TargetRole      string          `json:"target_role,omitempty"`
+			Ask             string          `json:"ask,omitempty"`
+			Context         string          `json:"context,omitempty"`
+			Constraints     json.RawMessage `json:"constraints,omitempty"`
+			ExpectedOutput  string          `json:"expected_output,omitempty"`
+			SuccessEvidence json.RawMessage `json:"success_evidence,omitempty"`
+		} `json:"handoff,omitempty"`
+		Feedback struct {
+			ForRole         string          `json:"for_role,omitempty"`
+			Summary         string          `json:"summary,omitempty"`
+			RequestedChange string          `json:"requested_change,omitempty"`
+			Severity        string          `json:"severity,omitempty"`
+			EvidenceLinks   json.RawMessage `json:"evidence_links,omitempty"`
+		} `json:"feedback,omitempty"`
+		RecordedAt time.Time `json:"recorded_at"`
+	}
+	if err := json.Unmarshal(raw, &aux); err != nil {
+		return Disposition{}, err
+	}
+	evidence, err := decodeStringList(aux.EvidenceLinks)
+	if err != nil {
+		return Disposition{}, fmt.Errorf("evidence_links: %w", err)
+	}
+	workProducts, err := decodeStringList(aux.WorkProductIDs)
+	if err != nil {
+		return Disposition{}, fmt.Errorf("work_product_ids: %w", err)
+	}
+	blockedBy, err := decodeStringList(aux.BlockedBy)
+	if err != nil {
+		return Disposition{}, fmt.Errorf("blocked_by: %w", err)
+	}
+	constraints, err := decodeStringList(aux.Handoff.Constraints)
+	if err != nil {
+		return Disposition{}, fmt.Errorf("handoff.constraints: %w", err)
+	}
+	successEvidence, err := decodeStringList(aux.Handoff.SuccessEvidence)
+	if err != nil {
+		return Disposition{}, fmt.Errorf("handoff.success_evidence: %w", err)
+	}
+	feedbackEvidence, err := decodeStringList(aux.Feedback.EvidenceLinks)
+	if err != nil {
+		return Disposition{}, fmt.Errorf("feedback.evidence_links: %w", err)
+	}
+	return Disposition{
+		JobID:          aux.JobID,
+		RepoID:         aux.RepoID,
+		Role:           aux.Role,
+		Status:         aux.Status,
+		NextNeed:       aux.NextNeed,
+		SuggestedRole:  aux.SuggestedRole,
+		TicketID:       aux.TicketID,
+		Reason:         aux.Reason,
+		EvidenceLinks:  evidence,
+		ApprovalID:     aux.ApprovalID,
+		WorkProductIDs: workProducts,
+		BlockedBy:      blockedBy,
+		TraceID:        aux.TraceID,
+		Handoff: Handoff{
+			TargetRole:      aux.Handoff.TargetRole,
+			Ask:             aux.Handoff.Ask,
+			Context:         aux.Handoff.Context,
+			Constraints:     constraints,
+			ExpectedOutput:  aux.Handoff.ExpectedOutput,
+			SuccessEvidence: successEvidence,
+		},
+		Feedback: Feedback{
+			ForRole:         aux.Feedback.ForRole,
+			Summary:         aux.Feedback.Summary,
+			RequestedChange: aux.Feedback.RequestedChange,
+			Severity:        aux.Feedback.Severity,
+			EvidenceLinks:   feedbackEvidence,
+		},
+		RecordedAt: aux.RecordedAt,
+	}, nil
+}
+
+func decodeStringList(raw json.RawMessage) ([]string, error) {
+	raw = bytes.TrimSpace(raw)
+	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {
+		return nil, nil
+	}
+	var values []string
+	if err := json.Unmarshal(raw, &values); err == nil {
+		return cleanStringList(values), nil
+	}
+	var single string
+	if err := json.Unmarshal(raw, &single); err != nil {
+		return nil, err
+	}
+	single = strings.TrimSpace(single)
+	if single == "" {
+		return nil, nil
+	}
+	if strings.HasPrefix(single, "[") && strings.HasSuffix(single, "]") {
+		if err := json.Unmarshal([]byte(single), &values); err == nil {
+			return cleanStringList(values), nil
+		}
+		return cleanStringList(splitStringListLiteral(single)), nil
+	}
+	return []string{single}, nil
+}
+
+func splitStringListLiteral(value string) []string {
+	value = strings.TrimSpace(value)
+	value = strings.TrimPrefix(value, "[")
+	value = strings.TrimSuffix(value, "]")
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		part = strings.Trim(part, `"'`)
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
+}
+
+func cleanStringList(values []string) []string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			out = append(out, value)
+		}
+	}
+	return out
 }
 
 // Decision is the deterministic routing decision recorded after a disposition.

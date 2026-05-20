@@ -155,6 +155,9 @@ actually own the target product behavior.
 `internal/docsync` is the deterministic audit engine. It:
 
 - walks audited foundation roots and deployed app roots;
+- includes root-level source entries such as `main.go` or `index.html` in
+  addition to conventional `cmd/`, `src/`, `app/`, `pages/`, `web/`, and
+  static roots;
 - parses top-of-file `MarsDocSync` metadata;
 - verifies each metadata doc path points to a durable documentation artifact;
 - computes expected docs from the canonical prefix rules when the audited repo
@@ -202,6 +205,9 @@ Docs-consistency tests make the operating model release-blocking:
   metadata, and missing docs.
 - `cmd/mars-harness` tests CLI flags and output.
 - `internal/tools` tests the mirrored tool registration and report output.
+- `file_write` tool policy rejects source/test writes that omit valid
+  top-of-file `MarsDocSync` metadata or point at a missing doc, so local-model
+  drift is corrected before a code file is created.
 - `internal/docsconsistency` runs the source-wide audit so missing metadata
   fails `go test ./...`.
 - `internal/scanner` tests generated target doctrine, route docs, role

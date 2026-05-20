@@ -97,11 +97,15 @@ Then the tool fails before process execution with an actionable instruction to u
 
 Given a local model emits a simple malformed `shell_exec` argv shape
 When `argv` is a JSON-encoded array string, a Python-style quoted list string, or a one-item simple command string with no shell syntax
-Then the tool normalizes it into executable argv tokens so the run does not spend extra turns recovering from harmless formatting drift
+Then tool policy and execution normalize it into the same argv tokens so ownership checks, guardrails, and execution do not spend extra turns recovering from harmless formatting drift
+
+Given a local model emits simple list fields for `job_disposition_record` as strings
+When `evidence_links`, `work_product_ids`, `blocked_by`, handoff list fields, or feedback evidence are JSON-encoded list strings, Python-style quoted list strings, or a single path string
+Then disposition recording normalizes those fields before validation so terminal handoff evidence is durable without repeated formatting retries
 
 Given a local model emits a no-op `shell_exec` call
 When `argv` is empty, `argv` contains only blank text, or the command is a single `:`
-Then the tool does not execute a process and returns completion guidance that names any active tracked background PIDs, tells the role to stop the PID after probes, and directs the role to update ticket evidence, commit, push, and record `job_disposition_record`
+Then the tool does not execute a process, returns a tool error that cannot be mistaken for progress, and includes completion guidance that names any active tracked background PIDs, tells the role to stop the PID after probes, and directs the role to update ticket evidence, commit, push, and record `job_disposition_record`
 
 Given a local model emits malformed `mars_harness_cli` args
 When `args` is a JSON-encoded array string, a Python-style quoted list string, or a simple single command string
@@ -110,6 +114,10 @@ Then the tool normalizes the command before binary resolution so release, score,
 Given a local model emits malformed path-list fields for built-in tools
 When tools such as `workspace_hygiene`, `git_diff`, or `git_commit` receive `paths` as a JSON-encoded array string or Python-style quoted list string
 Then the tool normalizes the path list before policy checks so generic recovery works across project archetypes instead of only one demo path
+
+Given a role writes a source or test file through `file_write`
+When the path is a source root such as `src/`, `cmd/`, `app/`, `pages/`, `web/`, `static/`, `.github/workflows/`, or a root-level source file
+Then the write is blocked unless the content already contains valid top-of-file `MarsDocSync` docs metadata that points at existing documentation
 
 Given a local model emits a malformed `file_write` payload with `<parameter=content>` embedded in `path`
 When the separate `content` field is empty
@@ -138,6 +146,10 @@ Then the tool intercepts the kill request and terminates the tracked process tre
 Given a role calls `shell_exec` with a bare port token such as `:8080`
 When the tool validates the command
 Then the call fails before process execution and tells the role that ports are not executable commands, to start the app with its real server command using `background:true`, and to probe separately with `curl http://localhost:8080/health` or the target route
+
+Given a role calls `shell_exec` for a likely server or watcher command
+When the command is run in the foreground and matches a server entrypoint such as an HTTP `go run`, `npm start`, `npm run dev`, `python -m http.server`, `uvicorn`, `vite`, or `next`
+Then the call fails before process execution and tells the role to rerun it with `background:true`, probe readiness with a separate request, and stop the tracked PID after validation
 
 Given a role calls `shell_exec` with an external `timeout` or `gtimeout` executable
 When the tool validates the command
@@ -208,6 +220,10 @@ Then `job_disposition_record` blocks the disposition and instructs the Engineer 
 Given an Engineer has an ordinary product ticket in `docs/tickets/backlog/`
 When it tries to mutate product, package, config, feature, dependency, build, or commit state before moving a ticket to `docs/tickets/in-progress/`
 Then tool policy blocks the mutation and instructs the Engineer to claim the product ticket with `git mv`, commit the claim, and then continue
+
+Given an Engineer has an ordinary product ticket in `docs/tickets/backlog/` and no in-progress product ticket
+When it tries any non-claim `shell_exec`, including read-only discovery or a no-op placeholder
+Then tool policy blocks the shell call and instructs the Engineer to run the backlog-to-in-progress `git mv` claim first
 
 ### F-005-S011: Role Ownership Tool Boundaries
 

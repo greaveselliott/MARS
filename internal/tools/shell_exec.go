@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -194,7 +195,7 @@ func handleShellExec(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 		return ToolResult{}, fmt.Errorf("shell_exec: parse arguments: %w", err)
 	}
 	if shellExecNoop(args) {
-		return shellExecNoopResult(), nil
+		return shellExecNoopResult(), fmt.Errorf("shell_exec: no-op command cannot advance work")
 	}
 	hasArgv := len(args.Argv) > 0
 	hasShell := strings.TrimSpace(args.ShellCommand) != ""
@@ -547,18 +548,27 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 	cmd := buildCmd(context.Background(), root, args)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
-	stdoutPipe, err := cmd.StdoutPipe()
+	stdoutRead, stdoutWrite, err := os.Pipe()
 	if err != nil {
 		return ToolResult{}, fmt.Errorf("shell_exec: stdout pipe: %w", err)
 	}
-	stderrPipe, err := cmd.StderrPipe()
+	defer stdoutRead.Close()
+	stderrRead, stderrWrite, err := os.Pipe()
 	if err != nil {
+		stdoutWrite.Close()
 		return ToolResult{}, fmt.Errorf("shell_exec: stderr pipe: %w", err)
 	}
+	defer stderrRead.Close()
+	cmd.Stdout = stdoutWrite
+	cmd.Stderr = stderrWrite
 
 	if err := cmd.Start(); err != nil {
+		stdoutWrite.Close()
+		stderrWrite.Close()
 		return ToolResult{}, fmt.Errorf("shell_exec: start background: %w", err)
 	}
+	stdoutWrite.Close()
+	stderrWrite.Close()
 	pid := cmd.Process.Pid
 
 	bgMu.Lock()
@@ -581,11 +591,11 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 	var stdoutBuf, stderrBuf bytes.Buffer
 	done := make(chan struct{}, 2)
 	go func() {
-		_, _ = io.Copy(&stdoutBuf, stdoutPipe)
+		_, _ = io.Copy(&stdoutBuf, stdoutRead)
 		done <- struct{}{}
 	}()
 	go func() {
-		_, _ = io.Copy(&stderrBuf, stderrPipe)
+		_, _ = io.Copy(&stderrBuf, stderrRead)
 		done <- struct{}{}
 	}()
 

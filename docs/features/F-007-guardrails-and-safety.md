@@ -102,6 +102,10 @@ Given a planner role has a narrow ownership boundary
 When COO tries to create product implementation files or run a mutating shell command before CTO ticketing
 Then the tool guardrail blocks the action and leaves implementation to ticket-backed Engineer work
 
+Given Engineer has an ordinary product ticket waiting in `docs/tickets/backlog/` and no in-progress ticket
+When it calls `shell_exec` for anything except the backlog-to-in-progress claim move
+Then the tool guardrail blocks the shell call and names the exact `git mv` claim path before further discovery, validation, or implementation shell commands can run
+
 Given Dogfood is running observation-first validation
 When it attempts to write product source, package manifests, lockfiles, config, or harness scaffold
 Then the tool guardrail blocks the mutation while still allowing bounded evidence reports under `docs/reports/dogfood/`
@@ -127,6 +131,16 @@ Then tool policy blocks the file before creation and instructs the role to use e
 Given a role calls an external `timeout` or `gtimeout` validation command through `shell_exec`
 When tool policy rejects the non-portable wrapper before process execution
 Then telemetry classifies the event as a guardrail block, not a retryable tool timeout, so the runtime records foundation evidence without enqueueing duplicate retry work
+
+Given a role validates a web service or watcher through `shell_exec`
+When it runs a likely long-running command in the foreground, including an HTTP `go run`, `npm start`, `npm run dev`, `python -m http.server`, `uvicorn`, `vite`, or `next`
+Then tool policy blocks the command before process execution and requires managed background mode, a separate readiness probe, and tracked PID cleanup so validation does not spend turns on foreground timeouts
+
+### F-007-S013: Source Writes Carry Documentation Metadata
+
+Given a role writes source, static asset, workflow, or test code through `file_write`
+When the content lacks top-of-file `MarsDocSync` docs metadata or references a missing feature-contract path
+Then tool policy blocks the write before the source file is created or replaced and tells the role to reference the existing canonical documentation path instead of a scenario ID path
 
 ### F-007-S009: Workspace Hygiene Gates
 

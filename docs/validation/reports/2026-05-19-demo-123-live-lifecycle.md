@@ -1468,6 +1468,501 @@ they do not trigger deterministic retry work. The next API canary should either
 produce valid DocSync metadata and proceed, or stop at implementation rework
 instead of approving stale documentation.
 
+### API Rerun After DocSync Disposition Gate (Task Notes API) - 2026-05-20
+
+Target: `<validation-root>`
+
+Binary: `<validation-root>`
+
+Command:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --debug
+```
+
+Job outcomes:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Telemetry:
+
+```text
+coo|guardrail_block|1
+cto-weekly|guardrail_block|1
+engineer|circle_detected|1
+engineer|guardrail_block|2
+```
+
+Positive evidence:
+
+- CEO, COO, and CTO reached product-specific planning and one ordinary product
+  ticket with zero target intervention-debt tickets.
+- COO and CTO recovered from clean-handoff guardrails by committing planning
+  and ticket artifacts before disposition.
+- Engineer claimed `T-001` before source mutation, implemented a Go
+  `GET /health` endpoint, ran `go mod tidy`, passed `go test ./...`, and
+  recovered from the repo-local build-output guardrail by building to
+  `<validation-root>`.
+- The failed Engineer job did not dispatch through Orchestrator and created no
+  target intervention-debt tickets.
+- `scores export` wrote `docs/QUALITY_SCORE.md` with overall grade
+  `Insufficient evidence`, which is appropriately conservative for a failed
+  implementation lifecycle.
+
+Residual findings:
+
+- Engineer wrote `src/main.go` and `src/main_test.go` with no `MarsDocSync`
+  metadata. Manual audit output:
+
+  ```text
+  docsync: checked 2 files, findings 2
+  FAIL: src/main.go: missing MarsDocSync docs metadata
+  FAIL: src/main_test.go: missing MarsDocSync docs metadata
+  ```
+
+- After validation passed, Engineer repeatedly called `shell_exec` with empty
+  `argv`. Soft no-op guidance returned as a successful tool result, so the
+  model spent turns without moving the ticket to done or recording a blocked
+  disposition and eventually hit `circle_detected`.
+- CTO wasted discovery turns by grepping `docs/tickets/*.md`, which misses the
+  lifecycle subdirectories, but still produced the correct single product
+  ticket. This remains a lower-priority discovery-efficiency follow-up.
+
+Source action:
+
+- `shell_exec` no-op calls now return a tool error with the same completion
+  guidance, making empty `argv` and single `:` calls visibly non-progressing.
+- `file_write` now rejects source/test writes under source roots, plus
+  root-level source files such as `main.go` or `index.html`, unless content
+  includes valid top-of-file `MarsDocSync` docs metadata pointing at existing
+  documentation.
+- `internal/docsync` now audits root-level source files so direct-root app
+  layouts receive the same metadata coverage as `src/` and `cmd/`.
+
+The next API canary should confirm Engineer writes valid DocSync metadata
+before source creation, avoids empty-shell completion loops, and reaches ticket
+completion or a clear blocked disposition.
+
+### API Rerun After No-Op Hard Error And DocSync Write Preflight (Task Notes API) - 2026-05-20
+
+Target: `<validation-root>`
+
+Binary: `<validation-root>`
+
+Command:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --debug
+```
+
+Job outcomes:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Telemetry at stop:
+
+```text
+ceo|guardrail_block|4
+coo|guardrail_block|1
+cto-weekly|guardrail_block|1
+engineer|guardrail_block|5
+engineer|llm_unreachable|1
+```
+
+Positive evidence:
+
+- Product-specific planning and ticketing still reached Engineer with zero
+  target intervention-debt tickets.
+- `file_write` DocSync preflight did not prevent useful implementation: the
+  first attempted source write included a structured `MarsDocSync` block
+  pointing at the canonical feature contract.
+- Runtime failures and guardrail blocks stayed foundation-owned and did not
+  create target intervention-debt tickets.
+
+Residual findings:
+
+- CEO and COO spent extra turns on duplicate feature-contract creation,
+  broad discovery, and attempted ticket creation through the CLI/tool boundary.
+  They recovered and completed, but this is still factory-pace drag.
+- Engineer attempted the correct `git mv` claim command, but emitted `argv` as
+  a JSON-encoded array string. `shell_exec` execution can normalize that shape,
+  while the claim exception in policy could not, so policy blocked the exact
+  command it told Engineer to run.
+- The run was stopped after this evidence was captured; the final
+  `llm_unreachable` telemetry came from operator shutdown, not from the original
+  claim-policy failure.
+
+Source action:
+
+- The Engineer claim exception now decodes `shell_exec` arguments through the
+  same normalizing parser as execution, so JSON-string argv drift no longer
+  blocks backlog-to-in-progress ticket moves.
+
+The next API canary should confirm Engineer can claim `T-001`, keep the valid
+DocSync metadata, and continue to build/test/ticket completion.
+
+### API Rerun After Claim Argv Normalization (Task Notes API) - 2026-05-20
+
+Target: `<validation-root>`
+
+Binary: `<validation-root>`
+
+Command:
+
+```bash
+<validation-root> start \
+  --repo <validation-root> \
+  --db <validation-root> \
+  --log-file <validation-root> \
+  --debug
+```
+
+Job outcomes:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Telemetry at stop:
+
+```text
+ceo|guardrail_block|1
+cto-weekly|guardrail_block|1
+engineer|circle_detected|1
+engineer|guardrail_block|1
+```
+
+Positive evidence:
+
+- Product-specific planning and ticketing still reached Engineer with zero
+  target intervention-debt tickets.
+- CTO created and committed `T-001` for the Task Notes API health endpoint,
+  confirming the previous JSON-string argv claim-policy issue was no longer
+  blocking the planning-to-implementation handoff.
+- Runtime failures stayed foundation-owned; Engineer failure did not dispatch
+  through Orchestrator and did not create target intervention-debt tickets.
+- `scores export` wrote `docs/QUALITY_SCORE.md` with overall grade
+  `Insufficient evidence`, preserving a conservative evidence claim.
+
+Residual findings:
+
+- COO initially emitted `job_disposition_record.evidence_links` as a string
+  containing list syntax. The role recovered, but the strict decoder spent two
+  avoidable turns.
+- Engineer read the backlog ticket and feature contract but did not claim
+  `T-001` before shell discovery. A broad `find .` command was blocked, then
+  two empty `shell_exec` calls ended the job with `circle_detected`.
+- The target had no source implementation; `T-001` remained in backlog.
+
+Source action:
+
+- Engineer `shell_exec` is now claim-first while ordinary product backlog work
+  exists and no in-progress ticket is present. The only allowed pre-claim shell
+  command is the backlog-to-in-progress `git mv` claim; read-only discovery,
+  validation, and no-op shell placeholders receive exact claim guidance.
+- `job_disposition_record` now normalizes strict arrays, JSON-string lists,
+  Python-style list strings, and single strings for evidence and handoff list
+  fields before validation.
+
+The next API canary should confirm Engineer claims `T-001` before shell
+discovery, then proceeds to source implementation with DocSync metadata.
+
+### API Rerun After Claim-First Shell Policy (Task Notes API) - 2026-05-20
+
+Target:
+`<validation-root>`
+
+Binary:
+`<validation-root>`
+
+Command:
+
+```bash
+<validation-root> start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+```
+
+The first unprivileged start attempt initialized and seeded the target before
+the local sandbox rejected the dashboard bind. The escalated rerun processed a
+fresh CEO bootstrap job and produced one normal lifecycle path; the bind
+restriction is local to the validation environment and is not counted as a
+target lifecycle failure.
+
+Job outcomes at stop:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|failed|1
+```
+
+Telemetry at stop:
+
+```text
+cto-weekly|guardrail_block|1
+engineer|circle_detected|1
+engineer|guardrail_block|5
+```
+
+Target commits of interest:
+
+```text
+3b187e7 chore(learnings): update runtime learnings for ceo
+73334e0 plan: update feature contract and exec plan for F-001-S001 health endpoint
+701f2c5 tickets: create implementation ticket T-001 for GET /health endpoint implementation
+a814c0a chore(tickets): claim T-001
+ceffc12 feat: implement GET /health endpoint with service status, name, and timestamp (T-001 step 1)
+45973ec test: add tests for health endpoint (T-001 step 2)
+611bf4a chore: capture run18 quality evidence
+```
+
+Positive evidence:
+
+- AD-153 is validated in the live path. Engineer first tried `shell_exec`
+  `ls -la` before claiming the product ticket; policy blocked it with the
+  exact `git mv` claim command, and Engineer immediately claimed and committed
+  `T-001`.
+- CEO, COO, and CTO reached product-specific planning and a product ticket
+  without duplicate bootstrap jobs or intervention-debt ticket amplification.
+- Source-write DocSync preflight worked as intended. Engineer recovered by
+  writing valid `MarsDocSync` metadata on `main.go` and `main_test.go`.
+- `docsync_audit` reported zero findings, `go test ./...` passed, and the
+  external validation build `go build -o <validation-root>`
+  succeeded.
+- Runtime failures stayed foundation-owned. No target intervention-debt ticket
+  was created, and the Engineer failure did not dispatch Orchestrator.
+
+Residual findings:
+
+- After passing tests and the external build, Engineer ran `go run main.go` in
+  the foreground. The tool timed out after 30 seconds while the server printed
+  `Starting server on :8080`.
+- Engineer then repeated empty `shell_exec` calls until `circle_detected`.
+- The role tried to remove `<validation-root>` with `rm`; the
+  destructive shell policy blocked it. This is a minor cleanup-friction finding
+  because the artifact was outside the target repo.
+
+Source action:
+
+- `shell_exec` now rejects likely server and watcher commands when run in the
+  foreground. HTTP-shaped `go run` commands and common dev-server commands
+  must use `background:true`, a separate readiness probe, and tracked PID
+  cleanup.
+
+The next API canary should confirm Engineer reaches implementation again,
+starts the service in managed background mode, probes `/health`, stops the
+tracked PID, and moves `T-001` to done with evidence.
+
+### API Rerun After Foreground Server Preflight (Task Notes API) - 2026-05-20
+
+Target:
+`<validation-root>`
+
+Binary:
+`<validation-root>`
+
+Command:
+
+```bash
+<validation-root> start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+```
+
+Job outcomes at stop:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+engineer|completed|1
+qa|completed|1
+security|failed|1
+```
+
+Telemetry at stop:
+
+```text
+coo|guardrail_block|1
+cto-weekly|guardrail_block|1
+engineer|guardrail_block|4
+security|guardrail_block|2
+security|max_turns|1
+```
+
+Target commits of interest:
+
+```text
+f7a08ec chore(learnings): update runtime learnings for ceo
+b3b9c8f plan: update active scenario schedule and feature contract for Task Notes API walking skeleton
+e7d3ae9 tickets: create implementation ticket T-001 for GET /health endpoint
+09c96a3 chore(tickets): claim T-001
+2f2f76f feat: implement GET /health endpoint for Task Notes API (T-001)
+54384cd chore: update ticket evidence and metadata (T-001)
+bd3732c chore(tickets): move T-001 to done
+6eebbc2 chore(learnings): update runtime learnings for qa
+64014bd chore: capture run19 quality evidence
+```
+
+Positive evidence:
+
+- The run reached real product completion for the non-static API canary:
+  `T-001` moved to `docs/tickets/done/`, QA approved it, and the target
+  worktree was clean after quality-score evidence was committed.
+- Engineer again obeyed the claim-first shell guard after an initial `ls`
+  attempt, then claimed and committed `T-001`.
+- Source and test writes included valid `MarsDocSync` metadata on first write,
+  `docsync_audit` reported zero findings, `go test ./...` and `go test -v`
+  passed, and the external `<validation-root>` build succeeded.
+- Runtime validation used managed background execution: the external binary was
+  started with `background:true`, `curl -s http://localhost:8080/health`
+  returned JSON with `service`, `status`, and `timestamp`, and the tracked PID
+  was killed.
+- `scores export` wrote `docs/QUALITY_SCORE.md` with overall grade `C`, one
+  done ticket, zero open intervention-debt tickets, and factory-pace rows for
+  CEO, COO, CTO, Engineer, QA, and Security.
+- The failed Security job stayed foundation-owned: no Orchestrator recovery loop
+  and no target intervention-debt ticket.
+
+Residual findings:
+
+- COO still spent turns trying `mars_harness_cli ticket_create` and direct
+  ticket `file_write` before recovering to a clean planning handoff. This is
+  pace drag, not product starvation.
+- Engineer still spent discovery turns on broad `find`, extra `ls`, and an
+  initial attempt to run `./task-notes-api` after building the validation binary
+  outside the repo. It recovered and completed, so this is now an optimization
+  target rather than a blocker.
+- Security successfully reached test, docsync, external build, managed
+  background start, curl, and kill evidence, but then repeated validation and
+  hit `max_turns` before writing a security report or terminal disposition.
+
+Source action:
+
+- Generated Security guidance now has a bounded terminal evidence path:
+  inspect changed diff, scan for secrets, read changed code and done ticket,
+  run `docsync_audit`, run the smallest relevant test, perform at most one
+  managed smoke probe when needed, then write the audit, commit, push if
+  possible, and record `job_disposition_record`.
+
+The next API canary should confirm Security writes and commits
+`docs/reports/security/security-audit-<date>.md`, records an approved or
+changes-requested disposition before `max_turns`, and keeps the target backlog
+free of foundation-owned intervention debt.
+
+### API Rerun After Bounded Security Review (Task Notes API) - 2026-05-20
+
+Target:
+`<validation-root>`
+
+Binary:
+`<validation-root>`
+
+Command:
+
+```bash
+<validation-root> start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+```
+
+Job outcomes at stop:
+
+```text
+ceo|completed|1
+coo|completed|1
+cto-weekly|completed|1
+dogfood|completed|1
+engineer|completed|1
+qa|completed|1
+release-manager|completed|1
+security|completed|1
+```
+
+Telemetry at stop:
+
+```text
+cto-weekly|guardrail_block|1
+dogfood|guardrail_block|1
+engineer|guardrail_block|7
+```
+
+Target commits of interest:
+
+```text
+d3b14dd chore(learnings): update runtime learnings for ceo
+4091625 plan: update active scenario schedule and feature contract for GET /health endpoint
+547cf6e tickets: create implementation ticket for current scenario F-001-S002
+8e5f386 chore(tickets): claim T-001
+c971487 feat: implement GET /health endpoint with service name, status, and timestamp (T-001)
+756495f chore(tickets): update T-001 evidence and acceptance criteria
+a688616 chore(tickets): move T-001 to done
+f01fc55 chore(learnings): update runtime learnings for qa
+0bbc493 security: audit 2026-05-20
+f0cda20 dogfood: E2E validation findings 2026-05-20
+7441faf release: notes 0.2.0
+c28174f chore: capture run20 quality evidence
+```
+
+Positive evidence:
+
+- The full non-static API lifecycle completed through product planning,
+  product ticketing, Engineer implementation, QA, Security, Dogfood, and
+  Release Manager without intervention-debt ticket amplification.
+- Security validated the run19 source action. It completed in 14 turns: read
+  recent commits, scanned for secrets, ran `docsync_audit`, ran
+  `go test ./...`, built the validation binary outside the repo, started it
+  with `background:true`, curled `/health`, killed the tracked PID, wrote and
+  committed `docs/reports/security/security-audit-2026-05-20.md`, and recorded
+  terminal disposition.
+- Dogfood completed after rechecking test/build/runtime behavior, wrote and
+  committed `docs/reports/dogfood/dogfood-validation-2026-05-20.md`, and
+  recorded terminal disposition.
+- Release Manager generated release notes, committed `release: notes 0.2.0`,
+  and created local tag `v0.2.0`. It stopped cleanly with a release publication
+  blocker because the disposable target had no `origin` remote.
+- `scores export` wrote `docs/QUALITY_SCORE.md` with overall grade `A`, one
+  done product ticket, zero open intervention-debt tickets, and Factory Pace
+  rows through Release Manager.
+
+Residual findings:
+
+- Engineer still spent seven guardrail blocks before completion. The largest
+  repeated sources were pre-claim discovery, broad `find .`, source DocSync
+  preflight recovery, in-repo build-output prevention, and malformed shell argv
+  recovery while stopping a validation process.
+- Dogfood still tried a default `go build ./...` before recovering to
+  `go build -o <validation-root> ./...`.
+- The static-game and Task Notes API canaries are now productive, but they are
+  not enough to claim generic software-factory performance. The next loop
+  should add distinct target archetypes and treat repeated cross-target
+  guardrail tax as the next optimization input.
+
+Source action:
+
+- No new blocking source change is required from run20. The run validates the
+  bounded Security guidance added after run19.
+- Record the confirmed improvement and shift the active plan toward a
+  representative validation matrix rather than further tuning only the
+  Space Invaders or Task Notes API canaries.
+
 ## Assessment
 
 The lifecycle is materially healthier than the older intervention-debt-heavy
@@ -1523,7 +2018,27 @@ loops; the remaining turn sink is empty/`:` no-op shell calls after successful
 validation. Run14 confirms no-op shell guidance lets Engineer complete the
 ticket lifecycle and shifts the next generic bottleneck to mechanical DocSync
 approval gates plus non-retryable classification for policy-blocked timeout
-wrappers. The remaining live-loop work is to rerun the API canary after the
-DocSync/timeout gate fix, confirm bad metadata cannot be approved, and keep
-validating against multiple software archetypes before making generic lifecycle
-claims.
+wrappers. Run15 confirms runtime failures remain quarantined without
+intervention-debt tickets, but shows source DocSync metadata must be enforced
+at write time and no-op shell guidance must fail the tool call to prevent
+circle detection. Run16 confirms valid DocSync metadata can appear on the first
+source write, but shows shell policy must use the same argv normalization as
+execution so JSON-string `git mv` ticket-claim commands satisfy the claim gate.
+Run17 confirms the claim-argv normalization path reaches Engineer, but shows
+Engineer shell work still needs a mechanical claim-first boundary and
+disposition evidence-list normalization. Run18 confirms the claim-first shell
+boundary works in the live path, source-write DocSync preflight can recover
+without human intervention, and API implementation/testing can make material
+product progress without intervention-debt tickets; the next generic
+bottleneck is foreground server validation after tests/builds pass. The
+Run19 canary confirms managed background validation and ticket completion for
+the non-static API path, plus QA approval and a target quality-score export.
+The next generic bottleneck is bounded Security terminal evidence: Security can
+validate the work, but still needs to stop after one sufficient proof, write
+the audit, and record disposition before max turns. Run20 confirms bounded
+Security terminal evidence, Dogfood validation, and local target release notes
+all complete in the non-static API path with overall quality grade `A` and
+zero target intervention-debt tickets. The remaining live-loop work is now to
+validate multiple software archetypes before making generic lifecycle claims
+and to optimize repeated guardrail tax only when it appears across that
+representative matrix.

@@ -38,6 +38,13 @@ Review bounded security risk and either remediate narrowly or return explicit ri
 - Requested remediation.
 - Evidence command/path.
 
+## Review Budget
+
+- For a feature ticket already completed by Engineer and approved by QA, keep review bounded: inspect recent diffs, scan for secrets, read the changed code and done ticket, run docsync audit, and run the smallest relevant test command.
+- Treat `go test ./...` as enough compile evidence for ordinary Go security review unless the ticket specifically requires runtime smoke evidence.
+- If a runtime smoke is needed, start exactly one managed background process, probe it before killing it, stop the tracked PID, then write the report and record disposition.
+- Do not repeat equivalent start/curl cycles, run ping as liveness proof, or spend extra turns after one successful smoke probe unless a confirmed finding needs reproduction.
+
 ## Feedback I Need
 
 - Name the changed surface and threat concern.

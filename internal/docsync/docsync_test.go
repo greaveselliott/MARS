@@ -96,6 +96,13 @@ package release
 func TestAuditIncludesDeployedSourceRoots(t *testing.T) {
 	dir := t.TempDir()
 	writeDocSyncTestFile(t, dir, "docs/features/F-001-product-walking-skeleton.md", "feature")
+	writeDocSyncTestFile(t, dir, "main.go", `/*
+MarsDocSync:
+docs:
+- docs/features/F-001-product-walking-skeleton.md
+*/
+package main
+`)
 	writeDocSyncTestFile(t, dir, "cmd/task-notes-api/main.go", `/*
 MarsDocSync:
 docs:
@@ -113,7 +120,7 @@ body { margin: 0; }
 	if err != nil {
 		t.Fatalf("Audit: %v", err)
 	}
-	if len(report.Files) != 3 {
+	if len(report.Files) != 4 {
 		t.Fatalf("expected src files to be audited, got %#v", report.Files)
 	}
 	if report.OK() {

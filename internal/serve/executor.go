@@ -296,8 +296,8 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 			if e.orgStore == nil {
 				return fmt.Errorf("orgstate store unavailable")
 			}
-			var d orgstate.Disposition
-			if err := json.Unmarshal(raw, &d); err != nil {
+			d, err := orgstate.DecodeDisposition(raw)
+			if err != nil {
 				return fmt.Errorf("parse disposition: %w", err)
 			}
 			d.JobID = job.ID

@@ -57,10 +57,13 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 
 	switch name {
 	case "file_write":
+		if err := checkEngineerClaimBeforeProductMutation(root, session, hasSession, name, raw); err != nil {
+			return err
+		}
 		if err := checkFileWritePolicy(root, session, hasSession, raw); err != nil {
 			return err
 		}
-		return checkEngineerClaimBeforeProductMutation(root, session, hasSession, name, raw)
+		return nil
 	case "ticket_create":
 		return checkTicketCreatePolicy(root, session, hasSession, raw)
 	case "job_disposition_record":
@@ -89,8 +92,14 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 		if err != nil {
 			return err
 		}
+		if err := checkEngineerShellExecBeforeTicketClaim(root, session, hasSession, raw, generatedArtifactCleanup); err != nil {
+			return err
+		}
 		if !generatedArtifactCleanup {
 			if err := checkShellPolicy(raw); err != nil {
+				return err
+			}
+			if err := checkForegroundLongRunningShellPolicy(root, args); err != nil {
 				return err
 			}
 			if err := checkShellBuildOutputPolicy(root, args); err != nil {
@@ -372,6 +381,174 @@ func checkEngineerClaimBeforeProductMutation(root Root, session Session, hasSess
 	)
 }
 
+func checkEngineerShellExecBeforeTicketClaim(root Root, session Session, hasSession bool, raw json.RawMessage, generatedArtifactCleanup bool) error {
+	if generatedArtifactCleanup || !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
+		return nil
+	}
+	if shellExecMovesBacklogTicketToInProgress(raw) {
+		return nil
+	}
+	inProgress, err := ticketstate.ListStatus(root.Abs(), ticketstate.StatusInProgress)
+	if err != nil {
+		return fmt.Errorf("policy: inspect in-progress tickets before shell_exec: %w", err)
+	}
+	if len(inProgress) > 0 {
+		return nil
+	}
+	backlog, err := ticketstate.ListStatus(root.Abs(), ticketstate.StatusBacklog)
+	if err != nil {
+		return fmt.Errorf("policy: inspect backlog tickets before shell_exec: %w", err)
+	}
+	backlog = ordinaryProductTickets(backlog)
+	if len(backlog) == 0 {
+		return nil
+	}
+	return fmt.Errorf(
+		"policy: engineer must claim %s before running shell_exec; run shell_exec with argv [\"git\", \"mv\", %q, \"docs/tickets/in-progress/\"] and then git_commit \"chore(tickets): claim %s\" before discovery, validation, or implementation shell commands",
+		backlog[0].ID,
+		backlog[0].RelPath,
+		backlog[0].ID,
+	)
+}
+
+func checkForegroundLongRunningShellPolicy(root Root, args shellExecArgs) error {
+	if args.Background {
+		return nil
+	}
+	cmd, ok := likelyForegroundLongRunningCommand(root, args)
+	if !ok {
+		return nil
+	}
+	return fmt.Errorf("policy: shell_exec command %q is likely a long-running server or watcher; rerun it with background:true, probe readiness with a separate curl or equivalent command, then stop the tracked PID after validation", cmd)
+}
+
+func likelyForegroundLongRunningCommand(root Root, args shellExecArgs) (string, bool) {
+	fields := normalizedShellExecFields(args)
+	if len(fields) == 0 {
+		return "", false
+	}
+	cmd := filepathBase(fields[0])
+	switch cmd {
+	case "npm":
+		if len(fields) >= 2 && fields[1] == "start" {
+			return "npm start", true
+		}
+		if len(fields) >= 3 && fields[1] == "run" && serverScriptName(fields[2]) {
+			return "npm run " + fields[2], true
+		}
+	case "pnpm", "yarn", "bun":
+		if len(fields) >= 2 && serverScriptName(fields[1]) {
+			return cmd + " " + fields[1], true
+		}
+		if len(fields) >= 3 && fields[1] == "run" && serverScriptName(fields[2]) {
+			return cmd + " run " + fields[2], true
+		}
+	case "python", "python3":
+		if len(fields) >= 3 && fields[1] == "-m" && fields[2] == "http.server" {
+			return cmd + " -m http.server", true
+		}
+	case "uvicorn", "gunicorn", "hypercorn", "rails", "vite", "next":
+		return cmd, true
+	case "go":
+		if len(fields) >= 2 && fields[1] == "run" && goRunLikelyStartsServer(root, fields[2:]) {
+			return "go run", true
+		}
+	}
+	return "", false
+}
+
+func normalizedShellExecFields(args shellExecArgs) []string {
+	if len(args.Argv) > 0 {
+		fields := make([]string, 0, len(args.Argv))
+		for _, field := range args.Argv {
+			field = strings.Trim(strings.TrimSpace(strings.ToLower(field)), `"'`)
+			if field != "" {
+				fields = append(fields, field)
+			}
+		}
+		return fields
+	}
+	cmd := strings.TrimSpace(args.ShellCommand)
+	if cmd == "" || shellCommandHasControlSyntax(cmd) {
+		return nil
+	}
+	return shellFields(cmd)
+}
+
+func serverScriptName(name string) bool {
+	switch strings.TrimSpace(strings.ToLower(name)) {
+	case "dev", "start", "serve", "server", "preview", "watch":
+		return true
+	default:
+		return false
+	}
+}
+
+func goRunLikelyStartsServer(root Root, args []string) bool {
+	targets := goRunTargets(args)
+	if len(targets) == 0 {
+		return false
+	}
+	for _, target := range targets {
+		for _, rel := range goRunCandidateFiles(target) {
+			if sourceContainsServerMarker(root, rel) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func goRunTargets(args []string) []string {
+	var targets []string
+	for _, arg := range args {
+		arg = strings.TrimSpace(arg)
+		if arg == "" || strings.HasPrefix(arg, "-") {
+			continue
+		}
+		targets = append(targets, arg)
+	}
+	return targets
+}
+
+func goRunCandidateFiles(target string) []string {
+	target = strings.TrimPrefix(cleanRepoPath(cleanShellPathToken(target)), "./")
+	switch {
+	case target == "" || target == ".":
+		return []string{"main.go"}
+	case strings.HasSuffix(target, ".go"):
+		return []string{target}
+	default:
+		return []string{filepath.ToSlash(filepath.Join(target, "main.go"))}
+	}
+}
+
+func sourceContainsServerMarker(root Root, rel string) bool {
+	abs, err := root.ResolvePath(rel)
+	if err != nil {
+		return false
+	}
+	data, err := os.ReadFile(abs)
+	if err != nil {
+		return false
+	}
+	text := strings.ToLower(string(data))
+	for _, marker := range []string{
+		"listenandserve",
+		"http.handle",
+		"http.newservemux",
+		"gin.default",
+		"fiber.new",
+		"chi.newrouter",
+		"echo.new",
+	} {
+		if strings.Contains(text, marker) {
+			return true
+		}
+	}
+	return false
+}
+
 func engineerToolRequiresClaim(toolName string, raw json.RawMessage) bool {
 	switch toolName {
 	case "file_write", "dependency_sync", "mars_harness_cli", "git_commit":
@@ -436,6 +613,9 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 	if err := checkRootValidationScriptWritePolicy(root, args.Path); err != nil {
 		return err
 	}
+	if err := checkSourceFileDocSyncWritePolicy(root, args.Path, args.Content); err != nil {
+		return err
+	}
 	if !hasSession {
 		return nil
 	}
@@ -448,6 +628,59 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 		return fmt.Errorf("policy: secret scanner blocked %s:%d (%s)", hits[0].File, hits[0].Line, hits[0].Pattern)
 	}
 	return nil
+}
+
+func checkSourceFileDocSyncWritePolicy(root Root, rel, content string) error {
+	rel = cleanRepoPath(rel)
+	if !sourceFileRequiresDocSync(rel) {
+		return nil
+	}
+	docs := docsync.MetadataDocs(content)
+	if len(docs) == 0 {
+		return fmt.Errorf("policy: source file %s must include top-of-file MarsDocSync docs metadata before it can be written; reference the canonical feature contract under docs/features/ (for example docs/features/F-001-product-walking-skeleton.md), not a scenario ID path", rel)
+	}
+	for _, doc := range docs {
+		if !strings.HasPrefix(doc, "docs/") && doc != "AGENTS.md" && doc != "README.md" && doc != "ARCHITECTURE.md" && doc != "CONTRIBUTING.md" {
+			return fmt.Errorf("policy: source file %s MarsDocSync metadata references non-documentation path %s", rel, doc)
+		}
+		if _, err := os.Stat(filepath.Join(root.Abs(), filepath.FromSlash(doc))); err != nil {
+			return fmt.Errorf("policy: source file %s MarsDocSync metadata references missing doc %s; read docs/features/ and use the existing canonical feature contract, not a scenario ID path", rel, doc)
+		}
+	}
+	return nil
+}
+
+func sourceFileRequiresDocSync(rel string) bool {
+	rel = filepath.ToSlash(strings.TrimSpace(rel))
+	if rel == "" {
+		return false
+	}
+	switch filepath.Ext(rel) {
+	case ".go", ".html", ".css", ".js", ".yaml", ".yml":
+	default:
+		return false
+	}
+	if !strings.Contains(rel, "/") {
+		return true
+	}
+	for _, prefix := range []string{
+		"cmd/",
+		"internal/",
+		"pkg/",
+		"examples/",
+		"src/",
+		"app/",
+		"pages/",
+		"public/",
+		"web/",
+		"static/",
+		".github/workflows/",
+	} {
+		if strings.HasPrefix(rel, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func checkRootValidationScriptWritePolicy(root Root, rel string) error {
@@ -1257,8 +1490,8 @@ func ticketDoneMoveSources(fields []string) []string {
 }
 
 func shellExecMovesBacklogTicketToInProgress(raw json.RawMessage) bool {
-	var args shellExecArgs
-	if err := json.Unmarshal(raw, &args); err != nil {
+	args, err := decodeShellExecArgs(raw)
+	if err != nil {
 		return false
 	}
 	fields := args.Argv

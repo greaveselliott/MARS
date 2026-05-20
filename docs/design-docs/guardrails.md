@@ -153,6 +153,20 @@ project-owned scripts to be updated. `shell_exec` also rejects external
 `timeout`/`gtimeout` executables so roles use tool `timeout_seconds` or managed
 `background:true` validation instead of platform-specific process wrappers.
 
+The follow-up `demo-api-run15` replay showed that documentation-sync failures
+should also be caught before source files are written, not only at successful
+handoff. `file_write` now blocks source, test, static asset, and workflow
+writes under audited source roots, plus root-level source files such as
+`main.go` or `index.html`, unless the content already carries top-of-file
+`MarsDocSync` metadata pointing at existing documentation. This keeps scenario
+ID paths and missing metadata from becoming committed product state.
+
+The `demo-api-run17` replay showed that Engineer can also spend implementation
+turns on shell discovery before visible ticket ownership. When ordinary product
+backlog work exists and no ticket is in progress, Engineer `shell_exec` now
+allows only the backlog-to-in-progress `git mv` claim. Discovery, validation,
+and no-op shell calls are blocked until the claim is committed.
+
 ### Open topics
 
 - **Advisory vs hard tiers:** advisory rules surface warnings in traces and UI; hard rules fail the job or block merge paths per policy; same schema with a `severity` field is the likely shape.

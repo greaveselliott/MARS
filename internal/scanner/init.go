@@ -2439,7 +2439,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. New repo-root validation scripts such as ` + "`validate.sh`" + ` are blocked; use existing tests, direct build/run/curl evidence, or intentional durable tests. |
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
-| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not call ` + "`shell_exec`" + ` with empty ` + "`argv`" + ` or a single ` + "`:`" + ` as a wait or placeholder command; no-op calls return guidance to stop tracked PIDs, commit, push, and record ` + "`job_disposition_record`" + `. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors. Background cleanup terminates wrapper processes and known descendants so ` + "`go run`" + ` child servers do not occupy ports after a job ends, and ` + "`kill <tracked-background-pid>`" + ` applies the same cleanup during a job. ` + "`go build`" + ` without ` + "`-o`" + ` and ` + "`go build -o <path>`" + ` inside the target repo are blocked before execution; use ` + "`go test ./...`" + ` for compile validation or put validation binaries in an external temp path. |
+| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Simple malformed argv shapes are normalized before policy checks and execution. Engineer runs with an ordinary backlog product ticket and no in-progress ticket must use ` + "`shell_exec`" + ` to claim that ticket with ` + "`git mv ... docs/tickets/in-progress/`" + ` before any other shell command. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Likely server/watch commands such as ` + "`go run`" + ` HTTP entrypoints, ` + "`npm start`" + `, ` + "`npm run dev`" + `, ` + "`python -m http.server`" + `, ` + "`uvicorn`" + `, ` + "`vite`" + `, and ` + "`next`" + ` are blocked in foreground mode; rerun them with ` + "`background:true`" + `, probe readiness separately, and stop the tracked PID. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not call ` + "`shell_exec`" + ` with empty ` + "`argv`" + ` or a single ` + "`:`" + ` as a wait or placeholder command; no-op calls fail with guidance to stop tracked PIDs, commit, push, and record ` + "`job_disposition_record`" + `. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors. Background cleanup terminates wrapper processes and known descendants so ` + "`go run`" + ` child servers do not occupy ports after a job ends, and ` + "`kill <tracked-background-pid>`" + ` applies the same cleanup during a job. ` + "`go build`" + ` without ` + "`-o`" + ` and ` + "`go build -o <path>`" + ` inside the target repo are blocked before execution; use ` + "`go test ./...`" + ` for compile validation or put validation binaries in an external temp path. |
 | ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading. |
 | ` + "`github_auth_check`" + ` | Check private Mars Harness GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
 | ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe ` + "`.gitignore`" + `-only repair when needed. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
@@ -3412,6 +3412,9 @@ IMPLEMENTATION:
       shell_exec: git mv docs/tickets/backlog/T-NNN-*.md docs/tickets/in-progress/
       git_commit: message "chore(tickets): claim T-NNN"
       git_push
+      The shell tool enforces this boundary: before a backlog product ticket is
+      claimed, non-claim shell_exec calls are rejected so discovery, validation,
+      and implementation do not preempt ticket ownership.
    If the selected ticket was already in in-progress/, do not move it. Resume it.
    Product mutation tools are blocked until at least one ticket is in
    ` + "`docs/tickets/in-progress/`" + `. Claim first, then edit source, package,
@@ -3443,6 +3446,8 @@ IMPLEMENTATION:
 5. CHECK DOCUMENTATION SYNC
    - For every new or materially changed code file, add or update its
      top-of-file ` + "`MarsDocSync`" + ` block with associated docs
+   - ` + "`file_write`" + ` rejects source and test files that do not include valid
+     ` + "`MarsDocSync`" + ` docs metadata, so include the block in the first write
    - Use the structured block form for Go and other source files:
      ` + "```" + `
      /*
@@ -3490,6 +3495,8 @@ IMPLEMENTATION:
       shell_exec with background:true: npm run dev (or equivalent). Never use
       shell syntax such as ` + "`cmd & PID=$!`" + ` inside shell_command; the tool
       rejects shell background operators because they can leak child processes.
+      Likely server/watch commands are blocked when run in the foreground; use
+      background:true, probe readiness separately, and stop the tracked PID.
       Never use external ` + "`timeout`" + ` or ` + "`gtimeout`" + ` commands; use the
       tool's ` + "`timeout_seconds`" + ` field for bounded foreground commands, or
       ` + "`background:true`" + ` for servers with separate curl probes.
@@ -3499,8 +3506,9 @@ IMPLEMENTATION:
 	      PID you started if cleanup is needed. Never call shell_exec with
 	      a bare port token such as ` + "`:8080`" + `; ports are not commands.
       Never call shell_exec with empty ` + "`argv`" + ` or ` + "`:`" + ` as a wait or
-      placeholder command. After a successful probe, stop the tracked PID, update
-      ticket evidence, commit, push, and record ` + "`job_disposition_record`" + `.
+      placeholder command. The tool fails no-op calls with completion guidance;
+      after a successful probe, stop the tracked PID, update ticket evidence,
+      commit, push, and record ` + "`job_disposition_record`" + `.
    f) If a package-managed project has no expected build or dev script, that
       is a bug — add one. If the target is intentionally static HTML/CSS/JS
       with no package manifest and no build step, do NOT create package manager
@@ -3769,6 +3777,24 @@ START by reading:
 5. Run docsync_audit before recording an approved disposition. Missing
    MarsDocSync metadata, missing docs, or invalid references are review blockers;
    record NEEDS_REMEDIATION and changes_requested instead of approving.
+
+BOUND REVIEW BUDGET:
+
+- For a ticket already completed by Engineer and approved by QA, do one bounded
+  security pass: inspect the changed diff, scan for secrets, read the changed
+  code and done ticket, run docsync_audit, and run the smallest relevant test
+  command such as ` + "`go test ./...`" + `.
+- Do not repeat equivalent build/start probes after evidence has already proven
+  the endpoint. In Go projects, ` + "`go test ./...`" + ` is enough compile evidence
+  for security review unless the ticket specifically requires a runtime smoke.
+- If one runtime smoke is needed, build outside the repo, start the exact
+  external binary with ` + "`background:true`" + `, probe with curl while the process is
+  still running, then stop the tracked PID. Do not try ` + "`./<project>`" + ` or
+  ` + "`./tmp/<project>`" + ` after building to ` + "`/tmp/<project>-validation`" + `.
+- After a successful probe and PID cleanup, immediately write the security
+  report, commit it, push if a remote exists, and record
+  ` + "`job_disposition_record`" + `. Do not run ping, repeat curl/start cycles, or
+  perform more liveness checks unless a concrete finding needs confirmation.
 
 REVIEW CHECKLIST:
 

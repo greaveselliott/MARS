@@ -2421,6 +2421,228 @@ as guardrail blocks rather than retryable tool timeouts. Generated role
 guidance now distinguishes scenario IDs from feature-contract paths and treats
 DocSync `FAIL:` output as a release/readiness blocker.
 
+### Non-Static API Replay: No-Op Guidance Must Fail The Tool Call
+
+The next replay used `<validation-root>` to
+validate the DocSync disposition gate and timeout classification in a fresh Task
+Notes API target.
+
+Positive evidence:
+
+- CEO, COO, and CTO again produced product-specific planning and a single
+  ordinary product ticket with zero target intervention-debt tickets.
+- Runtime guardrail signals remained foundation-owned telemetry. The run did
+  not route a failed Engineer job back through Orchestrator.
+- The target `scores export` produced `Insufficient evidence` after the failed
+  run, which is more conservative than the earlier A-grade escape.
+
+Residual findings:
+
+- Engineer wrote `src/main.go` and `src/main_test.go` without `MarsDocSync`
+  metadata. A manual `docsync audit` reported both files as missing metadata.
+- After successful `go test ./...` and an external build, Engineer repeatedly
+  called `shell_exec` with empty `argv`. The soft no-op guidance was treated as
+  progress, and the run ended with `circle_detected` before ticket evidence,
+  ticket completion, or disposition.
+
+Decision: no-op `shell_exec` calls now return a tool error while preserving the
+same completion guidance, so empty `argv` and single `:` calls are no longer
+successful turns. `file_write` also rejects source/test writes that lack valid
+top-of-file `MarsDocSync` metadata or reference a missing doc path, catching the
+run15 source drift before files enter the target worktree.
+
+### Non-Static API Replay: Policy Must Normalize Shell Argv Like Execution
+
+The next replay used `<validation-root>` to
+validate the no-op hard-error and source-write DocSync preflight in a fresh Task
+Notes API target.
+
+Positive evidence:
+
+- The source-write preflight did not block useful code. Engineer's first source
+  write already included a structured `MarsDocSync` block pointing at
+  `docs/features/F-001-product-walking-skeleton.md`.
+- Duplicate feature-contract creation, CEO ownership boundaries, ticket-file
+  hand-writing, and clean-handoff commits all remained mechanical guardrails.
+- No target intervention-debt tickets were created.
+
+Residual findings:
+
+- CEO and COO still spent many turns recovering from broad discovery and
+  role-boundary mistakes before completing their handoffs.
+- Engineer attempted the correct claim command, but emitted `argv` as a
+  JSON-encoded array string. Execution can normalize that shape, but the
+  claim-exception policy decoded `argv` directly as `[]string`, so the command
+  was blocked by the claim guard it was supposed to satisfy.
+
+Decision: shell tool policy now decodes `shell_exec` arguments through the same
+normalizing parser used by execution before checking the backlog-to-in-progress
+ticket claim exception. Ownership policy and execution therefore agree on
+simple malformed argv shapes.
+
+### Non-Static API Replay: Engineer Shell Work Must Start With Claim
+
+The next replay used `<validation-root>` to
+validate the claim-argv normalization fix in a fresh Task Notes API target.
+
+Positive evidence:
+
+- CEO, COO, and CTO again reached product-specific planning and a committed
+  ordinary product ticket with zero target intervention-debt tickets.
+- The lifecycle reached Engineer without duplicate bootstrap jobs or automatic
+  intervention-debt amplification.
+- CTO created and committed `T-001` for the current BDD scenario, confirming
+  the previous shell-argv policy fix was no longer the immediate blocker.
+- Runtime failures and guardrail blocks stayed foundation-owned and did not
+  route through Orchestrator after Engineer failed.
+
+Residual findings:
+
+- COO initially emitted `job_disposition_record.evidence_links` as a string
+  containing list syntax and needed extra attempts before recording the
+  terminal disposition.
+- Engineer read the backlog ticket and feature contract, but did not claim
+  `T-001` before shell discovery. A broad `find .` command was blocked, then
+  repeated empty `shell_exec` calls ended the job with `circle_detected`.
+- No product source was created, and the ticket remained in backlog.
+
+Decision: Engineer `shell_exec` is now claim-first whenever an ordinary
+backlog product ticket exists and no in-progress product ticket is present.
+The only allowed pre-claim shell command is the `git mv` ticket claim; all
+other shell calls receive the exact claim command and commit message guidance.
+`job_disposition_record` also normalizes simple list-as-string fields before
+validation so harmless evidence-list formatting drift does not spend role
+turns.
+
+### Non-Static API Replay: Server Validation Must Use Managed Background Mode
+
+The next replay used `<validation-root>` to
+validate claim-first shell execution in a fresh Task Notes API target. The
+target brief asked for a tiny HTTP API with a `GET /health` endpoint.
+
+Positive evidence:
+
+- Engineer first tried `shell_exec` `ls -la` before claiming the ticket. The
+  claim-first guard blocked it and returned the exact `git mv` claim command.
+  Engineer immediately moved `T-001` into `docs/tickets/in-progress/` and
+  committed `chore(tickets): claim T-001`.
+- CEO, COO, and CTO again reached product-specific planning and a committed
+  ordinary product ticket with zero target intervention-debt tickets.
+- Engineer recovered from source-write DocSync preflight by writing valid
+  top-of-file `MarsDocSync` metadata on `main.go` and `main_test.go`.
+- `docsync_audit` checked the implementation with zero findings,
+  `go test ./...` passed, and an external `/tmp` validation build succeeded.
+- Runtime failures stayed foundation-owned. The failed Engineer job recorded
+  telemetry but did not dispatch Orchestrator and did not create target
+  intervention-debt tickets.
+
+Residual findings:
+
+- Engineer attempted `go build -o task-notes-api` inside the repository; the
+  existing build-output guard blocked it and Engineer recovered by building to
+  `<validation-root>`.
+- Engineer then ran `go run main.go` as a foreground validation command. The
+  tool spent its timeout while the server was running on `:8080`, then Engineer
+  repeated empty `shell_exec` calls until `circle_detected`.
+- The role tried to remove the external validation binary with `rm`, which is
+  still blocked by the destructive shell policy. That is noisy, but smaller
+  than the foreground server timeout because it did not dirty the target repo.
+
+Decision: likely server and watcher commands now have a pre-execution shell
+guard. HTTP-shaped `go run`, common JavaScript dev servers, Python HTTP
+servers, ASGI/WSGI servers, Vite, Next, and similar watch commands must use
+`background:true`, separate readiness probes, and tracked PID cleanup. The
+next API canary should confirm Engineer reaches the same implementation point
+and then validates the service through managed background execution instead of
+a foreground timeout.
+
+### Non-Static API Replay: Security Needs Bounded Terminal Evidence
+
+The next replay used `<validation-root>` to
+validate foreground server preflight and managed runtime validation after the
+run18 fix.
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, and QA completed. `T-001` moved through backlog,
+  in-progress, and done, and the target worktree ended clean after quality
+  evidence was committed.
+- Engineer again hit the claim-first shell guard, recovered immediately with
+  the exact `git mv` claim, implemented the Go health endpoint, wrote
+  MarsDocSync metadata on source and test files, passed `go test ./...`, and
+  passed `docsync_audit`.
+- Runtime validation used managed background execution. The external
+  `<validation-root>` binary started with `background:true`,
+  `curl /health` returned service/status/timestamp JSON, and the tracked PID
+  was killed.
+- `scores export` produced overall grade `C`, one done ticket, zero open
+  intervention-debt tickets, and Factory Pace rows for each role.
+- Security failed with `max_turns`, but the failure stayed foundation-owned:
+  no Orchestrator dispatch loop and no target intervention-debt ticket.
+
+Residual findings:
+
+- COO still tries ticket creation through the CLI and direct `file_write`
+  before handing off to CTO, costing turns even though recovery works.
+- Engineer still spends discovery and recovery turns after the ticket claim,
+  including one attempt to run a repo-local binary name after an external build.
+- Security has enough evidence to approve, but repeats validation and reaches
+  `max_turns` before writing an audit report or recording terminal
+  disposition.
+
+Decision: generated Security guidance now treats post-QA feature review as a
+bounded pass. Once diffs, secrets scan, changed code, done ticket,
+`docsync_audit`, tests, and at most one managed smoke probe are complete,
+Security should write the audit, commit, push when possible, and record
+`job_disposition_record` instead of running more liveness checks.
+
+### Non-Static API Replay: Bounded Security And Release Notes Complete
+
+The next replay used `<validation-root>` to
+validate the bounded Security guidance and the target release-note loop after
+the run19 fix.
+
+Positive evidence:
+
+- CEO, COO, CTO, Engineer, QA, Security, Dogfood, and Release Manager all
+  completed. The target finished with one done product ticket, local release
+  notes, tag `v0.2.0`, and a clean worktree after quality evidence was
+  committed.
+- Security followed the bounded review path: inspected recent commits, scanned
+  for secrets, ran `docsync_audit`, ran `go test ./...`, built the validation
+  binary outside the repo, performed one managed `/health` probe, killed the
+  tracked PID, wrote `docs/reports/security/security-audit-2026-05-20.md`,
+  committed it, and recorded terminal disposition in 14 turns.
+- Dogfood then revalidated tests, external build, HTTP 200 response, JSON
+  payload, and POST 405 behavior, wrote
+  `docs/reports/dogfood/dogfood-validation-2026-05-20.md`, committed it, and
+  recorded terminal disposition.
+- Release Manager generated target release notes with
+  `mars-harness release notes --repo . --bump auto`, committed
+  `release: notes 0.2.0`, created tag `v0.2.0`, and stopped with a release
+  publication blocker because the disposable target had no `origin` remote.
+- `scores export` reported overall grade `A`, one done product ticket, zero
+  backlog or in-progress tickets, and zero open intervention-debt tickets.
+
+Residual findings:
+
+- Engineer still paid guardrail tax before completion: one pre-claim shell
+  discovery block, a broad `find .` block, a DocSync preflight block, an
+  in-repo `go build -o task-notes-api` block, and a few malformed shell argv
+  recovery attempts while killing the validation process.
+- Dogfood still initially tried `go build ./...`, recovered to an external
+  `-o <validation-root>` build, and completed. This is now an optimization target, not
+  a lifecycle blocker.
+- The validation evidence is still concentrated in the static-game and
+  non-static HTTP API canaries. The next foundation claim should come from a
+  representative target matrix rather than further overfitting this one API
+  path.
+
+Decision: bounded Security review is validated as a foundation improvement.
+The next continuous-improvement slice should treat residual guardrail blocks as
+pace telemetry and expand the live validation matrix across target archetypes
+before broadening role prompts or tool policy.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

@@ -49,8 +49,13 @@ list is short:
 foundation source checkout, prefix rules below define expected docs. In a
 deployed target repo, product code under common layouts such as `cmd/`,
 `internal/`, `pkg/`, `src/`, `app/`, `pages/`, `public/`, `web/`, and `static/`
-still needs valid metadata, but does not inherit this foundation package map;
-it must point to the target's local feature contracts or design docs.
+still needs valid metadata, and root-level source files such as `main.go` or
+`index.html` are included as audited source too. Deployed targets do not
+inherit this foundation package map; metadata must point to the target's local
+feature contracts or design docs. The mirrored `file_write` policy rejects
+source/test writes that omit valid `MarsDocSync` metadata or point at a missing
+doc path, so generated target agents correct documentation routing before the
+source file exists in the worktree.
 
 ## Package Map
 
@@ -102,7 +107,7 @@ it must point to the target's local feature contracts or design docs.
 | `internal/shellpath/` | `docs/design-docs/release-versioning.md` | F-002 |
 | `internal/telemetry/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
 | `internal/tickets/` | `docs/design-docs/delivery-operating-model.md` | F-001 |
-| `internal/tools/` | `docs/design-docs/tools-glossary.md` | F-005 |
+| `internal/tools/` | `docs/design-docs/tools-glossary.md`, `docs/design-docs/guardrails.md` | F-005, F-006, F-007 |
 | `internal/trace/` | `docs/design-docs/agent-runtime.md` | F-005 |
 | `internal/trust/` | `docs/design-docs/scoring-system.md` | F-008 |
 | `internal/ui/` | `docs/design-docs/agent-runtime.md`, `docs/design-docs/dashboard.md` | F-005, F-010 |

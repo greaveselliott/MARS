@@ -88,7 +88,9 @@ that writes SQLite state scoped to the current job, repo, and role. The tool is
 registered like other built-in tools and is trust-gated by the role allowlist.
 Dispositions may also carry structured `handoff` and `feedback` objects so the
 next role gets an explicit ask and the prior role gets explicit correction
-rather than implicit prose.
+rather than implicit prose. The recorder accepts strict arrays plus simple
+list-as-string shapes for evidence and handoff fields before validation, so
+local-model formatting drift does not prevent durable terminal handoffs.
 
 Dispatch handoff jobs outrank scheduled cron jobs when the queue claims work.
 Cron schedules remain a safety net for unattended operation, but they must not
@@ -128,7 +130,10 @@ ticket in backlog or in progress. If QA or another reviewer records
 implementation rework, dispatch may route Engineer to the same ticket even when
 the ticket currently lives in `done/` or `in-review/`. The runtime must not send
 that case back to CTO for a duplicate ticket unless the review explicitly asks
-for ticket breakdown instead of rework.
+for ticket breakdown instead of rework. When Engineer starts with ordinary
+backlog product work and no in-progress ticket, `shell_exec` is claim-first:
+the backlog-to-in-progress `git mv` is the only allowed shell command until
+visible ticket ownership exists.
 
 ## Data Model
 

@@ -121,6 +121,18 @@ func isFoundationHarnessRoot(root string) bool {
 
 func SourceFiles(root string) ([]string, error) {
 	var files []string
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return nil, fmt.Errorf("docsync: read repo root: %w", err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if isSourceExtension(filepath.Ext(entry.Name())) {
+			files = append(files, filepath.ToSlash(entry.Name()))
+		}
+	}
 	sourceRoots := []string{"cmd", "internal", "pkg", ".github/workflows", "examples", "src", "app", "pages", "public", "web", "static"}
 	for _, sourceRoot := range sourceRoots {
 		absSourceRoot := filepath.Join(root, filepath.FromSlash(sourceRoot))

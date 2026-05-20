@@ -33,6 +33,7 @@ type Persona struct {
 	Owns                []string
 	DoesNotOwn          []string
 	BestFeedbackFormat  []string
+	ReviewBudget        []string
 	FeedbackINeed       []string
 	FeedbackIGive       []string
 	StopConditions      []string
@@ -409,6 +410,12 @@ func DefaultPersonas() []Persona {
 				"Exploitability or impact.",
 				"Requested remediation.",
 				"Evidence command/path.",
+			},
+			ReviewBudget: []string{
+				"For a feature ticket already completed by Engineer and approved by QA, keep review bounded: inspect recent diffs, scan for secrets, read the changed code and done ticket, run docsync audit, and run the smallest relevant test command.",
+				"Treat `go test ./...` as enough compile evidence for ordinary Go security review unless the ticket specifically requires runtime smoke evidence.",
+				"If a runtime smoke is needed, start exactly one managed background process, probe it before killing it, stop the tracked PID, then write the report and record disposition.",
+				"Do not repeat equivalent start/curl cycles, run ping as liveness proof, or spend extra turns after one successful smoke probe unless a confirmed finding needs reproduction.",
 			},
 			FeedbackINeed: []string{
 				"Name the changed surface and threat concern.",
@@ -823,6 +830,9 @@ func RenderManual(p Persona) string {
 	writeSection(&b, "Owns", p.Owns, false)
 	writeSection(&b, "Does Not Own", p.DoesNotOwn, false)
 	writeSection(&b, "Best Feedback Format", p.BestFeedbackFormat, false)
+	if len(nonEmpty(p.ReviewBudget)) > 0 {
+		writeSection(&b, "Review Budget", p.ReviewBudget, false)
+	}
 	writeSection(&b, "Feedback I Need", p.FeedbackINeed, false)
 	writeSection(&b, "Feedback I Give", p.FeedbackIGive, false)
 	writeSection(&b, "Stop Conditions", p.StopConditions, false)
@@ -843,6 +853,9 @@ func RenderPromptManual(p Persona) string {
 	writeSubsection(&b, "Owns", p.Owns, false)
 	writeSubsection(&b, "Does Not Own", p.DoesNotOwn, false)
 	writeSubsection(&b, "Best Feedback Format", p.BestFeedbackFormat, false)
+	if len(nonEmpty(p.ReviewBudget)) > 0 {
+		writeSubsection(&b, "Review Budget", p.ReviewBudget, false)
+	}
 	writeSubsection(&b, "How I Like To Receive Feedback", p.FeedbackINeed, false)
 	writeSubsection(&b, "Feedback I Give", p.FeedbackIGive, false)
 	writeSubsection(&b, "Stop Conditions", p.StopConditions, false)

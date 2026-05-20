@@ -245,6 +245,10 @@ Given Security records an approved or completed dispatch disposition for a ticke
 When Orchestrator explicitly requests Dependency Manager or Release Manager through `next_need` or `suggested_role`
 Then dispatch may route to that governance role, but dependency and release work are no longer automatic review-chain defaults for a fresh product slice
 
+Given Security reviews a feature ticket that Engineer completed and QA approved
+When secrets scan, changed-code inspection, `docsync_audit`, tests, and at most one managed runtime smoke probe have passed
+Then Security writes and commits a bounded audit report and records terminal `job_disposition_record` instead of repeating equivalent validation until `max_turns`
+
 Given Engineer records a successful dispatch disposition for a feature ticket
 When the named ticket still exists in `docs/tickets/backlog/`, `docs/tickets/in-progress/`, or `docs/tickets/in-review/`
 Then tool policy rejects the disposition before the server records it, forcing same-run ticket evidence and lifecycle completion instead of a later repair job
@@ -252,6 +256,10 @@ Then tool policy rejects the disposition before the server records it, forcing s
 Given Engineer selects an ordinary product ticket from `docs/tickets/backlog/`
 When it attempts product mutation before claiming that ticket into `docs/tickets/in-progress/`
 Then tool policy blocks the mutation so backlog work cannot become source commits without a visible ticket claim
+
+Given Engineer selects an ordinary product ticket from `docs/tickets/backlog/`
+When it attempts read-only discovery, broad traversal, validation, or no-op placeholder work through `shell_exec` before claiming that ticket into `docs/tickets/in-progress/`
+Then tool policy blocks the shell call with claim-first guidance so implementation handoff cannot spend turns before visible ticket ownership
 
 Given an active plan names a BDD feature ID such as `F-001`
 When generated planner, ticketing, or Orchestrator prompts check for the feature contract
