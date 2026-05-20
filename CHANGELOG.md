@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.31] - 2026-05-20
+<!-- mars-harness-release: version=0.41.31 commit=5c37fee655b9 -->
+
+### Impact
+- **factory:** Operators see improved reliability because stabilize static demo lifecycle.
+
+### Why
+- **factory:** This matters because stabilize static demo lifecycle closes a failure mode or degraded path.
+
+### What Changed
+- **factory:** Changed stabilize static demo lifecycle (5c37fee).
+
+### Fixes
+- **factory:** Stabilize static demo lifecycle (5c37fee)
+
 ## [0.41.30] - 2026-05-20
 <!-- mars-harness-release: version=0.41.30 commit=1c8ff8453634 -->
 
