@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.41.32] - 2026-05-20
+<!-- mars-harness-release: version=0.41.32 commit=40d9722ec551 -->
+
+### Impact
+- **dispatch:** Operators see improved reliability because stop release blocked loops.
+
+### Why
+- **dispatch:** This matters because stop release blocked loops closes a failure mode or degraded path.
+
+### What Changed
+- **dispatch:** Changed stop release blocked loops (40d9722).
+
+### Fixes
+- **dispatch:** Stop release blocked loops (40d9722)
+
 ## [0.41.31] - 2026-05-20
 <!-- mars-harness-release: version=0.41.31 commit=5c37fee655b9 -->
 
