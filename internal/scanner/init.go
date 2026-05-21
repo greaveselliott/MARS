@@ -1336,8 +1336,7 @@ The order is strict:
 
 1. Update ` + "`docs/exec-plans/active/current-operating-plan.md`" + ` so the current slice, scenario schedule, and walking skeleton are explicit.
 2. Create or update the ` + "`docs/features/F-NNN-*.md`" + ` contract named by the plan.
-3. Create tickets from the current failing scenario, or from the next
-   uncovered scenario when the current scenario is already ticketed.
+3. Create tickets from the current failing scenario or scenario group.
 4. Deliver one ticket with evidence.
 
 In shorthand: exec plan, feature contract, ticket, delivery.
@@ -1355,8 +1354,7 @@ plan pointer, fix the exec plan first.
   top-of-file ` + "`MarsDocSync`" + ` metadata, and plans or tickets record whether those
   docs were updated or explicitly checked as current.
 - The active plan schedule is the ordered list of failing BDD scenarios.
-- Feature tickets are created only from the current failing scenario, or from
-  the next uncovered scenario when the current scenario is already ticketed.
+- Feature tickets are created only from the current failing scenario or scenario group.
 - A feature is not shipped until in-scope BDD scenarios pass or are explicitly descoped by the CEO.
 
 ## Format
@@ -1795,9 +1793,8 @@ exception context.
 - The CEO owns vision, active goals, and final strategy/scope decisions.
 - The COO aligns one active exec plan first, then creates or updates the feature
   contracts named by that plan.
-- The CTO creates technical implementation tickets only from the current
-  failing scenario, or from the next uncovered scenario when the current
-  scenario is already ticketed.
+- The CTO creates technical implementation tickets only from the current failing
+  scenario or scenario group.
 - The Engineer implements one ticket and provides scenario evidence before done.
 - QA and Dogfood validate behavior against the BDD scenarios.
 - Release notes and quality scores separate shipped feature scenarios from enablers.
@@ -3216,7 +3213,7 @@ contracts, and any feedback or handoff context from the Orchestrator.
 BOOTSTRAP ORDER IS STRICT:
 1. CEO decides goals and scope.
 2. COO writes the active exec plan and BDD feature contract.
-3. CTO creates technical tickets from the current or next uncovered scenario.
+3. CTO creates technical tickets from the current failing scenario.
 4. Engineer implements one ticket with evidence.
 5. QA validates before downstream review.
 
@@ -3358,19 +3355,14 @@ bootstrap, or an empty product backlog, keep the run intentionally narrow:
 - Do not create or edit product implementation files, package/module files,
   README usage notes, tests, build config, or root product files. Those belong
   to Engineer after a ticket is created and claimed.
-- Create at most one ordinary feature ticket for the next ticketable scenario.
-  Start with the current failing scenario, but if that scenario already has an
-  ordinary product ticket in backlog, in-progress, in-review, or done, advance
-  to the next uncovered scenario in the Scenario Schedule instead of confirming
-  old work or handing Engineer a closed ticket.
-- If an open ordinary product ticket already exists for the selected scenario,
-  do not create another independent ticket. Record a disposition with
-  next_need "implementation" and suggested_role "engineer".
-- If every scheduled scenario already has a ticket and no open product ticket
-  remains, record feedback.for_role "coo" asking COO to update the active plan
-  with the next failing scenario or close the plan. Do not loop back to CTO.
-- After creating or confirming one open scenario ticket exists, commit the
-  ticket change, record job_disposition_record, and stop.
+- Create at most one ordinary feature ticket for the current failing scenario.
+  The first ticket should be a walking-skeleton implementation slice that can
+  make visible product progress, even if it spans a few small files.
+- If a ticket already exists for the current BDD scenario, do not create
+  another independent ticket. Record a disposition with next_need
+  "implementation" and suggested_role "engineer".
+- After creating or confirming that one current-scenario ticket exists, commit
+  the ticket change, record job_disposition_record, and stop.
 
 TASK 1 — Architecture fit.
 
@@ -3386,12 +3378,9 @@ coherent:
 TASK 2 — Technical ticket creation.
 
 Use ticket_create, not file_write, for implementation tickets. Create tickets
-only for the next ticketable scenario from the active plan's Scenario Schedule.
-On fresh bootstrap or an empty product backlog, create exactly one
-engineer-ready ticket for the walking skeleton; after that ticket is closed or
-in review and no open product ticket remains, select the next uncovered
-scenario rather than returning to the already-covered current failing scenario.
-Do not decompose the same BDD scenario into several independent backlog tickets
+only for the current failing scenario. On fresh bootstrap or an empty product
+backlog, create exactly one engineer-ready ticket for the walking skeleton; do
+not decompose the same BDD scenario into several independent backlog tickets
 before the first implementation evidence exists. Each ticket must have:
 
 - A concise action-oriented title
@@ -3441,8 +3430,7 @@ DON'T:
 - Do not write docs/exec-plans/active/current-operating-plan.md as CTO.
 - Do not write go.mod, package manifests, README usage notes, product source,
   tests, build config, or root product files as CTO.
-- Do not expand scope beyond the selected ticketable scenario from the active
-  Scenario Schedule.
+- Do not expand scope beyond the current failing scenario.
 - Do not create tickets without BDD scenario and evidence expectations.
 - Never run broad directory commands without excluding node_modules, .git,
   vendor, dist, build, and other generated directories.
@@ -3450,8 +3438,7 @@ DON'T:
 ## Quality Bar
 
 - Technical tickets are ready for Engineer without clarification.
-- Every feature ticket maps to the selected current or next uncovered BDD
-  scenario ID and expected evidence.
+- Every feature ticket maps to current BDD scenario IDs and expected evidence.
 - Architecture decisions are documented and indexed.
 - The disposition names implementation as next_need or gives explicit upstream
   feedback with requested_change and evidence.

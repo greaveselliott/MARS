@@ -884,9 +884,6 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(ctoPrompt), "Do not write go.mod")
 	assert.Contains(t, string(ctoPrompt), "product source")
 	assert.Contains(t, string(ctoPrompt), "tests, build config")
-	assert.Contains(t, string(ctoPrompt), "next uncovered scenario")
-	assert.Contains(t, string(ctoPrompt), "Do not loop back to CTO")
-	assert.Contains(t, string(ctoPrompt), "selected ticketable scenario")
 
 	orchestratorPrompt, err = os.ReadFile(filepath.Join(dir, ".harness", "roles", "orchestrator.md"))
 	require.NoError(t, err)

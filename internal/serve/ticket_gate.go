@@ -129,31 +129,6 @@ func enforceEngineerTicketPrerequisite(decision orgstate.Decision, snap ticketSn
 	return decision
 }
 
-func stopRepeatedPostGateRoute(decision orgstate.Decision, recent []orgstate.Decision) orgstate.Decision {
-	if strings.TrimSpace(decision.NextRole) == "" || strings.TrimSpace(decision.TicketStateHash) == "" {
-		return decision
-	}
-	count := 0
-	for _, prev := range recent {
-		if prev.RepoID == decision.RepoID &&
-			prev.SourceRole == decision.SourceRole &&
-			prev.TicketID == decision.TicketID &&
-			prev.NextNeed == decision.NextNeed &&
-			prev.NextRole == decision.NextRole &&
-			prev.TicketStateHash == decision.TicketStateHash {
-			count++
-		}
-	}
-	if count < 2 {
-		return decision
-	}
-	decision.NextRole = ""
-	decision.DecisionKind = "ambiguous"
-	decision.Reason = strings.TrimSpace(decision.Reason + "; post-ticket-gate loop guard detected repeated route without ticket-state change")
-	decision.StopReason = "loop guard stopped repeated post-ticket-gate route without ticket-state change"
-	return decision
-}
-
 func sourceCompletedEngineerWithoutOpenProductTicket(decision orgstate.Decision, source *orgstate.Disposition, snap ticketSnapshot) bool {
 	if !strings.EqualFold(strings.TrimSpace(decision.SourceRole), "orchestrator") {
 		return false
