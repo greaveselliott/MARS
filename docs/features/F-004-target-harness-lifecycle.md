@@ -30,7 +30,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 
 Given a user points Mars Harness at a git checkout without `.harness/manifest.yaml`
 When `mars-harness init --repo <path>` runs
-Then the repo receives a usable target harness with manifest, metadata, role prompts, guardrails, knowledge routes, docs, ticket directories, quality score, dogfood evidence report directory, version, and changelog
+Then the repo receives a usable target harness with manifest, metadata, role prompts, guardrails, knowledge routes, docs, ticket directories, quality score, dogfood evidence report directory, version, changelog, and root ignore policy for host OS metadata such as `.DS_Store`
 
 ### F-004-S002: Init Mirrors Doctrine
 
@@ -42,7 +42,7 @@ Then they include compact AGENTS guidance, goals, feature contracts, ticket meta
 
 Given a target repo already has user-edited manifest, roles, guardrails, tickets, docs, or AGENTS guidance
 When `mars-harness upgrade --repo <path>` runs
-Then missing default files are added while existing user-owned files are preserved
+Then missing default files and safe host OS metadata ignore entries are added while existing user-owned files are preserved
 
 ### F-004-S004: Update Check Reports Drift
 

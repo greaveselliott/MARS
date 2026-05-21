@@ -251,18 +251,33 @@ func checkGitCommitGeneratedWorkspacePolicy(ctx context.Context, root Root, args
 		if len(paths) > 0 {
 			return fmt.Errorf("git_commit: generated workspace paths would be staged: %s. Add generated output to .gitignore or remove it before committing, or pass explicit non-generated paths; generated dependency/build output must not be committed.", strings.Join(paths, ", "))
 		}
+		noise, err := dirtyWorkspaceNoisePaths(ctx, root)
+		if err != nil {
+			return err
+		}
+		if len(noise) > 0 {
+			return fmt.Errorf("git_commit: workspace noise paths would be staged: %s. Keep OS metadata such as .DS_Store ignored or removed; if no product changes remain, record the job disposition instead of committing workspace noise.", strings.Join(noise, ", "))
+		}
 		return nil
 	}
 	var generated []string
+	var noise []string
 	for _, p := range args.Paths {
 		rel := cleanRepoPath(p)
 		if IsGeneratedWorkspacePath(rel) {
 			generated = append(generated, generatedRoot(rel))
 		}
+		if IsWorkspaceNoisePath(rel) {
+			noise = append(noise, rel)
+		}
 	}
 	generated = compactStrings(generated)
 	if len(generated) > 0 {
 		return fmt.Errorf("git_commit: generated workspace paths cannot be committed: %s. Commit source, docs, tickets, and lockfiles separately; keep dependency/build output ignored or removed.", strings.Join(generated, ", "))
+	}
+	noise = compactStrings(noise)
+	if len(noise) > 0 {
+		return fmt.Errorf("git_commit: workspace noise paths cannot be committed: %s. Keep OS metadata such as .DS_Store ignored or removed; commit only product source, docs, tickets, or lockfiles.", strings.Join(noise, ", "))
 	}
 	return nil
 }
@@ -300,6 +315,35 @@ func dirtyGeneratedWorkspaceRoots(ctx context.Context, root Root) ([]string, err
 	if untracked.ExitCode == 0 {
 		for _, rel := range generatedPathsFromLines(untracked.Output, nil) {
 			seen[rel] = true
+		}
+	}
+	return sortedKeys(seen), nil
+}
+
+func dirtyWorkspaceNoisePaths(ctx context.Context, root Root) ([]string, error) {
+	seen := map[string]bool{}
+	diff, err := runGit(ctx, root, "diff", "--name-only", "HEAD", "--")
+	if err != nil {
+		return nil, err
+	}
+	if diff.ExitCode == 0 {
+		for _, line := range strings.Split(diff.Output, "\n") {
+			rel := cleanRepoPath(line)
+			if rel != "" && IsWorkspaceNoisePath(rel) {
+				seen[rel] = true
+			}
+		}
+	}
+	untracked, err := runGit(ctx, root, "ls-files", "--others", "--exclude-standard")
+	if err != nil {
+		return nil, err
+	}
+	if untracked.ExitCode == 0 {
+		for _, line := range strings.Split(untracked.Output, "\n") {
+			rel := cleanRepoPath(line)
+			if rel != "" && IsWorkspaceNoisePath(rel) {
+				seen[rel] = true
+			}
 		}
 	}
 	return sortedKeys(seen), nil

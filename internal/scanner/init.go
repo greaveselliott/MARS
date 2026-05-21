@@ -114,6 +114,11 @@ func Init(repoRoot string, force bool) error {
 		}
 		slog.Debug("created directory", "path", d)
 	}
+	if changed, err := ensureWorkspaceNoiseGitignore(repoRoot); err != nil {
+		return err
+	} else if changed {
+		slog.Debug("init: wrote workspace noise ignore policy", "path", ".gitignore")
+	}
 
 	projectName := filepath.Base(repoRoot)
 	brief := readProjectBrief(repoRoot, projectName)
@@ -185,6 +190,12 @@ func Upgrade(repoRoot string) (updated []string, err error) {
 	}
 
 	projectName := filepath.Base(repoRoot)
+	if changed, err := ensureWorkspaceNoiseGitignore(repoRoot); err != nil {
+		return updated, err
+	} else if changed {
+		updated = append(updated, ".gitignore")
+		slog.Info("upgrade: wrote missing workspace noise ignore policy", "path", ".gitignore")
+	}
 
 	manifestPath := filepath.Join(harnessPath, "manifest.yaml")
 	if _, err := os.Stat(manifestPath); err == nil {
@@ -498,6 +509,71 @@ func writeHarnessMetadata(repoRoot, generatorVersion string) (bool, error) {
 		return false, fmt.Errorf("harness metadata: write %s: %w", path, err)
 	}
 	return true, nil
+}
+
+var defaultWorkspaceNoiseIgnores = []string{
+	".DS_Store",
+	"Thumbs.db",
+	"Desktop.ini",
+}
+
+func ensureWorkspaceNoiseGitignore(repoRoot string) (bool, error) {
+	path := filepath.Join(filepath.Clean(repoRoot), ".gitignore")
+	data, err := os.ReadFile(path)
+	if err != nil && !os.IsNotExist(err) {
+		return false, fmt.Errorf("init: read %s: %w", path, err)
+	}
+	content := string(data)
+	lines := parseGitignoreLines(content)
+	var missing []string
+	for _, entry := range defaultWorkspaceNoiseIgnores {
+		if !gitignoreCoversLiteral(lines, entry) {
+			missing = append(missing, entry)
+		}
+	}
+	if len(missing) == 0 {
+		return false, nil
+	}
+	var b strings.Builder
+	b.WriteString(content)
+	if content != "" && !strings.HasSuffix(content, "\n") {
+		b.WriteString("\n")
+	}
+	if content != "" && !strings.HasSuffix(b.String(), "\n\n") {
+		b.WriteString("\n")
+	}
+	b.WriteString("# Mars Harness workspace hygiene\n")
+	for _, entry := range missing {
+		b.WriteString(entry)
+		b.WriteString("\n")
+	}
+	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+		return false, fmt.Errorf("init: write %s: %w", path, err)
+	}
+	return true, nil
+}
+
+func parseGitignoreLines(content string) []string {
+	var lines []string
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		lines = append(lines, strings.Trim(line, "/"))
+	}
+	return lines
+}
+
+func gitignoreCoversLiteral(lines []string, entry string) bool {
+	entry = strings.Trim(entry, "/")
+	for _, line := range lines {
+		line = strings.Trim(line, "/")
+		if line == entry || line == "**/"+entry || strings.HasSuffix(line, "/"+entry) {
+			return true
+		}
+	}
+	return false
 }
 
 // EnsureHarness scaffolds .harness/ when manifest.yaml is missing. If the

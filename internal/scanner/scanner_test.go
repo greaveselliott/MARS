@@ -1034,6 +1034,20 @@ func TestInit_forceOverwrite(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
 }
 
+func TestInitWritesWorkspaceNoiseGitignore(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+
+	require.NoError(t, Init(dir, false))
+
+	content, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
+	require.NoError(t, err)
+	assert.Contains(t, string(content), ".DS_Store")
+	assert.Contains(t, string(content), "Thumbs.db")
+	assert.Contains(t, string(content), "Desktop.ini")
+}
+
 func TestInit_forcePreservesExistingContent(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

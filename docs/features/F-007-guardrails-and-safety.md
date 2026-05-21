@@ -407,9 +407,9 @@ Then the guardrail blocks the cleanup and keeps the role in source/test repair p
 
 ### F-007-S009: Workspace Hygiene Gates
 
-Given a repository has missing generated-directory ignore policy, tracked generated dependency output, dirty generated build output, large generated diffs, or deletion state
+Given a repository has missing generated-directory ignore policy, tracked generated dependency output, dirty generated build output, large generated diffs, host OS metadata noise, or deletion state
 When an agent job starts or a dependency install/fetch is requested
-Then generated paths are classified separately from implementation files, safely inferable missing ignore entries are committed as a `.gitignore`-only repair before model loading, `workspace_hygiene` reports a deterministic recipe with `recipe_id` and `next_action` for non-repairable cases, raw package-manager mutation through `shell_exec` is blocked, and `dependency_sync` performs package-manager work only after preflight passes
+Then generated paths and host OS metadata are classified separately from implementation files, safely inferable missing ignore entries are committed as a `.gitignore`-only repair before model loading, `workspace_hygiene` reports a deterministic recipe with `recipe_id` and `next_action` for non-repairable cases, raw package-manager mutation through `shell_exec` is blocked, `dependency_sync` performs package-manager work only after preflight passes, and `.DS_Store`-style noise does not force a completed product ticket to reopen before terminal disposition
 
 ### F-007-S037: Test-Build Repair Writes Stay In Failed Scope
 

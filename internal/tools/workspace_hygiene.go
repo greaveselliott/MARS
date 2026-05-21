@@ -176,6 +176,12 @@ var generatedDependencyMetadataFiles = map[string]bool{
 	"yarn.lock":         true,
 }
 
+var workspaceNoiseFileNames = map[string]bool{
+	".ds_store":   true,
+	"desktop.ini": true,
+	"thumbs.db":   true,
+}
+
 // GeneratedWorkspaceDirs returns directories that are treated as generated
 // dependency or build output for context and hygiene checks.
 func GeneratedWorkspaceDirs() []string {
@@ -197,6 +203,20 @@ func IsGeneratedWorkspacePath(rel string) bool {
 		}
 	}
 	return false
+}
+
+// IsWorkspaceNoisePath reports whether rel is host OS metadata that should not
+// participate in product ticket lifecycle or disposition gates.
+func IsWorkspaceNoisePath(rel string) bool {
+	rel = cleanRepoPath(rel)
+	if rel == "" || rel == "." {
+		return false
+	}
+	base := rel
+	if idx := strings.LastIndex(base, "/"); idx >= 0 {
+		base = base[idx+1:]
+	}
+	return workspaceNoiseFileNames[strings.ToLower(base)]
 }
 
 // IsGeneratedDependencyMetadataPath reports whether rel is a dependency

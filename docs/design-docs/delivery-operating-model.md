@@ -130,7 +130,8 @@ they must not run package-manager install/fetch commands through raw
 `shell_exec`. The deterministic path is:
 
 1. `workspace_hygiene` audits `.gitignore`, tracked generated paths, dirty
-   generated directories, large generated diffs, and forbidden deletions.
+   generated directories, large generated diffs, host OS metadata noise, and
+   forbidden deletions.
 2. Before model loading, `serve` may make one safe policy repair: append
    missing generated-directory entries such as `node_modules/` to `.gitignore`
    and commit only `.gitignore`. This repair is allowed only when generated
@@ -151,6 +152,11 @@ they must not run package-manager install/fetch commands through raw
    `node_modules/`, build output, generated diffs, or deletion state become
    deterministic blockers instead of repeated LLM, guardrail, and Orchestrator
    loops.
+7. Host OS metadata such as `.DS_Store`, `Thumbs.db`, and `Desktop.ini` is
+   deployed-harness hygiene noise. Generated targets ignore it from day one,
+   and lifecycle/disposition gates do not treat it as product work that must
+   reopen a completed ticket. Agents must not commit those files; if no product
+   changes remain, they should record the disposition instead.
 
 Raw dependency mutation commands such as `npm install`, `npm ci`,
 `pnpm install`, `yarn install`, `bun install`, `go mod download`,
@@ -5475,3 +5481,38 @@ case-insensitive, but ticket source paths keep their original case before
 - Uppercase ticket IDs remain safe in shell-command lifecycle moves.
 - Command safety checks can continue using normalized shell tokens without being
   reused for path-sensitive policy decisions.
+
+## AD-221: Workspace Noise Does Not Reopen Product Tickets
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+A live `demo-6` deployed harness run made real Tetris product progress, moved
+`T-001` to `docs/tickets/done/`, and committed the lifecycle move, but the
+Engineer could not record its terminal disposition. Finder-created `.DS_Store`
+metadata remained dirty after the ticket was done. The disposition gate treated
+that metadata as ordinary uncommitted work, then the Engineer tried to commit
+`.DS_Store`; rework policy blocked the commit because product mutations after a
+done ticket require reopening the ticket. The role spent the remaining turn
+budget in that contradiction and failed with `max_turns`.
+
+### Decision
+
+Generated target harnesses now add root `.gitignore` entries for `.DS_Store`,
+`Thumbs.db`, and `Desktop.ini` during `init` and `upgrade`. Tool policy also
+classifies those host OS metadata files as workspace noise for lifecycle and
+disposition gates: dirty workspace noise does not block ticket moves into
+`docs/tickets/done/` or terminal disposition, and `git_commit` rejects attempts
+to commit only workspace noise with guidance to record the disposition when no
+product work remains.
+
+### Consequences
+
+- Clean demo runs should not turn Finder or desktop metadata into product work.
+- Completed product tickets no longer need to be reopened just to satisfy an OS
+  metadata dirty-tree blocker.
+- Agents still cannot commit `.DS_Store` or similar metadata; the files must be
+  ignored, removed, or left outside product completion accounting.

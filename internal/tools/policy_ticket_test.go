@@ -17,6 +17,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestTicketCreatePolicyBlocksEngineerOrdinaryBacklogDuringEligibleInProgress(t *testing.T) {
@@ -210,6 +212,63 @@ verified_by: engineer
 	err := preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"shell_command":"git mv docs/tickets/in-progress/T-001-ship.md docs/tickets/done/"}`))
 	if err != nil {
 		t.Fatalf("expected evidenced feature ticket done move to pass, got %v", err)
+	}
+}
+
+func TestShellExecPolicyAllowsTicketDoneMoveWithOnlyWorkspaceNoiseDirty(t *testing.T) {
+	t.Parallel()
+	dir, root := setupWorkspaceHygieneRepo(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "in-progress"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "done"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".DS_Store"), []byte("baseline\n"), 0o644))
+	writePolicyTicket(t, dir, "in-progress", "T-001-ship.md", `---
+id: T-001
+work_type: feature
+bdd_scenarios: ["F-001-S001"]
+end_to_end_evidence: required
+evidence_links: ["npm test"]
+verified_by: engineer
+---
+# Ship
+`)
+	runTestGit(t, dir, "add", ".DS_Store", "docs/tickets/in-progress/T-001-ship.md")
+	runTestGit(t, dir, "commit", "-m", "seed ticket and workspace noise")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".DS_Store"), []byte("changed\n"), 0o644))
+
+	err := preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"shell_command":"git mv docs/tickets/in-progress/T-001-ship.md docs/tickets/done/"}`))
+	if err != nil {
+		t.Fatalf("expected workspace noise not to block ticket done move, got %v", err)
+	}
+}
+
+func TestGitCommitPolicyBlocksWorkspaceNoiseWithoutReopenLoop(t *testing.T) {
+	t.Parallel()
+	dir, root := setupWorkspaceHygieneRepo(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "done"), 0o755))
+	writePolicyTicket(t, dir, "done", "T-001-ship.md", `---
+id: T-001
+work_type: feature
+bdd_scenarios: ["F-001-S001"]
+evidence_links: ["npm test"]
+verified_by: engineer
+---
+# Ship
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".DS_Store"), []byte("baseline\n"), 0o644))
+	runTestGit(t, dir, "add", ".DS_Store", "docs/tickets/done/T-001-ship.md")
+	runTestGit(t, dir, "commit", "-m", "seed done ticket and workspace noise")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".DS_Store"), []byte("changed\n"), 0o644))
+
+	ctx := WithSession(context.Background(), Session{Role: "engineer", ToolCounts: map[string]int{}})
+	err := preToolPolicy(ctx, root, "git_commit", []byte(`{"message":"chore: remove workspace noise","paths":[".DS_Store"]}`))
+	if err == nil {
+		t.Fatal("expected workspace noise commit to be blocked")
+	}
+	if !strings.Contains(err.Error(), "workspace noise paths cannot be committed") {
+		t.Fatalf("expected workspace noise policy instead of ticket reopen loop, got %v", err)
+	}
+	if strings.Contains(err.Error(), "must reopen product ticket") {
+		t.Fatalf("workspace noise should not force product ticket reopen, got %v", err)
 	}
 }
 

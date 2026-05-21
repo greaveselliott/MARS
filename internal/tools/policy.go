@@ -509,6 +509,9 @@ func checkEngineerClaimBeforeProductMutation(ctx context.Context, root Root, ses
 	if engineerToolIsTicketOnlyMutation(toolName, raw) {
 		return nil
 	}
+	if toolName == "git_commit" && gitCommitTouchesOnlyWorkspaceNoise(ctx, root, raw) {
+		return nil
+	}
 	inProgress, err := ticketstate.ListStatus(root.Abs(), ticketstate.StatusInProgress)
 	if err != nil {
 		return fmt.Errorf("policy: inspect in-progress tickets before %s: %w", toolName, err)
@@ -1320,6 +1323,27 @@ func engineerToolIsTicketOnlyMutation(toolName string, raw json.RawMessage) bool
 	default:
 		return false
 	}
+}
+
+func gitCommitTouchesOnlyWorkspaceNoise(ctx context.Context, root Root, raw json.RawMessage) bool {
+	var args gitCommitArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return false
+	}
+	if len(args.Paths) > 0 {
+		for _, p := range args.Paths {
+			if !IsWorkspaceNoisePath(p) {
+				return false
+			}
+		}
+		return true
+	}
+	files, err := changedFiles(ctx, root)
+	if err != nil || len(dispositionBlockingFiles(files)) > 0 {
+		return false
+	}
+	noise, err := dirtyWorkspaceNoisePaths(ctx, root)
+	return err == nil && len(noise) > 0
 }
 
 func engineerReworkTickets(root Root) ([]ticketstate.Ticket, error) {
@@ -2699,7 +2723,8 @@ func checkEngineerDispositionTicketState(root Root, session Session, status, tic
 func dispositionBlockingFiles(files []string) []string {
 	var blocking []string
 	for _, file := range files {
-		if filepath.ToSlash(strings.TrimSpace(file)) == runtimeLearningsPath {
+		rel := filepath.ToSlash(strings.TrimSpace(file))
+		if rel == runtimeLearningsPath || IsWorkspaceNoisePath(rel) {
 			continue
 		}
 		blocking = append(blocking, file)
@@ -4143,7 +4168,7 @@ func changedFiles(ctx context.Context, root Root) ([]string, error) {
 	if tr.ExitCode == 0 {
 		for _, line := range strings.Split(tr.Output, "\n") {
 			line = strings.TrimSpace(line)
-			if line != "" && !IsGeneratedWorkspacePath(line) && !seen[line] {
+			if line != "" && !IsGeneratedWorkspacePath(line) && !IsWorkspaceNoisePath(line) && !seen[line] {
 				seen[line] = true
 				files = append(files, line)
 			}
@@ -4156,7 +4181,7 @@ func changedFiles(ctx context.Context, root Root) ([]string, error) {
 	if untracked.ExitCode == 0 {
 		for _, line := range strings.Split(untracked.Output, "\n") {
 			line = strings.TrimSpace(line)
-			if line != "" && !IsGeneratedWorkspacePath(line) && !seen[line] {
+			if line != "" && !IsGeneratedWorkspacePath(line) && !IsWorkspaceNoisePath(line) && !seen[line] {
 				seen[line] = true
 				files = append(files, line)
 			}
