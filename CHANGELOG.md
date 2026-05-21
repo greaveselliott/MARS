@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.18] - 2026-05-21
+<!-- mars-harness-release: version=0.42.18 commit=a7c46aab914b -->
+
+### Impact
+- **guardrails:** Operators see improved reliability because preserve test evidence during repair.
+
+### Why
+- **guardrails:** This matters because preserve test evidence during repair closes a failure mode or degraded path.
+
+### What Changed
+- **guardrails:** Changed preserve test evidence during repair (a7c46aa).
+
+### Fixes
+- **guardrails:** Preserve test evidence during repair (a7c46aa)
+
 ## [0.42.17] - 2026-05-21
 <!-- mars-harness-release: version=0.42.17 commit=9c963901f887 -->
 
