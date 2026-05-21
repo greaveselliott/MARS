@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.25] - 2026-05-22
+<!-- mars-harness-release: version=0.42.25 commit=da7779359b0d -->
+
+### Impact
+- **orchestration:** The foundation returns to the previously validated lifecycle behavior before starting a broader live project-completion loop.
+
+### Why
+- **orchestration:** The post-ticket-gate loop fix was too narrow for the next objective; the factory now needs evidence from a complete Phaser Tetris build before accepting more lifecycle changes.
+
+### What Changed
+- **orchestration:** Reverted the ticket-shaping loop guard, generated CTO prompt changes, scenario-ticketing contract edits, and empty `bdd_scenarios` repair text from `v0.42.24` (da77793).
+
+### Other
+- **orchestration:** Scrap ticket shaping loop fix (da77793)
+
 ## [0.42.24] - 2026-05-22
 <!-- mars-harness-release: version=0.42.24 commit=1d1e4323f5eb -->
 
