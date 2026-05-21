@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.19] - 2026-05-21
+<!-- mars-harness-release: version=0.42.19 commit=7e67f374daef -->
+
+### Impact
+- **tools:** Operators see improved reliability because converge post-validation no-op work.
+
+### Why
+- **tools:** This matters because converge post-validation no-op work closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed converge post-validation no-op work (7e67f37).
+
+### Fixes
+- **tools:** Converge post-validation no-op work (7e67f37)
+
 ## [0.42.18] - 2026-05-21
 <!-- mars-harness-release: version=0.42.18 commit=a7c46aab914b -->
 
