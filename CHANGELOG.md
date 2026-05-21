@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.24] - 2026-05-22
+<!-- mars-harness-release: version=0.42.24 commit=1d1e4323f5eb -->
+
+### Impact
+- **orchestration:** Fresh and continuing target runs no longer burn turns in a repeated CTO ticket-shaping loop after the first product ticket is done.
+
+### Why
+- **orchestration:** The live `demo-6` run showed one completed product ticket followed by repeated CTO handoffs with no ticket-state change; this release keeps product planning moving toward the next uncovered BDD scenario or stops with a clear blocker.
+
+### What Changed
+- **orchestration:** Added a post-ticket-gate loop guard, tightened CTO generated guidance around current-or-next uncovered scenarios, and improved empty `bdd_scenarios` repair guidance (1d1e432).
+
+### Fixes
+- **orchestration:** Stop repeated ticket shaping loops (1d1e432)
+
 ## [0.42.23] - 2026-05-21
 <!-- mars-harness-release: version=0.42.23 commit=8309291edb20 -->
 
