@@ -317,6 +317,9 @@ plans to decide what to do next.
   before exposing retrievable job logs. A notes-only GitHub Release was created
   from the generated changelog entry at
   `https://github.com/greaveselliott/mars-harness/releases/tag/v0.42.17`.
+  The release-created workflow run `26242344544` then failed the same way
+  before asset publication, and main-branch CI run `26242396980` failed before
+  exposing retrievable job logs for the blocker-recording commit.
   `go run ./cmd/mars-harness release verify-assets --version v0.42.17` is
   blocked because the notes-only release is missing
   `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
