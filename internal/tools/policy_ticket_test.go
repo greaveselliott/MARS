@@ -2419,6 +2419,7 @@ func TestEngineerFailingTestAllowsSameJobRepairTestFileRemoval(t *testing.T) {
 	}}
 	session.ToolState = map[string]string{
 		testBuildValidationCommandKey:                              `shell_exec {"argv":["go","test","./cmd/note-stats"]}`,
+		testBuildValidationOutputKey:                               "main_test.go: helper redeclared in this block\nold_test.go: other declaration of helper",
 		testBuildRepairWritePathKey("cmd/note-stats/main_test.go"): "true",
 		testBuildRepairWritePathKey("cmd/note-stats/main.go"):      "true",
 	}
@@ -2439,6 +2440,55 @@ func TestEngineerFailingTestAllowsSameJobRepairTestFileRemoval(t *testing.T) {
 	err = preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["rm","cmd/note-stats/main.go"]}`))
 	if err == nil {
 		t.Fatal("expected source removal to remain blocked even when the source was rewritten during repair")
+	}
+}
+
+func TestEngineerFailingTestAllowsMissingGoModuleBootstrap(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
+	writePolicyTicket(t, dir, "in-progress", "T-001-notes-api.md", "# T-001\n")
+
+	failedArgs := shellExecArgs{Argv: []string{"go", "test", "./internal/note"}}
+	session := Session{Role: "engineer", ToolCounts: map[string]int{
+		testBuildValidationOutstandingKey:                      1,
+		testCommandFailureKey:                                  1,
+		testBuildValidationFailureFingerprintKey(failedArgs):   1,
+		testBuildValidationFailureEditWatermarkKey(failedArgs): 0,
+	}}
+	session.ToolState = map[string]string{
+		testBuildValidationCommandKey: `shell_exec {"argv":["go","test","./internal/note"]}`,
+		testBuildValidationOutputKey:  "go: cannot find main module, but found .git/config in /tmp/demo-notes-api\n\tto create a module there, run:\n\tgo mod init",
+		testBuildValidationScopeKey:   "internal/note/",
+	}
+	ctx := WithSession(context.Background(), session)
+
+	if err := preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["go","mod","init","demo-notes-api"]}`)); err != nil {
+		t.Fatalf("expected missing Go module bootstrap to be allowed, got %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module demo-notes-api\n\ngo 1.23\n"), 0o644); err != nil {
+		t.Fatalf("write go.mod: %v", err)
+	}
+	err := preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["go","mod","init","demo-notes-api"]}`))
+	if err == nil {
+		t.Fatal("expected go mod init to be blocked once go.mod exists")
+	}
+	if !strings.Contains(err.Error(), "failing test or build command") {
+		t.Fatalf("expected unresolved failure guidance, got %v", err)
+	}
+
+	if err := os.Remove(filepath.Join(dir, "go.mod")); err != nil {
+		t.Fatalf("remove go.mod: %v", err)
+	}
+	session.ToolState[testBuildValidationOutputKey] = "FAIL: TestCreateNote expected title"
+	ctx = WithSession(context.Background(), session)
+	err = preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["go","mod","init","demo-notes-api"]}`))
+	if err == nil {
+		t.Fatal("expected go mod init to stay blocked when failure output is not missing-module evidence")
+	}
+	if !strings.Contains(err.Error(), "failing test or build command") {
+		t.Fatalf("expected unresolved failure guidance, got %v", err)
 	}
 }
 
@@ -2466,6 +2516,7 @@ func TestEngineerFailingTestAllowsRemovalOfTestFileWrittenBeforeFailure(t *testi
 	session.ToolCounts[testBuildValidationFailureFingerprintKey(failedArgs)] = 1
 	session.ToolCounts[testBuildValidationFailureEditWatermarkKey(failedArgs)] = 0
 	session.ToolState[testBuildValidationCommandKey] = `shell_exec {"argv":["go","test","./cmd/note-stats"]}`
+	session.ToolState[testBuildValidationOutputKey] = "main_test.go: helper redeclared in this block\nold_test.go: other declaration of helper"
 	ctx := WithSession(context.Background(), session)
 
 	if err := preToolPolicy(ctx, root, "shell_exec", []byte(`{"shell_command":"rm -f cmd/note-stats/main_test.go"}`)); err != nil {
@@ -2483,6 +2534,34 @@ func TestEngineerFailingTestAllowsRemovalOfTestFileWrittenBeforeFailure(t *testi
 	err = preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["rm","cmd/note-stats/main.go"]}`))
 	if err == nil {
 		t.Fatal("expected source removal to remain blocked even when the source was written earlier in the job")
+	}
+}
+
+func TestEngineerFailingTestBlocksSameJobTestRemovalForAssertionFailure(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
+	writePolicyTicket(t, dir, "in-progress", "T-001-note-stats.md", "# T-001\n")
+
+	session := Session{Role: "engineer", ToolCounts: map[string]int{}, ToolState: map[string]string{}}
+	writtenTestRaw := []byte(`{"path":"cmd/note-stats/main_test.go","content":"/*\nMarsDocSync:\ndocs:\n- docs/features/F-001-product-walking-skeleton.md\n*/\npackage main\n"}`)
+	recordSessionToolOutcome(&session, root, "file_write", writtenTestRaw, ToolResult{}, nil)
+
+	failedArgs := shellExecArgs{Argv: []string{"go", "test", "./cmd/note-stats"}}
+	session.ToolCounts[testBuildValidationOutstandingKey] = 1
+	session.ToolCounts[testCommandFailureKey] = 1
+	session.ToolCounts[testBuildValidationFailureFingerprintKey(failedArgs)] = 1
+	session.ToolCounts[testBuildValidationFailureEditWatermarkKey(failedArgs)] = 0
+	session.ToolState[testBuildValidationCommandKey] = `shell_exec {"argv":["go","test","./cmd/note-stats"]}`
+	session.ToolState[testBuildValidationOutputKey] = "main_test.go:42: expected 3 items, got 2"
+	ctx := WithSession(context.Background(), session)
+
+	err := preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["rm","cmd/note-stats/main_test.go"]}`))
+	if err == nil {
+		t.Fatal("expected assertion-failure test removal to remain blocked")
+	}
+	if !strings.Contains(err.Error(), "failing test or build command") {
+		t.Fatalf("expected failing-test repair-lane guidance, got %v", err)
 	}
 }
 

@@ -691,6 +691,21 @@ Remaining work:
   `v0.2.0`; kept guardrail blocks as telemetry; and created no target
   intervention-debt tickets. The only terminal blocker was expected missing
   remote publication in the temporary target.
+- `demo-notes-api-run63` broadened the matrix with a Go HTTP JSON API and a
+  local bare `origin`. CEO, COO, and CTO-weekly again produced product-first
+  planning and one ordinary ticket, Engineer claimed and pushed the ticket, and
+  intervention signals stayed foundation telemetry. The next blocker was a
+  bootstrap repair trap: after `go test ./internal/note` failed because no
+  `go.mod` existed, the repair lane blocked the direct `go mod init` fix and
+  the role drifted into test deletion and placeholder attempts. AD-216 now
+  allows `go mod init` only when missing-module output and an absent `go.mod`
+  make it the direct package-config repair.
+- `demo-notes-api-run64` avoided the module trap by writing `go.mod` early,
+  but exposed two generic evidence holes: raw `go get` was not classified as
+  dependency mutation, and same-job test cleanup could delete assertion
+  evidence after a focused test failure. AD-217 now blocks raw `go get` with
+  dependency-sync guidance and limits same-job test cleanup to
+  duplicate/generated-test shaped failures.
 - Define calibrated thresholds after the baseline, not before it.
 - Broaden the canary matrix to remote-backed release validation and non-CLI
   application shapes before claiming the factory loop is generic rather than

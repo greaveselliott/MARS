@@ -5451,3 +5451,115 @@ Run the next canary against a different application shape with a configured
 remote or explicit remote-publication simulation, then confirm the release path
 publishes or blocks for a genuinely actionable reason while product delivery
 remains product-specific and intervention-debt-free.
+
+## Run 63: Notes API Canary Exposed Missing Module Bootstrap Trap
+
+### Setup
+
+Run 63 used a clean HTTP JSON API target at
+`<validation-root>` with binary
+`<validation-root>`.
+
+The target brief asked for a small dependency-light Go API for personal notes:
+create, list, fetch, update, delete, tag search, free-text search, validation
+errors, tests, and README usage. Unlike earlier no-remote canaries, this target
+had a local bare `origin` at
+`<validation-root>`.
+
+### Observations
+
+- The first sandboxed `start` initialized the deployed harness and enqueued CEO
+  before the local sandbox blocked port binding. The escalated retry reused the
+  same repo ID `69c62c6a-e3ec-44c3-812c-2817da716409` and CEO job
+  `a9dcb9d7-059c-4043-8584-cae01bc3e03d`, validating bootstrap idempotency
+  again.
+- CEO, COO, and CTO-weekly completed. They produced product-specific Notes API
+  planning, updated the active feature contract, and created one ordinary
+  product ticket `T-001`; no automatic intervention-debt ticket preempted the
+  product backlog.
+- Engineer initially hit the claim-first ticket guardrail, and the signal was
+  logged as foundation telemetry rather than target backlog. Engineer then
+  claimed `T-001`, committed the claim, and `git_push` successfully pushed to
+  the local bare `origin`.
+- Engineer created Go source for `cmd/demo-notes-api`, `internal/note`,
+  `internal/handlers`, and `internal/server`, plus a focused test file and
+  README updates.
+- The first `go test ./internal/note` failed because the fresh target had no
+  `go.mod`: Go reported `cannot find main module` and suggested
+  `go mod init`.
+- The unresolved test/build repair guardrail correctly blocked runtime probes,
+  product commits, ticket moves, and unrelated shell work while keeping all
+  guardrail signals as foundation telemetry. However, it also blocked
+  `go mod init demo-notes-api`, the direct package-config repair.
+- After that block, the role tried worse recovery paths: deleting the test,
+  committing product work anyway, removing directories, and creating
+  placeholder tests. The operator stopped the run at Engineer turn 41.
+- DB state at stop: `ceo`, `coo`, and `cto-weekly` were `completed`; Engineer
+  was still `running`; telemetry contained `engineer|guardrail_block|14`; the
+  target worktree was dirty with uncommitted application files.
+
+### Decision From Run 63
+
+AD-216 now treats missing Go module bootstrap as bounded test/build repair.
+When the latest failing output proves Go cannot find a main module and `go.mod`
+is absent, Engineer may run `go mod init <module>` before rerunning same-lane
+validation. The exception remains closed when the module file exists or the
+failing output is not missing-module evidence.
+
+### Next Check
+
+Rerun a fresh Notes API or other HTTP-service canary and confirm Engineer can
+recover by running `go mod init`, rerun same-lane tests, commit product work,
+continue to QA, and keep intervention-debt signals quarantined as telemetry.
+
+## Run 64: Notes API Canary Avoided Module Trap, Exposed Dependency And Test-Evidence Holes
+
+### Setup
+
+Run 64 used a fresh copy of the Notes API target at
+`<validation-root>`, local bare
+remote `<validation-root>`,
+and patched binary `<validation-root>`.
+
+### Observations
+
+- CEO, COO, and CTO-weekly again completed product-specific planning and one
+  ordinary product ticket. Guardrail blocks for broad discovery and
+  commit-before-disposition stayed foundation telemetry.
+- Engineer hit the claim-first guardrail, recovered by moving `T-001` to
+  in-progress, committed and pushed the claim to the local bare `origin`, then
+  began implementation.
+- Unlike Run 63, Engineer wrote `go.mod` before validation, so the new
+  `go mod init` repair exception was not exercised by this live replay.
+- Engineer committed and pushed product implementation before first running
+  `go test ./...`. The subsequent test failed on an unused import, which
+  Engineer repaired and committed forward.
+- Engineer then added tests but also ran raw
+  `go get github.com/stretchr/testify`, mutating dependency state outside
+  `dependency_sync` and contrary to the brief's standard-library preference.
+- The new tests exposed assertion failures. The repair lane blocked switching
+  test lanes and unchanged reruns, but still allowed deletion of a same-job
+  test file even though the failure was ordinary assertion evidence rather than
+  duplicate/generated-test conflict.
+- The operator stopped the run at Engineer turn 46. DB state at stop:
+  `ceo`, `coo`, and `cto-weekly` completed; Engineer remained running;
+  telemetry included `engineer|guardrail_block|6`, `ceo|guardrail_block|1`,
+  and `cto-weekly|guardrail_block|1`.
+
+### Decision From Run 64
+
+AD-217 now blocks raw `go get` as dependency mutation and narrows same-job test
+cleanup to duplicate/generated-test shaped failures. Assertion failures must
+preserve the test and be repaired through implementation/test edits plus
+same-lane validation. Patched binary
+`<validation-root>` confirmed the raw
+`go get` block through `mars-harness tools run shell_exec`, returning:
+`policy: shell_exec command "go get" mutates dependency state; use
+dependency_sync so workspace hygiene preflight and postflight run`.
+
+### Next Check
+
+Run another HTTP-service canary and confirm raw dependency mutation is blocked
+before `go.mod`/`go.sum` changes, assertion-failure test deletion is blocked,
+and Engineer either repairs the failing behavior or records an honest blocked
+handoff without target intervention-debt creation.

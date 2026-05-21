@@ -882,3 +882,18 @@ Checks recorded during the 2026-05-02 review:
   tickets. The remaining terminal blocker was the expected missing remote for
   publication in the temporary target. Next canaries should broaden beyond
   small CLI targets and include a remote-backed release path.
+  The clean `demo-notes-api-run63` replay on 2026-05-21 broadened the matrix
+  with a Go HTTP JSON API and a local bare `origin`. The lifecycle again reached
+  product-specific CEO, COO, and CTO-weekly work, created one ordinary product
+  ticket, and pushed Engineer's ticket-claim commit to the remote. The new
+  blocker was bootstrap repair policy: after `go test ./internal/note` failed
+  because no Go module existed, the unresolved test/build guardrail blocked the
+  direct `go mod init` repair and the role drifted into workaround attempts. As
+  of 2026-05-21, AD-216 allows `go mod init` only when missing-module output
+  and an absent `go.mod` prove it is the direct package-config repair.
+  The patched `demo-notes-api-run64` replay on 2026-05-21 avoided the module
+  trap by writing `go.mod` before validation, then exposed two adjacent
+  evidence holes on the HTTP-service shape: raw `go get` escaped dependency
+  sync, and same-job test cleanup could delete assertion evidence after a
+  focused test failure. As of 2026-05-21, AD-217 blocks raw `go get` and
+  reserves same-job test cleanup for duplicate/generated-test shaped failures.

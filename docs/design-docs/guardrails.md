@@ -191,6 +191,43 @@ BDD contract, Engineer must edit the implementation instead of deleting or
 weakening the test. Successful same-lane validation clears the stored failure
 output with the rest of the unresolved repair state.
 
+### AD-216: Missing Module Bootstrap Stays Inside Test/Build Repair
+
+**Status:** Accepted
+**Date:** 2026-05-21
+
+The `demo-notes-api-run63` replay showed a fresh Go HTTP API target where
+Engineer wrote source before module initialization. The first focused
+`go test` failed with Go's missing-module guidance, but the unresolved
+test/build guardrail also blocked `go mod init`, which was the direct
+package-config repair. The role then drifted into test deletion and placeholder
+attempts.
+
+The repair lane now permits `go mod init <module>` only when the latest failing
+test/build output proves the missing-module condition and `go.mod` is absent.
+This keeps fresh-target bootstrap inside the same quality lane without opening
+runtime probes, helper scripts, ticket completion, product commits, or unrelated
+shell commands before validation passes.
+
+### AD-217: Dependency Mutation And Test Cleanup Stay Evidence-Preserving
+
+**Status:** Accepted
+**Date:** 2026-05-21
+
+The patched `demo-notes-api-run64` replay reached the HTTP API Engineer stage
+and showed two remaining guardrail holes. Raw `go get` was not classified as a
+dependency mutation, so Engineer could introduce `github.com/stretchr/testify`
+without `dependency_sync`. Later, after a focused store test failed on an
+assertion, the same-job test cleanup exception allowed deleting the test file
+instead of preserving the evidence and repairing behavior.
+
+Raw `go get` now uses the same dependency-mutation block as raw install/fetch
+commands. Same-job test cleanup during unresolved test/build repair now requires
+duplicate/generated-test shaped output, such as redeclarations, duplicate
+definitions, mixed packages, or parse/declaration errors. Ordinary assertion
+failures remain protected evidence: Engineer must edit implementation, tests,
+fixtures, or package/build config and rerun same-lane validation.
+
 ### Open topics
 
 - **Advisory vs hard tiers:** advisory rules surface warnings in traces and UI; hard rules fail the job or block merge paths per policy; same schema with a `severity` field is the likely shape.
@@ -224,3 +261,11 @@ Rule evaluation should stay sub-second for typical repos on laptop hardware; pat
   showed Engineer stuck after adding failing tests for a real implementation
   mismatch. Guardrails now repeat the latest failing assertion output in
   unresolved test/build guidance instead of naming only the command.
+- **2026-05-21 — Missing module bootstrap during repair:** A Notes API replay
+  showed `go mod init` blocked after `go test` failed because no Go module
+  existed. Guardrails now allow that one bootstrap command only when the
+  missing-module output and absent `go.mod` make it the direct repair.
+- **2026-05-21 — Dependency mutation and assertion-test preservation:** A
+  Notes API replay showed raw `go get` escaping dependency sync and same-job
+  test deletion weakening an assertion failure. Guardrails now block raw
+  `go get` and reserve test-file cleanup for duplicate/generated-test output.

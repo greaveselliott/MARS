@@ -5268,3 +5268,93 @@ than deleting or weakening the test.
   re-entering unresolved test/build churn or creating target intervention-debt
   tickets. The remaining blocker was expected missing remote publication in the
   temporary target.
+
+## AD-216: Missing Module Bootstrap Is A Test/Build Repair Action
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-notes-api-run63` replay broadened the validation matrix from compact
+CLIs to a small HTTP JSON API with a local bare `origin`. The run confirmed the
+product-first path again: retry-after-bind used the same CEO bootstrap job,
+CEO/COO/CTO-weekly created product-specific planning and an ordinary Notes API
+ticket, Engineer claimed and pushed that ticket, and a ticket-gate guardrail
+remained foundation telemetry instead of target intervention debt.
+
+Engineer then implemented Go source before initializing the module. The first
+`go test ./internal/note` failed with Go's missing-module guidance:
+`cannot find main module ... go mod init`. The unresolved test/build repair
+lane correctly blocked runtime probes, commits, ticket moves, and unrelated
+shell work, but it also blocked the direct remediation command
+`go mod init demo-notes-api`. The role then tried destructive or low-value
+workarounds such as deleting tests and creating placeholders.
+
+### Decision
+
+Engineer test/build repair now treats missing package/module bootstrap as a
+bounded repair action. When the latest failing test/build output explicitly
+shows Go's missing-module failure and `go.mod` is absent, Engineer may run
+`go mod init <module>` even while the test/build lane is unresolved. The
+command remains blocked when `go.mod` already exists or when the failing output
+does not prove a missing module.
+
+All other repair-lane gates remain intact: runtime probes, helper scripts,
+ticket evidence, ticket completion, successful disposition, product commits,
+and unrelated shell commands stay blocked until same-lane validation passes.
+
+### Consequences
+
+- Fresh Go targets can recover from an honest bootstrap ordering mistake
+  without forcing the model into placeholder files or test deletion.
+- The exception is evidence-backed and narrow: it requires missing-module
+  output and an absent module file.
+- The next API canary should confirm Engineer runs `go mod init`, reruns
+  same-lane tests successfully, commits product work, and continues to QA
+  without intervention-debt churn.
+
+## AD-217: Dependency Mutation And Test Cleanup Stay Evidence-Preserving
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The patched `demo-notes-api-run64` replay avoided the missing-module trap by
+writing `go.mod` before validation, but exposed two adjacent generic policy
+gaps on an HTTP service target.
+
+First, Engineer used raw `go get github.com/stretchr/testify`, which mutated
+dependency state outside `dependency_sync` and contradicted the target brief's
+standard-library preference. The raw dependency guard already blocked
+`go mod download` but missed `go get`.
+
+Second, after adding tests and seeing an assertion-shaped store failure,
+Engineer deleted a same-job test file. Same-job test cleanup existed to remove
+duplicate/generated tests during repair, but Run 64 showed that the exception
+was too broad when the failure was ordinary product assertion evidence.
+
+### Decision
+
+Raw `go get` is now classified as dependency mutation and blocked with the same
+`dependency_sync` guidance as raw package-manager install/fetch commands.
+
+Same-job test cleanup during unresolved test/build repair is now allowed only
+when the latest failing output looks like duplicate/generated-test conflict:
+markers such as redeclarations, already-declared symbols, duplicate definitions,
+mixed packages, or parse/declaration errors. Assertion failures and contract
+mismatches must be repaired by source/test edits and same-lane validation, not
+by removing the evidence.
+
+### Consequences
+
+- Engineers cannot silently introduce external dependencies through raw
+  `go get` while bypassing workspace hygiene and dependency sync policy.
+- The duplicate-test cleanup escape hatch remains available for generated test
+  collisions but no longer weakens newly written assertion evidence.
+- The next API canary should confirm raw dependency mutation is blocked before
+  it changes `go.mod`, assertion-failure test deletion is blocked, and Engineer
+  repairs the implementation or test logic instead.

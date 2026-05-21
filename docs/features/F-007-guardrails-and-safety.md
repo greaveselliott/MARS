@@ -431,6 +431,33 @@ Given the failing assertion is aligned with the ticket, README, or BDD contract
 When Engineer receives the guardrail guidance
 Then the message directs Engineer to repair implementation behavior instead of deleting or weakening the test
 
+### F-007-S039: Missing Go Module Bootstrap Is Repair Work
+
+Given Engineer has an unresolved failing Go test/build command whose latest output says Go cannot find a main module
+And the target repo has no `go.mod`
+When Engineer runs `go mod init <module>`
+Then the guardrail allows the command as package/build configuration repair
+
+Given the repo already has `go.mod` or the latest failure output does not prove a missing Go module
+When Engineer runs `go mod init <module>` while the repair lane is unresolved
+Then the guardrail blocks the command as unrelated shell work
+
+### F-007-S040: Dependency Mutation And Test Cleanup Preserve Evidence
+
+Given an agent calls `shell_exec` with raw `go get <module>`
+When shell policy evaluates the command
+Then the guardrail blocks it as dependency mutation and points to `dependency_sync`
+
+Given Engineer has an unresolved test/build assertion failure
+And a test file was written by the same job
+When Engineer tries to remove that test file
+Then the guardrail blocks the cleanup and keeps assertion evidence intact
+
+Given Engineer has an unresolved duplicate/generated-test failure
+And a test-like file was written by the same job
+When Engineer removes that test-like file non-recursively
+Then the guardrail allows the cleanup before same-lane validation reruns
+
 ## Out of Scope
 
 - AST-level semantic policy enforcement in v1.
@@ -479,3 +506,5 @@ None.
 - F-007-S036: `go test ./internal/tools -run TestEngineerFailingTestAllowsSameJobRepairTestFileRemoval`
 - F-007-S037: `go test ./internal/tools -run TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation`
 - F-007-S038: `go test ./internal/tools -run TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane`
+- F-007-S039: `go test ./internal/tools -run TestEngineerFailingTestAllowsMissingGoModuleBootstrap`
+- F-007-S040: `go test ./internal/tools -run 'TestShellPolicyBlocksRawDependencyMutationCommands|TestEngineerFailingTestBlocksSameJobTestRemovalForAssertionFailure|TestEngineerFailingTestAllowsSameJobRepairTestFileRemoval'`

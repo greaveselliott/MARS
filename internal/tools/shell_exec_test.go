@@ -1235,6 +1235,7 @@ func TestShellPolicyBlocksRawDependencyMutationCommands(t *testing.T) {
 		`{"argv":["pnpm","install"]}`,
 		`{"argv":["yarn","install"]}`,
 		`{"argv":["bun","install"]}`,
+		`{"argv":["go","get","github.com/stretchr/testify"]}`,
 		`{"argv":["go","mod","download"]}`,
 		`{"argv":["cargo","fetch"]}`,
 		`{"argv":["pip","install","-r","requirements.txt"]}`,

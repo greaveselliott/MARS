@@ -143,7 +143,7 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 		if err := checkEngineerUnexpectedRuntimeValidationReworkPolicy(root, session, hasSession, args); err != nil {
 			return err
 		}
-		if err := checkEngineerTestBuildValidationReworkPolicy(session, hasSession, args); err != nil {
+		if err := checkEngineerTestBuildValidationReworkPolicy(root, session, hasSession, args); err != nil {
 			return err
 		}
 		if err := checkExternalValidationArtifactFreshness(root, session, hasSession, args); err != nil {
@@ -918,11 +918,14 @@ func runtimeValidationExactCorrection(session Session) string {
 	return "the exact failing shell_exec command with expected_exit_code set to the expected non-zero code"
 }
 
-func checkEngineerTestBuildValidationReworkPolicy(session Session, hasSession bool, args shellExecArgs) error {
+func checkEngineerTestBuildValidationReworkPolicy(root Root, session Session, hasSession bool, args shellExecArgs) error {
 	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingTestBuildValidationFailures(session) == 0 {
 		return nil
 	}
 	if shellExecSameJobTestBuildRepairCleanupNoRoot(session, args) {
+		return nil
+	}
+	if shellExecRunsMissingPackageConfigBootstrap(root, session, args) {
 		return nil
 	}
 	if !shellExecRunsTestCommand(args) && !shellExecRunsBuildCommand(args) {
@@ -938,6 +941,39 @@ func checkEngineerTestBuildValidationReworkPolicy(session Session, hasSession bo
 		return fmt.Errorf("policy: a test/build command already failed after the latest repair edit. Do not rerun validation unchanged or switch commands yet; use file_read/file_write to inspect and edit source, tests, fixtures, or package/build config, or remove duplicate/generated test files created or rewritten earlier in this job, then rerun a same-lane test/build command and make it pass")
 	}
 	return nil
+}
+
+func shellExecRunsMissingPackageConfigBootstrap(root Root, session Session, args shellExecArgs) bool {
+	fields := normalizedShellExecFields(args)
+	if len(fields) < 4 {
+		return false
+	}
+	if filepathBase(fields[0]) != "go" || fields[1] != "mod" || fields[2] != "init" {
+		return false
+	}
+	if repoPathExists(root, "go.mod") {
+		return false
+	}
+	return testBuildFailureLooksLikeMissingGoModule(session)
+}
+
+func testBuildFailureLooksLikeMissingGoModule(session Session) bool {
+	if session.ToolState == nil {
+		return false
+	}
+	output := strings.ToLower(strings.TrimSpace(session.ToolState[testBuildValidationOutputKey]))
+	return strings.Contains(output, "cannot find main module") ||
+		strings.Contains(output, "go.mod file not found") ||
+		strings.Contains(output, "go: go.mod file not found")
+}
+
+func repoPathExists(root Root, rel string) bool {
+	abs, err := root.ResolvePath(rel)
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(abs)
+	return err == nil
 }
 
 func shellExecSameJobTestBuildRepairCleanup(root Root, session Session, hasSession bool, args shellExecArgs) bool {
@@ -964,6 +1000,9 @@ func shellExecSameJobTestBuildRepairCleanupNoRoot(session Session, args shellExe
 	if session.ToolState == nil {
 		return false
 	}
+	if !testBuildFailureAllowsSameJobTestCleanup(session) {
+		return false
+	}
 	paths, ok := shellRemovalPathOperands(args)
 	if !ok {
 		return false
@@ -978,6 +1017,28 @@ func shellExecSameJobTestBuildRepairCleanupNoRoot(session Session, args shellExe
 		}
 	}
 	return true
+}
+
+func testBuildFailureAllowsSameJobTestCleanup(session Session) bool {
+	if session.ToolState == nil {
+		return false
+	}
+	output := strings.ToLower(strings.TrimSpace(session.ToolState[testBuildValidationOutputKey]))
+	if output == "" {
+		return false
+	}
+	for _, marker := range []string{
+		"redeclared",
+		"already declared",
+		"duplicate",
+		"found packages",
+		"expected declaration",
+	} {
+		if strings.Contains(output, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func engineerTestBuildRepairRemovalPath(rel string) bool {
@@ -3560,6 +3621,9 @@ func dependencyShellOperation(cmd string) (string, bool) {
 				return filepathBase(field) + " " + fields[i+1], true
 			}
 		case "go":
+			if nextTokenIs(fields, i, "get") {
+				return "go get", true
+			}
 			if i+2 < len(fields) && fields[i+1] == "mod" && fields[i+2] == "download" {
 				return "go mod download", true
 			}
