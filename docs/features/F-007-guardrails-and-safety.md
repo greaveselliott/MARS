@@ -458,6 +458,12 @@ And a test-like file was written by the same job
 When Engineer removes that test-like file non-recursively
 Then the guardrail allows the cleanup before same-lane validation reruns
 
+### F-007-S041: Engineer Runtime Validation Converges Without No-Op Waits
+
+Given Engineer has successful validation evidence and dirty implementation or ticket work
+When it tries to use an empty `shell_exec` argv or single `:` placeholder as a wait
+Then the guardrail blocks the no-op before process execution and directs Engineer to stop tracked background validation, commit the dirty files, update ticket evidence, move the ticket to done, push, and record `job_disposition_record`
+
 ## Out of Scope
 
 - AST-level semantic policy enforcement in v1.
@@ -508,3 +514,4 @@ None.
 - F-007-S038: `go test ./internal/tools -run TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane`
 - F-007-S039: `go test ./internal/tools -run TestEngineerFailingTestAllowsMissingGoModuleBootstrap`
 - F-007-S040: `go test ./internal/tools -run 'TestShellPolicyBlocksRawDependencyMutationCommands|TestEngineerFailingTestBlocksSameJobTestRemovalForAssertionFailure|TestEngineerFailingTestAllowsSameJobRepairTestFileRemoval'`
+- F-007-S041: `go test ./internal/tools -run TestEngineerPostValidationDirtyNoopBlocksBeforeGenericNoop`

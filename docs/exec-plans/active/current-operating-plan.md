@@ -907,3 +907,13 @@ Checks recorded during the 2026-05-02 review:
   sync, and same-job test cleanup could delete assertion evidence after a
   focused test failure. As of 2026-05-21, AD-217 blocks raw `go get` and
   reserves same-job test cleanup for duplicate/generated-test shaped failures.
+  The clean `demo-inventory-api-run65` replay on 2026-05-21 broadened the
+  matrix with a different Go HTTP JSON API. It completed product planning,
+  feature contract update, ordinary product ticketing, implementation, QA,
+  Security, Dogfood finding creation, Orchestrator rework routing, and Engineer
+  route repair validation. The terminal gap was post-runtime-validation
+  convergence: after successful background server validation and `/health`
+  probe, Engineer repeated no-op placeholders instead of killing the tracked
+  PID, committing the dirty repair, updating evidence, moving `T-002` to done,
+  and handing back to QA. As of 2026-05-21, AD-218 blocks the first such
+  no-op with exact convergence steps.

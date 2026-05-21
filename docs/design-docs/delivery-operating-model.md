@@ -5358,3 +5358,48 @@ by removing the evidence.
 - The next API canary should confirm raw dependency mutation is blocked before
   it changes `go.mod`, assertion-failure test deletion is blocked, and Engineer
   repairs the implementation or test logic instead.
+
+## AD-218: Runtime Validation No-Ops Converge Immediately
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-inventory-api-run65` canary broadened live validation to a new HTTP
+JSON Inventory API target with only a README brief and a local bare `origin`.
+The run confirmed the product-first lifecycle after the v0.42.18 guardrail
+changes: CEO, COO, CTO-weekly, Engineer, QA, Security, Dogfood, and
+Orchestrator all completed real product work before the second Engineer rework
+job failed.
+
+The failure happened after Engineer repaired a Dogfood-discovered route
+registration bug, passed build/tests, started the API in managed background
+mode, and successfully probed `/health`. Instead of stopping the tracked
+background PID, committing the dirty implementation, updating ticket evidence,
+moving the ticket to done, and handing to QA, Engineer called no-op
+`shell_exec` placeholders twice. The second placeholder was blocked, but the
+role hit `circle_detected` before recording completion.
+
+### Decision
+
+Engineer no-op shell placeholders after successful validation and dirty
+implementation or ticket work now fail in pre-tool policy on the first attempt.
+The guardrail names the active ticket, dirty files, tracked background PID kill
+commands when present, evidence update, implementation commit, ticket
+lifecycle move, push, and `job_disposition_record` handoff.
+
+Concrete validation commands remain allowed while implementation work is dirty,
+so this does not prevent the useful `go test`, external build, `go run
+background:true`, and `curl` sequence that proved the repair.
+
+### Consequences
+
+- Post-runtime-validation roles no longer need to spend a generic no-op failure
+  before receiving terminal convergence instructions.
+- Managed background validation cleanup is part of the same convergence path as
+  ticket evidence and lifecycle completion.
+- The next clean Inventory/API-style canary should confirm Engineer commits the
+  route repair and closes the Dogfood ticket instead of ending in
+  `circle_detected`.

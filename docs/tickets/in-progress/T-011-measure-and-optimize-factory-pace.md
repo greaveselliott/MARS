@@ -21,6 +21,7 @@ bdd_scenarios:
   - F-006-S020
   - F-006-S021
   - F-006-S022
+  - F-007-S041
 end_to_end_evidence: not_applicable
 evidence_links:
   - "go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries"
@@ -41,6 +42,7 @@ evidence_links:
   - "go test ./internal/tools -run 'TestRecordSessionToolOutcomeTracksRuntimeValidationCommands|TestEngineerPostRuntimeValidationNoopRedirectsToTicketCompletion'"
   - "go test ./internal/tools -run 'TestReviewApprovalRequiresPassingValidationWhenTestsExist|TestRecordSessionToolOutcomeTracks(RuntimeValidationCommands|ValidationArtifactBuildAndRun|ValidationCommands)'"
   - "go test ./internal/tools -run 'TestEngineerPostValidationCommitBlocksExploratoryShellUntilTicketDone|TestEngineerPostRuntimeValidationNoopRedirectsToTicketCompletion'"
+  - "go test ./internal/tools -run TestEngineerPostValidationDirtyNoopBlocksBeforeGenericNoop"
   - "go test ./internal/scanner -run 'TestInit_success|TestInitRolePromptsIncludeOperationalGuidance'"
   - "go test ./internal/docsync"
   - "go test ./internal/telemetry -run 'TestClassify|TestRetryable'"
@@ -78,15 +80,33 @@ evidence_links:
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#note-stats-cli-run-14-expected-runtime-error-probes-should-not-poison-qa-approval
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#note-stats-cli-run-15-post-validation-gate-needed-a-non-shell-next-step
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#run-62-slugify-cli-completed-full-local-lifecycle-after-rework-guidance
+  - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#run-65-inventory-api-canary-reached-product-rework-exposed-post-validation-no-op-failure
 verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'; go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|RejectsBarePortCommands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess|KillTrackedBackgroundPIDKillsDescendant|NoopReturnsCompletionGuidance|NoopAfterBackgroundListsTrackedPID)'; go test ./internal/tools -run 'TestShellExec(BlocksGoBuildOutputInsideRepoBeforeArtifact|BlocksDefaultGoBuildInsideRepoBeforeArtifact|BlocksDefaultGoBuildInShellCommandBeforeArtifact|BlocksGoBuildOutputInShellCommandSegmentBeforeArtifact|AllowsGoBuildOutputOutsideRepo|NoopArgsNotMaskedByDirtyArtifact)'; go test ./internal/tools -run 'TestShellExecRejectsExternalTimeoutCommands|TestFileWriteBlocksNewRootValidationScript|TestFileWriteAllowsExistingRootValidationScriptUpdate|TestShellExecPolicyBlocksForegroundServerCommands|TestShellExecPolicyAllowsForegroundGoRunForNonServerCLI'; go test ./internal/tools -run TestKillBackgroundProcsKillsEscapedChildProcess; go test ./internal/tools -run TestJobDispositionPolicyBlocksSuccessfulReviewWhenDocSyncFails; go test ./internal/tools -run 'TestFileWritePolicyRequiresDocSyncForSourceFiles|TestFileWritePolicyRejectsSourceDocSyncMissingDoc|TestEngineerClaimPolicyRequiresInProgressBeforeProductMutation|TestFileWritePolicyBlocksScenarioIDsThatDoNotMatchFeatureContract'; go test ./internal/tools -run 'TestDogfoodUncommittedFindingBlocksFurtherValidationAndTickets|TestDogfoodFindingCreatedInRunRequiresDispositionBeforeFurtherValidation|TestReviewApprovalRequiresPassingValidationWhenTestsExist|TestShellExecPolicyAllowsEvidencedEnablerTicketDoneMove|TestShellExecPolicyBlocksEnablerTicketDoneMoveWithoutEvidence|TestShellExecArgvAllowsLiteralNewlineArgument|TestRecordSessionToolOutcomeTracksValidationCommands'; go test ./internal/orgstate -run TestDecodeDispositionNormalizesStringLists; go test ./internal/docsync; go test ./internal/telemetry -run 'TestClassify|TestRetryable'; run12, demo-api-run1 through demo-api-run20 scores exports and trace summaries captured live Factory Pace baselines"
 owner: "Codex"
 last_attempt: >-
-  2026-05-21: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45 tools and Dogfood 66 turns/32 tools. Non-static API and static-game replays through demo-api-run20 confirmed product-first planning, ticketing, managed background validation, bounded Security, target release notes, quality grade A, and zero intervention debt while removing repeated guardrail loops. CLI matrix replays confirmed product-first command-line planning and progressively fixed Security authority, scratch probes, contract drift, closure drift, Dogfood finding handoff, review validation evidence, newline argv, and enabler closure metadata. demo-cli-run7 through demo-cli-run14 progressively fixed scenario ID drift, post-validation shell drift, review-ticket reopening, completion-commit classification, repeated no-op loops, QA shell validation, temp artifact freshness, direct runtime validation, and expected negative runtime probe classification. demo-cli-run15 confirmed the product path still reaches committed implementation and passing external runtime proof, then exposed that the post-validation completion policy needs to force the next non-shell ticket evidence step more explicitly before the final `git mv` to done. Tool policy now permits commits with an active in-progress-to-done ticket move, gives QA bounded validation shell access, requires temp validation binaries to be built in the same role session before execution, counts successful direct runtime probes as validation evidence, allows documented expected runtime error probes to support review evidence, names `file_read`/`file_write` as the required post-validation evidence update, and still preserves failed build/test blockers and rework reopening for already-done tickets.
+  2026-05-21: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining
+  scoring outcomes to trace summaries; run12 export shows Engineer 92 turns/45
+  tools and Dogfood 66 turns/32 tools. CLI and API canaries progressively fixed
+  Security authority, scratch probes, contract drift, closure drift, Dogfood
+  handoff, review validation evidence, newline argv, enabler closure metadata,
+  review-ticket reopening, completion-commit classification, no-op loops, QA
+  shell validation, temp artifact freshness, direct runtime validation, expected
+  negative runtime probes, post-validation evidence update, startup retry
+  persistence, failing test output guidance, missing Go module repair, raw
+  `go get`, and assertion-test preservation. demo-inventory-api-run65 then
+  confirmed product planning, ordinary ticketing, implementation, QA, Security,
+  Dogfood finding creation, Orchestrator rework routing, and Engineer route
+  repair validation on a distinct HTTP JSON API before exposing the next
+  terminal gap: post-runtime-validation no-op placeholders with dirty rework.
+  AD-218 now blocks the first such no-op with tracked-PID cleanup, commit,
+  evidence, ticket closure, push, and qa_review guidance.
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
 next_action: >-
-  Broaden the live validation matrix beyond compact CLI products: run a different application archetype and a remote-backed release path, then confirm product delivery, release publication behavior, and intervention-debt quarantine remain healthy.
+  Rerun the Inventory/API-style canary after AD-218 and confirm Engineer stops
+  tracked background validation, commits the route repair, closes the Dogfood
+  rework ticket, pushes, and hands back to QA without no-op circle detection.
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -139,7 +159,7 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 
 ## BDD Evidence
 
-- Scenario IDs: F-008-S008, F-006-S015, F-006-S016, F-007-S010, F-007-S011, F-007-S012, and F-005-S015.
+- Scenario IDs: F-008-S008, F-006-S015, F-006-S016, F-007-S010, F-007-S011, F-007-S012, F-007-S041, and F-005-S015.
 - Evidence links: `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries` covers the first quality-export pace slice.
 - Evidence links: `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole` cover the scheduled duplicate-work fix.
 - Evidence links: `go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'` covers the bounded build-artifact cleanup exception.
@@ -170,6 +190,7 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 - Evidence links: `go test ./internal/tools -run 'TestRecordSessionToolOutcomeTracksRuntimeValidationCommands|TestEngineerPostRuntimeValidationNoopRedirectsToTicketCompletion'` covers direct runtime validation classification and post-commit no-op redirection.
 - Evidence links: `go test ./internal/tools -run TestReviewApprovalRequiresPassingValidationWhenTestsExist` covers expected runtime error probes remaining review evidence while failed build/test commands still block approval.
 - Evidence links: `go test ./internal/tools -run 'TestEngineerPostValidationCommitBlocksExploratoryShellUntilTicketDone|TestEngineerPostRuntimeValidationNoopRedirectsToTicketCompletion'` covers the post-validation non-shell evidence guidance before ticket lifecycle completion.
+- Evidence links: `demo-inventory-api-run65` confirmed the generic HTTP API lifecycle reaches product rework and runtime validation, then exposed post-validation no-op placeholders before dirty rework commit; `go test ./internal/tools -run TestEngineerPostValidationDirtyNoopBlocksBeforeGenericNoop` covers the immediate convergence guard.
 - Evidence links: `go test ./internal/tools -run 'TestRecordSessionToolOutcomeTracksExpectedRuntimeFailure|TestReviewApprovalRequiresPassingValidationWhenTestsExist|TestEngineerMustReopenDoneTicketBeforeRework'` covers explicit expected exit codes, unexpected runtime validation approval blocks, and external temp validation cleanup.
 - Verified by: partial; live baseline export and before/after replay evidence remain open.
 

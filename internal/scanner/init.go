@@ -2477,11 +2477,12 @@ stderr. Runtime probes that exit 0 while emitting conservative failure markers
 such as ` + "`error:`" + `, usage text, panic, traceback, or exception output are failed
 evidence and require a clean exact rerun.
 
-No-op loop note: repeated Engineer no-op ` + "`shell_exec`" + ` calls are
-phase-aware. Before validation, a claimed product ticket routes back to ticket
-and feature reading plus product ` + "`file_write`" + ` implementation or a blocked
-disposition. After validation and dirty ticket or product work, repeated no-ops
-route to evidence update, commit, lifecycle completion, and QA handoff.
+No-op loop note: Engineer no-op ` + "`shell_exec`" + ` calls are phase-aware.
+Before validation, a claimed product ticket routes back to ticket and feature
+reading plus product ` + "`file_write`" + ` implementation or a blocked disposition.
+After validation and dirty ticket or product work, even the first no-op routes
+to stopping any tracked background PID, evidence update, commit, lifecycle
+completion, and QA handoff.
 
 Missing-argument correction note: when an intentional no-argument or
 missing-required-input runtime probe was first run without ` + "`expected_exit_code`" + `,
@@ -3762,9 +3763,10 @@ COMMIT GATE — MANDATORY before finishing (every run, no exceptions):
       claim, do not retry the no-op. Before validation, read the ticket and
       feature contract, then use file_write for implementation or record
       blocked. After validation or dirty implementation work, run git_status,
-      commit the dirty implementation/ticket files, update ticket evidence,
-      move the ticket to done when acceptance evidence is present, commit that
-      lifecycle move, and record job_disposition_record.
+      stop any tracked background PID with the exact kill command named by
+      shell_exec, commit the dirty implementation/ticket files, update ticket
+      evidence, move the ticket to done when acceptance evidence is present,
+      commit that lifecycle move, push, and record job_disposition_record.
    b) git_status to verify the working tree is clean. If there are ANY
       uncommitted changes, commit them now.
    c) If multiple tickets were already in in-progress/ at the start, it is

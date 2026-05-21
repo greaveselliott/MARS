@@ -1057,6 +1057,63 @@ blocked_by: []
 	}
 }
 
+func TestEngineerPostValidationDirtyNoopBlocksBeforeGenericNoop(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir, root := setupPolicyTicketRepo(t)
+	initGitRepo(t, dir)
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
+	writePolicyTicket(t, dir, "in-progress", "T-002-repair-route.md", `---
+id: T-002
+title: Repair route registration
+work_type: feature
+bdd_scenarios:
+- F-001-S002
+end_to_end_evidence: required
+evidence_links:
+- curl http://localhost:8080/health
+verified_by:
+- engineer
+blocker: none
+blocked_by: []
+---
+
+# Repair route registration
+`)
+	if err := runGitExit0(context.Background(), root, "add", "."); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "commit", "-m", "chore(tickets): claim T-002"); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte(`/*
+MarsDocSync:
+docs:
+- docs/features/F-001-product-walking-skeleton.md
+*/
+package main
+`), 0o644); err != nil {
+		t.Fatalf("write dirty implementation: %v", err)
+	}
+
+	ctx := WithSession(context.Background(), Session{Role: "engineer", ToolCounts: map[string]int{
+		validationCommandSuccessKey: 1,
+		"tool:git_commit:success":   1,
+	}})
+	err := preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":[":"]}`))
+	if err == nil {
+		t.Fatal("expected post-validation no-op with dirty work to be blocked")
+	}
+	if !strings.Contains(err.Error(), "successful validation and dirty implementation or ticket work") ||
+		!strings.Contains(err.Error(), "T-002") ||
+		!strings.Contains(err.Error(), "main.go") ||
+		!strings.Contains(err.Error(), "git_commit") ||
+		!strings.Contains(err.Error(), "docs/tickets/done") ||
+		!strings.Contains(err.Error(), "job_disposition_record") {
+		t.Fatalf("expected dirty-work convergence guidance, got %v", err)
+	}
+}
+
 func TestEngineerPostValidationGateAllowsValidationWhileImplementationDirty(t *testing.T) {
 	t.Parallel()
 	requireGit(t)

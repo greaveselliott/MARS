@@ -5563,3 +5563,66 @@ Run another HTTP-service canary and confirm raw dependency mutation is blocked
 before `go.mod`/`go.sum` changes, assertion-failure test deletion is blocked,
 and Engineer either repairs the failing behavior or records an honest blocked
 handoff without target intervention-debt creation.
+
+## Run 65: Inventory API Canary Reached Product Rework, Exposed Post-Validation No-Op Failure
+
+### Setup
+
+Run 65 used a fresh Inventory API target at
+`<validation-root>`, local bare
+remote `<validation-root>`,
+database `<validation-root>`,
+log `<validation-root>`,
+and patched binary `<validation-root>`.
+The brief asked for a small standard-library Go HTTP JSON service for inventory
+items, quantities, and reorder thresholds.
+
+### Observations
+
+- The harness initialized the deployed target, committed the generated harness
+  baseline, registered one repo, and seeded exactly one CEO bootstrap job.
+- CEO, COO, and CTO-weekly completed product-specific planning from the README:
+  active goal, exec plan, canonical `F-001-product-walking-skeleton.md`, and
+  ordinary product ticket `T-001`.
+- Engineer claimed `T-001`, pushed the claim to the local bare `origin`, wrote
+  a Go module and product source, passed `go build -o <validation-root>`
+  after a normal unused-import repair, passed `go test ./internal/inventory`,
+  committed and pushed implementation, updated ticket evidence, moved `T-001`
+  to done, and recorded `qa_review`.
+- QA approved with `go test ./internal/inventory`, `make test`, external build,
+  and `docsync_audit`. Security approved after `go test ./...`.
+- Dogfood ran end-to-end validation and found a target-owned product bug: the
+  generated HTTP server registered conflicting `/items` handlers. It created
+  normal target ticket `T-002`, committed and pushed it, and recorded
+  `changes_requested`.
+- Orchestrator routed `T-002` back to Engineer. The second Engineer job claimed
+  and pushed the ticket, repaired the route registration, passed external build,
+  `go test ./...`, `go test ./internal/inventory`, started the server with
+  `background:true`, and successfully probed `curl http://localhost:8080/health`.
+- After that successful runtime evidence, Engineer called no-op `shell_exec`
+  placeholders instead of stopping the tracked server, committing the dirty
+  route repair, updating evidence, moving `T-002` to done, and handing back to
+  QA. The job ended as `circle_detected`.
+- DB summary after stopping the run: `ceo`, `coo`, `cto-weekly`, first
+  `engineer`, `qa`, `security`, `dogfood`, and `orchestrator` completed; second
+  `engineer` failed with `executor: agent ended with circle_detected`.
+  Telemetry stayed foundation-owned: `ceo|guardrail_block|3`,
+  `cto-weekly|guardrail_block|1`, `engineer|guardrail_block|8`,
+  `engineer|circle_detected|1`, `security|guardrail_block|3`, and
+  `dogfood|guardrail_block|8`.
+
+### Decision From Run 65
+
+AD-218 now blocks the first Engineer no-op placeholder after successful
+validation when implementation or ticket files are dirty. The guardrail points
+to tracked background PID cleanup, `git_status`, implementation commit, ticket
+evidence update, ticket move to done, lifecycle commit, push, and
+`job_disposition_record`. This keeps the useful validation path open while
+removing the generic no-op gap that produced `circle_detected`.
+
+### Next Check
+
+Rerun an Inventory/API-style canary or resume a comparable rework path and
+confirm Engineer stops the tracked background process, commits the route repair,
+updates and closes the rework ticket, pushes, and hands back to QA without
+entering no-op loops.

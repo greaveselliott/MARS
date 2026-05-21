@@ -619,7 +619,15 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 	if err != nil {
 		return nil
 	}
-	if len(dispositionBlockingFiles(files)) > 0 {
+	blockingFiles := dispositionBlockingFiles(files)
+	if shellExecNoop(args) && len(blockingFiles) > 0 {
+		return fmt.Errorf(
+			"policy: engineer has successful validation and dirty implementation or ticket work for %s. Do not call shell_exec no-op placeholders or waits. %s",
+			tickets[0].ID,
+			engineerDirtyPostValidationGuidance(tickets[0], blockingFiles),
+		)
+	}
+	if len(blockingFiles) > 0 {
 		return nil
 	}
 	return fmt.Errorf(
@@ -629,6 +637,26 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 		tickets[0].RelPath,
 		tickets[0].ID,
 	)
+}
+
+func engineerDirtyPostValidationGuidance(ticket ticketstate.Ticket, files []string) string {
+	var b strings.Builder
+	if pids := trackedBackgroundPIDs(); len(pids) > 0 {
+		b.WriteString("Stop tracked background validation first")
+		for _, pid := range pids {
+			b.WriteString(fmt.Sprintf(" with shell_exec argv [\"kill\",\"%d\"]", pid))
+		}
+		b.WriteString(". ")
+	}
+	b.WriteString(fmt.Sprintf(
+		"Run git_status, git_commit the dirty files (%s), use file_read and file_write on %q to populate evidence_links and verified_by, move %q to docs/tickets/done/ with shell_exec argv [\"git\",\"mv\",%q,\"docs/tickets/done/\"], commit that lifecycle move, git_push if a remote exists, then record job_disposition_record with ticket_id %s and next_need qa_review",
+		strings.Join(files, ", "),
+		ticket.RelPath,
+		ticket.RelPath,
+		ticket.RelPath,
+		ticket.ID,
+	))
+	return b.String()
 }
 
 func checkEngineerRepeatedNoopPolicy(ctx context.Context, root Root, session Session, hasSession bool, args shellExecArgs) error {

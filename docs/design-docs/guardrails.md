@@ -228,6 +228,24 @@ definitions, mixed packages, or parse/declaration errors. Ordinary assertion
 failures remain protected evidence: Engineer must edit implementation, tests,
 fixtures, or package/build config and rerun same-lane validation.
 
+### AD-218: Post-Validation Engineer No-Ops Are Immediate Convergence Blocks
+
+**Status:** Accepted
+**Date:** 2026-05-21
+
+The `demo-inventory-api-run65` replay reached a full product loop through
+Dogfood-discovered rework: Engineer repaired a route-registration bug, passed
+build/test/runtime validation, and had dirty implementation work ready to
+commit. It then spent placeholder `shell_exec` no-ops instead of stopping the
+tracked background server, committing the repair, updating evidence, moving the
+ticket to done, and handing back to QA.
+
+No-op placeholders after Engineer has successful validation and dirty
+implementation or ticket work are now blocked before process execution on the
+first attempt. The guardrail message names dirty files, any tracked background
+PID cleanup commands, ticket evidence update, lifecycle move, push, and terminal
+disposition so runtime proof converges directly into product progress.
+
 ### Open topics
 
 - **Advisory vs hard tiers:** advisory rules surface warnings in traces and UI; hard rules fail the job or block merge paths per policy; same schema with a `severity` field is the likely shape.
@@ -269,3 +287,7 @@ Rule evaluation should stay sub-second for typical repos on laptop hardware; pat
   Notes API replay showed raw `go get` escaping dependency sync and same-job
   test deletion weakening an assertion failure. Guardrails now block raw
   `go get` and reserve test-file cleanup for duplicate/generated-test output.
+- **2026-05-21 — Post-validation no-op convergence:** An Inventory API replay
+  showed Engineer pass runtime validation for a Dogfood route fix, then loop on
+  no-op shell placeholders instead of committing and closing the rework ticket.
+  Guardrails now block the first such no-op with exact convergence steps.
