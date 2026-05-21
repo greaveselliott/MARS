@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.20] - 2026-05-21
+<!-- mars-harness-release: version=0.42.20 commit=ae14dea916b2 -->
+
+### Impact
+- **tools:** Operators see improved reliability because synchronize background output capture.
+
+### Why
+- **tools:** This matters because synchronize background output capture closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed synchronize background output capture (ae14dea).
+
+### Fixes
+- **tools:** Synchronize background output capture (ae14dea)
+
 ## [0.42.19] - 2026-05-21
 <!-- mars-harness-release: version=0.42.19 commit=7e67f374daef -->
 
