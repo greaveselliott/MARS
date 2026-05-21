@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.17] - 2026-05-21
+<!-- mars-harness-release: version=0.42.17 commit=9c963901f887 -->
+
+### Impact
+- **lifecycle:** Operators see improved reliability because stabilize continuous factory loop.
+
+### Why
+- **lifecycle:** This matters because stabilize continuous factory loop closes a failure mode or degraded path.
+
+### What Changed
+- **lifecycle:** Changed stabilize continuous factory loop (9c96390).
+
+### Fixes
+- **lifecycle:** Stabilize continuous factory loop (9c96390)
+
 ## [0.42.16] - 2026-05-20
 <!-- mars-harness-release: version=0.42.16 commit=b7cc36ed8138 -->
 
