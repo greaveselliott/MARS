@@ -181,6 +181,10 @@ When the process exits during the startup capture window
 Then the tool returns an error with the initial output and exit code so the role treats the result as a boot failure instead of continuing as though the server is running
 
 Given a role starts a long-running command with `background:true`
+When the startup capture window ends while the process is still running and emitting logs
+Then the tool returns a bounded initial output snapshot without racing the background capture goroutines
+
+Given a role starts a long-running command with `background:true`
 When the agent job ends or the harness cleans background processes
 Then the tool terminates the tracked process, its process group, and any known descendant processes so wrapper commands such as `go run` do not leave child servers occupying ports for later runs
 
@@ -586,7 +590,7 @@ None.
 - F-005-S012: `go test ./internal/tools -run TestGitPush_noRemote`
 - F-005-S013: `go test ./internal/scanner -run TestInit_success`
 - F-005-S014: `go test ./internal/tools -run TestExecutor_toolHandlerHardTimeout`
-- F-005-S015: `go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|RejectsBarePortCommands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess)'`, `demo-api-run7`, and `demo-api-run8` live evidence
+- F-005-S015: `go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|RejectsBarePortCommands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess)'`, `go test ./internal/tools -race -count=1 -coverprofile=<validation-root> -covermode=atomic`, `demo-api-run7`, and `demo-api-run8` live evidence
 - F-005-S016: `go test ./internal/tools -run 'TestShellExecArgvAllowsLiteralNewlineArgument|TestRecordSessionToolOutcomeTracksValidationCommands|TestReviewApprovalRequiresPassingValidationWhenTestsExist'`
 - F-005-S017: `go test ./internal/tools -run 'TestTicketCreate_parseHintForQuotedBDDScenarios|TestRecordSessionToolOutcomeTracksTicketCreationFailures'`
 - F-005-S018: `go test ./internal/tools -run TestRecordSessionToolOutcomeEngineerCorrectsMissingArgumentRuntimeFailure`

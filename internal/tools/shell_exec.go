@@ -75,6 +75,23 @@ var (
 	bgProcs = map[int]*exec.Cmd{}
 )
 
+type lockedBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (b *lockedBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.b.Write(p)
+}
+
+func (b *lockedBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.b.String()
+}
+
 // KillBackgroundProcs terminates all tracked background processes. Called
 // by the executor when a job ends to prevent orphan dev servers.
 func KillBackgroundProcs() {
@@ -633,7 +650,7 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 
 	// Capture initial output for the capture window so the agent sees
 	// startup messages (e.g. "ready on http://localhost:3000").
-	var stdoutBuf, stderrBuf bytes.Buffer
+	var stdoutBuf, stderrBuf lockedBuffer
 	done := make(chan struct{}, 2)
 	go func() {
 		_, _ = io.Copy(&stdoutBuf, stdoutRead)

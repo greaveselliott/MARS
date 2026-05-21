@@ -5403,3 +5403,41 @@ background:true`, and `curl` sequence that proved the repair.
 - The next clean Inventory/API-style canary should confirm Engineer commits the
   route repair and closes the Dogfood ticket instead of ending in
   `circle_detected`.
+
+## AD-219: Managed Background Capture Is Race-Safe
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+After GitHub Actions billing capacity was restored, the previously opaque
+workflow failures became actionable CI evidence. The `v0.42.19` release
+workflow rerun passed and `mars-harness release verify-assets --version
+v0.42.19` found all required binaries and `checksums.txt`, but the current-main
+CI run exposed a race in `internal/tools` under `go test ./... -race -count=1
+-coverprofile=coverage.out -covermode=atomic`.
+
+The race came from managed `shell_exec` background validation. While a
+long-running target server stayed alive beyond the startup capture window,
+stdout and stderr goroutines continued writing to `bytes.Buffer` values while
+the tool assembled the initial output snapshot returned to the role.
+
+### Decision
+
+The background startup capture buffers are synchronized. The tool still returns
+after the same startup window, still reports early exits as boot failures, and
+still keeps the tracked process available for readiness probes and cleanup, but
+snapshot assembly now reads stdout and stderr through the same lock used by the
+capture writers.
+
+### Consequences
+
+- Race-detected CI can exercise managed background validation without failing on
+  the output snapshot path.
+- The live factory loop keeps the managed-background lifecycle that proved useful
+  in API canaries without weakening process cleanup or probe guidance.
+- Release workflow status must be checked again after infrastructure blockers
+  clear because budget failures can hide real product defects behind missing
+  logs.
