@@ -3321,7 +3321,7 @@ func checkShellTicketDoneEvidencePolicy(ctx context.Context, root Root, raw json
 	}
 	fields := args.Argv
 	if strings.TrimSpace(args.ShellCommand) != "" {
-		fields = shellFields(args.ShellCommand)
+		fields = shellFieldsPreserveCase(args.ShellCommand)
 	}
 	if copies := ticketDoneCopySources(fields); len(copies) > 0 {
 		return fmt.Errorf(
@@ -3383,7 +3383,7 @@ func checkTicketDoneMoveHasOnlyTicketChanges(ctx context.Context, root Root) err
 func ticketDoneCopySources(fields []string) []string {
 	var sources []string
 	for i, field := range fields {
-		if filepathBase(field) != "cp" {
+		if strings.ToLower(filepathBase(field)) != "cp" {
 			continue
 		}
 		if source, dest, ok := ticketMoveOperands(fields[i+1:]); ok && ticketMoveTargetsDone(source, dest) {
@@ -3396,7 +3396,7 @@ func ticketDoneCopySources(fields []string) []string {
 func ticketDoneMoveSources(fields []string) []string {
 	var sources []string
 	for i, field := range fields {
-		switch filepathBase(field) {
+		switch strings.ToLower(filepathBase(field)) {
 		case "git":
 			if i+1 >= len(fields) || strings.ToLower(strings.TrimSpace(fields[i+1])) != "mv" {
 				continue
@@ -3405,7 +3405,7 @@ func ticketDoneMoveSources(fields []string) []string {
 				sources = append(sources, cleanShellPathToken(source))
 			}
 		case "mv":
-			if i > 0 && filepathBase(fields[i-1]) == "git" {
+			if i > 0 && strings.ToLower(filepathBase(fields[i-1])) == "git" {
 				continue
 			}
 			if source, dest, ok := ticketMoveOperands(fields[i+1:]); ok && ticketMoveTargetsDone(source, dest) {
@@ -3932,6 +3932,19 @@ func forbiddenShellOperation(cmd string) (string, bool) {
 
 func shellFields(cmd string) []string {
 	raw := strings.Fields(strings.ToLower(cmd))
+	fields := make([]string, 0, len(raw))
+	for _, field := range raw {
+		field = strings.Trim(field, `"'`)
+		field = strings.TrimRight(field, ";")
+		if field != "" {
+			fields = append(fields, field)
+		}
+	}
+	return fields
+}
+
+func shellFieldsPreserveCase(cmd string) []string {
+	raw := strings.Fields(cmd)
 	fields := make([]string, 0, len(raw))
 	for _, field := range raw {
 		field = strings.Trim(field, `"'`)

@@ -181,6 +181,18 @@ verified_by: TBD
 	}
 }
 
+func TestTicketDoneMoveSourcesPreserveShellCommandPathCase(t *testing.T) {
+	t.Parallel()
+	fields := shellFieldsPreserveCase(`git mv docs/tickets/in-progress/T-001-Ship.md docs/tickets/done/`)
+	sources := ticketDoneMoveSources(fields)
+	if len(sources) != 1 {
+		t.Fatalf("expected one ticket done move source, got %v", sources)
+	}
+	if sources[0] != "docs/tickets/in-progress/T-001-Ship.md" {
+		t.Fatalf("expected source path case to be preserved, got %q", sources[0])
+	}
+}
+
 func TestShellExecPolicyAllowsFeatureTicketDoneMoveWithEvidence(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)

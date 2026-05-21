@@ -5441,3 +5441,37 @@ capture writers.
 - Release workflow status must be checked again after infrastructure blockers
   clear because budget failures can hide real product defects behind missing
   logs.
+
+## AD-220: Ticket Evidence Guard Preserves Path Case
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `v0.42.20` Release workflow published all binary assets, but the paired
+main-branch CI run failed two `internal/tools` policy tests on Linux:
+feature and enabler tickets could appear to move into `docs/tickets/done/`
+without required evidence. The same tests passed locally on macOS.
+
+The root cause was case sensitivity. The shared `shellFields` helper lowercased
+shell commands so destructive-command checks could compare command tokens
+simply. `checkShellTicketDoneEvidencePolicy` reused those lowercased tokens for
+ticket file paths. On macOS, `T-001-ship.md` still resolved after becoming
+`t-001-ship.md`; on Linux, the read failed and the policy skipped evidence
+validation.
+
+### Decision
+
+Path-sensitive ticket lifecycle parsing now uses a case-preserving shell token
+helper. Command-name matching for `git`, `mv`, and `cp` remains
+case-insensitive, but ticket source paths keep their original case before
+`Root.ResolvePath` and `os.ReadFile` inspect frontmatter.
+
+### Consequences
+
+- Linux CI and macOS local runs enforce the same ticket evidence requirement.
+- Uppercase ticket IDs remain safe in shell-command lifecycle moves.
+- Command safety checks can continue using normalized shell tokens without being
+  reused for path-sensitive policy decisions.

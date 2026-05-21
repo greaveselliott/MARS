@@ -347,6 +347,13 @@ plans to decide what to do next.
   `26249406435`: `internal/tools` raced while reading managed background
   `shell_exec` startup output during `go test ./... -race -count=1
   -coverprofile=coverage.out -covermode=atomic`.
+- `v0.42.20` release notes and tag were pushed on 2026-05-21 for managed
+  background output capture synchronization. The tag-push Release workflow run
+  `26251082633` passed, publishing all four binary assets and `checksums.txt`.
+  Main-branch CI run `26251070633` then failed in `internal/tools` because
+  shell-command ticket lifecycle parsing lowercased `T-001`/`T-002` ticket file
+  paths before reading frontmatter on Linux, allowing missing-evidence ticket
+  done moves to escape only on case-sensitive filesystems.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
