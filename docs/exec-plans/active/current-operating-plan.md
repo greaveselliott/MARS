@@ -309,6 +309,19 @@ plans to decide what to do next.
   and the main-branch CI run `26188726401` failed before running repo tests on
   GitHub. `mars-harness release verify-assets --version v0.42.16` is blocked
   because GitHub returned `404 Not Found` for the `v0.42.16` release object.
+- `v0.42.17` release notes and tag were pushed on 2026-05-21 for the
+  continuous factory-loop stabilization. The tag-push Release workflow run
+  `26242138645` failed before creating release assets; the `linux/amd64`
+  matrix job failed with no retrievable logs or steps, and the remaining matrix
+  jobs were cancelled or skipped. Main-branch CI run `26242173189` also failed
+  before exposing retrievable job logs. A notes-only GitHub Release was created
+  from the generated changelog entry at
+  `https://github.com/greaveselliott/mars-harness/releases/tag/v0.42.17`.
+  `go run ./cmd/mars-harness release verify-assets --version v0.42.17` is
+  blocked because the notes-only release is missing
+  `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
+  `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
+  `checksums.txt`.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
