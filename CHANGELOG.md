@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.22] - 2026-05-21
+<!-- mars-harness-release: version=0.42.22 commit=1fe1dd535711 -->
+
+### Impact
+- **tools:** Operators see improved reliability because clear policy lint blockers.
+
+### Why
+- **tools:** This matters because clear policy lint blockers closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed clear policy lint blockers (1fe1dd5).
+
+### Fixes
+- **tools:** Clear policy lint blockers (1fe1dd5)
+
 ## [0.42.21] - 2026-05-21
 <!-- mars-harness-release: version=0.42.21 commit=a9d602f4f728 -->
 
