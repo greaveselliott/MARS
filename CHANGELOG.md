@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.21] - 2026-05-21
+<!-- mars-harness-release: version=0.42.21 commit=a9d602f4f728 -->
+
+### Impact
+- **tools:** Operators see improved reliability because preserve ticket evidence path case.
+
+### Why
+- **tools:** This matters because preserve ticket evidence path case closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed preserve ticket evidence path case (a9d602f).
+
+### Fixes
+- **tools:** Preserve ticket evidence path case (a9d602f)
+
 ## [0.42.20] - 2026-05-21
 <!-- mars-harness-release: version=0.42.20 commit=ae14dea916b2 -->
 
