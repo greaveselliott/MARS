@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.23] - 2026-05-21
+<!-- mars-harness-release: version=0.42.23 commit=8309291edb20 -->
+
+### Impact
+- **guardrails:** Operators see improved reliability because ignore workspace metadata noise.
+
+### Why
+- **guardrails:** This matters because ignore workspace metadata noise closes a failure mode or degraded path.
+
+### What Changed
+- **guardrails:** Changed ignore workspace metadata noise (8309291).
+
+### Fixes
+- **guardrails:** Ignore workspace metadata noise (8309291)
+
 ## [0.42.22] - 2026-05-21
 <!-- mars-harness-release: version=0.42.22 commit=1fe1dd535711 -->
 
