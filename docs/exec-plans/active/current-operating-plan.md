@@ -325,6 +325,16 @@ plans to decide what to do next.
   `mars-harness-linux-amd64`, `mars-harness-linux-arm64`,
   `mars-harness-darwin-amd64`, `mars-harness-darwin-arm64`, and
   `checksums.txt`.
+- `v0.42.18` release notes and tag were pushed on 2026-05-21 for the
+  guardrail repair-evidence stabilization. The tag-push Release workflow run
+  `26247800820` failed before creating the GitHub Release or publishing assets:
+  the `linux/arm64` matrix job failed with no retrievable steps, the remaining
+  matrix jobs were cancelled, and the release job was skipped. Main-branch CI
+  run `26247792812` also failed before exposing retrievable job logs. `gh run
+  view --log-failed` returned `log not found` for Release workflow job
+  `77250600906` and CI job `77250569043`. `go run ./cmd/mars-harness release
+  verify-assets --version v0.42.18` is blocked because GitHub returned
+  `404 Not Found` for the `v0.42.18` release object.
 - Model evaluation, Ollama catalog support, model overrides, persisted reports,
   repo-backed benchmark cases, and promotion blocking shipped under `MH-030`.
 
