@@ -2,8 +2,11 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/delivery-operating-model.md
 - docs/design-docs/harness-operating-model.md
 - docs/features/F-001-delivery-operating-model.md
+- docs/features/F-006-queue-and-orchestration.md
+- docs/roles/ROLES.md
 */
 package roleregistry
 
@@ -246,7 +249,7 @@ var defaultEntries = []Entry{
 		Schedule:           "chain-only",
 		Tools:              "file_read, file_write, file_search, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push",
 		TrustLevel:         "progressive planner write with plan and BDD gates",
-		Guardrails:         "exec plan, BDD feature contract, scenario schedule, planning-only writes, no implementation, no mutating shell, trust, and git discipline",
+		Guardrails:         "exec plan, BDD feature contract, scenario schedule, planning-only writes, no alternate ticket creation, no implementation, no mutating shell, trust, and git discipline",
 		ModelRouting:       "reasoning",
 		ScoringSignals:     "plan clarity, BDD completeness, scenario priority, CTO handoff quality",
 		EscalationBehavior: "return disposition to orchestrator; route ticket_breakdown to CTO and goal conflicts to CEO",
@@ -260,7 +263,7 @@ var defaultEntries = []Entry{
 		Schedule:           "0 21 * * 0",
 		Tools:              "file_read, file_write, grep, workspace_hygiene, github_auth_check, record_decision, ticket_create, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push",
 		TrustLevel:         "progressive technical-planning write with ticket and git gates",
-		Guardrails:         "architecture rationale, technical decomposition, BDD ticket evidence, trust, and git discipline",
+		Guardrails:         "architecture rationale, technical decomposition, BDD ticket evidence, no implementation/product-file writes, trust, and git discipline",
 		ModelRouting:       "reasoning",
 		ScoringSignals:     "architecture fit, ticket readiness, decision quality, audit finding closure",
 		EscalationBehavior: "return disposition to orchestrator; route implementation tickets to Engineer and planning blockers to COO",
@@ -274,10 +277,10 @@ var defaultEntries = []Entry{
 		Schedule:           "0 0,6,12,18 * * 1-5",
 		Tools:              "file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record",
 		TrustLevel:         "progressive engineering write with ticket, test, release, and git gates",
-		Guardrails:         "blast-radius containment, tests, ticket evidence, docsync, in-progress drain, release versioning, and git discipline",
+		Guardrails:         "blast-radius containment, tests, ticket evidence, ticket/BDD contract fidelity, closure before packaging, docsync, bounded review rework, in-progress drain, release versioning, and git discipline",
 		ModelRouting:       "coding",
 		ScoringSignals:     "test pass rate, ticket completion evidence, blocker metadata quality, regression rate, review rework",
-		EscalationBehavior: "return disposition to orchestrator; return blocked tickets with blocker, blocked_by, trace_id, and next_action metadata",
+		EscalationBehavior: "return disposition to orchestrator; answer changes_requested with exact evidence before broader validation; return blocked tickets with blocker, blocked_by, trace_id, and next_action metadata",
 	},
 	{
 		Role:               "qa",
@@ -286,9 +289,9 @@ var defaultEntries = []Entry{
 		Mode:               "quality-review",
 		TriggerSources:     "orchestrator dispatch after implementation or review request",
 		Schedule:           "chain-only",
-		Tools:              "file_read, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff",
-		TrustLevel:         "reviewer read-only by default",
-		Guardrails:         "evidence gate, BDD contracts, doctrine sync, docsync, and tool policy",
+		Tools:              "file_read, shell_exec, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff",
+		TrustLevel:         "reviewer read-only except bounded validation shell",
+		Guardrails:         "evidence gate, in-job validation proof, validation-only shell, BDD contracts, doctrine sync, docsync, and tool policy",
 		ModelRouting:       "reasoning",
 		ScoringSignals:     "defect detection, evidence accuracy, false approval rate, reopened tickets",
 		EscalationBehavior: "return disposition to orchestrator; record findings instead of hiding incomplete work",
@@ -301,11 +304,11 @@ var defaultEntries = []Entry{
 		TriggerSources:     "schedule; orchestrator dispatch after QA or risk signal",
 		Schedule:           "0 22 * * 0",
 		Tools:              "file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push",
-		TrustLevel:         "progressive reviewer write for bounded remediation",
-		Guardrails:         "security posture, blast-radius containment, docsync, trust, and git discipline",
+		TrustLevel:         "progressive reviewer write limited to security reports",
+		Guardrails:         "security posture, current-evidence finding validity, in-job validation proof, blast-radius containment, docsync, trust, and git discipline",
 		ModelRouting:       "reasoning",
-		ScoringSignals:     "security finding validity, remediation success, dependency risk reduction",
-		EscalationBehavior: "return disposition to orchestrator; record unresolved risk as tickets",
+		ScoringSignals:     "security finding validity, remediation clarity, dependency risk reduction",
+		EscalationBehavior: "return disposition to orchestrator; record implementation, evidence, or documentation remediation as Engineer changes_requested feedback",
 	},
 	{
 		Role:               "dependency-manager",
@@ -344,7 +347,7 @@ var defaultEntries = []Entry{
 		Schedule:           "0 10 * * 1-5",
 		Tools:              "file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record",
 		TrustLevel:         "progressive tester write limited to bounded evidence and target-owned findings",
-		Guardrails:         "real command evidence, observation-first validation, no product mutation, blast-radius containment, docsync, trust, and git discipline",
+		Guardrails:         "real command evidence, observation-first validation, committed finding handoff before further validation, no product mutation, blast-radius containment, docsync, trust, and git discipline",
 		ModelRouting:       "coding",
 		ScoringSignals:     "setup success, E2E pass rate, reproduced failures, target-owned finding quality",
 		EscalationBehavior: "record foundation/runtime failures as telemetry or blocked dispositions; create target tickets only for target-owned product defects",

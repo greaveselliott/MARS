@@ -13,8 +13,9 @@ Turn CEO goals into a single active operating plan, BDD feature contract, scenar
 
 1. One active plan with clear goals, blockers, scenario schedule, and success evidence.
 2. BDD feature contracts that define business logic before technical tickets.
-3. Small walking-skeleton slices that CTO and Engineer can execute.
-4. Planning clarity over ticket volume.
+3. Scenario IDs that match their feature contract path, e.g. only F-001-SNNN headings inside docs/features/F-001*.md.
+4. Small walking-skeleton slices that CTO and Engineer can execute.
+5. Planning clarity over ticket volume.
 
 ## Owns
 
@@ -63,4 +64,5 @@ Turn CEO goals into a single active operating plan, BDD feature contract, scenar
 - Use next_need ticket_breakdown when CTO should create implementation tickets.
 - Use next_need architecture_review when CTO must validate technical fit before tickets.
 - Use feedback.for_role ceo when planning is blocked by goal or scope conflict.
+- Do not create tickets by another path: no `file_write` under `docs/tickets/`, no `mars_harness_cli tools run ticket_create`, and no shell-based ticket writes. Commit the plan and feature contract, then hand off to CTO.
 

@@ -8,10 +8,10 @@
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-005, F-006, F-007, F-009, F-010, F-012
 **Hypothesis:** Treating factory pace as measured intervention debt, using the `demo-123` replay series as concrete evidence, will reduce avoidable turns without hiding productive long-running work.
-**Success Evidence:** The 2026-05-20 `demo-123-run11` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; release-blocked publication stopped dispatch without remote mutation or a Dogfood loop. The 2026-05-20 `demo-api-run1`, `demo-api-run2`, `demo-api-run4`, `demo-api-run5`, `demo-api-run6`, `demo-api-run7`, `demo-api-run8`, `demo-api-run9`, `demo-api-run10`, `demo-api-run11`, `demo-api-run12`, `demo-api-run13`, `demo-api-run14`, `demo-api-run15`, `demo-api-run16`, `demo-api-run17`, `demo-api-run18`, `demo-api-run19`, and `demo-api-run20` non-static replays reached product-specific planning and ticketing without intervention-debt ticket amplification; `demo-api-run9` reached local release notes, `demo-api-run11` reached product implementation, QA, Security, Dogfood validation evidence, and quality-score export, `demo-api-run13` confirmed tracked background kill cleanup lets the `/tmp` validation binary start without manual port cleanup, `demo-api-run14` confirmed no-op shell guidance lets Engineer complete the ticket lifecycle, `demo-api-run15` confirmed runtime failures stay quarantined when Engineer fails before review, `demo-api-run16` confirmed source write DocSync metadata can be present at first write, `demo-api-run17` confirmed the handoff reaches Engineer but shell work must be mechanically claim-first, `demo-api-run18` confirmed claim-first shell policy plus source DocSync preflight recovery in the live implementation path, `demo-api-run19` confirmed managed background API validation, ticket completion, QA approval, quality-score export, and zero target intervention-debt tickets, and `demo-api-run20` confirmed bounded Security terminal evidence, Dogfood validation, target release-note generation, overall quality grade `A`, and zero target intervention-debt tickets.
+**Success Evidence:** The 2026-05-20 `demo-123-run11` replay reached product planning, ticketing, Engineer completion, QA, Security, Dogfood, and local release notes with zero intervention-debt tickets; release-blocked publication stopped dispatch without remote mutation or a Dogfood loop. The 2026-05-20 `demo-api-run1`, `demo-api-run2`, `demo-api-run4`, `demo-api-run5`, `demo-api-run6`, `demo-api-run7`, `demo-api-run8`, `demo-api-run9`, `demo-api-run10`, `demo-api-run11`, `demo-api-run12`, `demo-api-run13`, `demo-api-run14`, `demo-api-run15`, `demo-api-run16`, `demo-api-run17`, `demo-api-run18`, `demo-api-run19`, and `demo-api-run20` non-static replays reached product-specific planning and ticketing without intervention-debt ticket amplification; `demo-api-run9` reached local release notes, `demo-api-run11` reached product implementation, QA, Security, Dogfood validation evidence, and quality-score export, `demo-api-run13` confirmed tracked background kill cleanup lets the `/tmp` validation binary start without manual port cleanup, `demo-api-run14` confirmed no-op shell guidance lets Engineer complete the ticket lifecycle, `demo-api-run15` confirmed runtime failures stay quarantined when Engineer fails before review, `demo-api-run16` confirmed source write DocSync metadata can be present at first write, `demo-api-run17` confirmed the handoff reaches Engineer but shell work must be mechanically claim-first, `demo-api-run18` confirmed claim-first shell policy plus source DocSync preflight recovery in the live implementation path, `demo-api-run19` confirmed managed background API validation, ticket completion, QA approval, quality-score export, and zero target intervention-debt tickets, and `demo-api-run20` confirmed bounded Security terminal evidence, Dogfood validation, target release-note generation, overall quality grade `A`, and zero target intervention-debt tickets. The 2026-05-20 `demo-cli-run1` Note Stats CLI replay confirmed product-specific planning, ticketing, implementation, QA, external build-output recovery, and zero intervention-debt tickets for a CLI archetype. The 2026-05-20 `demo-cli-run2` replay confirmed Security no longer mutates product code, root scratch probes are blocked, target quality export reaches grade `B`, and runtime failures remain foundation telemetry with zero target intervention-debt tickets. The 2026-05-20 `demo-cli-run3` replay confirmed the patched generated guidance, claim-first implementation start, root scratch-probe blocking, and max-turn containment with zero target intervention-debt tickets. The 2026-05-20 `demo-cli-run4` replay confirmed contract-first implementation fixed the empty-text semantic drift and produced a committed product slice before the next closure blocker. The 2026-05-20 `demo-cli-run5` replay confirmed closure-before-packaging moved `T-001` to done and reached QA/Security/Dogfood without repo-local packaging artifacts before exposing Dogfood finding-handoff drift. The 2026-05-20 `demo-cli-run6` replay confirmed Dogfood creates one committed finding and Orchestrator routes Engineer rework without intervention-debt amplification; Engineer fixed the target tests, while QA/Security validation approval and remediation-ticket closure became the next source gates.
 **Falsification Evidence:** Pace remains unmeasured, max-turn limits are raised blindly, future clean target replays still route autonomous follow-up after a terminal release blocker, or Dogfood/Engineer tool recovery prevents useful validation from reaching a terminal outcome.
-**Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013
-**Current Failing Scenario:** As of 2026-05-20, `demo-api-run20` confirms the first API lifecycle can reach product implementation, QA, Security, Dogfood, and local release notes, but residual guardrail tax remains in Engineer/Dogfood and the evidence matrix is still too narrow to claim generic software-factory performance.
+**Scenario Schedule:** F-012-S010, F-001-S015, F-004-S007, F-012-S006, F-012-S007, F-009-S013, F-005-S010, F-005-S011, F-005-S016, F-005-S035, F-006-S018, F-006-S019, F-006-S020, F-006-S021, F-006-S022, F-006-S042, F-007-S014
+**Current Failing Scenario:** As of 2026-05-21, `demo-temp-run56` confirms AD-209 moved the clean CLI lifecycle beyond the prior Engineer `max_turns` blocker: product implementation, QA-requested test rework, Engineer test addition, ticket completion, and a second QA handoff all occurred. The remaining live blocker is review terminal convergence firing before QA can run required `docsync_audit` evidence, causing a `circle_detected` failure after successful tests. The next check is AD-210 docsync-aware review terminal convergence in a clean CLI canary.
 **Walking Skeleton Slice:** Expand the live validation matrix across distinct target archetypes, record pace and guardrail-tax deltas for each, and only promote fixes that repeat across targets or protect a clear foundation invariant.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
@@ -487,3 +487,382 @@ Checks recorded during the 2026-05-02 review:
   release publication could mutate remotes and route back to Dogfood after local
   release evidence. The `demo-123-run11` replay confirmed remote mutation is
   blocked and `release_blocked` stops dispatch with no pending follow-up jobs.
+- `T-011`: in progress as of 2026-05-21. The clean `demo-cli-run7` replay
+  confirmed product-specific CEO and COO planning on a generic Note Stats CLI
+  target with zero target intervention-debt tickets, then exposed a fresh
+  ticketing blocker: COO wrote `F-002-SNNN` headings inside the existing `F-001`
+  contract, causing CTO ticket creation to stall behind the feature-contract
+  planning-order guardrail. The clean `demo-cli-run8` replay confirmed the
+  scenario/file ID alignment fix reaches CTO ticket creation and a committed
+  working CLI, then exposed post-validation convergence drift: Engineer kept
+  running exploratory shell probes after successful validation and an
+  implementation commit until `context_overflow`. The clean `demo-cli-run9`
+  replay confirmed ticket closure reaches QA and QA validation gates catch
+  missing tests, then exposed review rework against a ticket still marked done.
+  The clean `demo-cli-run10` replay confirmed rework-ticket reopening
+  enforcement, product implementation, passing tests, and docsync, then exposed
+  the completion-path edge case: the final product-plus-ticket-done commit was
+  blocked as if it were hidden rework. The clean `demo-cli-run11` replay
+  reached implementation and successful external validation, then exposed
+  repeated empty shell no-ops before commit and ticket close. The clean
+  `demo-cli-run12` replay confirmed Engineer reached QA with a completed
+  product ticket, then exposed a review-policy/tool-surface mismatch: QA
+  requires in-job validation evidence but lacked `shell_exec`, and `/tmp`
+  validation binaries could be reused without same-session freshness proof. The
+  clean `demo-cli-run13` replay confirmed product-specific planning, ticketing,
+  and a committed Note Stats CLI implementation, then exposed that direct
+  `go run` product probes were not counted as validation evidence, so Engineer
+  repeated no-op shell placeholders until `circle_detected` with `T-001` still
+  in progress. The 2026-05-21 source slice gives QA bounded validation-only
+  `shell_exec`, records same-session external validation artifacts, blocks
+  stale `<validation-root>` executions, allows fresh validation artifact
+  execution through the Engineer convergence gate, and counts successful direct
+  runtime probes as validation evidence. The clean `demo-cli-run14` replay
+  confirmed Engineer closes the ticket after direct runtime proof and reaches
+  QA, then exposed that expected non-zero runtime probes for invalid input were
+  treated like failed builds/tests and blocked QA approval. The clean
+  `demo-cli-run15` replay then exposed an earlier completion blocker: Engineer
+  reached committed implementation plus passing external runtime proof, but
+  repeated shell placeholders after the completion gate instead of updating
+  ticket evidence through `file_read`/`file_write` and moving `T-001` to done.
+  The clean `demo-cli-run16` replay confirmed ticket evidence convergence
+  reaches QA, then exposed a QA false approval after an unexpected empty-text
+  runtime failure contradicted the brief while tests encoded the bug. The clean
+  `demo-cli-run17` replay confirmed unexpected runtime failures no longer
+  approve by default and the empty-text behavior was fixed, then exposed the
+  2026-05-21 failing scenario: QA ran a failing `go test ./...` on the final turn
+  and hit `max_turns` before recording `changes_requested`, while Engineer used
+  `<validation-root>` instead of the freshness-tracked
+  `<validation-root>` path. The 2026-05-21 source slice stops QA/Security
+  shell validation after the first failing build/test/unexpected runtime
+  command, gives dispatch jobs one terminal-tool grace prompt at the
+  turn-budget edge, and blocks external Go validation builds that do not use
+  `<validation-root>`. The clean `demo-cli-run18` replay confirmed that failing
+  QA validation became structured `changes_requested`, Orchestrator routes
+  rework back to Engineer, Engineer reopens done tickets before mutation, and
+  same-session validation artifact freshness works across role boundaries. The
+  2026-05-21 failing scenario is narrower: an expected-negative missing-argument
+  probe run once without `expected_exit_code` could not be corrected because the
+  shell-stop rule blocked the exact rerun. The 2026-05-21 source slice allows one
+  exact matching `expected_exit_code` correction for runtime probes while keeping
+  failing builds/tests and uncorrected runtime failures on the rework path. The
+  clean `demo-cli-run19` replay confirmed fresh product-specific bootstrap and
+  implementation still proceed without target intervention-debt tickets, then
+  exposed completion outrunning evidence: Engineer observed an empty-text
+  runtime failure, marked the acceptance path complete, moved `T-001` to done,
+  and ended as `max_turns` after spending the terminal grace turn on a
+  non-terminal lifecycle command. The 2026-05-21 source slice now blocks
+  Engineer ticket completion while current-job runtime validation failures
+  remain unrepaired, and restricts the budget-edge grace turn to the configured
+  terminal disposition tool. The clean `demo-cli-run20` replay confirmed the
+  done move is blocked while the empty-text runtime failure remains unresolved,
+  with no target intervention-debt tickets. It then exposed an Engineer
+  expected-exit bypass loop: the role retried the failed acceptance path with
+  `expected_exit_code: 1` until `circle_detected`. The 2026-05-21 source slice
+  makes retroactive expected-exit correction review-only for QA/Security;
+  Engineer must make the exact failed runtime command pass before completion.
+  The clean `demo-cli-run21` replay confirmed that bypass is closed and
+  product planning still works, then exposed a repeat-failure loop: Engineer
+  kept running runtime probes after the empty-text acceptance command failed.
+  The 2026-05-21 source slice now requires a post-failure implementation edit
+  before Engineer can rerun runtime probes, and still requires the exact failed
+  command to pass before completion. The clean `demo-cli-run22` replay
+  confirmed that behavior: Engineer edited after the blocked repeat and made
+  the exact empty-text command pass. It then exposed an expected-negative
+  correction gap for missing required arguments; as of 2026-05-21, source
+  policy allows Engineer to rerun an obvious missing-argument probe with
+  matching `expected_exit_code` while preserving strict rework for positive
+  acceptance failures. The clean `demo-cli-run23` replay confirmed that
+  correction path, then exposed zero-exit error stderr being counted as
+  successful runtime evidence; as of 2026-05-21, source policy treats
+  conservative error-shaped stderr from direct runtime validation as failed
+  evidence until the exact command passes cleanly. The clean `demo-cli-run24`
+  replay confirmed product-first planning, feature-contract update, ticket
+  creation, and intervention-debt quarantine, then exposed an Engineer
+  claimed-ticket no-op loop before implementation; as of 2026-05-21, repeated
+  pre-validation no-op shell calls after claim are blocked and routed to
+  ticket/feature reading plus product `file_write` implementation or a blocked
+  disposition. The clean `demo-cli-run25` replay confirmed that fix, with
+  Engineer writing product files and repairing the empty-text path, then exposed
+  missing-argument correction wording; as of 2026-05-21, unresolved runtime
+  blocker messages explicitly name the exact-command `expected_exit_code`
+  correction for no-argument or missing-required-input probes. The clean
+  `demo-cli-run26` replay confirmed CEO/COO still produce product-specific
+  planning, then exposed false CTO progress after failed ticket creation; as
+  of 2026-05-21, unresolved failed `ticket_create` and ticket-file bypass
+  attempts block successful dispositions until a later `ticket_create`
+  succeeds.
+  The clean `demo-cli-run27` replay confirmed that ticket-creation fix: CTO
+  created a real product ticket and Engineer started implementation. It exposed
+  that a missing-argument runtime probe first run without `expected_exit_code`
+  still allowed adjacent work before correction; as of 2026-05-21, session
+  state stores the exact correction and policy blocks unrelated Engineer
+  mutations until that correction runs or an honest blocked disposition is
+  recorded.
+  The clean `demo-cli-run28` replay confirmed CTO ticketing and Engineer
+  implementation handoff, then exposed stale `<validation-root>` reuse after
+  a positive acceptance failure and source edit; as of 2026-05-21, external
+  validation artifacts must be rebuilt after post-failure implementation edits
+  before rerun evidence is trusted.
+  The clean `demo-cli-run29` replay confirmed fresh product-specific planning,
+  feature contract, ticketing, and Engineer source work, then exposed ticket
+  evidence outrunning validation: Engineer wrote in-progress `evidence_links`
+  and `verified_by` before any successful validation in the job. As of
+  2026-05-21, Engineer ticket evidence writes are blocked until the same job
+  records successful validation.
+  The clean `demo-cli-run30` replay confirmed that evidence-first behavior:
+  Engineer validated, updated ticket evidence, moved `T-001` to done, and
+  handed to QA. It then exposed review recovery drift: QA hit the same-session
+  `<validation-root>` artifact guard and stalled instead of rebuilding the
+  binary in its own session. As of 2026-05-21, external artifact freshness
+  errors name the exact `shell_exec argv` rebuild command for QA/Security.
+  The clean `demo-cli-run31` replay confirmed product-first delivery reached
+  QA with ordinary product artifacts and zero target intervention-debt tickets,
+  and confirmed exact missing-argument correction state in a live Engineer
+  run. It then exposed two validation-quality gaps: Engineer accepted
+  exit-zero runtime output that contradicted the empty-text JSON contract, and
+  QA guessed an invalid root package after a repo-local `go build
+  ./cmd/note-stats` guardrail block. As of 2026-05-21, Go build-output
+  guardrails emit exact corrected `shell_exec argv` commands that preserve the
+  package target, and generated role guidance requires automated assertions
+  for explicit expected-output examples; QA approval is mechanically blocked
+  for Go source changes when no `_test.go` files exist.
+  The clean `demo-cli-run32` replay confirmed product-first delivery still
+  reached a committed product ticket with Go tests and exact build-output
+  correction, then exposed the next generic fault: after a missing-input
+  expected-exit repro still panicked, policy trapped Engineer before repair.
+  It also exposed deployed/foundation naming drift through `cmd/mars-harness`
+  and `module mars-harness` in a Note Stats target. As of 2026-05-21, failed
+  missing-input correction attempts unlock implementation edits while
+  completion stays blocked, and generated CTO/Engineer guidance requires
+  target-derived command, module, and binary names.
+  The clean `demo-cli-run33` replay confirmed target-derived `cmd/note-stats`
+  and `module note-stats` behavior plus implementation repair after runtime
+  failure. It then exposed stale runtime-failure accounting: repeated failures
+  of the same exact `--text ""` command left multiple outstanding counters,
+  and one later exact success only cleared one. As of 2026-05-21, exact runtime
+  repair clears all unmatched failures for the same command fingerprint in the
+  current job.
+  The clean `demo-cli-run34` replay confirmed the repeated-runtime repair:
+  Engineer fixed the empty-text path, corrected the omitted-flag negative path
+  with `expected_exit_code`, wrote tests, passed docsync, and reached QA without
+  intervention-debt amplification. It then exposed review and traceability
+  drift: QA ran package initialization during review, missed the first-run
+  `expected_exit_code` on an intentional negative probe, Orchestrator treated
+  ticket README examples as live backlog, and product code was bundled into the
+  ticket done move commit. As of 2026-05-21, reviewer shell access is
+  validation-only, ticket done moves require non-ticket product changes to be
+  committed first, and Orchestrator routing must ignore README examples as live
+  work.
+  The clean `demo-cli-run35` replay confirmed the ticket-closure fix: Engineer
+  committed product source, README, and `go.mod` separately before a
+  lifecycle-only done-ticket commit. QA then built a fresh validation binary
+  and passed docsync plus runtime probes, but repeated empty `shell_exec`
+  placeholders instead of recording `job_disposition_record`, ending in
+  `circle_detected`. As of 2026-05-21, required terminal-tool jobs get one
+  circle-grace reminder, reviewer no-op placeholders after successful
+  validation route directly to structured disposition, and policy-blocked
+  no-op shell calls are counted as no-op failures for telemetry.
+  The clean `demo-cli-run36` replay confirmed product-first planning and
+  ticketing still work without target intervention-debt tickets, but exposed
+  that an unresolved empty-string acceptance failure could still be bypassed
+  with shell-wrapper probes, unrelated validation, ticket evidence edits, and
+  an implementation commit. As of 2026-05-21, Engineer runtime acceptance
+  failures freeze unrelated shell paths and product commits until the exact
+  failed command passes, while stale `<validation-root>` artifact rebuilds
+  remain available after source edits.
+  The clean `demo-temp-run37` replay used a different Temperature JSON CLI
+  target. It confirmed product-specific planning, ticket creation,
+  implementation, tests, exact omitted-flag `expected_exit_code` correction,
+  product commit, evidence update, docsync, and a lifecycle-only done-ticket
+  commit. It then exposed stale ticket-creation state: a blocked Engineer
+  pre-validation evidence write later prevented an otherwise valid successful
+  disposition. As of 2026-05-21, Engineer evidence-write failures no longer
+  count as ticket-creation debt; failed `ticket_create` and non-Engineer
+  ticket-file bypass attempts still block false planning handoffs.
+  The clean `demo-temp-run38` replay on 2026-05-21 confirmed the alternate CLI canary
+  reaches product implementation, evidence update, and done-ticket closure, but
+  exposed two remaining generic loop leaks: COO tried alternate ticket creation
+  paths despite not owning ticketing, and QA alternated no-op shell placeholders
+  after validation until `circle_detected` instead of recording disposition or
+  requesting missing tests. As of 2026-05-21, non-ticket-owning planners hand
+  off `ticket_breakdown` to CTO without alternate ticket writes, review no-op
+  recovery after successful validation is terminal-only, and QA routes Go
+  source without `_test.go` files to `changes_requested`.
+  The clean `demo-temp-run39` replay on 2026-05-21 confirmed the planning
+  handoff fix and durable-test expectation on the alternate CLI target, then
+  exposed failing-test bypass: Engineer observed a failing `go test`, proved
+  narrower runtime probes, attempted forbidden cleanup, and committed product
+  work while the authoritative test command still failed. As of 2026-05-21,
+  Engineer failing test/build evidence creates a repair lane: source/test
+  edits remain available, but runtime side probes, ticket evidence, ticket
+  completion, successful disposition, and product commits are blocked until the
+  exact failing command passes.
+  The clean `demo-temp-run40` replay on 2026-05-21 confirmed early planning
+  again, then exposed CTO role-boundary drift before Engineer validation: CTO
+  created the ticket but also wrote `go.mod`, attempted source/test writes,
+  updated README usage, and committed product-adjacent state. As of 2026-05-21,
+  CTO file writes are limited to technical planning artifacts, while package,
+  README usage, source, test, build, config, and root product-file changes
+  belong to ticket-backed Engineer delivery.
+  The clean `demo-temp-run41` replay on 2026-05-21 confirmed CTO now creates
+  and commits only the implementation ticket before Engineer claims it. It then
+  exposed that the test/build repair lane was too exact-command-bound:
+  Engineer could not run a focused same-lane `go test` after the original
+  package-pattern test failed, and started trying workaround paths such as a
+  root verification script. As of 2026-05-21, test/build repair lanes accept
+  bounded source/test/fixture/build-config edits followed by same-lane focused
+  validation, while runtime probes, helper scripts, ticket evidence,
+  completion, disposition, and product commits stay blocked until validation
+  passes.
+  The clean `demo-temp-run42` replay on 2026-05-21 confirmed AD-196's
+  blocking side: runtime probes, build substitution, helper paths, and commits
+  stayed blocked while the test lane was unresolved. The same run also exposed that
+  focused shell validation shaped as `cd cmd/temperature-json-cli && go test
+  -v .` was not classified as a test command. As of 2026-05-21, AD-197
+  recognizes that narrow `cd <dir> && <test/build>` form for same-lane repair
+  while keeping arbitrary shell wrappers blocked.
+  The clean `demo-temp-run43` replay on 2026-05-21 confirmed the product path
+  through Engineer and QA on the alternate target: Engineer corrected an
+  expected missing-input probe, repaired a failing test, committed product
+  work, updated evidence, closed the ticket, and QA approved. Security then
+  gathered clean read plus validation evidence but spent more than five minutes
+  in the next model turn instead of recording disposition. As of 2026-05-21,
+  AD-198 makes clean QA/Security review evidence a terminal-only boundary with
+  a short grace timeout for the required `job_disposition_record` response.
+  The clean `demo-temp-run44` replay on 2026-05-21 confirmed product-first
+  planning and Engineer delivery again, but QA falsely routed implementation
+  rework after a validation command procedure mistake: `go build ... cmd/...`
+  lacked the required `./cmd/...` package prefix. As of 2026-05-21, AD-199
+  records obvious QA/Security Go build/test command-target mistakes separately
+  from target validation failures so reviewers can correct their command and
+  continue without creating false product rework.
+  The clean `demo-temp-run45` replay on 2026-05-21 then exposed the same
+  validation shape one layer earlier: Engineer tried the safe focused nested
+  module test as `argv:["cd","cmd/temperature-json-cli","&&","go","test",
+  "./..."]`, which argv mode rejected before the model fell into a root
+  `go test ./cmd/...` failure. As of 2026-05-21, AD-200 normalizes only the
+  validation-only `cd <dir> && <test/build>` argv shape into `shell_command`
+  while keeping arbitrary shell syntax rejected.
+  The clean `demo-temp-run46` replay on 2026-05-21 confirmed the external
+  build-artifact correction and positive runtime checks, then exposed a
+  missing-input CLI validation loop: Engineer ran the validation binary with
+  no arguments, received the expected `--celsius flag is required` error, but
+  the runtime repair guardrail treated the absent `expected_exit_code` as an
+  unresolved failure and blocked completion. As of 2026-05-21, AD-201 treats
+  clear missing-input CLI probes with required/usage output and no crash
+  markers as expected negative-path evidence on the first run.
+  The clean `demo-temp-run47` replay on 2026-05-21 confirmed that
+  missing-input validation no longer poisoned Engineer completion, then
+  exposed the sibling invalid-input case: `go run ... invalid` correctly
+  produced `Must be a number`, but the policy still treated it as unexpected.
+  As of 2026-05-21, AD-201 covers deliberate invalid-input probes as well as
+  missing-input probes, while valid positive inputs rejected as invalid remain
+  failures.
+  The clean `demo-temp-run48` replay on 2026-05-21 confirmed AD-201 through
+  Engineer implementation, positive runtime validation, missing-input and
+  invalid-input validation, product commit, ticket closure, and QA handoff.
+  QA requested rework because the Go CLI lacked `_test.go` coverage, and the
+  rework Engineer then hit a missing `./` Go package-target procedure failure
+  that incorrectly poisoned the product repair lane. As of 2026-05-21, AD-202
+  classifies obvious Engineer Go validation-procedure mistakes separately
+  from real product build failures so corrected validation can continue.
+  The clean `demo-temp-run49` replay on 2026-05-21 confirmed the alternate
+  CLI target through product planning, ticket creation, Engineer claim, source
+  write with DocSync metadata, external validation build, positive runtime
+  validation, and missing-input validation. It then exposed the next
+  negative-path classifier gap: `<validation-root> 25 30`
+  correctly returned `error: too many arguments provided`, but the runtime
+  guardrail treated the surplus-argument rejection as unexpected. As of
+  2026-05-21, AD-203 treats clear surplus-argument CLI probes as expected
+  negative-path evidence when the output names too many or surplus arguments
+  and no crash markers are present.
+  The clean `demo-temp-run50` replay on 2026-05-21 confirmed another
+  product-first path through Engineer implementation, external validation,
+  positive runtime checks, and explicit expected-exit negative checks. It then
+  exposed the next repair-lane gap: after bad same-job test files caused a real
+  `go test` compile failure, the guardrail correctly blocked unrelated work
+  but also blocked the `rm` cleanup needed to delete those bad same-job test
+  files. As of 2026-05-21, AD-204 allows only non-recursive removal of
+  test-like files written by the same Engineer job after the test/build
+  failure began; source files, unmarked tests, and recursive cleanup remain
+  blocked.
+  The clean `demo-temp-run51` replay on 2026-05-21 confirmed full
+  product-first delivery through Engineer: plan, ticket, implementation,
+  tests, runtime evidence, ticket closure, and QA handoff. QA corrected the
+  familiar `cmd/...` versus `./cmd/...` Go build procedure mistake, then had
+  sufficient review evidence but missed the required terminal
+  `job_disposition_record` call and ended as `circle_detected`. As of
+  2026-05-21, AD-205 rejects the first non-terminal response after a clean
+  review-evidence reminder without executing it and gives one stronger
+  terminal-only correction before repeated misses fail.
+  The clean `demo-temp-run52` replay on 2026-05-21 exercised a different
+  Engineer repair path. After a failing `go test ./cmd/temperature-json-cli/...`
+  command, the repair lane blocked runtime probes, destructive cleanup, commits,
+  and ticket moves, but still allowed root `main.go` and `main_test.go` writes.
+  Engineer started validating a parallel root implementation instead of the
+  failed package. As of 2026-05-21, AD-206 records narrow Go package
+  test/build repair scopes and blocks source/test/fixture writes outside that
+  scope until the lane is repaired.
+  The clean `demo-temp-run55` replay on 2026-05-21 confirmed run metadata
+  injection but exposed the same-job cleanup gap one layer later: Engineer
+  wrote duplicate or placeholder test files before the first failing package
+  test, then could not remove them because AD-204 only covered files written
+  after the failure began. As of 2026-05-21, AD-209 records every successful
+  Engineer `file_write` path so same-job generated test files can be removed
+  during unresolved test/build repair while pre-existing tests and source files
+  stay protected.
+  The clean `demo-temp-run56` replay on 2026-05-21 validated that direction by
+  reaching QA, receiving test-coverage rework, adding focused Go tests, closing
+  `T-001`, and handing back to QA. The next blocker was review terminal
+  convergence: QA successfully ran `go test ./cmd/temperature-json-cli/` but
+  tried required `docsync_audit` after the runtime had already forced
+  `job_disposition_record`, so the job ended with `circle_detected`. As of
+  2026-05-21, AD-210 requires docsync evidence before the review terminal
+  boundary fires.
+  The clean `demo-temp-run57` replay on 2026-05-21 confirmed docsync can now
+  run before the terminal boundary, then exposed an adjacent evidence-ordering
+  bug: QA was forced to terminal disposition after external build evidence
+  even though `_test.go` files existed and the test command had not run. As of
+  2026-05-21, AD-211 requires review terminal convergence to wait for a
+  successful test command when test files exist.
+  The clean `demo-temp-run58` replay on 2026-05-21 confirmed the direct
+  convergence check but exposed no-op recovery as a stale terminal trigger: an
+  empty review `shell_exec` after build evidence forced approval guidance
+  before tests had passed. As of 2026-05-21, AD-212 keeps no-op recovery
+  aligned with the same evidence gates as approval and points reviewers to
+  missing tests or docsync before terminal approval guidance.
+  The clean `demo-temp-run59` replay on 2026-05-21 validated that review path
+  and reached local release artifacts: product planning, ticket creation,
+  Engineer implementation, QA, Security, Dogfood, `release: notes 0.2.0`, and
+  tag `v0.2.0`. The remaining rough edge was Release Manager using
+  `shell_exec mars-harness release notes`, which resolved a stale installed
+  binary before recovering through a second release pass. As of 2026-05-21,
+  AD-213 blocks direct `mars-harness` shell invocations in agent jobs and
+  routes Mars Harness CLI workflows through `mars_harness_cli`.
+  The clean `demo-temp-run60` replay on 2026-05-21 broadened the canary matrix
+  with a Word Count JSON CLI. It validated AD-213 in the live release path:
+  Release Manager used `mars_harness_cli`, committed `release: notes 0.2.0`,
+  created tag `v0.2.0`, and stopped only on the real missing-remote blocker.
+  The new finding was startup retry persistence: a bind-failed sandboxed start
+  registered and queued bootstrap state, then automatic cleanup deleted SQLite
+  `-wal`/`-shm` sidecars before the retry. As of 2026-05-21, AD-214 preserves
+  SQLite sidecars and lets SQLite recover/checkpoint them instead of deleting
+  queue or repo registry state.
+  The clean `demo-slug-run61` replay on 2026-05-21 validated AD-214 with a
+  Slugify JSON CLI: the retry reused the same repo ID and CEO job after a
+  bind-failed first start. It then exposed the next pace issue. QA correctly
+  requested test rework, Orchestrator routed it to Engineer, and Engineer added
+  a failing contract-shaped test, but the unresolved test/build guardrail only
+  repeated the command and the role churned for 9m44s without repairing the
+  implementation. As of 2026-05-21, AD-215 repeats the latest failing
+  test/build output in guardrail guidance and tells Engineer to edit
+  implementation when the assertion matches the contract.
+  The clean `demo-slug-run62` replay on 2026-05-21 validated AD-215 in the
+  live lifecycle: the same Slugify JSON CLI shape completed CEO, COO,
+  CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager in one local
+  run; generated `release: notes 0.2.0`; created tag `v0.2.0`; kept guardrail
+  blocks as foundation telemetry; and created no target intervention-debt
+  tickets. The remaining terminal blocker was the expected missing remote for
+  publication in the temporary target. Next canaries should broaden beyond
+  small CLI targets and include a remote-backed release path.

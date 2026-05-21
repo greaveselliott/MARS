@@ -69,20 +69,24 @@ history.
 
 ### AD-051: Source And Target Release Behavior Mirrors
 
-`mars-harness init` creates `VERSION`, `CHANGELOG.md`, release-versioning design guidance, and release knowledge routes in target repos. The default release-manager prompt uses the same `mars-harness release notes --repo . --bump auto` command that Mars Harness itself uses.
+`mars-harness init` creates `VERSION`, `CHANGELOG.md`, release-versioning design guidance, and release knowledge routes in target repos. The default release-manager prompt uses the same `release notes --repo . --bump auto` command that Mars Harness itself uses, but executes Mars Harness commands through the structured `mars_harness_cli` tool rather than `shell_exec mars-harness ...` so deployed agents resolve the active harness executable before any stale installed PATH binary.
 
 ### AD-056: Source Changes Are Automatically Versioned On Commit
 
 Every non-release semantic commit to this source repository must be followed by an automatic release-note generation step before the task is considered done:
 
 1. commit the coherent source/doc/test change
-2. run `mars-harness release notes --repo . --bump auto`
+2. run `mars_harness_cli` with args `["release","notes","--repo",".","--bump","auto"]`
 3. verify the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes
-4. run `mars-harness release backfill-notes --repo . --check`; if it reports
-   legacy entries, run `mars-harness release backfill-notes --repo .` and
+4. run `mars_harness_cli` with args `["release","backfill-notes","--repo",".","--check"]`; if it reports
+   legacy entries, run `mars_harness_cli` with args `["release","backfill-notes","--repo","."]` and
    include that changelog correction in the same release-note commit
 5. commit them as `release: notes X.Y.Z`
 6. push `main`
+
+For operator terminal work, the equivalent command is
+`mars-harness release notes --repo . --bump auto`; in agent jobs the
+structured `mars_harness_cli` form is required to avoid stale PATH binaries.
 
 The `release: notes X.Y.Z` commit itself is exempt. The release generator ignores release-note commits so the workflow does not create an infinite version loop.
 
@@ -90,9 +94,9 @@ The `release: notes X.Y.Z` commit itself is exempt. The release generator ignore
 
 Initialized target repositories use the same operating rule. `mars-harness init` writes target `AGENTS.md`, `docs/design-docs/release-versioning.md`, and the release-manager prompt so every non-release semantic commit in the target repo is followed by:
 
-1. `mars-harness release notes --repo . --bump auto`
+1. `mars_harness_cli` with args `["release","notes","--repo",".","--bump","auto"]`
 2. verification of generated `VERSION` and `CHANGELOG.md`
-3. `mars-harness release backfill-notes --repo . --check`, with any required
+3. `mars_harness_cli` with args `["release","backfill-notes","--repo",".","--check"]`, with any required
    historical backfill included before commit
 4. a `release: notes X.Y.Z` commit
 5. push to `main`
@@ -250,6 +254,26 @@ backfills. Release managers must run `mars-harness release verify-assets
 --version vX.Y.Z` after publication before claiming the installer or self-update
 path is shipped.
 
+### AD-207: Release Tags Must Point At The Release-Note Commit
+
+The `demo-temp-run53` replay proved the generated target lifecycle can now
+reach local release notes, but Release Manager briefly tagged `v0.2.0` at the
+pre-release-note Dogfood commit while `VERSION` and `CHANGELOG.md` were still
+dirty. The disposition guard forced the release-note commit afterward, but the
+local tag still pointed at the wrong commit.
+
+Release tags are therefore a mechanical invariant, not a prompt-only ritual.
+Before any `git tag vX.Y.Z` shell command is allowed, the worktree must be
+clean, `VERSION` must equal `X.Y.Z`, `HEAD` must be the
+`release: notes X.Y.Z` commit, and any explicit tag target must resolve to
+that same `HEAD`. `git_release_guard` also fails when a version tag exists but
+does not point at the release-note `HEAD`, so a stale local tag is visible
+before publication.
+
+This keeps local-only target releases useful while preventing the source or a
+deployed harness from publishing assets, GitHub Releases, or update metadata
+for a commit that does not contain the generated release notes.
+
 ## Implementation Requirements
 
 - Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
@@ -274,6 +298,8 @@ path is shipped.
 - Publish or update matching GitHub Releases when authenticated GitHub release capability is configured.
 - Verify `gh release view vX.Y.Z` after every tag push and create/update a
   notes-only release object from `CHANGELOG.md` when workflow publication fails.
+- Block release tag creation unless the tag matches `VERSION`, the worktree is
+  clean, `HEAD` is the release-note commit, and the tag target is that `HEAD`.
 - Let the installed binary reinstall itself without requiring a source checkout.
 - Verify release assets before announcing installer or self-update availability.
 - Use the same update vocabulary for binary and deployed target harness updates.

@@ -37,6 +37,7 @@ type Session struct {
 	Guardrails          *guardrails.Engine
 	SafetyLimits        safety.Limits
 	ToolCounts          map[string]int
+	ToolState           map[string]string
 	PolicyRecorder      func(PolicyEvent)
 	DispositionRecorder func(context.Context, json.RawMessage) error
 }

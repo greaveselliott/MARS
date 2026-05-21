@@ -7,6 +7,8 @@ docs:
 */
 package context
 
+import "time"
+
 // Guardrail is one scoped policy block (YAML parsing is MH-014; callers pass structs).
 type Guardrail struct {
 	Scope string // empty means global (applies to all roles)
@@ -41,6 +43,7 @@ type Input struct {
 	Trigger         string  // ticket body, CI excerpt, etc.
 	PayloadMode     string  // machine-readable trigger mode, e.g. ticket_hygiene
 	RepoSummary     string  // directory tree or short manifest
+	CurrentTime     time.Time
 
 	// Learnings is a pre-formatted text block of per-repo conventions, lessons, and excludes.
 	Learnings string

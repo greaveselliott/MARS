@@ -13,8 +13,9 @@ Turn approved, verified changes into versioned release notes, tags, assets, and 
 
 1. Version and changelog correctness.
 2. Release asset health.
-3. Git tag and publication evidence.
-4. Never claiming an incomplete release is complete.
+3. Git tags that point at the release-note commit.
+4. Publication evidence.
+5. Never claiming an incomplete release is complete.
 
 ## Owns
 
@@ -43,6 +44,7 @@ Turn approved, verified changes into versioned release notes, tags, assets, and 
 - Provide the version target and approved evidence.
 - Separate release blockers from downstream quality failures.
 - State whether the desired output is notes, tag, GitHub release, binary verification, or blocker record.
+- Use `mars_harness_cli` for Mars Harness release commands; generic `shell_exec mars-harness ...` can resolve a stale installed binary instead of the active harness executable.
 
 ## Feedback I Give
 

@@ -131,9 +131,26 @@ func registerTicketCreate(r *Registry) error {
 func handleTicketCreate(_ context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
 	var args ticketCreateArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
-		return ToolResult{}, fmt.Errorf("ticket_create: parse arguments: %w", err)
+		return ToolResult{}, fmt.Errorf("ticket_create: parse arguments: %s", ticketCreateParseHint(err))
 	}
 	return CreateTicket(root, TicketInput(args))
+}
+
+func ticketCreateParseHint(err error) string {
+	msg := err.Error()
+	if strings.Contains(msg, "bdd_scenarios") && strings.Contains(msg, "[]string") {
+		return fmt.Sprintf("bdd_scenarios must be a JSON array, not a quoted string; use \"bdd_scenarios\":[\"F-001-S002\"]: %s", msg)
+	}
+	if strings.Contains(msg, "blocked_by") && strings.Contains(msg, "[]string") {
+		return fmt.Sprintf("blocked_by must be a JSON array, not a quoted string; use \"blocked_by\":[\"T-001\"]: %s", msg)
+	}
+	if strings.Contains(msg, "depends_on") && strings.Contains(msg, "[]string") {
+		return fmt.Sprintf("depends_on must be a JSON array, not a quoted string; use \"depends_on\":[\"T-001\"]: %s", msg)
+	}
+	if strings.Contains(msg, "evidence_links") && strings.Contains(msg, "[]string") {
+		return fmt.Sprintf("evidence_links must be a JSON array, not a quoted string; use \"evidence_links\":[\"go test ./...\"]: %s", msg)
+	}
+	return msg
 }
 
 // CreateTicket creates a backlog ticket under docs/tickets/backlog with automatic dedupe.

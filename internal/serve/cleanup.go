@@ -9,6 +9,7 @@ docs:
 package serve
 
 import (
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"net"
@@ -16,10 +17,12 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	_ "modernc.org/sqlite"
 )
 
-// Cleanup kills stale processes from previous runs and removes corrupt
-// SQLite WAL/SHM files. Called automatically by `start` and `serve`.
+// Cleanup kills stale processes from previous runs and lets SQLite recover
+// any sidecar WAL/SHM files. Called automatically by `start` and `serve`.
 // extraPorts are additional ports to check (e.g. the dashboard port).
 func Cleanup(webhookPort int, dbPath string, extraPorts ...int) {
 	killStalePort(webhookPort)
@@ -86,14 +89,36 @@ func cleanStaleSQLite(dbPath string) {
 	if dbPath == "" {
 		return
 	}
+	if _, err := os.Stat(dbPath); err != nil {
+		if !os.IsNotExist(err) {
+			slog.Debug("cleanup: inspect sqlite db failed", "path", dbPath, "err", err)
+		}
+		return
+	}
+
+	hasSidecar := false
 	for _, suffix := range []string{"-shm", "-wal"} {
 		path := dbPath + suffix
 		if _, err := os.Stat(path); err == nil {
-			if err := os.Remove(path); err != nil {
-				slog.Debug("cleanup: remove stale file failed", "path", path, "err", err)
-			} else {
-				slog.Info("cleanup: removed stale file", "path", path)
-			}
+			hasSidecar = true
+		} else if err != nil && !os.IsNotExist(err) {
+			slog.Debug("cleanup: inspect sqlite sidecar failed", "path", path, "err", err)
 		}
 	}
+	if !hasSidecar {
+		return
+	}
+
+	db, err := sql.Open("sqlite", dbPath+"?_pragma=busy_timeout(5000)")
+	if err != nil {
+		slog.Warn("cleanup: sqlite sidecar recovery open failed", "path", dbPath, "err", err)
+		return
+	}
+	defer db.Close()
+
+	if _, err := db.Exec("PRAGMA wal_checkpoint(PASSIVE)"); err != nil {
+		slog.Warn("cleanup: sqlite sidecar recovery checkpoint failed", "path", dbPath, "err", err)
+		return
+	}
+	slog.Info("cleanup: sqlite sidecar recovery checked", "path", dbPath)
 }

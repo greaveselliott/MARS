@@ -28,6 +28,8 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 11. F-009-S011 - Private release auth is a first-class Getting Started operating model.
 12. F-009-S012 - Approved product validation enters release review automatically in generated target lifecycles.
 13. F-009-S013 - GitHub Release objects are created even when asset workflows are blocked.
+14. F-009-S014 - Version tags can only be created at the release-note commit.
+15. F-009-S015 - Release Manager uses the structured Mars Harness CLI tool instead of stale PATH binaries.
 
 ## Scenarios
 
@@ -119,6 +121,14 @@ Then dispatch routes to Release Manager before stopping so generated target `VER
 And Release Manager runs `mars-harness release backfill-notes --repo . --check` so legacy release entries are found deliberately instead of being missed during routine versioning
 And a Release Manager `release_blocked` publication disposition stops dispatch as operator-visible release evidence instead of routing back to Dogfood or another already-completed product validation role
 
+### F-009-S015: Release Review Uses Structured CLI Resolution
+
+Given a deployed target has an older `mars-harness` binary earlier on `PATH`
+When Release Manager needs release notes, backfill, or asset verification
+Then the role uses `mars_harness_cli` with structured args instead of `shell_exec mars-harness ...`
+And `shell_exec` blocks direct `mars-harness` binary invocations with a correction that names the equivalent `mars_harness_cli` args
+And release review cannot fail solely because a stale installed binary lacks a newer command surface
+
 ### F-009-S013: Notes-Only Release Object Fallback
 
 Given GitHub release credentials are configured and the tag `vX.Y.Z` has been pushed
@@ -126,6 +136,14 @@ When the Release workflow is blocked by CI, billing, permissions, or another wor
 Then the release process must publish a notes-only GitHub Release using the generated changelog entry for `X.Y.Z`
 And the operating record must distinguish that release-object publication succeeded from the remaining asset blocker
 And asset verification remains failing until the required binaries and checksums are attached
+
+### F-009-S014: Release Tag Commit Invariant
+
+Given generated release notes have updated `VERSION` to `X.Y.Z` and changed `CHANGELOG.md`
+When Release Manager attempts to create or update `vX.Y.Z`
+Then tag creation is blocked until the release-note files are committed as `release: notes X.Y.Z`
+And the tag is blocked when its explicit target resolves to any commit other than the current release-note `HEAD`
+And `git_release_guard` fails when `vX.Y.Z` already exists but points at a pre-release-note commit
 
 ## Out of Scope
 
@@ -152,3 +170,5 @@ None.
 - F-009-S010: `go test ./cmd/mars-harness -run TestVersionEntrypointsPrintSameVersionLine`
 - F-009-S012: `go test ./internal/orchestration -run 'TestDecide_(dogfoodApprovalRoutesDirectlyToReleaseManager|releaseManagerReleaseBlockedStopsDispatch|orchestratorCannotRouteReleaseBlockedBackToDogfood)'`, `go test ./internal/serve -run TestHandleJobComplete_releaseBlockedStopsWithoutDogfoodLoop`, and `go test ./internal/scanner -run TestInit_success`
 - F-009-S013: `go test ./internal/docsconsistency -run TestSourceRepoVersioningRuleIsDocumented` and `go test ./internal/scanner -run TestInit_success`
+- F-009-S014: `go test ./internal/tools -run 'TestShellExecPolicyBlocksReleaseTag|TestGitReleaseGuardReportsStaleReleaseTag'`
+- F-009-S015: `go test ./internal/tools -run TestShellExecPolicyBlocksMarsHarnessBinary` and `go test ./internal/scanner -run TestInit_success`

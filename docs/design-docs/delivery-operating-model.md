@@ -2333,3 +2333,2938 @@ that has already passed Engineer and QA:
 - The next API canary should confirm Security writes
   `docs/reports/security/security-audit-<date>.md`, commits it, and records an
   approved or changes-requested disposition before hitting the turn limit.
+
+## AD-157: Security Review Reports Remediation Instead Of Patching Product Code
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The first CLI target in the representative live matrix,
+`demo-cli-run1`, proved that product-first planning and implementation were not
+specific to the Space Invaders or HTTP API canaries. CEO, COO, CTO, Engineer,
+and QA reached a product-specific Note Stats CLI plan, feature contract,
+ordinary product ticket, implementation, and review. The run also exposed two
+generic lifecycle gaps:
+
+- Engineer created a repo-root `debug.go` scratch probe. It was given valid
+  `MarsDocSync` metadata, so the source metadata gate no longer blocked it,
+  and it was committed with ticket lifecycle work despite being validation
+  noise rather than product code.
+- Security correctly ran `go test ./cmd/note-stats` and found a failing line
+  count test, but then patched `cmd/note-stats/main.go` inside Security review
+  and hit `max_turns` before writing a security report, committing the fix, or
+  recording a disposition. The target was left dirty with a passing test fix in
+  the worktree.
+
+The runtime contained the failure properly: `max_turns` stayed foundation-owned
+telemetry, no intervention-debt ticket was created, and the dirty target survey
+paused instead of dispatching more autonomous work into the uncommitted state.
+The remaining problem was role authority. Security is a reviewer. A functional
+regression discovered during Security review should be handed back to Engineer
+with exact evidence, not fixed opportunistically at the end of a review run.
+
+### Decision
+
+Security `file_write` is now limited to
+`docs/reports/security/security-audit-<date>.md`. Attempts to write product
+code, tests, tickets, feature contracts, or other repo files are rejected before
+the worktree changes. The policy error tells Security to write the audit and
+record `changes_requested` for Engineer when tests, implementation evidence,
+docs, or code need remediation.
+
+Generated Security guidance mirrors that boundary. If a relevant test fails,
+Security writes a NEEDS_REMEDIATION audit and records
+`job_disposition_record` with `status: changes_requested`,
+`feedback.for_role: engineer`, the exact failing command, affected file, and
+requested fix. Security still runs bounded evidence collection, but it does not
+become an implementation role.
+
+The scratch validation block also generalizes from root shell scripts to
+new root-level scratch probes such as `debug.go`, `probe.go`, `scratch.py`, or
+`validate.js`. Existing files can still be updated deliberately, and durable
+validation belongs in tests or scoped validation code under an owned directory.
+
+### Consequences
+
+- Late reviewer-discovered functional defects route through the normal
+  Engineer rework path with explicit evidence instead of leaving dirty product
+  fixes behind a failed Security job.
+- Root scratch probes can no longer bypass hygiene by adding valid DocSync
+  metadata.
+- The next CLI canary should confirm Security reports failing tests as
+  `changes_requested`, or approves only after tests and DocSync pass, without
+  mutating product files.
+
+## AD-158: Review Rework Is Bounded By The Requested Evidence
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The second CLI matrix canary, `demo-cli-run2`, confirmed the AD-157 authority
+boundary: Security wrote only `docs/reports/security/`, committed its audit,
+and no target intervention-debt tickets were created. The product ticket reached
+done, `go test ./cmd/note-stats` passed, and `scores export` produced a target
+quality grade of `B` with one done ticket and zero open intervention debt.
+
+The same run exposed the next lifecycle inefficiency. Security marked a
+`NEEDS_REMEDIATION` finding for `--text` flag behavior even after observing the
+CLI already failed safely for missing or empty input. Orchestrator correctly
+routed the `changes_requested` disposition to Engineer, but Engineer treated it
+as broad rework: it inspected many paths, repeated guarded discovery, patched
+the same surface, rebuilt and smoked the binary, then added extra newline probes
+until `max_turns`. The runtime again contained the failure as foundation
+telemetry and did not dispatch an autonomous loop, but product progress had
+already been achieved and the remaining work was review accuracy and bounded
+handoff discipline.
+
+### Decision
+
+Generated Security guidance now classifies findings from current evidence
+instead of speculation. `NEEDS_REMEDIATION` is reserved for failing tests or
+DocSync, current exploitable code paths, invalid input that succeeds unsafely,
+secrets, credentials, or actionable dependency/configuration risk. Commands
+that already exit non-zero safely and future-extension hardening notes are
+recorded as PASS notes or low-severity observations, not Engineer rework.
+Security report findings now include an evidence line and an explicit
+`Required before release` field.
+
+Generated Engineer guidance now has a review-rework fast path. When a
+`changes_requested` handoff names a ticket that is already done or in review,
+Engineer reads the exact feedback, reproduces the exact failing command or path,
+and either records that no code change is needed or makes the smallest patch.
+After the requested evidence passes, Engineer runs only the relevant test and
+DocSync checks, commits any changed work, pushes, and records
+`job_disposition_record`. Extra exploratory edge cases and broad smoke probes
+belong in follow-up tickets or Dogfood evidence, not in the same rework job.
+
+### Consequences
+
+- Security should stop converting speculative hardening into product-blocking
+  rework.
+- Engineer rework should converge after the requested evidence passes instead
+  of expanding validation until the turn budget is exhausted.
+- The next CLI canary should confirm a Security false positive becomes an
+  approved report or a bounded changes-requested handoff that Engineer closes
+  with a terminal disposition.
+
+## AD-159: Engineer Implementation Is Bounded By The Ticket Contract
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The next CLI canary, `demo-cli-run3`, validated that the patched target
+generated the new Security and Engineer review-rework guidance, but it exposed
+an earlier failure class before Security could run. CEO, COO, and CTO produced
+a product-specific plan, feature contract, and implementation ticket. Engineer
+claimed `T-001` correctly and did not create root scratch probes, but then
+spent 50 turns on open-ended CLI implementation and exploratory edge cases.
+
+The target ticket already said empty `--text ""` should produce zero words,
+zero characters, and zero lines. Engineer drifted between alternative empty
+text semantics, rewrote tests to follow the implementation rather than the
+ticket, investigated character counts with ad hoc commands, and hit
+`max_turns` with uncommitted product files. Runtime containment again worked:
+the failure stayed foundation-owned telemetry, did not route through
+Orchestrator, and created no target intervention-debt ticket. The remaining
+gap is that initial implementation needs the same bounded shape as review
+rework: the selected ticket and BDD scenario are the contract for the run.
+
+### Decision
+
+Generated Engineer guidance now has a contract-first implementation rule.
+Before product writes, Engineer must treat the selected ticket acceptance
+criteria and feature contract as the product contract. Tests and code should
+be aligned to that contract, not rewritten to justify exploratory behavior.
+If an edge case is genuinely ambiguous, Engineer should update the feature
+contract or record a blocked disposition rather than inventing semantics. If
+an exploratory edge case is useful but outside the selected ticket, it becomes
+follow-up evidence rather than same-run validation.
+
+After the required acceptance criteria and one relevant test suite pass,
+Engineer should update ticket evidence, move the ticket to done, commit, push,
+and record `job_disposition_record` instead of continuing to add unrequested
+edge probes.
+
+### Consequences
+
+- Feature delivery should converge on the selected product slice instead of
+  expanding until `max_turns`.
+- QA and Dogfood remain available for broader edge-case validation after the
+  initial ticket is complete.
+- The next CLI canary should confirm Engineer commits a passing Note Stats
+  implementation and records disposition before Security review.
+
+## AD-160: Ticket Closure Precedes Packaging Exploration
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The follow-up CLI canary, `demo-cli-run4`, confirmed the AD-159 contract fix
+improved the live path. Engineer claimed `T-001`, implemented the Note Stats
+CLI, honored the explicit empty-text contract by producing zero words, zero
+characters, and zero lines for `--text ""`, proved the hello-world and
+multiline cases with an external validation binary, ran
+`go test ./cmd/note-stats`, updated ticket evidence, and committed product
+code.
+
+The job still hit `max_turns` before QA. After the selected ticket evidence
+had passed and product code was committed, Engineer continued exploring
+packaging/build-output work. It tried `go build -o bin/note-stats`, hit the
+argv guardrail, then wrapped the same repo-local build in
+`shell_command: "mkdir -p bin && go build -o bin/note-stats ..."`. That
+created an untracked binary before blast-radius validation stopped the tool.
+The runtime correctly kept the failure as foundation telemetry and created no
+target intervention-debt ticket, but the product slice was ready and the
+remaining turn sink was post-success closure discipline.
+
+### Decision
+
+Generated Engineer guidance now treats successful acceptance evidence as a
+closure trigger. Once the selected ticket's acceptance criteria and one
+relevant test suite have passed, Engineer must update ticket evidence, move the
+ticket to done, commit, push, and record disposition before packaging,
+install, distribution, or extra build-output exploration. Repo-local binaries,
+release packages, installer artifacts, and other distributable outputs are not
+part of an ordinary feature ticket unless the selected ticket explicitly asks
+for them.
+
+`shell_exec` build-output policy also scans shell command segments, not only
+commands that start with `go build`. Shell commands such as
+`mkdir -p bin && go build -o bin/app ...` are rejected before execution when
+the Go build output would land inside the target repository.
+
+### Consequences
+
+- A working feature slice should close and move to QA instead of drifting into
+  packaging work.
+- Go CLI and service validation can still use external temp binaries as proof,
+  but target repos stay source-only unless packaging is explicit scope.
+- The next CLI canary should confirm Engineer moves the Note Stats ticket to
+  done after the required tests and external validation pass.
+
+## AD-161: Dogfood Findings Commit Before Further Validation
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The next CLI canary, `demo-cli-run5`, confirmed AD-160 materially improved the
+live lifecycle. Engineer moved `T-001` to done before any repo-local packaging
+artifact was created, QA approved the finished ticket, and Security completed a
+bounded audit report. Dogfood then found a legitimate target-owned product gap:
+running the Note Stats CLI with no `--text` argument produced zero-count JSON
+instead of a required-argument error.
+
+That finding belonged in the target backlog, but Dogfood created two duplicate
+uncommitted tickets for the same issue and continued validation until
+`max_turns`. Runtime containment held and no foundation/runtime failures were
+materialized as intervention debt, but the useful product finding was left as
+dirty target state instead of a clean handoff Engineer could claim.
+
+### Decision
+
+Dogfood-created target findings are now a hard handoff point. After
+`ticket_create` produces an uncommitted ticket under the ticket lifecycle
+directories, Dogfood may inspect status, diff, read files, commit, push, or
+record disposition. Further shell validation and additional `ticket_create`
+calls are blocked until the finding ticket is committed and the run records a
+terminal disposition.
+
+Generated Dogfood guidance now says the same thing in workflow language: once a
+target-owned finding exists, stop additional validation, commit the finding,
+attempt push when a remote exists, and record `changes_requested` or another
+terminal disposition before continuing.
+
+### Consequences
+
+- Dogfood remains able to create product-defect tickets, but cannot flood the
+  backlog with semantically duplicate findings in the same dirty state.
+- Target-owned findings become clean, claimable evidence rather than untracked
+  files that later roles cannot move or claim.
+- Runtime and harness failures remain foundation telemetry; this rule is about
+  target-owned finding handoff, not turning foundation failures into backlog
+  work.
+- The next CLI canary should confirm Dogfood commits exactly one missing-arg
+  finding and records a terminal handoff instead of hitting `max_turns`.
+
+## AD-162: Review Approval Requires Live Validation Evidence
+
+**Status:** Accepted
+**Date:** 2026-05-20
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run6` replay validated the AD-161 handoff direction and exposed a
+more precise quality escape. The run reached product-specific planning,
+ticketing, implementation, QA, Security, Dogfood, Orchestrator, and Engineer
+rework with zero intervention-debt tickets. Dogfood created exactly one
+target-owned finding for a failing Note Stats test expectation, committed it,
+and Orchestrator routed the rework back to Engineer.
+
+Two generic lifecycle problems remained:
+
+- QA approved `T-001` without running the authoritative test suite even though
+  `cmd/note-stats/main_test.go` existed.
+- Security later ran `go test ./...`, saw a failing test, and still recorded an
+  approved disposition. Dogfood caught the same failure and created `T-002`.
+
+The same run showed two smaller tool-policy issues. Literal newline arguments
+in `shell_exec` argv mode were rejected even though argv does not use shell
+parsing, causing avoidable guardrail tax for multiline validation. The Engineer
+then fixed `T-002` and got tests passing, but closing the Dogfood-created
+enabler ticket fought the done-move evidence policy because an enabler with
+`end_to_end_evidence: required` was treated as if it had to become a feature
+ticket.
+
+### Decision
+
+The tool executor now records validation command outcomes in the job session.
+`shell_exec` commands recognized as tests or builds increment validation
+success/failure counters based on the actual exit code. QA and Security cannot
+record `approved`, `completed`, or `in_review` for a named ticket unless the
+current job has run an authoritative validation command successfully. If test
+files are present, a successful test command is required. Any failing
+validation command in the same review job blocks approval and instructs the
+role to record `changes_requested` with the exact failing command and Engineer
+next action.
+
+Dogfood finding handoff is also strengthened from "while the ticket is
+uncommitted" to "after this run creates a Dogfood finding." Once Dogfood calls
+`ticket_create`, further validation or another ticket is blocked for the rest
+of that run; the allowed path is status/diff/read, commit, push if possible,
+and `job_disposition_record`.
+
+`shell_exec` argv validation now allows literal newline characters inside an
+argument. It still rejects shell control tokens, redirection, command
+substitution, backticks, shell builtins, and other syntax that requires
+`shell_command`.
+
+The ticket done-move policy now distinguishes feature tickets from enabler or
+remediation tickets. Feature tickets still require BDD scenarios,
+`end_to_end_evidence: required`, evidence links, and verifier metadata before
+moving to `done/`. Enabler tickets that explicitly require evidence can close
+with evidence links and verifier metadata without pretending to be a feature.
+
+### Consequences
+
+- QA and Security approval now has a mechanical "tests/builds actually passed
+  in this job" floor instead of relying on prompt compliance.
+- Dogfood findings become a single clean handoff rather than a committed ticket
+  followed by more same-run exploration.
+- Multiline CLI/app validation can use structured argv without falling back to
+  shell strings.
+- Engineer can close Dogfood-created remediation work once evidence is present
+  instead of fighting feature-ticket metadata.
+- The next canary should confirm QA/Security approval is blocked until tests
+  pass, Dogfood stops immediately after a finding handoff, and Engineer closes
+  remediation tickets without `max_turns`.
+
+## AD-163: Feature Scenario IDs Must Match Their Contract Path
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run7` replay used a fresh Note Stats CLI target to avoid
+overfitting the live loop to the earlier Space Invaders project. CEO and COO
+made product-specific progress: CEO defined the first slice from `README.md`,
+COO updated the active plan and `docs/features/F-001-product-walking-skeleton.md`,
+and both committed their work. CTO then tried to create the first implementation
+ticket but repeatedly hit the ticket planning-order guardrail.
+
+The root cause was a malformed feature contract. COO appended scenario headings
+`F-002-S001`, `F-002-S002`, and `F-002-S003` inside the existing `F-001`
+contract. CTO reasonably copied those IDs into `ticket_create`. Tool policy
+then looked for `docs/features/F-002*.md`, found none, and blocked the ticket.
+The role did not recover cleanly and spent turns rereading plan ranges. This is
+the same product-first lifecycle class as earlier loops: the harness was close
+to useful delivery, but a small doctrine mismatch stalled the first product
+ticket.
+
+### Decision
+
+Feature contract writes now enforce scenario/file alignment mechanically. A
+scenario heading inside `docs/features/F-001*.md` must use an `F-001-SNNN` ID.
+If a role writes `F-002-SNNN` inside that file, `file_write` blocks the update,
+names the mismatched heading line, and tells the role to rename the heading or
+create/update the matching `docs/features/F-002*.md` contract before ticket
+creation.
+
+Generated COO guidance now states that scenario heading IDs must match the
+feature contract path, and generated CTO guidance says to route feedback back
+to COO instead of creating tickets when the plan or contract shows mismatched
+scenario IDs.
+
+### Consequences
+
+- The bad `F-002-SNNN`-inside-`F-001` shape is stopped at planning time rather
+  than discovered later by `ticket_create`.
+- CTO should see fewer ambiguous ticket policy blocks during fresh bootstrap.
+- The next clean canary should reach an ordinary product ticket using scenario
+  IDs from the same canonical feature contract path.
+
+## AD-164: Post-Validation Engineer Runs Must Converge Before Context Overflow
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run8` replay confirmed AD-163 on a fresh Note Stats CLI target.
+CEO and COO produced product-specific planning, CTO created `T-001` from the
+canonical `F-001` contract, and Engineer claimed the ticket, implemented the
+CLI, initialized the Go module, and validated the requested behavior:
+
+- `go run ./cmd/note-stats --text "hello world"` returned two words, eleven
+  characters, and one line.
+- empty `--text` returned zero counts.
+- multiline text returned three lines.
+- missing `--text` exited non-zero with an actionable error.
+- `go test ./...` and `go build -o <validation-root> ./cmd/note-stats`
+  passed.
+
+After the implementation commit, Engineer did not move the evidenced ticket to
+`docs/tickets/done/` or record `job_disposition_record`. Instead it spent more
+turns on broad inspection, `find .`, malformed `shell_exec`, `ls /tmp`, and
+other non-product probes. The run ended with `context_overflow` at roughly 41k
+prompt tokens. This was still an improvement over earlier loops: the runtime
+quarantined the overflow as foundation telemetry, created no intervention-debt
+ticket, and did not dispatch Orchestrator into a containment loop. The remaining
+defect was convergence after useful product work already existed.
+
+### Decision
+
+Engineer `shell_exec` now has a post-validation completion gate. Once the
+current job has successful validation evidence and a successful implementation
+commit while an ordinary product ticket remains in `docs/tickets/in-progress/`,
+additional exploratory shell commands are blocked. The allowed shell path is
+the lifecycle move:
+
+```text
+git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
+```
+
+The policy error instructs Engineer to update ticket evidence if needed, move
+the ticket to `done/`, commit the lifecycle move, and record
+`job_disposition_record` with `next_need: qa_review`.
+
+The agent loop context pruner now also prunes old assistant tool-call arguments
+and older prose after pruning old tool results. This matters because large
+historical `file_write` payloads and shell command outputs can keep the prompt
+over provider limits even when tool result bodies were already replaced.
+
+### Consequences
+
+- Validated implementation runs should stop at ticket lifecycle completion
+  instead of spending turns on broad shell exploration.
+- Context overflow is less likely in long-running jobs with large historical
+  tool calls.
+- The next canary should confirm Engineer moves `T-001` to `done/`, records a
+  QA handoff, and reaches review without intervention-debt amplification.
+
+## AD-165: Review Rework Must Reopen The Ticket Before Product Mutation
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run9` replay confirmed the post-validation convergence gate
+shifted the lifecycle forward: Engineer moved `T-001` to
+`docs/tickets/done/`, recorded a QA handoff, and QA began review instead of the
+run ending in context overflow. QA then correctly blocked approval because the
+Engineer had not run the authoritative test suite after implementation. QA
+recorded `changes_requested`, Orchestrator routed rework to Engineer, and the
+second Engineer pass ran `go test ./...`, found failing tests, and began
+repairing them.
+
+The defect was ticket state. The ticket stayed in `docs/tickets/done/` while
+Engineer performed review rework. Because there was no backlog or in-progress
+ticket, the product-mutation claim gate did not apply; Engineer could edit
+`main_test.go` and continue shell validation while the repo-visible lifecycle
+still said the ticket was done. That weakens review truth, hides rework from
+ticket ordering, and lets QA rejection become an implicit side channel instead
+of an ordinary product workflow.
+
+The same run also showed the initial AD-164 gate was slightly too eager. It
+counted an earlier ticket-claim commit plus a later build success as enough to
+block additional validation while implementation files were still dirty. QA
+caught the missing test evidence, but the policy needed to distinguish "a clean
+committed implementation is ready for lifecycle close" from "a job has some
+prior commit and has started validation."
+
+The follow-up `demo-cli-run10` replay confirmed the rework guard but exposed a
+completion-path edge case. Engineer implemented the selected CLI slice, added
+tests, passed `go test ./cmd/note-stats`, passed `docsync_audit`, and moved
+`T-001` from `docs/tickets/in-progress/` to `docs/tickets/done/`. The first
+version of this rule then interpreted the pending done ticket as rework and
+blocked the final implementation commit until the job hit `max_turns`. The
+policy therefore needs to recognize an in-progress-to-done ticket move as
+ordinary completion, not hidden rework.
+
+### Decision
+
+Engineer product mutation now requires an in-progress ordinary product ticket
+not only for backlog work, but also for review rework. If no in-progress or
+backlog product ticket exists and a product ticket lives in
+`docs/tickets/in-review/` or `docs/tickets/done/`, product file writes and
+mutating shell work are blocked until Engineer reopens the ticket with:
+
+```text
+git mv docs/tickets/done/T-NNN-*.md docs/tickets/in-progress/
+```
+
+or the equivalent move from `docs/tickets/in-review/`. That move is allowed as
+a ticket-only mutation, and the policy error tells Engineer to commit the
+rework claim before running validation or changing product files.
+
+The normal completion path remains legal. When the worktree already contains a
+ticket move from `docs/tickets/in-progress/` to `docs/tickets/done/`, the
+implementation commit may include product files, tests, and that lifecycle
+move. The rework guard only applies to product mutation after the ticket is
+already done or in review with no active completion move.
+
+The post-validation shell convergence gate now checks the worktree before
+blocking. If product files or ticket files are still dirty, validation shell
+commands remain available. The gate only blocks exploratory shell calls after
+successful validation, a successful commit in the job, a remaining in-progress
+ticket, and a clean implementation tree.
+
+Generated Engineer guidance now says that a `changes_requested` handoff for a
+done or in-review ticket must reopen that ticket before shell validation or
+product/source edits when rework is required.
+
+### Consequences
+
+- QA/Security rejection becomes visible repo state again: the ticket is no
+  longer silently "done" while implementation rework happens.
+- Engineer can still read the done ticket and review feedback before reopening,
+  but cannot mutate product code or run validation shell work until the ticket
+  is back in the active queue.
+- The post-validation stop rule should no longer block legitimate tests while
+  implementation files are still uncommitted.
+- The next canary should confirm the rework path reopens `T-001`, reruns
+  tests, commits the fix, moves the ticket back to done, and returns to QA
+  without hidden ticket-state drift.
+
+## AD-166: Repeated No-Op Shell Calls After Validation Are A Loop Boundary
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run11` replay confirmed `demo-cli-run10`'s completion-commit
+patch was ready for a live check, but Engineer failed earlier in the lifecycle.
+After claiming `T-001`, writing the Note Stats CLI, building it to
+`<validation-root>`, and running successful CLI probes, Engineer
+called `shell_exec` with empty `argv` repeatedly instead of committing dirty
+implementation files or closing the ticket. The no-op tool already returned a
+hard error with completion guidance, but the model retried empty calls until
+the agent loop stopped with `circle_detected`.
+
+The failure was useful: no target intervention-debt tickets were created, and
+the runtime stopped as foundation telemetry. But relying on the generic
+circle detector wastes turns and leaves the dirty product work uncommitted.
+The no-op recovery path needs to become an explicit convergence boundary when
+the job has already produced validation evidence and dirty ticket work.
+
+### Decision
+
+`shell_exec` records no-op failures in the session. If Engineer has already
+had a no-op shell failure, has successful validation evidence, has dirty
+disposition-blocking files, and still has an ordinary product ticket in
+`docs/tickets/in-progress/`, a repeated no-op is blocked before execution with
+specific lifecycle guidance: stop shell placeholders, run `git_status`, update
+ticket evidence if needed, `git_commit` the implementation and ticket files,
+move the ticket to `docs/tickets/done/` when acceptance evidence is present,
+commit that lifecycle move, and record `job_disposition_record` with
+`next_need: qa_review`.
+
+Generated Engineer guidance and the generic no-op result now also say not to
+retry empty `argv` or single `:` calls after validation or dirty work.
+
+### Consequences
+
+- Local-model placeholder calls become a faster, clearer boundary before the
+  broader circle detector fires.
+- Engineer keeps validation freedom while work is changing, but repeated
+  no-op calls after evidence now point at commit and ticket completion.
+- The next CLI canary should confirm Engineer commits dirty CLI work instead
+  of repeating no-op shell calls, then reaches the ticket completion commit
+  and QA handoff check.
+
+## AD-167: Review Validation Uses Fresh Session-Built Artifacts
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run12` replay confirmed the no-op and completion-commit fixes
+moved the lifecycle materially forward. CEO, COO, and CTO created a
+product-specific Note Stats plan, BDD contract, and implementation ticket with
+no target intervention-debt tickets. Engineer claimed `T-001`, implemented the
+CLI, ran useful probes, moved the ticket to `docs/tickets/done/`, committed
+the implementation plus ticket lifecycle move, and handed off to QA.
+
+The next failure was review validation. QA correctly tried to enforce the
+in-job validation policy, but the default generated QA manifest did not include
+`shell_exec`, so QA could not run the required authoritative command. QA
+therefore requested changes instead of approving. The follow-up Engineer
+rework then exposed two shell-evidence problems:
+
+- Engineer ran `<validation-root>` before proving that binary had
+  been built in the current role session. A stale binary from an older dogfood
+  run can make evidence look current when it is not.
+- After Engineer reopened the ticket and rebuilt with
+  `go build -o <validation-root>`, the post-validation convergence
+  gate treated the fresh binary execution as exploratory shell work and blocked
+  the exact proof needed to answer QA.
+
+### Decision
+
+Generated QA now has `shell_exec`, but only as a bounded validation surface.
+The QA prompt says to use it for authoritative tests, builds, and direct
+runtime probes named by the ticket or BDD scenario, not for product mutation,
+broad discovery, package-manager setup, or cleanup. QA remains read-only for
+repo writes by default.
+
+`shell_exec` session tracking now records successful external validation
+artifacts built with commands such as:
+
+```text
+go build -o /tmp/<project>-validation <entrypoint>
+```
+
+Executing a `<validation-root>` binary is trusted only if that path was
+built successfully earlier in the same role session. Otherwise policy blocks
+the command and instructs the role to rebuild the binary first. When the path
+is fresh, running it counts as validation evidence and is allowed through the
+Engineer post-validation convergence gate.
+
+### Consequences
+
+- QA can satisfy the approval policy with real in-job command evidence instead
+  of routing unnecessary rework only because its tool surface was incomplete.
+- External validation binaries remain useful, but stale `/tmp` artifacts cannot
+  silently prove a current target change.
+- Engineer can answer QA rework with the intended build-then-run evidence path
+  without reopening a loop after the fresh build succeeds.
+- The next CLI canary should confirm QA runs validation itself, approves with
+  evidence, and routes to Security or the next release/dogfood step without an
+  unnecessary Engineer rework lap.
+
+## AD-168: Direct Runtime Probes Count As Validation Evidence
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run13` replay confirmed the first-run lifecycle now reaches
+product implementation without target intervention-debt tickets. CEO, COO, and
+CTO produced a product-specific Note Stats plan, feature contract, and
+ordinary implementation ticket. Engineer claimed `T-001`, implemented the CLI,
+and successfully ran:
+
+```text
+go run cmd/note-stats/main.go --text "hello world"
+```
+
+The command exercised the product behavior and returned the expected JSON.
+However, the role session only classified build and test commands as
+validation. Because the direct runtime probe was invisible to the convergence
+gate, Engineer's later empty `shell_exec` calls received only generic no-op
+guidance. The job stopped with `circle_detected` while the target had useful
+product code committed but `T-001` still in `docs/tickets/in-progress/`.
+
+Containment behaved correctly: the loop was recorded as foundation telemetry,
+no target intervention-debt ticket was created, and no Orchestrator recovery
+loop was dispatched.
+
+### Decision
+
+Successful direct runtime commands now count as validation evidence when they
+execute product behavior and exit successfully. Recognized evidence includes
+language run commands such as `go run`, `cargo run`, and `dotnet run`, common
+interpreter entrypoints, package start scripts, and bounded smoke probes.
+
+Generated Engineer guidance now names this rule explicitly: once a direct
+runtime probe passes and the implementation is committed, the next work is to
+update ticket evidence, move the ticket to `docs/tickets/done/`, commit the
+lifecycle move, and record `job_disposition_record`, not to issue placeholder
+shell waits.
+
+### Consequences
+
+- CLI and small-tool targets can prove behavior with direct execution even
+  before a fuller test suite exists.
+- The existing post-validation convergence gate now catches the live
+  `go run` success path and redirects no-op/exploratory shell calls toward
+  ticket closure.
+- Review roles still require stronger evidence when test files exist; runtime
+  probes are a validation signal, not a license to skip authoritative tests.
+- The next CLI canary should confirm Engineer turns a successful direct
+  runtime probe into ticket completion and QA handoff instead of stopping with
+  `circle_detected`.
+
+## AD-169: Expected Runtime Error Probes Do Not Poison Review Approval
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run14` replay confirmed AD-168 fixed the Engineer-side
+convergence path. CEO, COO, and CTO produced product-specific Note Stats
+planning, a feature contract, and an ordinary implementation ticket with zero
+target intervention-debt tickets. Engineer claimed `T-001`, implemented the
+CLI, ran direct runtime and test evidence, committed product code, moved the
+ticket to `docs/tickets/done/`, committed the lifecycle move, and handed off
+to QA without the prior no-op `circle_detected` failure.
+
+QA then used its bounded validation shell surface as intended. It built a
+fresh `<validation-root>` binary, ran positive CLI probes, ran an
+expected negative probe for missing `--text`, and ran `go test`. The negative
+runtime probe exited non-zero because the product correctly rejected invalid
+input. However, review approval policy treated every failing validation command
+the same way. `job_disposition_record` therefore blocked QA approval even
+though the failed runtime command was the expected evidence for the invalid
+input path and the authoritative tests passed.
+
+Containment remained correct: the failure stayed foundation telemetry, no
+target intervention-debt ticket was created, and the target product work was
+cleanly committed. The remaining issue was evidence classification. A failed
+build or failed test means the reviewed artifact is not ready. A documented
+non-zero runtime probe can be the desired proof for a negative-path scenario.
+
+### Decision
+
+Validation outcome tracking now separates build/test failures from broader
+runtime probe failures. QA and Security approval still requires successful
+in-job validation evidence, and if test files exist it still requires a
+successful test command. Approval is blocked after any failing build or test
+command in the same review job.
+
+Non-zero direct runtime probes no longer poison review approval by themselves.
+They may be used as evidence for expected error behavior when the role
+documents the command and observed result, pairs it with positive runtime
+evidence where relevant, and follows it with passing authoritative tests when
+tests exist. If the runtime error is unexpected or product-owned, the review
+role should still record `changes_requested` with the exact failing command
+and requested Engineer action.
+
+### Consequences
+
+- QA can verify required error handling, permission failures, invalid input,
+  and other negative-path behavior without being forced into false
+  changes-requested loops.
+- Failed builds and tests remain hard release blockers for approval.
+- Runtime probes remain evidence, but reviewers must distinguish "expected
+  product rejection" from "unexpected validation failure" in the disposition.
+- The next CLI canary should confirm QA approves the Note Stats ticket after
+  positive probes, the expected missing-argument rejection, and passing tests,
+  then routes to Security without target intervention-debt amplification.
+
+## AD-170: Post-Validation Completion Guidance Leaves The Shell Path
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run15` replay was intended to validate AD-169 in QA, but it
+failed earlier in the Engineer lifecycle. CEO, COO, and CTO again produced
+product-specific Note Stats planning, feature-contract updates, and an
+ordinary implementation ticket with no target intervention-debt tickets.
+Engineer claimed `T-001`, implemented the Go CLI, committed source, recovered
+from an unused-import build failure, built a fresh external validation binary,
+and ran a successful runtime probe.
+
+The post-validation convergence gate did fire: after the clean implementation
+commit and successful validation, additional `shell_exec` calls were blocked
+because `T-001` still lived in `docs/tickets/in-progress/`. The model still
+repeated empty `shell_exec` calls until `circle_detected`. The target state was
+clean and useful product code was committed, but ticket evidence and the
+`docs/tickets/done/` move were missing.
+
+The previous error text correctly mentioned "update ticket evidence" and
+`git mv ... docs/tickets/done/`, but it did not name the concrete non-shell
+tool sequence strongly enough. In practice, the local model kept reaching for
+`shell_exec` because the recovery path still included a shell command later in
+the sequence.
+
+### Decision
+
+The post-validation completion policy now makes the next allowed action
+unambiguous. When Engineer already has successful validation, a clean
+implementation commit, and an ordinary product ticket still in progress, any
+non-lifecycle `shell_exec` error says:
+
+- do not call `shell_exec` again except the exact `git mv` lifecycle move;
+- next use `file_read` on the in-progress ticket;
+- then use `file_write` on that same ticket to populate `evidence_links` and
+  `verified_by`;
+- only after evidence is updated, run the exact `git mv` to
+  `docs/tickets/done/`, commit the lifecycle move, and record
+  `job_disposition_record`.
+
+Generated Engineer persona and target guidance mirror the same wording so the
+model sees the non-shell recovery path before it encounters the policy error.
+
+### Consequences
+
+- A completed, validated implementation should leave the shell loop faster and
+  perform the ticket evidence update the policy requires.
+- The lifecycle still does not auto-close tickets; the repo-visible evidence
+  remains an agent action, not hidden runtime mutation.
+- The next CLI canary should confirm Engineer updates `T-001`, moves it to
+  `docs/tickets/done/`, records QA handoff, and finally reaches the AD-169 QA
+  review check.
+
+## AD-171: Review Approval Distinguishes Expected And Unexpected Runtime Failures
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run16` replay validated the AD-170 Engineer recovery path:
+Engineer updated the in-progress ticket evidence, moved `T-001` to
+`docs/tickets/done/`, committed the lifecycle move, and handed off to QA.
+The same run exposed a sharper review-quality problem. The target brief
+required `--text ""` to return zero counts, but the implementation treated an
+empty string as if `--text` was missing. QA observed that runtime probe fail:
+
+```text
+<validation-root> --text ""
+stderr: error: --text flag is required
+exit_code: 1
+```
+
+The generated test suite nevertheless encoded empty text as an expected error,
+so `go test -v` passed. Because AD-169 allowed non-zero runtime probes to avoid
+poisoning expected negative-path approval, QA approved the ticket even though
+the failing probe contradicted the product brief and the done ticket claimed
+empty text was complete.
+
+AD-169's distinction was directionally right: expected invalid-input probes
+should not force false rework. The missing piece was a durable way for a role
+to state that a non-zero exit was intentionally expected, so policy could block
+all other validation failures.
+
+### Decision
+
+`shell_exec` now accepts an optional `expected_exit_code` field. Reviewers use
+it only when intentionally proving an error path or invalid-input rejection.
+Session outcome tracking records a matching non-zero runtime command as
+expected negative-path evidence instead of a validation failure.
+
+QA and Security approval is now blocked after any unexpected failing validation
+command in the same job, even when tests pass. Expected non-zero runtime probes
+remain acceptable only when they set `expected_exit_code`, match that code, and
+are paired with passing tests or positive validation evidence where relevant.
+
+External temp validation binaries such as `<validation-root>` may also
+be removed through `shell_exec` cleanup after ticket completion without forcing
+Engineer to reopen a finished ticket. That cleanup is outside the target repo
+and should not be treated as product rework.
+
+### Consequences
+
+- QA cannot approve a ticket after an observed runtime failure unless that
+  failure was explicitly marked and matched as an expected error-path probe.
+- Tests that accidentally encode the wrong acceptance criterion no longer mask
+  contradictory runtime evidence.
+- Expected missing-argument, permission-denied, or invalid-input probes still
+  work, but they must be explicit in the tool call.
+- Engineer post-completion cleanup of `<validation-root>` binaries no longer
+  creates rework-loop pressure.
+- The next CLI canary should confirm QA requests Engineer rework for the
+  empty-text bug, Engineer reopens `T-001`, fixes the implementation/test
+  mismatch, and QA then approves with the missing-argument probe marked by
+  `expected_exit_code`.
+
+## AD-172: Review Validation Failures Exit Through Structured Handoff
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run17` replay validated the core AD-171 behavior. QA no longer
+approved contradictory runtime evidence, and the target implementation was
+eventually corrected so `--text ""` returned zero counts:
+
+```text
+<validation-root> --text ""
+{"word_count":0,"character_count":0,"line_count":0}
+```
+
+The run still exposed two lifecycle weaknesses. First, QA ran the
+authoritative `go test ./...` command on its final model turn; the tests failed
+on a multi-line counting expectation, but the role reached `max_turns` before
+recording `changes_requested`. Second, Engineer built and reused `<validation-root>`
+instead of the documented `<validation-root>` path, so same-session
+freshness tracking did not protect that executable name.
+
+Both failures are generic factory issues, not Note Stats-specific behavior.
+Review roles must turn failed validation into a structured handoff immediately,
+and external runnable validation artifacts must use the tracked naming
+convention so stale binaries cannot masquerade as current evidence.
+
+### Decision
+
+QA and Security now stop shell validation after any current-job failing build,
+test, or unexpected runtime validation command. Further `shell_exec` calls are
+blocked with a direct instruction to record `job_disposition_record` using
+`status: changes_requested`, `next_need: implementation_rework`,
+`feedback.for_role: engineer`, and the exact failing command/output.
+
+Dispatch-mode agent loops now grant one final terminal-tool reminder at the
+model turn-budget boundary. If a role has reached the turn budget without the
+required terminal tool, the loop appends one last instruction to call
+`job_disposition_record` and forbids further inspection or validation. This is
+not extra work budget; it is a structured-exit opportunity so findings do not
+disappear into raw `max_turns` telemetry.
+
+Go validation builds outside the target repo must use tracked
+`/tmp/<project>-validation` style paths. `go build -o /tmp/<project>` is now
+blocked before execution and redirected to `/tmp/<project>-validation`, aligning
+all external validation binaries with the freshness guard.
+
+Generated QA/Security guidance now tells reviewers to run authoritative tests
+early once the implementation files are known, stop immediately on failure, and
+record the structured handoff instead of spending more turns on additional
+shell validation.
+
+### Consequences
+
+- QA failures should become Engineer rework handoffs rather than `max_turns`
+  dead ends.
+- Review approval remains strict: failing builds/tests and unexpected runtime
+  failures cannot be approved away.
+- Expected negative-path runtime probes still work when the role uses
+  `expected_exit_code`.
+- External temp binaries become uniformly freshness-tracked through the
+  `-validation` suffix.
+- The next CLI canary should confirm QA either approves after passing tests or
+  records `changes_requested` immediately after the first failing validation,
+  with no target intervention-debt ticket materialization.
+
+## AD-173: Expected Negative Probes Can Be Corrected Once
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run18` replay confirmed AD-172 changed the live experience:
+QA found a product-validation failure, received one terminal-tool grace turn,
+and recorded `changes_requested` instead of ending as raw `max_turns`.
+Orchestrator routed the rework back to Engineer, and Engineer reopened the done
+ticket before product mutation.
+
+The next weakness was the review procedure around expected negative probes.
+QA intentionally checked the missing-argument path, but first ran
+`<validation-root>` without `expected_exit_code`. The command correctly
+exited non-zero, but policy classified it as an unexpected runtime failure.
+When QA tried to approve, approval was blocked; when QA tried to rerun the same
+command with `expected_exit_code: 1`, the AD-172 shell-stop rule blocked the
+correction and forced another rework loop.
+
+That is too brittle for generic product validation. A reviewer should use
+`expected_exit_code` on the first attempt, but the harness should allow one
+immediate exact-command correction when the only failure is an expected-negative
+runtime probe.
+
+### Decision
+
+QA and Security still stop shell validation after failing builds, failing tests,
+or uncorrected unexpected runtime failures. Build and test failures remain
+terminal for the review job and require `changes_requested`.
+
+For runtime validation only, the tool session now records the exact command and
+exit code for an unexpected non-zero validation result. If the reviewer
+immediately reruns that same command with a matching non-zero
+`expected_exit_code`, policy allows the rerun once, records it as expected
+negative-path evidence, and clears the unexpected runtime-failure blocker for
+approval. Other shell commands remain blocked until disposition.
+
+Generated QA and Security guidance now says to set `expected_exit_code` on the
+first attempt for invalid-input/error-path probes. If the reviewer forgets, the
+only allowed recovery is to rerun the exact same command once with the matching
+expected code before any other shell validation.
+
+### Consequences
+
+- Reviewers can correct a validation-procedure mistake without turning a safe
+  negative-path check into Engineer rework.
+- Approval remains strict for real failures: builds, tests, different runtime
+  commands, and uncorrected unexpected runtime probes still block approval.
+- The next CLI canary should confirm missing-argument checks can be corrected
+  with `expected_exit_code` while true product failures still route back to
+  Engineer.
+
+## AD-174: Product Completion Requires Repaired Runtime Validation
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run19` replay confirmed the factory still makes product-first
+progress on a non-game target. CEO, COO, and CTO created product-specific
+goals, an active plan, a feature contract, and `T-001` for a Note Stats CLI.
+Engineer claimed the ticket, implemented code, committed the implementation,
+updated ticket evidence, moved `T-001` to done, and committed the lifecycle
+move with no intervention-debt tickets in the target backlog.
+
+The failure was evidence integrity. Engineer had already observed
+`<validation-root> --text ""` fail with
+`error: --text flag is required`, even though the brief and ticket required
+empty text to return zero counts. The role then marked the acceptance criteria
+as complete, moved the ticket to `docs/tickets/done/`, and used the final
+turn-budget grace on another lifecycle command instead of the required
+`job_disposition_record`. The job ended as `max_turns`, and a manual replay of
+the committed target confirmed the product behavior was still wrong.
+
+This is generic: the harness cannot treat ticket metadata, lifecycle moves, or
+commits as completion while the same role session still has an unresolved
+runtime validation failure for the ticket behavior.
+
+### Decision
+
+`shell_exec` session tracking now records outstanding unexpected runtime
+validation failures by exact command fingerprint. A later successful run of
+the same runtime command repairs the outstanding failure. For review roles, an
+intentional negative-path probe repairs it only when the exact command is
+rerun with a matching non-zero `expected_exit_code`; AD-175 keeps that
+retroactive correction out of Engineer implementation jobs.
+
+Engineer cannot complete the product lifecycle while such a failure is
+outstanding. Tool policy blocks:
+
+- moving an in-progress product ticket into `docs/tickets/done/`;
+- committing a staged in-progress-to-done ticket move;
+- writing a product ticket directly under `docs/tickets/done/`;
+- recording a successful `job_disposition_record`.
+
+The error tells Engineer to fix the behavior and rerun the exact failing
+command successfully, or to rerun the exact intentional negative-path command
+with `expected_exit_code`, before updating completion evidence or requesting
+QA review.
+
+The agent loop also tightens the terminal-tool grace turn. Once the turn-budget
+edge reminder has been issued, the next model response may spend the grace only
+on the configured terminal tool. If the model calls any other tool, the loop
+ends as `max_turns` without executing that extra side-effecting cleanup.
+
+### Consequences
+
+- Product tickets should not move to done while current-job runtime evidence
+  still contradicts the BDD contract.
+- Expected negative-path validation remains available, but it must be declared
+  with `expected_exit_code` to clear the runtime-failure blocker.
+- The terminal grace turn becomes a true structured-exit path instead of an
+  extra mutation turn.
+- The next clean CLI canary should confirm Engineer either repairs failing
+  acceptance behavior before ticket completion or is blocked before the done
+  move, with the target backlog still free of foundation intervention debt.
+
+## AD-175: Engineer Cannot Reclassify Failed Acceptance As Expected
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run20` replay confirmed AD-174 blocked the bad lifecycle move.
+Engineer observed `<validation-root> --text ""` fail, updated the
+ticket evidence, and attempted to move `T-001` to `docs/tickets/done/`. Policy
+blocked the move because the current job still had an unresolved runtime
+validation failure.
+
+The role then tried to rerun the same failing acceptance command with
+`expected_exit_code: 1`. That is valid for a reviewer who accidentally forgot
+`expected_exit_code` on a known negative-path probe, but it is unsafe for
+Engineer after a positive acceptance command has failed. In an implementation
+job, a failed acceptance path should be repaired and rerun successfully, not
+reclassified as expected failure after the fact.
+
+### Decision
+
+Only QA and Security may use the one-time exact-command
+`expected_exit_code` correction for an unexpected runtime validation failure.
+Engineer may still use `expected_exit_code` when an intentional error-path
+probe is declared on the first run, but once Engineer has observed an
+unexpected runtime failure, the outstanding blocker is cleared only by a later
+successful run of that exact command.
+
+### Consequences
+
+- Engineer cannot bypass a failed positive acceptance path by retroactively
+  adding `expected_exit_code`.
+- QA/Security keep the AD-173 correction path for review-procedure mistakes.
+- The next clean CLI canary should confirm a failed empty-text acceptance check
+  either gets fixed and rerun successfully or blocks ticket completion without
+  an expected-exit loop.
+
+## AD-176: Failed Engineer Runtime Validation Requires Rework Before Rerun
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run21` replay confirmed the expected-exit bypass was closed.
+Engineer implemented a product-specific Note Stats CLI ticket, ran
+`go run ./cmd/note-stats --text "hello world"` successfully, then observed the
+required empty-text acceptance probe fail:
+
+```text
+go run ./cmd/note-stats --text ""
+Error: --text flag is required
+```
+
+The harness did not move the ticket to done, did not create target
+intervention-debt, and did not dispatch the failure into an autonomous
+containment loop. The remaining issue was convergence: Engineer reran runtime
+probes, including the same failed command, until `circle_detected` stopped the
+job. That is still product-first, but it spends turns proving the same failure
+instead of editing the implementation.
+
+### Decision
+
+When Engineer has an outstanding unexpected runtime validation failure,
+`shell_exec` now blocks further runtime probes until the implementation has
+actually been edited. The policy distinguishes three cases:
+
+- rerunning the same failed runtime command before any post-failure
+  `file_write` is blocked with explicit inspect/edit guidance;
+- running a different runtime probe while any exact failure is still
+  outstanding is blocked until the original failed command is repaired;
+- adding `expected_exit_code` after an Engineer runtime failure is blocked
+  immediately, preserving AD-175.
+
+After a post-failure edit, Engineer may rerun the exact failed command. A
+successful exit clears the runtime-failure blocker and allows normal ticket
+evidence and lifecycle completion to continue.
+
+### Consequences
+
+- The live loop should move from "observe failed acceptance, repeat failed
+  acceptance" to "observe failed acceptance, edit implementation, rerun exact
+  acceptance."
+- Negative-path probes remain available when Engineer declares
+  `expected_exit_code` on the first intentional run, before any unexpected
+  runtime failure exists.
+- The next clean CLI canary should confirm the Engineer either edits and fixes
+  `--text ""` or receives policy guidance to edit before runtime probes repeat.
+
+## AD-177: Engineer Can Correct Missing-Argument Negative Probes
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run22` replay confirmed AD-176 changed the live behavior.
+Engineer repeated the failed empty-text acceptance command once, policy blocked
+the unchanged rerun, and Engineer edited the implementation. The exact
+`<validation-root> --text ""` command then exited successfully.
+
+The next failure was a boundary between positive acceptance and expected
+negative-path validation. Engineer ran `<validation-root>` without
+`expected_exit_code` to prove the missing-argument path. The command correctly
+failed because the product brief says missing `--text` should fail, but policy
+treated it as an unresolved unexpected runtime failure and blocked later runtime
+probes. Engineer then looped on unrelated newline probes because the policy
+guidance did not leave a valid correction path for the missing-argument check.
+
+### Decision
+
+Engineer may use the one-time exact-command `expected_exit_code` correction
+only for obvious missing-argument runtime probes: a validation binary or
+language run command invoked without application arguments. This keeps the
+generic implementation workflow practical when the role forgets to mark a
+negative-path probe up front.
+
+The correction remains blocked for positive acceptance paths with supplied
+application input, including `--text ""`. Those failures still require
+implementation rework and a later successful exact command.
+
+### Consequences
+
+- Missing-required-input validation can be repaired procedurally without
+  forcing fake product behavior or blocking the rest of the acceptance suite.
+- Failed positive acceptance remains strict: Engineer cannot turn it into an
+  expected failure after observing the failure.
+- The next clean CLI canary should confirm Engineer uses
+  `expected_exit_code: 1` for `<validation-root>` after an omitted
+  expected marker, then continues to evidence/ticket completion.
+
+## AD-178: Runtime Error Stderr Is Failed Evidence
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run23` replay confirmed AD-177 allowed Engineer to recover from
+an omitted missing-argument `expected_exit_code`, but exposed a broader runtime
+evidence gap. The target validation binary exited zero for:
+
+```text
+<validation-root> --text ""
+```
+
+while printing `error: --text flag is required` and usage text to stderr. The
+harness counted the probe as successful runtime evidence because the exit code
+was zero, so Engineer could move toward completion even though the user-visible
+CLI behavior contradicted the product brief.
+
+### Decision
+
+Direct runtime validation commands now treat conservative error-shaped stderr
+as failed evidence even when the process exits zero. The markers are intentionally
+simple and product-agnostic: `error:`, `Usage of`, `panic:`, `Traceback`, and
+`exception`.
+
+This applies only to direct runtime probes and same-session validation artifact
+executions, not to build or test commands. A later exact rerun with exit code
+zero and no error-shaped stderr repairs the blocker.
+
+### Consequences
+
+- Runtime evidence follows the visible product behavior, not only process
+  status.
+- CLIs, scripts, and small generated apps that print errors but forget to exit
+  non-zero no longer close tickets with contradictory evidence.
+- The next clean CLI canary should confirm the zero-exit `--text ""` stderr
+  error blocks further runtime probes until Engineer edits the implementation
+  and the exact command later passes cleanly.
+
+## AD-179: Claimed Engineer No-Op Loops Route To Implementation
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run24` replay confirmed the foundation lifecycle reached
+product-specific planning, a product feature contract, and a committed
+implementation ticket without intervention-debt amplification. Engineer claimed
+`T-001`, committed the claim, then called empty `shell_exec` placeholders before
+writing any product code. The generic no-op message primarily described
+post-validation completion, so Engineer repeated no-op calls and ended as
+`circle_detected` without touching the implementation.
+
+### Decision
+
+After Engineer has an in-progress product ticket and has already received a
+no-op `shell_exec` failure, a repeated no-op before successful validation is a
+policy boundary. The next action must be implementation-oriented: read the
+in-progress ticket and linked feature contract, then use `file_write` to create
+or update product files, or record `job_disposition_record` with `status:
+blocked` if the ticket cannot be implemented.
+
+The post-validation no-op path remains separate: after successful validation and
+dirty implementation/ticket work, repeated no-ops still route to commit,
+evidence update, lifecycle move, and QA handoff.
+
+### Consequences
+
+- A claimed ticket cannot stall in shell placeholders before the first product
+  edit.
+- No-op recovery guidance is phase-aware: pre-implementation points at
+  `file_read`/`file_write`; post-validation points at evidence and lifecycle
+  completion.
+- The next clean CLI canary should confirm Engineer turns the repeated no-op
+  block into product file edits instead of another `circle_detected` job.
+
+## AD-180: Runtime Failure Guidance Names Missing-Argument Correction
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run25` replay confirmed AD-179 changed live behavior: Engineer
+claimed `T-001`, read the ticket and feature contract, wrote product files, and
+ran direct runtime probes instead of looping on no-op shell calls. It then hit a
+known negative-path edge. Engineer ran the missing-required-input probe without
+`expected_exit_code`, later fixed the positive empty-text path, but kept trying
+other runtime probes and completion because the unresolved-runtime blocker did
+not explicitly name the allowed correction.
+
+### Decision
+
+Unresolved Engineer runtime-failure policy messages now distinguish positive
+acceptance repair from procedural negative-path correction. For an intentional
+no-argument or missing-required-input probe, the policy tells Engineer to rerun
+the exact earlier command once with `expected_exit_code`, usually `1`. For
+positive acceptance failures, Engineer must still edit implementation and make
+the exact command pass without `expected_exit_code`.
+
+### Consequences
+
+- The policy already allowed missing-argument correction; the live role now gets
+  direct, actionable wording when it is blocked from other probes or completion.
+- The stricter positive-acceptance path remains intact.
+- The next clean CLI canary should confirm Engineer uses `expected_exit_code`
+  for the missing-argument probe and proceeds without repeated completion
+  blocks.
+
+## AD-181: Failed Ticket Creation Cannot Become Completed Progress
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run26` replay confirmed AD-180 did not regress the product-first
+bootstrap path: CEO recovered from a feature-contract role-boundary block, COO
+updated the active plan and canonical feature contract, and CTO reached product
+ticket creation without target intervention-debt churn. The next failure was
+ticket-materialization integrity. CTO called `ticket_create` with
+`bdd_scenarios` encoded as a quoted JSON string, repeated the same malformed
+tool call, attempted to hand-write a ticket with `file_write`, then recorded a
+successful disposition claiming an implementation ticket existed even though no
+ticket had been created.
+
+### Decision
+
+Ticket-creation failures are now tracked as unresolved session state. A failed
+`ticket_create`, or a failed `file_write` attempt under `docs/tickets/`, blocks
+successful `job_disposition_record` statuses until a later `ticket_create`
+succeeds in the same job. Roles can still finish honestly with `status:
+blocked`, `failed`, or `changes_requested` and the exact ticket-creation error
+as the blocker.
+
+`ticket_create` parse errors now include field-specific repair guidance for
+common local-model array drift. If `bdd_scenarios`, `blocked_by`,
+`depends_on`, or `evidence_links` is supplied as a quoted list string, the
+error names the field and shows the correct JSON array shape.
+
+### Consequences
+
+- CTO and other planning roles cannot claim product progress after ticket
+  materialization failed.
+- Failed attempts to bypass `ticket_create` by writing ticket markdown directly
+  remain guardrail telemetry and also prevent false successful handoff.
+- The next clean CLI canary should confirm CTO repairs malformed
+  `ticket_create` arguments or records a blocked disposition, rather than
+  looping through CTO or handing implementation to Engineer without a backlog
+  ticket.
+
+## AD-182: Missing-Argument Runtime Corrections Are Exact And Blocking
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run27` replay confirmed AD-181 changed the live lifecycle:
+CTO created a real `T-001` product ticket with valid `bdd_scenarios` array
+metadata and Engineer began ticket-backed implementation. The remaining
+runtime edge was convergence after a procedural validation mistake. Engineer
+ran the missing-required-input validation binary without `expected_exit_code`,
+then continued with edits, decisions, commits, and completion attempts before
+performing the exact expected-negative correction.
+
+The earlier AD-180 wording told the role what kind of correction was allowed,
+but the session did not carry the exact failed command and correction forward
+as a hard next action. That let a local model keep exploring after the harness
+already knew the correct immediate recovery step.
+
+### Decision
+
+Unexpected runtime validation failures now store the exact unresolved
+`shell_exec` command in session state. When the failed command is an obvious
+no-argument or missing-required-input probe, the session also stores the exact
+correction, including `expected_exit_code: 1`.
+
+While that missing-argument correction is outstanding, Engineer cannot continue
+unrelated mutating work such as `file_write`, `git_commit`, `git_push`,
+`record_decision`, dependency sync, CLI mutation, tool creation, or persona
+creation. The allowed forward paths are:
+
+1. Run the exact stored `shell_exec` correction with matching
+   `expected_exit_code`.
+2. Record `job_disposition_record` with `status: blocked` and the exact blocker
+   if that correction is invalid.
+
+The existing positive-acceptance rule remains strict: a failed acceptance probe
+with supplied input is repaired by editing implementation and making the exact
+command pass cleanly, not by retroactively adding `expected_exit_code`.
+
+### Consequences
+
+- The harness converts a known procedural negative-path mistake into one clear
+  next action instead of letting the role spend turns on adjacent work.
+- Missing-argument correction guidance now includes the exact command shape,
+  reducing local-model formatting drift.
+- Product implementation remains protected from false completion, while
+  positive behavior failures still force real code repair.
+- The next clean CLI canary should confirm Engineer either runs the exact
+  expected-exit correction promptly or records a blocked disposition before
+  continuing unrelated mutations.
+
+## AD-183: External Validation Artifacts Must Be Rebuilt After Runtime Edits
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run28` replay confirmed the AD-181 ticket materialization path:
+CTO created a valid product ticket and Engineer claimed it. The run did not
+reach the AD-182 missing-argument correction because an earlier positive
+acceptance path failed first. Engineer built `<validation-root>`,
+proved the happy path, then observed `<validation-root> --text ""`
+fail even though the brief says empty text should return zero counts. Policy
+correctly blocked unchanged reruns and required an implementation edit.
+
+After editing `main.go`, Engineer reran the same `<validation-root>` binary
+without rebuilding it. The stale binary still represented the old source, so
+the role looped on the same failure and no-op placeholders until
+`circle_detected`.
+
+### Decision
+
+The session now records the runtime-edit counter at the moment an external
+validation artifact is built. If a runtime validation failure is followed by an
+implementation edit, any later execution of a previously built
+`<validation-root>` artifact is blocked until the role rebuilds that artifact
+with `go build -o <validation-root> ...`.
+
+This is a freshness rule, not a product-specific assertion. It applies to
+external validation binaries because they are snapshots of source at build
+time. Direct source commands such as `go run` still validate the current source
+without a rebuild step.
+
+### Consequences
+
+- Positive acceptance repair cannot be tested against stale binaries.
+- Engineer receives an exact rebuild command shape before rerunning runtime
+  validation.
+- The existing same-session artifact trust rule now covers both first use and
+  post-edit freshness.
+- The next clean CLI canary should confirm that after an empty-text failure and
+  source edit, Engineer rebuilds `<validation-root>` before rerunning the
+  acceptance probe.
+
+## AD-184: Ticket Evidence Follows Successful In-Job Validation
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run29` replay confirmed the fresh target lifecycle still reaches
+product-specific planning, feature-contract update, ticket creation, and
+Engineer implementation work without creating target intervention-debt tickets.
+Engineer claimed `T-001`, corrected a missing `MarsDocSync` source write, and
+started building the Note Stats CLI.
+
+The run then exposed a smaller evidence-integrity gap. Before any successful
+validation command in the Engineer job, the role updated the in-progress ticket
+with `evidence_links` and `verified_by`. That metadata made the ticket look
+closer to completion than the actual validation transcript supported, while the
+job later stalled in repeated no-op placeholders before proving the product
+behavior.
+
+### Decision
+
+Engineer cannot populate `evidence_links` or `verified_by` in a ticket under
+`docs/tickets/in-progress/` until the same job has recorded at least one
+successful validation command. The validation may be a test command, build
+command, direct runtime probe, or other shell validation outcome that the
+session records as successful.
+
+Empty or placeholder evidence fields remain writable, and non-Engineer roles
+retain their existing review and planning boundaries. The rule is intentionally
+attached to in-progress Engineer delivery because that is where ticket evidence
+can otherwise outrun implementation proof.
+
+### Consequences
+
+- Ticket metadata cannot claim evidence before the current Engineer job has
+  actually produced validation evidence.
+- The role receives direct guidance to run `go test`, a build, or a runtime
+  command that exercises the BDD scenario before updating ticket evidence.
+- Completion and ticket-lifecycle gates now have a stronger upstream invariant:
+  evidence fields are populated only after at least one successful validation
+  signal exists in the same job.
+- The next clean CLI canary should confirm Engineer responds by running
+  validation before evidence updates instead of repeatedly writing ticket
+  metadata or no-op shell placeholders.
+
+## AD-185: Review Validation Artifact Rebuilds Need Exact Corrections
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run30` replay confirmed AD-184. Engineer no longer populated
+in-progress ticket evidence before validation. Instead it repaired a failing
+test build, built `<validation-root>`, proved the empty-text and
+hello-world CLI paths, ran `go test ./...`, updated ticket evidence, moved
+`T-001` to done, committed the lifecycle move, and handed off to QA.
+
+QA then hit the same-session artifact freshness guard by trying to execute the
+Engineer-built `<validation-root>` binary. The guard correctly blocked
+stale cross-session evidence and kept the event as foundation telemetry, but
+the role did not quickly recover by rebuilding the binary in its own session.
+The blocker text said to rerun the matching build, but did not name the exact
+`shell_exec argv` correction.
+
+### Decision
+
+External validation artifact freshness errors now include an exact shell tool
+correction. For a root Go CLI, the error names:
+
+```json
+["go","build","-o","/tmp/<project>-validation","."]
+```
+
+The same helper is used when the binary was never built in the current role
+session and when the binary became stale after a post-failure source edit. The
+helper prefers the root Go package when `go.mod` and `main.go` are present,
+falls back to the first `cmd/*/main.go` package when available, and otherwise
+uses `.` as the safest general Go build target.
+
+Generated QA/Security guidance and the persona manuals now say to run the
+exact `shell_exec argv` correction from the tool error before rerunning a
+`<validation-root>` binary.
+
+### Consequences
+
+- Reviewer recovery after a stale external artifact guard has one explicit next
+  command instead of an inferred build target.
+- The same-session freshness invariant stays intact: QA and Security cannot
+  trust Engineer-built temp binaries from an earlier role session.
+- The next clean CLI canary should confirm QA rebuilds `<validation-root>` in
+  its own job, reruns the runtime probe, and records a structured disposition
+  without a long quiet stall.
+
+## AD-186: Build Guard Corrections Preserve Package Targets
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run31` replay confirmed the product-first lifecycle again. CEO
+accepted the Note Stats CLI brief, COO updated the active plan and BDD
+contract, CTO created a product ticket, and Engineer claimed, implemented,
+validated, evidenced, and moved `T-001` to done without creating target
+intervention-debt tickets.
+
+The run then exposed two narrower validation-quality gaps. First, Engineer
+treated exit-zero runtime probes as enough evidence even though the explicit
+empty-text contract expected `{"words":0,"lines":0,"characters":0}` and the
+implementation returned `{"words":0,"lines":1,"characters":0}`. Second, QA
+correctly blocked `go build ./cmd/note-stats` because it would create a
+repo-local binary, but the recovery message did not name an exact corrected
+argv. QA guessed `go build -o <validation-root> .`, which failed for
+the `cmd/<name>` layout and forced changes-requested before the intended
+review could proceed.
+
+### Decision
+
+Go build-output guardrails now include an exact `shell_exec argv` correction
+that preserves the original build package or entrypoint while redirecting the
+output to `<validation-root>`. For example:
+
+```json
+["go","build","-o","<validation-root>","./cmd/note-stats"]
+```
+
+The same correction formatter is used for implicit `go build` output,
+repo-local `-o` output, and external temp outputs that lack the tracked
+`-validation` suffix. It preserves package patterns such as `./...` and
+`./cmd/<name>` instead of normalizing them into invalid path tokens.
+
+The operating model also tightens expected-output evidence. When README,
+tickets, or BDD contracts name exact CLI output, API response bodies,
+UI-visible state, or persisted data, Engineer should add automated assertions
+for those examples and QA should request changes when only exit-code smoke
+evidence exists. For Go product code, QA approval is mechanically blocked when
+non-test `.go` source files exist but no `_test.go` files are present.
+
+### Consequences
+
+- Reviewers can recover from repo-local Go build guards without guessing the
+  package path for root or `cmd/<name>` layouts.
+- `go build ./...`, `go build ./cmd/<name>`, and `go build -o <bad-path> ...`
+  errors now provide directly runnable `shell_exec argv` guidance.
+- Exact expected-output examples become test obligations, reducing false
+  confidence from command success alone.
+- QA cannot approve Go source changes with no Go test files, so smoke-only
+  product delivery routes back to Engineer before Security or release.
+- The next clean CLI canary should confirm QA follows the exact build
+  correction, and Engineer produces tests that catch the empty-text line-count
+  mismatch before moving a ticket to done.
+
+## AD-187: Missing-Input Repro Guards Must Unlock Repair Edits
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run32` replay confirmed that the product-first lifecycle now
+reaches a real product ticket with Engineer tests before completion. It also
+showed a deterministic containment loop. Engineer ran a runtime probe for a
+missing or empty input path, the validation binary panicked, and the harness
+correctly required an exact `expected_exit_code` rerun before any unrelated
+probe. That rerun still showed the implementation defect, but the same guard
+continued to block `file_write` and told Engineer to rerun the same failing
+probe again. The result was a runtime-policy loop instead of product repair.
+
+The same run exposed a deployed/foundation naming leak: CTO wrote the target
+ticket with `cmd/mars-harness/main.go` and Engineer initialized `module
+mars-harness` inside a Note Stats CLI target. That was product progress, but
+the target implementation shape was still borrowing foundation source names.
+
+### Decision
+
+Missing-input runtime failures now distinguish correction proof from repair
+work. The first unexpected no-argument or missing-required-input runtime
+failure still blocks mutations until Engineer reruns the exact command with
+`expected_exit_code`. If that correction attempt succeeds, the unexpected
+failure is cleared. If the correction attempt still fails, the harness records
+that the expected-exit repro was attempted and allows implementation
+`file_write` so Engineer can fix the product. Completion, commits, ticket
+done-moves, and unrelated runtime probes remain blocked until validation is
+repaired.
+
+Generated CTO and Engineer guidance now also keeps foundation names out of
+deployed targets. CTO tickets must derive affected paths, module names,
+command names, and binary names from the target README, repo basename, remote,
+or existing local conventions. Engineer must not initialize a fresh target as
+`module mars-harness` or create `cmd/mars-harness` unless the target product is
+explicitly Mars Harness itself; small fresh Go targets should prefer standard
+library tests unless the repo already uses or requires another dependency.
+
+### Consequences
+
+- Missing-input guards still prevent accidental retroactive `expected_exit_code`
+  laundering for positive acceptance failures.
+- A failed missing-input correction attempt becomes evidence that product code
+  needs repair, not a reason to loop on the same command.
+- Engineer can edit after proving the negative-path repro, but cannot finish
+  the ticket until the exact failing runtime path is repaired and revalidated.
+- Fresh deployed targets are less likely to inherit foundation package names,
+  reducing generic-software-factory drift toward Mars-specific scaffolds.
+- The next clean CLI canary should confirm Engineer fixes a bad missing-input
+  implementation after the expected-exit repro instead of looping, and that
+  CTO/Engineer derive command/module names from the target product.
+
+## AD-188: Exact Runtime Repairs Clear Repeated Failure Counters
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run33` replay confirmed the AD-187 target-naming fix: CTO created
+`T-001` with `cmd/note-stats/main.go`, and Engineer initialized `module
+note-stats` instead of leaking foundation `mars-harness` names. It also
+confirmed the missing-input repair path: after the `--text ""` positive
+acceptance path failed, Engineer was allowed to edit and rebuild.
+
+The run then exposed a counter-level loop. The same exact runtime command
+failed more than once while Engineer iterated. When the command later exited
+zero, session repair accounting only cleared one outstanding failure count.
+The harness still considered an earlier identical failure unresolved and
+blocked unrelated probes, causing `circle_detected` even though the exact
+command had been rerun successfully.
+
+### Decision
+
+Runtime repair accounting now treats one successful exact rerun as repairing
+all outstanding failures for that exact command fingerprint in the current
+job. Expected-exit corrections for missing-input probes use the same rule: if
+the exact correction succeeds, it clears every unmatched failure for that same
+command and expected exit code. The global outstanding-runtime-failure counter
+is decremented by the number of repaired matching failures without going below
+zero.
+
+### Consequences
+
+- Repeated attempts at the same exact failing command no longer create stale
+  outstanding blockers after the command finally succeeds.
+- The harness still blocks different runtime probes until the exact failed
+  command is repaired.
+- Product semantic mismatches may still need QA or automated assertions, but
+  the runtime policy no longer traps the role after an exact command becomes
+  process-successful.
+- The next clean CLI canary should confirm an exact runtime success clears
+  repeated same-command failures and lets Engineer continue to tests, evidence,
+  or QA handoff.
+
+## AD-189: Review Validation And Ticket Closure Must Preserve Product Progress
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run34` replay confirmed AD-188: Engineer repaired the `--text ""`
+positive acceptance failure, reran that exact command successfully, corrected
+the omitted-flag negative path with `expected_exit_code: 1`, wrote Go tests,
+and reached QA instead of ending in stale `circle_detected`. It also exposed
+the next quality and traceability faults.
+
+QA first used shallow `grep` globs that missed `cmd/note-stats-cli/main.go`,
+then ran `go mod init` even though the module already existed. Later, QA ran
+the intentional no-argument error-path probe without `expected_exit_code`; the
+command correctly exited non-zero, but review policy counted it as an
+unexpected validation failure and forced `changes_requested`. Orchestrator then
+read sample player-movement prose from `docs/tickets/README.md` as if it were
+live ticket state. Finally, Engineer had committed product code, tests, and
+`go.mod` inside the `chore(tickets): move T-001 to done` lifecycle commit,
+weakening traceability even though the product behavior was correct.
+
+### Decision
+
+Reviewer shell execution is now mechanically validation-only. QA and Security
+may use shell for read-only inspection, tests, builds, fresh external
+`<validation-root>` binaries, runtime probes, and HTTP probes. They may not use
+review shell access for package or module initialization such as `go mod init`,
+product mutation, broad discovery, cleanup, or placeholder no-op commands.
+Generated QA guidance also says intentional negative-path probes should set
+`expected_exit_code` on the first run.
+
+Ticket lifecycle moves to `docs/tickets/done/` now require non-ticket product
+changes to be committed first. Dirty ticket evidence can move with the
+lifecycle commit, but dirty source, tests, docs, package manifests, lockfiles,
+config, or validation code block the done move until an implementation/test
+commit exists.
+
+Generated Orchestrator guidance now treats `docs/tickets/README.md` as
+conventions and examples only. Live routing must use lifecycle directory state,
+the source disposition ticket ID, and structured handoff evidence rather than
+sample `T-001` prose from the README.
+
+### Consequences
+
+- QA/Security can no longer turn a review into target setup or mutate the repo
+  while trying to validate it.
+- Expected negative-path probes should not create false rework when the product
+  already behaves correctly.
+- Product and test commits become visible to downstream reviewers before the
+  ticket lifecycle close commit.
+- Orchestrator is less likely to route rework from example docs instead of the
+  actual completed ticket.
+- The next clean CLI canary should confirm Engineer creates a separate
+  implementation/test commit before the done move, QA uses
+  `expected_exit_code` for the no-argument path on the first run, and
+  Orchestrator routes from the real `source_disposition` rather than
+  `docs/tickets/README.md` examples.
+
+## AD-190: Review No-Op Loops Get A Terminal Disposition Off-Ramp
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run35` replay confirmed the AD-189 ticket-closure boundary:
+Engineer made a separate `feat(cli)` implementation commit for product source,
+README, and `go.mod`, then moved `T-001` to done in a lifecycle-only commit.
+QA then performed useful validation: it inspected the done ticket and source,
+ran `docsync_audit`, built a fresh `<validation-root>` binary, and
+validated the happy path and empty-string path.
+
+The review still failed as a harness loop. After successful validation, QA
+called `shell_exec` with empty `argv` as a placeholder several times instead of
+recording the required `job_disposition_record`. Tool policy correctly blocked
+the placeholders and foundation telemetry quarantined the `circle_detected`
+failure without creating target intervention debt or dispatching Orchestrator.
+The product state was good, but review completion was lost to a protocol loop.
+
+### Decision
+
+Server jobs that require a terminal tool now get one circle-grace turn. If the
+model repeats the same tool-call shape enough to trigger circle detection and a
+required terminal tool such as `job_disposition_record` is configured, the loop
+adds one corrective user message requiring only that terminal tool. If the next
+response calls a different tool, the job still ends with `circle_detected`.
+
+Reviewer no-op policy now distinguishes review phases. QA and Security no-op
+placeholders after successful validation receive direct disposition guidance:
+stop shell validation and record `job_disposition_record` with `status:
+approved` or the appropriate quality decision. No-op placeholders after failed
+validation route to structured `changes_requested`. Policy-blocked no-op shell
+calls are also counted as no-op failures in the session so telemetry and loop
+guards can identify review dithering even when the process was never executed.
+
+Generated QA guidance and canonical persona docs now say that after the
+required build, test, runtime, and docsync evidence has passed, the next action
+is `job_disposition_record`; reviewers must not call empty `argv`, `:`, or wait
+commands.
+
+### Consequences
+
+- A reviewer that has already gathered enough passing evidence gets one hard
+  off-ramp to the required disposition before the job is declared circular.
+- The harness still refuses to auto-approve; the model must call the terminal
+  tool with explicit evidence and status.
+- Review no-op loops remain foundation-owned telemetry and do not create
+  target intervention-debt tickets.
+- The next clean CLI canary should confirm QA records an approved disposition
+  after validation instead of ending in `circle_detected` from repeated empty
+  shell calls.
+
+## AD-191: Unresolved Runtime Failures Freeze Commits And Shell Side Paths
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-cli-run36` replay confirmed that product-first bootstrap and
+intervention-debt quarantine still hold. CEO, COO, and CTO produced the Note
+Stats CLI plan, feature contract, and product ticket. Engineer claimed the
+ticket, wrote product source, and ran a validation binary. The happy path
+passed, but the contracted empty-string acceptance probe failed with
+`Error: --text flag is required`.
+
+The harness correctly blocked ticket completion, successful disposition, and
+moving the ticket to `docs/tickets/done/` while that acceptance failure was
+unresolved. It still allowed too much adjacent motion: shell-wrapper probes,
+unrelated validation such as `go test ./...`, ticket evidence edits, and an
+implementation commit happened before the exact failed command passed. The job
+ended at `max_turns`; no target intervention-debt ticket or Orchestrator loop
+was created, but bad source state was committed as progress.
+
+### Decision
+
+When Engineer has an unresolved positive runtime acceptance failure,
+`shell_exec` is constrained to the runtime repair lane. It may rebuild the same
+stale `<validation-root>` artifact after a source edit, or rerun the exact
+failed runtime command after the source is repaired. Other shell probes, shell
+wrappers, tests, placeholders, commits, and ticket moves are blocked until the
+failure is repaired.
+
+Engineer product commits are also blocked while an unexpected runtime
+validation failure is outstanding. The role must keep failed implementation
+state uncommitted, inspect and edit source with repository tools, rebuild a
+stale validation artifact if required, and make the exact failed command pass
+before committing product work or progressing ticket lifecycle.
+
+### Consequences
+
+- A failed acceptance path cannot be converted into apparent progress through
+  a clean commit or a different validation command.
+- Stale validation artifact rebuilds remain available, so the repair path does
+  not deadlock after legitimate source edits.
+- The boundary is intentionally generic: it applies to any target software
+  where the role has produced direct runtime evidence, not just CLI canaries.
+- The next clean canary should confirm Engineer repairs the failed runtime
+  acceptance path before committing implementation work or moving tickets.
+
+## AD-192: Engineer Evidence Blocks Do Not Become Ticket-Creation Debt
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run37` replay deliberately used a different product shape: a
+Temperature JSON CLI with required `--celsius 0`, `--celsius 100`, and omitted
+flag behavior. The lifecycle reached implementation and validated real product
+behavior. Engineer first attempted to populate ticket evidence before
+validation, and policy correctly blocked that write. Engineer then ran tests,
+corrected the omitted-flag command with exact `expected_exit_code`, committed
+product source and tests, updated evidence, passed docsync, and moved the
+ticket to done.
+
+The successful disposition was falsely blocked. Session accounting treated the
+earlier failed in-progress ticket-evidence write as unresolved ticket-creation
+debt. That rule was intended to stop planning roles from bypassing failed
+`ticket_create` calls by writing ticket files directly, but it was too broad
+for Engineer evidence updates on already-created tickets.
+
+### Decision
+
+Ticket-creation failure accounting now remains scoped to actual ticket
+creation failure. Failed `ticket_create` calls still create outstanding
+ticket-creation debt until a later successful `ticket_create` clears it.
+Failed non-Engineer `file_write` attempts under `docs/tickets/` still count as
+ticket-file creation or bypass attempts. Failed Engineer ticket evidence
+updates do not increment ticket-creation debt; their own guardrail message is
+enough to route Engineer back to validation or evidence repair.
+
+### Consequences
+
+- CTO and other planning roles still cannot record successful handoff after
+  malformed ticket creation or direct ticket-file bypass attempts.
+- Engineer can recover from pre-validation evidence mistakes and later record
+  a valid `qa_review` disposition after successful validation, evidence update,
+  commit, and done-ticket lifecycle move.
+- Ticket evidence ordering remains enforced, but it no longer poisons a later
+  valid implementation handoff.
+- The next clean canary should confirm a pre-validation evidence block does
+  not prevent Engineer disposition after the ticket is properly completed.
+
+## AD-193: Review No-Op Recovery Becomes Terminal-Only
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run38` replay confirmed that the factory can now move a second
+CLI archetype from product-specific CEO planning through CTO ticketing and
+Engineer implementation. It also exposed two coordination leaks.
+
+First, COO did not own ticket creation but still tried several alternate paths:
+direct `file_write` under `docs/tickets/`, `mars_harness_cli ticket_create`,
+and `mars_harness_cli tools run ticket_create`. Policy blocked each attempt,
+but the role only escaped by recording a blocked disposition and spending an
+extra Orchestrator turn before CTO could create the implementation ticket.
+
+Second, QA read the done ticket, inspected source, built a fresh validation
+binary, and ran a passing runtime probe, but then looped on empty or placeholder
+`shell_exec` calls instead of recording the terminal disposition. The terminal
+tool circle grace helped contain the loop, but because the calls alternated
+between empty argv and shell-placeholder shapes, the job still reached
+`circle_detected`. QA also failed to turn the missing durable Go tests into a
+structured `changes_requested` disposition.
+
+### Decision
+
+Planning handoff is explicit: COO and other non-ticket-owning planning roles
+must not create tickets through `ticket_create`, direct ticket `file_write`,
+`mars_harness_cli`, or shell commands. They commit planning artifacts and hand
+off `next_need: ticket_breakdown` with `suggested_role: cto-weekly`. If such a
+planning role already hit a ticket-creation policy block for work it does not
+own, the successful `ticket_breakdown` disposition remains available so the
+run can move to the proper ticket owner instead of pretending implementation is
+ready.
+
+Review no-op recovery is terminal-only. When QA or Security receives a blocked
+no-op shell placeholder after successful validation, session state records that
+the next tool must be `job_disposition_record`. Further shell validation,
+placeholders, or other non-terminal tools are blocked with disposition
+guidance. If the target contains Go source but no `_test.go` files, that
+guidance tells QA to record `changes_requested` for Engineer tests rather than
+approve from runtime smoke evidence alone.
+
+### Consequences
+
+- Planning-role mistakes no longer require an extra blocked disposition plus
+  Orchestrator detour before CTO can create a product ticket.
+- Review roles cannot burn the rest of their turn budget on alternating
+  no-op shell shapes after the policy has already told them to finish.
+- Missing durable Go tests become explicit review feedback instead of a hidden
+  weakness behind successful build/runtime smoke output.
+- The next clean canary should confirm QA exits through a structured
+  disposition after the first no-op block, and routes missing-test products to
+  Engineer rework.
+
+## AD-194: Failed Test And Build Evidence Freezes Engineer Side Paths
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run39` replay confirmed the AD-193 planning improvements on the
+Temperature JSON CLI target. CEO and COO produced product-specific planning,
+COO handed directly to CTO without alternate ticket creation, and CTO created
+the product ticket. Engineer then implemented source and a `_test.go` file,
+which is progress over the missing-test failure in run 38.
+
+The next failure was validation discipline. `go test` failed because the
+implementation had duplicate helper definitions and test/runtime entrypoint
+drift. Engineer proved some runtime probes with `go run main.go`, but the
+authoritative test command still failed. The role then attempted forbidden
+`rm` cleanup, updated evidence, and committed product work before tests passed.
+No target intervention-debt ticket or Orchestrator loop was created, but the
+factory still allowed broken test evidence to be bypassed by runtime side
+probes and a product commit.
+
+### Decision
+
+Engineer test and build failures are now tracked as an explicit repair lane.
+When Engineer observes a failing test or build command in the current job,
+the session records the exact command fingerprint and blocks unrelated
+`shell_exec` calls, runtime probes, ticket moves, ticket evidence updates,
+successful dispositions, and product commits until the exact failing command
+passes after a source or test edit.
+
+The repair lane is generic. It is not tied to Go or to the Temperature JSON
+CLI canary. It applies to any recognized test/build command for the target
+stack. Source and test `file_write` repairs remain available; ticket evidence
+and lifecycle writes are blocked until the failed test/build command is clean.
+
+### Consequences
+
+- Passing runtime probes cannot outrun failing tests or builds.
+- Engineers keep a direct repair path through source/test edits and an exact
+  validation rerun instead of being pushed into target intervention debt.
+- Broken product state is harder to preserve as a semantic implementation
+  commit.
+- The next clean canary should confirm a failing `go test` forces source/test
+  repair and exact passing rerun before ticket evidence, ticket completion, or
+  product commit can continue.
+
+## AD-195: CTO Technical Planning Is Not Product Implementation
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run40` replay confirmed the early AD-193 path again: CEO chose
+the Temperature JSON CLI slice, COO updated product-specific planning and the
+canonical feature contract, committed those artifacts, and routed CTO without
+alternate ticket creation.
+
+CTO then created the product ticket but crossed the role boundary. It wrote
+`go.mod`, repeatedly attempted product source and test writes, updated README
+usage notes, and committed `go.mod` plus the ticket before handing work to
+Engineer. Source-file DocSync guardrails blocked some writes, but package and
+README product mutations still escaped because CTO was treated as a generic
+planner with `file_write`.
+
+### Decision
+
+CTO file writes are now bounded to technical planning artifacts:
+`docs/design-docs/`, `docs/reports/strategy/`, and
+`docs/goals/observations.md`. Product implementation files, package/module
+files, README usage notes, tests, build config, and root product files belong
+behind `ticket_create` and ticket-backed Engineer delivery. The generated CTO
+prompt, persona docs, role registry, and tools glossary now state this
+boundary explicitly.
+
+### Consequences
+
+- CTO can still record architecture rationale and create implementation
+  tickets, but cannot start the implementation while shaping that ticket.
+- Package/module initialization such as `go.mod` is reserved for Engineer,
+  which keeps implementation, validation, and ticket evidence in one role
+  transcript.
+- The next clean canary should confirm CTO creates and commits only the
+  implementation ticket, then hands to Engineer without dirty product files.
+
+## AD-196: Test/Build Repair Lanes Allow Same-Lane Validation, Not Workarounds
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run41` replay confirmed the CTO boundary from AD-195. CEO and
+COO produced product-specific Temperature JSON CLI planning, CTO created and
+committed only the implementation ticket, and Engineer claimed the ticket
+before writing `go.mod`, source, tests, and README usage notes.
+
+The next failure was in AD-194's repair lane strictness. Engineer ran
+`go test ./cmd/temperature-json-cli/...`, fixed an unused import, then hit a
+subprocess path failure in the test. The guardrail correctly blocked runtime
+probes, cleanup, ticket evidence, and product commits while the test failure
+was unresolved, but it also rejected reasonable same-lane validation attempts
+such as `go test ./cmd/temperature-json-cli` because they were not the exact
+original command. That trapped the role into repeated guardrail blocks and
+workaround attempts, including an ad hoc root verification script.
+
+### Decision
+
+Engineer test/build repair is lane-based rather than exact-command-only. After
+a failing test command, Engineer may edit product source, tests, fixtures, or
+package/build config, then run another recognized test command. After a
+failing build command, Engineer may make the same bounded repair writes and
+run another recognized build command. Runtime probes, unrelated shell
+commands, helper scripts, ticket evidence updates, ticket done moves,
+successful dispositions, and product commits remain blocked until a same-lane
+test/build command passes.
+
+The policy also blocks new root scratch verification files whose names contain
+validation, scratch, or verify language, so ad hoc scripts such as
+`verify_functionality.sh` do not become product noise during repair.
+
+### Consequences
+
+- The repair lane keeps the quality invariant that failing tests/builds cannot
+  be bypassed by runtime probes or commits.
+- Engineer can recover from legitimate command-shape drift, package scoping,
+  and framework-specific focused test commands without getting stuck on a
+  single exact command string.
+- Repair writes stay product-relevant: source, tests, fixtures, and build
+  config are allowed, while helper scripts, ticket evidence, and unrelated
+  docs wait until validation is clean.
+- The next clean canary should confirm Engineer can repair a failing test,
+  rerun a focused same-lane test command, and continue toward product commit
+  and ticket closure without creating workaround files.
+
+## AD-197: Simple CD Validation Shell Commands Count As Same-Lane Repair
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run42` replay confirmed AD-195 again and partially confirmed
+AD-196. CTO created only the implementation ticket. Engineer claimed it, wrote
+source and tests, ran `go test ./cmd/temperature-json-cli/...`, and was
+blocked from runtime probes, build substitution, helper scripts, and product
+commits while the failing test lane was unresolved.
+
+The remaining trap was command classification. The local model repeatedly used
+the natural shell shape `cd cmd/temperature-json-cli && go test -v .` for
+focused package validation. The shell executor can run that command, but the
+repair-lane classifier treated any shell control syntax as unclassifiable and
+therefore blocked it as an unrelated side path. The result was another
+guardrail loop even though the requested command was still a test command in
+the correct lane.
+
+### Decision
+
+Validation command recognition now understands the narrow shell pattern
+`cd <dir> && <test-or-build command>` for repair-lane classification. The
+recognized validation command is the right-hand side after the simple `cd`.
+Arbitrary shell control syntax, multiple chained operations, pipes,
+redirection, substitutions, and shell wrappers remain unclassified for the
+repair lane and are still blocked while a failing test/build lane is
+unresolved.
+
+### Consequences
+
+- Engineer can use the common focused validation shape produced by local
+  models and Go projects without escaping the test/build repair lane.
+- The policy stays narrow: this is not a general shell-wrapper bypass for
+  runtime probes, cleanup, ticket moves, or helper scripts.
+- The next clean canary should confirm `cd <package> && go test -v .` can
+  repair a failed package-pattern test and allow the product lifecycle to move
+  toward commit and ticket evidence.
+
+## AD-198: Clean Review Evidence Forces A Terminal Disposition
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run43` replay confirmed the AD-196 and AD-197 direction on a
+fresh Temperature JSON CLI target. CEO, COO, and CTO stayed product-specific.
+Engineer claimed the ticket, implemented source, tests, README usage notes,
+and `go.mod`, corrected an expected missing-input runtime probe with
+`expected_exit_code`, repaired a failing `go test`, committed product work,
+updated ticket evidence, moved `T-001` to done, and handed off to QA. QA read
+the completed ticket and implementation, ran docsync, tests, and happy-path
+runtime probes, then approved.
+
+The remaining failure was review completion latency. Security inspected recent
+commits, scanned for secrets, ran docsync, ran the relevant test command, read
+source, and ran a successful runtime probe. At that point the review had clean
+evidence and no failing validation, but the next model turn spent more than
+five minutes instead of recording `job_disposition_record`. Stopping the run
+cancelled that LLM call and produced a foundation-owned `llm_unreachable`
+signal. No target intervention-debt ticket was created, and product progress
+was preserved, but the review stage still relied on the model deciding when it
+had enough evidence.
+
+### Decision
+
+Review evidence convergence is now mechanical. When QA or Security has both a
+successful `file_read` inspection and at least one successful validation
+command in the current job, and no test, build, or unexpected runtime
+validation failure is outstanding, the agent loop appends a terminal-only
+reminder. The next response must call the configured terminal tool,
+`job_disposition_record`, and any other tool or prose-only answer ends the job
+as a loop boundary instead of executing more inspection.
+
+The same terminal-only grace response is bounded by a short per-call timeout.
+After the loop has already told a required-terminal-tool job to finish because
+of turn budget, repeated tool-call shape, or sufficient review evidence, the
+next LLM completion is capped so a simple disposition cannot consume another
+full default inference timeout.
+
+### Consequences
+
+- QA and Security no longer need to stumble into a no-op shell block before the
+  runtime tells them to finish.
+- Clean review evidence becomes a convergence point: decide, request changes,
+  or block, but do not continue broad validation.
+- The target backlog remains protected because review dithering and inference
+  stalls stay foundation telemetry rather than intervention-debt tickets.
+- The next clean canary should confirm Security records a terminal disposition
+  immediately after clean read plus validation evidence and then routes forward
+  without another long model turn.
+
+## AD-199: Reviewer Command Procedure Failures Stay In Review
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run44` replay confirmed the product-first path on another fresh
+Temperature JSON CLI target. CEO, COO, and CTO created product-specific
+planning and one implementation ticket. Engineer claimed the ticket, wrote the
+Go CLI, proved the two positive Celsius conversions, corrected the
+missing-argument negative path with `expected_exit_code`, committed product
+work, updated evidence, moved `T-001` to done, and handed to QA. Intervention
+signals from guardrail blocks and the operator stop stayed foundation-owned
+and did not become target backlog tickets.
+
+QA then hit a review-procedure failure, not a product failure. It ran:
+
+```json
+{"argv":["go","build","-o","<validation-root>","cmd/temperature-json-cli"]}
+```
+
+Go rejected that package path because local package targets require the
+`./cmd/...` form. QA immediately tried corrected build targets, but the review
+policy had already counted the first command as a failing build and blocked
+further validation, forcing `changes_requested` for implementation rework even
+though the target source had previously built and run successfully.
+
+### Decision
+
+Reviewer validation now distinguishes obvious validation-procedure mistakes
+from target product failures. For QA and Security, Go test/build commands that
+fail because a repo-relative package path omitted `./`, or because the reviewer
+builds `.` in a CLI repo whose main package lives under `cmd/*`, are recorded
+as `validation:procedure_failure` rather than `validation:command:failure` or
+`validation:build:failure`.
+
+That keeps the review lane open for a corrected validation command in the same
+job. Real compile errors, failing tests, failing runtime probes, and
+uncorrected expected-negative runtime probes still force the existing
+structured `changes_requested` path.
+
+### Consequences
+
+- Reviewers can correct their own command-addressing mistakes without sending
+  healthy product work back to Engineer.
+- The quality gate remains strict for target-owned failures because only
+  recognizable validation-procedure failures bypass the failure counters.
+- The next clean canary should confirm QA can recover from `cmd/<name>` or root
+  `.` build-target mistakes by running the corrected `./cmd/<name>` build,
+  then continue to runtime evidence and terminal disposition.
+
+## AD-200: Simple CD Validation Argv Normalizes To Shell Command
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run45` replay started cleanly and confirmed the product-first
+bootstrap path again. CEO named the Temperature JSON CLI goal, COO rewrote the
+active plan and feature contract, and CTO-weekly created and committed the
+implementation ticket without product mutation. Engineer claimed the ticket
+and began implementation.
+
+The run then exposed a validation-interface mismatch. Engineer created a
+nested Go module under `cmd/temperature-json-cli`, which means the correct
+test command is naturally:
+
+```json
+{"shell_command":"cd cmd/temperature-json-cli && go test ./..."}
+```
+
+The model first attempted the same operation in argv form:
+
+```json
+{"argv":["cd","cmd/temperature-json-cli","&&","go","test","./..."]}
+```
+
+`shell_exec` correctly rejected that because argv mode does not run shell
+builtins or control operators. The model then tried the root command
+`go test ./cmd/temperature-json-cli/...`, which Go rejected because the nested
+module is outside the root module. That failure opened the Engineer test
+repair lane and blocked builds, commits, discovery, and cleanup even though
+the original intended validation was a safe focused test command.
+
+### Decision
+
+`shell_exec` now normalizes only this narrow argv mistake into the existing
+shell-command path: `["cd","<dir>","&&",<test-or-build-command>...]`. The
+right-hand command must classify as a recognized test or build command, and
+all tokens must be simple tokens without pipes, redirects, substitutions,
+background operators, or arbitrary shell control syntax.
+
+The normalized command then flows through the same shell-command validation
+and policy used by AD-197. General shell syntax in argv mode remains rejected.
+
+### Consequences
+
+- Local models can recover from the common `cd ... && go test` argv formatting
+  mistake without turning safe validation into a product failure.
+- The policy remains narrow: cleanup, runtime probes, shell wrappers,
+  redirection, pipes, substitutions, package-manager mutation, and ticket moves
+  are not normalized.
+- The next clean canary should confirm the Engineer can run nested-module test
+  validation through the normalized argv shape, continue to product commit,
+  and reach QA for the AD-199 and AD-198 review checks.
+
+## AD-201: CLI Input-Validation Probes Are Expected Negative-Path Evidence
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run46` replay validated the earlier stabilizations and then
+found a narrower loop in Engineer runtime validation. CEO, COO, and
+CTO-weekly again stayed product-first for the Temperature JSON CLI target.
+Engineer claimed `T-001`, wrote the CLI implementation, created `go.mod` and
+tests, and first attempted to build a repo-local binary. AD-196 blocked that
+artifact path and gave the exact `<validation-root>`
+correction, which Engineer followed. The binary then returned correct JSON for
+`--celsius 0` and `--celsius 100`.
+
+Engineer next ran the validation binary without arguments. For this product,
+that is a useful negative-path check: the CLI should reject missing required
+input and print a clear error. The binary exited non-zero with
+`--celsius flag is required`, but because the role had not supplied
+`expected_exit_code`, the runtime policy treated the probe as an unexpected
+failure. The correction guidance existed, but the local model drifted into
+other probes, edits, commits, ticket moves, and dispositions instead of
+rerunning that exact command with `expected_exit_code`. The guardrail then did
+the right thing by blocking completion, but the job made no further product
+progress.
+
+The `demo-temp-run47` replay confirmed that the missing-input probe no longer
+poisoned the job. Engineer successfully ran `go run ...` with no arguments,
+received clear missing-input usage text, and continued. The next negative path
+was an explicit bad input value: `go run ... invalid` returned
+`Invalid temperature value 'invalid'. Must be a number.` The product behavior
+was correct, but the same runtime repair guardrail treated the invalid-input
+check as unexpected because the classifier only recognized missing input.
+
+### Decision
+
+An obvious CLI input-validation runtime probe now counts as expected
+negative-path validation immediately when all of these are true:
+
+- The command shape is a direct runtime probe, such as a single validation
+  binary, `go run`, `cargo run`, or a language entrypoint.
+- The probe is recognizably an input-validation check, such as no required
+  input or a deliberately bad argument like `invalid`.
+- The command exits non-zero.
+- Output or stderr clearly describes required, missing, usage, or similar
+  input validation.
+- Output does not contain crash markers such as panic, traceback, exception,
+  runtime error, or segmentation fault.
+
+Explicit `expected_exit_code` remains supported and still records expected
+negative-path evidence. Positive acceptance failures and crash-like missing
+input failures still open the runtime repair lane and block completion until
+the exact command is repaired.
+
+### Consequences
+
+- Engineer can validate standard CLI missing-input and invalid-input behavior
+  without a second corrective tool call.
+- The guardrail remains strict for crashes and broken positive behavior.
+- The next clean canary should confirm Engineer can commit and close the
+  Temperature JSON CLI ticket after positive JSON checks, missing-input
+  validation, and invalid-input validation, then reach QA/Security review.
+
+## AD-202: Engineer Command Procedure Failures Stay Out Of Repair Lane
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run48` replay confirmed AD-201 in the live lifecycle. Engineer
+implemented the Temperature JSON CLI, built the external validation binary,
+proved positive Celsius conversions, proved missing-input behavior, proved
+invalid-input behavior, ran `go test ./...`, committed product work, moved
+`T-001` to done, and handed off to QA.
+
+QA then requested implementation rework because the delivered Go package had
+no `_test.go` file, even though the ticket carried runtime evidence. The
+orchestrated Engineer rework exposed another command-procedure trap: Engineer
+ran `go build -o <validation-root>
+cmd/temperature-json-cli/`. Go rejected the package target because it needed
+`./cmd/temperature-json-cli`. The corrected command was obvious, but the
+Engineer repair-lane policy treated the first command as a real build failure
+and blocked the corrected validation command until a source edit occurred.
+
+### Decision
+
+Validation-procedure failure classification now applies to Engineer as well
+as QA and Security. Recognizable Go package-target mistakes, including missing
+`./` for repo-relative package paths and root `.` builds in `cmd/*` CLI repos,
+record `validation:procedure_failure` rather than test/build failure counters.
+
+Corrected validation commands remain available in the same job. Real compile
+errors, failing tests, and target-owned build failures still open the normal
+Engineer repair lane.
+
+### Consequences
+
+- Engineer can correct command-addressing mistakes without being forced into a
+  meaningless source edit.
+- The repair lane remains strict for real target failures.
+- The next clean canary should confirm Engineer rework can recover from
+  `cmd/...` build target mistakes and continue to validation, commit, and
+  review handoff.
+
+## AD-203: Surplus CLI Argument Probes Are Expected Negative-Path Evidence
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run49` replay confirmed AD-201 and AD-202 were moving the
+alternate CLI target forward. CEO, COO, and CTO-weekly produced
+product-specific planning and a product ticket. Engineer claimed `T-001`,
+created the Go CLI with DocSync metadata, corrected a repo-local build-output
+guardrail by building `<validation-root>`, proved the
+positive `25` Celsius conversion, and proved the missing-input negative path.
+
+Engineer then ran `<validation-root> 25 30`. The CLI
+correctly rejected the surplus positional argument with `error: too many
+arguments provided`, but the runtime policy treated the non-zero exit as an
+unexpected product failure. The guardrail then blocked later runtime probes,
+build/test commands, and completion. The classification was too narrow: it
+recognized missing input and obviously invalid single values, but not the
+common CLI validation case where extra input is rejected.
+
+### Decision
+
+Surplus-argument CLI probes now count as expected negative-path runtime
+evidence when all of these are true:
+
+- The command is a direct runtime probe.
+- The command includes more than one product argument.
+- The command exits non-zero.
+- Output names surplus input, such as too many arguments, too many args, too
+  many values, at most one, only one, single argument, or exactly one argument.
+- Output does not contain crash markers such as panic, traceback, exception,
+  runtime error, or segmentation fault.
+
+Missing-input and invalid-input probes keep the AD-201 classification. Positive
+acceptance failures and crash-like extra-input failures still open the strict
+runtime repair lane.
+
+### Consequences
+
+- Engineer can validate ordinary CLI arity behavior without poisoning product
+  completion.
+- Multi-argument positive paths are not blanket-exempt; the output must show a
+  surplus-input validation message.
+- The next clean canary should confirm the Temperature JSON CLI can complete
+  positive, missing-input, invalid-input, and surplus-argument validation
+  without entering the unresolved runtime failure lane.
+
+## AD-204: Test-Build Repair Can Remove Same-Job Bad Test Files
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run50` replay confirmed the factory could again reach Engineer
+implementation on the alternate CLI target. Engineer claimed `T-001`, wrote a
+Go CLI with DocSync metadata, built an external validation binary, proved
+positive Celsius conversions, and used explicit `expected_exit_code` for
+missing-input and invalid-input probes. It then added Go tests, and those
+tests failed with a real compile error caused by duplicate test helper/type
+definitions.
+
+The test/build repair lane correctly blocked runtime probes, build-command
+switching, ticket moves, and unrelated shell commands while the test failure
+was unresolved. However, the only available deletion surface for the bad
+same-job test files was `shell_exec rm ...`, and the repair lane blocked that
+too. The model then created more duplicate test files while trying to route
+around the blockage. The guardrail protected product completion, but it also
+removed the practical path for deleting broken test artifacts created during
+the same repair attempt.
+
+### Decision
+
+During an unresolved Engineer test/build failure, `shell_exec rm` or `unlink`
+is allowed only when all of these are true:
+
+- The role is Engineer.
+- A test/build validation failure is currently outstanding.
+- The removal command has no recursive flags.
+- Every removed path is inside the repo.
+- Every removed path is test-like, such as a source file whose basename
+  contains `test`, or a path under `testdata/` or `fixtures/`.
+- Every removed path was written by the same job after the test/build failure
+  began.
+
+Unmarked test files, product source files, recursive removal, generated
+cleanup outside the existing artifact rules, and ordinary cleanup remain
+blocked.
+
+### Consequences
+
+- Engineer can undo bad same-job test repair files without leaving the failing
+  test lane.
+- The model cannot delete old tests or source files simply to make validation
+  pass.
+- The next clean canary should confirm Engineer can recover from bad test-file
+  generation and then rerun the same-lane test successfully.
+
+## AD-205: Review Terminal Evidence Gets One Missed-Tool Correction
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run51` replay confirmed the product-first path through a full
+fresh target lifecycle. CEO and COO produced a product-specific Temperature
+JSON CLI plan and feature contract. CTO-weekly created one product ticket.
+Engineer claimed it, wrote the Go CLI and tests, built the external validation
+binary, proved positive and negative CLI behavior, ran `go test ./...`, passed
+DocSync, committed the implementation, moved `T-001` to done, and handed off
+to QA.
+
+QA then repeated a familiar review command-procedure mistake. It first ran
+`go build -o <validation-root> cmd/temperature-json-cli`,
+then corrected the package target to `./cmd/temperature-json-cli`. The
+corrected build succeeded, which meant review evidence was sufficient. The
+agent loop correctly appended terminal-only guidance requiring
+`job_disposition_record`, but the next model response attempted another
+non-terminal tool and the job ended as `circle_detected`. Product progress was
+preserved and no target intervention debt was created, but the strict boundary
+lost a good review after the model had just repaired its command.
+
+### Decision
+
+Review evidence convergence remains mechanical: once QA or Security has clean
+read plus validation evidence and no outstanding product failure, the next
+useful action is `job_disposition_record`.
+
+The first non-terminal response after that terminal-evidence reminder is now
+rejected in-band instead of ending the job immediately. The rejected tool is
+not executed. The loop appends one stronger correction naming the attempted
+non-terminal tool, repeats the terminal disposition guidance, and allows one
+more model response. If that response is still not the required terminal tool,
+the job ends with `circle_detected`.
+
+### Consequences
+
+- A single missed terminal-tool instruction no longer loses a completed review.
+- Review roles still cannot keep inspecting or validating indefinitely after
+  sufficient evidence exists.
+- The rejected non-terminal tool does not mutate target state or consume a
+  tool execution.
+- The next clean canary should confirm QA turns the correction into an
+  approved or changes-requested `job_disposition_record` instead of another
+  `circle_detected` failure.
+
+## AD-206: Test-Build Repair Writes Stay In The Failed Scope
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run52` replay used the AD-205 binary against a fresh
+Temperature JSON CLI target. CEO and CTO-weekly still produced a product
+ticket without target intervention-debt churn, and Engineer claimed `T-001`.
+Engineer wrote `cmd/temperature-json-cli/main.go`, `cmd/temperature-json-cli/main_test.go`,
+and `go.mod`, then ran `go test ./cmd/temperature-json-cli/...`.
+
+That package test failed with ordinary test/build defects. The repair lane
+correctly blocked runtime probes, destructive `rm -rf`, commits, and ticket
+completion. However, `file_write` still allowed any source file while the test
+failure was outstanding. The model responded by creating a parallel root
+`main.go` and `main_test.go`, then repeated root `go test ./...` attempts
+while the original package tests remained failing. The guardrail prevented
+unsafe completion, but the allowed repair surface was too broad.
+
+### Decision
+
+When an Engineer test/build command fails, the runtime records a repair scope
+from recognized Go package targets such as `./cmd/temperature-json-cli/...`.
+While that failure remains outstanding, source, test, fixture, and testdata
+writes are allowed only inside the failed scope. Package/build config files
+such as `go.mod`, lockfiles, and test/build configuration remain available
+because they may be required to fix the same lane.
+
+If no narrower scope can be derived, such as a repo-wide `go test ./...`, the
+repair lane keeps the prior repo-wide source repair behavior. Scope tracking
+is cleared when the test/build failure is repaired.
+
+### Consequences
+
+- Engineer can repair the package that failed without spawning alternate
+  entrypoints that make validation noisier.
+- Same-lane validation remains available after scoped repair edits.
+- Broad repo-wide failures still allow broad repair because no narrower
+  package scope is known.
+- The next clean canary should confirm a failing package test leads to
+  `cmd/...` repair or structured blocked disposition, not root-level duplicate
+  implementation.
+
+## AD-209: Test-Build Repair Can Remove Same-Job Tests Written Before Failure
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run55` replay used a fresh Temperature JSON CLI target to
+validate run metadata and the earlier release/tag fixes. CEO, COO, and
+CTO-weekly again produced product-specific planning and one ordinary product
+ticket without target intervention-debt pollution. Engineer claimed `T-001`
+and wrote real product files under `cmd/temperature-json-cli/`.
+
+The run failed in the Engineer phase. The first failing command was
+`go test ./cmd/temperature-json-cli -run TestTemperatureCLI`, and the failure
+was caused by duplicate or placeholder generated test files. The test/build
+repair lane correctly blocked runtime probes, build switching, ticket evidence,
+ticket completion, commits, and a false successful disposition. However, the
+only cleanup path for a duplicate test written before the failing command was
+`rm -f cmd/temperature-json-cli/main_test.go`. AD-204 allowed removal only for
+test files written after the failure began, so that cleanup stayed blocked and
+the role spent the remaining turns trying to work around the test failure.
+
+### Decision
+
+Every successful Engineer `file_write` now records the written path in the
+job session. During an unresolved test/build repair lane, non-recursive
+`rm` or `unlink` may remove a test-like file only when that exact path was
+created or rewritten earlier by the same Engineer job. The previous safety
+constraints still apply: the path must resolve inside the repo, must be
+test-like or fixture/testdata, and source removal remains blocked even if the
+source file was written by the same job.
+
+This expands the same-job cleanup exception from "written after the failing
+test" to "written earlier in the same job" without allowing deletion of old
+project tests.
+
+### Consequences
+
+- Engineer can prune duplicate generated tests that it created before the
+  first failing test command.
+- Pre-existing project tests remain protected from deletion as a repair
+  shortcut.
+- The test/build repair lane keeps runtime probes, ticket completion, commits,
+  and successful dispositions blocked until the same-lane test/build command
+  passes.
+- The next clean canary should confirm Engineer removes or rewrites duplicate
+  generated tests, reruns `go test`, commits product work, and reaches QA
+  instead of exhausting `max_turns`.
+
+## AD-210: Review Terminal Boundary Waits For DocSync Evidence
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run56` replay used a fresh Temperature JSON CLI target after
+AD-209. The run validated the same-job test cleanup direction: the first
+Engineer completed product work, QA requested ordinary test-coverage rework,
+Orchestrator sent the same ticket back to Engineer, and the second Engineer
+added `cmd/temperature-json-cli/cli_test.go`, passed
+`go test ./cmd/temperature-json-cli/`, committed, pushed locally, moved
+`T-001` back to done, and recorded a successful disposition.
+
+The next QA job then read the ticket, README, implementation, and tests, and
+ran `go test ./cmd/temperature-json-cli/` successfully. At that point the
+agent loop decided review evidence was sufficient and forced a terminal-only
+`job_disposition_record` boundary. The QA role guidance still requires
+`docsync_audit` evidence before approval, so the model attempted
+`docsync_audit`; the runtime rejected it as post-validation churn, sent one
+stronger terminal correction, and the job ended with `circle_detected` after a
+second missed terminal call.
+
+The failure was not product logic and not target backlog work. It was a
+foundation review-boundary contradiction between "docsync is required before
+approval" and "validation evidence is already sufficient, no more tools".
+
+### Decision
+
+Review terminal convergence now waits for docsync evidence. For review roles
+that require docsync on successful dispositions, clean `file_read` plus
+successful validation is no longer enough to trigger the terminal-only
+boundary. The job must also have a successful `docsync_audit` tool call.
+
+After `docsync_audit` has run, the existing convergence behavior remains: the
+next non-terminal tool after sufficient review evidence is rejected without
+execution, the model gets one stronger terminal-only correction, and repeated
+misses still end with `circle_detected`.
+
+The generated QA persona now states this ordering explicitly: run
+`docsync_audit` before final approval, then call `job_disposition_record`;
+successful `job_disposition_record` approvals still run the mechanical
+docsync policy as a final guard.
+
+### Consequences
+
+- QA and Security can satisfy no-stale-documentation evidence before the
+  runtime closes the review loop.
+- The runtime no longer asks models to choose between role doctrine and the
+  terminal-tool correction.
+- Successful approvals still get mechanical docsync enforcement at
+  `job_disposition_record`.
+- The next clean canary should confirm the post-rework QA path runs
+  `docsync_audit`, records an approved or changes-requested disposition, and
+  proceeds to the next lifecycle role instead of ending with
+  `circle_detected`.
+
+## AD-211: Review Terminal Boundary Waits For Required Tests
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run57` replay validated the AD-210 ordering change but exposed
+the next review-boundary edge. QA read the done ticket, feature contract,
+README, implementation file, and ran `docsync_audit` successfully. It then
+built the external validation binary with
+`go build -o <validation-root> ./cmd/temperature-json-cli`.
+Because the terminal convergence heuristic treated any successful validation
+command as enough, it forced the `job_disposition_record` boundary after that
+build even though the target contained `_test.go` files and QA had not yet run
+the authoritative Go test command. The model attempted more shell validation,
+received the stronger terminal-only correction, and ended with
+`circle_detected`.
+
+The failure stayed foundation-owned telemetry and did not create target
+intervention debt or dispatch an Orchestrator loop.
+
+### Decision
+
+Review terminal convergence now mirrors the successful-disposition approval
+policy for test-bearing repositories. If the target repo contains test files,
+clean review evidence is not considered terminal-sufficient until the review
+job has recorded a successful test command. Build-only validation may still be
+valuable evidence, but it cannot prematurely cut off QA or Security before the
+test suite has run.
+
+The missing-test path remains unchanged: if Go source exists with no
+`_test.go` files, the terminal guidance points QA at a `changes_requested`
+disposition for Engineer test coverage rather than allowing indefinite
+inspection.
+
+### Consequences
+
+- Reviewers can still build external validation binaries, but build-only
+  evidence no longer preempts required tests.
+- The terminal-only boundary remains available after docsync plus successful
+  tests, preserving the protection against long post-evidence review loops.
+- The next clean canary should confirm QA runs `go test` after external build
+  evidence and records a structured disposition instead of ending with
+  `circle_detected`.
+
+## AD-212: Review No-Op Recovery Uses The Same Evidence Gates As Approval
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run58` replay validated that AD-211 prevented the terminal
+boundary from firing immediately after build evidence, but exposed a sibling
+path. QA built `<validation-root>` and then called
+`shell_exec` with an empty argv. The review no-op guard still treated any prior
+successful validation as "terminal evidence is sufficient" and told QA to call
+`job_disposition_record` with approval. The disposition policy correctly
+rejected approval because test files existed and the authoritative test command
+had not passed. The agent loop then repeated terminal-only guidance and QA
+ended with `circle_detected`.
+
+The failure stayed foundation-owned telemetry and did not dispatch an
+Orchestrator loop or create target intervention debt.
+
+### Decision
+
+Review no-op recovery now shares the same evidence gates as successful review
+approval. A blocked review `shell_exec` no-op no longer globally marks
+`review:terminal_disposition:required` just because some validation succeeded.
+The agent loop alone turns review evidence into a terminal-only boundary, using
+`ReviewTerminalEvidenceSatisfied` with access to the target repo, test files,
+docsync state, read evidence, and validation failures.
+
+The no-op policy now gives concrete missing-evidence guidance:
+
+- If test files exist and no test command has passed, the next action is the
+  authoritative test command, such as `go test ./...`, or an honest
+  `changes_requested` disposition if tests cannot be run.
+- If docsync is required and `docsync_audit` has not passed, the next action is
+  `docsync_audit` or an honest `changes_requested` disposition.
+- Only after the required evidence gates are met does a review no-op route to
+  final `job_disposition_record` approval guidance.
+
+### Consequences
+
+- Build-only or runtime-only evidence cannot trap QA/Security between no-op
+  terminal guidance and approval policy.
+- The runtime preserves the no-op guardrail without turning it into a false
+  terminal boundary.
+- The next clean canary should confirm QA can recover from a no-op after build
+  evidence by running tests, then recording a structured disposition.
+
+## AD-213: Mars Harness CLI Workflows Use Structured Tool Resolution
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-temp-run59` replay validated the AD-212 review fix and reached a
+complete product lifecycle: CEO, COO, CTO-weekly, Engineer, QA, Security,
+Dogfood, and Release Manager all advanced ordinary product work without
+intervention-debt starvation. QA approved after build, runtime, test, and
+docsync evidence, and the target received a local `release: notes 0.2.0` commit
+and `v0.2.0` tag.
+
+The remaining release rough edge was command resolution. The first
+Release Manager pass ran `mars-harness release notes --repo . --bump auto
+--dry-run` through `shell_exec`, which resolved an older installed
+`mars-harness` binary whose command surface did not include `release`. The
+role then read the `mars_harness_cli` reference but repeated the same stale
+shell command until loop containment forced a failed liveness disposition.
+Orchestrator recovered by dispatching Release Manager again; the second pass
+completed local release artifacts and stopped cleanly on the expected missing
+remote publication blocker.
+
+### Decision
+
+Mars Harness CLI workflows inside agent jobs now use the structured
+`mars_harness_cli` tool rather than direct `shell_exec mars-harness ...`
+commands. The tool resolves the active harness executable before PATH, which is
+the same binary that started the job, and therefore avoids stale installed
+binaries in deployed target repos.
+
+The `shell_exec` policy rejects direct `mars-harness` binary invocations in
+argv mode or as the first executable in a shell command. The error names the
+equivalent `mars_harness_cli` args so the model can recover without guessing a
+binary path.
+
+Generated Release Manager guidance now states this explicitly for release
+notes, backfill, and related Mars Harness CLI workflows.
+
+### Consequences
+
+- Release review should no longer fail solely because the target machine has
+  an older `mars-harness` earlier on PATH.
+- The structured CLI tool remains the single mirrored authority for setup,
+  update, release, score, trust, model, and harness commands.
+- Direct shell remains available for product validation commands such as
+  `go test`, built binaries, curl probes, and Git commands that are already
+  covered by dedicated release/tag guardrails.
+- The next clean canary should confirm Release Manager reaches local release
+  notes directly through `mars_harness_cli` and stops only on real publication
+  blockers such as a missing remote.
+
+## AD-215: Engineer Test/Build Rework Guidance Carries Failure Output
+
+**Status:** Accepted
+**Date:** 2026-05-21
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-slug-run61` replay showed a healthy product-first path through CEO,
+COO, CTO-weekly, Engineer, QA, Orchestrator, and rework Engineer before it hit
+a repair-guidance gap. QA correctly requested missing Go tests. Engineer added
+tests, and `go test` exposed a contract-shaped product mismatch in the Slugify
+CLI word-count behavior. Guardrails blocked unrelated shell work, commits,
+ticket completion, and successful disposition while the test/build lane was
+unresolved, but the repeated guidance named only the command and not the
+assertion failure.
+
+### Decision
+
+The tool session now stores a compact copy of the latest failing test/build
+output along with the unresolved command. Subsequent guardrail messages include
+that output and explicitly state that when a failing assertion matches the
+ticket, README, or BDD contract, Engineer must edit the implementation rather
+than deleting or weakening the test.
+
+### Consequences
+
+- Rework roles get the concrete failure text even after intervening policy
+  blocks or model retries.
+- Contract-aligned tests remain first-class product evidence rather than
+  disposable scaffolding.
+- Successful same-lane validation clears the stored failure output with the
+  rest of the unresolved repair state.
+- The `demo-slug-run62` replay validated the behavior in a fresh target:
+  product planning, ordinary ticketing, implementation with tests, QA,
+  Security, Dogfood, local release notes, and tag creation completed without
+  re-entering unresolved test/build churn or creating target intervention-debt
+  tickets. The remaining blocker was expected missing remote publication in the
+  temporary target.

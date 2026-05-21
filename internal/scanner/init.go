@@ -14,6 +14,7 @@ docs:
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/roles/ROLES.md
 */
@@ -597,7 +598,7 @@ roles:
     max_turns: 20
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff]
+    tools: [file_read, shell_exec, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff]
 
   security:
     prompt: roles/security.md
@@ -1008,7 +1009,7 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
 - Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
 - After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, ensure the generated entry explains ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` before commit buckets, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
-- When GitHub release credentials are configured, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets. Confirm ` + "`gh release view vX.Y.Z`" + ` succeeds. If the tag workflow did not create the release object, create a notes-only GitHub Release from the generated ` + "`CHANGELOG.md`" + ` entry for the existing tag, then record missing assets as the remaining blocker. A notes-only GitHub Release is a blocker until required assets are attached and verified. If publishing or verification is blocked, record the blocker explicitly.
+- When GitHub release credentials are configured, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets. Never tag while ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + ` are dirty, and never target a pre-release-note commit. Confirm ` + "`gh release view vX.Y.Z`" + ` succeeds. If the tag workflow did not create the release object, create a notes-only GitHub Release from the generated ` + "`CHANGELOG.md`" + ` entry for the existing tag, then record missing assets as the remaining blocker. A notes-only GitHub Release is a blocker until required assets are attached and verified. If publishing or verification is blocked, record the blocker explicitly.
 - Private Mars Harness release access is part of getting started and version-drift repair. Run ` + "`mars-harness auth github check`" + ` or the read-only ` + "`github_auth_check`" + ` tool before ` + "`mars-harness update tool`" + `, release asset verification, install repair, or update troubleshooting. Configure access with ` + "`mars-harness auth github setup`" + `; never paste tokens into chat, docs, commits, tickets, traces, logs, or target repo files.
 - Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
 - Check drift with ` + "`mars-harness update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars-harness update harness --repo .`" + `.
@@ -1149,6 +1150,12 @@ Ticket markdown belongs only in ` + "`backlog/`" + `, ` + "`in-progress/`" + `,
 ` + "`in-review/`" + `, or ` + "`done/`" + `. Direct files such as
 ` + "`docs/tickets/T-001-example.md`" + ` are invalid; move misplaced tickets into
 the lifecycle directory that reflects their state.
+
+For feature tickets, pass ` + "`bdd_scenarios`" + ` as a JSON array such as
+` + "`[\"F-001-S001\"]`" + `, not as a quoted list string. If ` + "`ticket_create`" + `
+or a direct ticket-file write fails, do not record completed progress until a
+later ` + "`ticket_create`" + ` succeeds. Record ` + "`status: blocked`" + ` with
+the exact tool error when ticket materialization is still blocked.
 
 Tickets come after planning and feature contracts. Before creating ordinary
 feature tickets, the active exec plan must name the current scenario and the
@@ -2436,17 +2443,17 @@ tools are added, removed, renamed, or materially change behavior.
 | Tool | Use When | Notes |
 | --- | --- | --- |
 | ` + "`file_read`" + ` | Read a known file path from the repository. | Non-mutating. Use before editing or reviewing code. |
-| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. New repo-root validation scripts such as ` + "`validate.sh`" + ` are blocked; use existing tests, direct build/run/curl evidence, or intentional durable tests. |
+| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. Engineer cannot populate in-progress ticket ` + "`evidence_links`" + ` or ` + "`verified_by`" + ` before the same job records successful validation. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. New repo-root validation scripts such as ` + "`validate.sh`" + ` are blocked; use existing tests, direct build/run/curl evidence, or intentional durable tests. COO may only write planning artifacts. CTO may only write bounded technical planning artifacts; implementation, package/module, README usage, source, test, build, config, and root product-file edits belong to ticket-backed Engineer delivery. |
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
-| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Simple malformed argv shapes are normalized before policy checks and execution. Engineer runs with an ordinary backlog product ticket and no in-progress ticket must use ` + "`shell_exec`" + ` to claim that ticket with ` + "`git mv ... docs/tickets/in-progress/`" + ` before any other shell command. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Likely server/watch commands such as ` + "`go run`" + ` HTTP entrypoints, ` + "`npm start`" + `, ` + "`npm run dev`" + `, ` + "`python -m http.server`" + `, ` + "`uvicorn`" + `, ` + "`vite`" + `, and ` + "`next`" + ` are blocked in foreground mode; rerun them with ` + "`background:true`" + `, probe readiness separately, and stop the tracked PID. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not call ` + "`shell_exec`" + ` with empty ` + "`argv`" + ` or a single ` + "`:`" + ` as a wait or placeholder command; no-op calls fail with guidance to stop tracked PIDs, commit, push, and record ` + "`job_disposition_record`" + `. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors. Background cleanup terminates wrapper processes and known descendants so ` + "`go run`" + ` child servers do not occupy ports after a job ends, and ` + "`kill <tracked-background-pid>`" + ` applies the same cleanup during a job. ` + "`go build`" + ` without ` + "`-o`" + ` and ` + "`go build -o <path>`" + ` inside the target repo are blocked before execution; use ` + "`go test ./...`" + ` for compile validation or put validation binaries in an external temp path. |
+| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Simple malformed argv shapes are normalized before policy checks and execution, and literal newlines inside one argv argument are allowed because argv does not invoke shell parsing. Engineer runs with an ordinary backlog product ticket and no in-progress ticket must use ` + "`shell_exec`" + ` to claim that ticket with ` + "`git mv ... docs/tickets/in-progress/`" + ` before any other shell command. Use ` + "`expected_exit_code`" + ` only for intentional non-zero error-path validation probes; unexpected validation failures block review approval. Engineer cannot move, write, or commit product tickets to ` + "`docs/tickets/done/`" + ` while the same job has an unrepaired unexpected runtime validation failure; after Engineer observes an unexpected runtime failure, runtime probes are blocked until an implementation ` + "`file_write`" + ` occurs, and only a later successful run of that exact failed command repairs the blocker. Engineer may correct an obvious no-argument/missing-argument runtime probe by rerunning that exact command once with matching ` + "`expected_exit_code`" + `, but cannot retroactively add ` + "`expected_exit_code`" + ` to clear a failed positive acceptance path. QA/Security shell execution is validation-only: read-only inspection, tests, builds, fresh external validation binaries, runtime probes, and HTTP probes are allowed, while package/module initialization such as ` + "`go mod init`" + `, product mutation, broad discovery, cleanup, and placeholder no-ops are blocked. QA/Security retain the one-time exact-command ` + "`expected_exit_code`" + ` correction for review-procedure mistakes. QA/Security must stop shell validation after any failing build, test, or unexpected runtime probe and record ` + "`changes_requested`" + ` with the failing command/output, except they may immediately rerun the exact same runtime probe once with matching ` + "`expected_exit_code`" + ` when the first run was an expected-negative case. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Likely server/watch commands such as ` + "`go run`" + ` HTTP entrypoints, ` + "`npm start`" + `, ` + "`npm run dev`" + `, ` + "`python -m http.server`" + `, ` + "`uvicorn`" + `, ` + "`vite`" + `, and ` + "`next`" + ` are blocked in foreground mode; rerun them with ` + "`background:true`" + `, probe readiness separately, and stop the tracked PID. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not call ` + "`shell_exec`" + ` with empty ` + "`argv`" + ` or a single ` + "`:`" + ` as a wait or placeholder command; no-op calls fail with guidance to stop tracked PIDs, commit, push, and record ` + "`job_disposition_record`" + `. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors. Background cleanup terminates wrapper processes and known descendants so ` + "`go run`" + ` child servers do not occupy ports after a job ends, and ` + "`kill <tracked-background-pid>`" + ` applies the same cleanup during a job. ` + "`go build`" + ` without ` + "`-o`" + `, ` + "`go build -o <path>`" + ` inside the target repo, and untracked temp outputs without a ` + "`-validation`" + ` suffix are blocked before execution; use ` + "`go test ./...`" + ` for compile validation or ` + "`go build -o /tmp/<project>-validation <entrypoint>`" + ` for runnable validation. |
 | ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading. |
 | ` + "`github_auth_check`" + ` | Check private Mars Harness GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
 | ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe ` + "`.gitignore`" + `-only repair when needed. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
 | ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. The resolver prefers ` + "`MARS_HARNESS_CLI_BIN`" + `, then the active harness executable, then ` + "`PATH`" + `, and stale binaries produce actionable update guidance. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
-| ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before dispatch-mode jobs complete. Non-Orchestrator roles must commit repo changes before terminal dispositions that approve, complete, request changes, block, fail, or otherwise hand off work. |
+| ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before dispatch-mode jobs complete. Non-Orchestrator roles must commit repo changes before terminal dispositions that approve, complete, request changes, block, fail, or otherwise hand off work. Dispatch jobs get one final terminal-tool reminder at the turn-budget boundary so review failures can become structured dispositions instead of raw ` + "`max_turns`" + `; after that reminder, only the terminal tool may execute. Engineer successful dispositions require the named ticket in ` + "`docs/tickets/done/`" + ` and no unrepaired unexpected runtime validation failure. QA and Security approval for named tickets requires successful in-job validation evidence, and test files require a successful test command. |
 | ` + "`tool_create`" + ` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
 | ` + "`persona_create`" + ` | Scaffold a repo-local persona manual, role prompt, registry row, and optional manifest role. | Mutating. Use for universal, foundation, or deployed persona proposals; foundation defaults still require adding the canonical Go entry in ` + "`internal/personas`" + `. |
 | ` + "`release_orchestrate`" + ` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with ` + "`mars_harness_cli`" + ` and git tools. |
@@ -2454,7 +2461,7 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`architecture_audit`" + ` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
 | ` + "`harness_doctrine_sync`" + ` | Check mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency. | Non-mutating. Use when changing operating doctrine or mirrored definitions. |
 | ` + "`docsync_audit`" + ` | Audit source files for ` + "`MarsDocSync`" + ` metadata and associated documentation pointers. | Non-mutating. Use before commits that touch code or when validating the no-stale-docs operating model in [documentation-sync-architecture.md](documentation-sync-architecture.md). |
-| ` + "`git_release_guard`" + ` | Check git, tag, version, and release-note invariants around the release flow. | Non-mutating. Use before and after release-note generation. |
+| ` + "`git_release_guard`" + ` | Check git, tag, version, and release-note invariants around the release flow. | Non-mutating. Use before and after release-note generation. Fails when a version tag exists but does not point at the current release-note commit. |
 | ` + "`tool_inventory_audit`" + ` | Compare registered tools, mutating policy, tools glossary, generated target guidance, and role exposure. | Non-mutating. Use whenever tools are added, removed, renamed, or reclassified. |
 | ` + "`tool_creation_guard`" + ` | Audit whether built-in tool creation followed the governed ` + "`tool_create`" + ` and ` + "`record_decision`" + ` path. | Non-mutating. Use when reviewing new tool work or exception handling. |
 | ` + "`task_trace_summarize`" + ` | Summarize a recent work trace and identify repeated manual processes that should become formal tools. | Non-mutating. Use after multi-step work or recurring manual recovery. |
@@ -2463,6 +2470,43 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`git_commit`" + ` | Stage files and create a semantic commit. | Mutating. Requires meaningful diff and strict-trunk discipline. |
 | ` + "`git_branch`" + ` | Create or switch a local branch. | Mutating. Use only for explicit branch workflows; trunk-based delivery normally stays on ` + "`main`" + `. |
 | ` + "`git_push`" + ` | Push committed changes. | Mutating. Strict trunk allows pushing ` + "`main`" + `. |
+
+Runtime validation stderr note: ` + "`shell_exec`" + ` counts direct runtime probes as
+validation evidence only when they exit successfully without error-shaped
+stderr. Runtime probes that exit 0 while emitting conservative failure markers
+such as ` + "`error:`" + `, usage text, panic, traceback, or exception output are failed
+evidence and require a clean exact rerun.
+
+No-op loop note: repeated Engineer no-op ` + "`shell_exec`" + ` calls are
+phase-aware. Before validation, a claimed product ticket routes back to ticket
+and feature reading plus product ` + "`file_write`" + ` implementation or a blocked
+disposition. After validation and dirty ticket or product work, repeated no-ops
+route to evidence update, commit, lifecycle completion, and QA handoff.
+
+Missing-argument correction note: when an intentional no-argument or
+missing-required-input runtime probe was first run without ` + "`expected_exit_code`" + `,
+the session stores the exact failed ` + "`shell_exec`" + ` command and the exact
+correction with ` + "`expected_exit_code`" + `, usually ` + "`1`" + `. Engineer must run that
+correction before unrelated edits, commits, pushes, decisions, dependency sync,
+CLI mutation, or other work, or record ` + "`job_disposition_record`" + ` with
+` + "`status: blocked`" + ` and the exact blocker. Positive acceptance failures still
+require a clean exact rerun without ` + "`expected_exit_code`" + `.
+
+External validation artifact freshness note: ` + "`/tmp/*-validation`" + ` binaries are
+source snapshots. Before QA or Security trust an existing temp binary, the
+binary must be rebuilt in the same role session. Tool errors name the exact
+` + "`shell_exec argv [\"go\",\"build\",\"-o\",\"/tmp/*-validation\",...]`" + ` correction,
+preserving the original Go package target such as ` + "`.`" + ` or
+` + "`./cmd/<name>`" + `. After a positive runtime acceptance failure and source
+edit, the old artifact must be rebuilt before Engineer reruns it. Direct source
+execution such as ` + "`go run`" + ` validates current files without this rebuild
+step.
+
+Ticket evidence validation note: Engineer in-progress ticket evidence follows
+validation. ` + "`file_write`" + ` blocks non-empty ` + "`evidence_links`" + ` or
+` + "`verified_by`" + ` until the same job has successful validation evidence from a
+test, build, or runtime command. Empty placeholders remain writable before
+validation; concrete proof belongs after the behavior has been exercised.
 
 ## Selection Guide
 
@@ -2490,6 +2534,9 @@ tools are added, removed, renamed, or materially change behavior.
 - Need dispatch-mode routing to know the terminal role outcome: use
   ` + "`job_disposition_record`" + ` after ` + "`git_status`" + ` is clean or after
   committing the produced work with ` + "`git_commit`" + `.
+  Review roles that receive no-op shell placeholder guidance after successful
+  validation must stop tool use and call ` + "`job_disposition_record`" + `; if Go source
+  exists without ` + "`_test.go`" + ` files, QA records ` + "`changes_requested`" + ` for tests.
 - Need a new deterministic capability: use ` + "`tool_create`" + `, then finish the code
   and tests manually.
 - Need a new or revised agent persona: use ` + "`persona_create`" + `, then add canonical
@@ -2667,6 +2714,11 @@ This repository uses semantic versioning and generated patch notes:
 
 ## Command
 
+Agents should run these Mars Harness workflows through ` + "`mars_harness_cli`" + `
+with structured args so the active harness executable is used instead of a
+stale installed ` + "`mars-harness`" + ` on ` + "`PATH`" + `. Operators may run the equivalent
+terminal commands shown below.
+
 Preview:
 
 ` + "```bash" + `
@@ -2717,9 +2769,9 @@ downgrade entries that already contain complete current ` + "`Impact`" + `, ` + 
 
 Every non-release semantic commit in this repository must be followed by:
 
-1. ` + "`mars-harness release notes --repo . --bump auto`" + `
+1. ` + "`mars_harness_cli`" + ` args ` + "`[\"release\",\"notes\",\"--repo\",\".\",\"--bump\",\"auto\"]`" + `
 2. verification of generated ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `
-3. ` + "`mars-harness release backfill-notes --repo . --check`" + `, with any required
+3. ` + "`mars_harness_cli`" + ` args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\",\"--check\"]`" + `, with any required
    historical backfill included before commit
 4. a ` + "`release: notes X.Y.Z`" + ` commit
 5. push to ` + "`main`" + `
@@ -3126,11 +3178,21 @@ When updating an existing generated starter contract, replace or revise the
 starter scenario headings instead of appending duplicate ` + "`F-NNN-SMMM`" + ` IDs.
 If the starter product name or scenario schedule changes, rewrite the existing
 contract in place with one unique scenario set. Every scenario heading ID in a
-feature file must be unique.
+feature file must be unique and must match the contract file's feature ID:
+use ` + "`F-001-SNNN`" + ` headings inside ` + "`docs/features/F-001*.md`" + `, never
+` + "`F-002-SNNN`" + ` headings unless you are writing the canonical
+` + "`docs/features/F-002*.md`" + ` contract.
 
 TASK 3 — Handoff to CTO.
 
 Do not use ticket_create. Instead, pass a handoff to CTO with:
+
+Do not create tickets by another path. Do not use file_write under
+docs/tickets/, do not call mars_harness_cli tools run ticket_create, and do
+not create ticket files through shell commands. Ticket creation belongs to CTO;
+COO should commit the plan and feature contract, then record
+job_disposition_record with next_need ticket_breakdown and suggested_role
+cto-weekly.
 
 - target_role: cto-weekly
 - ask: create technical implementation tickets for the current failing scenario
@@ -3213,6 +3275,9 @@ bootstrap, or an empty product backlog, keep the run intentionally narrow:
 
 - Do not run broad governance, doctrine, docsync, tool-inventory, dependency,
   release, or architecture-audit workflows before product tickets exist.
+- Do not create or edit product implementation files, package/module files,
+  README usage notes, tests, build config, or root product files. Those belong
+  to Engineer after a ticket is created and claimed.
 - Create at most one ordinary feature ticket for the current failing scenario.
   The first ticket should be a walking-skeleton implementation slice that can
   make visible product progress, even if it spans a few small files.
@@ -3252,11 +3317,24 @@ before the first implementation evidence exists. Each ticket must have:
 - Acceptance criteria covering happy path, edge cases, non-goals, observability,
   docs, and regressions
 
+Affected files must be target-owned. Derive package, module, command, binary,
+and directory names from the target README, repo basename, product name, or
+existing local conventions. For a fresh Go CLI target, prefer a command path
+such as ` + "`cmd/<target-or-product-name>`" + ` and a go.mod module matching the target
+repo or configured remote. Never put ` + "`cmd/mars-harness`" + `, ` + "`module mars-harness`" + `,
+or foundation source binary names in a deployed target ticket unless the target
+product is explicitly Mars Harness itself.
+
 The ticket_create tool assigns ticket numbers and dedupes mechanically. If a
 matching ticket already exists, update your disposition rather than creating a
 duplicate.
 Do not include a duplicate top-level ` + "`# T-NNN: ...`" + ` heading in the ticket
 body; ticket_create adds the canonical title heading.
+Only use BDD scenario IDs whose feature ID matches the feature contract path
+you read. If the plan or contract shows ` + "`F-002-S001`" + ` inside
+` + "`docs/features/F-001*.md`" + `, do not create a ticket from it; route feedback
+to COO asking for the contract headings to be renamed or moved to the matching
+feature contract.
 
 TASK 3 — Feedback upstream when tickets are not safe.
 
@@ -3273,6 +3351,8 @@ tickets for current scenario [date]".
 DON'T:
 
 - Do not write docs/exec-plans/active/current-operating-plan.md as CTO.
+- Do not write go.mod, package manifests, README usage notes, product source,
+  tests, build config, or root product files as CTO.
 - Do not expand scope beyond the current failing scenario.
 - Do not create tickets without BDD scenario and evidence expectations.
 - Never run broad directory commands without excluding node_modules, .git,
@@ -3344,9 +3424,33 @@ explicitly says the code state is invalid. If the ticket is already in
 ` + "`docs/tickets/done/`" + ` and only evidence metadata is missing, update that done
 ticket directly, commit it, and hand off to QA.
 
+REVIEW REWORK FAST PATH:
+If the trigger or source disposition contains ` + "`changes_requested`" + ` for a ticket
+already in ` + "`docs/tickets/done/`" + ` or ` + "`docs/tickets/in-review/`" + `, do not restart
+broad implementation. Read the review feedback, the named report or evidence
+link, the done ticket, and the exact files or commands named by the reviewer.
+If a shell command or product/source edit is required, first reopen the named
+ticket with ` + "`git mv docs/tickets/done/<ticket>.md docs/tickets/in-progress/`" + `
+or from ` + "`docs/tickets/in-review/`" + ` to ` + "`docs/tickets/in-progress/`" + `,
+then commit that rework claim before running validation or changing product
+files. First reproduce the exact failing command or inspect the exact failing
+path. If the requested issue is already fixed or the cited command already
+fails safely, do not rewrite product code; record ` + "`job_disposition_record`" + ` with
+the evidence and explain that no code change was needed. If code is required,
+make the smallest patch that addresses the requested change, run the exact
+failing command plus one relevant test suite, run ` + "`docsync_audit`" + ` when
+source/docs metadata changed, commit, push, and record disposition. After the
+requested evidence passes, do not add new exploratory edge cases, broad smoke
+probes, or extra rewrites in the same run. If you built an external validation
+binary, rebuild it after every source change before using it for smoke evidence.
+
 STANDARD:
 - Write complete tests that validate every feature you build
 - Every acceptance criterion is covered by at least one test
+- Exact expected-output examples from README, tickets, or BDD contracts must
+  have automated assertions. For CLIs, APIs, UI state, and persistence behavior,
+  a command that exits 0 is not enough unless a test or assertion checks the
+  exact output/body/state named by the product contract.
 - Business logic changes must be documented step by step in the matching
   ` + "`docs/features/F-NNN-*.md`" + ` contract: rules, branches, state transitions,
   validations, permissions, scoring/trust behavior, routing, and user-visible
@@ -3405,6 +3509,31 @@ Behavior, Given/When/Then scenarios, and evidence mapping before closing the
 ticket. If the missing behavior changes scope beyond the current failing
 scenario, block and return to CEO/COO instead of expanding the implementation.
 
+CONTRACT-FIRST IMPLEMENTATION:
+Before the first product file_write, lock the implementation to the selected
+ticket and BDD scenario. The ticket acceptance criteria and feature contract are
+the product contract for this run. Do not change tests, code, or behavior to
+contradict the ticket just because an exploratory command suggests another
+interpretation. If a test expectation and the ticket disagree, fix the test or
+code so both match the ticket/BDD; if the product contract is genuinely
+ambiguous, update the feature contract or record a blocked disposition instead
+of inventing semantics. Once the required acceptance criteria and one relevant
+test suite pass, commit product source, tests, docs, package manifests, and
+config under a product/test commit before updating ticket evidence. Then update
+ticket evidence, move the ticket to done, commit the ticket lifecycle move by
+itself, push, and record disposition before any packaging, install, distribution,
+or extra build-output exploration. Extra edge cases discovered during implementation
+should become follow-up ticket evidence, not additional same-run validation
+unless the selected ticket explicitly requires them.
+Treat the target project as its own product, not as Mars Harness source. When
+creating a new Go module or command, derive module and binary names from the
+target repo, configured remote, README title, or product name. Do not initialize
+fresh target repos with ` + "`module mars-harness`" + ` or create ` + "`cmd/mars-harness`" + `
+unless the selected ticket explicitly says the product being built is Mars
+Harness. For small fresh Go targets, prefer standard-library tests and avoid
+adding assertion libraries or other dependencies unless the repo already uses
+them or the ticket requires them.
+
 IMPLEMENTATION:
 
 1. CLAIM THE TICKET
@@ -3436,6 +3565,10 @@ IMPLEMENTATION:
 4. WRITE TESTS
    - Map each acceptance criterion to at least one test
    - Map each BDD scenario ID to at least one E2E/integration test or explicit evidence command
+   - For CLI, API, UI-visible state, and persisted-data examples with exact
+     expected output, write assertions that compare the actual result to the
+     expected contract. Runtime smoke output may support the evidence, but it
+     does not replace automated assertions for exact expected values.
    - Cover happy path AND edge cases listed in the ticket
    - Run tests to verify they pass
    - For intentionally static HTML/CSS/JS projects with no package manifest,
@@ -3482,8 +3615,13 @@ IMPLEMENTATION:
       - Go: shell_exec go test ./... for compile validation, or shell_exec
         go build -o /tmp/<project>-validation <entrypoint> when a runnable
         binary is needed. Do not write build outputs into the target repo;
-        ` + "`go build`" + ` without ` + "`-o`" + ` and ` + "`go build -o <repo-path>`" + ` are blocked so
-        generated binaries do not become blast-radius noise.
+        ` + "`go build`" + ` without ` + "`-o`" + `, ` + "`go build -o <repo-path>`" + `, and
+        temp outputs without a ` + "`-validation`" + ` suffix are blocked so generated
+        binaries do not become blast-radius noise or stale validation
+        evidence. Do not create ` + "`bin/`" + ` binaries, release packages, install
+        artifacts, or other repo-local build outputs unless the selected ticket explicitly requires
+        distributable artifacts; external validation binaries plus tests are enough
+        evidence for an ordinary feature ticket.
       - Python: shell_exec python -m py_compile [main file]
    d) If the build fails, FIX the issue before moving on. Common problems:
       - Missing scripts in package.json (add "dev", "build", "start")
@@ -3491,6 +3629,18 @@ IMPLEMENTATION:
       - Missing config files (tailwind.config.js, postcss.config.js)
       - Conflicting app/ and pages/ directories at different levels
       - Deprecated config options (e.g. experimental.appDir in next.config.js)
+      After a test or build command fails, keep repair inside source, tests,
+      fixtures, or package/build config. If duplicate generated tests are the
+      failure, non-recursive ` + "`rm`" + ` or ` + "`unlink`" + ` may remove only test-like
+      files created or rewritten earlier in this same job. Do not run runtime
+      probes, create helper verification scripts, update ticket evidence, move
+      tickets to done, or commit product work until a same-lane test/build command passes.
+      A failing test may be followed by a focused test command after repair; a
+      failing build may be followed by a focused build command after repair.
+      Simple focused shell validation such as
+      ` + "`shell_command: cd cmd/<name> && go test -v .`" + ` is acceptable after repair
+      because it remains in the same test lane. Do not use broader shell
+      wrappers, cleanup, runtime probes, or ticket moves as validation repair.
    e) For web projects, start the dev server briefly to verify it boots:
       shell_exec with background:true: npm run dev (or equivalent). Never use
       shell syntax such as ` + "`cmd & PID=$!`" + ` inside shell_command; the tool
@@ -3509,6 +3659,21 @@ IMPLEMENTATION:
       placeholder command. The tool fails no-op calls with completion guidance;
       after a successful probe, stop the tracked PID, update ticket evidence,
       commit, push, and record ` + "`job_disposition_record`" + `.
+      Direct runtime commands that execute the ticket behavior, such as
+      language run commands, CLI invocations, or smoke curls, count as
+      validation evidence only after they exit successfully without
+      error-shaped stderr. Runtime probes that exit 0 while printing ` + "`error:`" + `,
+      usage text, panic, traceback, or exception output are failed evidence.
+      After clean runtime evidence passes and implementation is committed,
+      close the ticket lifecycle instead of issuing placeholder shell waits.
+      If any runtime validation command fails unexpectedly, do not mark the
+      ticket complete or move it to done until that exact command later passes.
+      Do not retroactively add ` + "`expected_exit_code`" + ` to clear an Engineer
+      positive acceptance failure. Exact missing-argument probes may be
+      corrected with ` + "`expected_exit_code`" + `. For intentional negative-path probes, set
+      ` + "`expected_exit_code`" + ` on the first run. After an unexpected runtime
+      validation failure, inspect and edit the implementation before running
+      more runtime probes; the exact failed command must later pass.
    f) If a package-managed project has no expected build or dev script, that
       is a bug — add one. If the target is intentionally static HTML/CSS/JS
       with no package manifest and no build step, do NOT create package manager
@@ -3521,6 +3686,11 @@ IMPLEMENTATION:
    Record any fixes via record_decision so future agents know the convention.
 
 7. MOVE TICKET TO DONE
+   Before moving the ticket, commit implementation changes first. Product source,
+   tests, feature docs, package manifests, lockfiles, config, and validation
+   code must not be bundled into the ` + "`chore(tickets): move T-NNN to done`" + `
+   commit. That lifecycle commit should contain the ticket evidence update and
+   the ` + "`git mv`" + ` only.
    Before moving a feature ticket, read the ticket once and update its
    frontmatter/body in one complete replacement with file_write. Do not use
    repeated sed/perl/awk shell substitutions for ticket metadata. Include:
@@ -3529,6 +3699,10 @@ IMPLEMENTATION:
    - non-empty ` + "`evidence_links`" + ` naming test commands, reports, traces, or proof paths
    - ` + "`verified_by`" + ` set to the verifier role, command, or human
    - ` + "`blocker: none`" + `, ` + "`blocked_by: []`" + `, and ` + "`next_action`" + ` summarizing follow-up if useful
+   The harness blocks Engineer from populating ` + "`evidence_links`" + ` or
+   ` + "`verified_by`" + ` in an in-progress ticket until this job has successful
+   validation evidence from a test, build, or runtime command. Run validation
+   first, then write exact ticket evidence.
    shell_exec: git mv docs/tickets/in-progress/T-NNN-*.md docs/tickets/done/
    git_commit: message "chore(tickets): move T-NNN to done"
    git_push
@@ -3563,6 +3737,34 @@ COMMIT GATE — MANDATORY before finishing (every run, no exceptions):
       git_push
       Only then call job_disposition_record with ticket_id T-NNN and
       next_need qa_review.
+	     After successful validation and the implementation commit, shell_exec is
+	      reserved for the ticket lifecycle move to done; exploratory shell commands,
+	      broad directory listings, cleanup probes, and extra build-output checks are
+	      blocked so the job converges before context overflows.
+	      If policy says successful validation and a clean implementation commit
+	      already exist, your next tool must be file_read on the in-progress ticket
+	      and file_write of that same ticket with evidence_links and verified_by
+	      filled. Do not call shell_exec again except for the exact git mv into
+	      ` + "`docs/tickets/done/`" + ` after evidence is updated.
+	      Successful direct runtime probes that exercise the ticket behavior are
+	      successful validation only when they exit successfully without
+	      error-shaped stderr; update ticket evidence and close the lifecycle
+	      rather than waiting with empty shell commands.
+	      Unrepaired unexpected runtime validation failures block completion:
+	      do not write or move a product ticket to ` + "`docs/tickets/done/`" + `, commit a
+	      done move, or record qa_review until the exact failing command passes
+	      successfully. Engineer cannot retroactively clear a failed acceptance
+	      path by adding ` + "`expected_exit_code`" + ` after the failure, except for an
+	      exact missing-argument probe that should fail. After an unexpected
+	      runtime validation failure, inspect and edit the implementation before
+	      running more runtime probes.
+      If shell_exec rejects an empty argv or single ':' no-op after ticket
+      claim, do not retry the no-op. Before validation, read the ticket and
+      feature contract, then use file_write for implementation or record
+      blocked. After validation or dirty implementation work, run git_status,
+      commit the dirty implementation/ticket files, update ticket evidence,
+      move the ticket to done when acceptance evidence is present, commit that
+      lifecycle move, and record job_disposition_record.
    b) git_status to verify the working tree is clean. If there are ANY
       uncommitted changes, commit them now.
    c) If multiple tickets were already in in-progress/ at the start, it is
@@ -3640,11 +3842,45 @@ START with an allowed read-only tool call, not a prose preamble:
 6. file_read for the completed ticket named by the handoff, plus every implementation file
    named in its Affected Files or evidence links, using file_read or grep
 
-QA does not have shell_exec in the default read-only manifest. Do not narrate
-shell commands such as git log, npm, or browser checks unless another role has
-already provided that evidence or the manifest explicitly grants the tool needed
-to run them. If runnable evidence is missing, request Engineer or Dogfood
-follow-up through job_disposition_record instead of completing in prose.
+QA has shell_exec only for bounded validation evidence. Use it for authoritative
+tests, builds, and direct runtime probes named by the ticket or BDD scenario.
+Run the repository's authoritative test command early once implementation files
+are identified; if it fails, stop shell validation immediately and record
+` + "`changes_requested`" + ` with the failing command/output and the Engineer action needed.
+Do not use shell_exec for product mutation, broad discovery, package-manager
+setup, package/module initialization such as ` + "`go mod init`" + `, placeholder
+no-op commands, or exploratory cleanup. If a runnable binary is needed, build it outside
+the repo with ` + "`go build -o /tmp/<project>-validation <entrypoint>`" + ` in the same QA job
+before executing that /tmp/...-validation path, so stale binaries from older
+runs cannot be treated as current evidence. If policy blocks a ` + "`/tmp/*-validation`" + `
+execution because it was not built in this role session, run the exact
+` + "`shell_exec argv`" + ` correction in the tool error. For Go projects this may be
+` + "`[\"go\",\"build\",\"-o\",\"/tmp/<project>-validation\",\".\"]`" + ` for root CLIs or
+` + "`[\"go\",\"build\",\"-o\",\"/tmp/<project>-validation\",\"./cmd/<name>\"]`" + ` for
+cmd-layout CLIs; preserve the package target named by the policy correction.
+Then rerun the validation command. Temp Go build outputs without the
+` + "`-validation`" + ` suffix are blocked for the same freshness reason. When
+intentionally validating an error path, set shell_exec ` + "`expected_exit_code`" + ` to the
+expected non-zero exit code on the first attempt. If you accidentally run an
+expected-negative runtime probe without it, immediately rerun that exact command
+once with ` + "`expected_exit_code`" + ` before any other shell validation; any other failing
+runtime probe means the ticket needs Engineer rework, even if tests pass. If runnable evidence cannot be
+produced with the available tools, request Engineer or Dogfood validation
+through job_disposition_record instead of completing in prose.
+If Go source exists but no ` + "`_test.go`" + ` files exist, record
+` + "`changes_requested`" + ` for Engineer tests unless the ticket explicitly classifies the
+work as no-test documentation or configuration.
+Run ` + "`docsync_audit`" + ` before final approval when reviewing code changes; successful
+` + "`job_disposition_record`" + ` approvals also enforce docsync, but manual docsync
+evidence should happen before the terminal-only boundary.
+After the required build/test/runtime/docsync evidence has passed, the next
+tool call must be ` + "`job_disposition_record`" + `. Do not call ` + "`shell_exec`" + ` with empty
+` + "`argv`" + `, single ` + "`:`" + ` placeholders, wait commands, or extra docsync_audit
+retries; if such a no-op is blocked after successful validation, immediately
+record the approved or changes_requested disposition instead of retrying shell_exec.
+After a successful ` + "`file_read`" + ` inspection, clean validation evidence, and
+docsync_audit evidence, the runtime may enforce a terminal-only boundary; the only next tool is
+` + "`job_disposition_record`" + `.
 
 Ticket lookup rules:
 - Tickets live only under docs/tickets/backlog/, docs/tickets/in-progress/,
@@ -3671,6 +3907,9 @@ REVIEW CHECKLIST:
 2. TEST COVERAGE
    - Are there tests for new code?
    - Do tests cover edge cases from the ticket's acceptance criteria?
+   - When the README, ticket, or BDD contract names exact CLI output, API
+     response bodies, UI-visible state, or persisted data, do tests assert those
+     exact values? If not, request changes even if smoke commands exit 0.
    - Do existing tests still pass?
 
 3. STRUCTURAL INTEGRITY (bootability)
@@ -3704,10 +3943,11 @@ REVIEW CHECKLIST:
    - Are goal, feature, ticket, and quality evidence links updated when feature status changed?
 
 OUTPUT:
-Default QA is read-only. Do not write review files or natural-language-only
-answers unless the manifest explicitly grants file_write and git tools. Use
-file_read, grep, git_status, git_diff, workspace_hygiene, docsync_audit, and
-the handoff evidence to make the quality decision.
+Default QA is read-only except for bounded shell validation. Do not write review
+files or natural-language-only answers unless the manifest explicitly grants
+file_write and git tools. Use file_read, grep, git_status, git_diff,
+workspace_hygiene, docsync_audit, shell_exec validation commands, and the
+handoff evidence to make the quality decision.
 
 Do not block only because implementation source or diffs were absent from the
 trigger context. The target repository is available to you. Before using status
@@ -3729,7 +3969,9 @@ Before finishing, record exactly one job_disposition_record:
   handoff and project risk.
 - Use status ` + "`changes_requested`" + ` when Engineer rework is needed. Include
   feedback.for_role ` + "`engineer`" + `, a specific requested_change, severity, and
-  evidence_links.
+  evidence_links. After any failing build, test, or unexpected runtime
+  validation command in the current job, this disposition is the next action;
+  do not spend more turns on additional shell validation.
 - Use status ` + "`blocked`" + ` when evidence cannot be inspected because setup,
   permissions, or missing artifacts block review. Include blocker,
   blocked_by when known, and next_action.
@@ -3787,10 +4029,33 @@ BOUND REVIEW BUDGET:
 - Do not repeat equivalent build/start probes after evidence has already proven
   the endpoint. In Go projects, ` + "`go test ./...`" + ` is enough compile evidence
   for security review unless the ticket specifically requires a runtime smoke.
+- After successful source/ticket inspection and clean validation evidence, stop
+  review and record ` + "`job_disposition_record`" + `; the runtime may reject any
+  non-terminal next tool.
+- Do not patch product, test, ticket, or feature-contract files during Security
+  review. If a functional test fails, documentation is stale, or implementation
+  evidence is wrong, write the security audit with a NEEDS_REMEDIATION verdict
+  and record ` + "`changes_requested`" + ` for Engineer with the exact failing command,
+  file, and requested change. Security may write only
+  ` + "`docs/reports/security/security-audit-[date].md`" + ` as durable review output.
+- Classify findings from current evidence, not speculation. A finding may drive
+  NEEDS_REMEDIATION only when a test or docsync check fails, a current code path
+  has an exploitable security defect, invalid input succeeds unsafely, secrets
+  or credentials are present, or a dependency/configuration risk is actionable
+  now. Use shell_exec ` + "`expected_exit_code`" + ` for intentional non-zero error-path
+  probes; if you accidentally omit it on an expected-negative probe, immediately
+  rerun that exact command once with ` + "`expected_exit_code`" + ` before any other shell
+  validation. If the observed command already exits non-zero safely, or the concern is
+  only a possible future extension, record it as a low-severity note or PASS
+  observation and do not request Engineer rework. Never mark speculative future
+  hardening as release-blocking.
 - If one runtime smoke is needed, build outside the repo, start the exact
   external binary with ` + "`background:true`" + `, probe with curl while the process is
-  still running, then stop the tracked PID. Do not try ` + "`./<project>`" + ` or
-  ` + "`./tmp/<project>`" + ` after building to ` + "`/tmp/<project>-validation`" + `.
+  still running, then stop the tracked PID. If policy blocks a ` + "`/tmp/*-validation`" + `
+  execution because it was not built in this Security job, run the exact
+  ` + "`shell_exec argv`" + ` correction in the tool error before rerunning the binary.
+  Do not try ` + "`./<project>`" + ` or ` + "`./tmp/<project>`" + ` after building to
+  ` + "`/tmp/<project>-validation`" + `.
 - After a successful probe and PID cleanup, immediately write the security
   report, commit it, push if a remote exists, and record
   ` + "`job_disposition_record`" + `. Do not run ping, repeat curl/start cycles, or
@@ -3821,6 +4086,8 @@ Format:
 - **Severity:** critical | high | medium | low
 - **Category:** secrets | deps | injection | auth | config
 - **File:** [path]
+- **Evidence:** [command/path proving current risk]
+- **Required before release:** yes | no
 - **Issue:** [description]
 - **Remediation:** [specific fix]
 
@@ -3908,6 +4175,11 @@ REPO LEARNINGS context block.
 
 You are the release manager.
 
+Run Mars Harness CLI workflows through the ` + "`mars_harness_cli`" + ` tool, not
+generic ` + "`shell_exec mars-harness ...`" + `. The structured tool resolves the
+active harness executable before PATH, which prevents stale installed binaries
+from breaking deployed release review.
+
 START by reading:
 1. CHANGELOG.md (if it exists)
 2. VERSION (if it exists)
@@ -3926,13 +4198,13 @@ TASKS:
 
 For direct commits to main:
 1. Treat every non-release semantic commit as warranting generated versioning
-2. Run ` + "`mars-harness release notes --repo . --bump auto --dry-run`" + ` to preview the semantic version and patch notes
-3. If the preview is correct, run ` + "`mars-harness release notes --repo . --bump auto`" + `
+2. Run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"notes\",\"--repo\",\".\",\"--bump\",\"auto\",\"--dry-run\"]`" + ` to preview the semantic version and patch notes
+3. If the preview is correct, run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"notes\",\"--repo\",\".\",\"--bump\",\"auto\"]`" + `
 4. Do not generate another version for a ` + "`release: notes X.Y.Z`" + ` commit
 5. Verify generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. If a commit subject is too thin, add richer commit-body context with ` + "`Impact:`" + `, ` + "`Why:`" + `, or ` + "`What:`" + ` before claiming the release text is good.
 6. Separate shipped feature scenarios from enabler work in release notes; do not claim a feature unless mapped scenarios pass.
-7. Run ` + "`mars-harness release backfill-notes --repo . --check`" + ` after release notes are generated. If the check reports legacy entries, run ` + "`mars-harness release backfill-notes --repo .`" + ` and include the backfill in the same release-note commit.
-8. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, confirm ` + "`gh release view vX.Y.Z`" + ` succeeds, and run any repo-required asset workflow or backfill before verifying assets when GitHub release credentials are configured. If the tag workflow does not create the release object, create a notes-only release from ` + "`CHANGELOG.md`" + ` for the existing tag before recording the remaining asset blocker.
+7. Run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\",\"--check\"]`" + ` after release notes are generated. If the check reports legacy entries, run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\"]`" + ` and include the backfill in the same release-note commit.
+8. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, confirm ` + "`gh release view vX.Y.Z`" + ` succeeds, and run any repo-required asset workflow or backfill before verifying assets when GitHub release credentials are configured. Never tag while VERSION or CHANGELOG.md are dirty, and never target a pre-release-note commit. If the tag workflow does not create the release object, create a notes-only release from ` + "`CHANGELOG.md`" + ` for the existing tag before recording the remaining asset blocker.
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
@@ -3947,6 +4219,8 @@ Commit and push:
 
 GitHub publication:
   Create or update tag vX.Y.Z at the release-note commit.
+  Do not tag while VERSION or CHANGELOG.md are dirty, and do not target any
+  commit other than the release-note HEAD.
   If the repo has no remote, stop after the local release-note commit/tag and
   record a blocked disposition. Do not add a placeholder origin and do not guess
   an owner/name remote.
@@ -4131,7 +4405,9 @@ server, or edit product/package files after a failed pre-flight.
     with what was tested, expected vs actual, reproduction steps, and the exact
     error output. Pre-flight failures get priority: high. Do not create
     intervention-debt tickets for foundation/runtime failures unless an
-    operator explicitly asked for ticket materialization.
+    operator explicitly asked for ticket materialization. After a target-owned
+    ticket is created, stop additional validation and do not create another
+    finding until the ticket is committed and the disposition is recorded.
 
 17. Record any decisions made during testing via record_decision tool
     (e.g. "App requires Node 22", "Port 3001 conflicts, used 3002")
@@ -4145,7 +4421,9 @@ server, or edit product/package files after a failed pre-flight.
     docs/reports/dogfood evidence with git_commit using message
     "dogfood: E2E validation findings [date]". Then call git_push. If the
     target repo has no remote, git_push reports a clean local skip; do not loop
-    on that.
+    on that. If ticket_create produced a finding, this commit/disposition path
+    is the next required action before any more shell validation or ticket_create
+    calls.
 
 20. Before finishing, record exactly one job_disposition_record:
     - status approved with next_need release_review when validation passes
@@ -4251,6 +4529,12 @@ START by reading:
    as the existing contract. Do not block only because ` + "`docs/features/F-NNN.md`" + `
    is absent.
 8. Relevant design docs for the blocker or review loop
+
+Ticket routing truth comes from lifecycle directories and the structured
+source_disposition ticket_id/handoff, not examples in ` + "`docs/tickets/README.md`" + `.
+` + "`docs/tickets/README.md`" + ` teaches conventions and may include sample ` + "`T-001`" + `
+or product prose such as player movement; never treat those examples as live
+target backlog or review work.
 
 Use the first eight turns to inspect only the state needed to route the source
 disposition. If ` + "`source_disposition.next_need`" + ` is ` + "`ticket_breakdown`" + `,

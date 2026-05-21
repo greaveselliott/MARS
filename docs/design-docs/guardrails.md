@@ -167,6 +167,30 @@ backlog work exists and no ticket is in progress, Engineer `shell_exec` now
 allows only the backlog-to-in-progress `git mv` claim. Discovery, validation,
 and no-op shell calls are blocked until the claim is committed.
 
+### AD-215: Test/Build Repair Guardrails Repeat The Failing Assertion
+
+**Status:** Accepted
+**Date:** 2026-05-21
+
+The `demo-slug-run61` replay showed the right repair boundary but weak
+feedback. QA requested rework because the Slugify CLI implementation had no Go
+tests. Engineer added `cmd/slugify-json/main_test.go`; the same-lane `go test`
+then failed because a contract-shaped assertion expected punctuation-separated
+words to count as separate words while the implementation returned `2`.
+Guardrails correctly blocked unrelated runtime probes, builds, commits, ticket
+moves, and successful disposition while that failure was unresolved, but the
+repeated policy message only named the unresolved command. The role could keep
+bouncing off the same boundary without the assertion failure being the most
+salient next action.
+
+Unresolved test/build session state now records a compact copy of the latest
+failing stdout/stderr or exit code. Every later guardrail message for that
+unresolved lane includes both the exact command and the failing output. The
+guidance also says that when a failing assertion matches the ticket, README, or
+BDD contract, Engineer must edit the implementation instead of deleting or
+weakening the test. Successful same-lane validation clears the stored failure
+output with the rest of the unresolved repair state.
+
 ### Open topics
 
 - **Advisory vs hard tiers:** advisory rules surface warnings in traces and UI; hard rules fail the job or block merge paths per policy; same schema with a `severity` field is the likely shape.
@@ -186,4 +210,17 @@ Rule evaluation should stay sub-second for typical repos on laptop hardware; pat
 
 ## Discoveries
 
-_(None yet.)_
+- **2026-05-21 — Scoped test/build repair writes:** A clean target replay
+  showed Engineer responding to a failing `go test ./cmd/...` command by
+  creating a parallel root `main.go` and `main_test.go`. Guardrails now record
+  the failed Go package target when it is narrow and block source/test writes
+  outside that scope until the same test/build lane is repaired.
+- **2026-05-21 — Structured Mars Harness CLI routing:** A clean release replay
+  showed Release Manager resolving an older installed `mars-harness` through
+  `shell_exec`, even though the active running harness binary had the needed
+  `release` command. `shell_exec` now blocks direct `mars-harness` binary
+  invocations and points the role at equivalent `mars_harness_cli` args.
+- **2026-05-21 — Failing test output in repair guidance:** A Slugify CLI replay
+  showed Engineer stuck after adding failing tests for a real implementation
+  mismatch. Guardrails now repeat the latest failing assertion output in
+  unresolved test/build guidance instead of naming only the command.

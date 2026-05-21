@@ -147,6 +147,12 @@ func TestFoundationAcceptanceBroaderDogfoodLoopCoversTicketCommitPushAndQualityE
 			"argv":            []string{"test", "-f", "README.md"},
 			"timeout_seconds": 5,
 		}),
+		fakeToolResponseArgs(t, "export-quality", "mars_harness_cli", map[string]any{
+			"mode":            "run",
+			"args":            []string{"scores", "export"},
+			"repo":            ".",
+			"timeout_seconds": 5,
+		}),
 		fakeToolResponseArgs(t, "create-finding", "ticket_create", map[string]any{
 			"title":               "Broader dogfood loop finding",
 			"priority":            "medium",
@@ -182,16 +188,10 @@ func TestFoundationAcceptanceBroaderDogfoodLoopCoversTicketCommitPushAndQualityE
 			"message": "test(dogfood): record broader fake loop",
 		}),
 		fakeToolResponseArgs(t, "push-evidence", "git_push", map[string]any{}),
-		fakeToolResponseArgs(t, "export-quality", "mars_harness_cli", map[string]any{
-			"mode":            "run",
-			"args":            []string{"scores", "export"},
-			"repo":            ".",
-			"timeout_seconds": 5,
-		}),
 		fakeToolResponseArgs(t, "record-disposition", "job_disposition_record", map[string]any{
 			"status":         "completed",
 			"next_need":      "no_need",
-			"reason":         "Broader fake dogfood loop covered ticket creation, test execution, commit, push attempt, scoring outcome, and quality export.",
+			"reason":         "Broader fake dogfood loop covered test execution, quality export, ticket creation, commit, and push attempt.",
 			"evidence_links": []string{reportPath, "mars-harness scores export --repo ."},
 		}),
 	)

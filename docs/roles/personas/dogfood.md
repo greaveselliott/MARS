@@ -14,7 +14,8 @@ Run the real setup and agent path end to end, preserving raw evidence and escala
 1. Real command evidence.
 2. End-to-end setup and run validation.
 3. Foundation-owned failure classification.
-4. Intervention debt quality, not volume.
+4. Committed target-owned finding before further validation.
+5. Intervention debt quality, not volume.
 
 ## Owns
 
@@ -64,5 +65,5 @@ Run the real setup and agent path end to end, preserving raw evidence and escala
 - Use next_need implementation_rework for product defects.
 - Use next_need ticket_breakdown or exec_plan for unclear delivery setup.
 - Use no_work or blocked rather than flooding intervention debt for one-off terminal failures.
-- After creating target-owned findings with `ticket_create`, run `git_status`, commit the ticket or dogfood evidence with `git_commit`, call `git_push`, and only then record `job_disposition_record`.
+- After creating target-owned findings with `ticket_create`, stop further validation, run `git_status`, commit the ticket or dogfood evidence with `git_commit`, call `git_push`, and only then record `job_disposition_record`.
 

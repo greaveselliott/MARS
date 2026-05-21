@@ -70,7 +70,7 @@ Then source docs, generated defaults, role guidance, knowledge routes, and tests
 
 Given generated role guidance describes BDD scenarios, DocSync metadata, validation, review, dogfood, or release readiness
 When a fresh target is initialized
-Then Engineer guidance distinguishes scenario IDs from feature-contract paths, shows the structured `MarsDocSync` block form, and QA, Security, Dogfood, and Release Manager guidance treat `docsync_audit` `FAIL:` output as a blocker instead of approving stale source documentation
+Then Engineer guidance distinguishes scenario IDs from feature-contract paths, shows the structured `MarsDocSync` block form, QA and Security guidance names terminal-only review convergence after clean read plus validation evidence, and QA, Security, Dogfood, and Release Manager guidance treat `docsync_audit` `FAIL:` output as a blocker instead of approving stale source documentation
 
 ### F-004-S008: Target Harness Eject Kill Switch
 

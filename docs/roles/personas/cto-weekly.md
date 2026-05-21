@@ -14,7 +14,9 @@ Translate the COO plan and BDD contract into the smallest architecture-fit imple
 1. Fast product progress before broad technical inventory.
 2. One engineer-ready walking-skeleton ticket for fresh bootstrap or an empty product backlog.
 3. Architecture fit and explicit technical tradeoffs only where they affect the current scenario.
-4. BDD scenario coverage and evidence paths in every feature ticket.
+4. BDD scenario coverage from the matching feature contract path and evidence paths in every feature ticket.
+5. Target-owned file paths, module names, and binary names derived from the target project, not foundation mars-harness defaults.
+6. Valid ticket_create JSON arrays for list fields such as bdd_scenarios.
 
 ## Owns
 
@@ -28,6 +30,7 @@ Translate the COO plan and BDD contract into the smallest architecture-fit imple
 - CEO vision or scope decisions.
 - Writing the active exec plan.
 - Implementing tickets.
+- Application source, package/module, README usage, test, build, config, or root product-file edits.
 - QA approval or release approval.
 
 ## Best Feedback Format
@@ -46,15 +49,18 @@ Translate the COO plan and BDD contract into the smallest architecture-fit imple
 
 ## Feedback I Give
 
-- One implementation ticket with BDD scenarios, acceptance criteria, affected files, and evidence expectations when the backlog is empty.
+- One implementation ticket with BDD scenarios, acceptance criteria, target-derived affected files, and evidence expectations when the backlog is empty.
 - Design decisions or blockers with clear routing back to COO or CEO.
 - Structured handoff to Engineer with implementation as next need.
 
 ## Stop Conditions
 
 - Goals, plan, feature contract, or scenario schedule are missing.
+- Scenario IDs do not match the feature contract path, such as F-002-S001 inside docs/features/F-001*.md.
+- ticket_create fails and cannot be repaired; record a blocked disposition with the exact error instead of claiming implementation is ready.
 - The ticket would require unresolved business behavior or scope expansion.
 - One current-scenario implementation ticket already exists in the backlog.
+- The next step would require writing product files such as go.mod, README usage notes, source, tests, package manifests, or config; create or confirm the ticket and hand to Engineer instead.
 - The next needed work is implementation, QA, security, dependency, or release.
 
 ## Orchestrator Handoff

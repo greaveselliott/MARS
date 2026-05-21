@@ -8,17 +8,25 @@ release docs unless they explicitly define their own binary publication flow.
 ## Workflow
 
 1. Confirm the semantic commit is coherent and verified.
-2. Run `mars-harness release notes --repo . --bump auto`.
+2. When running as a harness agent, use `mars_harness_cli` with args
+   `["release","notes","--repo",".","--bump","auto"]`; when operating from a
+   trusted terminal, run the equivalent `mars-harness release notes --repo .
+   --bump auto`.
 3. Review `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go`.
 4. Run `go test ./internal/docsconsistency ./internal/docsync`, plus any
    package tests touched by the semantic commit.
 5. Commit the generated files as `release: notes X.Y.Z`.
 6. Push the release-note commit to `origin main` and the active working branch.
-7. Create or update tag `vX.Y.Z` at the release-note commit and push it.
+7. Create or update tag `vX.Y.Z` at the release-note commit and push it. Do
+   not tag while `VERSION` or `CHANGELOG.md` are dirty, and do not target a
+   pre-release-note commit.
 8. Verify `gh release view vX.Y.Z --repo greaveselliott/mars-harness`.
 9. If the release object is missing but the tag exists, create a notes-only
    GitHub Release from the generated `CHANGELOG.md` entry.
-10. Run `mars-harness release verify-assets --version vX.Y.Z`.
+10. As a harness agent, use `mars_harness_cli` with args
+    `["release","verify-assets","--version","vX.Y.Z"]`; from a trusted
+    terminal, run the equivalent `mars-harness release verify-assets --version
+    vX.Y.Z`.
 11. If assets are missing, record the blocker in the active plan before moving
     to unrelated work.
 

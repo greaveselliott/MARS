@@ -231,6 +231,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		PayloadMode:     job.PayloadMode,
 		Learnings:       learnData.FormatForContext(),
 		TicketIndex:     ticketIndex,
+		CurrentTime:     time.Now(),
 	})
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("context assembly: %v", err))

@@ -2,8 +2,10 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/delivery-operating-model.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-006-queue-and-orchestration.md
 */
 package tools
 
@@ -86,9 +88,11 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 	}
 	if err := preToolPolicy(runCtx, root, name, raw); err != nil {
 		recordPolicyEvent(runCtx, "pre", name, err)
+		recordSessionToolPolicyFailure(e.Session, name, raw, err)
 		return ToolResult{Duration: time.Since(start)}, err
 	}
 	res, err := executeHandlerWithTimeout(runCtx, start, ttl, name, root, raw, h)
+	recordSessionToolOutcome(e.Session, root, name, raw, res, err)
 	if err != nil {
 		return res, err
 	}
@@ -104,6 +108,624 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 		}
 	}
 	return res, nil
+}
+
+func recordSessionToolOutcome(session *Session, root Root, name string, raw json.RawMessage, res ToolResult, err error) {
+	if session == nil {
+		return
+	}
+	if session.ToolCounts == nil {
+		session.ToolCounts = make(map[string]int)
+	}
+	if session.ToolState == nil {
+		session.ToolState = make(map[string]string)
+	}
+	if err == nil {
+		session.ToolCounts["tool:"+name+":success"]++
+	} else {
+		session.ToolCounts["tool:"+name+":failure"]++
+	}
+	recordTicketCreationOutcome(session, name, raw, err)
+	if name == "file_write" && err == nil && strings.ToLower(strings.TrimSpace(session.Role)) == "engineer" {
+		recordTestBuildRepairWritePath(session, raw)
+	}
+	if name == "file_write" && err == nil && session.ToolCounts[unexpectedRuntimeValidationOutstandingKey] > 0 {
+		session.ToolCounts[runtimeValidationEditAfterFailureKey]++
+	}
+	if name == "file_write" && err == nil && session.ToolCounts[testBuildValidationOutstandingKey] > 0 {
+		session.ToolCounts[testBuildValidationEditAfterFailureKey]++
+	}
+	if name != "shell_exec" {
+		return
+	}
+	args, decodeErr := decodeShellExecArgs(raw)
+	if decodeErr != nil {
+		return
+	}
+	if shellExecNoop(args) && err != nil {
+		session.ToolCounts[shellNoopFailureKey]++
+		return
+	}
+	if err == nil && res.ExitCode == 0 {
+		recordSuccessfulValidationArtifactBuild(session, root, args)
+	}
+	if !shellExecRunsValidationCommandForSession(session, root, args) {
+		return
+	}
+	runtimeValidation := shellExecRunsRuntimeOrArtifactValidationCommandForSession(session, root, args)
+	runtimeStderrFailure := err == nil && res.ExitCode == 0 && runtimeValidation && runtimeValidationStderrLooksFailure(res.Stderr)
+	session.ToolCounts[validationCommandAttemptKey]++
+	if err == nil && res.ExitCode != 0 && validationProcedureFailure(session, root, args, res) {
+		session.ToolCounts[validationProcedureFailureKey]++
+		session.ToolState[validationProcedureFailureCommandKey] = shellExecCommandForPrompt(args, nil)
+		return
+	}
+	if err == nil && res.ExitCode == 0 && !runtimeStderrFailure {
+		session.ToolCounts[validationCommandSuccessKey]++
+		if runtimeValidation {
+			if recordSuccessfulRuntimeValidationRepair(session, args) && session.ToolCounts[validationCommandFailureKey] > 0 {
+				session.ToolCounts[validationCommandFailureKey]--
+			}
+		}
+		if shellExecRunsTestCommand(args) {
+			session.ToolCounts[testCommandSuccessKey]++
+		}
+		if shellExecRunsBuildCommand(args) {
+			session.ToolCounts[buildCommandSuccessKey]++
+		}
+		recordSuccessfulTestBuildValidationRepair(session, args)
+		return
+	}
+	if err == nil && args.ExpectedExitCode != nil && *args.ExpectedExitCode != 0 && runtimeValidation && shellExecLooksLikeMissingArgumentRuntimeProbe(args) {
+		recordMissingArgumentCorrectionAttempt(session, args, *args.ExpectedExitCode)
+	}
+	if err == nil && args.ExpectedExitCode != nil && *args.ExpectedExitCode != 0 && res.ExitCode == *args.ExpectedExitCode && runtimeValidation {
+		session.ToolCounts[expectedRuntimeFailureSuccessKey]++
+		if recordExpectedRuntimeValidationCorrection(session, args, res.ExitCode) && session.ToolCounts[validationCommandFailureKey] > 0 {
+			session.ToolCounts[validationCommandFailureKey]--
+		}
+		return
+	}
+	if err == nil && args.ExpectedExitCode == nil && runtimeValidation && runtimeValidationLooksExpectedInputValidationFailure(args, res) {
+		session.ToolCounts[expectedRuntimeFailureSuccessKey]++
+		return
+	}
+	session.ToolCounts[validationCommandFailureKey]++
+	if err == nil && (res.ExitCode != 0 || runtimeStderrFailure) && runtimeValidation {
+		exitCode := res.ExitCode
+		session.ToolCounts[unexpectedRuntimeValidationFailureKey(args, exitCode)]++
+		session.ToolCounts[unexpectedRuntimeValidationFailureFingerprintKey(args)]++
+		session.ToolCounts[runtimeValidationFailureEditWatermarkKey(args)] = session.ToolCounts[runtimeValidationEditAfterFailureKey]
+		session.ToolCounts[unexpectedRuntimeValidationOutstandingKey]++
+		recordUnexpectedRuntimeValidationState(session, args)
+	}
+	if shellExecRunsTestCommand(args) {
+		session.ToolCounts[testCommandFailureKey]++
+	}
+	if shellExecRunsBuildCommand(args) {
+		session.ToolCounts[buildCommandFailureKey]++
+	}
+	recordFailedTestBuildValidation(session, args, res)
+}
+
+func recordTestBuildRepairWritePath(session *Session, raw json.RawMessage) {
+	if session == nil {
+		return
+	}
+	if session.ToolState == nil {
+		session.ToolState = make(map[string]string)
+	}
+	args, err := decodeFileWriteArgs(raw)
+	if err != nil {
+		return
+	}
+	rel := cleanRepoPath(args.Path)
+	if rel == "" {
+		return
+	}
+	session.ToolState[testBuildRepairWritePathKey(rel)] = "true"
+}
+
+func recordSessionToolPolicyFailure(session *Session, name string, raw json.RawMessage, err error) {
+	if session == nil || err == nil {
+		return
+	}
+	if session.ToolCounts == nil {
+		session.ToolCounts = make(map[string]int)
+	}
+	if session.ToolState == nil {
+		session.ToolState = make(map[string]string)
+	}
+	session.ToolCounts["tool:"+name+":failure"]++
+	recordTicketCreationOutcome(session, name, raw, err)
+	if name == "shell_exec" {
+		args, decodeErr := decodeShellExecArgs(raw)
+		if decodeErr == nil && shellExecNoop(args) {
+			session.ToolCounts[shellNoopFailureKey]++
+		}
+	}
+}
+
+func recordTicketCreationOutcome(session *Session, name string, raw json.RawMessage, err error) {
+	if session == nil {
+		return
+	}
+	if session.ToolCounts == nil {
+		session.ToolCounts = make(map[string]int)
+	}
+	switch name {
+	case "ticket_create":
+		if err == nil {
+			session.ToolCounts[ticketCreationOutstandingFailureKey] = 0
+			return
+		}
+		session.ToolCounts[ticketCreationOutstandingFailureKey]++
+	case "file_write":
+		if err != nil && fileWriteTargetsTicketCreationPath(session.Role, raw) {
+			session.ToolCounts[ticketCreationOutstandingFailureKey]++
+		}
+	}
+}
+
+func fileWriteTargetsTicketCreationPath(role string, raw json.RawMessage) bool {
+	if strings.ToLower(strings.TrimSpace(role)) == "engineer" {
+		return false
+	}
+	return fileWriteTargetsTicketPath(raw)
+}
+
+func fileWriteTargetsTicketPath(raw json.RawMessage) bool {
+	args, err := decodeFileWriteArgs(raw)
+	if err != nil {
+		return false
+	}
+	rel := cleanRepoPath(args.Path)
+	return rel == "docs/tickets" || strings.HasPrefix(rel, "docs/tickets/")
+}
+
+func recordUnexpectedRuntimeValidationState(session *Session, args shellExecArgs) {
+	if session == nil {
+		return
+	}
+	if session.ToolState == nil {
+		session.ToolState = make(map[string]string)
+	}
+	session.ToolState[unexpectedRuntimeValidationCommandKey] = shellExecCommandForPrompt(args, nil)
+	if shellExecLooksLikeMissingArgumentRuntimeProbe(args) {
+		exitCode := 1
+		correction := shellExecCommandForPrompt(args, &exitCode)
+		if session.ToolState[unexpectedRuntimeValidationCorrectionKey] != correction {
+			delete(session.ToolState, unexpectedRuntimeValidationAttemptedKey)
+		}
+		session.ToolState[unexpectedRuntimeValidationMissingArgKey] = "true"
+		session.ToolState[unexpectedRuntimeValidationCorrectionKey] = correction
+		return
+	}
+	delete(session.ToolState, unexpectedRuntimeValidationMissingArgKey)
+	delete(session.ToolState, unexpectedRuntimeValidationCorrectionKey)
+	delete(session.ToolState, unexpectedRuntimeValidationAttemptedKey)
+}
+
+func recordFailedTestBuildValidation(session *Session, args shellExecArgs, res ToolResult) {
+	if session == nil || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
+		return
+	}
+	if !shellExecRunsTestCommand(args) && !shellExecRunsBuildCommand(args) {
+		return
+	}
+	if session.ToolCounts == nil {
+		session.ToolCounts = make(map[string]int)
+	}
+	if session.ToolState == nil {
+		session.ToolState = make(map[string]string)
+	}
+	session.ToolCounts[testBuildValidationFailureFingerprintKey(args)]++
+	session.ToolCounts[testBuildValidationFailureEditWatermarkKey(args)] = session.ToolCounts[testBuildValidationEditAfterFailureKey]
+	session.ToolCounts[testBuildValidationLastFailureEditKey] = session.ToolCounts[testBuildValidationEditAfterFailureKey]
+	session.ToolCounts[testBuildValidationOutstandingKey]++
+	session.ToolState[testBuildValidationCommandKey] = shellExecCommandForPrompt(args, nil)
+	if output := summarizeTestBuildFailureOutput(res); output != "" {
+		session.ToolState[testBuildValidationOutputKey] = output
+	} else {
+		delete(session.ToolState, testBuildValidationOutputKey)
+	}
+	if scopes := testBuildValidationRepairScopes(args); len(scopes) > 0 {
+		session.ToolState[testBuildValidationScopeKey] = strings.Join(scopes, "\n")
+	} else {
+		delete(session.ToolState, testBuildValidationScopeKey)
+	}
+}
+
+func summarizeTestBuildFailureOutput(res ToolResult) string {
+	var parts []string
+	if strings.TrimSpace(res.Output) != "" {
+		parts = append(parts, strings.TrimSpace(res.Output))
+	}
+	if strings.TrimSpace(res.Stderr) != "" {
+		parts = append(parts, strings.TrimSpace(res.Stderr))
+	}
+	if len(parts) == 0 && res.ExitCode != 0 {
+		parts = append(parts, fmt.Sprintf("exit code %d", res.ExitCode))
+	}
+	out := strings.Join(parts, "\n")
+	out = strings.Join(strings.Fields(out), " ")
+	out, _ = TruncateUTF8(out, 900)
+	return out
+}
+
+func validationProcedureFailure(session *Session, root Root, args shellExecArgs, res ToolResult) bool {
+	if session == nil || !roleAllowsValidationProcedureFailure(session.Role) {
+		return false
+	}
+	if !shellExecRunsTestCommand(args) && !shellExecRunsBuildCommand(args) {
+		return false
+	}
+	if goCommandMissingRelativePackagePrefix(args, res) {
+		return true
+	}
+	if goCommandTargetsRootWithoutGoFiles(root, args, res) {
+		return true
+	}
+	return false
+}
+
+func roleAllowsValidationProcedureFailure(role string) bool {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "engineer":
+		return true
+	default:
+		return reviewRoleRequiresValidationEvidence(role)
+	}
+}
+
+func goCommandMissingRelativePackagePrefix(args shellExecArgs, res ToolResult) bool {
+	output := strings.ToLower(res.Stderr + "\n" + res.Output)
+	if !strings.Contains(output, " is not in std ") {
+		return false
+	}
+	fields := goTestOrBuildCommandFields(args)
+	for _, field := range fields[2:] {
+		token := cleanShellPathToken(field)
+		if token == "" || shellControlToken(token) {
+			break
+		}
+		if strings.HasPrefix(token, "-") {
+			continue
+		}
+		if strings.HasPrefix(token, "cmd/") || strings.HasPrefix(token, "internal/") || strings.HasPrefix(token, "pkg/") {
+			return true
+		}
+	}
+	return false
+}
+
+func goCommandTargetsRootWithoutGoFiles(root Root, args shellExecArgs, res ToolResult) bool {
+	output := strings.ToLower(res.Stderr + "\n" + res.Output)
+	if !strings.Contains(output, "no go files in") {
+		return false
+	}
+	if _, ok := firstCmdMain(root); !ok {
+		return false
+	}
+	fields := goTestOrBuildCommandFields(args)
+	if len(fields) < 2 {
+		return false
+	}
+	hasTarget := false
+	for i := 2; i < len(fields); i++ {
+		token := cleanShellPathToken(fields[i])
+		if token == "" || shellControlToken(token) {
+			break
+		}
+		if token == "-o" {
+			i++
+			continue
+		}
+		if strings.HasPrefix(token, "-o=") || strings.HasPrefix(token, "-") {
+			continue
+		}
+		hasTarget = true
+		if token == "." {
+			return true
+		}
+	}
+	return !hasTarget
+}
+
+func goTestOrBuildCommandFields(args shellExecArgs) []string {
+	fields := args.Argv
+	if strings.TrimSpace(args.ShellCommand) != "" {
+		fields = shellCommandFields(args.ShellCommand)
+	}
+	for i := 0; i < len(fields)-1; i++ {
+		if filepathBase(cleanShellPathToken(fields[i])) != "go" {
+			continue
+		}
+		action := cleanShellPathToken(fields[i+1])
+		if action == "test" || action == "build" {
+			return fields[i:]
+		}
+	}
+	return nil
+}
+
+func recordSuccessfulTestBuildValidationRepair(session *Session, args shellExecArgs) bool {
+	if session == nil || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
+		return false
+	}
+	if !shellExecRunsTestCommand(args) && !shellExecRunsBuildCommand(args) {
+		return false
+	}
+	if session.ToolCounts == nil || session.ToolCounts[testBuildValidationOutstandingKey] <= 0 {
+		return false
+	}
+	repaired := 0
+	if shellExecRunsTestCommand(args) {
+		repaired += session.ToolCounts[testCommandFailureKey]
+		session.ToolCounts[testCommandFailureKey] = 0
+	}
+	if shellExecRunsBuildCommand(args) {
+		repaired += session.ToolCounts[buildCommandFailureKey]
+		session.ToolCounts[buildCommandFailureKey] = 0
+	}
+	if repaired <= 0 {
+		repaired = 1
+	}
+	session.ToolCounts[testBuildValidationRepairKey(args)] += repaired
+	decrementOutstandingTestBuildFailures(session, repaired)
+	if session.ToolCounts[validationCommandFailureKey] <= repaired {
+		session.ToolCounts[validationCommandFailureKey] = 0
+	} else {
+		session.ToolCounts[validationCommandFailureKey] -= repaired
+	}
+	if session.ToolCounts[testBuildValidationOutstandingKey] == 0 && session.ToolState != nil {
+		delete(session.ToolState, testBuildValidationCommandKey)
+		delete(session.ToolState, testBuildValidationOutputKey)
+		delete(session.ToolState, testBuildValidationScopeKey)
+	}
+	return true
+}
+
+func decrementOutstandingTestBuildFailures(session *Session, n int) {
+	if session == nil || session.ToolCounts == nil || n <= 0 {
+		return
+	}
+	outstanding := session.ToolCounts[testBuildValidationOutstandingKey]
+	if outstanding <= n {
+		session.ToolCounts[testBuildValidationOutstandingKey] = 0
+		return
+	}
+	session.ToolCounts[testBuildValidationOutstandingKey] = outstanding - n
+}
+
+func clearUnexpectedRuntimeValidationState(session *Session) {
+	if session == nil || session.ToolState == nil {
+		return
+	}
+	delete(session.ToolState, unexpectedRuntimeValidationCommandKey)
+	delete(session.ToolState, unexpectedRuntimeValidationCorrectionKey)
+	delete(session.ToolState, unexpectedRuntimeValidationMissingArgKey)
+	delete(session.ToolState, unexpectedRuntimeValidationAttemptedKey)
+}
+
+func shellExecCommandForPrompt(args shellExecArgs, expectedExitCode *int) string {
+	payload := map[string]any{}
+	if len(args.Argv) > 0 {
+		payload["argv"] = args.Argv
+	} else {
+		payload["shell_command"] = args.ShellCommand
+	}
+	if expectedExitCode != nil {
+		payload["expected_exit_code"] = *expectedExitCode
+	}
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return "shell_exec with the exact failing command"
+	}
+	return "shell_exec " + string(encoded)
+}
+
+func runtimeValidationStderrLooksFailure(stderr string) bool {
+	s := strings.ToLower(strings.TrimSpace(stderr))
+	if s == "" {
+		return false
+	}
+	for _, marker := range []string{"error:", "usage of ", "panic:", "traceback", "exception"} {
+		if strings.Contains(s, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func runtimeValidationLooksExpectedInputValidationFailure(args shellExecArgs, res ToolResult) bool {
+	if res.ExitCode == 0 {
+		return false
+	}
+	output := strings.ToLower(strings.TrimSpace(res.Stderr + "\n" + res.Output))
+	if output == "" {
+		return false
+	}
+	if runtimeValidationOutputHasCrashMarker(output) {
+		return false
+	}
+	if shellExecLooksLikeInputValidationRuntimeProbe(args) && runtimeValidationOutputHasInputValidationMarker(output) {
+		return true
+	}
+	return shellExecLooksLikeSurplusArgumentRuntimeProbe(args) && runtimeValidationOutputHasSurplusArgumentMarker(output)
+}
+
+func runtimeValidationOutputHasCrashMarker(output string) bool {
+	for _, marker := range []string{"panic:", "traceback", "exception", "runtime error", "segmentation fault"} {
+		if strings.Contains(output, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func runtimeValidationOutputHasInputValidationMarker(output string) bool {
+	for _, marker := range []string{
+		"required",
+		"missing",
+		"usage:",
+		"usage of ",
+		"requires",
+		"must provide",
+		"must be",
+		"expected",
+		"invalid",
+		"invalid input",
+	} {
+		if strings.Contains(output, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func runtimeValidationOutputHasSurplusArgumentMarker(output string) bool {
+	for _, marker := range []string{
+		"too many argument",
+		"too many args",
+		"too many values",
+		"at most one",
+		"only one",
+		"single argument",
+		"exactly one argument",
+	} {
+		if strings.Contains(output, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func shellExecLooksLikeInputValidationRuntimeProbe(args shellExecArgs) bool {
+	if shellExecLooksLikeMissingArgumentRuntimeProbe(args) {
+		return true
+	}
+	for _, field := range shellExecRuntimeProductArgs(args) {
+		token := strings.ToLower(strings.Trim(strings.TrimSpace(field), `"'`))
+		switch token {
+		case "invalid", "bad", "abc", "not-a-number", "not_a_number":
+			return true
+		}
+		if strings.Contains(token, "invalid") || strings.Contains(token, "not-a-number") || strings.Contains(token, "not_a_number") {
+			return true
+		}
+	}
+	return false
+}
+
+func shellExecLooksLikeSurplusArgumentRuntimeProbe(args shellExecArgs) bool {
+	return len(shellExecRuntimeProductArgs(args)) > 1
+}
+
+func shellExecRuntimeProductArgs(args shellExecArgs) []string {
+	fields := normalizedShellExecFields(args)
+	if len(fields) == 0 {
+		return nil
+	}
+	cmd := filepathBase(fields[0])
+	switch cmd {
+	case "go", "cargo", "dotnet":
+		if len(fields) >= 3 && fields[1] == "run" {
+			return fields[3:]
+		}
+	case "python", "python3", "node", "deno", "ruby":
+		if len(fields) >= 2 {
+			return fields[2:]
+		}
+	case "java":
+		if len(fields) >= 3 && fields[1] == "-jar" {
+			return fields[3:]
+		}
+	case "npm", "pnpm", "yarn", "bun":
+		if len(fields) >= 3 && fields[1] == "run" {
+			return fields[3:]
+		}
+		if len(fields) >= 2 {
+			return fields[2:]
+		}
+	default:
+		return fields[1:]
+	}
+	return nil
+}
+
+func shellExecRunsRuntimeOrArtifactValidationCommandForSession(session *Session, root Root, args shellExecArgs) bool {
+	if shellExecRunsTestCommand(args) || shellExecRunsBuildCommand(args) {
+		return false
+	}
+	if shellExecRunsRuntimeValidationCommand(args) {
+		return true
+	}
+	return shellExecRunsRecordedValidationArtifact(*session, root, args)
+}
+
+func recordExpectedRuntimeValidationCorrection(session *Session, args shellExecArgs, exitCode int) bool {
+	if !roleCanCorrectUnexpectedRuntimeValidation(session.Role, args) {
+		return false
+	}
+	failureKey := unexpectedRuntimeValidationFailureKey(args, exitCode)
+	correctionKey := expectedRuntimeValidationCorrectionKey(args, exitCode)
+	unrepaired := session.ToolCounts[failureKey] - session.ToolCounts[correctionKey]
+	if unrepaired <= 0 {
+		return false
+	}
+	session.ToolCounts[correctionKey] += unrepaired
+	session.ToolCounts[runtimeValidationRepairKey(args)] += unrepaired
+	decrementOutstandingRuntimeFailures(session, unrepaired)
+	if session.ToolCounts[unexpectedRuntimeValidationOutstandingKey] == 0 {
+		clearUnexpectedRuntimeValidationState(session)
+	}
+	return true
+}
+
+func recordMissingArgumentCorrectionAttempt(session *Session, args shellExecArgs, exitCode int) {
+	if session == nil || session.ToolState == nil || exitCode == 0 {
+		return
+	}
+	session.ToolState[unexpectedRuntimeValidationAttemptedKey] = shellExecCommandForPrompt(args, &exitCode)
+}
+
+func roleCanCorrectUnexpectedRuntimeValidation(role string, args shellExecArgs) bool {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "qa", "security":
+		return true
+	case "engineer":
+		return shellExecLooksLikeMissingArgumentRuntimeProbe(args)
+	default:
+		return false
+	}
+}
+
+func recordSuccessfulRuntimeValidationRepair(session *Session, args shellExecArgs) bool {
+	failureKey := unexpectedRuntimeValidationFailureFingerprintKey(args)
+	repairKey := runtimeValidationRepairKey(args)
+	unrepaired := session.ToolCounts[failureKey] - session.ToolCounts[repairKey]
+	if unrepaired <= 0 {
+		return false
+	}
+	session.ToolCounts[repairKey] += unrepaired
+	decrementOutstandingRuntimeFailures(session, unrepaired)
+	if session.ToolCounts[unexpectedRuntimeValidationOutstandingKey] == 0 {
+		clearUnexpectedRuntimeValidationState(session)
+	}
+	return true
+}
+
+func decrementOutstandingRuntimeFailures(session *Session, n int) {
+	if session == nil || session.ToolCounts == nil || n <= 0 {
+		return
+	}
+	outstanding := session.ToolCounts[unexpectedRuntimeValidationOutstandingKey]
+	if outstanding <= n {
+		session.ToolCounts[unexpectedRuntimeValidationOutstandingKey] = 0
+		return
+	}
+	session.ToolCounts[unexpectedRuntimeValidationOutstandingKey] = outstanding - n
 }
 
 type handlerResult struct {

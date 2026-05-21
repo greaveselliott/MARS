@@ -5,9 +5,11 @@ docs:
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/release-versioning.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-009-release-update-lifecycle.md
 */
 package tools
 
@@ -16,6 +18,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -88,6 +91,28 @@ func TestToolInventoryAudit_reportsRegistryAndGlossary(t *testing.T) {
 	require.Contains(t, res.Output, "Registered tools:")
 	require.Contains(t, res.Output, "release_orchestrate")
 	require.Contains(t, res.Output, "PASS: glossary includes release_orchestrate")
+}
+
+func TestGitReleaseGuardReportsStaleReleaseTag(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	writeWorkflowFile(t, dir, "VERSION", "0.1.0\n")
+	writeWorkflowFile(t, dir, "CHANGELOG.md", "# Changelog\n")
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "VERSION", "CHANGELOG.md"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "feat: seed product"))
+	previous := strings.TrimSpace(gitOutput(context.Background(), root, "rev-parse", "HEAD"))
+	writeWorkflowFile(t, dir, "VERSION", "0.2.0\n")
+	writeWorkflowFile(t, dir, "CHANGELOG.md", "# Changelog\n\n## [0.2.0]\n")
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "VERSION", "CHANGELOG.md"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "release: notes 0.2.0"))
+	require.NoError(t, runGitExit0(context.Background(), root, "tag", "v0.2.0", previous))
+
+	res, err := handleGitReleaseGuard(context.Background(), root, json.RawMessage(`{}`))
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "FAIL: tag v0.2.0 exists but does not point at release-note HEAD")
 }
 
 func TestArchitectureAudit_detectsCurrentTerms(t *testing.T) {

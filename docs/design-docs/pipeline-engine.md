@@ -26,6 +26,12 @@ Schema includes a **`repo_id`** column (and associated invariants) from the firs
 
 Foreign keys and indexes should be designed assuming **many repos** even when the UI hides that for v1.
 
+### AD-214: Startup cleanup preserves SQLite WAL state
+
+`start` and `serve` must not delete SQLite `-wal` or `-shm` sidecar files during automatic startup cleanup. SQLite WAL files can contain committed queue, repo registry, trace, and telemetry state that has not yet been checkpointed into the main database file. Deleting those sidecars after a failed bind or interrupted process can silently discard the previous run's bootstrap record and make a retry look like a fresh repo registration.
+
+Startup cleanup now treats SQLite sidecars as recoverable database state. When a database file and sidecars are present, the harness opens the database with a busy timeout and asks SQLite to run a passive WAL checkpoint. If recovery/checkpointing fails, the sidecars are left in place and the operator sees a warning rather than losing state. Explicit destructive cleanup remains limited to operator-controlled flows such as `eject --apply`.
+
 ### Open topics
 
 - **Job queue:** states (queued, running, succeeded, failed, cancelled), idempotency keys, lease/timeout semantics, dead-letter handling for poison jobs.
@@ -37,6 +43,13 @@ Foreign keys and indexes should be designed assuming **many repos** even when th
 
 ## Discoveries
 
+- 2026-05-21: `demo-temp-run60` reproduced a retry-after-bind-failure edge:
+  the first sandboxed start registered the target and enqueued a CEO bootstrap
+  job, then the escalated retry logged removal of `demo-temp-run60.db-wal` and
+  `demo-temp-run60.db-shm` before registering the same path under a new repo
+  ID. The final DB did not contain duplicate jobs because the WAL state had
+  been discarded, which is worse than duplicate bootstrap work. Cleanup now
+  preserves sidecars and lets SQLite recover/checkpoint them.
 - 2026-05-20: A non-static `demo-api-run1` lifecycle replay showed the minute
   scheduler enqueueing a second Engineer while the first Engineer was still
   running. The queue already serialized claims per repo, but duplicate pending

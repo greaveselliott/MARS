@@ -5,9 +5,11 @@ docs:
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/release-versioning.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-009-release-update-lifecycle.md
 */
 package tools
 
@@ -135,7 +137,7 @@ Sequence:
 4. Review VERSION, CHANGELOG.md, and buildinfo changes.
 5. Commit generated files as `+"`release: notes X.Y.Z`"+`.
 6. Push main.
-7. Tag the release-note commit as `+"`vX.Y.Z`"+` and push the tag.
+7. Tag the release-note commit as `+"`vX.Y.Z`"+` and push the tag. Do not tag while VERSION/CHANGELOG.md are dirty, and do not target any commit other than the release-note HEAD.
 8. Wait for the Release workflow to complete.
 9. Run `+"`mars_harness_cli`"+` with args ["release", "verify-assets", "--version", "vX.Y.Z"].
 10. If verification fails, record the blocker before treating release work as complete.
@@ -244,16 +246,25 @@ func handleGitReleaseGuard(ctx context.Context, root Root, raw json.RawMessage) 
 	}
 	version := strings.TrimSpace(readOptional(root, "VERSION"))
 	head := gitOutput(ctx, root, "log", "-1", "--pretty=%s")
+	headIsReleaseNote := strings.HasPrefix(strings.ToLower(strings.TrimSpace(head)), "release: notes ")
+	headSHA := strings.TrimSpace(gitOutput(ctx, root, "rev-parse", "HEAD"))
 	tagExists := false
+	tagTarget := ""
 	if version != "" {
 		tagExists = gitExit0(ctx, root, "rev-parse", "--verify", "v"+version)
+		if tagExists {
+			tagTarget = strings.TrimSpace(gitOutput(ctx, root, "rev-list", "-n", "1", "v"+version))
+		}
 	}
 	status := gitOutput(ctx, root, "status", "--short")
 	var checks []string
 	checks = append(checks, passFail(version != "", "VERSION is present", "VERSION is missing"))
-	checks = append(checks, passFail(strings.HasPrefix(head, "release: notes ") || strings.TrimSpace(status) != "", "HEAD is release-note commit or worktree has unreleased changes", "HEAD is not a release-note commit and worktree is clean"))
+	checks = append(checks, passFail(headIsReleaseNote || strings.TrimSpace(status) != "", "HEAD is release-note commit or worktree has unreleased changes", "HEAD is not a release-note commit and worktree is clean"))
 	if version != "" {
 		checks = append(checks, passFail(tagExists, "tag v"+version+" exists locally", "tag v"+version+" is missing locally"))
+		if tagExists {
+			checks = append(checks, passFail(headIsReleaseNote && headSHA != "" && tagTarget == headSHA, "tag v"+version+" points at release-note HEAD", "tag v"+version+" exists but does not point at release-note HEAD"))
+		}
 	}
 	checks = append(checks, "git status:\n"+nonEmpty(status, "(clean)"))
 	return ToolResult{Output: "# git_release_guard\n\n" + strings.Join(checks, "\n")}, nil

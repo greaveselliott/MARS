@@ -32,6 +32,18 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 15. F-006-S015 - Scheduled triggers skip same-repo same-role work that is already pending, claimed, or running.
 16. F-006-S016 - Fresh bootstrap roles reuse canonical feature-contract paths and rewrite starter scenarios in place.
 17. F-006-S017 - Successful implementation, review, validation, and release dispositions cannot approve source with failing DocSync evidence.
+18. F-006-S018 - Dogfood-created target findings must be committed and handed off before further validation or duplicate ticket creation.
+19. F-006-S019 - Review rework reopens done or in-review product tickets before Engineer product mutation or validation shell work.
+20. F-006-S020 - Direct runtime validation commands count as completion evidence for lifecycle convergence.
+21. F-006-S021 - Expected runtime error probes can be review evidence without blocking approval.
+22. F-006-S022 - Post-validation completion directs Engineer away from shell retries and into ticket evidence updates.
+23. F-006-S023 - Review validation failures become structured rework handoffs before more shell validation.
+24. F-006-S036 - Engineer failing test/build evidence becomes a repair lane before runtime probes, evidence, ticket completion, or product commits can continue.
+25. F-006-S037 - CTO ticket shaping cannot mutate product implementation files before Engineer claims the ticket.
+26. F-006-S038 - Engineer test/build repair lanes accept focused same-lane validation after bounded repair edits.
+27. F-006-S039 - Simple `cd <dir> && <test/build>` shell commands count as same-lane validation for repair classification.
+28. F-006-S041 - Engineer test/build repair writes stay inside the failed package scope when one is known.
+29. F-006-S042 - Engineer can remove duplicate test files it created earlier in the same job while repairing a failing test lane.
 
 ## Scenarios
 
@@ -221,6 +233,10 @@ Given QA or another dispatch-mode role exits without recording `job_disposition_
 When the model first tries to finish with prose only
 Then the agent loop gives one corrective prompt for the required terminal `job_disposition_record` tool call instead of ending the job immediately
 
+Given a dispatch-mode role has already received the turn-budget terminal-tool reminder
+When the next model response calls any tool other than the configured terminal disposition tool
+Then the loop ends as `max_turns` without executing that non-terminal tool, so the grace turn cannot mutate the repo and still fail disposition
+
 Given generated QA is dispatched to review a completed implementation ticket
 When the job starts in the default target harness
 Then QA uses the `reasoning` model tier, starts with an allowed read-only inspection tool call, and has `git_status` plus `git_diff` available for repository evidence before recording `job_disposition_record`
@@ -248,6 +264,116 @@ Then dispatch may route to that governance role, but dependency and release work
 Given Security reviews a feature ticket that Engineer completed and QA approved
 When secrets scan, changed-code inspection, `docsync_audit`, tests, and at most one managed runtime smoke probe have passed
 Then Security writes and commits a bounded audit report and records terminal `job_disposition_record` instead of repeating equivalent validation until `max_turns`
+
+Given Security observes that an invalid-input command already exits non-zero safely
+When the only remaining concern is speculative future hardening or a non-current risk
+Then Security records the item as a non-blocking PASS note or low-severity observation instead of sending Engineer into changes-requested rework
+
+### F-006-S019: Review Rework Reopens Tickets
+
+Given Engineer receives a `changes_requested` handoff for a completed ticket
+When shell validation or product/source edits are required to answer the review
+Then Engineer must first reopen the ticket from `docs/tickets/done/` or `docs/tickets/in-review/` into `docs/tickets/in-progress/`, commit that rework claim, and only then mutate product files or run validation shell commands
+
+Given Engineer receives a `changes_requested` handoff for a completed ticket
+When the exact requested command or evidence passes after either no code change or one minimal patch
+Then Engineer commits any changed work and records terminal `job_disposition_record` without adding unrelated exploratory probes that can consume the turn budget
+
+Given Engineer implements an ordinary feature ticket with explicit acceptance criteria and BDD scenarios
+When exploratory validation suggests an edge-case behavior that is not part of the selected ticket contract
+Then Engineer keeps tests and code aligned to the ticket and feature contract, records the new edge case as follow-up evidence when useful, and closes the selected ticket once required evidence passes
+
+Given Engineer has passed the selected ticket's acceptance evidence and committed the product implementation
+When the ticket does not explicitly require a packaged binary, install artifact, or release distribution
+Then Engineer moves the ticket to done and records disposition before creating repo-local build outputs or running packaging exploration
+
+Given Engineer has successful validation evidence and a committed implementation while an ordinary product ticket remains in `docs/tickets/in-progress/`
+When the worktree is clean and Engineer attempts additional `shell_exec` exploration instead of moving the ticket through the lifecycle
+Then policy blocks the shell command and instructs Engineer to update ticket evidence, move the ticket to `docs/tickets/done/`, commit that lifecycle move, and record `job_disposition_record` with `next_need: qa_review`
+
+Given Engineer has successful validation evidence, dirty implementation work, and an in-progress product ticket
+When it repeats empty-argv or single-colon `shell_exec` no-op calls
+Then policy treats the repeated no-op as a loop boundary and instructs Engineer to stop shell placeholders, inspect status, commit the dirty work, complete the ticket lifecycle, and record `job_disposition_record`
+
+Given Engineer reopens a completed ticket after QA requests validation rework
+When Engineer builds an external validation binary with `go build -o /tmp/<project>-validation ...`
+Then Engineer may execute that same fresh binary in the current role session as validation evidence instead of being blocked by the post-validation shell convergence gate
+
+### F-006-S020: Runtime Validation Counts For Lifecycle Convergence
+
+Given Engineer has an ordinary product ticket in `docs/tickets/in-progress/`
+When a direct runtime command such as `go run`, `cargo run`, `dotnet run`, a language interpreter entrypoint, a package start script, or a bounded smoke probe successfully exercises the ticket behavior
+Then the role session records that command as validation evidence, so after the implementation commit further placeholder or exploratory shell calls are redirected toward ticket evidence, `docs/tickets/done/`, and `job_disposition_record`
+
+### F-006-S021: Expected Runtime Error Probes In Review
+
+Given QA or Security reviews a named ticket and test files exist
+When the role has a successful test command plus positive runtime evidence and a non-zero runtime probe for an expected invalid-input or error path that declares and matches `shell_exec expected_exit_code`
+Then the review disposition may approve because the runtime error is negative-path evidence rather than a failed build or test
+
+Given QA or Security accidentally runs an expected negative-path runtime probe without `expected_exit_code`
+When the same command exited non-zero and no build or test command has failed in the current job
+Then the role may rerun that exact command once with the matching non-zero `expected_exit_code`, and the corrected probe no longer blocks approval
+
+Given QA or Security reviews a named ticket after a build command, test command, or unexpected runtime validation command failed in the same job
+When the role attempts to approve, complete, or move the ticket to in-review
+Then the disposition is blocked and the reviewer must record `changes_requested` or `blocked` with the failing command and requested Engineer action
+
+### F-006-S023: Review Failure Handoff
+
+Given QA or Security reviews a named ticket after a build command, test command, or unexpected runtime validation command failed in the same job
+When the role attempts another `shell_exec` command before recording disposition
+Then tool policy blocks the shell command and directs the reviewer to record `job_disposition_record` with `status: changes_requested`, `next_need: implementation_rework`, `feedback.for_role: engineer`, and the exact failing command/output
+
+Given the only current-job validation failure is an expected negative-path runtime probe that was first run without `expected_exit_code`
+When QA or Security attempts to rerun the exact same command with the matching non-zero `expected_exit_code`
+Then tool policy allows that one corrective shell command, records expected negative-path evidence, and blocks any different shell command until disposition
+
+### F-006-S022: Post-Validation Ticket Evidence Recovery
+
+Given Engineer has successful validation evidence, a clean implementation commit, and an ordinary product ticket still in `docs/tickets/in-progress/`
+When Engineer attempts any non-lifecycle `shell_exec` command instead of closing the ticket
+Then policy blocks the shell command and says the next tool must be `file_read` on the in-progress ticket followed by `file_write` on the same ticket to populate `evidence_links` and `verified_by`
+
+Given Engineer has claimed an ordinary product ticket but has not yet produced validation evidence
+When Engineer repeats an empty-argv or single-colon `shell_exec` no-op
+Then policy blocks the repeated no-op and routes the session back to ticket/feature reading plus product `file_write` implementation or a blocked disposition
+
+Given the ticket evidence has been updated after successful validation
+When Engineer runs the exact `git mv` lifecycle command to move the ticket into `docs/tickets/done/`
+Then the shell command is allowed so the lifecycle move, commit, push, and QA handoff can finish
+
+Given Engineer has observed an unexpected runtime validation failure in the current job
+When the exact failing command has not subsequently passed and has not been corrected with matching `expected_exit_code`
+Then tool policy blocks writing or moving a product ticket to `docs/tickets/done/`, blocks committing a staged ticket-done move, and blocks successful disposition until the runtime evidence is repaired
+
+Given Engineer has observed an unexpected runtime validation failure in the current job
+When Engineer reruns that same command with `expected_exit_code`
+Then the outstanding completion blocker remains because retroactive expected-exit correction is reserved for QA/Security review-procedure mistakes
+
+Given Engineer has observed an obvious missing-argument runtime validation failure in the current job
+When Engineer reruns that exact no-argument command with matching `expected_exit_code`
+Then the queue session treats it as expected negative-path evidence and clears the blocker so the role can continue positive acceptance validation
+
+Given Engineer has an unresolved missing-argument runtime validation failure in the current job
+When policy blocks a different runtime probe, ticket completion, or successful disposition
+Then the queue-facing blocker text names the exact `expected_exit_code` correction instead of only saying to rerun the command successfully
+
+Given a direct runtime validation command exits 0 while printing error-shaped stderr
+When the queue session evaluates validation progress
+Then the session treats the command as failed runtime evidence and keeps completion blocked until an exact clean rerun succeeds
+
+Given Engineer has observed an unexpected runtime validation failure in the current job
+When Engineer attempts to rerun runtime validation before any post-failure implementation edit
+Then policy blocks the runtime probe and directs Engineer to inspect/edit the implementation, then rerun the exact failed command successfully
+
+Given Engineer has implemented and validated an ordinary product ticket
+When the worktree contains product changes plus a lifecycle move from `docs/tickets/in-progress/` to `docs/tickets/done/`
+Then the final `git_commit` is allowed as ordinary completion rather than being treated as hidden review rework against an already-done ticket
+
+Given Dogfood creates a target-owned finding ticket during validation
+When that ticket exists in the current Dogfood run
+Then Dogfood may inspect status, diff, read files, commit, push, or record disposition, but further shell validation and additional `ticket_create` calls are blocked until the finding is handed off through terminal disposition
 
 Given Engineer records a successful dispatch disposition for a feature ticket
 When the named ticket still exists in `docs/tickets/backlog/`, `docs/tickets/in-progress/`, or `docs/tickets/in-review/`
@@ -279,6 +405,10 @@ Given generated COO updates a starter `F-001` feature contract
 When `docs/features/F-001-product-walking-skeleton.md` already exists
 Then COO edits that existing path in place and replaces starter scenarios with one unique scenario set instead of appending duplicate scenario headings
 
+Given generated COO updates a starter `F-001` feature contract
+When the planner adds product-specific scenario headings
+Then every heading uses the same `F-001-SNNN` feature ID prefix as the contract path, and work that needs `F-002-SNNN` first creates or updates the canonical `docs/features/F-002*.md` contract
+
 Given Orchestrator receives a next need of `strategy_advice`, `executive_narrative`, `tradeoff_analysis`, or `goal_conflict`
 When the target manifest includes the optional `head-of-strategy` role
 Then Orchestrator routes to that advisor for memo, tradeoff, and narrative work while CEO remains owner of final goal or vision decisions
@@ -307,6 +437,239 @@ Given Orchestrator suggests a canonical role alias such as `cto`, `release`, or 
 When the target manifest contains the corresponding executable role key such as `cto-weekly`, `release-manager`, or `dependency-manager`
 Then dispatch normalizes to the manifest role key and does not fall back into another Orchestrator loop
 
+### F-006-S023: Ticket-Creation Failure Cannot Handoff As Product Progress
+
+Given a non-Orchestrator planning role has an unresolved failed `ticket_create` or failed ticket-file write in the current session
+When it attempts `job_disposition_record` with a successful status such as `completed`, `approved`, `in_review`, or `no_work`
+Then policy blocks the disposition and directs the role to retry `ticket_create` with valid JSON or record an honest blocked disposition with the exact failure
+
+Given the role records `status: blocked`, `status: failed`, or `status: changes_requested`
+When ticket creation is still unresolved
+Then the disposition remains available so orchestration can surface the blocker without pretending an implementation ticket exists
+
+### F-006-S024: Missing-Argument Runtime Corrections Converge Before Mutation
+
+Given Engineer has an unresolved no-argument or missing-required-input runtime probe in the current session
+When the session stores an exact `shell_exec` correction with matching `expected_exit_code`
+Then unrelated mutations, commits, decisions, pushes, dependency sync, CLI mutation, tool creation, and persona creation are blocked until that correction runs or Engineer records an honest blocked disposition
+
+Given Engineer records `status: blocked` with the exact blocker
+When the correction cannot be applied
+Then the dispatcher receives explicit blocker evidence instead of another silent runtime-probe loop
+
+### F-006-S025: External Validation Artifacts Rebuild After Runtime Failure Edits
+
+Given Engineer has an unresolved positive acceptance failure from an external `<validation-root>` artifact
+When Engineer edits implementation source after that failure
+Then queue-session policy treats the previously built artifact as stale until a fresh `go build -o <validation-root> ...` succeeds
+
+Given the artifact is rebuilt after the edit
+When Engineer reruns the same runtime acceptance probe
+Then the rerun can repair the outstanding runtime blocker based on current source behavior
+
+### F-006-S026: Ticket Evidence Follows Validation
+
+Given Engineer is working an in-progress ticket and has not produced successful validation in the current job
+When it attempts to fill `evidence_links` or `verified_by`
+Then orchestration-facing ticket state remains unchanged and the role is directed back to validation first
+
+Given a validation command succeeds in that job
+When Engineer updates the in-progress ticket with concrete evidence and verifier metadata
+Then the ticket can continue through the normal done move, commit, and QA handoff path
+
+### F-006-S027: Reviewer Artifact Rebuild Recovery
+
+Given QA or Security tries to execute an external validation artifact built by an earlier role session
+When same-session artifact freshness blocks the command
+Then the next review action is the exact rebuild command from the tool error or a structured blocked/changes-requested disposition
+
+Given the reviewer runs that exact rebuild command
+When the binary build succeeds in the same role session
+Then the reviewer can rerun the runtime probe as current evidence
+
+### F-006-S028: Review Build Guard Recovery Is Deterministic
+
+Given QA or Security attempts a Go build that would write a repo-local binary
+When the build-output guardrail blocks the command
+Then the reviewer receives an exact package-preserving `shell_exec argv` correction instead of prose-only recovery guidance
+
+Given the reviewer follows that exact correction
+When the build succeeds in the same role session
+Then review can continue with current runtime evidence instead of routing changes-requested from a guessed build target
+
+Given QA reviews a Go feature ticket with non-test `.go` source files
+When no `_test.go` files exist in the repository
+Then approval is blocked and QA must request Engineer tests before the ticket can continue to Security or release
+
+### F-006-S029: Missing-Input Repro Loops Route To Repair
+
+Given Engineer has a missing-required-input runtime failure in the current job
+When the exact `expected_exit_code` correction is attempted but the command still panics or exits incorrectly
+Then the job can proceed to implementation repair instead of repeatedly dispatching the same repro command
+
+Given that runtime failure remains outstanding
+When Engineer tries to commit, move the ticket to done, or record QA handoff before the exact runtime path is repaired
+Then orchestration policy still blocks completion and keeps the ticket in the implementation loop
+
+### F-006-S030: Repeated Exact Runtime Failures Converge
+
+Given Engineer repeats the same runtime validation command during implementation repair
+When later source changes make that exact command exit successfully
+Then the queue session clears every outstanding same-command failure count so dispatch does not end in stale `circle_detected`
+
+Given the job has no other outstanding runtime blockers
+When the exact command succeeds
+Then Engineer can continue toward tests, evidence, ticket lifecycle, or reviewer handoff
+
+### F-006-S031: Review And Ticket Closure Preserve Live Product State
+
+Given QA or Security reviews a completed ticket
+When it needs shell validation
+Then shell access is limited to read-only inspection, tests, builds, fresh external validation binaries, runtime probes, and HTTP probes
+
+Given a reviewer attempts package/module initialization, product mutation, cleanup, broad discovery, or a placeholder no-op through `shell_exec`
+When the command is not validation evidence
+Then policy blocks it and routes the reviewer to read-only tools, validation commands, or a structured disposition
+
+Given Engineer has uncommitted source, tests, docs, package manifests, lockfiles, config, or validation code
+When it tries to move a product ticket into `docs/tickets/done/`
+Then the lifecycle move is blocked until those non-ticket changes are committed separately
+
+Given Orchestrator reads `docs/tickets/README.md`
+When the README contains example ticket text
+Then Orchestrator treats it as conventions only and routes from lifecycle directories plus `source_disposition` ticket and handoff state
+
+### F-006-S032: Review No-Op Loops Converge To Disposition
+
+Given QA or Security has already run successful validation evidence in the current job
+When it calls `shell_exec` with empty `argv` or another no-op placeholder
+Then policy tells the reviewer to stop shell validation and record `job_disposition_record`
+
+Given the reviewer repeats the same no-op command shape
+When the job has `job_disposition_record` as a required terminal tool
+Then the agent loop gives one terminal-tool-only circle grace turn before failing the job
+
+### F-006-S033: Runtime Repair Freezes False Progress
+
+Given Engineer has an unresolved positive runtime acceptance failure
+When it tries to run other shell probes, shell wrappers, tests, ticket moves, or product commits
+Then policy blocks those side paths until source repair plus the exact failed runtime command prove the acceptance path now passes
+
+Given the failing runtime command used a same-session `<validation-root>` artifact
+When Engineer edits source after the failure
+Then rebuilding that same stale validation artifact remains allowed before the exact failed command is rerun
+
+### F-006-S034: Ticket Evidence Blocks Do Not Poison Implementation Handoff
+
+Given Engineer attempts to populate an in-progress ticket's evidence before successful validation
+When policy blocks that evidence write
+Then the failure is treated as an evidence-ordering guardrail, not unresolved ticket-creation debt
+
+Given Engineer later validates the behavior, updates ticket evidence, commits product work, moves the ticket to done, and records `job_disposition_record`
+When no actual `ticket_create` failure remains unresolved in the same job
+Then the disposition is allowed to hand off to QA review
+
+### F-006-S035: Review No-Op Recovery Uses Terminal Disposition
+
+Given QA or Security has already recorded successful validation evidence in the current job
+When a no-op shell placeholder is blocked with terminal disposition guidance
+Then any later non-terminal tool call is blocked and only `job_disposition_record` may complete the job
+
+Given the reviewed target has Go source files but no `_test.go` files
+When QA reaches terminal disposition after validation
+Then the role records `changes_requested` for Engineer to add durable tests instead of approving from runtime smoke evidence alone
+
+Given COO or another non-ticket-owning planner hits an attempted ticket-creation policy block
+When it records `next_need: ticket_breakdown` for CTO
+Then the handoff remains available and does not require a blocked disposition detour
+
+### F-006-S036: Engineer Test/Build Failure Repair Lane
+
+Given Engineer observes a failing test or build command in the current job
+When the role attempts runtime probes, unrelated shell commands, ticket evidence updates, ticket done moves, successful disposition, or product commits before same-lane validation passes
+Then the session blocks those actions and routes Engineer to bounded source, test, fixture, or package/build config repair followed by a same-lane test/build command
+
+Given Engineer edits source or tests after the failing test/build command
+When the role reruns a same-lane test/build command and it exits successfully
+Then the outstanding repair lane clears and normal ticket evidence, lifecycle completion, and QA handoff can continue
+
+### F-006-S037: CTO Ticket Shaping Does Not Implement
+
+Given CTO is shaping a ticket from COO planning
+When it attempts to write product implementation files, package/module files, README usage notes, tests, build config, or root product files
+Then the session blocks the write and keeps implementation behind `ticket_create` plus Engineer delivery
+
+Given CTO needs to record architecture rationale before ticketing
+When it writes bounded technical planning artifacts under `docs/design-docs/`, `docs/reports/strategy/`, or `docs/goals/observations.md`
+Then those writes remain available and can be committed before the CTO disposition
+
+### F-006-S038: Test/Build Repair Allows Same-Lane Validation
+
+Given Engineer observes a failing test command in the current job
+When it edits product source, tests, fixtures, or package/build config
+Then a later recognized test command in the same lane may repair the blocker even when its package scope differs from the original command
+
+Given Engineer observes a failing build command in the current job
+When it edits product source, tests, fixtures, or package/build config
+Then a later recognized build command in the same lane may repair the blocker even when its output target or package scope differs from the original command
+
+Given a failing test/build repair lane is unresolved
+When Engineer attempts runtime probes, helper scripts, unrelated shell commands, ticket evidence updates, ticket done moves, successful disposition, or product commits
+Then those actions remain blocked until the same validation lane passes
+
+### F-006-S039: Simple CD Validation Commands Stay In Lane
+
+Given Engineer has an unresolved failing test/build repair lane
+When it runs a shell command shaped exactly like `cd <dir> && <recognized test/build command>`
+Then the command is classified by the right-hand test/build command and may repair the same validation lane after bounded repair edits
+
+Given Engineer has an unresolved failing test/build repair lane
+When it uses arbitrary shell control syntax, multiple chained operations, pipes, redirection, substitutions, cleanup, runtime probes, or ticket moves
+Then the command remains blocked as a side path rather than counting as validation repair
+
+### F-006-S040: Clean Review Evidence Stops More Review Work
+
+Given a dispatch-mode QA or Security job requires `job_disposition_record`
+And the role has read relevant source or ticket context and has clean validation evidence
+When the role tries to continue with another non-terminal action after the terminal reminder
+Then orchestration ends the job as a contained loop boundary instead of executing more review work or routing target intervention debt
+
+Given the role responds with `job_disposition_record`
+When the disposition is valid
+Then normal forward review dispatch can continue
+
+### F-006-S041: Test-Build Repair Writes Stay Scoped
+
+Given Engineer has an unresolved failing test/build repair lane from a narrow package command
+When it edits source, tests, fixtures, or testdata outside that failed package scope
+Then the write is blocked as an alternate implementation path
+
+Given Engineer edits source, tests, fixtures, testdata, or package/build config inside the failed scope
+When it reruns a same-lane test/build command successfully
+Then the repair lane can clear and normal ticket lifecycle may resume
+
+### F-006-S042: Same-Job Test Cleanup Covers Pre-Failure Writes
+
+Given Engineer created or rewrote a test-like file earlier in the same job
+And a later test/build command fails in that package
+When Engineer removes that same-job test file with non-recursive `rm` or `unlink`
+Then the cleanup remains inside the failing test/build repair lane so duplicate generated tests can be pruned before rerunning validation
+
+Given a test-like file was not created or rewritten by the same Engineer job
+When Engineer tries to remove it while a test/build repair lane is unresolved
+Then the deletion remains blocked so old project tests cannot be discarded to make validation pass
+
+### F-006-S043: Startup Cleanup Preserves SQLite Recovery State
+
+Given `start` or `serve` is retried after a failed bind, interrupted process, or stale worker cleanup
+And the configured SQLite database has `-wal` or `-shm` sidecar files
+When startup cleanup runs before opening the server
+Then the harness leaves those sidecar files in place and asks SQLite to recover or checkpoint them instead of deleting queue or repo registry state
+
+Given SQLite recovery fails during cleanup
+When startup continues or reports the failure
+Then the sidecar files remain operator-visible and are not silently removed by automatic cleanup
+
 ## Out of Scope
 
 - External queue systems such as Redis.
@@ -333,3 +696,28 @@ None.
 - F-006-S012: `go test ./internal/tools -run 'TestShellExecPolicy.*FeatureTicketDone(Move|Copy)|TestFileWritePolicyBlocksDoneFeatureTicket'`
 - F-006-S013: `go test ./internal/serve -run TestHandleJobFailed_maxTurnsDoesNotRouteOrchestrator`
 - F-006-S015: `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole`
+- F-006-S018: `go test ./internal/tools -run 'TestDogfoodUncommittedFindingBlocksFurtherValidationAndTickets|TestDogfoodFindingCreatedInRunRequiresDispositionBeforeFurtherValidation'`
+- F-006-S019: `go test ./internal/tools -run 'TestEngineerPostValidationGateAllowsValidationWhileImplementationDirty|TestEngineerMustReopenDoneTicketBeforeProductMutation|TestEngineerPostValidationAllowsFreshExternalValidationArtifact'`
+- F-006-S020: `go test ./internal/tools -run 'TestRecordSessionToolOutcomeTracksRuntimeValidationCommands|TestEngineerPostRuntimeValidationNoopRedirectsToTicketCompletion'`
+- F-006-S021: `go test ./internal/tools -run TestReviewApprovalRequiresPassingValidationWhenTestsExist`
+- F-006-S022: `go test ./internal/tools -run 'TestEngineerPostValidationCommitBlocksExploratoryShellUntilTicketDone|TestEngineerPostRuntimeValidationNoopRedirectsToTicketCompletion|TestEngineerCannotCompleteTicketWithUnresolvedRuntimeValidationFailure'` and `go test ./internal/agent -run 'TestRun_requiredTerminalToolGetsOneBudgetGraceTurn|TestRun_terminalToolGraceRejectsNonTerminalTool'`
+- F-006-S023: `go test ./internal/tools -run TestSuccessfulDispositionBlocksUnresolvedTicketCreationFailure`
+- F-006-S024: `go test ./internal/tools -run TestEngineerMissingArgumentRuntimeFailureBlocksUnrelatedMutation`
+- F-006-S025: `go test ./internal/tools -run 'TestExternalValidationArtifact(MustBeRebuiltAfterRuntimeFailureEdit|AllowsRerunAfterRuntimeFailureEditAndRebuild)'`
+- F-006-S026: `go test ./internal/tools -run 'TestEngineerTicketEvidenceWrite(RequiresValidation|AllowedAfterValidation)'`
+- F-006-S027: `go test ./internal/tools -run TestExternalValidationArtifactMustBeBuiltInSameSession`
+- F-006-S028: `go test ./internal/tools -run 'TestShellExecBlocksDefaultGoBuildForCmdPackageWithExactCorrection|TestQAApprovalRequiresGoTestsForGoSource'`
+- F-006-S029: `go test ./internal/tools -run 'TestRecordSessionToolOutcomeTracksFailedMissingArgumentCorrectionAttempt|TestEngineerMissingArgumentRuntimeFailureAllowsImplementationEditAfterCorrectionAttempt'`
+- F-006-S030: `go test ./internal/tools -run TestRecordSessionToolOutcomeExactSuccessClearsRepeatedRuntimeFailures`
+- F-006-S031: `go test ./internal/tools -run 'TestReviewShellExecPolicy|TestShellExecPolicy.*TicketDoneMove'` and `go test ./internal/scanner -run TestInit_success`
+- F-006-S032: `go test ./internal/agent -run TestRun_requiredTerminalToolGetsOneCircleGraceTurn` and `go test ./internal/tools -run 'TestReviewShellExecPolicyRoutesPostValidationNoopToDisposition|TestRecordSessionToolPolicyFailureTracksNoopFailures'`
+- F-006-S033: `go test ./internal/tools -run 'TestEngineerRuntimeFailureBlocks(ShellWrapperBypass|ValidationUnrelatedShell)|TestEngineerPositiveRuntimeFailureBlocksImplementationCommit|TestEngineerRuntimeFailureAllowsStaleValidationArtifactRebuild'`
+- F-006-S034: `go test ./internal/tools -run 'TestRecordSessionToolOutcome(TracksTicketCreationFailures|IgnoresEngineerTicketEvidencePolicyFailure)|TestSuccessfulDispositionBlocksUnresolvedTicketCreationFailure'`
+- F-006-S035: `go test ./internal/tools -run 'TestReviewShellExecPolicyRoutesNoTestGoRepoToChangesRequested|TestReviewTerminalDispositionRequiredBlocksFurtherShellExec|TestPlanningRoleCanHandOffUnownedTicketCreationFailure'`
+- F-006-S036: `go test ./internal/tools -run 'TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation|TestEngineerFailingTestBlocksCommitTicketEvidenceAndDisposition|TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane'`
+- F-006-S037: `go test ./internal/tools -run TestCTOFileWritePolicyAllowsTechnicalPlanningAndBlocksImplementation`
+- F-006-S038: `go test ./internal/tools -run 'TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation|TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane'`
+- F-006-S039: `go test ./internal/tools -run 'TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation|TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane'`
+- F-006-S040: `go test ./internal/agent -run TestRun_reviewEvidenceReminder`
+- F-006-S041: `go test ./internal/tools -run TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation`
+- F-006-S043: `go test ./internal/serve -run TestCleanStaleSQLitePreservesRecoverableSidecars`

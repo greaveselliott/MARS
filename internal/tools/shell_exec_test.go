@@ -2,8 +2,10 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/release-versioning.md
 - docs/design-docs/tools-glossary.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-009-release-update-lifecycle.md
 */
 package tools
 
@@ -11,6 +13,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -35,6 +38,533 @@ func TestShellExec_argv(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, res.ExitCode)
 	require.Contains(t, strings.TrimSpace(res.Output), "hello")
+}
+
+func TestShellExecArgvAllowsLiteralNewlineArgument(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	res, err := handleShellExec(context.Background(), root, []byte(`{"argv":["printf","%s","hello\nworld"],"timeout_seconds":5}`))
+	require.NoError(t, err)
+	require.Equal(t, 0, res.ExitCode)
+	require.Equal(t, "hello\nworld", res.Output)
+}
+
+func TestShellExecPolicyBlocksMarsHarnessBinaryArgv(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	err = preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"argv":["mars-harness","release","notes","--repo",".","--bump","auto","--dry-run"]}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "mars_harness_cli")
+	require.Contains(t, err.Error(), `["release","notes","--repo",".","--bump","auto","--dry-run"]`)
+}
+
+func TestShellExecPolicyBlocksMarsHarnessBinaryShellCommand(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	err = preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"shell_command":"MARS_HARNESS_CLI_BIN=/tmp/current mars-harness release backfill-notes --repo . --check"}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "mars_harness_cli")
+	require.Contains(t, err.Error(), `["release","backfill-notes","--repo",".","--check"]`)
+}
+
+func TestRecordSessionToolOutcomeTracksValidationCommands(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["go","test","./..."],"timeout_seconds":5}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 1}, nil)
+	require.Equal(t, 1, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 1, session.ToolCounts[testCommandFailureKey])
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 0}, nil)
+	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[testCommandSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeReviewerGoBuildProcedureFailureDoesNotPoisonReview(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cmd", "temperature-json-cli"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "cmd", "temperature-json-cli", "main.go"), []byte("package main\nfunc main() {}\n"), 0o644))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	badRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/temperature-json-cli-validation","cmd/temperature-json-cli"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", badRaw, ToolResult{
+		ExitCode: 1,
+		Stderr:   "package cmd/temperature-json-cli is not in std (/usr/local/go/src/cmd/temperature-json-cli)\n",
+	}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandAttemptKey])
+	require.Equal(t, 1, session.ToolCounts[validationProcedureFailureKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[buildCommandFailureKey])
+
+	ctx := WithSession(context.Background(), *session)
+	err = preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["go","build","-o","/tmp/temperature-json-cli-validation","./cmd/temperature-json-cli"]}`))
+	require.NoError(t, err)
+}
+
+func TestRecordSessionToolOutcomeEngineerGoBuildProcedureFailureDoesNotPoisonRepairLane(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cmd", "temperature-json-cli"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "cmd", "temperature-json-cli", "main.go"), []byte("package main\nfunc main() {}\n"), 0o644))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	badRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/temperature-json-cli-validation","cmd/temperature-json-cli"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", badRaw, ToolResult{
+		ExitCode: 1,
+		Stderr:   "package cmd/temperature-json-cli is not in std (/usr/local/go/src/cmd/temperature-json-cli)\n",
+	}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandAttemptKey])
+	require.Equal(t, 1, session.ToolCounts[validationProcedureFailureKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[testBuildValidationOutstandingKey])
+	require.Equal(t, 0, session.ToolCounts[buildCommandFailureKey])
+
+	ctx := WithSession(context.Background(), *session)
+	err = preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["go","build","-o","/tmp/temperature-json-cli-validation","./cmd/temperature-json-cli"]}`))
+	require.NoError(t, err)
+}
+
+func TestRecordSessionToolOutcomeReviewerRootBuildProcedureFailureDoesNotPoisonReview(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cmd", "temperature-json-cli"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "cmd", "temperature-json-cli", "main.go"), []byte("package main\nfunc main() {}\n"), 0o644))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	badRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/temperature-json-cli-validation","."]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", badRaw, ToolResult{
+		ExitCode: 1,
+		Stderr:   fmt.Sprintf("no Go files in %s\n", dir),
+	}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationProcedureFailureKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[buildCommandFailureKey])
+
+	ctx := WithSession(context.Background(), *session)
+	err = preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["go","build","-o","/tmp/temperature-json-cli-validation","./cmd/temperature-json-cli"]}`))
+	require.NoError(t, err)
+}
+
+func TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["go","test","./cmd/note-stats/..."],"timeout_seconds":5}`)
+	args := shellExecArgs{Argv: []string{"go", "test", "./cmd/note-stats/..."}, TimeoutSeconds: 5}
+	focusedRaw := json.RawMessage(`{"shell_command":"cd cmd/note-stats && go test -v .","timeout_seconds":5}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{
+		ExitCode: 1,
+		Output:   `--- FAIL: TestCountWords (0.00s) main_test.go:62: countWords("Test@#$%Special Characters!") = 2, expected 3`,
+	}, nil)
+	require.Equal(t, 1, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 1, session.ToolCounts[testCommandFailureKey])
+	require.Equal(t, 1, session.ToolCounts[testBuildValidationOutstandingKey])
+	require.Equal(t, 1, session.ToolCounts[testBuildValidationFailureFingerprintKey(args)])
+	require.Equal(t, 0, session.ToolCounts[testBuildValidationLastFailureEditKey])
+	require.Contains(t, session.ToolState[testBuildValidationCommandKey], `"go","test","./cmd/note-stats/..."`)
+	require.Contains(t, session.ToolState[testBuildValidationOutputKey], "countWords")
+	require.Contains(t, testBuildValidationCorrectionGuidance(*session), "expected 3")
+	require.Contains(t, testBuildValidationCorrectionGuidance(*session), "edit the implementation")
+
+	recordSessionToolOutcome(session, root, "file_write", json.RawMessage(`{"path":"cmd/note-stats/main.go","content":"package main\n"}`), ToolResult{}, nil)
+	require.Equal(t, 1, session.ToolCounts[testBuildValidationEditAfterFailureKey])
+
+	recordSessionToolOutcome(session, root, "shell_exec", focusedRaw, ToolResult{ExitCode: 0}, nil)
+	require.Equal(t, 0, session.ToolCounts[testBuildValidationOutstandingKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[testCommandFailureKey])
+	require.Equal(t, 1, session.ToolCounts[testCommandSuccessKey])
+	require.Empty(t, session.ToolState[testBuildValidationCommandKey])
+}
+
+func TestRecordSessionToolOutcomeTracksRuntimeValidationCommands(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["go","run","cmd/note-stats/main.go","--text","hello world"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 0}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
+	require.Equal(t, 0, session.ToolCounts[testCommandSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeTracksExpectedRuntimeFailure(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["go","run",".","--missing"],"expected_exit_code":1}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 1}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandAttemptKey])
+	require.Equal(t, 1, session.ToolCounts[expectedRuntimeFailureSuccessKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeCorrectsUnexpectedRuntimeFailure(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/note-stats-validation","."]}`)
+	missingTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation"]}`)
+	expectedMissingTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation"],"expected_exit_code":1}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", missingTextRaw, ToolResult{ExitCode: 1}, nil)
+	require.Equal(t, 1, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 1, session.ToolCounts[unexpectedRuntimeValidationFailureKey(shellExecArgs{Argv: []string{"/tmp/note-stats-validation"}}, 1)])
+	require.Equal(t, 1, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+
+	recordSessionToolOutcome(session, root, "shell_exec", expectedMissingTextRaw, ToolResult{ExitCode: 1}, nil)
+
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+	require.Equal(t, 1, session.ToolCounts[expectedRuntimeFailureSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[expectedRuntimeValidationCorrectionKey(shellExecArgs{Argv: []string{"/tmp/note-stats-validation"}}, 1)])
+}
+
+func TestRecordSessionToolOutcomeTreatsMissingArgumentCLIProbeAsExpectedFailure(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/temperature-json-cli-validation","."]}`)
+	missingInputRaw := json.RawMessage(`{"argv":["/tmp/temperature-json-cli-validation"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", missingInputRaw, ToolResult{ExitCode: 1, Stderr: "Error: --celsius flag is required"}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandAttemptKey]-session.ToolCounts[buildCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[expectedRuntimeFailureSuccessKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+	require.Empty(t, session.ToolState[unexpectedRuntimeValidationMissingArgKey])
+	require.Empty(t, session.ToolState[unexpectedRuntimeValidationCorrectionKey])
+}
+
+func TestRecordSessionToolOutcomeTreatsInvalidInputCLIProbeAsExpectedFailure(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	validInputRaw := json.RawMessage(`{"argv":["go","run","cmd/temperature-json-cli/main.go","25"]}`)
+	invalidInputRaw := json.RawMessage(`{"argv":["go","run","cmd/temperature-json-cli/main.go","invalid"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", validInputRaw, ToolResult{ExitCode: 0, Output: `{"celsius":25,"fahrenheit":77}`}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", invalidInputRaw, ToolResult{ExitCode: 1, Stderr: "Error: Invalid temperature value 'invalid'. Must be a number."}, nil)
+
+	require.Equal(t, 2, session.ToolCounts[validationCommandAttemptKey])
+	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[expectedRuntimeFailureSuccessKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+}
+
+func TestRecordSessionToolOutcomeTreatsSurplusArgumentCLIProbeAsExpectedFailure(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/temperature-json-cli-validation","."]}`)
+	validInputRaw := json.RawMessage(`{"argv":["/tmp/temperature-json-cli-validation","25"]}`)
+	surplusInputRaw := json.RawMessage(`{"argv":["/tmp/temperature-json-cli-validation","25","30"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", validInputRaw, ToolResult{ExitCode: 0, Output: `{"celsius":25,"fahrenheit":77}`}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", surplusInputRaw, ToolResult{ExitCode: 1, Stderr: "error: too many arguments provided"}, nil)
+
+	require.Equal(t, 2, session.ToolCounts[validationCommandAttemptKey]-session.ToolCounts[buildCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey]-session.ToolCounts[buildCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[expectedRuntimeFailureSuccessKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+}
+
+func TestRecordSessionToolOutcomeStillTreatsPositiveInputFailureAsUnexpected(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	validInputRaw := json.RawMessage(`{"argv":["go","run","cmd/temperature-json-cli/main.go","25"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", validInputRaw, ToolResult{ExitCode: 1, Stderr: "Error: Invalid temperature value '25'. Must be a number."}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 1, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+	require.Equal(t, 0, session.ToolCounts[expectedRuntimeFailureSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeRepairsUnexpectedRuntimeFailureWithExactSuccess(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/note-stats-validation","."]}`)
+	emptyTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation","--text",""]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", emptyTextRaw, ToolResult{ExitCode: 1}, nil)
+	require.Equal(t, 1, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 1, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+
+	recordSessionToolOutcome(session, root, "shell_exec", emptyTextRaw, ToolResult{ExitCode: 0}, nil)
+
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+	require.Equal(t, 2, session.ToolCounts[validationCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[runtimeValidationRepairKey(shellExecArgs{Argv: []string{"/tmp/note-stats-validation", "--text", ""}})])
+}
+
+func TestRecordSessionToolOutcomeExactSuccessClearsRepeatedRuntimeFailures(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/note-stats-validation","."]}`)
+	emptyTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation","--text",""]}`)
+	args := shellExecArgs{Argv: []string{"/tmp/note-stats-validation", "--text", ""}}
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", emptyTextRaw, ToolResult{ExitCode: 1}, nil)
+	recordSessionToolOutcome(session, root, "file_write", json.RawMessage(`{"path":"main.go","content":"package main\n"}`), ToolResult{}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", emptyTextRaw, ToolResult{ExitCode: 1}, nil)
+	require.Equal(t, 2, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+
+	recordSessionToolOutcome(session, root, "shell_exec", emptyTextRaw, ToolResult{ExitCode: 0}, nil)
+
+	require.Equal(t, 0, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+	require.Equal(t, 2, session.ToolCounts[runtimeValidationRepairKey(args)])
+}
+
+func TestRecordSessionToolOutcomeTreatsRuntimeErrorStderrAsFailure(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/note-stats-validation","."]}`)
+	emptyTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation","--text",""]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", emptyTextRaw, ToolResult{ExitCode: 0, Stderr: "error: --text flag is required\nUsage of /tmp/note-stats-validation:"}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandSuccessKey]-session.ToolCounts[buildCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+
+	recordSessionToolOutcome(session, root, "shell_exec", emptyTextRaw, ToolResult{ExitCode: 0, Output: `{"word_count":0,"character_count":0,"line_count":0}`}, nil)
+
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+}
+
+func TestRecordSessionToolOutcomeEngineerExpectedExitDoesNotRepairUnexpectedRuntimeFailure(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/note-stats-validation","."]}`)
+	emptyTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation","--text",""]}`)
+	expectedEmptyTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation","--text",""],"expected_exit_code":1}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", emptyTextRaw, ToolResult{ExitCode: 1}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", expectedEmptyTextRaw, ToolResult{ExitCode: 1}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 1, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+	require.Equal(t, 1, session.ToolCounts[expectedRuntimeFailureSuccessKey])
+	require.Equal(t, 0, session.ToolCounts[expectedRuntimeValidationCorrectionKey(shellExecArgs{Argv: []string{"/tmp/note-stats-validation", "--text", ""}}, 1)])
+}
+
+func TestRecordSessionToolOutcomeEngineerCorrectsMissingArgumentRuntimeFailure(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/note-stats-validation","."]}`)
+	missingTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation"]}`)
+	expectedMissingTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation"],"expected_exit_code":1}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", missingTextRaw, ToolResult{ExitCode: 1}, nil)
+	require.Equal(t, "true", session.ToolState[unexpectedRuntimeValidationMissingArgKey])
+	require.Contains(t, session.ToolState[unexpectedRuntimeValidationCorrectionKey], `"expected_exit_code":1`)
+	require.Contains(t, session.ToolState[unexpectedRuntimeValidationCorrectionKey], `"/tmp/note-stats-validation"`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", expectedMissingTextRaw, ToolResult{ExitCode: 1}, nil)
+
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+	require.Equal(t, 1, session.ToolCounts[expectedRuntimeValidationCorrectionKey(shellExecArgs{Argv: []string{"/tmp/note-stats-validation"}}, 1)])
+	require.Empty(t, session.ToolState[unexpectedRuntimeValidationMissingArgKey])
+	require.Empty(t, session.ToolState[unexpectedRuntimeValidationCorrectionKey])
+}
+
+func TestRecordSessionToolOutcomeTracksFailedMissingArgumentCorrectionAttempt(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/note-stats-validation","."]}`)
+	missingTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation"]}`)
+	expectedMissingTextRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation"],"expected_exit_code":1}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", missingTextRaw, ToolResult{ExitCode: 2, Stderr: "panic: runtime error: index out of range"}, nil)
+	require.Equal(t, "true", session.ToolState[unexpectedRuntimeValidationMissingArgKey])
+	require.Contains(t, session.ToolState[unexpectedRuntimeValidationCorrectionKey], `"expected_exit_code":1`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", expectedMissingTextRaw, ToolResult{ExitCode: 2, Stderr: "panic: runtime error: index out of range"}, nil)
+
+	require.Equal(t, 2, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 2, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+	require.Equal(t, session.ToolState[unexpectedRuntimeValidationCorrectionKey], session.ToolState[unexpectedRuntimeValidationAttemptedKey])
+	require.True(t, missingArgumentCorrectionAttempted(*session))
+}
+
+func TestRecordSessionToolOutcomeTracksEditWatermarkAfterUnexpectedRuntimeFailure(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	emptyTextRaw := json.RawMessage(`{"argv":["go","run","./cmd/note-stats","--text",""]}`)
+	args := shellExecArgs{Argv: []string{"go", "run", "./cmd/note-stats", "--text", ""}}
+
+	recordSessionToolOutcome(session, root, "shell_exec", emptyTextRaw, ToolResult{ExitCode: 1}, nil)
+	require.Equal(t, 0, session.ToolCounts[runtimeValidationFailureEditWatermarkKey(args)])
+
+	recordSessionToolOutcome(session, root, "file_write", json.RawMessage(`{"path":"cmd/note-stats/main.go","content":"package main\n"}`), ToolResult{}, nil)
+	require.Equal(t, 1, session.ToolCounts[runtimeValidationEditAfterFailureKey])
+
+	recordSessionToolOutcome(session, root, "shell_exec", emptyTextRaw, ToolResult{ExitCode: 1}, nil)
+	require.Equal(t, 1, session.ToolCounts[runtimeValidationFailureEditWatermarkKey(args)])
+}
+
+func TestRecordSessionToolOutcomeTracksNoopFailures(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+
+	recordSessionToolOutcome(session, root, "shell_exec", json.RawMessage(`{"argv":[]}`), ToolResult{}, errors.New("noop"))
+
+	require.Equal(t, 1, session.ToolCounts[shellNoopFailureKey])
+}
+
+func TestRecordSessionToolPolicyFailureTracksNoopFailuresWithoutForcingTerminal(t *testing.T) {
+	t.Parallel()
+	session := &Session{Role: "qa", ToolCounts: map[string]int{validationCommandSuccessKey: 1}}
+
+	recordSessionToolPolicyFailure(session, "shell_exec", json.RawMessage(`{"argv":[]}`), errors.New("policy"))
+
+	require.Equal(t, 1, session.ToolCounts[shellNoopFailureKey])
+	require.Equal(t, 0, session.ToolCounts[reviewTerminalDispositionRequiredKey])
+}
+
+func TestRecordSessionToolOutcomeTracksTicketCreationFailures(t *testing.T) {
+	t.Parallel()
+	session := &Session{Role: "cto-weekly", ToolCounts: map[string]int{}}
+
+	recordSessionToolPolicyFailure(session, "ticket_create", json.RawMessage(`{"bdd_scenarios":"[\"F-001-S002\"]"}`), errors.New("parse"))
+	require.Equal(t, 1, session.ToolCounts[ticketCreationOutstandingFailureKey])
+
+	recordSessionToolPolicyFailure(session, "file_write", json.RawMessage(`{"path":"docs/tickets/backlog/T-001-demo.md","content":"# demo"}`), errors.New("policy"))
+	require.Equal(t, 2, session.ToolCounts[ticketCreationOutstandingFailureKey])
+
+	recordSessionToolOutcome(session, Root{}, "ticket_create", json.RawMessage(`{"bdd_scenarios":["F-001-S002"]}`), ToolResult{}, nil)
+	require.Equal(t, 0, session.ToolCounts[ticketCreationOutstandingFailureKey])
+}
+
+func TestRecordSessionToolOutcomeIgnoresEngineerTicketEvidencePolicyFailure(t *testing.T) {
+	t.Parallel()
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+
+	recordSessionToolPolicyFailure(session, "file_write", json.RawMessage(`{"path":"docs/tickets/in-progress/T-001-demo.md","content":"# demo"}`), errors.New("policy"))
+
+	require.Equal(t, 0, session.ToolCounts[ticketCreationOutstandingFailureKey])
+}
+
+func TestRecordSessionToolOutcomeTracksValidationArtifactBuildAndRun(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/note-stats-validation","./cmd/note-stats"]}`)
+	runRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation","--text","hello world"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[buildCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[validationArtifactSessionKey("/tmp/note-stats-validation")])
+	require.Equal(t, 0, session.ToolCounts[validationArtifactBuildEditWatermarkKey("/tmp/note-stats-validation")])
+
+	recordSessionToolOutcome(session, root, "shell_exec", runRaw, ToolResult{ExitCode: 0}, nil)
+	require.Equal(t, 2, session.ToolCounts[validationCommandSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeRefreshesValidationArtifactAfterRuntimeEdit(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	buildRaw := json.RawMessage(`{"argv":["go","build","-o","/tmp/note-stats-validation","."]}`)
+	runRaw := json.RawMessage(`{"argv":["/tmp/note-stats-validation","--text",""]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", runRaw, ToolResult{ExitCode: 1}, nil)
+	recordSessionToolOutcome(session, root, "file_write", json.RawMessage(`{"path":"main.go","content":"package main\n"}`), ToolResult{}, nil)
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{ExitCode: 0}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[runtimeValidationEditAfterFailureKey])
+	require.Equal(t, 1, session.ToolCounts[validationArtifactBuildEditWatermarkKey("/tmp/note-stats-validation")])
 }
 
 func TestShellExec_normalizesModelMalformedArgv(t *testing.T) {
@@ -69,6 +599,24 @@ func TestShellExec_normalizesModelMalformedArgv(t *testing.T) {
 			require.Equal(t, "hello", strings.TrimSpace(res.Output))
 		})
 	}
+}
+
+func TestShellExecNormalizesSimpleCdValidationArgv(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	appDir := filepath.Join(dir, "cmd", "temperature-json-cli")
+	require.NoError(t, os.MkdirAll(appDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "go.mod"), []byte("module temperature-json-cli\n\ngo 1.21\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "main.go"), []byte("package main\nfunc celsiusToFahrenheit(c int) int { return c*9/5 + 32 }\nfunc main() {}\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "main_test.go"), []byte("package main\nimport \"testing\"\nfunc TestConvert(t *testing.T) { if got := celsiusToFahrenheit(100); got != 212 { t.Fatalf(\"got %d\", got) } }\n"), 0o644))
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	res, err := handleShellExec(context.Background(), root, []byte(`{"argv":["cd","cmd/temperature-json-cli","&&","go","test","./..."],"timeout_seconds":30}`))
+
+	require.NoError(t, err)
+	require.Equal(t, 0, res.ExitCode)
+	require.Contains(t, res.Output, "ok")
 }
 
 func TestShellExec_shellCommand(t *testing.T) {
@@ -528,6 +1076,61 @@ func TestShellExecBlocksGitRemoteMutation(t *testing.T) {
 	}
 }
 
+func TestShellExecPolicyBlocksReleaseTagBeforeReleaseNotesCommit(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.1.0\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte("# Changelog\n"), 0o644))
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "VERSION", "CHANGELOG.md"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "feat: seed product"))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.2.0\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte("# Changelog\n\n## [0.2.0]\n"), 0o644))
+
+	err = preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"argv":["git","tag","-a","v0.2.0","-m","Release v0.2.0","HEAD"]}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "release tag v0.2.0 must be created after VERSION and CHANGELOG.md are committed")
+	require.Contains(t, err.Error(), "release: notes 0.2.0")
+}
+
+func TestShellExecPolicyBlocksReleaseTagTargetThatIsNotReleaseNotesHead(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.1.0\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte("# Changelog\n"), 0o644))
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "VERSION", "CHANGELOG.md"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "feat: seed product"))
+	previous := strings.TrimSpace(gitOutput(context.Background(), root, "rev-parse", "HEAD"))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.2.0\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte("# Changelog\n\n## [0.2.0]\n"), 0o644))
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "VERSION", "CHANGELOG.md"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "release: notes 0.2.0"))
+
+	err = preToolPolicy(context.Background(), root, "shell_exec", []byte(fmt.Sprintf(`{"argv":["git","tag","-a","v0.2.0","-m","Release v0.2.0","%s"]}`, previous)))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not current release-note HEAD")
+}
+
+func TestShellExecPolicyAllowsReleaseTagAtReleaseNotesHead(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.2.0\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte("# Changelog\n\n## [0.2.0]\n"), 0o644))
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "VERSION", "CHANGELOG.md"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "release: notes 0.2.0"))
+
+	err = preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"argv":["git","tag","-a","v0.2.0","-m","Release v0.2.0"]}`))
+	require.NoError(t, err)
+}
+
 func TestShellPolicyBlocksDestructiveVariants(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -779,6 +1382,7 @@ func TestShellExecBlocksGoBuildOutputInsideRepoBeforeArtifact(t *testing.T) {
 	require.Contains(t, err.Error(), "go build output")
 	require.Contains(t, err.Error(), "inside the target repo")
 	require.Contains(t, err.Error(), "/tmp/task-notes-api-validation")
+	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/task-notes-api-validation","main.go"]`)
 	require.NoFileExists(t, filepath.Join(dir, "task-notes-api"))
 }
 
@@ -801,6 +1405,7 @@ func TestShellExecBlocksDefaultGoBuildInsideRepoBeforeArtifact(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "go build without -o")
 	require.Contains(t, err.Error(), "/tmp/task-notes-api-validation")
+	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/task-notes-api-validation","./..."]`)
 	require.NoFileExists(t, filepath.Join(dir, "task-notes-api"))
 }
 
@@ -823,14 +1428,63 @@ func TestShellExecBlocksDefaultGoBuildInShellCommandBeforeArtifact(t *testing.T)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "go build without -o")
 	require.Contains(t, err.Error(), "/tmp/task-notes-api-validation")
+	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/task-notes-api-validation","./..."]`)
 	require.NoFileExists(t, filepath.Join(dir, "task-notes-api"))
+}
+
+func TestShellExecBlocksDefaultGoBuildForCmdPackageWithExactCorrection(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module note-stats\n\ngo 1.24\n"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cmd", "note-stats"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "cmd", "note-stats", "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "qa",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":["go","build","./cmd/note-stats"]}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "go build without -o")
+	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/note-stats-validation","./cmd/note-stats"]`)
+	require.NoFileExists(t, filepath.Join(dir, "note-stats"))
+}
+
+func TestShellExecBlocksGoBuildOutputInShellCommandSegmentBeforeArtifact(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module note-stats\n\ngo 1.24\n"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cmd", "note-stats"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "cmd", "note-stats", "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"shell_command":"mkdir -p bin && go build -o bin/note-stats cmd/note-stats/main.go"}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "go build output")
+	require.Contains(t, err.Error(), "inside the target repo")
+	require.Contains(t, err.Error(), "/tmp/note-stats-validation")
+	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/note-stats-validation","cmd/note-stats/main.go"]`)
+	require.NoFileExists(t, filepath.Join(dir, "bin", "note-stats"))
 }
 
 func TestShellExecAllowsGoBuildOutputOutsideRepo(t *testing.T) {
 	dir, root := setupDirtyGitRepo(t, 0)
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
-	output := filepath.Join(t.TempDir(), "task-notes-api")
+	output := filepath.Join(t.TempDir(), "task-notes-api-validation")
 
 	reg, err := DefaultRegistry()
 	require.NoError(t, err)
@@ -846,6 +1500,30 @@ func TestShellExecAllowsGoBuildOutputOutsideRepo(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, res.ExitCode)
 	require.FileExists(t, output)
+}
+
+func TestShellExecBlocksGoBuildOutputOutsideRepoWithoutValidationSuffix(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/task-notes-api\n\ngo 1.24\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
+	output := filepath.Join(t.TempDir(), "task-notes-api")
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", fmt.Sprintf(`{"argv":["go","build","-o",%q,"main.go"]}`, output))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not a tracked validation artifact")
+	require.Contains(t, err.Error(), "task-notes-api-validation")
+	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/task-notes-api-validation","main.go"]`)
+	require.NoFileExists(t, output)
 }
 
 func TestShellExecNoopArgsNotMaskedByDirtyArtifact(t *testing.T) {
@@ -927,9 +1605,30 @@ func TestFileWriteBlocksNewRootValidationScript(t *testing.T) {
 
 	_, err = ex.Execute(context.Background(), root, []string{"file_write"}, "file_write", `{"path":"validate.sh","content":"#!/bin/sh\ngo test ./...\n"}`)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "repo-root validation script")
+	require.Contains(t, err.Error(), "repo-root scratch validation file")
 	require.Contains(t, err.Error(), "direct shell_exec build/run/curl evidence")
 	require.NoFileExists(t, filepath.Join(dir, "validate.sh"))
+}
+
+func TestFileWriteBlocksNewRootScratchProbe(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	raw := `{"path":"debug.go","content":"/*\nMarsDocSync:\ndocs:\n- docs/features/F-001-product-walking-skeleton.md\n*/\npackage main\nfunc main() {}\n"}`
+	_, err = ex.Execute(context.Background(), root, []string{"file_write"}, "file_write", raw)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "repo-root scratch validation file")
+	require.Contains(t, err.Error(), "scratch probes become committed product noise")
+	require.NoFileExists(t, filepath.Join(dir, "debug.go"))
 }
 
 func TestFileWriteAllowsExistingRootValidationScriptUpdate(t *testing.T) {
@@ -954,6 +1653,46 @@ func TestFileWriteAllowsExistingRootValidationScriptUpdate(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join(dir, "validate.sh"))
 	require.NoError(t, err)
 	require.Contains(t, string(content), "go test")
+}
+
+func TestSecurityFileWriteBlocksProductRemediation(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "security",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	raw := `{"path":"cmd/app/main.go","content":"package main\nfunc main() {}\n"}`
+	_, err = ex.Execute(context.Background(), root, []string{"file_write"}, "file_write", raw)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "security review cannot write product or ticket files")
+	require.Contains(t, err.Error(), "record changes_requested for Engineer")
+	require.NoFileExists(t, filepath.Join(dir, "cmd", "app", "main.go"))
+}
+
+func TestSecurityFileWriteAllowsSecurityReport(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "security",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	res, err := ex.Execute(context.Background(), root, []string{"file_write"}, "file_write", `{"path":"docs/reports/security/security-audit-2026-05-20.md","content":"# Security Audit\n\nPASS\n"}`)
+	require.NoError(t, err)
+	require.Contains(t, res.Output, "wrote")
+	require.FileExists(t, filepath.Join(dir, "docs", "reports", "security", "security-audit-2026-05-20.md"))
 }
 
 func TestValidateRepoDiffIgnoresGeneratedUntrackedFiles(t *testing.T) {

@@ -44,22 +44,28 @@ const shellExecSchema = `{
     "background": {
       "type": "boolean",
       "description": "Start as a background process. Returns after a short startup window with the PID and initial output. Use for dev servers and watchers; startup exits are reported as errors."
+    },
+    "expected_exit_code": {
+      "type": "integer",
+      "description": "Expected process exit code for validation probes. Omit for normal success. Use a non-zero value only when intentionally testing an error path."
     }
   }
 }`
 
 type shellExecArgs struct {
-	Argv           []string `json:"argv"`
-	ShellCommand   string   `json:"shell_command"`
-	TimeoutSeconds int      `json:"timeout_seconds"`
-	Background     bool     `json:"background"`
+	Argv             []string `json:"argv"`
+	ShellCommand     string   `json:"shell_command"`
+	TimeoutSeconds   int      `json:"timeout_seconds"`
+	Background       bool     `json:"background"`
+	ExpectedExitCode *int     `json:"expected_exit_code"`
 }
 
 type rawShellExecArgs struct {
-	Argv           json.RawMessage `json:"argv"`
-	ShellCommand   string          `json:"shell_command"`
-	TimeoutSeconds int             `json:"timeout_seconds"`
-	Background     bool            `json:"background"`
+	Argv             json.RawMessage `json:"argv"`
+	ShellCommand     string          `json:"shell_command"`
+	TimeoutSeconds   int             `json:"timeout_seconds"`
+	Background       bool            `json:"background"`
+	ExpectedExitCode *int            `json:"expected_exit_code"`
 }
 
 // bgProcs tracks background processes started by shell_exec so they can
@@ -236,9 +242,10 @@ func decodeShellExecArgs(raw json.RawMessage) (shellExecArgs, error) {
 		return shellExecArgs{}, err
 	}
 	args := shellExecArgs{
-		ShellCommand:   rawArgs.ShellCommand,
-		TimeoutSeconds: rawArgs.TimeoutSeconds,
-		Background:     rawArgs.Background,
+		ShellCommand:     rawArgs.ShellCommand,
+		TimeoutSeconds:   rawArgs.TimeoutSeconds,
+		Background:       rawArgs.Background,
+		ExpectedExitCode: rawArgs.ExpectedExitCode,
 	}
 	if len(rawArgs.Argv) == 0 || bytes.Equal(bytes.TrimSpace(rawArgs.Argv), []byte("null")) {
 		return args, nil
@@ -249,6 +256,12 @@ func decodeShellExecArgs(raw json.RawMessage) (shellExecArgs, error) {
 	}
 	args.Argv = argv
 	args.Argv = normalizeShellExecArgv(args.Argv)
+	if strings.TrimSpace(args.ShellCommand) == "" {
+		if shellCommand, ok := normalizeShellExecCdValidationArgv(args.Argv); ok {
+			args.ShellCommand = shellCommand
+			args.Argv = nil
+		}
+	}
 	return args, nil
 }
 
@@ -261,6 +274,38 @@ func normalizeShellExecArgv(argv []string) []string {
 		return argv
 	}
 	return strings.Fields(only)
+}
+
+func normalizeShellExecCdValidationArgv(argv []string) (string, bool) {
+	if len(argv) < 5 || strings.ToLower(strings.TrimSpace(argv[0])) != "cd" || strings.TrimSpace(argv[2]) != "&&" {
+		return "", false
+	}
+	dir := strings.TrimSpace(argv[1])
+	if !shellExecSimpleToken(dir) {
+		return "", false
+	}
+	rhs := make([]string, 0, len(argv)-3)
+	for _, arg := range argv[3:] {
+		arg = strings.TrimSpace(arg)
+		if !shellExecSimpleToken(arg) {
+			return "", false
+		}
+		rhs = append(rhs, arg)
+	}
+	if !shellFieldsRunTestCommand(rhs) && !shellFieldsRunBuildCommand(rhs) {
+		return "", false
+	}
+	return "cd " + dir + " && " + strings.Join(rhs, " "), true
+}
+
+func shellExecSimpleToken(token string) bool {
+	if token == "" || strings.ContainsAny(token, " \t\r\n") {
+		return false
+	}
+	if shellArgvControlToken(token) || shellArgvLooksLikeRedirection(token) || shellArgvContainsControlSyntax(token) || strings.Contains(token, "$(") || strings.Contains(token, "`") {
+		return false
+	}
+	return true
 }
 
 func shellExecNoop(args shellExecArgs) bool {
@@ -298,7 +343,7 @@ func shellExecNoopResult() ToolResult {
 		}
 		b.WriteString(". Probe the intended route, then stop the tracked PID with shell_exec argv [\"kill\",\"<pid>\"] before committing.")
 	}
-	b.WriteString(" If validation is complete, update ticket evidence, move the ticket to done when appropriate, commit, push, and call job_disposition_record.")
+	b.WriteString(" Do not retry empty argv or ':' calls. If an implementation ticket is claimed but validation has not started, read the in-progress ticket and feature contract, then use file_write to implement or record job_disposition_record with status blocked. If validation is complete or the worktree is dirty, use git_status, update ticket evidence, git_commit the work, move the ticket to done when appropriate, commit the lifecycle move, push, and call job_disposition_record.")
 	return ToolResult{Output: b.String()}
 }
 
@@ -342,7 +387,7 @@ func validateShellExecArgv(argv []string) error {
 		if token == "" {
 			continue
 		}
-		if shellArgvControlToken(token) || shellArgvLooksLikeRedirection(token) || shellArgvContainsControlSyntax(token) || strings.Contains(token, "$(") || strings.Contains(token, "`") || strings.Contains(token, "\n") {
+		if shellArgvControlToken(token) || shellArgvLooksLikeRedirection(token) || shellArgvContainsControlSyntax(token) || strings.Contains(token, "$(") || strings.Contains(token, "`") {
 			return shellArgvSyntaxError(arg)
 		}
 	}

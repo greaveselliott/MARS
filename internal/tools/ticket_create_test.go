@@ -352,6 +352,23 @@ func TestTicketCreate_rejectsEmptyBody(t *testing.T) {
 	assert.Contains(t, err.Error(), "body is required")
 }
 
+func TestTicketCreate_parseHintForQuotedBDDScenarios(t *testing.T) {
+	t.Parallel()
+	_, root := setupTicketDir(t)
+
+	_, err := handleTicketCreate(context.Background(), root, []byte(`{
+		"title":"Implement CLI",
+		"priority":"high",
+		"work_type":"feature",
+		"bdd_scenarios":"[\"F-001-S002\"]",
+		"body":"## Context\nTest.\n\n## Acceptance criteria\n- [ ] Works"
+	}`))
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "bdd_scenarios must be a JSON array")
+	assert.Contains(t, err.Error(), `"bdd_scenarios":["F-001-S002"]`)
+}
+
 func TestTicketCreate_differentTopicAllowed(t *testing.T) {
 	t.Parallel()
 	dir, root := setupTicketDir(t)

@@ -11,19 +11,21 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/llm"
 )
 
 const (
-	headerRole      = "## ROLE"
-	headerGuards    = "## GUARDRAILS"
-	headerLearnings = "## REPO LEARNINGS"
-	headerKnowledge = "## KNOWLEDGE ROUTES"
-	headerSkills    = "## SKILLS"
-	headerTrigger   = "## TRIGGER CONTEXT"
-	headerRepo      = "## REPO SUMMARY"
-	headerTickets   = "## TICKET INDEX"
+	headerRole        = "## ROLE"
+	headerRunMetadata = "## RUN METADATA"
+	headerGuards      = "## GUARDRAILS"
+	headerLearnings   = "## REPO LEARNINGS"
+	headerKnowledge   = "## KNOWLEDGE ROUTES"
+	headerSkills      = "## SKILLS"
+	headerTrigger     = "## TRIGGER CONTEXT"
+	headerRepo        = "## REPO SUMMARY"
+	headerTickets     = "## TICKET INDEX"
 )
 
 // block is an internal mutable slice used for budget trimming (lower truncPri drops first).
@@ -46,6 +48,9 @@ func Assemble(in Input) (system string, stats []SectionStat, err error) {
 	var parts []block
 
 	parts = append(parts, block{name: "role", header: headerRole, body: strings.TrimSpace(role), truncPri: 100})
+	if md := runMetadataBody(in.CurrentTime); md != "" {
+		parts = append(parts, block{name: "run_metadata", header: headerRunMetadata, body: md, truncPri: 100})
+	}
 
 	guardBodies := filterGuardrails(in.Guardrails, scope)
 	if len(guardBodies) > 0 {
@@ -144,6 +149,33 @@ func triggerContextBody(payloadMode, trigger string) string {
 	return fmt.Sprintf("payload_mode: %s\n\n%s", payloadMode, trigger)
 }
 
+func runMetadataBody(now time.Time) string {
+	if now.IsZero() {
+		return ""
+	}
+	zoneName, zoneOffset := now.Zone()
+	if strings.TrimSpace(zoneName) == "" {
+		zoneName = "local"
+	}
+	return fmt.Sprintf("- current_date: %s\n- current_time: %s\n- timezone: %s (%s)\n\nUse `current_date` for dated evidence paths, report dates, release entries, and ticket timestamps. Do not infer a date from examples or model memory; if this metadata is absent, omit the date or record it as unknown instead of inventing one.",
+		now.Format("2006-01-02"),
+		now.Format(time.RFC3339),
+		zoneName,
+		formatUTCOffset(zoneOffset),
+	)
+}
+
+func formatUTCOffset(offsetSeconds int) string {
+	sign := "+"
+	if offsetSeconds < 0 {
+		sign = "-"
+		offsetSeconds = -offsetSeconds
+	}
+	hours := offsetSeconds / 3600
+	minutes := (offsetSeconds % 3600) / 60
+	return fmt.Sprintf("%s%02d:%02d", sign, hours, minutes)
+}
+
 func loadRolePrompt(in Input) (string, error) {
 	path := strings.TrimSpace(in.RolePromptPath)
 	if path != "" {
@@ -191,7 +223,7 @@ func shrinkToBudget(parts *[]block, budget int) {
 		bestPri := int(^uint(0) >> 1)
 		for i := range *parts {
 			p := &(*parts)[i]
-			if p.name == "role" {
+			if p.name == "role" || p.name == "run_metadata" {
 				continue
 			}
 			if strings.TrimSpace(p.body) == "" {

@@ -21,7 +21,11 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/trace"
 )
 
-const prunedPlaceholder = "[pruned — context limit]"
+const (
+	prunedPlaceholder        = "[pruned — context limit]"
+	prunedToolArgumentsJSON  = `{"pruned":"context limit"}`
+	terminalToolGraceTimeout = 90 * time.Second
+)
 
 // pruneContext replaces old tool-result message content with a short placeholder
 // when the estimated token count exceeds the context window. It never touches
@@ -32,6 +36,7 @@ func pruneContext(messages []llm.Message, defs []llm.ToolDefinition, contextSize
 	if est <= contextSize {
 		return
 	}
+	target := contextPruneTarget(contextSize)
 
 	protectedTail := 4
 	if len(messages) < protectedTail+2 {
@@ -39,8 +44,8 @@ func pruneContext(messages []llm.Message, defs []llm.ToolDefinition, contextSize
 	}
 	pruneEnd := len(messages) - protectedTail
 
-	pruned := 0
-	for i := 2; i < pruneEnd && llm.EstimateTokens(messages, defs) > contextSize; i++ {
+	prunedTools := 0
+	for i := 2; i < pruneEnd && llm.EstimateTokens(messages, defs) > target; i++ {
 		if messages[i].Role != "tool" {
 			continue
 		}
@@ -48,17 +53,65 @@ func pruneContext(messages []llm.Message, defs []llm.ToolDefinition, contextSize
 			continue
 		}
 		messages[i].Content = prunedPlaceholder
-		pruned++
+		prunedTools++
 	}
 
-	if pruned > 0 {
+	prunedAssistantCalls := 0
+	for i := 2; i < pruneEnd && llm.EstimateTokens(messages, defs) > target; i++ {
+		if messages[i].Role != "assistant" || len(messages[i].ToolCalls) == 0 {
+			continue
+		}
+		changed := false
+		for j := range messages[i].ToolCalls {
+			if messages[i].ToolCalls[j].Function.Arguments == prunedToolArgumentsJSON {
+				continue
+			}
+			messages[i].ToolCalls[j].Function.Arguments = prunedToolArgumentsJSON
+			changed = true
+		}
+		if messages[i].Content != "" && messages[i].Content != prunedPlaceholder {
+			messages[i].Content = prunedPlaceholder
+			changed = true
+		}
+		if changed {
+			prunedAssistantCalls++
+		}
+	}
+
+	prunedProse := 0
+	for i := 2; i < pruneEnd && llm.EstimateTokens(messages, defs) > target; i++ {
+		if messages[i].Role != "assistant" && messages[i].Role != "user" {
+			continue
+		}
+		if messages[i].Content == "" || messages[i].Content == prunedPlaceholder {
+			continue
+		}
+		messages[i].Content = prunedPlaceholder
+		prunedProse++
+	}
+
+	if prunedTools > 0 || prunedAssistantCalls > 0 || prunedProse > 0 {
 		slog.Info("agent: pruned context to fit window",
-			"pruned_messages", pruned,
+			"pruned_tool_messages", prunedTools,
+			"pruned_assistant_tool_calls", prunedAssistantCalls,
+			"pruned_prose_messages", prunedProse,
 			"before_tokens", est,
 			"after_tokens", llm.EstimateTokens(messages, defs),
 			"context_size", contextSize,
+			"target_tokens", target,
 		)
 	}
+}
+
+func contextPruneTarget(contextSize int) int {
+	if contextSize <= 0 {
+		return 0
+	}
+	target := contextSize * 85 / 100
+	if target < 1 {
+		return contextSize
+	}
+	return target
 }
 
 // Completer is satisfied by *llm.Client for production use.
@@ -197,6 +250,10 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 	toolInvocations := 0
 	identicalStreak := 0
 	terminalToolReminderSent := false
+	terminalToolBudgetReminderSent := false
+	terminalToolCircleReminderSent := false
+	terminalToolEvidenceReminderSent := false
+	terminalToolEvidenceRetrySent := false
 	var lastFingerprint string
 
 	for {
@@ -205,6 +262,20 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			return res, nil
 		}
 		if llmCalls >= maxTurns {
+			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && !terminalToolBudgetReminderSent {
+				if err := traceAppend(p, &messages, defs, llm.Message{
+					Role: "user",
+					Content: fmt.Sprintf(
+						"The job has reached its turn budget. Stop inspection and validation now. Call `%s` in the next response with the terminal status, reason, evidence_links, and any handoff or feedback fields required by the dispatch protocol. If validation failed, record changes_requested with the exact failing command and output. Do not call any other tool.",
+						required,
+					),
+				}); err != nil {
+					return LoopResult{}, err
+				}
+				terminalToolBudgetReminderSent = true
+				maxTurns++
+				continue
+			}
 			res = finish(messages, defs, EndMaxTurns, llmCalls, toolInvocations, start, "")
 			return res, nil
 		}
@@ -230,7 +301,13 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			Messages: messages,
 			Tools:    defs,
 		}
-		resp, err := chatWithRetries(ctx, p.Completer, req, retries)
+		chatCtx := ctx
+		cancelChat := func() {}
+		if terminalToolBudgetReminderSent || terminalToolCircleReminderSent || terminalToolEvidenceReminderSent {
+			chatCtx, cancelChat = context.WithTimeout(ctx, terminalToolGraceTimeout)
+		}
+		resp, err := chatWithRetries(chatCtx, p.Completer, req, retries)
+		cancelChat()
 		if err != nil {
 			res = LoopResult{
 				Messages:        messages,
@@ -273,6 +350,10 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 
 		content := strings.TrimSpace(am.Content)
 		if len(calls) == 0 {
+			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && terminalToolEvidenceReminderSent {
+				res = finish(messages, defs, EndCircleDetected, llmCalls, toolInvocations, start, "terminal evidence reminder received prose-only response")
+				return res, nil
+			}
 			if content == "" {
 				res = finish(messages, defs, EndEmptyResponse, llmCalls, toolInvocations, start, "")
 				return res, nil
@@ -301,6 +382,43 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			return res, nil
 		}
 
+		if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && terminalToolBudgetReminderSent {
+			if len(calls) != 1 || strings.TrimSpace(calls[0].Function.Name) != required {
+				res = finish(messages, defs, EndMaxTurns, llmCalls, toolInvocations, start, "")
+				return res, nil
+			}
+		}
+		if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && terminalToolCircleReminderSent {
+			if len(calls) != 1 || strings.TrimSpace(calls[0].Function.Name) != required {
+				res = finish(messages, defs, EndCircleDetected, llmCalls, toolInvocations, start, "")
+				return res, nil
+			}
+		}
+		if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && terminalToolEvidenceReminderSent {
+			if len(calls) != 1 || strings.TrimSpace(calls[0].Function.Name) != required {
+				if terminalToolEvidenceRetrySent {
+					res = finish(messages, defs, EndCircleDetected, llmCalls, toolInvocations, start, "terminal evidence reminder received repeated non-terminal tool")
+					return res, nil
+				}
+				if err := traceAppend(p, &messages, defs, llm.Message{
+					Role: "user",
+					Content: fmt.Sprintf(
+						"Your last response called %s after review evidence was already sufficient; that tool was not executed. Call `%s` in the next response only. %s Do not call any other tool.",
+						toolCallNamesForPrompt(calls),
+						required,
+						tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session),
+					),
+				}); err != nil {
+					return LoopResult{}, err
+				}
+				terminalToolEvidenceRetrySent = true
+				if llmCalls >= maxTurns {
+					maxTurns++
+				}
+				continue
+			}
+		}
+
 		fp := fingerprintToolCalls(calls)
 		if fp == lastFingerprint {
 			identicalStreak++
@@ -319,6 +437,24 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 		}
 
 		if identicalStreak >= 3 {
+			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && !terminalToolCircleReminderSent {
+				if err := traceAppend(p, &messages, defs, llm.Message{
+					Role: "user",
+					Content: fmt.Sprintf(
+						"You have repeated the same tool call shape and are about to be stopped as a loop. Stop inspection and validation now. Call `%s` in the next response with the terminal status, reason, evidence_links, ticket_id when applicable, and any handoff or feedback fields required by the dispatch protocol. If validation passed, record the successful disposition. If validation failed, record changes_requested with the exact failing command and output. Do not call any other tool.",
+						required,
+					),
+				}); err != nil {
+					return LoopResult{}, err
+				}
+				terminalToolCircleReminderSent = true
+				identicalStreak = 0
+				lastFingerprint = ""
+				if llmCalls >= maxTurns {
+					maxTurns++
+				}
+				continue
+			}
 			res = LoopResult{
 				Messages:         messages,
 				EndReason:        EndCircleDetected,
@@ -351,12 +487,41 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			}); err != nil {
 				return LoopResult{}, err
 			}
+			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && strings.TrimSpace(tc.Function.Name) != required && !terminalToolEvidenceReminderSent && tools.ReviewTerminalEvidenceSatisfied(p.Root, p.Executor.Session) {
+				tools.MarkReviewTerminalDispositionRequired(p.Executor.Session)
+				if err := traceAppend(p, &messages, defs, llm.Message{
+					Role: "user",
+					Content: fmt.Sprintf(
+						"Review evidence is sufficient for a terminal decision. Stop inspection and validation now. Call `%s` in the next response only. %s Do not call any other tool.",
+						required,
+						tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session),
+					),
+				}); err != nil {
+					return LoopResult{}, err
+				}
+				terminalToolEvidenceReminderSent = true
+			}
 			if execErr == nil && p.Executor.StopAfterTool != nil && p.Executor.StopAfterTool() {
 				res = finish(messages, defs, EndCompleted, llmCalls, toolInvocations, start, "")
 				return res, nil
 			}
 		}
 	}
+}
+
+func toolCallNamesForPrompt(calls []llm.ToolCall) string {
+	if len(calls) == 0 {
+		return "no terminal tool"
+	}
+	names := make([]string, 0, len(calls))
+	for _, call := range calls {
+		name := strings.TrimSpace(call.Function.Name)
+		if name == "" {
+			name = "an unnamed tool"
+		}
+		names = append(names, "`"+name+"`")
+	}
+	return strings.Join(names, ", ")
 }
 
 func finish(msgs []llm.Message, defs []llm.ToolDefinition, reason EndReason, llmCalls, tools int, start time.Time, circle string) LoopResult {

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -166,4 +167,45 @@ func TestAssemble_payloadModeInTriggerContext(t *testing.T) {
 	require.Contains(t, out, "## TRIGGER CONTEXT")
 	require.Contains(t, out, "payload_mode: ticket_hygiene")
 	require.Contains(t, out, `"type":"orchestrator.survey"`)
+}
+
+func TestAssemble_runMetadata(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 5, 21, 14, 45, 0, 0, time.FixedZone("BST", 3600))
+	out, stats, err := Assemble(Input{
+		RoleScope:   "dogfood",
+		RolePrompt:  "You are the dogfood role.",
+		CurrentTime: now,
+	})
+	require.NoError(t, err)
+	require.Contains(t, out, "## RUN METADATA")
+	require.Contains(t, out, "current_date: 2026-05-21")
+	require.Contains(t, out, "current_time: 2026-05-21T14:45:00+01:00")
+	require.Contains(t, out, "timezone: BST (+01:00)")
+	require.Contains(t, out, "Do not infer a date from examples or model memory")
+
+	var found bool
+	for _, s := range stats {
+		if s.Name == "run_metadata" {
+			found = true
+			require.Greater(t, s.Tokens, 0)
+		}
+	}
+	require.True(t, found, "expected run_metadata section in stats")
+}
+
+func TestAssemble_budgetPreservesRunMetadata(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 5, 21, 14, 45, 0, 0, time.UTC)
+	out, _, err := Assemble(Input{
+		RoleScope:   "engineer",
+		RolePrompt:  "ROLE_FIXED_MARKER",
+		CurrentTime: now,
+		Trigger:     strings.Repeat("T", 2000),
+		RepoSummary: strings.Repeat("R", 2000),
+		TokenBudget: 120,
+	})
+	require.NoError(t, err)
+	require.Contains(t, out, "ROLE_FIXED_MARKER")
+	require.Contains(t, out, "current_date: 2026-05-21")
 }

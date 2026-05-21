@@ -9,6 +9,7 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -294,6 +295,86 @@ func TestRun_requiredTerminalToolOnlyRepromptsOnce(t *testing.T) {
 	require.Equal(t, 1, reminders, "loop should avoid spending the job budget on repeated terminal-tool reminders")
 }
 
+func TestRun_requiredTerminalToolGetsOneBudgetGraceTurn(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "evidence.txt"), []byte("ok\n"), 0o644))
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	successfulTools := 0
+	ex.StopAfterTool = func() bool {
+		successfulTools++
+		return successfulTools == 2
+	}
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_read", "inspect", `{"path":"evidence.txt"}`),
+		toolResp("file_read", "terminal", `{"path":"evidence.txt"}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read"},
+		SystemPrompt:         "You are a test harness.",
+		UserMessage:          "Finish with the terminal tool.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 1},
+		RequiredTerminalTool: "file_read",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 2, res.LLMCalls)
+	require.Equal(t, 2, res.ToolInvocations)
+
+	var budgetReminderFound bool
+	for _, msg := range res.Messages {
+		if msg.Role == "user" &&
+			strings.Contains(msg.Content, "reached its turn budget") &&
+			strings.Contains(msg.Content, "`file_read`") &&
+			strings.Contains(msg.Content, "Do not call any other tool") {
+			budgetReminderFound = true
+		}
+	}
+	require.True(t, budgetReminderFound, "loop should add one terminal-tool grace prompt at the max-turn boundary")
+}
+
+func TestRun_terminalToolGraceRejectsNonTerminalTool(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "evidence.txt"), []byte("ok\n"), 0o644))
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_read", "inspect", `{"path":"evidence.txt"}`),
+		toolResp("shell_exec", "cleanup", `{"argv":["echo","late cleanup"]}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read", "shell_exec"},
+		SystemPrompt:         "You are a test harness.",
+		UserMessage:          "Finish with the terminal tool.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 1},
+		RequiredTerminalTool: "file_read",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndMaxTurns, res.EndReason)
+	require.Equal(t, 2, res.LLMCalls)
+	require.Equal(t, 1, res.ToolInvocations)
+}
+
 func TestRun_threeToolCallsHappyPath(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -360,6 +441,382 @@ func TestRun_circleDetected(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, EndCircleDetected, res.EndReason)
 	require.NotEmpty(t, res.CircleDiagnostic)
+}
+
+func TestRun_requiredTerminalToolGetsOneCircleGraceTurn(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "evidence.txt"), []byte("ok\n"), 0o644))
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	ex.StopAfterTool = func() bool { return true }
+
+	noOp := toolResp("shell_exec", "noop", `{"argv":[]}`)
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		noOp,
+		noOp,
+		noOp,
+		toolResp("file_read", "terminal", `{"path":"evidence.txt"}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"shell_exec", "file_read"},
+		SystemPrompt:         "You are a test harness.",
+		UserMessage:          "Validate, then finish with the terminal tool.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 10},
+		RequiredTerminalTool: "file_read",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 4, res.LLMCalls)
+	require.Equal(t, 3, res.ToolInvocations, "the third repeated no-op should be replaced by a terminal-tool reminder")
+	require.Equal(t, 4, mock.i)
+
+	var reminderFound bool
+	for _, msg := range res.Messages {
+		if msg.Role == "user" &&
+			strings.Contains(msg.Content, "repeated the same tool call shape") &&
+			strings.Contains(msg.Content, "`file_read`") &&
+			strings.Contains(msg.Content, "Do not call any other tool") {
+			reminderFound = true
+		}
+	}
+	require.True(t, reminderFound, "loop should add a terminal-tool reminder before circle detection stops the job")
+}
+
+func TestRun_reviewEvidenceReminderAllowsOneTerminalCorrection(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeReviewEvidenceFixture(t, dir)
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	dispositions := 0
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{
+		Role:       "qa",
+		ToolCounts: map[string]int{},
+		DispositionRecorder: func(context.Context, json.RawMessage) error {
+			dispositions++
+			return nil
+		},
+	}
+	ex.StopAfterTool = func() bool { return dispositions > 0 }
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_read", "read", `{"path":"README.md"}`),
+		toolResp("shell_exec", "test", `{"argv":["./go","test","./..."]}`),
+		toolResp("docsync_audit", "docsync", `{}`),
+		toolResp("shell_exec", "late", `{"argv":["./go","test","./..."]}`),
+		toolResp("job_disposition_record", "terminal", `{"status":"approved","ticket_id":"T-001","next_need":"security_review","evidence_links":["./go test ./..."]}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read", "shell_exec", "docsync_audit", "job_disposition_record"},
+		SystemPrompt:         "You are a QA reviewer.",
+		UserMessage:          "Review the completed ticket.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 10},
+		RequiredTerminalTool: "job_disposition_record",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 5, res.LLMCalls)
+	require.Equal(t, 4, res.ToolInvocations)
+	require.Equal(t, 1, dispositions)
+
+	var reminderFound, correctionFound bool
+	for _, msg := range res.Messages {
+		if msg.Role == "user" &&
+			strings.Contains(msg.Content, "Review evidence is sufficient") &&
+			strings.Contains(msg.Content, "`job_disposition_record`") &&
+			strings.Contains(msg.Content, "Do not call any other tool") {
+			reminderFound = true
+		}
+		if msg.Role == "user" &&
+			strings.Contains(msg.Content, "that tool was not executed") &&
+			strings.Contains(msg.Content, "`job_disposition_record`") &&
+			strings.Contains(msg.Content, "Do not call any other tool") {
+			correctionFound = true
+		}
+	}
+	require.True(t, reminderFound, "loop should add a terminal-only reminder after clean review evidence")
+	require.True(t, correctionFound, "loop should give one bounded correction after a non-terminal response")
+}
+
+func TestRun_reviewEvidenceReminderRejectsRepeatedNonTerminalTool(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeReviewEvidenceFixture(t, dir)
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{
+		Role:       "qa",
+		ToolCounts: map[string]int{},
+		DispositionRecorder: func(context.Context, json.RawMessage) error {
+			t.Fatal("non-terminal responses should be rejected before disposition")
+			return nil
+		},
+	}
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_read", "read", `{"path":"README.md"}`),
+		toolResp("shell_exec", "test", `{"argv":["./go","test","./..."]}`),
+		toolResp("docsync_audit", "docsync", `{}`),
+		toolResp("shell_exec", "late", `{"argv":["./go","test","./..."]}`),
+		toolResp("shell_exec", "late-again", `{"argv":["./go","test","./..."]}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read", "shell_exec", "docsync_audit", "job_disposition_record"},
+		SystemPrompt:         "You are a QA reviewer.",
+		UserMessage:          "Review the completed ticket.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 10},
+		RequiredTerminalTool: "job_disposition_record",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCircleDetected, res.EndReason)
+	require.Equal(t, 5, res.LLMCalls)
+	require.Equal(t, 3, res.ToolInvocations)
+
+	var reminderFound, correctionFound bool
+	for _, msg := range res.Messages {
+		if msg.Role == "user" &&
+			strings.Contains(msg.Content, "Review evidence is sufficient") &&
+			strings.Contains(msg.Content, "`job_disposition_record`") &&
+			strings.Contains(msg.Content, "Do not call any other tool") {
+			reminderFound = true
+		}
+		if msg.Role == "user" &&
+			strings.Contains(msg.Content, "that tool was not executed") &&
+			strings.Contains(msg.Content, "`job_disposition_record`") {
+			correctionFound = true
+		}
+	}
+	require.True(t, reminderFound, "loop should add a terminal-only reminder after clean review evidence")
+	require.True(t, correctionFound, "loop should add one correction before failing repeated misses")
+}
+
+func TestRun_reviewEvidenceReminderAcceptsTerminalTool(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeReviewEvidenceFixture(t, dir)
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	dispositions := 0
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{
+		Role:       "qa",
+		ToolCounts: map[string]int{},
+		DispositionRecorder: func(context.Context, json.RawMessage) error {
+			dispositions++
+			return nil
+		},
+	}
+	ex.StopAfterTool = func() bool { return dispositions > 0 }
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_read", "read", `{"path":"README.md"}`),
+		toolResp("shell_exec", "test", `{"argv":["./go","test","./..."]}`),
+		toolResp("docsync_audit", "docsync", `{}`),
+		toolResp("job_disposition_record", "terminal", `{"status":"approved","ticket_id":"T-001","next_need":"security_review","evidence_links":["./go test ./..."]}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read", "shell_exec", "docsync_audit", "job_disposition_record"},
+		SystemPrompt:         "You are a QA reviewer.",
+		UserMessage:          "Review the completed ticket.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 10},
+		RequiredTerminalTool: "job_disposition_record",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 4, res.LLMCalls)
+	require.Equal(t, 4, res.ToolInvocations)
+	require.Equal(t, 1, dispositions)
+}
+
+func TestRun_reviewEvidenceAllowsDocSyncBeforeTerminalBoundary(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeReviewEvidenceFixture(t, dir)
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	dispositions := 0
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{
+		Role:       "qa",
+		ToolCounts: map[string]int{},
+		DispositionRecorder: func(context.Context, json.RawMessage) error {
+			dispositions++
+			return nil
+		},
+	}
+	ex.StopAfterTool = func() bool { return dispositions > 0 }
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_read", "read", `{"path":"README.md"}`),
+		toolResp("shell_exec", "test", `{"argv":["./go","test","./..."]}`),
+		toolResp("docsync_audit", "docsync", `{}`),
+		toolResp("job_disposition_record", "terminal", `{"status":"approved","ticket_id":"T-001","next_need":"security_review","evidence_links":["./go test ./...","docsync_audit"]}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read", "shell_exec", "docsync_audit", "job_disposition_record"},
+		SystemPrompt:         "You are a QA reviewer.",
+		UserMessage:          "Review the completed ticket.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 10},
+		RequiredTerminalTool: "job_disposition_record",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 4, res.LLMCalls)
+	require.Equal(t, 4, res.ToolInvocations)
+	require.Equal(t, 1, dispositions)
+
+	for _, msg := range res.Messages {
+		require.False(t,
+			msg.Role == "user" && strings.Contains(msg.Content, "Review evidence is sufficient") && strings.Contains(msg.Content, "that tool was not executed"),
+			"docsync_audit should be allowed before the terminal-only correction path",
+		)
+	}
+}
+
+func TestRun_reviewEvidenceDoesNotForceTerminalBeforeTestCommandWhenTestsExist(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeReviewEvidenceFixture(t, dir)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "features"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "features", "F-001-product-walking-skeleton.md"), []byte("# F-001\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main_test.go"), []byte("/* MarsDocSync: [\"docs/features/F-001-product-walking-skeleton.md\"] */\npackage main\n"), 0o644))
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{
+		Role:       "qa",
+		ToolCounts: map[string]int{},
+	}
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_read", "read", `{"path":"README.md"}`),
+		toolResp("docsync_audit", "docsync", `{}`),
+		toolResp("shell_exec", "build", `{"argv":["./go","build","./..."]}`),
+		toolResp("shell_exec", "test", `{"argv":["./go","test","./..."]}`),
+		toolResp("shell_exec", "late", `{"argv":["./go","test","./..."]}`),
+		toolResp("shell_exec", "late-again", `{"argv":["./go","test","./..."]}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read", "shell_exec", "docsync_audit", "job_disposition_record"},
+		SystemPrompt:         "You are a QA reviewer.",
+		UserMessage:          "Review the completed ticket.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 10},
+		RequiredTerminalTool: "job_disposition_record",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCircleDetected, res.EndReason)
+	require.Equal(t, 6, res.LLMCalls)
+	require.Equal(t, 4, res.ToolInvocations)
+}
+
+func TestRun_reviewNoopAfterBuildAllowsMissingTestCorrection(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeReviewEvidenceFixture(t, dir)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "features"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "features", "F-001-product-walking-skeleton.md"), []byte("# F-001\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "main_test.go"), []byte("/* MarsDocSync: [\"docs/features/F-001-product-walking-skeleton.md\"] */\npackage main\n"), 0o644))
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	dispositions := 0
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{
+		Role:       "qa",
+		ToolCounts: map[string]int{},
+		DispositionRecorder: func(context.Context, json.RawMessage) error {
+			dispositions++
+			return nil
+		},
+	}
+	ex.StopAfterTool = func() bool { return dispositions > 0 }
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_read", "read", `{"path":"README.md"}`),
+		toolResp("docsync_audit", "docsync", `{}`),
+		toolResp("shell_exec", "build", `{"argv":["./go","build","-o","/tmp/demo-validation","./..."]}`),
+		toolResp("shell_exec", "noop", `{"argv":[]}`),
+		toolResp("shell_exec", "test", `{"argv":["./go","test","./..."]}`),
+		toolResp("job_disposition_record", "terminal", `{"status":"approved","ticket_id":"T-001","next_need":"security_review","evidence_links":["./go test ./..."]}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read", "shell_exec", "docsync_audit", "job_disposition_record"},
+		SystemPrompt:         "You are a QA reviewer.",
+		UserMessage:          "Review the completed ticket.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 10},
+		RequiredTerminalTool: "job_disposition_record",
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 1, dispositions)
+
+	var missingTestGuidance bool
+	for _, msg := range res.Messages {
+		if msg.Role == "tool" &&
+			strings.Contains(msg.Content, "authoritative test command") &&
+			!strings.Contains(msg.Content, "status approved") {
+			missingTestGuidance = true
+		}
+	}
+	require.True(t, missingTestGuidance, "no-op after build should guide QA to tests instead of approval")
+}
+
+func writeReviewEvidenceFixture(t *testing.T, dir string) {
+	t.Helper()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Demo\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go"), []byte("#!/bin/sh\nexit 0\n"), 0o755))
 }
 
 func TestRun_maxTurns(t *testing.T) {
@@ -561,6 +1018,34 @@ func TestPruneContext_replacesOldToolMessages(t *testing.T) {
 	// Recent tail (last 4: indices 6-9) protected — tool results at 7 and 9 kept.
 	require.Equal(t, bigContent, msgs[7].Content)
 	require.Equal(t, bigContent, msgs[9].Content)
+}
+
+func TestPruneContext_replacesOldAssistantToolArguments(t *testing.T) {
+	t.Parallel()
+	bigArgs := `{"path":"cmd/app/main.go","content":"` + strings.Repeat("x", 12000) + `"}`
+	msgs := []llm.Message{
+		{Role: "system", Content: "system prompt"},
+		{Role: "user", Content: "go"},
+		{Role: "assistant", Content: "write large file", ToolCalls: []llm.ToolCall{{ID: "1", Function: llm.FunctionCall{Name: "file_write", Arguments: bigArgs}}}},
+		{Role: "tool", ToolCallID: "1", Content: prunedPlaceholder},
+		{Role: "assistant", Content: "read it", ToolCalls: []llm.ToolCall{{ID: "2", Function: llm.FunctionCall{Name: "file_read", Arguments: `{"path":"cmd/app/main.go"}`}}}},
+		{Role: "tool", ToolCallID: "2", Content: "ok"},
+		{Role: "assistant", Content: "recent", ToolCalls: []llm.ToolCall{{ID: "3", Function: llm.FunctionCall{Name: "git_status", Arguments: `{}`}}}},
+		{Role: "tool", ToolCallID: "3", Content: "clean"},
+		{Role: "assistant", Content: "latest", ToolCalls: []llm.ToolCall{{ID: "4", Function: llm.FunctionCall{Name: "git_diff", Arguments: `{}`}}}},
+		{Role: "tool", ToolCallID: "4", Content: ""},
+	}
+
+	pruneContext(msgs, nil, 1200)
+
+	require.Equal(t, prunedToolArgumentsJSON, msgs[2].ToolCalls[0].Function.Arguments)
+	require.Equal(t, prunedPlaceholder, msgs[2].Content)
+	require.Equal(t, `{"path":"cmd/app/main.go"}`, msgs[4].ToolCalls[0].Function.Arguments)
+	require.Equal(t, "system prompt", msgs[0].Content)
+	require.Equal(t, "go", msgs[1].Content)
+	require.Equal(t, `{}`, msgs[6].ToolCalls[0].Function.Arguments)
+	require.Equal(t, `{}`, msgs[8].ToolCalls[0].Function.Arguments)
+	require.LessOrEqual(t, llm.EstimateTokens(msgs, nil), contextPruneTarget(1200))
 }
 
 func TestPruneContext_noOpWhenUnderLimit(t *testing.T) {
