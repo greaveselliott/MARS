@@ -1968,7 +1968,7 @@ func reviewTerminalDispositionGuidance(root Root, session Session) string {
 	if repoHasTestFiles(root) && counts[testCommandSuccessKey] == 0 {
 		return "Run the repository's authoritative test command such as go test ./... before approval, or record job_disposition_record with status changes_requested if tests cannot be run."
 	}
-	if roleRequiresDocSyncForSuccessfulDisposition(session.Role) && counts["tool:docsync_audit:success"] == 0 {
+	if roleRequiresDocSyncForSuccessfulDisposition(role) && counts["tool:docsync_audit:success"] == 0 {
 		return "Run docsync_audit before approval, or record job_disposition_record with status changes_requested if documentation sync cannot be verified."
 	}
 	return "Call job_disposition_record now with status approved, ticket_id, next_need security_review or no_need, and evidence_links naming the build/test/runtime commands that passed."
@@ -3416,10 +3416,6 @@ func ticketDoneMoveSources(fields []string) []string {
 	return sources
 }
 
-func shellExecMovesBacklogTicketToInProgress(raw json.RawMessage) bool {
-	return shellExecMovesTicketToInProgress(raw)
-}
-
 func shellExecMovesTicketToInProgress(raw json.RawMessage) bool {
 	args, err := decodeShellExecArgs(raw)
 	if err != nil {
@@ -3618,19 +3614,6 @@ func ticketLifecycleDuplicatesOutsideState(root Root, rel, state string) []strin
 		}
 	}
 	return dupes
-}
-
-func uniqueStringsPreserveOrder(values []string) []string {
-	seen := make(map[string]bool)
-	out := make([]string, 0, len(values))
-	for _, value := range values {
-		if seen[value] {
-			continue
-		}
-		seen[value] = true
-		out = append(out, value)
-	}
-	return out
 }
 
 func dependencyShellOperation(cmd string) (string, bool) {
