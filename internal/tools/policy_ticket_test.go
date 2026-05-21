@@ -101,6 +101,26 @@ func TestTicketCreatePolicyRequiresFeatureContractBeforeFeatureTicket(t *testing
 	}
 }
 
+func TestTicketCreatePolicyNamesEmptyBDDScenariosRepair(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyPlan(t, dir)
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
+
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
+	raw := []byte(`{"title":"Implement next slice","priority":"high","work_type":"feature","bdd_scenarios":[],"body":"## Context\nx"}`)
+	err := preToolPolicy(ctx, root, "ticket_create", raw)
+	if err == nil {
+		t.Fatal("expected empty bdd_scenarios to be rejected")
+	}
+	if !strings.Contains(err.Error(), "non-empty bdd_scenarios array") {
+		t.Fatalf("expected non-empty array repair guidance, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "next uncovered scenario") {
+		t.Fatalf("expected next-scenario repair guidance, got %v", err)
+	}
+}
+
 func TestTicketCreatePolicyCapsDogfoodBySeverityAndDedupe(t *testing.T) {
 	t.Parallel()
 	_, root := setupPolicyTicketRepo(t)

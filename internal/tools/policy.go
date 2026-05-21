@@ -297,7 +297,7 @@ func checkTicketCreatePlanningOrder(root Root, args ticketCreateArgs) error {
 	}
 	featureIDs := featureIDsFromScenarios(args.BDDScenarios)
 	if len(featureIDs) == 0 {
-		return fmt.Errorf("policy: feature ticket_create requires bdd_scenarios from an existing docs/features contract; planning order is exec plan, feature contract, ticket, delivery")
+		return fmt.Errorf("policy: feature ticket_create requires a non-empty bdd_scenarios array from an existing docs/features contract; use the current or next uncovered scenario from the active plan, such as \"bdd_scenarios\":[\"F-001-S001\"]. Planning order is exec plan, feature contract, ticket, delivery")
 	}
 	for _, id := range featureIDs {
 		if !featureContractExists(root, id) {

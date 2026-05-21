@@ -44,6 +44,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 27. F-006-S039 - Simple `cd <dir> && <test/build>` shell commands count as same-lane validation for repair classification.
 28. F-006-S041 - Engineer test/build repair writes stay inside the failed package scope when one is known.
 29. F-006-S042 - Engineer can remove duplicate test files it created earlier in the same job while repairing a failing test lane.
+30. F-006-S043 - Post-ticket-gate dispatch loops stop, and CTO advances from already-ticketed scenarios to the next uncovered product scenario.
 
 ## Scenarios
 
@@ -582,6 +583,20 @@ Then the role records `changes_requested` for Engineer to add durable tests inst
 Given COO or another non-ticket-owning planner hits an attempted ticket-creation policy block
 When it records `next_need: ticket_breakdown` for CTO
 Then the handoff remains available and does not require a blocked disposition detour
+
+### F-006-S043: Ticket Gate Loops Stop And Scenario Ticketing Advances
+
+Given the Engineer ticket prerequisite rewrites an implementation handoff to `cto-weekly` because no open ordinary product ticket exists
+When the same source role, next need, next role, ticket ID, and ticket-state hash have already repeated without ticket-state change
+Then dispatch records a loop-guard stop instead of enqueueing another CTO, Engineer, or Orchestrator bounce
+
+Given the active Scenario Schedule contains later BDD scenarios and the current failing scenario already has an ordinary product ticket in backlog, in-progress, in-review, or done
+When CTO is asked to shape the next implementation ticket
+Then CTO selects the next uncovered scenario, passes a non-empty `bdd_scenarios` array to `ticket_create`, and creates at most one ordinary product ticket for that selected scenario
+
+Given every scheduled scenario already has a ticket and no open ordinary product ticket remains
+When CTO is asked to shape more implementation work
+Then CTO records upstream feedback to COO to update or close the active plan instead of confirming stale work or routing another CTO loop
 
 ### F-006-S036: Engineer Test/Build Failure Repair Lane
 

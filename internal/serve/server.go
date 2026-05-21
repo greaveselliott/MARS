@@ -1354,6 +1354,7 @@ func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec
 	}
 	if snapErr == nil {
 		decision = enforceEngineerTicketPrerequisite(decision, snap, manifest, source)
+		decision = stopRepeatedPostGateRoute(decision, recent)
 	}
 	decision, err = s.orgStore.RecordDecision(ctx, decision)
 	if err != nil {
@@ -1721,6 +1722,7 @@ func (s *Server) dispatchFallbackAfterOrchestratorFailure(ctx context.Context, j
 	decision.Reason = strings.TrimSpace(decision.Reason + "; deterministic fallback after failed Orchestrator")
 	if snapErr == nil {
 		decision = enforceEngineerTicketPrerequisite(decision, snap, manifest, &sourceDisposition)
+		decision = stopRepeatedPostGateRoute(decision, recent)
 	}
 	if strings.EqualFold(strings.TrimSpace(decision.NextRole), "orchestrator") {
 		log.Warn("serve: dispatch fallback refused recursive Orchestrator route",

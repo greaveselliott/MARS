@@ -14,6 +14,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"github.com/greaveselliott/mars-harness/internal/orgstate"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 )
@@ -37,6 +39,41 @@ func TestTicketSnapshotRoutingHashIgnoresDeferredInterventionDebt(t *testing.T) 
 	}
 	if base.hash() == withDeferred.hash() {
 		t.Fatalf("full ticket hash should still reflect deferred intervention-debt")
+	}
+}
+
+func TestStopRepeatedPostGateRouteStopsTicketShapingLoop(t *testing.T) {
+	decision := orgstate.Decision{
+		RepoID:          "repo-1",
+		SourceRole:      "cto-weekly",
+		NextNeed:        "implementation",
+		NextRole:        "engineer",
+		TicketStateHash: "same-state",
+		Reason:          "using role suggested_role without Orchestrator detour",
+	}
+	manifest := &bundle.Manifest{Roles: map[string]bundle.RoleConfig{"cto-weekly": {}}}
+
+	gated := enforceEngineerTicketPrerequisite(decision, ticketSnapshot{}, manifest, nil)
+	if gated.NextRole != "cto-weekly" {
+		t.Fatalf("expected ticket gate to rewrite Engineer to CTO, got %q", gated.NextRole)
+	}
+	if gated.NextNeed != "ticket_breakdown" {
+		t.Fatalf("expected ticket gate to request ticket_breakdown, got %q", gated.NextNeed)
+	}
+
+	recent := []orgstate.Decision{
+		{RepoID: "repo-1", SourceRole: "cto-weekly", NextNeed: "ticket_breakdown", NextRole: "cto-weekly", TicketStateHash: "same-state"},
+		{RepoID: "repo-1", SourceRole: "cto-weekly", NextNeed: "ticket_breakdown", NextRole: "cto-weekly", TicketStateHash: "same-state"},
+	}
+	stopped := stopRepeatedPostGateRoute(gated, recent)
+	if stopped.NextRole != "" {
+		t.Fatalf("expected repeated post-gate route to stop, got %q", stopped.NextRole)
+	}
+	if !strings.Contains(stopped.StopReason, "post-ticket-gate") {
+		t.Fatalf("expected post-ticket-gate loop stop reason, got %q", stopped.StopReason)
+	}
+	if !strings.Contains(stopped.Reason, "loop guard") {
+		t.Fatalf("expected loop guard reason, got %q", stopped.Reason)
 	}
 }
 
