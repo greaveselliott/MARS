@@ -2,6 +2,23 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.27] - 2026-05-22
+<!-- mars-harness-release: version=0.42.27 commit=9878b4107790 -->
+
+### Impact
+- **lifecycle:** Fresh target bootstraps now move past CEO/COO planning into CTO-created product tickets instead of looping on planning guardrails when a brief excludes polish, previews, sound, or similar optional extensions.
+
+### Why
+- **lifecycle:** The live Tetris replay loop showed two foundation-owned blockers after the previous stabilization: COO tried to create a sibling active-plan file for the current failing scenario, and optional Out-of-Scope lines such as animation polish or next-piece preview were interpreted as descoping covered core gameplay. Those loops kept the factory from reaching implementation even though the target product plan was valid.
+
+### What Changed
+- **lifecycle:** Added a single-active-plan policy error and mirrored COO guidance so current-failing-scenario recovery updates `docs/exec-plans/active/current-operating-plan.md` instead of creating a second active plan.
+- **lifecycle:** Broadened Out-of-Scope parsing so enhancement-only exclusions for animation/visual polish, optional previews, sound/audio, multiplayer, mobile touch controls, hold-piece, and hard-drop variants do not descope already-covered basic capabilities.
+- **lifecycle:** Recorded live `demo-tetris-64` through `demo-tetris-68` dogfood evidence; the confirmation replay completed CEO, COO, and CTO, created ordinary product tickets, and reached Engineer implementation.
+
+### Fixes
+- **lifecycle:** Unblock product-first planning handoff (9878b41)
+
 ## [0.42.26] - 2026-05-22
 <!-- mars-harness-release: version=0.42.26 commit=262aa0960d04 -->
 
