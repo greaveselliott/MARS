@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.26] - 2026-05-22
+<!-- mars-harness-release: version=0.42.26 commit=262aa0960d04 -->
+
+### Impact
+- **lifecycle:** Operators see improved reliability because stabilize product-first demo loop.
+
+### Why
+- **lifecycle:** This matters because stabilize product-first demo loop closes a failure mode or degraded path.
+
+### What Changed
+- **lifecycle:** Changed stabilize product-first demo loop (262aa09).
+
+### Fixes
+- **lifecycle:** Stabilize product-first demo loop (262aa09)
+
 ## [0.42.25] - 2026-05-22
 <!-- mars-harness-release: version=0.42.25 commit=da7779359b0d -->
 
