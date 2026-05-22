@@ -2210,6 +2210,9 @@ func checkPlannerFileWritePolicy(session Session, hasSession bool, rel string) e
 		if cooPlanningWritePath(rel) {
 			return nil
 		}
+		if strings.HasPrefix(rel, "docs/exec-plans/active/") && strings.HasSuffix(strings.ToLower(rel), ".md") {
+			return fmt.Errorf("policy: keep exactly one active exec plan; update docs/exec-plans/active/current-operating-plan.md with the current failing scenario instead of creating %s", rel)
+		}
 		return fmt.Errorf("policy: coo may only write planning artifacts under docs/exec-plans, docs/features, or docs/goals/observations.md; implementation path %s belongs behind CTO tickets and Engineer delivery", rel)
 	case "cto", "cto-weekly":
 		if ctoTechnicalPlanningWritePath(rel) {
@@ -4440,6 +4443,38 @@ func outOfScopeLineIsExplanation(line string) bool {
 
 func outOfScopeLineLeavesBasicCapabilityInScope(line string) bool {
 	normalized := normalizeCapabilitySurface(line)
+	switch normalized {
+	case "animation", "animations", "animation polish", "animation only polish", "animation-only polish",
+		"visual polish", "visual effects",
+		"preview", "previews", "next piece preview", "next piece previews", "piece preview", "piece previews",
+		"sound", "sounds", "sound effects", "audio", "audio feedback",
+		"multiplayer", "multiplayer support", "multiplayer functionality",
+		"mobile touch controls", "touch controls", "touch input",
+		"hold piece", "hold queue", "hard drop":
+		return true
+	}
+	for _, prefix := range []string{
+		"animation for ",
+		"animations for ",
+		"animated ",
+		"animation polish for ",
+		"animation-only polish for ",
+		"visual polish for ",
+		"visual effects for ",
+		"preview for ",
+		"previews for ",
+		"next piece preview for ",
+		"sound for ",
+		"sounds for ",
+		"audio for ",
+		"multiplayer for ",
+		"mobile touch controls for ",
+		"touch controls for ",
+	} {
+		if strings.HasPrefix(normalized, prefix) {
+			return true
+		}
+	}
 	if strings.Contains(normalized, "advanced") && strings.Contains(normalized, "beyond basic") {
 		return true
 	}
@@ -4449,6 +4484,9 @@ func outOfScopeLineLeavesBasicCapabilityInScope(line string) bool {
 			strings.Contains(normalized, "combo") ||
 			strings.Contains(normalized, "back to back") ||
 			strings.Contains(normalized, "changes basic")) {
+		return true
+	}
+	if strings.Contains(normalized, "combo") || strings.Contains(normalized, "back to back") {
 		return true
 	}
 	if strings.Contains(normalized, "beyond") {

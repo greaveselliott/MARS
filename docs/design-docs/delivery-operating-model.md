@@ -7444,3 +7444,73 @@ planners to break out the actual behaviors they introduce.
   "game over detection" without forcing unnatural scenario titles.
 - The fix generalizes to non-game projects where "including" and "detection"
   are connective planning language rather than product outcomes by themselves.
+
+## AD-270: Enhancement-Only Exclusions Do Not Descope Covered Gameplay
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-64` rerun confirmed the bootstrap idempotency and
+product-specific planning improvements on the released `v0.42.26` binary, but
+found one remaining Out-of-Scope loop. COO covered falling tetromino pieces and
+line clearing in the Scenario Schedule and scenarios. Its Out of Scope section
+then excluded "Animations for piece movement or line clearing", which is a
+polish/enhancement exclusion. The capability guard treated the line as if basic
+piece movement and line clearing were themselves descoped, blocking CTO handoff
+even though the basic behaviors were required and covered.
+
+### Decision
+
+Out-of-scope capability checks now treat enhancement-only lines such as
+animation polish, animations for piece movement, animations for line clearing,
+visual polish, visual effects, optional previews, sound/audio, multiplayer,
+mobile-touch controls, hold-piece, and hard-drop variants as leaving the
+covered basic behavior in scope. The rule is line-aware: a direct Out of Scope
+line for required behavior such as movement, line clearing, scoring, game over,
+or restart still requires a Descoped Scenarios rationale before planning can
+hand off.
+
+### Consequences
+
+- First-slice planning can exclude polish without accidentally excluding the
+  product behavior that polish would enhance.
+- The fix is foundation-owned and applies to any deployed project where
+  advanced presentation or animation work refers to core behavior.
+- Runtime telemetry continues to quarantine these policy false positives as
+  foundation signals rather than creating deployed intervention-debt tickets.
+
+## AD-271: COO Current-Failing-Scenario Recovery Updates The Single Active Plan
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-65` replay verified that the enhancement-only Out-of-Scope
+fix removed the previous planning loop. COO produced a product-specific active
+plan and BDD feature contract, then attempted to recover by creating
+`docs/exec-plans/active/current-failing-scenario.md`. Generated deployed
+guidance already says there must be exactly one active exec plan, but the
+runtime policy's generic implementation-boundary error did not tell COO how to
+repair the attempt.
+
+### Decision
+
+The current failing scenario remains a section of
+`docs/exec-plans/active/current-operating-plan.md`. COO may update that active
+plan and the matching feature contract, but attempts to create another Markdown
+file under `docs/exec-plans/active/` are blocked with specific guidance to keep
+one active plan and update `current-operating-plan.md` instead. The generated
+COO prompt and persona stop conditions now name the same rule directly.
+
+### Consequences
+
+- Planning recovery preserves one source of truth for deployed active work.
+- COO receives actionable recovery guidance instead of bouncing through a
+  generic policy error.
+- Waiting plans and reports still belong in backlog/report locations; the
+  active directory stays a single current operating plan.

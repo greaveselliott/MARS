@@ -127,6 +127,10 @@ Given the COO role is shaping the first product slice
 When it attempts to write implementation files such as root HTML, source, package, test, or build artifacts
 Then tool policy blocks the mutation and requires the work to pass through CTO ticketing and Engineer delivery, while allowing planning writes under `docs/exec-plans`, `docs/features`, and `docs/goals/observations.md`
 
+Given the COO role is updating the current failing scenario
+When it attempts to create a second active exec-plan file such as `docs/exec-plans/active/current-failing-scenario.md`
+Then tool policy blocks the write with guidance to update `docs/exec-plans/active/current-operating-plan.md` as the only active plan
+
 Given the CEO role is shaping fresh product direction
 When it attempts to write COO-owned planning artifacts such as `docs/exec-plans/*` or `docs/features/*`
 Then tool policy blocks the mutation and requires CEO to update strategy artifacts only, then hand off with `next_need: exec_plan` or another explicit downstream need
@@ -833,6 +837,7 @@ And the feature scenario schedule includes line clearing with score points
 When COO lists high-score tracking or persistence under Out of Scope
 Then the capability guard treats that line as an advanced scoring extension rather than a descoping of basic score tracking
 And `beyond ...` qualifier lines such as animations beyond basic movement or UI beyond the score display do not descope the basic behavior named after the qualifier
+And enhancement-only exclusions such as animation polish or animations for piece movement or line clearing do not descope the covered basic movement or line-clearing behavior
 And directly listing basic scoring under Out of Scope still requires a Descoped Scenarios rationale
 
 ### F-005-S059: Browser Evidence Completion Stops Shell Drift
@@ -861,7 +866,7 @@ And package build reruns plus tracked background PID cleanup remain allowed
 
 Given a feature contract covers basic product capabilities in the Scenario Schedule and scenario headings
 And the Out of Scope section includes explanatory prose such as clear reasons or explicit rationale
-And the Out of Scope section lists advanced-only extensions such as high-score persistence, combos, previews, multiplayer, mobile touch controls, sounds, or animation polish
+And the Out of Scope section lists advanced-only extensions such as high-score persistence, combos, next-piece previews, multiplayer, mobile touch controls, sounds, or animation polish
 When COO hands off to CTO for ticket breakdown
 Then the runtime does not treat the explanatory prose or advanced-only exclusions as descoping covered basic capabilities
 And required behavior still fails if it is directly listed under Out of Scope without Descoped Scenarios rationale
@@ -888,7 +893,7 @@ None.
 
 - F-005-S001: `go test ./internal/context`
 - F-005-S002: `go test ./internal/agent -run TestRun`
-- F-005-S003: `go test ./internal/tools -run 'TestExecutor|TestShellExec|TestFileWritePolicyBlocksScenarioIDsThatDoNotMatchFeatureContract'` and `go test ./internal/serve -run TestFoundationAcceptance`
+- F-005-S003: `go test ./internal/tools -run 'TestExecutor|TestShellExec|TestFileWritePolicyBlocksScenarioIDsThatDoNotMatchFeatureContract|TestCOOFileWritePolicyBlocksSecondActiveExecPlanWithSpecificGuidance'` and `go test ./internal/serve -run TestFoundationAcceptance`
 - F-005-S004: `go test ./internal/agent -run TestRun_persistsTraceToSQLite`
 - F-005-S005: `go test ./internal/agent -run 'TestRun_(max|token|wall|circle|empty)'`
 - F-005-S006: `go test ./cmd/mars-harness -run 'TestRunStartServeExposeDebugAndLogFileFlags'` and planned broader E2E dogfood evidence

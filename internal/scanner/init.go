@@ -1502,6 +1502,8 @@ Architectural decisions and design documents for this project.
 | AD-267 | After browser-framework package build passes but before browser-product smoke passes, Engineer shell validation is limited to build reruns, canonical product smoke, and tracked PID cleanup so Node-only bundle probes cannot replace mounted UI evidence. | 2026-05-22 | Accepted |
 | AD-268 | Out-of-scope explanation prose and advanced-only extensions no longer descope covered basic product capabilities such as line clearing or score tracking. | 2026-05-22 | Accepted |
 | AD-269 | Capability matching ignores generic glue words such as include/including, show/display, and detection while preserving concrete behavior requirements. | 2026-05-22 | Accepted |
+| AD-270 | Enhancement-only Out-of-Scope lines such as animations for movement or line clearing do not descope covered basic gameplay behavior. | 2026-05-22 | Accepted |
+| AD-271 | COO current-failing-scenario recovery updates the single active exec plan instead of creating sibling active plan files. | 2026-05-22 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -3276,6 +3278,11 @@ the only active plan and must include:
 - Walking skeleton slice and learning/MVP outcome
 - This week priorities sourced from goals, feature contracts, or evidence
 
+The current failing scenario is a section inside
+docs/exec-plans/active/current-operating-plan.md. Do not create
+docs/exec-plans/active/current-failing-scenario.md or any other sibling active
+plan file for it.
+
 TASK 2 — BDD feature contract.
 
 Create or update the docs/features/F-NNN-*.md contract named by the active
@@ -3309,7 +3316,8 @@ The contract must document:
   product behaviors they introduce.
 - Out of Scope may list advanced-only extensions such as high-score
   persistence, combos, previews, mobile touch controls, multiplayer, or
-  animations, but it must not imply that basic in-scope capabilities such as
+  animations, including animation-only exclusions for covered movement or line
+  clearing, but it must not imply that basic in-scope capabilities such as
   scoring, line clearing, movement, game over, or restart are excluded.
 
 When updating an existing generated starter contract, replace or revise the

@@ -672,6 +672,21 @@ func TestCOOFileWritePolicyAllowsPlanningDocsAndBlocksImplementation(t *testing.
 	}
 }
 
+func TestCOOFileWritePolicyBlocksSecondActiveExecPlanWithSpecificGuidance(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+	ctx := WithSession(context.Background(), Session{Role: "coo", ToolCounts: map[string]int{}})
+
+	err := preToolPolicy(ctx, root, "file_write", []byte(`{"path":"docs/exec-plans/active/current-failing-scenario.md","content":"# Current Failing Scenario\n"}`))
+	if err == nil {
+		t.Fatal("expected COO second active exec-plan write to be blocked")
+	}
+	if !strings.Contains(err.Error(), "keep exactly one active exec plan") ||
+		!strings.Contains(err.Error(), "current-operating-plan.md") {
+		t.Fatalf("expected single-active-plan guidance, got %v", err)
+	}
+}
+
 func TestCTOFileWritePolicyAllowsTechnicalPlanningAndBlocksImplementation(t *testing.T) {
 	t.Parallel()
 	_, root := setupPolicyTicketRepo(t)
@@ -4069,6 +4084,18 @@ func TestCOOCompletionAllowsOutOfScopeIntroAndAdvancedScoringSystems(t *testing.
 	}
 }
 
+func TestCOOCompletionAllowsAnimationOnlyOutOfScopeForCoveredGameplay(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeDemoTetrisExplicitListBrief(t, dir)
+	writeDemoTetrisFeatureWithAnimationPolishOutOfScope(t, dir)
+	ctx := WithSession(context.Background(), Session{Role: "coo", ToolCounts: map[string]int{}})
+
+	if err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"ticket_breakdown","suggested_role":"cto-weekly"}`)); err != nil {
+		t.Fatalf("expected animation-polish out-of-scope text not to descope falling pieces or line clearing, got %v", err)
+	}
+}
+
 func TestCapabilityMatchingIgnoresIncludingAndDetectionGlue(t *testing.T) {
 	t.Parallel()
 
@@ -6884,6 +6911,128 @@ The following capabilities are explicitly out of scope for the first visible pro
 ## Descoped Scenarios
 
 None - all descoped capabilities are listed under Out of Scope with explicit rationale.
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write feature: %v", err)
+	}
+}
+
+func writeDemoTetrisExplicitListBrief(t *testing.T, repoRoot string) {
+	t.Helper()
+	content := `# Demo Tetris
+
+Build a browser Tetris game using Phaser JS. The first playable slice should include a visible board, falling tetromino pieces, keyboard movement and rotation, collision detection, line clearing, visible score, game over when the stack reaches the top, and restart after game over.
+
+Use a small, dependency-light implementation that can be installed, built, and smoke-tested locally. Keep sound effects, multiplayer, mobile touch controls, next-piece preview, combo scoring, high-score persistence, and animation polish out of scope for the first slice.
+`
+	if err := os.WriteFile(filepath.Join(repoRoot, "README.md"), []byte(content), 0o644); err != nil {
+		t.Fatalf("write README: %v", err)
+	}
+}
+
+func writeDemoTetrisFeatureWithAnimationPolishOutOfScope(t *testing.T, repoRoot string) {
+	t.Helper()
+	path := filepath.Join(repoRoot, "docs", "features", "F-001-product-walking-skeleton.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir feature: %v", err)
+	}
+	content := `# F-001: Product Walking Skeleton
+
+- Feature ID: F-001
+- Goals: G-001
+- Status: active
+- Owner: CEO
+- Product Brief: Demo Tetris: Build a browser Tetris game using Phaser JS.
+
+## Business Logic
+
+The product must include a visible board, falling tetromino pieces, keyboard movement and rotation, collision detection, line clearing, visible score, and game over when the stack reaches the top.
+
+## Step-By-Step Behavior
+
+The scenarios below define the concrete product capabilities needed for the first visible product slice.
+
+## Scenario Schedule
+
+1. F-001-S001 - Visible board is displayed with grid structure
+2. F-001-S002 - Tetromino pieces fall at regular intervals
+3. F-001-S003 - Player can move pieces horizontally with keyboard
+4. F-001-S004 - Player can rotate pieces with keyboard
+5. F-001-S005 - Collision detection works for piece movement and placement
+6. F-001-S006 - Line clearing occurs when rows are complete
+7. F-001-S007 - Visible score tracking updates with cleared lines
+8. F-001-S008 - Game-over state triggers when stack reaches top
+9. F-001-S009 - Player can restart after game over
+
+## Scenarios
+
+### F-001-S001: Visible Board Is Displayed With Grid Structure
+
+Given the game has started
+When the game initializes
+Then a visible grid-based Tetris board should be displayed with a defined width and height
+
+### F-001-S002: Tetromino Pieces Fall At Regular Intervals
+
+Given the game is running
+When a tetromino piece is created
+Then the piece should fall at a regular, predictable interval
+
+### F-001-S003: Player Can Move Pieces Horizontally With Keyboard
+
+Given a tetromino piece is falling
+When player presses left or right arrow keys
+Then the piece should move horizontally in the specified direction
+
+### F-001-S004: Player Can Rotate Pieces With Keyboard
+
+Given a tetromino piece is falling
+When player presses up arrow key or spacebar
+Then the piece should rotate in place
+
+### F-001-S005: Collision Detection Works For Piece Movement And Placement
+
+Given a tetromino piece is falling
+When the piece attempts to move into a blocked position
+Then the movement should be prevented
+
+### F-001-S006: Line Clearing Occurs When Rows Are Complete
+
+Given a tetromino piece is placed
+When a complete horizontal line is formed
+Then that line should be cleared from the board
+
+### F-001-S007: Visible Score Tracking Updates With Cleared Lines
+
+Given a line is cleared
+When the line clear is recorded
+Then the score should increase based on the number of lines cleared
+And the visible score display tracks the current score
+
+### F-001-S008: Game-Over State Triggers When Stack Reaches Top
+
+Given a tetromino piece is placed
+When the new piece cannot enter the board due to stack height
+Then the game should transition to game-over state
+
+### F-001-S009: Player Can Restart After Game Over
+
+Given the game is over
+When the player chooses restart
+Then the board resets for another round
+
+## Out of Scope
+
+- Sound effects or audio feedback
+- Animation polish
+- Next piece preview
+- Combo scoring system
+- High score persistence or save/load functionality
+- Multiplayer support
+
+## Descoped Scenarios
+
+None.
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write feature: %v", err)

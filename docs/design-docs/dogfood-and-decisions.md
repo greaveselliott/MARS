@@ -4296,6 +4296,49 @@ state when the stack fills. Decision: show/display variants join
 include/detection as glue words; concrete behavior terms such as game over and
 stack-fill coverage remain required.
 
+The `demo-tetris-64` rerun confirmed `v0.42.26` startup improvements and then
+found a remaining Out-of-Scope false positive. CEO bootstrap was idempotent
+after a failed bind retry, the generated feature contract was Tetris-specific,
+and guardrail signals stayed in foundation telemetry instead of target
+intervention debt. COO's contract covered falling pieces and line clearing, but
+the Out of Scope line "Animations for piece movement or line clearing" was
+treated as if basic falling-piece and line-clearing behavior were descoped.
+Decision: enhancement-only Out of Scope lines such as animations for movement
+or line clearing leave the already-covered basic gameplay behavior in scope;
+directly descoping the basic behavior still requires a Descoped Scenarios
+rationale.
+
+The `demo-tetris-65` replay confirmed that the animation-only Out-of-Scope loop
+was gone: COO produced a Tetris-specific active plan and feature contract
+without re-triggering the prior capability block. The next foundation-owned
+issue was a recovery attempt to create
+`docs/exec-plans/active/current-failing-scenario.md` even though deployed
+guidance allows exactly one active exec plan. Decision: COO current failing
+scenario recovery remains inside
+`docs/exec-plans/active/current-operating-plan.md`; the file-write policy now
+blocks sibling active-plan files with explicit single-plan guidance instead of
+the generic implementation-boundary error.
+
+The `demo-tetris-66` and `demo-tetris-67` replays confirmed the
+single-active-plan recovery guidance: COO updated
+`docs/exec-plans/active/current-operating-plan.md` directly and did not
+recreate `current-failing-scenario.md`. The next capability-parser issue was
+narrower: optional Out of Scope lines such as "Animation polish" and
+"Next-piece preview" were treated as descoping falling tetromino pieces even
+though the scenarios covered falling pieces. Decision: standalone
+animation/visual polish, optional previews, sound/audio, multiplayer,
+mobile-touch, hold-piece, and hard-drop exclusions are advanced-only extensions
+and do not descope covered basic capabilities.
+
+The `demo-tetris-68` confirmation replay passed the product-first bootstrap
+boundary after the parser fix. CEO completed, COO completed without creating a
+sibling active-plan file or tripping optional Out-of-Scope text, and CTO
+created ordinary product tickets for `F-001-S001` and the next grouped gameplay
+slice. Engineer then claimed `T-001` and began writing application files. That
+confirms the foundation fix moves the lifecycle beyond planning into target
+product delivery; the later manual stop interrupted Engineer and is not treated
+as a product or foundation failure for this fix.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against

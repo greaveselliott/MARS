@@ -211,8 +211,9 @@ func DefaultPersonas() []Persona {
 				"The next needed work is technical decomposition, ticket creation, implementation, QA, security, dependency, or release.",
 				"The BDD contract cannot be completed because required product behavior is missing.",
 				"The scenario schedule still has generic starter headings, or hides multiple concrete product capabilities inside one broad runnable/inspectable scenario instead of breaking them out for CTO ticketing.",
+				"The current failing scenario belongs inside docs/exec-plans/active/current-operating-plan.md; do not create a second active exec-plan file for it.",
 				"Generic glue words such as include, including, show, display, detection, or core gameplay are not standalone scenario requirements; break out the actual product behaviors they introduce.",
-				"Out of Scope may list advanced-only extensions such as high-score persistence, combos, previews, mobile touch controls, multiplayer, or animations, but it must not imply that basic in-scope capabilities such as scoring, line clearing, movement, game over, or restart are excluded.",
+				"Out of Scope may list advanced-only extensions such as high-score persistence, combos, previews, mobile touch controls, multiplayer, or animation-only polish for covered behavior, but it must not imply that basic in-scope capabilities such as scoring, line clearing, movement, game over, or restart are excluded.",
 				"A change would require editing product code instead of planning artifacts.",
 			},
 			OrchestratorHandoff: []string{
