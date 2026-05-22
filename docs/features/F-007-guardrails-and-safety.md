@@ -26,7 +26,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 9. F-007-S009 - Workspace hygiene blocks generated dependency/build churn before model work and package-manager mutation.
 10. F-007-S010 - Untracked repo-local compiled binaries named after the repo or Go module may be removed as generated build artifacts, and blast-radius errors for those artifacts name the exact cleanup command without opening arbitrary deletion.
 11. F-007-S011 - Validation build commands are blocked before execution when their explicit output path would create a compiled artifact inside the target repo.
-12. F-007-S012 - New repo-root validation shell scripts are blocked so scratch validation does not become committed product noise.
+12. F-007-S012 - New repo-root validation, smoke, and probe helpers are blocked so scratch validation does not become committed product noise.
 13. F-007-S013 - Source, static asset, workflow, and test writes require valid top-of-file documentation metadata.
 14. F-007-S014 - Dogfood finding tickets freeze further validation until the target-owned finding is committed and handed off.
 15. F-007-S027 - Failing Engineer test/build evidence blocks runtime side paths, ticket evidence, ticket completion, and product commits until repaired.
@@ -334,6 +334,11 @@ Then the guardrail allows a later recognized build command in the same validatio
 Given that repair lane is unresolved
 When Engineer attempts to write a helper verification script or root scratch probe
 Then the guardrail blocks the write and keeps repair inside product source, tests, fixtures, or package/build config
+
+Given Engineer is working on a browser-framework product ticket
+When it tries to create a new repo-root helper such as `validate-game.js`, `browser-smoke.js`, or `probe-ui.js`
+Then the guardrail blocks the file as scratch validation noise
+And the role must use direct `shell_exec` evidence or create intentional durable validation under `scripts/` or `tests/`
 
 ### F-007-S030: Simple CD Validation Shell Is Recognized
 

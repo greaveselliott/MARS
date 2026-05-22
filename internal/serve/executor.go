@@ -270,6 +270,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		Role:         job.Role,
 		JobID:        job.ID,
 		RepoID:       job.RepoID,
+		Trigger:      job.Trigger,
 		TrustLevel:   string(trustLevel),
 		Guardrails:   guardEngine,
 		SafetyLimits: safety.DefaultLimits(),

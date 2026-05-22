@@ -128,12 +128,51 @@ func registerTicketCreate(r *Registry) error {
 	)
 }
 
-func handleTicketCreate(_ context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
+func handleTicketCreate(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
 	var args ticketCreateArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return ToolResult{}, fmt.Errorf("ticket_create: parse arguments: %s", ticketCreateParseHint(err))
 	}
+	args = withInferredTicketCreateScenarios(ctx, args)
 	return CreateTicket(root, TicketInput(args))
+}
+
+func withInferredTicketCreateScenarios(ctx context.Context, args ticketCreateArgs) ticketCreateArgs {
+	if len(args.BDDScenarios) > 0 || isInterventionDebtTicket(args) {
+		return args
+	}
+	if inferred := ticketCreateScenarioIDsFromArgs(args); len(inferred) > 0 {
+		args.BDDScenarios = inferred
+		return args
+	}
+	session, ok := SessionFromContext(ctx)
+	if !ok {
+		return args
+	}
+	role := strings.ToLower(strings.TrimSpace(session.Role))
+	if role != "cto" && role != "cto-weekly" {
+		return args
+	}
+	if pending := pendingCTOHandoffRequiredScenarios(session); len(pending) > 0 {
+		args.BDDScenarios = pending
+	}
+	return args
+}
+
+func ticketCreateScenarioIDsFromArgs(args ticketCreateArgs) []string {
+	var b strings.Builder
+	b.WriteString(args.Title)
+	b.WriteByte('\n')
+	b.WriteString(args.Source)
+	b.WriteByte('\n')
+	b.WriteString(args.Body)
+	for key, value := range args.Metadata {
+		b.WriteByte('\n')
+		b.WriteString(key)
+		b.WriteByte(' ')
+		b.WriteString(value)
+	}
+	return orderedFeatureScenarioIDs(b.String())
 }
 
 func ticketCreateParseHint(err error) string {
@@ -546,6 +585,9 @@ func findDuplicateByBDDScenario(input TicketInput, existing []existingTicket) *e
 		if strings.Join(existingScenarios, "\x00") == proposedKey {
 			return &existing[i]
 		}
+		if existing[i].Status != "done" && scenarioSetsOverlap(proposed, existingScenarios) {
+			return &existing[i]
+		}
 	}
 	return nil
 }
@@ -565,6 +607,26 @@ func normalizedScenarioSet(values []string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func scenarioSetsOverlap(a, b []string) bool {
+	if len(a) == 0 || len(b) == 0 {
+		return false
+	}
+	set := map[string]bool{}
+	for _, value := range a {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			set[value] = true
+		}
+	}
+	for _, value := range b {
+		value = strings.TrimSpace(value)
+		if value != "" && set[value] {
+			return true
+		}
+	}
+	return false
 }
 
 func updateExistingTicket(root Root, existing existingTicket, input TicketInput) (bool, error) {

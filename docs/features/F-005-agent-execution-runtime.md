@@ -43,6 +43,25 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 26. F-005-S036 - Review terminal convergence waits for tests when test files exist.
 27. F-005-S037 - Review no-op recovery uses the same evidence gates as approval.
 28. F-005-S038 - Direct `mars-harness` shell commands route to `mars_harness_cli`.
+29. F-005-S039 - Background server startup is validation setup, not review proof.
+30. F-005-S040 - Test/build repair guidance includes failing output.
+31. F-005-S042 - Browser-framework completion requires real build and product-state evidence.
+32. F-005-S043 - Product brief capabilities must be represented in the scenario schedule and scenario headings before ticketing.
+33. F-005-S044 - Browser smoke guidance remains runnable when copied into ticket evidence, and QA routes helper failures to foundation evidence instead of target rework.
+34. F-005-S045 - Feature tickets cannot re-cover scenarios already covered by earlier ordinary tickets.
+35. F-005-S046 - Browser validation helper files are not treated as product framework source.
+36. F-005-S047 - CTO ticket creation can recover the pending product-scenario batch after a handoff gate.
+37. F-005-S048 - Planner roles cannot mutate the target through shell execution.
+38. F-005-S049 - Product capability extraction ignores active-goal non-goals and operational validation constraints.
+39. F-005-S050 - Product capability matching accepts natural scenario titles.
+40. F-005-S051 - Advanced score persistence does not descope basic scoring.
+41. F-005-S052 - Review HTTP probes before server startup are validation-procedure failures.
+42. F-005-S053 - Engineer review rework reopens the dispatch-named ticket.
+43. F-005-S054 - Browser-framework modules loaded through plain Node eval are validation-procedure failures.
+44. F-005-S055 - Dependency sync counts as a test/build repair action before same-lane validation reruns.
+45. F-005-S056 - Browser-framework planning and review share the same product-smoke evidence path.
+46. F-005-S057 - Generic gameplay summary labels do not become standalone capability requirements.
+47. F-005-S058 - Alternate input exclusions do not descope basic keyboard movement.
 
 ## Scenarios
 
@@ -112,9 +131,10 @@ Given the CEO role is shaping fresh product direction
 When it attempts to write COO-owned planning artifacts such as `docs/exec-plans/*` or `docs/features/*`
 Then tool policy blocks the mutation and requires CEO to update strategy artifacts only, then hand off with `next_need: exec_plan` or another explicit downstream need
 
-Given the COO role has shell access in an existing target manifest
+Given a planner role such as CEO, Head of Strategy, COO, CTO, or CTO-weekly has shell access in an existing target manifest
 When it attempts a mutating `shell_exec`
-Then tool policy blocks the command so shell access cannot bypass the planning-only ownership boundary
+Then tool policy blocks the command so shell access cannot bypass the strategy, planning, ticketing, or implementation ownership boundary
+And read-only inspection such as `git status --short` remains available when the command is otherwise policy-safe
 
 Given a role calls `shell_exec` with `argv`
 When the argv tokens contain shell-only syntax such as redirection, pipes, control operators, command substitution, or shell builtins
@@ -256,6 +276,11 @@ Given a feature ticket already exists for a BDD scenario
 When a role calls `ticket_create` for another ordinary feature ticket with the same exact BDD scenario set and no `depends_on`
 Then the tool returns the existing ticket as a duplicate and creates no new backlog file
 
+Given an active backlog, in-progress, or in-review feature ticket already covers a BDD scenario
+When Dogfood or another role calls `ticket_create` for a new ordinary feature ticket whose scenario list overlaps that active ticket
+Then the tool returns the active ticket as a duplicate and creates no new backlog file
+And the role can reference the existing active ticket in disposition evidence instead of multiplying findings
+
 Given the second ticket is an explicitly dependent decomposition
 When it carries `depends_on` metadata naming the earlier ticket
 Then `ticket_create` may create the dependent ticket with the same BDD scenario because the relationship is no longer independent fan-out
@@ -286,9 +311,17 @@ Given QA or Security makes an obvious validation-procedure mistake in a Go build
 When the command failure indicates a package-targeting mistake rather than a compile, test, or product runtime failure
 Then the tool session records the procedure failure separately, permits a corrected validation command in the same review job, and still blocks approval until successful validation evidence exists
 
+Given QA or Security runs an HTTP probe before any dev or static server is listening
+When the probe fails with connection-refused or could-not-connect output
+Then the tool session records the procedure failure separately, permits the reviewer to start the appropriate server with `background:true`, and still requires later successful validation evidence before approval
+
 Given Engineer makes an obvious validation-procedure mistake in a Go build or test command during product delivery or review rework
 When the command failure indicates a package-targeting mistake such as missing `./` before a repo-relative package path
 Then the tool session records the procedure failure separately, permits a corrected validation command in the same job, and does not require a meaningless source edit before validation can continue
+
+Given Orchestrator dispatches Engineer for review rework with a source disposition naming `ticket_id`
+When no ordinary product ticket is currently in progress and the named ticket is in `docs/tickets/done/` or `docs/tickets/in-review/`
+Then Engineer preflight requires reopening that dispatch-named ticket instead of selecting an older completed product ticket
 
 Given Engineer observes a real compile error, failing test, or unexpected runtime validation failure
 When Engineer attempts unrelated validation, ticket completion, commit, or successful disposition
@@ -301,6 +334,10 @@ Then the runtime permits the cleanup so the role can continue same-lane repair a
 Given Engineer tries to remove an unmarked test file, product source file, or recursive path during unresolved test/build repair
 When the shell command is evaluated
 Then the runtime blocks the cleanup and keeps the role in source/test repair plus same-lane validation
+
+Given Engineer has an unresolved test/build failure and writes a focused test file under `test/` or `tests/`, with a conventional `*.test.*`, `*.spec.*`, or `_test.go` name
+When the file write is evaluated
+Then the runtime treats the edit as same-lane repair work rather than unrelated helper-script drift
 
 Given a role calls `shell_exec` with argv tokens shaped exactly like `cd <dir> && <recognized test-or-build command>`
 When every token is simple and the right-hand side is validation-only
@@ -543,6 +580,184 @@ When the command is provided as argv or as the first executable in a shell comma
 Then the runtime blocks the shell command before execution
 And the error names the equivalent `mars_harness_cli` args so the active harness executable is used instead of a stale installed binary
 
+### F-005-S039: Background Server Startup Is Not Review Proof
+
+Given QA or Security has inspected the completed ticket and implementation files
+And the same job has run `docsync_audit`
+When the reviewer starts a long-running app or static server with `background:true`
+Then the server startup is treated as validation setup only
+And review terminal convergence waits for a separate successful validation probe such as `curl -fsS http://127.0.0.1:<port>/`
+
+Given that separate HTTP probe succeeds after the background server starts
+When the same job has clean read and docsync evidence with no failing validation outstanding
+Then the runtime may force the normal terminal `job_disposition_record` boundary
+
+### F-005-S040: Background Server Output Stays Drained After Startup
+
+Given a role starts a long-running dev server or static server with `shell_exec`
+And the command uses `background:true`
+When the tool returns the tracked PID after the startup capture window
+Then the runtime continues draining stdout and stderr until the process exits
+And later server request logs do not break the server pipe or cause empty HTTP replies
+
+### F-005-S042: Browser Framework Completion Requires Build Evidence
+
+Given an Engineer completes a browser-framework product ticket in a repository whose `package.json` declares a framework such as Phaser, Vite, React, Vue, Svelte, Three, Pixi, or Babylon
+When the package has no deterministic build script, the build script is a no-op such as `echo` or `true`, the build script is copy-only such as `mkdir dist && cp ...`, the build script only runs syntax checks such as `node --check`, or the same job has not run a recognized build command successfully
+Then the runtime blocks ticket evidence writes, done-ticket moves, and successful Engineer dispositions
+And the error tells Engineer to add or fix the package build/browser validation surface, rerun validation, update evidence, and then close the ticket
+
+Given an Engineer writes browser-framework package or entrypoint files for a Phaser brief
+When `package.json` omits the local `phaser` dependency, omits a deterministic build script, uses only a no-op/copy-only/syntax-only build script, or `index.html` loads Phaser from a CDN-only script tag
+Then `file_write` blocks the edit before the invalid target shape becomes committed product state
+And the error directs Engineer to use a local npm dependency plus a real build/runtime validation path
+
+Given an Engineer writes `package.json` for a Phaser brief
+When a runtime script uses a Mars Harness reserved port such as `18081` or starts a static source server such as `python3 -m http.server`
+Then `file_write` blocks the edit before the target app collides with local harness runtime ports or bypasses Vite module bundling
+And the error directs Engineer to use Vite dev or preview on an application port such as `5173`
+
+Given an Engineer writes Phaser HTML or JavaScript source under a nested source path such as `src/index.html` or `src/main.js`
+When the HTML loads Phaser from a CDN script, the JavaScript references `Phaser.*` without importing Phaser, or `new Phaser.Game` is constructed inside a scene callback
+Then `file_write` blocks the edit before those lifecycle defects can grow into a long validation loop
+And the error names the invalid source shape to repair
+
+Given an Engineer writes `vite.config.js` or `vite.config.ts` for a Phaser brief
+When the config imports Phaser, browser runtime code, or local `src/*` game modules
+Then `file_write` blocks the edit before `vite build` can fail from Node evaluating browser-only code
+And the error directs Engineer to keep Vite config limited to Vite/plugin configuration and import game code from browser entrypoints
+
+Given an Engineer writes `vite.config.js` or `vite.config.ts` for a Phaser brief
+When the config externalizes `phaser` from the production browser bundle
+Then `file_write` blocks the edit before `vite build` can pass with an unresolved browser runtime import
+And source inspection blocks ticket evidence, done moves, and approval if the externalization already exists
+
+Given that browser-framework product ticket has build evidence but no browser-product smoke or equivalent source/runtime assertion
+When Engineer tries to populate ticket evidence, move the ticket to done, or record a successful disposition
+Then the runtime blocks completion before QA receives the ticket
+And the error states that `node --check` or grep-only evidence is insufficient because the module graph and mounted UI state still need proof
+And it names a literal `shell_exec argv ["node","-e", ...]` source/runtime assertion as an acceptable fallback when Playwright or Puppeteer is unavailable
+
+Given Engineer runs a browser-product source/runtime assertion through `shell_exec`
+When the command uses `argv: ["node", "-e", "..."]` and the eval code contains JavaScript semicolons or import expressions
+Then argv validation treats the eval body as a language-code argument rather than shell syntax
+And a successful command that proves Phaser canvas or `#game` mounting records browser-product smoke evidence
+
+Given Engineer writes a durable validation helper such as `scripts/validate-phaser.js` or `tests/*.spec.js`
+When that helper inspects source strings such as `new Phaser.Game` to prove browser-framework lifecycle shape
+Then Phaser product-source lifecycle checks do not classify the helper as app source
+And browser-framework source inspection ignores the helper while continuing to inspect `src/`, entrypoints, package scripts, and Vite config
+
+Given Engineer has successful validation and a clean implementation commit for a browser-framework product ticket
+And the same job is still missing required package build evidence or browser-product smoke evidence
+When Engineer runs the missing build command or the bounded product smoke assertion
+Then the post-validation shell convergence gate allows that command to execute
+And other exploratory post-validation shell commands remain blocked until the ticket evidence is updated and the lifecycle move is ready
+
+Given any role validates browser source
+When it tries to run `node --check` against an `.html` or `.htm` file
+Then the command is blocked as a validation-procedure mistake, not tracked as a product runtime failure
+And the role is told to validate HTML entrypoints through package build and browser/static smoke instead
+
+Given Engineer validates a browser-framework target
+When a plain Node eval command imports or requires project browser modules and fails with missing browser globals such as `window is not defined` from framework package startup
+Then the failure is recorded as a validation-procedure mistake, not an unresolved product runtime failure
+And Engineer may continue with package build, managed server, browser-product smoke, or source/runtime assertion evidence without first making unrelated product edits
+
+Given the README, vision, feature contract, or HTML source references Phaser before a package manifest exists
+When CTO creates a feature ticket for the current scenario
+Then the ticket cannot prescribe Go CLI paths, `go.mod`, `cmd/*`, or Go module setup unless the README explicitly names a Go backend
+And the ticket must instead point Engineer toward a browser JavaScript package shape with local Phaser dependency and build evidence
+
+Given a Phaser implementation uses ES module imports between local source files
+When a source file imports a named symbol that the local module does not export, uses a symbol exported by another local module without importing it, references `Phaser.*` or `extends Phaser.Scene` without importing Phaser in that module, or an HTML file loads module syntax through a classic script tag
+Then browser-framework completion is blocked with the exact source and target file named
+And the role must repair the module graph before evidence, lifecycle closure, or approval can proceed
+
+Given QA, Security, or Dogfood reviews that browser-framework ticket
+When the package manifest is missing, Phaser is only loaded through a CDN/script tag, the package has no real build script, a framework build has not passed, no browser-product smoke or equivalent source/runtime assertion checked mounted UI state, or source inspection finds an obvious Phaser lifecycle defect such as config callbacks that are not defined or imported
+Then approval is blocked
+And terminal review guidance routes the role to `changes_requested` instead of approving based on static HTTP `curl` evidence alone
+
+Given QA reviews a browser-framework ticket whose build passed and source inspection shows no framework lifecycle defects
+When QA's smoke setup fails because the dev server was not running, the localhost probe was aimed at a stopped server, or the helper assertion was malformed
+Then `changes_requested` with `next_need: implementation_rework` is blocked
+And QA must rerun a managed server/product-smoke setup, approve with corrected evidence, or record a foundation/dogfood validation finding instead of sending target Engineer rework
+
+### F-005-S043: Product Brief Capabilities Must Become Scenarios Before Ticketing
+
+Given README, active goals, or the product brief says the target product should include or support explicit capabilities
+And the generated `docs/features/F-001-product-walking-skeleton.md` still has generic starter scenario headings
+When COO attempts to hand off planning as complete
+Then `job_disposition_record` is blocked until the Scenario Schedule and scenario headings represent those explicit capabilities or list them under Descoped Scenarios with reasons
+
+Given the feature contract mentions every explicit product capability only inside one broad runnable or inspectable scenario body
+When COO attempts to hand off planning as complete
+Then `job_disposition_record` is blocked until the Scenario Schedule entries or scenario headings break those capabilities into visible product slices for CTO ticketing
+
+Given a product brief wraps one capability list across single line breaks
+When COO or CTO capability checks extract explicit requirements from the brief
+Then single newlines are treated as wrapped prose rather than sentence boundaries
+And required capabilities later in the wrapped list must still become scenarios or explicit descoped entries
+
+Given product strategy text introduces a capability list with a category prefix such as "all core Tetris mechanics:"
+When COO or CTO capability checks extract explicit requirements from the brief, vision, or active goals
+Then the category label is removed before item matching
+And individual capabilities such as visible playfield grid, falling tetrominoes, controls, scoring, game over, and restart match the scenario schedule directly
+
+Given a product brief contains validation guidance such as build evidence, smoke evidence, or proof that the app mounts
+When COO or CTO capability checks extract explicit requirements from the brief
+Then those validation-evidence fragments are not treated as product capabilities
+And short proof tails such as "mounts" or "plays" do not force standalone product scenarios
+
+Given the brief names keyboard movement
+When the feature scenario schedule covers keyboard controls, left/right/down input, and rotation
+Then the capability guard treats the movement requirement as covered
+
+Given the feature contract names explicit brief capabilities under `Out of Scope`
+And those capabilities are not represented under `Descoped Scenarios` with rationale
+When COO attempts to hand off planning as complete or CTO attempts to create tickets
+Then the runtime blocks the handoff because required product behavior cannot disappear into generic out-of-scope text
+
+Given the feature contract includes a required capability in the scenario schedule
+And an Out of Scope line excludes only an advanced extension beyond that basic capability
+When COO attempts to hand off planning as complete
+Then the runtime does not treat the basic capability as descoped
+And direct Out of Scope lines for required behavior still require Scenario Schedule coverage or explicit descoping rationale
+
+Given the same incomplete scenario schedule reaches CTO
+When CTO attempts to create a feature ticket for the current scenario
+Then `ticket_create` is blocked with feedback to rewrite the scenario schedule before implementation tickets are created
+
+Given the feature contract has an ordered scenario schedule
+And no done ticket has covered the earliest scenario in that schedule
+When CTO attempts to create a feature ticket only for a later scenario
+Then `ticket_create` is blocked until the ticket includes the earliest uncovered scenario
+And later scenarios may be batched only when that earliest scenario is also part of the same ticket
+
+Given ordinary feature tickets already cover earlier scenarios in a feature contract
+When CTO calls `ticket_create` for a new feature ticket that includes those already-covered scenarios again
+Then the tool policy blocks the ticket and names the already-covered scenario IDs
+And the feedback directs CTO to create the next uncovered scenario ticket only, or group it with later uncovered adjacent scenarios
+
+Given CTO has already created the first early product ticket
+And the implementation handoff gate names the next required product scenarios
+When CTO retries `ticket_create` without a usable `bdd_scenarios` array but the pending gate state names those scenarios
+Then the tool fills the missing BDD scenario list from the pending handoff state before creating the next ticket
+And the created ticket records those BDD scenario IDs in frontmatter and evidence sections
+
+Given COO rewrites the generated feature contract with product-specific scenarios
+And the contract still uses durable BDD vocabulary such as product rules, workflow branches, state transitions, and user-visible outcomes
+When COO records a completed planning disposition
+Then the runtime accepts that vocabulary as valid product-specific documentation
+And starter-placeholder blocking is limited to actual scaffold phrases such as starter contract text or placeholder-noun instructions
+
+Given active goals include Markdown Scope bullets, Non-Goals, and implementation constraints such as npm install/build scripts
+When COO records a completed planning disposition after covering the actual product behaviors in the feature scenario schedule
+Then capability extraction treats each Markdown bullet as a separate statement
+And non-goals such as hold-piece mechanics, generic access wording, operational script constraints, and validation/build wording do not become required product scenarios
+And natural gameplay qualifiers such as full lines or another round do not block when the scenario schedule clearly covers line clearing and restart behavior
+
 ### F-005-S033: Test-Build Repair Scope Is Recorded
 
 Given Engineer runs a recognized Go test or build command with a narrow package target
@@ -550,7 +765,7 @@ And that command fails as product validation rather than a command-procedure err
 When the runtime records the unresolved test/build failure
 Then it stores the failed package repair scope until a same-lane test/build command repairs the failure
 
-### F-005-S039: Test-Build Repair Guidance Includes Failing Output
+### F-005-S041: Test-Build Repair Guidance Includes Failing Output
 
 Given Engineer runs a recognized test or build command and it fails
 When the runtime records the unresolved test/build repair state
@@ -558,11 +773,106 @@ Then it stores the exact unresolved command and a compact copy of the latest fai
 
 Given Engineer later attempts unrelated shell validation, completion, commit, or disposition while the test/build failure is unresolved
 When guardrail guidance is returned
-Then the message includes the exact command, latest failing output, and an instruction to edit implementation rather than weakening a test when the failing assertion matches the ticket, README, or BDD contract
+Then the message includes the exact command, a bounded compact failing-output excerpt, and an instruction to edit implementation rather than weakening a test when the failing assertion matches the ticket, README, or BDD contract
+And repeated guardrail blocks do not replay long build output into the role context
 
 Given Engineer reruns a same-lane test/build command successfully
 When the runtime clears the unresolved repair state
 Then the stored failing output is cleared with the command and scope state
+
+### F-005-S055: Dependency Sync Repairs Missing Build Dependencies
+
+Given Engineer has an unresolved test/build failure caused by missing package-manager dependencies or missing local build tools
+When Engineer successfully runs `dependency_sync`
+Then the runtime treats that dependency sync as a repair action for the unresolved test/build lane
+And Engineer may immediately rerun the same-lane test/build command
+And ticket completion, commits, runtime probes, and successful disposition remain blocked until that same-lane validation passes
+
+### F-005-S056: Browser Framework Planning And Review Share Product-Smoke Guidance
+
+Given CTO creates a feature ticket for a Phaser or browser-framework target
+When the ticket prescribes CDN-only runtime loading or CDN acceptance criteria
+Then ticket creation is blocked with guidance to require local package dependencies, deterministic build evidence, and browser-product smoke evidence
+
+Given QA or Security has build and HTTP evidence for a browser-framework ticket but no product-smoke evidence
+When approval is attempted
+Then the approval blocker includes the canonical browser-smoke command or equivalent source/runtime assertion guidance
+
+Given QA or Security starts a managed validation server through `shell_exec background:true`
+When the reviewer stops the tracked PID with `kill`
+Then the validation-only shell policy allows that tracked cleanup while continuing to block arbitrary cleanup or untracked process kills
+
+### F-005-S057: Generic Gameplay Summary Labels Are Not Standalone Capabilities
+
+Given an active goal heading says to implement core gameplay mechanics
+And the README or goal body names concrete product behaviors such as movement, rotation, line clearing, score, game over, and restart
+When COO or CTO capability checks extract product requirements
+Then generic words such as core, gameplay, mechanic, and mechanics do not create a separate standalone capability
+And the concrete behavior words remain required before planning can hand off to ticket breakdown
+
+### F-005-S058: Alternate Input Exclusions Do Not Descope Basic Movement
+
+Given a feature contract covers movement through keyboard controls or directional movement scenarios
+And the Out of Scope section excludes mobile touch controls or another alternate input mode
+When COO or CTO capability checks compare required movement behavior against out-of-scope text
+Then generic controls wording alone does not count as movement coverage or movement descoping
+And keyboard controls still count as movement coverage when the required behavior is keyboard movement
+
+### F-005-S050: Product Capability Matching Accepts Natural Scenario Titles
+
+Given a product brief asks for a game-over behavior when the playfield stack fills
+When COO writes a feature contract whose scenario schedule says the game ends when the stack fills and the user can restart
+Then the capability guard accepts the scenario outline as coverage for game-over and restart behavior
+And product names such as Tetris and modifier words such as falling are not required outline keywords when the behavior words are present
+And the guard still requires distinct requested product capabilities to remain visible in the scenario schedule or scenario headings before CTO ticketing
+
+### F-005-S051: Advanced Score Persistence Does Not Descope Basic Scoring
+
+Given a product brief requires score tracking
+And the feature scenario schedule includes line clearing with score points
+When COO lists high-score tracking or persistence under Out of Scope
+Then the capability guard treats that line as an advanced scoring extension rather than a descoping of basic score tracking
+And `beyond ...` qualifier lines such as animations beyond basic movement or UI beyond the score display do not descope the basic behavior named after the qualifier
+And directly listing basic scoring under Out of Scope still requires a Descoped Scenarios rationale
+
+### F-005-S059: Browser Evidence Completion Stops Shell Drift
+
+Given an Engineer job is delivering a browser-framework ticket
+And the same job has passed the required deterministic package build
+And the same job has passed the required browser-product smoke
+And implementation or ticket files remain dirty
+When Engineer attempts another shell exploration command instead of closing the ticket lifecycle
+Then the runtime blocks the shell command
+And the policy guidance directs Engineer to commit dirty work, update ticket evidence, move the ticket to `done`, commit the lifecycle move, push when configured, and record disposition
+And tracked background PID cleanup remains allowed so validation servers are not left running
+
+### F-005-S060: Post-Build Browser Smoke Gate Blocks Substitute Probes
+
+Given an Engineer job is delivering a browser-framework ticket
+And the same job has passed the required deterministic package build
+And the same job has not yet passed browser-product smoke
+And implementation or ticket files remain dirty
+When Engineer attempts generated-bundle inspection, plain Node `require('phaser')`, requiring browser bundles from Node, `node --check` on HTML, or trivial environment probes
+Then the runtime blocks the shell command
+And the policy guidance sends Engineer to the canonical browser-product smoke or equivalent source/runtime assertion
+And package build reruns plus tracked background PID cleanup remain allowed
+
+### F-005-S061: Advanced Out-Of-Scope Exclusions Do Not Descope Covered Basics
+
+Given a feature contract covers basic product capabilities in the Scenario Schedule and scenario headings
+And the Out of Scope section includes explanatory prose such as clear reasons or explicit rationale
+And the Out of Scope section lists advanced-only extensions such as high-score persistence, combos, previews, multiplayer, mobile touch controls, sounds, or animation polish
+When COO hands off to CTO for ticket breakdown
+Then the runtime does not treat the explanatory prose or advanced-only exclusions as descoping covered basic capabilities
+And required behavior still fails if it is directly listed under Out of Scope without Descoped Scenarios rationale
+
+### F-005-S062: Capability Matching Ignores Glue Words Around Concrete Behaviors
+
+Given README, goals, or feature prose uses phrases such as core gameplay including visible grid, show game over, or game over detection
+And the Scenario Schedule or scenario headings cover the concrete behavior words around those phrases
+When COO or CTO capability checks compare required product behavior against the feature contract
+Then include/includes/including, show/shows/showing, display/displays/displayed, and detect/detected/detection do not become standalone missing capabilities
+And concrete capabilities such as visible grid, line clearing, score tracking, game over, and restart remain required
 
 ## Out of Scope
 
@@ -584,7 +894,7 @@ None.
 - F-005-S006: `go test ./cmd/mars-harness -run 'TestRunStartServeExposeDebugAndLogFileFlags'` and planned broader E2E dogfood evidence
 - F-005-S007: `go test ./internal/tools -run 'TestToolCreate|TestMarsHarnessCLI'`
 - F-005-S008: `go test ./internal/tools -run TestPersonaCreate` and `go test ./internal/personas`
-- F-005-S009: `go test ./internal/tools -run TestTicketCreate_dedupesIndependentFeatureTicketsForSameBDDScenario`
+- F-005-S009: `go test ./internal/tools -run 'TestTicketCreate_dedupes(IndependentFeatureTicketsForSameBDDScenario|ActiveFeatureTicketsForOverlappingBDDScenario)'`
 - F-005-S010: `go test ./internal/tools -run 'TestJobDispositionPolicy|TestEngineerDispositionPolicyRequiresTicketDoneBeforeSuccess|TestEngineerClaimPolicyRequiresInProgressBeforeProductMutation|TestReviewApprovalRequiresPassingValidationWhenTestsExist|TestShellExecPolicyAllowsEvidencedEnablerTicketDoneMove|TestShellExecPolicyBlocksEnablerTicketDoneMoveWithoutEvidence|TestTicketDoneMoveSourcesPreserveShellCommandPathCase|TestRecordSessionToolOutcomeRepairsUnexpectedRuntimeFailureWithExactSuccess|TestRecordSessionToolOutcomeCorrectsUnexpectedRuntimeFailure|TestRecordSessionToolOutcomeEngineerExpectedExitDoesNotRepairUnexpectedRuntimeFailure'` and `go test ./internal/scanner -run TestInit_success`
 - F-005-S011: `go test ./internal/tools -run 'TestCOO(FileWrite|ShellExec)Policy|TestDogfoodFileWritePolicyBlocksProductMutation|TestDogfoodFindingCreatedInRunRequiresDispositionBeforeFurtherValidation'`
 - F-005-S012: `go test ./internal/tools -run TestGitPush_noRemote`
@@ -606,10 +916,29 @@ None.
 - F-005-S036: `go test ./internal/agent -run TestRun_reviewEvidenceDoesNotForceTerminalBeforeTestCommandWhenTestsExist` and `go test ./internal/tools -run TestReviewTerminalEvidenceWaitsForTestsWhenTestFilesExist`
 - F-005-S037: `go test ./internal/agent -run TestRun_reviewNoopAfterBuildAllowsMissingTestCorrection` and `go test ./internal/tools -run TestReviewShellExecPolicyRoutesPostBuildNoopToTestsWhenTestsExist`
 - F-005-S038: `go test ./internal/tools -run TestShellExecPolicyBlocksMarsHarnessBinary`
-- F-005-S039: `go test ./internal/tools -run TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane`
+- F-005-S039: `go test ./internal/tools -run 'TestRecordSessionToolOutcomeDoesNotCountBackgroundServerAsValidation|TestReviewTerminalEvidenceIgnoresBackgroundServerStart'`
+- F-005-S040: `go test ./internal/tools -run TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane`
 - F-005-S028: `go test ./internal/tools -run TestRecordSessionToolOutcomeReviewer`
-- F-005-S029: `go test ./internal/tools -run 'TestShellExecNormalizesSimpleCdValidationArgv|TestShellExecArgvRejectsShellSyntax'`
+- F-005-S029: `go test ./internal/tools -run 'TestShellExecNormalizesSimpleCdValidationArgv|TestShellExecArgvRejectsShellSyntax|TestShellExecArgvAllowsNodeEvalCodeArgument'`
 - F-005-S030: `go test ./internal/tools -run 'TestRecordSessionToolOutcomeTreatsMissingArgumentCLIProbeAsExpectedFailure|TestRecordSessionToolOutcomeTreatsInvalidInputCLIProbeAsExpectedFailure|TestRecordSessionToolOutcomeTreatsSurplusArgumentCLIProbeAsExpectedFailure|TestRecordSessionToolOutcomeStillTreatsPositiveInputFailureAsUnexpected'`
 - F-005-S031: `go test ./internal/tools -run TestRecordSessionToolOutcomeEngineerGoBuildProcedureFailureDoesNotPoisonRepairLane`
 - F-005-S032: `go test ./internal/tools -run TestEngineerFailingTestAllowsSameJobRepairTestFileRemoval`
 - F-005-S033: `go test ./internal/tools -run TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation`
+- F-005-S041: `go test ./internal/tools -run TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation`
+- F-005-S042: `go test ./internal/tools -run 'TestCTOTicketCreateBlocksGoShapeForPhaserBrief|TestEngineerFileWriteBlocksGoScaffoldForPhaserBrief|TestEngineerFileWriteBlocksPhaserPackageWithoutBuildScript|TestEngineerFileWriteBlocksPhaserPackageCopyOnlyBuildScript|TestEngineerFileWriteBlocksPhaserCDNScriptTag|TestEngineerFileWriteBlocksNestedPhaserCDNScriptTag|TestEngineerFileWriteBlocksPhaserPackageReservedRuntimePort|TestEngineerFileWriteBlocksPhaserPackageStaticSourceServer|TestEngineerFileWriteBlocksPhaserSourceWithoutModuleImport|TestEngineerFileWriteBlocksRecursivePhaserGameConstruction|TestEngineerFileWriteBlocksPhaserRuntimeInViteConfig|TestEngineerFileWriteBlocksPhaserExternalInViteConfig|TestEngineerBrowserFrameworkEvidenceRequiresPackageForPhaserBrief|TestEngineerBrowserFrameworkTicketEvidenceRequiresBuildScript|TestEngineerBrowserFrameworkTicketEvidenceRequiresBuildSuccess|TestEngineerBrowserFrameworkTicketEvidenceRejectsNoopBuildScript|TestEngineerBrowserFrameworkTicketEvidenceRejectsSyntaxOnlyBuildScript|TestEngineerBrowserFrameworkTicketEvidenceRejectsCopyOnlyBuildScript|TestEngineerBrowserFrameworkTicketEvidenceRequiresProductSmoke|TestEngineerPostValidationAllowsMissingBrowserBuildAfterCommit|TestEngineerPostValidationAllowsMissingBrowserSmokeAfterBuild|TestEngineerBrowserFrameworkTicketEvidenceBlocksMissingNamedExports|TestEngineerBrowserFrameworkTicketEvidenceBlocksClassicScriptModuleEntry|TestEngineerBrowserFrameworkTicketEvidenceBlocksPhaserExternalInViteConfig|TestEngineerBrowserFrameworkTicketEvidenceBlocksMissingPhaserImport|TestEngineerBrowserFrameworkTicketEvidenceBlocksMissingLocalExportImport|TestShellExecPolicyBlocksNodeCheckHTML|TestRecordSessionToolOutcomeTreatsNodeCheckHTMLAsProcedureFailure|TestRecordSessionToolOutcomeTracksBrowserProductSmokeNodeEval|TestQABrowserFrameworkApprovalBlocksPhaserLifecycleDefect|TestQABrowserFrameworkApprovalRequiresProductSmoke|TestDogfoodBrowserFrameworkApprovalRequiresProductSmoke|TestReviewTerminalEvidenceForBrowserFrameworkWithoutBuildRequestsChanges'` and `go test ./internal/scanner -run 'TestInit_success|TestInitGeneratedRolePrompts'`
+- F-005-S043: `go test ./internal/tools -run 'TestCOOCompletionRequiresProductSpecificFeatureContract|TestCOOCompletionAllowsProductSpecificContractWithBusinessLogicLanguage|TestCOOCompletionRequiresBriefCapabilitiesInScenarioSchedule|TestCOOCompletionRejectsCollapsedProductCapabilityScenario|TestCOOCompletionIgnoresValidationEvidenceAndAcceptsControlSynonym|TestCOOCompletionRejectsBriefCapabilitiesInOutOfScope|TestCOOCompletionAllowsAdvancedOutOfScopeQualifierForCoveredBasicCapabilities|TestCTOTicketCreateRequiresBriefCapabilitiesInScenarioSchedule|TestCTOTicketCreateRequiresEarliestUncoveredFeatureScenario|TestCTOTicketCreateAllowsScenarioGroupStartingWithEarliestUncoveredScenario'`
+- F-005-S046: `go test ./internal/tools -run 'TestEngineerFileWriteAllowsPhaserValidationHelperProbeStrings|TestBrowserFrameworkSourceFindingsIgnorePhaserValidationHelper'`
+- F-005-S047: `go test ./internal/tools -run TestCTOTicketCreateInfersPendingHandoffScenarios`
+- F-005-S048: `go test ./internal/tools -run TestPlanningRoleShellExecPolicyBlocksMutatingCommands`
+- F-005-S049: `go test ./internal/tools -run TestCOOCompletionIgnoresActiveGoalNonGoalsAndOperationalConstraints`
+- F-005-S050: `go test ./internal/tools -run 'TestCOOCompletionAcceptsExpandedDemoTetrisScenarioSchedule|TestCOOCompletionAcceptsGroupedGameOverScenarioSchedule|TestCOOCompletionAcceptsRefinedDemoTetrisScenarioSchedule'`
+- F-005-S051: `go test ./internal/tools -run TestCOOCompletionAllowsHighScorePersistenceOutOfScope`
+- F-005-S052: `go test ./internal/tools -run TestReviewHTTPProbeBeforeServerStartIsProcedureFailure`
+- F-005-S053: `go test ./internal/tools -run TestEngineerReworkUsesDispatchTicketBeforeOlderDoneTicket`
+- F-005-S056: `go test ./internal/tools -run 'TestCTOTicketCreateBlocksCDNShapeForPhaserBrief|TestQABrowserFrameworkApprovalRequiresProductSmoke|TestReviewShellExecPolicyAllowsTrackedBackgroundKill'`
+- F-005-S057: `go test ./internal/tools -run TestCOOCompletionIgnoresGenericGameplayMechanicsGoalHeading`
+- F-005-S058: `go test ./internal/tools -run TestCOOCompletionDoesNotTreatMobileTouchControlsAsMovementDescoped`
+- F-005-S059: `go test ./internal/tools -run TestEngineerPostValidationBrowserEvidenceBlocksDirtyExploration`
+- F-005-S060: `go test ./internal/tools -run TestEngineerPostBuildBrowserFrameworkBlocksSmokeSubstitutesWhileDirty`
+- F-005-S061: `go test ./internal/tools -run TestCOOCompletionAllowsOutOfScopeIntroAndAdvancedScoringSystems`
+- F-005-S062: `go test ./internal/tools -run TestCapabilityMatchingIgnoresIncludingAndDetectionGlue`

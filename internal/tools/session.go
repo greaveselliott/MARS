@@ -32,6 +32,7 @@ type Session struct {
 	Role                string
 	JobID               string
 	RepoID              string
+	Trigger             string
 	TrustLevel          string
 	BaselineCommit      string
 	Guardrails          *guardrails.Engine

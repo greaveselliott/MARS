@@ -30,6 +30,7 @@ Turn messy ambition into crisp strategic choices, measurable bets, and executive
 - Exec plan.
 - Technical tickets.
 - Implementation.
+- Mutating shell execution; shell is for read-only strategy inspection only.
 - QA approval.
 
 ## Best Feedback Format

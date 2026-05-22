@@ -51,6 +51,17 @@ func TestShellExecArgvAllowsLiteralNewlineArgument(t *testing.T) {
 	require.Equal(t, "hello\nworld", res.Output)
 }
 
+func TestShellExecArgvAllowsNodeEvalCodeArgument(t *testing.T) {
+	t.Parallel()
+
+	err := validateShellExecArgv([]string{
+		"node",
+		"-e",
+		"import('./src/main.js'); console.log('browser smoke: Phaser canvas #game new Phaser.Game')",
+	})
+	require.NoError(t, err)
+}
+
 func TestShellExecPolicyBlocksMarsHarnessBinaryArgv(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -202,6 +213,34 @@ func TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane(t *testing.T)
 	require.Empty(t, session.ToolState[testBuildValidationCommandKey])
 }
 
+func TestRecordSessionToolOutcomeDependencySyncCountsAsTestBuildRepair(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}, ToolState: map[string]string{}}
+	buildRaw := json.RawMessage(`{"argv":["npm","run","build"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", buildRaw, ToolResult{
+		ExitCode: 127,
+		Stderr:   "sh: vite: command not found",
+	}, nil)
+	require.Equal(t, 1, session.ToolCounts[testBuildValidationOutstandingKey])
+	require.Equal(t, 0, session.ToolCounts[testBuildValidationEditAfterFailureKey])
+
+	ctx := WithSession(context.Background(), *session)
+	err = preToolPolicy(ctx, root, "shell_exec", buildRaw)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "latest repair edit")
+
+	recordSessionToolOutcome(session, root, "dependency_sync", json.RawMessage(`{"action":"install","package_manager":"npm","reason":"Install build tool dependencies"}`), ToolResult{}, nil)
+	require.Equal(t, 1, session.ToolCounts[testBuildValidationEditAfterFailureKey])
+
+	ctx = WithSession(context.Background(), *session)
+	err = preToolPolicy(ctx, root, "shell_exec", buildRaw)
+	require.NoError(t, err)
+}
+
 func TestRecordSessionToolOutcomeTracksRuntimeValidationCommands(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -214,6 +253,63 @@ func TestRecordSessionToolOutcomeTracksRuntimeValidationCommands(t *testing.T) {
 
 	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
 	require.Equal(t, 0, session.ToolCounts[testCommandSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeTracksBrowserProductSmokeNodeEval(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["node","-e","const fs=require('fs'); console.log('browser smoke: Phaser canvas #game new Phaser.Game');"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 0}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[browserProductSmokeSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeTracksTicketDoneMove(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["git","mv","docs/tickets/in-progress/T-002-ship.md","docs/tickets/done/"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 0}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[ticketDoneMoveSuccessKey])
+	require.Equal(t, "T-002", session.ToolState[ticketDoneMoveLastIDKey])
+}
+
+func TestRecordSessionToolOutcomeTracksHTTPProbeValidation(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["curl","-fsS","http://127.0.0.1:8765/"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 0}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
+	require.Equal(t, 0, session.ToolCounts[testCommandSuccessKey])
+	require.Equal(t, 0, session.ToolCounts[buildCommandSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeDoesNotCountBackgroundServerAsValidation(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["python3","-m","http.server","8080","--bind","127.0.0.1"],"background":true}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 0}, nil)
+
+	require.Equal(t, 0, session.ToolCounts[validationCommandAttemptKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandSuccessKey])
 }
 
 func TestRecordSessionToolOutcomeTracksExpectedRuntimeFailure(t *testing.T) {
@@ -828,6 +924,26 @@ func TestShellExecBackgroundReturnsPIDForLongRunningProcess(t *testing.T) {
 	require.Contains(t, res.Output, "Started in background (PID")
 	require.Contains(t, res.Output, "After probes, stop this tracked PID")
 	require.Contains(t, res.Output, "Do not call shell_exec with empty argv or :")
+}
+
+func TestShellExecBackgroundKeepsOutputDrainedAfterStartup(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell loop is unix-specific")
+	}
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	defer KillBackgroundProcs()
+
+	res, err := handleShellExec(context.Background(), root, []byte(`{"shell_command":"while true; do echo tick >&2; sleep 1; done","background":true}`))
+	require.NoError(t, err)
+	pid := backgroundPIDFromOutput(t, res.Output)
+
+	time.Sleep(1500 * time.Millisecond)
+	bgMu.Lock()
+	_, tracked := bgProcs[pid]
+	bgMu.Unlock()
+	require.True(t, tracked, "background process should still be tracked after writing post-startup stderr")
 }
 
 func TestShellExecNoopReturnsCompletionGuidance(t *testing.T) {

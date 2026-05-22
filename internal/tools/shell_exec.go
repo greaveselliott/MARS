@@ -76,14 +76,27 @@ var (
 )
 
 type lockedBuffer struct {
-	mu sync.Mutex
-	b  bytes.Buffer
+	mu  sync.Mutex
+	b   bytes.Buffer
+	max int
 }
 
 func (b *lockedBuffer) Write(p []byte) (int, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.b.Write(p)
+	if b.max <= 0 {
+		_, _ = b.b.Write(p)
+		return len(p), nil
+	}
+	remaining := b.max - b.b.Len()
+	if remaining > 0 {
+		if len(p) > remaining {
+			_, _ = b.b.Write(p[:remaining])
+		} else {
+			_, _ = b.b.Write(p)
+		}
+	}
+	return len(p), nil
 }
 
 func (b *lockedBuffer) String() string {
@@ -399,7 +412,10 @@ func validateShellExecArgv(argv []string) error {
 	if shellArgvBuiltin(program) {
 		return shellArgvSyntaxError(argv[0])
 	}
-	for _, arg := range argv {
+	for i, arg := range argv {
+		if shellArgvCodeArgument(program, argv, i) {
+			continue
+		}
 		token := strings.Trim(strings.TrimSpace(arg), `"'`)
 		if token == "" {
 			continue
@@ -409,6 +425,21 @@ func validateShellExecArgv(argv []string) error {
 		}
 	}
 	return nil
+}
+
+func shellArgvCodeArgument(program string, argv []string, index int) bool {
+	if index <= 0 || index >= len(argv) {
+		return false
+	}
+	prev := strings.Trim(strings.TrimSpace(argv[index-1]), `"'`)
+	switch strings.ToLower(strings.TrimSpace(program)) {
+	case "node", "nodejs":
+		return prev == "-e" || prev == "--eval" || prev == "-p" || prev == "--print"
+	case "python", "python3", "ruby", "perl":
+		return prev == "-c" || prev == "-e"
+	default:
+		return false
+	}
 }
 
 func validateShellExecGitRemoteMutation(argv []string, mode string) error {
@@ -614,18 +645,19 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 	if err != nil {
 		return ToolResult{}, fmt.Errorf("shell_exec: stdout pipe: %w", err)
 	}
-	defer stdoutRead.Close()
 	stderrRead, stderrWrite, err := os.Pipe()
 	if err != nil {
+		stdoutRead.Close()
 		stdoutWrite.Close()
 		return ToolResult{}, fmt.Errorf("shell_exec: stderr pipe: %w", err)
 	}
-	defer stderrRead.Close()
 	cmd.Stdout = stdoutWrite
 	cmd.Stderr = stderrWrite
 
 	if err := cmd.Start(); err != nil {
+		stdoutRead.Close()
 		stdoutWrite.Close()
+		stderrRead.Close()
 		stderrWrite.Close()
 		return ToolResult{}, fmt.Errorf("shell_exec: start background: %w", err)
 	}
@@ -651,13 +683,17 @@ func execBackground(root Root, args shellExecArgs) (ToolResult, error) {
 	// Capture initial output for the capture window so the agent sees
 	// startup messages (e.g. "ready on http://localhost:3000").
 	var stdoutBuf, stderrBuf lockedBuffer
+	stdoutBuf.max = DefaultMaxToolOutputBytes / 2
+	stderrBuf.max = DefaultMaxToolOutputBytes / 2
 	done := make(chan struct{}, 2)
 	go func() {
 		_, _ = io.Copy(&stdoutBuf, stdoutRead)
+		_ = stdoutRead.Close()
 		done <- struct{}{}
 	}()
 	go func() {
 		_, _ = io.Copy(&stderrBuf, stderrRead)
+		_ = stderrRead.Close()
 		done <- struct{}{}
 	}()
 

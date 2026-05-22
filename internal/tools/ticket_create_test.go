@@ -165,6 +165,39 @@ func TestTicketCreate_dedupesIndependentFeatureTicketsForSameBDDScenario(t *test
 	assert.Contains(t, result.Output, "created ticket T-002")
 }
 
+func TestTicketCreate_dedupesActiveFeatureTicketsForOverlappingBDDScenario(t *testing.T) {
+	t.Parallel()
+	dir, root := setupTicketDir(t)
+
+	result, err := CreateTicket(root, TicketInput{
+		Title:        "Implement browser access and playfield display",
+		Priority:     "high",
+		WorkType:     "feature",
+		BDDScenarios: []string{"F-001-S002", "F-001-S003"},
+		Source:       "current-operating-plan.md",
+		Body:         "## Context\nEarly product batch.\n\n## Requirements\nBuild it.\n\n## Acceptance criteria\n- [ ] Scenarios pass",
+	})
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "created ticket T-001")
+
+	result, err = CreateTicket(root, TicketInput{
+		Title:        "Dogfood pre-flight missing core gameplay mechanics",
+		Priority:     "high",
+		WorkType:     "feature",
+		BDDScenarios: []string{"F-001-S003"},
+		Source:       "dogfood test 2026-05-22",
+		Body:         "## Context\nDogfood observed missing gameplay.\n\n## Requirements\nFix it.\n\n## Acceptance criteria\n- [ ] Scenario passes",
+	})
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "DUPLICATE")
+	assert.Contains(t, result.Output, "F-001-S003")
+	assert.Contains(t, result.Output, "T-001")
+
+	entries, err := os.ReadDir(filepath.Join(dir, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+}
+
 func TestTicketCreate_interventionDebtWritesMetadata(t *testing.T) {
 	t.Parallel()
 	dir, root := setupTicketDir(t)

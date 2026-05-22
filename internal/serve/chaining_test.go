@@ -11,8 +11,10 @@ package serve
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/greaveselliott/mars-harness/internal/orgstate"
@@ -880,6 +882,114 @@ func TestHandleJobComplete_releaseBlockedStopsWithoutDogfoodLoop(t *testing.T) {
 	}
 }
 
+func TestHandleJobComplete_openProductTicketRoutesBeforeRelease(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+	writeDispatchTicket(t, repoRoot, "backlog", "T-002-next-slice.md", `---
+id: T-002
+title: Next slice
+kind: feature
+bdd_scenarios: ["F-001-S002"]
+---
+
+# Next slice
+`)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/release-waits-open-ticket", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	completedJob := &queue.Job{ID: "job-dogfood-approved", RepoID: repoID, Role: "dogfood"}
+	if err := srv.orgStore.RecordDisposition(ctx, orgstate.Disposition{
+		JobID:    completedJob.ID,
+		RepoID:   repoID,
+		Role:     "dogfood",
+		Status:   "approved",
+		NextNeed: "no_need",
+		Reason:   "slice validated",
+	}); err != nil {
+		t.Fatalf("RecordDisposition: %v", err)
+	}
+
+	srv.handleJobComplete(ctx, completedJob)
+
+	dispatchJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if dispatchJob == nil {
+		t.Fatal("expected dispatch job")
+	}
+	if dispatchJob.Role != "engineer" {
+		t.Fatalf("expected open product ticket to route engineer before release, got %s", dispatchJob.Role)
+	}
+}
+
+func TestHandleJobComplete_uncoveredGeneratedFeatureScenarioRoutesCTOBeforeRelease(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+	writeGeneratedFeatureContract(t, repoRoot, []string{"F-001-S001", "F-001-S002"})
+	writeDispatchTicket(t, repoRoot, "done", "T-001-first-slice.md", `---
+id: T-001
+title: First slice
+kind: feature
+bdd_scenarios: ["F-001-S001"]
+---
+
+# First slice
+Evidence for F-001-S001.
+`)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/release-waits-scenarios", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	completedJob := &queue.Job{ID: "job-dogfood-scenarios", RepoID: repoID, Role: "dogfood"}
+	if err := srv.orgStore.RecordDisposition(ctx, orgstate.Disposition{
+		JobID:    completedJob.ID,
+		RepoID:   repoID,
+		Role:     "dogfood",
+		Status:   "approved",
+		NextNeed: "no_need",
+		Reason:   "first slice validated",
+	}); err != nil {
+		t.Fatalf("RecordDisposition: %v", err)
+	}
+
+	srv.handleJobComplete(ctx, completedJob)
+
+	dispatchJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if dispatchJob == nil {
+		t.Fatal("expected dispatch job")
+	}
+	if dispatchJob.Role != "cto-weekly" {
+		t.Fatalf("expected uncovered scenario to route CTO before release, got %s", dispatchJob.Role)
+	}
+}
+
 func TestHandleJobFailed_failedOrchestratorFallsForwardFromSourceDisposition(t *testing.T) {
 	repoRoot, dbPath := setupDispatchFixture(t)
 
@@ -1075,6 +1185,219 @@ func TestHandleJobFailed_ticketGateRepairDoesNotReenqueue(t *testing.T) {
 	}
 }
 
+func TestHandleJobFailed_maxTurnsAfterTicketLifecyclePolicyBlockEnqueuesRepair(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/ticket-gate-after-max-turns", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:     "job-engineer-max-turns-after-ticket-gate",
+		RepoID: repoID,
+		Role:   "engineer",
+	}
+	srv.telemetry.Record(
+		failedJob.ID,
+		repoID,
+		"engineer",
+		"pre tool policy blocked job_disposition_record: policy: engineer cannot record a successful disposition for T-001 while it remains in docs/tickets/in-progress/T-001-demo.md; update evidence, move the ticket to docs/tickets/done/ with git mv, commit the lifecycle move, then record qa_review",
+	)
+
+	srv.handleJobFailed(ctx, failedJob, errTest("executor: agent ended with max_turns"))
+
+	repairJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if repairJob == nil {
+		t.Fatal("expected ticket-gate repair job")
+	}
+	if repairJob.Role != "engineer" {
+		t.Fatalf("expected engineer repair job, got %s", repairJob.Role)
+	}
+	var trigger map[string]string
+	if err := json.Unmarshal([]byte(repairJob.Trigger), &trigger); err != nil {
+		t.Fatalf("unmarshal trigger: %v", err)
+	}
+	if trigger["type"] != "ticket_gate_repair" {
+		t.Fatalf("expected ticket_gate_repair trigger, got %q", trigger["type"])
+	}
+	if !strings.Contains(trigger["ask"], "node --check main.js") || !strings.Contains(trigger["ask"], "18081") {
+		t.Fatalf("expected bounded validation repair guidance, got %q", trigger["ask"])
+	}
+}
+
+func TestHandleJobFailed_maxTurnsWithActiveProductTicketEnqueuesContinuation(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+	writeDispatchTicket(t, repoRoot, "in-progress", "T-001-build-game.md", `---
+id: T-001
+title: Build game
+work_type: feature
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/product-continuation", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:     "job-engineer-max-turns-product-progress",
+		RepoID: repoID,
+		Role:   "engineer",
+	}
+	srv.handleJobFailed(ctx, failedJob, errTest("executor: agent ended with max_turns"))
+
+	continuationJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if continuationJob == nil {
+		t.Fatal("expected product continuation job")
+	}
+	if continuationJob.Role != "engineer" {
+		t.Fatalf("expected engineer continuation job, got %s", continuationJob.Role)
+	}
+	var trigger map[string]string
+	if err := json.Unmarshal([]byte(continuationJob.Trigger), &trigger); err != nil {
+		t.Fatalf("unmarshal trigger: %v", err)
+	}
+	if trigger["type"] != "product_continuation" {
+		t.Fatalf("expected product_continuation trigger, got %q", trigger["type"])
+	}
+	if !strings.Contains(trigger["ask"], "Continue the active product ticket") || !strings.Contains(trigger["ask"], "browser-framework") {
+		t.Fatalf("expected bounded product continuation guidance, got %q", trigger["ask"])
+	}
+}
+
+func TestHandleJobFailed_circleDetectedWithActiveProductTicketEnqueuesContinuation(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+	writeDispatchTicket(t, repoRoot, "in-progress", "T-001-build-game.md", `---
+id: T-001
+title: Build game
+work_type: feature
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/product-continuation-circle", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:     "job-engineer-circle-product-progress",
+		RepoID: repoID,
+		Role:   "engineer",
+	}
+	srv.handleJobFailed(ctx, failedJob, errTest("executor: agent ended with circle_detected"))
+
+	continuationJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if continuationJob == nil {
+		t.Fatal("expected product continuation job")
+	}
+	if continuationJob.Role != "engineer" {
+		t.Fatalf("expected engineer continuation job, got %s", continuationJob.Role)
+	}
+	var trigger map[string]string
+	if err := json.Unmarshal([]byte(continuationJob.Trigger), &trigger); err != nil {
+		t.Fatalf("unmarshal trigger: %v", err)
+	}
+	if trigger["type"] != "product_continuation" {
+		t.Fatalf("expected product_continuation trigger, got %q", trigger["type"])
+	}
+	if !strings.Contains(trigger["reason"], "circle_detected") {
+		t.Fatalf("expected circle reason in trigger, got %q", trigger["reason"])
+	}
+}
+
+func TestHandleJobFailed_productContinuationDoesNotReenqueue(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+	writeDispatchTicket(t, repoRoot, "in-progress", "T-001-build-game.md", `---
+id: T-001
+title: Build game
+work_type: feature
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/product-continuation-no-loop", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:      "job-engineer-product-continuation",
+		RepoID:  repoID,
+		Role:    "engineer",
+		Trigger: `{"type":"product_continuation","source_job":"job-engineer-max-turns"}`,
+	}
+	srv.handleJobFailed(ctx, failedJob, errTest("executor: agent ended with max_turns"))
+
+	claimed, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if claimed != nil {
+		t.Fatalf("expected no recursive product continuation job, got role=%s", claimed.Role)
+	}
+}
+
 func TestHandleJobFailed_dispatchProtocolDoesNotRouteOrchestrator(t *testing.T) {
 	repoRoot, dbPath := setupDispatchFixture(t)
 
@@ -1221,5 +1544,36 @@ blocked_by: []
 	}
 	if got := countJobsByStatusAndRole(t, srv, "pending", "engineer"); got != 1 {
 		t.Fatalf("expected pending engineer survey job, got %d", got)
+	}
+}
+
+func writeDispatchTicket(t *testing.T, repoRoot, status, name, content string) {
+	t.Helper()
+	dir := filepath.Join(repoRoot, "docs", "tickets", status)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir ticket dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+		t.Fatalf("write ticket: %v", err)
+	}
+}
+
+func writeGeneratedFeatureContract(t *testing.T, repoRoot string, scenarios []string) {
+	t.Helper()
+	path := filepath.Join(repoRoot, "docs", "features", "F-001-product-walking-skeleton.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir feature dir: %v", err)
+	}
+	var b strings.Builder
+	b.WriteString("# F-001: Product Walking Skeleton\n\n## Scenario Schedule\n\n")
+	for i, scenario := range scenarios {
+		b.WriteString(fmt.Sprintf("%d. %s - scenario\n", i+1, scenario))
+	}
+	b.WriteString("\n## Scenarios\n\n")
+	for _, scenario := range scenarios {
+		b.WriteString("### " + scenario + ": Scenario\n\nGiven product intent\nWhen work runs\nThen evidence exists\n\n")
+	}
+	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+		t.Fatalf("write feature: %v", err)
 	}
 }

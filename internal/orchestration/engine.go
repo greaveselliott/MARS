@@ -545,19 +545,52 @@ func repeatedRoute(in Input, nextRole string) bool {
 	if nextRole == "" || in.TicketStateHash == "" {
 		return false
 	}
+	currentReviewRank, stagedReviewerRework := currentReviewerReworkRank(in, nextRole)
 	count := 0
 	d := in.Disposition
-	for _, prev := range in.RecentDecisions {
+	for i, prev := range in.RecentDecisions {
 		if prev.RepoID == d.RepoID &&
 			prev.SourceRole == d.Role &&
 			prev.TicketID == d.TicketID &&
 			prev.NextNeed == d.NextNeed &&
 			prev.NextRole == nextRole &&
 			prev.TicketStateHash == in.TicketStateHash {
+			if stagedReviewerRework {
+				if previousRank, ok := previousReviewSourceRankForRoute(in.RecentDecisions, i, prev); ok && previousRank < currentReviewRank {
+					continue
+				}
+			}
 			count++
 		}
 	}
 	return count >= 2
+}
+
+func currentReviewerReworkRank(in Input, nextRole string) (int, bool) {
+	if in.SourceDisposition == nil || normalize(in.Disposition.Role) != "orchestrator" {
+		return 0, false
+	}
+	source := *in.SourceDisposition
+	if normalize(source.Status) != "changes_requested" || normalize(nextRole) != "engineer" {
+		return 0, false
+	}
+	rank, ok := reviewLifecycleRank(source.Role)
+	return rank, ok
+}
+
+func previousReviewSourceRankForRoute(decisions []orgstate.Decision, routeIndex int, route orgstate.Decision) (int, bool) {
+	for i := routeIndex + 1; i < len(decisions); i++ {
+		candidate := decisions[i]
+		if candidate.RepoID != route.RepoID ||
+			candidate.TicketID != route.TicketID ||
+			candidate.NextNeed != route.NextNeed ||
+			candidate.NextRole != "orchestrator" ||
+			candidate.TicketStateHash != route.TicketStateHash {
+			continue
+		}
+		return reviewLifecycleRank(candidate.SourceRole)
+	}
+	return 0, false
 }
 
 func normalize(value string) string {

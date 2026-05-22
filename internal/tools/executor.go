@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 )
@@ -135,8 +136,15 @@ func recordSessionToolOutcome(session *Session, root Root, name string, raw json
 	if name == "file_write" && err == nil && session.ToolCounts[testBuildValidationOutstandingKey] > 0 {
 		session.ToolCounts[testBuildValidationEditAfterFailureKey]++
 	}
+	if name == "dependency_sync" && err == nil && strings.ToLower(strings.TrimSpace(session.Role)) == "engineer" && session.ToolCounts[testBuildValidationOutstandingKey] > 0 {
+		session.ToolCounts[testBuildValidationEditAfterFailureKey]++
+	}
 	if name != "shell_exec" {
 		return
+	}
+	if movedID, ok := shellExecInProgressToDoneTicketID(raw); err == nil && res.ExitCode == 0 && ok {
+		session.ToolCounts[ticketDoneMoveSuccessKey]++
+		session.ToolState[ticketDoneMoveLastIDKey] = movedID
 	}
 	args, decodeErr := decodeShellExecArgs(raw)
 	if decodeErr != nil {
@@ -162,6 +170,9 @@ func recordSessionToolOutcome(session *Session, root Root, name string, raw json
 	}
 	if err == nil && res.ExitCode == 0 && !runtimeStderrFailure {
 		session.ToolCounts[validationCommandSuccessKey]++
+		if shellExecRunsBrowserProductSmokeCommand(args) {
+			session.ToolCounts[browserProductSmokeSuccessKey]++
+		}
 		if runtimeValidation {
 			if recordSuccessfulRuntimeValidationRepair(session, args) && session.ToolCounts[validationCommandFailureKey] > 0 {
 				session.ToolCounts[validationCommandFailureKey]--
@@ -357,6 +368,18 @@ func validationProcedureFailure(session *Session, root Root, args shellExecArgs,
 	if session == nil || !roleAllowsValidationProcedureFailure(session.Role) {
 		return false
 	}
+	if shellExecNodeCheckHTML(args) {
+		return true
+	}
+	if nodeCheckMissingFileProcedureFailure(root, args, res) {
+		return true
+	}
+	if nodeEvalBrowserFrameworkProcedureFailure(root, args, res) {
+		return true
+	}
+	if shellExecRunsHTTPProbe(args) && httpProbeFailedBeforeServerStart(res) {
+		return true
+	}
 	if !shellExecRunsTestCommand(args) && !shellExecRunsBuildCommand(args) {
 		return false
 	}
@@ -365,6 +388,174 @@ func validationProcedureFailure(session *Session, root Root, args shellExecArgs,
 	}
 	if goCommandTargetsRootWithoutGoFiles(root, args, res) {
 		return true
+	}
+	return false
+}
+
+func nodeEvalBrowserFrameworkProcedureFailure(root Root, args shellExecArgs, res ToolResult) bool {
+	code, ok := shellExecNodeEvalCode(args)
+	if !ok || strings.TrimSpace(code) == "" {
+		return false
+	}
+	output := strings.ToLower(strings.TrimSpace(res.Stderr + "\n" + res.Output))
+	if !browserGlobalMissingInNode(output) {
+		return false
+	}
+	if !nodeEvalLoadsProjectOrBrowserFramework(code) && !browserFrameworkPackageInStack(output) {
+		return false
+	}
+	info := repoBrowserFrameworkInfo(root)
+	return info.UsesFramework || browserFrameworkPackageInStack(output)
+}
+
+func shellExecNodeEvalCode(args shellExecArgs) (string, bool) {
+	fields := normalizedShellExecFields(args)
+	for i := 0; i < len(fields); i++ {
+		if filepathBase(fields[i]) != "node" {
+			continue
+		}
+		for j := i + 1; j < len(fields); j++ {
+			flag := fields[j]
+			if flag == "--" {
+				break
+			}
+			if flag == "-e" || flag == "--eval" {
+				if j+1 < len(fields) {
+					return fields[j+1], true
+				}
+				return "", false
+			}
+			if strings.HasPrefix(flag, "--eval=") {
+				return strings.TrimPrefix(flag, "--eval="), true
+			}
+		}
+	}
+	return "", false
+}
+
+func browserGlobalMissingInNode(output string) bool {
+	for _, marker := range []string{
+		"referenceerror: window is not defined",
+		"referenceerror: document is not defined",
+		"referenceerror: navigator is not defined",
+		"referenceerror: self is not defined",
+	} {
+		if strings.Contains(output, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func nodeEvalLoadsProjectOrBrowserFramework(code string) bool {
+	lower := strings.ToLower(code)
+	for _, marker := range []string{
+		"require('./",
+		`require("./`,
+		"require('../",
+		`require("../`,
+		"import('./",
+		`import("./`,
+		"import('../",
+		`import("../`,
+		" from './",
+		` from "./`,
+		" from '../",
+		` from "../`,
+		"require('phaser')",
+		`require("phaser")`,
+		"import('phaser')",
+		`import("phaser")`,
+		" from 'phaser'",
+		` from "phaser"`,
+	} {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func browserFrameworkPackageInStack(output string) bool {
+	for _, marker := range []string{
+		"node_modules/phaser",
+		`node_modules\phaser`,
+		"phaser/src/",
+		`phaser\src\`,
+		"node_modules/pixi.js",
+		`node_modules\pixi.js`,
+		"node_modules/@pixi",
+		`node_modules\@pixi`,
+		"node_modules/konva",
+		`node_modules\konva`,
+	} {
+		if strings.Contains(output, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func nodeCheckMissingFileProcedureFailure(root Root, args shellExecArgs, res ToolResult) bool {
+	target, ok := shellExecNodeCheckTarget(args)
+	if !ok || target == "" {
+		return false
+	}
+	abs, err := root.ResolvePath(target)
+	if err != nil {
+		return false
+	}
+	if _, err := os.Stat(abs); err == nil {
+		return false
+	}
+	output := strings.ToLower(strings.TrimSpace(res.Stderr + "\n" + res.Output))
+	for _, marker := range []string{
+		"cannot find module",
+		"module_not_found",
+		"no such file",
+		"enoent",
+	} {
+		if strings.Contains(output, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func shellExecNodeCheckTarget(args shellExecArgs) (string, bool) {
+	fields := normalizedShellExecFields(args)
+	for i := 0; i < len(fields)-2; i++ {
+		if filepathBase(fields[i]) != "node" {
+			continue
+		}
+		flag := fields[i+1]
+		if flag != "--check" && flag != "-c" {
+			continue
+		}
+		return cleanShellPathToken(fields[i+2]), true
+	}
+	return "", false
+}
+
+func httpProbeFailedBeforeServerStart(res ToolResult) bool {
+	if res.ExitCode == 0 {
+		return false
+	}
+	output := strings.ToLower(strings.TrimSpace(res.Stderr + "\n" + res.Output))
+	if output == "" {
+		return false
+	}
+	for _, marker := range []string{
+		"curl: (7)",
+		"failed to connect",
+		"could not connect",
+		"couldn't connect",
+		"connection refused",
+		"connection failure",
+	} {
+		if strings.Contains(output, marker) {
+			return true
+		}
 	}
 	return false
 }

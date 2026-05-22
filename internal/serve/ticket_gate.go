@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -84,6 +85,8 @@ func snapshotTickets(repoPath string) (ticketSnapshot, error) {
 	return snap, nil
 }
 
+var featureScenarioIDPattern = regexp.MustCompile(`\bF-\d{3}-S\d{3}\b`)
+
 func enforceEngineerTicketPrerequisite(decision orgstate.Decision, snap ticketSnapshot, manifest *bundle.Manifest, source *orgstate.Disposition) orgstate.Decision {
 	if sourceCompletedEngineerWithoutOpenProductTicket(decision, source, snap) {
 		decision.DecisionKind = "deterministic"
@@ -126,6 +129,44 @@ func enforceEngineerTicketPrerequisite(decision orgstate.Decision, snap ticketSn
 	}
 	decision.NextRole = ""
 	decision.StopReason = "engineer dispatch requires an open ordinary product ticket and no cto-weekly role is configured"
+	return decision
+}
+
+func enforceReleaseRequiresCompletedFeatureScenarios(decision orgstate.Decision, snap ticketSnapshot, manifest *bundle.Manifest, repoPath string) orgstate.Decision {
+	if !strings.EqualFold(strings.TrimSpace(decision.NextRole), "release-manager") {
+		return decision
+	}
+	if snap.hasOpenProductTicket() {
+		decision.DecisionKind = "deterministic"
+		decision.NextNeed = "implementation"
+		decision.Reason = strings.TrimSpace(decision.Reason + "; release waits while ordinary product tickets remain open")
+		if manifest != nil {
+			if _, ok := manifest.Roles["engineer"]; ok {
+				decision.NextRole = "engineer"
+				decision.StopReason = ""
+				return decision
+			}
+		}
+		decision.NextRole = ""
+		decision.StopReason = "release waits for open product tickets and no engineer role is configured"
+		return decision
+	}
+	missing := uncoveredGeneratedFeatureScenarios(repoPath, snap)
+	if len(missing) == 0 {
+		return decision
+	}
+	decision.DecisionKind = "deterministic"
+	decision.NextNeed = "ticket_breakdown"
+	decision.Reason = strings.TrimSpace(decision.Reason + "; release waits for uncovered feature scenarios: " + strings.Join(missing, ", "))
+	if manifest != nil {
+		if _, ok := manifest.Roles["cto-weekly"]; ok {
+			decision.NextRole = "cto-weekly"
+			decision.StopReason = ""
+			return decision
+		}
+	}
+	decision.NextRole = ""
+	decision.StopReason = "release waits for uncovered feature scenarios and no cto-weekly role is configured"
 	return decision
 }
 
@@ -205,6 +246,63 @@ func (s ticketSnapshot) productTicketByID(id string) (ticketstate.Ticket, bool) 
 		return t, true
 	}
 	return ticketstate.Ticket{}, false
+}
+
+func uncoveredGeneratedFeatureScenarios(repoPath string, snap ticketSnapshot) []string {
+	if strings.TrimSpace(repoPath) == "" {
+		return nil
+	}
+	featurePath := filepath.Join(repoPath, "docs", "features", "F-001-product-walking-skeleton.md")
+	data, err := os.ReadFile(featurePath)
+	if err != nil {
+		return nil
+	}
+	scenarios := orderedScenarioIDs(string(data))
+	if len(scenarios) == 0 {
+		return nil
+	}
+	covered := map[string]bool{}
+	for _, name := range snap.Done {
+		t, ok := snap.Details[name]
+		if !ok || t.Kind == "intervention-debt" {
+			continue
+		}
+		for _, scenario := range ticketScenarioIDs(repoPath, t) {
+			covered[scenario] = true
+		}
+	}
+	var missing []string
+	for _, scenario := range scenarios {
+		if !covered[scenario] {
+			missing = append(missing, scenario)
+		}
+	}
+	return missing
+}
+
+func orderedScenarioIDs(content string) []string {
+	matches := featureScenarioIDPattern.FindAllString(strings.ToUpper(content), -1)
+	seen := map[string]bool{}
+	var out []string
+	for _, match := range matches {
+		if seen[match] {
+			continue
+		}
+		seen[match] = true
+		out = append(out, match)
+	}
+	return out
+}
+
+func ticketScenarioIDs(repoPath string, ticket ticketstate.Ticket) []string {
+	if strings.TrimSpace(ticket.RelPath) == "" {
+		return nil
+	}
+	data, err := os.ReadFile(filepath.Join(repoPath, filepath.FromSlash(ticket.RelPath)))
+	if err != nil {
+		return nil
+	}
+	return orderedScenarioIDs(string(data))
 }
 
 func validateEngineerTicketGate(before, after ticketSnapshot) error {

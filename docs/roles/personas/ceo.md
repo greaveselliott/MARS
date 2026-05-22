@@ -29,6 +29,7 @@ Set the durable vision, active goals, and final scope decisions so every downstr
 - Writing BDD feature contracts.
 - Creating technical tickets.
 - Implementing or approving engineering work.
+- Mutating shell execution; shell is for read-only planning inspection only.
 - QA, security, dependency, or release approval.
 
 ## Best Feedback Format

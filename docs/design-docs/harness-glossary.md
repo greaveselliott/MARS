@@ -40,6 +40,9 @@ harness and deployed harnesses.
 | Deployed operating model | The operating model inside a target application harness, governing how agents build that target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Live demo improvement loop | The foundation stabilization loop for lifecycle work: run a clean representative target such as `demo-123`, review findings, implement one or two bounded source actions, rerun, and claim improvement only after rerun evidence is confirmed, merged or fast-forwarded to trunk, and pushed to the remote. |
+| Failure ownership classification | The universal operating-model step that classifies every observed failure as foundation-owned, deployed-owned, or mixed/unclear before creating tickets or fixes; foundation-owned fixes belong in `mars-harness` source/runtime/generated doctrine and should benefit all applicable users, while deployed-owned fixes belong in the target repo and should improve that deployed harness or product. |
+| Foundation-owned failure | A failure caused by Mars Harness runtime, orchestration, role guidance, tool policy, generated defaults, model/provider behavior, telemetry, release/update, or mirrored doctrine; record it as foundation evidence or a source ticket instead of converting it into target product backlog. |
+| Deployed-owned failure | A failure caused by target product behavior, target architecture, local build/test setup, target docs, target skills, or project-specific policy; fix it inside the deployed harness or target project and mirror only reusable doctrine back to the foundation. |
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes `file_read`, `file_write`, `file_search`, `shell_exec`, `mars_harness_cli`, `grep`, `workspace_hygiene`, `github_auth_check`, `dependency_sync`, `record_decision`, `ticket_create`, `tool_create`, `persona_create`, `docsync_audit`, release/status/audit workflow tools, and git tools. |
@@ -73,6 +76,13 @@ Use the foundation/deployed architecture when a change touches mirrored
 operating doctrine, generated target guidance, recursive improvement
 boundaries, doctrine drift, tool/skill authority, runtime feedback routing, or
 the line between source-only mechanics and deployed-target requirements.
+
+### When classifying failures or planning live-loop fixes include this: `docs/design-docs/foundation-deployed-harness-architecture.md`
+
+Use the foundation/deployed architecture before turning a live demo, dogfood,
+telemetry, review, or operator finding into work. Classify the finding as
+foundation-owned, deployed-owned, or mixed/unclear; then choose the owning repo,
+ticket path, and fix level before changing code or target backlog.
 
 ### When changing foundational rules include this: `docs/design-docs/tenets.md`
 

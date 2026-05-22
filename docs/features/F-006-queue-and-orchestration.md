@@ -44,6 +44,9 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 27. F-006-S039 - Simple `cd <dir> && <test/build>` shell commands count as same-lane validation for repair classification.
 28. F-006-S041 - Engineer test/build repair writes stay inside the failed package scope when one is known.
 29. F-006-S042 - Engineer can remove duplicate test files it created earlier in the same job while repairing a failing test lane.
+30. F-006-S045 - Release review waits for open product tickets and uncovered generated feature scenarios.
+31. F-006-S046 - Fresh bootstrap CTO ticketing can seed a small ordered product backlog batch from early product scenarios so later product work is ready after the first slice.
+32. F-006-S047 - Engineer closes one product ticket per job before claiming another product ticket.
 
 ## Scenarios
 
@@ -163,6 +166,10 @@ Given Orchestrator repeatedly chooses the same next role and next need without a
 When the loop guard evaluates the new dispatch decision
 Then dispatch stops with a loop-guard reason instead of enqueueing Orchestrator or the same target role again
 
+Given QA has already requested implementation rework and the same ticket later reaches Security
+When Security records fresh `changes_requested` feedback for the same product ticket without a ticket-state change
+Then the loop guard treats the Security feedback as a later review-stage handoff and routes one bounded Engineer rework instead of stopping on the earlier QA route history
+
 Given a dispatch-mode Orchestrator job fails before it records a disposition
 When its trigger carries a non-Orchestrator `source_disposition` with a deterministic routing signal such as `next_need`, `suggested_role`, `handoff.target_role`, or `feedback.for_role`
 Then the server records the failure as telemetry and falls forward to the deterministic target role using the original source handoff instead of enqueueing Orchestrator again
@@ -179,6 +186,18 @@ Given Orchestrator selects Engineer for implementation
 When an ordinary product ticket exists in backlog or in-progress
 Then dispatch may enqueue Engineer and the ticket gate remains responsible for claim, completion, evidence, and handoff correctness
 
+Given CTO is shaping a fresh product feature with a clear scenario schedule
+When the earliest uncovered scenario is already covered by an ordinary ticket in backlog, in-progress, in-review, or done
+Then CTO may create the next scenario ticket instead of being forced to wait for the earlier ticket to reach done, allowing a small ordered backlog batch for the project build
+
+Given CTO records an implementation handoff for a feature with multiple early scheduled product scenarios
+When fewer than the first two or three early product scenarios are covered by ordinary tickets
+Then the disposition is blocked until CTO creates a small product backlog batch or deliberately groups adjacent early product scenarios in one bounded ticket
+
+Given a later scheduled scenario is only about evidence ordering, governance, telemetry, or intervention-debt containment
+When the early product scenarios are already covered by ordinary tickets
+Then CTO may hand off to Engineer without creating a process-only implementation ticket
+
 Given Engineer completed an ordinary product ticket and moved it to `docs/tickets/done/`
 When Orchestrator or deterministic Orchestrator-failure fallback attempts another implementation, CTO planning, or other pre-review handoff but no open product ticket remains
 Then dispatch routes QA review instead of routing back to Engineer, CTO ticket shaping, or another planning loop
@@ -194,6 +213,15 @@ Then dispatch routes directly to Release Manager so `VERSION`, `CHANGELOG.md`, t
 Given Release Manager records a blocked disposition with `next_need: release_blocked`
 When local release notes or tag evidence exists but publication is blocked by a missing remote, credentials, workflow failure, or asset publication failure
 Then dispatch stops with an operator-visible release-publication blocker and does not enqueue Orchestrator, Dogfood, or earlier product-validation roles unless product validation evidence changed
+
+Given Dogfood, Security, or another review role completes a validated product slice
+When dispatch would route to Release Manager but ordinary product tickets remain open
+Then dispatch routes Engineer before release so the backlog continues draining
+
+Given no ordinary product tickets remain open
+And the generated target feature contract still contains scenarios without a done ticket that references them in `bdd_scenarios`
+When dispatch would route to Release Manager
+Then dispatch routes CTO ticket shaping before release so generated feature scenarios are covered before version publication
 
 Given Engineer fails a ticket gate such as missing BDD scenario evidence on a done ticket
 When dispatch-mode failure handling records the failure
@@ -291,6 +319,11 @@ Given Engineer has successful validation evidence and a committed implementation
 When the worktree is clean and Engineer attempts additional `shell_exec` exploration instead of moving the ticket through the lifecycle
 Then policy blocks the shell command and instructs Engineer to update ticket evidence, move the ticket to `docs/tickets/done/`, commit that lifecycle move, and record `job_disposition_record` with `next_need: qa_review`
 
+Given Engineer has moved an ordinary product ticket from `docs/tickets/in-progress/` to `docs/tickets/done/`
+When another ordinary product ticket remains in backlog
+Then the lifecycle move commit is still allowed before the next claim gate runs
+And any attempt to claim or mutate the next product ticket in the same job is blocked until Engineer commits the lifecycle move, pushes when a remote exists, and records `job_disposition_record` with `next_need: qa_review`
+
 Given Engineer has successful validation evidence, dirty implementation work, and an in-progress product ticket
 When it repeats empty-argv or single-colon `shell_exec` no-op calls
 Then policy treats the repeated no-op as a loop boundary and instructs Engineer to stop shell placeholders, inspect status, commit the dirty work, complete the ticket lifecycle, and record `job_disposition_record`
@@ -334,6 +367,12 @@ Then tool policy allows that one corrective shell command, records expected nega
 Given Engineer has successful validation evidence, a clean implementation commit, and an ordinary product ticket still in `docs/tickets/in-progress/`
 When Engineer attempts any non-lifecycle `shell_exec` command instead of closing the ticket
 Then policy blocks the shell command and says the next tool must be `file_read` on the in-progress ticket followed by `file_write` on the same ticket to populate `evidence_links` and `verified_by`
+
+Given that in-progress ticket is for a browser-framework package
+And required package build evidence or browser-product smoke evidence is still missing
+When Engineer runs the missing build command or the bounded smoke/source-runtime assertion after the implementation commit
+Then the post-validation convergence gate allows that evidence command
+And blocks other exploratory shell commands until the required evidence exists
 
 Given Engineer has claimed an ordinary product ticket but has not yet produced validation evidence
 When Engineer repeats an empty-argv or single-colon `shell_exec` no-op
@@ -608,6 +647,7 @@ Then those writes remain available and can be committed before the CTO dispositi
 Given Engineer observes a failing test command in the current job
 When it edits product source, tests, fixtures, or package/build config
 Then a later recognized test command in the same lane may repair the blocker even when its package scope differs from the original command
+And tests include files under `test/` or `tests/` plus conventional `*.test.*`, `*.spec.*`, and Go `_test.go` files
 
 Given Engineer observes a failing build command in the current job
 When it edits product source, tests, fixtures, or package/build config
@@ -616,6 +656,7 @@ Then a later recognized build command in the same lane may repair the blocker ev
 Given a failing test/build repair lane is unresolved
 When Engineer attempts runtime probes, helper scripts, unrelated shell commands, ticket evidence updates, ticket done moves, successful disposition, or product commits
 Then those actions remain blocked until the same validation lane passes
+And repeated guardrail messages summarize the failing output compactly so repair guidance does not overflow the role context
 
 ### F-006-S039: Simple CD Validation Commands Stay In Lane
 
@@ -647,6 +688,7 @@ Then the write is blocked as an alternate implementation path
 Given Engineer edits source, tests, fixtures, testdata, or package/build config inside the failed scope
 When it reruns a same-lane test/build command successfully
 Then the repair lane can clear and normal ticket lifecycle may resume
+And focused test-file edits stay eligible repair work instead of being treated as unrelated helper scripts
 
 ### F-006-S042: Same-Job Test Cleanup Covers Pre-Failure Writes
 
@@ -669,6 +711,36 @@ Then the harness leaves those sidecar files in place and asks SQLite to recover 
 Given SQLite recovery fails during cleanup
 When startup continues or reports the failure
 Then the sidecar files remain operator-visible and are not silently removed by automatic cleanup
+
+### F-006-S044: Ticket Lifecycle Blocks Recover After Max Turns
+
+Given Engineer has implemented and committed product work for an in-progress ticket
+And tool policy blocks ticket evidence, done-ticket moves, or successful disposition because lifecycle evidence is incomplete
+When the Engineer then reaches `max_turns`
+Then dispatch enqueues one bounded `ticket_gate_repair` Engineer job instead of stopping with only telemetry
+
+Given the bounded repair job runs
+When evidence is missing but the code state is not proven invalid
+Then Engineer runs one validation command that exercises the named BDD scenario, updates ticket evidence, moves the ticket to `docs/tickets/done/`, commits the lifecycle correction, and records `job_disposition_record`
+
+Given a static HTML/CSS/JS ticket has no package manifest
+When Engineer validates the ticket by serving the HTML entry and probing it with HTTP
+Then the successful HTTP probe counts as validation evidence for ticket evidence updates and lifecycle completion
+
+### F-006-S046: Engineer Product Progress Continues After Max Turns
+
+Given Engineer reaches `max_turns` or `circle_detected` while an ordinary product ticket remains in `docs/tickets/in-progress/`
+And the failure is not already running a bounded ticket-gate repair or product-continuation job
+When dispatch-mode failure handling records the runtime failure
+Then the harness enqueues one bounded Engineer `product_continuation` job for the same active product ticket instead of stopping with only foundation telemetry
+
+Given that product-continuation job runs
+When it inspects the target state
+Then it continues from the latest commits and dirty files, fixes only the remaining product/build/validation/lifecycle gaps, updates evidence, moves the ticket to done when acceptance is met, and records `job_disposition_record`
+
+Given a product-continuation job also reaches `max_turns`
+When failure handling runs again
+Then the harness does not enqueue recursive product-continuation jobs
 
 ## Out of Scope
 
@@ -700,7 +772,7 @@ None.
 - F-006-S019: `go test ./internal/tools -run 'TestEngineerPostValidationGateAllowsValidationWhileImplementationDirty|TestEngineerMustReopenDoneTicketBeforeProductMutation|TestEngineerPostValidationAllowsFreshExternalValidationArtifact'`
 - F-006-S020: `go test ./internal/tools -run 'TestRecordSessionToolOutcomeTracksRuntimeValidationCommands|TestEngineerPostRuntimeValidationNoopRedirectsToTicketCompletion'`
 - F-006-S021: `go test ./internal/tools -run TestReviewApprovalRequiresPassingValidationWhenTestsExist`
-- F-006-S022: `go test ./internal/tools -run 'TestEngineerPostValidationCommitBlocksExploratoryShellUntilTicketDone|TestEngineerPostRuntimeValidationNoopRedirectsToTicketCompletion|TestEngineerCannotCompleteTicketWithUnresolvedRuntimeValidationFailure'` and `go test ./internal/agent -run 'TestRun_requiredTerminalToolGetsOneBudgetGraceTurn|TestRun_terminalToolGraceRejectsNonTerminalTool'`
+- F-006-S022: `go test ./internal/tools -run 'TestEngineerPostValidationCommitBlocksExploratoryShellUntilTicketDone|TestEngineerPostValidationAllowsMissingBrowserBuildAfterCommit|TestEngineerPostValidationAllowsMissingBrowserSmokeAfterBuild|TestEngineerPostRuntimeValidationNoopRedirectsToTicketCompletion|TestEngineerCannotCompleteTicketWithUnresolvedRuntimeValidationFailure'` and `go test ./internal/agent -run 'TestRun_requiredTerminalToolGetsOneBudgetGraceTurn|TestRun_terminalToolGraceRejectsNonTerminalTool'`
 - F-006-S023: `go test ./internal/tools -run TestSuccessfulDispositionBlocksUnresolvedTicketCreationFailure`
 - F-006-S024: `go test ./internal/tools -run TestEngineerMissingArgumentRuntimeFailureBlocksUnrelatedMutation`
 - F-006-S025: `go test ./internal/tools -run 'TestExternalValidationArtifact(MustBeRebuiltAfterRuntimeFailureEdit|AllowsRerunAfterRuntimeFailureEditAndRebuild)'`
@@ -721,3 +793,6 @@ None.
 - F-006-S040: `go test ./internal/agent -run TestRun_reviewEvidenceReminder`
 - F-006-S041: `go test ./internal/tools -run TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation`
 - F-006-S043: `go test ./internal/serve -run TestCleanStaleSQLitePreservesRecoverableSidecars`
+- F-006-S044: `go test ./internal/serve -run TestHandleJobFailed_maxTurnsAfterTicketLifecyclePolicyBlockEnqueuesRepair` and `go test ./internal/tools -run TestRecordSessionToolOutcomeTracksHTTPProbeValidation`
+- F-006-S045: `go test ./internal/serve -run 'TestHandleJobComplete_(openProductTicketRoutesBeforeRelease|uncoveredGeneratedFeatureScenarioRoutesCTOBeforeRelease)'`
+- F-006-S046: `go test ./internal/serve -run 'TestHandleJobFailed_maxTurnsWithActiveProductTicketEnqueuesContinuation|TestHandleJobFailed_circleDetectedWithActiveProductTicketEnqueuesContinuation|TestHandleJobFailed_productContinuationDoesNotReenqueue|TestOrchestratorSurveyPausesTicketOwnerAfterRecentRuntimeFailure'`

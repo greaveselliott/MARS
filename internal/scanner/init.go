@@ -515,6 +515,11 @@ var defaultWorkspaceNoiseIgnores = []string{
 	".DS_Store",
 	"Thumbs.db",
 	"Desktop.ini",
+	"node_modules/",
+	"dist/",
+	"build/",
+	"coverage/",
+	".vite/",
 }
 
 func ensureWorkspaceNoiseGitignore(repoRoot string) (bool, error) {
@@ -766,7 +771,7 @@ var defaultHarnessFiles = map[string]string{
     paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/conversation-as-system-record.md, docs/design-docs/index.md
   - when: harness vocabulary, mirrored definitions, foundation harness, deployed harness, operating model, role domains, role modes, tools, tool availability, tool use cases, tool selection, tool allowlists, tenets, first-class definitions, or contextual definitions
     paths: AGENTS.md, docs/roles/ROLES.md, docs/design-docs/harness-glossary.md, docs/design-docs/harness-operating-model.md, docs/design-docs/tools-glossary.md, docs/design-docs/tenets.md, docs/design-docs/mirrored-harness-and-context-glossary.md
-  - when: foundation/deployed architecture, mirrored operating doctrine, recursive improvement boundaries, doctrine drift, source-only rules, deployed-only rules, runtime feedback routing, or tool/skill authority
+  - when: foundation/deployed architecture, mirrored operating doctrine, recursive improvement boundaries, doctrine drift, source-only rules, deployed-only rules, failure ownership classification, runtime feedback routing, live-loop fix ownership, or tool/skill authority
     paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/mirrored-harness-and-context-glossary.md, docs/design-docs/tools-glossary.md, docs/design-docs/skill-evolution.md
   - when: role routing, role model, domains, modes, schedules, chains, trigger routing, handoff, feedback, persona manuals, or manifest role behavior
     paths: .harness/manifest.yaml, docs/roles/ROLES.md, docs/roles/personas, docs/design-docs/harness-operating-model.md, docs/design-docs/context-glossary.md
@@ -1018,6 +1023,9 @@ would otherwise live only in chat.
 - **Deployed operating model** — the operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Live evidence improvement loop** — the product stabilization loop inherited from the foundation operating model: observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, and claim improvement only after rerun evidence is confirmed, merged or fast-forwarded to trunk, and pushed to the remote.
+- **Failure ownership classification** — the universal operating-model step that classifies every observed failure as foundation-owned, deployed-owned, or mixed/unclear before creating tickets or fixes; foundation-owned fixes belong in ` + "`mars-harness`" + ` source/runtime/generated doctrine and should benefit all applicable users, while deployed-owned fixes belong in the target repo and should improve this deployed harness or product.
+- **Foundation-owned failure** — a failure caused by Mars Harness runtime, orchestration, role guidance, tool policy, generated defaults, model/provider behavior, telemetry, release/update, or mirrored doctrine; record it as foundation evidence or a source follow-up instead of converting it into target product backlog.
+- **Deployed-owned failure** — a failure caused by target product behavior, target architecture, local build/test setup, target docs, target skills, or project-specific policy; fix it inside this deployed harness or target project and mirror only reusable doctrine back to the foundation.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
 - **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
@@ -1075,7 +1083,8 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - No stale documentation: when writing or materially changing code, add or update the top-of-file ` + "`MarsDocSync`" + ` comment block with a ` + "`docs:`" + ` list of associated docs, run or satisfy the docsync audit where applicable, then update those docs in the same commit or record why no doc change was needed.
 - CLI tool/skill sync: when ` + "`mars-harness`" + ` CLI commands, flags, output contracts, repo behavior, or workflows change, update ` + "`mars_harness_cli`" + ` reference and repo-shortcut behavior, generated target doctrine, and affected skills in the same change.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
-- Product lifecycle improvements use a live evidence loop: observe a real product path, review findings, make one or two bounded target-owned changes, rerun the same path, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence.
+- Product lifecycle improvements use a live evidence loop: observe a real product path, review findings, classify every failure as foundation-owned, deployed-owned, or mixed/unclear, make one or two bounded changes at the owning layer, rerun the same path, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence.
+- Do not turn Mars Harness runtime, orchestration, generated-default, tool-policy, model/provider, telemetry, or mirrored-doctrine failures into this target's backlog by default. Record foundation-owned findings as evidence or source follow-up; fix target product behavior, target architecture, local build/test setup, target docs, target skills, and project policy in this repo.
 - Prefer eligible in-progress tickets before backlog work; a ticket is eligible when it has no meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata.
 - Complete one coherent step at a time.
 - If blocked, record ` + "`blocker`" + `, ` + "`blocked_by`" + `, ` + "`trace_id`" + `, and ` + "`next_action`" + `, create or update the dependency/intervention-debt ticket, and return the ticket to a non-misleading state.
@@ -1487,6 +1496,12 @@ Architectural decisions and design documents for this project.
 | AD-108 | Agents fetch and fast-forward from ` + "`origin/main`" + ` before non-trivial work, then push validated commits and release tags to remote trunk as soon as they are ready. | 2026-05-05 | Accepted |
 | AD-138 | Product lifecycle improvements use a live evidence loop: observe a real path, review findings, make bounded target-owned changes, rerun, merge or fast-forward to trunk, push to the remote, and claim improvement only from rerun evidence. | 2026-05-19 | Accepted |
 | AD-139 | Foundation and deployed harness architecture separates source doctrine, runtime substrate, generated target doctrine, target project ownership, feedback routing, tool/skill authority, and source-only release mechanics. | 2026-05-19 | Accepted |
+| AD-252 | Failure ownership classification is universal doctrine: every live-loop, dogfood, telemetry, review, or operator finding is classified as foundation-owned, deployed-owned, or mixed before tickets or fixes are created. | 2026-05-22 | Accepted |
+| AD-253 | Review HTTP probes before server startup are validation-procedure failures, and Engineer rework reopens the dispatch-named ticket. | 2026-05-22 | Accepted |
+| AD-266 | Active feature-ticket scenario overlap dedupes Dogfood findings, review roles go straight to canonical browser-framework evidence, Security avoids broad shell secret scans, and Orchestrator preserves lifecycle ticket paths. | 2026-05-22 | Accepted |
+| AD-267 | After browser-framework package build passes but before browser-product smoke passes, Engineer shell validation is limited to build reruns, canonical product smoke, and tracked PID cleanup so Node-only bundle probes cannot replace mounted UI evidence. | 2026-05-22 | Accepted |
+| AD-268 | Out-of-scope explanation prose and advanced-only extensions no longer descope covered basic product capabilities such as line clearing or score tracking. | 2026-05-22 | Accepted |
+| AD-269 | Capability matching ignores generic glue words such as include/including, show/display, and detection while preserving concrete behavior requirements. | 2026-05-22 | Accepted |
 `,
 
 	"docs/design-docs/conversation-as-system-record.md": `# AD-086: Conversation As System Record
@@ -1763,13 +1778,24 @@ they are ready.
 
 Product lifecycle improvements use the same evidence loop as delivery work:
 observe a real build, run, dogfood, user, or agent path; review the findings;
-make one or two bounded target-owned changes; rerun the same path; merge or
-fast-forward the confirmed fix to trunk; push it to the remote; and claim
+classify every failure as foundation-owned, deployed-owned, or mixed/unclear;
+make one or two bounded changes at the owning layer; rerun the same path; merge
+or fast-forward the confirmed fix to trunk; push it to the remote; and claim
 improvement only from rerun evidence. If the rerun or remote push cannot
 happen, record the blocker and exact replay, merge, and push commands in the
 owning ticket, plan, report, or decision. The source-harness ` + "`demo-123`" + ` replay is
 source-only shorthand; target repos choose their own representative product
 path.
+
+Failure ownership classification is universal doctrine. Foundation-owned
+failures include Mars Harness runtime, orchestration, generated defaults, role
+guidance, tool policy, model/provider behavior, telemetry, release/update, or
+mirrored doctrine. They become foundation evidence or source follow-up, not
+target backlog by default. Deployed-owned failures include product behavior,
+target architecture, local build/test setup, target docs, target skills, or
+project policy. They are fixed in this repo. Mixed or unclear findings remain
+observations or investigations until the owning layer is explicit, except for
+small local unblocks needed to finish target evidence.
 
 A repeated process promotion to formalized tools is part of the operating model.
 When agents or humans use a
@@ -1814,6 +1840,8 @@ exception context.
 | Source and target diverge | ` + "`update check`" + ` and ` + "`doctor --repo`" + ` report operating-model drift; update writes missing defaults only. |
 | Agents build on stale trunk or strand ready commits locally | Fetch ` + "`origin/main`" + ` before editing; push validated commits and tags promptly; record blockers for divergence, dirty state, unavailable remotes, or rejected pushes. |
 | Operating-model additions create handoff gaps | Treat operating-model changes as system changes: update the whole affected workflow in one task or record the blocker before merging. |
+| Foundation defects become target backlog noise | Classify failures before ticketing; route runtime, orchestration, generated-default, tool-policy, model/provider, telemetry, or mirrored-doctrine issues to foundation evidence or source follow-up. |
+| Target product bugs are hidden behind foundation fixes | Keep deployed-owned failures in this repo with target evidence; mirror only reusable doctrine or tooling gaps back to the foundation. |
 
 ## AD-097: Business Logic Is First-Class BDD
 
@@ -2339,7 +2367,8 @@ loading every document.
 | Canonical role domain | One of Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Role mode | A lower-kebab-case purpose inside a role domain, such as ticket-delivery or quality-review. | ` + "`docs/design-docs/harness-operating-model.md`" + ` |
 | Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. | ` + "`docs/roles/ROLES.md`" + ` |
-| Live evidence improvement loop | Observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
+| Live evidence improvement loop | Observe a real product path, review findings, classify each failure as foundation-owned, deployed-owned, or mixed/unclear, implement one or two bounded changes at the owning layer, rerun, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence. | ` + "`docs/design-docs/delivery-operating-model.md`" + ` |
+| Failure ownership classification | The universal routing step that decides whether a finding belongs to foundation source/runtime/generated doctrine, this deployed harness/product, or a mixed follow-up before creating tickets or fixes. | ` + "`docs/design-docs/harness-glossary.md`" + ` |
 | Conversation system record | Durable artifact rule for significant agent conversations that affect plans, decisions, investigations, quality findings, or completed-work state. | ` + "`docs/design-docs/conversation-as-system-record.md`" + ` |
 | Design decision | A durable architecture or workflow choice. | ` + "`docs/design-docs/index.md`" + ` |
 | Release | A semantic version plus patch-note entry generated from commits. | ` + "`docs/design-docs/release-versioning.md`" + ` |
@@ -2398,6 +2427,9 @@ harness and deployed harnesses.
 | Deployed operating model | The operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Live evidence improvement loop | The product stabilization loop inherited from the foundation operating model: observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence. |
+| Failure ownership classification | The universal operating-model step that classifies every observed failure as foundation-owned, deployed-owned, or mixed/unclear before creating tickets or fixes; foundation-owned fixes belong in ` + "`mars-harness`" + ` source/runtime/generated doctrine and should benefit all applicable users, while deployed-owned fixes belong in this target repo and should improve this deployed harness or product. |
+| Foundation-owned failure | A failure caused by Mars Harness runtime, orchestration, role guidance, tool policy, generated defaults, model/provider behavior, telemetry, release/update, or mirrored doctrine; record it as foundation evidence or a source follow-up instead of converting it into target product backlog. |
+| Deployed-owned failure | A failure caused by target product behavior, target architecture, local build/test setup, target docs, target skills, or project-specific policy; fix it inside this deployed harness or target project and mirror only reusable doctrine back to the foundation. |
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
 | Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
@@ -2429,8 +2461,15 @@ release behavior, or context-routing discipline.
 
 Use the mirrored harness architecture route when a change touches generated
 target guidance, mirrored operating doctrine, recursive improvement boundaries,
-doctrine drift, tool/skill authority, runtime feedback routing, or the line
-between source-only mechanics and deployed-target requirements.
+doctrine drift, tool/skill authority, failure ownership classification, runtime
+feedback routing, or the line between source-only mechanics and deployed-target requirements.
+
+### When classifying failures or planning live-loop fixes include this: ` + "`docs/design-docs/mirrored-harness-and-context-glossary.md`" + `
+
+Use the mirrored harness route before turning a live demo, dogfood, telemetry,
+review, or operator finding into work. Classify the finding as
+foundation-owned, deployed-owned, or mixed/unclear; then choose the owning repo,
+ticket path, and fix level before changing code or target backlog.
 
 ### When changing foundational rules include this: ` + "`docs/design-docs/tenets.md`" + `
 
@@ -2519,17 +2558,17 @@ tools are added, removed, renamed, or materially change behavior.
 | Tool | Use When | Notes |
 | --- | --- | --- |
 | ` + "`file_read`" + ` | Read a known file path from the repository. | Non-mutating. Use before editing or reviewing code. |
-| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. Engineer cannot populate in-progress ticket ` + "`evidence_links`" + ` or ` + "`verified_by`" + ` before the same job records successful validation. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. New repo-root validation scripts such as ` + "`validate.sh`" + ` are blocked; use existing tests, direct build/run/curl evidence, or intentional durable tests. COO may only write planning artifacts. CTO may only write bounded technical planning artifacts; implementation, package/module, README usage, source, test, build, config, and root product-file edits belong to ticket-backed Engineer delivery. |
+| ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. Engineer cannot populate in-progress ticket ` + "`evidence_links`" + ` or ` + "`verified_by`" + ` before the same job records successful validation; browser-framework packages also require a build script, successful same-job build evidence, and no obvious static lifecycle defects. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. New repo-root validation scripts such as ` + "`validate.sh`" + ` are blocked; use existing tests, direct build/run/curl evidence, or intentional durable tests. COO may only write planning artifacts. CTO may only write bounded technical planning artifacts; implementation, package/module, README usage, source, test, build, config, and root product-file edits belong to ticket-backed Engineer delivery. |
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
-| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Simple malformed argv shapes are normalized before policy checks and execution, and literal newlines inside one argv argument are allowed because argv does not invoke shell parsing. Engineer runs with an ordinary backlog product ticket and no in-progress ticket must use ` + "`shell_exec`" + ` to claim that ticket with ` + "`git mv ... docs/tickets/in-progress/`" + ` before any other shell command. Use ` + "`expected_exit_code`" + ` only for intentional non-zero error-path validation probes; unexpected validation failures block review approval. Engineer cannot move, write, or commit product tickets to ` + "`docs/tickets/done/`" + ` while the same job has an unrepaired unexpected runtime validation failure; after Engineer observes an unexpected runtime failure, runtime probes are blocked until an implementation ` + "`file_write`" + ` occurs, and only a later successful run of that exact failed command repairs the blocker. Engineer may correct an obvious no-argument/missing-argument runtime probe by rerunning that exact command once with matching ` + "`expected_exit_code`" + `, but cannot retroactively add ` + "`expected_exit_code`" + ` to clear a failed positive acceptance path. During Engineer unresolved test/build repair, ` + "`go mod init <module>`" + ` is allowed only when the latest failure says Go cannot find a main module and no ` + "`go.mod`" + ` exists. QA/Security shell execution is validation-only: read-only inspection, tests, builds, fresh external validation binaries, runtime probes, and HTTP probes are allowed, while package/module initialization such as ` + "`go mod init`" + `, product mutation, broad discovery, cleanup, and placeholder no-ops are blocked. QA/Security retain the one-time exact-command ` + "`expected_exit_code`" + ` correction for review-procedure mistakes. QA/Security must stop shell validation after any failing build, test, or unexpected runtime probe and record ` + "`changes_requested`" + ` with the failing command/output, except they may immediately rerun the exact same runtime probe once with matching ` + "`expected_exit_code`" + ` when the first run was an expected-negative case. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Likely server/watch commands such as ` + "`go run`" + ` HTTP entrypoints, ` + "`npm start`" + `, ` + "`npm run dev`" + `, ` + "`python -m http.server`" + `, ` + "`uvicorn`" + `, ` + "`vite`" + `, and ` + "`next`" + ` are blocked in foreground mode; rerun them with ` + "`background:true`" + `, probe readiness separately, and stop the tracked PID. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not call ` + "`shell_exec`" + ` with empty ` + "`argv`" + ` or a single ` + "`:`" + ` as a wait or placeholder command; no-op calls fail with guidance to stop tracked PIDs, commit, push, and record ` + "`job_disposition_record`" + `. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors. Background cleanup terminates wrapper processes and known descendants so ` + "`go run`" + ` child servers do not occupy ports after a job ends, and ` + "`kill <tracked-background-pid>`" + ` applies the same cleanup during a job. ` + "`go build`" + ` without ` + "`-o`" + `, ` + "`go build -o <path>`" + ` inside the target repo, and untracked temp outputs without a ` + "`-validation`" + ` suffix are blocked before execution; use ` + "`go test ./...`" + ` for compile validation or ` + "`go build -o /tmp/<project>-validation <entrypoint>`" + ` for runnable validation. |
+| ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Simple malformed argv shapes are normalized before policy checks and execution, and literal newlines inside one argv argument are allowed because argv does not invoke shell parsing. Planner roles such as CEO, Head of Strategy, COO, CTO, and CTO-weekly may use read-only shell inspection when otherwise policy-safe, but mutating shell commands are blocked so strategy, planning, ticketing, dependency, and implementation ownership cannot be bypassed. Engineer runs with an ordinary backlog product ticket and no in-progress ticket must use ` + "`shell_exec`" + ` to claim that ticket with ` + "`git mv ... docs/tickets/in-progress/`" + ` before any other shell command. Engineer review rework with only done or in-review product tickets must reopen the dispatch-named source-disposition ticket before validation shell commands or product mutation. Use ` + "`expected_exit_code`" + ` only for intentional non-zero error-path validation probes; unexpected validation failures block review approval. Engineer cannot move, write, or commit product tickets to ` + "`docs/tickets/done/`" + ` while the same job has an unrepaired unexpected runtime validation failure; after Engineer observes an unexpected runtime failure, runtime probes are blocked until an implementation ` + "`file_write`" + ` occurs, and only a later successful run of that exact failed command repairs the blocker. Engineer may correct an obvious no-argument/missing-argument runtime probe by rerunning that exact command once with matching ` + "`expected_exit_code`" + `, but cannot retroactively add ` + "`expected_exit_code`" + ` to clear a failed positive acceptance path. During Engineer unresolved test/build repair, ` + "`go mod init <module>`" + ` is allowed only when the latest failure says Go cannot find a main module and no ` + "`go.mod`" + ` exists. QA/Security shell execution is validation-only: read-only inspection, tests, builds, fresh external validation binaries, runtime probes, and HTTP probes are allowed, while package/module initialization such as ` + "`go mod init`" + `, product mutation, broad discovery, cleanup, and placeholder no-ops are blocked. QA/Security retain the one-time exact-command ` + "`expected_exit_code`" + ` correction for review-procedure mistakes. HTTP probes that fail because no server is listening are validation-procedure failures, so reviewers may start the appropriate server with ` + "`background:true`" + ` and rerun a separate probe before approval. QA/Security must stop shell validation after any failing build, test, or unexpected runtime probe and record ` + "`changes_requested`" + ` with the failing command/output, except they may immediately rerun the exact same runtime probe once with matching ` + "`expected_exit_code`" + ` when the first run was an expected-negative case. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Likely server/watch commands such as ` + "`go run`" + ` HTTP entrypoints, ` + "`npm start`" + `, ` + "`npm run dev`" + `, ` + "`python -m http.server`" + `, ` + "`uvicorn`" + `, ` + "`vite`" + `, and ` + "`next`" + ` are blocked in foreground mode; rerun them with ` + "`background:true`" + `, probe readiness separately, and stop the tracked PID. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not call ` + "`shell_exec`" + ` with empty ` + "`argv`" + ` or a single ` + "`:`" + ` as a wait or placeholder command; no-op calls fail with guidance to stop tracked PIDs, commit, push, and record ` + "`job_disposition_record`" + `. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors. Background cleanup terminates wrapper processes and known descendants so ` + "`go run`" + ` child servers do not occupy ports after a job ends, and ` + "`kill <tracked-background-pid>`" + ` applies the same cleanup during a job. ` + "`go build`" + ` without ` + "`-o`" + `, ` + "`go build -o <path>`" + ` inside the target repo, and untracked temp outputs without a ` + "`-validation`" + ` suffix are blocked before execution; use ` + "`go test ./...`" + ` for compile validation or ` + "`go build -o /tmp/<project>-validation <entrypoint>`" + ` for runnable validation. |
 | ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading. |
 | ` + "`github_auth_check`" + ` | Check private Mars Harness GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
 | ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe ` + "`.gitignore`" + `-only repair when needed. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go get`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
 | ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. The resolver prefers ` + "`MARS_HARNESS_CLI_BIN`" + `, then the active harness executable, then ` + "`PATH`" + `, and stale binaries produce actionable update guidance. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
-| ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. |
-| ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before dispatch-mode jobs complete. Non-Orchestrator roles must commit repo changes before terminal dispositions that approve, complete, request changes, block, fail, or otherwise hand off work. Dispatch jobs get one final terminal-tool reminder at the turn-budget boundary so review failures can become structured dispositions instead of raw ` + "`max_turns`" + `; after that reminder, only the terminal tool may execute. Engineer successful dispositions require the named ticket in ` + "`docs/tickets/done/`" + ` and no unrepaired unexpected runtime validation failure. QA and Security approval for named tickets requires successful in-job validation evidence, and test files require a successful test command. |
+| ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. Browser JavaScript tickets for Phaser briefs cannot prescribe Go CLI/module shape or CDN-only Phaser runtime acceptance; require local package dependencies, deterministic build evidence, and browser-product smoke evidence. |
+| ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before dispatch-mode jobs complete. Non-Orchestrator roles must commit repo changes before terminal dispositions that approve, complete, request changes, block, fail, or otherwise hand off work. Dispatch jobs get one final terminal-tool reminder at the turn-budget boundary so review failures can become structured dispositions instead of raw ` + "`max_turns`" + `; after that reminder, only the terminal tool may execute. Engineer successful dispositions require the named ticket in ` + "`docs/tickets/done/`" + ` and no unrepaired unexpected runtime validation failure; browser-framework packages additionally require successful same-job build evidence and no obvious static lifecycle defects. QA and Security approval for named tickets requires successful in-job validation evidence, test files require a successful test command, and browser-framework package manifests require successful build evidence. |
 | ` + "`tool_create`" + ` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
 | ` + "`persona_create`" + ` | Scaffold a repo-local persona manual, role prompt, registry row, and optional manifest role. | Mutating. Use for universal, foundation, or deployed persona proposals; foundation defaults still require adding the canonical Go entry in ` + "`internal/personas`" + `. |
 | ` + "`release_orchestrate`" + ` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with ` + "`mars_harness_cli`" + ` and git tools. |
@@ -2559,6 +2598,15 @@ reading plus product ` + "`file_write`" + ` implementation or a blocked disposit
 After validation and dirty ticket or product work, even the first no-op routes
 to stopping any tracked background PID, evidence update, commit, lifecycle
 completion, and QA handoff.
+
+Browser-framework post-build note: after Engineer has successful package build
+evidence for a browser-framework ticket and dirty work remains, ` + "`shell_exec`" + `
+does not allow generated-bundle inspection, plain Node ` + "`require('phaser')`" + `,
+requiring Vite browser bundles from Node, ` + "`node --check`" + ` on HTML, or
+trivial environment probes as validation substitutes before browser-product
+smoke passes. The allowed shell lane is build rerun, canonical browser-product
+smoke or equivalent source/runtime assertion, and tracked background PID
+cleanup.
 
 Missing-argument correction note: when an intentional no-argument or
 missing-required-input runtime probe was first run without ` + "`expected_exit_code`" + `,
@@ -3250,6 +3298,19 @@ The contract must document:
 - Step-by-step behavior and Given/When/Then scenarios
 - A clear note that CTO tickets may only target the current failing scenario or
   scenario group
+- If README, active goals, or the product brief says the product should include
+  or support a set of capabilities, the Scenario Schedule must name those
+  capabilities as concrete in-scope scenarios or list them under Descoped
+  Scenarios with a reason. Generic headings such as "project brief becomes a
+  visible product slice" are starter placeholders, not enough for ticketing a
+  complete application.
+- Generic glue words such as include, including, show, display, detection, or
+  core gameplay are not standalone scenario requirements; break out the actual
+  product behaviors they introduce.
+- Out of Scope may list advanced-only extensions such as high-score
+  persistence, combos, previews, mobile touch controls, multiplayer, or
+  animations, but it must not imply that basic in-scope capabilities such as
+  scoring, line clearing, movement, game over, or restart are excluded.
 
 When updating an existing generated starter contract, replace or revise the
 starter scenario headings instead of appending duplicate ` + "`F-NNN-SMMM`" + ` IDs.
@@ -3294,7 +3355,11 @@ it.
 ## Quality Bar
 
 - The active plan and BDD contract agree on feature ID and scenario IDs.
-- The current failing scenario is explicit and small enough for ticketing.
+- The scenario schedule covers the explicit product capabilities from the brief
+  or deliberately descopes them; do not turn active-goal Non-Goals or
+  operational install/build/validation constraints into product scenarios.
+- The current failing scenario is explicit, product-specific, and small enough
+  for ticketing.
 - No technical tickets are created by COO.
 - No implementation files are created or edited by COO.
 - The disposition gives CTO a concrete ask, context, constraints, expected
@@ -3355,7 +3420,14 @@ bootstrap, or an empty product backlog, keep the run intentionally narrow:
 - Do not create or edit product implementation files, package/module files,
   README usage notes, tests, build config, or root product files. Those belong
   to Engineer after a ticket is created and claimed.
-- Create at most one ordinary feature ticket for the current failing scenario.
+- If the README or feature Business Logic names several product capabilities
+  but the Scenario Schedule still has generic starter headings, stop and route
+  feedback to COO. Do not create a first-grid or scaffold ticket from a
+  non-decomposed contract.
+- Create at most one ordinary feature ticket for the current failing scenario,
+  and ensure it includes the earliest uncovered BDD scenario in the feature
+  schedule. Do not skip ` + "`F-001-S001`" + ` just because a later scenario looks
+  more interesting.
   The first ticket should be a walking-skeleton implementation slice that can
   make visible product progress, even if it spans a few small files.
 - If a ticket already exists for the current BDD scenario, do not create
@@ -3372,6 +3444,8 @@ coherent:
 - The walking skeleton slice is a real end-to-end path, not scaffold-only work.
 - The plan does not contradict existing architecture decisions.
 - The feature contract names enough business logic for implementation tickets.
+- Explicit product capabilities from README or the brief are represented in
+  the Scenario Schedule or deliberately descoped.
 - Any non-trivial design decision is documented under docs/design-docs/ and
   indexed in docs/design-docs/index.md.
 
@@ -3396,11 +3470,20 @@ before the first implementation evidence exists. Each ticket must have:
 
 Affected files must be target-owned. Derive package, module, command, binary,
 and directory names from the target README, repo basename, product name, or
-existing local conventions. For a fresh Go CLI target, prefer a command path
-such as ` + "`cmd/<target-or-product-name>`" + ` and a go.mod module matching the target
-repo or configured remote. Never put ` + "`cmd/mars-harness`" + `, ` + "`module mars-harness`" + `,
-or foundation source binary names in a deployed target ticket unless the target
-product is explicitly Mars Harness itself.
+existing local conventions. Do not assume a Go CLI shape just because this
+harness is written in Go. For browser JavaScript targets, especially briefs
+that name Phaser, React, Vue, Three, or similar frameworks, default affected
+files to ` + "`package.json`" + `, ` + "`index.html`" + `, ` + "`src/*.js`" + `/` + "`src/*.ts`" + `,
+tests, and build config, with evidence such as ` + "`npm run build`" + ` plus a
+browser/runtime smoke. Do not mention ` + "`go.mod`" + `, ` + "`cmd/*`" + `, or Go
+module setup in those tickets unless README explicitly names a Go backend. Do
+not prescribe CDN-only browser-framework runtime loading or CDN acceptance
+criteria for Phaser tickets; require local package dependencies, deterministic
+build evidence, and browser-product smoke evidence instead. For
+a fresh Go CLI target, prefer a command path such as ` + "`cmd/<target-or-product-name>`" + `
+and a go.mod module matching the target repo or configured remote. Never put ` + "`cmd/mars-harness`" + `,
+` + "`module mars-harness`" + `, or foundation source binary names in a deployed target ticket
+unless the target product is explicitly Mars Harness itself.
 
 The ticket_create tool assigns ticket numbers and dedupes mechanically. If a
 matching ticket already exists, update your disposition rather than creating a
@@ -3491,6 +3574,11 @@ evidence condition. Typical repairs are:
 - set ` + "`verified_by`" + ` to engineer, qa, dogfood, command, or a specific verifier
 - update the ticket's BDD Evidence section and acceptance boxes to match the
   implemented and inspected work
+- when evidence is missing, run one bounded validation command that exercises
+  the named BDD scenario before writing evidence; static HTML/CSS/JS projects
+  should run ` + "`node --check main.js`" + ` when JavaScript exists and the static
+  HTTP smoke command below rather than placeholder echo/ls/grep-only commands;
+	  never run ` + "`node --check`" + ` on ` + "`.html`" + ` files
 - move the ticket between in-progress, done, or in-review only when that is the
   named gate failure
 - commit the ticket evidence/lifecycle correction and record
@@ -3650,8 +3738,55 @@ IMPLEMENTATION:
    - Run tests to verify they pass
    - For intentionally static HTML/CSS/JS projects with no package manifest,
      do not run ` + "`npm run build`" + ` and do not create package files only to satisfy
-     this step. Use targeted file reads plus one static HTTP smoke command as
-     explicit evidence. Do not create throwaway root validation scripts.
+     this step. Use targeted file reads plus concrete static validation
+     commands as explicit evidence. If JavaScript exists, run
+     ` + "`node --check main.js`" + ` before HTTP smoke so syntax failures are caught
+	     without package-manager setup; never run ` + "`node --check`" + ` on ` + "`.html`" + ` files.
+     Then start
+     ` + "`python3 -m http.server 5173 --bind 127.0.0.1`" + ` with
+     ` + "`background:true`" + ` from the HTML entry directory, run
+     ` + "`curl -fsS http://127.0.0.1:5173/`" + `, and stop the tracked PID. If
+     port 5173 is occupied or the curl reports an empty reply, stop that PID
+     and retry once on port 5174 before recording a blocker. Do not substitute
+     echo, ls, find, grep-only checks, or placeholder commands for validation
+     evidence. Do not create throwaway root validation scripts.
+   - Static HTTP curl proves the files are served; it does not prove browser
+     framework behavior by itself. For browser-game or UI-framework tickets,
+     include a real deterministic build command when a package manifest exists;
+     ` + "`echo`" + `, ` + "`true`" + `, copy-only scripts such as ` + "`mkdir dist && cp ...`" + `,
+     ` + "`node --check`" + `-only syntax checks, and other no-op build scripts are not evidence.
+     Run the build successfully before ticket evidence or done moves, and add
+     one browser-product smoke or equivalent source/runtime assertion that
+     checks mounted UI state such as Phaser game/canvas behavior before closing
+     the ticket. If Playwright/Puppeteer is unavailable, run a focused
+     source/runtime assertion that explicitly checks the module entry,
+     ` + "`new Phaser.Game`" + `, canvas/game container mounting, and Phaser imports.
+     Use ` + "`node -e`" + ` in argv mode for that assertion and print a success
+     line containing ` + "`browser smoke: Phaser canvas #game new Phaser.Game`" + `;
+     do not create repo-root scratch scripts for this check.
+     After build passes and before that browser-product smoke passes, do not
+     inspect ` + "`dist/assets`" + `, ` + "`require('phaser')`" + `, require Vite browser
+     bundles from Node, run ` + "`node --check`" + ` on HTML, or run trivial
+     environment probes as substitutes for mounted product UI evidence.
+     If the project brief names Phaser, write ` + "`package.json`" + ` with a local
+     ` + "`phaser`" + ` npm dependency, ` + "`vite`" + ` dev dependency, and ` + "`vite build`" + ` script in the first
+     package edit, use Vite dev/preview scripts on application ports such as
+     ` + "`5173`" + `/` + "`5174`" + ` rather than Mars Harness reserved ports
+     ` + "`18080`" + `-` + "`18089`" + `, avoid static source-server scripts such as
+     ` + "`python3 -m http.server`" + ` for npm-module Phaser apps, avoid CDN-only
+     Phaser script tags, create ` + "`new Phaser.Game`" + ` exactly once at the
+     top level, keep scene callbacks defined or imported in the module that
+     references them, import ` + "`Phaser`" + ` in every module that references ` + "`Phaser.*`" + ` or
+     ` + "`extends Phaser.Scene`" + `, mount it into a container element such as
+     ` + "`<div id=\"game\"></div>`" + `, keep ` + "`vite.config.*`" + ` limited to
+     Vite/plugin configuration instead of importing Phaser, externalizing
+     ` + "`phaser`" + ` from the bundle, or importing ` + "`src/*`" + ` game modules,
+     and use the scene instance (` + "`this.add`" + `,
+     ` + "`this.input`" + `, ` + "`this.time`" + `) inside ` + "`create`" + ` and
+     ` + "`update`" + ` callbacks; export every locally imported module symbol,
+     and never instantiate another ` + "`Phaser.Game`" + `
+     from inside a scene callback, call unbound helpers that use ` + "`this.add`" + `,
+     or call ` + "`game.add`" + ` as if the game object were the active scene.
 
 5. CHECK DOCUMENTATION SYNC
    - For every new or materially changed code file, add or update its
@@ -3755,11 +3890,14 @@ IMPLEMENTATION:
       is a bug — add one. If the target is intentionally static HTML/CSS/JS
       with no package manifest and no build step, do NOT create package manager
       files solely to satisfy harness expectations. Instead, run one bounded
-      static smoke test: start ` + "`python3 -m http.server`" + ` with
-      background:true from the directory containing ` + "`index.html`" + ` (use
-      ` + "`src/`" + ` directly when ` + "`src/index.html`" + ` exists), curl the
-      primary HTML/route, record that command as
-      evidence, and stop the background process.
+      static smoke test: run ` + "`node --check main.js`" + ` when a JavaScript
+	      entrypoint exists (never on ` + "`.html`" + `), start ` + "`python3 -m http.server 18081 --bind 127.0.0.1`" + `
+      with background:true from the directory containing ` + "`index.html`" + ` (use
+      ` + "`src/`" + ` directly when ` + "`src/index.html`" + ` exists), curl the primary
+      HTML route with ` + "`curl -fsS http://127.0.0.1:18081/`" + `, record those
+      commands as evidence, and stop the background process. If port 18081 fails
+      due to occupancy or an empty reply, stop the tracked PID and retry once on
+      18082 before recording a blocker.
    Record any fixes via record_decision so future agents know the convention.
 
 7. MOVE TICKET TO DONE
@@ -3823,6 +3961,11 @@ COMMIT GATE — MANDATORY before finishing (every run, no exceptions):
 	      and file_write of that same ticket with evidence_links and verified_by
 	      filled. Do not call shell_exec again except for the exact git mv into
 	      ` + "`docs/tickets/done/`" + ` after evidence is updated.
+	      For browser-framework tickets, once package build and browser-product smoke
+	      both pass in the same Engineer job, do not inspect generated bundles or run
+	      extra probes while dirty work remains. Commit implementation, update ticket
+	      evidence, move the ticket to done, commit the lifecycle move, push when
+	      configured, and record disposition.
 	      Successful direct runtime probes that exercise the ticket behavior are
 	      successful validation only when they exit successfully without
 	      error-shaped stderr; update ticket evidence and close the lifecycle
@@ -3948,6 +4091,32 @@ through job_disposition_record instead of completing in prose.
 If Go source exists but no ` + "`_test.go`" + ` files exist, record
 ` + "`changes_requested`" + ` for Engineer tests unless the ticket explicitly classifies the
 work as no-test documentation or configuration.
+For intentionally static HTML/CSS/JS projects, starting a static server is only
+validation setup. Do not approve until a separate ` + "`curl -fsS`" + ` probe has
+passed against the served route and you have inspected the browser entrypoint
+for obvious runtime errors against the ticket/BDD behavior. Static curl proves
+delivery of files, not JavaScript correctness. If the ticket names a browser
+framework and a package manifest exists, require a successful real build command
+such as ` + "`npm run build`" + `; missing build scripts are changes_requested,
+and no-op or ` + "`node --check`" + `-only syntax build scripts are also changes_requested.
+Immediately after build passes, run one browser-product smoke or equivalent
+source/runtime assertion that checks mounted UI state such as Phaser game/canvas
+behavior before attempting approval, because HTTP 200 alone is not JavaScript
+correctness.
+For Phaser, use the canonical bounded ` + "`node -e`" + ` source/runtime assertion
+when browser automation is unavailable; approval blockers may print the exact
+command. Do not ` + "`require('phaser')`" + ` or import browser-only Phaser modules directly
+in Node as validation, because missing browser globals make that a QA procedure
+failure. If you started a managed dev server with ` + "`background:true`" + `,
+stop only that tracked PID with ` + "`shell_exec argv [\"kill\",\"<pid>\"]`" + `
+after probes.
+Review the framework lifecycle usage. For Phaser, reject undefined scene
+callbacks referenced from config, local named imports that are not exported by
+their modules, recursive ` + "`new Phaser.Game`" + ` inside
+` + "`create`" + `/` + "`update`" + `, Phaser mounted into an existing ` + "`<canvas>`" + `
+as the parent, unbound helper functions that use ` + "`this.add`" + `, or calls
+to ` + "`game.add`" + ` inside scene callbacks instead of using the scene instance
+(` + "`this.add`" + `); request Engineer rework with the exact file and line.
 Run ` + "`docsync_audit`" + ` before final approval when reviewing code changes; successful
 ` + "`job_disposition_record`" + ` approvals also enforce docsync, but manual docsync
 evidence should happen before the terminal-only boundary.
@@ -4090,7 +4259,10 @@ You are a security auditor reviewing this project.
 START by reading:
 1. Recent commits: git log --oneline -10
 2. Recent diffs: git diff HEAD~5..HEAD
-3. All files for secrets: grep -r "password\|secret\|api_key\|token" --include="*.{js,ts,go,py,yaml,yml,json,env}" .
+3. Changed-surface secret evidence: inspect the recent diff and changed files
+   with file_read or grep. Do not run broad recursive secret scans through
+   shell_exec. If a repository-wide search is truly needed, use the dedicated
+   grep tool with explicit file globs and exclude generated directories.
 4. Current date: shell_exec date +%F. Use that exact date in file names,
    headings, commit messages, and disposition evidence. Do not invent a future
    date.
@@ -4101,9 +4273,12 @@ START by reading:
 BOUND REVIEW BUDGET:
 
 - For a ticket already completed by Engineer and approved by QA, do one bounded
-  security pass: inspect the changed diff, scan for secrets, read the changed
-  code and done ticket, run docsync_audit, and run the smallest relevant test
-  command such as ` + "`go test ./...`" + `.
+  security pass: inspect the changed diff, read the changed code and done
+  ticket, use grep or bounded file_read/diff inspection for secrets in the
+  changed surface, run docsync_audit, and run the smallest relevant test or
+  build command. Do not run broad recursive secret scans through shell_exec; if
+  a repository-wide secret search is truly needed, use the dedicated grep tool
+  with explicit file globs or inspect changed files directly.
 - Do not repeat equivalent build/start probes after evidence has already proven
   the endpoint. In Go projects, ` + "`go test ./...`" + ` is enough compile evidence
   for security review unless the ticket specifically requires a runtime smoke.
@@ -4134,6 +4309,10 @@ BOUND REVIEW BUDGET:
   ` + "`shell_exec argv`" + ` correction in the tool error before rerunning the binary.
   Do not try ` + "`./<project>`" + ` or ` + "`./tmp/<project>`" + ` after building to
   ` + "`/tmp/<project>-validation`" + `.
+- For browser-framework tickets, reuse the QA evidence shape: run the package
+  build and, when Phaser or another browser framework is present, the canonical
+  browser-product smoke before approval. Do not validate Phaser by directly
+  requiring the package or browser entrypoint in Node.
 - After a successful probe and PID cleanup, immediately write the security
   report, commit it, push if a remote exists, and record
   ` + "`job_disposition_record`" + `. Do not run ping, repeat curl/start cycles, or
@@ -4427,7 +4606,8 @@ server, or edit product/package files after a failed pre-flight.
       Do not use file_write to modify package.json, package-lock.json, source,
       config, or scripts. If validation needs a missing script or dependency,
       create a target-owned ticket instead.
-   b) Run the build command (npm run build / go build / equivalent)
+   b) Run the real build command (npm run build / go build / equivalent).
+      No-op scripts such as echo/true are failures, not build evidence.
    c) If build fails, capture the FULL error output and file a ticket with the error.
       Do NOT skip to Phase 2 — a failed build is a blocking issue.
 
@@ -4456,7 +4636,10 @@ server, or edit product/package files after a failed pre-flight.
 
 ### Phase 3 — E2E Validation
 
-10. SMOKE TEST: curl key routes mentioned in README, verify 200 responses
+10. SMOKE TEST: curl key routes mentioned in README, verify 200 responses.
+    For browser-framework or browser-game targets, HTTP 200 is only file
+    delivery. Also run one browser-product smoke or equivalent source/runtime
+    assertion that checks mounted UI state such as Phaser game/canvas behavior.
 11. HAPPY PATH: Walk through primary user flows described in README
     (e.g. signup, login, create resource, view listing)
 12. EDGE CASES: Test with invalid inputs, missing auth, non-existent routes
@@ -4481,7 +4664,11 @@ server, or edit product/package files after a failed pre-flight.
     work_type enabler unless the failure maps to a BDD feature scenario,
     bdd_scenarios when applicable, source "dogfood test [date]", and a body
     with what was tested, expected vs actual, reproduction steps, and the exact
-    error output. Pre-flight failures get priority: high. Do not create
+    error output. Before creating a target-owned finding, compare its BDD
+    scenario IDs with active backlog, in-progress, and in-review tickets. If an
+    active ticket already covers the scenario, reference that ticket in the
+    disposition instead of creating a duplicate finding. Pre-flight failures get
+    priority: high. Do not create
     intervention-debt tickets for foundation/runtime failures unless an
     operator explicitly asked for ticket materialization. After a target-owned
     ticket is created, stop additional validation and do not create another
@@ -4665,6 +4852,18 @@ When ` + "`source_disposition`" + ` contains handoff or feedback, translate it i
 cleaned Orchestrator-owned handoff for the chosen target role. Preserve the
 actionable ask, constraints, evidence links, ticket ID, and trace ID instead of
 summarising them away.
+
+Ticket path rules:
+- Tickets live only under ` + "`docs/tickets/backlog/`" + `, ` + "`docs/tickets/in-progress/`" + `,
+  ` + "`docs/tickets/in-review/`" + `, or ` + "`docs/tickets/done/`" + `. Never assume a
+  ticket lives at ` + "`docs/tickets/T-NNN-...md`" + `.
+- Prefer the lifecycle path from ` + "`source_disposition`" + `, trigger context, or the
+  TICKET INDEX. If only a ticket ID is available, search/read the lifecycle
+  directories by path or frontmatter ID before claiming ticket context is
+  missing.
+- Do not use content grep to discover ticket filenames. If a grep tool is the
+  only available lookup, search for frontmatter such as ` + "`id: T-004`" + ` or a
+  scenario ID, not for a filename glob under ` + "`docs/tickets/*`" + `.
 
 Do not modify product code. Do not invent roles not present in the manifest.
 If state is contradictory, record a durable decision and choose Janitor or stop.

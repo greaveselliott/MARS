@@ -44,6 +44,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/scheduler"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
 	"github.com/greaveselliott/mars-harness/internal/telemetry"
+	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 	"github.com/greaveselliott/mars-harness/internal/trace"
 	"github.com/greaveselliott/mars-harness/internal/trust"
 	"github.com/greaveselliott/mars-harness/internal/ui"
@@ -1354,6 +1355,7 @@ func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec
 	}
 	if snapErr == nil {
 		decision = enforceEngineerTicketPrerequisite(decision, snap, manifest, source)
+		decision = enforceReleaseRequiresCompletedFeatureScenarios(decision, snap, manifest, rec.Path)
 	}
 	decision, err = s.orgStore.RecordDecision(ctx, decision)
 	if err != nil {
@@ -1513,6 +1515,21 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 				}
 				return
 			}
+			if cat == telemetry.CategoryMaxTurns && job.Role == "engineer" && !isTicketGateRepairTrigger(job.Trigger) && s.jobHadTicketLifecyclePolicyBlock(job.ID) {
+				log.Warn("serve: enqueueing bounded ticket-gate repair after max turns followed ticket lifecycle policy blocks",
+					"error", jobErr,
+				)
+				s.enqueueTicketGateRepair(ctx, job, jobErr)
+				return
+			}
+			if (cat == telemetry.CategoryMaxTurns || cat == telemetry.CategoryCircleDetected) && job.Role == "engineer" && !isTicketGateRepairTrigger(job.Trigger) && !isProductContinuationTrigger(job.Trigger) && engineerHasContinuableProductTicket(rec.Path) {
+				log.Warn("serve: enqueueing bounded product continuation after engineer loop boundary with an active product ticket",
+					"category", cat,
+					"error", jobErr,
+				)
+				s.enqueueProductContinuation(ctx, job, jobErr)
+				return
+			}
 			if job.Role != "orchestrator" && dispatchRuntimeFailureStops(cat) {
 				log.Warn("serve: not dispatching runtime failure through Orchestrator; foundation telemetry or operator retry must resolve it first",
 					"category", cat,
@@ -1605,7 +1622,7 @@ func (s *Server) enqueueTicketGateRepair(ctx context.Context, job *queue.Job, jo
 		"source_job":   job.ID,
 		"reason":       jobErr.Error(),
 		"repair_scope": "ticket_lifecycle_and_evidence_only",
-		"ask":          "Repair only the failed ticket lifecycle or evidence condition, commit the correction, then record job_disposition_record. Do not restart broad implementation unless the gate error explicitly names invalid code.",
+		"ask":          "Repair only the failed ticket lifecycle or evidence condition. If evidence is missing, run bounded validation that exercises the named BDD scenario, update ticket evidence, move the ticket to done, commit the lifecycle correction, then record job_disposition_record. For static HTML/CSS/JS, run node --check main.js when JavaScript exists, then python3 -m http.server 18081 --bind 127.0.0.1 with background:true, curl -fsS http://127.0.0.1:18081/, stop the tracked PID, and retry once on 18082 only if the port is occupied or curl returns an empty reply. Do not restart broad implementation unless validation proves the code state is invalid.",
 	})
 	repairJob := queue.Job{
 		RepoID:         job.RepoID,
@@ -1628,6 +1645,38 @@ func (s *Server) enqueueTicketGateRepair(ctx context.Context, job *queue.Job, jo
 			"reason":     jobErr.Error(),
 		})
 		s.dash.BroadcastEvent("ticket_gate_repair_enqueued", string(payload))
+	}
+}
+
+func (s *Server) enqueueProductContinuation(ctx context.Context, job *queue.Job, jobErr error) {
+	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+	triggerJSON, _ := json.Marshal(map[string]string{
+		"type":         "product_continuation",
+		"source_job":   job.ID,
+		"reason":       jobErr.Error(),
+		"repair_scope": "continue_active_product_ticket",
+		"ask":          "Continue the active product ticket from its current repository state. Inspect the in-progress ticket, latest commits, and dirty files first. Fix only the remaining product, build, validation, or ticket-lifecycle gaps. For browser-framework work, replace placeholder build scripts with a command that can fail on broken source, fix module-loading/import errors, run the build and a product smoke that proves real UI state, update ticket evidence, move the ticket to done, commit, push if a remote exists, then record job_disposition_record with next_need qa_review. Do not create intervention-debt tickets or restart planning.",
+	})
+	continuationJob := queue.Job{
+		RepoID:         job.RepoID,
+		Role:           job.Role,
+		Trigger:        string(triggerJSON),
+		IdempotencyKey: fmt.Sprintf("product-continuation:%s:%s:%s", job.ID, job.RepoID, job.Role),
+	}
+	jobID, err := s.queue.Enqueue(ctx, continuationJob)
+	if err != nil {
+		log.Error("serve: failed to enqueue product continuation job", "err", err)
+		return
+	}
+	log.Info("serve: product continuation job enqueued", "continuation_job_id", jobID)
+	if s.dash != nil {
+		payload, _ := json.Marshal(map[string]string{
+			"job_id":     jobID,
+			"role":       job.Role,
+			"repo":       job.RepoID,
+			"source_job": job.ID,
+		})
+		s.dash.BroadcastEvent("product_continuation_enqueued", string(payload))
 	}
 }
 
@@ -1848,6 +1897,34 @@ func isTicketGateRepairTrigger(raw string) bool {
 	return trigger["type"] == "ticket_gate_repair"
 }
 
+func isProductContinuationTrigger(raw string) bool {
+	var trigger map[string]string
+	if err := json.Unmarshal([]byte(raw), &trigger); err != nil {
+		return false
+	}
+	return trigger["type"] == "product_continuation"
+}
+
+func engineerHasContinuableProductTicket(repoPath string) bool {
+	repoPath = strings.TrimSpace(repoPath)
+	if repoPath == "" {
+		return false
+	}
+	tickets, err := ticketstate.ListStatus(repoPath, ticketstate.StatusInProgress)
+	if err != nil {
+		return false
+	}
+	for _, ticket := range tickets {
+		kind := strings.ToLower(strings.TrimSpace(ticket.Kind))
+		workType := strings.ToLower(strings.TrimSpace(ticket.WorkType))
+		if kind == "intervention-debt" || workType == "intervention-debt" {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
 func (s *Server) jobHadPolicyBlock(jobID string) bool {
 	if s == nil || s.telemetry == nil || strings.TrimSpace(jobID) == "" {
 		return false
@@ -1861,6 +1938,29 @@ func (s *Server) jobHadPolicyBlock(jobID string) bool {
 		}
 		msg := strings.ToLower(evt.Message)
 		if strings.Contains(msg, "tool policy blocked") || strings.Contains(msg, "blast radius exceeded") {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Server) jobHadTicketLifecyclePolicyBlock(jobID string) bool {
+	if s == nil || s.telemetry == nil || strings.TrimSpace(jobID) == "" {
+		return false
+	}
+	for _, evt := range s.telemetry.Events() {
+		if evt.JobID != jobID {
+			continue
+		}
+		msg := strings.ToLower(evt.Message)
+		if !strings.Contains(msg, "policy:") {
+			continue
+		}
+		if strings.Contains(msg, "cannot record a successful disposition") ||
+			strings.Contains(msg, "cannot populate ticket evidence_links") ||
+			strings.Contains(msg, "cannot move to docs/tickets/done") ||
+			strings.Contains(msg, "cannot move a product ticket to docs/tickets/done") ||
+			(strings.Contains(msg, "feature ticket") && strings.Contains(msg, "evidence_links")) {
 			return true
 		}
 	}

@@ -36,6 +36,10 @@ func TestFoundationAcceptanceFreshBootstrapHappyPath(t *testing.T) {
 	repo := setupFoundationTarget(t, false)
 	fake := newFakeChatServer(t,
 		fakeToolResponse("write-probe", "file_write", `{"path":"docs/exec-plans/backlog/foundation-acceptance-probe.md","content":"foundation gate passed\n"}`),
+		fakeToolResponseArgs(t, "write-feature", "file_write", map[string]any{
+			"path":    "docs/features/F-001-product-walking-skeleton.md",
+			"content": foundationAcceptanceFeatureContract(),
+		}),
 		fakeToolResponse("commit-probe", "git_commit", `{"message":"test: commit foundation acceptance probe"}`),
 		fakeToolResponse("record-disposition", "job_disposition_record", `{"status":"completed","reason":"foundation acceptance probe completed"}`),
 		fakeTextResponse("Done."),
@@ -47,12 +51,33 @@ func TestFoundationAcceptanceFreshBootstrapHappyPath(t *testing.T) {
 	require.NoError(t, exec.Execute(ctx, job))
 	srv.handleJobComplete(ctx, job)
 
-	require.Equal(t, 3, fake.RequestCount(), "job_disposition_record is terminal in dispatch mode")
+	require.Equal(t, 4, fake.RequestCount(), "job_disposition_record is terminal in dispatch mode")
 	data, err := os.ReadFile(filepath.Join(repo, "docs", "exec-plans", "backlog", "foundation-acceptance-probe.md"))
 	require.NoError(t, err)
 	require.Equal(t, "foundation gate passed\n", string(data))
 	require.Equal(t, 0, countInterventionDebtTickets(t, repo))
 	require.Equal(t, 1, countOutcomes(t, srv, "coo", "passed"))
+}
+
+func foundationAcceptanceFeatureContract() string {
+	return `# F-001: Foundation Acceptance Probe
+
+## Summary
+
+Define a product-specific acceptance slice for the foundation harness bootstrap test.
+
+## Scenario Schedule
+
+- [ ] F-001-S001 - Write and commit the foundation acceptance probe.
+
+## Scenarios
+
+### F-001-S001 - Write and commit the foundation acceptance probe
+
+Given a freshly initialized target harness
+When the COO creates a foundation acceptance probe plan
+Then the target contains durable planning evidence committed to git
+`
 }
 
 func TestFoundationAcceptanceDispatchProseCompletionRepromptsForDisposition(t *testing.T) {

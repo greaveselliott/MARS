@@ -99,6 +99,22 @@ record the exact target repo, command, branch/ref or binary used, database/log
 paths, observed lifecycle events, product progress, chosen actions, rerun
 result, remote ref, and any remaining operator action.
 
+Failure ownership classification is a universal operating-model gate. Before a
+live-loop, dogfood, telemetry, review, or operator finding becomes a ticket or
+code change, agents classify it as foundation-owned, deployed-owned, or
+mixed/unclear. Foundation-owned failures include runtime, orchestration,
+generated-default, role-guidance, tool-policy, model/provider, release/update,
+telemetry, or mirrored-doctrine defects. Their fixes belong in the
+`mars-harness` source harness, runtime substrate, generated target defaults, or
+foundation docs and should improve the affected class of users, not just the
+current demo. Deployed-owned failures include target product behavior, target
+architecture, local package/build/test setup, target docs, target skills, or
+project policy. Their fixes belong in the target repo and should improve that
+deployed harness or product. Mixed findings may use a small target unblock to
+finish evidence, but the reusable defect still gets a foundation follow-up.
+Unclear failures stay observations, telemetry, or investigation notes until
+ownership is clear; they must not automatically become target backlog noise.
+
 No feature is shipped until its in-scope BDD scenarios pass or the CEO
 explicitly descopes, supersedes, or invalidates them. Enabler work may complete
 without shipping a feature, but it must be labelled as enabler work and must
@@ -5516,3 +5532,1915 @@ product work remains.
   metadata dirty-tree blocker.
 - Agents still cannot commit `.DS_Store` or similar metadata; the files must be
   ignored, removed, or left outside product completion accounting.
+
+## AD-222: Browser JavaScript Tickets Must Keep Target Shape
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-12` live replay showed a planning-level failure before product
+validation could help. The target brief said "Create Tetris using Phaser JS",
+but CTO produced an ordinary feature ticket whose affected files and design
+guidance described a fresh Go CLI with `cmd/phaser-tetris-demo/main.go` and
+`go.mod`. Engineer then followed that ticket literally, creating a Go static
+file server, a CDN-only Phaser HTML page, and a Phaser-related Go module
+dependency. The problem was not ticket volume or intervention debt; the first
+authoritative implementation contract had inherited the foundation repo's Go
+shape instead of the deployed target's browser framework shape.
+
+### Decision
+
+CTO ticket creation is now target-shape aware for browser JavaScript briefs.
+When README, the vision, the feature contract, or source HTML references Phaser
+and the README does not explicitly name a Go backend, feature tickets cannot
+prescribe Go CLI paths, `go.mod`, `cmd/*`, or Go module setup. Generated CTO
+guidance instead points browser JavaScript targets toward `package.json`,
+`index.html`, `src/*.js` or `src/*.ts`, tests, build config, `npm run build`,
+and browser/runtime smoke evidence.
+
+Engineer file writes also block Go module or `cmd/*.go` scaffolding for
+Phaser-only briefs. Browser-framework completion detection now derives Phaser
+from README/vision and HTML script tags, not only from an existing
+`package.json`; completion requires a package manifest with local `phaser`
+dependency, a deterministic build script, same-job build evidence, and no
+obvious Phaser lifecycle defects.
+
+### Consequences
+
+- Fresh browser-game targets should start from a browser JavaScript package
+  surface instead of a Go wrapper unless the brief asks for a Go backend.
+- Bad technical ticket shape is caught at ticket creation before Engineer
+  spends implementation cycles on the wrong architecture.
+- CDN-only Phaser sketches stay visible as incomplete validation surfaces rather
+  than passing static HTTP evidence.
+- Legitimate Go-backed browser targets remain possible when the README states
+  that backend requirement explicitly.
+
+## AD-223: Browser Game Evidence Must Prove Product Behavior
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-13` replay improved target shape: CTO created a Phaser/JS
+ticket and Engineer produced `package.json`, `index.html`, and `src/main.js`.
+However, the build script was only `echo 'Building Phaser Tetris Demo...'`, QA
+accepted build and syntax evidence, and Dogfood reported success from HTTP 200
+reachability plus file inspection. The target still contained only a movable
+sample block, while the project brief requested complete playable Tetris.
+
+### Decision
+
+Browser-framework evidence now distinguishes real validation from file
+delivery. A package build script that is only `echo`, `true`, `exit 0`, or an
+equivalent no-op is treated as missing build evidence. QA, Security, and Dogfood
+cannot approve browser-framework work from HTTP/build evidence alone; they must
+also run a browser-product smoke or equivalent source/runtime assertion that
+checks mounted UI state such as Phaser game/canvas behavior. Generated Engineer,
+QA, and Dogfood guidance now states that HTTP 200 is file delivery, not
+JavaScript correctness.
+
+### Consequences
+
+- Browser projects should stop passing review with placeholder build scripts.
+- Dogfood reports should describe product behavior evidence, not only server
+  liveness.
+- The policy is generic to browser frameworks, while Phaser guidance remains
+  specific enough to catch the live game failure class.
+
+## AD-224: Release Waits For Generated Feature Scenario Coverage
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The same `demo-tetris-13` replay completed one walking-skeleton ticket and
+immediately reached release review. That was lifecycle progress, but it was not
+project completion. The generated feature contract still contained uncovered
+scenarios, and the active project brief still named a larger product. Without a
+mechanical release gate, a target could version a thin scaffold as if the build
+were finished.
+
+### Decision
+
+Dispatch now checks release-bound decisions against visible target work. If
+ordinary product tickets remain open, release-bound dispatch routes Engineer
+before Release Manager. If the generated target feature contract
+`docs/features/F-001-product-walking-skeleton.md` still contains scenarios that
+are not referenced by any done product ticket, release-bound dispatch routes CTO
+for ticket shaping before version publication.
+
+### Consequences
+
+- The lifecycle continues draining product work instead of releasing after the
+  first slice.
+- Scenario coverage becomes the mechanical bridge between BDD planning and
+  release readiness.
+- Temporary targets without a remote can still record release blockers, but only
+  after the generated product scenario schedule is covered.
+
+## AD-225: Product Brief Capabilities Must Become Scenarios Before Ticketing
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-14` replay exposed a planning gap after target-shape and
+browser-evidence fixes. COO copied the explicit Tetris requirements into
+Business Logic, but left the Scenario Schedule as generic starter headings:
+"project brief becomes a visible product slice", "user can run or inspect the
+first product behavior", and "product evidence is captured". CTO then created
+one narrow grid ticket, explicitly out-of-scoping movement, rotation, line
+clearing, scoring, game over, and restart. Engineer spent 36 turns on that thin
+slice and eventually hit local-model context overflow. The lifecycle had
+product-first motion, but it still lacked a mechanical path from complete
+product brief to complete product build.
+
+### Decision
+
+Planning and ticket creation now check product capability coverage. When README,
+active goals, or the product brief says the target product should include or
+support explicit capabilities, the generated feature scenario surface must
+represent those capabilities as concrete scenarios or list them under Descoped
+Scenarios with reasons. COO cannot record completed planning while the scenario
+schedule remains generic. CTO cannot create feature tickets from a
+non-decomposed contract; it must route feedback to COO instead of turning the
+first visible fragment into the whole implementation backlog.
+
+Generated COO and CTO guidance now names this rule: BDD defines the whole
+feature, walking skeleton is only the delivery strategy, and product-capability
+lists from the brief must become scenario coverage before implementation
+tickets are created.
+
+### Consequences
+
+- A "complete app" brief should become a scenario schedule for the app's real
+  capabilities rather than a single scaffold or grid ticket.
+- CTO remains free to create one ticket at a time, but only after the full
+  feature contract has concrete future scenarios for the remaining product
+  behavior.
+- The policy is generic to explicit "include/support/features" capability
+  language, so Tetris is one validation target rather than the only product
+  shape the factory optimizes for.
+
+## AD-226: Browser Framework Completion Must Fail Before QA On Broken Module Graphs
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-15` replay confirmed the planning fixes: CEO, COO, and CTO
+created a product-specific Phaser Tetris feature and one ordinary product
+ticket without intervention-debt flooding. QA also caught the first broken
+Phaser implementation and routed rework. The rework still failed, though:
+Engineer marked the ticket done after `node --check`, `npm run build`, and grep
+evidence even though `src/main.js` imported `TetrisGame` from `src/game.js`,
+`src/game.js` did not export it, and the Phaser scene callbacks were bound to a
+wrapper object that used scene APIs through the wrong `this`. QA policy then
+blocked approval for missing browser-product smoke, but the reviewer spent the
+remaining turn budget trying to start the app and ended in `max_turns`.
+
+### Decision
+
+Browser-framework completion now shifts that failure left into Engineer policy.
+For package-managed browser framework targets, syntax-only build scripts such
+as `node --check ...` are treated like no-op build scripts because they do not
+prove bundling, module resolution, or browser lifecycle correctness. Engineer
+cannot populate ticket evidence, move a browser-framework ticket to done, or
+record successful disposition until the same job has successful build evidence
+and one browser-product smoke or equivalent source/runtime assertion. The
+source policy also detects local named imports whose target module does not
+export the imported symbol, classic script tags that load ES module syntax, and
+Phaser wrapper patterns that bind scene callbacks to the wrong context.
+
+### Consequences
+
+- QA receives fewer already-broken browser-game tickets and can spend review
+  turns on product behavior instead of first-pass module graph failures.
+- `node --check` remains useful for intentionally static JavaScript, but it no
+  longer satisfies package-managed browser-framework build evidence by itself.
+- The rule stays generic to browser frameworks while recording concrete Phaser
+  lifecycle checks discovered in the live Tetris build loop.
+
+## AD-227: Product Progress Max-Turns Continue The Active Ticket Once
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-16` replay made visible product progress after the
+browser-framework evidence shifts: CEO, COO, and CTO created product-specific
+Tetris planning and an ordinary Phaser-shaped product ticket; Engineer claimed
+the ticket, wrote source files, committed implementation work, and pushed. The
+role then exhausted its turn budget before ticket evidence, ticket closure, and
+`job_disposition_record`, leaving the lifecycle blocked even though there was a
+clear active product ticket to continue. This is different from
+intervention-debt flooding: the factory was building the product, but the
+runtime treated partial product progress plus max turns as a dead end.
+
+The same replay also showed that browser-framework guards need to catch module
+graph failures directly. The implementation used `import`/`export` syntax from
+`src/main.js` while `index.html` loaded it through a classic script tag, and
+`src/game.js` referenced `createRandomTetromino` and `rotateTetromino` from
+another local module without importing them. Those defects should be found
+before a role spends review budget trying to open a blank browser app.
+
+### Decision
+
+Dispatch-mode failure handling now treats Engineer `max_turns` with an
+ordinary in-progress product ticket as a bounded continuation case. When the
+failed job is not already a ticket-gate repair or product-continuation job, the
+harness enqueues one same-role `product_continuation` job. The continuation
+prompt tells Engineer to inspect the current ticket, latest commits, and dirty
+files; fix only remaining product/build/validation/lifecycle gaps; update
+evidence; move the ticket to done; commit; push when possible; and record
+`job_disposition_record`. Recursive continuations are blocked, preserving the
+rule that runtime failures do not become unbounded autonomous loops.
+
+Browser-framework source inspection now also blocks local-module symbols that
+are exported by one local file but used by another module without an import.
+Together with the existing classic-script module-loading and missing named
+export checks, this catches the common "blank app after HTTP 200" failure class
+before QA or Dogfood are asked to approve it.
+
+### Consequences
+
+- Product progress is no longer discarded just because the first Engineer run
+  ran out of turns after useful commits.
+- Continuation remains bounded and product-scoped rather than routing runtime
+  failures through Orchestrator or target intervention-debt tickets.
+- Browser-app completion checks stay generic to module graph health, while the
+  Phaser Tetris replay remains the concrete evidence that motivated them.
+
+## AD-228: Browser Validation Procedure Mistakes Must Not Freeze Product Repair
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-17` replay verified that AD-227 worked mechanically: the
+first Engineer job reached `max_turns` with an active product ticket, and the
+harness immediately enqueued a bounded product-continuation Engineer job
+instead of stopping. The continuation then showed why the original role burned
+so many turns. Engineer had run `node --check index.html`, which is a
+validation-procedure mistake because Node's syntax checker is for JavaScript,
+not HTML. The runtime treated the failing HTML syntax probe as an unexpected
+product runtime failure and froze commits, shell commands, and disposition
+until that exact impossible command passed. Repeated policy feedback inflated
+the local-model prompt until it exceeded the 32k context window.
+
+The same run showed that Phaser target-shape guidance still arrived too late.
+Engineer wrote a CDN-only `index.html`, a `package.json` with a local Phaser
+dependency but no deterministic build script, and repo-root scratch validation
+files such as `test-phaser.js` and `test-phaser.html`. Completion policy would
+eventually block those artifacts, but the role spent the turn budget learning
+the constraints through failure.
+
+### Decision
+
+`node --check` against `.html` or `.htm` is now blocked before execution and is
+also classified as a validation-procedure failure if an older path records the
+result. It no longer creates an unresolved runtime validation failure that must
+be repaired by rerunning an impossible command.
+
+For Phaser browser targets, Engineer file writes now block invalid package and
+entrypoint shapes earlier: `package.json` must declare the local `phaser` npm
+dependency and include a deterministic build script that can fail on broken
+source, and `index.html` cannot load Phaser from a CDN-only script tag. Root
+scratch validation files with names such as `test-phaser.js` or
+`test-phaser.html` are blocked so validation evidence does not become product
+noise.
+
+### Consequences
+
+- A validation-procedure mistake no longer poisons the rest of the product
+  delivery job or forces the local model into a context-overflow loop.
+- Browser-framework constraints fail at the first package/entrypoint write
+  instead of only at ticket evidence or QA approval.
+- Static projects can still use `node --check` for JavaScript files; browser
+  entrypoints must be proven through build/static/browser smoke rather than
+  treating HTML as JavaScript.
+
+## AD-229: Product-Specific BDD Vocabulary Must Not Trip Starter Guards
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-18` replay advanced beyond CEO and into COO with the patched
+browser validation rules. COO rewrote the generated
+`docs/features/F-001-product-walking-skeleton.md` into a Tetris-specific
+contract with scenarios for visible playfield, falling tetrominoes, movement,
+rotation, line clearing, scoring, game over, and restart. The runtime still
+blocked the planning disposition because the Business Logic section reused
+standard BDD vocabulary from the generated scaffold: "Product rules, workflow
+branches, state transitions..." In this case the phrase was no longer starter
+text; it was part of a real product-specific paragraph.
+
+### Decision
+
+The COO starter-placeholder guard now rejects actual scaffold markers such as
+"starter contract is seeded" and "replace placeholder nouns", but it does not
+treat durable BDD vocabulary as placeholder text by itself. Product-specific
+feature contracts may still explain product rules, workflow branches, state
+transitions, scoring decisions, routing rules, and user-visible outcomes. The
+separate product-capability coverage guard remains responsible for proving the
+scenario schedule covers explicit README/goal capabilities before CTO ticketing.
+
+### Consequences
+
+- COO can use the foundation glossary's BDD language without being trapped in a
+  false planning loop.
+- The starter guard remains strict against real generated scaffold text.
+- Product capability coverage stays mechanical, so relaxing the phrase match
+  does not permit generic starter scenarios to reach ticket creation.
+
+## AD-230: Browser Build Repair Must Stay Compact And Config-Safe
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-19` replay reached the desired product-delivery lane: CEO and
+COO completed, CTO created an ordinary Tetris ticket, and Engineer claimed it
+and wrote a Phaser/Vite app skeleton. The next failure was more subtle.
+Engineer introduced a `vite.config.js` shape that caused `npm run build` to
+evaluate Phaser/browser runtime code in Node, producing `ReferenceError:
+window is not defined`. The unresolved-build guard correctly blocked unrelated
+shell commands, but every blocked retry repeated a long failing-output excerpt.
+That loop consumed the local model context and the Engineer job ended with
+`llm_unreachable`/context overflow before the product build was completed.
+
+### Decision
+
+For Phaser briefs, `file_write` now rejects `vite.config.js` and
+`vite.config.ts` content that imports Phaser, browser runtime code, or local
+`src/*` game modules. Vite config must stay limited to Vite/plugin
+configuration; Phaser and game modules belong in browser entrypoints.
+
+Unresolved test/build guardrail guidance now includes only a bounded compact
+failing-output excerpt. The full failure remains visible in telemetry/tool
+results, but repeated policy blocks no longer replay long build output into the
+agent prompt.
+
+### Consequences
+
+- The common Phaser/Vite `window is not defined` build trap is blocked at
+  config-write time instead of after a failed build loop.
+- Repeated repair-lane guardrails preserve the invariant that failing builds
+  must be repaired before side paths continue, while reducing context pressure.
+- The rule remains product-shape specific: ordinary Vite plugin imports are
+  allowed, and browser runtime code still belongs in `src/*` entrypoints.
+
+## AD-231: Test Repair Lanes Must Allow Real Test Files
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-20` replay advanced through CEO, COO, and CTO into a
+product-specific Phaser Tetris implementation. Engineer wrote a Vite/Phaser app
+and hit a legitimate integration-test failure: Jest could not find the
+`jest-environment-jsdom` package. The unresolved test/build guard correctly
+blocked unrelated shell probes and switching to build validation, but it also
+blocked a focused write to `tests/integration/playfield.test.js`. That
+contradicted the repair-lane guidance, which explicitly allows source, tests,
+fixtures, and package/build config edits before rerunning same-lane validation.
+
+### Decision
+
+Engineer test/build repair writes now recognize real test files as first-class
+repair targets. Files under `test/` or `tests/`, Go `_test.go` files, and
+conventional JavaScript/TypeScript `*.test.*` or `*.spec.*` files are eligible
+same-lane repair writes. Scope limits still apply when the failing validation
+command recorded a narrow package or directory scope, and root scratch
+validation probes remain blocked by the separate scratch-file policy.
+
+### Consequences
+
+- The harness can repair failing browser integration tests without forcing the
+  agent into ticket churn, helper scripts, or unrelated validation commands.
+- The policy matches its user-facing guidance: real tests are valid repair
+  surface, while docs, ticket evidence, commits, and side probes still wait
+  for successful validation.
+- The allowance stays bounded to durable test locations and conventional test
+  filenames, preserving protection against ad hoc root scratch files.
+
+## AD-232: Browser Game Builds Must Be Real Bundles With Clean Output
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-21` replay confirmed the lifecycle now reaches product code
+quickly: CEO, COO, and CTO completed in under four minutes, CTO created an
+ordinary visible-playfield ticket, and Engineer wrote a Phaser implementation.
+The job still failed to complete. Engineer first tried a copy-only build script
+(`mkdir -p dist && cp src/index.html dist/index.html && echo ...`) and later
+used `live-server`, syntax checks, and static source reads instead of a real
+browser bundle plus product smoke. The code also left `dist/index.html`
+unignored, causing the automatic continuation job to fail workspace hygiene
+before it could repair the ticket. Source inspection caught some module-entry
+issues, but it did not catch `GameScene.js` extending `Phaser.Scene` without
+importing Phaser in that module.
+
+### Decision
+
+Phaser/browser-framework package writes and completion checks now treat
+copy-only build scripts as no-op validation. Build scripts made only of
+`mkdir`, `cp`, `copy`, `rsync`, `touch`, static-server commands, `echo`, or
+syntax-only checks do not count as deterministic browser build evidence.
+Generated target `.gitignore` now includes common dependency and build output
+directories (`node_modules/`, `dist/`, `build/`, `coverage/`, `.vite/`) from
+initialization so first-run browser builds do not poison continuation hygiene.
+Browser-framework source inspection also blocks modules that reference
+`Phaser.*` or `extends Phaser.Scene` without importing or defining Phaser in
+that same module.
+
+### Consequences
+
+- Phaser targets are pushed toward Vite or an equivalent bundler instead of
+  file-copy sketches that hide module graph failures.
+- Continuation jobs can start from a clean ignored-output policy after a build
+  creates `dist/`.
+- Missing Phaser imports are detected before ticket evidence, done moves, QA
+  handoff, or review approval.
+- The rules remain general to browser-framework delivery while using the
+  Tetris replay as concrete evidence for the failure mode.
+
+## AD-233: Browser Smoke And Planning Scope Need Executable Off-Ramps
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-22` replay improved the previous browser-game failure: the
+generated target ignored `dist/` and `node_modules/`, Engineer used a real
+Phaser/Vite package with `vite build`, and Phaser imports were present in the
+scene module. The run still failed to finish the first ticket. Engineer spent
+two max-turn jobs trying to satisfy browser-product smoke, but the guardrail
+only said to use Playwright/Puppeteer or an equivalent source/runtime
+assertion. The model tried repo-root scratch files and a `node -e` eval body in
+argv mode; scratch files were correctly blocked, but argv validation treated
+JavaScript semicolons as shell syntax.
+
+The same replay exposed a planning regression. The project brief explicitly
+required line clearing, scoring, game over, and restart behavior, but COO's
+feature contract put those capabilities under `Out of Scope` while claiming
+`Descoped Scenarios: None`. That let CTO create only a visible-playfield ticket
+and made the lifecycle look productive while drifting away from the complete
+Tetris build.
+
+### Decision
+
+`shell_exec` argv validation now treats language eval payloads after flags such
+as `node -e`, `node --eval`, and `python -c` as code arguments rather than shell
+syntax. Browser-framework completion guidance names a concrete fallback:
+when Playwright/Puppeteer is unavailable, Engineer can run a bounded `node -e`
+source/runtime assertion that checks module entry, `new Phaser.Game`, mount
+container/canvas evidence, and Phaser imports, then prints
+`browser smoke: Phaser canvas #game new Phaser.Game` so the session records
+browser-product smoke.
+
+Product capability coverage now also rejects feature contracts that put
+explicit brief requirements under generic `Out of Scope` text unless those
+requirements are represented under `Descoped Scenarios` with rationale.
+Required product behavior must either become in-scope scenario coverage or be
+deliberately descoped; it cannot silently disappear before ticketing.
+
+### Consequences
+
+- Browser game jobs get a concrete smoke-validation off-ramp without lowering
+  the quality bar to `node --check`, grep-only evidence, or HTTP 200.
+- Repo-root scratch validation files remain blocked, but `node -e` source
+  assertions no longer fail because JavaScript code contains semicolons.
+- The first-run plan stays aligned to explicit product requirements, reducing
+  the risk that a complete-app brief becomes a one-ticket scaffold build.
+- The rule is generic to product briefs: Tetris exposed it, but any deployed
+  target with explicit required capabilities receives the same protection.
+
+## AD-234: Browser Bundles Must Not Externalize Runtime Frameworks
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-23` replay validated the planning-scope fix: COO produced an
+eight-scenario Tetris feature contract covering visible playfield, falling
+tetrominoes, movement, rotation, line clearing, scoring, game over, and
+restart. Engineer then created and committed a real Phaser/Vite package for
+the first playfield scenario. Two remaining issues appeared. First, Engineer
+still did not run the smoke assertion after build success; it repeatedly tried
+ticket evidence, done moves, and successful disposition while the policy asked
+for browser-product smoke. The guardrail named `node -e`, but it did not show a
+literal tool call. Second, the generated `vite.config.js` added
+`rollupOptions.external: ['phaser']`. That can let `vite build` complete while
+leaving a bare `phaser` import for the browser, so build evidence no longer
+proves the deployed bundle can load the local dependency.
+
+### Decision
+
+Browser-product smoke guardrails for Phaser now include a literal
+`shell_exec argv ["node","-e", ...]` command. The command reads `index.html`
+and `src/main.js`, checks the mount surface, verifies `new Phaser.Game`, checks
+for Phaser import usage, and prints
+`browser smoke: Phaser canvas #game new Phaser.Game` so the runtime records the
+same-job browser smoke success.
+
+Phaser Vite config writes and existing-source completion checks now reject
+config that externalizes `phaser` through `rollupOptions.external` or an
+equivalent external entry. Phaser must stay in the production browser bundle so
+`npm run build` validates the module graph the browser will actually load.
+
+### Consequences
+
+- The model receives a copy-pastable next action instead of another abstract
+  browser-smoke reminder.
+- `vite build` can no longer be satisfied by a configuration that removes the
+  main runtime framework from the browser bundle.
+- Source inspection catches already-written Vite externalization before ticket
+  evidence, lifecycle closure, or review approval.
+- The rule generalizes from Tetris: package-managed browser frameworks should
+  prove bundled runtime dependencies, not merely compile a shell around them.
+
+## AD-235: Product Tickets Must Start At The Earliest Uncovered Scenario
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-24` replay exercised the literal smoke guidance and
+Vite-externalization guardrails against a fresh Phaser Tetris target. COO
+produced a product-specific feature contract, but it grouped the complete
+Tetris brief into four scenarios and set the active plan's current failing
+scenario to keyboard controls before any playfield ticket existed. CTO then
+created `T-001` for `F-001-S002`, skipping the earliest uncovered scenario.
+
+Engineer made real product files, but the implementation still did not finish:
+`package.json` used `python3 -m http.server 18081` as its app server, colliding
+with Mars Harness inference/runtime ports; `src/index.html` loaded Phaser from
+a CDN script under a nested HTML path; and `src/main.js` referenced global
+`Phaser` without importing it and constructed `new Phaser.Game` inside a scene
+callback. The job exhausted 48 turns and ended with context overflow rather
+than a verified done ticket.
+
+### Decision
+
+Feature `ticket_create` now enforces scenario order mechanically. A feature
+ticket must include the earliest uncovered scenario from the feature contract;
+later scenarios may be batched only when the same ticket also includes that
+earliest scenario. This prevents a stale or over-eager active-plan cursor from
+skipping the first unproven product slice.
+
+Phaser package and source policies now block several live-demo failure modes at
+write time: package runtime scripts cannot use Mars Harness reserved ports
+`18080`-`18089`, Phaser package scripts cannot use static source servers such
+as `python3 -m http.server` in place of Vite dev/preview, nested HTML entry
+points cannot load Phaser from CDN script tags, Phaser source that references
+`Phaser.*` must import or define Phaser in that module, and `new Phaser.Game`
+must be created exactly once from the browser entrypoint rather than inside
+scene callbacks.
+
+### Consequences
+
+- Fresh product delivery starts with the first uncovered BDD scenario even when
+  the active plan cursor drifts.
+- Target dev servers avoid local inference/runtime port collisions.
+- Invalid Phaser/browser app shapes are rejected before they accumulate into a
+  long Engineer context-overflow loop.
+- Static HTTP evidence remains available for intentionally static projects,
+  but package-managed Phaser apps are steered toward Vite build/dev/preview
+  paths that actually validate npm module loading.
+
+## AD-236: Wrapped Briefs And Browser Evidence Keep Planning And Closure Honest
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-25` replay confirmed the earliest-scenario ticket gate: CTO
+first tried to create a keyboard-controls ticket, the runtime rejected it, and
+the next CTO attempt created `T-001` for `F-001-S001` instead. Engineer then
+claimed the visible-playfield ticket and produced a much better Phaser/Vite
+shape with local `phaser`, Vite scripts on app ports, source under `src/`, and
+one top-level `new Phaser.Game`.
+
+Two issues remained. First, the target README wrapped one required capability
+sentence across two physical lines: "visible playfield, falling tetrominoes,"
+then "keyboard movement and rotation, line clearing, scoring, game over, and
+restart". The brief parser treated the single newline like a sentence boundary,
+so COO could still leave later wrapped capabilities under `Out of Scope`.
+Second, after Engineer committed implementation files, the post-validation
+shell convergence gate blocked follow-up `npm run build` and browser-product
+smoke commands even though browser-framework completion explicitly requires
+that evidence before ticket closure.
+
+### Decision
+
+Brief capability extraction now treats single newlines as wrapped prose and
+only treats blank-line runs as sentence boundaries. Product capability checks
+therefore see the whole requirement sentence before COO handoff or CTO
+ticketing, including wrapped lists such as Tetris line clearing, scoring, game
+over, and restart behavior.
+
+Engineer post-validation convergence still blocks exploratory shell churn after
+a clean implementation commit, but it permits the two missing browser-framework
+validation steps needed to close a product ticket: the package build command
+when same-job build evidence is absent, and the browser-product smoke/source
+runtime assertion when build evidence exists but mounted product-state evidence
+is absent.
+
+### Consequences
+
+- Wrapped README briefs are evaluated as operator intent, not accidental
+  paragraph fragments.
+- Browser-framework tickets can converge after an implementation commit instead
+  of looping on a guardrail that demands evidence while blocking the evidence
+  commands.
+- The exception is narrow: it applies only to missing required browser build or
+  product-smoke evidence, not broad discovery or unrelated post-validation
+  shell activity.
+
+## AD-237: Product Capability Guards Ignore Validation-Evidence Clauses
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-26` replay proved AD-236 fixed the wrapped-line issue: COO kept
+visible playfield, falling tetrominoes, keyboard movement and rotation, line
+clearing, scoring, game over, and restart in the feature schedule. The next
+planning loop came from a different sentence in the README: "include enough
+build or smoke evidence to prove the game mounts and plays." The capability
+guard treated that validation/evidence clause as another product capability,
+so COO repeatedly added or rewrote a build/smoke scenario and still could not
+complete because the matcher held onto tail fragments such as "plays".
+
+The same replay showed a normal wording mismatch. A feature scenario that said
+"keyboard controls" with left/right/down/rotate keys was a reasonable coverage
+for the brief's "keyboard movement and rotation", but the keyword matcher
+looked for the literal movement stem.
+
+### Decision
+
+Product capability extraction now ignores brief fragments that are plainly
+about validation evidence rather than user-visible product behavior: evidence,
+smoke test, validation evidence, proof/prove/proving, verified-by wording, and
+build artifacts. The splitter also drops short validation tails such as "plays"
+or "mounts" after one of those evidence fragments has been skipped.
+
+Capability coverage also treats keyboard controls, left, right, or down input
+language as movement coverage. Rotation remains separately required when the
+brief names rotation.
+
+### Consequences
+
+- Operators can ask for build or smoke evidence in the project brief without
+  accidentally expanding product scope into a validation-only feature.
+- Planning remains strict about real product capabilities while avoiding
+  repeated guardrail loops over evidence phrasing.
+- The matcher gets a small, domain-agnostic control synonym that helps games,
+  editors, and other keyboard-driven software without making unrelated product
+  behavior pass silently.
+
+## AD-238: Out-Of-Scope Capability Checks Must Respect Advanced-Only Qualifiers
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The next `demo-tetris-27` replay cleared the validation-evidence capability
+loop and moved the active plan back to `F-001-S001`. COO produced a
+product-specific scenario schedule and repeatedly repaired genuine out-of-scope
+mistakes. It then got stuck on a false positive: the contract already included
+line clearing and scoring scenarios, but its Out of Scope section said
+"Advanced scoring or game modes beyond basic line clearing." The guard matched
+the words "scoring" and "line clearing" inside that advanced-only qualifier and
+treated the basic capabilities as descoped.
+
+### Decision
+
+Out-of-scope capability checks are now line-aware. A required capability only
+counts as out of scope when the matching out-of-scope line actually describes
+that base capability as excluded. Lines that use an explicit qualifier such as
+"advanced ... beyond basic ..." are treated as excluding only the advanced
+extension, not the basic behavior already covered by the scenario schedule.
+
+### Consequences
+
+- Agents can keep advanced variants, modes, polish, or stretch mechanics out of
+  scope without accidentally descoping the core capability.
+- The guard still blocks direct descoping of required product behavior such as
+  restart when it is listed in Out of Scope without a descoped scenario reason.
+- Planning loops lose another false-positive source while preserving the
+  product-brief coverage invariant.
+
+## AD-239: Circle-Detected Product Progress Gets A Bounded Continuation
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-28` replay progressed past planning: CEO, COO, and CTO
+completed, CTO created exactly one ordinary `F-001-S001` product ticket, and
+Engineer claimed it. Engineer then wrote real Phaser/Vite package and source
+files, while write-time guards correctly blocked invalid Vite imports, missing
+DocSync metadata, and a broken Phaser lifecycle helper. The job ended as
+`circle_detected` after repeated guardrail blocks, leaving an active product
+ticket and uncommitted product files.
+
+The runtime correctly kept the failure out of target intervention debt and did
+not route it through Orchestrator. But it also stopped without a bounded
+follow-up job, even though the existing product-continuation lane already
+handles the same situation for `max_turns` after useful product progress.
+
+### Decision
+
+Engineer `circle_detected` with an ordinary in-progress product ticket now
+enqueues one bounded `product_continuation` Engineer job, using the same
+non-recursive continuation guard as `max_turns`. The continuation prompt tells
+Engineer to inspect the active ticket, latest commits, and dirty files, repair
+only remaining product/build/validation/lifecycle gaps, update evidence, move
+the ticket to done when acceptance is met, commit, push when possible, and
+record `job_disposition_record`.
+
+### Consequences
+
+- Repeated guardrail loops during useful product implementation no longer end
+  the lifecycle with dirty partial product work and no next job.
+- Runtime failures still do not become intervention-debt tickets or Orchestrator
+  loops.
+- Recursive continuations remain blocked, so a second loop boundary becomes
+  operator-visible evidence for the next source fix.
+
+## AD-240: Bootstrap Ticketing And Browser Smoke Evidence Must Keep The Factory Moving
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-29` replay got further than prior runs. CEO and COO completed
+product-specific planning, CTO created an ordinary product ticket, Engineer
+implemented a real Phaser/Vite playfield slice, build and smoke validation ran,
+and the ticket reached `done`. Two new sources of waste appeared after that
+progress:
+
+- CTO still seeded only the first scenario ticket, so the factory had no ready
+  backlog for the remaining falling-piece, controls, scoring, game-over, and
+  restart scenarios.
+- QA copied or interpreted browser-smoke evidence as shell syntax, hit a
+  helper/escaping failure, and routed "the implementation is correct but the
+  smoke test is wrong" back to Engineer as implementation rework.
+
+### Decision
+
+Bootstrap technical planning now supports a small backlog batch. Once a feature
+scenario is already covered by any ordinary ticket in backlog, in-progress,
+in-review, or done, `ticket_create` may advance to the next uncovered scenario.
+This lets CTO create one to three ordered product tickets during fresh
+bootstrap instead of leaving the factory with a single active slice.
+
+Phaser browser-smoke guidance now uses string checks rather than JSON-escaped
+regular expressions, so evidence copied into tickets remains easier for QA to
+rerun and reason about. QA changes-requested dispositions are also blocked when
+the feedback says the implementation is correct and the problem is the smoke
+helper or validation wording while browser-framework source inspection is
+clean. That situation is a foundation/dogfood validation finding or an
+approval-with-corrected-evidence path, not target Engineer rework.
+
+### Consequences
+
+- Fresh projects get enough product backlog to keep building after the first
+  visible slice without broad overplanning.
+- Browser validation evidence is less likely to become a quoting trap that
+  causes false rework.
+- QA can still request changes for real source, build, scenario, or acceptance
+  failures; only "the test is wrong but the implementation is correct" loops
+  are intercepted.
+
+## AD-241: QA Validation Setup And CTO Batch Handoffs Must Not Stall Product Builds
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-30` replay showed material improvement but exposed the next
+factory bottlenecks. CEO and COO produced product-specific planning, CTO
+created a real Phaser ticket, and Engineer shipped a Vite/Phaser skeleton after
+one bounded continuation. The run still wasted turns because CTO handed off
+after covering only `F-001-S001`, leaving the rest of Tetris unticketed, and QA
+requested Engineer rework after its own smoke setup failed against a stopped
+`localhost:5173` server even though `npm run build` passed and source inspection
+was clean.
+
+### Decision
+
+CTO implementation handoff is now mechanically blocked when a feature has
+multiple early scheduled scenarios but ordinary tickets cover fewer than the
+first two or three. CTO may satisfy this with separate ordered tickets or one
+bounded grouped ticket when adjacent early scenarios are naturally the same
+walking skeleton slice.
+
+QA changes-requested routing is also narrowed for browser-framework projects.
+When build evidence exists and source inspection has no framework lifecycle
+findings, a dev-server setup failure, stopped localhost probe, or malformed
+smoke helper cannot be routed to target Engineer as `implementation_rework`.
+QA must rerun the managed smoke/source assertion, approve with corrected
+evidence, or record a foundation/dogfood validation finding.
+
+### Consequences
+
+- Fresh project builds have enough early product backlog to continue after the
+  first visible slice.
+- QA can still block real browser-framework defects, missing build evidence, or
+  missing product-smoke evidence.
+- QA-owned validation setup failures become foundation evidence rather than
+  target backlog churn.
+
+## AD-242: Capability Category Prefixes Are Not Product Requirements
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-31` replay improved planning quality: COO produced a full
+seven-scenario Tetris feature contract. The run then stalled because the
+capability extractor read strategy prose from the generated product vision as
+the literal requirement "all core Tetris mechanics: visible playfield grid".
+The feature schedule already covered "visible playfield grid"; the false
+requirement came from preserving the category prefix before the colon.
+
+### Decision
+
+Brief capability extraction now strips category prefixes before colon-delimited
+lists when the prefix is a generic grouping label such as mechanics,
+capabilities, features, behaviors, or behaviours. The individual list items
+remain first-class product capabilities; the category label itself does not
+need a scenario.
+
+### Consequences
+
+- COO and CTO can use normal strategy prose such as "all core mechanics:
+  grid, falling pieces, controls" without creating phantom requirements.
+- Capability coverage still requires each listed behavior to appear in the
+  scenario schedule or be explicitly descoped.
+
+## AD-243: Engineer Jobs Close One Product Ticket Before Claiming The Next
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-32` replay got further than earlier runs: CEO, COO, and CTO
+produced product-specific planning, CTO seeded a small Tetris ticket batch, and
+Engineer completed real Phaser/Vite work for `T-001` and `T-002`. The run then
+showed two adjacent lifecycle defects. First, the CTO batch gate tempted the
+model into creating a grouped `T-003` that re-covered `F-001-S001` and
+`F-001-S002` after those scenarios already had tickets, instead of creating
+only the next uncovered scenario. Second, after moving `T-002` to
+`docs/tickets/done/`, Engineer tried to claim `T-003` before committing the
+`T-002` lifecycle move and recording a QA handoff. The guardrails blocked the
+new claim repeatedly, and the job ended at `max_turns` despite real product
+progress.
+
+### Decision
+
+Feature `ticket_create` now rejects already-covered BDD scenario IDs in a new
+ordinary feature ticket. Once an earlier ordinary ticket in backlog,
+in-progress, in-review, or done covers `F-001-S001`, a later ticket cannot
+include that scenario again unless it is linked as explicit dependent work by a
+separate mechanism. The policy feedback names the covered scenarios and directs
+CTO to create the next uncovered scenario ticket only, or group it with later
+uncovered adjacent scenarios.
+
+Engineer ticket completion is also single-ticket per job. A successful
+in-progress-to-done ticket move is recorded in the role session. The final
+lifecycle commit is allowed even when more backlog tickets exist, but further
+product mutation or `git mv` claims are blocked until Engineer commits the
+lifecycle move, pushes when a remote exists, and records
+`job_disposition_record` with `next_need: qa_review`.
+
+### Consequences
+
+- CTO can still seed a useful early backlog batch, but cannot satisfy the batch
+  gate by duplicating scenarios already covered by earlier tickets.
+- Engineer jobs stop at a clear review boundary after one ticket instead of
+  chaining into the next product ticket and losing the completed work to turn
+  budget exhaustion.
+- The factory keeps product progress while preserving review evidence between
+  slices.
+
+## AD-244: Browser Validation Helpers Are Not Product Framework Source
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-33` replay confirmed the previous fixes: CTO created a clean
+two-ticket early batch without duplicate scenario coverage, and Engineer
+started a real Phaser/Vite implementation for `T-001`. The next loop appeared
+after the browser product-smoke assertion failed. Engineer attempted to create
+a root helper file named `validate-phaser.js` that inspected `src/main.js` for
+`new Phaser.Game`, but the Phaser source-shape guard treated the helper itself
+as product app source because the helper contained the probe string. That left
+the job blocked by validation-helper policy rather than product code.
+
+### Decision
+
+Browser-framework source inspection now distinguishes validation/probe helper
+paths from product source. Root helpers such as `validate-phaser.js`, files
+with smoke or probe names, `scripts/*` helpers, and conventional test/spec
+paths are allowed to contain inspection strings such as `new Phaser.Game`
+without triggering Phaser lifecycle checks. Product source under `src/`,
+entrypoints, package scripts, and Vite config still receive the same lifecycle,
+import, bundle, and module-graph checks.
+
+AD-260 later narrows new root helper creation because the live loop showed
+they become ticket-closeout clutter. The source-inspection exemption remains
+for existing helpers and intentional durable helpers under `scripts/` or
+`tests/`.
+
+### Consequences
+
+- Engineers can repair or explain browser-smoke failures with small helper
+  files when inline `node -e` becomes unwieldy.
+- Product-source guardrails remain strict for shipped app files.
+- Browser validation helper mistakes stay foundation/runtime evidence instead
+  of becoming false product implementation defects.
+
+## AD-245: Product Capabilities Must Be Visible In The Scenario Outline
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-34` replay regressed from the fuller `demo-tetris-31` feature
+contract shape. COO represented visible playfield, falling tetrominoes,
+keyboard movement and rotation, line clearing, scoring, game over, and restart
+inside one broad "user can run or inspect the first product behavior"
+scenario. Although the scenario body mentioned the requested mechanics, the
+scenario schedule and headings gave CTO no clean product slices to turn into an
+ordered backlog.
+
+### Decision
+
+Planning completion now requires explicit product brief capabilities to appear
+in the scenario schedule entries or scenario headings, or to be listed under
+Descoped Scenarios with reasons. A feature contract cannot hide multiple
+requested capabilities inside a single broad runnable/inspectable scenario body
+and then hand off to CTO as if the product backlog were decomposed.
+
+### Consequences
+
+- COO must expose product mechanics as ticketable BDD slices before CTO starts
+  ticketing.
+- CTO receives a clearer scenario outline and can create a small ordered
+  backlog instead of one oversized product ticket.
+- Validation/evidence prose can still live in scenario bodies and evidence
+  sections, but it cannot replace product decomposition.
+
+## AD-246: CTO Handoff Counts Product Scenarios, Not Process-Only Scenarios
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+In `demo-tetris-34`, after CTO created the first ordinary product ticket, the
+handoff gate kept demanding `F-001-S003`. That scenario was not another Tetris
+mechanic; it described keeping product evidence ahead of governance expansion
+and intervention debt. The gate therefore created a deterministic loop: CTO
+tried to satisfy a process-only scenario as if it were product implementation,
+then hit ticket-shape and disposition blocks.
+
+### Decision
+
+The CTO implementation handoff gate now derives its required early batch from
+scenarios that cover product brief capabilities. Evidence-only, governance,
+telemetry, intervention-debt, or wider-automation ordering scenarios do not
+force target implementation tickets once early product scenarios are ticketed.
+When no explicit capability list exists, the gate falls back to the first two
+or three scheduled scenarios so generic projects still get a small backlog.
+
+### Consequences
+
+- Product implementation can begin after real product scenarios are ticketed.
+- Evidence and governance scenarios stay documented, but they do not become
+  fake target backlog work.
+- The factory still protects against a single planning-only ticket handoff
+  because product-capability scenarios remain required before Engineer runs.
+
+## AD-247: CTO Ticket Creation Recovers Pending Scenario Batches
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The next `demo-tetris-35` loop confirmed that COO could now produce a good
+product scenario outline and that CTO could create the first product ticket.
+The handoff gate correctly asked CTO to add `F-001-S002` and `F-001-S003`
+before Engineer handoff. CTO then repeatedly retried `ticket_create`, but the
+tool arguments omitted the `bdd_scenarios` array or re-covered `F-001-S001`,
+so the role burned turns against policy instead of creating the next product
+ticket.
+
+### Decision
+
+When the CTO handoff gate blocks implementation because specific product
+scenarios are still missing, that pending scenario batch is stored in the tool
+session. A later CTO `ticket_create` with no usable `bdd_scenarios` can infer
+the missing BDD scenario IDs from either the ticket title/body/metadata or the
+pending handoff state before the ticket is created. Policy feedback still tells
+CTO to use an explicit JSON array, but the tool can now recover from local-model
+argument drift during the same job.
+
+### Consequences
+
+- CTO can recover from a missing `bdd_scenarios` array after the gate has
+  already named the exact next product scenarios.
+- Created tickets still contain durable BDD scenario IDs, preserving evidence
+  and ticket ordering.
+- The policy continues to reject duplicate already-covered scenario IDs, so
+  automatic recovery does not reopen the earlier duplicate-ticket loop.
+
+## AD-248: Planner Roles Cannot Mutate Targets Through Shell
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-36` replay found a fresh-bootstrap leak before the product
+ticket spine could form. CEO read the Phaser Tetris brief and hit several
+correct policy blocks, but shell execution still attempted product and
+dependency-shaped mutations such as root package setup before COO, CTO, or
+Engineer owned the work. That left untracked product-shaped files in the target
+and spent turns on guardrails rather than the next product planning handoff.
+
+### Decision
+
+Planner roles cannot use `shell_exec` for mutating commands. CEO, Head of
+Strategy, COO, CTO, and CTO-weekly may still perform read-only inspection when
+otherwise policy-safe, but shell-based file, package, dependency, cleanup, or
+ticket mutations are rejected. The role-specific write path remains explicit:
+CEO writes strategy artifacts, COO writes planning artifacts, CTO creates
+tickets and bounded technical rationale, and implementation or dependency
+mutation belongs to ticket-backed Engineer or dependency tools.
+
+### Consequences
+
+- Fresh bootstrap stays in the product-first handoff path instead of creating
+  dependency or product files before a ticket exists.
+- Existing target manifests that still expose `shell_exec` to planner roles are
+  contained by policy instead of relying on prompts.
+- Read-only planning inspection remains available, so the policy does not blind
+  planners that need to inspect target state before handoff.
+
+## AD-249: Capability Extraction Separates Product Scope From Non-Goals And Operations
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-37` replay moved cleanly through CEO and into COO after the
+planner shell containment fix. COO created a product-specific active plan and
+feature contract, but the completion gate repeatedly rejected handoff because
+capability extraction treated the active-goal Scope and Non-Goals block as one
+long sentence. Optional mechanics listed as non-goals, such as hold piece, and
+operational constraints, such as npm install/build/local-validation scripts,
+were therefore promoted into required product scenario coverage.
+
+### Decision
+
+Product capability extraction now treats Markdown bullets, numbered list
+entries, headings, and blank lines as capability statement boundaries. It
+recognizes explicit product-action phrasing such as must implement, must
+detect, must allow, and should let, while leaving generic access phrasing,
+operational build/install constraints, and non-goal prose outside the required
+product scenario set. Capability matching also normalizes small gameplay
+wording differences such as tracking score to score behavior and reaching game
+over to game-over behavior, plus line-clearing and restart wording such as
+full lines or another round.
+
+### Consequences
+
+- COO can descoped optional mechanics without being forced to make them target
+  implementation tickets.
+- Build scripts, install steps, and validation constraints can remain in active
+  goals as delivery constraints without becoming BDD product scenarios.
+- The scenario coverage gate still requires real product behaviors such as
+  playfield, controls, scoring, game over, and restart to appear in the
+  Scenario Schedule or scenario headings.
+
+## AD-250: Capability Matching Accepts Natural Scenario Titles
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-41` replay reached a stronger COO state: the active plan and
+feature contract were product-specific, and the contract grouped related
+Tetris capabilities into five runnable scenarios. The gate still rejected the
+handoff because the README phrase "reach game over when the stack fills" was
+matched too literally against the scenario title "Game ends when stack fills
+and user can restart." The scenario body named "game over", but the outline
+guard deliberately reads only the schedule and headings to make sure
+capabilities are visible before ticketing.
+
+The follow-on `demo-tetris-42` replay showed the same tightness in two more
+natural planning phrases. A schedule entry saying "Playfield is visible and
+keyboard controls work" should cover "see a Tetris playfield" without requiring
+the product name in every title, and "Tetrominoes move and rotate with
+keyboard" should cover "rotate falling tetrominoes with the keyboard" without
+requiring the motion modifier "falling" inside the rotation scenario title.
+
+### Decision
+
+Capability matching now treats game-over wording and game-ending wording as
+the same product capability. Product-name tokens such as Tetris and modifier
+tokens such as falling are not required outline keywords when the actual
+product behavior, such as playfield or rotate tetromino with keyboard, is
+visible. Scenario outlines may say "game over" or "game ends" when covering an
+explicit game-over brief requirement, while still requiring restart, playfield,
+controls, scoring, and line-clearing behavior to be visibly represented in
+schedule entries or scenario headings.
+
+### Consequences
+
+- COO can write natural scenario titles without being forced to mirror README
+  prose exactly.
+- The outline guard still rejects collapsed product contracts that hide
+  multiple capabilities inside one broad runnable/inspectable scenario.
+- Fresh browser-game bootstraps can advance from planning to CTO ticketing
+  once the schedule clearly exposes the requested product behaviors.
+
+## AD-251: Advanced Score Persistence Does Not Descope Basic Scoring
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-43` and `demo-tetris-44` replays produced strong product
+contracts with separate scenarios for browser access, playfield, movement,
+rotation, line clearing with score points, game over, and restart. The
+completion gate still blocked COO because the Out of Scope section said "High
+score tracking or persistence," "animations beyond basic movement," and "UI
+beyond the game grid and score display." Those lines exclude advanced
+extensions, not the basic score and movement capabilities that the scenario
+schedule already kept in scope.
+
+### Decision
+
+Out-of-scope capability checks now treat high-score tracking, persistence, and
+`beyond ...` qualifiers as advanced extensions. Such lines do not count as
+descoping the basic movement or score-tracking capability when that behavior
+remains visible in the scenario schedule or scenario headings. Directly listing
+"movement", "scoring system", or equivalent basic behavior under Out of Scope
+still requires a Descoped Scenarios rationale.
+
+### Consequences
+
+- COO can keep first-slice scope small by excluding high-score persistence
+  without blocking ticket handoff for ordinary score behavior.
+- The gate still protects against accidentally moving required product behavior
+  out of scope.
+- Browser-game planning can express a minimal viable scoring rule separately
+  from later persistence or leaderboard work.
+
+## AD-252: Failure Ownership Classification Is Universal Doctrine
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The Tetris/Phaser live loop improved first-run product delivery, but it also
+showed the danger of overfitting. Some failures were general factory defects:
+planning capability matching, QA validation-procedure recovery, and wrong
+ticket routing. Others could have been real target product bugs if source
+inspection or runtime evidence had proven broken game behavior. Treating every
+symptom as either a target ticket or a source fix would make the harness worse:
+target repos get polluted with foundation debt, while foundation changes become
+too specific to one stack or product.
+
+### Decision
+
+Every live demo, dogfood, telemetry, review, and operator finding is classified
+before action:
+
+- **Foundation-owned:** runtime, orchestration, generated defaults, role
+  guidance, tool policy, model/provider behavior, telemetry, release/update, or
+  mirrored doctrine. Fix in `mars-harness` source, tests, docs, role prompts,
+  generated target defaults, tools, or skills. The improvement must benefit all
+  applicable users or a clearly named project class.
+- **Deployed-owned:** target product behavior, target architecture, local
+  package/build/test setup, target docs, target skills, or project policy. Fix
+  in the target repo and preserve target evidence.
+- **Mixed/unclear:** use the smallest local unblock only when needed to finish
+  target evidence, then record a foundation follow-up for the reusable defect;
+  otherwise keep the finding as observation, telemetry, or investigation until
+  ownership is clear.
+
+Live improvement batches are grouped by ownership and generality, not by the
+demo stack that exposed them. A Phaser or Tetris observation can justify a
+foundation change only when the failing mechanism is generic to browser
+frameworks, review routing, ticket lifecycle, tool policy, or generated
+doctrine. A genuine product bug stays deployed-owned.
+
+### Consequences
+
+- The continuous improvement loop remains product-finishing oriented without
+  turning one representative demo into the whole factory specification.
+- Target backlog stays focused on target value; foundation defects remain
+  foundation evidence or source tickets until fixed for all applicable users.
+- Review and dogfood reports must name the failure owner, fix level, and
+  rerun evidence before claiming improvement.
+- Generated target harnesses inherit the same classification rule, while
+  source-only mechanics such as `demo-123` remain foundation shorthand.
+
+## AD-253: Review Procedure Failures And Rework Routing Stay At The Right Layer
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The first classified post-AD-252 finding came from `demo-tetris-45`. QA ran
+`curl -f http://localhost:5173/` before starting a dev server. That was a
+review procedure failure, not proof that the target product implementation was
+broken. The same run then exposed a second foundation-owned defect: after QA
+requested rework on `T-003`, Engineer's rework preflight selected the oldest
+completed ticket, `T-001`, because it scanned all done tickets instead of the
+dispatch source disposition.
+
+### Decision
+
+Review HTTP probes that fail because no server is listening are tracked as
+validation-procedure failures. They do not increment product validation failure
+counters, and QA/Security may recover by starting the appropriate dev/static
+server with `background:true`, running a separate readiness/product probe, and
+then approving or requesting changes from real evidence. Failing builds,
+failing tests, and runtime probes that execute a product command still remain
+target-owned validation failures unless a procedure classifier explicitly
+matches them.
+
+Engineer rework selection now honors the dispatch trigger's
+`source_disposition.ticket_id` for `changes_requested` and
+`implementation_rework` handoffs. When the Orchestrator routes Engineer back to
+a specific ticket, the claim/reopen policy must require that ticket, not an
+arbitrary older done or in-review product ticket.
+
+### Consequences
+
+- QA validation setup mistakes no longer create false target rework or freeze
+  review jobs before the correct server/probe sequence can run.
+- Engineer rework stays attached to the ticket that was actually reviewed.
+- Both fixes are foundation-owned and generic: they apply to any web target or
+  review handoff, not to Phaser or Tetris specifically.
+
+## AD-254: CTO Duplicate Ticket Failures Do Not Poison Covered Batches
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-47` clean rerun validated the product-first path through CEO
+and COO, then exposed a CTO recovery loop. CTO created a valid first product
+ticket, hit the early-scenario handoff gate, created additional ordinary product
+tickets until the first three early scenarios were covered, and committed the
+batch. After that it attempted a broad duplicate `ticket_create` for scenarios
+that were already covered. The duplicate ticket guard correctly blocked the
+extra ticket, but the successful-disposition guard then rejected Engineer
+handoff because the last ticket creation attempt failed and no later successful
+ticket creation followed. The repo already contained the required early product
+ticket batch, so the role was trapped in policy recovery instead of handing off
+to implementation.
+
+### Decision
+
+Successful CTO implementation handoff is now coverage-aware after a failed
+ticket creation attempt. A failed duplicate `ticket_create` still blocks the
+duplicate ticket, but it does not poison disposition when the ticket lifecycle
+already covers the required early product scenarios for the feature contract.
+The existing clean-tree, ticket lifecycle, and early-scenario coverage gates
+still apply; this only removes the ordering assumption that a successful
+`ticket_create` must occur after the latest failed duplicate attempt.
+
+### Consequences
+
+- CTO can recover from redundant or duplicate ticket attempts once the target
+  repo already has the valid batch needed for Engineer.
+- The duplicate-ticket policy still protects target backlog quality.
+- The fix is foundation-owned and generic to BDD ticket lifecycle handoff; it
+  does not encode a Tetris or Phaser-specific exception.
+
+## AD-255: Capability Matching Treats Product Pieces As Specific Game Pieces
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-48` rerun was intended to validate AD-254, but it surfaced an
+earlier COO gate before CTO ticketing. The README said pieces should "lock into
+the stack," while the refined feature contract used Tetris-specific language:
+"Tetrominoes Lock Into Stack On Contact" and "the tetromino locks into the
+stack." The contract was product-specific and covered the behavior, but the
+capability matcher treated `pieces` as a separate required keyword instead of a
+generic form of the target's concrete game piece.
+
+### Decision
+
+Capability matching now normalizes `piece` and `pieces` to the same product
+capability keyword as `tetromino`. This preserves the requirement that locking
+behavior be visible in the scenario schedule or headings, while allowing the
+scenario contract to use domain-specific nouns.
+
+### Consequences
+
+- COO can use precise product vocabulary without being forced to repeat README
+  wording verbatim.
+- The planning gate remains generic: it accepts specific nouns that represent
+  the same product object, not a Tetris-only exception to scenario coverage.
+
+## AD-256: Duplicate Feature Path Guidance Respects Planner Ownership
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-49` rerun exposed a foundation-owned policy contradiction in
+fresh bootstrap. CEO attempted to create `docs/features/F-001.md` after finding
+that the generated target already had the canonical
+`docs/features/F-001-product-walking-skeleton.md`. The duplicate feature path
+guard correctly rejected the duplicate, but its recovery text told the active
+role to update the canonical contract. CEO then followed that instruction and
+hit the planner write boundary, because feature contracts belong to COO
+planning, not CEO strategy. The guardrails were individually correct, but the
+combined feedback sent the role into avoidable recovery turns.
+
+### Decision
+
+Duplicate feature contract path guidance is now role-aware. Roles that are not
+allowed to write feature contracts, including CEO, are told to record strategy
+in their allowed strategy artifacts or hand off to COO to update the canonical
+feature contract. Roles that may own feature contracts still receive the normal
+instruction to update the canonical contract instead of creating a duplicate
+path.
+
+### Consequences
+
+- Fresh bootstrap preserves the CEO -> COO ownership boundary instead of
+  encouraging CEO to write planning artifacts.
+- Duplicate feature ID protection remains intact for every role.
+- The fix is foundation-owned and generic to generated target planning policy,
+  not specific to the Tetris demo.
+
+## AD-257: Browser-Framework Entry Validation Must Not Trap Engineer
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-50` rerun validated the CEO/COO bootstrap path and reached
+Engineer with ordinary product tickets. Engineer then hit two foundation-owned
+entry-loop defects before source could be written. First, `node --check
+main.js` failed because the file did not exist yet; the runtime policy treated
+that procedure mistake as an unresolved product validation failure, later
+blocking the correct `node --check src/main.js` command. Second, the Phaser
+source guard misread a valid top-level `new Phaser.Game(config)` placed after
+scene callback declarations as if that construction occurred inside each
+callback function. Engineer repeated the same blocked write instead of reaching
+the first product implementation.
+
+### Decision
+
+`node --check` against a missing file is now validation-procedure failure, not
+an unresolved product runtime failure. It records procedure evidence and leaves
+Engineer free to create or inspect the correct implementation path.
+
+Phaser source lifecycle checks now inspect the actual JavaScript function body
+for `preload`, `create`, and `update` before flagging recursive game
+construction. A single top-level `new Phaser.Game(...)` after callback
+declarations is allowed; constructing `new Phaser.Game(...)` inside a scene
+callback remains blocked.
+
+### Consequences
+
+- Browser-framework tickets can recover from an early wrong-path syntax probe
+  without poisoning later validation.
+- The Phaser lifecycle guard still protects real recursive game construction
+  while no longer rejecting normal module startup shape.
+- The fix is foundation-owned and generic to browser-framework validation and
+  Phaser entrypoint policy; it does not encode target-specific Tetris behavior.
+
+## AD-258: Product Capability Coverage Follows Active Feature Contracts
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-51` rerun validated the AD-257 code path far enough to expose
+a planning-level contradiction. COO created an active product-specific
+`F-002` feature contract for core Tetris gameplay and marked the generated
+`F-001` walking skeleton as superseded. The handoff guard still evaluated
+`F-001` as the only contract that could satisfy README capabilities, so COO
+cycled between editing `F-001`, editing `F-002`, and retrying disposition
+instead of handing product ticket breakdown to CTO.
+
+### Decision
+
+Product capability coverage now aggregates active feature contracts under
+`docs/features/F-*.md`. Superseded feature contracts are ignored for capability
+coverage and for the feature ID list used by CTO handoff gates. If no active
+feature contract exists, the generated `F-001-product-walking-skeleton.md`
+remains the fallback contract.
+
+### Consequences
+
+- COO can either refine `F-001` or deliberately supersede it with a more
+  product-specific active feature contract without creating a policy loop.
+- CTO ticket sequencing starts from active product contracts instead of stale
+  superseded walking-skeleton scenarios.
+- Generated `F-001` remains useful as a bootstrap fallback, but it no longer
+  monopolizes product capability coverage after the project has a better
+  active feature contract.
+
+## AD-259: Browser-Framework Node Eval Failures Are Procedure Mistakes
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-52` rerun validated the AD-258 planning path: CEO, COO, and
+CTO reached an ordinary product ticket, and Engineer created a package-managed
+browser app, installed dependencies, started Vite, and confirmed the HTTP
+entrypoint responded. Engineer then attempted a plain Node smoke probe that
+`require()`d a Phaser scene module. Because Phaser initializes browser-only
+globals at module load, the probe failed with `ReferenceError: window is not
+defined` from `node_modules/phaser`. The runtime recorded that as an
+unexpected product runtime failure and blocked subsequent `node --check` and
+`npm run build` validation, even though the failure was caused by the probe
+choice rather than by executing the product in its browser environment.
+
+### Decision
+
+Plain Node eval commands that import or require project browser modules and
+fail with missing browser globals from a declared browser-framework package are
+classified as validation-procedure failures. They record procedure evidence
+but do not create an unresolved product runtime blocker. Engineer can continue
+with the correct validation surface: package build, managed dev or preview
+server, browser-product smoke, or a source/runtime assertion that does not load
+browser-only framework startup under plain Node.
+
+### Consequences
+
+- Browser-framework delivery no longer gets stuck after an over-eager Node
+  module probe of code that is meant to run in a browser bundle.
+- Real browser-framework defects remain guarded by build evidence, source
+  inspection, and product-smoke requirements.
+- The rule is foundation-owned and general to browser-framework targets; the
+  Tetris replay is evidence, not the product-specific rule.
+
+## AD-260: Root Browser-Smoke Helpers Stay Out Of Product Repos
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-53` replay confirmed that the AD-259 change removed the
+browser-framework Node eval trap. Engineer reached a real product slice,
+created a Vite/Phaser package, passed `npm run build`, ran a managed Vite
+server, confirmed the HTTP entrypoint, and then ran the documented direct
+`node -e` browser-smoke source assertion successfully. The job still ended at
+`max_turns` because Engineer first wrote a repo-root `validate-game.js`
+scratch helper, committed it with the product implementation and ticket
+evidence, then spent the final turns trying to remove or inspect that helper
+instead of moving the ticket to `done`.
+
+### Decision
+
+New repo-root JavaScript/TypeScript/Ruby/Python/Go/shell helper files with
+validation, validate, smoke, probe, scratch, verify, or test-like names are
+blocked as scratch validation noise. Browser-framework helper code remains
+allowed only when it is intentionally durable under `scripts/` or `tests/`.
+For one-off product-smoke proof, roles should use direct `shell_exec` commands
+such as the documented `node -e` assertion, package build, managed server
+probes, or browser automation.
+
+### Consequences
+
+- One-off browser-smoke helpers no longer become accidental product files that
+  derail ticket closure or require cleanup commits.
+- Durable validation remains possible under explicit validation directories.
+- The rule generalizes beyond Phaser/Tetris: root scratch validation belongs
+  outside the target product surface for any deployed harness.
+
+## AD-261: Dependency Sync Repairs Missing Build Dependencies
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-54` replay validated the root scratch-helper guardrail: the
+Engineer used a direct `node -e` browser-smoke assertion and avoided creating a
+repo-root helper file. The next lifecycle blocker happened after `npm run
+build` failed with `vite: command not found`. Engineer correctly called
+`dependency_sync`, which installed the package dependencies, but the unresolved
+test/build repair lane still treated the build failure as unchanged and blocked
+the natural `npm run build` rerun until another source edit occurred. That
+pushed the role toward unrelated probes and unnecessary product mutation.
+
+### Decision
+
+Successful `dependency_sync` by Engineer now counts as a repair action for an
+outstanding test/build failure in the same job. The repair lane still requires a
+later successful same-lane test or build command before commits, ticket
+completion, runtime probes, or successful disposition can proceed; dependency
+sync only opens the rerun path when package-manager setup was the bounded
+repair action.
+
+### Consequences
+
+- Missing local build tools and package dependencies can be repaired without
+  forcing an artificial source edit.
+- The validation gate still prevents blind completion after dependency install;
+  same-lane validation must pass before delivery can close.
+- The rule is foundation-owned and generic to package-managed target projects,
+  not specific to Tetris or Phaser.
+
+## AD-262: Browser Framework Tickets And Review Smoke Stay In One Evidence Path
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-55` replay validated the dependency-sync repair path and
+reached a full package-managed Phaser implementation. The next lifecycle drag
+was not implementation capability: CTO created a ticket whose acceptance
+criteria still said the Phaser library should load from a CDN, contradicting
+the foundation policy that requires local npm dependencies and package build
+evidence. QA then correctly blocked HTTP/build-only approval, but the approval
+error did not include the canonical smoke command already known by the
+foundation policy. QA also tried to stop its managed Vite server with
+`kill <pid>` and hit the generic validation-only shell boundary before the
+tracked background cleanup path could run.
+
+### Decision
+
+Phaser/browser JavaScript feature tickets cannot prescribe CDN-only runtime
+loading or CDN acceptance criteria; they must require a local `phaser` package,
+deterministic package build evidence, and browser-product smoke evidence. The
+review approval gate now prints the same canonical browser-smoke command that
+Engineer completion uses when product smoke is missing. QA and Security may
+stop tracked background PIDs created by `shell_exec background:true`; arbitrary
+cleanup and untracked process kills remain blocked.
+
+### Consequences
+
+- Planning, implementation, and review now point at the same browser-framework
+  evidence path instead of creating contradictory ticket text.
+- QA can recover from the normal managed-dev-server validation flow without
+  turning cleanup into a target rework request.
+- The rule is foundation-owned and general to browser-framework targets; the
+  replay supplied evidence, but the fix benefits any deployed harness using a
+  browser framework.
+
+## AD-263: Generic Gameplay Summary Labels Are Not Standalone Capabilities
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-56` replay validated the browser-framework ticket and review
+guidance changes far enough to reach COO planning again. COO created and
+repaired a product-specific feature contract with scenarios for opening the
+browser game, playfield visibility, movement and rotation, line clearing,
+scoring, game over, and restart. The capability gate still rejected handoff
+because CEO had created a goal titled "Implement core Tetris gameplay
+mechanics", and capability extraction treated the generic summary phrase "core
+Tetris gameplay mechanics" as a separate requirement even though the concrete
+mechanics were already covered.
+
+### Decision
+
+Capability extraction no longer treats generic summary terms such as `core`,
+`gameplay`, `mechanic`, or `mechanics` as standalone capability keywords.
+Concrete behavior words still drive coverage: playfield, move, rotate, line
+clearing, score, game over, restart, browser access, collision, locking, and
+similar product actions remain required when the brief or goals name them.
+
+### Consequences
+
+- Goal headings can summarize a product area without creating an impossible
+  duplicate coverage requirement.
+- COO still has to cover the actual product behaviors before CTO ticketing.
+- The fix is generic to games and application domains that use summary labels
+  such as core workflow, gameplay mechanics, or product mechanics.
+
+## AD-264: Alternate Input Scope Does Not Descope Basic Movement
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-57` replay confirmed the AD-263 generic-label fix: CEO
+completed quickly and COO no longer looped on "core gameplay mechanics".
+COO then produced a product-specific plan and feature contract, but the
+capability guard rejected handoff because the Out of Scope section listed
+"Mobile touch controls". The matcher treated the word `controls` as movement
+coverage, so an excluded alternate input modality looked like the required
+keyboard movement behavior had been descoped.
+
+### Decision
+
+Movement coverage may still be satisfied by concrete directional language or
+keyboard controls, but generic `controls` alone no longer covers the `move`
+capability. This keeps "keyboard controls work" as valid coverage while
+preventing "mobile touch controls" or other alternate-input exclusions from
+blocking a feature contract that already covers keyboard movement.
+
+### Consequences
+
+- Product contracts can explicitly exclude alternate platforms or input
+  modalities without accidentally descoping the required primary behavior.
+- The capability matcher remains strict about actual movement scenarios.
+- The fix generalizes beyond Tetris to browser apps, games, and tools with
+  optional mobile, touch, mouse, or alternate-device input modes.
+
+## AD-265: Browser Evidence Completion Stops Further Shell Exploration
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-58` replay validated the latest planning and
+browser-framework fixes through real implementation: CEO and COO produced a
+product-specific plan, CTO created a local-dependency Phaser ticket, and
+Engineer built a Vite/Phaser slice. Engineer then passed the canonical
+browser-product smoke and `npm run build`, but continued shell exploration into
+`dist/assets` instead of committing the remaining dirty files, updating ticket
+evidence, moving the ticket to `done`, and recording disposition. That extra
+bundle inspection pushed the next prompt over the local model context window.
+
+### Decision
+
+For browser-framework Engineer jobs, once the same job has passed all required
+completion evidence, including deterministic package build and browser-product
+smoke, further `shell_exec` exploration is blocked while implementation or
+ticket files remain dirty. The only shell exception is tracked background PID
+cleanup. The policy message sends Engineer to `git_status`, `git_commit`,
+ticket evidence update, `git mv ... docs/tickets/done/`, lifecycle commit,
+push when configured, and `job_disposition_record`.
+
+### Consequences
+
+- Successful browser-framework validation becomes a convergence point instead
+  of an invitation to inspect generated bundles or repeat probes.
+- Context-overflow failures after already-sufficient build/smoke evidence are
+  reduced without weakening the build and smoke gates.
+- The rule is foundation-owned and generic to package-managed browser targets,
+  not a Tetris-specific optimization.
+
+## AD-266: Active Scenario Deduplication And Review Evidence Shortcuts
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-59` replay validated AD-265 through the first three product
+tickets. CEO, COO, and CTO produced product-specific planning and multiple
+ordinary product tickets; Engineer completed T-001, T-002, and evidence-only
+T-003 without intervention-debt flooding. The remaining drag came from
+repeatable foundation behavior: Dogfood created a product finding for
+`F-001-S003` even though active product tickets already covered that scenario,
+QA and Security first tried validation shapes that policy later corrected, and
+Orchestrator wasted turns looking for `docs/tickets/T-NNN...` paths that do not
+exist.
+
+### Decision
+
+`ticket_create` now treats active feature-ticket scenario overlap as a duplicate
+even when the proposed ticket's scenario list is not exactly equal to the
+existing ticket's list. This applies to backlog, in-progress, and in-review
+tickets while preserving explicit dependent decompositions through
+`depends_on`. Review role guidance now tells QA and Security to run the
+canonical browser-product smoke immediately after package build evidence for
+browser-framework tickets, and Security no longer starts from broad recursive
+secret scans through `shell_exec`. Orchestrator guidance now uses lifecycle
+ticket paths from disposition context or the ticket index and forbids assuming
+flat `docs/tickets/T-NNN...` paths.
+
+### Consequences
+
+- Dogfood can still create target-owned findings, but not duplicate scenarios
+  that active product tickets already cover.
+- Review roles spend fewer turns rediscovering the browser-framework evidence
+  gates that policy already enforces.
+- Security remains bounded to the changed surface and avoids predictable
+  shell-policy failures for broad recursive scans.
+- Orchestrator handoffs preserve ticket IDs and paths without burning routing
+  turns on impossible ticket locations.
+
+## AD-267: Post-Build Browser Smoke Gate Blocks Substitute Probes
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-60` rerun confirmed the product-first bootstrap and active
+scenario dedupe path: one CEO bootstrap job was seeded, CEO and COO created
+Tetris-specific planning artifacts, CTO created a three-ticket product backlog,
+and Engineer claimed the first ticket and reached a successful Vite/Phaser
+package build. The next failure was validation drift before ticket closure.
+After `npm run build` passed but before browser-product smoke passed, Engineer
+inspected `dist/assets`, attempted `require('phaser')` in plain Node, and tried
+to require browser bundles from Node. Those checks predictably produced
+browser-global failures such as missing `window` or `document`, then sent the
+job toward source churn instead of mounted product evidence.
+
+### Decision
+
+For browser-framework Engineer jobs, once the same job has successful package
+build evidence and the target repo still has dirty implementation or ticket
+work, `shell_exec` is limited to build reruns, canonical browser-product smoke
+or equivalent source/runtime assertion, and tracked background PID cleanup until
+browser-product smoke passes. Runtime policy blocks substitute shell validation
+such as generated-bundle inspection, plain Node `require('phaser')`, requiring
+Vite browser bundles from Node, `node --check` on HTML, or trivial environment
+probes. The prompt and generated target guidance name the same boundary so the
+role chooses the product-smoke lane directly.
+
+### Consequences
+
+- Build success now routes toward mounted UI evidence instead of local-model
+  experimentation with browser-only bundles under Node.
+- The rule remains foundation-owned and generic to package-managed browser apps,
+  not a Tetris-only behavior.
+- Engineer can still rerun the real build after repairs and can still run the
+  canonical smoke command needed to close the ticket.
+
+## AD-268: Out-Of-Scope Explanations Do Not Descope Basic Product Capabilities
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-61` rerun confirmed the post-build browser-smoke policy in the
+fresh generated target guidance, but surfaced an earlier planning loop. COO
+created a valid product-specific scenario schedule covering playfield, falling
+pieces, movement, rotation, locking, line clearing, score, game over, and
+restart. It also listed advanced-only exclusions such as high-score persistence,
+combos/back-to-back scoring systems, previews, multiplayer, mobile touch
+controls, sounds, and animation polish under Out of Scope. The capability guard
+then treated explanatory text like "clear reasons" as a descoping of line
+clearing, and treated "advanced scoring systems" as a descoping of basic score
+tracking. COO repeatedly rewrote the feature contract and could not hand off to
+CTO, even though the required scenarios were present.
+
+### Decision
+
+Out-of-scope capability checks now ignore section-introduction and rationale
+prose such as "the following capabilities", "clear reasons", and "explicit
+rationale". They also treat advanced scoring systems, combos, back-to-back
+scoring, high-score persistence, and other advanced-only extensions as leaving
+basic score tracking and line clearing in scope when those basics are already
+covered by the Scenario Schedule and scenario headings. COO and generated target
+guidance now state that Out of Scope may list advanced-only extensions, but must
+not imply that basic in-scope capabilities are excluded.
+
+### Consequences
+
+- Valid feature contracts can exclude future polish or advanced mechanics
+  without blocking the first complete product build.
+- The guard still rejects actual required behavior listed under Out of Scope
+  without a Descoped Scenarios rationale.
+- Planning policy remains generic to deployed software projects where advanced
+  extensions share words with the base product behavior.
+
+## AD-269: Capability Matching Ignores Glue Words Around Real Behaviors
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-tetris-62` replay confirmed that AD-268 removed the false
+Out-of-Scope blocker. COO then repaired the feature contract into separate
+scenario entries for visible grid, falling tetrominoes, movement/rotation,
+locking, line clearing, scoring, game over, restart, and runnable gameplay. The
+next blocker came from capability extraction noise: active goal and README
+phrases such as "core Tetris gameplay including visible grid" and "game over
+detection" produced standalone keywords for "including" and "detection". Those
+are connective words around the real product behaviors, not separate
+capabilities, so the guard kept rejecting a valid schedule.
+
+### Decision
+
+Capability keyword matching now treats include/includes/including,
+show/shows/showing, display/displays/displayed, and detect/detected/detection
+as stop words. The concrete behavior words around them still matter: visible
+grid, line clearing, score tracking, game over, restart, and similar product
+terms must be covered by scenario schedule entries or scenario headings. COO
+and generated target guidance now call these "generic glue words" and tell
+planners to break out the actual behaviors they introduce.
+
+### Consequences
+
+- Product capability checks remain strict about concrete behavior while avoiding
+  false missing-scenario loops for ordinary prose.
+- Active goal wording can contain natural phrases such as "including X" or
+  "game over detection" without forcing unnatural scenario titles.
+- The fix generalizes to non-game projects where "including" and "detection"
+  are connective planning language rather than product outcomes by themselves.

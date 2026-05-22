@@ -497,6 +497,82 @@ func TestDecide_repeatedOrchestratorRouteStopsDispatch(t *testing.T) {
 	require.Contains(t, decision.StopReason, "loop guard")
 }
 
+func TestDecide_laterReviewerReworkBypassesEarlierReviewStageLoopGuard(t *testing.T) {
+	t.Parallel()
+
+	source := orgstate.Disposition{
+		JobID:    "security-job",
+		RepoID:   "repo-1",
+		Role:     "security",
+		Status:   "changes_requested",
+		NextNeed: "implementation_rework",
+		TicketID: "T-001",
+	}
+	decision, err := Decide(Input{
+		Manifest:          testManifest("engineer", "qa", "security", "orchestrator"),
+		SourceDisposition: &source,
+		Disposition: orgstate.Disposition{
+			JobID:         "orchestrator-job",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			NextNeed:      "implementation_rework",
+			SuggestedRole: "engineer",
+			TicketID:      "T-001",
+		},
+		TicketStateHash: "same-state",
+		RecentDecisions: []orgstate.Decision{
+			{RepoID: "repo-1", SourceRole: "security", TicketID: "T-001", NextNeed: "implementation_rework", NextRole: "orchestrator", TicketStateHash: "same-state"},
+			{RepoID: "repo-1", SourceRole: "orchestrator", TicketID: "T-001", NextNeed: "implementation_rework", NextRole: "engineer", TicketStateHash: "same-state"},
+			{RepoID: "repo-1", SourceRole: "qa", TicketID: "T-001", NextNeed: "implementation_rework", NextRole: "orchestrator", TicketStateHash: "same-state"},
+			{RepoID: "repo-1", SourceRole: "orchestrator", TicketID: "T-001", NextNeed: "implementation_rework", NextRole: "engineer", TicketStateHash: "same-state"},
+			{RepoID: "repo-1", SourceRole: "qa", TicketID: "T-001", NextNeed: "implementation_rework", NextRole: "orchestrator", TicketStateHash: "same-state"},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "engineer", decision.NextRole)
+	require.Equal(t, "orchestrator", decision.DecisionKind)
+	require.Empty(t, decision.StopReason)
+}
+
+func TestDecide_sameReviewerReworkStillTripsLoopGuard(t *testing.T) {
+	t.Parallel()
+
+	source := orgstate.Disposition{
+		JobID:    "security-job-3",
+		RepoID:   "repo-1",
+		Role:     "security",
+		Status:   "changes_requested",
+		NextNeed: "implementation_rework",
+		TicketID: "T-001",
+	}
+	decision, err := Decide(Input{
+		Manifest:          testManifest("engineer", "security", "orchestrator"),
+		SourceDisposition: &source,
+		Disposition: orgstate.Disposition{
+			JobID:         "orchestrator-job",
+			RepoID:        "repo-1",
+			Role:          "orchestrator",
+			Status:        "completed",
+			NextNeed:      "implementation_rework",
+			SuggestedRole: "engineer",
+			TicketID:      "T-001",
+		},
+		TicketStateHash: "same-state",
+		RecentDecisions: []orgstate.Decision{
+			{RepoID: "repo-1", SourceRole: "security", TicketID: "T-001", NextNeed: "implementation_rework", NextRole: "orchestrator", TicketStateHash: "same-state"},
+			{RepoID: "repo-1", SourceRole: "orchestrator", TicketID: "T-001", NextNeed: "implementation_rework", NextRole: "engineer", TicketStateHash: "same-state"},
+			{RepoID: "repo-1", SourceRole: "security", TicketID: "T-001", NextNeed: "implementation_rework", NextRole: "orchestrator", TicketStateHash: "same-state"},
+			{RepoID: "repo-1", SourceRole: "orchestrator", TicketID: "T-001", NextNeed: "implementation_rework", NextRole: "engineer", TicketStateHash: "same-state"},
+			{RepoID: "repo-1", SourceRole: "security", TicketID: "T-001", NextNeed: "implementation_rework", NextRole: "orchestrator", TicketStateHash: "same-state"},
+		},
+	})
+	require.NoError(t, err)
+	require.Empty(t, decision.NextRole)
+	require.Equal(t, "ambiguous", decision.DecisionKind)
+	require.Contains(t, decision.StopReason, "loop guard")
+}
+
 func TestDecide_noWorkStopsDispatch(t *testing.T) {
 	t.Parallel()
 

@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -43,6 +44,9 @@ var mutatingTools = map[string]bool{
 	"persona_create":      true,
 	"release_orchestrate": true,
 }
+
+var toolsFeatureScenarioIDPattern = regexp.MustCompile(`\bF-\d{3}-S\d{3}\b`)
+var toolsFeatureScenarioHeadingPattern = regexp.MustCompile(`(?mi)^###\s+(F-\d{3}-S\d{3})\b.*$`)
 
 const (
 	dogfoodTicketCreateLimitTotal             = 5
@@ -67,8 +71,12 @@ const (
 	testBuildValidationLastFailureEditKey     = "validation:test_build_failure:last_edit_watermark"
 	testBuildRepairWritePathPrefix            = "validation:test_build_failure:repair_write:"
 	shellNoopFailureKey                       = "shell:noop:failure"
+	ticketDoneMoveSuccessKey                  = "ticket:lifecycle_done_move:success"
+	ticketDoneMoveLastIDKey                   = "ticket:lifecycle_done_move:last_id"
+	ctoHandoffRequiredScenariosKey            = "cto:handoff_required_scenarios"
 	reviewTerminalDispositionRequiredKey      = "review:terminal_disposition:required"
 	ticketCreationOutstandingFailureKey       = "ticket_create:failure:outstanding"
+	browserProductSmokeSuccessKey             = "validation:browser_product_smoke:success"
 	unexpectedRuntimeValidationCommandKey     = "validation:runtime_unexpected_failure:command"
 	unexpectedRuntimeValidationCorrectionKey  = "validation:runtime_unexpected_failure:correction"
 	unexpectedRuntimeValidationMissingArgKey  = "validation:runtime_unexpected_failure:missing_argument"
@@ -102,7 +110,7 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 		}
 		return nil
 	case "ticket_create":
-		return checkTicketCreatePolicy(root, session, hasSession, raw)
+		return checkTicketCreatePolicy(ctx, root, session, hasSession, raw)
 	case "job_disposition_record":
 		return checkJobDispositionRecordPolicy(ctx, root, session, hasSession, raw)
 	case "dependency_sync", "mars_harness_cli":
@@ -135,6 +143,9 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 	case "shell_exec":
 		args, err := validateShellExecPolicyArgs(raw)
 		if err != nil {
+			return err
+		}
+		if err := checkShellNodeCheckHTMLPolicy(args); err != nil {
 			return err
 		}
 		if err := checkReviewValidationFailureShellPolicy(session, hasSession, args); err != nil {
@@ -174,7 +185,7 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 				return err
 			}
 		}
-		if err := checkEngineerShellExecBeforeTicketClaim(root, session, hasSession, raw, generatedArtifactCleanup); err != nil {
+		if err := checkEngineerShellExecBeforeTicketClaim(ctx, root, session, hasSession, raw, generatedArtifactCleanup); err != nil {
 			return err
 		}
 		if !generatedArtifactCleanup && !sameJobTestBuildRepairCleanup {
@@ -188,14 +199,18 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 				return err
 			}
 		}
+		if err := checkEngineerBrowserFrameworkTicketDoneMovePolicy(root, session, hasSession, raw); err != nil {
+			return err
+		}
 		if err := checkShellTicketDoneEvidencePolicy(ctx, root, raw); err != nil {
 			return err
 		}
 		if generatedArtifactCleanup {
 			return nil
 		}
-		if hasSession && strings.ToLower(strings.TrimSpace(session.Role)) == "coo" && !shellExecReadOnly(raw) {
-			return fmt.Errorf("policy: coo cannot run mutating shell_exec; update planning docs with file_write and use git tools for commit/push, while implementation stays behind CTO tickets and Engineer delivery")
+		if hasSession && planningRoleCannotMutateWithShell(session.Role) && !shellExecReadOnly(raw) {
+			role := strings.ToLower(strings.TrimSpace(session.Role))
+			return fmt.Errorf("policy: %s cannot run mutating shell_exec; use file_write for owned planning artifacts, git tools for commit/status, ticket_create for tickets, and Engineer/dependency tools for implementation or dependency changes", role)
 		}
 		if !shellExecReadOnly(raw) {
 			if err := checkEngineerClaimBeforeProductMutation(ctx, root, session, hasSession, name, raw); err != nil {
@@ -240,7 +255,16 @@ func enforceTrust(session Session, name string) error {
 	return nil
 }
 
-func checkTicketCreatePolicy(root Root, session Session, hasSession bool, raw json.RawMessage) error {
+func planningRoleCannotMutateWithShell(role string) bool {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "ceo", "head-of-strategy", "coo", "cto", "cto-weekly":
+		return true
+	default:
+		return false
+	}
+}
+
+func checkTicketCreatePolicy(ctx context.Context, root Root, session Session, hasSession bool, raw json.RawMessage) error {
 	if !hasSession {
 		return nil
 	}
@@ -248,7 +272,11 @@ func checkTicketCreatePolicy(root Root, session Session, hasSession bool, raw js
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return nil
 	}
-	if err := checkTicketCreatePlanningOrder(root, args); err != nil {
+	args = withInferredTicketCreateScenarios(ctx, args)
+	if err := checkTicketCreatePlanningOrder(root, session, hasSession, args); err != nil {
+		return err
+	}
+	if err := checkBrowserFrameworkTicketCreatePolicy(root, session, hasSession, args); err != nil {
 		return err
 	}
 	role := strings.ToLower(strings.TrimSpace(session.Role))
@@ -260,6 +288,66 @@ func checkTicketCreatePolicy(root Root, session Session, hasSession bool, raw js
 	default:
 		return nil
 	}
+}
+
+func checkBrowserFrameworkTicketCreatePolicy(root Root, session Session, hasSession bool, args ticketCreateArgs) error {
+	if !hasSession {
+		return nil
+	}
+	role := strings.ToLower(strings.TrimSpace(session.Role))
+	if role != "cto" && role != "cto-weekly" {
+		return nil
+	}
+	workType := normalizeWorkType(args.Kind, args.WorkType)
+	if workType != "feature" {
+		return nil
+	}
+	if err := checkProductCapabilityScenarioCoverage(root); err != nil {
+		return err
+	}
+	if !projectBriefMentionsFramework(root, "phaser") || projectBriefNamesGoBackend(root) {
+		return nil
+	}
+	body := strings.ToLower(args.Title + "\n" + args.Source + "\n" + args.Body)
+	badGoShape := []string{"go.mod", "go module", "go cli", "golang", "cmd/"}
+	for _, marker := range badGoShape {
+		if strings.Contains(body, marker) {
+			return fmt.Errorf("policy: Phaser/JavaScript target tickets must default to a browser JavaScript shape such as package.json, index.html, and src/*.js with npm run build evidence. Do not prescribe Go CLI paths, go.mod, or cmd/* unless the README explicitly names a Go backend")
+		}
+	}
+	if phaserTicketPrescribesCDNRuntime(body) {
+		return fmt.Errorf("policy: Phaser/JavaScript target tickets must require a local phaser npm dependency, package build evidence, and browser-product smoke evidence. Do not prescribe CDN-only Phaser script tags or CDN loading acceptance criteria")
+	}
+	return nil
+}
+
+func phaserTicketPrescribesCDNRuntime(body string) bool {
+	body = strings.ToLower(strings.TrimSpace(body))
+	if !strings.Contains(body, "phaser") || !strings.Contains(body, "cdn") {
+		return false
+	}
+	negated := regexp.MustCompile(`\b(no|not|avoid|without|disallow|reject|block|cannot|can't|must not|do not|don't|never)\b[^.\n]{0,64}\bcdn\b`)
+	if negated.MatchString(body) {
+		return false
+	}
+	badPhrases := []string{
+		"cdn-only",
+		"cdn script",
+		"script tag",
+		"load from cdn",
+		"loads from cdn",
+		"loaded from cdn",
+		"loaded by cdn",
+		"use cdn",
+		"uses cdn",
+		"using cdn",
+	}
+	for _, phrase := range badPhrases {
+		if strings.Contains(body, phrase) {
+			return true
+		}
+	}
+	return false
 }
 
 func checkEngineerTicketCreatePolicy(root Root, args ticketCreateArgs) error {
@@ -283,7 +371,7 @@ func isInterventionDebtTicket(args ticketCreateArgs) bool {
 	return strings.TrimSpace(args.Kind) == "intervention-debt" || strings.TrimSpace(args.WorkType) == "intervention-debt"
 }
 
-func checkTicketCreatePlanningOrder(root Root, args ticketCreateArgs) error {
+func checkTicketCreatePlanningOrder(root Root, session Session, hasSession bool, args ticketCreateArgs) error {
 	if isInterventionDebtTicket(args) {
 		return nil
 	}
@@ -297,11 +385,39 @@ func checkTicketCreatePlanningOrder(root Root, args ticketCreateArgs) error {
 	}
 	featureIDs := featureIDsFromScenarios(args.BDDScenarios)
 	if len(featureIDs) == 0 {
+		if hasSession && (strings.EqualFold(strings.TrimSpace(session.Role), "cto") || strings.EqualFold(strings.TrimSpace(session.Role), "cto-weekly")) {
+			if next := pendingCTOHandoffRequiredScenarios(session); len(next) > 0 {
+				return fmt.Errorf("policy: feature ticket_create is missing bdd_scenarios. Retry ticket_create with bdd_scenarios as a JSON array, for example %s, matching the next product scenario(s) before Engineer handoff", quoteStringArray(next))
+			}
+		}
 		return fmt.Errorf("policy: feature ticket_create requires bdd_scenarios from an existing docs/features contract; planning order is exec plan, feature contract, ticket, delivery")
 	}
 	for _, id := range featureIDs {
 		if !featureContractExists(root, id) {
 			return fmt.Errorf("policy: feature ticket_create references %s before a docs/features/%s*.md contract exists; planning order is exec plan, feature contract, ticket, delivery", id, id)
+		}
+		scenarios, covered := featureScenarioCoverage(root, id)
+		var alreadyCovered []string
+		for _, scenario := range args.BDDScenarios {
+			scenario = strings.ToUpper(strings.TrimSpace(scenario))
+			if scenario == "" || featureIDFromScenarioIDMust(scenario) != id {
+				continue
+			}
+			if covered[scenario] {
+				alreadyCovered = append(alreadyCovered, scenario)
+			}
+		}
+		if len(alreadyCovered) > 0 {
+			sort.Strings(alreadyCovered)
+			firstMissing := firstUncoveredFeatureScenarioFromCoverage(scenarios, covered)
+			if firstMissing != "" {
+				return fmt.Errorf("policy: feature ticket_create cannot include already-covered scenario(s) %s for %s. Create the next ticket for %s only, or group it with later uncovered adjacent scenarios", strings.Join(alreadyCovered, ", "), id, firstMissing)
+			}
+			return fmt.Errorf("policy: feature ticket_create cannot include already-covered scenario(s) %s for %s; all contract scenarios appear to be ticketed already", strings.Join(alreadyCovered, ", "), id)
+		}
+		firstMissing := firstUncoveredFeatureScenario(root, id)
+		if firstMissing != "" && !scenarioListContains(args.BDDScenarios, firstMissing) {
+			return fmt.Errorf("policy: feature ticket_create must start with the earliest uncovered scenario %s for %s. Create the next ticket from that scenario, or include it in this scenario group before later scenarios", firstMissing, id)
 		}
 	}
 	return nil
@@ -324,6 +440,11 @@ func featureIDsFromScenarios(scenarios []string) []string {
 	return ids
 }
 
+func featureIDFromScenarioIDMust(scenario string) string {
+	id, _ := featureIDFromScenarioID(scenario)
+	return id
+}
+
 func featureIDFromScenarioID(scenario string) (string, bool) {
 	parts := strings.Split(strings.TrimSpace(strings.ToUpper(scenario)), "-")
 	if len(parts) < 2 || parts[0] != "F" || parts[1] == "" {
@@ -333,12 +454,153 @@ func featureIDFromScenarioID(scenario string) (string, bool) {
 }
 
 func featureContractExists(root Root, featureID string) bool {
+	return featureContractPath(root, featureID) != ""
+}
+
+func featureContractPath(root Root, featureID string) string {
 	featuresDir, err := root.ResolvePath(filepath.Join("docs", "features"))
 	if err != nil {
-		return false
+		return ""
 	}
 	matches, err := filepath.Glob(filepath.Join(featuresDir, featureID+"*.md"))
-	return err == nil && len(matches) > 0
+	if err != nil || len(matches) == 0 {
+		return ""
+	}
+	sort.Strings(matches)
+	return matches[0]
+}
+
+func firstUncoveredFeatureScenario(root Root, featureID string) string {
+	scenarios, covered := featureScenarioCoverage(root, featureID)
+	return firstUncoveredFeatureScenarioFromCoverage(scenarios, covered)
+}
+
+func firstUncoveredFeatureScenarioFromCoverage(scenarios []string, covered map[string]bool) string {
+	if len(scenarios) == 0 {
+		return ""
+	}
+	for _, scenario := range scenarios {
+		if !covered[scenario] {
+			return scenario
+		}
+	}
+	return ""
+}
+
+func featureScenarioCoverage(root Root, featureID string) ([]string, map[string]bool) {
+	covered := map[string]bool{}
+	featurePath := featureContractPath(root, featureID)
+	if featurePath == "" {
+		return nil, covered
+	}
+	data, err := os.ReadFile(featurePath)
+	if err != nil {
+		return nil, covered
+	}
+	scenarios := orderedFeatureScenarioIDs(string(data))
+	if len(scenarios) == 0 {
+		return nil, covered
+	}
+	tickets, err := ticketstate.List(root.Abs())
+	if err == nil {
+		for _, t := range tickets {
+			if t.Kind == "intervention-debt" {
+				continue
+			}
+			if strings.TrimSpace(t.RelPath) == "" {
+				continue
+			}
+			data, err := os.ReadFile(filepath.Join(root.Abs(), filepath.FromSlash(t.RelPath)))
+			if err != nil {
+				continue
+			}
+			for _, scenario := range orderedFeatureScenarioIDs(string(data)) {
+				covered[scenario] = true
+			}
+		}
+	}
+	return scenarios, covered
+}
+
+func featureContractIDs(root Root) []string {
+	featuresDir, err := root.ResolvePath(filepath.Join("docs", "features"))
+	if err != nil {
+		return nil
+	}
+	matches, err := filepath.Glob(filepath.Join(featuresDir, "F-*.md"))
+	if err != nil {
+		return nil
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, match := range matches {
+		if data, err := os.ReadFile(match); err == nil && featureContractSuperseded(string(data)) {
+			continue
+		}
+		id, ok := featureContractIDFromName(filepath.Base(match))
+		if !ok || seen[id] {
+			continue
+		}
+		seen[id] = true
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func featureContractSuperseded(content string) bool {
+	return regexp.MustCompile(`(?im)^\s*-\s*status:\s*superseded\b`).MatchString(content)
+}
+
+func countCoveredFeatureScenarios(scenarios []string, covered map[string]bool) int {
+	n := 0
+	for _, scenario := range scenarios {
+		if covered[scenario] {
+			n++
+		}
+	}
+	return n
+}
+
+func firstUncoveredFeatureScenarios(scenarios []string, covered map[string]bool, limit int) []string {
+	if limit <= 0 {
+		return nil
+	}
+	var out []string
+	for _, scenario := range scenarios {
+		if covered[scenario] {
+			continue
+		}
+		out = append(out, scenario)
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out
+}
+
+func orderedFeatureScenarioIDs(content string) []string {
+	matches := toolsFeatureScenarioIDPattern.FindAllString(strings.ToUpper(content), -1)
+	seen := map[string]bool{}
+	var out []string
+	for _, match := range matches {
+		if seen[match] {
+			continue
+		}
+		seen[match] = true
+		out = append(out, match)
+	}
+	return out
+}
+
+func scenarioListContains(values []string, want string) bool {
+	want = strings.ToUpper(strings.TrimSpace(want))
+	for _, value := range values {
+		if strings.ToUpper(strings.TrimSpace(value)) == want {
+			return true
+		}
+	}
+	return false
 }
 
 func repoFileExists(root Root, rel string) bool {
@@ -512,6 +774,12 @@ func checkEngineerClaimBeforeProductMutation(ctx context.Context, root Root, ses
 	if toolName == "git_commit" && gitCommitTouchesOnlyWorkspaceNoise(ctx, root, raw) {
 		return nil
 	}
+	if toolName == "git_commit" && worktreeHasInProgressToDoneTicketMove(ctx, root) {
+		return nil
+	}
+	if engineerCompletedTicketThisRun(session) {
+		return fmt.Errorf("policy: engineer already moved product ticket %s to docs/tickets/done in this run. Do not claim or mutate another ticket in the same job; commit any remaining lifecycle changes, git_push if a remote exists, then record job_disposition_record with ticket_id %s and next_need qa_review", engineerCompletedTicketID(session), engineerCompletedTicketID(session))
+	}
 	inProgress, err := ticketstate.ListStatus(root.Abs(), ticketstate.StatusInProgress)
 	if err != nil {
 		return fmt.Errorf("policy: inspect in-progress tickets before %s: %w", toolName, err)
@@ -526,10 +794,7 @@ func checkEngineerClaimBeforeProductMutation(ctx context.Context, root Root, ses
 	}
 	backlog = ordinaryProductTickets(backlog)
 	if len(backlog) == 0 {
-		if toolName == "git_commit" && worktreeHasInProgressToDoneTicketMove(ctx, root) {
-			return nil
-		}
-		rework, err := engineerReworkTickets(root)
+		rework, err := engineerReworkTickets(root, session)
 		if err != nil {
 			return fmt.Errorf("policy: inspect review rework tickets before %s: %w", toolName, err)
 		}
@@ -552,11 +817,17 @@ func checkEngineerClaimBeforeProductMutation(ctx context.Context, root Root, ses
 	)
 }
 
-func checkEngineerShellExecBeforeTicketClaim(root Root, session Session, hasSession bool, raw json.RawMessage, generatedArtifactCleanup bool) error {
+func checkEngineerShellExecBeforeTicketClaim(ctx context.Context, root Root, session Session, hasSession bool, raw json.RawMessage, generatedArtifactCleanup bool) error {
 	if generatedArtifactCleanup || !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
 		return nil
 	}
 	if shellExecMovesTicketToInProgress(raw) {
+		if worktreeHasInProgressToDoneTicketMove(ctx, root) {
+			return fmt.Errorf("policy: engineer has already moved a product ticket to docs/tickets/done but the lifecycle move is not committed. Run git_status, git_commit the ticket lifecycle move, git_push if a remote exists, then record job_disposition_record with next_need qa_review before claiming another ticket")
+		}
+		if engineerCompletedTicketThisRun(session) {
+			return fmt.Errorf("policy: engineer already completed product ticket %s in this run. Do not claim another ticket in the same job; record job_disposition_record with ticket_id %s and next_need qa_review after the lifecycle commit", engineerCompletedTicketID(session), engineerCompletedTicketID(session))
+		}
 		return nil
 	}
 	inProgress, err := ticketstate.ListStatus(root.Abs(), ticketstate.StatusInProgress)
@@ -572,8 +843,14 @@ func checkEngineerShellExecBeforeTicketClaim(root Root, session Session, hasSess
 		return fmt.Errorf("policy: inspect backlog tickets before shell_exec: %w", err)
 	}
 	backlog = ordinaryProductTickets(backlog)
+	if worktreeHasInProgressToDoneTicketMove(ctx, root) {
+		return fmt.Errorf("policy: engineer has an uncommitted product ticket lifecycle move to docs/tickets/done. Commit that move and record job_disposition_record with next_need qa_review before running more shell commands or claiming another ticket")
+	}
+	if engineerCompletedTicketThisRun(session) {
+		return fmt.Errorf("policy: engineer already completed product ticket %s in this run. Do not continue into another ticket; record job_disposition_record with ticket_id %s and next_need qa_review", engineerCompletedTicketID(session), engineerCompletedTicketID(session))
+	}
 	if len(backlog) == 0 {
-		rework, err := engineerReworkTickets(root)
+		rework, err := engineerReworkTickets(root, session)
 		if err != nil {
 			return fmt.Errorf("policy: inspect review rework tickets before shell_exec: %w", err)
 		}
@@ -595,12 +872,25 @@ func checkEngineerShellExecBeforeTicketClaim(root Root, session Session, hasSess
 	)
 }
 
+func engineerCompletedTicketThisRun(session Session) bool {
+	return session.ToolCounts != nil && session.ToolCounts[ticketDoneMoveSuccessKey] > 0
+}
+
+func engineerCompletedTicketID(session Session) string {
+	if session.ToolState != nil {
+		if id := strings.TrimSpace(session.ToolState[ticketDoneMoveLastIDKey]); id != "" {
+			return id
+		}
+	}
+	return "the current ticket"
+}
+
 func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root Root, session Session, hasSession bool, raw json.RawMessage) error {
 	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
 		return nil
 	}
 	counts := session.ToolCounts
-	if counts == nil || counts[validationCommandSuccessKey] == 0 || counts["tool:git_commit:success"] == 0 {
+	if counts == nil || counts[validationCommandSuccessKey] == 0 {
 		return nil
 	}
 	if shellExecMovesInProgressTicketToDone(raw) {
@@ -608,6 +898,20 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 	}
 	args, err := decodeShellExecArgs(raw)
 	if err == nil && shellExecRunsRecordedValidationArtifact(session, root, args) {
+		return nil
+	}
+	if err == nil && shellExecStopsTrackedBackgroundPID(args) {
+		return nil
+	}
+	if err == nil && engineerPostCommitBrowserValidationAllowed(root, session, args) {
+		return nil
+	}
+	if err == nil {
+		if blockErr := checkEngineerBrowserPostBuildSmokeOnlyPolicy(ctx, root, session, args); blockErr != nil {
+			return blockErr
+		}
+	}
+	if counts["tool:git_commit:success"] == 0 {
 		return nil
 	}
 	tickets, err := ticketstate.ListStatus(root.Abs(), ticketstate.StatusInProgress)
@@ -631,7 +935,21 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 		)
 	}
 	if len(blockingFiles) > 0 {
+		if engineerBrowserFrameworkEvidenceComplete(root, session) {
+			return fmt.Errorf(
+				"policy: engineer already has successful browser-framework build and product-smoke validation with dirty implementation or ticket work for %s. Do not call shell_exec again except tracked PID cleanup. %s",
+				tickets[0].ID,
+				engineerDirtyPostValidationGuidance(tickets[0], blockingFiles),
+			)
+		}
 		return nil
+	}
+	if blockers := engineerBrowserFrameworkCompletionBlockers(root, session); len(blockers) > 0 {
+		return fmt.Errorf(
+			"policy: engineer cannot close browser-framework product ticket %s yet: %s. Fix the source or package validation surface, rerun validation, then update ticket evidence and move the ticket to done",
+			tickets[0].ID,
+			strings.Join(blockers, "; "),
+		)
 	}
 	return fmt.Errorf(
 		"policy: engineer already has successful validation and a clean implementation commit while product ticket %s remains in progress. Do not call shell_exec again except the exact lifecycle move. Next use file_read on %q, then file_write the same ticket with evidence_links and verified_by populated, then run shell_exec argv [\"git\", \"mv\", %q, \"docs/tickets/done/\"], commit the lifecycle move, and record job_disposition_record with ticket_id %s and next_need qa_review",
@@ -640,6 +958,59 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 		tickets[0].RelPath,
 		tickets[0].ID,
 	)
+}
+
+func engineerBrowserFrameworkEvidenceComplete(root Root, session Session) bool {
+	info := repoBrowserFrameworkInfo(root)
+	if !info.UsesFramework {
+		return false
+	}
+	counts := session.ToolCounts
+	if counts == nil || counts[validationCommandSuccessKey] == 0 {
+		return false
+	}
+	return len(engineerBrowserFrameworkCompletionBlockers(root, session)) == 0
+}
+
+func checkEngineerBrowserPostBuildSmokeOnlyPolicy(ctx context.Context, root Root, session Session, args shellExecArgs) error {
+	info := repoBrowserFrameworkInfo(root)
+	if !info.UsesFramework || !browserFrameworkRequiresProductSmoke(root) {
+		return nil
+	}
+	counts := session.ToolCounts
+	if counts == nil || counts[buildCommandSuccessKey] == 0 || counts[browserProductSmokeSuccessKey] > 0 {
+		return nil
+	}
+	if shellExecRunsBuildCommand(args) || shellExecRunsBrowserProductSmokeCommand(args) || shellExecStopsTrackedBackgroundPID(args) {
+		return nil
+	}
+	files, err := changedFiles(ctx, root)
+	if err != nil || len(dispositionBlockingFiles(files)) == 0 {
+		return nil
+	}
+	return fmt.Errorf(
+		"policy: engineer has successful browser-framework build evidence but still needs browser-product smoke before more shell validation. Run %s. Do not inspect dist/assets, require('phaser'), require browser bundles from Node, run node --check on HTML, or use trivial environment probes as substitutes for mounted product UI evidence",
+		browserProductSmokeCommandGuidance(root),
+	)
+}
+
+func engineerPostCommitBrowserValidationAllowed(root Root, session Session, args shellExecArgs) bool {
+	info := repoBrowserFrameworkInfo(root)
+	if !info.UsesFramework {
+		return false
+	}
+	counts := session.ToolCounts
+	if counts == nil {
+		return false
+	}
+	if info.HasBuildScript && counts[buildCommandSuccessKey] == 0 && shellExecRunsBuildCommand(args) {
+		return true
+	}
+	if browserFrameworkRequiresProductSmoke(root) && counts[buildCommandSuccessKey] > 0 &&
+		counts[browserProductSmokeSuccessKey] == 0 && shellExecRunsBrowserProductSmokeCommand(args) {
+		return true
+	}
+	return false
 }
 
 func engineerDirtyPostValidationGuidance(ticket ticketstate.Ticket, files []string) string {
@@ -793,7 +1164,7 @@ func engineerTestBuildRepairWritePathInScope(session Session, rel string) bool {
 	if rel == "" {
 		return false
 	}
-	if !sourceFileRequiresDocSync(rel) && !pathLooksLikeFixtureOrTestdata(rel) {
+	if !sourceFileRequiresDocSync(rel) && !pathLooksLikeFixtureOrTestdata(rel) && !pathLooksLikeTestFile(rel) {
 		return true
 	}
 	if session.ToolState == nil {
@@ -832,6 +1203,9 @@ func engineerTestBuildRepairWritePath(rel string) bool {
 		return true
 	}
 	lowerRel := strings.ToLower(filepath.ToSlash(rel))
+	if pathLooksLikeTestFile(lowerRel) {
+		return true
+	}
 	base := filepath.Base(lowerRel)
 	switch base {
 	case "go.mod", "go.sum",
@@ -850,6 +1224,33 @@ func pathLooksLikeFixtureOrTestdata(rel string) bool {
 	lowerRel := strings.ToLower(filepath.ToSlash(cleanRepoPath(rel)))
 	wrapped := "/" + lowerRel + "/"
 	return strings.Contains(wrapped, "/testdata/") || strings.Contains(wrapped, "/fixtures/")
+}
+
+func pathLooksLikeTestFile(rel string) bool {
+	lowerRel := strings.ToLower(filepath.ToSlash(cleanRepoPath(rel)))
+	if lowerRel == "" {
+		return false
+	}
+	base := filepath.Base(lowerRel)
+	for _, suffix := range []string{
+		"_test.go",
+		".test.js",
+		".test.jsx",
+		".test.ts",
+		".test.tsx",
+		".test.mjs",
+		".spec.js",
+		".spec.jsx",
+		".spec.ts",
+		".spec.tsx",
+		".spec.mjs",
+	} {
+		if strings.HasSuffix(base, suffix) {
+			return true
+		}
+	}
+	wrapped := "/" + lowerRel + "/"
+	return strings.Contains(wrapped, "/tests/") || strings.Contains(wrapped, "/test/")
 }
 
 func checkEngineerUnresolvedRuntimeValidationBeforeDoneFileWrite(session Session, hasSession bool, rel string) error {
@@ -914,7 +1315,7 @@ func testBuildValidationCorrectionGuidance(session Session) string {
 			parts = append(parts, "The exact unresolved command was: "+command+".")
 		}
 		if output := strings.TrimSpace(session.ToolState[testBuildValidationOutputKey]); output != "" {
-			parts = append(parts, "Latest failing output: "+output)
+			parts = append(parts, "Latest failing output (compact): "+compactPolicyFailureOutput(output))
 		}
 	}
 	if len(parts) == 0 {
@@ -922,6 +1323,16 @@ func testBuildValidationCorrectionGuidance(session Session) string {
 	}
 	parts = append(parts, "If the failing assertion matches the ticket, README, or BDD contract, edit the implementation rather than deleting or weakening the test.")
 	return " " + strings.Join(parts, " ")
+}
+
+func compactPolicyFailureOutput(output string) string {
+	output = strings.Join(strings.Fields(output), " ")
+	output, truncated := TruncateUTF8(output, 180)
+	output = strings.TrimSpace(output)
+	if truncated {
+		output += "..."
+	}
+	return output
 }
 
 func runtimeValidationCorrectionGuidance(session Session) string {
@@ -1080,6 +1491,9 @@ func engineerTestBuildRepairRemovalPath(rel string) bool {
 	lowerRel := strings.ToLower(filepath.ToSlash(rel))
 	base := filepath.Base(lowerRel)
 	if sourceFileRequiresDocSync(rel) && strings.Contains(base, "test") {
+		return true
+	}
+	if pathLooksLikeTestFile(lowerRel) {
 		return true
 	}
 	wrapped := "/" + lowerRel + "/"
@@ -1346,7 +1760,7 @@ func gitCommitTouchesOnlyWorkspaceNoise(ctx context.Context, root Root, raw json
 	return err == nil && len(noise) > 0
 }
 
-func engineerReworkTickets(root Root) ([]ticketstate.Ticket, error) {
+func engineerReworkTickets(root Root, session Session) ([]ticketstate.Ticket, error) {
 	var out []ticketstate.Ticket
 	for _, status := range []string{ticketstate.StatusInReview, ticketstate.StatusDone} {
 		tickets, err := ticketstate.ListStatus(root.Abs(), status)
@@ -1355,7 +1769,44 @@ func engineerReworkTickets(root Root) ([]ticketstate.Ticket, error) {
 		}
 		out = append(out, ordinaryProductTickets(tickets)...)
 	}
+	if targetID := engineerReworkTicketIDFromTrigger(session.Trigger); targetID != "" {
+		for _, ticket := range out {
+			if strings.EqualFold(strings.TrimSpace(ticket.ID), targetID) {
+				return []ticketstate.Ticket{ticket}, nil
+			}
+		}
+		return nil, nil
+	}
 	return out, nil
+}
+
+func engineerReworkTicketIDFromTrigger(raw string) string {
+	var trigger struct {
+		Type              string `json:"type"`
+		TargetRole        string `json:"target_role"`
+		SourceDisposition struct {
+			Status   string `json:"status"`
+			NextNeed string `json:"next_need"`
+			TicketID string `json:"ticket_id"`
+		} `json:"source_disposition"`
+	}
+	if err := json.Unmarshal([]byte(raw), &trigger); err != nil {
+		return ""
+	}
+	if !strings.EqualFold(strings.TrimSpace(trigger.Type), "dispatch") {
+		return ""
+	}
+	if target := strings.ToLower(strings.TrimSpace(trigger.TargetRole)); target != "" && target != "engineer" {
+		return ""
+	}
+	source := trigger.SourceDisposition
+	if !strings.EqualFold(strings.TrimSpace(source.Status), "changes_requested") {
+		return ""
+	}
+	if next := strings.ToLower(strings.TrimSpace(source.NextNeed)); next != "" && next != "implementation_rework" && next != "implementation" && next != "fix" {
+		return ""
+	}
+	return strings.ToUpper(strings.TrimSpace(source.TicketID))
 }
 
 func worktreeHasInProgressToDoneTicketMove(ctx context.Context, root Root) bool {
@@ -1409,7 +1860,7 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 	if err := checkTicketDoneContentPolicy(root, args.Path, args.Content); err != nil {
 		return err
 	}
-	if err := checkEngineerTicketEvidenceWriteRequiresValidation(session, hasSession, args.Path, args.Content); err != nil {
+	if err := checkEngineerTicketEvidenceWriteRequiresValidation(root, session, hasSession, args.Path, args.Content); err != nil {
 		return err
 	}
 	if err := checkEngineerUnresolvedTestBuildValidationBeforeFileWrite(session, hasSession, args.Path); err != nil {
@@ -1418,7 +1869,7 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 	if err := checkEngineerUnresolvedRuntimeValidationBeforeDoneFileWrite(session, hasSession, args.Path); err != nil {
 		return err
 	}
-	if err := checkFeatureFileWritePolicy(root, args.Path); err != nil {
+	if err := checkFeatureFileWritePolicy(root, session, hasSession, args.Path); err != nil {
 		return err
 	}
 	if err := checkFeatureScenarioIDPolicy(args.Path, args.Content); err != nil {
@@ -1431,6 +1882,12 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 		return err
 	}
 	if err := checkSecurityFileWritePolicy(session, hasSession, args.Path); err != nil {
+		return err
+	}
+	if err := checkEngineerBrowserFrameworkImplementationShapePolicy(root, session, hasSession, args.Path); err != nil {
+		return err
+	}
+	if err := checkEngineerBrowserFrameworkPackageWritePolicy(root, session, hasSession, args.Path, args.Content); err != nil {
 		return err
 	}
 	if err := checkRootScratchValidationWritePolicy(root, args.Path); err != nil {
@@ -1534,16 +1991,23 @@ func rootScratchValidationName(rel string) bool {
 	}
 	stem := strings.TrimSuffix(base, ext)
 	switch stem {
-	case "debug", "probe", "scratch", "tmp", "temp", "validate", "validation", "verify", "smoke", "smoke-test", "test-server":
+	case "debug", "probe", "scratch", "tmp", "temp", "test", "validate", "validation", "verify", "smoke", "smoke-test", "test-server":
 		return true
 	default:
-		return strings.Contains(stem, "validation") || strings.Contains(stem, "scratch") || strings.Contains(stem, "verify")
+		return strings.HasPrefix(stem, "test-") ||
+			strings.HasSuffix(stem, "-test") ||
+			strings.Contains(stem, "validate") ||
+			strings.Contains(stem, "validation") ||
+			strings.Contains(stem, "smoke") ||
+			strings.Contains(stem, "probe") ||
+			strings.Contains(stem, "scratch") ||
+			strings.Contains(stem, "verify")
 	}
 }
 
 func rootScratchValidationExt(ext string) bool {
 	switch strings.ToLower(ext) {
-	case ".sh", ".go", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".rb":
+	case ".sh", ".go", ".html", ".htm", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".rb":
 		return true
 	default:
 		return false
@@ -1564,6 +2028,160 @@ func checkSecurityFileWritePolicy(session Session, hasSession bool, rel string) 
 func securityReportWritePath(rel string) bool {
 	rel = filepath.ToSlash(strings.TrimSpace(rel))
 	return strings.HasPrefix(rel, "docs/reports/security/") && strings.HasSuffix(strings.ToLower(rel), ".md")
+}
+
+func checkEngineerBrowserFrameworkImplementationShapePolicy(root Root, session Session, hasSession bool, rel string) error {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
+		return nil
+	}
+	if !projectBriefMentionsFramework(root, "phaser") || projectBriefNamesGoBackend(root) {
+		return nil
+	}
+	rel = cleanRepoPath(rel)
+	lower := strings.ToLower(rel)
+	if lower == "go.mod" || strings.HasSuffix(lower, "/go.mod") || strings.HasSuffix(lower, ".go") && strings.HasPrefix(lower, "cmd/") {
+		return fmt.Errorf("policy: Phaser/JavaScript target implementation should use package.json, index.html, and src/*.js with local phaser dependency/build evidence. Do not add Go module or cmd/*.go scaffolding unless README explicitly names a Go backend")
+	}
+	return nil
+}
+
+func checkEngineerBrowserFrameworkPackageWritePolicy(root Root, session Session, hasSession bool, rel, content string) error {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
+		return nil
+	}
+	if !projectBriefMentionsFramework(root, "phaser") || projectBriefNamesGoBackend(root) {
+		return nil
+	}
+	rel = cleanRepoPath(rel)
+	lower := strings.ToLower(rel)
+	switch lower {
+	case "package.json":
+		var pkg struct {
+			Scripts         map[string]string `json:"scripts"`
+			Dependencies    map[string]string `json:"dependencies"`
+			DevDependencies map[string]string `json:"devDependencies"`
+		}
+		if err := json.Unmarshal([]byte(content), &pkg); err != nil {
+			return nil
+		}
+		hasPhaser := false
+		for dep := range pkg.Dependencies {
+			if strings.EqualFold(strings.TrimSpace(dep), "phaser") {
+				hasPhaser = true
+			}
+		}
+		for dep := range pkg.DevDependencies {
+			if strings.EqualFold(strings.TrimSpace(dep), "phaser") {
+				hasPhaser = true
+			}
+		}
+		if !hasPhaser {
+			return fmt.Errorf("policy: Phaser browser targets must declare a local phaser npm dependency in package.json; do not rely on CDN-only runtime")
+		}
+		hasBuild := false
+		for name, script := range pkg.Scripts {
+			if buildScriptName(name) && !packageBuildScriptNoop(script) {
+				hasBuild = true
+				break
+			}
+		}
+		if !hasBuild {
+			return fmt.Errorf("policy: Phaser browser targets must include a deterministic package build script in package.json, such as vite build, tsc --noEmit, or another command that fails on broken source; echo, true, and node --check-only scripts are not enough")
+		}
+		for name, script := range pkg.Scripts {
+			if !runtimeScriptName(name) {
+				continue
+			}
+			if port := reservedHarnessPortInScript(script); port != "" {
+				return fmt.Errorf("policy: package.json script %q uses reserved Mars Harness port %s. Use an application dev port such as 5173 so target servers do not collide with local inference/runtime ports", name, port)
+			}
+			if phaserRuntimeScriptUsesStaticSourceServer(script) {
+				return fmt.Errorf("policy: package.json script %q starts a static source server for a Phaser app. Use Vite dev/preview, for example `vite --host 127.0.0.1 --port 5173` or `npm run build && vite preview --host 127.0.0.1 --port 5173`, so local npm modules are bundled correctly", name)
+			}
+		}
+	}
+	if htmlSourcePath(lower) {
+		lowerContent := strings.ToLower(content)
+		if strings.Contains(lowerContent, "<script") && strings.Contains(lowerContent, "phaser") &&
+			(strings.Contains(lowerContent, "http://") || strings.Contains(lowerContent, "https://") || strings.Contains(lowerContent, "cdn.")) {
+			return fmt.Errorf("policy: Phaser browser targets should use the local phaser npm dependency and package build/runtime validation, not a CDN-only Phaser script tag in index.html")
+		}
+	}
+	switch lower {
+	case "vite.config.js", "vite.config.ts":
+		if viteConfigImportsPhaserRuntime(content) {
+			return fmt.Errorf("policy: Phaser Vite config runs in Node during build and must not import Phaser, browser globals, or src/* game modules. Keep vite.config limited to Vite/plugin configuration, and import Phaser/game code from the browser entrypoint instead")
+		}
+		if viteConfigExternalizesPhaser(content) {
+			return fmt.Errorf("policy: Phaser Vite config must not externalize phaser from the production bundle; remove rollupOptions.external entries for phaser so npm run build proves the browser can load the local dependency")
+		}
+	}
+	if javascriptSourcePath(lower) && !browserFrameworkValidationHelperPath(lower) {
+		if findings := phaserSingleFileSourceFindings(rel, content); len(findings) > 0 {
+			return fmt.Errorf("policy: Phaser source file has lifecycle/import issue: %s", strings.Join(findings, "; "))
+		}
+	}
+	return nil
+}
+
+func reservedHarnessPortInScript(script string) string {
+	for _, port := range []string{"18080", "18081", "18082", "18083", "18084", "18085", "18086", "18087", "18088", "18089"} {
+		if regexp.MustCompile(`(^|[^0-9])` + regexp.QuoteMeta(port) + `([^0-9]|$)`).MatchString(script) {
+			return port
+		}
+	}
+	return ""
+}
+
+func phaserRuntimeScriptUsesStaticSourceServer(script string) bool {
+	script = strings.ToLower(strings.TrimSpace(script))
+	for _, marker := range []string{
+		"python -m http.server",
+		"python3 -m http.server",
+		"http-server",
+		"live-server",
+	} {
+		if strings.Contains(script, marker) {
+			return true
+		}
+	}
+	if regexp.MustCompile(`(^|[;&|]\s*)serve(?:\s+|$)`).MatchString(script) && !strings.Contains(script, "vite preview") {
+		return true
+	}
+	return false
+}
+
+func viteConfigImportsPhaserRuntime(content string) bool {
+	lower := strings.ToLower(content)
+	runtimeMarkers := []string{
+		"from 'phaser'",
+		`from "phaser"`,
+		"require('phaser')",
+		`require("phaser")`,
+		"from './src",
+		`from "./src`,
+		"from '../src",
+		`from "../src`,
+		"require('./src",
+		`require("./src`,
+		"require('../src",
+		`require("../src`,
+	}
+	for _, marker := range runtimeMarkers {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func viteConfigExternalizesPhaser(content string) bool {
+	lower := strings.ToLower(content)
+	if !strings.Contains(lower, "external") || !strings.Contains(lower, "phaser") {
+		return false
+	}
+	externalRe := regexp.MustCompile(`(?s)\bexternal\s*:\s*(?:\[[^\]]*['"]phaser['"]|['"]phaser['"]|\([^)]*phaser)`)
+	return externalRe.MatchString(lower)
 }
 
 func checkDogfoodFileWritePolicy(session Session, hasSession bool, rel string) error {
@@ -1698,7 +2316,7 @@ func checkTicketDoneContentPolicy(root Root, rel, content string) error {
 	)
 }
 
-func checkEngineerTicketEvidenceWriteRequiresValidation(session Session, hasSession bool, rel, content string) error {
+func checkEngineerTicketEvidenceWriteRequiresValidation(root Root, session Session, hasSession bool, rel, content string) error {
 	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
 		return nil
 	}
@@ -1712,6 +2330,13 @@ func checkEngineerTicketEvidenceWriteRequiresValidation(session Session, hasSess
 		return nil
 	}
 	if session.ToolCounts != nil && session.ToolCounts[validationCommandSuccessKey] > 0 {
+		if blockers := engineerBrowserFrameworkCompletionBlockers(root, session); len(blockers) > 0 {
+			return fmt.Errorf(
+				"policy: engineer cannot populate ticket evidence for browser-framework work in %s yet: %s. Add or fix package build/browser validation, run it successfully in this job, then update evidence_links with the concrete commands",
+				rel,
+				strings.Join(blockers, "; "),
+			)
+		}
 		return nil
 	}
 	return fmt.Errorf("policy: engineer cannot populate ticket evidence_links or verified_by in %s before successful validation in this job; run go test, a build, or a runtime command that exercises the BDD scenario, then update the ticket with exact evidence", rel)
@@ -1825,7 +2450,7 @@ func formatFeatureScenarioDuplicates(dupes []featureScenarioDuplicate) string {
 	return strings.Join(formatted, ", ")
 }
 
-func checkFeatureFileWritePolicy(root Root, rel string) error {
+func checkFeatureFileWritePolicy(root Root, session Session, hasSession bool, rel string) error {
 	rel = cleanRepoPath(rel)
 	lowerRel := strings.ToLower(rel)
 	if !strings.HasPrefix(lowerRel, "docs/features/") || !strings.HasSuffix(lowerRel, ".md") {
@@ -1858,7 +2483,20 @@ func checkFeatureFileWritePolicy(root Root, rel string) error {
 		}
 	}
 	existing := filepath.ToSlash(filepath.Join("docs", "features", filepath.Base(matches[0])))
+	if hasSession && !roleMayWriteFeatureContracts(session.Role) {
+		role := strings.ToLower(strings.TrimSpace(session.Role))
+		return fmt.Errorf("policy: feature contract %s already exists as %s; %s cannot write feature contracts. Record strategy in allowed strategy artifacts or hand off to COO to update %s; do not create duplicate feature path %s", featureID, existing, role, existing, rel)
+	}
 	return fmt.Errorf("policy: feature contract %s already exists as %s; update the canonical contract instead of creating duplicate feature path %s", featureID, existing, rel)
+}
+
+func roleMayWriteFeatureContracts(role string) bool {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "", "coo":
+		return true
+	default:
+		return false
+	}
 }
 
 func featureContractIDFromName(base string) (string, bool) {
@@ -1895,10 +2533,22 @@ func checkJobDispositionRecordPolicy(ctx context.Context, root Root, session Ses
 	if err := checkEngineerDispositionTicketState(root, session, args.Status, args.TicketID); err != nil {
 		return err
 	}
+	if err := checkPlanningDispositionFeatureSpecificity(root, session, args.Status); err != nil {
+		return err
+	}
+	if err := checkCTODispositionTicketBatch(root, session, args.Status, args.NextNeed, args.SuggestedRole); err != nil {
+		return err
+	}
 	if err := checkReviewDispositionValidationEvidence(root, session, args.Status, args.TicketID); err != nil {
 		return err
 	}
-	if err := checkSuccessfulDispositionUnresolvedTicketCreation(session, args.Status, args.NextNeed, args.SuggestedRole); err != nil {
+	if err := checkReviewChangesRequestedFeedbackOwnership(root, session, args.Status, args.NextNeed, raw); err != nil {
+		return err
+	}
+	if err := checkDogfoodDispositionValidationEvidence(root, session, args.Status); err != nil {
+		return err
+	}
+	if err := checkSuccessfulDispositionUnresolvedTicketCreation(root, session, args.Status, args.NextNeed, args.SuggestedRole); err != nil {
 		return err
 	}
 	if !dispositionRequiresCleanTree(args.Status) {
@@ -1915,17 +2565,265 @@ func checkJobDispositionRecordPolicy(ctx context.Context, root Root, session Ses
 	return fmt.Errorf("policy: job_disposition_record cannot complete while repository has uncommitted changes: %s. Run git_status, commit the changed work with git_commit, then record the disposition", summarizeChangedFiles(files))
 }
 
-func checkSuccessfulDispositionUnresolvedTicketCreation(session Session, status, nextNeed, suggestedRole string) error {
+func checkCTODispositionTicketBatch(root Root, session Session, status, nextNeed, suggestedRole string) error {
+	role := strings.ToLower(strings.TrimSpace(session.Role))
+	if role != "cto" && role != "cto-weekly" {
+		return nil
+	}
+	if !successfulDispositionStatus(status) {
+		return nil
+	}
+	nextNeed = strings.ToLower(strings.TrimSpace(nextNeed))
+	suggestedRole = strings.ToLower(strings.TrimSpace(suggestedRole))
+	if nextNeed != "implementation" && suggestedRole != "engineer" {
+		return nil
+	}
+	for _, featureID := range featureContractIDs(root) {
+		scenarios, covered := featureScenarioCoverage(root, featureID)
+		if len(scenarios) < 2 {
+			continue
+		}
+		requiredScenarios := earlyCTOHandoffRequiredScenarios(root, featureID, scenarios)
+		if len(requiredScenarios) == 0 {
+			continue
+		}
+		required := len(requiredScenarios)
+		coveredCount := countCoveredFeatureScenarios(requiredScenarios, covered)
+		if coveredCount >= required {
+			continue
+		}
+		next := firstUncoveredFeatureScenarios(requiredScenarios, covered, required-coveredCount)
+		recordCTOHandoffRequiredScenarios(session, next)
+		return fmt.Errorf("policy: cto cannot hand off implementation for %s after covering only %d/%d early product scenario(s). Create a small product backlog batch with ticket_create before Engineer handoff: cover the next product scenario(s) %s, or group adjacent bounded product scenarios in one ticket when that is the clearer slice", featureID, coveredCount, required, strings.Join(next, ", "))
+	}
+	return nil
+}
+
+func recordCTOHandoffRequiredScenarios(session Session, scenarios []string) {
+	if len(scenarios) == 0 || session.ToolState == nil {
+		return
+	}
+	session.ToolState[ctoHandoffRequiredScenariosKey] = strings.Join(scenarios, ",")
+}
+
+func pendingCTOHandoffRequiredScenarios(session Session) []string {
+	if session.ToolState == nil {
+		return nil
+	}
+	return splitScenarioList(session.ToolState[ctoHandoffRequiredScenariosKey])
+}
+
+func splitScenarioList(value string) []string {
+	var out []string
+	for _, part := range strings.FieldsFunc(value, func(r rune) bool {
+		return r == ',' || r == '\n' || r == ' '
+	}) {
+		part = strings.ToUpper(strings.TrimSpace(part))
+		if toolsFeatureScenarioIDPattern.MatchString(part) {
+			out = append(out, part)
+		}
+	}
+	return out
+}
+
+func quoteStringArray(values []string) string {
+	if len(values) == 0 {
+		return "[]"
+	}
+	quoted := make([]string, 0, len(values))
+	for _, value := range values {
+		quoted = append(quoted, strconv.Quote(value))
+	}
+	return "[" + strings.Join(quoted, ",") + "]"
+}
+
+func earlyCTOHandoffRequiredScenarios(root Root, featureID string, scenarios []string) []string {
+	productScenarios := productScenarioIDsForHandoff(root, featureID, scenarios)
+	if len(productScenarios) > 0 {
+		if len(productScenarios) > 3 {
+			return productScenarios[:3]
+		}
+		return productScenarios
+	}
+	required := len(scenarios)
+	if required > 3 {
+		required = 3
+	}
+	return append([]string(nil), scenarios[:required]...)
+}
+
+func productScenarioIDsForHandoff(root Root, featureID string, scenarios []string) []string {
+	featurePath := featureContractPath(root, featureID)
+	if featurePath == "" {
+		return nil
+	}
+	data, err := os.ReadFile(featurePath)
+	if err != nil {
+		return nil
+	}
+	sections := orderedFeatureScenarioSections(string(data))
+	if len(sections) == 0 {
+		return nil
+	}
+	byID := make(map[string]string, len(sections))
+	for _, section := range sections {
+		byID[section.ID] = section.Text
+	}
+	requiredCapabilities := projectBriefCapabilityPhrases(root)
+	var out []string
+	for _, scenario := range scenarios {
+		text := byID[scenario]
+		if text == "" {
+			continue
+		}
+		if scenarioCoversProductCapability(text, requiredCapabilities) {
+			out = append(out, scenario)
+		}
+	}
+	return out
+}
+
+func scenarioCoversProductCapability(text string, requiredCapabilities []string) bool {
+	if len(requiredCapabilities) > 0 {
+		for _, phrase := range requiredCapabilities {
+			if capabilityPhraseCovered(text, phrase) {
+				return true
+			}
+		}
+		return false
+	}
+	return scenarioLooksProductImplementation(text)
+}
+
+func scenarioLooksProductImplementation(text string) bool {
+	surface := normalizeCapabilitySurface(text)
+	if strings.Contains(surface, "harness telemetry") ||
+		strings.Contains(surface, "intervention debt") ||
+		strings.Contains(surface, "governance expansion") ||
+		strings.Contains(surface, "wider automation") {
+		return false
+	}
+	for _, marker := range []string{
+		"visible",
+		"runnable",
+		"inspectable",
+		"user can",
+		"player",
+		"game",
+		"app",
+		"browser",
+		"build",
+		"feature",
+		"behavior",
+		"behaviour",
+	} {
+		if strings.Contains(surface, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+type featureScenarioSection struct {
+	ID   string
+	Text string
+}
+
+func orderedFeatureScenarioSections(content string) []featureScenarioSection {
+	matches := toolsFeatureScenarioHeadingPattern.FindAllStringSubmatchIndex(content, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+	var out []featureScenarioSection
+	for i, match := range matches {
+		id := strings.ToUpper(content[match[2]:match[3]])
+		start := match[0]
+		end := len(content)
+		if i+1 < len(matches) {
+			end = matches[i+1][0]
+		} else if outOfScope := strings.Index(strings.ToLower(content[start:]), "\n## out of scope"); outOfScope >= 0 {
+			end = start + outOfScope
+		}
+		out = append(out, featureScenarioSection{
+			ID:   id,
+			Text: content[start:end],
+		})
+	}
+	return out
+}
+
+func checkReviewChangesRequestedFeedbackOwnership(root Root, session Session, status, nextNeed string, raw json.RawMessage) error {
+	if !reviewRoleRequiresValidationEvidence(session.Role) ||
+		strings.ToLower(strings.TrimSpace(status)) != "changes_requested" ||
+		strings.ToLower(strings.TrimSpace(nextNeed)) != "implementation_rework" {
+		return nil
+	}
+	if !repoBrowserFrameworkInfo(root).UsesFramework {
+		return nil
+	}
+	if findings := browserFrameworkSourceFindings(root); len(findings) > 0 {
+		return nil
+	}
+	text := strings.ToLower(string(raw))
+	buildSucceeded := session.ToolCounts != nil && session.ToolCounts[buildCommandSuccessKey] > 0 ||
+		strings.Contains(text, "build succeeded") ||
+		strings.Contains(text, "build passed")
+	foundationValidationSignal := strings.Contains(text, "implementation is correct") ||
+		strings.Contains(text, "smoke test validation error") ||
+		strings.Contains(text, "test should") ||
+		strings.Contains(text, "test needs") ||
+		(buildSucceeded && (strings.Contains(text, "server not running") ||
+			strings.Contains(text, "dev server") ||
+			strings.Contains(text, "localhost:5173") ||
+			strings.Contains(text, "curl test")))
+	if !foundationValidationSignal {
+		return nil
+	}
+	return fmt.Errorf("policy: %s changes_requested feedback appears to route a foundation validation/test wording issue to Engineer even though browser-framework source inspection is clean. Do not send implementation_rework when the implementation is described as correct; approve with corrected evidence, or record a foundation/dogfood finding for the validation helper instead", strings.ToLower(strings.TrimSpace(session.Role)))
+}
+
+func checkSuccessfulDispositionUnresolvedTicketCreation(root Root, session Session, status, nextNeed, suggestedRole string) error {
 	if !successfulDispositionStatus(status) || session.ToolCounts == nil {
 		return nil
 	}
 	if session.ToolCounts[ticketCreationOutstandingFailureKey] == 0 {
 		return nil
 	}
+	if ctoImplementationHandoffTicketBatchSatisfied(root, session.Role, nextNeed, suggestedRole) {
+		return nil
+	}
 	if planningRoleCanHandOffTicketCreation(session.Role, nextNeed, suggestedRole) {
 		return nil
 	}
 	return fmt.Errorf("policy: job_disposition_record cannot record a successful disposition while ticket creation failed earlier in this job and no successful ticket_create followed. Retry ticket_create with valid JSON, including bdd_scenarios as an array like [\"F-001-S002\"], or record status blocked with the exact ticket_create error as the blocker")
+}
+
+func ctoImplementationHandoffTicketBatchSatisfied(root Root, role, nextNeed, suggestedRole string) bool {
+	role = strings.ToLower(strings.TrimSpace(role))
+	if role != "cto" && role != "cto-weekly" {
+		return false
+	}
+	nextNeed = strings.ToLower(strings.TrimSpace(nextNeed))
+	suggestedRole = strings.ToLower(strings.TrimSpace(suggestedRole))
+	if nextNeed != "implementation" && suggestedRole != "engineer" {
+		return false
+	}
+	checked := false
+	for _, featureID := range featureContractIDs(root) {
+		scenarios, covered := featureScenarioCoverage(root, featureID)
+		if len(scenarios) < 2 {
+			continue
+		}
+		requiredScenarios := earlyCTOHandoffRequiredScenarios(root, featureID, scenarios)
+		if len(requiredScenarios) == 0 {
+			continue
+		}
+		checked = true
+		if countCoveredFeatureScenarios(requiredScenarios, covered) < len(requiredScenarios) {
+			return false
+		}
+	}
+	return checked
 }
 
 func planningRoleCanHandOffTicketCreation(role, nextNeed, suggestedRole string) bool {
@@ -1964,7 +2862,163 @@ func checkReviewDispositionValidationEvidence(root Root, session Session, status
 	if counts[validationCommandSuccessKey] == 0 {
 		return fmt.Errorf("policy: %s must run at least one authoritative validation command successfully before approving %s; use tests, build, or an end-to-end command that exercises the completed ticket", strings.ToLower(strings.TrimSpace(session.Role)), strings.ToUpper(strings.TrimSpace(ticketID)))
 	}
+	if blockers := browserFrameworkCompletionBlockers(root, session, true); len(blockers) > 0 {
+		return fmt.Errorf(
+			"policy: %s cannot approve browser-framework ticket %s yet: %s. Record changes_requested with feedback.for_role engineer, next_need implementation_rework, and evidence_links naming the missing or failing validation",
+			strings.ToLower(strings.TrimSpace(session.Role)),
+			strings.ToUpper(strings.TrimSpace(ticketID)),
+			strings.Join(blockers, "; "),
+		)
+	}
+	if browserFrameworkRequiresProductSmoke(root) && counts[browserProductSmokeSuccessKey] == 0 {
+		return fmt.Errorf(
+			"policy: %s cannot approve browser-framework ticket %s from HTTP/build evidence alone. Run a browser product smoke or equivalent source/runtime assertion that checks the framework mounted real product UI state such as Phaser game/canvas behavior, then approve or request changes. Suggested smoke: %s",
+			strings.ToLower(strings.TrimSpace(session.Role)),
+			strings.ToUpper(strings.TrimSpace(ticketID)),
+			browserProductSmokeCommandGuidance(root),
+		)
+	}
 	return nil
+}
+
+func checkDogfoodDispositionValidationEvidence(root Root, session Session, status string) error {
+	if strings.ToLower(strings.TrimSpace(session.Role)) != "dogfood" || !successfulReviewDispositionStatus(status) {
+		return nil
+	}
+	if !browserFrameworkRequiresProductSmoke(root) {
+		return nil
+	}
+	counts := session.ToolCounts
+	if counts == nil {
+		counts = map[string]int{}
+	}
+	if counts[browserProductSmokeSuccessKey] > 0 {
+		return nil
+	}
+	return fmt.Errorf("policy: dogfood cannot approve browser-framework E2E from curl/HTTP reachability alone. Run a browser product smoke or equivalent source/runtime assertion that checks real product UI state such as Phaser game/canvas behavior, or create a target-owned finding and record changes_requested")
+}
+
+func checkPlanningDispositionFeatureSpecificity(root Root, session Session, status string) error {
+	role := strings.ToLower(strings.TrimSpace(session.Role))
+	if role != "coo" || !successfulDispositionStatus(status) {
+		return nil
+	}
+	featurePath, err := root.ResolvePath(filepath.Join("docs", "features", "F-001-product-walking-skeleton.md"))
+	if err != nil {
+		return nil
+	}
+	data, err := os.ReadFile(featurePath)
+	if err != nil {
+		return nil
+	}
+	content := strings.ToLower(string(data))
+	if !projectBriefHasConcreteProductIntent(root) {
+		return nil
+	}
+	if !featureContractSuperseded(string(data)) && (strings.Contains(content, "starter contract is seeded") ||
+		strings.Contains(content, "replace placeholder nouns")) {
+		return fmt.Errorf("policy: coo cannot complete planning while docs/features/F-001-product-walking-skeleton.md still contains starter-placeholder contract text. Rewrite the feature contract with product-specific business logic, scenario schedule, and current failing scenario from README/active goals before handing off to CTO")
+	}
+	if err := checkProductCapabilityScenarioCoverage(root); err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkProductCapabilityScenarioCoverage(root Root) error {
+	required := projectBriefCapabilityPhrases(root)
+	if len(required) == 0 {
+		return nil
+	}
+	contents := productCapabilityCoverageFeatureContents(root)
+	if len(contents) == 0 {
+		return nil
+	}
+	var scenarioParts []string
+	var outlineParts []string
+	var descopedParts []string
+	var outOfScopeParts []string
+	for _, content := range contents {
+		scenarioParts = append(scenarioParts, featureScenarioSurface(content))
+		outlineParts = append(outlineParts, featureScenarioOutlineSurface(content))
+		descopedParts = append(descopedParts, featureDescopedSurface(content))
+		outOfScopeParts = append(outOfScopeParts, featureOutOfScopeSurface(content))
+	}
+	scenarioSurface := strings.Join(scenarioParts, "\n")
+	outlineSurface := strings.Join(outlineParts, "\n")
+	descopedSurface := strings.Join(descopedParts, "\n")
+	outOfScopeSurface := strings.Join(outOfScopeParts, "\n")
+	surface := scenarioSurface + "\n" + descopedSurface
+	outlineAndDescopedSurface := outlineSurface + "\n" + descopedSurface
+	var missing []string
+	var outOfScopeRequired []string
+	var outlineMissing []string
+	for _, phrase := range required {
+		if strings.TrimSpace(outOfScopeSurface) != "" &&
+			outOfScopeSurfaceRequiresDescoping(outOfScopeSurface, phrase) &&
+			!capabilityPhraseCovered(descopedSurface, phrase) {
+			outOfScopeRequired = append(outOfScopeRequired, phrase)
+			continue
+		}
+		if !capabilityPhraseCovered(surface, phrase) {
+			missing = append(missing, phrase)
+			continue
+		}
+		if !capabilityPhraseCovered(outlineAndDescopedSurface, phrase) {
+			outlineMissing = append(outlineMissing, phrase)
+		}
+	}
+	if len(outOfScopeRequired) > 0 {
+		return fmt.Errorf(
+			"policy: active feature contracts list explicit product brief capabilities under Out of Scope without Descoped Scenarios rationale: %s. Move required capabilities into the Scenario Schedule/scenario headings, or descoped scenarios with explicit reasons before creating tickets or handing off to CTO",
+			strings.Join(outOfScopeRequired, ", "),
+		)
+	}
+	if len(missing) == 0 {
+		if len(outlineMissing) == 0 {
+			return nil
+		}
+		return fmt.Errorf(
+			"policy: active feature contract scenario outline does not break out product brief capabilities: %s. Rewrite the Scenario Schedule entries or scenario headings so distinct product capabilities are visible before CTO ticketing; do not hide them inside one broad runnable/inspectable scenario",
+			strings.Join(outlineMissing, ", "),
+		)
+	}
+	return fmt.Errorf(
+		"policy: active feature contract scenario schedule does not cover product brief capabilities: %s. Rewrite the Scenario Schedule and scenario headings so every explicit brief capability is an in-scope scenario or is deliberately listed under Descoped Scenarios before creating tickets or handing off to CTO",
+		strings.Join(missing, ", "),
+	)
+}
+
+func productCapabilityCoverageFeatureContents(root Root) []string {
+	featuresDir, err := root.ResolvePath(filepath.Join("docs", "features"))
+	if err != nil {
+		return nil
+	}
+	matches, err := filepath.Glob(filepath.Join(featuresDir, "F-*.md"))
+	if err != nil || len(matches) == 0 {
+		return nil
+	}
+	sort.Strings(matches)
+	var active []string
+	var fallback []string
+	for _, match := range matches {
+		data, err := os.ReadFile(match)
+		if err != nil {
+			continue
+		}
+		content := string(data)
+		if strings.EqualFold(filepath.Base(match), "F-001-product-walking-skeleton.md") {
+			fallback = append(fallback, content)
+		}
+		if featureContractSuperseded(content) {
+			continue
+		}
+		active = append(active, content)
+	}
+	if len(active) > 0 {
+		return active
+	}
+	return fallback
 }
 
 func checkReviewTerminalDispositionOnly(root Root, session Session, hasSession bool, name string) error {
@@ -1985,6 +3039,9 @@ func reviewTerminalDispositionGuidance(root Root, session Session) string {
 	counts := session.ToolCounts
 	if counts == nil {
 		counts = map[string]int{}
+	}
+	if guidance := browserFrameworkTerminalDispositionGuidance(root, session); guidance != "" {
+		return guidance
 	}
 	if repoHasGoSourceFiles(root) && !repoHasTestFiles(root) {
 		return "Call job_disposition_record with status changes_requested, ticket_id, next_need implementation_rework, feedback.for_role engineer, and evidence_links explaining that Go source files exist but no _test.go files assert the completed behavior."
@@ -2019,6 +3076,13 @@ func ReviewTerminalEvidenceSatisfied(root Root, session *Session) bool {
 		return false
 	}
 	if repoHasTestFiles(root) && counts[testCommandSuccessKey] == 0 {
+		return false
+	}
+	info := repoBrowserFrameworkInfo(root)
+	if info.UsesFramework && info.HasBuildScript && counts[buildCommandSuccessKey] == 0 {
+		return false
+	}
+	if info.UsesFramework && info.HasBuildScript && counts[buildCommandSuccessKey] > 0 && counts[browserProductSmokeSuccessKey] == 0 {
 		return false
 	}
 	if roleRequiresDocSyncForSuccessfulDisposition(session.Role) && counts["tool:docsync_audit:success"] == 0 {
@@ -2093,6 +3157,9 @@ func checkReviewerShellExecValidationPolicy(root Root, session Session, hasSessi
 		}
 		return fmt.Errorf("policy: %s cannot use shell_exec no-op placeholders during review; run a concrete read-only inspection or validation command, or record job_disposition_record with the quality decision", role)
 	}
+	if shellExecStopsTrackedBackgroundPID(args) {
+		return nil
+	}
 	if shellExecReadOnly(raw) {
 		return nil
 	}
@@ -2100,6 +3167,32 @@ func checkReviewerShellExecValidationPolicy(root Root, session Session, hasSessi
 		return nil
 	}
 	return fmt.Errorf("policy: %s shell_exec is validation-only; do not run mutating setup, package initialization, product edits, cleanup, or broad discovery such as %q. Use read-only tools, tests/builds/runtime probes, or record job_disposition_record with a blocker", role, shellExecCommandDisplay(args))
+}
+
+func shellExecStopsTrackedBackgroundPID(args shellExecArgs) bool {
+	if len(args.Argv) < 2 || strings.TrimSpace(args.ShellCommand) != "" || filepathBase(args.Argv[0]) != "kill" {
+		return false
+	}
+	active := map[int]bool{}
+	for _, pid := range trackedBackgroundPIDs() {
+		active[pid] = true
+	}
+	if len(active) == 0 {
+		return false
+	}
+	sawPID := false
+	for _, arg := range args.Argv[1:] {
+		arg = strings.TrimSpace(strings.Trim(arg, `"'`))
+		if arg == "" || strings.HasPrefix(arg, "-") {
+			continue
+		}
+		pid, err := strconv.Atoi(arg)
+		if err != nil || !active[pid] {
+			return false
+		}
+		sawPID = true
+	}
+	return sawPID
 }
 
 func expectedExitCodeCorrectsUnexpectedValidationFailure(session Session, args shellExecArgs) bool {
@@ -2190,17 +3283,27 @@ func successfulReviewDispositionStatus(status string) bool {
 }
 
 func shellExecRunsValidationCommand(args shellExecArgs) bool {
-	return shellExecRunsTestCommand(args) || shellExecRunsBuildCommand(args) || shellExecRunsRuntimeValidationCommand(args)
+	return shellExecRunsTestCommand(args) || shellExecRunsBuildCommand(args) || shellExecRunsRuntimeValidationCommand(args) || shellExecRunsHTTPProbe(args)
 }
 
 func shellExecRunsValidationCommandForSession(session *Session, root Root, args shellExecArgs) bool {
-	if shellExecRunsValidationCommand(args) {
+	if shellExecCountsAsValidationEvidence(args) {
 		return true
 	}
 	if session == nil {
 		return false
 	}
 	return shellExecRunsRecordedValidationArtifact(*session, root, args)
+}
+
+func shellExecCountsAsValidationEvidence(args shellExecArgs) bool {
+	if shellExecRunsTestCommand(args) || shellExecRunsBuildCommand(args) || shellExecRunsHTTPProbe(args) {
+		return true
+	}
+	if args.Background {
+		return false
+	}
+	return shellExecRunsRuntimeValidationCommand(args)
 }
 
 func recordSuccessfulValidationArtifactBuild(session *Session, root Root, args shellExecArgs) {
@@ -2513,6 +3616,31 @@ func shellExecRunsRuntimeValidationCommand(args shellExecArgs) bool {
 	}
 }
 
+func checkShellNodeCheckHTMLPolicy(args shellExecArgs) error {
+	if !shellExecNodeCheckHTML(args) {
+		return nil
+	}
+	return fmt.Errorf("policy: node --check only validates JavaScript source, not HTML files. Do not run node --check on .html/.htm entries; validate browser targets with a real package build such as npm run build and a browser/product smoke that loads the HTML")
+}
+
+func shellExecNodeCheckHTML(args shellExecArgs) bool {
+	fields := normalizedShellExecFields(args)
+	for i := 0; i < len(fields)-2; i++ {
+		if filepathBase(fields[i]) != "node" {
+			continue
+		}
+		flag := fields[i+1]
+		if flag != "--check" && flag != "-c" {
+			continue
+		}
+		target := strings.ToLower(cleanShellPathToken(fields[i+2]))
+		if strings.HasSuffix(target, ".html") || strings.HasSuffix(target, ".htm") {
+			return true
+		}
+	}
+	return false
+}
+
 func shellExecRunsHTTPProbe(args shellExecArgs) bool {
 	fields := normalizedShellExecFields(args)
 	if len(fields) == 0 {
@@ -2524,6 +3652,34 @@ func shellExecRunsHTTPProbe(args shellExecArgs) bool {
 	default:
 		return false
 	}
+}
+
+func shellExecRunsBrowserProductSmokeCommand(args shellExecArgs) bool {
+	display := strings.ToLower(shellExecCommandDisplay(args))
+	if display == "" {
+		return false
+	}
+	if strings.Contains(display, "playwright") ||
+		strings.Contains(display, "puppeteer") ||
+		strings.Contains(display, "document.queryselector") ||
+		strings.Contains(display, "getelementbyid") ||
+		strings.Contains(display, "queryselector") {
+		return strings.Contains(display, "canvas") ||
+			strings.Contains(display, "#game") ||
+			strings.Contains(display, "phaser") ||
+			strings.Contains(display, "score") ||
+			strings.Contains(display, "game over")
+	}
+	if strings.Contains(display, "phaser") &&
+		(strings.Contains(display, "canvas") ||
+			strings.Contains(display, "new phaser.game") ||
+			strings.Contains(display, "tetromino") ||
+			strings.Contains(display, "line clear") ||
+			strings.Contains(display, "game over") ||
+			strings.Contains(display, "restart")) {
+		return true
+	}
+	return false
 }
 
 func shellExecCommandDisplay(args shellExecArgs) string {
@@ -2541,6 +3697,69 @@ func testScriptName(name string) bool {
 func buildScriptName(name string) bool {
 	name = strings.TrimSpace(strings.ToLower(name))
 	return name == "build" || strings.HasPrefix(name, "build:") || strings.Contains(name, "build")
+}
+
+func packageBuildScriptNoop(script string) bool {
+	script = strings.TrimSpace(strings.ToLower(script))
+	if script == "" {
+		return true
+	}
+	if packageBuildScriptOnlySyntaxCheck(script) {
+		return true
+	}
+	for _, marker := range []string{
+		"vite build", "next build", "webpack", "rollup", "parcel", "astro build",
+		"tsc", "esbuild", "npm run", "pnpm run", "yarn ", "bun run",
+		"node ", "deno ", "make ",
+	} {
+		if strings.Contains(script, marker) {
+			return false
+		}
+	}
+	parts := strings.Split(script, "&&")
+	if len(parts) == 0 {
+		return true
+	}
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if part == ":" || part == "true" || part == "exit 0" ||
+			strings.HasPrefix(part, "echo ") ||
+			strings.HasPrefix(part, "printf ") ||
+			strings.HasPrefix(part, "mkdir ") ||
+			strings.HasPrefix(part, "cp ") ||
+			strings.HasPrefix(part, "copy ") ||
+			strings.HasPrefix(part, "rsync ") ||
+			strings.HasPrefix(part, "touch ") ||
+			strings.HasPrefix(part, "live-server") ||
+			strings.HasPrefix(part, "http-server") ||
+			strings.HasPrefix(part, "serve ") ||
+			strings.Contains(part, "python -m http.server") ||
+			strings.Contains(part, "python3 -m http.server") {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func packageBuildScriptOnlySyntaxCheck(script string) bool {
+	parts := strings.Split(script, "&&")
+	checked := false
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if strings.HasPrefix(part, "node --check ") || strings.HasPrefix(part, "node -c ") {
+			checked = true
+			continue
+		}
+		return false
+	}
+	return checked
 }
 
 func runtimeScriptName(name string) bool {
@@ -2606,6 +3825,1279 @@ func repoHasGoSourceFiles(root Root) bool {
 		return nil
 	})
 	return hasSource
+}
+
+type browserFrameworkInfo struct {
+	UsesFramework          bool
+	FrameworkNames         []string
+	DeclaredFrameworkNames []string
+	HasPackageManifest     bool
+	HasBuildScript         bool
+	NoopBuildScripts       []string
+}
+
+func repoBrowserFrameworkInfo(root Root) browserFrameworkInfo {
+	var info browserFrameworkInfo
+	seen := map[string]bool{}
+	addFramework := func(name string, declared bool) {
+		name = strings.ToLower(strings.TrimSpace(name))
+		if name == "" {
+			return
+		}
+		if !seen[name] {
+			seen[name] = true
+			info.FrameworkNames = append(info.FrameworkNames, name)
+		}
+		if declared && !frameworkListContains(info.DeclaredFrameworkNames, name) {
+			info.DeclaredFrameworkNames = append(info.DeclaredFrameworkNames, name)
+		}
+	}
+	path, err := root.ResolvePath("package.json")
+	if err == nil {
+		if data, err := os.ReadFile(path); err == nil {
+			var pkg struct {
+				Scripts         map[string]string `json:"scripts"`
+				Dependencies    map[string]string `json:"dependencies"`
+				DevDependencies map[string]string `json:"devDependencies"`
+			}
+			if err := json.Unmarshal(data, &pkg); err == nil {
+				info.HasPackageManifest = true
+				for name, script := range pkg.Scripts {
+					if buildScriptName(name) {
+						if packageBuildScriptNoop(script) {
+							info.NoopBuildScripts = append(info.NoopBuildScripts, name)
+							continue
+						}
+						info.HasBuildScript = true
+					}
+				}
+				frameworks := map[string]string{
+					"@vitejs/plugin-react": "react",
+					"@vitejs/plugin-vue":   "vue",
+					"babylonjs":            "babylon",
+					"next":                 "next",
+					"phaser":               "phaser",
+					"pixi.js":              "pixi",
+					"react":                "react",
+					"svelte":               "svelte",
+					"three":                "three",
+					"vite":                 "vite",
+					"vue":                  "vue",
+				}
+				for dep := range pkg.Dependencies {
+					if name, ok := frameworks[strings.ToLower(strings.TrimSpace(dep))]; ok {
+						addFramework(name, true)
+					}
+				}
+				for dep := range pkg.DevDependencies {
+					if name, ok := frameworks[strings.ToLower(strings.TrimSpace(dep))]; ok {
+						addFramework(name, true)
+					}
+				}
+			}
+		}
+	}
+	if projectBriefMentionsFramework(root, "phaser") || repoHasPhaserScriptTag(root) {
+		addFramework("phaser", false)
+	}
+	info.UsesFramework = len(info.FrameworkNames) > 0
+	return info
+}
+
+func browserFrameworkCompletionBlockers(root Root, session Session, requireBuildRun bool) []string {
+	info := repoBrowserFrameworkInfo(root)
+	if !info.UsesFramework {
+		return nil
+	}
+	var blockers []string
+	frameworks := strings.Join(info.FrameworkNames, ", ")
+	if frameworks == "" {
+		frameworks = "browser framework"
+	}
+	if frameworkListContains(info.FrameworkNames, "phaser") && !frameworkListContains(info.DeclaredFrameworkNames, "phaser") {
+		if info.HasPackageManifest {
+			blockers = append(blockers, "project references Phaser but package.json does not declare a local phaser dependency; add phaser to package.json instead of relying on CDN-only runtime")
+		} else {
+			blockers = append(blockers, "project references Phaser but has no package.json; create a JavaScript package manifest with a local phaser dependency and deterministic npm run build")
+		}
+	}
+	if !info.HasPackageManifest {
+		blockers = append(blockers, fmt.Sprintf("project references %s but no package.json is present; add package.json with a deterministic build/static validation command such as npm run build", frameworks))
+	} else if len(info.NoopBuildScripts) > 0 && !info.HasBuildScript {
+		blockers = append(blockers, fmt.Sprintf("package.json build script for %s is a no-op (%s); replace it with a deterministic build/static validation command such as vite build, tsc --noEmit, or another command that can fail when the browser app is broken", frameworks, strings.Join(info.NoopBuildScripts, ", ")))
+	} else if !info.HasBuildScript {
+		blockers = append(blockers, fmt.Sprintf("package.json declares %s but no build script; add a deterministic build/static validation command such as npm run build", frameworks))
+	} else if requireBuildRun {
+		counts := session.ToolCounts
+		if counts == nil || counts[buildCommandSuccessKey] == 0 {
+			blockers = append(blockers, fmt.Sprintf("package.json declares %s but npm run build or equivalent has not passed in this job", frameworks))
+		}
+	}
+	blockers = append(blockers, browserFrameworkSourceFindings(root)...)
+	return blockers
+}
+
+func engineerBrowserFrameworkCompletionBlockers(root Root, session Session) []string {
+	blockers := browserFrameworkCompletionBlockers(root, session, true)
+	if !browserFrameworkRequiresProductSmoke(root) {
+		return blockers
+	}
+	counts := session.ToolCounts
+	if counts == nil || counts[browserProductSmokeSuccessKey] == 0 {
+		blockers = append(blockers, "browser-framework product smoke has not passed in this job; run "+browserProductSmokeCommandGuidance(root)+". node --check, grep-only evidence, and repo-root scratch scripts are insufficient")
+	}
+	return blockers
+}
+
+func browserProductSmokeCommandGuidance(root Root) string {
+	info := repoBrowserFrameworkInfo(root)
+	if frameworkListContains(info.FrameworkNames, "phaser") {
+		return `shell_exec argv ["node","-e","const fs=require('fs'); const htmlPath=['src/index.html','index.html'].find(p=>fs.existsSync(p)); if(!htmlPath) throw new Error('missing index.html'); const html=fs.readFileSync(htmlPath,'utf8'); const lower=html.toLowerCase(); if(lower.includes('phaser')&&(lower.includes('cdn')||lower.includes('http'))) throw new Error('CDN Phaser script tag is not bundled'); if(!html.includes('main.js')) throw new Error('missing main.js module script'); const mainPath=fs.existsSync('src/main.js')?'src/main.js':'main.js'; const main=fs.readFileSync(mainPath,'utf8'); if(!main.includes(\"import Phaser from 'phaser'\")&&!main.includes('import Phaser from \"phaser\"')) throw new Error('missing import Phaser from phaser'); const games=main.split('new Phaser.Game').length-1; if(games!==1) throw new Error('expected exactly one new Phaser.Game'); if(!main.includes('parent')) throw new Error('missing parent game container'); console.log('browser smoke: Phaser canvas #game new Phaser.Game');"]`
+	}
+	return "Playwright/Puppeteer or an equivalent source/runtime assertion that proves the browser app mounts real UI state"
+}
+
+func browserFrameworkTerminalDispositionGuidance(root Root, session Session) string {
+	info := repoBrowserFrameworkInfo(root)
+	if !info.UsesFramework {
+		return ""
+	}
+	counts := session.ToolCounts
+	if counts == nil {
+		counts = map[string]int{}
+	}
+	sourceFindings := browserFrameworkSourceFindings(root)
+	if len(sourceFindings) > 0 || !info.HasBuildScript {
+		blockers := browserFrameworkCompletionBlockers(root, session, false)
+		return "Call job_disposition_record with status changes_requested, ticket_id, next_need implementation_rework, feedback.for_role engineer, and evidence_links explaining that browser-framework completion is not proven: " + strings.Join(blockers, "; ") + "."
+	}
+	if counts[buildCommandSuccessKey] == 0 {
+		return "Run the browser-framework build command such as npm run build before approval, or record job_disposition_record with status changes_requested if the project has no runnable build validation."
+	}
+	if browserFrameworkRequiresProductSmoke(root) && counts[browserProductSmokeSuccessKey] == 0 {
+		return "Run a browser product smoke or equivalent source/runtime assertion that checks real product UI state such as Phaser game/canvas behavior before approval, such as " + browserProductSmokeCommandGuidance(root) + ", or record job_disposition_record with status changes_requested."
+	}
+	return ""
+}
+
+func browserFrameworkRequiresProductSmoke(root Root) bool {
+	info := repoBrowserFrameworkInfo(root)
+	if !info.UsesFramework {
+		return false
+	}
+	return true
+}
+
+func browserFrameworkSourceFindings(root Root) []string {
+	info := repoBrowserFrameworkInfo(root)
+	if !frameworkListContains(info.FrameworkNames, "phaser") {
+		return nil
+	}
+	var findings []string
+	findings = append(findings, phaserGoModuleFindings(root)...)
+	jsModules := map[string]string{}
+	jsModulePaths := []string{}
+	htmlFiles := map[string]string{}
+	htmlPaths := []string{}
+	_ = filepath.WalkDir(root.Abs(), func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			switch strings.ToLower(d.Name()) {
+			case ".git", ".harness", "node_modules", "vendor", "dist", "build", "coverage":
+				return filepath.SkipDir
+			default:
+				return nil
+			}
+		}
+		rel, err := filepath.Rel(root.Abs(), path)
+		if err != nil {
+			return nil
+		}
+		rel = filepath.ToSlash(rel)
+		lowerRel := strings.ToLower(rel)
+		if !javascriptSourcePath(lowerRel) && !htmlSourcePath(lowerRel) {
+			return nil
+		}
+		if browserFrameworkValidationHelperPath(lowerRel) {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+		content := string(data)
+		if (lowerRel == "vite.config.js" || lowerRel == "vite.config.ts") && viteConfigExternalizesPhaser(content) {
+			findings = append(findings, fmt.Sprintf("%s externalizes phaser from the Vite bundle; remove rollupOptions.external for phaser so the browser build proves the local dependency loads", rel))
+		}
+		if htmlSourcePath(lowerRel) {
+			findings = append(findings, phaserHTMLFindings(rel, content)...)
+			htmlFiles[rel] = content
+			htmlPaths = append(htmlPaths, rel)
+			return nil
+		}
+		jsModules[rel] = content
+		jsModulePaths = append(jsModulePaths, rel)
+		for _, id := range []string{"preload", "create", "update"} {
+			if phaserSceneReferencesIdentifier(content, id) && !jsDefinesOrImportsIdentifier(content, id) {
+				findings = append(findings, fmt.Sprintf("%s references Phaser scene callback %q without defining or importing it in the same module", rel, id))
+			}
+		}
+		findings = append(findings, phaserSingleFileSourceFindings(rel, content)...)
+		return nil
+	})
+	for _, rel := range jsModulePaths {
+		findings = append(findings, jsLocalNamedImportFindings(rel, jsModules[rel], jsModules)...)
+		findings = append(findings, jsMissingLocalExportImportFindings(rel, jsModules[rel], jsModules)...)
+	}
+	for _, rel := range htmlPaths {
+		findings = append(findings, htmlClassicScriptModuleFindings(rel, htmlFiles[rel], jsModules)...)
+	}
+	return findings
+}
+
+func javascriptSourcePath(lowerRel string) bool {
+	return strings.HasSuffix(lowerRel, ".js") ||
+		strings.HasSuffix(lowerRel, ".mjs") ||
+		strings.HasSuffix(lowerRel, ".jsx") ||
+		strings.HasSuffix(lowerRel, ".ts") ||
+		strings.HasSuffix(lowerRel, ".tsx")
+}
+
+func browserFrameworkValidationHelperPath(lowerRel string) bool {
+	lowerRel = filepath.ToSlash(strings.ToLower(strings.TrimSpace(lowerRel)))
+	base := filepath.Base(lowerRel)
+	if strings.Contains(base, ".test.") || strings.Contains(base, ".spec.") {
+		return true
+	}
+	if strings.HasPrefix(lowerRel, "test/") || strings.HasPrefix(lowerRel, "tests/") {
+		return true
+	}
+	if strings.HasPrefix(lowerRel, "scripts/") &&
+		(strings.Contains(base, "validate") || strings.Contains(base, "smoke") || strings.Contains(base, "probe")) {
+		return true
+	}
+	if strings.Contains(lowerRel, "/") {
+		return false
+	}
+	return strings.HasPrefix(base, "validate-") ||
+		strings.HasSuffix(base, "-validation.js") ||
+		strings.Contains(base, "smoke") ||
+		strings.Contains(base, "probe")
+}
+
+func htmlSourcePath(lowerRel string) bool {
+	return strings.HasSuffix(lowerRel, ".html") || strings.HasSuffix(lowerRel, ".htm")
+}
+
+func projectBriefMentionsFramework(root Root, framework string) bool {
+	framework = strings.ToLower(strings.TrimSpace(framework))
+	if framework == "" {
+		return false
+	}
+	for _, rel := range []string{
+		"README.md",
+		filepath.Join("docs", "product-specs", "vision.md"),
+		filepath.Join("docs", "goals", "active.md"),
+		filepath.Join("docs", "features", "F-001-product-walking-skeleton.md"),
+	} {
+		abs, err := root.ResolvePath(rel)
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(abs)
+		if err != nil {
+			continue
+		}
+		if strings.Contains(strings.ToLower(string(data)), framework) {
+			return true
+		}
+	}
+	return false
+}
+
+func projectBriefHasConcreteProductIntent(root Root) bool {
+	for _, rel := range []string{
+		"README.md",
+		filepath.Join("docs", "product-specs", "vision.md"),
+		filepath.Join("docs", "goals", "active.md"),
+	} {
+		abs, err := root.ResolvePath(rel)
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(abs)
+		if err != nil {
+			continue
+		}
+		lower := strings.ToLower(string(data))
+		for _, marker := range []string{"create ", "build ", "implement ", "game", "app", "application", "service", "tool", "website", "dashboard"} {
+			if strings.Contains(lower, marker) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func projectBriefCapabilityPhrases(root Root) []string {
+	text := projectBriefSourceText(root)
+	if strings.TrimSpace(text) == "" {
+		return nil
+	}
+	markers := []string{
+		" should include ",
+		" must include ",
+		" include ",
+		" includes ",
+		" including ",
+		" should implement ",
+		" must implement ",
+		" implement ",
+		" implements ",
+		" should support ",
+		" must support ",
+		" support ",
+		" supports ",
+		" should detect ",
+		" must detect ",
+		" should allow ",
+		" must allow ",
+		" should let ",
+		" must let ",
+		" features:",
+		" features include ",
+	}
+	seen := map[string]bool{}
+	var phrases []string
+	for _, sentence := range splitBriefSentences(text) {
+		lower := " " + strings.ToLower(sentence) + " "
+		for _, marker := range markers {
+			idx := strings.Index(lower, marker)
+			if idx < 0 {
+				continue
+			}
+			segment := strings.TrimSpace(lower[idx+len(marker):])
+			for _, phrase := range splitCapabilitySegment(segment) {
+				if isValidationEvidenceCapabilityPhrase(phrase) {
+					continue
+				}
+				key := strings.ToLower(phrase)
+				if seen[key] {
+					continue
+				}
+				seen[key] = true
+				phrases = append(phrases, phrase)
+			}
+		}
+	}
+	return phrases
+}
+
+func projectBriefSourceText(root Root) string {
+	var b strings.Builder
+	for _, rel := range []string{
+		"README.md",
+		filepath.Join("docs", "product-specs", "vision.md"),
+		filepath.Join("docs", "goals", "active.md"),
+	} {
+		abs, err := root.ResolvePath(rel)
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(abs)
+		if err != nil {
+			continue
+		}
+		b.WriteByte('\n')
+		b.Write(data)
+	}
+	return b.String()
+}
+
+func splitBriefSentences(text string) []string {
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+	numberedListPattern := regexp.MustCompile(`^\d+\.\s+`)
+	var normalized strings.Builder
+	for _, line := range strings.Split(text, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			normalized.WriteString(". ")
+			continue
+		}
+		if strings.HasPrefix(trimmed, "- ") ||
+			strings.HasPrefix(trimmed, "* ") ||
+			strings.HasPrefix(trimmed, "#") ||
+			numberedListPattern.MatchString(trimmed) {
+			normalized.WriteString(". ")
+		}
+		normalized.WriteString(trimmed)
+		normalized.WriteByte(' ')
+	}
+	fields := regexp.MustCompile(`[.!?]+`).Split(normalized.String(), -1)
+	var out []string
+	for _, field := range fields {
+		field = strings.TrimSpace(field)
+		if field != "" {
+			out = append(out, field)
+		}
+	}
+	return out
+}
+
+func splitCapabilitySegment(segment string) []string {
+	segment = strings.TrimSpace(segment)
+	segment = strings.Trim(segment, " .:-")
+	segment = stripCapabilityCategoryPrefix(segment)
+	if segment == "" {
+		return nil
+	}
+	segment = regexp.MustCompile(`\b(and|plus)\b`).ReplaceAllString(segment, ",")
+	rawParts := strings.FieldsFunc(segment, func(r rune) bool {
+		return r == ',' || r == ';' || r == '\n'
+	})
+	var phrases []string
+	skipValidationTail := false
+	for _, part := range rawParts {
+		phrase := cleanCapabilityPhrase(part)
+		if phrase == "" {
+			continue
+		}
+		if isValidationEvidenceCapabilityPhrase(phrase) {
+			skipValidationTail = true
+			continue
+		}
+		if skipValidationTail && isValidationEvidenceTailPhrase(phrase) {
+			continue
+		}
+		skipValidationTail = false
+		if len(capabilityKeywords(phrase)) == 0 {
+			continue
+		}
+		phrases = append(phrases, phrase)
+	}
+	return phrases
+}
+
+func stripCapabilityCategoryPrefix(segment string) string {
+	idx := strings.Index(segment, ":")
+	if idx < 0 {
+		return segment
+	}
+	prefix := strings.ToLower(strings.TrimSpace(segment[:idx]))
+	if strings.Contains(prefix, "mechanic") ||
+		strings.Contains(prefix, "capabilit") ||
+		strings.Contains(prefix, "feature") ||
+		strings.Contains(prefix, "behavior") ||
+		strings.Contains(prefix, "behaviour") {
+		return strings.TrimSpace(segment[idx+1:])
+	}
+	return segment
+}
+
+func cleanCapabilityPhrase(phrase string) string {
+	phrase = strings.TrimSpace(strings.ToLower(phrase))
+	phrase = strings.Trim(phrase, "`*_ .:-")
+	for _, prefix := range []string{"a ", "an ", "the "} {
+		phrase = strings.TrimPrefix(phrase, prefix)
+	}
+	for _, suffix := range []string{" behavior", " behaviour", " feature", " features", " functionality", " flow", " capability", " capabilities"} {
+		phrase = strings.TrimSuffix(phrase, suffix)
+	}
+	phrase = strings.Join(strings.Fields(phrase), " ")
+	if len(phrase) < 3 {
+		return ""
+	}
+	return phrase
+}
+
+func isValidationEvidenceCapabilityPhrase(phrase string) bool {
+	normalized := normalizeCapabilitySurface(phrase)
+	if normalized == "" {
+		return false
+	}
+	for _, marker := range []string{
+		"evidence",
+		"smoke evidence",
+		"smoke test",
+		"validation evidence",
+		"test evidence",
+		"prove",
+		"proves",
+		"proving",
+		"verified by",
+		"build artifact",
+	} {
+		if strings.Contains(normalized, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidationEvidenceTailPhrase(phrase string) bool {
+	switch normalizeCapabilitySurface(phrase) {
+	case "mount", "mounts", "play", "plays", "load", "loads", "run", "runs":
+		return true
+	default:
+		return false
+	}
+}
+
+func featureScenarioSurface(content string) string {
+	lower := strings.ToLower(content)
+	start := strings.Index(lower, "## scenario schedule")
+	if start < 0 {
+		start = strings.Index(lower, "## scenarios")
+	}
+	if start < 0 {
+		return ""
+	}
+	end := strings.Index(lower[start:], "\n## out of scope")
+	if end >= 0 {
+		return lower[start : start+end]
+	}
+	return lower[start:]
+}
+
+func featureScenarioOutlineSurface(content string) string {
+	lower := strings.ToLower(content)
+	var parts []string
+	start := strings.Index(lower, "## scenario schedule")
+	if start >= 0 {
+		end := strings.Index(lower[start+1:], "\n## ")
+		if end >= 0 {
+			parts = append(parts, lower[start:start+1+end])
+		} else {
+			parts = append(parts, lower[start:])
+		}
+	}
+	for _, line := range strings.Split(lower, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "### f-") {
+			parts = append(parts, line)
+		}
+	}
+	return strings.Join(parts, "\n")
+}
+
+func featureOutOfScopeSurface(content string) string {
+	lower := strings.ToLower(content)
+	start := strings.Index(lower, "## out of scope")
+	if start < 0 {
+		return ""
+	}
+	end := strings.Index(lower[start+1:], "\n## ")
+	if end >= 0 {
+		return lower[start : start+1+end]
+	}
+	return lower[start:]
+}
+
+func outOfScopeSurfaceRequiresDescoping(surface, phrase string) bool {
+	for _, line := range strings.Split(surface, "\n") {
+		line = strings.TrimSpace(line)
+		line = strings.TrimPrefix(line, "-")
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "##") {
+			continue
+		}
+		if outOfScopeLineIsExplanation(line) {
+			continue
+		}
+		if outOfScopeLineLeavesBasicCapabilityInScope(line) {
+			continue
+		}
+		if capabilityPhraseCovered(line, phrase) {
+			return true
+		}
+	}
+	return false
+}
+
+func outOfScopeLineIsExplanation(line string) bool {
+	normalized := normalizeCapabilitySurface(line)
+	if strings.HasPrefix(normalized, "the following") ||
+		strings.HasPrefix(normalized, "following ") ||
+		strings.HasPrefix(normalized, "none ") {
+		return true
+	}
+	for _, marker := range []string{
+		"clear reason",
+		"clear reasons",
+		"explicit rationale",
+		"explicit rationales",
+		"listed under out of scope",
+	} {
+		if strings.Contains(normalized, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func outOfScopeLineLeavesBasicCapabilityInScope(line string) bool {
+	normalized := normalizeCapabilitySurface(line)
+	if strings.Contains(normalized, "advanced") && strings.Contains(normalized, "beyond basic") {
+		return true
+	}
+	if strings.Contains(normalized, "advanced") &&
+		(strings.Contains(normalized, "scoring") ||
+			strings.Contains(normalized, "score") ||
+			strings.Contains(normalized, "combo") ||
+			strings.Contains(normalized, "back to back") ||
+			strings.Contains(normalized, "changes basic")) {
+		return true
+	}
+	if strings.Contains(normalized, "beyond") {
+		return true
+	}
+	if strings.Contains(normalized, "high score") || strings.Contains(normalized, "persistence") || strings.Contains(normalized, "persisted") {
+		return true
+	}
+	return false
+}
+
+func featureDescopedSurface(content string) string {
+	lower := strings.ToLower(content)
+	start := strings.Index(lower, "## descoped scenarios")
+	if start < 0 {
+		return ""
+	}
+	end := strings.Index(lower[start+1:], "\n## ")
+	if end >= 0 {
+		return lower[start : start+1+end]
+	}
+	return lower[start:]
+}
+
+func capabilityPhraseCovered(surface, phrase string) bool {
+	surface = normalizeCapabilitySurface(surface)
+	phrase = normalizeCapabilitySurface(phrase)
+	if phrase == "" {
+		return true
+	}
+	if strings.Contains(surface, phrase) {
+		return true
+	}
+	surfaceKeys := capabilityKeywordSet(surface)
+	keys := capabilityKeywords(phrase)
+	if len(keys) == 0 {
+		return true
+	}
+	for _, key := range keys {
+		if key == "move" && (surfaceKeys["left"] || surfaceKeys["right"] || surfaceKeys["down"] || (surfaceKeys["control"] && surfaceKeys["keyboard"])) {
+			continue
+		}
+		if !surfaceKeys[key] {
+			return false
+		}
+	}
+	return true
+}
+
+func normalizeCapabilitySurface(text string) string {
+	text = strings.ToLower(text)
+	text = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(text, " ")
+	return strings.Join(strings.Fields(text), " ")
+}
+
+func capabilityKeywordSet(text string) map[string]bool {
+	out := map[string]bool{}
+	for _, field := range strings.Fields(text) {
+		if key := capabilityKeyword(field); key != "" {
+			out[key] = true
+		}
+	}
+	return out
+}
+
+func capabilityKeywords(phrase string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, field := range strings.Fields(normalizeCapabilitySurface(phrase)) {
+		key := capabilityKeyword(field)
+		if key == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, key)
+	}
+	return out
+}
+
+func capabilityKeyword(token string) string {
+	token = strings.TrimSpace(strings.ToLower(token))
+	if token == "" || capabilityStopWords[token] {
+		return ""
+	}
+	switch {
+	case strings.HasPrefix(token, "tetromino"):
+		return "tetromino"
+	case strings.HasPrefix(token, "piece"):
+		return "tetromino"
+	case strings.HasPrefix(token, "rotat"):
+		return "rotat"
+	case strings.HasPrefix(token, "scor"):
+		return "score"
+	case strings.HasPrefix(token, "track"):
+		return "score"
+	case strings.HasPrefix(token, "clear"):
+		return "clear"
+	case strings.HasPrefix(token, "mov"):
+		return "move"
+	case token == "over" || strings.HasPrefix(token, "end"):
+		return "gameover"
+	case strings.HasPrefix(token, "restart"):
+		return "restart"
+	case strings.HasPrefix(token, "playfield"):
+		return "playfield"
+	case strings.HasPrefix(token, "keyboard"):
+		return "keyboard"
+	case strings.HasPrefix(token, "browser"):
+		return "browser"
+	case strings.HasPrefix(token, "canvas"):
+		return "canvas"
+	case strings.HasPrefix(token, "collision"):
+		return "collision"
+	case strings.HasPrefix(token, "lock"):
+		return "lock"
+	}
+	for _, suffix := range []string{"ing", "ed", "es", "s"} {
+		if len(token) > len(suffix)+3 && strings.HasSuffix(token, suffix) {
+			token = strings.TrimSuffix(token, suffix)
+			break
+		}
+	}
+	if len(token) < 4 || capabilityStopWords[token] {
+		return ""
+	}
+	return token
+}
+
+var capabilityStopWords = map[string]bool{
+	"a": true, "an": true, "and": true, "another": true, "are": true, "as": true, "be": true, "by": true,
+	"can": true, "complete": true, "condition": true, "conditions": true, "described": true,
+	"core": true, "detect": true, "detected": true, "detection": true, "display": true, "displayed": true, "displays": true,
+	"fall": true, "falling": true, "fill": true, "fills": true, "filled": true, "for": true, "from": true, "full": true,
+	"gameplay": true, "handle": true, "handled": true, "game": true, "games": true, "in": true,
+	"include": true, "includes": true, "including": true, "inspect": true, "inspected": true, "into": true, "local": true, "locally": true, "of": true,
+	"mechanic": true, "mechanics": true, "on": true, "open": true, "opened": true, "or": true, "product": true, "project": true,
+	"player": true, "players": true, "reach": true, "reaches": true, "round": true, "rounds": true, "run": true, "stack": true,
+	"show": true, "showing": true, "shows": true, "that": true, "the": true, "to": true, "tetris": true, "using": true, "user": true, "users": true,
+	"version": true, "when": true, "with": true,
+}
+
+func projectBriefNamesGoBackend(root Root) bool {
+	for _, rel := range []string{
+		"README.md",
+		filepath.Join("docs", "product-specs", "vision.md"),
+	} {
+		abs, err := root.ResolvePath(rel)
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(abs)
+		if err != nil {
+			continue
+		}
+		lower := strings.ToLower(string(data))
+		for _, marker := range []string{"go backend", "golang backend", "go server", "golang server", "go cli", "golang cli"} {
+			if strings.Contains(lower, marker) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func repoHasPhaserScriptTag(root Root) bool {
+	found := false
+	_ = filepath.WalkDir(root.Abs(), func(path string, d os.DirEntry, err error) error {
+		if err != nil || found {
+			return nil
+		}
+		if d.IsDir() {
+			switch strings.ToLower(d.Name()) {
+			case ".git", ".harness", "node_modules", "vendor", "dist", "build", "coverage":
+				return filepath.SkipDir
+			default:
+				return nil
+			}
+		}
+		if !strings.HasSuffix(strings.ToLower(d.Name()), ".html") {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+		lower := strings.ToLower(string(data))
+		if strings.Contains(lower, "<script") && strings.Contains(lower, "phaser") {
+			found = true
+		}
+		return nil
+	})
+	return found
+}
+
+func phaserGoModuleFindings(root Root) []string {
+	var findings []string
+	_ = filepath.WalkDir(root.Abs(), func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			switch strings.ToLower(d.Name()) {
+			case ".git", ".harness", "node_modules", "vendor", "dist", "build", "coverage":
+				return filepath.SkipDir
+			default:
+				return nil
+			}
+		}
+		if strings.ToLower(d.Name()) != "go.mod" {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+		if !strings.Contains(strings.ToLower(string(data)), "phaser") {
+			return nil
+		}
+		rel, err := filepath.Rel(root.Abs(), path)
+		if err != nil {
+			return nil
+		}
+		findings = append(findings, fmt.Sprintf("%s declares a Phaser-related Go module dependency; Phaser JS targets should use package.json with the phaser npm dependency, not go.mod", filepath.ToSlash(rel)))
+		return nil
+	})
+	return findings
+}
+
+func phaserHTMLFindings(rel, content string) []string {
+	lower := strings.ToLower(content)
+	if strings.Contains(lower, "<script") && strings.Contains(lower, "phaser") &&
+		(strings.Contains(lower, "http://") || strings.Contains(lower, "https://") || strings.Contains(lower, "cdn.")) {
+		return []string{fmt.Sprintf("%s loads Phaser from a CDN/script tag; Phaser JS targets must use the local phaser npm dependency through the module/bundler entrypoint", rel)}
+	}
+	return nil
+}
+
+func phaserSingleFileSourceFindings(rel, content string) []string {
+	var findings []string
+	findings = append(findings, phaserMissingImportFindings(rel, content)...)
+	findings = append(findings, phaserUnboundSceneHelperFindings(rel, content)...)
+	findings = append(findings, phaserSceneContextFindings(rel, content)...)
+	findings = append(findings, phaserGameConstructionFindings(rel, content)...)
+	return findings
+}
+
+func frameworkListContains(values []string, want string) bool {
+	want = strings.ToLower(strings.TrimSpace(want))
+	for _, value := range values {
+		if strings.ToLower(strings.TrimSpace(value)) == want {
+			return true
+		}
+	}
+	return false
+}
+
+func phaserSceneReferencesIdentifier(content, id string) bool {
+	pattern := regexp.MustCompile(`(?m)\b` + regexp.QuoteMeta(id) + `\s*:\s*` + regexp.QuoteMeta(id) + `\b`)
+	return pattern.MatchString(content)
+}
+
+func jsDefinesOrImportsIdentifier(content, id string) bool {
+	quoted := regexp.QuoteMeta(id)
+	patterns := []*regexp.Regexp{
+		regexp.MustCompile(`(?m)\bfunction\s+` + quoted + `\s*\(`),
+		regexp.MustCompile(`(?m)\b(?:const|let|var)\s+` + quoted + `\b`),
+		regexp.MustCompile(`(?m)\bimport\b[^\n;]*\b` + quoted + `\b`),
+	}
+	for _, pattern := range patterns {
+		if pattern.MatchString(content) {
+			return true
+		}
+	}
+	return false
+}
+
+func phaserUnboundSceneHelperFindings(rel, content string) []string {
+	var findings []string
+	helperRe := regexp.MustCompile(`(?s)function\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\([^)]*\)\s*\{[^}]*\bthis\.add\.`)
+	for _, match := range helperRe.FindAllStringSubmatch(content, -1) {
+		if len(match) < 2 {
+			continue
+		}
+		name := match[1]
+		bareCall := regexp.MustCompile(`\b` + regexp.QuoteMeta(name) + `\s*\(\s*\)`)
+		callCount := len(bareCall.FindAllStringIndex(content, -1))
+		if callCount > 1 {
+			findings = append(findings, fmt.Sprintf("%s defines Phaser helper %s using this.add but calls it without binding or passing the scene", rel, name))
+		}
+	}
+	return findings
+}
+
+func phaserMissingImportFindings(rel, content string) []string {
+	if !strings.Contains(content, "Phaser.") && !regexp.MustCompile(`\bextends\s+Phaser\.`).MatchString(content) {
+		return nil
+	}
+	if jsDefinesOrImportsIdentifier(content, "Phaser") {
+		return nil
+	}
+	return []string{fmt.Sprintf("%s uses Phaser global APIs without importing or defining Phaser in the same module; import Phaser from 'phaser' or avoid referencing the global", rel)}
+}
+
+func phaserSceneContextFindings(rel, content string) []string {
+	var findings []string
+	sceneAPIRe := regexp.MustCompile(`\bthis\.(?:add|cameras|input|load|make|physics|time|tweens)\b`)
+	if strings.Contains(content, "new Phaser.Game") && strings.Contains(content, ".bind(this)") && sceneAPIRe.MatchString(content) {
+		findings = append(findings, fmt.Sprintf("%s binds Phaser scene callbacks to wrapper this while using Phaser scene APIs; Phaser scene lifecycle methods must run with scene context or receive the scene explicitly", rel))
+	}
+	gameInstanceSceneAPIRe := regexp.MustCompile(`\bthis\.(?:game|gameInstance)\.(?:add|input|load|make|physics)\b`)
+	if gameInstanceSceneAPIRe.MatchString(content) {
+		findings = append(findings, fmt.Sprintf("%s uses the Phaser game instance as a scene API surface; drawing, input, and factory calls must run from the Phaser scene context", rel))
+	}
+	return findings
+}
+
+func phaserGameConstructionFindings(rel, content string) []string {
+	if !strings.Contains(content, "new Phaser.Game") {
+		return nil
+	}
+	var findings []string
+	count := strings.Count(content, "new Phaser.Game")
+	if count > 1 {
+		findings = append(findings, fmt.Sprintf("%s constructs Phaser.Game %d times; create exactly one game instance from the browser entrypoint", rel, count))
+	}
+	for _, callback := range []string{"preload", "create", "update"} {
+		if phaserNewGameInsideFunction(content, callback) {
+			findings = append(findings, fmt.Sprintf("%s constructs new Phaser.Game inside scene callback %s; create the game once at module startup and let scene callbacks use the scene instance", rel, callback))
+		}
+	}
+	return findings
+}
+
+func phaserNewGameInsideFunction(content, name string) bool {
+	re := regexp.MustCompile(`\bfunction\s+` + regexp.QuoteMeta(name) + `\s*\([^)]*\)\s*\{`)
+	for _, loc := range re.FindAllStringIndex(content, -1) {
+		open := strings.LastIndex(content[loc[0]:loc[1]], "{")
+		if open < 0 {
+			continue
+		}
+		open += loc[0]
+		close := jsMatchingBrace(content, open)
+		if close < 0 {
+			continue
+		}
+		body := content[open+1 : close]
+		if regexp.MustCompile(`\bnew\s+Phaser\.Game\b`).MatchString(body) {
+			return true
+		}
+	}
+	return false
+}
+
+func jsMatchingBrace(content string, open int) int {
+	if open < 0 || open >= len(content) || content[open] != '{' {
+		return -1
+	}
+	depth := 0
+	inSingle := false
+	inDouble := false
+	inTemplate := false
+	lineComment := false
+	blockComment := false
+	escaped := false
+	for i := open; i < len(content); i++ {
+		ch := content[i]
+		next := byte(0)
+		if i+1 < len(content) {
+			next = content[i+1]
+		}
+		if lineComment {
+			if ch == '\n' || ch == '\r' {
+				lineComment = false
+			}
+			continue
+		}
+		if blockComment {
+			if ch == '*' && next == '/' {
+				blockComment = false
+				i++
+			}
+			continue
+		}
+		if inSingle || inDouble || inTemplate {
+			if escaped {
+				escaped = false
+				continue
+			}
+			if ch == '\\' {
+				escaped = true
+				continue
+			}
+			if inSingle && ch == '\'' {
+				inSingle = false
+			}
+			if inDouble && ch == '"' {
+				inDouble = false
+			}
+			if inTemplate && ch == '`' {
+				inTemplate = false
+			}
+			continue
+		}
+		if ch == '/' && next == '/' {
+			lineComment = true
+			i++
+			continue
+		}
+		if ch == '/' && next == '*' {
+			blockComment = true
+			i++
+			continue
+		}
+		switch ch {
+		case '\'':
+			inSingle = true
+		case '"':
+			inDouble = true
+		case '`':
+			inTemplate = true
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+func jsLocalNamedImportFindings(rel, content string, modules map[string]string) []string {
+	var findings []string
+	importRe := regexp.MustCompile(`(?m)\bimport\s*(?:type\s*)?\{([^}]+)\}\s*from\s*["']([^"']+)["']`)
+	for _, match := range importRe.FindAllStringSubmatch(content, -1) {
+		if len(match) < 3 {
+			continue
+		}
+		spec := strings.TrimSpace(match[2])
+		if !strings.HasPrefix(spec, ".") {
+			continue
+		}
+		names := jsNamedImportNames(match[1])
+		if len(names) == 0 {
+			continue
+		}
+		targetRel, ok := resolveLocalJSModuleRel(rel, spec, modules)
+		if !ok {
+			findings = append(findings, fmt.Sprintf("%s imports {%s} from %s but no matching local module file was found", rel, strings.Join(names, ", "), spec))
+			continue
+		}
+		exported := jsExportedNames(modules[targetRel])
+		for _, name := range names {
+			if name == "default" {
+				continue
+			}
+			if !exported[name] {
+				findings = append(findings, fmt.Sprintf("%s imports {%s} from %s but %s does not export it", rel, name, targetRel, targetRel))
+			}
+		}
+	}
+	return findings
+}
+
+func jsMissingLocalExportImportFindings(rel, content string, modules map[string]string) []string {
+	if !jsContainsModuleSyntax(content) {
+		return nil
+	}
+	exportsByName := map[string][]string{}
+	for moduleRel, moduleContent := range modules {
+		if moduleRel == rel {
+			continue
+		}
+		for name := range jsExportedNames(moduleContent) {
+			exportsByName[name] = append(exportsByName[name], moduleRel)
+		}
+	}
+	var findings []string
+	for name, exporters := range exportsByName {
+		if !jsUsesIdentifier(content, name) || jsDefinesOrImportsIdentifier(content, name) {
+			continue
+		}
+		sort.Strings(exporters)
+		findings = append(findings, fmt.Sprintf("%s uses %s but does not import it from local module %s", rel, name, exporters[0]))
+	}
+	sort.Strings(findings)
+	return findings
+}
+
+func jsUsesIdentifier(content, id string) bool {
+	quoted := regexp.QuoteMeta(id)
+	patterns := []*regexp.Regexp{
+		regexp.MustCompile(`(?m)\b` + quoted + `\s*\(`),
+		regexp.MustCompile(`(?m)\bnew\s+` + quoted + `\b`),
+		regexp.MustCompile(`(?m)\b` + quoted + `\s*\.`),
+	}
+	for _, pattern := range patterns {
+		if pattern.MatchString(content) {
+			return true
+		}
+	}
+	return false
+}
+
+func jsNamedImportNames(raw string) []string {
+	var names []string
+	for _, part := range strings.Split(raw, ",") {
+		part = strings.TrimSpace(part)
+		part = strings.TrimPrefix(part, "type ")
+		if part == "" {
+			continue
+		}
+		asParts := regexp.MustCompile(`(?i)\s+as\s+`).Split(part, 2)
+		name := strings.TrimSpace(asParts[0])
+		fields := strings.Fields(name)
+		if len(fields) == 0 {
+			continue
+		}
+		name = fields[0]
+		if regexp.MustCompile(`^[A-Za-z_$][A-Za-z0-9_$]*$`).MatchString(name) {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+func resolveLocalJSModuleRel(sourceRel, spec string, modules map[string]string) (string, bool) {
+	spec = strings.TrimSpace(spec)
+	if i := strings.IndexAny(spec, "?#"); i >= 0 {
+		spec = spec[:i]
+	}
+	if spec == "" || !strings.HasPrefix(spec, ".") {
+		return "", false
+	}
+	sourceDir := filepath.ToSlash(filepath.Dir(sourceRel))
+	if sourceDir == "." {
+		sourceDir = ""
+	}
+	base := filepath.ToSlash(filepath.Clean(filepath.Join(sourceDir, spec)))
+	if base == "." || strings.HasPrefix(base, "../") || base == ".." {
+		return "", false
+	}
+	candidates := []string{base}
+	if ext := strings.ToLower(filepath.Ext(base)); ext == "" {
+		for _, suffix := range []string{".js", ".mjs", ".jsx", ".ts", ".tsx"} {
+			candidates = append(candidates, base+suffix)
+		}
+		for _, suffix := range []string{"index.js", "index.mjs", "index.jsx", "index.ts", "index.tsx"} {
+			candidates = append(candidates, filepath.ToSlash(filepath.Join(base, suffix)))
+		}
+	}
+	for _, candidate := range candidates {
+		candidate = cleanRepoPath(candidate)
+		if _, ok := modules[candidate]; ok {
+			return candidate, true
+		}
+	}
+	return "", false
+}
+
+func jsExportedNames(content string) map[string]bool {
+	exported := map[string]bool{}
+	for _, pattern := range []*regexp.Regexp{
+		regexp.MustCompile(`(?m)\bexport\s+(?:async\s+)?function\s+([A-Za-z_$][A-Za-z0-9_$]*)\b`),
+		regexp.MustCompile(`(?m)\bexport\s+class\s+([A-Za-z_$][A-Za-z0-9_$]*)\b`),
+		regexp.MustCompile(`(?m)\bexport\s+(?:const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)\b`),
+	} {
+		for _, match := range pattern.FindAllStringSubmatch(content, -1) {
+			if len(match) >= 2 {
+				exported[match[1]] = true
+			}
+		}
+	}
+	exportListRe := regexp.MustCompile(`(?s)\bexport\s*\{([^}]+)\}`)
+	for _, match := range exportListRe.FindAllStringSubmatch(content, -1) {
+		if len(match) < 2 {
+			continue
+		}
+		for _, part := range strings.Split(match[1], ",") {
+			part = strings.TrimSpace(part)
+			part = strings.TrimPrefix(part, "type ")
+			if part == "" {
+				continue
+			}
+			asParts := regexp.MustCompile(`(?i)\s+as\s+`).Split(part, 2)
+			name := strings.TrimSpace(asParts[len(asParts)-1])
+			if fields := strings.Fields(name); len(fields) > 0 {
+				name = fields[0]
+			}
+			if regexp.MustCompile(`^[A-Za-z_$][A-Za-z0-9_$]*$`).MatchString(name) {
+				exported[name] = true
+			}
+		}
+	}
+	return exported
+}
+
+func htmlClassicScriptModuleFindings(rel, content string, modules map[string]string) []string {
+	var findings []string
+	tagRe := regexp.MustCompile(`(?is)<script\b([^>]*)>`)
+	srcRe := regexp.MustCompile(`(?is)\bsrc\s*=\s*["']([^"']+)["']`)
+	typeModuleRe := regexp.MustCompile(`(?is)\btype\s*=\s*["']module["']`)
+	for _, tag := range tagRe.FindAllStringSubmatch(content, -1) {
+		if len(tag) < 2 {
+			continue
+		}
+		attrs := tag[1]
+		if typeModuleRe.MatchString(attrs) {
+			continue
+		}
+		src := srcRe.FindStringSubmatch(attrs)
+		if len(src) < 2 {
+			continue
+		}
+		targetRel, ok := resolveHTMLScriptRel(rel, src[1], modules)
+		if !ok {
+			continue
+		}
+		if jsContainsModuleSyntax(modules[targetRel]) {
+			findings = append(findings, fmt.Sprintf("%s loads %s as a classic script but %s contains ES module import/export syntax; use type=\"module\" or bundle the entrypoint", rel, targetRel, targetRel))
+		}
+	}
+	return findings
+}
+
+func resolveHTMLScriptRel(sourceRel, spec string, modules map[string]string) (string, bool) {
+	spec = strings.TrimSpace(spec)
+	if strings.HasPrefix(spec, "http://") || strings.HasPrefix(spec, "https://") || strings.HasPrefix(spec, "//") {
+		return "", false
+	}
+	if i := strings.IndexAny(spec, "?#"); i >= 0 {
+		spec = spec[:i]
+	}
+	sourceDir := filepath.ToSlash(filepath.Dir(sourceRel))
+	if sourceDir == "." {
+		sourceDir = ""
+	}
+	base := filepath.ToSlash(filepath.Clean(filepath.Join(sourceDir, spec)))
+	if base == "." || strings.HasPrefix(base, "../") || base == ".." {
+		return "", false
+	}
+	base = cleanRepoPath(base)
+	_, ok := modules[base]
+	return base, ok
+}
+
+func jsContainsModuleSyntax(content string) bool {
+	return regexp.MustCompile(`(?m)^\s*(?:import|export)\b`).MatchString(content)
 }
 
 func testFilePath(rel string) bool {
@@ -2687,6 +5179,14 @@ func checkEngineerDispositionTicketState(root Root, session Session, status, tic
 	}
 	if successfulReviewDispositionStatus(status) && engineerOutstandingTestBuildValidationFailures(session) > 0 {
 		return unresolvedTestBuildValidationCompletionError("record a successful product disposition", session)
+	}
+	if successfulReviewDispositionStatus(status) {
+		if blockers := engineerBrowserFrameworkCompletionBlockers(root, session); len(blockers) > 0 {
+			return fmt.Errorf(
+				"policy: engineer cannot record a successful browser-framework disposition yet: %s. Fix the implementation or package build validation, rerun validation, update ticket evidence, and then record qa_review",
+				strings.Join(blockers, "; "),
+			)
+		}
 	}
 	if strings.ToLower(strings.TrimSpace(status)) == "no_work" && strings.TrimSpace(ticketID) == "" {
 		return nil
@@ -3382,6 +5882,30 @@ func checkShellTicketDoneEvidencePolicy(ctx context.Context, root Root, raw json
 	return nil
 }
 
+func checkEngineerBrowserFrameworkTicketDoneMovePolicy(root Root, session Session, hasSession bool, raw json.RawMessage) error {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
+		return nil
+	}
+	args, err := decodeShellExecArgs(raw)
+	if err != nil {
+		return nil
+	}
+	fields := args.Argv
+	if strings.TrimSpace(args.ShellCommand) != "" {
+		fields = shellFieldsPreserveCase(args.ShellCommand)
+	}
+	if len(ticketDoneMoveSources(fields)) == 0 {
+		return nil
+	}
+	if blockers := engineerBrowserFrameworkCompletionBlockers(root, session); len(blockers) > 0 {
+		return fmt.Errorf(
+			"policy: engineer cannot move browser-framework ticket to docs/tickets/done yet: %s. Fix the implementation or package build surface, rerun validation, then update evidence and move the ticket",
+			strings.Join(blockers, "; "),
+		)
+	}
+	return nil
+}
+
 func checkTicketDoneMoveHasOnlyTicketChanges(ctx context.Context, root Root) error {
 	files, err := changedFiles(ctx, root)
 	if err != nil {
@@ -3466,9 +5990,14 @@ func shellExecMovesTicketToInProgress(raw json.RawMessage) bool {
 }
 
 func shellExecMovesInProgressTicketToDone(raw json.RawMessage) bool {
+	_, ok := shellExecInProgressToDoneTicketID(raw)
+	return ok
+}
+
+func shellExecInProgressToDoneTicketID(raw json.RawMessage) (string, bool) {
 	args, err := decodeShellExecArgs(raw)
 	if err != nil {
-		return false
+		return "", false
 	}
 	fields := args.Argv
 	if strings.TrimSpace(args.ShellCommand) != "" {
@@ -3485,12 +6014,12 @@ func shellExecMovesInProgressTicketToDone(raw json.RawMessage) bool {
 		if !ok || !ticketMoveTargetsDone(source, dest) {
 			continue
 		}
-		_, state, ok := ticketLifecyclePathIdentity(cleanRepoPath(cleanShellPathToken(source)))
+		id, state, ok := ticketLifecyclePathIdentity(cleanRepoPath(cleanShellPathToken(source)))
 		if ok && state == "in-progress" {
-			return true
+			return id, true
 		}
 	}
-	return false
+	return "", false
 }
 
 func ticketMoveOperands(fields []string) (source, dest string, ok bool) {

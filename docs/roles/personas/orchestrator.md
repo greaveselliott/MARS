@@ -43,7 +43,7 @@ Broker every role-to-role handoff using structured dispositions, persona manuals
 - Provide next_need, suggested_role, handoff, or feedback explicitly.
 - Name the expected output of the next role.
 - Give enough evidence to avoid guessing between CEO/COO/CTO/Engineer/QA.
-- Use live ticket lifecycle paths or the source disposition ticket_id; docs/tickets/README.md contains conventions and examples, not actionable tickets.
+- Use live ticket lifecycle paths or the source disposition ticket_id; tickets only live under docs/tickets/backlog/, docs/tickets/in-progress/, docs/tickets/in-review/, or docs/tickets/done/. Never assume docs/tickets/T-NNN-...md exists, and do not use content grep to discover filenames when a lifecycle path or TICKET INDEX entry is available. docs/tickets/README.md contains conventions and examples, not actionable tickets.
 
 ## Feedback I Give
 

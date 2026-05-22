@@ -57,6 +57,7 @@ Run the real setup and agent path end to end, preserving raw evidence and escala
 ## Stop Conditions
 
 - The E2E path passes with evidence.
+- Browser-framework E2E includes more than HTTP reachability: a real build command and one browser-product smoke or equivalent source/runtime assertion must check mounted UI state such as Phaser game/canvas behavior before Dogfood can report success.
 - The failure is reproduced and classified.
 - The next step belongs to Engineer, CTO, COO, CEO, or foundation triage.
 
@@ -65,5 +66,6 @@ Run the real setup and agent path end to end, preserving raw evidence and escala
 - Use next_need implementation_rework for product defects.
 - Use next_need ticket_breakdown or exec_plan for unclear delivery setup.
 - Use no_work or blocked rather than flooding intervention debt for one-off terminal failures.
+- Before creating a target-owned finding, compare its BDD scenario IDs with active backlog, in-progress, and in-review tickets. If an active ticket already covers the scenario, reference that ticket in the disposition instead of creating a duplicate.
 - After creating target-owned findings with `ticket_create`, stop further validation, run `git_status`, commit the ticket or dogfood evidence with `git_commit`, call `git_push`, and only then record `job_disposition_record`.
 

@@ -162,6 +162,25 @@ This leaves a clean path for future work:
 5. Mirror only the reusable core.
 6. Recheck the live or deterministic evidence that justified the change.
 
+## Failure Ownership Classification
+
+Every live-loop finding is classified before it becomes backlog or code. The
+classification is an operating-model step, not a retrospective label:
+
+| Class | Root cause | Fix level | Backlog route |
+| --- | --- | --- | --- |
+| Foundation-owned | Runtime substrate, generated defaults, role guidance, tool policy, orchestration, model/provider behavior, telemetry, release/update, source-only release mechanics, or mirrored doctrine. | Patch `mars-harness` source, generated target defaults, foundation docs, role prompts, tools, skills, or tests so all applicable users benefit. | Source ticket, source plan, design-doc discovery, or foundation telemetry; not target product backlog by default. |
+| Deployed-owned | Target product behavior, target architecture, local package/build/test setup, target docs, target-specific skills, or project policy. | Patch the target repo or deployed harness artifact and preserve target evidence. | Target product/enabler/intervention ticket owned by that target repo. |
+| Mixed or unclear | A target symptom exposes a possible foundation gap, or a foundation limitation blocks a target product path. | Apply the smallest local unblock only when needed to finish target evidence, then create a foundation follow-up for the reusable defect. | Both routes may exist, but each ticket states which layer it owns and what evidence proves it. |
+
+Ambiguous failures default to observation, telemetry, or an investigation note
+until ownership is clear. They must not automatically become target
+intervention-debt tickets. Batch fixes by ownership and generality: a
+foundation fix should benefit a class of projects or all users, while a
+deployed fix should improve the specific target product or its local harness.
+This prevents the software factory from overfitting to one demo stack while
+still allowing target projects to finish.
+
 ## Doctrine Maintenance
 
 Doctrine maintenance is an operating duty, not a one-time documentation task.
