@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.43.2] - 2026-05-23
+<!-- mars-harness-release: version=0.43.2 commit=d21df208ce43 -->
+
+### Impact
+- **update:** Operators see improved reliability because private release auth fallback caching.
+
+### Why
+- **update:** This matters because private release auth fallback caching closes a failure mode or degraded path.
+
+### What Changed
+- **update:** Changed private release auth fallback caching (d21df20).
+
+### Fixes
+- **update:** Private release auth fallback caching (d21df20)
+
 ## [0.43.1] - 2026-05-23
 <!-- mars-harness-release: version=0.43.1 commit=491c7593cbc7 -->
 
