@@ -138,6 +138,28 @@ Release publication has two independent gates:
 
 GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the mirror blocker without treating local asset publication as failed.
 
+#### Release Publication Architecture
+
+```mermaid
+flowchart TB
+  Commit["Non-release semantic commit"] --> Notes["release notes --repo . --bump auto"]
+  Notes --> ReleaseCommit["release: notes X.Y.Z"]
+  ReleaseCommit --> PushMain["push main"]
+  PushMain --> Tag["tag vX.Y.Z at release-note HEAD"]
+  Tag --> Guard["git_release_guard\nclean tree, VERSION match, tag at HEAD"]
+  Guard --> Publish["release publish-assets\n--upload none|github|auto"]
+  Publish --> Dist["dist/releases\n4 platform binaries + checksums.txt"]
+  Dist --> VerifyDist["verify-assets --dist\nlocal source-of-truth gate"]
+  Publish -. optional .-> Mirror["GitHub Release mirror"]
+  Mirror -. optional .-> VerifyMirror["verify-assets\nGitHub mirror gate"]
+  VerifyMirror -. enables .-> UpdateTool["update tool\nGitHub asset download"]
+  VerifyDist --> Complete["Release complete locally"]
+```
+
+The local dist gate is mandatory. The GitHub mirror branch is optional and only
+controls whether installer and self-update claims can rely on GitHub-hosted
+assets.
+
 ### AD-141: Foundation Release Publication Uses A Source-Only Skill
 
 The source harness release path has a repeated judgment-heavy sequence after

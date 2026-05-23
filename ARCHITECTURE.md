@@ -35,7 +35,8 @@ flowchart TB
 
     CLI --> SETUP["setup / path setup"]
     CLI --> UPDATE["update check / tool / harness"]
-    CLI --> RELEASE["release notes / verify-assets"]
+    CLI --> CHECKS["checks run"]
+    CLI --> RELEASE["release notes / publish-assets / verify-assets"]
     CLI --> TARGETOPS["init / upgrade / scan / register"]
     CLI --> EXECOPS["start / serve / run"]
     CLI --> TOOLOPS["tools list / run"]
@@ -44,7 +45,9 @@ flowchart TB
 
     SETUP --> CONFIG
     UPDATE --> CONFIG
+    CHECKS --> QUEUE
     RELEASE --> SOURCE["mars-harness source repo"]
+    RELEASE --> DIST["Local dist/releases assets"]
     TARGETOPS --> TARGET["Target repository"]
     EXECOPS --> SERVER["Orchestrator server"]
     TOOLOPS --> TOOLS["Built-in tool registry"]
@@ -88,6 +91,11 @@ flowchart TB
     REFS["docs/references/"]
   end
 
+  subgraph OptionalServices ["Optional external integrations"]
+    GHREL["GitHub Release mirror"]
+  end
+
+  RELEASE -. optional mirror .-> GHREL
   CONTEXT -. reads .-> AGENTS
   CONTEXT -. reads .-> MANIFEST
   CONTEXT -. routes .-> KNOWLEDGE
@@ -113,6 +121,58 @@ Mars Harness has six visible layers:
 | Learning loop | scores, trust, telemetry, quality score, skills, guardrails, decisions | Convert outcomes and failures into trust changes, intervention work, and reusable procedure. |
 | Release state | `release notes`, tags, release assets, `CHANGELOG.md`, `VERSION` | Version source and target changes, publish source binaries, and verify release assets. |
 
+## Local Delivery Architecture
+
+Mars Harness treats local execution as the authoritative delivery path. GitHub
+can still receive webhooks or mirror release assets, but the repo-owned gates,
+recorded check outcomes, repair routing, release binaries, and checksum
+verification all run locally through the harness.
+
+```mermaid
+flowchart LR
+  subgraph Workstation ["Operator workstation"]
+    Intent["Plan or code change"]
+    Sync["Fetch and rebase main"]
+    CheckGate["make check\nbuild, race tests, coverage, lint or go vet"]
+    DogfoodGate["make dogfood\nnon-mutating role dry-runs"]
+    ChecksRun["mars-harness checks run\nnamed local command"]
+    ReleaseNotes["release notes\nVERSION, CHANGELOG, buildinfo"]
+    TagGuard["git_release_guard\nclean tree, release-note HEAD, tag at HEAD"]
+    Publish["release publish-assets\nlinux/darwin x amd64/arm64"]
+    LocalDist["dist/releases\nbinaries + checksums.txt"]
+    VerifyLocal["verify-assets --dist\nchecksum and asset gate"]
+  end
+
+  subgraph MarsRuntime ["Mars Harness runtime"]
+    RepoDB["Per-repo SQLite DB\nchecks, scores, traces, telemetry"]
+    Scoring["Outcome scoring"]
+    Survey["Orchestrator survey"]
+    Fixer["pipeline-fixer"]
+  end
+
+  subgraph OptionalGitHub ["Optional GitHub integration"]
+    Webhook["workflow/webhook failures"]
+    GHRelease["GitHub Release mirror"]
+    VerifyMirror["verify-assets\nGitHub asset gate"]
+    UpdateTool["update tool\nprivate asset download"]
+  end
+
+  Intent --> Sync --> CheckGate --> DogfoodGate
+  CheckGate --> ChecksRun
+  DogfoodGate --> ChecksRun
+  ChecksRun -->|passed or failed| RepoDB
+  RepoDB --> Scoring --> Survey
+  Survey -->|checks_failed| Fixer
+  Webhook -. optional signal .-> Fixer
+
+  Intent --> ReleaseNotes --> TagGuard --> Publish --> LocalDist --> VerifyLocal
+  Publish -. upload auto or github .-> GHRelease --> VerifyMirror --> UpdateTool
+```
+
+The important boundary is that local checks and local release assets are source
+of truth. Optional GitHub signals can add evidence or distribution reach, but
+they do not replace the local gates.
+
 ## CLI Contract
 
 `cmd/mars-harness/` is the single command entry point. The current implemented
@@ -133,6 +193,7 @@ surface is:
 | `mars-harness start --repo <path>` | Auto-init if needed, register the repo, seed the CEO role, and run the per-repo orchestrator. |
 | `mars-harness serve` | Run the legacy multi-repo orchestrator, dashboard, webhooks, cron scheduler, workers, and recovery watchdog. |
 | `mars-harness run <role> --repo <path>` | Execute one role against a target repo, with `--dry-run` for prompt preview. |
+| `mars-harness checks run --repo <path> --name <name> -- <command...>` | Run a named local delivery check, record pass/fail in the repo database, and feed failed checks into scoring and pipeline repair routing. |
 | `mars-harness tools list [--json]` | List the universal registered built-in tool surface available to foundation and deployed harness contexts. |
 | `mars-harness tools run <name> --repo <path> --args-json <json>` | Execute one registered tool through the same executor, allowlist, trust policy, repo root, and JSON argument path used by agent runs. |
 | `mars-harness mcp serve --repo <path>` | Expose registered tools through stdio MCP so any MCP-compatible client or local harness agent can use Mars Harness tools through a model-provider-agnostic tool mechanism. |
@@ -143,7 +204,8 @@ surface is:
 | `mars-harness trust set <role> <repo> <level> --reason <text>` | Apply an audited trust override. |
 | `mars-harness models evaluate` | Print or run model evaluation probes against an OpenAI-compatible endpoint. |
 | `mars-harness release notes --repo <path> --bump auto` | Generate semantic patch notes, update `VERSION`, `CHANGELOG.md`, and source build info. |
-| `mars-harness release verify-assets [--version <tag>]` | Check that a GitHub Release has the required platform binaries and checksums. |
+| `mars-harness release publish-assets --repo <path> --version vX.Y.Z --upload none|github|auto` | Build local source release binaries, write checksums, verify local assets, and optionally mirror them to GitHub Releases. |
+| `mars-harness release verify-assets [--dist <path>] [--version <tag>]` | Check that local dist assets or an optional GitHub Release mirror has the required platform binaries and checksums. |
 
 There is no current top-level `status`, `interventions`, or `stop --now`
 command. Graceful stop is exposed through Ctrl+C, terminal key `q`, and the
@@ -286,13 +348,15 @@ pause/resume, warm restart, scan, run-role, and graceful stop. The terminal UI
 provides the same operational controls during `start` and `serve`: `p`, `r`,
 `s`, `q`, and `h`.
 
-### Release (`internal/release/`, `.github/workflows/`)
+### Release (`internal/release/`)
 
 Release notes infer semantic versions from commits, update source build info,
 and prepend generated changelog entries. Source release-note commits are tagged
-as `vX.Y.Z`; the tag-triggered Release workflow builds platform binaries and
-checksums. `release verify-assets` confirms the GitHub Release has the expected
-assets.
+as `vX.Y.Z`; `release publish-assets` then cross-compiles local platform
+binaries, writes `checksums.txt`, verifies the local dist, and can optionally
+mirror the same assets to GitHub Releases. `release verify-assets --dist`
+confirms the local asset source of truth, while `release verify-assets` without
+`--dist` verifies the optional GitHub mirror.
 
 ## Generated Target Harness Layout
 
@@ -428,8 +492,10 @@ Every non-release semantic source commit is followed by:
    source build-info updates.
 3. Push to `main`.
 4. Tag `vX.Y.Z` at the release-note commit.
-5. Push the tag so the Release workflow publishes binaries and checksums.
-6. `mars-harness release verify-assets --version vX.Y.Z`.
+5. Push the tag.
+6. `mars-harness release publish-assets --repo . --version vX.Y.Z --upload auto`.
+7. `mars-harness release verify-assets --dist dist/releases --version vX.Y.Z`.
+8. When GitHub mirroring is configured, `mars-harness release verify-assets --version vX.Y.Z`.
 
 Initialized target repos receive the same release-note discipline through
 generated guidance, adjusted to their own release capability.
