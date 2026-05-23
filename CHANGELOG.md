@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.44.0] - 2026-05-23
+<!-- mars-harness-release: version=0.44.0 commit=41f858359867 -->
+
+### Impact
+- **release:** Operators gain new capability: move delivery gates local.
+
+### Why
+- **release:** This matters because move delivery gates local was missing from the shipped capability set.
+
+### What Changed
+- **release:** Changed move delivery gates local (41f8583).
+
+### Features
+- **release:** Move delivery gates local (41f8583)
+
 ## [0.43.2] - 2026-05-23
 <!-- mars-harness-release: version=0.43.2 commit=d21df208ce43 -->
 
