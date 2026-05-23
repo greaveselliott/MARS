@@ -61,13 +61,13 @@ source file exists in the worktree.
 
 | Source Prefix | Architecture / Product Docs | Feature Contracts |
 | --- | --- | --- |
-| `.github/workflows/` | `docs/design-docs/release-versioning.md` | `docs/features/F-009-release-update-lifecycle.md` |
 | `cmd/mars-harness/` | `docs/product-specs/product-surface.md`, `docs/design-docs/cli-tool-skill-sync.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, `docs/design-docs/release-versioning.md`, `docs/design-docs/self-reflective-telemetry.md`, `docs/design-docs/dashboard.md` | F-001, F-002, F-004, F-005, F-009, F-010, F-012 |
 | `examples/` | `docs/design-docs/role-customization.md` | F-004 |
 | `internal/agent/` | `docs/design-docs/agent-runtime.md` | F-005 |
 | `internal/buildinfo/` | `docs/design-docs/release-versioning.md` | F-009 |
 | `internal/bundle/` | `docs/design-docs/context-efficiency.md`, `docs/design-docs/role-customization.md` | F-004, F-005 |
 | `internal/config/` | `docs/product-specs/product-surface.md`, `docs/design-docs/release-versioning.md` | F-003, F-009 |
+| `Makefile` | `docs/design-docs/release-versioning.md`, `docs/design-docs/dogfood-matrix.md` | F-009 |
 | `internal/context/` | `docs/design-docs/context-efficiency.md` | F-005 |
 | `internal/dashboard/` | `docs/design-docs/dashboard.md` | F-010 |
 | `internal/docsconsistency/` | `docs/design-docs/delivery-operating-model.md` | F-001 |

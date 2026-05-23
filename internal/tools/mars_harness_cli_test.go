@@ -33,7 +33,7 @@ func TestMarsHarnessCLI_reference(t *testing.T) {
 	for _, command := range []string{
 		"setup", "init", "eject", "upgrade", "start", "serve", "register", "run <role>",
 		"scan", "doctor", "auth github check", "auth github setup", "update check", "update tool", "update harness",
-		"path setup", "release notes", "release backfill-notes", "release verify-assets", "scores", "scores export",
+		"path setup", "release notes", "release backfill-notes", "release publish-assets", "release verify-assets", "checks run", "scores", "scores export",
 		"telemetry status", "telemetry preview", "telemetry export", "telemetry send", "telemetry collect", "telemetry triage-foundation",
 		"docsync audit", "trust", "trust set", "models evaluate", "models list", "models override",
 		"tools list", "tools run <name>", "mcp serve",
@@ -45,6 +45,8 @@ func TestMarsHarnessCLI_reference(t *testing.T) {
 func TestMarsHarnessCLI_repoShortcutAppendsRepoFlagForSyncedCommands(t *testing.T) {
 	for _, args := range [][]string{
 		{"release", "backfill-notes", "--dry-run"},
+		{"release", "publish-assets", "--version", "v1.2.3", "--upload", "none"},
+		{"checks", "run", "--name", "unit", "--", "go", "test", "./..."},
 		{"docsync", "audit"},
 		{"models", "evaluate", "--json"},
 		{"models", "override", "--tier", "coding", "--provider", "ollama", "--model", "qwen"},

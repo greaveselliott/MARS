@@ -264,8 +264,8 @@ func resolveReleaseAssetPlan(ctx context.Context, client *http.Client, cfg Confi
 	}
 	report := VerifyReleaseAssetInfo(release)
 	if !report.OK {
-		return Plan{}, fmt.Errorf("update tool: latest release %s is missing required assets: %s\nPush tag %s from the release-note commit and let the Release workflow attach binaries before retrying.",
-			releaseIdentity(release), strings.Join(report.Missing, ", "), releaseIdentity(release))
+		return Plan{}, fmt.Errorf("update tool: latest release %s is missing required assets: %s\nPush tag %s from the release-note commit, run `mars-harness release publish-assets --repo . --version %s --upload github`, then `mars-harness release verify-assets --version %s` before retrying.",
+			releaseIdentity(release), strings.Join(report.Missing, ", "), releaseIdentity(release), releaseIdentity(release), releaseIdentity(release))
 	}
 	plan.Version = report.Version
 	plan.ReleaseTag = release.TagName

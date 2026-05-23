@@ -224,16 +224,17 @@ mars-harness release notes --repo . --bump auto
 ```
 
 In this source repo and in repos initialized by Mars Harness, run the release command after every non-release semantic commit and commit the generated version files as `release: notes X.Y.Z` before pushing `main`.
-When GitHub release credentials are configured, push tag `vX.Y.Z` at the
-release-note commit so release automation can publish the generated changelog
-entry and any repo-required assets. A GitHub Release with notes but no required
-assets is not complete; run the Release workflow backfill for that tag or record
-the blocker. For Mars Harness source releases, verify the binary asset contract
-with:
+For Mars Harness source releases, push tag `vX.Y.Z` at the release-note commit,
+publish local release assets, and verify the binary asset contract with:
 
 ```bash
-mars-harness release verify-assets --version vX.Y.Z
+mars-harness release publish-assets --repo . --version vX.Y.Z --upload auto
+mars-harness release verify-assets --dist dist/releases --version vX.Y.Z
 ```
+
+When GitHub release credentials are configured, `--upload auto` also mirrors the
+local assets to a GitHub Release. A failed mirror is a release blocker to record,
+not hidden CI state.
 
 ## Next Steps
 

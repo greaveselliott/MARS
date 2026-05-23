@@ -197,8 +197,8 @@ syntax-only build scripts such as `echo`, `true`, `mkdir dist && cp ...`, or
 defects such as `Phaser.*` usage without importing Phaser in that module. Empty
 placeholders remain writable before validation; concrete proof belongs after
 the behavior has been exercised.
-| `release_orchestrate` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with `mars_harness_cli` and git tools. |
-| `github_release_status` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
+| `release_orchestrate` | Plan and preflight the full semantic commit, release notes, push, tag, local asset publication, optional GitHub mirror, and asset verification ritual. | Mutating workflow. Use before driving release state with `mars_harness_cli` and git tools. |
+| `github_release_status` | Inspect optional GitHub release mirror status and decide whether to upload, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
 | `architecture_audit` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
 | `harness_doctrine_sync` | Check mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency. | Non-mutating. Use when changing operating doctrine or mirrored definitions. |
 | `docsync_audit` | Audit source files for `MarsDocSync` metadata and associated documentation pointers. | Non-mutating. Use before commits that touch code or when validating the no-stale-docs operating model in [documentation-sync-architecture.md](documentation-sync-architecture.md). Foundation source checkouts enforce expected-doc prefix mappings; deployed target repos require valid metadata and existing docs without forcing foundation-only source-doc references. |

@@ -79,6 +79,20 @@ func TestScan_detectsCI(t *testing.T) {
 	assert.True(t, result.HasCI)
 }
 
+func TestScan_detectsLocalDeliveryGate(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "Makefile"), []byte("check:\n\tgo test ./...\n"), 0o644))
+
+	result, err := Scan(context.Background(), Config{RepoRoot: dir})
+	require.NoError(t, err)
+	assert.True(t, result.HasCI)
+	for _, finding := range result.Findings {
+		assert.NotEqual(t, "no_ci", finding.Type)
+	}
+}
+
 func TestScan_detectsMissingTests(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -605,8 +619,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Operating rules inherited from Mars Harness apply here")
 	assert.Contains(t, string(agentGuide), "mars-harness eject --repo .")
 	assert.Contains(t, string(agentGuide), "--apply --confirm <repo-name>")
-	assert.Contains(t, string(agentGuide), "publish or update GitHub Release")
-	assert.Contains(t, string(agentGuide), "notes-only GitHub Release")
+	assert.Contains(t, string(agentGuide), "release publish-assets")
+	assert.Contains(t, string(agentGuide), "optional mirror")
 	assert.Contains(t, string(agentGuide), "mars-harness auth github check")
 	assert.Contains(t, string(agentGuide), "mars-harness auth github setup")
 	assert.Contains(t, string(agentGuide), "never paste tokens")
@@ -1002,11 +1016,12 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(releaseDoc), "Every non-release semantic commit")
 	assert.Contains(t, string(releaseDoc), "Agents should run these Mars Harness workflows through `mars_harness_cli`")
 	assert.Contains(t, string(releaseDoc), "release: notes X.Y.Z")
-	assert.Contains(t, string(releaseDoc), "GitHub Release")
+	assert.Contains(t, string(releaseDoc), "local release assets")
+	assert.Contains(t, string(releaseDoc), "mars-harness release publish-assets")
 	assert.Contains(t, string(releaseDoc), "vX.Y.Z")
-	assert.Contains(t, string(releaseDoc), "notes-only GitHub")
+	assert.Contains(t, string(releaseDoc), "mars-harness release verify-assets --dist")
+	assert.Contains(t, string(releaseDoc), "Releases remain an optional mirror")
 	assert.Contains(t, string(releaseDoc), "gh release view vX.Y.Z")
-	assert.Contains(t, string(releaseDoc), "GitHub Release object")
 	assert.Contains(t, string(releaseDoc), "Impact")
 	assert.Contains(t, string(releaseDoc), "Why")
 	assert.Contains(t, string(releaseDoc), "What Changed")
@@ -1022,10 +1037,10 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(releasePrompt), "Separate shipped feature scenarios from enabler work")
 	assert.Contains(t, string(releasePrompt), "Impact")
 	assert.Contains(t, string(releasePrompt), "What Changed")
-	assert.Contains(t, string(releasePrompt), "publish or update GitHub Release")
+	assert.Contains(t, string(releasePrompt), "release publish-assets")
 	assert.Contains(t, string(releasePrompt), "gh release view vX.Y.Z")
-	assert.Contains(t, string(releasePrompt), "release object")
-	assert.Contains(t, string(releasePrompt), "notes-only release is a blocker")
+	assert.Contains(t, string(releasePrompt), "optional mirror")
+	assert.Contains(t, string(releasePrompt), "local release assets")
 	assert.Contains(t, string(releasePrompt), "Never add, rewrite, guess, or")
 	assert.Contains(t, string(releasePrompt), "Do not add a placeholder origin")
 }

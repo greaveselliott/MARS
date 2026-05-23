@@ -138,9 +138,9 @@ Sequence:
 5. Commit generated files as `+"`release: notes X.Y.Z`"+`.
 6. Push main.
 7. Tag the release-note commit as `+"`vX.Y.Z`"+` and push the tag. Do not tag while VERSION/CHANGELOG.md are dirty, and do not target any commit other than the release-note HEAD.
-8. Wait for the Release workflow to complete.
-9. Run `+"`mars_harness_cli`"+` with args ["release", "verify-assets", "--version", "vX.Y.Z"].
-10. If verification fails, record the blocker before treating release work as complete.
+8. Run `+"`mars_harness_cli`"+` with args ["release", "publish-assets", "--repo", ".", "--version", "vX.Y.Z", "--upload", "auto"].
+9. Run `+"`mars_harness_cli`"+` with args ["release", "verify-assets", "--dist", "dist/releases", "--version", "vX.Y.Z"].
+10. If local verification or optional GitHub mirroring fails, record the blocker before treating release work as complete.
 `, strings.TrimSpace(version), nonEmpty(status, "(clean)"), nonEmpty(head, "(no commits)")))
 	if strings.TrimSpace(args.Notes) != "" {
 		out += "\nTask notes:\n" + strings.TrimSpace(args.Notes)
@@ -162,15 +162,15 @@ Local HEAD:
 Recent local release tags:
 %s
 
-Remote inspection commands:
+Remote inspection commands for optional GitHub mirrors:
 - `+"`gh run list --repo <owner/name> --limit 10`"+`
 - `+"`gh run view <run-id> --repo <owner/name> --json status,conclusion,url`"+`
 - `+"`gh release view vX.Y.Z --repo <owner/name> --json tagName,name,assets,url,isDraft,isPrerelease,publishedAt`"+`
 - `+"`mars-harness release verify-assets --version vX.Y.Z`"+`
 
 Interpretation:
-- Tag exists but release is 404: wait for the Release workflow or inspect the workflow failure.
-- Release exists but assets are missing: wait for upload completion, rerun failed release jobs, or record the blocker.
+- Tag exists but release is 404: local assets may still be complete; run publish-assets with --upload github or record a mirror blocker.
+- Release exists but assets are missing: rerun local publish-assets with --upload github or record the blocker.
 - Local tag and remote tag disagree: stop and resolve tag drift before publishing installer guidance.
 `, nonEmpty(head, "(unknown)"), firstLines(tags, 10))
 	return ToolResult{Output: out}, nil

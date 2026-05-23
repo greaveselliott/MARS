@@ -109,46 +109,46 @@ work, deterministic dispatch routes to `release-manager` when that role exists,
 so versioning and release blockers become part of the same autonomous product
 delivery chain.
 
-### AD-059: Versioned Releases Are Published To GitHub When Configured
+### AD-059: Versioned Releases Are Published From Local Assets
 
-A release is not fully complete until the generated version is visible as a GitHub Release when the repository has authenticated GitHub release capability.
+A release is not fully complete until local release assets are built and
+verified. GitHub Releases remain an optional mirror when the repository has
+authenticated GitHub release capability.
 
 After a `release: notes X.Y.Z` commit is pushed to `main`, release work must:
 
 1. create or update tag `vX.Y.Z` at the release-note commit
-2. push the tag so the release workflow builds binary assets and publishes or
-   updates GitHub Release `vX.Y.Z`
-3. use the generated `CHANGELOG.md` entry for `X.Y.Z` as the release notes body
-4. verify the release object exists with `gh release view vX.Y.Z`; if the tag
-   workflow failed to create the release object, create a notes-only GitHub
-   Release for the existing tag from the generated `CHANGELOG.md` entry before
-   ending the task
-5. verify the release is visible in GitHub and `mars-harness release
-   verify-assets --version vX.Y.Z` passes
+2. run `mars-harness release publish-assets --repo . --version vX.Y.Z
+   --upload none|github|auto`
+3. verify local release assets with `mars-harness release verify-assets --dist
+   dist/releases --version vX.Y.Z`
+4. when GitHub mirroring is configured, verify the release object exists with
+   `gh release view vX.Y.Z`
+5. verify mirrored GitHub assets with `mars-harness release verify-assets
+   --version vX.Y.Z` before claiming installer or self-update availability from
+   the mirror
 
-GitHub release publication has two independent gates:
+Release publication has two independent gates:
 
-- **Release object gate:** `gh release view vX.Y.Z` must succeed. If Actions,
-  CI, billing, or workflow publication fails but the GitHub API is available,
-  Release Manager creates or updates a notes-only release from the generated
-  changelog entry so the Releases page reflects the current version.
-- **Asset gate:** `mars-harness release verify-assets --version vX.Y.Z` must
-  pass before installer or self-update availability is claimed. A notes-only
-  release is visible but still blocked for binary distribution until required
-  assets and `checksums.txt` are attached.
+- **Local asset gate:** `mars-harness release verify-assets --dist
+  dist/releases --version vX.Y.Z` must pass before a source release is complete.
+- **Optional GitHub mirror gate:** `gh release view vX.Y.Z` and
+  `mars-harness release verify-assets --version vX.Y.Z` must pass before the
+  GitHub mirror is advertised as installable.
 
-GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the blocker and leaves a follow-up ticket instead of claiming the release is complete.
+GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the mirror blocker without treating local asset publication as failed.
 
 ### AD-141: Foundation Release Publication Uses A Source-Only Skill
 
 The source harness release path has a repeated judgment-heavy sequence after
 each non-release semantic commit: generate release notes, commit and push them,
-tag the release, publish or repair the GitHub Release object, verify binary
-assets, and record missing-asset blockers without pretending a notes-only
-release is complete.
+tag the release, publish local assets, optionally mirror to GitHub Releases,
+verify binary assets, and record missing-asset blockers without pretending a
+notes-only release is complete.
 
-The deterministic commands remain `mars-harness release notes`, git, GitHub
-CLI, and `mars-harness release verify-assets`. The reusable procedure lives in
+The deterministic commands remain `mars-harness release notes`, git,
+`mars-harness release publish-assets`, optional GitHub CLI mirroring, and
+`mars-harness release verify-assets`. The reusable procedure lives in
 `.harness/skills/release-publication/SKILL.md` so Release Manager and Codex
 share the same ordered checklist and stop conditions.
 
@@ -239,21 +239,16 @@ work without manual profile editing.
 
 ### AD-078: Release Assets Are Built From Tags And Verified
 
-For the source harness, `git tag vX.Y.Z && git push origin vX.Y.Z` is the
-authoritative asset-publication trigger after the release-note commit is on
-`main`. Direct `gh release create` publication is the fallback for the release
-object gate when the tag workflow fails or cannot start. That fallback must use
-the existing tag and the generated `CHANGELOG.md` entry, and it remains
-incomplete until release assets are attached and verified.
-
-The Release workflow cross-compiles `linux/darwin` x `amd64/arm64`, writes
-`checksums.txt`, verifies all expected assets before publication, and uses the
-matching `CHANGELOG.md` entry as the GitHub Release body. It runs on pushed
-version tags, on newly published GitHub Releases to recover from notes-only
-publication, and through `workflow_dispatch` with a `version` input for manual
-backfills. Release managers must run `mars-harness release verify-assets
---version vX.Y.Z` after publication before claiming the installer or self-update
-path is shipped.
+For the source harness, `mars-harness release publish-assets --repo . --version
+vX.Y.Z --upload none|github|auto` is the authoritative asset-publication path
+after the release-note commit is on `main` and tag `vX.Y.Z` points at that
+commit. The command cross-compiles `linux/darwin` x `amd64/arm64`, writes
+`checksums.txt`, verifies local release assets, and can optionally create or
+update a GitHub Release mirror from the matching `CHANGELOG.md` entry. Release
+managers must run `mars-harness release verify-assets --dist dist/releases
+--version vX.Y.Z` before claiming the local installer or self-update path is
+shipped. When GitHub mirroring is used, they also run `mars-harness release
+verify-assets --version vX.Y.Z` before advertising the mirror.
 
 ### AD-207: Release Tags Must Point At The Release-Note Commit
 
@@ -296,9 +291,9 @@ for a commit that does not contain the generated release notes.
 - Generate the same VERSION/CHANGELOG/release guidance in target repos.
 - Treat source-repo versioning as part of done for every non-release semantic commit.
 - Treat target-repo versioning as part of done for every non-release semantic commit after `mars-harness init`.
-- Publish or update matching GitHub Releases when authenticated GitHub release capability is configured.
-- Verify `gh release view vX.Y.Z` after every tag push and create/update a
-  notes-only release object from `CHANGELOG.md` when workflow publication fails.
+- Publish local release assets with `mars-harness release publish-assets`.
+- Mirror matching GitHub Releases when authenticated GitHub release capability is configured.
+- Verify `gh release view vX.Y.Z` after GitHub mirroring.
 - Block release tag creation unless the tag matches `VERSION`, the worktree is
   clean, `HEAD` is the release-note commit, and the tag target is that `HEAD`.
 - Let the installed binary reinstall itself without requiring a source checkout.

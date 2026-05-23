@@ -23,6 +23,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"os/exec"
@@ -37,6 +38,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
+	"github.com/greaveselliott/mars-harness/internal/selfupdate"
 	"github.com/greaveselliott/mars-harness/internal/serve"
 	harnesstools "github.com/greaveselliott/mars-harness/internal/tools"
 	"github.com/spf13/cobra"
@@ -227,6 +229,88 @@ func TestReleaseBackfillNotesCommandChecksAndWrites(t *testing.T) {
 	require.Contains(t, string(changelog), "### Why")
 	require.Contains(t, string(changelog), "### What Changed")
 	require.NotContains(t, string(changelog), "### Why This Release Matters")
+}
+
+func TestChecksRunRecordsFailedOutcome(t *testing.T) {
+	t.Parallel()
+	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	repoDir := t.TempDir()
+
+	cmd := checksRunCmd()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&errOut)
+	cmd.SetArgs([]string{
+		"--repo", repoDir,
+		"--db", dbPath,
+		"--name", "unit-failure",
+		"--", "sh", "-c", "exit 7",
+	})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, out.String(), `Recorded check "unit-failure" as checks_failed`)
+
+	store, err := scoring.OpenStore(dbPath)
+	require.NoError(t, err)
+	defer store.Close()
+	counts, err := store.OutcomeCounts(context.Background(), repoDir, time.Now().Add(-time.Hour))
+	require.NoError(t, err)
+	require.Len(t, counts, 1)
+	require.Equal(t, scoring.OutcomeChecksFailed, counts[0].Type)
+	require.Equal(t, "engineer", counts[0].Role)
+}
+
+func TestReleasePublishAssetsCommandBuildsLocalDist(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("go not in PATH")
+	}
+	repoDir := initReleaseAssetRepo(t)
+	distDir := filepath.Join(t.TempDir(), "release")
+
+	cmd := releasePublishAssetsCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{
+		"--repo", repoDir,
+		"--version", "v1.2.3",
+		"--dist", distDir,
+		"--upload", "none",
+	})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "Status: ok")
+	for _, name := range selfupdate.ExpectedReleaseAssetNames() {
+		require.FileExists(t, filepath.Join(distDir, name))
+	}
+}
+
+func TestReleaseVerifyAssetsCommandChecksLocalDist(t *testing.T) {
+	t.Parallel()
+	distDir := t.TempDir()
+	var checksumLines []string
+	for _, name := range selfupdate.ExpectedReleaseAssetNames() {
+		if name == "checksums.txt" {
+			continue
+		}
+		path := filepath.Join(distDir, name)
+		require.NoError(t, os.WriteFile(path, []byte(name+"\n"), 0o644))
+		sum := sha256.Sum256([]byte(name + "\n"))
+		checksumLines = append(checksumLines, fmt.Sprintf("%x  %s", sum, name))
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(distDir, "checksums.txt"), []byte(strings.Join(checksumLines, "\n")+"\n"), 0o644))
+
+	cmd := releaseVerifyAssetsCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--dist", distDir, "--version", "v1.2.3"})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "Status: ok")
 }
 
 func TestDocSyncAuditCommandReportsStatus(t *testing.T) {
@@ -796,6 +880,46 @@ Old narrative.
 - **cli:** Add command backfill (` + short + `)
 `
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte(changelog), 0o644))
+	return dir
+}
+
+func initReleaseAssetRepo(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	runMainTestGit(t, dir, "init")
+	runMainTestGit(t, dir, "config", "user.email", "test@example.com")
+	runMainTestGit(t, dir, "config", "user.name", "Test User")
+	writeToolRunRepoFile(t, dir, "go.mod", "module example.com/release-asset-test\n\ngo 1.22\n")
+	writeToolRunRepoFile(t, dir, "cmd/mars-harness/main.go", `package main
+
+import "fmt"
+
+var version = "dev"
+var commit = "unknown"
+var date = "unknown"
+
+func main() {
+	fmt.Println(version, commit, date)
+}
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("1.2.3\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte(`# Changelog
+
+## [1.2.3] - 2026-05-23
+<!-- mars-harness-release: version=1.2.3 commit=test -->
+
+### Impact
+Local release assets can be verified.
+
+### Why
+The release path is tested without GitHub Actions.
+
+### What Changed
+Built local assets.
+`), 0o644))
+	runMainTestGit(t, dir, "add", "-A")
+	runMainTestGit(t, dir, "commit", "-m", "release: notes 1.2.3")
+	runMainTestGit(t, dir, "tag", "v1.2.3")
 	return dir
 }
 

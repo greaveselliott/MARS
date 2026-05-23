@@ -726,7 +726,7 @@ roles:
     trust_level: contributor
     tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
-  # ── CI repair ────────────────────────────────────────────
+  # ── Delivery-gate repair ─────────────────────────────────
   pipeline-fixer:
     prompt: roles/pipeline-fixer.md
     domain: engineer
@@ -1094,7 +1094,7 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
 - Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
 - After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, ensure the generated entry explains ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` before commit buckets, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
-- When GitHub release credentials are configured, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, and run any repo-required asset workflow or backfill before verifying assets. Never tag while ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + ` are dirty, and never target a pre-release-note commit. Confirm ` + "`gh release view vX.Y.Z`" + ` succeeds. If the tag workflow did not create the release object, create a notes-only GitHub Release from the generated ` + "`CHANGELOG.md`" + ` entry for the existing tag, then record missing assets as the remaining blocker. A notes-only GitHub Release is a blocker until required assets are attached and verified. If publishing or verification is blocked, record the blocker explicitly.
+- For source-style binary releases, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, run ` + "`mars-harness release publish-assets --repo . --version vX.Y.Z --upload auto`" + `, and verify the local dist with ` + "`mars-harness release verify-assets --dist dist/releases --version vX.Y.Z`" + `. Never tag while ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + ` are dirty, and never target a pre-release-note commit. When GitHub release credentials are configured, treat GitHub Releases as an optional mirror: confirm ` + "`gh release view vX.Y.Z`" + ` succeeds and ` + "`mars-harness release verify-assets --version vX.Y.Z`" + ` passes before advertising the mirror. If publishing or verification is blocked, record the blocker explicitly.
 - Private Mars Harness release access is part of getting started and version-drift repair. Run ` + "`mars-harness auth github check`" + ` or the read-only ` + "`github_auth_check`" + ` tool before ` + "`mars-harness update tool`" + `, release asset verification, install repair, or update troubleshooting. Configure access with ` + "`mars-harness auth github setup`" + `; never paste tokens into chat, docs, commits, tickets, traces, logs, or target repo files.
 - Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
 - Check drift with ` + "`mars-harness update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars-harness update harness --repo .`" + `.
@@ -2913,24 +2913,21 @@ delivery chain.
 
 ## GitHub Release Rule
 
-When this repository has authenticated GitHub release capability, every pushed
-release-note commit must create or update tag ` + "`vX.Y.Z`" + ` at that commit,
-push the tag, and create or update GitHub Release ` + "`vX.Y.Z`" + ` using the
-matching generated ` + "`CHANGELOG.md`" + ` entry. Repositories with binary or
-package assets must run any release-asset workflow or backfill for that tag and
-verify those assets before claiming the release is complete. A notes-only GitHub
-Release is a blocker until the required assets are attached and verified.
+For source-style binary releases, every pushed release-note commit must create
+or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, run ` + "`mars-harness release publish-assets --repo . --version vX.Y.Z --upload auto`" + `,
+and verify the local dist with ` + "`mars-harness release verify-assets --dist dist/releases --version vX.Y.Z`" + ` before installer or self-update availability is claimed.
+These local release assets are the source of truth for completion. GitHub
+Releases remain an optional mirror for repositories that publish through GitHub.
 
-Publication has two gates. First, ` + "`gh release view vX.Y.Z`" + ` must confirm the
-GitHub Release object exists. If the tag workflow is blocked or fails before
-creating it, create a notes-only release from the generated ` + "`CHANGELOG.md`" + `
-entry for the existing tag so the Releases page reflects the current version.
-Second, ` + "`mars-harness release verify-assets --version vX.Y.Z`" + ` must pass
-before installer or self-update availability is claimed.
+When this repository has authenticated GitHub release capability, the same
+publication command may mirror the local assets to GitHub Release ` + "`vX.Y.Z`" + `
+using the matching generated ` + "`CHANGELOG.md`" + ` entry. ` + "`gh release view vX.Y.Z`" + `
+and ` + "`mars-harness release verify-assets --version vX.Y.Z`" + ` are mirror checks,
+not the source of truth for local asset completeness.
 
-If the repo has no GitHub remote, no release credentials, or the GitHub publish
+If the repo has no GitHub remote, no release credentials, or the GitHub mirror
 step fails, record the blocker and create or update follow-up work instead of
-claiming the release is complete.
+claiming the mirror is complete.
 
 ## Private Release Auth
 
@@ -4458,7 +4455,7 @@ START by reading:
 7. docsync_audit. If it reports any ` + "`FAIL:`" + ` findings, do not publish or
    approve the release. Record a blocked or changes_requested disposition with
    the failing files and route rework before version publication.
-8. GitHub release state only when a real remote is already configured: gh release list --limit 10
+8. GitHub release mirror state only when a real remote is already configured: gh release list --limit 10
 
 TASKS:
 
@@ -4470,31 +4467,29 @@ For direct commits to main:
 5. Verify generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. If a commit subject is too thin, add richer commit-body context with ` + "`Impact:`" + `, ` + "`Why:`" + `, or ` + "`What:`" + ` before claiming the release text is good.
 6. Separate shipped feature scenarios from enabler work in release notes; do not claim a feature unless mapped scenarios pass.
 7. Run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\",\"--check\"]`" + ` after release notes are generated. If the check reports legacy entries, run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\"]`" + ` and include the backfill in the same release-note commit.
-8. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, publish or update GitHub Release ` + "`vX.Y.Z`" + ` from the generated changelog entry, confirm ` + "`gh release view vX.Y.Z`" + ` succeeds, and run any repo-required asset workflow or backfill before verifying assets when GitHub release credentials are configured. Never tag while VERSION or CHANGELOG.md are dirty, and never target a pre-release-note commit. If the tag workflow does not create the release object, create a notes-only release from ` + "`CHANGELOG.md`" + ` for the existing tag before recording the remaining asset blocker.
+8. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"publish-assets\",\"--repo\",\".\",\"--version\",\"vX.Y.Z\",\"--upload\",\"auto\"]`" + `, and verify local assets with ` + "`[\"release\",\"verify-assets\",\"--dist\",\"dist/releases\",\"--version\",\"vX.Y.Z\"]`" + `. Never tag while VERSION or CHANGELOG.md are dirty, and never target a pre-release-note commit. When GitHub release credentials are configured, confirm ` + "`gh release view vX.Y.Z`" + ` succeeds and run ` + "`mars-harness release verify-assets --version vX.Y.Z`" + ` before advertising the optional mirror.
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
 2. If yes: update VERSION and CHANGELOG.md with the command above
 3. Verify tests pass before cutting
-4. Tag and publish the GitHub Release only after docsync_audit passes and the release-note commit is verified on main
+4. Publish local release assets only after docsync_audit passes and the release-note commit is verified on main
 
 Commit and push:
   git add VERSION CHANGELOG.md
   git commit -m "release: notes X.Y.Z"
   git push
 
-GitHub publication:
+Local release publication:
   Create or update tag vX.Y.Z at the release-note commit.
   Do not tag while VERSION or CHANGELOG.md are dirty, and do not target any
   commit other than the release-note HEAD.
   If the repo has no remote, stop after the local release-note commit/tag and
   record a blocked disposition. Do not add a placeholder origin and do not guess
   an owner/name remote.
-  Push the tag, then create or update GitHub Release vX.Y.Z with the matching CHANGELOG.md entry.
-  Confirm gh release view vX.Y.Z succeeds. If the release object is missing after the tag workflow, create a notes-only GitHub Release from the generated CHANGELOG.md entry for the existing tag.
-  Run any repo-required asset workflow or backfill for the tag.
-  Verify any repo-required release assets before claiming the release is complete; a notes-only release is a blocker.
-  If GitHub auth, API access, CI, or asset verification is unavailable, record the blocker and create or update follow-up work.
+  Push the tag, run mars-harness release publish-assets, and verify local release assets from the dist directory before claiming the release is complete.
+  If GitHub mirroring is configured, create or update GitHub Release vX.Y.Z with the matching CHANGELOG.md entry, confirm gh release view vX.Y.Z succeeds, and verify mirrored assets before advertising the optional mirror.
+  If GitHub auth, API access, local build, mirror, or asset verification is unavailable, record the blocker and create or update follow-up work.
 `,
 
 	"dogfood": `# Dogfood Tester — E2E Validation
@@ -4752,15 +4747,17 @@ context block.
 
 ## Trigger
 
-- **Event:** CI workflow fails
+- **Event:** Mars records a failed local delivery check, or an optional GitHub
+  workflow failure arrives from an integration event
 - **Dispatch:** After the fix, record a disposition so the Orchestrator can choose QA review or another repair step
 
 ## Prompt
 
-You are a CI/CD specialist. A pipeline has failed and you need to fix it.
+You are a local delivery-gate specialist. A pipeline or check has failed and you
+need to fix it.
 
 START by reading:
-1. CI configuration files (.github/workflows/, Makefile, etc.)
+1. Local delivery-gate configuration (Makefile ` + "`check`" + `, Mars checks, scripts, and optional CI workflow files)
 2. Recent commits that may have caused the failure
 3. Test output and error logs
 

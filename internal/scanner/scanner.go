@@ -137,7 +137,7 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 	if !result.HasCI {
 		result.Findings = append(result.Findings, Finding{
 			Type:        "no_ci",
-			Description: "No CI configuration found — add .github/workflows/ or equivalent",
+			Description: "No CI or local delivery gate found — add Makefile check, mars-harness checks, .github/workflows/, or equivalent",
 			Severity:    "high",
 		})
 	}
@@ -284,9 +284,25 @@ func detectCI(root string, files []string) bool {
 		if base == ".gitlab-ci.yml" || base == "Jenkinsfile" {
 			return true
 		}
+		if base == "Makefile" && hasMakeCheckTarget(filepath.Join(root, f)) {
+			return true
+		}
 	}
 	_, err := os.Stat(filepath.Join(root, ".github", "workflows"))
 	return err == nil
+}
+
+func hasMakeCheckTarget(path string) bool {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "check:") {
+			return true
+		}
+	}
+	return false
 }
 
 func detectTests(files []string) bool {

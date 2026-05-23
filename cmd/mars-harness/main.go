@@ -127,6 +127,7 @@ func newRootCommand() *cobra.Command {
 	root.AddCommand(mcpCmd())
 	root.AddCommand(modelsCmd())
 	root.AddCommand(releaseCmd())
+	root.AddCommand(checksCmd())
 	root.AddCommand(docsyncCmd())
 	root.AddCommand(pathCmd())
 	root.AddCommand(authCmd())
@@ -1148,6 +1149,7 @@ func releaseCmd() *cobra.Command {
 	}
 	cmd.AddCommand(releaseBackfillNotesCmd())
 	cmd.AddCommand(releaseNotesCmd())
+	cmd.AddCommand(releasePublishAssetsCmd())
 	cmd.AddCommand(releaseVerifyAssetsCmd())
 	return cmd
 }
@@ -1276,14 +1278,23 @@ func releaseVerifyAssetsCmd() *cobra.Command {
 		repoFullName  string
 		verifyVersion string
 		releaseURL    string
+		distDir       string
 		jsonOut       bool
 	)
 	cmd := &cobra.Command{
 		Use:   "verify-assets",
-		Short: "Verify GitHub Release binary assets",
-		Long: `Verify that a GitHub Release contains all Mars Harness binary assets
-and checksums.txt before announcing an installer or self-update release.`,
+		Short: "Verify release binary assets",
+		Long: `Verify that local release assets or a GitHub Release contain all Mars
+Harness binary assets and checksums.txt before announcing an installer or
+self-update release.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if strings.TrimSpace(distDir) != "" {
+				report, err := release.VerifyLocalAssets(distDir, verifyVersion)
+				if err != nil {
+					return err
+				}
+				return printReleaseAssetReport(cmd.OutOrStdout(), report, jsonOut)
+			}
 			url := strings.TrimSpace(releaseURL)
 			if url == "" {
 				url = selfupdate.ReleaseAPIURL(repoFullName, verifyVersion)
@@ -1292,29 +1303,199 @@ and checksums.txt before announcing an installer or self-update release.`,
 			if err != nil {
 				return err
 			}
-			if jsonOut {
-				return writeJSON(os.Stdout, report)
-			}
-			fmt.Printf("Release assets: %s\n", report.TagName)
-			if report.URL != "" {
-				fmt.Printf("URL: %s\n", report.URL)
-			}
-			fmt.Printf("Required: %s\n", strings.Join(report.Required, ", "))
-			if len(report.Found) > 0 {
-				fmt.Printf("Found: %s\n", strings.Join(report.Found, ", "))
-			}
-			if report.OK {
-				fmt.Println("Status: ok")
-				return nil
-			}
-			fmt.Printf("Missing: %s\n", strings.Join(report.Missing, ", "))
-			return fmt.Errorf("release verify-assets: release %s is missing required assets", report.TagName)
+			return printReleaseAssetReport(cmd.OutOrStdout(), report, jsonOut)
 		},
 	}
 	cmd.Flags().StringVar(&repoFullName, "repo", selfupdate.DefaultRepoFullName, "GitHub repository in owner/name form")
 	cmd.Flags().StringVar(&verifyVersion, "version", selfupdate.DefaultVersion, "Release tag to verify, e.g. latest or v0.12.0")
 	cmd.Flags().StringVar(&releaseURL, "release-url", "", "GitHub-compatible release metadata URL override")
+	cmd.Flags().StringVar(&distDir, "dist", "", "Local release asset directory to verify instead of GitHub release metadata")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func releasePublishAssetsCmd() *cobra.Command {
+	var (
+		repoPath       string
+		version        string
+		distDir        string
+		upload         string
+		githubRepoFull string
+	)
+	cmd := &cobra.Command{
+		Use:   "publish-assets",
+		Short: "Build and optionally mirror release assets locally",
+		Long: `Build linux/darwin amd64/arm64 release binaries from the release-note
+commit, generate checksums.txt, verify local assets, and optionally mirror the
+assets to GitHub Releases.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repoPath == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("release publish-assets: cannot determine working directory: %w", err)
+				}
+			}
+			result, err := release.PublishAssets(cmd.Context(), release.PublishAssetsConfig{
+				RepoRoot:   repoPath,
+				Version:    version,
+				DistDir:    distDir,
+				Upload:     upload,
+				GitHubRepo: githubRepoFull,
+				Stdout:     cmd.OutOrStdout(),
+				Stderr:     cmd.ErrOrStderr(),
+			})
+			if err != nil {
+				return err
+			}
+			out := cmd.OutOrStdout()
+			fmt.Fprintf(out, "Release assets: %s\n", result.TagName)
+			fmt.Fprintf(out, "Dist: %s\n", result.DistDir)
+			fmt.Fprintf(out, "Assets: %s\n", strings.Join(assetBaseNames(result.Assets), ", "))
+			fmt.Fprintf(out, "Checksums: %s\n", result.ChecksumsPath)
+			switch {
+			case result.Uploaded:
+				fmt.Fprintln(out, "GitHub mirror: uploaded")
+			case result.UploadSkipped:
+				fmt.Fprintln(out, "GitHub mirror: skipped")
+			default:
+				fmt.Fprintln(out, "GitHub mirror: disabled")
+			}
+			fmt.Fprintln(out, "Status: ok")
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
+	cmd.Flags().StringVar(&version, "version", "", "Release tag to publish, for example v1.2.3")
+	cmd.Flags().StringVar(&distDir, "dist", filepath.Join("dist", "releases"), "Local release asset directory")
+	cmd.Flags().StringVar(&upload, "upload", "none", "Optional mirror mode: none, github, or auto")
+	cmd.Flags().StringVar(&githubRepoFull, "github-repo", selfupdate.DefaultRepoFullName, "GitHub repository in owner/name form for upload modes")
+	_ = cmd.MarkFlagRequired("version")
+	return cmd
+}
+
+func printReleaseAssetReport(out io.Writer, report selfupdate.ReleaseAssetReport, jsonOut bool) error {
+	if jsonOut {
+		return writeJSON(out, report)
+	}
+	fmt.Fprintf(out, "Release assets: %s\n", report.TagName)
+	if report.URL != "" {
+		fmt.Fprintf(out, "URL: %s\n", report.URL)
+	}
+	fmt.Fprintf(out, "Required: %s\n", strings.Join(report.Required, ", "))
+	if len(report.Found) > 0 {
+		fmt.Fprintf(out, "Found: %s\n", strings.Join(report.Found, ", "))
+	}
+	if report.OK {
+		fmt.Fprintln(out, "Status: ok")
+		return nil
+	}
+	fmt.Fprintf(out, "Missing: %s\n", strings.Join(report.Missing, ", "))
+	return fmt.Errorf("release verify-assets: release %s is missing required assets", report.TagName)
+}
+
+func assetBaseNames(paths []string) []string {
+	names := make([]string, 0, len(paths))
+	for _, path := range paths {
+		names = append(names, filepath.Base(path))
+	}
+	return names
+}
+
+func checksCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "checks",
+		Short: "Run and record local Mars checks",
+	}
+	cmd.AddCommand(checksRunCmd())
+	return cmd
+}
+
+func checksRunCmd() *cobra.Command {
+	var (
+		repoPath string
+		dbPath   string
+		name     string
+		role     string
+	)
+	cmd := &cobra.Command{
+		Use:   "run --repo <path> --name <check-name> -- <command> [args...]",
+		Short: "Run a local check and record the result for Mars orchestration",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if strings.TrimSpace(repoPath) == "" {
+				return fmt.Errorf("checks run: --repo is required")
+			}
+			if strings.TrimSpace(name) == "" {
+				return fmt.Errorf("checks run: --name is required")
+			}
+			if strings.TrimSpace(role) == "" {
+				role = "engineer"
+			}
+			repoAbs, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("checks run: resolve repo path: %w", err)
+			}
+			resolvedDB, repoID, err := resolveRepoDBAndID(repoAbs, dbPath)
+			if err != nil {
+				return err
+			}
+			if err := os.MkdirAll(filepath.Dir(resolvedDB), 0o755); err != nil {
+				return fmt.Errorf("checks run: create database directory: %w", err)
+			}
+			store, err := scoring.OpenStore(resolvedDB)
+			if err != nil {
+				return err
+			}
+			defer store.Close()
+
+			started := time.Now().UTC()
+			localCmd := exec.CommandContext(cmd.Context(), args[0], args[1:]...)
+			localCmd.Dir = repoAbs
+			localCmd.Stdout = cmd.OutOrStdout()
+			localCmd.Stderr = cmd.ErrOrStderr()
+			runErr := localCmd.Run()
+			exitCode := 0
+			if runErr != nil {
+				exitCode = 1
+				var exitErr *exec.ExitError
+				if errors.As(runErr, &exitErr) {
+					exitCode = exitErr.ExitCode()
+				}
+			}
+			outcomeType := scoring.OutcomeChecksPassed
+			if runErr != nil {
+				outcomeType = scoring.OutcomeChecksFailed
+			}
+			details, _ := json.Marshal(map[string]any{
+				"name":        name,
+				"command":     args,
+				"exit_code":   exitCode,
+				"duration_ms": time.Since(started).Milliseconds(),
+			})
+			if err := store.RecordOutcome(cmd.Context(), scoring.Outcome{
+				JobID:      "local-check:" + name + ":" + started.Format("20060102T150405Z"),
+				RepoID:     repoID,
+				Role:       role,
+				Type:       outcomeType,
+				Details:    string(details),
+				RecordedAt: time.Now().UTC(),
+			}); err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Recorded check %q as %s for repo %s role %s\n", name, outcomeType, repoID, role)
+			if runErr != nil {
+				return fmt.Errorf("checks run: command failed with exit code %d: %w", exitCode, runErr)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository whose check is being recorded")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&name, "name", "", "Stable local check name")
+	cmd.Flags().StringVar(&role, "role", "engineer", "Role to attribute check outcome to")
+	_ = cmd.MarkFlagRequired("repo")
+	_ = cmd.MarkFlagRequired("name")
 	return cmd
 }
 
@@ -1584,7 +1765,7 @@ func sourceFoundationGuardrails() []guardrails.Rule {
 			Name:      "Foundation Release Discipline",
 			Severity:  guardrails.SeverityAdvisory,
 			Scope:     foundationMaintainerRoleName,
-			Message:   "After semantic source changes, keep docs synchronized, generate release notes, push trunk, publish or update GitHub release notes, and record any asset blocker.",
+			Message:   "After semantic source changes, keep docs synchronized, generate release notes, push trunk, publish local release assets, optionally mirror them to GitHub, and record any asset blocker.",
 			CreatedAt: now,
 		},
 	}

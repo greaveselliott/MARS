@@ -90,21 +90,18 @@ Decision:
 - Keep the recursive improvement loop as operating doctrine and generated
   target guidance.
 - Use `.harness/skills/release-publication/SKILL.md` as the foundation Release
-  Manager skill for GitHub release publication and missing-asset blocker
-  recording.
+  Manager skill for local release publication, optional GitHub mirroring, and
+  missing-asset blocker recording.
 - Do not create a universal skill yet; target repos already receive generic
-  release discipline, and target release workflows may not publish binaries.
+  release discipline, and target release publication may not produce binaries.
 - Do not mirror the foundation skill into generated targets yet. The source
   harness publishes cross-platform binary assets, while generated targets may
   publish npm packages, container images, app deployments, notes-only releases,
   or no GitHub Release at all. Mirroring waits until a generic target release
   publication contract exists.
-- Do not create a new release-publish tool yet; existing release, GitHub, and
-  git surfaces cover the deterministic actions, while the brittle part is
-  procedural judgment around workflow failure, notes-only fallback, and blocker
-  truth.
-- Reconsider a deterministic tool only after the foundation skill proves a
-  stable argument shape and repeated manual failure mode.
+- Keep deterministic publication in the source release tool surface through
+  `mars-harness release publish-assets`; the skill owns sequencing,
+  optional-mirror judgment, and blocker truth.
 
 ### CLI Workflow Skills Stay Synchronized
 

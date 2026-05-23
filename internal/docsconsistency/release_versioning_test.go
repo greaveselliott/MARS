@@ -68,26 +68,22 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 	}
 }
 
-func TestReleaseWorkflowBackfillsNotesOnlyReleases(t *testing.T) {
+func TestReleasePublicationIsLocalFirst(t *testing.T) {
 	root := repoRoot(t)
-	data, err := os.ReadFile(filepath.Join(root, ".github", "workflows", "release.yml"))
+	data, err := os.ReadFile(filepath.Join(root, "docs", "design-docs", "release-versioning.md"))
 	if err != nil {
-		t.Fatalf("read release workflow: %v", err)
+		t.Fatalf("read release versioning doc: %v", err)
 	}
 	text := string(data)
 	for _, needle := range []string{
-		"tags: ['v*']",
-		"release:",
-		"types: [published]",
-		"workflow_dispatch:",
-		"version:",
-		"RELEASE_TAG:",
-		"ref: ${{ env.RELEASE_TAG }}",
-		"tag_name: ${{ env.RELEASE_TAG }}",
-		"overwrite_files: true",
+		"mars-harness release publish-assets",
+		"--upload none|github|auto",
+		"local release assets",
+		"Optional GitHub mirror",
+		"mars-harness release verify-assets --dist",
 	} {
 		if !strings.Contains(text, needle) {
-			t.Fatalf("release workflow must support asset backfills; missing %q", needle)
+			t.Fatalf("release docs must describe local-first asset publication; missing %q", needle)
 		}
 	}
 }

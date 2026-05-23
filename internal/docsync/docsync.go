@@ -133,7 +133,7 @@ func SourceFiles(root string) ([]string, error) {
 			files = append(files, filepath.ToSlash(entry.Name()))
 		}
 	}
-	sourceRoots := []string{"cmd", "internal", "pkg", ".github/workflows", "examples", "src", "app", "pages", "public", "web", "static"}
+	sourceRoots := []string{"cmd", "internal", "pkg", "examples", "src", "app", "pages", "public", "web", "static"}
 	for _, sourceRoot := range sourceRoots {
 		absSourceRoot := filepath.Join(root, filepath.FromSlash(sourceRoot))
 		if _, err := os.Stat(absSourceRoot); os.IsNotExist(err) {
@@ -314,7 +314,7 @@ func isDeployedSourcePath(rel string) bool {
 
 func Rules() []Rule {
 	return []Rule{
-		{Prefix: ".github/workflows/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/features/F-009-release-update-lifecycle.md"}},
+		{Prefix: "Makefile", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/design-docs/dogfood-matrix.md", "docs/features/F-009-release-update-lifecycle.md"}},
 		{Prefix: "cmd/mars-harness/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/cli-tool-skill-sync.md", "docs/design-docs/delivery-operating-model.md", "docs/design-docs/documentation-sync-architecture.md", "docs/design-docs/release-versioning.md", "docs/design-docs/self-reflective-telemetry.md", "docs/product-specs/product-surface.md", "docs/features/F-001-delivery-operating-model.md", "docs/features/F-002-zero-config-shell-path.md", "docs/features/F-004-target-harness-lifecycle.md", "docs/features/F-009-release-update-lifecycle.md", "docs/features/F-012-self-improvement-loop.md"}},
 		{Prefix: "examples/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/role-customization.md", "docs/features/F-004-target-harness-lifecycle.md"}},
 		{Prefix: "internal/agent/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/agent-runtime.md", "docs/features/F-005-agent-execution-runtime.md"}},

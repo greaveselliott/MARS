@@ -593,7 +593,7 @@ func DefaultPersonas() []Persona {
 			FeedbackINeed: []string{
 				"Provide the version target and approved evidence.",
 				"Separate release blockers from downstream quality failures.",
-				"State whether the desired output is notes, tag, GitHub release, binary verification, or blocker record.",
+				"State whether the desired output is notes, tag, local assets, optional GitHub mirror, binary verification, or blocker record.",
 				"Use `mars_harness_cli` for Mars Harness release commands; generic `shell_exec mars-harness ...` can resolve a stale installed binary instead of the active harness executable.",
 			},
 			FeedbackIGive: []string{
@@ -604,7 +604,7 @@ func DefaultPersonas() []Persona {
 			StopConditions: []string{
 				"Release is complete and verified.",
 				"Required approval evidence is missing.",
-				"Publication is blocked by credentials, remote, CI, or asset verification.",
+				"Publication is blocked by credentials, remote, local build, optional mirror, or asset verification.",
 			},
 			OrchestratorHandoff: []string{
 				"Use status completed when release artifacts are verified.",

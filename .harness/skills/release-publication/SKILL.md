@@ -20,20 +20,24 @@ release docs unless they explicitly define their own binary publication flow.
 7. Create or update tag `vX.Y.Z` at the release-note commit and push it. Do
    not tag while `VERSION` or `CHANGELOG.md` are dirty, and do not target a
    pre-release-note commit.
-8. Verify `gh release view vX.Y.Z --repo greaveselliott/mars-harness`.
-9. If the release object is missing but the tag exists, create a notes-only
-   GitHub Release from the generated `CHANGELOG.md` entry.
-10. As a harness agent, use `mars_harness_cli` with args
-    `["release","verify-assets","--version","vX.Y.Z"]`; from a trusted
-    terminal, run the equivalent `mars-harness release verify-assets --version
-    vX.Y.Z`.
-11. If assets are missing, record the blocker in the active plan before moving
-    to unrelated work.
+8. As a harness agent, use `mars_harness_cli` with args
+   `["release","publish-assets","--repo",".","--version","vX.Y.Z","--upload","auto"]`;
+   from a trusted terminal, run the equivalent `mars-harness release
+   publish-assets --repo . --version vX.Y.Z --upload auto`.
+9. Verify local assets with `mars_harness_cli` args
+   `["release","verify-assets","--dist","dist/releases","--version","vX.Y.Z"]`
+   or `mars-harness release verify-assets --dist dist/releases --version
+   vX.Y.Z`.
+10. If GitHub mirroring was enabled, verify `gh release view vX.Y.Z --repo
+    greaveselliott/mars-harness` and then run `mars-harness release
+    verify-assets --version vX.Y.Z`.
+11. If local assets or the optional mirror are missing, record the blocker in
+    the active plan before moving to unrelated work.
 
 ## Token Safety
 
-- Use `mars-harness auth github check` or `gh auth status` when release or
-  asset verification needs GitHub credentials.
+- Use `mars-harness auth github check` or `gh auth status` when optional
+  GitHub mirroring needs credentials.
 - Never paste token values into chat, docs, commits, traces, tickets, logs, or
   tool output.
 - Prefer GitHub CLI auth, `GH_TOKEN`, or `GITHUB_TOKEN`; local stored tokens
@@ -41,15 +45,18 @@ release docs unless they explicitly define their own binary publication flow.
 
 ## Stop Conditions
 
-- Stop and record a blocker if `git push`, tag push, GitHub release creation,
-  or asset verification fails.
-- A notes-only GitHub Release satisfies the release-object gate only. It is not
-  a complete binary release until `verify-assets` passes.
+- Stop and record a blocker if `git push`, tag push, local asset publication,
+  local asset verification, GitHub release creation, or GitHub mirror
+  verification fails.
+- A notes-only GitHub Release satisfies the optional mirror object gate only.
+  The local dist remains the source of truth; the mirror stays incomplete until
+  GitHub `verify-assets` passes.
 - Do not start another semantic change while the release-note commit, pushed
   tag, release object, or missing-asset blocker is unrecorded.
 
 ## Evidence
 
-Record the release version, pushed commit, pushed tag, `gh release view`
-result, `verify-assets` result, and any workflow run or GitHub API blocker in
-the active plan or owning ticket.
+Record the release version, pushed commit, pushed tag, local dist path, local
+`verify-assets` result, optional `gh release view` result, optional GitHub
+`verify-assets` result, and any local build or GitHub API blocker in the active
+plan or owning ticket.

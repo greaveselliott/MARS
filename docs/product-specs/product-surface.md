@@ -59,7 +59,8 @@ gateway, auth boundary, and runtime state owner.
 | `mars-harness models evaluate [--endpoint <url> --model <name>]` | Implemented | Prints the model-refresh plan or runs benchmark probes with tool-call JSON, strict triage JSON, and repo-backed ticket-completion JSON. Live reports include provider, model, endpoint, hardware profile, timing, token counts, failures, promotion status, and are persisted under `docs/generated/model-evaluations/` by default. `--provider ollama --model <name>` targets local Ollama's OpenAI-compatible endpoint. |
 | `mars-harness models override --repo <path> (--tier <tier>\|--role <role>) --provider <provider> --model <name>` | Implemented | Writes `.harness/model-overrides.yaml` so a repo can explicitly route one tier or role to an Ollama or OpenAI-compatible model without changing default registry entries. |
 | `mars-harness release notes --repo <path> --bump auto` | Implemented | Generates semantic-versioned patch notes from commits, updates `VERSION`, prepends `CHANGELOG.md`, and explains impact, why, and what changed before semantic commit buckets. |
-| `mars-harness release verify-assets [--version <tag>]` | Implemented | Fails a release check unless all four platform binaries and `checksums.txt` are attached to the GitHub Release. |
+| `mars-harness release publish-assets --repo <path> --version <tag> --upload none\|github\|auto` | Implemented | Builds local source-release binaries for linux/darwin x amd64/arm64, writes `checksums.txt`, verifies the dist, and optionally mirrors the same assets to GitHub Releases. |
+| `mars-harness release verify-assets [--dist <path>] [--version <tag>]` | Implemented | Fails a release check unless all four platform binaries and `checksums.txt` exist in the local dist or, without `--dist`, on the GitHub Release mirror. |
 
 ## Generated Target Harness
 
@@ -135,7 +136,7 @@ Mars Harness and initialized target repos use the same release contract:
 - release-note commits themselves are ignored in the next generated entry
 - generated entries include a marker so tags are useful but not required for the next diff
 - in the source harness repo and initialized target repos, every non-release semantic commit is immediately followed by the generated version/patch-note commit before the task is done
-- when authenticated GitHub release capability is configured, the generated version is tagged as `vX.Y.Z`; the source harness Release workflow publishes or backfills the matching changelog entry plus checksum-verified binary assets
+- for source releases, the generated version is tagged as `vX.Y.Z`; `mars-harness release publish-assets` builds checksum-verified local assets and may optionally mirror them to GitHub Releases when authenticated GitHub release capability is configured
 
 ## Generated Source References
 

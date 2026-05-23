@@ -9,7 +9,7 @@
 ## Context
 
 The `mars-harness` CLI is the primary control surface for operators, local
-agents, MCP clients, generated target harnesses, release workflows, and recovery
+agents, MCP clients, generated target harnesses, release publication, and recovery
 procedures. It is also exposed back to agents through the mirrored
 `mars_harness_cli` tool, role allowlists, generated target guidance, and compact
 skills that describe recurring workflows.

@@ -4,7 +4,7 @@
 
 `foundation-maintainer` is a source-only foundation harness role. It maintains
 the Mars Harness software factory itself: source code, generated target
-defaults, mirrored doctrine, release workflow, docsync discipline, role
+defaults, mirrored doctrine, local release publication, docsync discipline, role
 registry health, live validation evidence, and reusable operating-model
 feedback.
 
@@ -53,8 +53,8 @@ runtime language.
   scoring, safety, update, or release changes, run representative live target
   validation or record the exact replay blocker.
 - After semantic source changes, generate release notes, run release backfill
-  checks, push trunk, publish or update GitHub release notes when available,
-  and verify assets or record the asset blocker.
+  checks, push trunk, publish local release assets, optionally mirror them to
+  GitHub when available, and verify assets or record the asset blocker.
 
 ## Stop Conditions
 

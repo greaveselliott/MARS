@@ -62,7 +62,7 @@ mars-harness update harness --repo /path/to/target-repo
 
 `update tool` uses checksum-verified private GitHub Release assets by default.
 Run `mars-harness auth github setup` once during getting started so update,
-version-drift, and release-asset workflows can reuse the same auth model. The
+version-drift, and optional release-asset mirrors can reuse the same auth model. The
 resolver tries `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth from `gh auth token`,
 then an optional local token stored under `~/.mars-harness/`. Source development
 channels remain available with `mars-harness update tool --source --version
@@ -85,10 +85,12 @@ mars-harness release notes --repo . --bump auto
 ```
 
 For changes to this source repo and repos initialized by Mars Harness, that release command is part of the commit flow: every non-release semantic commit is followed by a generated `release: notes X.Y.Z` commit before `main` is pushed.
-When GitHub release credentials are configured, push tag `vX.Y.Z` at the
-release-note commit so the Release workflow publishes the changelog entry and
-checksum-verified binaries. Verify it with `mars-harness release verify-assets
---version vX.Y.Z`.
+For source releases, push tag `vX.Y.Z` at the release-note commit, publish
+local assets with `mars-harness release publish-assets --repo . --version
+vX.Y.Z --upload auto`, then verify the local dist with `mars-harness release
+verify-assets --dist dist/releases --version vX.Y.Z`. When GitHub release
+credentials are configured, the same command may mirror those assets to GitHub
+Releases as an optional distribution surface.
 
 ## Lineage
 

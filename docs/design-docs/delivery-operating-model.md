@@ -5460,9 +5460,9 @@ capture writers.
   the output snapshot path.
 - The live factory loop keeps the managed-background lifecycle that proved useful
   in API canaries without weakening process cleanup or probe guidance.
-- Release workflow status must be checked again after infrastructure blockers
-  clear because budget failures can hide real product defects behind missing
-  logs.
+- Release publication and local check evidence must be re-run after
+  infrastructure blockers clear because external budget failures can hide real
+  product defects behind missing logs.
 
 ## AD-220: Ticket Evidence Guard Preserves Path Case
 

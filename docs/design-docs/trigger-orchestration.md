@@ -120,7 +120,8 @@ flowchart TD
     Orchestrator -->|"security_review"| Security
     Orchestrator -->|"dependency_maintenance"| DepMgr
     Orchestrator -->|"release_review"| Release
-    CI["CI Workflow"] -->|failure| Fixer["Pipeline Fixer\n trigger: workflow_run failure"]
+    Checks["Mars local checks"] -->|"checks_failed outcome"| Fixer["Pipeline Fixer\n survey: failed checks"]
+    OptionalCI["Optional GitHub workflow"] -->|failure| Fixer
     Fixer -->|"structured disposition"| Orchestrator
     Dogfood["Dogfood Tester\n validation support"] -->|"structured disposition"| Orchestrator
 ```
@@ -142,7 +143,7 @@ Derived from the Mars role set and normalized for strict trunk delivery.
 | 7 | Dependency Mgr | `dependency-manager` | maintainer | `dependency-maintenance` | — | `0 23 * * 0` (Sun 11pm) | — | fast |
 | 8 | Release Mgr | `release-manager` | maintainer | `release-management` | — | `0 8 * * 1` (Mon 8am) | — | reasoning |
 | 9 | Dogfood Tester | `dogfood` | end-to-end-tester | `dogfood-validation` | — | `0 10 * * 1-5` (daily 10am) | — | coding |
-| 10 | Pipeline Fixer | `pipeline-fixer` | engineer | `pipeline-repair` | `workflow_run.conclusion == "failure"` | — | `[qa]` | coding |
+| 10 | Pipeline Fixer | `pipeline-fixer` | engineer | `pipeline-repair` | Native survey for `checks_failed`; optional `workflow_run.conclusion == "failure"` integration | — | `[qa]` | coding |
 | 11 | Janitor | `janitor` | orchestrator | `ticket-hygiene` | — | `0 7 * * *` (daily 7am) | — | fast |
 
 ## Reference Manifest
@@ -233,6 +234,7 @@ roles:
     model: coding
     triggers:
       - workflow_run.conclusion == "failure"
+    # Mars-recorded failed checks route through the native Orchestrator survey.
     then: [qa]
     tools: [file_read, file_write, shell_exec, grep]
 

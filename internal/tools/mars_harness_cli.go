@@ -214,7 +214,20 @@ func normalizeMarsHarnessArgs(root Root, args marsHarnessCLIArgs) ([]string, err
 	if err != nil {
 		return nil, fmt.Errorf("mars_harness_cli: resolve repo: %w", err)
 	}
-	return append(cliArgs, "--repo", resolved), nil
+	return appendRepoFlag(cliArgs, resolved), nil
+}
+
+func appendRepoFlag(args []string, repo string) []string {
+	for i, arg := range args {
+		if arg == "--" {
+			out := make([]string, 0, len(args)+2)
+			out = append(out, args[:i]...)
+			out = append(out, "--repo", repo)
+			out = append(out, args[i:]...)
+			return out
+		}
+	}
+	return append(args, "--repo", repo)
 }
 
 func marsHarnessCommandArgv(root Root, args []string) ([]string, error) {
@@ -311,7 +324,9 @@ func marsHarnessCommandSupportsRepo(args []string) bool {
 	case "update":
 		return sub == "check" || sub == "harness"
 	case "release":
-		return sub == "notes" || sub == "backfill-notes"
+		return sub == "notes" || sub == "backfill-notes" || sub == "publish-assets"
+	case "checks":
+		return sub == "run"
 	case "docsync":
 		return sub == "audit"
 	case "models":
@@ -482,10 +497,23 @@ Global command surface:
     Flags: --repo <path>, --min-version <X.Y.Z>, --max-version <X.Y.Z>, --dry-run, --check
     Example: ["release", "backfill-notes", "--repo", ".", "--max-version", "0.26.2", "--dry-run"]
 
+  release publish-assets
+    Build linux/darwin amd64/arm64 release binaries locally, write checksums.txt,
+    verify the local dist, and optionally mirror assets to GitHub Releases.
+    Flags: --repo <path>, --version <vX.Y.Z>, --dist <path>, --upload <none|github|auto>, --github-repo <owner/name>
+    Example: ["release", "publish-assets", "--repo", ".", "--version", "v1.2.3", "--upload", "none"]
+
   release verify-assets
-    Verify release metadata/assets for the updater.
-    Flags: --repo <owner/name>, --version <latest|tag>, --release-url <url>, --json
+    Verify local dist assets or GitHub release metadata/assets for the updater.
+    Flags: --repo <owner/name>, --version <latest|tag>, --release-url <url>, --dist <path>, --json
     Example: ["release", "verify-assets", "--version", "latest", "--json"]
+    Local example: ["release", "verify-assets", "--dist", "dist/releases", "--version", "v1.2.3"]
+
+  checks run
+    Run a local check command and record checks_passed/checks_failed in the
+    repo database so Mars can route failed checks to pipeline-fixer.
+    Flags: --repo <path>, --db <path>, --name <check-name>, --role <role>
+    Example: ["checks", "run", "--repo", ".", "--name", "unit", "--", "go", "test", "./..."]
 
   docsync audit
     Audit source-file MarsDocSync metadata and associated documentation pointers.
