@@ -1785,7 +1785,7 @@ make one or two bounded changes at the owning layer; rerun the same path; merge
 or fast-forward the confirmed fix to trunk; push it to the remote; and claim
 improvement only from rerun evidence. If the rerun or remote push cannot
 happen, record the blocker and exact replay, merge, and push commands in the
-owning ticket, plan, report, or decision. The source-harness ` + "`demo-123`" + ` replay is
+owning ticket, plan, report, or decision. Source-harness replay identifiers are
 source-only shorthand; target repos choose their own representative product
 path.
 
@@ -2786,7 +2786,7 @@ of its own agents during a target run.
 This deployed harness mirrors the reusable core: evidence-driven planning, BDD
 contracts, ticket truth, feedback routing, tool/skill selection, and the generic
 run-review-act-rerun improvement loop. Source-only mechanics, including the
-named source ` + "`demo-123`" + ` replay and ` + "`mars-harness`" + ` binary release asset
+named source replay identifiers and ` + "`mars-harness`" + ` binary release asset
 publication, stay foundation-only unless this target deliberately adopts an
 equivalent local policy.
 

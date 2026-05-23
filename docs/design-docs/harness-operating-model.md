@@ -65,14 +65,25 @@ integrations; normal roles make semantic commits to `main` and push directly.
 | `janitor` | Orchestrator | `ticket-hygiene` | Drains stale state, misleading in-progress work, and backlog entropy. |
 
 For Mars Harness source stabilization, the End-to-End Tester domain also owns
-the live demo improvement loop against representative target repos. `demo-123`
-is the canonical small first-run lifecycle replay: run the clean target, review
-the findings, help select bounded source actions, and rerun before claiming
-improvement. The replay should show whether a source change actually improves
-the operator path from brief to product plan, feature contract, product ticket,
-implementation, review, or dogfood evidence without intervention-debt
-starvation. When the live check cannot run, the owning role records the exact
-blocker and replay steps instead of treating deterministic tests as sufficient.
+the live demo improvement loop against representative target repos. The
+validation matrix defines the replay set; no single demo subject becomes
+foundation doctrine. A replay should show whether a source change actually
+improves the operator path from brief to product plan, feature contract,
+product ticket, implementation, review, or dogfood evidence without
+intervention-debt starvation. When the live check cannot run, the owning role
+records the exact blocker and replay steps instead of treating deterministic
+tests as sufficient.
+
+## Source-Only Foundation Role Mapping
+
+The source repo may define foundation-only roles that help external AI clients
+consume the foundation operating model. These roles are not generated into
+target harnesses and do not make `mars-harness` a normal target of its own
+agent runs.
+
+| Source role | Domain | Mode | Notes |
+| --- | --- | --- | --- |
+| `foundation-maintainer` | Maintainer | `foundation-build` | Manual/operator-invoked source role for maintaining the software factory, classifying foundation/deployed ownership, keeping vendor adapters thin, and preserving release/docsync/live-validation discipline. |
 
 ## Mode Boundaries
 
@@ -264,6 +275,28 @@ Follow-up work remains:
 
 - `MH-047` should add native payload-mode routing to jobs and traces where the
   runtime needs more than static manifest metadata.
+
+## AD-274: Foundation Role And Vendor-Neutral Client Adapters
+
+**Status:** Accepted
+**Date:** 2026-05-23
+**Owner:** Mars Harness maintainers
+
+The foundation operating model must be consumable by all major AI coding
+clients, not only one vendor runtime. Mars Harness therefore defines
+`foundation-maintainer` as a source-only role profile for maintaining the
+software factory and keeps vendor-specific instruction files as thin adapters.
+
+`AGENTS.md` and `docs/roles/personas/foundation-maintainer.md` are the
+canonical foundation instruction surfaces. `CLAUDE.md`, `GEMINI.md`,
+`.github/copilot-instructions.md`, and `.cursor/rules/*.mdc` point at those
+surfaces instead of carrying independent doctrine. Clients that natively read
+`AGENTS.md` use it directly.
+
+The runtime supports `mars-harness run foundation-maintainer --repo . --dry-run
+--no-init` against the source repository without scaffolding a source
+`.harness/manifest.yaml`. The role is rejected for non-source repositories and
+is not generated into deployed target manifests.
 
 ## Failure Modes And Mitigations
 

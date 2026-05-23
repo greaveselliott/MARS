@@ -32,9 +32,10 @@ would otherwise live only in chat.
 - **Role mode** — a lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as `ticket-delivery`, `quality-review`, or `pipeline-repair`.
 - **Role registry** — a checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior.
 - **Foundation operating model** — the operating model for `mars-harness` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
+- **Foundation maintainer role** — the source-only `foundation-maintainer` role for agents maintaining this software factory; it is manual/operator-invoked, consumes the foundation operating model, classifies foundation/deployed ownership before changes, and is not mirrored into deployed harnesses.
 - **Deployed operating model** — the operating model inside a target application harness, governing how agents build that target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
-- **Live demo improvement loop** — the foundation stabilization loop for lifecycle work: run a clean representative target such as `demo-123`, review findings, implement one or two bounded source actions, rerun, and claim improvement only after rerun evidence is confirmed, merged or fast-forwarded to trunk, and pushed to the remote.
+- **Live demo improvement loop** — the foundation stabilization loop for lifecycle work: run a clean representative target from the validation matrix, review findings, implement one or two bounded source actions, rerun, and claim improvement only after rerun evidence is confirmed, merged or fast-forwarded to trunk, and pushed to the remote.
 - **Failure ownership classification** — the universal operating-model step that classifies every observed failure as foundation-owned, deployed-owned, or mixed/unclear before creating tickets or fixes; foundation-owned fixes belong in `mars-harness` source/runtime/generated doctrine and should benefit all applicable users, while deployed-owned fixes belong in the target repo and should improve that deployed harness or product.
 - **Foundation-owned failure** — a failure caused by Mars Harness runtime, orchestration, role guidance, tool policy, generated defaults, model/provider behavior, telemetry, release/update, or mirrored doctrine; record it as foundation evidence or a source ticket instead of converting it into target product backlog.
 - **Deployed-owned failure** — a failure caused by target product behavior, target architecture, local build/test setup, target docs, target skills, or project-specific policy; fix it inside the deployed harness or target project and mirror only reusable doctrine back to the foundation.
@@ -49,6 +50,7 @@ would otherwise live only in chat.
 - **Universal skills** — skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable Mars Harness operating doctrine.
 - **Foundation skills** — skills used by agents operating on `mars-harness` itself to evolve, validate, release, or maintain the software factory.
 - **Deployed skills** — skills stored in a target project's `.harness/skills/` directory and used by that deployed harness to capture project-specific reusable procedures.
+- **Vendor-neutral foundation adapter** — a thin AI-client instruction file that points an external agent at `AGENTS.md` and `docs/roles/personas/foundation-maintainer.md` without becoming an independent source of doctrine.
 - **CLI tool/skill sync** — foundational operating rule that any `mars-harness` CLI change must update the mirrored `mars_harness_cli` tool reference, repo-shortcut map, generated target guidance, and any skills that name the affected CLI workflow.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level `AGENTS.md`.
@@ -63,6 +65,28 @@ Documentation sync architecture: [docs/design-docs/documentation-sync-architectu
 CLI tool/skill sync: [docs/design-docs/cli-tool-skill-sync.md](docs/design-docs/cli-tool-skill-sync.md)
 
 Agents always operate on a target project. The harness is never the target of its own agents (no self-modification during runs).
+
+## Foundation Mode For AI Clients
+
+The foundation operating model must work with any capable AI coding client.
+`AGENTS.md` and `docs/roles/personas/foundation-maintainer.md` are the source
+of truth; vendor files are compatibility adapters only.
+
+| Client | Instruction surface | Foundation mode entry |
+| --- | --- | --- |
+| Claude Code (recommended) | `CLAUDE.md` imports this file and the foundation role packet. | Read `CLAUDE.md`, then work as `foundation-maintainer`. |
+| Cursor | Root `AGENTS.md` plus thin `.cursor/rules/*.mdc` adapters. | Read this file and the foundation role packet. |
+| Gemini CLI | `GEMINI.md` points to this file and the foundation role packet. | Read `GEMINI.md`, then the referenced canonical docs. |
+| Windsurf | Root `AGENTS.md`. | Use this file as the always-on workspace rule. |
+| OpenCode | Root `AGENTS.md`. | Use this file as the project rules file. |
+| GitHub Copilot | `.github/copilot-instructions.md` plus agent instructions where supported. | Read the Copilot adapter, then the canonical docs it names. |
+| Kiro IDE & CLI | Root `AGENTS.md`. | Use this file as steering for the workspace. |
+| Codex / Other Agents | Root `AGENTS.md`. | Read this file first, then the foundation role packet for source work. |
+
+When changing the foundation harness, every client must classify findings as
+foundation-owned, deployed-owned, mirrored doctrine, or evidence-only before
+creating tickets or patches. Client-specific files must not carry independent
+operating doctrine.
 
 ## The Nine Tenets
 
@@ -240,6 +264,7 @@ Manually execute a single agent role against a repository.
 mars-harness run <role> --repo /path/to/repo
 mars-harness run engineer --repo . --dry-run   # preview system prompt
 mars-harness run engineer --repo /path/to/legacy-repo --dry-run --no-init   # observer-safe missing-harness check
+mars-harness run foundation-maintainer --repo . --dry-run --no-init   # preview source-only foundation context
 ```
 
 Flags: `--model-endpoint`, `--trace`, `--dry-run`, `--no-init`, `--budget`, `--max-turns`
@@ -363,7 +388,7 @@ golangci-lint run
 7. **No stale documentation.** All docs are live system artifacts. When writing or materially changing code, add or update the top-of-file `MarsDocSync` comment block with a `docs:` list of associated docs, run or satisfy the docsync audit where applicable, then update those docs in the same commit or record why no doc change was needed.
 8. **BDD defines done.** Goals align the active plan, BDD feature contracts define feature completeness, and walking skeleton slices implement the next failing scenario through real E2E/integration evidence.
 9. **Business logic is first-class BDD.** Every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, release classification, or user-visible outcome must be documented step by step in `docs/features/` before or alongside implementation.
-10. **Source improvements use the live demo loop.** When changing Mars Harness lifecycle, orchestration, generated target scaffolding, intervention-debt routing, model/provider behavior, dashboard/control-plane behavior, scoring, safety/guardrails, or update/release behavior, run a representative clean target such as `demo-123`, review the findings, implement one or two bounded actions, rerun, and claim improvement only after the rerun evidence confirms the fix and the work is merged or fast-forwarded to trunk and pushed to the remote. If the loop cannot run, record the exact blocker and replay steps.
+10. **Source improvements use the live demo loop.** When changing Mars Harness lifecycle, orchestration, generated target scaffolding, intervention-debt routing, model/provider behavior, dashboard/control-plane behavior, scoring, safety/guardrails, or update/release behavior, run a representative clean target from the validation matrix, review the findings, implement one or two bounded actions, rerun, and claim improvement only after the rerun evidence confirms the fix and the work is merged or fast-forwarded to trunk and pushed to the remote. If the loop cannot run, record the exact blocker and replay steps.
 11. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
 12. **Feed conversations back.** Significant conversations must update the owning repo artifact in the same direct commit to `main`: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
 13. **Avoid docs churn for trivial replies.** Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.

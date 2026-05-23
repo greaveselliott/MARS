@@ -109,11 +109,11 @@ Then it fetches `origin main`, works only from local `main` at or fast-forwarded
 
 Given a Mars Harness source change claims to improve first-run lifecycle, orchestration, intervention-debt routing, generated target scaffolding, model or provider behavior, dashboard/control-plane behavior, scoring, update/release, or safety/guardrail behavior
 When the agent prepares completion evidence
-Then the evidence includes a representative live target run such as `demo-123`, with exact command, target repo, branch/ref or binary, runtime artifact paths, observed lifecycle events, product progress, and remaining blockers; if the run cannot be performed, the blocker records the intended replay steps and why the live check is unavailable
+Then the evidence includes a representative live target run from the validation matrix, with exact command, target repo, branch/ref or binary, runtime artifact paths, observed lifecycle events, product progress, and remaining blockers; if the run cannot be performed, the blocker records the intended replay steps and why the live check is unavailable
 
 ### F-001-S014: Continuous Live Demo Improvement Loop
 
-Given a live target run such as `demo-123` exposes a lifecycle, orchestration, intervention-debt, runtime, generated-target, model/provider, scoring, safety, dashboard, or update/release issue
+Given a representative live target run exposes a lifecycle, orchestration, intervention-debt, runtime, generated-target, model/provider, scoring, safety, dashboard, or update/release issue
 When the agent stabilizes Mars Harness source behavior
 Then the agent records the run evidence, reviews the findings, selects one or two bounded source actions tied to that evidence, implements and tests those actions, reruns a clean representative target, merges or fast-forwards the confirmed fix to trunk, pushes it to the remote, and claims improvement only when the rerun shows better product progress or a clearly smaller remaining blocker
 
@@ -147,6 +147,6 @@ None.
 - F-001-S010: `go test ./internal/docsconsistency -run TestAD074OperatingModelArtifactsExist` verifies the architecture and universal operating model are documented.
 - F-001-S011: `go test ./cmd/mars-harness -run TestMarsHarnessCLI` verifies the live Cobra command tree, `mars_harness_cli` reference, and repo shortcut map stay synchronized.
 - F-001-S012: `go test ./internal/docsconsistency -run TestRemoteTrunkOperatingModelIsDocumented` verifies source and generated target doctrine include the remote-trunk workflow.
-- F-001-S013: source-harness lifecycle changes include a `demo-123` or equivalent live-experience transcript, or an explicit blocker with replay steps.
+- F-001-S013: source-harness lifecycle changes include a representative live-experience transcript, or an explicit blocker with replay steps.
 - F-001-S014: `go test ./internal/docsconsistency -run TestLiveDemoImprovementLoopIsDocumented` verifies the run, review, act, rerun, merge, and push loop is documented in source and generated target doctrine.
 - F-001-S015: [foundation-deployed-harness-architecture.md](../design-docs/foundation-deployed-harness-architecture.md) drift review and `go test ./internal/docsconsistency ./internal/docsync`

@@ -107,7 +107,7 @@ func TestLiveDemoImprovementLoopIsDocumented(t *testing.T) {
 	required := map[string][]string{
 		"AGENTS.md": {
 			"Source improvements use the live demo loop",
-			"run a representative clean target such as `demo-123`",
+			"run a representative clean target from the validation matrix",
 			"claim improvement only after the rerun evidence confirms the fix",
 			"merged or fast-forwarded to trunk and pushed to the remote",
 		},
@@ -123,12 +123,12 @@ func TestLiveDemoImprovementLoopIsDocumented(t *testing.T) {
 		},
 		"docs/design-docs/harness-operating-model.md": {
 			"live demo improvement loop",
-			"`demo-123`",
-			"rerun before claiming",
+			"validation matrix defines the replay set",
+			"no single demo subject",
 		},
 		"docs/design-docs/harness-glossary.md": {
 			"Live demo improvement loop",
-			"run a clean representative target such as `demo-123`",
+			"run a clean representative target from the validation matrix",
 			"merged or fast-forwarded to trunk",
 			"pushed to the remote",
 		},

@@ -22,7 +22,6 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 	required := []string{
 		"AGENTS.md",
 		"CONTRIBUTING.md",
-		".cursor/rules/strict-trunk-commits.mdc",
 		"docs/design-docs/release-versioning.md",
 	}
 
@@ -50,6 +49,21 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 					t.Fatalf("%s must document detailed release note narrative; missing %q", rel, needle)
 				}
 			}
+		}
+	}
+
+	cursorRule, err := os.ReadFile(filepath.Join(root, ".cursor", "rules", "strict-trunk-commits.mdc"))
+	if err != nil {
+		t.Fatalf("read Cursor strict trunk adapter: %v", err)
+	}
+	cursorText := string(cursorRule)
+	for _, needle := range []string{
+		"AGENTS.md",
+		"docs/roles/personas/foundation-maintainer.md",
+		"release",
+	} {
+		if !strings.Contains(cursorText, needle) {
+			t.Fatalf(".cursor/rules/strict-trunk-commits.mdc must stay a thin release adapter; missing %q", needle)
 		}
 	}
 }

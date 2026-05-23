@@ -6,6 +6,8 @@ docs:
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/dashboard.md
+- docs/design-docs/harness-glossary.md
+- docs/design-docs/harness-operating-model.md
 - docs/design-docs/release-versioning.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/product-specs/product-surface.md
@@ -16,6 +18,7 @@ docs:
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-012-self-improvement-loop.md
+- docs/roles/ROLES.md
 */
 package main
 
@@ -1339,7 +1342,9 @@ func runCmd() *cobra.Command {
 If .harness/manifest.yaml is missing, the same scaffold as 'mars-harness init'
 is applied automatically (requires a git repository). Use --no-init with
 --dry-run when inspecting an uninitialized target without writing harness
-scaffolding.`,
+scaffolding. The source-only foundation-maintainer role may run from the
+mars-harness source repo with --dry-run --no-init without creating a source
+manifest.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			roleName := args[0]
@@ -1384,6 +1389,8 @@ type runOpts struct {
 	budget        int
 	maxTurns      int
 }
+
+const foundationMaintainerRoleName = "foundation-maintainer"
 
 type runtimeDisplay struct {
 	out       io.Writer
@@ -1477,6 +1484,143 @@ func (d *runtimeDisplay) Error(msg string) {
 	fmt.Fprintf(d.out, "mars-harness: error: %s\n", msg)
 }
 
+func loadRunProfile(repoRoot, roleName string, sourceFoundationRole bool) (*bundle.Manifest, bundle.RoleConfig, string, []guardrails.Rule, []bundle.KnowledgeRoute, []bundle.SkillDef, error) {
+	if sourceFoundationRole {
+		return loadSourceFoundationRunProfile(repoRoot)
+	}
+
+	manifest, err := bundle.Load(repoRoot)
+	if err != nil {
+		return nil, bundle.RoleConfig{}, "", nil, nil, nil, err
+	}
+	role, ok := manifest.Roles[roleName]
+	if !ok {
+		return nil, bundle.RoleConfig{}, "", nil, nil, nil, fmt.Errorf("role %q not found in manifest; check .harness/manifest.yaml", roleName)
+	}
+	rolePrompt, err := manifest.RolePrompt(repoRoot, roleName)
+	if err != nil {
+		return nil, bundle.RoleConfig{}, "", nil, nil, nil, err
+	}
+	guardRules, err := manifest.LoadGuardrails(repoRoot, roleName)
+	if err != nil {
+		return nil, bundle.RoleConfig{}, "", nil, nil, nil, err
+	}
+	knowledgeDefs, err := manifest.LoadKnowledgeRoutes(repoRoot, roleName)
+	if err != nil {
+		return nil, bundle.RoleConfig{}, "", nil, nil, nil, err
+	}
+	skillDefs, err := bundle.LoadSkills(repoRoot, roleName)
+	if err != nil {
+		return nil, bundle.RoleConfig{}, "", nil, nil, nil, fmt.Errorf("load skills: %w", err)
+	}
+	return manifest, role, rolePrompt, guardRules, knowledgeDefs, skillDefs, nil
+}
+
+func loadSourceFoundationRunProfile(repoRoot string) (*bundle.Manifest, bundle.RoleConfig, string, []guardrails.Rule, []bundle.KnowledgeRoute, []bundle.SkillDef, error) {
+	role := sourceFoundationRoleConfig()
+	manifest := &bundle.Manifest{
+		Name:              "mars-harness-foundation",
+		Description:       "Source-only foundation operating model for mars-harness maintainers",
+		OrchestrationMode: "dispatch",
+		Roles: map[string]bundle.RoleConfig{
+			foundationMaintainerRoleName: role,
+		},
+	}
+
+	promptPath := filepath.Join(repoRoot, "docs", "roles", "personas", "foundation-maintainer.md")
+	prompt, err := os.ReadFile(promptPath)
+	if err != nil {
+		return nil, bundle.RoleConfig{}, "", nil, nil, nil, fmt.Errorf("run: read source-only foundation role packet %s: %w", promptPath, err)
+	}
+	rolePrompt := strings.TrimSpace(string(prompt))
+	if rolePrompt == "" {
+		return nil, bundle.RoleConfig{}, "", nil, nil, nil, fmt.Errorf("run: source-only foundation role packet %s is empty", promptPath)
+	}
+
+	skillDefs, err := bundle.LoadSkills(repoRoot, foundationMaintainerRoleName)
+	if err != nil {
+		return nil, bundle.RoleConfig{}, "", nil, nil, nil, fmt.Errorf("load source foundation skills: %w", err)
+	}
+	return manifest, role, rolePrompt, sourceFoundationGuardrails(), sourceFoundationKnowledgeRoutes(), skillDefs, nil
+}
+
+func sourceFoundationRoleConfig() bundle.RoleConfig {
+	return bundle.RoleConfig{
+		Prompt:     "docs/roles/personas/foundation-maintainer.md",
+		Domain:     "maintainer",
+		Mode:       "foundation-build",
+		Model:      "reasoning",
+		TrustLevel: string(trust.LevelContributor),
+		Tools: []string{
+			"file_read", "file_write", "shell_exec", "dependency_sync", "mars_harness_cli",
+			"grep", "workspace_hygiene", "github_auth_check", "record_decision",
+			"ticket_create", "tool_create", "persona_create", "task_trace_summarize",
+			"docsync_audit", "git_status", "git_diff", "git_commit", "git_push",
+			"job_disposition_record", "release_orchestrate", "github_release_status",
+			"git_release_guard",
+		},
+		MaxTurns: 50,
+	}
+}
+
+func sourceFoundationGuardrails() []guardrails.Rule {
+	now := time.Now().UTC()
+	return []guardrails.Rule{
+		{
+			ID:        "foundation-classify-ownership",
+			Name:      "Classify Foundation And Deployed Ownership",
+			Severity:  guardrails.SeverityAdvisory,
+			Scope:     foundationMaintainerRoleName,
+			Message:   "Before proposing or applying changes, classify each finding as foundation-owned, deployed-owned, mirrored doctrine, or evidence-only.",
+			CreatedAt: now,
+		},
+		{
+			ID:        "foundation-no-demo-doctrine",
+			Name:      "Validation Evidence Is Not Product Doctrine",
+			Severity:  guardrails.SeverityAdvisory,
+			Scope:     foundationMaintainerRoleName,
+			Message:   "Use validation projects as evidence only; generalize reusable rules before changing foundation docs, generated target defaults, tools, or role guidance.",
+			CreatedAt: now,
+		},
+		{
+			ID:        "foundation-release-discipline",
+			Name:      "Foundation Release Discipline",
+			Severity:  guardrails.SeverityAdvisory,
+			Scope:     foundationMaintainerRoleName,
+			Message:   "After semantic source changes, keep docs synchronized, generate release notes, push trunk, publish or update GitHub release notes, and record any asset blocker.",
+			CreatedAt: now,
+		},
+	}
+}
+
+func sourceFoundationKnowledgeRoutes() []bundle.KnowledgeRoute {
+	return []bundle.KnowledgeRoute{
+		{When: "foundation mode, repo rules, client adapters, or source work", Paths: "AGENTS.md, docs/roles/personas/foundation-maintainer.md, docs/design-docs/harness-glossary.md"},
+		{When: "role domains, role modes, source-only roles, or role registry", Paths: "docs/design-docs/harness-operating-model.md, docs/roles/ROLES.md"},
+		{When: "foundation/deployed ownership, live feedback, validation loops, or doctrine drift", Paths: "docs/design-docs/foundation-deployed-harness-architecture.md, docs/design-docs/delivery-operating-model.md, docs/design-docs/dogfood-matrix.md"},
+		{When: "documentation sync, code documentation metadata, or generated target guidance", Paths: "docs/design-docs/documentation-sync-architecture.md, docs/design-docs/code-documentation-map.md, docs/design-docs/cli-tool-skill-sync.md"},
+		{When: "release notes, tags, GitHub releases, assets, or update flow", Paths: "docs/design-docs/release-versioning.md, .harness/skills/release-publication/SKILL.md"},
+		{When: "active work, tickets, goals, or execution plans", Paths: "docs/goals/active.md, docs/exec-plans/active/current-operating-plan.md, docs/tickets/README.md, docs/tickets/backlog/"},
+	}
+}
+
+func isMarsHarnessSourceRepo(repoRoot string) bool {
+	goMod, err := os.ReadFile(filepath.Join(repoRoot, "go.mod"))
+	if err != nil || !strings.Contains(string(goMod), "module github.com/greaveselliott/mars-harness") {
+		return false
+	}
+	for _, rel := range []string{
+		filepath.Join("cmd", "mars-harness", "main.go"),
+		filepath.Join("internal", "scanner", "init.go"),
+		"AGENTS.md",
+	} {
+		if _, err := os.Stat(filepath.Join(repoRoot, rel)); err != nil {
+			return false
+		}
+	}
+	return true
+}
+
 func executeRun(opts runOpts) error {
 	absRepo, err := filepath.Abs(opts.repoPath)
 	if err != nil {
@@ -1488,8 +1632,13 @@ func executeRun(opts runOpts) error {
 		return err
 	}
 
+	sourceFoundationRole := opts.roleName == foundationMaintainerRoleName
+	if sourceFoundationRole && !isMarsHarnessSourceRepo(absRepo) {
+		return fmt.Errorf("run: role %q is source-only for the mars-harness foundation repo; %s is not a mars-harness source checkout. Use a generated target role for deployed harness work, or rerun from the mars-harness source repository", foundationMaintainerRoleName, absRepo)
+	}
+
 	manifestPath := filepath.Join(absRepo, ".harness", "manifest.yaml")
-	if opts.noInit {
+	if opts.noInit && !sourceFoundationRole {
 		if _, err := os.Stat(manifestPath); err != nil {
 			if !os.IsNotExist(err) {
 				return fmt.Errorf("run: inspect harness manifest at %s: %w", manifestPath, err)
@@ -1524,7 +1673,7 @@ func executeRun(opts runOpts) error {
 		Role:     opts.roleName,
 	})
 
-	if !opts.noInit {
+	if !opts.noInit && !sourceFoundationRole {
 		preInitChanges, err := gitChangedPaths(absRepo)
 		if err != nil {
 			tw.WriteError(fmt.Sprintf("inspect pre-init git status: %v", err))
@@ -1549,33 +1698,15 @@ func executeRun(opts runOpts) error {
 		}
 	}
 
-	manifest, err := bundle.Load(absRepo)
+	manifest, role, rolePrompt, guardRules, knowledgeDefs, skillDefs, err := loadRunProfile(absRepo, opts.roleName, sourceFoundationRole)
 	if err != nil {
 		tw.WriteError(err.Error())
 		return err
-	}
-
-	role, ok := manifest.Roles[opts.roleName]
-	if !ok {
-		msg := fmt.Sprintf("role %q not found in manifest; check .harness/manifest.yaml", opts.roleName)
-		tw.WriteError(msg)
-		return errors.New(msg)
 	}
 
 	handoff := manifest.DisplayHandoff(opts.roleName)
 	tw.WriteHeader(opts.roleName, role.Model, role.Tools, handoff)
 
-	rolePrompt, err := manifest.RolePrompt(absRepo, opts.roleName)
-	if err != nil {
-		tw.WriteError(err.Error())
-		return err
-	}
-
-	guardRules, err := manifest.LoadGuardrails(absRepo, opts.roleName)
-	if err != nil {
-		tw.WriteError(err.Error())
-		return err
-	}
 	guardEngine, err := guardrails.New(guardRules)
 	if err != nil {
 		tw.WriteError(err.Error())
@@ -1589,19 +1720,9 @@ func executeRun(opts runOpts) error {
 		}
 		promptGuardrails = append(promptGuardrails, ctx.Guardrail{Scope: r.Scope, Title: r.Name, Body: body})
 	}
-	knowledgeDefs, err := manifest.LoadKnowledgeRoutes(absRepo, opts.roleName)
-	if err != nil {
-		tw.WriteError(err.Error())
-		return err
-	}
 	var knowledgeRoutes []ctx.KnowledgeRoute
 	for _, kr := range knowledgeDefs {
 		knowledgeRoutes = append(knowledgeRoutes, ctx.KnowledgeRoute{When: kr.When, Paths: kr.Paths})
-	}
-	skillDefs, err := bundle.LoadSkills(absRepo, opts.roleName)
-	if err != nil {
-		tw.WriteError(fmt.Sprintf("load skills: %v", err))
-		return err
 	}
 	var skills []ctx.Skill
 	for _, sd := range skillDefs {

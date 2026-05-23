@@ -879,6 +879,15 @@ When COO or CTO capability checks compare required product behavior against the 
 Then include/includes/including, show/shows/showing, display/displays/displayed, and detect/detected/detection do not become standalone missing capabilities
 And concrete capabilities such as visible grid, line clearing, score tracking, game over, and restart remain required
 
+### F-005-S063: Source-Only Foundation Maintainer Role
+
+Given an operator runs `mars-harness run foundation-maintainer --repo . --dry-run --no-init` from the Mars Harness source repository
+When the source repo has no `.harness/manifest.yaml`
+Then the runtime assembles the source-only foundation role context from canonical repo docs
+And it does not scaffold a source `.harness/manifest.yaml`
+And running `foundation-maintainer` against a non-source repository fails with an actionable source-only role error
+And generated target manifests do not include `foundation-maintainer`
+
 ## Out of Scope
 
 - Parallel tool execution inside a single agent turn.
@@ -947,3 +956,4 @@ None.
 - F-005-S060: `go test ./internal/tools -run TestEngineerPostBuildBrowserFrameworkBlocksSmokeSubstitutesWhileDirty`
 - F-005-S061: `go test ./internal/tools -run TestCOOCompletionAllowsOutOfScopeIntroAndAdvancedScoringSystems`
 - F-005-S062: `go test ./internal/tools -run TestCapabilityMatchingIgnoresIncludingAndDetectionGlue`
+- F-005-S063: `go test ./cmd/mars-harness -run TestRunCommandFoundationMaintainer` and `go test ./internal/scanner -run TestInit_success`

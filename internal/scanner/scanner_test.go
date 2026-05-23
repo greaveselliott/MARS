@@ -420,6 +420,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, manifestStr, "tool_inventory_audit", "review roles should expose tool inventory audit")
 	assert.Contains(t, manifestStr, "max_turns: 40", "dogfood role should have max_turns: 40")
 	assert.Contains(t, manifestStr, "knowledge/context-glossary.yaml", "manifest should include default glossary knowledge route")
+	assert.NotContains(t, manifestStr, "foundation-maintainer", "source-only foundation role must not be generated into target manifests")
 
 	strategyRoleBlock := manifestRoleBlock(t, manifestStr, "head-of-strategy")
 	assert.Contains(t, strategyRoleBlock, "domain: planner")

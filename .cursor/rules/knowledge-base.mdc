@@ -1,34 +1,7 @@
-# Knowledge Base
+# Cursor Adapter: Foundation Context
 
-Mars Harness has documented standards, architectural decisions, and reference material. Before making non-trivial changes, read the relevant docs.
+Read @AGENTS.md for the repository guide and context routes. For foundation
+source work, also read @docs/roles/personas/foundation-maintainer.md and follow
+the linked operating-model docs.
 
-## Mandatory reading
-
-- `AGENTS.md` — Project guide, directory structure, key constraints
-- `ARCHITECTURE.md` — System architecture, component responsibilities, data flow
-
-## Architectural decisions (`docs/design-docs/`)
-
-Read the index at `docs/design-docs/index.md` to find relevant decisions. Key routing:
-
-| When working on... | Read |
-|---|---|
-| Agent runtime, conversation loop, tool calling | `agent-runtime.md` |
-| Local models, GPU detection, llama.cpp, model download | `local-inference.md` |
-| Accuracy scores, outcome tracking, progressive autonomy | `scoring-system.md` |
-| Self-improvement, intervention detection, trunk evolution commits | `self-improvement.md` |
-| Guardrails, validation, overrides | `guardrails.md` |
-| Job queue, scheduler, sandbox, blast radius | `pipeline-engine.md` |
-| Dashboard, htmx, Chart.js, SSE | `dashboard.md` |
-| Context assembly, budgets, knowledge routes | `context-efficiency.md` |
-| Product vision, tenets, Mars relationship | `docs/product-specs/` |
-| Model benchmarks, hardware profiles, tool calling bugs | `docs/references/model-landscape-april-2026.md` |
-
-## Delivery schedule
-
-Active: [docs/exec-plans/active/delivery-schedule.md](../../docs/exec-plans/active/delivery-schedule.md)
-
-## Quality and debt
-
-- Tech debt: [docs/exec-plans/tech-debt.md](../../docs/exec-plans/tech-debt.md)
-- Pipeline learnings: [docs/exec-plans/pipeline-learnings.md](../../docs/exec-plans/pipeline-learnings.md)
+Do not duplicate the knowledge base in Cursor rules.

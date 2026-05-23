@@ -12,6 +12,7 @@ description: >-
 
 1. Setup complete: `mars-harness doctor`
 2. Git repo at `--repo`. If `.harness/manifest.yaml` is missing, `run` scaffolds it automatically (same as `init`).
+3. Source-only foundation work may use `foundation-maintainer` in the Mars Harness source repo with `--dry-run --no-init`.
 
 ## Run
 
@@ -25,6 +26,7 @@ Example:
 mars-harness run engineer --repo /path/to/project
 mars-harness run pipeline-fixer --repo .
 mars-harness run reviewer --repo /path/to/project
+mars-harness run foundation-maintainer --repo . --dry-run --no-init
 ```
 
 ## Flags
@@ -35,6 +37,7 @@ mars-harness run reviewer --repo /path/to/project
 | `--model-endpoint` | (auto) | Override LLM endpoint URL |
 | `--trace` | `false` | Verbose execution trace output |
 | `--dry-run` | `false` | Print system prompt without calling LLM |
+| `--no-init` | `false` | Do not scaffold a missing target harness; required for source-only foundation dry-run |
 | `--budget` | `0` (unlimited) | Token budget |
 | `--max-turns` | `50` | Maximum LLM round-trips |
 
@@ -44,6 +47,7 @@ Preview what the agent will see without calling the LLM:
 
 ```bash
 mars-harness run engineer --repo /path --dry-run
+mars-harness run foundation-maintainer --repo . --dry-run --no-init
 ```
 
 ## What Happens

@@ -28,10 +28,10 @@ func TestCheckRepoPassesGeneratedRegistry(t *testing.T) {
 	assert.True(t, report.OK(), "unexpected registry issues: %+v", report.Issues)
 }
 
-func TestSourceDefaultRegistryMatchesGenerated(t *testing.T) {
+func TestSourceRoleRegistryMatchesGenerated(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 	path := filepath.Join(repoRoot, filepath.FromSlash(roleregistry.RegistryPath))
-	expected := roleregistry.DefaultMarkdown()
+	expected := roleregistry.SourceMarkdown()
 	if os.Getenv("UPDATE_ROLE_REGISTRY") == "1" {
 		require.NoError(t, os.WriteFile(path, []byte(expected), 0o644))
 	}

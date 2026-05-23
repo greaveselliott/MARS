@@ -406,7 +406,7 @@ Global command surface:
   run <role>
     Manually execute one role against a target repository.
     Flags: --repo <path>, --model-endpoint <url>, --debug, --log-file <path>, --trace, --dry-run, --no-init, --budget <tokens>, --max-turns <n>
-    Default TTY output is a full-screen dashboard; --debug streams verbose trace/log output inline. --trace is kept as a run-only compatibility alias for debug-style trace detail. Use --dry-run --no-init for observer-safe inspection of uninitialized targets without scaffolding .harness/.
+    Default TTY output is a full-screen dashboard; --debug streams verbose trace/log output inline. --trace is kept as a run-only compatibility alias for debug-style trace detail. Use --dry-run --no-init for observer-safe inspection of uninitialized targets without scaffolding .harness/. Source work may run foundation-maintainer from the mars-harness source repo to preview the source-only foundation operating context without creating a source manifest.
     Example: ["run", "engineer", "--repo", ".", "--dry-run"]
 
   scan

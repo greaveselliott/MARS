@@ -1,19 +1,7 @@
-# Clean main before commit
+# Cursor Adapter: Trunk Discipline
 
-Before making commits, confirm you are on `main` and understand the delta you
-are about to add to trunk.
+Read @AGENTS.md for trunk, commit, push, release, and documentation rules.
+For foundation source work, also read
+@docs/roles/personas/foundation-maintainer.md.
 
-## Before the first commit on new work
-
-1. `git fetch origin main`
-2. `git status --short`
-3. `git log --oneline origin/main..HEAD`
-
-## Before pushing
-
-```bash
-git fetch origin main
-git log --oneline origin/main..HEAD
-```
-
-Every commit listed should belong to this task. If you see unrelated commits, fix history before push.
+Do not add standalone Cursor-only doctrine here.

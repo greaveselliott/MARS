@@ -1,15 +1,7 @@
-# Intervention to automation
+# Cursor Adapter: Feedback Routing
 
-Mars Harness's founding principle is to remove humans from the routine delivery loop and treat the pipeline as self-improving.
+Read @AGENTS.md and @docs/roles/personas/foundation-maintainer.md before
+turning intervention, telemetry, review, or validation feedback into durable
+work.
 
-## Rule for agents
-
-Whenever work implies that a human must do something (commit by hand, re-run a job, fix a configuration, resolve stuck feedback):
-
-1. Ask: what change to the harness, a role prompt, a guardrail, or a policy would remove or reduce that dependency next time?
-2. If the answer is non-trivial, capture it in the relevant design doc or `docs/exec-plans/tech-debt.md`.
-3. Prefer implementing the automation as part of "done", not as a vague future note.
-
-## Anti-pattern
-
-Telling the maintainer to "just do X manually" without recording it as debt to automate.
+Keep reusable feedback doctrine in canonical repo docs, not Cursor rules.

@@ -6,6 +6,7 @@ docs:
 - docs/design-docs/dashboard.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/harness-operating-model.md
 - docs/design-docs/release-versioning.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/product-specs/product-surface.md
@@ -26,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -568,6 +570,43 @@ func TestRunCommandNoInitDryRunDoesNotWriteUninitializedTarget(t *testing.T) {
 	require.NoFileExists(t, logPath)
 }
 
+func TestRunCommandFoundationMaintainerDryRunUsesSourceProfileWithoutInit(t *testing.T) {
+	root := mainTestSourceRoot(t)
+	require.NoFileExists(t, filepath.Join(root, ".harness", "manifest.yaml"))
+
+	err := executeRun(runOpts{
+		roleName: foundationMaintainerRoleName,
+		repoPath: root,
+		logFile:  filepath.Join(t.TempDir(), "run.log"),
+		dryRun:   true,
+		noInit:   true,
+		budget:   4000,
+	})
+
+	require.NoError(t, err)
+	require.NoFileExists(t, filepath.Join(root, ".harness", "manifest.yaml"))
+}
+
+func TestRunCommandFoundationMaintainerRejectsNonSourceRepo(t *testing.T) {
+	repoDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "go.mod"), []byte("module example.com/not-mars\n"), 0o644))
+	logPath := filepath.Join(t.TempDir(), "run.log")
+
+	err := executeRun(runOpts{
+		roleName: foundationMaintainerRoleName,
+		repoPath: repoDir,
+		logFile:  logPath,
+		dryRun:   true,
+		noInit:   true,
+	})
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "source-only")
+	require.Contains(t, err.Error(), "not a mars-harness source checkout")
+	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
+	require.NoFileExists(t, logPath)
+}
+
 func TestRunCommandNoInitWithoutDryRunFailsClosed(t *testing.T) {
 	repoDir := t.TempDir()
 	logPath := filepath.Join(t.TempDir(), "run.log")
@@ -765,6 +804,13 @@ func writeToolRunRepoFile(t *testing.T, root, rel, content string) {
 	path := filepath.Join(root, rel)
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+}
+
+func mainTestSourceRoot(t *testing.T) string {
+	t.Helper()
+	_, file, _, ok := runtime.Caller(0)
+	require.True(t, ok, "runtime.Caller failed")
+	return filepath.Clean(filepath.Join(filepath.Dir(file), "..", ".."))
 }
 
 func runnableCommands(root *cobra.Command) []*cobra.Command {
