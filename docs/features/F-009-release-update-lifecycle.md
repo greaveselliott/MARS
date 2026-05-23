@@ -57,6 +57,7 @@ Given a release asset and `checksums.txt` are available
 When `mars-harness update tool` installs the tool
 Then checksum mismatch prevents replacement and valid assets atomically replace the installed binary
 And private releases are authenticated through the Getting Started auth resolver in this order: `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth, then optional local config token
+And `mars-harness auth github setup` saves a verified GitHub CLI token as the owner-only local fallback without printing the token
 And private release assets are downloaded through GitHub asset API URLs when release metadata provides them
 And missing or invalid auth points to `mars-harness auth github setup`
 
@@ -109,6 +110,7 @@ Given Mars Harness release assets live in a private GitHub Release repository
 When a user follows Getting Started
 Then the documented sequence includes `mars-harness auth github setup`, `mars-harness setup`, `mars-harness doctor`, and `mars-harness update tool`
 And `mars-harness auth github check` reports `status`, `auth_source`, `repo_access`, `release_access`, `message`, and `next_action` without printing token values
+And `mars-harness auth github setup` verifies access and stores a local fallback only when auth comes from GitHub CLI or an explicit `--token`
 And `mars-harness setup` checks private-release auth unless `--skip-github` or `--test-mode` is used
 And `mars-harness doctor` reports private-release auth readiness with a concrete fix
 And agents can use the read-only `github_auth_check` tool before update, release verification, install repair, or version-drift remediation

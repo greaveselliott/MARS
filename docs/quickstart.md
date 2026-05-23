@@ -56,9 +56,11 @@ mars-harness auth github check
 ```
 
 `mars-harness` resolves auth in this order: `GH_TOKEN`, `GITHUB_TOKEN`, GitHub
-CLI auth from `gh auth token`, then an optional local token stored under
-`~/.mars-harness/`. Prefer GitHub CLI auth for laptops. For headless installs,
-set `GH_TOKEN` or `GITHUB_TOKEN`, or run:
+CLI auth from `gh auth token`, then a local token stored under
+`~/.mars-harness/`. `mars-harness auth github setup` verifies GitHub CLI auth
+and saves that owner-only local fallback so later updates do not depend on
+keychain access. For headless installs, set `GH_TOKEN` or `GITHUB_TOKEN`, or
+run:
 
 ```bash
 mars-harness auth github setup --token <token>

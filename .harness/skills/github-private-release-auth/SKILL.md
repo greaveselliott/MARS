@@ -13,7 +13,9 @@ assets.
 
 1. Run `mars-harness auth github check` or the `github_auth_check` tool.
 2. If auth is missing, ask the operator to run `gh auth login`, then
-   `mars-harness auth github setup`.
+   `mars-harness auth github setup`. Setup verifies access and stores a
+   GitHub CLI token as the owner-only local fallback so later update runs do not
+   depend on keychain access.
 3. For headless installs, use `GH_TOKEN`, `GITHUB_TOKEN`, or
    `mars-harness auth github setup --token <token>` with repository contents
    read access.
@@ -24,9 +26,8 @@ assets.
 
 - Never paste token values into chat, docs, commits, traces, tickets, logs, or
   tool output.
-- Prefer GitHub CLI auth over storing a local token.
-- If local token storage is required, it belongs under `~/.mars-harness/`, never
-  in a target repository.
+- Store local fallback tokens only through `mars-harness auth github setup`;
+  they belong under `~/.mars-harness/`, never in a target repository.
 
 ## Stop Conditions
 

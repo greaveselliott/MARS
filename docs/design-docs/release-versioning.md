@@ -169,12 +169,13 @@ source checkout for ordinary upgrades.
 
 Private release repositories use the same checksum-verified path through the
 Getting Started private release auth operating model. Operators run
-`mars-harness auth github setup` once, then `mars-harness update tool` resolves
-auth in this order: `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth from
-`gh auth token`, then an optional local token stored under `~/.mars-harness/`
-with owner-only permissions. Token values are never printed, written to target
-repos, or included in traces, telemetry, doctor output, JSON, errors, tickets,
-or docs.
+`mars-harness auth github setup` once. When setup verifies access through
+GitHub CLI auth, it stores that token as an owner-only local fallback under
+`~/.mars-harness/` so future update runs do not depend on keychain access.
+Then `mars-harness update tool` resolves auth in this order: `GH_TOKEN`,
+`GITHUB_TOKEN`, GitHub CLI auth from `gh auth token`, then the local fallback.
+Token values are never printed, written to target repos, or included in traces,
+telemetry, doctor output, JSON, errors, tickets, or docs.
 
 When release metadata exposes GitHub asset API URLs, the updater downloads from
 those authenticated API URLs instead of browser download URLs so private assets

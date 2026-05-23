@@ -143,6 +143,71 @@ func TestCheckWithoutTokenReturnsSetupGuidance(t *testing.T) {
 	require.NotContains(t, report.Message, "GH_TOKEN=")
 }
 
+func TestSetupPersistsGHCLIFallbackAfterSuccessfulCheck(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, ".mars-harness", "config.yaml")
+	client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		require.Equal(t, "Bearer gh-cli-token", req.Header.Get("Authorization"))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     http.StatusText(http.StatusOK),
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{}`)),
+		}, nil
+	})}
+
+	report, err := Setup(context.Background(), Options{
+		Env:         func(string) string { return "" },
+		ConfigPath:  cfgPath,
+		GHAuthToken: func(context.Context) (string, error) { return "gh-cli-token", nil },
+		HTTPClient:  client,
+		ReleaseURL:  "https://api.example.test/repos/private/project/releases/latest",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, StatusOK, report.Status)
+	require.Equal(t, SourceGHCLI, report.AuthSource)
+	require.Contains(t, report.Message, "saved a local fallback")
+	data, err := os.ReadFile(cfgPath)
+	require.NoError(t, err)
+	require.Contains(t, string(data), "github_token: gh-cli-token")
+	info, err := os.Stat(cfgPath)
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+}
+
+func TestSetupDoesNotPersistEnvTokenImplicitly(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, ".mars-harness", "config.yaml")
+	client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		require.Equal(t, "Bearer env-token", req.Header.Get("Authorization"))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     http.StatusText(http.StatusOK),
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{}`)),
+		}, nil
+	})}
+
+	report, err := Setup(context.Background(), Options{
+		Env: func(key string) string {
+			if key == "GH_TOKEN" {
+				return "env-token"
+			}
+			return ""
+		},
+		ConfigPath: cfgPath,
+		HTTPClient: client,
+		ReleaseURL: "https://api.example.test/repos/private/project/releases/latest",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, StatusOK, report.Status)
+	require.Equal(t, SourceEnvGHToken, report.AuthSource)
+	_, err = os.Stat(cfgPath)
+	require.True(t, os.IsNotExist(err))
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {

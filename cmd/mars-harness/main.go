@@ -991,8 +991,9 @@ func authGitHubSetupCmd() *cobra.Command {
 		Long: `Prepare GitHub auth for private Mars Harness release assets.
 
 The recommended path is to authenticate GitHub CLI once with "gh auth login",
-then run this command. Headless installs may pass --token or set GH_TOKEN or
-GITHUB_TOKEN instead. Token values are never printed.`,
+then run this command. Setup saves a verified GitHub CLI token as an owner-only
+local fallback for future update runs. Headless installs may pass --token or set
+GH_TOKEN or GITHUB_TOKEN instead. Token values are never printed.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := githubauth.Options{ConfigPath: configPath}
 			if strings.TrimSpace(token) != "" {
@@ -1000,22 +1001,15 @@ GITHUB_TOKEN instead. Token values are never printed.`,
 				if path == "" {
 					path = config.DefaultPath()
 				}
-				cfg, err := config.Load(path)
-				if err != nil {
-					return err
-				}
 				opts = githubauth.Options{
 					ConfigPath:   path,
 					ConfigToken:  strings.TrimSpace(token),
 					DisableGHCLI: true,
 					Env:          func(string) string { return "" },
 				}
-				report := githubauth.Check(cmd.Context(), opts)
-				if report.Status == githubauth.StatusOK {
-					cfg.GitHubToken = strings.TrimSpace(token)
-					if err := config.Save(path, cfg); err != nil {
-						return err
-					}
+				report, err := githubauth.Setup(cmd.Context(), opts)
+				if err != nil {
+					return err
 				}
 				if jsonOut {
 					if err := writeJSON(cmd.OutOrStdout(), report); err != nil {
@@ -1029,7 +1023,10 @@ GITHUB_TOKEN instead. Token values are never printed.`,
 				}
 				return nil
 			}
-			report := githubauth.Check(cmd.Context(), opts)
+			report, err := githubauth.Setup(cmd.Context(), opts)
+			if err != nil {
+				return err
+			}
 			if jsonOut {
 				if err := writeJSON(cmd.OutOrStdout(), report); err != nil {
 					return err

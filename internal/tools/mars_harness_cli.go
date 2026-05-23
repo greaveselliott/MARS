@@ -427,7 +427,8 @@ Global command surface:
 
   auth github setup
     Prepare private release auth for update tool. Prefer gh auth login, then
-    run this command; headless installs may pass --token.
+    run this command; setup saves a verified GitHub CLI fallback under
+    ~/.mars-harness. Headless installs may pass --token.
     Flags: --config <path>, --token <token>, --json
     Example: ["auth", "github", "setup"]
 

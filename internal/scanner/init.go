@@ -2944,10 +2944,11 @@ mars-harness update tool
 ` + "```" + `
 
 The auth resolver tries ` + "`GH_TOKEN`" + `, then ` + "`GITHUB_TOKEN`" + `, then
-GitHub CLI auth from ` + "`gh auth token`" + `, then the optional local token stored
-under ` + "`~/.mars-harness/`" + `. GitHub CLI auth is preferred. Headless installs
-may set ` + "`GH_TOKEN`" + ` or use ` + "`mars-harness auth github setup --token <token>`" + `
-with repository contents read access.
+GitHub CLI auth from ` + "`gh auth token`" + `, then the local token stored under
+` + "`~/.mars-harness/`" + `. ` + "`mars-harness auth github setup`" + ` verifies GitHub CLI auth
+and stores that owner-only local fallback so future update runs do not depend on
+keychain access. Headless installs may set ` + "`GH_TOKEN`" + ` or use
+` + "`mars-harness auth github setup --token <token>`" + ` with repository contents read access.
 
 Never write tokens to this repo or any target repo. Never print token values in
 logs, traces, telemetry, doctor output, JSON, errors, tickets, or docs. Agents

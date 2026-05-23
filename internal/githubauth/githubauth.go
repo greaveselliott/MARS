@@ -129,7 +129,50 @@ func ResolveToken(ctx context.Context, opts Options) ResolveResult {
 // metadata. It intentionally never includes the token in output.
 func Check(ctx context.Context, opts Options) Report {
 	resolved := ResolveToken(ctx, opts)
-	token := resolved.Token
+	return checkToken(ctx, opts, resolved.Token)
+}
+
+// Setup verifies private release access and persists an owner-only local
+// fallback when setup resolved auth from GitHub CLI or an explicit config token.
+func Setup(ctx context.Context, opts Options) (Report, error) {
+	resolved := ResolveToken(ctx, opts)
+	report := checkToken(ctx, opts, resolved.Token)
+	if report.Status != StatusOK {
+		return report, nil
+	}
+
+	token := strings.TrimSpace(resolved.Token.Value)
+	if token == "" {
+		return report, nil
+	}
+	if resolved.Token.Source != SourceGHCLI && !(resolved.Token.Source == SourceConfig && strings.TrimSpace(opts.ConfigToken) != "") {
+		return report, nil
+	}
+
+	path := strings.TrimSpace(opts.ConfigPath)
+	if path == "" {
+		path = config.DefaultPath()
+	}
+	cfg, err := config.Load(path)
+	if err != nil {
+		return report, fmt.Errorf("private release auth setup: load config: %w", err)
+	}
+	if strings.TrimSpace(cfg.GitHubToken) == token {
+		return report, nil
+	}
+	cfg.GitHubToken = token
+	if err := config.Save(path, cfg); err != nil {
+		return report, fmt.Errorf("private release auth setup: save local fallback: %w", err)
+	}
+	if resolved.Token.Source == SourceGHCLI {
+		report.Message += "; saved a local fallback from GitHub CLI auth"
+	} else {
+		report.Message += "; saved local private release auth"
+	}
+	return report, nil
+}
+
+func checkToken(ctx context.Context, opts Options, token Token) Report {
 	if strings.TrimSpace(token.Value) == "" {
 		return Report{
 			Status:        StatusFail,
