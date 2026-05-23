@@ -4096,11 +4096,91 @@ func TestCOOCompletionAllowsAnimationOnlyOutOfScopeForCoveredGameplay(t *testing
 	}
 }
 
+func TestCOOCompletionAcceptsOutcomeGlueWhenCapabilitiesAreBrokenOut(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeGenericOutcomeBrief(t, dir)
+	writeGenericFeatureWithOutcomeScenarios(t, dir)
+	ctx := WithSession(context.Background(), Session{Role: "coo", ToolCounts: map[string]int{}})
+
+	if err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"ticket_breakdown","suggested_role":"cto-weekly"}`)); err != nil {
+		t.Fatalf("expected readable/usable outcome phrasing not to block broken-out product capabilities, got %v", err)
+	}
+}
+
+func TestCOOCompletionIgnoresProjectNameTokensFromBriefHeadings(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	readme := `# Orion Ledger
+
+The first slice must include Orion Ledger transaction import, ledger balance reconciliation, and report export.
+`
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte(readme), 0o644); err != nil {
+		t.Fatalf("write README: %v", err)
+	}
+	featurePath := filepath.Join(dir, "docs", "features", "F-001-product-walking-skeleton.md")
+	if err := os.MkdirAll(filepath.Dir(featurePath), 0o755); err != nil {
+		t.Fatalf("mkdir feature dir: %v", err)
+	}
+	feature := `# F-001: Product Walking Skeleton
+
+## Business Logic
+
+The product must include transaction import, balance reconciliation, and report export.
+
+## Scenario Schedule
+
+1. F-001-S001 - Import transactions from a local file
+2. F-001-S002 - Reconcile balances
+3. F-001-S003 - Export a report
+
+## Scenarios
+
+### F-001-S001: Import Transactions From A Local File
+
+Given a local file exists
+When the user imports it
+Then transactions are visible
+
+### F-001-S002: Reconcile Balances
+
+Given imported transactions exist
+When the user reconciles the account
+Then the balance reconciliation is visible
+
+### F-001-S003: Export A Report
+
+Given reconciled data exists
+When the user exports a report
+Then a report file is produced
+
+## Out of Scope
+
+- Bank integrations
+
+## Descoped Scenarios
+
+None.
+`
+	if err := os.WriteFile(featurePath, []byte(feature), 0o644); err != nil {
+		t.Fatalf("write feature: %v", err)
+	}
+	required := strings.Join(projectBriefCapabilityPhrases(root), ", ")
+	if strings.Contains(required, "orion") || strings.Contains(required, "ledger transaction") {
+		t.Fatalf("expected product label tokens to be stripped from required capabilities, got %q", required)
+	}
+	ctx := WithSession(context.Background(), Session{Role: "coo", ToolCounts: map[string]int{}})
+
+	if err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"ticket_breakdown","suggested_role":"cto-weekly"}`)); err != nil {
+		t.Fatalf("expected generic product label tokens not to block capability coverage, got %v", err)
+	}
+}
+
 func TestCapabilityMatchingIgnoresIncludingAndDetectionGlue(t *testing.T) {
 	t.Parallel()
 
-	if !capabilityPhraseCovered("visible playfield grid is displayed", "core tetris gameplay including visible grid") {
-		t.Fatal("expected including/core gameplay glue not to block visible grid coverage")
+	if !capabilityPhraseCovered("visible board grid is displayed", "core product including visible grid") {
+		t.Fatal("expected including/core product glue not to block visible grid coverage")
 	}
 	if !capabilityPhraseCovered("game over is detected when stack fills the playfield", "game over detection") {
 		t.Fatal("expected detection glue not to block game-over coverage")
@@ -6930,6 +7010,37 @@ Use a small, dependency-light implementation that can be installed, built, and s
 	}
 }
 
+func writeGenericOutcomeBrief(t *testing.T, repoRoot string) {
+	t.Helper()
+	content := `# Work Board Demo
+
+Create a browser-based work board.
+
+The first useful product should let a user open the app locally and see a usable task board. It should include:
+
+- A visible board with To Do, In Progress, and Done columns.
+- Task cards with title and description.
+- Create-task workflow.
+- Move-task workflow between columns.
+- Filter by status.
+- A visible task count.
+- Empty-state messaging.
+- Reset sample data.
+
+Out of scope for the first build:
+
+- Authentication.
+- Cloud sync.
+- Notifications.
+- Team permissions.
+- Mobile offline support.
+- Analytics dashboards.
+`
+	if err := os.WriteFile(filepath.Join(repoRoot, "README.md"), []byte(content), 0o644); err != nil {
+		t.Fatalf("write README: %v", err)
+	}
+}
+
 func writeDemoTetrisFeatureWithAnimationPolishOutOfScope(t *testing.T, repoRoot string) {
 	t.Helper()
 	path := filepath.Join(repoRoot, "docs", "features", "F-001-product-walking-skeleton.md")
@@ -7335,6 +7446,107 @@ Then game over appears and the player can restart
 
 - Advanced scoring or game modes beyond basic line clearing
 - Menus and online features
+
+## Descoped Scenarios
+
+None.
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write feature: %v", err)
+	}
+}
+
+func writeGenericFeatureWithOutcomeScenarios(t *testing.T, repoRoot string) {
+	t.Helper()
+	path := filepath.Join(repoRoot, "docs", "features", "F-001-product-walking-skeleton.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir feature: %v", err)
+	}
+	content := `# F-001: Product Walking Skeleton
+
+- Feature ID: F-001
+- Goals: G-001
+- Status: active
+- Owner: CEO
+- Product Brief: Work Board Demo: Create a browser-based work board.
+
+## Business Logic
+
+The product must include a visible board with workflow columns, task cards, task creation, task movement, status filtering, task count, empty-state messaging, and sample-data reset.
+
+## Step-By-Step Behavior
+
+The scenarios below define the concrete product capabilities for the first useful slice.
+
+## Scenario Schedule
+
+1. F-001-S001 - Display a visible board with workflow columns
+2. F-001-S002 - Show task cards with title and description
+3. F-001-S003 - Create new task cards
+4. F-001-S004 - Move task cards between columns
+5. F-001-S005 - Filter tasks by status
+6. F-001-S006 - Display visible task count
+7. F-001-S007 - Show empty-state messaging
+8. F-001-S008 - Reset sample data
+
+## Scenarios
+
+### F-001-S001: Display a visible board with workflow columns
+
+Given a browser-based work board
+When the first product slice is implemented
+Then a user can see To Do, In Progress, and Done columns
+
+### F-001-S002: Show task cards with title and description
+
+Given the board columns are visible
+When sample work exists
+Then task cards show a title and description
+
+### F-001-S003: Create new task cards
+
+Given the board is visible
+When the user submits a new task
+Then a task card appears in To Do
+
+### F-001-S004: Move task cards between columns
+
+Given a task card exists
+When the user moves it to another status
+Then the card appears in the matching column
+
+### F-001-S005: Filter tasks by status
+
+Given multiple task statuses exist
+When the user filters by status
+Then only matching tasks are shown
+
+### F-001-S006: Display visible task count
+
+Given tasks are visible
+When the board renders
+Then the task count is visible and accurate
+
+### F-001-S007: Show empty-state messaging
+
+Given no tasks match the current filter
+When the board renders
+Then an empty-state message is visible
+
+### F-001-S008: Reset sample data
+
+Given the board data has changed
+When the user resets sample data
+Then the starter tasks and columns are restored
+
+## Out of Scope
+
+- Authentication
+- Cloud sync
+- Notifications
+- Team permissions
+- Mobile offline support
+- Analytics dashboards
 
 ## Descoped Scenarios
 

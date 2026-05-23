@@ -469,6 +469,22 @@ Given Engineer has successful validation evidence and dirty implementation or ti
 When it tries to use an empty `shell_exec` argv or single `:` placeholder as a wait
 Then the guardrail blocks the no-op before process execution and directs Engineer to stop tracked background validation, commit the dirty files, update ticket evidence, move the ticket to done, push, and record `job_disposition_record`
 
+### F-007-S042: Capability Guards Ignore Readable Outcome Glue
+
+Given a product brief says the first product should let a user see, play, or use a useful outcome
+And the feature contract breaks out the concrete requested behaviors into scenario schedule entries or scenario headings
+When COO records a successful planning disposition or CTO creates a ticket
+Then the guardrail ignores glue words such as `see`, `useful`, `usable`, and `playable` as standalone capabilities
+And still requires concrete behavior words such as workflow, validation, calculation, state transition, or product controls to be covered or deliberately descoped
+
+### F-007-S043: Capability Guards Strip Product Labels Dynamically
+
+Given a target brief has a project title or branded product name
+And brief-derived capability text repeats that label next to concrete behaviors
+When COO records a successful planning disposition or CTO creates a ticket
+Then the guardrail strips project-label tokens from required capability matching only when concrete behavior words remain
+And the guardrail does not add validating demo names or product-object nouns as global capability stopwords or synonyms
+
 ## Out of Scope
 
 - AST-level semantic policy enforcement in v1.
@@ -520,3 +536,5 @@ None.
 - F-007-S039: `go test ./internal/tools -run TestEngineerFailingTestAllowsMissingGoModuleBootstrap`
 - F-007-S040: `go test ./internal/tools -run 'TestShellPolicyBlocksRawDependencyMutationCommands|TestEngineerFailingTestBlocksSameJobTestRemovalForAssertionFailure|TestEngineerFailingTestAllowsSameJobRepairTestFileRemoval'`
 - F-007-S041: `go test ./internal/tools -run TestEngineerPostValidationDirtyNoopBlocksBeforeGenericNoop`
+- F-007-S042: `go test ./internal/tools -run TestCOOCompletionAcceptsOutcomeGlueWhenCapabilitiesAreBrokenOut`
+- F-007-S043: `go test ./internal/tools -run TestCOOCompletionIgnoresProjectNameTokensFromBriefHeadings`

@@ -3676,10 +3676,9 @@ func shellExecRunsBrowserProductSmokeCommand(args shellExecArgs) bool {
 	if strings.Contains(display, "phaser") &&
 		(strings.Contains(display, "canvas") ||
 			strings.Contains(display, "new phaser.game") ||
-			strings.Contains(display, "tetromino") ||
-			strings.Contains(display, "line clear") ||
-			strings.Contains(display, "game over") ||
-			strings.Contains(display, "restart")) {
+			strings.Contains(display, "scene") ||
+			strings.Contains(display, "sprite") ||
+			strings.Contains(display, "game object")) {
 		return true
 	}
 	return false
@@ -4149,6 +4148,7 @@ func projectBriefCapabilityPhrases(root Root) []string {
 	if strings.TrimSpace(text) == "" {
 		return nil
 	}
+	labelTokens := projectBriefLabelTokens(root)
 	markers := []string{
 		" should include ",
 		" must include ",
@@ -4186,6 +4186,10 @@ func projectBriefCapabilityPhrases(root Root) []string {
 				if isValidationEvidenceCapabilityPhrase(phrase) {
 					continue
 				}
+				phrase = stripCapabilityLabelTokens(phrase, labelTokens)
+				if len(capabilityKeywords(phrase)) == 0 {
+					continue
+				}
 				key := strings.ToLower(phrase)
 				if seen[key] {
 					continue
@@ -4196,6 +4200,71 @@ func projectBriefCapabilityPhrases(root Root) []string {
 		}
 	}
 	return phrases
+}
+
+func projectBriefLabelTokens(root Root) map[string]bool {
+	out := map[string]bool{}
+	for _, rel := range []string{
+		"README.md",
+		filepath.Join("docs", "product-specs", "vision.md"),
+		filepath.Join("docs", "goals", "active.md"),
+	} {
+		abs, err := root.ResolvePath(rel)
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(abs)
+		if err != nil {
+			continue
+		}
+		for _, line := range strings.Split(string(data), "\n") {
+			trimmed := strings.TrimSpace(line)
+			if !strings.HasPrefix(trimmed, "#") {
+				continue
+			}
+			trimmed = strings.TrimLeft(trimmed, "#")
+			trimmed = strings.TrimSpace(trimmed)
+			if trimmed == "" {
+				continue
+			}
+			for _, field := range strings.Fields(normalizeCapabilitySurface(trimmed)) {
+				key := capabilityKeyword(field)
+				if key == "" || capabilityLabelKeepWords[key] {
+					continue
+				}
+				out[key] = true
+			}
+		}
+	}
+	return out
+}
+
+func stripCapabilityLabelTokens(phrase string, labels map[string]bool) string {
+	if len(labels) == 0 {
+		return phrase
+	}
+	fields := strings.Fields(normalizeCapabilitySurface(phrase))
+	if len(fields) == 0 {
+		return phrase
+	}
+	var kept []string
+	removed := false
+	for _, field := range fields {
+		key := capabilityKeyword(field)
+		if key != "" && labels[key] {
+			removed = true
+			continue
+		}
+		kept = append(kept, field)
+	}
+	candidate := cleanCapabilityPhrase(strings.Join(kept, " "))
+	if candidate == "" || len(capabilityKeywords(candidate)) == 0 {
+		if removed {
+			return ""
+		}
+		return phrase
+	}
+	return candidate
 }
 
 func projectBriefSourceText(root Root) string {
@@ -4572,10 +4641,6 @@ func capabilityKeyword(token string) string {
 		return ""
 	}
 	switch {
-	case strings.HasPrefix(token, "tetromino"):
-		return "tetromino"
-	case strings.HasPrefix(token, "piece"):
-		return "tetromino"
 	case strings.HasPrefix(token, "rotat"):
 		return "rotat"
 	case strings.HasPrefix(token, "scor"):
@@ -4623,9 +4688,24 @@ var capabilityStopWords = map[string]bool{
 	"gameplay": true, "handle": true, "handled": true, "game": true, "games": true, "in": true,
 	"include": true, "includes": true, "including": true, "inspect": true, "inspected": true, "into": true, "local": true, "locally": true, "of": true,
 	"mechanic": true, "mechanics": true, "on": true, "open": true, "opened": true, "or": true, "product": true, "project": true,
-	"player": true, "players": true, "reach": true, "reaches": true, "round": true, "rounds": true, "run": true, "stack": true,
-	"show": true, "showing": true, "shows": true, "that": true, "the": true, "to": true, "tetris": true, "using": true, "user": true, "users": true,
-	"version": true, "when": true, "with": true,
+	"piece": true, "pieces": true, "playable": true, "player": true, "players": true, "reach": true, "reaches": true, "round": true, "rounds": true, "run": true, "see": true, "stack": true,
+	"show": true, "showing": true, "shows": true, "that": true, "the": true, "to": true, "using": true, "user": true, "users": true,
+	"usable": true, "useful": true, "version": true, "when": true, "with": true,
+}
+
+var capabilityLabelKeepWords = map[string]bool{
+	"application": true,
+	"board":       true,
+	"calendar":    true,
+	"chat":        true,
+	"dashboard":   true,
+	"editor":      true,
+	"form":        true,
+	"service":     true,
+	"site":        true,
+	"task":        true,
+	"tracker":     true,
+	"workflow":    true,
 }
 
 func projectBriefNamesGoBackend(root Root) bool {

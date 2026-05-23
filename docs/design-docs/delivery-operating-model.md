@@ -7514,3 +7514,78 @@ COO prompt and persona stop conditions now name the same rule directly.
   generic policy error.
 - Waiting plans and reports still belong in backlog/report locations; the
   active directory stays a single current operating plan.
+
+## AD-272: Readable Outcome Glue Does Not Become A Product Capability
+
+**Status:** Accepted
+**Date:** 2026-05-22
+**Owner:** Mars Harness maintainers
+
+### Context
+
+A live target replay investigated the operator report that early target runs
+could create too little product backlog and then stall. The run found a
+pre-ticketing foundation blocker: COO produced a product-specific plan and BDD
+contract with distinct scenarios for the requested concrete behaviors, but the
+policy guard still rejected the handoff because a README sentence described
+the first product as something a user could open, see, and use. Those words are
+readable outcome glue around concrete product behaviors; treating them as
+standalone requirements forced more planning turns without improving the
+deployed product.
+
+### Decision
+
+Capability keyword matching now treats words such as `see`, `useful`,
+`usable`, and `playable` as generic outcome glue. The concrete behavior words
+around them still matter: if the brief asks for a board, workflow, validation,
+calculation, report, control, state transition, or another specific behavior,
+that behavior must appear in the Scenario Schedule, scenario headings, or
+Descoped Scenarios rationale before COO handoff or CTO ticket creation.
+
+### Consequences
+
+- Natural README phrasing can describe a readable, playable user outcome
+  without creating phantom planning requirements.
+- Product capability guards still require the actual requested behaviors to be
+  represented before implementation tickets are created.
+- The fix is foundation-level and applies to deployed projects beyond the
+  validating demo whenever product briefs use outcome prose around concrete
+  capabilities.
+
+## AD-273: Demo Evidence Does Not Become Product-Specific Doctrine
+
+**Status:** Accepted
+**Date:** 2026-05-23
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The live browser-game improvement loop produced useful foundation evidence, but
+it also exposed a second-order risk: repeated validation against one target can
+leak that target's product vocabulary into generic foundation rules. A
+representative replay is valuable when it reveals a reusable failure class, but
+the foundation harness should not learn one product name, one mechanic, or one
+object noun as a permanent global exception.
+
+### Decision
+
+Reusable operating doctrine is written by failure class and project class, not
+by demo product. Demo names and product details may remain in dogfood evidence
+only as traceability anchors. Generated target guidance, role prompts, and tool
+policy must express the reusable rule: product-label tokens from the target
+brief can be ignored when concrete behaviors remain covered, but product names
+must not be added as global stopwords. Likewise, generic capability matching
+must not map one target's object nouns to another target's object nouns.
+Stack-specific rules remain allowed only when they are justified by the stack
+itself, such as browser-framework lifecycle validation, rather than by the demo
+product that exposed the issue.
+
+### Consequences
+
+- The live demo loop can keep producing evidence without turning a validating
+  project into the harness specification.
+- Product capability checks generalize to any named target: project labels are
+  stripped from brief-derived requirements only when concrete behavior remains.
+- Foundation and deployed operating-model changes must explain the reusable
+  mechanism they protect, while deployed product bugs stay in the deployed
+  target.

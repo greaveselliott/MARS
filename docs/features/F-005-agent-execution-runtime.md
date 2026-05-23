@@ -704,10 +704,10 @@ When COO or CTO capability checks extract explicit requirements from the brief
 Then single newlines are treated as wrapped prose rather than sentence boundaries
 And required capabilities later in the wrapped list must still become scenarios or explicit descoped entries
 
-Given product strategy text introduces a capability list with a category prefix such as "all core Tetris mechanics:"
+Given product strategy text introduces a capability list with a category prefix such as "all core product capabilities:"
 When COO or CTO capability checks extract explicit requirements from the brief, vision, or active goals
 Then the category label is removed before item matching
-And individual capabilities such as visible playfield grid, falling tetrominoes, controls, scoring, game over, and restart match the scenario schedule directly
+And individual capabilities such as a visible board, workflow controls, scoring or reporting, state transitions, and reset behavior match the scenario schedule directly
 
 Given a product brief contains validation guidance such as build evidence, smoke evidence, or proof that the app mounts
 When COO or CTO capability checks extract explicit requirements from the brief
@@ -759,8 +759,8 @@ And starter-placeholder blocking is limited to actual scaffold phrases such as s
 Given active goals include Markdown Scope bullets, Non-Goals, and implementation constraints such as npm install/build scripts
 When COO records a completed planning disposition after covering the actual product behaviors in the feature scenario schedule
 Then capability extraction treats each Markdown bullet as a separate statement
-And non-goals such as hold-piece mechanics, generic access wording, operational script constraints, and validation/build wording do not become required product scenarios
-And natural gameplay qualifiers such as full lines or another round do not block when the scenario schedule clearly covers line clearing and restart behavior
+And non-goals such as optional future workflows, generic access wording, operational script constraints, and validation/build wording do not become required product scenarios
+And natural product qualifiers do not block when the scenario schedule clearly covers the requested behavior
 
 ### F-005-S033: Test-Build Repair Scope Is Recorded
 
@@ -824,10 +824,10 @@ And keyboard controls still count as movement coverage when the required behavio
 
 ### F-005-S050: Product Capability Matching Accepts Natural Scenario Titles
 
-Given a product brief asks for a game-over behavior when the playfield stack fills
-When COO writes a feature contract whose scenario schedule says the game ends when the stack fills and the user can restart
-Then the capability guard accepts the scenario outline as coverage for game-over and restart behavior
-And product names such as Tetris and modifier words such as falling are not required outline keywords when the behavior words are present
+Given a product brief asks for a named product workflow and state-transition behavior
+When COO writes a feature contract whose scenario schedule names the concrete workflow and state transition without repeating the target's product label
+Then the capability guard accepts the scenario outline as coverage for the concrete behavior
+And product labels from the target brief are not required outline keywords when the behavior words are present
 And the guard still requires distinct requested product capabilities to remain visible in the scenario schedule or scenario headings before CTO ticketing
 
 ### F-005-S051: Advanced Score Persistence Does Not Descope Basic Scoring
@@ -936,7 +936,7 @@ None.
 - F-005-S047: `go test ./internal/tools -run TestCTOTicketCreateInfersPendingHandoffScenarios`
 - F-005-S048: `go test ./internal/tools -run TestPlanningRoleShellExecPolicyBlocksMutatingCommands`
 - F-005-S049: `go test ./internal/tools -run TestCOOCompletionIgnoresActiveGoalNonGoalsAndOperationalConstraints`
-- F-005-S050: `go test ./internal/tools -run 'TestCOOCompletionAcceptsExpandedDemoTetrisScenarioSchedule|TestCOOCompletionAcceptsGroupedGameOverScenarioSchedule|TestCOOCompletionAcceptsRefinedDemoTetrisScenarioSchedule'`
+- F-005-S050: `go test ./internal/tools -run 'TestCOOCompletionIgnoresProjectNameTokensFromBriefHeadings|TestCapabilityMatchingIgnoresIncludingAndDetectionGlue'`
 - F-005-S051: `go test ./internal/tools -run TestCOOCompletionAllowsHighScorePersistenceOutOfScope`
 - F-005-S052: `go test ./internal/tools -run TestReviewHTTPProbeBeforeServerStartIsProcedureFailure`
 - F-005-S053: `go test ./internal/tools -run TestEngineerReworkUsesDispatchTicketBeforeOlderDoneTicket`

@@ -4339,6 +4339,22 @@ confirms the foundation fix moves the lifecycle beyond planning into target
 product delivery; the later manual stop interrupted Engineer and is not treated
 as a product or foundation failure for this fix.
 
+A live replay investigated the operator report that only one ticket was
+created and Engineer then failed to make meaningful product progress. The run
+reproduced a related pre-ticketing blocker: the planning guard treated natural
+outcome prose such as "see a playable ..." as if the readability words were
+standalone product capabilities. Decision: readable and usable outcome glue
+such as `see`, `useful`, `usable`, and `playable` is ignored during capability
+keyword matching while the concrete behavior words around that prose remain
+required in the scenario schedule, scenario headings, or descoping rationale.
+
+The follow-up cleanup classified the same replay as evidence rather than
+doctrine. Product names and product-object nouns from a representative demo are
+not added to global capability stopwords or synonym maps. Instead, capability
+matching strips project-label tokens from target brief headings dynamically when
+concrete behavior words remain, and stack-specific rules must be justified by
+the stack class rather than the demo product that exposed the issue.
+
 ### Mars Observer Replay: Dry-Run Needs An Explicit No-Init Boundary
 
 The first Mars observer validation against
