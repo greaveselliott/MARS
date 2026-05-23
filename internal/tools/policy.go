@@ -3984,10 +3984,7 @@ func browserFrameworkTerminalDispositionGuidance(root Root, session Session) str
 
 func browserFrameworkRequiresProductSmoke(root Root) bool {
 	info := repoBrowserFrameworkInfo(root)
-	if !info.UsesFramework {
-		return false
-	}
-	return true
+	return info.UsesFramework
 }
 
 func browserFrameworkSourceFindings(root Root) []string {
