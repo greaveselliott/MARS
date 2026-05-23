@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.43.0] - 2026-05-23
+<!-- mars-harness-release: version=0.43.0 commit=0b023fe637ae -->
+
+### Impact
+- **foundation:** Operators gain new capability: add vendor-neutral foundation role.
+
+### Why
+- **foundation:** This matters because add vendor-neutral foundation role was missing from the shipped capability set.
+
+### What Changed
+- **foundation:** Changed add vendor-neutral foundation role (0b023fe).
+
+### Features
+- **foundation:** Add vendor-neutral foundation role (0b023fe)
+
 ## [0.42.28] - 2026-05-23
 <!-- mars-harness-release: version=0.42.28 commit=35fb75a21a38 -->
 
