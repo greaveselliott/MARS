@@ -102,7 +102,7 @@ The web dashboard uses a neutral operations theme with semantic CSS tokens for b
 
 Operators need to pause, restart, scan, stop, and force-run individual roles without killing the process. Two control surfaces share identical backend methods on `Server`:
 
-**CLI (terminal):** Interactive TTYs use a full-screen ANSI dashboard (`internal/ui/dashboard_tty.go`) plus the raw terminal key listener (`internal/ui/keylistener.go`). The dashboard redraws current state, repo, web dashboard URL, durable command log path, active jobs, current role/model, turn and tool counts, recent events, blocker summaries, and control hints. Keys: `p` (pause/resume), `r` (warm restart), `s` (re-scan), `q` (graceful stop), `h` (help). Activated automatically during `mars-harness serve` and `mars-harness start`; `mars-harness run` uses the same dashboard without key bindings beyond Ctrl+C cancellation.
+**CLI (terminal):** Interactive TTYs use a full-screen ANSI dashboard (`internal/ui/dashboard_tty.go`) plus the raw terminal key listener (`internal/ui/keylistener.go`). The dashboard redraws current state, repo, web dashboard URL, durable command log path, active jobs, current role/model, active phase with phase age, turn and tool counts, recent events, blocker summaries, and control hints. Non-streaming model calls appear as `waiting for model response` so a slow local first response is distinguishable from a stuck tool or completed idle state. Keys: `p` (pause/resume), `r` (warm restart), `s` (re-scan), `q` (graceful stop), `h` (help). Activated automatically during `mars-harness serve` and `mars-harness start`; `mars-harness run` uses the same dashboard without key bindings beyond Ctrl+C cancellation.
 
 **CLI debug mode:** `run`, `start`, and `serve` accept `--debug` to restore verbose inline trace/log streaming. `run --trace` remains as a compatibility alias for debug-style trace detail. All three commands write slog output to `~/.mars-harness/traces/logs/YYYYMMDD-HHMMSS-<command>.log` unless `--log-file` is supplied. Non-TTY output falls back to concise plain progress and never enters alternate-screen mode.
 
@@ -144,3 +144,9 @@ Operators need to pause, restart, scan, stop, and force-run individual roles wit
   to shut down from inside the active dashboard request handler. Stop now uses
   a buffered stop request consumed by the server loop so the handler can return
   success before dashboard shutdown begins.
+- 2026-05-23 live `demo-6` validation showed a `cto-weekly` job could look
+  stalled while it was inside a non-streaming local model call: the terminal
+  only reported `inference ready` with zero tools. The terminal dashboard now
+  tracks a job phase and phase age, including `waiting for model response`, so
+  operators can tell slow generation apart from an actual lack of runtime
+  progress.

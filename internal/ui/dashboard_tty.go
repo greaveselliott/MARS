@@ -60,18 +60,20 @@ type dashboardEvent struct {
 }
 
 type dashboardJobState struct {
-	Meta       JobViewMeta
-	StartedAt  time.Time
-	EndedAt    time.Time
-	Ready      bool
-	Turn       int
-	MaxTurns   int
-	ToolCalls  int
-	LastTool   string
-	LastError  string
-	LastOutput string
-	Summary    string
-	Outcome    string
+	Meta        JobViewMeta
+	StartedAt   time.Time
+	EndedAt     time.Time
+	LastPhaseAt time.Time
+	Ready       bool
+	Phase       string
+	Turn        int
+	MaxTurns    int
+	ToolCalls   int
+	LastTool    string
+	LastError   string
+	LastOutput  string
+	Summary     string
+	Outcome     string
 }
 
 // NewTerminalDashboard creates a full-screen terminal dashboard when the writer
@@ -173,7 +175,8 @@ func (d *TerminalDashboard) NewJobView(meta JobViewMeta) JobView {
 	if meta.JobID == "" {
 		meta.JobID = fmt.Sprintf("%s-%d", meta.Role, time.Now().UnixNano())
 	}
-	d.jobs[meta.JobID] = &dashboardJobState{Meta: meta, StartedAt: time.Now()}
+	now := time.Now()
+	d.jobs[meta.JobID] = &dashboardJobState{Meta: meta, StartedAt: now, LastPhaseAt: now, Phase: "starting"}
 	d.activeJob = meta.JobID
 	d.appendEventLocked("job", fmt.Sprintf("%s starting", meta.Role))
 	d.redrawLocked()
@@ -285,10 +288,7 @@ func (d *TerminalDashboard) redrawLocked() {
 		if job.MaxTurns > 0 {
 			turn = fmt.Sprintf("%d/%d", job.Turn, job.MaxTurns)
 		}
-		status := "running"
-		if job.Ready {
-			status = "inference ready"
-		}
+		status := jobStatusLocked(job)
 		if job.Outcome != "" {
 			status = job.Outcome
 		}
@@ -326,6 +326,23 @@ func (d *TerminalDashboard) redrawLocked() {
 	}
 
 	fmt.Fprint(d.w, b.String())
+}
+
+func jobStatusLocked(job *dashboardJobState) string {
+	if job == nil {
+		return "running"
+	}
+	status := "running"
+	if job.Ready {
+		status = "inference ready"
+	}
+	if strings.TrimSpace(job.Phase) != "" {
+		status = job.Phase
+	}
+	if job.EndedAt.IsZero() && !job.LastPhaseAt.IsZero() {
+		status = fmt.Sprintf("%s (%s)", status, time.Since(job.LastPhaseAt).Truncate(time.Second))
+	}
+	return status
 }
 
 func (d *TerminalDashboard) activeJobsLocked() int {
@@ -393,6 +410,8 @@ func (v *dashboardJobView) WriteHeader(role, model string, tools []string, hando
 		job.Meta.Model = model
 		job.Meta.Tools = tools
 		job.Meta.Handoff = handoff
+		job.Phase = "loaded tools"
+		job.LastPhaseAt = time.Now()
 		v.dash.appendEventLocked("job", fmt.Sprintf("%s loaded (%d tools)", role, len(tools)))
 	})
 }
@@ -400,6 +419,8 @@ func (v *dashboardJobView) WriteHeader(role, model string, tools []string, hando
 func (v *dashboardJobView) WriteReady() {
 	v.withJob(func(job *dashboardJobState) {
 		job.Ready = true
+		job.Phase = "inference ready"
+		job.LastPhaseAt = time.Now()
 		v.dash.appendEventLocked("model", fmt.Sprintf("%s inference ready", job.Meta.Role))
 	})
 }
@@ -408,6 +429,8 @@ func (v *dashboardJobView) WriteToolCall(name, args string) {
 	v.withJob(func(job *dashboardJobState) {
 		job.ToolCalls++
 		job.LastTool = name
+		job.Phase = "executing tool"
+		job.LastPhaseAt = time.Now()
 		v.dash.appendEventLocked("tool", fmt.Sprintf("%s called %s", job.Meta.Role, name))
 	})
 }
@@ -415,12 +438,16 @@ func (v *dashboardJobView) WriteToolCall(name, args string) {
 func (v *dashboardJobView) WriteToolResult(name, output string) {
 	v.withJob(func(job *dashboardJobState) {
 		job.LastOutput = truncate(output, 120)
+		job.Phase = "tool result ready"
+		job.LastPhaseAt = time.Now()
 	})
 }
 
 func (v *dashboardJobView) WriteAssistant(content string) {
 	v.withJob(func(job *dashboardJobState) {
 		job.Summary = truncate(content, 140)
+		job.Phase = "assistant replied"
+		job.LastPhaseAt = time.Now()
 		v.dash.appendEventLocked("reply", fmt.Sprintf("%s replied", job.Meta.Role))
 	})
 }
@@ -429,6 +456,9 @@ func (v *dashboardJobView) WriteTurn(turn, maxTurns int) {
 	v.withJob(func(job *dashboardJobState) {
 		job.Turn = turn
 		job.MaxTurns = maxTurns
+		job.Phase = "waiting for model response"
+		job.LastPhaseAt = time.Now()
+		v.dash.appendEventLocked("model", fmt.Sprintf("%s waiting for model response (turn %d/%d)", job.Meta.Role, turn, maxTurns))
 	})
 }
 
@@ -436,6 +466,8 @@ func (v *dashboardJobView) WriteError(msg string) {
 	v.withJob(func(job *dashboardJobState) {
 		job.LastError = msg
 		job.Outcome = "blocked"
+		job.Phase = "blocked"
+		job.LastPhaseAt = time.Now()
 		if job.EndedAt.IsZero() {
 			job.EndedAt = time.Now()
 		}
@@ -448,6 +480,8 @@ func (v *dashboardJobView) WriteSummary(role, reason string, llmCalls, toolCalls
 	v.withJob(func(job *dashboardJobState) {
 		job.EndedAt = time.Now()
 		job.Outcome = reason
+		job.Phase = reason
+		job.LastPhaseAt = job.EndedAt
 		job.Summary = fmt.Sprintf("%s finished: %s, turns=%d, tools=%d, time=%s", role, reason, llmCalls, toolCalls, duration.Round(time.Millisecond))
 		v.dash.appendEventLocked("done", job.Summary)
 	})

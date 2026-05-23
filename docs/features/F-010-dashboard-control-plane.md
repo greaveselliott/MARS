@@ -92,6 +92,7 @@ Then pause, resume, restart, scan, stop, and run-role semantics stay aligned
 Given `serve`, `start`, or `run` is attached to an interactive TTY
 When the command runs without `--debug`
 Then the terminal redraws a dashboard-style view with state, current work, recent events, blocker summaries, controls, dashboard URL when available, and command log path
+And the current work line reports the active job phase with phase age, including `waiting for model response` during non-streaming LLM calls
 
 Given the same commands run without a TTY
 When output is piped or captured
@@ -116,6 +117,7 @@ Then the dashboard exposes recent decisions so operators can see why Orchestrato
 Given `serve`, `start`, or `run` is attached to an interactive TTY
 When the command runs without `--debug`
 Then the terminal redraws a dashboard-style view with state, current work, recent events, blocker summaries, controls, dashboard URL when available, and command log path
+And slow local model responses remain visibly active as `waiting for model response` rather than staying at `inference ready`
 
 Given an operator passes `--debug`
 When the command runs

@@ -50,6 +50,25 @@ func TestTerminalDashboardRendersJobStateAndSuppressesRawToolOutput(t *testing.T
 	require.NotContains(t, out, "raw dependency output")
 }
 
+func TestTerminalDashboardShowsModelWaitPhase(t *testing.T) {
+	var buf bytes.Buffer
+	dash := NewTerminalDashboard(&buf, &fakeStatusProvider{healthy: true}, DashboardOptions{
+		Command: "run",
+		Force:   true,
+	})
+	dash.Start()
+
+	view := dash.NewJobView(JobViewMeta{JobID: "job-1", Role: "cto-weekly", Model: "reasoning"})
+	view.WriteHeader("cto-weekly", "reasoning", []string{"file_read"}, nil)
+	view.WriteReady()
+	view.WriteTurn(1, 50)
+
+	dash.Stop()
+	out := buf.String()
+	require.Contains(t, out, "status: waiting for model response")
+	require.Contains(t, out, "cto-weekly waiting for model response (turn 1/50)")
+}
+
 func TestPlainJobViewSuppressesToolResults(t *testing.T) {
 	var buf bytes.Buffer
 	view := NewPlainJobViewFactory(&buf).NewJobView(JobViewMeta{Role: "engineer"})
