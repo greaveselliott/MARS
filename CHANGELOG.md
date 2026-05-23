@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.43.1] - 2026-05-23
+<!-- mars-harness-release: version=0.43.1 commit=491c7593cbc7 -->
+
+### Impact
+- **tools:** Operators see improved reliability because satisfy browser smoke lint.
+
+### Why
+- **tools:** This matters because satisfy browser smoke lint closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed satisfy browser smoke lint (491c759).
+
+### Fixes
+- **tools:** Satisfy browser smoke lint (491c759)
+
 ## [0.43.0] - 2026-05-23
 <!-- mars-harness-release: version=0.43.0 commit=0b023fe637ae -->
 
