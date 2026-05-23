@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.44.3] - 2026-05-23
+<!-- mars-harness-release: version=0.44.3 commit=3601809bfd4a -->
+
+### Impact
+- **architecture:** Operators and future agents get clearer guidance because add local delivery diagrams.
+
+### Why
+- **architecture:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **architecture:** Changed add local delivery diagrams (3601809).
+
+### Documentation
+- **architecture:** Add local delivery diagrams (3601809)
+
 ## [0.44.2] - 2026-05-23
 <!-- mars-harness-release: version=0.44.2 commit=e712ec44dd81 -->
 
