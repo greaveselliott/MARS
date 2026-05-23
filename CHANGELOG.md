@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.44.2] - 2026-05-23
+<!-- mars-harness-release: version=0.44.2 commit=e712ec44dd81 -->
+
+### Impact
+- **tools:** Operators see improved reliability because scope cto handoff to active plan feature.
+
+### Why
+- **tools:** This matters because scope cto handoff to active plan feature closes a failure mode or degraded path.
+
+### What Changed
+- **tools:** Changed scope cto handoff to active plan feature (e712ec4).
+
+### Fixes
+- **tools:** Scope cto handoff to active plan feature (e712ec4)
+
 ## [0.44.1] - 2026-05-23
 <!-- mars-harness-release: version=0.44.1 commit=7343cee455f8 -->
 
