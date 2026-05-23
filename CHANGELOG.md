@@ -2,6 +2,23 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.42.28] - 2026-05-23
+<!-- mars-harness-release: version=0.42.28 commit=35fb75a21a38 -->
+
+### Impact
+- **lifecycle:** Product-first planning is less likely to stall on named-demo vocabulary: target product names and readable outcome prose no longer become phantom capabilities when the concrete behaviors are already covered.
+
+### Why
+- **lifecycle:** The live improvement loop showed that useful demo evidence can accidentally become product-specific foundation doctrine. Capability matching needed to keep the reusable lesson while removing hardcoded demo names and object synonyms from runtime policy.
+
+### What Changed
+- **lifecycle:** Added dynamic product-label stripping for brief-derived capability checks, ignored readable outcome glue such as see/useful/usable/playable, and removed product-specific global stopwords or object-noun mappings from generic policy.
+- **lifecycle:** Updated foundation doctrine and feature contracts to state that representative demo names are evidence anchors only; reusable rules must be expressed by failure class, project class, or stack class.
+- **lifecycle:** Cleaned the generic generated/role guidance surface so no Tetris or tetromino vocabulary remains outside historical evidence and test fixtures.
+
+### Fixes
+- **lifecycle:** Genericize demo capability matching (35fb75a)
+
 ## [0.42.27] - 2026-05-22
 <!-- mars-harness-release: version=0.42.27 commit=9878b4107790 -->
 
