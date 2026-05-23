@@ -13,6 +13,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -4417,6 +4418,81 @@ blocked_by: []
 	}
 }
 
+func TestCTOCompletionUsesActivePlanFeatureForEarlyScenarioBatch(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeDetailedTetrisBrief(t, dir)
+	writePolicyPlanForFeature(t, dir, "F-002", "F-002-S001, F-002-S002, F-002-S003", "F-002-S002")
+	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
+	writeTetrisFeatureContract(t, dir, "F-002-core-mechanics.md", []string{
+		"F-002-S001",
+		"F-002-S002",
+		"F-002-S003",
+		"F-002-S004",
+	})
+	writePolicyTicket(t, dir, "done", "T-001-board-setup.md", `---
+id: T-001
+title: Implement board setup
+work_type: feature
+bdd_scenarios:
+- F-002-S001
+end_to_end_evidence: required
+evidence_links: []
+verified_by: engineer
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
+
+	err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"implementation","suggested_role":"engineer"}`))
+	if err == nil {
+		t.Fatal("expected CTO handoff to require the active plan feature's next scenarios")
+	}
+	if !strings.Contains(err.Error(), "F-002") ||
+		!strings.Contains(err.Error(), "F-002-S002") ||
+		strings.Contains(err.Error(), "F-001") {
+		t.Fatalf("expected active-plan feature guidance, got %v", err)
+	}
+}
+
+func TestCTOCompletionIgnoresUnselectedStarterFeatureWhenActivePlanBatchIsCovered(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeDetailedTetrisBrief(t, dir)
+	writePolicyPlanForFeature(t, dir, "F-002", "F-002-S001, F-002-S002, F-002-S003", "F-002-S002")
+	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
+	writeTetrisFeatureContract(t, dir, "F-002-core-mechanics.md", []string{
+		"F-002-S001",
+		"F-002-S002",
+		"F-002-S003",
+	})
+	writePolicyTicket(t, dir, "backlog", "T-001-active-plan-batch.md", `---
+id: T-001
+title: Implement active plan batch
+work_type: feature
+bdd_scenarios:
+- F-002-S001
+- F-002-S002
+- F-002-S003
+end_to_end_evidence: required
+evidence_links: []
+verified_by: TBD
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
+
+	if err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"implementation","suggested_role":"engineer"}`)); err != nil {
+		t.Fatalf("expected active-plan batch to permit Engineer handoff despite unselected starter feature, got %v", err)
+	}
+}
+
 func TestCTOCompletionAllowsGroupedEarlyScenarioCoverage(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)
@@ -7704,6 +7780,46 @@ func writePolicyPlan(t *testing.T, repoRoot string) {
 	}
 	if err := os.WriteFile(path, []byte("# Current Operating Plan\n"), 0o644); err != nil {
 		t.Fatalf("write plan: %v", err)
+	}
+}
+
+func writePolicyPlanForFeature(t *testing.T, repoRoot, featureID, schedule, current string) {
+	t.Helper()
+	path := filepath.Join(repoRoot, "docs", "exec-plans", "active", "current-operating-plan.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir plan: %v", err)
+	}
+	content := fmt.Sprintf(`# Current Operating Plan
+
+**BDD Feature:** %s
+**Scenario Schedule:** %s
+**Current Failing Scenario:** %s
+`, featureID, schedule, current)
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write plan: %v", err)
+	}
+}
+
+func writeTetrisFeatureContract(t *testing.T, repoRoot, name string, scenarios []string) {
+	t.Helper()
+	path := filepath.Join(repoRoot, "docs", "features", name)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir feature: %v", err)
+	}
+	var b strings.Builder
+	b.WriteString("# Feature\n\n")
+	b.WriteString("## Business Logic\n\n")
+	b.WriteString("The product includes visible Tetris gameplay with falling blocks, movement, and scoring.\n\n")
+	b.WriteString("## Scenario Schedule\n\n")
+	for i, scenario := range scenarios {
+		fmt.Fprintf(&b, "%d. %s - product behavior\n", i+1, scenario)
+	}
+	b.WriteString("\n## Scenarios\n\n")
+	for _, scenario := range scenarios {
+		fmt.Fprintf(&b, "### %s: Product Behavior\n\nGiven the game is running\nWhen the user plays\nThen product behavior is visible\n\n", scenario)
+	}
+	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+		t.Fatalf("write feature: %v", err)
 	}
 }
 

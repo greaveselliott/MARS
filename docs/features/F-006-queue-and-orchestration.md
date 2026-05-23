@@ -194,6 +194,10 @@ Given CTO records an implementation handoff for a feature with multiple early sc
 When fewer than the first two or three early product scenarios are covered by ordinary tickets
 Then the disposition is blocked until CTO creates a small product backlog batch or deliberately groups adjacent early product scenarios in one bounded ticket
 
+Given the active operating plan names a specific BDD feature and scenario schedule
+When other active feature contracts still exist from starter planning or historical slices
+Then the CTO implementation handoff batch is evaluated against the active-plan feature first, so stale unselected contracts do not block the current Engineer handoff
+
 Given a later scheduled scenario is only about evidence ordering, governance, telemetry, or intervention-debt containment
 When the early product scenarios are already covered by ordinary tickets
 Then CTO may hand off to Engineer without creating a process-only implementation ticket

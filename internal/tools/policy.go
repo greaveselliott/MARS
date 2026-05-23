@@ -45,6 +45,7 @@ var mutatingTools = map[string]bool{
 	"release_orchestrate": true,
 }
 
+var toolsFeatureIDPattern = regexp.MustCompile(`\bF-\d{3}\b`)
 var toolsFeatureScenarioIDPattern = regexp.MustCompile(`\bF-\d{3}-S\d{3}\b`)
 var toolsFeatureScenarioHeadingPattern = regexp.MustCompile(`(?mi)^###\s+(F-\d{3}-S\d{3})\b.*$`)
 
@@ -2581,7 +2582,7 @@ func checkCTODispositionTicketBatch(root Root, session Session, status, nextNeed
 	if nextNeed != "implementation" && suggestedRole != "engineer" {
 		return nil
 	}
-	for _, featureID := range featureContractIDs(root) {
+	for _, featureID := range ctoHandoffFeatureContractIDs(root) {
 		scenarios, covered := featureScenarioCoverage(root, featureID)
 		if len(scenarios) < 2 {
 			continue
@@ -2627,6 +2628,63 @@ func splitScenarioList(value string) []string {
 		}
 	}
 	return out
+}
+
+func ctoHandoffFeatureContractIDs(root Root) []string {
+	planIDs := activePlanFeatureIDs(root)
+	if len(planIDs) == 0 {
+		return featureContractIDs(root)
+	}
+	existing := map[string]bool{}
+	for _, id := range featureContractIDs(root) {
+		existing[id] = true
+	}
+	var out []string
+	for _, id := range planIDs {
+		if existing[id] {
+			out = append(out, id)
+		}
+	}
+	if len(out) == 0 {
+		return featureContractIDs(root)
+	}
+	return out
+}
+
+func activePlanFeatureIDs(root Root) []string {
+	path, err := root.ResolvePath(filepath.Join("docs", "exec-plans", "active", "current-operating-plan.md"))
+	if err != nil {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var ids []string
+	seen := map[string]bool{}
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "**BDD Feature:**") &&
+			!strings.HasPrefix(trimmed, "**Scenario Schedule:**") &&
+			!strings.HasPrefix(trimmed, "**Current Failing Scenario:**") {
+			continue
+		}
+		for _, scenarioID := range toolsFeatureScenarioIDPattern.FindAllString(trimmed, -1) {
+			id := featureIDFromScenarioIDMust(scenarioID)
+			if !seen[id] {
+				seen[id] = true
+				ids = append(ids, id)
+			}
+		}
+		for _, id := range toolsFeatureIDPattern.FindAllString(trimmed, -1) {
+			id = strings.ToUpper(id)
+			if !seen[id] {
+				seen[id] = true
+				ids = append(ids, id)
+			}
+		}
+	}
+	return ids
 }
 
 func quoteStringArray(values []string) string {
@@ -2812,7 +2870,7 @@ func ctoImplementationHandoffTicketBatchSatisfied(root Root, role, nextNeed, sug
 		return false
 	}
 	checked := false
-	for _, featureID := range featureContractIDs(root) {
+	for _, featureID := range ctoHandoffFeatureContractIDs(root) {
 		scenarios, covered := featureScenarioCoverage(root, featureID)
 		if len(scenarios) < 2 {
 			continue

@@ -7589,3 +7589,40 @@ product that exposed the issue.
 - Foundation and deployed operating-model changes must explain the reusable
   mechanism they protect, while deployed product bugs stay in the deployed
   target.
+
+## AD-275: CTO Handoff Gates Follow The Active Plan Feature
+
+**Status:** Accepted
+**Date:** 2026-05-23
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The `demo-6` live rerun after v0.44.1 exposed a foundation-owned planning
+guardrail contradiction. CEO and COO moved the active operating plan to
+`F-002`, and the target already had a completed `F-002-S001` ticket. CTO then
+correctly tried to continue the Tetris core-mechanics slice, but the
+implementation handoff guard scanned every active feature contract and kept
+blocking on the older starter `F-001` walking-skeleton contract. The result was
+repeated `ticket_create`, `file_write`, and `job_disposition_record` guardrail
+blocks with no new backlog tickets and no Engineer dispatch.
+
+### Decision
+
+CTO implementation handoff batch checks now prefer the feature IDs named by
+`docs/exec-plans/active/current-operating-plan.md` through its `BDD Feature`,
+`Scenario Schedule`, or `Current Failing Scenario` fields. If the active plan
+does not name a resolvable feature, the policy falls back to scanning all
+active feature contracts as before. This keeps bootstrap safety for simple
+targets while preventing stale starter or historical feature contracts from
+blocking the current planned product slice.
+
+### Consequences
+
+- CTO can continue a promoted feature slice by creating the next active-plan
+  tickets instead of chasing an unselected starter contract.
+- The early product batch guard remains intact for the active feature, so
+  Engineer still receives a small ordered backlog rather than free-floating
+  implementation work.
+- The fix is foundation-owned and general to deployed targets with multiple
+  active feature contracts or promoted product plans.
