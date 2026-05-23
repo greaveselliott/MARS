@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.44.1] - 2026-05-23
+<!-- mars-harness-release: version=0.44.1 commit=7343cee455f8 -->
+
+### Impact
+- **ui:** Operators see improved reliability because expose model wait phase in terminal dashboard.
+
+### Why
+- **ui:** This matters because expose model wait phase in terminal dashboard closes a failure mode or degraded path.
+
+### What Changed
+- **ui:** Changed expose model wait phase in terminal dashboard (7343cee).
+
+### Fixes
+- **ui:** Expose model wait phase in terminal dashboard (7343cee)
+
 ## [0.44.0] - 2026-05-23
 <!-- mars-harness-release: version=0.44.0 commit=41f858359867 -->
 
