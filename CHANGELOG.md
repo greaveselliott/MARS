@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.45.0] - 2026-05-24
+<!-- mars-harness-release: version=0.45.0 commit=f0065ad06d42 -->
+
+### Impact
+- **onboarding:** Operators gain new capability: add source checkout update path.
+
+### Why
+- **onboarding:** This matters because add source checkout update path was missing from the shipped capability set.
+
+### What Changed
+- **onboarding:** Changed add source checkout update path (f0065ad).
+
+### Features
+- **onboarding:** Add source checkout update path (f0065ad)
+
 ## [0.44.3] - 2026-05-23
 <!-- mars-harness-release: version=0.44.3 commit=3601809bfd4a -->
 
