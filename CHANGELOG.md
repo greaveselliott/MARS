@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.45.1] - 2026-05-24
+<!-- mars-harness-release: version=0.45.1 commit=43a575dd0483 -->
+
+### Impact
+- **references:** Operators and future agents get clearer guidance because add AI engineering reading list.
+
+### Why
+- **references:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **references:** Changed add AI engineering reading list (43a575d).
+
+### Documentation
+- **references:** Add AI engineering reading list (43a575d)
+
 ## [0.45.0] - 2026-05-24
 <!-- mars-harness-release: version=0.45.0 commit=f0065ad06d42 -->
 
