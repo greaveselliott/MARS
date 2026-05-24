@@ -1,31 +1,21 @@
 # Quickstart
 
-Zero to first run in under five minutes.
+Install from a source checkout, download local inference assets, and run Mars
+Harness against a target repository.
 
-## Prerequisites
+## System Requirements
 
-- A machine with a GPU (NVIDIA, Apple Silicon, or AMD ROCm)
-- Go 1.22+ (only if building from source)
+- macOS or Linux
 - Git
+- Go 1.22+
+- Network access for setup downloads
+- Disk space for multi-GB GGUF model files under `~/.mars-harness/models`
+- Recommended GPU: Apple Silicon/Metal, NVIDIA CUDA, or AMD ROCm
 
-## Install
+CPU fallback exists for development and dry runs, but ordinary autonomous
+operation is designed for a GPU-backed local model.
 
-**Option A — Binary release (recommended):**
-
-```bash
-curl -sSfL https://raw.githubusercontent.com/greaveselliott/mars-harness/main/scripts/install.sh | bash
-```
-
-Or pin a specific version:
-
-```bash
-VERSION=v1.0.0 curl -sSfL https://raw.githubusercontent.com/greaveselliott/mars-harness/main/scripts/install.sh | bash
-```
-
-Homebrew is not currently published for Mars Harness. The supported install
-paths are the release installer above and the source-development build below.
-
-**Option B — Build from source:**
+## Install From Source
 
 ```bash
 git clone https://github.com/greaveselliott/mars-harness.git
@@ -33,7 +23,9 @@ cd mars-harness
 make install
 ```
 
-This installs `mars-harness` into your Go binary directory, usually `$(go env GOPATH)/bin`, and configures Fish, Zsh, Bash, POSIX sh/Ksh, Csh, or Tcsh so new terminals can resolve `mars-harness` automatically.
+This installs `mars-harness` into your Go binary directory, usually
+`$(go env GOPATH)/bin`, and configures Fish, Zsh, Bash, POSIX sh/Ksh, Csh, or
+Tcsh so new terminals can resolve `mars-harness` automatically.
 
 For one-off source builds, prefer `go build -o build/mars-harness ./cmd/mars-harness`. Avoid `go build ./cmd/mars-harness; ./mars-harness ...`: the semicolon runs the old binary if the build fails, and the source-tree binary is easy to confuse with the installed command.
 
@@ -44,10 +36,63 @@ mars-harness version
 # mars-harness v1.0.0 linux/amd64 commit=abc123 built=2026-04-12T00:00:00Z
 ```
 
-## Private Release Auth
+## Setup Local Inference
 
-Mars Harness currently updates from private GitHub Release assets. Configure
-release auth once as part of getting started:
+Run the first-time setup wizard:
+
+```bash
+mars-harness setup --skip-github
+mars-harness doctor
+```
+
+Setup creates `~/.mars-harness/`, writes default config, detects hardware,
+installs the pinned `llama-server` binary, downloads pinned GGUF models into
+`~/.mars-harness/models`, and configures shell PATH for the installed command.
+
+Use `--skip-download` only if compatible model files are already present. Use
+`--test-mode` only for dry/local setup paths that avoid downloads and external
+services.
+
+Mars Harness chooses a local inference profile automatically during setup. On
+Apple Silicon and other unified-memory machines, this avoids loading the
+largest Q8 model when a smaller model is likely to run faster overall.
+
+Manual overrides are available in `~/.mars-harness/config.yaml`:
+
+```yaml
+performance_profile: auto       # auto | quality | balanced | speed
+llama_parallel: 1               # default strict-trunk single-agent setting
+llama_flash_attention: auto
+```
+
+After changing `performance_profile`, run `mars-harness setup --skip-github`
+once so any newly required model files are downloaded.
+
+## Update From A Clone
+
+Run this from the Mars Harness source checkout:
+
+```bash
+make update-tool
+```
+
+`make update-tool` fast-forwards the checkout from `origin/main` when the
+worktree is clean, installs the updated command with `go install`, refreshes
+shell PATH setup, and prints `mars-harness version`.
+
+If you have local source changes, commit or stash them first. To install your
+current checkout without fetching remote changes, run:
+
+```bash
+make install
+```
+
+## Optional Binary Releases
+
+Binary release assets and GitHub Release mirrors remain available for
+compatibility, but they are not required for source checkout onboarding.
+
+If you use the binary updater, configure release auth once:
 
 ```bash
 gh auth login
@@ -55,35 +100,10 @@ mars-harness auth github setup
 mars-harness auth github check
 ```
 
-`mars-harness` resolves auth in this order: `GH_TOKEN`, `GITHUB_TOKEN`, GitHub
-CLI auth from `gh auth token`, then a local token stored under
-`~/.mars-harness/`. `mars-harness auth github setup` verifies GitHub CLI auth
-and saves that owner-only local fallback so later updates do not depend on
-keychain access. For headless installs, set `GH_TOKEN` or `GITHUB_TOKEN`, or
-run:
+Then:
 
 ```bash
-mars-harness auth github setup --token <token>
-```
-
-Token values are never printed and must never be committed to target repos.
-
-## Upgrade The Command
-
-Upgrade or reinstall the installed command without changing into the source checkout:
-
-```bash
-mars-harness update check --repo ~/my-project
 mars-harness update tool
-```
-
-By default this downloads the latest private platform release asset, verifies
-`checksums.txt`, atomically replaces the current `mars-harness` binary, and
-refreshes shell PATH setup for that directory. If auth is missing or expired,
-run `mars-harness auth github setup`. For source-development channels:
-
-```bash
-mars-harness update tool --source --version main
 mars-harness update tool --dry-run
 ```
 
@@ -106,37 +126,6 @@ Use JSON when another agent or automation needs to decide which update action to
 ```bash
 mars-harness update check --repo ~/my-project --json
 ```
-
-## Setup
-
-Run the first-time wizard. This checks private-release auth, detects your GPU,
-downloads a model, and creates `~/.mars-harness/`.
-
-```bash
-mars-harness auth github setup
-mars-harness setup
-```
-
-Use `--skip-download` to skip model download if you already have a compatible
-GGUF model. Use `--skip-github` to skip private-release auth and optional
-GitHub integration checks. Use `--test-mode` for local dry setup paths that
-avoid downloads and external services.
-
-### Local inference speed
-
-Mars Harness chooses a local inference profile automatically during setup.
-On Apple Silicon and other unified-memory machines, this avoids loading the
-largest Q8 model when a smaller model is likely to run faster overall.
-
-Manual overrides are still available in `~/.mars-harness/config.yaml`:
-
-```yaml
-performance_profile: auto       # auto | quality | balanced | speed
-llama_parallel: 1               # default strict-trunk single-agent setting
-llama_flash_attention: auto
-```
-
-After changing `performance_profile`, run `mars-harness setup` once so any newly required model files are downloaded.
 
 ## Initialise a Repository
 

@@ -5,7 +5,7 @@ GOBIN := $(shell $(GO) env GOBIN)
 GOPATH := $(shell $(GO) env GOPATH)
 INSTALL_BIN := $(if $(GOBIN),$(GOBIN),$(GOPATH)/bin)
 
-.PHONY: build install test vet lint check dogfood clean
+.PHONY: build install update-tool test vet lint check dogfood clean
 
 build:
 	CGO_ENABLED=0 $(GO) build -o $(BUILD_DIR)/$(BINARY) ./cmd/mars-harness
@@ -16,6 +16,9 @@ install:
 	@echo "Installed $(BINARY) to $(INSTALL_BIN)/$(BINARY)"
 	@echo "Run now: $(INSTALL_BIN)/$(BINARY) version"
 	@echo "After opening a new terminal or reloading your shell: $(BINARY) version"
+
+update-tool:
+	GO=$(GO) BINARY_NAME=$(BINARY) scripts/update-tool.sh
 
 test:
 	$(GO) test ./...

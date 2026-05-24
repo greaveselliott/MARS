@@ -20,6 +20,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 3. F-002-S003 - `mars-harness update tool` configures shell PATH after reinstalling/upgrading the binary.
 4. F-002-S004 - PATH setup is idempotent and does not duplicate profile snippets.
 5. F-002-S005 - Unsupported shells get clear manual remediation instead of a misleading success claim.
+6. F-002-S006 - Source `make update-tool` refreshes a clean clone and configures shell PATH after installing the updated binary.
 
 ## Scenarios
 
@@ -53,6 +54,19 @@ Given the user's shell is not one of Fish, Zsh, Bash, POSIX sh, Ksh, Csh, or Tcs
 When PATH setup runs
 Then the command reports the unsupported shell and the install directory the user must add manually
 
+### F-002-S006: Source Clone Update Configures PATH
+
+Given a developer has a clean Mars Harness source checkout with an `origin/main` remote
+When the developer runs `make update-tool`
+Then the checkout fast-forwards only when it can do so safely
+And Go installs `mars-harness` into the resolved Go binary directory
+And the installed binary runs `mars-harness path setup --install-dir <dir>`
+And the command prints the installed `mars-harness version`
+
+Given the source checkout has uncommitted changes, no `origin` remote, or divergent history
+When the developer runs `make update-tool`
+Then the command refuses to install and tells the developer to resolve the checkout or use `make install` for a local-only install
+
 ## Out of Scope
 
 - Rewriting system-wide `/etc/paths` or administrator-owned shell profiles.
@@ -70,3 +84,4 @@ None.
 - F-002-S003: `go test ./internal/selfupdate`
 - F-002-S004: `go test ./internal/shellpath -run TestEnsureZshIsIdempotent`
 - F-002-S005: `go test ./internal/shellpath -run TestEvaluateUnsupportedShellDoesNotWrite`
+- F-002-S006: `go test ./internal/selfupdate -run TestUpdateToolScript`

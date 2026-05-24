@@ -25,11 +25,12 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 8. F-009-S008 - Generated release notes explain impact, why, and what changed before commit buckets.
 9. F-009-S009 - Historical release entries are backfilled to the current narrative standard from marker ranges.
 10. F-009-S010 - The installed CLI reports its version through the explicit command and root-level version flags.
-11. F-009-S011 - Private release auth is a first-class Getting Started operating model.
+11. F-009-S011 - Private release auth is an optional binary-release operating model.
 12. F-009-S012 - Approved product validation enters release review automatically in generated target lifecycles.
 13. F-009-S013 - GitHub Release mirrors are optional and never replace local asset verification.
 14. F-009-S014 - Version tags can only be created at the release-note commit.
 15. F-009-S015 - Release Manager uses the structured Mars Harness CLI tool instead of stale PATH binaries.
+16. F-009-S016 - Source checkout onboarding and update are the primary path for repo cloners.
 
 ## Scenarios
 
@@ -103,10 +104,10 @@ Given a user wants to confirm the installed Mars Harness binary version
 When `mars-harness version`, `mars-harness --version`, or `mars-harness -v` runs
 Then each entrypoint prints the same version, OS/architecture, commit, and build date line
 
-### F-009-S011: Private Release Auth Getting Started
+### F-009-S011: Optional Private Release Auth
 
 Given Mars Harness release assets live in a private GitHub Release repository
-When a user follows Getting Started
+When a user follows optional binary release setup
 Then the documented sequence includes `mars-harness auth github setup`, `mars-harness setup`, `mars-harness doctor`, and `mars-harness update tool`
 And `mars-harness auth github check` reports `status`, `auth_source`, `repo_access`, `release_access`, `message`, and `next_action` without printing token values
 And `mars-harness auth github setup` verifies access and stores a local fallback only when auth comes from GitHub CLI or an explicit `--token`
@@ -128,6 +129,14 @@ Given a deployed target has an older `mars-harness` binary earlier on `PATH`
 When Release Manager needs release notes, backfill, or asset verification
 Then the role uses `mars_harness_cli` with structured args instead of `shell_exec mars-harness ...`
 And `shell_exec` blocks direct `mars-harness` binary invocations with a correction that names the equivalent `mars_harness_cli` args
+
+### F-009-S016: Source Checkout Onboarding
+
+Given a user clones the Mars Harness source repo
+When they follow the README quick start
+Then the primary path installs with `make install`, runs `mars-harness setup --skip-github`, verifies with `mars-harness doctor`, initializes a target repo, and previews an agent run with `--dry-run`
+And the README describes system requirements, GPU expectations, model downloads, and disk/network prerequisites before optional binary release auth
+And source checkout updates use `make update-tool` as the recommended command for safely fast-forwarding and reinstalling from the clone
 And release review cannot fail solely because a stale installed binary lacks a newer command surface
 
 ### F-009-S013: Optional GitHub Release Mirror

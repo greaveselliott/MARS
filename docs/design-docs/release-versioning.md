@@ -184,13 +184,18 @@ publication modes have a stable contract.
 
 Operators should not need to `cd` into the source repository to upgrade the built binary. The installed `mars-harness` command owns its own update surface through `mars-harness update tool`.
 
-The packaged-user path downloads the matching `mars-harness-{os}-{arch}` release
-asset, verifies `checksums.txt`, and atomically replaces the binary in the
-directory containing the currently running command. This avoids requiring Go or a
-source checkout for ordinary upgrades.
+The primary path for anyone cloning this repo is source checkout installation:
+`make install` installs the current checkout, while `make update-tool` safely
+fast-forwards a clean clone from `origin/main`, reinstalls with `go install`,
+refreshes shell PATH setup, and prints the installed version.
+
+The packaged-user path remains available for binary release assets. It downloads
+the matching `mars-harness-{os}-{arch}` asset, verifies `checksums.txt`, and
+atomically replaces the binary in the directory containing the currently running
+command. This avoids requiring Go or a source checkout for packaged users.
 
 Private release repositories use the same checksum-verified path through the
-Getting Started private release auth operating model. Operators run
+optional binary-release auth operating model. Operators run
 `mars-harness auth github setup` once. When setup verifies access through
 GitHub CLI auth, it stores that token as an owner-only local fallback under
 `~/.mars-harness/` so future update runs do not depend on keychain access.
@@ -205,11 +210,13 @@ do not fail behind a misleading 404. Missing or invalid auth points to
 `mars-harness auth github setup`; headless installs may use `GH_TOKEN`,
 `GITHUB_TOKEN`, or `mars-harness auth github setup --token <token>`.
 
-`mars-harness setup` includes a private-release auth check before ordinary
-runtime setup. `--skip-github` and `--test-mode` skip that external auth check.
+Source checkout onboarding runs `mars-harness setup --skip-github`, so private
+release auth is not required to install local inference assets. Plain
+`mars-harness setup` still includes a private-release auth check for packaged
+binary users; `--skip-github` and `--test-mode` skip that external auth check.
 `mars-harness doctor` reports private-release auth readiness with a concrete
-fix, and agents can use the read-only `github_auth_check` tool before update,
-release verification, install repair, or version-drift remediation.
+fix, and agents can use the read-only `github_auth_check` tool before binary
+update, release verification, install repair, or version-drift remediation.
 
 Source-development updates remain available through `mars-harness update tool
 --source` or `mars-harness update tool --version main`. That path uses `go
@@ -251,9 +258,12 @@ mars-harness path setup --install-dir <dir>
 
 `make install` runs that command through the freshly installed binary using its
 absolute path, so the first source install fixes Fish/Zsh/Bash/POSIX PATH for
-future terminals. `update tool` repeats the same setup after reinstalling the
-binary. `setup` includes the same step so binary-release installers can call one
-setup flow later.
+future terminals. `make update-tool` is the source-checkout update path for repo
+cloners: it refuses dirty, missing-origin, and diverged checkouts, fast-forwards
+clean clones from `origin/main`, installs through `go install`, repeats PATH
+setup, and prints the installed version. `update tool` repeats the same setup
+after reinstalling the binary. `setup` includes the same step so binary-release
+installers can call one setup flow later.
 
 The command cannot mutate the already-running parent shell process after it
 exits. It prints a reload hint for the current session and makes new terminals

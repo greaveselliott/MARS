@@ -36,7 +36,7 @@ Evidence is stored in three places:
 
 | Surface | Evidence command | Expected artifact | Failure route |
 | --- | --- | --- | --- |
-| setup/path | `mars-harness setup --test-mode` and `mars-harness path setup --install-dir <tmp-bin>` | Config and shell-path result without duplicate profile snippets | Intervention-debt ticket for setup or shellpath |
+| setup/path | `mars-harness setup --test-mode`, `mars-harness path setup --install-dir <tmp-bin>`, and source-update script tests for `make update-tool` | Config and shell-path result without duplicate profile snippets; source checkout update refuses unsafe git state before install | Intervention-debt ticket for setup or shellpath |
 | init/upgrade | `mars-harness init --repo <temp repo>` then `mars-harness update harness --repo <temp repo>` | `.harness/`, goals, BDD docs, role registry, quality score, release docs | Target-harness drift ticket |
 | register/start | `mars-harness start --repo <temp repo> --db <temp db outside repo>` with deterministic shutdown | Per-repo DB, registered repo, one idempotent CEO bootstrap job | Queue/orchestrator telemetry |
 | serve/control plane | `mars-harness serve --db <temp db> --addr :0` plus API control calls | Health, pause/resume/restart/scan/run-role endpoints respond | Control-plane ticket |

@@ -20,53 +20,91 @@ You provide a machine with a GPU. Mars Harness autonomously manages your develop
 
 Full text: [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
 
+## System Requirements
+
+- macOS or Linux
+- Git
+- Go 1.22+ for source installs
+- Network access for first setup downloads
+- Disk space for multi-GB GGUF model files under `~/.mars-harness/models`
+- Recommended GPU: Apple Silicon/Metal, NVIDIA CUDA, or AMD ROCm
+
+CPU fallback exists for development and dry runs, but the normal autonomous
+workflow is designed for a GPU-backed local model.
+
 ## Quick Start
 
 ```bash
-# Install from published GitHub Release assets
-curl -sSfL https://raw.githubusercontent.com/greaveselliott/mars-harness/main/scripts/install.sh | bash
+# Clone and install from source
+git clone https://github.com/greaveselliott/mars-harness.git
+cd mars-harness
+make install
 
-# Private release auth and setup
-mars-harness auth github setup
-mars-harness setup
+# Download local inference assets and verify the machine
+mars-harness setup --skip-github
 mars-harness doctor
-mars-harness update tool
 
-# Run a single role against a repo
-mars-harness run pipeline-fixer --repo /path/to/your/repo
+# Prepare a target repo and preview an agent run
+mars-harness init --repo /path/to/your/repo
+mars-harness run engineer --repo /path/to/your/repo --dry-run
 
 # Start the full autonomous pipeline
 mars-harness start --repo /path/to/your/repo
 ```
 
-Homebrew is not a supported install path yet; use the release installer above
-or the source-development path below until a tap is published.
+`make install` installs the current checkout exactly as-is. It uses `go install`
+and then runs shell PATH setup through the installed binary so new terminals can
+resolve `mars-harness`.
 
-When working from a source checkout, install the dev binary once instead of running `./mars-harness` from the repo root:
+Avoid `go build ./cmd/mars-harness; ./mars-harness ...`: the semicolon can run
+a stale old binary if the build fails, and the source-tree binary is easy to
+confuse with the installed command.
+
+## Local Models And Setup
+
+`mars-harness setup --skip-github` is the source-checkout first-run path. It:
+
+- creates `~/.mars-harness/`
+- writes default config
+- detects hardware
+- installs the pinned `llama-server` binary
+- downloads pinned GGUF model files into `~/.mars-harness/models`
+- configures shell PATH for the installed command
+
+Use `--skip-download` only when compatible model files are already present. Use
+`--test-mode` for dry/local setup paths that intentionally avoid downloads and
+external services.
+
+## Updating From A Clone
+
+Run this from the Mars Harness source checkout:
 
 ```bash
-cd /path/to/target-repo
-make install
-mars-harness start --repo /path/to/target-repo
+make update-tool
 ```
 
-Avoid `go build ./cmd/mars-harness; ./mars-harness ...`: the semicolon can run a stale old binary if the build fails.
+`make update-tool` fast-forwards the checkout from `origin/main` when the
+worktree is clean, installs the updated command with `go install`, refreshes
+shell PATH setup, and prints the installed version. If you have local changes,
+commit or stash them first, or run `make install` to install the current checkout
+without pulling.
 
-Upgrade the installed command without changing directories:
+Update generated harness files in a target repo with:
 
 ```bash
 mars-harness update check --repo /path/to/target-repo
-mars-harness update tool
 mars-harness update harness --repo /path/to/target-repo
 ```
 
-`update tool` uses checksum-verified private GitHub Release assets by default.
-Run `mars-harness auth github setup` once during getting started so update,
-version-drift, and optional release-asset mirrors can reuse the same auth model. The
-resolver tries `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth from `gh auth token`,
-then an optional local token stored under `~/.mars-harness/`. Source development
-channels remain available with `mars-harness update tool --source --version
-main`.
+## Optional Binary Releases
+
+The source checkout path above is the supported path for anyone pulling this
+repo today. Binary release assets and GitHub Release mirrors remain available
+for compatibility, but they are not required for source onboarding.
+
+If you use the binary updater, run `mars-harness auth github setup` once so
+private release-asset workflows can reuse GitHub CLI or token auth. Source users
+can ignore that step and use `make update-tool` instead.
 
 Remove Mars Harness from a target repo with a dry-run kill switch:
 
