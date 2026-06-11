@@ -33,8 +33,12 @@ For one-off source builds, prefer `go build -o build/mars-harness ./cmd/mars-har
 
 ```bash
 mars-harness version
-# mars-harness v1.0.0 linux/amd64 commit=abc123 built=2026-04-12T00:00:00Z
+# mars-harness 0.45.1 darwin/arm64 commit=abc123 built=2026-06-11T00:00:00Z
 ```
+
+The printed version matches the repo `VERSION` file (no `v` prefix); release
+tags use the `vX.Y.Z` form. Run `mars-harness --help` for the full command
+surface beyond this quickstart.
 
 ## Setup Local Inference
 

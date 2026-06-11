@@ -6,14 +6,17 @@ complexity: small
 work_type: docs
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
+evidence_links:
+  - "AD-277 in docs/design-docs/self-improvement.md, indexed in docs/design-docs/index.md"
+  - "mars-harness run --help / setup --help / version output compared against docs/quickstart.md on 2026-06-11"
+  - "go test ./internal/docsconsistency/... ./internal/docsync/..."
+verified_by: "foundation-maintainer"
 owner: "foundation-maintainer"
-last_attempt: "TBD"
+last_attempt: "2026-06-11"
 blocker: "none"
 blocked_by: []
-trace_id: "TBD"
-next_action: "Retire docs/prompt-port-status.md and verify docs/quickstart.md against the current cmd/mars-harness command surface."
+trace_id: "none"
+next_action: "Done; prompt-port-status.md retired under AD-277 and quickstart drift fixed."
 source: Foundation improvement plan Phase 1 WS-A (provisional T-020)
 created: 2026-06-11
 depends_on: []
@@ -42,14 +45,14 @@ Ownership classification: foundation-owned documentation hygiene.
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] prompt-port-status.md is removed and no live doc links to it.
-- [ ] quickstart.md commands and flags match the current CLI help output.
+- [x] prompt-port-status.md is removed and no live doc links to it.
+- [x] quickstart.md commands and flags match the current CLI help output (run/setup flags verified verbatim; version example corrected to the unprefixed `VERSION`-file form; install pin example made placeholder `vX.Y.Z`).
 
 ### Edge cases and negative paths
-- [ ] Done-ticket history that names the file is preserved unchanged.
+- [x] Done-ticket history that names the file is preserved unchanged (docs/tickets/done/MH-025-mars-prompt-port.md untouched).
 
 ### Non-goals
 - Rewriting quickstart structure or adding new tutorial content.
 
 ### Observability, docs, and regressions
-- [ ] go test ./internal/docsconsistency/... ./internal/docsync/... passes.
+- [x] go test ./internal/docsconsistency/... ./internal/docsync/... passes (run 2026-06-11).

@@ -70,6 +70,21 @@ create a second source of truth for the same learnings. If a future failure
 class needs a durable recipe, it goes through the AD or remediation-recipe
 path, not a freestanding tracker file.
 
+### AD-277: Retire Completed Snapshot Docs Outside docs/exec-plans
+
+`docs/prompt-port-status.md` tracked the MH-025 Mars prompt port. Every
+checklist row completed in 2026-04, the role inventory moved to
+`examples/roles/` plus the checked role registry in `docs/roles/ROLES.md`, and
+the tier assignments were superseded by manifest trust metadata. Keeping a
+fully-checked snapshot at the docs root presents stale role doctrine as
+current.
+
+As of 2026-06-11 the snapshot is retired. The durable rule: when a tracking
+snapshot's content is wholly superseded by checked, living artifacts (role
+registry, manifests, done tickets), the snapshot is deleted and the done
+ticket remains the historical record. `docs/quickstart.md` was reconciled
+against the 2026-06-11 CLI command surface in the same change.
+
 ### Design anchors
 
 - **Intervention detection:** classify events as **clear interventions** (unambiguous human override), **ambiguous** (could be normal workflow), or **non-interventions** to reduce false-positive evolution; store classification rationale in the trace.
