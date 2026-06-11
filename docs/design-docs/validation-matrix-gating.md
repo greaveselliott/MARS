@@ -63,10 +63,18 @@ Replay evidence is durable, discoverable, and uniform:
   `2026-05-19-demo-123-live-lifecycle.md` already does).
 - **Required fields per run section** (from AD-138 step 3 and
   `docs/validation/README.md`): exact command, target path or remote, source
-  ref or binary, database/log paths, job sequence, target
-  commits/tickets/docs produced, telemetry highlights, product progress
-  reached, target intervention-debt count, runtime artifacts, and stop
-  reason.
+  ref or binary, **model identity (model name, quantization, context size,
+  and the performance profile that resolved it) per inference tier used**,
+  database/log paths, job sequence, target commits/tickets/docs produced,
+  telemetry highlights, product progress reached, target intervention-debt
+  count, runtime artifacts, and stop reason.
+- **Model identity is part of the measurement contract:** pace baselines and
+  pace-delta comparisons are only valid between runs on the same model
+  identity. A model or quantization change invalidates prior pace baselines
+  for Phase-style before/after claims; the affected baselines are
+  reclassified evidence-only and re-captured on the new model (discovered
+  2026-06-12 when the quality-profile Q8_0 weights maxed unified memory and
+  the harness moved to the balanced model mid-measurement).
 - **What counts as a pass:** the rerun reaches at least the lifecycle stage
   of the prior baseline for that archetype; the failure signature the change
   claimed to fix does not reappear; no new foundation-owned failure class
@@ -91,6 +99,13 @@ Replay evidence is durable, discoverable, and uniform:
 
 ## Discoveries
 
+- **2026-06-12 — Model identity added to the AD-285 contract:** the first
+  T-011 baseline attempt ran on the heavy quality-profile model while the
+  operator was swapping to the balanced model for memory and speed; the run
+  was reclassified evidence-only because Phase 3 replays will run on the
+  balanced model and pace deltas would be confounded. AD-285 now requires
+  model identity per tier in every run section and ties baseline validity to
+  model identity.
 - **2026-06-11 — Phase 2 WS-C slices are the first consumers:** T-024/T-025
   (local quality gates) and T-026/T-027 (release flow audit, export rendering)
   were classified under this table while it was being written. The quality

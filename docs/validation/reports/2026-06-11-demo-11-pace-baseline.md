@@ -6,6 +6,32 @@
 foundation improvement plan) plus the AD-218 Inventory/API confirmation rerun
 requested by T-011 `next_action`. Recorded per the AD-285 evidence contract.
 
+> **Evidence reclassification (2026-06-12):** Run 1 below executed on the
+> heavy quality-profile model (`Qwen3-Coder-30B-A3B-Instruct-Q8_0`, reasoning
+> ctx 131072) whose weights were maxing unified memory and slowing inference.
+> The operator swapped the harness to the balanced model for all future runs,
+> so this run is **discarded as a Phase 3 pace baseline** (pace deltas against
+> it would be confounded by the model change) and kept as **evidence-only**
+> heavy-model performance data supporting the swap decision. The findings
+> (F1–F3) remain valid: F1 is a deterministic policy wedge independent of
+> model identity. The replacement baseline on the balanced model is
+> `docs/validation/baselines/2026-06-12-factory-pace-baseline.md`.
+
+## Heavy-model performance evidence (supports the model swap)
+
+Model identity for Run 1: `Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf` (32.5 GB
+weights) for both reasoning (ctx 131072) and coding (ctx 32768) tiers under
+`performance_profile: quality` resolution on a 64 GiB unified-memory machine.
+With both tier servers resident, weights alone exceeded 50 GB of unified
+memory.
+
+- Per-role wall times: CEO 30.0s (26 turns), COO 105.9s (42 turns),
+  cto-weekly **724.5s (12.1 minutes, 105 turns)** before `max_turns`.
+- The same heavy model also served a demo-12 frontend probe run
+  (2026-06-12 00:00–00:10): two Engineer jobs ended `max_turns` at ~6 minutes
+  each (51 LLM calls each), with multi-minute model load times whenever the
+  coding-tier server started alongside the resident reasoning server.
+
 ## Run 1: Inventory/API Canary On v0.50.1 — 2026-06-11
 
 ### Setup
@@ -19,6 +45,9 @@ requested by T-011 `next_action`. Recorded per the AD-285 evidence contract.
 - **Source ref / binary:** `mars-harness 0.50.1`, built with `make install`
   from `71cb744` on `codex/main-lifecycle-stabilization-rebased` (same tip as
   `origin/main`)
+- **Model identity:** `Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf` for reasoning
+  (ctx 131072) and coding (ctx 32768) tiers; quality-profile resolution
+  (heavy model — see the reclassification banner above)
 - **Database:** `~/.mars-harness/db/demo-11/mars.db`
 - **Log:** `~/.mars-harness/traces/logs/demo-11-baseline-start.log`
 - **Environment note:** before launch, a stale `mars-harness start` process
@@ -61,8 +90,11 @@ ticket T-001 for inventory API health endpoint` (`cfb70d6` — committed only
   target backlog as foundation-owned intervention signals.
 - `max_turns` event for cto-weekly routed to foundation telemetry.
 - `scores export` (v0.50.1) rendered Factory Pace and the new AD-283
-  Convergence And Guardrails sections from this live run; tables are copied
-  into [../baselines/2026-06-11-factory-pace-baseline.md](../baselines/2026-06-11-factory-pace-baseline.md).
+  Convergence And Guardrails sections from this live run. Factory Pace rows:
+  ceo 26.0 turns / 12.0 tools / 30.0s; coo 42.0 / 20.0 / 105.9s; cto-weekly
+  105.0 / 51.0 / 724.5s with 1 limit stop. Convergence rows: cto-weekly
+  1 max_turns ("convergence-failure evidence"); telemetry triage rows:
+  cto-weekly guardrail_block x16, ceo x1, coo x1.
 
 ### Product progress reached
 
@@ -146,6 +178,8 @@ Phase 3 convergence telemetry work touches this surface.
 The prior recorded baseline for this archetype (`demo-inventory-api-run65`,
 pre-0.50 patched binary) reached Engineer product rework. This run stops two
 stages earlier, so the rerun does **not** meet the "reaches at least the
-lifecycle stage of the prior baseline" bar: the baseline is recorded as
-honest measurement, the lifecycle-reach regression is owned by F1, and no
-improvement claim is made for this archetype on v0.50.1.
+lifecycle stage of the prior baseline" bar: the lifecycle-reach regression is
+owned by F1, and no improvement claim is made for this archetype on v0.50.1.
+Per the 2026-06-12 reclassification banner, this run is heavy-model
+evidence-only and is not the Phase 3 pace baseline; the balanced-model rerun
+in `2026-06-12-demo-11-pace-baseline.md` owns that role.

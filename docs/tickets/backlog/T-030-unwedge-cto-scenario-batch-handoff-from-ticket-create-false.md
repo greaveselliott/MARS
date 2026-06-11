@@ -6,7 +6,7 @@ complexity: medium
 work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: ["docs/validation/reports/2026-06-11-demo-11-pace-baseline.md#f1-foundation-owned-tool-policy-ticket_create-fuzzy-title-dedupe-falsely-rejects-distinct-endpoint-tickets-and-wedges-cto-against-the-scenario-coverage-handoff-gate", "docs/validation/baselines/2026-06-11-factory-pace-baseline.md"]
+evidence_links: ["docs/validation/reports/2026-06-11-demo-11-pace-baseline.md#f1-foundation-owned-tool-policy-ticket_create-fuzzy-title-dedupe-falsely-rejects-distinct-endpoint-tickets-and-wedges-cto-against-the-scenario-coverage-handoff-gate", "docs/validation/baselines/2026-06-12-factory-pace-baseline.md"]
 verified_by: "TBD"
 owner: "foundation-maintainer"
 last_attempt: "TBD"
