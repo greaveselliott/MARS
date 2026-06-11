@@ -320,3 +320,10 @@ blocker that gates dispatch.
   shell-command ticket lifecycle parsing lowercased `T-001`/`T-002` ticket file
   paths before reading frontmatter on Linux, allowing missing-evidence ticket
   done moves to escape only on case-sensitive filesystems.
+- `v0.45.1`: the first live `mars-harness release audit --repo . --limit 5`
+  run on 2026-06-11 (T-026, AD-282) reported `missing_release` — the tag is
+  pushed but no GitHub Release object exists. Remediation: checkout the
+  `v0.45.1` release-note commit on `main`, then run `mars-harness release
+  publish-assets --repo . --version v0.45.1 --upload github`. Not executed
+  from the `codex/main-lifecycle-stabilization-rebased` branch because release
+  publication belongs to trunk state, not in-flight branch work.

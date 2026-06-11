@@ -31,6 +31,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 14. F-009-S014 - Version tags can only be created at the release-note commit.
 15. F-009-S015 - Release Manager uses the structured Mars Harness CLI tool instead of stale PATH binaries.
 16. F-009-S016 - Source checkout onboarding and update are the primary path for repo cloners.
+17. F-009-S017 - `release audit` detects notes-only and missing GitHub releases across recent tags.
 
 ## Scenarios
 
@@ -155,6 +156,16 @@ Then tag creation is blocked until the release-note files are committed as `rele
 And the tag is blocked when its explicit target resolves to any commit other than the current release-note `HEAD`
 And `git_release_guard` fails when `vX.Y.Z` already exists but points at a pre-release-note commit
 
+### F-009-S017: Release Mirror Audit
+
+Given local `vX.Y.Z` tags exist for published versions
+When `mars-harness release audit --repo .` runs
+Then the newest tags (default 10, `--limit` configurable) are checked against the GitHub releases list
+And a tag without a release object is reported as `missing_release`
+And a release object missing required platform binaries or `checksums.txt` is reported as `notes_only` with the missing asset names
+And every finding names the exact `release publish-assets --repo . --version vX.Y.Z --upload github` backfill command and the command exits non-zero
+And when local tags or the GitHub API are unavailable the audit reports the skip reason and exits zero so the optional mirror does not fail the pipeline
+
 ## Out of Scope
 
 - Treating tags as the only release-note state.
@@ -182,3 +193,4 @@ None.
 - F-009-S013: `go test ./cmd/mars-harness -run TestReleasePublishAssetsCommandBuildsLocalDist`, `go test ./internal/docsconsistency -run TestReleasePublicationIsLocalFirst`, and `go test ./internal/scanner -run TestInit_success`
 - F-009-S014: `go test ./internal/tools -run 'TestShellExecPolicyBlocksReleaseTag|TestGitReleaseGuardReportsStaleReleaseTag'`
 - F-009-S015: `go test ./internal/tools -run TestShellExecPolicyBlocksMarsHarnessBinary` and `go test ./internal/scanner -run TestInit_success`
+- F-009-S017: `go test ./internal/release -run TestAudit`

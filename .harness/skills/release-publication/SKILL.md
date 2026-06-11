@@ -31,8 +31,14 @@ release docs unless they explicitly define their own binary publication flow.
 10. If GitHub mirroring was enabled, verify `gh release view vX.Y.Z --repo
     greaveselliott/mars-harness` and then run `mars-harness release
     verify-assets --version vX.Y.Z`.
-11. If local assets or the optional mirror are missing, record the blocker in
-    the active plan before moving to unrelated work.
+11. Audit the mirror for drift across recent versions, not just the one you
+    published: `mars_harness_cli` args `["release","audit","--repo","."]` or
+    `mars-harness release audit --repo .`. Each finding names a notes-only or
+    missing release with the exact `publish-assets` backfill command; run the
+    backfill or record the blocker.
+12. If local assets, the optional mirror, or the audit findings are
+    unresolved, record the blocker in the active plan before moving to
+    unrelated work.
 
 ## Token Safety
 

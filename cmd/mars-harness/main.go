@@ -1147,11 +1147,84 @@ func releaseCmd() *cobra.Command {
 		Use:   "release",
 		Short: "Manage semantic versions and patch notes",
 	}
+	cmd.AddCommand(releaseAuditCmd())
 	cmd.AddCommand(releaseBackfillNotesCmd())
 	cmd.AddCommand(releaseNotesCmd())
 	cmd.AddCommand(releasePublishAssetsCmd())
 	cmd.AddCommand(releaseVerifyAssetsCmd())
 	return cmd
+}
+
+func releaseAuditCmd() *cobra.Command {
+	var (
+		repoPath       string
+		githubRepoFull string
+		limit          int
+		jsonOut        bool
+	)
+	cmd := &cobra.Command{
+		Use:   "audit",
+		Short: "Detect notes-only or missing GitHub releases for recent tags",
+		Long: `Audit the newest local vX.Y.Z tags against GitHub Releases and report
+versions whose release object is missing or has incomplete binary assets
+(notes-only releases). Each finding names the exact publish-assets backfill
+command. When tags or the GitHub API are unavailable the audit reports the
+blocker and exits successfully, because the GitHub mirror is optional
+infrastructure.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if repoPath == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("release audit: cannot determine working directory: %w", err)
+				}
+			}
+			result, err := release.Audit(cmd.Context(), release.AuditConfig{
+				RepoRoot:     repoPath,
+				RepoFullName: githubRepoFull,
+				Limit:        limit,
+			})
+			if err != nil {
+				return err
+			}
+			return printReleaseAuditResult(cmd.OutOrStdout(), result, jsonOut)
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
+	cmd.Flags().StringVar(&githubRepoFull, "github-repo", selfupdate.DefaultRepoFullName, "GitHub repository in owner/name form")
+	cmd.Flags().IntVar(&limit, "limit", 10, "Newest version tags to audit")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func printReleaseAuditResult(out io.Writer, result release.AuditResult, jsonOut bool) error {
+	if jsonOut {
+		if err := writeJSON(out, result); err != nil {
+			return err
+		}
+	} else {
+		fmt.Fprintf(out, "Release audit: %s\n", result.RepoFullName)
+		if result.Skipped {
+			fmt.Fprintf(out, "Skipped: %s\n", result.SkipReason)
+			fmt.Fprintln(out, "Record this blocker if release mirror health was expected to be verifiable.")
+			return nil
+		}
+		fmt.Fprintf(out, "Checked: %s\n", strings.Join(result.Checked, ", "))
+		for _, finding := range result.Findings {
+			fmt.Fprintf(out, "FINDING (%s): %s\n", finding.Class, finding.TagName)
+			if len(finding.Missing) > 0 {
+				fmt.Fprintf(out, "  Missing: %s\n", strings.Join(finding.Missing, ", "))
+			}
+			fmt.Fprintf(out, "  Fix: %s\n", finding.Remediation)
+		}
+		if len(result.Findings) == 0 {
+			fmt.Fprintln(out, "Status: ok")
+		}
+	}
+	if len(result.Findings) > 0 {
+		return fmt.Errorf("release audit: %d release(s) missing assets or release objects", len(result.Findings))
+	}
+	return nil
 }
 
 func releaseBackfillNotesCmd() *cobra.Command {

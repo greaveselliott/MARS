@@ -302,6 +302,31 @@ This keeps local-only target releases useful while preventing the source or a
 deployed harness from publishing assets, GitHub Releases, or update metadata
 for a commit that does not contain the generated release notes.
 
+### AD-282: Release Audit Detects Notes-Only And Missing GitHub Releases
+
+`verify-assets` checks one version at a time, so a notes-only release (tag and
+changelog published, binary assets never mirrored) stays invisible once
+attention moves to the next version. The recorded GitHub Actions billing
+blocker makes this drift class likely: tags keep flowing while asset uploads
+silently stop.
+
+`mars-harness release audit --repo . [--github-repo owner/name] [--limit n]
+[--json]` audits the newest local `vX.Y.Z` tags (default 10) against the
+GitHub releases list and classifies each as complete, `notes_only` (release
+object exists, required binaries or `checksums.txt` missing), or
+`missing_release` (tag has no release object). Every finding prints the exact
+`release publish-assets --repo . --version vX.Y.Z --upload github` backfill
+command, and findings make the command exit non-zero so scripted callers see
+the failure.
+
+The GitHub mirror is optional infrastructure (AD-078), so the audit degrades
+gracefully: when local tags or the GitHub API are unavailable it reports the
+skip reason and exits zero, and the operator records the blocker instead of
+the pipeline failing on missing optional capability. The release-publication
+skill runs the audit after every publication so drift across earlier versions
+is caught in the same pass, replacing the scheduled-CI detection that the
+retired GitHub Actions workflows would have hosted.
+
 ## Implementation Requirements
 
 - Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
@@ -326,6 +351,7 @@ for a commit that does not contain the generated release notes.
 - Publish local release assets with `mars-harness release publish-assets`.
 - Mirror matching GitHub Releases when authenticated GitHub release capability is configured.
 - Verify `gh release view vX.Y.Z` after GitHub mirroring.
+- Audit recent tags for notes-only or missing GitHub releases with `mars-harness release audit` after each publication.
 - Block release tag creation unless the tag matches `VERSION`, the worktree is
   clean, `HEAD` is the release-note commit, and the tag target is that `HEAD`.
 - Let the installed binary reinstall itself without requiring a source checkout.
@@ -359,3 +385,10 @@ for a commit that does not contain the generated release notes.
   notes` should warn or fail when `origin/main`'s `VERSION` (or the highest
   published `vX.Y.Z` tag) is ahead of the local base version, instead of
   silently reusing published numbers.
+- **2026-06-11 — First live `release audit` run found a real notes-only-class
+  defect:** the inaugural `mars-harness release audit --repo . --limit 5` run
+  (T-026, AD-282) reported `missing_release` for `v0.45.1` — the tag exists on
+  the remote but no GitHub Release object was ever created. Single-version
+  `verify-assets` discipline had not caught this because attention had moved
+  past that version. The finding and its remediation command are recorded in
+  [docs/validation/release-blockers.md](../validation/release-blockers.md).

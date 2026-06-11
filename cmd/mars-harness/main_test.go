@@ -38,6 +38,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
+	"github.com/greaveselliott/mars-harness/internal/release"
 	"github.com/greaveselliott/mars-harness/internal/selfupdate"
 	"github.com/greaveselliott/mars-harness/internal/serve"
 	harnesstools "github.com/greaveselliott/mars-harness/internal/tools"
@@ -311,6 +312,48 @@ func TestReleaseVerifyAssetsCommandChecksLocalDist(t *testing.T) {
 
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), "Status: ok")
+}
+
+func TestPrintReleaseAuditResultReportsFindingsAndSkips(t *testing.T) {
+	t.Parallel()
+
+	var clean bytes.Buffer
+	require.NoError(t, printReleaseAuditResult(&clean, release.AuditResult{
+		RepoFullName: "owner/repo",
+		Checked:      []string{"v0.2.0", "v0.1.0"},
+	}, false))
+	require.Contains(t, clean.String(), "Status: ok")
+
+	var findings bytes.Buffer
+	err := printReleaseAuditResult(&findings, release.AuditResult{
+		RepoFullName: "owner/repo",
+		Checked:      []string{"v0.2.0"},
+		Findings: []release.AuditFinding{{
+			TagName:     "v0.2.0",
+			Class:       release.AuditNotesOnly,
+			Missing:     []string{"checksums.txt"},
+			Remediation: "mars-harness release publish-assets --repo . --version v0.2.0 --upload github",
+		}},
+	}, false)
+	require.Error(t, err)
+	require.Contains(t, findings.String(), "FINDING (notes_only): v0.2.0")
+	require.Contains(t, findings.String(), "checksums.txt")
+	require.Contains(t, findings.String(), "publish-assets --repo . --version v0.2.0")
+
+	var skipped bytes.Buffer
+	require.NoError(t, printReleaseAuditResult(&skipped, release.AuditResult{
+		RepoFullName: "owner/repo",
+		Skipped:      true,
+		SkipReason:   "cannot list GitHub releases",
+	}, false))
+	require.Contains(t, skipped.String(), "Skipped: cannot list GitHub releases")
+
+	var jsonOut bytes.Buffer
+	require.NoError(t, printReleaseAuditResult(&jsonOut, release.AuditResult{
+		RepoFullName: "owner/repo",
+		Checked:      []string{"v0.1.0"},
+	}, true))
+	require.Contains(t, jsonOut.String(), `"repo_full_name": "owner/repo"`)
 }
 
 func TestDocSyncAuditCommandReportsStatus(t *testing.T) {

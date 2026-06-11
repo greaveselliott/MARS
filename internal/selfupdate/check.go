@@ -125,6 +125,12 @@ func setGitHubHeaders(req *http.Request, userAgent string) {
 	setGitHubAuth(req)
 }
 
+// SetGitHubAPIHeaders applies the standard GitHub API accept, user-agent, and
+// resolved auth headers used by harness release and update requests.
+func SetGitHubAPIHeaders(req *http.Request, userAgent string) {
+	setGitHubHeaders(req, userAgent)
+}
+
 func setGitHubDownloadHeaders(req *http.Request, userAgent string) {
 	req.Header.Set("Accept", "application/octet-stream")
 	req.Header.Set("User-Agent", userAgent)

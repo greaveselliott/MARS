@@ -324,7 +324,7 @@ func marsHarnessCommandSupportsRepo(args []string) bool {
 	case "update":
 		return sub == "check" || sub == "harness"
 	case "release":
-		return sub == "notes" || sub == "backfill-notes" || sub == "publish-assets"
+		return sub == "notes" || sub == "backfill-notes" || sub == "publish-assets" || sub == "audit"
 	case "checks":
 		return sub == "run"
 	case "docsync":
@@ -508,6 +508,14 @@ Global command surface:
     Flags: --repo <owner/name>, --version <latest|tag>, --release-url <url>, --dist <path>, --json
     Example: ["release", "verify-assets", "--version", "latest", "--json"]
     Local example: ["release", "verify-assets", "--dist", "dist/releases", "--version", "v1.2.3"]
+
+  release audit
+    Audit the newest local vX.Y.Z tags against GitHub Releases and report
+    notes-only releases (missing binary assets) or missing release objects,
+    with the exact publish-assets backfill command per finding. Skips with a
+    recorded blocker when tags or the GitHub API are unavailable.
+    Flags: --repo <path>, --github-repo <owner/name>, --limit <n>, --json
+    Example: ["release", "audit", "--repo", ".", "--limit", "10"]
 
   checks run
     Run a local check command and record checks_passed/checks_failed in the
