@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.49.0] - 2026-06-11
+<!-- mars-harness-release: version=0.49.0 commit=d13e68eff964 -->
+
+### Impact
+- **release:** Operators gain new capability: add release audit command to detect notes-only and missing GitHub releases (T-026).
+
+### Why
+- **release:** This matters because add release audit command to detect notes-only and missing GitHub releases (T-026) was missing from the shipped capability set.
+
+### What Changed
+- **release:** Changed add release audit command to detect notes-only and missing GitHub releases (T-026) (d13e68e).
+
+### Features
+- **release:** Add release audit command to detect notes-only and missing GitHub releases (T-026) (d13e68e)
+
+### Delivery Evidence
+- Enabler work: T-026: Make the release pipeline self-verifying with a release audit command
+
 ## [0.48.0] - 2026-06-11
 <!-- mars-harness-release: version=0.48.0 commit=b0e62051710c -->
 
