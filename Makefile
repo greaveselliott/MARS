@@ -5,7 +5,7 @@ GOBIN := $(shell $(GO) env GOBIN)
 GOPATH := $(shell $(GO) env GOPATH)
 INSTALL_BIN := $(if $(GOBIN),$(GOBIN),$(GOPATH)/bin)
 
-.PHONY: build install update-tool test vet lint check dogfood clean
+.PHONY: build install update-tool test vet lint check coverage-check dogfood clean
 
 build:
 	CGO_ENABLED=0 $(GO) build -o $(BUILD_DIR)/$(BINARY) ./cmd/mars-harness
@@ -36,9 +36,13 @@ lint:
 
 check:
 	CGO_ENABLED=0 $(GO) build ./cmd/mars-harness
-	$(GO) test ./... -race -count=1 -parallel=4 -coverprofile=coverage.out -covermode=atomic
+	$(GO) test ./... -race -count=1 -parallel=4 -coverprofile=coverage.out -covermode=atomic -cover | tee coverage-report.txt
 	$(GO) tool cover -func=coverage.out | tail -n 5
+	scripts/check-coverage.sh --input coverage-report.txt
 	$(MAKE) lint
+
+coverage-check:
+	scripts/check-coverage.sh
 
 dogfood: build
 	$(BUILD_DIR)/$(BINARY) version

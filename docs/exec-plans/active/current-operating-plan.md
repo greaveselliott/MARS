@@ -39,7 +39,7 @@ plans to decide what to do next.
     `MH-061`, and any newly created live-loop follow-up tickets.
   - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
     through `T-009`, plus `T-012`, `T-014`, `T-015`, `T-016`, `T-017`,
-    and `T-019` through `T-023`.
+    and `T-019` through `T-024`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -77,7 +77,7 @@ provisional until `ticket_create` assigns them when each workstream starts.
 | --- | --- | --- |
 | WS-A Documentation hygiene | Retire/refresh stale durable docs, quality-score cadence, slim this plan | `T-019`, `T-020`, `T-021`, `T-022` |
 | WS-B Decision gates | Dashboard architecture AD and schedule-or-defer decision | `T-023` |
-| WS-C Production-grade gates | Coverage ratchet, govulncheck + fuzz, self-verifying release pipeline, pace/convergence telemetry | provisional `T-024`, `T-025`, `T-026`, `T-027` |
+| WS-C Production-grade gates | Coverage ratchet (`T-024` done 2026-06-11, AD-280), govulncheck + fuzz, self-verifying release pipeline, pace/convergence telemetry | `T-024`, provisional `T-025`, `T-026`, `T-027` |
 | WS-D Convergence consolidation | Convergence state-machine AD and incremental rule-cluster migration, extending `T-011` | provisional `T-028`, `T-029` |
 | WS-E God-file decomposition | Policy-domain decomposition AD and per-domain extractions | provisional `T-030` through `T-039` |
 | WS-F Validation matrix discipline | Matrix-gating AD and archetype-gap baseline replays | provisional `T-040`, `T-041` |
@@ -182,6 +182,9 @@ Checks recorded during the 2026-05-02 review:
 - Coverage remains below the stated 70 percent target in several packages,
   including `internal/inference`, `internal/setup`, `internal/ui`,
   `internal/serve`, `internal/hardware`, and command entrypoint code.
+- As of 2026-06-11 (`T-024`, AD-280), per-package coverage floors are enforced
+  by `scripts/check-coverage.sh` inside `make check`; regressions below the
+  seeded floors fail mechanically and floors are ratchet-only.
 - `golangci-lint` was not installed in the local environment during the 2026-05-02
   review, so local lint status is unknown.
 

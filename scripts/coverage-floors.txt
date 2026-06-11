@@ -1,0 +1,62 @@
+# Per-package coverage floors for scripts/check-coverage.sh (T-024, AD-280).
+#
+# Format: <import path> <floor>
+#   <floor> is an integer percent (ratchet-only: floors may only go up),
+#   or `notest` for packages with no test files,
+#   or `nostmt` for packages whose tests report [no statements].
+#
+# Seeded 2026-06-11 from `go test -cover ./...` actuals: floor = actual
+# rounded down to the nearest whole point; packages at or above 70% get 70.
+# Actuals that landed exactly on a whole point (config 65.0, ui 62.0) were
+# seeded one point lower to absorb run-to-run variance at the boundary.
+# Raise a floor in the same commit that durably improves a package's
+# coverage. Never lower a floor; fixing a regression means restoring tests.
+github.com/greaveselliott/mars-harness/cmd/mars-harness 51
+github.com/greaveselliott/mars-harness/internal/agent 70
+github.com/greaveselliott/mars-harness/internal/buildinfo notest
+github.com/greaveselliott/mars-harness/internal/bundle 57
+github.com/greaveselliott/mars-harness/internal/config 64
+github.com/greaveselliott/mars-harness/internal/context 70
+github.com/greaveselliott/mars-harness/internal/dashboard 70
+github.com/greaveselliott/mars-harness/internal/docsconsistency nostmt
+github.com/greaveselliott/mars-harness/internal/docsync 70
+github.com/greaveselliott/mars-harness/internal/doctor 70
+github.com/greaveselliott/mars-harness/internal/evolution 70
+github.com/greaveselliott/mars-harness/internal/foundationtelemetry 70
+github.com/greaveselliott/mars-harness/internal/github 70
+github.com/greaveselliott/mars-harness/internal/githubauth 60
+github.com/greaveselliott/mars-harness/internal/guardrails 70
+github.com/greaveselliott/mars-harness/internal/hardware 50
+github.com/greaveselliott/mars-harness/internal/inference 43
+github.com/greaveselliott/mars-harness/internal/learnings 60
+github.com/greaveselliott/mars-harness/internal/llm 64
+github.com/greaveselliott/mars-harness/internal/mcpstdio 70
+github.com/greaveselliott/mars-harness/internal/models 70
+github.com/greaveselliott/mars-harness/internal/operatingmodel 70
+github.com/greaveselliott/mars-harness/internal/orchestration 70
+github.com/greaveselliott/mars-harness/internal/orgstate 70
+github.com/greaveselliott/mars-harness/internal/personas 70
+github.com/greaveselliott/mars-harness/internal/planhygiene 70
+github.com/greaveselliott/mars-harness/internal/power 0
+github.com/greaveselliott/mars-harness/internal/qualityscore 70
+github.com/greaveselliott/mars-harness/internal/queue 70
+github.com/greaveselliott/mars-harness/internal/release 61
+github.com/greaveselliott/mars-harness/internal/remediation 70
+github.com/greaveselliott/mars-harness/internal/roleregistry 70
+github.com/greaveselliott/mars-harness/internal/safety 70
+github.com/greaveselliott/mars-harness/internal/sandbox 70
+github.com/greaveselliott/mars-harness/internal/scanner 70
+github.com/greaveselliott/mars-harness/internal/scheduler 70
+github.com/greaveselliott/mars-harness/internal/scoring 69
+github.com/greaveselliott/mars-harness/internal/selfupdate 70
+github.com/greaveselliott/mars-harness/internal/serve 66
+github.com/greaveselliott/mars-harness/internal/setup 37
+github.com/greaveselliott/mars-harness/internal/shellpath 62
+github.com/greaveselliott/mars-harness/internal/telemetry 67
+github.com/greaveselliott/mars-harness/internal/tickets 70
+github.com/greaveselliott/mars-harness/internal/tools 70
+github.com/greaveselliott/mars-harness/internal/trace 70
+github.com/greaveselliott/mars-harness/internal/trust 63
+github.com/greaveselliott/mars-harness/internal/ui 61
+github.com/greaveselliott/mars-harness/internal/updatecheck 64
+github.com/greaveselliott/mars-harness/pkg/testutil 70
