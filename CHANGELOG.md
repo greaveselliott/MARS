@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.1] - 2026-06-11
+<!-- mars-harness-release: version=0.50.1 commit=4f663c010cb3 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because gate source-change classes on minimum archetype replays with a fixed evidence contract (T-028).
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed gate source-change classes on minimum archetype replays with a fixed evidence contract (T-028) (4f663c0).
+
+### Documentation
+- **validation:** Gate source-change classes on minimum archetype replays with a fixed evidence contract (T-028) (4f663c0)
+
+### Delivery Evidence
+- Enabler work: T-028: Define matrix-gating doctrine for source-change classes and validation evidence
+
 ## [0.50.0] - 2026-06-11
 <!-- mars-harness-release: version=0.50.0 commit=f53bb74ea98d -->
 
