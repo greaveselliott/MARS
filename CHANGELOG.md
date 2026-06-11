@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.46.4] - 2026-06-11
+<!-- mars-harness-release: version=0.46.4 commit=39fdf6d0d908 -->
+
+### Impact
+- **release:** Operators and future agents get clearer guidance because record divergent-branch version-collision incident and TD-008 guard.
+
+### Why
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **release:** Changed record divergent-branch version-collision incident and TD-008 guard (39fdf6d).
+
+### Documentation
+- **release:** Record divergent-branch version-collision incident and TD-008 guard (39fdf6d)
+
 ## [0.46.3] - 2026-06-11
 <!-- mars-harness-release: version=0.46.3 commit=538877f02c88 -->
 
