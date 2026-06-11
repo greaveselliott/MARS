@@ -213,6 +213,14 @@ VALUES(?,?,?,?,?,?,?)`,
 // outcomes include failed checks, guardrail blocks, reverts, human follow-ups,
 // noops, timeouts, and failed runs. Legacy PR outcomes are still understood.
 func (s *Store) ComputeScore(ctx context.Context, role, repoID string, windowDays int) (Score, error) {
+	return s.ComputeScoreAt(ctx, role, repoID, windowDays, time.Now().UTC())
+}
+
+// ComputeScoreAt is ComputeScore with an explicit reference time. The window
+// cutoff is computed relative to now instead of the wall clock, so callers
+// that evaluate evidence at a pinned point in time (for example quality-score
+// export) get window behavior consistent with their other queries.
+func (s *Store) ComputeScoreAt(ctx context.Context, role, repoID string, windowDays int, now time.Time) (Score, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -220,7 +228,7 @@ func (s *Store) ComputeScore(ctx context.Context, role, repoID string, windowDay
 		windowDays = defaultWindowDays
 	}
 
-	cutoff := time.Now().UTC().AddDate(0, 0, -windowDays).Unix()
+	cutoff := now.UTC().AddDate(0, 0, -windowDays).Unix()
 
 	rows, err := s.db.QueryContext(ctx, `
 SELECT type, COUNT(*) FROM outcomes
@@ -260,7 +268,7 @@ GROUP BY type`, role, repoID, cutoff)
 		value = float64(positive) / float64(denominator)
 	}
 
-	now := time.Now().UTC()
+	computedAt := now.UTC()
 	sc := Score{
 		Role:       role,
 		RepoID:     repoID,
@@ -268,7 +276,7 @@ GROUP BY type`, role, repoID, cutoff)
 		SampleSize: denominator,
 		WindowDays: windowDays,
 		Formula:    "v1",
-		ComputedAt: now,
+		ComputedAt: computedAt,
 	}
 
 	_, err = s.db.ExecContext(ctx, `
@@ -278,7 +286,7 @@ ON CONFLICT(role, repo_id) DO UPDATE SET
   value=excluded.value, sample_size=excluded.sample_size,
   window_days=excluded.window_days, formula=excluded.formula,
   computed_at=excluded.computed_at`,
-		sc.Role, sc.RepoID, sc.Value, sc.SampleSize, sc.WindowDays, sc.Formula, now.Unix())
+		sc.Role, sc.RepoID, sc.Value, sc.SampleSize, sc.WindowDays, sc.Formula, computedAt.Unix())
 	if err != nil {
 		return Score{}, fmt.Errorf("scoring: cache score: %w", err)
 	}

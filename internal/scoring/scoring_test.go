@@ -177,6 +177,39 @@ func TestComputeScore_windowRespected(t *testing.T) {
 	assert.Equal(t, 1, sc.SampleSize)
 }
 
+func TestComputeScoreAt_pinnedReferenceTime(t *testing.T) {
+	s := tempStore(t)
+	ctx := context.Background()
+
+	// Outcomes recorded far in the past relative to the wall clock, but
+	// inside the window relative to the pinned reference time.
+	pinned := time.Now().UTC().AddDate(0, 0, -90)
+	require.NoError(t, s.RecordOutcome(ctx, Outcome{
+		JobID: "pin-1", RepoID: "repo-1", Role: "engineer",
+		Type: OutcomePassed, RecordedAt: pinned.Add(-time.Hour),
+	}))
+	require.NoError(t, s.RecordOutcome(ctx, Outcome{
+		JobID: "pin-2", RepoID: "repo-1", Role: "engineer",
+		Type: OutcomeFailed, RecordedAt: pinned.Add(-2 * time.Hour),
+	}))
+	// Outside the 30d window relative to the pinned time.
+	require.NoError(t, s.RecordOutcome(ctx, Outcome{
+		JobID: "pin-old", RepoID: "repo-1", Role: "engineer",
+		Type: OutcomeFailed, RecordedAt: pinned.AddDate(0, 0, -40),
+	}))
+
+	sc, err := s.ComputeScoreAt(ctx, "engineer", "repo-1", 30, pinned)
+	require.NoError(t, err)
+	assert.Equal(t, 0.5, sc.Value, "window must be evaluated relative to the pinned time")
+	assert.Equal(t, 2, sc.SampleSize)
+	assert.Equal(t, pinned.Unix(), sc.ComputedAt.Unix(), "ComputedAt should reflect the reference time")
+
+	// Wall-clock ComputeScore sees no outcomes inside its window.
+	sc, err = s.ComputeScore(ctx, "engineer", "repo-1", 30)
+	require.NoError(t, err)
+	assert.Equal(t, 0, sc.SampleSize)
+}
+
 func TestRecordOutcome_roundTrip(t *testing.T) {
 	s := tempStore(t)
 	ctx := context.Background()

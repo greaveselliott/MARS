@@ -220,7 +220,7 @@ func (ev *evidence) collect(ctx context.Context) error {
 	}
 	scoreByKey := map[string]scoring.Score{}
 	for _, pair := range pairs {
-		sc, err := scoreStore.ComputeScore(ctx, pair.Role, pair.RepoID, ev.windowDays)
+		sc, err := scoreStore.ComputeScoreAt(ctx, pair.Role, pair.RepoID, ev.windowDays, ev.now)
 		if err != nil {
 			return err
 		}

@@ -62,3 +62,10 @@ Version any published score schema so external dashboards can migrate without si
   export now renders a Factory Pace section from trace summaries and terminal
   outcomes so optimization work starts from a dated baseline instead of chat
   impressions.
+- **2026-06-11 — Score windows accept a reference time:** `ComputeScore`
+  evaluated its window cutoff against the wall clock even when the caller
+  (quality-score export) pinned evidence to an explicit `Now`, which made the
+  export grade time-dependent and time-bombed the qualityscore tests once the
+  pinned fixture date aged past the window. `ComputeScoreAt` now threads the
+  caller's reference time through the cutoff and `ComputedAt`; `ComputeScore`
+  delegates with the wall clock.
