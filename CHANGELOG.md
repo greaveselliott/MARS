@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.0] - 2026-06-11
+<!-- mars-harness-release: version=0.50.0 commit=f53bb74ea98d -->
+
+### Impact
+- **qualityscore:** Operators gain new capability: break out convergence failures and guardrail block rates in scores export (T-027).
+
+### Why
+- **qualityscore:** This matters because break out convergence failures and guardrail block rates in scores export (T-027) was missing from the shipped capability set.
+
+### What Changed
+- **qualityscore:** Changed break out convergence failures and guardrail block rates in scores export (T-027) (f53bb74).
+
+### Features
+- **qualityscore:** Break out convergence failures and guardrail block rates in scores export (T-027) (f53bb74)
+
+### Delivery Evidence
+- Enabler work: T-027: Promote convergence failures and guardrail block rates into scores export
+
 ## [0.49.0] - 2026-06-11
 <!-- mars-harness-release: version=0.49.0 commit=d13e68eff964 -->
 
