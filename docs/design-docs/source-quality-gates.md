@@ -46,8 +46,44 @@ gate standalone. `internal/docsconsistency` tests exercise the script's
 pass/regression/missing-floor/stale-floor/deleted-tests paths against fixture
 output and keep the floors file synchronized with `go list ./...`.
 
+### AD-281: Hostile Model Output Parsers Are Fuzzed And The Module Is Vulnerability-Scanned
+
+Two source surfaces parse hostile model output: the tool-call parser in
+`internal/agent/parser.go` (structured fields, function tags, inline
+`tool_call` tags, embedded JSON) and the T-015 list-string/argv normalizers in
+`internal/tools` (`decodeStringSliceArg`, `parsePythonStyleStringList`,
+`normalizeShellExecArgv`). Local models emit malformed payloads routinely, so
+these parsers must never panic and must never produce structurally invalid
+tool calls.
+
+- Go fuzz targets cover both surfaces:
+  `FuzzToolCallsFromAssistantMessage` (seeded from `internal/agent/testdata`
+  recordings) asserts parsed calls always carry a non-empty name and valid
+  JSON arguments; `FuzzDecodeStringSliceArg`,
+  `FuzzParsePythonStyleStringList`, and `FuzzNormalizeShellExecArgv` assert
+  the normalizers never panic, never produce invalid UTF-8 from valid input,
+  and never silently drop non-empty argv.
+- `make fuzz-smoke` runs each target for a bounded `FUZZTIME` (default 10s)
+  and is part of `make check`. Full fuzzing stays local and manual
+  (`go test <pkg> -fuzz <target> -fuzztime 5m`). Crash corpus entries are
+  committed under `testdata/fuzz/` as permanent regression seeds.
+- `make vuln` runs `govulncheck ./...` and is part of `make check`. A missing
+  `govulncheck` binary degrades with the exact install command instead of
+  failing cryptically, so offline or fresh environments still pass the rest of
+  the gate.
+
 ## Discoveries
 
+- **2026-06-11 — First fuzz run found a real parser bug in seconds:**
+  `FuzzToolCallsFromAssistantMessage` immediately produced `[{}]`, which the
+  array path of `parseToolCallsFromText` converted into a tool call with an
+  empty name (the single-object path already rejected that). The fix rejects
+  unnamed tool calls in the array path; the crashing input is committed in
+  `internal/agent/testdata/fuzz/` as a regression seed.
+- **2026-06-11 — govulncheck found 6 reachable stdlib vulnerabilities:** all
+  were fixed upstream in go1.26.3/go1.26.4, so the bounded fix was pinning
+  `toolchain go1.26.4` in `go.mod`; after the bump the module scans clean (one
+  unreachable vulnerability remains in a required module).
 - **2026-06-11 — Seeding floors from one run is boundary-fragile:** two
   coverage runs on the same tree differed by up to 3 points for
   `cmd/mars-harness` (test additions between runs) and packages landing on

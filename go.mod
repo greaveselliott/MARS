@@ -2,6 +2,8 @@ module github.com/greaveselliott/mars-harness
 
 go 1.22.4
 
+toolchain go1.26.4
+
 require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.10.0

@@ -5,7 +5,10 @@ GOBIN := $(shell $(GO) env GOBIN)
 GOPATH := $(shell $(GO) env GOPATH)
 INSTALL_BIN := $(if $(GOBIN),$(GOBIN),$(GOPATH)/bin)
 
-.PHONY: build install update-tool test vet lint check coverage-check dogfood clean
+FUZZTIME ?= 10s
+GOPATH_BIN := $(shell $(GO) env GOPATH)/bin
+
+.PHONY: build install update-tool test vet lint check coverage-check vuln fuzz-smoke dogfood clean
 
 build:
 	CGO_ENABLED=0 $(GO) build -o $(BUILD_DIR)/$(BINARY) ./cmd/mars-harness
@@ -39,10 +42,28 @@ check:
 	$(GO) test ./... -race -count=1 -parallel=4 -coverprofile=coverage.out -covermode=atomic -cover | tee coverage-report.txt
 	$(GO) tool cover -func=coverage.out | tail -n 5
 	scripts/check-coverage.sh --input coverage-report.txt
+	$(MAKE) vuln
+	$(MAKE) fuzz-smoke
 	$(MAKE) lint
 
 coverage-check:
 	scripts/check-coverage.sh
+
+vuln:
+	@if command -v govulncheck >/dev/null 2>&1; then \
+		govulncheck ./...; \
+	elif [ -x "$(GOPATH_BIN)/govulncheck" ]; then \
+		"$(GOPATH_BIN)/govulncheck" ./...; \
+	else \
+		echo "govulncheck not found; skipping vulnerability scan."; \
+		echo "Fix: go install golang.org/x/vuln/cmd/govulncheck@latest"; \
+	fi
+
+fuzz-smoke:
+	$(GO) test ./internal/agent -run '^$$' -fuzz FuzzToolCallsFromAssistantMessage -fuzztime $(FUZZTIME)
+	$(GO) test ./internal/tools -run '^$$' -fuzz FuzzDecodeStringSliceArg -fuzztime $(FUZZTIME)
+	$(GO) test ./internal/tools -run '^$$' -fuzz FuzzParsePythonStyleStringList -fuzztime $(FUZZTIME)
+	$(GO) test ./internal/tools -run '^$$' -fuzz FuzzNormalizeShellExecArgv -fuzztime $(FUZZTIME)
 
 dogfood: build
 	$(BUILD_DIR)/$(BINARY) version

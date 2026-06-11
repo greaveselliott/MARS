@@ -106,6 +106,9 @@ func parseToolCallsFromText(src string) ([]llm.ToolCall, error) {
 		}
 		var out []llm.ToolCall
 		for i, r := range raw {
+			if r.Name == "" {
+				return nil, fmt.Errorf("agent: tool call at index %d missing name", i)
+			}
 			id := r.ID
 			if id == "" {
 				id = fmt.Sprintf("call_%d", i)
