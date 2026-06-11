@@ -4,7 +4,7 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, MH-051, MH-052, MH-053, MH-054, MH-055, MH-056, MH-057, MH-058, MH-059, MH-060, MH-061, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013, T-014, T-015, T-016
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, MH-051, MH-052, MH-053, MH-054, MH-055, MH-056, MH-057, MH-058, MH-059, MH-060, MH-061, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013, T-014, T-015, T-016, T-019, T-020, T-021, T-022, T-023
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-005, F-006, F-007, F-009, F-010, F-012
 **Hypothesis:** Treating factory pace as measured intervention debt, using the `demo-123` replay series as concrete evidence, will reduce avoidable turns without hiding productive long-running work.
@@ -35,8 +35,10 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains `T-011`.
-  - `docs/tickets/backlog/` contains `T-010`, `T-013`, `MH-051` through
-    `MH-061`, and any newly created live-loop follow-up tickets.
+  - `docs/tickets/backlog/` contains `T-010`, `T-013`, `T-019` through
+    `T-023` (foundation improvement workstreams WS-A/WS-B, created
+    2026-06-11), `MH-051` through `MH-061`, and any newly created live-loop
+    follow-up tickets.
   - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
     through `T-009`, plus `T-012`, `T-014`, `T-015`, and `T-016`.
 - Exec-plan state:
@@ -368,6 +370,28 @@ plans to decide what to do next.
 | `superseded/master-execution-plan.md` | Superseded | None | Nothing | Historical baseline. Do not use its checkbox status as truth. |
 | `superseded/delivery-schedule.md` | Superseded | None | Nothing | Historical milestone schedule; kept for lineage only. |
 
+## Foundation Improvement Workstreams
+
+Registered 2026-06-11 from the foundation improvement review. This is the only
+active plan; the workstreams below are amendments to it, not a second plan.
+Ticket IDs `T-019` through `T-023` are created; `T-024` and later IDs are
+provisional until `ticket_create` assigns them when each workstream starts.
+
+| Workstream | Scope | Tickets |
+| --- | --- | --- |
+| WS-A Documentation hygiene | Retire/refresh stale durable docs, quality-score cadence, slim this plan | `T-019`, `T-020`, `T-021`, `T-022` |
+| WS-B Decision gates | Dashboard architecture AD and schedule-or-defer decision | `T-023` |
+| WS-C Production-grade gates | Coverage ratchet, govulncheck + fuzz, self-verifying release pipeline, pace/convergence telemetry | provisional `T-024`, `T-025`, `T-026`, `T-027` |
+| WS-D Convergence consolidation | Convergence state-machine AD and incremental rule-cluster migration, extending `T-011` | provisional `T-028`, `T-029` |
+| WS-E God-file decomposition | Policy-domain decomposition AD and per-domain extractions | provisional `T-030` through `T-039` |
+| WS-F Validation matrix discipline | Matrix-gating AD and archetype-gap baseline replays | provisional `T-040`, `T-041` |
+
+Sequencing recorded 2026-06-11: WS-A and WS-B land first (docs/doctrine only,
+no replay tax). WS-C and WS-F follow, then the measurement floor (`T-027`
+telemetry plus the `T-011` dated pace baseline replay) must exist before any
+WS-D or WS-E slice, because each slice is judged by a before/after replay
+comparison against that baseline per the AD-138 loop.
+
 ## Current Priority Order
 
 1. **Factory pace intervention debt (`T-011`/`T-013`)**: Continue measuring role
@@ -388,19 +412,34 @@ plans to decide what to do next.
    `demo-api-run7` confirmed that fix before exposing repo-local validation
    binary prevention. `demo-api-run8` confirmed binary prevention and moved the
    current slice to malformed bare-port command recovery.
-2. **Representative live validation matrix**: Apply AD-138 by checking at least
+2. **Hygiene and decision gates (WS-A `T-019`-`T-022`, WS-B `T-023`)**:
+   Registered 2026-06-11. Small docs/doctrine commits that retire stale
+   artifacts, define the quality-score regeneration cadence, slim this plan,
+   and resolve the dashboard architecture decision. No factory runtime
+   behavior changes, so no replay tax.
+3. **Production gates and measurement floor (WS-C, WS-F, `T-011` baseline)**:
+   Coverage ratchet, govulncheck plus fuzz targets, self-verifying release
+   pipeline, matrix-gating doctrine, then pace/convergence telemetry and the
+   `T-011` dated pace baseline replay. These protect and precede the refactor
+   tracks.
+4. **Representative live validation matrix**: Apply AD-138 by checking at least
    one non-static project archetype before claiming broad factory progress.
    Keep `demo-123` as the static canary, but judge generic changes against the
    small matrix from `docs/design-docs/delivery-operating-model.md`.
-3. **Live lifecycle replay**: Run a clean target lifecycle and
+5. **Live lifecycle replay**: Run a clean target lifecycle and
    record product progress, queue health, intervention-debt count, quality
    export behavior, release-note behavior, stop/shutdown behavior, and whether
    Dogfood reaches a terminal disposition without dirty watchdog routing.
-4. **Dashboard control-plane backlog (`MH-051` through `MH-061`)**: On
+6. **Convergence consolidation and god-file decomposition (WS-D, WS-E)**:
+   After the measurement floor exists, land the convergence state-machine AD
+   and decomposition AD, then migrate one rule cluster or one policy domain
+   per slice with a canary replay and recorded pace delta per the AD-138 loop.
+7. **Dashboard control-plane backlog (`MH-051` through `MH-061`)**: On
    2026-05-20, the TanStack dashboard work is registered as backlog only.
-   Promote the plan when the active factory-pace slice is complete or an
-   operator explicitly reprioritizes dashboard work.
-5. **Mars parity continuation**: Use
+   The explicit schedule-or-defer decision is owned by `T-023` (WS-B);
+   promote the plan only per that recorded decision or explicit operator
+   reprioritization.
+8. **Mars parity continuation**: Use
    [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
    remediation ergonomics without creating a parallel roadmap.
