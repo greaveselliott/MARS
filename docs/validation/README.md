@@ -22,3 +22,8 @@ and with which guardrails.
 Validation reports should cite the profile, exact target path or remote, trust
 level, commands run, skipped optional paths, ticket or telemetry outputs, and
 the decision about whether contributor-mode validation is allowed.
+
+Report naming, required run fields, pass criteria, and the mapping from
+source-change classes to minimum archetype replays are defined in
+[docs/design-docs/validation-matrix-gating.md](../design-docs/validation-matrix-gating.md)
+(AD-284, AD-285).

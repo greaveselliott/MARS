@@ -39,7 +39,7 @@ plans to decide what to do next.
     `MH-061`, and any newly created live-loop follow-up tickets.
   - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
     through `T-009`, plus `T-012`, `T-014`, `T-015`, `T-016`, `T-017`,
-    and `T-019` through `T-027`.
+    and `T-019` through `T-028`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -78,9 +78,9 @@ provisional until `ticket_create` assigns them when each workstream starts.
 | WS-A Documentation hygiene | Retire/refresh stale durable docs, quality-score cadence, slim this plan | `T-019`, `T-020`, `T-021`, `T-022` |
 | WS-B Decision gates | Dashboard architecture AD and schedule-or-defer decision | `T-023` |
 | WS-C Production-grade gates | Coverage ratchet (`T-024` done 2026-06-11, AD-280), govulncheck + fuzz (`T-025` done 2026-06-11, AD-281), self-verifying release pipeline (`T-026` done 2026-06-11, AD-282, `release audit`), pace/convergence telemetry (`T-027` done 2026-06-11, AD-283, Convergence And Guardrails export) | `T-024`, `T-025`, `T-026`, `T-027` |
-| WS-D Convergence consolidation | Convergence state-machine AD and incremental rule-cluster migration, extending `T-011` | provisional `T-028`, `T-029` |
-| WS-E God-file decomposition | Policy-domain decomposition AD and per-domain extractions | provisional `T-030` through `T-039` |
-| WS-F Validation matrix discipline | Matrix-gating AD and archetype-gap baseline replays | provisional `T-040`, `T-041` |
+| WS-D Convergence consolidation | Convergence state-machine AD and incremental rule-cluster migration, extending `T-011` | provisional (next IDs from `ticket_create`; originally drafted as `T-028`, `T-029`) |
+| WS-E God-file decomposition | Policy-domain decomposition AD and per-domain extractions | provisional (originally drafted as `T-030` through `T-039`) |
+| WS-F Validation matrix discipline | Matrix-gating AD (`T-028` done 2026-06-11, AD-284/AD-285, provisional `T-040`) and archetype-gap baseline replays | `T-028`, provisional `T-041` |
 
 Sequencing recorded 2026-06-11: WS-A and WS-B land first (docs/doctrine only,
 no replay tax). WS-C and WS-F follow, then the measurement floor (`T-027`
