@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.45.3] - 2026-06-11
+<!-- mars-harness-release: version=0.45.3 commit=fb535fc82311 -->
+
+### Impact
+- **hygiene:** Operators and future agents get clearer guidance because retire pipeline-learnings tracker with AD-276 (T-019).
+
+### Why
+- **hygiene:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **hygiene:** Changed retire pipeline-learnings tracker with AD-276 (T-019) (fb535fc).
+
+### Documentation
+- **hygiene:** Retire pipeline-learnings tracker with AD-276 (T-019) (fb535fc)
+
+### Delivery Evidence
+- Enabler work: T-019: Retire pipeline-learnings standing tracker with recorded decision
+
 ## [0.45.2] - 2026-06-11
 <!-- mars-harness-release: version=0.45.2 commit=8ce8d95524fa -->
 
