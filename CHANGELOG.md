@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.3] - 2026-06-12
+<!-- mars-harness-release: version=0.50.3 commit=932695e7578f -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because reclassify heavy-model demo-11 baseline as evidence-only and add model identity to AD-285 (T-011).
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed reclassify heavy-model demo-11 baseline as evidence-only and add model identity to AD-285 (T-011) (932695e).
+
+### Documentation
+- **validation:** Reclassify heavy-model demo-11 baseline as evidence-only and add model identity to AD-285 (T-011) (932695e)
+
 ## [0.50.2] - 2026-06-11
 <!-- mars-harness-release: version=0.50.2 commit=ff3d42d80f32 -->
 
