@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.46.1] - 2026-06-11
+<!-- mars-harness-release: version=0.46.1 commit=ca7d214045d3 -->
+
+### Impact
+- **plan:** Operators and future agents get clearer guidance because extract release-blocker ledger to validation evidence (T-022).
+
+### Why
+- **plan:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **plan:** Changed extract release-blocker ledger to validation evidence (T-022) (ca7d214).
+
+### Documentation
+- **plan:** Extract release-blocker ledger to validation evidence (T-022) (ca7d214)
+
+### Delivery Evidence
+- Enabler work: T-022: Slim active plan by extracting release-blocker ledger to validation evidence
+
 ## [0.46.0] - 2026-06-11
 <!-- mars-harness-release: version=0.46.0 commit=2cd9f4df91f8 -->
 
