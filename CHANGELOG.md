@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.46.2] - 2026-06-11
+<!-- mars-harness-release: version=0.46.2 commit=082f0916c508 -->
+
+### Impact
+- **dashboard:** Operators and future agents get clearer guidance because record AD-279 constraint scope and defer epic until T-011 closes (T-023).
+
+### Why
+- **dashboard:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **dashboard:** Changed record AD-279 constraint scope and defer epic until T-011 closes (T-023) (082f091).
+
+### Documentation
+- **dashboard:** Record AD-279 constraint scope and defer epic until T-011 closes (T-023) (082f091)
+
+### Delivery Evidence
+- Enabler work: T-023: Record dashboard architecture decision and schedule-or-defer outcome
+
 ## [0.46.1] - 2026-06-11
 <!-- mars-harness-release: version=0.46.1 commit=ca7d214045d3 -->
 
