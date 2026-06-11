@@ -61,6 +61,44 @@ states honestly. Prompt, roster, guardrail, schedule, and model changes flow
 through draft code-host proposals or local patch previews instead of direct
 frontend writes to source files.
 
+### AD-279: Single-Binary Constraint Scope And Dashboard Epic Deferral
+
+AD-156 left an unresolved contradiction that `T-010` flagged: the TanStack
+Start sidecar requires external Node `24.x` and `pnpm@11.1.1`, while the
+repo's key constraints state single-binary distribution with no npm and no
+external runtime dependencies. This decision resolves both halves explicitly.
+
+**Constraint scope.** The single-binary, no-external-runtime-dependency
+constraint is scoped to the core harness runtime and default operation:
+setup, serve, start, run, queue, inference management, scoring, trust,
+release flow, and the embedded htmx dashboard must work offline from one Go
+binary with no Node, npm, or pnpm present. That constraint is not weakened.
+
+**Optional sidecar exception.** The TanStack control plane (AD-156) is an
+explicitly optional, operator-installed local sidecar behind the Go gateway.
+It is never bundled, never auto-installed, and never required: a machine
+without Node runs every core workflow unchanged, and missing or wrong
+prerequisite versions only produce actionable remediation output (MH-052).
+Production distribution remains one Go binary; Node tooling is a development
+and opt-in operator prerequisite, not a runtime dependency of the harness.
+
+**T-010 disposition.** The standalone shadcn-ui restyle of the embedded
+dashboard does not proceed on its own. The restyle goal is absorbed by the
+TanStack epic (MH-051 through MH-061): the embedded dashboard stays the
+shipped default until migration evidence in MH-061 proves replacement
+behavior. T-010's precondition ("do not pick up until the architecture
+trade-off is explicit") is satisfied by this decision.
+
+**Schedule-or-defer.** Decided 2026-06-11: the dashboard epic is **deferred
+until `T-011` (factory pace) closes**. Rationale: live replay evidence
+through 2026-05-21 shows convergence/stopping behavior is the dominant
+failure class; the WS-C production gates and measurement floor protect that
+work and must precede large new surfaces; the epic touches no current failure
+class and would compete for the serialized release lane. Start condition:
+promote `backlog/tanstack-dashboard-control-plane.md` when `T-011` reaches
+`done/` (or an operator explicitly reprioritizes), beginning with MH-051.
+MH-051 executes only once that start condition fires.
+
 ### Pipeline flow graph: simple layered layout
 
 V1 uses a server-side layered layout algorithm (roles grouped by trigger depth: scheduled roles in layer 1, event-triggered in layer 2, etc.) rendered as SVG. Not a full Sugiyama DAG layout. This is good enough for pipelines with 11-15 roles and implementable in a day.

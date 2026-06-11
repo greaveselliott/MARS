@@ -6,14 +6,18 @@ complexity: medium
 work_type: enabler
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
+evidence_links:
+  - "AD-279 in docs/design-docs/dashboard.md, indexed in docs/design-docs/index.md"
+  - "Active plan priority item 7 and Plan State row record the 2026-06-11 deferral with start condition (T-011 closes)"
+  - "T-010 next_action and Notes updated to reference AD-279"
+  - "go test ./internal/docsconsistency/... ./internal/docsync/..."
+verified_by: "foundation-maintainer"
 owner: "foundation-maintainer"
-last_attempt: "TBD"
+last_attempt: "2026-06-11"
 blocker: "none"
 blocked_by: []
-trace_id: "TBD"
-next_action: "Write the dashboard architecture AD resolving the T-010 single-binary versus TanStack sidecar conflict and record schedule-or-defer in the active plan."
+trace_id: "none"
+next_action: "Done; AD-279 recorded, epic deferred until T-011 closes, MH-051 executes only when the start condition fires."
 source: Foundation improvement plan Phase 1 WS-B (provisional T-023)
 created: 2026-06-11
 depends_on: []
@@ -44,14 +48,14 @@ Ownership classification: foundation-owned product-surface decision.
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] AD resolves the constraint conflict explicitly and is indexed.
-- [ ] Active plan states schedule-or-defer with the AD reference and start condition.
+- [x] AD resolves the constraint conflict explicitly and is indexed (AD-279: constraint scoped to core runtime, sidecar optional and operator-installed, never bundled).
+- [x] Active plan states schedule-or-defer with the AD reference and start condition (deferred until T-011 closes; promote the backlog plan starting with MH-051).
 
 ### Edge cases and negative paths
-- [ ] No dashboard ticket remains ambiguous about whether it may start.
+- [x] No dashboard ticket remains ambiguous about whether it may start (T-010 absorbed by the epic with updated next_action; MH-051 through MH-061 wait on the recorded start condition).
 
 ### Non-goals
 - Implementing any dashboard runtime code in this slice.
 
 ### Observability, docs, and regressions
-- [ ] go test ./internal/docsconsistency/... ./internal/docsync/... passes.
+- [x] go test ./internal/docsconsistency/... ./internal/docsync/... passes (run 2026-06-11).

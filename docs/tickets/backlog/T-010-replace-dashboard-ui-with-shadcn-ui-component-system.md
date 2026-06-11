@@ -13,7 +13,7 @@ last_attempt: "TBD"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Update dashboard architecture docs and feature contract to authorize the shadcn-ui/ui frontend path before implementation begins."
+next_action: "AD-279 (2026-06-11) resolved the architecture trade-off: the restyle is absorbed by the TanStack control-plane epic, which is deferred until T-011 closes; execute through MH-051..MH-061 when the epic is promoted."
 dedupe_key: "public-example"
 source: user request 2026-05-19
 created: 2026-05-19
@@ -90,3 +90,5 @@ This is a product and architecture change because existing dashboard doctrine ex
 ## Notes
 
 Current docs make React/npm/outside assets out of scope. This ticket should not be picked up as a pure UI restyle until that architecture trade-off is made explicit.
+
+2026-06-11 (T-023/AD-279): the trade-off is explicit. The single-binary/no-Node constraint is scoped to the core runtime; the TanStack control plane is an optional operator-installed sidecar; this restyle is absorbed by the MH-051..MH-061 epic, which is deferred until T-011 closes.

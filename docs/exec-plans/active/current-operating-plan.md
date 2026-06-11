@@ -35,12 +35,11 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains `T-011`.
-  - `docs/tickets/backlog/` contains `T-010`, `T-013`, `T-023` (foundation
-    improvement workstream WS-B, created 2026-06-11), `MH-051` through
+  - `docs/tickets/backlog/` contains `T-010`, `T-013`, `MH-051` through
     `MH-061`, and any newly created live-loop follow-up tickets.
   - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
     through `T-009`, plus `T-012`, `T-014`, `T-015`, `T-016`, `T-017`,
-    and `T-019` through `T-022`.
+    and `T-019` through `T-023`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -62,7 +61,7 @@ plans to decide what to do next.
 | --- | --- | --- | --- | --- |
 | `active/current-operating-plan.md` | Active, P0 | None | Plan promotions until this file names the next slice | Use this file as the only top-level execution map and scenario schedule. |
 | `backlog/mars-parity-supersession-plan.md` | Backlog, P1, G-001/G-002/F-001 | Ticket materialization completed on 2026-05-03; no open blocker | Supersession readiness claims | Pull slices into tickets and this active plan before execution. |
-| `backlog/tanstack-dashboard-control-plane.md` | Backlog, P2, G-001/G-003/F-010 | Product spec and F-010 expansion registered on 2026-05-20; waits behind active P0 work | Next-generation dashboard implementation claims and broad dashboard restyle work | Promote after the active P0 slice or explicit operator reprioritization; do not treat runtime work as started while this remains backlog. |
+| `backlog/tanstack-dashboard-control-plane.md` | Backlog, P2, G-001/G-003/F-010 | Deferred 2026-06-11 until `T-011` closes per AD-279 (T-023 decision gate) | Next-generation dashboard implementation claims and broad dashboard restyle work | Promote when `T-011` reaches done or an operator explicitly reprioritizes; start with `MH-051`; do not treat runtime work as started while this remains backlog. |
 | `backlog/model-evaluation-refresh-plan.md` | Completed initial model-refresh slice; future P4, G-003/F-001 | Higher-priority release/quality work for any future promotion ticket | Default model registry promotion until live benchmark evidence exists | Use only to seed future model-refresh tickets. |
 | `superseded/master-execution-plan.md` | Superseded | None | Nothing | Historical baseline. Do not use its checkbox status as truth. |
 | `superseded/delivery-schedule.md` | Superseded | None | Nothing | Historical milestone schedule; kept for lineage only. |
@@ -131,11 +130,13 @@ comparison against that baseline per the AD-138 loop.
    After the measurement floor exists, land the convergence state-machine AD
    and decomposition AD, then migrate one rule cluster or one policy domain
    per slice with a canary replay and recorded pace delta per the AD-138 loop.
-7. **Dashboard control-plane backlog (`MH-051` through `MH-061`)**: On
-   2026-05-20, the TanStack dashboard work is registered as backlog only.
-   The explicit schedule-or-defer decision is owned by `T-023` (WS-B);
-   promote the plan only per that recorded decision or explicit operator
-   reprioritization.
+7. **Dashboard control-plane backlog (`MH-051` through `MH-061`)**: Decided
+   2026-06-11 under `T-023` (WS-B): the epic is **deferred until `T-011`
+   closes**, per AD-279. AD-279 also scopes the single-binary constraint to
+   the core runtime and absorbs the `T-010` restyle into the epic. Start
+   condition: promote `backlog/tanstack-dashboard-control-plane.md` when
+   `T-011` reaches done (or explicit operator reprioritization), beginning
+   with `MH-051`.
 8. **Mars parity continuation**: Use
    [OpenHarness comparator](../../references/openharness-comparator.md)
    as reference input for readiness, skill metadata, compaction, and
