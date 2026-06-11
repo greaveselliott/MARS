@@ -344,3 +344,18 @@ for a commit that does not contain the generated release notes.
 - Target repos inherit the same release discipline without extra setup.
 - GitHub users see versioned release notes in the GitHub Releases UI, while local-only users still have repo-owned `VERSION` and `CHANGELOG.md`.
 - Future work can add tag creation, release publishing, release-asset self-update, and doctor checks for stale patch notes.
+
+## Discoveries
+
+- **2026-06-11 — Release-note numbering on divergent branches collides with
+  published trunk versions:** `release notes --bump auto` numbers from the
+  local `VERSION` file only. A long-lived branch that diverged before trunk
+  published v0.44.0–v0.45.1 regenerated 0.43.2–0.44.3 entries that collided
+  with tags already published from `main`. Remediation required rebasing the
+  branch onto `origin/main`, dropping the stale `release: notes` commits, and
+  regenerating each semantic commit's notes from the trunk baseline (0.45.2+).
+  This is a foundation-owned process failure: the generator is unaware of
+  remote trunk version state. TD-008 tracks the mechanical guard — `release
+  notes` should warn or fail when `origin/main`'s `VERSION` (or the highest
+  published `vX.Y.Z` tag) is ahead of the local base version, instead of
+  silently reusing published numbers.
