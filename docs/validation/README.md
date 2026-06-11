@@ -13,6 +13,9 @@ and with which guardrails.
   command lists, and graduation criteria.
 - `reports/` contains completed validation reports for source-owned dogfood
   or supersession trials. Create this directory when the first report lands.
+- `release-blockers.md` is the per-version release publication and
+  asset-verification blocker ledger extracted from the active plan on
+  2026-06-11 (T-022); new release blockers are appended there.
 - Target-local `docs/reports/dogfood/` remains the right place for evidence
   written during a deployed target run.
 
