@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.48.0] - 2026-06-11
+<!-- mars-harness-release: version=0.48.0 commit=b0e62051710c -->
+
+### Impact
+- **quality:** Operators gain new capability: fuzz hostile model output parsers and gate the module with govulncheck (T-025).
+
+### Why
+- **quality:** This matters because fuzz hostile model output parsers and gate the module with govulncheck (T-025) was missing from the shipped capability set.
+
+### What Changed
+- **quality:** Changed fuzz hostile model output parsers and gate the module with govulncheck (T-025) (b0e6205).
+
+### Features
+- **quality:** Fuzz hostile model output parsers and gate the module with govulncheck (T-025) (b0e6205)
+
+### Delivery Evidence
+- Enabler work: T-025: Add govulncheck and fuzz targets for hostile model output parsers
+
 ## [0.47.0] - 2026-06-11
 <!-- mars-harness-release: version=0.47.0 commit=51719fa4e1b9 -->
 
