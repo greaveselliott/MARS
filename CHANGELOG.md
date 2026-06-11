@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.46.0] - 2026-06-11
+<!-- mars-harness-release: version=0.46.0 commit=2cd9f4df91f8 -->
+
+### Impact
+- **qualityscore:** Operators gain new capability: define quality-score regeneration cadence with AD-278 (T-021).
+
+### Why
+- **qualityscore:** This matters because define quality-score regeneration cadence with AD-278 (T-021) was missing from the shipped capability set.
+
+### What Changed
+- **qualityscore:** Changed define quality-score regeneration cadence with AD-278 (T-021) (2cd9f4d).
+
+### Features
+- **qualityscore:** Define quality-score regeneration cadence with AD-278 (T-021) (2cd9f4d)
+
+### Delivery Evidence
+- Enabler work: T-021: Define QUALITY_SCORE regeneration cadence via scores export
+
 ## [0.45.4] - 2026-06-11
 <!-- mars-harness-release: version=0.45.4 commit=4543475447fc -->
 
