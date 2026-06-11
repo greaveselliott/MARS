@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.45.2] - 2026-06-11
+<!-- mars-harness-release: version=0.45.2 commit=8ce8d95524fa -->
+
+### Impact
+- **plan:** Operators and future agents get clearer guidance because register foundation improvement workstreams and WS-A/WS-B tickets.
+
+### Why
+- **plan:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **plan:** Changed register foundation improvement workstreams and WS-A/WS-B tickets (8ce8d95).
+
+### Documentation
+- **plan:** Register foundation improvement workstreams and WS-A/WS-B tickets (8ce8d95)
+
 ## [0.45.1] - 2026-05-24
 <!-- mars-harness-release: version=0.45.1 commit=43a575dd0483 -->
 
