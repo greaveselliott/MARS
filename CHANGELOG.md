@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.45.4] - 2026-06-11
+<!-- mars-harness-release: version=0.45.4 commit=4543475447fc -->
+
+### Impact
+- **hygiene:** Operators and future agents get clearer guidance because retire prompt-port-status and fix quickstart drift with AD-277 (T-020).
+
+### Why
+- **hygiene:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **hygiene:** Changed retire prompt-port-status and fix quickstart drift with AD-277 (T-020) (4543475).
+
+### Documentation
+- **hygiene:** Retire prompt-port-status and fix quickstart drift with AD-277 (T-020) (4543475)
+
+### Delivery Evidence
+- Enabler work: T-020: Retire prompt-port-status and reconcile quickstart command drift
+
 ## [0.45.3] - 2026-06-11
 <!-- mars-harness-release: version=0.45.3 commit=fb535fc82311 -->
 
