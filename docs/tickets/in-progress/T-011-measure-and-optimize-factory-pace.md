@@ -81,6 +81,8 @@ evidence_links:
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#note-stats-cli-run-15-post-validation-gate-needed-a-non-shell-next-step
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#run-62-slugify-cli-completed-full-local-lifecycle-after-rework-guidance
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#run-65-inventory-api-canary-reached-product-rework-exposed-post-validation-no-op-failure
+  - docs/validation/baselines/2026-06-11-factory-pace-baseline.md
+  - docs/validation/reports/2026-06-11-demo-11-pace-baseline.md#run-1-inventoryapi-canary-on-v0501--2026-06-11
 verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'; go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|RejectsBarePortCommands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess|KillTrackedBackgroundPIDKillsDescendant|NoopReturnsCompletionGuidance|NoopAfterBackgroundListsTrackedPID)'; go test ./internal/tools -run 'TestShellExec(BlocksGoBuildOutputInsideRepoBeforeArtifact|BlocksDefaultGoBuildInsideRepoBeforeArtifact|BlocksDefaultGoBuildInShellCommandBeforeArtifact|BlocksGoBuildOutputInShellCommandSegmentBeforeArtifact|AllowsGoBuildOutputOutsideRepo|NoopArgsNotMaskedByDirtyArtifact)'; go test ./internal/tools -run 'TestShellExecRejectsExternalTimeoutCommands|TestFileWriteBlocksNewRootValidationScript|TestFileWriteAllowsExistingRootValidationScriptUpdate|TestShellExecPolicyBlocksForegroundServerCommands|TestShellExecPolicyAllowsForegroundGoRunForNonServerCLI'; go test ./internal/tools -run TestKillBackgroundProcsKillsEscapedChildProcess; go test ./internal/tools -run TestJobDispositionPolicyBlocksSuccessfulReviewWhenDocSyncFails; go test ./internal/tools -run 'TestFileWritePolicyRequiresDocSyncForSourceFiles|TestFileWritePolicyRejectsSourceDocSyncMissingDoc|TestEngineerClaimPolicyRequiresInProgressBeforeProductMutation|TestFileWritePolicyBlocksScenarioIDsThatDoNotMatchFeatureContract'; go test ./internal/tools -run 'TestDogfoodUncommittedFindingBlocksFurtherValidationAndTickets|TestDogfoodFindingCreatedInRunRequiresDispositionBeforeFurtherValidation|TestReviewApprovalRequiresPassingValidationWhenTestsExist|TestShellExecPolicyAllowsEvidencedEnablerTicketDoneMove|TestShellExecPolicyBlocksEnablerTicketDoneMoveWithoutEvidence|TestShellExecArgvAllowsLiteralNewlineArgument|TestRecordSessionToolOutcomeTracksValidationCommands'; go test ./internal/orgstate -run TestDecodeDispositionNormalizesStringLists; go test ./internal/docsync; go test ./internal/telemetry -run 'TestClassify|TestRetryable'; run12, demo-api-run1 through demo-api-run20 scores exports and trace summaries captured live Factory Pace baselines"
 owner: "Codex"
 last_attempt: >-
@@ -100,13 +102,24 @@ last_attempt: >-
   terminal gap: post-runtime-validation no-op placeholders with dirty rework.
   AD-218 now blocks the first such no-op with tracked-PID cleanup, commit,
   evidence, ticket closure, push, and qa_review guidance.
+  2026-06-11: the dated pace baseline replay (demo-11 Inventory/API canary on
+  v0.50.1) is recorded in docs/validation/baselines/2026-06-11-factory-pace-
+  baseline.md. The run stopped at cto-weekly max_turns inside a deterministic
+  ticket_create false-duplicate wedge (finding F1 in the report), so the
+  AD-218 Engineer confirmation could not execute; AD-218 remains unvalidated
+  on this archetype until the Phase 3 fix lands. The run did live-validate the
+  T-027 Convergence And Guardrails export section.
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
 next_action: >-
-  Rerun the Inventory/API-style canary after AD-218 and confirm Engineer stops
-  tracked background validation, commits the route repair, closes the Dogfood
-  rework ticket, pushes, and hands back to QA without no-op circle detection.
+  After the Phase 3 fix for the cto-weekly ticket_create false-duplicate wedge
+  (2026-06-11 baseline finding F1), rerun the Inventory/API-style canary and
+  confirm Engineer stops tracked background validation, commits the route
+  repair, closes the Dogfood rework ticket, pushes, and hands back to QA
+  without no-op circle detection (AD-218). Calibrated max-turn limits follow
+  only after post-fix replays accumulate pace data against the 2026-06-11
+  baseline.
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -197,9 +210,9 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Current factory pace is measured from durable evidence, with a dated baseline documented before optimization work starts.
-- [ ] Pace is represented as a first-class metric with role/repo/job attribution rather than as ad hoc notes in chat.
-- [ ] The implementation surfaces pace where operators already inspect factory health, such as scores export, trace summaries, dashboard, or CLI output.
+- [x] Current factory pace is measured from durable evidence, with a dated baseline documented before optimization work starts. (docs/validation/baselines/2026-06-11-factory-pace-baseline.md, from the live demo-11 replay on v0.50.1.)
+- [x] Pace is represented as a first-class metric with role/repo/job attribution rather than as ad hoc notes in chat. (Factory Pace and Convergence And Guardrails sections rendered from the live demo-11 DB on 2026-06-11.)
+- [x] The implementation surfaces pace where operators already inspect factory health, such as scores export, trace summaries, dashboard, or CLI output. (`mars-harness scores export` live-validated against `~/.mars-harness/db/demo-11/mars.db`.)
 - [ ] At least one evidence-backed resolution reduces avoidable turns or improves successful completion before max-turn failure.
 - [ ] Max-turn and budget behavior is calibrated by role or work type so higher limits are available for productive work without allowing silent loops.
 

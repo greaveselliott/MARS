@@ -13,6 +13,9 @@ and with which guardrails.
   command lists, and graduation criteria.
 - `reports/` contains completed validation reports for source-owned dogfood
   or supersession trials. Create this directory when the first report lands.
+- `baselines/` contains dated factory-pace baselines (T-011): the
+  before-measurement that Phase 3 convergence and decomposition slices are
+  judged against per AD-138 and AD-284/AD-285.
 - `release-blockers.md` is the per-version release publication and
   asset-verification blocker ledger extracted from the active plan on
   2026-06-11 (T-022); new release blockers are appended there.

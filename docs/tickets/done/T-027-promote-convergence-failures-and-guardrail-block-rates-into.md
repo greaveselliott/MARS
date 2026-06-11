@@ -6,7 +6,7 @@ complexity: medium
 work_type: enabler
 bdd_scenarios: ["F-008-S007", "F-008-S009"]
 end_to_end_evidence: not_applicable
-evidence_links: ["AD-283 in docs/design-docs/self-reflective-telemetry.md, indexed in docs/design-docs/index.md", "F-008-S009 in docs/features/F-008-scoring-trust-quality.md", "go test ./internal/qualityscore -run 'TestExportRendersConvergenceAndGuardrailSignals|TestSummarizeConvergenceCleanWindowReportsNoFailures'", "Regenerated docs/QUALITY_SCORE.md for this repo renders the Convergence And Guardrails section and clean-window signal", "No runtime telemetry recording changed: data joins existing trace summaries and scoring outcome counts, so no canary replay is required"]
+evidence_links: ["AD-283 in docs/design-docs/self-reflective-telemetry.md, indexed in docs/design-docs/index.md", "F-008-S009 in docs/features/F-008-scoring-trust-quality.md", "go test ./internal/qualityscore -run 'TestExportRendersConvergenceAndGuardrailSignals|TestSummarizeConvergenceCleanWindowReportsNoFailures'", "Regenerated docs/QUALITY_SCORE.md for this repo renders the Convergence And Guardrails section and clean-window signal", "No runtime telemetry recording changed: data joins existing trace summaries and scoring outcome counts, so no canary replay is required", "Live validation 2026-06-11: the demo-11 pace-baseline replay rendered Convergence And Guardrails from a real run DB (cto-weekly max_turns counted, convergence-failure signal, roll-up totals consistent) — docs/validation/reports/2026-06-11-demo-11-pace-baseline.md#ad-218--t-027-validation-status"]
 verified_by: "command"
 owner: "foundation-maintainer"
 last_attempt: "2026-06-11"
