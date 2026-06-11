@@ -6,14 +6,18 @@ complexity: medium
 work_type: enabler
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
+evidence_links:
+  - "AD-278 in docs/design-docs/self-reflective-telemetry.md, indexed in docs/design-docs/index.md"
+  - "mars-harness scores export --repo . regeneration on 2026-06-11 (docs/QUALITY_SCORE.md Updated: 2026-06-11)"
+  - "TD-006 in docs/exec-plans/tech-debt.md records the hook/schedule automation follow-up"
+  - "go test ./internal/docsconsistency/... ./internal/docsync/..."
+verified_by: "foundation-maintainer"
 owner: "foundation-maintainer"
-last_attempt: "TBD"
+last_attempt: "2026-06-11"
 blocker: "none"
 blocked_by: []
-trace_id: "TBD"
-next_action: "Document the regeneration cadence for docs/QUALITY_SCORE.md, run a regeneration with scores export, and record any automation follow-up."
+trace_id: "none"
+next_action: "Done; cadence documented as AD-278, artifact regenerated, automation follow-up recorded as TD-006."
 source: Foundation improvement plan Phase 1 WS-A (provisional T-021)
 created: 2026-06-11
 depends_on: []
@@ -45,14 +49,14 @@ Ownership classification: foundation-owned enabler; extends existing F-008 behav
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Regeneration cadence and regression gating are documented in an indexed AD.
-- [ ] docs/QUALITY_SCORE.md is freshly regenerated.
+- [x] Regeneration cadence and regression gating are documented in an indexed AD (AD-278).
+- [x] docs/QUALITY_SCORE.md is freshly regenerated (Updated: 2026-06-11).
 
 ### Edge cases and negative paths
-- [ ] Insufficient-evidence exports remain honest and do not fabricate grades.
+- [x] Insufficient-evidence exports remain honest and do not fabricate grades (2026-06-11 export reports Insufficient evidence overall and an honest D for ticket flow).
 
 ### Non-goals
 - New telemetry surfaces or runtime behavior changes in this slice.
 
 ### Observability, docs, and regressions
-- [ ] go test ./internal/docsconsistency/... ./internal/docsync/... passes.
+- [x] go test ./internal/docsconsistency/... ./internal/docsync/... passes (run 2026-06-11).

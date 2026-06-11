@@ -85,6 +85,31 @@ score/outcome signals materialized as target tickets. Dashboard quality links
 point back to this generated artifact; the dashboard is not the source of
 truth.
 
+### AD-278: Quality Score Regeneration Cadence And Regression Gating
+
+`docs/QUALITY_SCORE.md` regeneration has a defined cadence instead of being
+refreshed only when an agent remembers. The triggers, all served by the
+existing `mars-harness scores export --repo <path>` surface (AD-072, F-008):
+
+1. **After every live validation run batch.** When a validation report lands
+   under `docs/validation/reports/`, the same change set regenerates the
+   quality score so Factory Pace rows and outcome signals reflect the run.
+2. **Before any quality or readiness claim.** Tickets, plans, or release
+   evidence that cite a grade must cite a same-day export, not a stale file.
+3. **At least once per release-note batch** when harness jobs ran since the
+   last export for the repo.
+
+Gating on grade regressions: a drop in any Overall Roll-Up area grade between
+two exports is an improvement-target signal first (AD-038). It blocks
+completion claims for work that touched that area until the regression is
+explained in the ticket or validation report; ticket materialization still
+requires the explicit `--create-intervention-debt` flag (AD-072).
+
+Automation status as of 2026-06-11: the cadence is operator/agent doctrine.
+Wiring the export into a post-run hook or scheduled survey is recorded as a
+follow-up in `docs/exec-plans/tech-debt.md` and is expected to land with the
+WS-C pace/convergence telemetry slice, which extends the same export surface.
+
 ### AD-104: Foundation Telemetry Uses Opt-In Anonymous Reports Through a Pluggable Collector
 
 Raw deployed-harness telemetry remains local in the repo-specific SQLite
