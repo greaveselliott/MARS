@@ -6,14 +6,16 @@ complexity: small
 work_type: docs
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
+evidence_links:
+  - "AD-276 in docs/design-docs/self-improvement.md, indexed in docs/design-docs/index.md"
+  - "go test ./internal/docsconsistency/... ./internal/docsync/..."
+verified_by: "foundation-maintainer"
 owner: "foundation-maintainer"
-last_attempt: "TBD"
+last_attempt: "2026-06-11"
 blocker: "none"
 blocked_by: []
-trace_id: "TBD"
-next_action: "Write the retirement AD, delete docs/exec-plans/pipeline-learnings.md, and update references that name the file."
+trace_id: "none"
+next_action: "Done; pipeline-learnings.md removed, AD-276 indexed, exec-plans README updated."
 source: Foundation improvement plan Phase 1 WS-A (provisional T-019)
 created: 2026-06-11
 depends_on: []
@@ -44,14 +46,14 @@ Ownership classification: foundation-owned documentation hygiene.
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Retirement AD exists and is indexed.
-- [ ] pipeline-learnings.md is removed and no live doc links to it.
+- [x] Retirement AD exists and is indexed (AD-276).
+- [x] pipeline-learnings.md is removed and no live doc links to it.
 
 ### Edge cases and negative paths
-- [ ] Historical reference docs that mention the file as Mars-monorepo evidence are preserved unchanged.
+- [x] Historical reference docs that mention the file as Mars-monorepo evidence are preserved unchanged (docs/references/mars-meta-harness-relevance-audit.md untouched).
 
 ### Non-goals
 - Backfilling historical run learnings into a new tracker.
 
 ### Observability, docs, and regressions
-- [ ] go test ./internal/docsconsistency/... ./internal/docsync/... passes.
+- [x] go test ./internal/docsconsistency/... ./internal/docsync/... passes (run 2026-06-11).

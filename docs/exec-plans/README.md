@@ -90,7 +90,10 @@ warnings when plan lifecycle state drifts from the ticket tree.
 | File | Purpose |
 |------|---------|
 | [tech-debt.md](tech-debt.md) | Known debt and acceptable gaps. |
-| [pipeline-learnings.md](pipeline-learnings.md) | Recurring failure patterns and fix recipes (populated during operation). |
+
+The former `pipeline-learnings.md` tracker was retired on 2026-06-11 (AD-276):
+recurring failure learnings live as `delivery-operating-model.md` architecture
+decisions, `docs/validation/` reports, and deterministic remediation recipes.
 
 ## Where to look next
 

@@ -35,12 +35,13 @@ plans to decide what to do next.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
   - `docs/tickets/in-progress/` contains `T-011`.
-  - `docs/tickets/backlog/` contains `T-010`, `T-013`, `T-019` through
+  - `docs/tickets/backlog/` contains `T-010`, `T-013`, `T-020` through
     `T-023` (foundation improvement workstreams WS-A/WS-B, created
     2026-06-11), `MH-051` through `MH-061`, and any newly created live-loop
     follow-up tickets.
   - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
-    through `T-009`, plus `T-012`, `T-014`, `T-015`, and `T-016`.
+    through `T-009`, plus `T-012`, `T-014`, `T-015`, `T-016`, `T-017`, and
+    `T-019`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.

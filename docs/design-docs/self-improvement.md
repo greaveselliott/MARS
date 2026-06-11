@@ -48,6 +48,28 @@ agent wants to execute work from a backlog plan, it first checks dependencies
 and blockers, updates the active plan's priority order, then performs the work
 through normal tickets and commits.
 
+### AD-276: Retire The Pipeline-Learnings Standing Tracker
+
+`docs/exec-plans/pipeline-learnings.md` was created from the Mars meta-harness
+relevance audit as a standing tracker for recurring failure patterns and fix
+recipes. It stayed empty through the entire 2026-05 live validation campaign
+because the learnings loop landed in stronger, already-checked artifacts
+instead:
+
+- Recurring failure patterns and their fixes are recorded as architecture
+  decisions in `delivery-operating-model.md` (AD-164 through AD-218 and later),
+  each tied to the replay run that exposed the failure.
+- Run-level evidence lives in `docs/validation/` reports and the active plan's
+  scenario schedule.
+- Deterministic remediation recipes live in `internal/remediation` with
+  trace-linked score evidence (MH-048).
+
+The tracker is retired as of 2026-06-11 rather than backfilled: copying 65
+replay runs into a parallel ledger would duplicate existing evidence and
+create a second source of truth for the same learnings. If a future failure
+class needs a durable recipe, it goes through the AD or remediation-recipe
+path, not a freestanding tracker file.
+
 ### Design anchors
 
 - **Intervention detection:** classify events as **clear interventions** (unambiguous human override), **ambiguous** (could be normal workflow), or **non-interventions** to reduce false-positive evolution; store classification rationale in the trace.
