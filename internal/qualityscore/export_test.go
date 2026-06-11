@@ -119,6 +119,68 @@ func TestExportRendersFactoryPaceFromTraceSummaries(t *testing.T) {
 	require.Contains(t, text, "Review `repo-1/dogfood` pace: 1 limit stop(s) with 40.0 average turns.")
 }
 
+func TestExportRendersConvergenceAndGuardrailSignals(t *testing.T) {
+	t.Parallel()
+	repo := setupQualityRepo(t)
+	dbPath := filepath.Join(repo, "mars.db")
+	scoreStore, err := scoring.OpenStore(dbPath)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	now := time.Date(2026, 5, 3, 9, 0, 0, 0, time.UTC)
+	outcomes := []scoring.Outcome{
+		{JobID: "job-circle", RepoID: "repo-1", Role: "engineer", Type: scoring.OutcomeFailed},
+		{JobID: "job-maxturns", RepoID: "repo-1", Role: "engineer", Type: scoring.OutcomeFailed},
+		{JobID: "job-clean", RepoID: "repo-1", Role: "engineer", Type: scoring.OutcomePassed},
+		{JobID: "job-noop", RepoID: "repo-1", Role: "dogfood", Type: scoring.OutcomeNoop},
+		{JobID: "job-blocked", RepoID: "repo-1", Role: "dogfood", Type: scoring.OutcomeGuardrailBlocked},
+	}
+	for _, outcome := range outcomes {
+		outcome.RecordedAt = now.Add(-time.Hour)
+		require.NoError(t, scoreStore.RecordOutcome(ctx, outcome))
+	}
+	require.NoError(t, scoreStore.Close())
+
+	traceStore, err := trace.OpenStore(dbPath)
+	require.NoError(t, err)
+	require.NoError(t, traceStore.Save(ctx, "job-circle", "trace-circle", "{}", `{"trace_id":"trace-circle","job_id":"job-circle","outcome":"circle_detected","wall_ms":50000,"turn_count":20,"tool_invocations":12,"llm_calls":15}`))
+	require.NoError(t, traceStore.Save(ctx, "job-maxturns", "trace-maxturns", "{}", `{"trace_id":"trace-maxturns","job_id":"job-maxturns","outcome":"max_turns","wall_ms":90000,"turn_count":40,"tool_invocations":22,"llm_calls":30}`))
+	require.NoError(t, traceStore.Save(ctx, "job-clean", "trace-clean", "{}", `{"trace_id":"trace-clean","job_id":"job-clean","outcome":"completed","wall_ms":1000,"turn_count":8,"tool_invocations":3,"llm_calls":4}`))
+	require.NoError(t, traceStore.Close())
+
+	report, err := Export(ctx, Options{
+		RepoPath:              repo,
+		RepoID:                "repo-1",
+		DBPath:                dbPath,
+		Now:                   now,
+		WindowDays:            30,
+		DisableTicketCreation: true,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, report.Path)
+
+	data, err := os.ReadFile(filepath.Join(repo, "docs", "QUALITY_SCORE.md"))
+	require.NoError(t, err)
+	text := string(data)
+	require.Contains(t, text, "## Convergence And Guardrails")
+	require.Contains(t, text, "| repo-1 | engineer | 3 | 1 | 1 | 0 | 0 | 0 | 0% | convergence-failure evidence |")
+	require.Contains(t, text, "| repo-1 | dogfood | 0 | 0 | 0 | 0 | 1 | 1 | 50% | convergence-failure evidence |")
+	require.Contains(t, text, "| Convergence failures | 1 circle_detected, 1 max_turns/max_tool_calls, 0 other limit stop(s), 1 no-op outcome(s); 1 guardrail block(s) across 5 terminal outcome(s) (20% block rate) |")
+}
+
+func TestSummarizeConvergenceCleanWindowReportsNoFailures(t *testing.T) {
+	t.Parallel()
+	rows := summarizeConvergence(
+		[]paceRow{{RepoID: "repo-1", Role: "engineer", Outcome: "completed"}},
+		[]scoring.OutcomeCount{{RepoID: "repo-1", Role: "engineer", Type: scoring.OutcomePassed, Count: 1}},
+	)
+	require.Len(t, rows, 1)
+	require.Equal(t, "clean", rows[0].Signal)
+	require.Equal(t, 0, rows[0].convergenceFailures())
+	require.Equal(t, "No convergence failures or guardrail blocks recorded.", convergenceSignal(rows))
+	require.Equal(t, "No convergence failures or guardrail blocks recorded.", convergenceSignal(nil))
+}
+
 func TestExportCreatesDedupedRegressionTicket(t *testing.T) {
 	t.Parallel()
 	repo := setupQualityRepo(t)

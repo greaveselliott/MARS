@@ -110,6 +110,26 @@ Wiring the export into a post-run hook or scheduled survey is recorded as a
 follow-up in `docs/exec-plans/tech-debt.md` and is expected to land with the
 WS-C pace/convergence telemetry slice, which extends the same export surface.
 
+### AD-283: Convergence Failures And Guardrail Block Rates Are First-Class Export Evidence
+
+Factory Pace (T-011, F-008-S008) collapsed every unproductive stop into a
+single limit-stop count, and guardrail blocks appeared only as a raw total.
+Operators triaging convergence problems need the failure kinds separated:
+circle detection means the loop guard fired, max-turn/max-tool stops mean the
+budget ran out, no-op outcomes mean a job ended without useful work, and
+guardrail block rate shows how often policy had to intervene relative to all
+terminal outcomes.
+
+`scores export` therefore renders a Convergence And Guardrails section in
+`docs/QUALITY_SCORE.md` with per repo/role counts of circle-detected stops,
+max-turn/max-tool stops, other limit stops (timeout, budget, empty response),
+no-op terminal outcomes, guardrail blocks, and the guardrail block rate over
+terminal outcomes, plus a Convergence failures roll-up row in Evidence
+Signals. All data comes from existing trace summaries and scoring outcome
+tables — no runtime recording changed, so no canary replay is required for
+this slice (T-027). A clean window reports that no failures were recorded;
+missing evidence still renders as missing rather than healthy (F-008-S007).
+
 ### AD-104: Foundation Telemetry Uses Opt-In Anonymous Reports Through a Pluggable Collector
 
 Raw deployed-harness telemetry remains local in the repo-specific SQLite

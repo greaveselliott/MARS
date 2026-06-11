@@ -803,6 +803,19 @@ func (ev evidence) render(grade string) string {
 		fmt.Fprintf(&b, "\n")
 	}
 
+	fmt.Fprintf(&b, "## Convergence And Guardrails\n\n")
+	convergence := summarizeConvergence(ev.paceRows, ev.outcomeCounts)
+	if len(convergence) == 0 {
+		fmt.Fprintf(&b, "No convergence or guardrail evidence was available in the selected evidence window.\n\n")
+	} else {
+		fmt.Fprintf(&b, "| Repo | Role | Traced Jobs | Circle Detected | Max Turns | Other Limit Stops | No-Op Outcomes | Guardrail Blocks | Block Rate | Signal |\n| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |\n")
+		for _, row := range convergence {
+			fmt.Fprintf(&b, "| %s | %s | %d | %d | %d | %d | %d | %d | %.0f%% | %s |\n",
+				emptyDash(row.RepoID), row.Role, row.TracedJobs, row.CircleDetected, row.MaxTurns, row.OtherLimitStops, row.NoopOutcomes, row.GuardrailBlocks, row.guardrailBlockRate()*100, row.Signal)
+		}
+		fmt.Fprintf(&b, "\n")
+	}
+
 	fmt.Fprintf(&b, "## Evidence Signals\n\n")
 	outcomes := summarizeOutcomes(ev.outcomeCounts)
 	remediation := summarizeRemediation(ev.outcomes)
@@ -810,6 +823,7 @@ func (ev evidence) render(grade string) string {
 	fmt.Fprintf(&b, "| Role scores | %s |\n", roleScoreSignal(ev.scores))
 	fmt.Fprintf(&b, "| Factory pace | %s |\n", paceSignal(pace))
 	fmt.Fprintf(&b, "| Terminal outcomes | %s |\n", terminalOutcomeSignal(outcomes))
+	fmt.Fprintf(&b, "| Convergence failures | %s |\n", convergenceSignal(convergence))
 	fmt.Fprintf(&b, "| Stuck tickets | %s |\n", stuckTicketSignal(ev.tickets))
 	fmt.Fprintf(&b, "| Failed dogfood | %s |\n", countSignal(outcomes.dogfoodFailures, "dogfood failures"))
 	fmt.Fprintf(&b, "| Guardrail blocks | %s |\n", countSignal(outcomes.byType[scoring.OutcomeGuardrailBlocked], "guardrail blocks"))
@@ -829,6 +843,7 @@ func (ev evidence) render(grade string) string {
 	fmt.Fprintf(&b, "## Source And Target Contract\n\n")
 	fmt.Fprintf(&b, "- Refresh this artifact with `mars-harness scores export --repo <path>`.\n")
 	fmt.Fprintf(&b, "- The export reads role scores, terminal outcomes, tickets, telemetry, dogfood, guardrail blocks, no-op runs, human follow-up, deterministic remediation attempts, and check outcomes from the same evidence used by dashboard quality views.\n")
+	fmt.Fprintf(&b, "- Convergence failures (circle detection, max-turn/max-tool stops, no-op outcomes) and guardrail block rates are broken out per repo/role from existing trace summaries and terminal outcome counts.\n")
 	fmt.Fprintf(&b, "- The dashboard may link to or display this data, but `docs/QUALITY_SCORE.md` remains the repo-visible source of truth for quality claims.\n")
 	fmt.Fprintf(&b, "- The quality score separates shipped feature scenarios from enabler work; feature claims still require mapped BDD evidence.\n")
 	fmt.Fprintf(&b, "- Low role scores and recurring failures are reported as improvement targets by default; pass `--create-intervention-debt` when ticket materialization is deliberately wanted.\n")
@@ -919,6 +934,34 @@ type paceSummary struct {
 	AvgWallMs          float64
 	LimitStops         int
 	Signal             string
+}
+
+// convergenceSummary breaks the pace limit-stop aggregate into the specific
+// convergence-failure kinds operators triage (T-027): circle detection,
+// turn/tool budget exhaustion, no-op terminal outcomes, and guardrail block
+// rates, per repo/role.
+type convergenceSummary struct {
+	RepoID           string
+	Role             string
+	TracedJobs       int
+	CircleDetected   int
+	MaxTurns         int
+	OtherLimitStops  int
+	NoopOutcomes     int
+	GuardrailBlocks  int
+	TerminalOutcomes int
+	Signal           string
+}
+
+func (c convergenceSummary) convergenceFailures() int {
+	return c.CircleDetected + c.MaxTurns + c.OtherLimitStops + c.NoopOutcomes
+}
+
+func (c convergenceSummary) guardrailBlockRate() float64 {
+	if c.TerminalOutcomes == 0 {
+		return 0
+	}
+	return float64(c.GuardrailBlocks) / float64(c.TerminalOutcomes)
 }
 
 type remediationSummary struct {
@@ -1016,6 +1059,86 @@ func summarizePace(rows []paceRow) []paceSummary {
 		return out[i].Role < out[j].Role
 	})
 	return out
+}
+
+// summarizeConvergence joins traced job outcomes with terminal outcome counts
+// so convergence failures and guardrail block rates are visible per repo/role
+// from existing trace and scoring tables; no new runtime recording is needed.
+func summarizeConvergence(rows []paceRow, counts []scoring.OutcomeCount) []convergenceSummary {
+	byKey := map[string]*convergenceSummary{}
+	get := func(repoID, role string) *convergenceSummary {
+		key := repoID + "\x00" + role
+		c := byKey[key]
+		if c == nil {
+			c = &convergenceSummary{RepoID: repoID, Role: role}
+			byKey[key] = c
+		}
+		return c
+	}
+	for _, row := range rows {
+		c := get(row.RepoID, row.Role)
+		c.TracedJobs++
+		switch strings.ToLower(strings.TrimSpace(row.Outcome)) {
+		case "circle_detected":
+			c.CircleDetected++
+		case "max_turns", "max_tool_calls":
+			c.MaxTurns++
+		default:
+			if row.LimitStop {
+				c.OtherLimitStops++
+			}
+		}
+	}
+	for _, count := range counts {
+		c := get(count.RepoID, count.Role)
+		c.TerminalOutcomes += count.Count
+		switch count.Type {
+		case scoring.OutcomeNoop:
+			c.NoopOutcomes += count.Count
+		case scoring.OutcomeGuardrailBlocked:
+			c.GuardrailBlocks += count.Count
+		}
+	}
+	out := make([]convergenceSummary, 0, len(byKey))
+	for _, c := range byKey {
+		switch {
+		case c.convergenceFailures() > 0:
+			c.Signal = "convergence-failure evidence"
+		case c.GuardrailBlocks > 0:
+			c.Signal = "guardrail-block evidence"
+		default:
+			c.Signal = "clean"
+		}
+		out = append(out, *c)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].RepoID != out[j].RepoID {
+			return out[i].RepoID < out[j].RepoID
+		}
+		return out[i].Role < out[j].Role
+	})
+	return out
+}
+
+func convergenceSignal(rows []convergenceSummary) string {
+	var circles, maxTurns, otherStops, noops, blocks, outcomes int
+	for _, row := range rows {
+		circles += row.CircleDetected
+		maxTurns += row.MaxTurns
+		otherStops += row.OtherLimitStops
+		noops += row.NoopOutcomes
+		blocks += row.GuardrailBlocks
+		outcomes += row.TerminalOutcomes
+	}
+	if len(rows) == 0 || (circles+maxTurns+otherStops+noops+blocks) == 0 {
+		return "No convergence failures or guardrail blocks recorded."
+	}
+	rate := 0.0
+	if outcomes > 0 {
+		rate = float64(blocks) / float64(outcomes)
+	}
+	return fmt.Sprintf("%d circle_detected, %d max_turns/max_tool_calls, %d other limit stop(s), %d no-op outcome(s); %d guardrail block(s) across %d terminal outcome(s) (%.0f%% block rate)",
+		circles, maxTurns, otherStops, noops, blocks, outcomes, rate*100)
 }
 
 func paceRowSignal(row paceSummary, negativeOutcomes int) string {

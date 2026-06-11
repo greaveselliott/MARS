@@ -23,6 +23,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 6. F-008-S006 - Release notes and quality score distinguish shipped feature scenarios from enabler work.
 7. F-008-S007 - Missing or sparse evidence is represented as insufficient evidence rather than healthy state.
 8. F-008-S008 - Factory pace is exported from trace summaries as quality evidence.
+9. F-008-S009 - Convergence failures and guardrail block rates are exported per repo/role as quality evidence.
 
 ## Scenarios
 
@@ -79,6 +80,18 @@ Given scoring outcomes have no matching trace summaries
 When quality score export runs
 Then the Factory Pace section reports insufficient trace pace evidence instead of implying the factory is fast or healthy
 
+### F-008-S009: Convergence And Guardrail Evidence
+
+Given the evidence window contains trace summaries and terminal outcome counts
+When `mars-harness scores export --repo <path> --db <path>` runs
+Then `docs/QUALITY_SCORE.md` includes a Convergence And Guardrails section with per repo/role counts of circle-detected stops, max-turn/max-tool stops, other limit stops, no-op terminal outcomes, guardrail blocks, and the guardrail block rate over terminal outcomes
+And the Evidence Signals table includes a Convergence failures roll-up across all repo/role rows
+And the data comes from existing trace summary and scoring outcome tables without new runtime recording
+
+Given the window has no convergence failures or guardrail blocks
+When quality score export runs
+Then the convergence signal reports that none were recorded instead of implying missing evidence is healthy
+
 ## Out of Scope
 
 - Treating scores as vanity dashboard numbers with no behavioral effect.
@@ -99,3 +112,4 @@ None.
 - F-008-S006: `go test ./internal/release -run TestPrepareClassifiesDeliveryEvidenceFromDoneTickets`
 - F-008-S007: `go test ./internal/qualityscore -run TestExportMissingDatabasePreservesManualNotes` and `go test ./internal/scoring -run TestComputeScore_minimumSampleSize`
 - F-008-S008: `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries`
+- F-008-S009: `go test ./internal/qualityscore -run 'TestExportRendersConvergenceAndGuardrailSignals|TestSummarizeConvergenceCleanWindowReportsNoFailures'`

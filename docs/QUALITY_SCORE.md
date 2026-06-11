@@ -29,7 +29,7 @@ This file is the repo-visible quality artifact for Mars Harness evidence. It is 
 | Role health | Insufficient evidence | No scored role outcomes. | Keep recording terminal outcomes for every role run. |
 | Factory pace | Insufficient evidence | No trace pace evidence. | Use trace pace rows to target high-turn or limit-stop roles before raising runtime limits. |
 | Terminal outcomes and checks | Insufficient evidence | No terminal outcomes recorded. | Investigate failed checks, guardrail blocks, no-op runs, and human follow-up. |
-| Ticket flow and intervention debt | D | 15 backlog, 1 in-progress, 68 done, 1 open intervention-debt | Drain in-progress and high-priority intervention debt before ordinary backlog work; keep medium/low intervention debt visible without blocking product progress. |
+| Ticket flow and intervention debt | D | 13 backlog, 1 in-progress, 73 done, 1 open intervention-debt | Drain in-progress and high-priority intervention debt before ordinary backlog work; keep medium/low intervention debt visible without blocking product progress. |
 | Telemetry and dogfood | A | No telemetry triage targets; None recorded | Promote recurring telemetry and dogfood failures into bounded remediation. |
 | Evidence coverage | Insufficient evidence | SQLite present but no role scores in the selected window. | Run harness jobs with scoring enabled when evidence is insufficient. |
 
@@ -43,6 +43,10 @@ No role scores were available in the selected evidence window.
 
 No trace pace evidence was available in the selected evidence window.
 
+## Convergence And Guardrails
+
+No convergence or guardrail evidence was available in the selected evidence window.
+
 ## Evidence Signals
 
 | Signal | Evidence |
@@ -50,6 +54,7 @@ No trace pace evidence was available in the selected evidence window.
 | Role scores | No scored role outcomes. |
 | Factory pace | No trace pace evidence. |
 | Terminal outcomes | No terminal outcomes recorded. |
+| Convergence failures | No convergence failures or guardrail blocks recorded. |
 | Stuck tickets | 1 in-progress: `docs/tickets/in-progress/T-011-measure-and-optimize-factory-pace.md` |
 | Failed dogfood | None recorded |
 | Guardrail blocks | None recorded |
@@ -70,6 +75,7 @@ No trace pace evidence was available in the selected evidence window.
 
 - Refresh this artifact with `mars-harness scores export --repo <path>`.
 - The export reads role scores, terminal outcomes, tickets, telemetry, dogfood, guardrail blocks, no-op runs, human follow-up, deterministic remediation attempts, and check outcomes from the same evidence used by dashboard quality views.
+- Convergence failures (circle detection, max-turn/max-tool stops, no-op outcomes) and guardrail block rates are broken out per repo/role from existing trace summaries and terminal outcome counts.
 - The dashboard may link to or display this data, but `docs/QUALITY_SCORE.md` remains the repo-visible source of truth for quality claims.
 - The quality score separates shipped feature scenarios from enabler work; feature claims still require mapped BDD evidence.
 - Low role scores and recurring failures are reported as improvement targets by default; pass `--create-intervention-debt` when ticket materialization is deliberately wanted.
