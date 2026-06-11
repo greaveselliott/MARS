@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.46.3] - 2026-06-11
+<!-- mars-harness-release: version=0.46.3 commit=538877f02c88 -->
+
+### Impact
+- **scoring:** Operators see improved reliability because evaluate score windows against the caller's reference time.
+
+### Why
+- **scoring:** This matters because evaluate score windows against the caller's reference time closes a failure mode or degraded path.
+
+### What Changed
+- **scoring:** Changed evaluate score windows against the caller's reference time (538877f).
+
+### Fixes
+- **scoring:** Evaluate score windows against the caller's reference time (538877f)
+
 ## [0.46.2] - 2026-06-11
 <!-- mars-harness-release: version=0.46.2 commit=082f0916c508 -->
 
