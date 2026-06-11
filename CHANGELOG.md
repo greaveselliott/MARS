@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.2] - 2026-06-11
+<!-- mars-harness-release: version=0.50.2 commit=ff3d42d80f32 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because record dated factory-pace baseline from demo-11 Inventory/API replay (T-011 measurement floor).
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed record dated factory-pace baseline from demo-11 Inventory/API replay (T-011 measurement floor) (ff3d42d).
+
+### Documentation
+- **validation:** Record dated factory-pace baseline from demo-11 Inventory/API replay (T-011 measurement floor) (ff3d42d)
+
+### Delivery Evidence
+- Enabler work: T-027: Promote convergence failures and guardrail block rates into scores export
+
 ## [0.50.1] - 2026-06-11
 <!-- mars-harness-release: version=0.50.1 commit=4f663c010cb3 -->
 
