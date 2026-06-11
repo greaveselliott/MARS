@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.47.0] - 2026-06-11
+<!-- mars-harness-release: version=0.47.0 commit=51719fa4e1b9 -->
+
+### Impact
+- **quality:** Operators gain new capability: add per-package coverage ratchet gate to the local delivery gate (T-024).
+
+### Why
+- **quality:** This matters because add per-package coverage ratchet gate to the local delivery gate (T-024) was missing from the shipped capability set.
+
+### What Changed
+- **quality:** Changed add per-package coverage ratchet gate to the local delivery gate (T-024) (51719fa).
+
+### Features
+- **quality:** Add per-package coverage ratchet gate to the local delivery gate (T-024) (51719fa)
+
+### Delivery Evidence
+- Enabler work: T-024: Add per-package coverage ratchet gate to CI
+
 ## [0.46.4] - 2026-06-11
 <!-- mars-harness-release: version=0.46.4 commit=39fdf6d0d908 -->
 
