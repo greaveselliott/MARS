@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.16] - 2026-06-12
+<!-- mars-harness-release: version=0.50.16 commit=f5a1d6a7c218 -->
+
+### Impact
+- **tools:** Maintainers get a healthier project surface because extract browser-framework policy domain into policy_browser.go (AD-287 slice 1, T-036).
+
+### Why
+- **tools:** This matters because project health work keeps future delivery predictable.
+
+### What Changed
+- **tools:** Changed extract browser-framework policy domain into policy_browser.go (AD-287 slice 1, T-036) (f5a1d6a).
+
+### Maintenance
+- **tools:** Extract browser-framework policy domain into policy_browser.go (AD-287 slice 1, T-036) (f5a1d6a)
+
 ## [0.50.15] - 2026-06-12
 <!-- mars-harness-release: version=0.50.15 commit=27b28a3889a3 -->
 
