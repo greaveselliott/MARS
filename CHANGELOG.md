@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.20] - 2026-06-12
+<!-- mars-harness-release: version=0.50.20 commit=63a37bf82dad -->
+
+### Impact
+- **tools:** Maintainers get a healthier project surface because extract capability/brief-parsing policy domain (AD-287 slice 4, T-039).
+
+### Why
+- **tools:** This matters because project health work keeps future delivery predictable.
+
+### What Changed
+- **tools:** Changed extract capability/brief-parsing policy domain (AD-287 slice 4, T-039) (63a37bf).
+
+### Maintenance
+- **tools:** Extract capability/brief-parsing policy domain (AD-287 slice 4, T-039) (63a37bf)
+
+### Delivery Evidence
+- Enabler work: T-036: Extract browser-framework static-analysis policy domain into policy_browser.go (AD-287 slice 1)
+- Enabler work: T-039: Move capability and brief-parsing helpers out of the policy monolith (AD-287 step 4)
+
 ## [0.50.19] - 2026-06-12
 <!-- mars-harness-release: version=0.50.19 commit=85787cfd7da3 -->
 
