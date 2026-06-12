@@ -158,6 +158,28 @@ telemetry triage rows. Operators reading only the convergence table may
 underestimate guardrail friction. Kept evidence-only for now; revisit when
 Phase 3 convergence telemetry work touches this surface.
 
+## Independent observer (read-only replay monitor)
+
+A separate read-only replay-monitor agent watched this run against the
+harness DB and trace log without write access to the target or this report.
+Its observations corroborate and sharpen the build-side record above:
+
+- **CTO churn quantified at the LLM-call level:** `cto-weekly` burned **51
+  LLM calls** against repeated ticket-policy guardrail blocks (the F1
+  `ticket_create` false-duplicate wedge plus the scenario-coverage handoff
+  gate) before ending `max_turns` at ~725s. This matches the build-side 105
+  turns / 51 tool invocations / 16 `guardrail_block` events and confirms the
+  wedge was spent fighting policy blocks, not making product progress.
+- **Post-failure orchestration gap observed verbatim:** the monitor captured
+  the log line "not dispatching runtime failure through Orchestrator;
+  foundation telemetry or operator retry must resolve it first" after the
+  `cto-weekly` max_turns failure. The pipeline then halted pending operator.
+  The same halt-pending-operator behavior was later observed after
+  `model_unavailable` (demo-12 run 1) and `circle_detected` (demo-11
+  balanced run) failures — the gap is a failure-class-independent missing
+  automatic transition, tracked under T-031 (routing) with the broader
+  mapping recorded in the convergence state-machine design doc.
+
 ## AD-218 / T-027 validation status
 
 - **AD-218 (post-runtime-validation convergence): not confirmed.** The run

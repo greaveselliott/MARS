@@ -59,6 +59,28 @@ Recorded per the AD-285 evidence contract including model identity.
    (ticket gate fail, then 32,883 tokens > 32,768), confirming the wedge is
    deterministic for this archetype state.
 
+## Independent observer (read-only replay monitor)
+
+A separate read-only replay-monitor agent watched the demo-12 session and
+recorded one pre-run failure that the build-side record above does not
+capture:
+
+- **Session-opening CEO failure (~2s, `model_unavailable`):** before the
+  recorded Run 1 sequence, the first CEO dispatch failed in ~2 seconds with
+  `model_unavailable` because the operator had swapped to
+  `performance_profile: balanced` — which resolves the reasoning/coding
+  tiers to `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` — while only the
+  quality-profile `Q8_0` weights were installed. The session proceeded only
+  after the operator downloaded the Q4_K_M artifact. Classification:
+  **foundation-owned** (setup/profile mismatch; a profile change after
+  setup leaves the AD-032 download-marker verification stale). Ticket:
+  T-033.
+- **Post-failure orchestration gap:** after the `model_unavailable` failure
+  the monitor observed the same "not dispatching runtime failure through
+  Orchestrator; foundation telemetry or operator retry must resolve it
+  first" halt seen after max_turns and circle_detected failures on demo-11
+  — the gap is failure-class-independent (tracked under T-031).
+
 ## Findings (failure ownership classification)
 
 ### F1 (foundation-owned, context assembly / model routing): engineer context assembly exceeds the balanced coding-tier 32k window on package-managed frontend targets

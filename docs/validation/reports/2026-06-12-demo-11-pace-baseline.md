@@ -67,6 +67,26 @@ contract, including the model-identity requirement added in v0.50.3.
    must resolve it first"). The retried qa job completed in 46s and the
    lifecycle continued through security, dogfood, and further rework.
 
+## Independent observer (read-only replay monitor)
+
+A separate read-only replay-monitor agent verified this run independently of
+the build-side record above:
+
+- **Run success independently verified:** the monitor confirmed the
+  lifecycle outcome via three independent surfaces — the per-repo DB job
+  outcomes (18 positive / 4 negative terminals), the demo-11 git history
+  (21 commits on `main` pushed to the local origin, including the three
+  QA-driven rework cycles and the security audit commit), and the on-disk
+  tree (working Go inventory API with passing test suites, T-001 in
+  `done/`). The baseline's lifecycle-reach claim does not rest solely on
+  the build agent's self-report.
+- **Post-failure orchestration gap:** the monitor observed the same
+  "not dispatching runtime failure through Orchestrator; foundation
+  telemetry or operator retry must resolve it first" halt after the qa
+  circle_detected failure that the Operator interventions section records.
+  This is one instance of the failure-class-independent gap tracked under
+  T-031.
+
 ## Findings (failure ownership classification)
 
 ### F1 (foundation-owned, convergence): qa circle_detected mid-review with no terminal disposition
