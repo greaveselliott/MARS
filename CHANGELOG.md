@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.7] - 2026-06-12
+<!-- mars-harness-release: version=0.50.7 commit=771dc5960d27 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because correct demo-11 baseline stop-reason and lifecycle-health claims from second monitor shift (T-011, T-031, T-035).
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed correct demo-11 baseline stop-reason and lifecycle-health claims from second monitor shift (T-011, T-031, T-035) (771dc59).
+
+### Documentation
+- **validation:** Correct demo-11 baseline stop-reason and lifecycle-health claims from second monitor shift (T-011, T-031, T-035) (771dc59)
+
 ## [0.50.6] - 2026-06-12
 <!-- mars-harness-release: version=0.50.6 commit=43f11b44847b -->
 
