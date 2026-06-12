@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.11] - 2026-06-12
+<!-- mars-harness-release: version=0.50.11 commit=bee4f5bbb283 -->
+
+### Impact
+- **agent:** Operators see improved reliability because clamp context budgeting to the served inference window (T-032, AD-288).
+
+### Why
+- **agent:** This matters because clamp context budgeting to the served inference window (T-032, AD-288) closes a failure mode or degraded path.
+
+### What Changed
+- **agent:** Changed clamp context budgeting to the served inference window (T-032, AD-288) (bee4f5b).
+
+### Fixes
+- **agent:** Clamp context budgeting to the served inference window (T-032, AD-288) (bee4f5b)
+
 ## [0.50.10] - 2026-06-12
 <!-- mars-harness-release: version=0.50.10 commit=1b0ad79aa040 -->
 
