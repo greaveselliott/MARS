@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.14] - 2026-06-12
+<!-- mars-harness-release: version=0.50.14 commit=26d4f391db52 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because fold independent monitor T-032 cross-check into demo-12/demo-13 observer evidence.
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed fold independent monitor T-032 cross-check into demo-12/demo-13 observer evidence (26d4f39).
+
+### Documentation
+- **validation:** Fold independent monitor T-032 cross-check into demo-12/demo-13 observer evidence (26d4f39)
+
+### Delivery Evidence
+- Enabler work: T-001: Intervention debt: Calibrate guardrail workflow for engineer
+- Enabler work: T-032: Fit engineer context assembly inside the balanced coding-tier window for package-managed frontend targets
+
 ## [0.50.13] - 2026-06-12
 <!-- mars-harness-release: version=0.50.13 commit=222392cbdf16 -->
 
