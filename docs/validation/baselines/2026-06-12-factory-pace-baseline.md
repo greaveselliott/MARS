@@ -1,6 +1,15 @@
 # Factory Pace Baseline — 2026-06-12 (balanced model)
 
 **Status:** Active baseline for Phase 3 pace comparisons
+**Archetype update (2026-06-12, v0.50.14):** for the Inventory/API
+archetype, the demo-14 convergence-routing replay
+([../reports/2026-06-12-demo-14-convergence-routing-replay.md](../reports/2026-06-12-demo-14-convergence-routing-replay.md))
+supersedes the demo-11 run as the lifecycle-reach reference: 48 jobs /
+126.5 min, all 10 product tickets closed, 4 dogfood passes, 0 operator
+interventions (AD-289 automatic convergence routing). The demo-11 per-role
+pace rows below remain the v0.50.2 measurement record; engineer/qa pace on
+v0.50.14 was same-or-better (engineer 235.9s vs 244.7s avg wall, qa 49.0s
+vs 63.3s).
 **Author:** foundation-maintainer
 **Source:** Live demo-11 Inventory/API canary replay on `mars-harness 0.50.2`
 **Run report:** [../reports/2026-06-12-demo-11-pace-baseline.md](../reports/2026-06-12-demo-11-pace-baseline.md)

@@ -102,11 +102,17 @@ produce the before/after replay evidence those slices are judged by.
 **T-032 closed 2026-06-12** (AD-288, v0.50.11): both archetype replays
 passed with zero context_overflow and lifecycle reach beyond the wedged
 baselines; the replay runs are the new demo-12/demo-13 archetype pace
-baselines (see the factory-pace baseline's archetype table). The
-`T-031` routing fix (with its T-035/post-max_turns siblings mapped in AD-286)
-follows second, restoring automatic lifecycle reach so replays stop needing
-operator retries. T-029-style extraction and state-machine slices proceed
-after that, in the AD-287 extraction order.
+baselines (see the factory-pace baseline's archetype table).
+**T-031 closed 2026-06-12** (AD-289, v0.50.13/v0.50.14): convergence
+failures get one automatic same-role retry per failure fingerprint, then a
+recorded `blocked/operator_retry` escalation; the 2026-06-12 demo-14
+Inventory/API replay drained its full backlog (T-001–T-010 done) with
+zero operator `run-role` calls and is the archetype lifecycle-reach
+reference. The T-035/post-max_turns siblings mapped in AD-286 remain
+separate edges (confirmed distinct code paths 2026-06-12). T-029-style
+extraction and state-machine slices follow in the AD-287 extraction order,
+with dogfood review convergence (6 failures in 10 demo-14 dogfood jobs) as
+the dominant remaining convergence consumer per the demo-14 report.
 
 ## Current Priority Order
 
@@ -152,8 +158,8 @@ after that, in the AD-287 extraction order.
    Phase 3 sequencing amendment above: `T-032` context overflow first (it
    unblocks the demo-12/demo-13 matrix replays the other slices need —
    **done 2026-06-12**, AD-288/v0.50.11, both archetype replays passed),
-   then the `T-031` routing fix (next slice; both T-032 replays needed
-   operator `run-role` retries through the post-failure dispatch halt),
+   then the `T-031` routing fix (**done 2026-06-12**, AD-289/v0.50.13,
+   demo-14 replay passed with zero operator retries),
    then one rule cluster or one policy domain per
    slice with a canary replay and recorded pace delta per the AD-138 loop.
 7. **Dashboard control-plane backlog (`MH-051` through `MH-061`)**: Decided

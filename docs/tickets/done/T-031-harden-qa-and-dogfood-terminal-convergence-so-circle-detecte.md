@@ -6,14 +6,14 @@ complexity: medium
 work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: required
-evidence_links: ["docs/design-docs/delivery-operating-model.md", "docs/design-docs/convergence-state-machine.md", "docs/validation/reports/2026-06-12-demo-11-pace-baseline.md", "docs/validation/reports/2026-06-12-demo-12-frontend-baseline.md", "docs/validation/reports/2026-06-12-demo-13-maintenance-baseline.md"]
+evidence_links: ["docs/validation/reports/2026-06-12-demo-14-convergence-routing-replay.md", "docs/design-docs/delivery-operating-model.md", "docs/design-docs/convergence-state-machine.md", "docs/validation/reports/2026-06-12-demo-11-pace-baseline.md", "docs/validation/reports/2026-06-12-demo-12-frontend-baseline.md", "docs/validation/reports/2026-06-12-demo-13-maintenance-baseline.md"]
 verified_by: "go test ./internal/serve -run 'TestHandleJobFailed_qaMaxTurnsEnqueuesConvergenceRetry|TestHandleJobFailed_dogfoodCircleDetectedEnqueuesConvergenceRetry|TestHandleJobFailed_engineerMaxTurnsWithoutTicketEnqueuesConvergenceRetry|TestHandleJobFailed_convergenceRetryFailureEscalatesWithDisposition|TestHandleJobFailed_productContinuationFailureEscalatesWithDisposition|TestHandleJobFailed_failedRetryFingerprintEscalatesNextFailure|TestHandleJobFailed_environmentFailureStillHaltsWithoutRetry'"
 owner: "foundation-maintainer"
 last_attempt: "2026-06-12"
 blocker: "none"
 blocked_by: []
-trace_id: "TBD"
-next_action: "Run the AD-284 orchestration replay (fresh Inventory/API archetype at demo-14) on the patched binary and record the AD-285 report before moving to done."
+trace_id: "747e5189 (cto-weekly max_turns) -> b63d6b31 (auto convergence_retry, completed)"
+next_action: "Done. AD-284 replay passed (demo-14, zero operator run-role calls, all 10 product tickets closed); see docs/validation/reports/2026-06-12-demo-14-convergence-routing-replay.md."
 kind: intervention-debt
 source: weekly-priorities.md
 created: 2026-06-12
@@ -44,6 +44,24 @@ failures only generically ("leave foundation/runtime failures as telemetry
 or blocked dispositions"), which remains accurate under AD-289; no scanner
 default or generated-guidance change is required. Ownership: foundation-owned
 (orchestration runtime); the demo targets carry no part of this fix.
+
+2026-06-12 CLOSED — AD-284 replay evidence (demo-14 Inventory/API, fresh
+brief, v0.50.14, zero operator run-role calls): every AD-289 path fired
+live. cto-weekly max_turns 747e5189 → automatic retry b63d6b31 completed
+(the v0.50.2 stall state, recovered without operator); dogfood
+56540d01/73dcbd2a → retries d8524b51/c94a8cad → chain-guard escalations
+with recorded blocked/operator_retry dispositions naming the exact retry
+command; dogfood 1950aa3b/58d48239 → immediate fingerprint-window
+escalations (no extra job burn — the demo-13 repeated-failure shape
+contained); engineer max_turns 3f7baafe took the richer AD-227
+product_continuation (edge layering preserved). Lifecycle drained the full
+backlog: T-001–T-010 done, 4 dogfood passes, 46 target commits, 126.5 min,
+queue empty at stop. Full report:
+docs/validation/reports/2026-06-12-demo-14-convergence-routing-replay.md.
+Scope confirmation: T-035 (graceful-stop draining) and the post-max_turns
+ticket_gate cascades do NOT share this code path — the routing fix lives in
+the dispatch failure branch; the stop path and the gate-repair handoff are
+separate edges with their own tickets.
 
 2026-06-12 T-032 rerun cross-check (independent monitor) — budget
 calibration evidence: with the AD-288 overflow fix landed, max_turns became
