@@ -345,3 +345,114 @@ slice of the extraction sequence. Run 3 does **not** replace Run 2 as the
 pace baseline (Run 3 carries AD-289 routing changes that make pace
 deltas vs Run 2 multi-causal; Run 2 remains the archetype baseline until
 a deliberate re-baseline).
+
+## Run 4: AD-287 final-sequence extraction checkpoint replay on v0.50.24 — 2026-06-12 {#run-4-v05024-ad287-final-checkpoint}
+
+AD-287 final-sequence gate: confirmatory checkpoint replay after the last
+extraction slice (T-043, `policy_validation.go` — pure same-package code
+motion of the validation-lane/repair domain, the densest-firing rule family
+in the system). The binary carries slices 2–8 (all pure motion) on top of
+the Run 3 binary; no behavior-change commits landed between v0.50.16 and
+v0.50.24, so the claim under test is **zero rule-level guardrail drift**
+vs Runs 2/3. Source-change class per AD-284: tool policy (frontend canary
+of the two-archetype minimum; the API archetype runs as demo-15 in
+`2026-06-12-demo-15-api-ad287-final-checkpoint.md`).
+
+- **Exact command:** `mars-harness start --repo
+  /path/to/local-redacted --debug --log-file
+  ~/.mars-harness/traces/logs/demo-12-balanced-frontend-replay-v0.50.24.log`
+- **Target:** `/path/to/local-redacted` reset to
+  seed commit `b6aa7a3` (`.git` + `spec.md` only, `git clean -fdx`), local
+  bare origin force-pushed back to the seed; per-repo DB
+  `~/.mars-harness/db/demo-12` removed before the run
+- **Source ref / binary:** `mars-harness 0.50.24` built from `ffa2629`
+  (extraction commit `5cd4eb3`, tag `v0.50.24` = `origin/main`), installed
+  via `make install`
+- **Model identity (AD-285):** unchanged from Runs 2/3 — reasoning +
+  coding = `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` (ctx 131072
+  reasoning :18081, ctx 32768 coding :18080); fast =
+  `google_gemma-4-E4B-it-Q5_K_M.gguf`; resolved from
+  `performance_profile: balanced` — comparison with Runs 2/3 is valid
+- **Database / logs:** `~/.mars-harness/db/demo-12/mars.db`;
+  `~/.mars-harness/traces/logs/demo-12-balanced-frontend-replay-v0.50.24.log`
+- **Job sequence (24 jobs, 09:21:04–09:50:51 UTC; ~30 min):**
+  ceo `58af4c99` 58s → coo `0420502f` 75s → cto-weekly `ad3ad112` 108s →
+  engineer `c22a0910` completed (129s; **T-001 claimed, implemented,
+  done**) → qa `424a2895` 40s → security `9d84ee50` 23s → dogfood
+  `a6d0b126` 126s → engineer `4d2cc1ee` completed (96s; **T-002 done**) →
+  qa `d81fed89` failed (circle_detected, 26s) → qa `cee153dd` completed
+  (AD-289 automatic retry, 32s) → security `41b10fcd` 28s → dogfood
+  `5f1ed3b0` 109s → cto-weekly `89544d0f` 99s → engineer `c10ea328`
+  completed (94s; **T-003 done**) → qa `31a7851b` 31s → security
+  `83ff653f` 24s → dogfood `7ef93e0b` failed (circle_detected, 55s) →
+  dogfood `19b9cc18` completed (AD-289 automatic retry, 121s; created
+  finding ticket T-004) → orchestrator `d061bd6b` 50s → engineer
+  `b129deee` failed (ticket_gate, 101s) → engineer `af555cde` completed
+  (existing `ticket_gate_repair` edge, 179s; **T-004 done**) → qa
+  `7f411a12` 73s → orchestrator `62a95923` 68s → engineer `dadeaccb`
+  failed (llm_unreachable: context canceled — artifact of the operator
+  graceful stop cancelling the in-flight T-001 rework job)
+- **Rule-level guardrail verdict (the claim under test): PASS.** 44
+  `guardrail_block` events (engineer 18, dogfood 14, security 6,
+  cto-weekly 3, qa 3), every one a pre-existing rule class with identical
+  message shape: foreground long-running shell (8), engineer
+  claim-before-mutation / reopen-before-rework gates (12 across
+  T-001..T-004), disposition clean-tree gates (5), security
+  review-shell limits (5), dogfood finding-disposition limits (5),
+  **validation-lane rules moved in this slice firing identically** —
+  `engineer already has successful validation and a clean implementation
+  commit …` (post-validation completion gate, 2) and `qa already observed
+  a failing build, test, or unexpected runtime validation …`
+  (review-validation-failure shell gate consuming the moved classifiers,
+  1) — CTO handoff coverage gate (1), argv shell-syntax (2), find-flood
+  (1), shell arg-parse rejection (1). Zero new or missing rule classes
+  among fired rules, zero policy errors/panics, **zero context_overflow**
+  (AD-288 holds). The failing-test/build repair-lane and artifact
+  freshness families did not fire because no validation failure lane was
+  entered — consistent with the cleaner run path, not a rule change.
+- **Failure mix:** 2 circle_detected (qa, dogfood — both recovered by
+  AD-289 automatic retries with zero operator `run-role` calls), 1
+  ticket_gate (repaired by the existing edge), 1 stop artifact. Run 3:
+  1 max_turns + 2 circle_detected + 2 ticket_gate + 1 operator retry.
+  Strictly cleaner; deltas attributable to run-path variance, no new
+  classes.
+- **Target commits / tickets / docs produced:** 24 commits pushed to the
+  local origin; CEO vision, COO plan + F-001 contract, CTO scenario
+  tickets; **T-001, T-002, T-003 closed through full
+  engineer → qa → security → dogfood cycles; dogfood finding ticket
+  T-004 created, implemented, and closed; T-001 rework loop opened** (the
+  in-flight rework engineer job was cancelled by the stop). Final state
+  checkpointed as `734991c chore(evidence): checkpoint v0.50.24 AD-287
+  final-sequence replay state + scores export`, pushed to the local
+  origin.
+- **Telemetry highlights (per-role avg wall):** ceo 58s; coo 75s;
+  cto-weekly 103.5s ×2; engineer 106.8s avg ×6 (2 failed); qa 40.4s ×5
+  (1 failed); security 25s ×3; dogfood 102.8s ×4 (1 failed);
+  orchestrator 59s ×2; failure categories: circle_detected 2,
+  ticket_gate 1, llm_unreachable 1 (stop artifact), guardrail_block 44,
+  **context_overflow 0**
+- **Product progress reached:** working Vite/React habit tracker with
+  **four tickets closed (T-001..T-004) including a dogfood-finding
+  remediation cycle** — beyond Run 3's bar (T-001 + T-002)
+- **Target intervention-debt count:** 0 open in target backlog at stop
+  (T-004 was created and resolved in-run; the reopened T-001 rework was
+  in flight at the operator stop, not debt)
+- **Operator interventions: 0 retries** (Run 3: 1) — both
+  circle_detected failures auto-recovered via AD-289; the only operator
+  action was the graceful stop (`POST /api/stop`, `{"ok":true}`) after
+  the success criteria were exceeded
+- **Runtime artifacts:** traces for all 24 jobs in the per-repo DB; full
+  debug log; scores export committed to the target
+- **Stop reason:** operator graceful stop after criteria exceeded; queue
+  drained to 0 pending/running within seconds of the stop
+
+### Run 4 pass/fail against AD-284/AD-285
+
+**Pass — no extraction drift.** The rerun exceeds the Run 2 baseline and
+the Run 3 checkpoint lifecycle reach (4 tickets closed vs 2); every fired
+guardrail is a pre-existing rule class with identical message shape,
+including the validation-lane rules moved in this final slice; zero
+context_overflow; zero policy errors; no new foundation-owned failure
+class; target intervention debt did not increase; the stop is
+operator-visible and recorded. Run 4 does **not** replace Run 2 as the
+pace baseline (same rationale as Run 3).
