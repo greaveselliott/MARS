@@ -157,6 +157,17 @@ The extraction sequence above is also the natural WS-D enablement order:
 
 ## Discoveries
 
+- **2026-06-12 — Slice 2 landed (T-037, `policy_release.go` + `policy_diff.go`):**
+  4 release-gate functions and 10 diff/secrets functions moved
+  (`policy.go` 6,009 → 5,650 lines); the four `diffStats` tests moved to
+  `policy_diff_test.go`. Release-tag policy tests already live in
+  `shell_exec_test.go`, so the release domain needed no test motion.
+  Borderline functions recorded in T-037: `changedFiles` (shared across
+  four domains) and `ticketLifecyclePathIdentity` (ticket domain) stay in
+  `policy.go`; `checkGitPushPolicy` assignment deferred. Per the
+  checkpoint policy, this pure-motion slice rides the slice-1 replay
+  checkpoint (demo-12 Run 3, PASS) and the test suite; no dedicated
+  replay.
 - **2026-06-12 — Slice 1 landed (T-036, `policy_browser.go`):** 46 functions
   plus the `browserFrameworkInfo` type moved (seed estimate was ~52);
   `policy.go` 7,091 → 6,009 lines. The delta against the seed count is
