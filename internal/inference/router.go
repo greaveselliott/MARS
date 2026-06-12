@@ -3,6 +3,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/local-inference.md
+- docs/design-docs/context-efficiency.md
 - docs/features/F-003-local-inference-lifecycle.md
 */
 package inference
@@ -180,6 +181,22 @@ func (r *Router) ServerForRole(ctx context.Context, role string) (string, error)
 // ServerForRoleModel returns the base URL for a role using its manifest model tier.
 func (r *Router) ServerForRoleModel(ctx context.Context, role, modelHint string) (string, error) {
 	return r.serverForTier(ctx, role, TierForRoleModel(role, modelHint))
+}
+
+// ContextWindowForRoleModel returns the context window (tokens) actually
+// served for the tier this role resolves to, so agent-loop budgeting can
+// clamp to the real serving window instead of assuming a default (AD-288).
+// Returns 0 when unknown (no local model spec, e.g. remote fallback).
+func (r *Router) ContextWindowForRoleModel(role, modelHint string) int {
+	if r == nil {
+		return 0
+	}
+	tier := TierForRoleModel(role, modelHint)
+	spec, ok := r.models[tier]
+	if !ok || spec.ContextLen <= 0 {
+		return 0
+	}
+	return spec.ContextLen
 }
 
 func (r *Router) serverForTier(ctx context.Context, role string, tier hardware.Tier) (string, error) {

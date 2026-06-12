@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/agent-runtime.md
 - docs/design-docs/delivery-operating-model.md
+- docs/design-docs/context-efficiency.md
 - docs/features/F-005-agent-execution-runtime.md
 */
 package agent
@@ -11,6 +12,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -25,6 +27,7 @@ const (
 	prunedPlaceholder        = "[pruned — context limit]"
 	prunedToolArgumentsJSON  = `{"pruned":"context limit"}`
 	terminalToolGraceTimeout = 90 * time.Second
+	maxOverflowClampRetries  = 3
 )
 
 // pruneContext replaces old tool-result message content with a short placeholder
@@ -36,7 +39,15 @@ func pruneContext(messages []llm.Message, defs []llm.ToolDefinition, contextSize
 	if est <= contextSize {
 		return
 	}
-	target := contextPruneTarget(contextSize)
+	pruneContextToTarget(messages, defs, contextSize, contextPruneTarget(contextSize))
+}
+
+// pruneContextToTarget prunes oldest-first down to an explicit estimator-token
+// target. Split out from pruneContext so the server-reported overflow clamp
+// (AD-288) can drive pruning to a calibrated target instead of the default
+// margin.
+func pruneContextToTarget(messages []llm.Message, defs []llm.ToolDefinition, contextSize, target int) {
+	est := llm.EstimateTokens(messages, defs)
 
 	protectedTail := 4
 	if len(messages) < protectedTail+2 {
@@ -101,6 +112,34 @@ func pruneContext(messages []llm.Message, defs []llm.ToolDefinition, contextSize
 			"target_tokens", target,
 		)
 	}
+}
+
+// clampAndPruneForOverflow reacts to a server-side context rejection (AD-288).
+// It clamps the loop's working window to the server-reported serving window
+// when that is smaller than the configured one, then prunes to a calibrated
+// target: the server's measured prompt size is used to rescale the estimator
+// target so the retried request lands inside the served window even when the
+// local estimate and the server tokenizer disagree. Returns the clamped
+// window and whether pruning reduced the estimate (retry is pointless when
+// nothing could be pruned).
+func clampAndPruneForOverflow(messages []llm.Message, defs []llm.ToolDefinition, ctxErr *llm.ContextSizeError, window int) (int, bool) {
+	if ctxErr.ContextWindow > 0 && ctxErr.ContextWindow < window {
+		window = ctxErr.ContextWindow
+	}
+	target := contextPruneTarget(window)
+	before := llm.EstimateTokens(messages, defs)
+	if ctxErr.PromptTokens > 0 && before > 0 {
+		// Measured calibration: estimator target × (estimate / served count).
+		// When the estimator under-counts relative to the server tokenizer,
+		// this shrinks the target proportionally.
+		scaled := int(int64(target) * int64(before) / int64(ctxErr.PromptTokens))
+		if scaled > 0 && scaled < target {
+			target = scaled
+		}
+	}
+	pruneContextToTarget(messages, defs, window, target)
+	after := llm.EstimateTokens(messages, defs)
+	return window, after < before
 }
 
 func contextPruneTarget(contextSize int) int {
@@ -248,6 +287,8 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 
 	llmCalls := 0
 	toolInvocations := 0
+	overflowClamps := 0
+	contextWindow := p.Config.effectiveContextSize()
 	identicalStreak := 0
 	terminalToolReminderSent := false
 	terminalToolBudgetReminderSent := false
@@ -294,7 +335,7 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			p.UI.WriteTurn(llmCalls+1, maxTurns)
 		}
 
-		pruneContext(messages, defs, p.Config.effectiveContextSize())
+		pruneContext(messages, defs, contextWindow)
 
 		req := llm.ChatCompletionRequest{
 			Model:    p.modelName(),
@@ -309,6 +350,21 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 		resp, err := chatWithRetries(chatCtx, p.Completer, req, retries)
 		cancelChat()
 		if err != nil {
+			var ctxErr *llm.ContextSizeError
+			if errors.As(err, &ctxErr) && overflowClamps < maxOverflowClampRetries {
+				overflowClamps++
+				if clamped, pruned := clampAndPruneForOverflow(messages, defs, ctxErr, contextWindow); pruned {
+					contextWindow = clamped
+					slog.Warn("agent: server rejected prompt as over context window; pruned and retrying",
+						"job_id", p.JobID,
+						"server_prompt_tokens", ctxErr.PromptTokens,
+						"server_context_window", ctxErr.ContextWindow,
+						"clamped_window", contextWindow,
+						"overflow_clamp", overflowClamps,
+					)
+					continue
+				}
+			}
 			res = LoopResult{
 				Messages:        messages,
 				EndReason:       EndLLMUnreachable,
@@ -542,6 +598,12 @@ func chatWithRetries(ctx context.Context, c Completer, req llm.ChatCompletionReq
 		resp, err := c.ChatCompletion(ctx, req)
 		if err == nil {
 			return resp, nil
+		}
+		var ctxErr *llm.ContextSizeError
+		if errors.As(err, &ctxErr) {
+			// Retrying the identical over-window request can never succeed;
+			// surface immediately so the loop can prune and rebuild (AD-288).
+			return llm.ChatCompletionResponse{}, err
 		}
 		lastErr = err
 		slog.Warn("agent: LLM call failed, will retry",

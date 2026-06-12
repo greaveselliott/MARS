@@ -4,14 +4,22 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/agent-runtime.md
 - docs/design-docs/local-inference.md
+- docs/design-docs/context-efficiency.md
 - docs/features/F-003-local-inference-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
 */
 package llm
 
-// EstimateTokens returns a rough token count for budgeting.
-// It uses a character-length heuristic (~4 characters per token) which matches
-// common tiktoken-style estimates for English-ish text without pulling in CGO or large tables.
+// EstimateTokens returns a conservative token count for budgeting.
+//
+// It uses a character-length heuristic of ~3 characters per token (AD-288).
+// The previous ~4 chars/token ratio matched English prose but under-counted
+// code-heavy harness prompts: the 2026-06-12 demo-12 engineer wedge measured
+// 33,281 served tokens for content the heuristic estimated at 26,188
+// (~3.15 chars/token actual on package.json/tool-JSON/source content), so the
+// context pruner never fired before llama.cpp rejected the request. Budget
+// math must over-estimate, never under-estimate: 3 chars/token bounds the
+// measured worst case while staying CGO- and table-free.
 func EstimateTokens(messages []Message, tools []ToolDefinition) int {
 	n := 0
 	for _, m := range messages {
@@ -39,9 +47,9 @@ func estimateString(s string) int {
 	if s == "" {
 		return 0
 	}
-	// ceil(len/4) — minimum 1 token for non-empty strings
+	// ceil(len/3) — minimum 1 token for non-empty strings (AD-288 calibration).
 	chars := len(s)
-	tokens := (chars + 3) / 4
+	tokens := (chars + 2) / 3
 	if tokens < 1 {
 		return 1
 	}

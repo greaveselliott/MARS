@@ -332,6 +332,41 @@ func TestChatCompletion_normalizesBaseURL(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestChatCompletion_contextSizeErrorTyped uses the exact llama.cpp body from
+// the 2026-06-12 demo-12 engineer wedge (job 0b93881f): the client must return
+// a typed *ContextSizeError carrying the server-counted prompt size and the
+// served window, without retrying the doomed request (AD-288).
+func TestChatCompletion_contextSizeErrorTyped(t *testing.T) {
+	t.Parallel()
+	var calls atomic.Int32
+	body := `{"error":{"code":400,"message":"request (33281 tokens) exceeds the available context size (32768 tokens), try increasing it","type":"exceed_context_size_error","n_prompt_tokens":33281,"n_ctx":32768}}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		http.Error(w, body, http.StatusBadRequest)
+	}))
+	t.Cleanup(srv.Close)
+
+	c, err := NewClient(Config{BaseURL: srv.URL, MaxRetries: 3})
+	require.NoError(t, err)
+	_, err = c.ChatCompletion(context.Background(), ChatCompletionRequest{Model: "m", Messages: []Message{{Role: "user", Content: "hi"}}})
+	require.Error(t, err)
+
+	var ctxErr *ContextSizeError
+	require.ErrorAs(t, err, &ctxErr)
+	require.Equal(t, 33281, ctxErr.PromptTokens)
+	require.Equal(t, 32768, ctxErr.ContextWindow)
+	require.Contains(t, err.Error(), "context size exceeded (non-retryable)")
+	require.Equal(t, int32(1), calls.Load(), "400 context errors must not be retried")
+}
+
+func TestParseContextSizeError_malformedBodyKeepsZeroFields(t *testing.T) {
+	t.Parallel()
+	cerr := parseContextSizeError("context window exceeded but not JSON")
+	require.Zero(t, cerr.PromptTokens)
+	require.Zero(t, cerr.ContextWindow)
+	require.Contains(t, cerr.Error(), "context size exceeded")
+}
+
 func TestChatCompletion_unexpectedStatus(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

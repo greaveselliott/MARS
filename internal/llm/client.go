@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/agent-runtime.md
 - docs/design-docs/local-inference.md
+- docs/design-docs/context-efficiency.md
 - docs/features/F-003-local-inference-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
 */
@@ -24,6 +25,38 @@ import (
 )
 
 const defaultMaxRetries = 5
+
+// ContextSizeError reports a server-side context-window rejection (HTTP 400
+// exceed_context_size_error from llama.cpp or compatible servers). It carries
+// the server-measured prompt size and serving window when the body includes
+// them, so the agent loop can clamp its budget to the actually served window
+// and prune-and-retry instead of failing the job (AD-288).
+type ContextSizeError struct {
+	PromptTokens  int    // server-counted prompt tokens (0 when unknown)
+	ContextWindow int    // server context window in tokens (0 when unknown)
+	Body          string // raw error body for diagnostics
+}
+
+func (e *ContextSizeError) Error() string {
+	return fmt.Sprintf("llm: context size exceeded (non-retryable): %s", e.Body)
+}
+
+// parseContextSizeError extracts n_prompt_tokens and n_ctx from a llama.cpp
+// exceed_context_size_error body. Missing or malformed fields stay zero.
+func parseContextSizeError(body string) *ContextSizeError {
+	cerr := &ContextSizeError{Body: body}
+	var payload struct {
+		Error struct {
+			NPromptTokens int `json:"n_prompt_tokens"`
+			NCtx          int `json:"n_ctx"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(body), &payload); err == nil {
+		cerr.PromptTokens = payload.Error.NPromptTokens
+		cerr.ContextWindow = payload.Error.NCtx
+	}
+	return cerr
+}
 
 // Config configures the HTTP client and retry behaviour.
 type Config struct {
@@ -211,7 +244,7 @@ func (c *Client) postJSON(ctx context.Context, path string, payload any, out any
 			}
 			bodyStr := strings.TrimSpace(string(b))
 			if resp.StatusCode == 400 && strings.Contains(bodyStr, "exceed") && strings.Contains(bodyStr, "context") {
-				return fmt.Errorf("llm: context size exceeded (non-retryable): %s", bodyStr)
+				return parseContextSizeError(bodyStr)
 			}
 			return fmt.Errorf("llm: unexpected status %s: %s", resp.Status, bodyStr)
 		}

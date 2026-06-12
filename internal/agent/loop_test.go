@@ -1048,6 +1048,147 @@ func TestPruneContext_replacesOldAssistantToolArguments(t *testing.T) {
 	require.LessOrEqual(t, llm.EstimateTokens(msgs, nil), contextPruneTarget(1200))
 }
 
+// stepMock scripts each ChatCompletion call individually so error and reply
+// steps can interleave (seqMock prefers replies over errors).
+type stepMock struct {
+	steps []func() (llm.ChatCompletionResponse, error)
+	i     int
+}
+
+func (s *stepMock) ChatCompletion(ctx context.Context, req llm.ChatCompletionRequest) (llm.ChatCompletionResponse, error) {
+	if s.i >= len(s.steps) {
+		return llm.ChatCompletionResponse{}, fmt.Errorf("stepMock: exhausted steps")
+	}
+	step := s.steps[s.i]
+	s.i++
+	return step()
+}
+
+func proseResp(content string) llm.ChatCompletionResponse {
+	return llm.ChatCompletionResponse{Choices: []llm.Choice{{Message: llm.Message{Role: "assistant", Content: content}}}}
+}
+
+// TestRun_overflowClampPrunesAndRecovers reproduces the T-032 wedge shape:
+// the server rejects a grown conversation as over its context window
+// (llama.cpp exceed_context_size_error). The loop must prune and retry
+// instead of failing the job (AD-288).
+func TestRun_overflowClampPrunesAndRecovers(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	big := strings.Repeat("x", 6000)
+	for _, name := range []string{"big1.txt", "big2.txt", "big3.txt"} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte(big), 0o644))
+	}
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+
+	overflow := &llm.ContextSizeError{
+		PromptTokens:  33281,
+		ContextWindow: 32768,
+		Body:          `{"error":{"code":400,"message":"request (33281 tokens) exceeds the available context size (32768 tokens), try increasing it","type":"exceed_context_size_error","n_prompt_tokens":33281,"n_ctx":32768}}`,
+	}
+	mock := &stepMock{steps: []func() (llm.ChatCompletionResponse, error){
+		func() (llm.ChatCompletionResponse, error) { return toolResp("file_read", "1", `{"path":"big1.txt"}`), nil },
+		func() (llm.ChatCompletionResponse, error) { return toolResp("file_read", "2", `{"path":"big2.txt"}`), nil },
+		func() (llm.ChatCompletionResponse, error) { return toolResp("file_read", "3", `{"path":"big3.txt"}`), nil },
+		func() (llm.ChatCompletionResponse, error) { return llm.ChatCompletionResponse{}, overflow },
+		func() (llm.ChatCompletionResponse, error) { return proseResp("done"), nil },
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:    mock,
+		Registry:     reg,
+		Executor:     ex,
+		Root:         root,
+		Allowlist:    []string{"file_read"},
+		SystemPrompt: "s",
+		UserMessage:  "u",
+		Config:       LoopConfig{Model: "test", MaxTurns: 10},
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason, "overflow must be recovered by pruning, not end the job")
+	require.Equal(t, 5, mock.i, "the overflowed turn must be retried after pruning")
+
+	pruned := 0
+	for _, m := range res.Messages {
+		if m.Content == prunedPlaceholder {
+			pruned++
+		}
+	}
+	require.Greater(t, pruned, 0, "older tool results must be pruned before the retry")
+}
+
+// TestRun_overflowWithNothingToPruneFailsCleanly: when even the protected
+// working set exceeds the served window, the loop fails with the typed
+// context error (classified context_overflow by telemetry) instead of
+// retrying a request that can never succeed.
+func TestRun_overflowWithNothingToPruneFailsCleanly(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+
+	overflow := &llm.ContextSizeError{PromptTokens: 40000, ContextWindow: 32768, Body: "exceed_context_size_error"}
+	calls := 0
+	mock := &stepMock{steps: []func() (llm.ChatCompletionResponse, error){
+		func() (llm.ChatCompletionResponse, error) { calls++; return llm.ChatCompletionResponse{}, overflow },
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:    mock,
+		Registry:     reg,
+		Executor:     ex,
+		Root:         root,
+		Allowlist:    []string{"file_read"},
+		SystemPrompt: "s",
+		UserMessage:  "u",
+		Config:       LoopConfig{Model: "test", MaxTurns: 10, LLMMaxRetries: 3},
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndLLMUnreachable, res.EndReason)
+	var ctxErr *llm.ContextSizeError
+	require.ErrorAs(t, res.Err, &ctxErr)
+	require.Equal(t, 1, calls, "context-size errors must not be retried verbatim")
+}
+
+func TestClampAndPruneForOverflow_clampsToServedWindowAndCalibrates(t *testing.T) {
+	t.Parallel()
+	big := strings.Repeat("x", 4000)
+	msgs := []llm.Message{
+		{Role: "system", Content: "sys"},
+		{Role: "user", Content: "go"},
+		{Role: "tool", ToolCallID: "1", Content: big},
+		{Role: "tool", ToolCallID: "2", Content: big},
+		{Role: "tool", ToolCallID: "3", Content: big},
+		{Role: "tool", ToolCallID: "4", Content: big},
+		{Role: "tool", ToolCallID: "5", Content: big},
+		{Role: "tool", ToolCallID: "6", Content: big},
+		// Small recent working set — the protected tail must not block the
+		// estimate from reaching the calibrated target.
+		{Role: "tool", ToolCallID: "7", Content: "ok"},
+		{Role: "tool", ToolCallID: "8", Content: "ok"},
+		{Role: "tool", ToolCallID: "9", Content: "ok"},
+		{Role: "tool", ToolCallID: "10", Content: "ok"},
+	}
+	before := llm.EstimateTokens(msgs, nil)
+	// Configured window says 131072 but the server actually serves 4000 and
+	// counted more tokens than the local estimate.
+	ctxErr := &llm.ContextSizeError{PromptTokens: before * 5 / 4, ContextWindow: 4000}
+	window, prunedAny := clampAndPruneForOverflow(msgs, nil, ctxErr, 131072)
+	require.Equal(t, 4000, window, "working window must clamp to the served window")
+	require.True(t, prunedAny)
+	after := llm.EstimateTokens(msgs, nil)
+	require.Less(t, after, before)
+	// Calibrated target: 85% of served window scaled by estimate/served ratio.
+	require.LessOrEqual(t, after-0, contextPruneTarget(4000), "estimate must land at or below the margin target")
+}
+
 func TestPruneContext_noOpWhenUnderLimit(t *testing.T) {
 	t.Parallel()
 	msgs := []llm.Message{

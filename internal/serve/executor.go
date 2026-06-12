@@ -7,6 +7,7 @@ docs:
 - docs/design-docs/guardrails.md
 - docs/design-docs/dashboard.md
 - docs/design-docs/pipeline-engine.md
+- docs/design-docs/context-efficiency.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-010-dashboard-control-plane.md
@@ -357,6 +358,14 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	}
 	tw.WriteReady()
 
+	// AD-288: budget against the window actually served for this role's tier
+	// unless the manifest explicitly overrides context_size. Without this the
+	// loop assumed the default window regardless of what llama.cpp serves.
+	contextWindow := role.ContextSize
+	if contextWindow <= 0 {
+		contextWindow = e.router.ContextWindowForRoleModel(job.Role, role.Model)
+	}
+
 	client, err := llm.NewClient(llm.Config{
 		BaseURL: endpoint,
 		Model:   role.Model,
@@ -391,7 +400,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		Config: agent.LoopConfig{
 			Model:       role.Model,
 			MaxTurns:    role.MaxTurns,
-			ContextSize: role.ContextSize,
+			ContextSize: contextWindow,
 		},
 		JobID:      job.ID,
 		Trace:      rec,

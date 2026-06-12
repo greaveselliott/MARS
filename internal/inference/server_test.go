@@ -246,6 +246,29 @@ func TestRouter_serverForRoleModelUsesManifestTierInError(t *testing.T) {
 	require.ErrorContains(t, err, "fast.gguf")
 }
 
+// TestRouter_contextWindowForRoleModel: the agent loop budgets against the
+// window the tier actually serves (AD-288), so the router must report it per
+// role/tier and return 0 when no local model spec is known.
+func TestRouter_contextWindowForRoleModel(t *testing.T) {
+	t.Parallel()
+
+	r := NewRouter(RouterConfig{
+		Models: map[hardware.Tier]hardware.ModelSpec{
+			hardware.TierCoding:    {Name: "c", File: "c.gguf", ContextLen: 32768},
+			hardware.TierReasoning: {Name: "r", File: "r.gguf", ContextLen: 131072},
+		},
+		ModelsDir: t.TempDir(),
+	})
+
+	require.Equal(t, 32768, r.ContextWindowForRoleModel("engineer", ""), "engineer defaults to the coding tier")
+	require.Equal(t, 131072, r.ContextWindowForRoleModel("ceo", ""), "ceo defaults to the reasoning tier")
+	require.Equal(t, 131072, r.ContextWindowForRoleModel("engineer", "reasoning"), "manifest model hint overrides the default tier")
+	require.Equal(t, 0, r.ContextWindowForRoleModel("qa", ""), "unknown tier spec reports 0 (caller falls back to default)")
+
+	var nilRouter *Router
+	require.Equal(t, 0, nilRouter.ContextWindowForRoleModel("engineer", ""))
+}
+
 func TestRouter_serverForRoleModelMentionsInstalledVariant(t *testing.T) {
 	t.Parallel()
 

@@ -30,6 +30,53 @@ knowledge, skills, and guardrail bodies may shrink before the run date is
 dropped. This keeps evidence temporally grounded without opening broad shell
 discovery in review roles.
 
+### AD-288: Context Budgeting Clamps To The Served Window With Calibrated Estimation
+
+The 2026-06-12 demo-12 (package-managed frontend) and demo-13 (existing-repo
+maintenance) baselines both wedged deterministically in engineer: prompts of
+33,281 / 32,883 / 32,923 served tokens against the balanced coding tier's
+32,768-token window, rejected by llama.cpp as non-retryable
+`exceed_context_size_error` (T-032). Trace forensics showed the agent loop's
+pruner never fired: at the moment the server counted 33,281 tokens, the
+character-heuristic estimator reported 26,188 (~3.15 chars/token actual on
+package.json/tool-JSON/source content vs the assumed 4), so the loop believed
+it was ~6.5k tokens under the window. A second latent defect compounded it:
+the loop's window was taken from manifest `context_size` (defaulting to
+32,768) and never from what the inference tier actually serves, so reasoning
+roles were budgeted at a quarter of their served 131,072 window and any
+profile change could silently invalidate the assumption.
+
+Overflow is now impossible by construction through three cooperating rules:
+
+1. **Conservative estimation.** `llm.EstimateTokens` uses ~3 chars/token,
+   calibrated to over-estimate the measured worst case (the demo-12 wedge is
+   encoded as a regression floor test). Budget math must over-estimate, never
+   under-estimate.
+2. **Serving-window wiring.** The inference router exposes the per-tier
+   served context length (`ContextWindowForRoleModel`) and the server
+   executor budgets the agent loop against it unless the manifest explicitly
+   overrides `context_size`. Coding-tier roles budget at 32,768; reasoning
+   roles at their real 131,072.
+3. **Server-reported clamp with prune-and-retry.** The LLM client returns a
+   typed `ContextSizeError` carrying llama.cpp's `n_prompt_tokens`/`n_ctx`.
+   The client and loop never retry the doomed request verbatim; instead the
+   loop clamps its working window to the server-reported `n_ctx`, rescales
+   the prune target by the measured estimate-to-served ratio, prunes oldest
+   tool output first per AD-006 trimming order, and retries (bounded
+   attempts). Only when nothing remains prunable does the job fail, with the
+   typed error still classified `context_overflow` by telemetry.
+
+The balanced coding-tier window was deliberately **not** raised in this
+change: raising ctx without budget enforcement only moves the wedge, doubles
+coding-tier KV-cache cost, and would have changed the AD-285 model identity
+under the replays that validate this fix. If post-fix replays show engineer
+convergence is starved by the ~14k-token system prompt share of the 32k
+window, raising the window or slimming the assembled sections is a separate
+measured slice. Known residual: the pruner never touches the system prompt
+or the protected recent tail, so a system prompt larger than the served
+window still fails (cleanly, with the typed error); the assembler-side
+budget for that case remains a "Topics to resolve" item below.
+
 ### Topics to resolve
 
 - **Minimal base context:** smallest fixed preamble that every role needs (policies, run metadata, repo identity, current task, manifest excerpt); everything else is opt-in per turn.
@@ -52,6 +99,14 @@ When trimming, prefer dropping **oldest tool outputs** before dropping the task 
 Document default budgets in `.harness/` examples so new repos inherit sensible ceilings without tuning.
 
 ## Discoveries
+
+- **2026-06-12 — T-032 overflow forensics:** the demo-12 engineer wedge (job
+  `0b93881f`, trace `tr-1781225306000294000`) recorded a final turn estimate
+  of 26,188 tokens while llama.cpp counted 33,281 for the same content —
+  the first measured calibration of the chars/token heuristic against the
+  Qwen3-Coder tokenizer on package-managed JS content (~3.15 chars/token).
+  AD-288 derives its 3-chars/token floor and the server-reported clamp from
+  this measurement.
 
 - **2026-04-11 — MH-004 assembler:** `internal/context.Assemble` builds fixed-order sections (`## ROLE`, `## GUARDRAILS`, `## KNOWLEDGE ROUTES`, `## TRIGGER CONTEXT`, `## REPO SUMMARY`), omits optional blocks when empty, filters guardrails by `Scope` (empty/`all` = global), formats knowledge as bullet lines `When working on X, read Y`, and applies a token **budget** using `llm.EstimateTokens` by iteratively shrinking lowest-priority bodies first (`repo` < `trigger` < `knowledge`; `role` is never truncated; shrinking stops if the budget still cannot be met without editing the role text).
 - **2026-05-02 — Context glossary default:** `mars-harness init` now emits a target `AGENTS.md`, `docs/design-docs/context-glossary.md`, and `.harness/knowledge/context-glossary.yaml`. Default roles reference the glossary route file so the base prompt carries a compact map, not full project doctrine.
