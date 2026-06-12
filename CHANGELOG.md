@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.4] - 2026-06-12
+<!-- mars-harness-release: version=0.50.4 commit=3d62536b9939 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because record balanced-model factory-pace baseline from demo-11 full lifecycle (T-011).
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed record balanced-model factory-pace baseline from demo-11 full lifecycle (T-011) (3d62536).
+
+### Documentation
+- **validation:** Record balanced-model factory-pace baseline from demo-11 full lifecycle (T-011) (3d62536)
+
+### Delivery Evidence
+- Enabler work: T-001: Intervention debt: Calibrate guardrail workflow for engineer
+- Enabler work: T-027: Promote convergence failures and guardrail block rates into scores export
+
 ## [0.50.3] - 2026-06-12
 <!-- mars-harness-release: version=0.50.3 commit=932695e7578f -->
 
