@@ -198,9 +198,29 @@ one of the two archetypes the matrix gate requires for this fix.
   success criteria were met and the orchestrator entered the known
   post-max_turns dispatch halt (T-031 scope)
 
+### Run 2 independent observer cross-check (read-only replay monitor)
+
+The independent monitor finished cross-checking this rerun on 2026-06-12
+and **confirms the T-032 gate: PASS, zero context overflows**. Cross-check
+data recorded for the evidence trail:
+
+- **max_turns is the dominant terminal failure post-fix:** 4 max_turns
+  failures — engineer `c3a6da4a`, `e81444cc`, `cefd6681` and qa `9bfcfb6e`.
+  One operator `run-role` retry was needed mid-run (the post-failure
+  dispatch halt, T-031/AD-289 scope).
+- **Guardrail churn improved on this archetype:** 88 → 65 guardrail_block
+  events vs Run 1.
+- **Lifecycle-reach delta confirmed:** T-001 closed and T-002 in progress
+  with a real feature commit, vs Run 1's T-001 stuck in progress at the
+  wedge.
+- **T-035 negative evidence:** zero orphaned pending jobs at orchestrator
+  exit — the graceful-stop draining gap did not reproduce under natural
+  termination (it occurred under operator preemption on demo-11).
+
 ### Run 2 pass/fail against AD-284/AD-285
 
-**Pass.** The rerun exceeds Run 1's lifecycle reach (T-001 closed + T-002
+**Pass** (independently confirmed by the monitor cross-check above). The
+rerun exceeds Run 1's lifecycle reach (T-001 closed + T-002
 feature commit vs T-001 in progress); the failure signature the change
 claimed to fix (`context_overflow` / `exceed_context_size_error`) did not
 reappear under the exact conditions that produced it deterministically in

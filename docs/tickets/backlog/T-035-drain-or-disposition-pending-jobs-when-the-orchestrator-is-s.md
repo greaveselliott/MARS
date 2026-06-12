@@ -28,6 +28,8 @@ During the 2026-06-12 demo-11 balanced-model baseline, the operator stopped the 
 
 Classification: foundation-owned (queue/serve stop semantics). Distinct from T-031: T-031 covers runtime-failure routing (circle_detected/max_turns halting pending operator retry); this ticket covers graceful stop abandoning pending work with no record. Execution truth (tenet 7) requires that stopping the factory either finishes claimed work, or leaves an explicit auditable record of what was abandoned and how to resume it.
 
+2026-06-12 negative evidence (independent monitor, T-032 rerun cross-check): zero orphaned pending jobs at orchestrator exit in both T-032 reruns (demo-12 and demo-13, natural graceful stops after the queue drained into the post-failure halt). The gap did not reproduce under natural termination — it occurred under operator preemption mid-queue (demo-11, job 4b659db8 enqueued one second before stop). The eventual fix should target the preemption path specifically (stop while pending jobs exist), not the drained-queue stop path. Also confirmed separate from T-031's AD-289 routing fix: the code paths share nothing (stop path vs failure-handling path).
+
 ## Requirements
 
 - Graceful stop (q key, SIGINT, POST /api/stop) either drains pending jobs within a bounded deadline or marks each undrained job with an explicit preempted state/disposition that telemetry and `doctor`/status surfaces report.

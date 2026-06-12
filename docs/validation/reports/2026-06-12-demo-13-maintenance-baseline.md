@@ -154,10 +154,37 @@ second of the two archetype replays the matrix gate requires for this fix
 - **Stop reason:** operator graceful stop (`POST /api/stop`) after the
   queue drained into the known post-max_turns dispatch halt (T-031 scope)
 
+### Run 2 independent observer cross-check (read-only replay monitor)
+
+The independent monitor finished cross-checking this rerun on 2026-06-12
+and **confirms the T-032 gate: PASS, zero context overflows** — with one
+honesty correction against the builder-side record:
+
+- **All five engineer jobs failed max_turns, zero completed:** `4b2a331c`,
+  `09eab37b`, `6b4b882c`, `1f67b7ca`, `b7cbd006`; the longest ran 1,482s
+  without converging. max_turns is the dominant terminal failure on this
+  archetype post-fix.
+- **Lifecycle-reach correction:** the builder record's "ticket evidence
+  cycles toward done" was rosier than the monitor data — **T-001 never
+  moved out of in-progress** despite 6+ real product commits. The reach
+  delta vs Run 1 still holds (multiple product commits vs one commit then
+  wedge), but the run produced no closed ticket.
+- **Guardrail churn regressed 483% on this archetype:** 12 → 70
+  guardrail_block events — turn burn shifted from context overflow to
+  guardrail-fighting once engineer iterations ran long enough to accumulate
+  blocks. Recorded as AD-286 evidence (agents unable to find the permitted
+  transition); the block-message contract and T-029 slices own this next
+  frontier, not the T-031 routing fix.
+- **T-035 negative evidence:** zero orphaned pending jobs at orchestrator
+  exit — the graceful-stop draining gap did not reproduce under natural
+  termination.
+
 ### Run 2 pass/fail against AD-284/AD-285
 
-**Pass.** The rerun exceeds Run 1's lifecycle reach (multiple product
-commits plus ticket evidence cycles toward done vs one commit then wedge);
+**Pass** (independently confirmed by the monitor cross-check above, with
+the lifecycle-reach wording corrected per that section). The rerun exceeds
+Run 1's lifecycle reach (multiple product commits and repeated evidence
+iterations vs one commit then wedge — though T-001 itself never closed);
 the failure signature this change claimed to fix did not reappear despite
 12 over-window prompt states that deterministically wedged Run 1; no new
 foundation-owned failure class appeared; target intervention debt did not
