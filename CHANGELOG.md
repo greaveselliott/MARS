@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.18] - 2026-06-12
+<!-- mars-harness-release: version=0.50.18 commit=03122e6a8281 -->
+
+### Impact
+- **tools:** Maintainers get a healthier project surface because extract release-gate and diff/secrets policy domains (AD-287 slice 2, T-037).
+
+### Why
+- **tools:** This matters because project health work keeps future delivery predictable.
+
+### What Changed
+- **tools:** Changed extract release-gate and diff/secrets policy domains (AD-287 slice 2, T-037) (03122e6).
+
+### Maintenance
+- **tools:** Extract release-gate and diff/secrets policy domains (AD-287 slice 2, T-037) (03122e6)
+
+### Delivery Evidence
+- Enabler work: T-037: Extract release-gate and diff/secrets policy domains into policy_release.go and policy_diff.go (AD-287 slice 2)
+
 ## [0.50.17] - 2026-06-12
 <!-- mars-harness-release: version=0.50.17 commit=a1f9b9f74d5d -->
 
