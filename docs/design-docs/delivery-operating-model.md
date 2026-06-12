@@ -71,6 +71,15 @@ self-improvement, the same change must update the affected artifacts, generated
 target defaults, role prompts, knowledge routes, and tests so agents have one
 coherent path to follow.
 
+The convergence rules in this document — the AD-164..AD-275 family of repair
+lanes, review gates, terminal boundaries, claim/handoff rules, and dispatch
+continuations — are formalized as an explicit delivery state machine in
+[convergence-state-machine.md](convergence-state-machine.md) (AD-286). That
+doc names the states and transitions; this doc remains the source of truth
+for each individual rule's decision text. New convergence guardrails must
+declare their guarded transition per AD-286; classification disputes resolve
+in favor of the AD text here.
+
 Remote trunk freshness is a foundation operating-model gate. For any repository
 with `origin/main`, agents start non-trivial work by fetching `origin main` and
 ensuring local `main` is at or fast-forwarded to `origin/main` before editing.
