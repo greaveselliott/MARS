@@ -746,6 +746,25 @@ Given a product-continuation job also reaches `max_turns`
 When failure handling runs again
 Then the harness does not enqueue recursive product-continuation jobs
 
+### F-006-S047: Convergence Failures Get One Automatic Retry Then Recorded Operator Escalation
+
+Given a non-Orchestrator dispatch job fails with `max_turns` or `circle_detected`
+And no earlier bounded edge fired (ticket-gate repair or Engineer product continuation)
+When dispatch-mode failure handling records the runtime failure
+Then the harness enqueues one same-role `convergence_retry` job whose trigger names the failure category, the failure fingerprint (`repo:role:category`), and a bounded role-appropriate resume ask instead of halting pending operator retry
+
+Given the failed job was itself a bounded automatic recovery job (`convergence_retry`, `product_continuation`, `ticket_gate_repair`, or `auto_recover`)
+When failure handling runs again
+Then no further automatic job is enqueued and the job's disposition is rewritten to `blocked` with `next_need: operator_retry` and a reason naming the exhausted budget, the fingerprint, and the exact operator retry command
+
+Given an automatic `convergence_retry` carrying the same failure fingerprint already failed inside the 24-hour retry window
+When a later job fails with the same fingerprint
+Then the failure escalates with the recorded `blocked/operator_retry` disposition instead of earning another automatic retry
+
+Given a dispatch job fails with an environment failure such as `model_unavailable` or `context_overflow`
+When failure handling classifies the category
+Then the runtime-failure halt is preserved with no automatic retry, because redispatching the same state reproduces the failure deterministically
+
 ## Out of Scope
 
 - External queue systems such as Redis.
@@ -800,3 +819,4 @@ None.
 - F-006-S044: `go test ./internal/serve -run TestHandleJobFailed_maxTurnsAfterTicketLifecyclePolicyBlockEnqueuesRepair` and `go test ./internal/tools -run TestRecordSessionToolOutcomeTracksHTTPProbeValidation`
 - F-006-S045: `go test ./internal/serve -run 'TestHandleJobComplete_(openProductTicketRoutesBeforeRelease|uncoveredGeneratedFeatureScenarioRoutesCTOBeforeRelease)'`
 - F-006-S046: `go test ./internal/serve -run 'TestHandleJobFailed_maxTurnsWithActiveProductTicketEnqueuesContinuation|TestHandleJobFailed_circleDetectedWithActiveProductTicketEnqueuesContinuation|TestHandleJobFailed_productContinuationDoesNotReenqueue|TestOrchestratorSurveyPausesTicketOwnerAfterRecentRuntimeFailure'`
+- F-006-S047: `go test ./internal/serve -run 'TestHandleJobFailed_qaMaxTurnsEnqueuesConvergenceRetry|TestHandleJobFailed_dogfoodCircleDetectedEnqueuesConvergenceRetry|TestHandleJobFailed_engineerMaxTurnsWithoutTicketEnqueuesConvergenceRetry|TestHandleJobFailed_convergenceRetryFailureEscalatesWithDisposition|TestHandleJobFailed_productContinuationFailureEscalatesWithDisposition|TestHandleJobFailed_failedRetryFingerprintEscalatesNextFailure|TestHandleJobFailed_environmentFailureStillHaltsWithoutRetry'`

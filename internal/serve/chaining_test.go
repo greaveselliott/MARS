@@ -19,6 +19,7 @@ import (
 
 	"github.com/greaveselliott/mars-harness/internal/orgstate"
 	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars-harness/internal/telemetry"
 )
 
 func setupChainingFixture(t *testing.T) (string, string) {
@@ -1395,6 +1396,355 @@ blocked_by: []
 	}
 	if claimed != nil {
 		t.Fatalf("expected no recursive product continuation job, got role=%s", claimed.Role)
+	}
+}
+
+func TestHandleJobFailed_qaMaxTurnsEnqueuesConvergenceRetry(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/qa-convergence-retry", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:     "job-qa-max-turns",
+		RepoID: repoID,
+		Role:   "qa",
+	}
+	srv.handleJobFailed(ctx, failedJob, errTest("executor: agent ended with max_turns"))
+
+	retryJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if retryJob == nil {
+		t.Fatal("expected convergence retry job for qa max_turns")
+	}
+	if retryJob.Role != "qa" {
+		t.Fatalf("expected qa retry job, got %s", retryJob.Role)
+	}
+	var trigger map[string]string
+	if err := json.Unmarshal([]byte(retryJob.Trigger), &trigger); err != nil {
+		t.Fatalf("unmarshal trigger: %v", err)
+	}
+	if trigger["type"] != "convergence_retry" {
+		t.Fatalf("expected convergence_retry trigger, got %q", trigger["type"])
+	}
+	if trigger["failure_category"] != "max_turns" {
+		t.Fatalf("expected max_turns failure category, got %q", trigger["failure_category"])
+	}
+	if trigger["fingerprint"] != convergenceFailureFingerprint(repoID, "qa", telemetry.CategoryMaxTurns) {
+		t.Fatalf("unexpected fingerprint %q", trigger["fingerprint"])
+	}
+	if !strings.Contains(trigger["ask"], "job_disposition_record") || !strings.Contains(trigger["ask"], "terminal disposition") {
+		t.Fatalf("expected bounded review-retry guidance, got %q", trigger["ask"])
+	}
+}
+
+func TestHandleJobFailed_dogfoodCircleDetectedEnqueuesConvergenceRetry(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/dogfood-convergence-retry", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:     "job-dogfood-circle",
+		RepoID: repoID,
+		Role:   "dogfood",
+	}
+	srv.handleJobFailed(ctx, failedJob, errTest("executor: agent ended with circle_detected"))
+
+	retryJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if retryJob == nil {
+		t.Fatal("expected convergence retry job for dogfood circle_detected")
+	}
+	if retryJob.Role != "dogfood" {
+		t.Fatalf("expected dogfood retry job, got %s", retryJob.Role)
+	}
+	var trigger map[string]string
+	if err := json.Unmarshal([]byte(retryJob.Trigger), &trigger); err != nil {
+		t.Fatalf("unmarshal trigger: %v", err)
+	}
+	if trigger["type"] != "convergence_retry" {
+		t.Fatalf("expected convergence_retry trigger, got %q", trigger["type"])
+	}
+	if trigger["failure_category"] != "circle_detected" {
+		t.Fatalf("expected circle_detected failure category, got %q", trigger["failure_category"])
+	}
+}
+
+func TestHandleJobFailed_engineerMaxTurnsWithoutTicketEnqueuesConvergenceRetry(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/engineer-convergence-retry", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:     "job-engineer-max-turns-no-ticket",
+		RepoID: repoID,
+		Role:   "engineer",
+	}
+	srv.handleJobFailed(ctx, failedJob, errTest("executor: agent ended with max_turns"))
+
+	retryJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if retryJob == nil {
+		t.Fatal("expected convergence retry job for engineer max_turns without a continuable ticket")
+	}
+	if retryJob.Role != "engineer" {
+		t.Fatalf("expected engineer retry job, got %s", retryJob.Role)
+	}
+	var trigger map[string]string
+	if err := json.Unmarshal([]byte(retryJob.Trigger), &trigger); err != nil {
+		t.Fatalf("unmarshal trigger: %v", err)
+	}
+	if trigger["type"] != "convergence_retry" {
+		t.Fatalf("expected convergence_retry trigger, got %q", trigger["type"])
+	}
+}
+
+func TestHandleJobFailed_convergenceRetryFailureEscalatesWithDisposition(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/convergence-escalation", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:      "job-qa-convergence-retry",
+		RepoID:  repoID,
+		Role:    "qa",
+		Trigger: `{"type":"convergence_retry","source_job":"job-qa-max-turns","fingerprint":"x"}`,
+	}
+	srv.handleJobFailed(ctx, failedJob, errTest("executor: agent ended with max_turns"))
+
+	claimed, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if claimed != nil {
+		t.Fatalf("expected no recursive convergence retry job, got role=%s", claimed.Role)
+	}
+
+	disposition, err := srv.orgStore.GetDisposition(ctx, failedJob.ID)
+	if err != nil {
+		t.Fatalf("GetDisposition: %v", err)
+	}
+	if disposition == nil {
+		t.Fatal("expected an escalation disposition for the exhausted retry budget")
+	}
+	if disposition.Status != "blocked" {
+		t.Fatalf("expected blocked escalation disposition, got %q", disposition.Status)
+	}
+	if disposition.NextNeed != "operator_retry" {
+		t.Fatalf("expected operator_retry next_need, got %q", disposition.NextNeed)
+	}
+	if !strings.Contains(disposition.Reason, "POST /api/run-role") || !strings.Contains(disposition.Reason, "mars-harness run qa") {
+		t.Fatalf("expected escalation reason to name the operator retry command, got %q", disposition.Reason)
+	}
+}
+
+func TestHandleJobFailed_productContinuationFailureEscalatesWithDisposition(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+	writeDispatchTicket(t, repoRoot, "in-progress", "T-001-build-game.md", `---
+id: T-001
+title: Build game
+work_type: feature
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/continuation-escalation", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:      "job-engineer-continuation-failed",
+		RepoID:  repoID,
+		Role:    "engineer",
+		Trigger: `{"type":"product_continuation","source_job":"job-engineer-max-turns"}`,
+	}
+	srv.handleJobFailed(ctx, failedJob, errTest("executor: agent ended with max_turns"))
+
+	claimed, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if claimed != nil {
+		t.Fatalf("expected no further automatic job after a failed continuation, got role=%s", claimed.Role)
+	}
+
+	disposition, err := srv.orgStore.GetDisposition(ctx, failedJob.ID)
+	if err != nil {
+		t.Fatalf("GetDisposition: %v", err)
+	}
+	if disposition == nil || disposition.Status != "blocked" || disposition.NextNeed != "operator_retry" {
+		t.Fatalf("expected blocked/operator_retry escalation disposition, got %+v", disposition)
+	}
+}
+
+func TestHandleJobFailed_failedRetryFingerprintEscalatesNextFailure(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/fingerprint-budget", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	// First qa max_turns failure earns one automatic retry.
+	srv.handleJobFailed(ctx, &queue.Job{ID: "job-qa-first", RepoID: repoID, Role: "qa"},
+		errTest("executor: agent ended with max_turns"))
+	retryJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim retry: %v", err)
+	}
+	if retryJob == nil {
+		t.Fatal("expected first automatic convergence retry")
+	}
+	if err := srv.queue.MarkRunning(ctx, retryJob.ID); err != nil {
+		t.Fatalf("MarkRunning: %v", err)
+	}
+	if err := srv.queue.Fail(ctx, retryJob.ID, "executor: agent ended with max_turns"); err != nil {
+		t.Fatalf("Fail retry: %v", err)
+	}
+	srv.handleJobFailed(ctx, retryJob, errTest("executor: agent ended with max_turns"))
+
+	// A later qa max_turns failure with the same fingerprint must escalate
+	// instead of earning another automatic retry.
+	nextFailed := &queue.Job{ID: "job-qa-second", RepoID: repoID, Role: "qa"}
+	srv.handleJobFailed(ctx, nextFailed, errTest("executor: agent ended with max_turns"))
+
+	claimed, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim after exhausted budget: %v", err)
+	}
+	if claimed != nil {
+		t.Fatalf("expected no second automatic retry for the same fingerprint, got role=%s trigger=%s", claimed.Role, claimed.Trigger)
+	}
+
+	disposition, err := srv.orgStore.GetDisposition(ctx, nextFailed.ID)
+	if err != nil {
+		t.Fatalf("GetDisposition: %v", err)
+	}
+	if disposition == nil || disposition.Status != "blocked" || disposition.NextNeed != "operator_retry" {
+		t.Fatalf("expected blocked/operator_retry escalation disposition, got %+v", disposition)
+	}
+}
+
+func TestHandleJobFailed_environmentFailureStillHaltsWithoutRetry(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/environment-halt", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:     "job-qa-model-unavailable",
+		RepoID: repoID,
+		Role:   "qa",
+	}
+	srv.handleJobFailed(ctx, failedJob, errTest("inference: local model for tier reasoning is missing"))
+
+	claimed, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if claimed != nil {
+		t.Fatalf("expected environment failure to halt without automatic retry, got role=%s", claimed.Role)
+	}
+
+	disposition, err := srv.orgStore.GetDisposition(ctx, failedJob.ID)
+	if err != nil {
+		t.Fatalf("GetDisposition: %v", err)
+	}
+	if disposition == nil || disposition.Status != "failed" {
+		t.Fatalf("expected plain failed disposition for environment failure, got %+v", disposition)
 	}
 }
 

@@ -7635,3 +7635,83 @@ blocking the current planned product slice.
   implementation work.
 - The fix is foundation-owned and general to deployed targets with multiple
   active feature contracts or promoted product plans.
+
+## AD-289: Convergence Failures Get One Automatic Retry Per Fingerprint, Then Recorded Operator Escalation
+
+**Status:** Accepted
+**Date:** 2026-06-12
+**Owner:** Mars Harness maintainers
+
+### Context
+
+AD-135 made all non-Orchestrator runtime failures halt as foundation
+telemetry ("not dispatching runtime failure through Orchestrator; foundation
+telemetry or operator retry must resolve it first"). AD-227 and AD-239 later
+carved out one bounded `product_continuation` edge, but only for Engineer
+`max_turns`/`circle_detected` with an ordinary in-progress product ticket.
+The 2026-06-11/12 baseline replays (demo-11, demo-12, demo-13) showed the
+remaining halt is the dominant lifecycle stall: a qa review with clean
+evidence circled and stalled the lifecycle until an operator
+`POST /api/run-role` retry, the single dogfood job circled and ended the run
+before the release stage, and both T-032 archetype replays needed operator
+`run-role` retries after engineer/qa `max_turns` (demo-12 rerun: 4 max_turns
+— 3 engineer, 1 qa; demo-13 rerun: 5/5 engineer jobs failed max_turns with
+zero completed). In every observed case the operator action that resolved
+the stall was a plain same-role retry — a fresh bounded session against the
+same repository state. AD-286 names this missing dispatch-overlay edge
+"operator-retry routing" (missing-transition class 1).
+
+The same evidence shows blind retries would amplify damage: demo-13's five
+consecutive engineer max_turns on the same ticket would have burned five
+more jobs under naive auto-retry, and environment failures
+(`model_unavailable`, `context_overflow`) reproduce deterministically when
+redispatched.
+
+### Decision
+
+Dispatch-mode failure handling implements the AD-286 `operator-retry-routing`
+transition as an automatic bounded edge, distinguishing convergence failures
+from environment failures:
+
+- **Convergence failures** are `max_turns` and `circle_detected` only — the
+  session exhausted its loop budget, but a fresh bounded session is a
+  legitimate recovery (the codified operator action). All other runtime
+  failure categories keep the AD-135 halt because retrying the same state
+  reproduces the failure (preflight/telemetry fixes own them: T-032, T-033).
+- When a non-Orchestrator dispatch job fails with a convergence failure and
+  no earlier bounded edge fired (ticket-gate repair, AD-227/AD-239 product
+  continuation), the harness enqueues **one** same-role `convergence_retry`
+  job whose trigger names the failure category, the failure fingerprint
+  (`repo:role:category`), and a bounded role-appropriate ask (review roles:
+  gather only missing bounded evidence, then record the terminal
+  disposition; other roles: resume remaining lifecycle steps only).
+- **Budget: at most one automatic retry per failure fingerprint.** If the
+  failed job was itself any bounded automatic recovery job
+  (`convergence_retry`, `product_continuation`, `ticket_gate_repair`,
+  `auto_recover`), or an automatic `convergence_retry` carrying the same
+  fingerprint already failed inside a 24-hour window, the failure
+  **escalates** instead: the job's disposition is rewritten to `blocked`
+  with `next_need: operator_retry` and a reason naming the exhausted budget,
+  the fingerprint, and the exact operator retry command
+  (`POST /api/run-role` / `mars-harness run <role> --repo`). A successful
+  retry leaves no failed-retry row, so a later distinct failure of the same
+  role earns one fresh automatic retry.
+
+### Consequences
+
+- The lifecycle no longer stalls pending operator for the common one-shot
+  convergence failures (qa/dogfood circles, engineer max_turns without a
+  continuable ticket); the operator-retry action observed in every baseline
+  is now the automatic first response, bounded to one attempt.
+- Repeated same-fingerprint failures (the demo-13 5×max_turns shape) reach
+  the operator after exactly one automatic attempt, with a recorded
+  disposition naming the retry command instead of a silent log line —
+  escalation became auditable execution truth (tenet 7).
+- AD-227/AD-239 stay the richer Engineer-specific edge; this edge is the
+  general fallback beneath them. Failed continuations and failed retries now
+  leave a `blocked/operator_retry` disposition where they previously halted
+  with only a `failed` record.
+- This is the first AD-286 missing-transition class landed as a named
+  state-machine transition (`operator-retry-routing` in the dispatch
+  overlay); the post-max_turns handoff cascades and T-035 graceful-stop
+  draining remain separate missing edges with their own tickets.

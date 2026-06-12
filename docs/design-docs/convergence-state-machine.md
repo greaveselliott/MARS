@@ -277,6 +277,7 @@ prior inventory pass are marked **(corrected)**.
 | AD-224 | release-bound dispatch gate **(corrected: was interpretation-layer)** | open tickets / uncovered scenarios route Engineer or CTO before Release Manager |
 | AD-227 | runtime-failure → `product_continuation` **(corrected: was interpretation-layer)** | Engineer max_turns with an active ticket gets one bounded continuation |
 | AD-239 | runtime-failure → `product_continuation` **(corrected: was interpretation-layer)** | Engineer circle_detected with an active ticket gets one bounded continuation |
+| AD-289 | runtime convergence failure → `operator-retry-routing` (this doc's missing-transition class 1, now implemented) | any non-Orchestrator max_turns/circle_detected gets one automatic same-role `convergence_retry` per failure fingerprint, then a recorded `blocked/operator_retry` escalation |
 
 #### Interpretation layer (outside the state machine)
 
@@ -330,10 +331,23 @@ The 2026-06-11/12 baseline runs read directly as state-machine traces:
   works; the machine's missing edges (below) are what cap honest
   convergence.
 - **Post-max_turns `ticket_gate` cascades (demo-12, jobs `28bd2736`,
-  `04dc813d`):** ticket-gate repair jobs inherited a wedged state the failed
+   `04dc813d`):** ticket-gate repair jobs inherited a wedged state the failed
   max_turns job never dispositioned and failed in cascade — evidence that
   the post-runtime-failure handoff carries incomplete state across the
   job boundary.
+- **T-032 rerun cross-check (independent monitor, 2026-06-12):** with the
+  AD-288 context fix removing the overflow wedge, `max_turns` became the
+  dominant terminal failure — demo-12 rerun: 4 max_turns (engineer
+  `c3a6da4a`, `e81444cc`, `cefd6681`; qa `9bfcfb6e`); demo-13 rerun: 5/5
+  engineer jobs failed max_turns (`4b2a331c`, `09eab37b`, `6b4b882c`,
+  `1f67b7ca`, `b7cbd006`), zero completed, longest 1,482s without
+  converging. Guardrail churn moved with the wedge removal: demo-12
+  improved 88→65 blocks, demo-13 regressed 12→70 — engineer iteration now
+  runs long enough to accumulate blocks the overflow previously cut short.
+  This is live confirmation that **guardrail-churn convergence (agents
+  burning turns unable to find the permitted transition) is the next
+  frontier after the AD-289 routing fix** — the block-message contract and
+  the T-029 implementation slices own it, not the retry edge.
 
 ### Missing automatic transitions (three named classes)
 
@@ -342,23 +356,31 @@ monitor shift, names three missing-transition classes in the dispatch
 overlay:
 
 1. **Operator-retry routing — terminal-role convergence failures have no
-   continuation edge (T-031).** AD-227 and AD-239 give *Engineer*
-   max_turns/circle_detected one bounded `product_continuation`. QA and
-   Dogfood have no equivalent: the demo-11 balanced run's qa circle
-   (`497d29c6`, clean evidence, no disposition recorded) and the dogfood
-   circle (`ff7b701e`) both halted the lifecycle pending an operator
-   `POST /api/run-role` retry. The missing edges are either (a) a bounded
-   review-continuation analogous to AD-227/AD-239, or (b) a harder in-job
-   terminal boundary (the AD-190/AD-198 family) that makes the circle
-   unreachable once evidence is clean. T-031 owns the choice. The same
-   uniform halt — "not dispatching runtime failure through Orchestrator;
-   foundation telemetry or operator retry must resolve it first" (AD-135
-   behavior) — fired after max_turns, circle_detected, model_unavailable,
-   and context_overflow alike; the overlay must distinguish convergence
-   failures (bounded automatic retry/continuation candidates) from
-   environment failures (model_unavailable, context_overflow — fail fast
-   into actionable preflight or telemetry findings, T-033/T-032, because
-   retrying the same state reproduces the failure deterministically).
+   continuation edge (T-031). _Implemented 2026-06-12 as AD-289 — the first
+   missing-transition class landed as a named transition._** AD-227 and
+   AD-239 give *Engineer* max_turns/circle_detected one bounded
+   `product_continuation`. QA and Dogfood had no equivalent: the demo-11
+   balanced run's qa circle (`497d29c6`, clean evidence, no disposition
+   recorded) and the dogfood circle (`ff7b701e`) both halted the lifecycle
+   pending an operator `POST /api/run-role` retry. The missing edges were
+   either (a) a bounded review-continuation analogous to AD-227/AD-239, or
+   (b) a harder in-job terminal boundary (the AD-190/AD-198 family) that
+   makes the circle unreachable once evidence is clean. T-031 owned the
+   choice and took (a): AD-289 dispatches one automatic same-role
+   `convergence_retry` per failure fingerprint (`repo:role:category`), then
+   escalates with a recorded `blocked/operator_retry` disposition naming
+   the exact retry command. The same uniform halt — "not dispatching
+   runtime failure through Orchestrator; foundation telemetry or operator
+   retry must resolve it first" (AD-135 behavior) — fired after max_turns,
+   circle_detected, model_unavailable, and context_overflow alike; AD-289
+   makes the overlay distinguish convergence failures (bounded automatic
+   retry/continuation) from environment failures (model_unavailable,
+   context_overflow — these keep the fail-fast halt into actionable
+   preflight or telemetry findings, T-033/T-032, because retrying the same
+   state reproduces the failure deterministically). The retry budget was
+   calibrated against the T-032 rerun evidence: demo-13's five consecutive
+   engineer max_turns on the same ticket prove blind multi-retry would
+   amplify the burn — one retry per fingerprint, then operator.
 2. **Post-max_turns handoff incompleteness.** When a job dies at max_turns
    it records no disposition, so the state it leaves behind (claimed ticket,
    dirty work, unresolved gates) crosses the job boundary implicitly. The
@@ -447,3 +469,9 @@ every cluster in a domain has migrated.
 - **2026-06-12 — AD-227/AD-239 are the template for T-031:** the bounded
   non-recursive `product_continuation` pattern already proven for Engineer
   is the natural shape for the missing terminal-role continuation edge.
+- **2026-06-12 — AD-289 sets the named-transition precedent:** the T-031
+  fix landed as the `operator-retry-routing` transition with its AD naming
+  the guarded edge and this doc's mapping table updated in the same change
+  — the first point fix delivered under the AD-286 rule that new
+  convergence rules declare their transition instead of accreting as
+  free-floating policy.

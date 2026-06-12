@@ -6,6 +6,8 @@ docs:
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/design-docs/self-reflective-telemetry.md
+- docs/design-docs/delivery-operating-model.md
+- docs/design-docs/convergence-state-machine.md
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-012-self-improvement-loop.md
@@ -1530,6 +1532,10 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 				s.enqueueProductContinuation(ctx, job, jobErr)
 				return
 			}
+			if job.Role != "orchestrator" && isConvergenceRuntimeFailure(cat) {
+				s.routeConvergenceFailure(ctx, job, cat, jobErr, traceID)
+				return
+			}
 			if job.Role != "orchestrator" && dispatchRuntimeFailureStops(cat) {
 				log.Warn("serve: not dispatching runtime failure through Orchestrator; foundation telemetry or operator retry must resolve it first",
 					"category", cat,
@@ -1677,6 +1683,182 @@ func (s *Server) enqueueProductContinuation(ctx context.Context, job *queue.Job,
 			"source_job": job.ID,
 		})
 		s.dash.BroadcastEvent("product_continuation_enqueued", string(payload))
+	}
+}
+
+// convergenceRetryFingerprintWindow bounds the automatic operator-retry
+// routing edge (AD-289): once an automatic convergence retry for a failure
+// fingerprint has itself failed inside this window, further failures with the
+// same fingerprint escalate to the operator instead of retrying again.
+const convergenceRetryFingerprintWindow = 24 * time.Hour
+
+// isConvergenceRuntimeFailure reports whether a runtime failure category is a
+// convergence failure: the session exhausted its loop budget (max_turns) or
+// repeated itself (circle_detected), where a fresh bounded session against the
+// same repository state is a legitimate recovery — the manual operator
+// run-role retries observed in live replays were exactly this action.
+// Environment failures (model_unavailable, context_overflow, llm_unreachable,
+// inference_crash, ...) are excluded because redispatching the same state
+// reproduces the failure deterministically.
+func isConvergenceRuntimeFailure(cat telemetry.FailureCategory) bool {
+	return cat == telemetry.CategoryMaxTurns || cat == telemetry.CategoryCircleDetected
+}
+
+// isAutomaticRecoveryTrigger reports whether the job was itself dispatched by
+// a bounded automatic recovery edge, in which case another automatic retry is
+// out of budget and the failure must escalate to the operator.
+func isAutomaticRecoveryTrigger(raw string) bool {
+	var trigger map[string]string
+	if err := json.Unmarshal([]byte(raw), &trigger); err != nil {
+		return false
+	}
+	switch trigger["type"] {
+	case "convergence_retry", "product_continuation", "ticket_gate_repair", "auto_recover":
+		return true
+	default:
+		return false
+	}
+}
+
+func convergenceFailureFingerprint(repoID, role string, cat telemetry.FailureCategory) string {
+	return fmt.Sprintf("%s:%s:%s", repoID, role, cat)
+}
+
+// routeConvergenceFailure implements the AD-286 operator-retry-routing
+// transition (AD-289): a runtime convergence failure gets at most one
+// automatic same-role retry per failure fingerprint; past that budget the
+// failure escalates to the operator with a recorded disposition naming the
+// exact retry command instead of halting silently.
+func (s *Server) routeConvergenceFailure(ctx context.Context, job *queue.Job, cat telemetry.FailureCategory, jobErr error, traceID string) {
+	fingerprint := convergenceFailureFingerprint(job.RepoID, job.Role, cat)
+	if isAutomaticRecoveryTrigger(job.Trigger) {
+		s.recordConvergenceEscalation(ctx, job, cat, fingerprint, jobErr, traceID,
+			"the failed job was already a bounded automatic recovery job")
+		return
+	}
+	if s.convergenceRetryAlreadyFailed(ctx, job.RepoID, job.Role, fingerprint) {
+		s.recordConvergenceEscalation(ctx, job, cat, fingerprint, jobErr, traceID,
+			"an automatic convergence retry for this failure fingerprint already failed inside the retry window")
+		return
+	}
+	s.enqueueConvergenceRetry(ctx, job, cat, fingerprint, jobErr)
+}
+
+// convergenceRetryAlreadyFailed reports whether an automatic convergence
+// retry carrying the same failure fingerprint already failed inside the
+// fingerprint window, which exhausts the automatic budget for that
+// fingerprint. A successful retry leaves no failed retry row, so distinct
+// later failures of the same role still earn one fresh automatic retry.
+func (s *Server) convergenceRetryAlreadyFailed(ctx context.Context, repoID, role, fingerprint string) bool {
+	if s == nil || s.db == nil {
+		return false
+	}
+	cutoff := time.Now().UTC().Add(-convergenceRetryFingerprintWindow).Unix()
+	var count int
+	err := s.db.QueryRowContext(ctx, `
+SELECT COUNT(*)
+FROM jobs
+WHERE repo_id = ?
+  AND role = ?
+  AND status = 'failed'
+  AND trigger_payload LIKE '%"type":"convergence_retry"%'
+  AND trigger_payload LIKE ?
+  AND completed_at >= ?`,
+		repoID, role, `%"fingerprint":"`+fingerprint+`"%`, cutoff).Scan(&count)
+	if err != nil {
+		slog.Warn("serve: convergence retry fingerprint lookup failed", "repo_id", repoID, "role", role, "err", err)
+		return false
+	}
+	return count > 0
+}
+
+func convergenceRetryAsk(role string) string {
+	switch role {
+	case "qa", "security", "dogfood":
+		return "Resume the interrupted review from the current repository state after a convergence failure. Inspect the dispatch-named work and the validation evidence already recorded first, gather only the bounded validation evidence that is still missing, then record job_disposition_record with an honest terminal verdict. If review evidence is already clean, record the terminal disposition immediately instead of re-reading evidence."
+	default:
+		return "Resume the interrupted work from the current repository state after a convergence failure. Inspect existing commits, tickets, and recorded evidence first, complete only the remaining lifecycle steps, then record job_disposition_record. Do not restart completed work or create intervention-debt tickets."
+	}
+}
+
+func (s *Server) enqueueConvergenceRetry(ctx context.Context, job *queue.Job, cat telemetry.FailureCategory, fingerprint string, jobErr error) {
+	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+	triggerJSON, _ := json.Marshal(map[string]string{
+		"type":             "convergence_retry",
+		"source_job":       job.ID,
+		"reason":           jobErr.Error(),
+		"failure_category": string(cat),
+		"fingerprint":      fingerprint,
+		"repair_scope":     "resume_role_from_current_state",
+		"ask":              convergenceRetryAsk(job.Role),
+	})
+	retryJob := queue.Job{
+		RepoID:         job.RepoID,
+		Role:           job.Role,
+		Trigger:        string(triggerJSON),
+		IdempotencyKey: fmt.Sprintf("convergence-retry:%s:%s:%s", job.ID, job.RepoID, job.Role),
+	}
+	jobID, err := s.queue.Enqueue(ctx, retryJob)
+	if err != nil {
+		log.Error("serve: failed to enqueue convergence retry job", "err", err)
+		return
+	}
+	log.Info("serve: convergence retry job enqueued after runtime convergence failure",
+		"retry_job_id", jobID,
+		"category", string(cat),
+		"fingerprint", fingerprint,
+	)
+	if s.dash != nil {
+		payload, _ := json.Marshal(map[string]string{
+			"job_id":      jobID,
+			"role":        job.Role,
+			"repo":        job.RepoID,
+			"source_job":  job.ID,
+			"category":    string(cat),
+			"fingerprint": fingerprint,
+		})
+		s.dash.BroadcastEvent("convergence_retry_enqueued", string(payload))
+	}
+}
+
+// recordConvergenceEscalation replaces the plain failed disposition with a
+// blocked/operator_retry disposition naming the exhausted automatic budget
+// and the exact operator retry command, so the halt is an operator-visible
+// recorded blocker rather than a silent log line.
+func (s *Server) recordConvergenceEscalation(ctx context.Context, job *queue.Job, cat telemetry.FailureCategory, fingerprint string, jobErr error, traceID, why string) {
+	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+	reason := fmt.Sprintf(
+		"convergence failure %s exhausted its automatic retry budget (%s); operator retry required: POST /api/run-role {\"repo_id\":%q,\"role\":%q} or mars-harness run %s --repo <repo-path>; fingerprint=%s; last error: %s",
+		cat, why, job.RepoID, job.Role, job.Role, fingerprint, jobErr.Error(),
+	)
+	log.Warn("serve: convergence failure escalated to operator after automatic retry budget",
+		"category", string(cat),
+		"fingerprint", fingerprint,
+		"why", why,
+	)
+	if s.orgStore != nil {
+		if err := s.orgStore.RecordDisposition(ctx, orgstate.Disposition{
+			JobID:    job.ID,
+			RepoID:   job.RepoID,
+			Role:     job.Role,
+			Status:   "blocked",
+			NextNeed: "operator_retry",
+			Reason:   reason,
+			TraceID:  traceID,
+		}); err != nil {
+			log.Error("serve: failed to record convergence escalation disposition", "err", err)
+		}
+	}
+	if s.dash != nil {
+		payload, _ := json.Marshal(map[string]string{
+			"job_id":      job.ID,
+			"role":        job.Role,
+			"repo":        job.RepoID,
+			"category":    string(cat),
+			"fingerprint": fingerprint,
+			"reason":      reason,
+		})
+		s.dash.BroadcastEvent("convergence_escalated", string(payload))
 	}
 }
 
