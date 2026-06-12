@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.9] - 2026-06-12
+<!-- mars-harness-release: version=0.50.9 commit=00b556666b63 -->
+
+### Impact
+- **design:** Operators and future agents get clearer guidance because add AD-287 policy.go decomposition AD with ordered same-package extraction sequence (T-030).
+
+### Why
+- **design:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **design:** Changed add AD-287 policy.go decomposition AD with ordered same-package extraction sequence (T-030) (00b5566).
+
+### Documentation
+- **design:** Add AD-287 policy.go decomposition AD with ordered same-package extraction sequence (T-030) (00b5566)
+
 ## [0.50.8] - 2026-06-12
 <!-- mars-harness-release: version=0.50.8 commit=019a67ed15a0 -->
 
