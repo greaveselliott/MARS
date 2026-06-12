@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.19] - 2026-06-12
+<!-- mars-harness-release: version=0.50.19 commit=85787cfd7da3 -->
+
+### Impact
+- **tools:** Maintainers get a healthier project surface because extract shell-safety policy domain (AD-287 slice 3, T-038).
+
+### Why
+- **tools:** This matters because project health work keeps future delivery predictable.
+
+### What Changed
+- **tools:** Changed extract shell-safety policy domain (AD-287 slice 3, T-038) (85787cf).
+
+### Maintenance
+- **tools:** Extract shell-safety policy domain (AD-287 slice 3, T-038) (85787cf)
+
+### Delivery Evidence
+- Enabler work: T-038: Move the shell-safety guardrail checks out of the policy monolith (AD-287 step 3)
+
 ## [0.50.18] - 2026-06-12
 <!-- mars-harness-release: version=0.50.18 commit=03122e6a8281 -->
 
