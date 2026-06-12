@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.15] - 2026-06-12
+<!-- mars-harness-release: version=0.50.15 commit=27b28a3889a3 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because record demo-14 AD-289 replay evidence and close T-031.
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed record demo-14 AD-289 replay evidence and close T-031 (27b28a3).
+
+### Documentation
+- **validation:** Record demo-14 AD-289 replay evidence and close T-031 (27b28a3)
+
+### Delivery Evidence
+- Enabler work: T-001: Intervention debt: Calibrate guardrail workflow for engineer
+- Enabler work: T-031: Harden qa and dogfood terminal convergence so circle_detected runtime failures do not cap lifecycle reach
+
 ## [0.50.14] - 2026-06-12
 <!-- mars-harness-release: version=0.50.14 commit=26d4f391db52 -->
 
