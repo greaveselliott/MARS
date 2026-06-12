@@ -2,6 +2,26 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.17] - 2026-06-12
+<!-- mars-harness-release: version=0.50.17 commit=a1f9b9f74d5d -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because record demo-12 AD-287 slice-1 checkpoint replay and close T-036.
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed record demo-12 AD-287 slice-1 checkpoint replay and close T-036 (a1f9b9f).
+
+### Documentation
+- **validation:** Record demo-12 AD-287 slice-1 checkpoint replay and close T-036 (a1f9b9f)
+
+### Delivery Evidence
+- Enabler work: T-001: Intervention debt: Calibrate guardrail workflow for engineer
+- Enabler work: T-002: Document foundation and deployed harness architecture
+- Enabler work: T-036: Extract browser-framework static-analysis policy domain into policy_browser.go (AD-287 slice 1)
+
 ## [0.50.16] - 2026-06-12
 <!-- mars-harness-release: version=0.50.16 commit=f5a1d6a7c218 -->
 
