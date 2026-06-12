@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.25] - 2026-06-12
+<!-- mars-harness-release: version=0.50.25 commit=1a1322fd4368 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because record AD-287 final-checkpoint demo-12 Run 4 PASS and demo-15 pause state (T-043).
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed record AD-287 final-checkpoint demo-12 Run 4 PASS and demo-15 pause state (T-043) (1a1322f).
+
+### Documentation
+- **validation:** Record AD-287 final-checkpoint demo-12 Run 4 PASS and demo-15 pause state (T-043) (1a1322f)
+
+### Delivery Evidence
+- Enabler work: T-001: Intervention debt: Calibrate guardrail workflow for engineer
+- Enabler work: T-004: Verify foundation deployed doctrine consistency and drift gates
+
 ## [0.50.24] - 2026-06-12
 <!-- mars-harness-release: version=0.50.24 commit=5cd4eb3af936 -->
 
