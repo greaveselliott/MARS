@@ -122,6 +122,9 @@ func reviewTerminalDispositionGuidance(root Root, session Session) string {
 	return "Call job_disposition_record now with status approved, ticket_id, next_need security_review or no_need, and evidence_links naming the build/test/runtime commands that passed."
 }
 
+// ReviewTerminalEvidenceSatisfied reports whether a review role has gathered
+// enough clean evidence that the agent loop should force the terminal
+// disposition path instead of letting more inspection consume the job.
 func ReviewTerminalEvidenceSatisfied(root Root, session *Session) bool {
 	if session == nil || !reviewRoleRequiresValidationEvidence(session.Role) {
 		return false
@@ -158,6 +161,8 @@ func ReviewTerminalEvidenceSatisfied(root Root, session *Session) bool {
 	return true
 }
 
+// MarkReviewTerminalDispositionRequired lets the agent loop turn sufficient
+// review evidence into a hard terminal-only boundary before the next tool call.
 func MarkReviewTerminalDispositionRequired(session *Session) {
 	if session == nil {
 		return
@@ -168,6 +173,8 @@ func MarkReviewTerminalDispositionRequired(session *Session) {
 	session.ToolCounts[reviewTerminalDispositionRequiredKey]++
 }
 
+// ReviewTerminalDispositionGuidance returns the same terminal guidance used by
+// tool policy errors, with nil-safe defaults for agent-loop reminders.
 func ReviewTerminalDispositionGuidance(root Root, session *Session) string {
 	if session == nil {
 		return "Call job_disposition_record now with status approved or changes_requested, ticket_id when applicable, next_need, and evidence_links naming the review evidence."
@@ -240,4 +247,13 @@ func reviewRoleRequiresValidationEvidence(role string) bool {
 
 func shellExecRunsValidationCommand(args shellExecArgs) bool {
 	return shellExecRunsTestCommand(args) || shellExecRunsBuildCommand(args) || shellExecRunsRuntimeValidationCommand(args) || shellExecRunsHTTPProbe(args)
+}
+
+func roleRequiresDocSyncForSuccessfulDisposition(role string) bool {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "engineer", "pipeline-fixer", "qa", "security", "dogfood", "release-manager", "dependency-manager":
+		return true
+	default:
+		return false
+	}
 }

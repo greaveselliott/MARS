@@ -433,3 +433,34 @@ func TestQAChangesRequestedBlocksDevServerSetupFailureRoutedToEngineer(t *testin
 		t.Fatalf("expected foundation-validation routing guidance, got %v", err)
 	}
 }
+
+func TestQAApprovalRequiresGoTestsForGoSource(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	sourcePath := filepath.Join(dir, "cmd", "note-stats", "main.go")
+	if err := os.MkdirAll(filepath.Dir(sourcePath), 0o755); err != nil {
+		t.Fatalf("mkdir source dir: %v", err)
+	}
+	if err := os.WriteFile(sourcePath, []byte(`/*
+MarsDocSync:
+docs:
+- docs/features/F-001-product-walking-skeleton.md
+*/
+package main
+
+func main() {}
+`), 0o644); err != nil {
+		t.Fatalf("write source file: %v", err)
+	}
+	ctx := WithSession(context.Background(), Session{Role: "qa", ToolCounts: map[string]int{
+		validationCommandSuccessKey: 1,
+		testCommandSuccessKey:       1,
+	}})
+	err := preToolPolicy(ctx, root, "job_disposition_record", []byte(`{"status":"approved","ticket_id":"T-001","next_need":"security_review"}`))
+	if err == nil {
+		t.Fatal("expected QA approval without Go tests to be blocked")
+	}
+	if !strings.Contains(err.Error(), "Go source files exist but no _test.go files are present") {
+		t.Fatalf("expected Go test coverage guidance, got %v", err)
+	}
+}

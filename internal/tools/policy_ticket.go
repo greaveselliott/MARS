@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
@@ -1092,4 +1093,35 @@ func ticketLifecyclePathIdentity(rel string) (id, state string, ok bool) {
 		return "", "", false
 	}
 	return idParts[0] + "-" + idParts[1], state, true
+}
+
+func pendingCTOHandoffRequiredScenarios(session Session) []string {
+	if session.ToolState == nil {
+		return nil
+	}
+	return splitScenarioList(session.ToolState[ctoHandoffRequiredScenariosKey])
+}
+
+func splitScenarioList(value string) []string {
+	var out []string
+	for _, part := range strings.FieldsFunc(value, func(r rune) bool {
+		return r == ',' || r == '\n' || r == ' '
+	}) {
+		part = strings.ToUpper(strings.TrimSpace(part))
+		if toolsFeatureScenarioIDPattern.MatchString(part) {
+			out = append(out, part)
+		}
+	}
+	return out
+}
+
+func quoteStringArray(values []string) string {
+	if len(values) == 0 {
+		return "[]"
+	}
+	quoted := make([]string, 0, len(values))
+	for _, value := range values {
+		quoted = append(quoted, strconv.Quote(value))
+	}
+	return "[" + strings.Join(quoted, ",") + "]"
 }

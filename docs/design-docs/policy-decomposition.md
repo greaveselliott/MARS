@@ -157,6 +157,45 @@ The extraction sequence above is also the natural WS-D enablement order:
 
 ## Discoveries
 
+- **2026-06-12 — Slice 7 landed (T-042, `policy_disposition.go`):** 27
+  functions plus the `featureScenarioSection` type moved (seed estimate
+  was ~26): the `job_disposition_record` gate family, CTO handoff batch
+  checks, docsync-at-disposition checks, the T-039-deferred
+  capability-coverage consumers (`checkProductCapabilityScenarioCoverage`,
+  `scenarioCoversProductCapability`, `productScenarioIDsForHandoff`,
+  `earlyCTOHandoffRequiredScenarios` and friends), and the T-040/T-041
+  deferrals whose callers are all disposition-domain
+  (`countCoveredFeatureScenarios`, `firstUncoveredFeatureScenarios`,
+  `featureContractSuperseded`, `successfulReviewDispositionStatus`)
+  (`policy.go` 3,089 → 2,434 lines). Four more caller-majority
+  reassignments settled in the same pure-motion commit:
+  `pendingCTOHandoffRequiredScenarios`, `splitScenarioList`, and
+  `quoteStringArray` → `policy_ticket.go` (ticket-side callers only;
+  the CTO-handoff session key stays in `policy.go` per the shared-key
+  rule, keeping the producer/consumer pair discoverable);
+  `roleRequiresDocSyncForSuccessfulDisposition` → `policy_review.go`
+  (three review callers vs one disposition). Test motion: 34
+  disposition-domain tests (job-disposition gates, the COO-completion
+  coverage family per T-039's blended-test record, the CTO-completion
+  batch family) plus 19 mover-only Tetris fixture helpers →
+  `policy_disposition_test.go`; `TestQAApprovalRequiresGoTestsForGoSource`
+  → `policy_review_test.go` as review residue
+  (`policy_ticket_test.go` 5,376 → 2,982 lines). Shared fixtures
+  (`writeDetailedTetrisBrief`, `writeTetrisFeatureWithFullScenarioSchedule`,
+  `writeTetrisFeatureWithGenericScenarios`, `writePolicyPlan`,
+  `writePolicyFeature`, `setupPolicyTicketRepo`, `writePolicyTicket`) stay
+  in `policy_ticket_test.go` with both ticket and disposition consumers.
+  **Slice-6 motion defect found and fixed:** the slice-B extraction left
+  the doc comments of the three exported review functions orphaned in
+  `policy.go` (the extraction tooling started spans at the `func` line);
+  this slice reattaches them to their declarations in `policy_review.go`
+  and the doc-comment audit of every function moved in slices 1–7 found
+  no other orphan. Deferred to the validation slice and recorded in
+  T-042: `dispositionBlockingFiles` and `summarizeChangedFiles`
+  (cross-domain shared), `planningRoleCannotMutateWithShell`
+  (dispatcher-adjacent trust enforcement), `checkGitPushPolicy` (still no
+  caller-graph signal). Pure motion verified by line-multiset equality;
+  intermediate slice per the checkpoint policy, rides the test suite.
 - **2026-06-12 — Slice 6 landed (T-041, `policy_review.go`):** 11 functions
   moved (seed estimate was ~19; the delta is deferrals recorded in T-041):
   the review terminal-gate family (`checkReviewTerminalDispositionOnly`,
