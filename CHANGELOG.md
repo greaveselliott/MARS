@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.10] - 2026-06-12
+<!-- mars-harness-release: version=0.50.10 commit=1b0ad79aa040 -->
+
+### Impact
+- **plan:** Operators and future agents get clearer guidance because sequence T-032 context overflow as first Phase 3 slice ahead of T-031 routing and extraction work.
+
+### Why
+- **plan:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **plan:** Changed sequence T-032 context overflow as first Phase 3 slice ahead of T-031 routing and extraction work (1b0ad79).
+
+### Documentation
+- **plan:** Sequence T-032 context overflow as first Phase 3 slice ahead of T-031 routing and extraction work (1b0ad79)
+
 ## [0.50.9] - 2026-06-12
 <!-- mars-harness-release: version=0.50.9 commit=00b556666b63 -->
 
