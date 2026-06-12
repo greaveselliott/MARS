@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.5] - 2026-06-12
+<!-- mars-harness-release: version=0.50.5 commit=2517626f590e -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because record frontend and maintenance archetype baselines, close T-029 (T-029, T-032).
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed record frontend and maintenance archetype baselines, close T-029 (T-029, T-032) (2517626).
+
+### Documentation
+- **validation:** Record frontend and maintenance archetype baselines, close T-029 (T-029, T-032) (2517626)
+
+### Delivery Evidence
+- Enabler work: T-029: Close validation archetype baseline gaps
+
 ## [0.50.4] - 2026-06-12
 <!-- mars-harness-release: version=0.50.4 commit=3d62536b9939 -->
 
