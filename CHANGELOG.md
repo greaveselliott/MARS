@@ -2,6 +2,26 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.12] - 2026-06-12
+<!-- mars-harness-release: version=0.50.12 commit=dc32dca28072 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because record T-032 replay evidence and close the ticket (AD-288).
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed record T-032 replay evidence and close the ticket (AD-288) (dc32dca).
+
+### Documentation
+- **validation:** Record T-032 replay evidence and close the ticket (AD-288) (dc32dca)
+
+### Delivery Evidence
+- Enabler work: T-001: Intervention debt: Calibrate guardrail workflow for engineer
+- Enabler work: T-002: Document foundation and deployed harness architecture
+- Enabler work: T-032: Fit engineer context assembly inside the balanced coding-tier window for package-managed frontend targets
+
 ## [0.50.11] - 2026-06-12
 <!-- mars-harness-release: version=0.50.11 commit=bee4f5bbb283 -->
 
