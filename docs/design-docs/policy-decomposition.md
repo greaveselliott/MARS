@@ -157,6 +157,23 @@ The extraction sequence above is also the natural WS-D enablement order:
 
 ## Discoveries
 
+- **2026-06-12 — Slice 4 landed (T-039, `policy_capability.go`):** 25
+  functions moved, exactly matching the seed estimate (`policy.go` 5,005 →
+  4,395 lines): the brief-interpretation family (including the T-036
+  deferrals `projectBriefMentionsFramework` and `projectBriefNamesGoBackend`,
+  whose callers are all browser checks but whose home is the interpretation
+  layer), the capability surface family, and the capability matching/keyword
+  family. The two pure capability unit tests moved to
+  `policy_capability_test.go`; the blended COO-completion tests stay in
+  `policy_ticket_test.go` because their primary subject is the disposition
+  coverage gate. The fuzzy feature-contract boundary resolved as predicted:
+  the scenario-coverage helper family (`featureIDsFromScenarios`,
+  `featureScenarioCoverage`, and friends) has ticket-gate caller majority and
+  waits for the `policy_ticket.go` slice, while the coverage/handoff
+  consumers (`checkProductCapabilityScenarioCoverage`,
+  `scenarioCoversProductCapability`, `productScenarioIDsForHandoff`) stay for
+  the disposition slice. Pure motion verified by line-multiset equality;
+  intermediate slice per the checkpoint policy, rides the test suite.
 - **2026-06-12 — Slice 3 landed (T-038, `policy_shell.go`):** 33 functions
   moved (seed estimate was ~57; the delta is the shared parsing core, recorded
   as deferrals in T-038): the shell entry checks, the foreground/long-running
