@@ -82,6 +82,7 @@ evidence_links:
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#run-62-slugify-cli-completed-full-local-lifecycle-after-rework-guidance
   - docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md#run-65-inventory-api-canary-reached-product-rework-exposed-post-validation-no-op-failure
   - docs/validation/baselines/2026-06-12-factory-pace-baseline.md
+  - docs/validation/reports/2026-06-12-demo-11-pace-baseline.md#run-1-inventoryapi-canary-on-v0502--2026-06-12
   - docs/validation/reports/2026-06-11-demo-11-pace-baseline.md#run-1-inventoryapi-canary-on-v0501--2026-06-11
 verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'; go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|RejectsBarePortCommands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess|KillTrackedBackgroundPIDKillsDescendant|NoopReturnsCompletionGuidance|NoopAfterBackgroundListsTrackedPID)'; go test ./internal/tools -run 'TestShellExec(BlocksGoBuildOutputInsideRepoBeforeArtifact|BlocksDefaultGoBuildInsideRepoBeforeArtifact|BlocksDefaultGoBuildInShellCommandBeforeArtifact|BlocksGoBuildOutputInShellCommandSegmentBeforeArtifact|AllowsGoBuildOutputOutsideRepo|NoopArgsNotMaskedByDirtyArtifact)'; go test ./internal/tools -run 'TestShellExecRejectsExternalTimeoutCommands|TestFileWriteBlocksNewRootValidationScript|TestFileWriteAllowsExistingRootValidationScriptUpdate|TestShellExecPolicyBlocksForegroundServerCommands|TestShellExecPolicyAllowsForegroundGoRunForNonServerCLI'; go test ./internal/tools -run TestKillBackgroundProcsKillsEscapedChildProcess; go test ./internal/tools -run TestJobDispositionPolicyBlocksSuccessfulReviewWhenDocSyncFails; go test ./internal/tools -run 'TestFileWritePolicyRequiresDocSyncForSourceFiles|TestFileWritePolicyRejectsSourceDocSyncMissingDoc|TestEngineerClaimPolicyRequiresInProgressBeforeProductMutation|TestFileWritePolicyBlocksScenarioIDsThatDoNotMatchFeatureContract'; go test ./internal/tools -run 'TestDogfoodUncommittedFindingBlocksFurtherValidationAndTickets|TestDogfoodFindingCreatedInRunRequiresDispositionBeforeFurtherValidation|TestReviewApprovalRequiresPassingValidationWhenTestsExist|TestShellExecPolicyAllowsEvidencedEnablerTicketDoneMove|TestShellExecPolicyBlocksEnablerTicketDoneMoveWithoutEvidence|TestShellExecArgvAllowsLiteralNewlineArgument|TestRecordSessionToolOutcomeTracksValidationCommands'; go test ./internal/orgstate -run TestDecodeDispositionNormalizesStringLists; go test ./internal/docsync; go test ./internal/telemetry -run 'TestClassify|TestRetryable'; run12, demo-api-run1 through demo-api-run20 scores exports and trace summaries captured live Factory Pace baselines"
 owner: "Codex"
@@ -112,17 +113,27 @@ last_attempt: >-
   swapped the harness to the balanced model, so the heavy run is reclassified
   evidence-only and the Phase 3 pace baseline is re-captured on the balanced
   model (model identity is now part of the AD-285 measurement contract).
+  Later on 2026-06-12: the balanced-model rerun (v0.50.2, Qwen3-Coder Q4_K_M
+  reasoning ctx 131072 / coding ctx 32768, Gemma-4-E4B Q5_K_M fast) completed
+  a full 51.6-minute lifecycle on a fresh demo-11 — T-001 done with three QA
+  rework loops, two security audits, and a dogfood attempt — and the dated
+  pace baseline is recorded in
+  docs/validation/baselines/2026-06-12-factory-pace-baseline.md. AD-218 is
+  now confirmed live on this archetype (0 no-op outcomes across 6 engineer
+  jobs including rework). The heavy-model T-030 wedge did not recur. New
+  foundation-owned findings: qa and dogfood circle_detected runtime failures
+  stall lifecycle reach pending operator retry (report findings F1/F2).
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
 next_action: >-
-  After the Phase 3 fix for the cto-weekly ticket_create false-duplicate wedge
-  (2026-06-11 baseline finding F1), rerun the Inventory/API-style canary and
-  confirm Engineer stops tracked background validation, commits the route
-  repair, closes the Dogfood rework ticket, pushes, and hands back to QA
-  without no-op circle detection (AD-218). Calibrated max-turn limits follow
-  only after post-fix replays accumulate pace data against the 2026-06-11
-  baseline.
+  Phase 3 pace optimization against the 2026-06-12 balanced-model baseline:
+  engineer is the slowest role (75.2 avg turns, 244.7s avg wall, 2 limit
+  stops). Harden terminal-role convergence so qa/dogfood circle_detected
+  runtime failures (2026-06-12 report findings F1/F2) stop capping lifecycle
+  reach, then calibrate max-turn limits once post-fix replays accumulate pace
+  data against the baseline. All comparisons must run on the same model
+  identity recorded in the baseline (AD-285).
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -213,7 +224,7 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [ ] Current factory pace is measured from durable evidence, with a dated baseline documented before optimization work starts. (The 2026-06-11 heavy-model demo-11 replay was reclassified evidence-only after the balanced-model swap; the Phase 3 baseline is captured on the balanced model in docs/validation/baselines/2026-06-12-factory-pace-baseline.md.)
+- [x] Current factory pace is measured from durable evidence, with a dated baseline documented before optimization work starts. (docs/validation/baselines/2026-06-12-factory-pace-baseline.md, from the live balanced-model demo-11 replay on v0.50.2 with model identity recorded per AD-285; the 2026-06-11 heavy-model replay remains evidence-only.)
 - [x] Pace is represented as a first-class metric with role/repo/job attribution rather than as ad hoc notes in chat. (Factory Pace and Convergence And Guardrails sections rendered from the live demo-11 DB on 2026-06-11.)
 - [x] The implementation surfaces pace where operators already inspect factory health, such as scores export, trace summaries, dashboard, or CLI output. (`mars-harness scores export` live-validated against `~/.mars-harness/db/demo-11/mars.db`.)
 - [ ] At least one evidence-backed resolution reduces avoidable turns or improves successful completion before max-turn failure.
