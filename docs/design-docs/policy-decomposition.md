@@ -157,6 +157,19 @@ The extraction sequence above is also the natural WS-D enablement order:
 
 ## Discoveries
 
+- **2026-06-12 — Slice 1 landed (T-036, `policy_browser.go`):** 46 functions
+  plus the `browserFrameworkInfo` type moved (seed estimate was ~52);
+  `policy.go` 7,091 → 6,009 lines. The delta against the seed count is
+  deliberate boundary discipline, recorded in T-036: brief-interpretation
+  helpers (`projectBriefMentionsFramework`, `projectBriefNamesGoBackend`)
+  stay for the `policy_capability.go` slice despite browser-majority
+  callers; `shellExecRunsHTTPProbe` (reviewer/validation shared),
+  `testFilePath` (validation caller), and the in-progress→done ticket-move
+  parsers (ticket domain, also called from `executor.go`) stay put. Browser
+  tests and the four Phaser fixture helpers moved to
+  `policy_browser_test.go` in the same commit
+  (`policy_ticket_test.go` 7,835 → 6,086 lines).
+
 - `policy_ticket_test.go` is misnamed: it holds all 183 policy test
   functions across every domain, not just ticket tests. The split
   restores the name's honesty without a rename.
