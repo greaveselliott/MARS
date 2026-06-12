@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.13] - 2026-06-12
+<!-- mars-harness-release: version=0.50.13 commit=222392cbdf16 -->
+
+### Impact
+- **serve:** Operators see improved reliability because give runtime convergence failures one bounded automatic retry per fingerprint (T-031, AD-289).
+
+### Why
+- **serve:** This matters because give runtime convergence failures one bounded automatic retry per fingerprint (T-031, AD-289) closes a failure mode or degraded path.
+
+### What Changed
+- **serve:** Changed give runtime convergence failures one bounded automatic retry per fingerprint (T-031, AD-289) (222392c).
+
+### Fixes
+- **serve:** Give runtime convergence failures one bounded automatic retry per fingerprint (T-031, AD-289) (222392c)
+
 ## [0.50.12] - 2026-06-12
 <!-- mars-harness-release: version=0.50.12 commit=dc32dca28072 -->
 
