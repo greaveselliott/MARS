@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.22] - 2026-06-12
+<!-- mars-harness-release: version=0.50.22 commit=8a8d9d32529a -->
+
+### Impact
+- **tools:** Maintainers get a healthier project surface because extract review-gates policy domain (AD-287 slice 6, T-041).
+
+### Why
+- **tools:** This matters because project health work keeps future delivery predictable.
+
+### What Changed
+- **tools:** Changed extract review-gates policy domain (AD-287 slice 6, T-041) (8a8d9d3).
+
+### Maintenance
+- **tools:** Extract review-gates policy domain (AD-287 slice 6, T-041) (8a8d9d3)
+
+### Delivery Evidence
+- Enabler work: T-040: Extract ticket-lifecycle policy domain into policy_ticket.go (AD-287 step 5)
+- Enabler work: T-041: Give review terminal gates a dedicated policy file (AD-287 step 6)
+
 ## [0.50.21] - 2026-06-12
 <!-- mars-harness-release: version=0.50.21 commit=9f877d85c45c -->
 
