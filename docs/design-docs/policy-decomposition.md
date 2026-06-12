@@ -157,6 +157,40 @@ The extraction sequence above is also the natural WS-D enablement order:
 
 ## Discoveries
 
+- **2026-06-12 — Slice 5 landed (T-040, `policy_ticket.go`):** 55 functions
+  moved (seed estimate was ~62; the delta is recorded deferrals in T-040):
+  the ticket_create gate/planning-order family, the dogfood finding-commit
+  family, the claim-before-mutation family, ticket file-write and
+  done-evidence checks, the lifecycle move-parser family, and the
+  scenario-coverage helpers assigned by T-039's deferral record
+  (`policy.go` 4,395 → 3,316 lines). One additional pure move resolves a
+  T-038 deferral: `reservedHarnessPortInScript` → `policy_browser.go`
+  (sole caller is a browser package-write check; unambiguous).
+  **Test-placement decision:** `policy_ticket_test.go` IS the ticket-domain
+  test home — exactly the end-state this AD already names ("contains only
+  ticket-domain tests, making its name honest... without a rename"), so
+  slice 5 moves no tests; slices 6/7 and the validation slice keep moving
+  non-ticket residue out. Assignment resolutions recorded in T-040:
+  `ticketLifecyclePathIdentity` moved (ticket caller majority 8-vs-4-diff,
+  confirming T-037's classification); `isTicketLifecycleDir` moved (1–1
+  caller tie broken by ticket-lifecycle semantics);
+  `countCoveredFeatureScenarios`, `firstUncoveredFeatureScenarios`, and
+  `featureContractSuperseded` deviate from T-039's "and friends" family
+  grouping because their remaining callers are all disposition-domain —
+  they wait for the disposition slice; `checkGitPushPolicy` stays deferred
+  (dispatcher-only caller, body is pure trunk-branch enforcement — caller
+  graph gives no domain signal; validation slice settles it);
+  `checkEngineerPostValidationCompletionShellPolicy` +
+  `engineerDirtyPostValidationGuidance` stay for the validation slice
+  (validation-evidence keys and browser-validation helpers dominate the
+  body); the feature-contract write-policy family
+  (`checkFeatureScenarioIDPolicy`, `checkFeatureFileWritePolicy`, and
+  helpers) and the planner write-path family stay with the
+  `checkFileWritePolicy` sub-dispatcher for the validation slice;
+  `repoFileExists` is cross-domain shared (dependency-sync, hygiene,
+  validation callers) and stays in `policy.go`, likely permanently. Pure
+  motion verified by line-multiset equality; intermediate slice per the
+  checkpoint policy, rides the test suite.
 - **2026-06-12 — Slice 4 landed (T-039, `policy_capability.go`):** 25
   functions moved, exactly matching the seed estimate (`policy.go` 5,005 →
   4,395 lines): the brief-interpretation family (including the T-036

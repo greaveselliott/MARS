@@ -1102,3 +1102,12 @@ func checkEngineerBrowserFrameworkTicketDoneMovePolicy(root Root, session Sessio
 	}
 	return nil
 }
+
+func reservedHarnessPortInScript(script string) string {
+	for _, port := range []string{"18080", "18081", "18082", "18083", "18084", "18085", "18086", "18087", "18088", "18089"} {
+		if regexp.MustCompile(`(^|[^0-9])` + regexp.QuoteMeta(port) + `([^0-9]|$)`).MatchString(script) {
+			return port
+		}
+	}
+	return ""
+}
