@@ -157,6 +157,27 @@ The extraction sequence above is also the natural WS-D enablement order:
 
 ## Discoveries
 
+- **2026-06-12 — Slice 3 landed (T-038, `policy_shell.go`):** 33 functions
+  moved (seed estimate was ~57; the delta is the shared parsing core, recorded
+  as deferrals in T-038): the shell entry checks, the foreground/long-running
+  family, the no-op loop check, and the destructive-operation/git-safety
+  family (`policy.go` 5,650 → 5,005 lines). Four shell-domain tests moved to
+  `policy_shell_test.go` (`policy_ticket_test.go` 5,929 → 5,822 lines); the
+  bulk of shell-safety unit tests already live in `shell_exec_test.go`, their
+  domain-named home. Key boundary findings: the core tokenizers
+  (`shellFields`, `normalizedShellExecFields`, `cleanShellPathToken`,
+  `filepathBase`) and the read-only classifier family (`shellExecReadOnly`
+  and friends) are cross-domain shared surface and stay in `policy.go` —
+  likely permanently, alongside the dispatchers and key constants; the
+  build-output/path helpers (`goBuildOutputPath`, `pathResolvesInsideRepo`,
+  `shellRemovalPathOperands`, `isUntrackedRootBuildArtifact` family) have
+  validation-lane callers and wait for the validation slice;
+  `shellExecStopsTrackedBackgroundPID` (seeded as shell "background cleanup")
+  is actually browser/validation/review shared; `reservedHarnessPortInScript`
+  (seeded as shell "port") has only a browser-domain caller. `hasToken`
+  assigned shell by caller majority (2 moving callers vs 1 in
+  `policy_release.go`). Pure motion verified by line-multiset equality;
+  intermediate slice per the checkpoint policy, rides the test suite.
 - **2026-06-12 — Slice 2 landed (T-037, `policy_release.go` + `policy_diff.go`):**
   4 release-gate functions and 10 diff/secrets functions moved
   (`policy.go` 6,009 → 5,650 lines); the four `diffStats` tests moved to
