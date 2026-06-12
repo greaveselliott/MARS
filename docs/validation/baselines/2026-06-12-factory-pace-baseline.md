@@ -70,3 +70,19 @@ positive, 4 negative. Convergence failures: 3 circle_detected, 1 max_turns.
 - Heavy-model comparison (evidence-only, not a pace delta): cto-weekly went
   from a 12.1-minute max_turns wedge on Q8_0 to a 3.4-minute clean
   convergence on Q4_K_M.
+
+## Archetype coverage (T-029)
+
+All rows captured on this model identity, binary 0.50.2.
+
+| Archetype | Target | Lifecycle reach bar | Status | Report |
+| --- | --- | --- | --- | --- |
+| Inventory/API (Go service) | demo-11 | Full lifecycle: T-001 done, 3 QA rework loops, 2 security audits, dogfood attempt, queue drained | Recorded | [2026-06-12-demo-11-pace-baseline.md](../reports/2026-06-12-demo-11-pace-baseline.md) |
+| Package-managed frontend (Vite/React) | demo-12 | Engineer initial scaffold (T-001 in progress); wedged on coding-tier context overflow (T-032) | Recorded | [2026-06-12-demo-12-frontend-baseline.md](../reports/2026-06-12-demo-12-frontend-baseline.md) |
+| Existing-repo maintenance (Phaser/Tetris) | demo-13 | Engineer real product commit (T-004 step 1); wedged on same overflow (T-032) | Recorded | [2026-06-12-demo-13-maintenance-baseline.md](../reports/2026-06-12-demo-13-maintenance-baseline.md) |
+
+Pace snapshots for demo-12/demo-13 (slowest role = engineer on both):
+demo-12 engineer 80.6 avg turns / 267.2s avg wall / 3 limit stops over 5
+jobs; demo-13 engineer 74.0 avg turns / 378.5s avg wall / 2 limit stops
+over 2 jobs. Full role tables live in each target's committed
+`docs/QUALITY_SCORE.md` and the run reports.
