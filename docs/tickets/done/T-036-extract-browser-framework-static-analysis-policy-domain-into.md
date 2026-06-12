@@ -6,14 +6,25 @@ complexity: medium
 work_type: enabler
 bdd_scenarios: []
 end_to_end_evidence: required
-evidence_links: []
-verified_by: "TBD"
+evidence_links: ["docs/validation/reports/2026-06-12-demo-12-frontend-baseline.md#run-3-v05016-ad287-slice1-checkpoint", "docs/design-docs/policy-decomposition.md"]
+verified_by: "go build ./..., full go test ./internal/tools (behavior-preservation oracle), make check (coverage ratchet), docsync audit 0 findings, line-multiset pure-motion verification, and the demo-12 v0.50.16 checkpoint replay (Run 3): zero rule-level guardrail drift, lifecycle reach beyond the v0.50.11 Run 2 baseline"
 owner: "foundation-maintainer"
-last_attempt: "TBD"
+last_attempt: >-
+  2026-06-12: landed as f5a1d6a (tag v0.50.16). 46 functions + the
+  browserFrameworkInfo type moved into policy_browser.go (policy.go 7,091
+  -> 6,009 lines); 41 browser tests + 4 Phaser fixture helpers moved into
+  policy_browser_test.go (policy_ticket_test.go 7,835 -> 6,086 lines) in
+  the same commit. Pure motion verified by line-multiset equality and the
+  full internal/tools suite. AD-287 slice-1 checkpoint replay on demo-12
+  (Run 3, v0.50.16): PASS — identical guardrail rule classes, no new
+  policy failures, T-001 AND T-002 closed (exceeds baseline reach;
+  excess attributed to AD-289 routing which postdates the baseline
+  binary). Failure-mix shift (circle_detected/ticket_gate vs max_turns)
+  attributed to T-031/AD-289, not the extraction.
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Perform the extraction, run gates, land commits, run the demo-12 checkpoint replay, record evidence, close."
+next_action: "Done. Next AD-287 slice: policy_release.go + policy_diff.go (sequence step 2) ride the slice-1 checkpoint per the AD's checkpoint policy."
 source: docs/design-docs/policy-decomposition.md (AD-287) — extraction sequence step 1; foundation improvement plan WS-E
 created: 2026-06-12
 depends_on: []

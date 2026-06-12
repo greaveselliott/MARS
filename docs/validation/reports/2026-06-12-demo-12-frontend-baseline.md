@@ -231,3 +231,117 @@ evidence: engineer/qa `max_turns` with post-failure dispatch halt (T-031,
 AD-286 state-machine scope) and browser-framework guardrail churn (65
 blocks, Run 1: 88). **This run replaces Run 1 as the package-managed
 frontend archetype pace baseline** (Run 1 recorded only the wedge).
+
+## Run 3: AD-287 slice-1 extraction checkpoint replay on v0.50.16 — 2026-06-12 {#run-3-v05016-ad287-slice1-checkpoint}
+
+AD-287 per-slice gate: confirmatory checkpoint replay after extraction
+slice 1 (T-036, `policy_browser.go` — pure same-package code motion of the
+browser-framework static-analysis domain). Source-change class per AD-284:
+tool policy. This is the frontend-archetype canary of the two-archetype
+minimum; the change is behavior-preserving by construction, so the claim
+under test is **zero rule-level guardrail drift** vs the Run 2 baseline.
+The binary also carries AD-288 (v0.50.11) and AD-289/T-031 convergence
+retry routing (v0.50.12–15), which the Run 2 baseline binary predates —
+failure-routing deltas are attributable to those landed changes, not to
+the extraction.
+
+- **Exact command:** `mars-harness start --repo
+  /path/to/local-redacted --debug --log-file
+  ~/.mars-harness/traces/logs/demo-12-balanced-frontend-replay-v0.50.16.log`
+- **Target:** `/path/to/local-redacted` reset to
+  seed commit `b6aa7a3` (`.git` + `spec.md` only, `git clean -fdx`), local
+  bare origin force-pushed back to the seed; per-repo DB
+  `~/.mars-harness/db/demo-12` removed before the run
+- **Source ref / binary:** `mars-harness 0.50.16` built from `7df6520`
+  (extraction commit `f5a1d6a`, tag `v0.50.16`), installed via
+  `make install`
+- **Model identity (AD-285):** unchanged from Run 2 — reasoning + coding =
+  `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` (ctx 131072 reasoning :18081,
+  ctx 32768 coding :18080); fast = `google_gemma-4-E4B-it-Q5_K_M.gguf`;
+  resolved from `performance_profile: balanced` — pace comparison with
+  Run 2 is valid
+- **Database / logs:** `~/.mars-harness/db/demo-12/mars.db`;
+  `~/.mars-harness/traces/logs/demo-12-balanced-frontend-replay-v0.50.16.log`
+- **Job sequence (15 jobs, 08:05–08:47 BST; ~42 min):** ceo 55s → coo 142s
+  → cto-weekly 143s → engineer `16989255` failed (max_turns, 431s) →
+  engineer `c96e6337` failed (circle_detected, 116s; AD-289 bounded
+  recovery job — escalated to operator after retry budget) → [operator
+  retry via `POST /api/run-role`, mirroring Run 2's single retry] →
+  engineer `c23b9bd8` failed (circle_detected, 58s) → engineer `73f10d29`
+  failed (ticket gate, 302s) → engineer `0e6a9891` completed (159s;
+  **T-001 moved to done**) → qa `c35067aa` completed (81s) → orchestrator
+  completed (78s) → engineer `cf39e95e` failed (ticket gate, 190s) →
+  engineer `167a35ef` completed (184s; **T-002 claimed and moved to
+  done**) → qa `cd4d3b64` completed (52s) → orchestrator completed (48s)
+  → engineer `0add1625` failed (llm_unreachable: context canceled —
+  artifact of the operator graceful stop, not a runtime failure)
+- **Rule-level guardrail verdict (the claim under test): PASS.** 83
+  `guardrail_block` events, every one a pre-existing rule class: browser
+  framework closure rules (post-build smoke-only, completion blockers,
+  QA browser approval, browser ticket done-move, browser evidence
+  population — all functions moved in slice 1, firing with identical
+  message text), validation-lane blocks, claim-before-mutation gates,
+  MarsDocSync file-write gates, no-op repetition, argv shell-syntax, and
+  find-flood limits. Zero new or missing rule patterns, zero policy
+  errors/panics. The moved browser domain fired correctly across
+  engineer and QA jobs on both ticket cycles.
+- **Pace and failure-mix deltas (attributed, not extraction drift):**
+  failure mix shifted from Run 2's 4× max_turns to 1× max_turns + 2×
+  circle_detected + 2× ticket_gate; one AD-289 bounded recovery job ran
+  and one operator-escalation was recorded (`convergence failure
+  escalated to operator after automatic retry budget`) — routing behavior
+  landed in v0.50.12–15 (T-031/AD-289), absent from the Run 2 binary.
+  Engineer guardrail churn per job: 73 blocks over 8 engineer jobs
+  (~9.1/job) vs Run 2's 65 over 5 engineer jobs (13/job) — lower per-job
+  churn, total higher only because the run progressed further.
+- **Target commits / tickets / docs produced:** CEO vision, COO plan +
+  F-001 contract, CTO scenario tickets; engineer landed
+  `dfe8877 feat: implement first runnable product behavior for habit
+  tracker`, **closed T-001 and T-002 through full engineer → QA →
+  orchestrator cycles** (Run 2 reached T-001 closed + T-002 claimed).
+  Final state checkpointed as `22f92f7 chore(evidence): checkpoint
+  v0.50.16 AD-287 slice-1 replay state + scores export`, pushed to the
+  local origin.
+- **Telemetry highlights (`scores export`):** ceo 28 turns/42.7s; coo
+  52/141.2s; cto-weekly 42/143.3s; engineer 66.7 avg turns/205.2s over 7
+  traced jobs (3 limit stops); qa 36.5 avg/66.5s over 2 jobs (Run 2: qa
+  failed max_turns); orchestrator 33 avg/62.8s over 2 jobs; failure
+  categories: max_turns 1, circle_detected 2, ticket_gate 2,
+  guardrail_block 83, **context_overflow 0** (AD-288 holds)
+- **Product progress reached:** working Vite/React habit tracker with
+  T-001 and T-002 closed and QA-approved — beyond Run 2's bar
+- **Target intervention-debt count:** 0 open in target backlog (signals
+  routed to foundation telemetry, unchanged)
+- **Runtime artifacts:** traces for all 15 jobs in the per-repo DB; full
+  debug log; scores export committed to the target
+- **Stop reason:** operator graceful stop (`POST /api/stop`) after the
+  success criteria were exceeded; the in-flight third-ticket engineer job
+  was cancelled by the stop (recorded as llm_unreachable)
+
+### Run 3 comparison table vs Run 2 baseline
+
+| Metric | Run 2 (v0.50.11 baseline) | Run 3 (v0.50.16) | Verdict / attribution |
+| --- | --- | --- | --- |
+| Rule-level guardrail behavior | browser/validation/ticket/docsync rule classes | identical rule classes, identical message shapes, none new/missing | **PASS — no extraction drift** |
+| guardrail_block total | 65 (5 engineer jobs) | 83 (8 engineer jobs; ~9.1/engineer-job vs 13) | per-job churn improved; total reflects longer run |
+| Failure types | 4 max_turns | 1 max_turns, 2 circle_detected, 2 ticket_gate, 1 stop artifact | shift attributable to AD-289/T-031 routing (postdates baseline) |
+| context_overflow | 0 | 0 | AD-288 holds |
+| Lifecycle reach | T-001 closed, T-002 claimed + feature commit | **T-001 and T-002 closed**, 2 full QA cycles | exceeds baseline; attributable to AD-289 retry routing |
+| Operator interventions | 1 run-role retry + stop | 1 run-role retry (after recorded AD-289 escalation) + stop | unchanged |
+| Intervention debt (target) | 0 | 0 | unchanged |
+| Model identity | balanced profile, Qwen3-Coder Q4_K_M + gemma-4-E4B Q5_K_M | identical | comparison valid |
+
+### Run 3 pass/fail against AD-284/AD-285
+
+**Pass.** The rerun reaches beyond the baseline lifecycle stage; the
+extraction introduced zero new guardrail patterns or policy failures
+(the specific drift signature this checkpoint exists to catch); no new
+foundation-owned failure class appeared (circle_detected/ticket_gate are
+pre-existing classes, newly *routed* by AD-289); target intervention debt
+did not increase; the stop is operator-visible and recorded. AD-287's
+slice-1 checkpoint is satisfied; per the AD's checkpoint policy,
+subsequent pure-motion slices ride on the test suite until the final
+slice of the extraction sequence. Run 3 does **not** replace Run 2 as the
+pace baseline (Run 3 carries AD-289 routing changes that make pace
+deltas vs Run 2 multi-causal; Run 2 remains the archetype baseline until
+a deliberate re-baseline).
