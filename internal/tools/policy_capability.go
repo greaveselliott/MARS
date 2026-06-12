@@ -625,3 +625,31 @@ func projectBriefNamesGoBackend(root Root) bool {
 	}
 	return false
 }
+
+var capabilityStopWords = map[string]bool{
+	"a": true, "an": true, "and": true, "another": true, "are": true, "as": true, "be": true, "by": true,
+	"can": true, "complete": true, "condition": true, "conditions": true, "described": true,
+	"core": true, "detect": true, "detected": true, "detection": true, "display": true, "displayed": true, "displays": true,
+	"fall": true, "falling": true, "fill": true, "fills": true, "filled": true, "for": true, "from": true, "full": true,
+	"gameplay": true, "handle": true, "handled": true, "game": true, "games": true, "in": true,
+	"include": true, "includes": true, "including": true, "inspect": true, "inspected": true, "into": true, "local": true, "locally": true, "of": true,
+	"mechanic": true, "mechanics": true, "on": true, "open": true, "opened": true, "or": true, "product": true, "project": true,
+	"piece": true, "pieces": true, "playable": true, "player": true, "players": true, "reach": true, "reaches": true, "round": true, "rounds": true, "run": true, "see": true, "stack": true,
+	"show": true, "showing": true, "shows": true, "that": true, "the": true, "to": true, "using": true, "user": true, "users": true,
+	"usable": true, "useful": true, "version": true, "when": true, "with": true,
+}
+
+var capabilityLabelKeepWords = map[string]bool{
+	"application": true,
+	"board":       true,
+	"calendar":    true,
+	"chat":        true,
+	"dashboard":   true,
+	"editor":      true,
+	"form":        true,
+	"service":     true,
+	"site":        true,
+	"task":        true,
+	"tracker":     true,
+	"workflow":    true,
+}

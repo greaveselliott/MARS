@@ -13,6 +13,8 @@ package tools
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -256,4 +258,79 @@ func roleRequiresDocSyncForSuccessfulDisposition(role string) bool {
 	default:
 		return false
 	}
+}
+
+func repoHasTestFiles(root Root) bool {
+	hasTests := false
+	_ = filepath.WalkDir(root.Abs(), func(path string, d os.DirEntry, err error) error {
+		if err != nil || hasTests {
+			return nil
+		}
+		name := d.Name()
+		if d.IsDir() {
+			switch name {
+			case ".git", ".harness", "node_modules", "vendor", "dist", "build", "coverage":
+				return filepath.SkipDir
+			default:
+				return nil
+			}
+		}
+		rel, err := filepath.Rel(root.Abs(), path)
+		if err != nil {
+			return nil
+		}
+		if testFilePath(filepath.ToSlash(rel)) {
+			hasTests = true
+		}
+		return nil
+	})
+	return hasTests
+}
+
+func repoHasGoSourceFiles(root Root) bool {
+	hasSource := false
+	_ = filepath.WalkDir(root.Abs(), func(path string, d os.DirEntry, err error) error {
+		if err != nil || hasSource {
+			return nil
+		}
+		name := d.Name()
+		if d.IsDir() {
+			switch name {
+			case ".git", ".harness", "node_modules", "vendor", "dist", "build", "coverage":
+				return filepath.SkipDir
+			default:
+				return nil
+			}
+		}
+		rel, err := filepath.Rel(root.Abs(), path)
+		if err != nil {
+			return nil
+		}
+		rel = filepath.ToSlash(strings.ToLower(strings.TrimSpace(rel)))
+		if strings.HasSuffix(rel, ".go") && !strings.HasSuffix(rel, "_test.go") {
+			hasSource = true
+		}
+		return nil
+	})
+	return hasSource
+}
+
+func testFilePath(rel string) bool {
+	rel = filepath.ToSlash(strings.ToLower(strings.TrimSpace(rel)))
+	base := filepath.Base(rel)
+	if strings.HasSuffix(base, "_test.go") ||
+		strings.HasSuffix(base, "_test.rs") ||
+		strings.HasSuffix(base, ".test.js") ||
+		strings.HasSuffix(base, ".test.jsx") ||
+		strings.HasSuffix(base, ".test.ts") ||
+		strings.HasSuffix(base, ".test.tsx") ||
+		strings.HasSuffix(base, ".spec.js") ||
+		strings.HasSuffix(base, ".spec.jsx") ||
+		strings.HasSuffix(base, ".spec.ts") ||
+		strings.HasSuffix(base, ".spec.tsx") ||
+		strings.HasPrefix(base, "test_") && strings.HasSuffix(base, ".py") ||
+		strings.HasSuffix(base, "_test.py") {
+		return true
+	}
+	return strings.HasPrefix(rel, "tests/") || strings.Contains(rel, "/tests/")
 }

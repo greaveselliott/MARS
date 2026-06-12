@@ -1111,3 +1111,66 @@ func reservedHarnessPortInScript(script string) string {
 	}
 	return ""
 }
+
+func packageBuildScriptNoop(script string) bool {
+	script = strings.TrimSpace(strings.ToLower(script))
+	if script == "" {
+		return true
+	}
+	if packageBuildScriptOnlySyntaxCheck(script) {
+		return true
+	}
+	for _, marker := range []string{
+		"vite build", "next build", "webpack", "rollup", "parcel", "astro build",
+		"tsc", "esbuild", "npm run", "pnpm run", "yarn ", "bun run",
+		"node ", "deno ", "make ",
+	} {
+		if strings.Contains(script, marker) {
+			return false
+		}
+	}
+	parts := strings.Split(script, "&&")
+	if len(parts) == 0 {
+		return true
+	}
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if part == ":" || part == "true" || part == "exit 0" ||
+			strings.HasPrefix(part, "echo ") ||
+			strings.HasPrefix(part, "printf ") ||
+			strings.HasPrefix(part, "mkdir ") ||
+			strings.HasPrefix(part, "cp ") ||
+			strings.HasPrefix(part, "copy ") ||
+			strings.HasPrefix(part, "rsync ") ||
+			strings.HasPrefix(part, "touch ") ||
+			strings.HasPrefix(part, "live-server") ||
+			strings.HasPrefix(part, "http-server") ||
+			strings.HasPrefix(part, "serve ") ||
+			strings.Contains(part, "python -m http.server") ||
+			strings.Contains(part, "python3 -m http.server") {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func packageBuildScriptOnlySyntaxCheck(script string) bool {
+	parts := strings.Split(script, "&&")
+	checked := false
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if strings.HasPrefix(part, "node --check ") || strings.HasPrefix(part, "node -c ") {
+			checked = true
+			continue
+		}
+		return false
+	}
+	return checked
+}

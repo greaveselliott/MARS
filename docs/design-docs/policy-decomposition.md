@@ -157,6 +157,89 @@ The extraction sequence above is also the natural WS-D enablement order:
 
 ## Discoveries
 
+- **2026-06-12 — Slice 8 landed (T-043, `policy_validation.go`) — extraction
+  sequence complete:** 82 functions moved (seed estimate was ~78): the
+  engineer runtime/test-build validation gate families (unresolved-failure
+  blocks before commit/completion/file-write, rework policies, the
+  missing-argument correction gate), repair-scope and watermark-key helpers,
+  validation artifact freshness/build tracking (the
+  `validationArtifactPath`/`shellExecRunsRecordedValidationArtifact` family),
+  the validation command classifiers
+  (`shellExecRunsTestCommand`/`BuildCommand`/`RuntimeValidationCommand`/`HTTPProbe`
+  and the `shellFieldsRun*` cores), script-name helpers
+  (`testScriptName`/`buildScriptName`/`runtimeScriptName`),
+  `checkEngineerPostValidationCompletionShellPolicy` +
+  `engineerDirtyPostValidationGuidance` (T-040 deferral),
+  `expectedExitCodeCorrectsUnexpectedValidationFailure` and the
+  `shellExecRunsValidationCommandForSession` family (T-041 deferrals), the
+  T-038-deferred build-output/path helpers (`goBuildOutputPath` family,
+  `pathResolvesInsideRepo`, `shellRemovalPathOperands`), and the
+  root-scratch-validation write family (validation-probe hygiene by
+  semantics). `sourceFileRequiresDocSync` moved by 3-vs-1 caller majority
+  (three validation repair-path callers vs one dispatcher-resident docsync
+  write gate). Five more caller-majority reassignments settled in the same
+  pure-motion commit: `packageBuildScriptNoop` +
+  `packageBuildScriptOnlySyntaxCheck` → `policy_browser.go` (browser-only
+  callers); `repoHasTestFiles`, `repoHasGoSourceFiles`, `testFilePath` →
+  `policy_review.go` (review-only callers — a recorded deviation from the
+  "repo-shape helpers are validation" seed; T-036's validation caller of
+  `testFilePath` moved into review-called code in later slices). Slice-4
+  motion residue fixed: the `capabilityStopWords`/`capabilityLabelKeepWords`
+  vars had only `policy_capability.go` consumers and move there. Test motion:
+  30 validation-domain tests (the runtime-failure rework family, the
+  failing-test/build repair-lane family, the external-validation-artifact
+  family, post-validation completion gates, and the two
+  `recordSessionToolOutcome` procedure-failure accounting tests including the
+  T-041-deferred `TestReviewHTTPProbeBeforeServerStartIsProcedureFailure`) →
+  `policy_validation_test.go`; no mover-only fixtures (all fixtures shared
+  with staying ticket tests). **Final assignment resolutions (closing the
+  open items from T-036..T-042):** `checkGitPushPolicy` is settled
+  dispatcher-resident — its body is pure trunk-branch enforcement with a
+  dispatcher-only caller and no domain signal; it stays with the
+  trust/dispatch core, recorded here as accepted. The `checkFileWritePolicy`
+  sub-dispatcher and its role/artifact write children
+  (`checkPlannerFileWritePolicy`, `checkSecurityFileWritePolicy`,
+  `checkDogfoodFileWritePolicy`, `checkSourceFileDocSyncWritePolicy`, the
+  feature-contract write family `checkFeatureFileWritePolicy`/
+  `checkFeatureScenarioIDPolicy` + helpers, and their path predicates) are
+  recorded as a **dispatcher-resident file-write surface**: every child's
+  only caller is the sub-dispatcher, the children gate role/artifact write
+  permissions at the `file_write` boundary rather than any one extracted
+  domain, and no extracted file has caller majority. Their tests remain in
+  `policy_ticket_test.go` as accepted residue alongside the ticket-domain
+  tests that share the same fixtures. Permanent `policy.go` residents
+  confirmed: dispatchers + `enforceTrust` + `planningRoleCannotMutateWithShell`,
+  `mutatingTools`, the shared `ToolState` key constants (including the two
+  executor-shared edit-watermark keys), the shared tokenizer family
+  (`shellFields`, `shellFieldsPreserveCase`, `normalizedShellExecFields` +
+  `simpleCDShellCommandTrailingFields`, `cleanShellPathToken`,
+  `filepathBase`, `shellCommandFields`, `shellControlToken`), the read-only
+  classifier family (`shellExecReadOnly` and friends), the
+  `toolsFeature*Pattern` regexes (ticket+disposition shared), and the
+  cross-domain shared helpers (`changedFiles`, `dispositionBlockingFiles`,
+  `summarizeChangedFiles`, `cleanRepoPath`, `repoFileExists`,
+  `shellExecStopsTrackedBackgroundPID` (3-domain),
+  `shellExecCommandDisplay` (browser/review 1–1 tie), and the
+  `isUntrackedRootBuildArtifact` family (diff/shell 1–1 tie)). **End state:**
+  `policy.go` 2,434 → **1,070 lines / 51 functions** — under the ~1,500-line
+  target and matching the explicitly accepted dispatcher-core shape
+  (dispatchers, trust, shared keys, shared tokenizers/classifiers, the
+  dispatcher-resident file-write surface, `checkGitPushPolicy`);
+  `policy_ticket_test.go` 2,982 → 1,873 lines. Final file set:
+  `policy.go` 1,070; `policy_browser.go` 1,176; `policy_capability.go` 655;
+  `policy_diff.go` 264; `policy_disposition.go` 633; `policy_release.go` 132;
+  `policy_review.go` 336; `policy_shell.go` 666; `policy_ticket.go` 1,127;
+  `policy_validation.go` 1,219 — no policy file above ~1,500 lines except
+  none; the largest is the new validation file at 1,219. Pure motion verified
+  by line-multiset equality (zero removed lines; the only additions are the
+  two new-file MarsDocSync headers, package clauses, and import scaffolding);
+  dispatch order untouched (`preToolPolicy`/`postToolPolicy` absent from the
+  diff). One process finding recorded as T-030 evidence: `ticket_create`
+  false-duplicated this slice's first ticket title against T-040's
+  ("Extract … policy domain into policy_*.go (AD-287 step N)" shape); a
+  reworded title created T-043 cleanly. This slice takes the AD-287
+  **final-sequence replay checkpoint** (two archetypes per AD-284 tool-policy
+  class); evidence in the T-043 ticket and `docs/validation/reports/`.
 - **2026-06-12 — Slice 7 landed (T-042, `policy_disposition.go`):** 27
   functions plus the `featureScenarioSection` type moved (seed estimate
   was ~26): the `job_disposition_record` gate family, CTO handoff batch
