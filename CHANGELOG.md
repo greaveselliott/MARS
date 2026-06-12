@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.24] - 2026-06-12
+<!-- mars-harness-release: version=0.50.24 commit=5cd4eb3af936 -->
+
+### Impact
+- **tools:** Operators and agents get stronger no-stale-docs enforcement because documentation sync is described and validated as part of the delivery workflow.
+
+### Why
+- **tools:** This matters because behavior changes become risky when code, BDD contracts, design docs, generated target guidance, and release notes drift apart.
+
+### What Changed
+- **tools:** The release documentation path now ties changed source files to associated docs, docsync evidence, and generated target doctrine instead of treating docs as an after-the-fact checklist (5cd4eb3).
+
+### Maintenance
+- **tools:** Extract validation-lane policy domain (AD-287 slice 8, T-043) (5cd4eb3)
+
+### Delivery Evidence
+- Enabler work: T-038: Move the shell-safety guardrail checks out of the policy monolith (AD-287 step 3)
+
 ## [0.50.23] - 2026-06-12
 <!-- mars-harness-release: version=0.50.23 commit=3b73d4c5a309 -->
 
