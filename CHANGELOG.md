@@ -2,6 +2,26 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.21] - 2026-06-12
+<!-- mars-harness-release: version=0.50.21 commit=9f877d85c45c -->
+
+### Impact
+- **tools:** Maintainers get a healthier project surface because extract ticket-lifecycle policy domain (AD-287 slice 5, T-040).
+
+### Why
+- **tools:** This matters because project health work keeps future delivery predictable.
+
+### What Changed
+- **tools:** Changed extract ticket-lifecycle policy domain (AD-287 slice 5, T-040) (9f877d8).
+
+### Maintenance
+- **tools:** Extract ticket-lifecycle policy domain (AD-287 slice 5, T-040) (9f877d8)
+
+### Delivery Evidence
+- Enabler work: T-038: Move the shell-safety guardrail checks out of the policy monolith (AD-287 step 3)
+- Enabler work: T-039: Move capability and brief-parsing helpers out of the policy monolith (AD-287 step 4)
+- Enabler work: T-040: Extract ticket-lifecycle policy domain into policy_ticket.go (AD-287 step 5)
+
 ## [0.50.20] - 2026-06-12
 <!-- mars-harness-release: version=0.50.20 commit=63a37bf82dad -->
 
