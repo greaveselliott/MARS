@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.8] - 2026-06-12
+<!-- mars-harness-release: version=0.50.8 commit=019a67ed15a0 -->
+
+### Impact
+- **design:** Operators and future agents get clearer guidance because add AD-286 convergence state-machine design doc mapping AD-164..AD-275 onto explicit delivery states and transitions (T-028).
+
+### Why
+- **design:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **design:** Changed add AD-286 convergence state-machine design doc mapping AD-164..AD-275 onto explicit delivery states and transitions (T-028) (019a67e).
+
+### Documentation
+- **design:** Add AD-286 convergence state-machine design doc mapping AD-164..AD-275 onto explicit delivery states and transitions (T-028) (019a67e)
+
+### Delivery Evidence
+- Enabler work: T-028: Define matrix-gating doctrine for source-change classes and validation evidence
+
 ## [0.50.7] - 2026-06-12
 <!-- mars-harness-release: version=0.50.7 commit=771dc5960d27 -->
 
