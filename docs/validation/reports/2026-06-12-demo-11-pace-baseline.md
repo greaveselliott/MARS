@@ -7,6 +7,13 @@ model after the 2026-06-11 heavy-model run was reclassified evidence-only
 (see `2026-06-11-demo-11-pace-baseline.md`). Recorded per the AD-285 evidence
 contract, including the model-identity requirement added in v0.50.3.
 
+> **Evidence correction (2026-06-12, second monitor shift):** the original
+> "natural end / queue drained" stop-reason claim below was wrong, and the
+> final lifecycle state was internally inconsistent. See the Independent
+> observer section for the corrected record. The per-role pace measurements
+> (turns, tool calls, wall times) remain valid baseline data; the
+> lifecycle-health claim carries the caveats below.
+
 ## Run 1: Inventory/API canary on v0.50.2 — 2026-06-12
 
 - **Exact command:** `mars-harness start --repo
@@ -56,8 +63,13 @@ contract, including the model-identity requirement added in v0.50.3.
   signals were kept out of the target backlog by the serve-side filter).
 - **Runtime artifacts:** traces under `~/.mars-harness/traces/` for all 22
   jobs; per-repo DB retained.
-- **Stop reason:** natural end — queue drained and the final orchestrator
-  survey was stopped by the loop guard after no ticket-state change.
+- **Stop reason (corrected):** originally recorded as "natural end — queue
+  drained and the final orchestrator survey was stopped by the loop guard."
+  The second monitor shift corrected this: the orchestrator was stopped by
+  the operator at 01:21:45 BST to start the demo-12 replay, leaving engineer
+  job `4b659db8` (dogfood-failure rework, enqueued 01:21:44 BST) orphaned in
+  `pending` — it never ran. The stop was operator preemption with one
+  undrained job, not a drained queue.
 
 ## Operator interventions
 
@@ -69,23 +81,51 @@ contract, including the model-identity requirement added in v0.50.3.
 
 ## Independent observer (read-only replay monitor)
 
-A separate read-only replay-monitor agent verified this run independently of
-the build-side record above:
+A separate read-only replay-monitor agent watched this run across two
+shifts (the second 00:41–02:42 BST) without write access to the target or
+this report. First-shift verification, second-shift corrections, and the
+monitor's overall verdict:
 
-- **Run success independently verified:** the monitor confirmed the
-  lifecycle outcome via three independent surfaces — the per-repo DB job
+- **Product output independently verified:** the monitor confirmed real
+  product delivery via three independent surfaces — the per-repo DB job
   outcomes (18 positive / 4 negative terminals), the demo-11 git history
   (21 commits on `main` pushed to the local origin, including the three
   QA-driven rework cycles and the security audit commit), and the on-disk
-  tree (working Go inventory API with passing test suites, T-001 in
-  `done/`). The baseline's lifecycle-reach claim does not rest solely on
-  the build agent's self-report.
+  tree (working Go inventory API with test suites, T-001 in `done/`). The
+  baseline's product-progress claim does not rest solely on the build
+  agent's self-report.
+- **Correction — the run did not terminate naturally:** the orchestrator was
+  stopped at 01:21:45 BST (preempted to start demo-12), orphaning engineer
+  job `4b659db8` (dogfood-failure rework, enqueued 01:21:44 BST) in
+  `pending`. Foundation-owned finding: sequential preemption leaves queues
+  undrained with no disposition — distinct from T-031's operator-retry
+  routing gap. Ticket: T-035.
+- **Correction — internally inconsistent final state:** T-001 sits in
+  `done/`, but the last QA job (`9c049078`, 01:10–01:12 BST) returned
+  `changes_requested` citing build/runtime validation failures, and dogfood
+  never passed (`ff7b701e` circle_detected at 01:04 BST). The per-role pace
+  data remains valid measurement; the lifecycle-health claim carries this
+  caveat. The final build/runtime QA failure is classified mixed/unclear
+  (target build state vs reviewer procedure) pending triage.
+- **Convergence events (full second-shift inventory):** qa `497d29c6`
+  circle_detected (00:44 BST), engineer `2be4ad82` circle_detected during
+  security rework (00:54 BST), dogfood `ff7b701e` circle_detected
+  (01:04 BST); 65 guardrail_block events across the run (compare demo-12:
+  88, demo-13: 12).
 - **Post-failure orchestration gap:** the monitor observed the same
   "not dispatching runtime failure through Orchestrator; foundation
   telemetry or operator retry must resolve it first" halt after the qa
   circle_detected failure that the Operator interventions section records.
   This is one instance of the failure-class-independent gap tracked under
   T-031.
+- **Deployed-owned signals (target product, not foundation):** missing
+  automated tests flagged by QA `54e57be2`, and a hardcoded API key with
+  insecure defaults flagged by security `1929fab4`. These belong in the
+  demo-11 target backlog, not foundation doctrine.
+- **Monitor verdict: amber/degraded.** The factory delivers real product
+  output, but convergence failures are systemic on the balanced profile:
+  the coding-tier context ceiling (T-032), guardrail-churn turn burn, and
+  the preemption/draining gap (T-035).
 
 ## Findings (failure ownership classification)
 
@@ -119,12 +159,18 @@ target T-011 Phase 3 already owns.
 
 ## Pass/fail against AD-285
 
-Pass. The prior recorded baseline for this archetype
-(`demo-inventory-api-run65`) reached Engineer product rework; this run goes
-materially further (three QA rework loops, two security audits, a dogfood
-attempt, T-001 done, queue drained), so the lifecycle-reach bar is met. The
-heavy-model F1 wedge from 2026-06-11 (ticket T-030) did not recur: cto-weekly
-created scenario tickets and converged cleanly in 205s.
+Pass on lifecycle reach, with corrected caveats. The prior recorded baseline
+for this archetype (`demo-inventory-api-run65`) reached Engineer product
+rework; this run goes materially further (three QA rework loops, two
+security audits, a dogfood attempt, T-001 done), so the lifecycle-reach bar
+is met. The heavy-model F1 wedge from 2026-06-11 (ticket T-030) did not
+recur: cto-weekly created scenario tickets and converged cleanly in 205s.
+Caveats from the second monitor shift (Independent observer section): the
+stop was operator preemption with one undrained rework job, not a drained
+queue, and the final state is internally inconsistent (T-001 in `done/`
+against a final QA `changes_requested` and no dogfood pass). Future
+comparisons against this baseline must use the per-role pace rows, not the
+end-state as a converged-lifecycle exemplar.
 
 ## Validation confirmations
 

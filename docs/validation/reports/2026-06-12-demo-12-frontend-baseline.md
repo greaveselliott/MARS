@@ -80,6 +80,17 @@ capture:
   Orchestrator; foundation telemetry or operator retry must resolve it
   first" halt seen after max_turns and circle_detected failures on demo-11
   — the gap is failure-class-independent (tracked under T-031).
+- **Guardrail churn and post-max_turns cascades (second shift):** 88
+  guardrail_block events on this run (highest of the three archetypes;
+  demo-11: 65, demo-13: 12), with engineer `a397ebde` alone hitting 88
+  blocks against browser-framework closure rules before max_turns. Two
+  `ticket_gate` cascade failures followed max_turns stops (`28bd2736`,
+  `04dc813d`) — post-failure handoff incompleteness: the gate repair job
+  inherits a wedged state the failed job never dispositioned.
+- **Monitor verdict: amber/degraded.** Real product output (working Vite
+  scaffold) but systemic convergence failure on this archetype: the
+  coding-tier context ceiling (T-032) compounded by guardrail-churn turn
+  burn.
 
 ## Findings (failure ownership classification)
 

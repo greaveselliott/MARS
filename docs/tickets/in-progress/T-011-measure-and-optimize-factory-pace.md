@@ -123,6 +123,13 @@ last_attempt: >-
   jobs including rework). The heavy-model T-030 wedge did not recur. New
   foundation-owned findings: qa and dogfood circle_detected runtime failures
   stall lifecycle reach pending operator retry (report findings F1/F2).
+  Correction (second monitor shift, 2026-06-12): the run did not terminate
+  naturally — operator preemption at 01:21:45 BST orphaned engineer rework
+  job 4b659db8 in pending (T-035) — and the final state is internally
+  inconsistent (T-001 in done/ vs final QA changes_requested 9c049078; no
+  dogfood pass). The per-role pace rows remain the valid Phase 3 baseline;
+  lifecycle-health claims from this run are caveated in the baseline
+  artifact and run report.
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
@@ -224,7 +231,7 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 ## Acceptance Criteria
 
 ### Functional (happy path)
-- [x] Current factory pace is measured from durable evidence, with a dated baseline documented before optimization work starts. (docs/validation/baselines/2026-06-12-factory-pace-baseline.md, from the live balanced-model demo-11 replay on v0.50.2 with model identity recorded per AD-285; the 2026-06-11 heavy-model replay remains evidence-only.)
+- [x] Current factory pace is measured from durable evidence, with a dated baseline documented before optimization work starts. (docs/validation/baselines/2026-06-12-factory-pace-baseline.md, from the live balanced-model demo-11 replay on v0.50.2 with model identity recorded per AD-285; the 2026-06-11 heavy-model replay remains evidence-only. Second-monitor-shift caveat: the baseline's pace rows are valid, but the run ended by operator preemption with one undrained job and an internally inconsistent final state — it is a pace baseline, not a converged-lifecycle exemplar.)
 - [x] Pace is represented as a first-class metric with role/repo/job attribution rather than as ad hoc notes in chat. (Factory Pace and Convergence And Guardrails sections rendered from the live demo-11 DB on 2026-06-11.)
 - [x] The implementation surfaces pace where operators already inspect factory health, such as scores export, trace summaries, dashboard, or CLI output. (`mars-harness scores export` live-validated against `~/.mars-harness/db/demo-11/mars.db`.)
 - [ ] At least one evidence-backed resolution reduces avoidable turns or improves successful completion before max-turn failure.

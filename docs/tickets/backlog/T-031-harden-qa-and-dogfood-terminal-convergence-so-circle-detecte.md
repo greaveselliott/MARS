@@ -38,3 +38,8 @@ max_turns — bounded automatic retry) from environment failures
 (model_unavailable, context_overflow — fail fast to an actionable preflight
 or telemetry finding, owned by T-033/T-032 respectively). The convergence
 state-machine design doc maps this gap as a missing automatic transition.
+Related but distinct: T-035 covers the graceful-stop/preemption gap (pending
+jobs orphaned with no disposition when the orchestrator is stopped), and the
+demo-12 second-shift evidence adds post-max_turns ticket_gate cascade
+failures (28bd2736, 04dc813d) — handoff incompleteness after a runtime
+failure, same missing-transition family.

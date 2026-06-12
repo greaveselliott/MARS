@@ -52,6 +52,19 @@ Recorded per the AD-285 evidence contract including model identity.
   without a retry because demo-12 had already demonstrated the wedge is
   retry-stable on package-managed targets.
 
+## Independent observer (read-only replay monitor)
+
+The second monitoring shift (00:41–02:42 BST) cross-checked this run:
+
+- **Guardrail churn was low on this archetype:** 12 guardrail_block events
+  (vs demo-11: 65, demo-12: 88) — the existing-repo planning survey ran
+  cleanly; turn burn concentrated entirely in the engineer context-overflow
+  wedge (T-032).
+- **Monitor verdict: amber/degraded** for the balanced-profile portfolio
+  overall: real product output on every archetype, but systemic convergence
+  failures (context ceiling, guardrail-churn turn burn, and the
+  preemption/draining gap recorded on demo-11 as T-035).
+
 ## Findings (failure ownership classification)
 
 ### F1 (foundation-owned, context assembly / model routing): the T-032 coding-tier context overflow generalizes to existing package-managed repos

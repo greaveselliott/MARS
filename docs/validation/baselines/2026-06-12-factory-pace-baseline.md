@@ -37,7 +37,17 @@ unified-memory saturation) is evidence-only; see
 End-to-end wall clock: 51.6 minutes (2026-06-11 23:21:44 UTC seed →
 2026-06-12 00:13:21 UTC final orchestrator loop-guard stop) for a full
 lifecycle: CEO → COO → CTO → Engineer (T-001 plus three QA rework loops) →
-QA → Security ×2 → Dogfood attempt → final QA, ending with the queue drained.
+QA → Security ×2 → Dogfood attempt → final QA.
+
+> **Correction (2026-06-12, second monitor shift):** the run did **not** end
+> with a drained queue. The orchestrator was stopped at 01:21:45 BST
+> (preempted to start demo-12), orphaning engineer job `4b659db8`
+> (dogfood-failure rework) in `pending` (T-035). The final state is also
+> internally inconsistent: T-001 sits in `done/` against a final QA
+> `changes_requested` (`9c049078`) and no dogfood pass (`ff7b701e`
+> circle_detected). The per-role pace rows above remain valid measurement;
+> do **not** cite this run as a converged-lifecycle exemplar. See the run
+> report's Independent observer section.
 
 ## Convergence And Guardrails (AD-283 / T-027)
 
@@ -65,8 +75,12 @@ positive, 4 negative. Convergence failures: 3 circle_detected, 1 max_turns.
   circle_detected runtime failure that the orchestrator correctly refused to
   redispatch). All other failures self-recovered through queue retries.
 - **Known stop:** dogfood circle_detected was never retried; the lifecycle
-  ended at the orchestrator loop guard without reaching the release stage.
-  Recorded as a foundation-owned finding in the run report.
+  never reached the release stage, and the final QA job returned
+  `changes_requested` while T-001 stayed in `done/`. The run ended by
+  operator preemption with one undrained rework job (T-035), not by a
+  drained queue. Recorded as foundation-owned findings in the run report.
+  Lifecycle-health claims from this baseline are caveated accordingly; the
+  pace rows are unaffected.
 - Heavy-model comparison (evidence-only, not a pace delta): cto-weekly went
   from a 12.1-minute max_turns wedge on Q8_0 to a 3.4-minute clean
   convergence on Q4_K_M.
@@ -77,7 +91,7 @@ All rows captured on this model identity, binary 0.50.2.
 
 | Archetype | Target | Lifecycle reach bar | Status | Report |
 | --- | --- | --- | --- | --- |
-| Inventory/API (Go service) | demo-11 | Full lifecycle: T-001 done, 3 QA rework loops, 2 security audits, dogfood attempt, queue drained | Recorded | [2026-06-12-demo-11-pace-baseline.md](../reports/2026-06-12-demo-11-pace-baseline.md) |
+| Inventory/API (Go service) | demo-11 | Full lifecycle: T-001 done, 3 QA rework loops, 2 security audits, dogfood attempt; stopped by operator preemption with one undrained rework job and a final QA `changes_requested` (see correction above) | Recorded | [2026-06-12-demo-11-pace-baseline.md](../reports/2026-06-12-demo-11-pace-baseline.md) |
 | Package-managed frontend (Vite/React) | demo-12 | Engineer initial scaffold (T-001 in progress); wedged on coding-tier context overflow (T-032) | Recorded | [2026-06-12-demo-12-frontend-baseline.md](../reports/2026-06-12-demo-12-frontend-baseline.md) |
 | Existing-repo maintenance (Phaser/Tetris) | demo-13 | Engineer real product commit (T-004 step 1); wedged on same overflow (T-032) | Recorded | [2026-06-12-demo-13-maintenance-baseline.md](../reports/2026-06-12-demo-13-maintenance-baseline.md) |
 
