@@ -42,6 +42,8 @@ The 2026-06-11 demo-11 Inventory/API pace-baseline replay (v0.50.1) stopped at c
 
 The wedge is archetype-shaped: API/service targets naturally produce same-suffix ticket titles, static browser targets mostly do not. This regressed lifecycle reach for the Inventory/API archetype from Engineer rework (run65 baseline) to CTO.
 
+Additional evidence (2026-06-12, foundation repo itself): during the AD-287 slice dispatch, ticket_create falsely rejected two sibling enabler tickets against DONE tickets — "Extract review-gates policy domain into policy_review.go (AD-287 step 6)" matched done T-040 "Extract ticket-lifecycle policy domain into policy_ticket.go (AD-287 step 5)", and an earlier title for T-040 matched done T-038. Sequenced work-stream tickets naturally share title suffixes the same way API endpoint tickets do, and DONE tickets participating in fuzzy title dedupe forces operators to invent dissimilar titles. Both retries succeeded only after deliberate re-titling (T-040, T-041 creation log).
+
 Ownership classification: foundation-owned (tool policy, internal/tools/ticket_create.go) with a secondary evidence-integrity facet (commit claiming ticket creation without the ticket file).
 
 ## Requirements

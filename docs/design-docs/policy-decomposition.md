@@ -157,6 +157,34 @@ The extraction sequence above is also the natural WS-D enablement order:
 
 ## Discoveries
 
+- **2026-06-12 — Slice 6 landed (T-041, `policy_review.go`):** 11 functions
+  moved (seed estimate was ~19; the delta is deferrals recorded in T-041):
+  the review terminal-gate family (`checkReviewTerminalDispositionOnly`,
+  `reviewTerminalDispositionGuidance`, `ReviewTerminalEvidenceSatisfied`,
+  `MarkReviewTerminalDispositionRequired`, `ReviewTerminalDispositionGuidance`),
+  reviewer shell validation policy (`checkReviewValidationFailureShellPolicy`,
+  `checkReviewerShellExecValidationPolicy`, `shellExecRunsValidationCommand`
+  by sole-caller majority), review approval evidence
+  (`checkReviewDispositionValidationEvidence`), changes-requested ownership
+  (`checkReviewChangesRequestedFeedbackOwnership`), and the shared role
+  predicate `reviewRoleRequiresValidationEvidence` (`policy.go` 3,316 →
+  3,089 lines). Seventeen review-domain tests moved to
+  `policy_review_test.go` per the T-040 test-placement decision
+  (`policy_ticket_test.go` 5,790 → 5,376 lines);
+  `TestReviewHTTPProbeBeforeServerStartIsProcedureFailure` stays because its
+  subject is validation procedure-failure accounting via
+  `recordSessionToolOutcome`. Deferrals by caller majority:
+  `successfulReviewDispositionStatus` (2 disposition callers vs 1 review)
+  waits for the disposition slice;
+  `expectedExitCodeCorrectsUnexpectedValidationFailure` (1–1 review/validation
+  tie, validation semantics) and `shellExecRunsValidationCommandForSession` +
+  `shellExecCountsAsValidationEvidence` (executor-called, validation
+  accounting) wait for the validation slice; `shellExecStopsTrackedBackgroundPID`
+  stays shared per T-038. One pre-existing wart fixed: slice 5 left a
+  gofmt-reported trailing blank line at `policy.go` EOF; trimmed here (the
+  only non-motion line change in the slice, recorded in T-041). Pure motion
+  otherwise verified by line-multiset equality; intermediate slice per the
+  checkpoint policy, rides the test suite.
 - **2026-06-12 — Slice 5 landed (T-040, `policy_ticket.go`):** 55 functions
   moved (seed estimate was ~62; the delta is recorded deferrals in T-040):
   the ticket_create gate/planning-order family, the dogfood finding-commit
