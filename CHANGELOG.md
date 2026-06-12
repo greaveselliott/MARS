@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.50.6] - 2026-06-12
+<!-- mars-harness-release: version=0.50.6 commit=43f11b44847b -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because fold independent replay-monitor evidence into baseline reports and record RAM-pressure discovery (T-031, T-033, T-034).
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed fold independent replay-monitor evidence into baseline reports and record RAM-pressure discovery (T-031, T-033, T-034) (43f11b4).
+
+### Documentation
+- **validation:** Fold independent replay-monitor evidence into baseline reports and record RAM-pressure discovery (T-031, T-033, T-034) (43f11b4)
+
 ## [0.50.5] - 2026-06-12
 <!-- mars-harness-release: version=0.50.5 commit=2517626f590e -->
 
