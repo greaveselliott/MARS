@@ -88,6 +88,22 @@ telemetry plus the `T-011` dated pace baseline replay) must exist before any
 WS-D or WS-E slice, because each slice is judged by a before/after replay
 comparison against that baseline per the AD-138 loop.
 
+Phase 3 sequencing amendment recorded 2026-06-12, after the measurement floor
+landed (baseline: `docs/validation/baselines/2026-06-12-factory-pace-baseline.md`;
+design ADs: AD-286 convergence state machine, AD-287 policy decomposition):
+**`T-032` (engineer coding-tier context overflow, P1) is the first Phase 3
+implementation slice.** Rationale: the matrix-gating table (AD-284) requires
+package-managed-frontend and existing-repo-maintenance archetype replays as
+confirmatory evidence for the later WS-D and WS-E slices, and as of
+2026-06-12 both archetypes wedge deterministically on the same context
+overflow (demo-12 and demo-13 baselines) — until T-032 lands, two of the
+three matrix rows cannot
+produce the before/after replay evidence those slices are judged by. The
+`T-031` routing fix (with its T-035/post-max_turns siblings mapped in AD-286)
+follows second, restoring automatic lifecycle reach so replays stop needing
+operator retries. T-029-style extraction and state-machine slices proceed
+after that, in the AD-287 extraction order.
+
 ## Current Priority Order
 
 1. **Factory pace intervention debt (`T-011`/`T-013`)**: Continue measuring role
@@ -127,9 +143,12 @@ comparison against that baseline per the AD-138 loop.
    export behavior, release-note behavior, stop/shutdown behavior, and whether
    Dogfood reaches a terminal disposition without dirty watchdog routing.
 6. **Convergence consolidation and god-file decomposition (WS-D, WS-E)**:
-   After the measurement floor exists, land the convergence state-machine AD
-   and decomposition AD, then migrate one rule cluster or one policy domain
-   per slice with a canary replay and recorded pace delta per the AD-138 loop.
+   The measurement floor, convergence state-machine AD (AD-286), and
+   decomposition AD (AD-287) landed 2026-06-12. Implementation order per the
+   Phase 3 sequencing amendment above: `T-032` context overflow first (it
+   unblocks the demo-12/demo-13 matrix replays the other slices need), then
+   the `T-031` routing fix, then one rule cluster or one policy domain per
+   slice with a canary replay and recorded pace delta per the AD-138 loop.
 7. **Dashboard control-plane backlog (`MH-051` through `MH-061`)**: Decided
    2026-06-11 under `T-023` (WS-B): the epic is **deferred until `T-011`
    closes**, per AD-279. AD-279 also scopes the single-binary constraint to
