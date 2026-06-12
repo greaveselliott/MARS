@@ -92,11 +92,24 @@ All rows captured on this model identity, binary 0.50.2.
 | Archetype | Target | Lifecycle reach bar | Status | Report |
 | --- | --- | --- | --- | --- |
 | Inventory/API (Go service) | demo-11 | Full lifecycle: T-001 done, 3 QA rework loops, 2 security audits, dogfood attempt; stopped by operator preemption with one undrained rework job and a final QA `changes_requested` (see correction above) | Recorded | [2026-06-12-demo-11-pace-baseline.md](../reports/2026-06-12-demo-11-pace-baseline.md) |
-| Package-managed frontend (Vite/React) | demo-12 | Engineer initial scaffold (T-001 in progress); wedged on coding-tier context overflow (T-032) | Recorded | [2026-06-12-demo-12-frontend-baseline.md](../reports/2026-06-12-demo-12-frontend-baseline.md) |
-| Existing-repo maintenance (Phaser/Tetris) | demo-13 | Engineer real product commit (T-004 step 1); wedged on same overflow (T-032) | Recorded | [2026-06-12-demo-13-maintenance-baseline.md](../reports/2026-06-12-demo-13-maintenance-baseline.md) |
+| Package-managed frontend (Vite/React) | demo-12 | **v0.50.11 (T-032 fix):** T-001 closed + T-002 feature commit; zero context_overflow (2 pruner saves); residual max_turns ×4 (T-031 scope). Supersedes the v0.50.2 wedge row (engineer scaffold, T-001 in progress, context overflow). | Recorded | [2026-06-12-demo-12-frontend-baseline.md Run 2](../reports/2026-06-12-demo-12-frontend-baseline.md#run-2-v05011-context-fix) |
+| Existing-repo maintenance (Phaser/Tetris) | demo-13 | **v0.50.11 (T-032 fix):** multiple product commits + T-001 evidence cycles toward done; zero context_overflow (12 pruner saves); residual max_turns ×5 (T-031 scope). Supersedes the v0.50.2 wedge row (one product commit, both engineer jobs overflowed). | Recorded | [2026-06-12-demo-13-maintenance-baseline.md Run 2](../reports/2026-06-12-demo-13-maintenance-baseline.md#run-2-v05011-context-fix) |
 
-Pace snapshots for demo-12/demo-13 (slowest role = engineer on both):
-demo-12 engineer 80.6 avg turns / 267.2s avg wall / 3 limit stops over 5
-jobs; demo-13 engineer 74.0 avg turns / 378.5s avg wall / 2 limit stops
-over 2 jobs. Full role tables live in each target's committed
+Pace snapshots (slowest role = engineer on all archetypes):
+
+- **demo-12 v0.50.11 archetype baseline (current):** engineer 47.3 avg
+  turns / 270.2s avg wall over 4 jobs, limit stops 3 (all max_turns);
+  zero context overflow. The superseded v0.50.2 wedge snapshot (80.6 avg
+  turns / 267.2s / 3 limit stops over 5 jobs incl. 2 context_overflow) is
+  evidence-only.
+- **demo-13 v0.50.11 archetype baseline (current):** engineer 51.0 avg
+  turns / 449.8s avg wall over 5 jobs, limit stops 5 (all max_turns);
+  zero context overflow. The superseded v0.50.2 wedge snapshot (74.0 avg
+  turns / 378.5s / 2 context_overflow stops over 2 jobs) is evidence-only.
+
+Note: demo-12/demo-13 archetype pace rows were re-captured on binary
+0.50.11 (AD-288 context fix). The model identity is unchanged, so the
+demo-11 rows above (binary 0.50.2) remain valid; engineer rows for the
+two package-managed archetypes must be compared against the v0.50.11
+numbers. Full role tables live in each target's committed
 `docs/QUALITY_SCORE.md` and the run reports.

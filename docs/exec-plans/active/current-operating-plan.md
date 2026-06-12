@@ -98,7 +98,11 @@ confirmatory evidence for the later WS-D and WS-E slices, and as of
 2026-06-12 both archetypes wedge deterministically on the same context
 overflow (demo-12 and demo-13 baselines) — until T-032 lands, two of the
 three matrix rows cannot
-produce the before/after replay evidence those slices are judged by. The
+produce the before/after replay evidence those slices are judged by.
+**T-032 closed 2026-06-12** (AD-288, v0.50.11): both archetype replays
+passed with zero context_overflow and lifecycle reach beyond the wedged
+baselines; the replay runs are the new demo-12/demo-13 archetype pace
+baselines (see the factory-pace baseline's archetype table). The
 `T-031` routing fix (with its T-035/post-max_turns siblings mapped in AD-286)
 follows second, restoring automatic lifecycle reach so replays stop needing
 operator retries. T-029-style extraction and state-machine slices proceed
@@ -146,8 +150,11 @@ after that, in the AD-287 extraction order.
    The measurement floor, convergence state-machine AD (AD-286), and
    decomposition AD (AD-287) landed 2026-06-12. Implementation order per the
    Phase 3 sequencing amendment above: `T-032` context overflow first (it
-   unblocks the demo-12/demo-13 matrix replays the other slices need), then
-   the `T-031` routing fix, then one rule cluster or one policy domain per
+   unblocks the demo-12/demo-13 matrix replays the other slices need —
+   **done 2026-06-12**, AD-288/v0.50.11, both archetype replays passed),
+   then the `T-031` routing fix (next slice; both T-032 replays needed
+   operator `run-role` retries through the post-failure dispatch halt),
+   then one rule cluster or one policy domain per
    slice with a canary replay and recorded pace delta per the AD-138 loop.
 7. **Dashboard control-plane backlog (`MH-051` through `MH-061`)**: Decided
    2026-06-11 under `T-023` (WS-B): the epic is **deferred until `T-011`

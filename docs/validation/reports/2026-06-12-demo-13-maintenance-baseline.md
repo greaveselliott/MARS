@@ -87,3 +87,85 @@ ticket (T-004 step 1)**, wedged on coding-tier context overflow. Planning
 roles (ceo/coo/cto-weekly) handled the existing-repo survey cleanly with no
 convergence failures — the archetype gap is isolated to engineer context
 assembly.
+
+**2026-06-12 superseded:** the Run 2 replay below (v0.50.11, AD-288 context
+fix) cleared the wedge and exceeded this bar. Run 2 is the archetype pace
+baseline from now on; Run 1 remains evidence of the wedge only.
+
+## Run 2: T-032 context-fix replay on v0.50.11 — 2026-06-12 {#run-2-v05011-context-fix}
+
+Validates T-032 / AD-288 on the existing-repo-maintenance archetype — the
+second of the two archetype replays the matrix gate requires for this fix
+(see the demo-12 report Run 2 for the first).
+
+- **Exact command:** `mars-harness start --repo
+  /path/to/local-redacted --debug --log-file
+  ~/.mars-harness/traces/logs/demo-13-balanced-maintenance-replay-v0.50.11.log`
+- **Target:** `/path/to/local-redacted` restored to
+  its pre-run committed state `fb08fdf` (maintenance brief; prior
+  Phaser/Tetris product history and harness scaffold retained per the
+  archetype definition), `git clean -fdx`, local bare origin force-pushed
+  back to `fb08fdf`; per-repo DB `~/.mars-harness/db/demo-13` removed
+  before the run
+- **Source ref / binary:** `mars-harness 0.50.11` built from `12af153` on
+  `codex/main-lifecycle-stabilization-rebased` (fix commit `bee4f5b`,
+  tag `v0.50.11`)
+- **Model identity (AD-285):** unchanged from Run 1 — reasoning + coding =
+  `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` (ctx 131072 reasoning :18081,
+  ctx 32768 coding :18080); fast = `google_gemma-4-E4B-it-Q5_K_M.gguf`;
+  resolved from `performance_profile: balanced` — pace comparison with
+  Run 1 is valid
+- **Database / logs:** `~/.mars-harness/db/demo-13/mars.db`;
+  `~/.mars-harness/traces/logs/demo-13-balanced-maintenance-replay-v0.50.11.log`
+- **Job sequence (8 jobs, 02:57:08–03:36 UTC; ~42 min, queue drained):**
+  ceo `9ec8f113` 99s → engineer `4b2a331c` failed (max_turns, 616s) →
+  coo `554404ff` 99s → cto-weekly `d1be85e4` 163s → engineer `09eab37b`
+  failed (max_turns, 495s) → engineer `6b4b882c` failed (max_turns,
+  495s) → engineer `1f67b7ca` failed (max_turns, 268s) → engineer
+  `b7cbd006` failed (max_turns, 375s)
+- **Context-fix evidence (the claim under test):** **zero
+  `context_overflow` telemetry events** (Run 1: 2 of 2 engineer jobs
+  overflowed at 32,923 tokens) and zero `exceed_context_size` rejections
+  across five engineer jobs against the existing multi-file project. The
+  budget pruner engaged **12 times** (04:07–04:40 BST), every time from
+  over-window estimates back inside the margin, e.g. 33,090→27,795,
+  34,601→27,192, 34,779→27,709, 32,818→26,103 (window 32,768, target
+  27,852) — each of these prompts would have wedged the Run 1 binary.
+- **Target commits / tickets / docs produced:** planning roles re-surveyed
+  the repo and refreshed plan + feature contract; engineer claimed T-001,
+  landed multiple real product commits — core Tetris mechanics
+  (`a6a3f68`, `de8e829`), project foundation (`ea1c228`), Phaser
+  scene-binding fix (`86a0627`) — and three evidence/verification ticket
+  updates ending at `27132e2 chore(tickets): update T-001 evidence and
+  ready for move to done`. Final state checkpointed as `a63f804
+  chore(evidence): checkpoint v0.50.11 context-fix replay state + scores
+  export` and pushed to the local origin.
+- **Telemetry highlights:** ceo 22 turns/99s; coo 16/99s; cto-weekly
+  20/163s; engineer 51 turns per job (turn-capped); failure categories:
+  max_turns 5 (all engineer), guardrail_block 70, **context_overflow 0**
+- **Product progress reached:** repeated engineer iterations on the
+  claimed maintenance ticket — mechanics implementation, bug-fix commit,
+  and validation/evidence cycles to "ready for move to done" — versus
+  Run 1's single product commit before the wedge
+- **Target intervention-debt count:** 0 open in target backlog
+  (max_turns/guardrail signals routed to foundation telemetry)
+- **Runtime artifacts:** traces for all 8 jobs in the per-repo DB; full
+  debug log; scores export committed to the target
+- **Stop reason:** operator graceful stop (`POST /api/stop`) after the
+  queue drained into the known post-max_turns dispatch halt (T-031 scope)
+
+### Run 2 pass/fail against AD-284/AD-285
+
+**Pass.** The rerun exceeds Run 1's lifecycle reach (multiple product
+commits plus ticket evidence cycles toward done vs one commit then wedge);
+the failure signature this change claimed to fix did not reappear despite
+12 over-window prompt states that deterministically wedged Run 1; no new
+foundation-owned failure class appeared; target intervention debt did not
+increase. Residual failures are pre-existing classes out of this slice's
+scope, recorded as evidence: engineer `max_turns` convergence churn with
+post-failure dispatch halt (T-031, AD-286 state-machine scope) and
+guardrail churn (70 blocks vs Run 1's 12 — engineer iteration on this
+archetype now runs long enough to accumulate blocks that the wedge
+previously cut short). **This run replaces Run 1 as the
+existing-repo-maintenance archetype pace baseline** (Run 1 recorded only
+the wedge).
