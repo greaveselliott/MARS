@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.56.1] - 2026-06-13
+<!-- mars-harness-release: version=0.56.1 commit=386dedf13dc9 -->
+
+### Impact
+- **plan:** Operators and future agents get clearer guidance because close foundation improvement plan with WS-D replay evidence.
+
+### Why
+- **plan:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **plan:** Changed close foundation improvement plan with WS-D replay evidence (386dedf).
+
+### Documentation
+- **plan:** Close foundation improvement plan with WS-D replay evidence (386dedf)
+
 ## [0.56.0] - 2026-06-13
 <!-- mars-harness-release: version=0.56.0 commit=d5ee4ef157d9 -->
 
