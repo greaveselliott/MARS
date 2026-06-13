@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.52.0] - 2026-06-13
+<!-- mars-harness-release: version=0.52.0 commit=0a01dd9699f6 -->
+
+### Impact
+- **pace:** Operators gain new capability: close T-011 with max-turn calibration and WS-D slice 3.
+
+### Why
+- **pace:** This matters because close T-011 with max-turn calibration and WS-D slice 3 was missing from the shipped capability set.
+
+### What Changed
+- **pace:** Changed close T-011 with max-turn calibration and WS-D slice 3 (0a01dd9).
+
+### Features
+- **pace:** Close T-011 with max-turn calibration and WS-D slice 3 (0a01dd9)
+
+### Delivery Evidence
+- Enabler work: T-011: Measure and optimize factory pace
+- Enabler work: T-035: Drain or disposition pending jobs when the orchestrator is stopped so preemption cannot orphan mid-lifecycle work
+
 ## [0.51.1] - 2026-06-13
 <!-- mars-harness-release: version=0.51.1 commit=e59ca9d82a8b -->
 
