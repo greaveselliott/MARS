@@ -103,6 +103,13 @@ Use the conversation system record decision when a conversation changes plans,
 tickets, design decisions, investigations, quality evidence, or completed-work
 state. Do not use chat summaries as substitutes for the owning artifacts.
 
+### When maintaining Mars Harness source or validating foundation runtime changes include this: `docs/design-docs/foundation-operating-model.md`
+
+Every foundation-owned runtime fix must be verified by running the installed
+binary against a clean validation project per AD-291 and AD-284. See also
+[validation-matrix-gating.md](validation-matrix-gating.md) and
+[docs/validation/README.md](../validation/README.md).
+
 ### When changing role domains, modes, trigger routing, tools, trust, guardrails, or scoring include this: `docs/roles/ROLES.md`
 
 Role domains and modes are canonical vocabulary, but explicit manifest role

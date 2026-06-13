@@ -66,7 +66,9 @@ integrations; normal roles make semantic commits to `main` and push directly.
 
 For Mars Harness source stabilization, the End-to-End Tester domain also owns
 the live demo improvement loop against representative target repos. The
-validation matrix defines the replay set; no single demo subject becomes
+canonical foundation rules live in
+[foundation-operating-model.md](foundation-operating-model.md) (AD-291, AD-292);
+the validation matrix defines the replay set; no single demo subject becomes
 foundation doctrine. A replay should show whether a source change actually
 improves the operator path from brief to product plan, feature contract,
 product ticket, implementation, review, or dogfood evidence without

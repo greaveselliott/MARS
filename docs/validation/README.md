@@ -29,4 +29,7 @@ the decision about whether contributor-mode validation is allowed.
 Report naming, required run fields, pass criteria, and the mapping from
 source-change classes to minimum archetype replays are defined in
 [docs/design-docs/validation-matrix-gating.md](../design-docs/validation-matrix-gating.md)
-(AD-284, AD-285).
+(AD-284, AD-285). The canonical **foundation** requirement to run those replays
+on a **clean project** before treating runtime fixes as done is
+[docs/design-docs/foundation-operating-model.md](../design-docs/foundation-operating-model.md)
+(AD-291, AD-292).

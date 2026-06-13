@@ -1,7 +1,8 @@
 # Cursor Adapter: Foundation Context
 
 Read @AGENTS.md for the repository guide and context routes. For foundation
-source work, also read @docs/roles/personas/foundation-maintainer.md and follow
-the linked operating-model docs.
+source work, also read @docs/design-docs/foundation-operating-model.md,
+@docs/roles/personas/foundation-maintainer.md, and follow the linked
+operating-model docs.
 
 Do not duplicate the knowledge base in Cursor rules.

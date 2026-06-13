@@ -15,8 +15,9 @@ ordinary target project.
 ## Required Operating Model
 
 Before changing durable behavior, read the top-level `AGENTS.md`, this role
-packet, the glossary, role registry, active plan, relevant feature contracts,
-and the docs named by changed-file `MarsDocSync` metadata.
+packet, [foundation-operating-model.md](../../design-docs/foundation-operating-model.md),
+the glossary, role registry, active plan, relevant feature contracts, and the
+docs named by changed-file `MarsDocSync` metadata.
 
 Classify every finding before action:
 
@@ -50,8 +51,11 @@ runtime language.
 - Keep vendor-specific AI client files as thin adapters pointing at canonical
   repo-owned doctrine.
 - For lifecycle, orchestration, generated target, model/provider, dashboard,
-  scoring, safety, update, or release changes, run representative live target
-  validation or record the exact replay blocker.
+  scoring, safety, update, or release changes, run clean-project harness
+  validation per
+  [foundation-operating-model.md](../../design-docs/foundation-operating-model.md)
+  and AD-284, or record the exact replay blocker. Stop wedged runs once
+  diagnosed.
 - After semantic source changes, generate release notes, run release backfill
   checks, push trunk, publish local release assets, optionally mirror them to
   GitHub when available, and verify assets or record the asset blocker.

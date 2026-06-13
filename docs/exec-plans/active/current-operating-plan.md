@@ -122,9 +122,34 @@ subset; demo-11 canary PASS (cto-weekly 2m 1s, 0 DUPLICATE). **T-011 closed
 **WS-D slice 5 landed 2026-06-12:** `DeliveryPhaseValidated` derivation plus
 post-validation shell guards via `engineerInValidatedPhase()`. **WS-D slice 4
 landed 2026-06-12:** file_write repair-lane guard and engineer disposition
-validation-failed gates migrated to `EngineerDeliveryState()`. Further WS-D
-clusters remain in the AD-286 migration queue (browser validated → dispose,
-committing/closing phases, review machine).
+validation-failed gates migrated to `EngineerDeliveryState()`. **WS-D slice 6
+landed 2026-06-13:** browser-framework completion blockers consult
+`engineerInValidatedBrowserCompletionPhase()`. **WS-D slice 7 landed
+2026-06-13:** `EngineerDeliveryState()` derives committing, evidence-recording,
+and closing post-validation phases. **WS-D slice 8 landed 2026-06-13:**
+`ReviewDeliveryState()` plus review terminal/no-op guards consult
+`reviewerInValidatedPhase()` / `reviewerInValidationFailedPhase()`. **CTO
+ticket-gate loop fix landed 2026-06-13:** when CTO completes with an
+implementation handoff but no open product ticket exists, dispatch advances to
+QA when ordinary product tickets are already done or escalates to COO instead
+of repeating CTO (demo-14 invalid canary closed as checkpoint-seed mismatch).
+**WS-D AD-286 migration queue complete** — remaining work is plan closure and
+optional dashboard epic (`MH-051`..`061`). **Foundation operating model
+landed 2026-06-13** ([foundation-operating-model.md](../../design-docs/foundation-operating-model.md),
+AD-291/AD-292): foundation runtime fixes require clean-project harness replay,
+not unit tests alone.
+
+## Next slice (plan closure)
+
+1. [ ] **`make install`** then run AD-284 batched validation for WS-D slices
+   6–8 + AD-290/AD-291: **demo-11** (static browser) + **demo-15** (API/service)
+   on clean seeds per [foundation-operating-model.md](../../design-docs/foundation-operating-model.md);
+   append evidence to
+   `docs/validation/reports/2026-06-13-foundation-wsd-closure-replay.md`.
+2. [ ] Record pass/fail against AD-284/AD-285; if blocked, record exact replay
+   command and leave closure unconfirmed (do not monitor wedged runs).
+3. [ ] Move this plan to `docs/exec-plans/completed/` when task 1–2 are satisfied
+   or deferred with a tech-debt row for the blocked replay.
 
 ## Current Priority Order
 
