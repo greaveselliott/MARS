@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.51.1] - 2026-06-13
+<!-- mars-harness-release: version=0.51.1 commit=e59ca9d82a8b -->
+
+### Impact
+- **queue:** Operators see improved reliability because preempt pending jobs on stop (T-035) and doctor RAM check (T-034).
+
+### Why
+- **queue:** This matters because preempt pending jobs on stop (T-035) and doctor RAM check (T-034) closes a failure mode or degraded path.
+
+### What Changed
+- **queue:** Changed preempt pending jobs on stop (T-035) and doctor RAM check (T-034) (e59ca9d).
+
+### Fixes
+- **queue:** Preempt pending jobs on stop (T-035) and doctor RAM check (T-034) (e59ca9d)
+
+### Delivery Evidence
+- Enabler work: T-034: Surface degraded-inference anomalies mechanically via pace telemetry and a doctor RAM-footprint check
+- Enabler work: T-035: Drain or disposition pending jobs when the orchestrator is stopped so preemption cannot orphan mid-lifecycle work
+
 ## [0.51.0] - 2026-06-13
 <!-- mars-harness-release: version=0.51.0 commit=5196f6d72feb -->
 
