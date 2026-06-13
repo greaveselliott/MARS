@@ -27,7 +27,7 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 		return nil
 	}
 	counts := session.ToolCounts
-	if counts == nil || counts[validationCommandSuccessKey] == 0 {
+	if counts == nil || !engineerInValidatedPhase(session) {
 		return nil
 	}
 	if shellExecMovesInProgressTicketToDone(raw) {

@@ -65,6 +65,11 @@ func (s Session) EngineerDeliveryState() DeliveryState {
 		return state
 	}
 
+	if s.ToolCounts != nil && s.ToolCounts[validationCommandSuccessKey] > 0 {
+		state.Phase = DeliveryPhaseValidated
+		return state
+	}
+
 	if s.ToolState != nil {
 		if strings.TrimSpace(s.ToolState[testBuildValidationCommandKey]) != "" ||
 			strings.TrimSpace(s.ToolState[unexpectedRuntimeValidationCommandKey]) != "" {
@@ -79,4 +84,9 @@ func (s Session) EngineerDeliveryState() DeliveryState {
 		}
 	}
 	return state
+}
+
+func engineerInValidatedPhase(session Session) bool {
+	state := session.EngineerDeliveryState()
+	return state.Phase == DeliveryPhaseValidated
 }

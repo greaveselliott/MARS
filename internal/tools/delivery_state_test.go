@@ -63,3 +63,24 @@ func TestEngineerDeliveryState_validationFailedRuntimeLane(t *testing.T) {
 	assert.Equal(t, DeliveryPhaseValidationFailed, state.Phase)
 	assert.Equal(t, RepairLaneRuntime, state.RepairLane)
 }
+
+func TestEngineerDeliveryState_validatedAfterSuccessfulValidation(t *testing.T) {
+	t.Parallel()
+	state := Session{
+		Role: "engineer",
+		ToolState: map[string]string{
+			testBuildValidationCommandKey: `shell_exec {"argv":["go","test","./..."]}`,
+		},
+		ToolCounts: map[string]int{validationCommandSuccessKey: 1},
+	}.EngineerDeliveryState()
+	assert.Equal(t, DeliveryPhaseValidated, state.Phase)
+}
+
+func TestEngineerInValidatedPhase(t *testing.T) {
+	t.Parallel()
+	assert.False(t, engineerInValidatedPhase(Session{Role: "engineer"}))
+	assert.True(t, engineerInValidatedPhase(Session{
+		Role:       "engineer",
+		ToolCounts: map[string]int{validationCommandSuccessKey: 1},
+	}))
+}

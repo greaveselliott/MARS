@@ -36,7 +36,7 @@ func checkEngineerRepeatedNoopPolicy(ctx context.Context, root Root, session Ses
 	if len(tickets) == 0 {
 		return nil
 	}
-	if counts[validationCommandSuccessKey] == 0 {
+	if !engineerInValidatedPhase(session) {
 		return fmt.Errorf(
 			"policy: repeated shell_exec no-op before implementation is a loop. Do not call shell_exec again for placeholders or waits. Use file_read on %q and the linked feature contract, then file_write the product implementation or record job_disposition_record with status blocked if the ticket cannot be implemented",
 			tickets[0].RelPath,
