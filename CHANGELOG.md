@@ -2,6 +2,25 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.55.1] - 2026-06-13
+<!-- mars-harness-release: version=0.55.1 commit=a66fd33b3b9c -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because start WS-D closure replay report on clean demo-11 seed.
+- **validation:** Operators and future agents get clearer guidance because document ephemeral runtime validation.
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed start WS-D closure replay report on clean demo-11 seed (24e5aa7).
+- **validation:** Changed document ephemeral runtime validation (a66fd33).
+
+### Documentation
+- **validation:** Start WS-D closure replay report on clean demo-11 seed (24e5aa7)
+- **validation:** Document ephemeral runtime validation (a66fd33)
+
 ## [0.55.0] - 2026-06-13
 <!-- mars-harness-release: version=0.55.0 commit=d4fbff4ca284 -->
 
