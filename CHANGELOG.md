@@ -2,6 +2,33 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.53.0] - 2026-06-13
+<!-- mars-harness-release: version=0.53.0 commit=128afecc0cfa -->
+
+### Impact
+- **tools:** Operators gain new capability: wS-D slice 4 — file_write and disposition DeliveryState gates.
+- The release includes visible project movement: merge pull request #2 from greaveselliott/foundation-restart.
+
+### Why
+- **tools:** This matters because wS-D slice 4 — file_write and disposition DeliveryState gates was missing from the shipped capability set.
+- This matters because the release should explain why merge pull request #2 from greaveselliott/foundation-restart belongs in the shipped state.
+
+### What Changed
+- **tools:** Changed wS-D slice 4 — file_write and disposition DeliveryState gates (128afec).
+- Changed merge pull request #2 from greaveselliott/foundation-restart (37cd5eb).
+
+### Features
+- **tools:** WS-D slice 4 — file_write and disposition DeliveryState gates (128afec)
+
+### Other
+- Merge pull request #2 from greaveselliott/foundation-restart (37cd5eb)
+
+### Delivery Evidence
+- Enabler work: T-030: Unwedge CTO scenario-batch handoff from ticket_create false-duplicate title matching
+- Enabler work: T-033: Verify profile-required model files at start so a profile swap cannot fail jobs with model_unavailable
+- Enabler work: T-035: Drain or disposition pending jobs when the orchestrator is stopped so preemption cannot orphan mid-lifecycle work
+- Enabler work: T-043: Carve the validation lane and repair guardrails out of the policy monolith to close the AD-287 sequence
+
 ## [0.52.0] - 2026-06-13
 <!-- mars-harness-release: version=0.52.0 commit=0a01dd9699f6 -->
 
