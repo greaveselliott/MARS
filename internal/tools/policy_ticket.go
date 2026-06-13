@@ -742,7 +742,10 @@ func checkEngineerTicketEvidenceWriteRequiresValidation(root Root, session Sessi
 	if !ticketEvidencePopulated(frontmatter) {
 		return nil
 	}
-	if session.ToolCounts != nil && session.ToolCounts[validationCommandSuccessKey] > 0 {
+	if engineerInValidationFailedTestBuildLane(session) || engineerInValidationFailedRuntimeLane(session) {
+		return nil
+	}
+	if engineerInValidatedBrowserCompletionPhase(root, session) {
 		if blockers := engineerBrowserFrameworkCompletionBlockers(root, session); len(blockers) > 0 {
 			return fmt.Errorf(
 				"policy: engineer cannot populate ticket evidence for browser-framework work in %s yet: %s. Add or fix package build/browser validation, run it successfully in this job, then update evidence_links with the concrete commands",
@@ -750,6 +753,9 @@ func checkEngineerTicketEvidenceWriteRequiresValidation(root Root, session Sessi
 				strings.Join(blockers, "; "),
 			)
 		}
+		return nil
+	}
+	if engineerInValidatedPhase(session) {
 		return nil
 	}
 	return fmt.Errorf("policy: engineer cannot populate ticket evidence_links or verified_by in %s before successful validation in this job; run go test, a build, or a runtime command that exercises the BDD scenario, then update the ticket with exact evidence", rel)

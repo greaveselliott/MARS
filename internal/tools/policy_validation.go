@@ -81,12 +81,14 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 		}
 		return nil
 	}
-	if blockers := engineerBrowserFrameworkCompletionBlockers(root, session); len(blockers) > 0 {
-		return fmt.Errorf(
-			"policy: engineer cannot close browser-framework product ticket %s yet: %s. Fix the source or package validation surface, rerun validation, then update ticket evidence and move the ticket to done",
-			tickets[0].ID,
-			strings.Join(blockers, "; "),
-		)
+	if engineerInValidatedBrowserCompletionPhase(root, session) {
+		if blockers := engineerBrowserFrameworkCompletionBlockers(root, session); len(blockers) > 0 {
+			return fmt.Errorf(
+				"policy: engineer cannot close browser-framework product ticket %s yet: %s. Fix the source or package validation surface, rerun validation, then update ticket evidence and move the ticket to done",
+				tickets[0].ID,
+				strings.Join(blockers, "; "),
+			)
+		}
 	}
 	return fmt.Errorf(
 		"policy: engineer already has successful validation and a clean implementation commit while product ticket %s remains in progress. Do not call shell_exec again except the exact lifecycle move. Next use file_read on %q, then file_write the same ticket with evidence_links and verified_by populated, then run shell_exec argv [\"git\", \"mv\", %q, \"docs/tickets/done/\"], commit the lifecycle move, and record job_disposition_record with ticket_id %s and next_need qa_review",

@@ -131,17 +131,15 @@ func ReviewTerminalEvidenceSatisfied(root Root, session *Session) bool {
 	if session == nil || !reviewRoleRequiresValidationEvidence(session.Role) {
 		return false
 	}
-	counts := session.ToolCounts
-	if counts == nil {
-		return false
-	}
-	if counts[reviewTerminalDispositionRequiredKey] > 0 {
+	state := session.ReviewDeliveryState()
+	if state.Phase == DeliveryPhaseTerminalDisposition {
 		return true
 	}
-	if counts[validationCommandSuccessKey] == 0 {
+	if state.Phase != DeliveryPhaseValidated {
 		return false
 	}
-	if counts[testCommandFailureKey] > 0 || counts[buildCommandFailureKey] > 0 || counts[validationCommandFailureKey] > 0 {
+	counts := session.ToolCounts
+	if counts == nil {
 		return false
 	}
 	if repoHasTestFiles(root) && counts[testCommandSuccessKey] == 0 {
@@ -209,7 +207,7 @@ func checkReviewerShellExecValidationPolicy(root Root, session Session, hasSessi
 	role := strings.ToLower(strings.TrimSpace(session.Role))
 	if shellExecNoop(args) {
 		counts := session.ToolCounts
-		if counts != nil && counts[validationCommandSuccessKey] > 0 && counts[testCommandFailureKey] == 0 && counts[buildCommandFailureKey] == 0 && counts[validationCommandFailureKey] == 0 {
+		if reviewerInValidatedPhase(session) && counts != nil && counts[testCommandFailureKey] == 0 && counts[buildCommandFailureKey] == 0 && counts[validationCommandFailureKey] == 0 {
 			if repoHasGoSourceFiles(root) && !repoHasTestFiles(root) {
 				return fmt.Errorf("policy: %s cannot use shell_exec no-op placeholders during review after validation. Stop shell validation now. %s", role, reviewTerminalDispositionGuidance(root, session))
 			}
@@ -221,7 +219,7 @@ func checkReviewerShellExecValidationPolicy(root Root, session Session, hasSessi
 			}
 			return fmt.Errorf("policy: %s cannot use shell_exec no-op placeholders during review after successful validation. Stop shell validation now. %s", role, reviewTerminalDispositionGuidance(root, session))
 		}
-		if counts != nil && (counts[testCommandFailureKey] > 0 || counts[buildCommandFailureKey] > 0 || counts[validationCommandFailureKey] > 0) {
+		if reviewerInValidationFailedPhase(session) {
 			return fmt.Errorf("policy: %s cannot use shell_exec no-op placeholders after failing validation. Stop shell validation and call job_disposition_record now with status changes_requested, ticket_id, next_need implementation_rework, feedback.for_role engineer, and evidence_links naming the failing command/output", role)
 		}
 		return fmt.Errorf("policy: %s cannot use shell_exec no-op placeholders during review; run a concrete read-only inspection or validation command, or record job_disposition_record with the quality decision", role)

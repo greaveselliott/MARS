@@ -485,7 +485,24 @@ every cluster in a domain has migrated.
   `shellExecSameJobTestBuildRepairCleanupNoRoot`) now consult
   `engineerInValidationFailed*Lane()` instead of raw outstanding-failure
   counts.
-  fix landed as the `operator-retry-routing` transition with its AD naming
+- **2026-06-13 — WS-D slice 6 landed:** browser-framework completion blockers
+  in `policy_validation.go`, `policy_disposition.go`, and `policy_ticket.go`
+  consult `engineerInValidatedBrowserCompletionPhase()` instead of raw
+  validation-success counts alone.
+- **2026-06-13 — WS-D slice 7 landed:** `EngineerDeliveryState()` derives
+  `committing`, `evidence-recording`, and `closing` from post-validation session
+  counters; `engineerInValidatedPhase()` covers all post-validation engineer
+  phases for shell guards.
+- **2026-06-13 — WS-D slice 8 landed:** `ReviewDeliveryState()` derives QA/
+  Security review phases; `ReviewTerminalEvidenceSatisfied` and review no-op
+  shell guards consult `reviewerInValidatedPhase()` /
+  `reviewerInValidationFailedPhase()`.
+- **2026-06-13 — CTO ticket-gate loop fix:** `enforceEngineerTicketPrerequisite`
+  breaks CTO→Engineer→CTO loops when CTO completes without leaving an open
+  product ticket — routes to QA when done tickets exist, COO when greenfield
+  shaping failed; `handleDispatchComplete` passes the completing disposition as
+  gate source when the trigger lacks one.
+- **2026-06-12 — T-031 fix landed** as the `operator-retry-routing` transition with its AD naming
   the guarded edge and this doc's mapping table updated in the same change
   — the first point fix delivered under the AD-286 rule that new
   convergence rules declare their transition instead of accreting as

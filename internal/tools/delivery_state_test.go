@@ -83,4 +83,66 @@ func TestEngineerInValidatedPhase(t *testing.T) {
 		Role:       "engineer",
 		ToolCounts: map[string]int{validationCommandSuccessKey: 1},
 	}))
+	assert.True(t, engineerInValidatedPhase(Session{
+		Role: "engineer",
+		ToolCounts: map[string]int{
+			validationCommandSuccessKey: 1,
+			"tool:git_commit:success":   1,
+		},
+	}))
+}
+
+func TestEngineerDeliveryState_postValidationPhases(t *testing.T) {
+	t.Parallel()
+	state := Session{
+		Role: "engineer",
+		ToolCounts: map[string]int{
+			validationCommandSuccessKey: 1,
+			"tool:git_commit:success":   1,
+		},
+	}.EngineerDeliveryState()
+	assert.Equal(t, DeliveryPhaseCommitting, state.Phase)
+
+	state = Session{
+		Role: "engineer",
+		ToolCounts: map[string]int{
+			validationCommandSuccessKey: 1,
+			"tool:git_commit:success":   1,
+			"tool:file_write:success":   1,
+		},
+	}.EngineerDeliveryState()
+	assert.Equal(t, DeliveryPhaseEvidenceRecording, state.Phase)
+
+	state = Session{
+		Role: "engineer",
+		ToolCounts: map[string]int{
+			validationCommandSuccessKey: 1,
+			ticketDoneMoveSuccessKey:    1,
+		},
+	}.EngineerDeliveryState()
+	assert.Equal(t, DeliveryPhaseClosing, state.Phase)
+}
+
+func TestReviewDeliveryState_phases(t *testing.T) {
+	t.Parallel()
+	state := Session{Role: "qa"}.ReviewDeliveryState()
+	assert.Equal(t, DeliveryPhaseClaimed, state.Phase)
+
+	state = Session{
+		Role:       "qa",
+		ToolCounts: map[string]int{buildCommandSuccessKey: 1},
+	}.ReviewDeliveryState()
+	assert.Equal(t, DeliveryPhaseValidating, state.Phase)
+
+	state = Session{
+		Role:       "qa",
+		ToolCounts: map[string]int{validationCommandSuccessKey: 1},
+	}.ReviewDeliveryState()
+	assert.Equal(t, DeliveryPhaseValidated, state.Phase)
+
+	state = Session{
+		Role:       "security",
+		ToolCounts: map[string]int{reviewTerminalDispositionRequiredKey: 1},
+	}.ReviewDeliveryState()
+	assert.Equal(t, DeliveryPhaseTerminalDisposition, state.Phase)
 }

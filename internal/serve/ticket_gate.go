@@ -117,6 +117,25 @@ func enforceEngineerTicketPrerequisite(decision orgstate.Decision, snap ticketSn
 	if snap.hasOpenProductTicket() {
 		return decision
 	}
+	if sourceCompletedCTOWithoutOpenProductTicket(source) {
+		if snap.hasDoneProductTicket() {
+			return routeEngineerAdvanceWithoutOpenTicket(
+				decision,
+				manifest,
+				"CTO completed without an open product ticket while ordinary product tickets are already done, so routing to QA review instead of repeating ticket shaping",
+			)
+		}
+		decision.DecisionKind = "deterministic"
+		decision.NextNeed = "ticket_breakdown"
+		decision.Reason = strings.TrimSpace(decision.Reason + "; CTO completed without creating an open product ticket, escalating to COO for ticket shaping instead of repeating CTO")
+		if manifest != nil {
+			if _, ok := manifest.Roles["coo"]; ok {
+				decision.NextRole = "coo"
+				decision.StopReason = ""
+				return decision
+			}
+		}
+	}
 	decision.DecisionKind = "deterministic"
 	decision.NextNeed = "ticket_breakdown"
 	decision.Reason = strings.TrimSpace(decision.Reason + "; Engineer dispatch requires an open ordinary product ticket, so routing to CTO for ticket shaping")
@@ -170,6 +189,37 @@ func enforceReleaseRequiresCompletedFeatureScenarios(decision orgstate.Decision,
 	return decision
 }
 
+func sourceCompletedCTOWithoutOpenProductTicket(source *orgstate.Disposition) bool {
+	if source == nil {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(source.Role), "cto-weekly") {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(source.Status)) {
+	case "completed", "approved":
+		return true
+	default:
+		return false
+	}
+}
+
+func routeEngineerAdvanceWithoutOpenTicket(decision orgstate.Decision, manifest *bundle.Manifest, reason string) orgstate.Decision {
+	decision.DecisionKind = "deterministic"
+	decision.NextNeed = "qa_review"
+	decision.Reason = strings.TrimSpace(decision.Reason + "; " + reason)
+	if manifest != nil {
+		if _, ok := manifest.Roles["qa"]; ok {
+			decision.NextRole = "qa"
+			decision.StopReason = ""
+			return decision
+		}
+	}
+	decision.NextRole = ""
+	decision.StopReason = "no open product ticket remains and no qa role is configured"
+	return decision
+}
+
 func sourceCompletedEngineerWithoutOpenProductTicket(decision orgstate.Decision, source *orgstate.Disposition, snap ticketSnapshot) bool {
 	if !strings.EqualFold(strings.TrimSpace(decision.SourceRole), "orchestrator") {
 		return false
@@ -220,6 +270,19 @@ func reviewReworkNeedsEngineer(decision orgstate.Decision, source *orgstate.Disp
 
 func (s ticketSnapshot) hasOpenProductTicket() bool {
 	for _, name := range append(append([]string{}, s.Backlog...), s.InProgress...) {
+		t, ok := s.Details[name]
+		if !ok {
+			return true
+		}
+		if t.Kind != "intervention-debt" {
+			return true
+		}
+	}
+	return false
+}
+
+func (s ticketSnapshot) hasDoneProductTicket() bool {
+	for _, name := range s.Done {
 		t, ok := s.Details[name]
 		if !ok {
 			return true

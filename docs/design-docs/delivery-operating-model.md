@@ -726,6 +726,45 @@ Engineer or CTO.
 - This can expose CTO no-op behavior earlier, but that is preferable to hiding
   the missing ticket behind untracked product code.
 
+## AD-290: CTO Ticket-Shaping Handoff Must Not Loop When No Open Ticket Exists
+
+**Status:** Accepted
+**Date:** 2026-06-13
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The 2026-06-13 demo-14 WS-D canary used checkpoint git (all ordinary product
+tickets in `docs/tickets/done/`) with a fresh queue DB. CEO→COO→CTO bootstrap
+still ran, CTO completed with `next_need: implementation`, and AD-116 correctly
+blocked Engineer for lack of an open ticket by routing back to CTO for
+`ticket_breakdown`. CTO then completed again with the same implementation
+handoff without creating a backlog ticket, producing an unbounded CTO serial loop
+(26+ jobs, zero Engineer/QA progress).
+
+### Decision
+
+When Engineer dispatch is blocked for lack of an open ordinary product ticket
+and the source disposition is a completed CTO handoff, dispatch must not route
+back to `cto-weekly` again. If ordinary product tickets already exist in
+`docs/tickets/done/`, rewrite the next role to `qa` with `next_need: qa_review`
+(the same advance path used when Engineer completes without an open ticket).
+Otherwise escalate to `coo` with `next_need: ticket_breakdown` so planning can
+reshape before another CTO attempt.
+
+`handleDispatchComplete` must treat the completing job's disposition as the
+ticket-gate source when the dispatch trigger does not carry an upstream source,
+so direct CTO completions participate in this guard.
+
+### Consequences
+
+- Checkpoint replays with finished ticket trees advance to review instead of
+  burning GPU on CTO churn.
+- Greenfield targets where CTO fails to create a ticket escalate to COO rather
+  than looping silently.
+- Validation runs must still pair git ticket state with queue/bootstrap intent;
+  this fix does not replace correct canary seeding.
+
 ## AD-117: Ticket-Gate Failure Recovery Is Bounded Engineer Repair
 
 **Status:** Accepted

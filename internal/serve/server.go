@@ -1367,6 +1367,10 @@ func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec
 	if sourceDisposition, ok := sourceDispositionFromDispatchTrigger(job.RepoID, job.Trigger); ok {
 		source = &sourceDisposition
 	}
+	sourceForGate := source
+	if sourceForGate == nil {
+		sourceForGate = disposition
+	}
 
 	decision, err := orchestration.Decide(orchestration.Input{
 		Disposition:       *disposition,
@@ -1380,7 +1384,7 @@ func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec
 		return
 	}
 	if snapErr == nil {
-		decision = enforceEngineerTicketPrerequisite(decision, snap, manifest, source)
+		decision = enforceEngineerTicketPrerequisite(decision, snap, manifest, sourceForGate)
 		decision = enforceReleaseRequiresCompletedFeatureScenarios(decision, snap, manifest, rec.Path)
 	}
 	decision, err = s.orgStore.RecordDecision(ctx, decision)

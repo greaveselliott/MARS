@@ -455,6 +455,63 @@ func TestHandleJobComplete_engineerDispatchRequiresOpenProductTicket(t *testing.
 	}
 }
 
+func TestHandleJobComplete_ctoHandoffWithoutOpenTicketRoutesToQAWhenDone(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+	doneDir := filepath.Join(repoRoot, "docs", "tickets", "done")
+	if err := os.MkdirAll(doneDir, 0o755); err != nil {
+		t.Fatalf("mkdir done: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(doneDir, "T-001-product.md"), []byte("---\nid: T-001\nkind: feature\n---\n# Product\n"), 0o644); err != nil {
+		t.Fatalf("write ticket: %v", err)
+	}
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/dispatch-cto-loop-break", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	completedJob := &queue.Job{
+		ID:     "job-cto-no-open-ticket",
+		RepoID: repoID,
+		Role:   "cto-weekly",
+	}
+	err = srv.orgStore.RecordDisposition(ctx, orgstate.Disposition{
+		JobID:         completedJob.ID,
+		RepoID:        repoID,
+		Role:          "cto-weekly",
+		Status:        "completed",
+		NextNeed:      "implementation",
+		SuggestedRole: "engineer",
+		Reason:        "implementation ready",
+	})
+	if err != nil {
+		t.Fatalf("RecordDisposition: %v", err)
+	}
+
+	srv.handleJobComplete(ctx, completedJob)
+
+	dispatchJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if dispatchJob == nil {
+		t.Fatal("expected dispatch job")
+	}
+	if dispatchJob.Role != "qa" {
+		t.Fatalf("expected qa after CTO loop break, got %s", dispatchJob.Role)
+	}
+}
+
 func TestHandleJobComplete_engineerDispatchAllowedWithOpenProductTicket(t *testing.T) {
 	repoRoot, dbPath := setupDispatchFixture(t)
 	ticketDir := filepath.Join(repoRoot, "docs", "tickets", "backlog")

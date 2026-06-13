@@ -66,7 +66,7 @@ func (s Session) EngineerDeliveryState() DeliveryState {
 	}
 
 	if s.ToolCounts != nil && s.ToolCounts[validationCommandSuccessKey] > 0 {
-		state.Phase = DeliveryPhaseValidated
+		state.Phase = engineerPostValidationPhase(s)
 		return state
 	}
 
@@ -86,7 +86,80 @@ func (s Session) EngineerDeliveryState() DeliveryState {
 	return state
 }
 
+func engineerPostValidationPhase(s Session) DeliveryPhase {
+	counts := s.ToolCounts
+	if counts == nil {
+		return DeliveryPhaseValidated
+	}
+	if counts[ticketDoneMoveSuccessKey] > 0 {
+		return DeliveryPhaseClosing
+	}
+	if counts["tool:file_write:success"] > 0 && counts["tool:git_commit:success"] > 0 {
+		return DeliveryPhaseEvidenceRecording
+	}
+	if counts["tool:git_commit:success"] > 0 {
+		return DeliveryPhaseCommitting
+	}
+	return DeliveryPhaseValidated
+}
+
+// ReviewDeliveryState derives the QA/Security review machine position from the
+// same session evidence review policy already consults (WS-D slice 8).
+func (s Session) ReviewDeliveryState() DeliveryState {
+	state := DeliveryState{
+		Phase:      DeliveryPhaseClaimed,
+		RepairLane: RepairLaneNone,
+	}
+	if !reviewRoleRequiresValidationEvidence(s.Role) {
+		return state
+	}
+	counts := s.ToolCounts
+	if counts == nil {
+		return state
+	}
+	if counts[reviewTerminalDispositionRequiredKey] > 0 {
+		state.Phase = DeliveryPhaseTerminalDisposition
+		return state
+	}
+	if counts[testCommandFailureKey] > 0 || counts[buildCommandFailureKey] > 0 || counts[validationCommandFailureKey] > 0 {
+		state.Phase = DeliveryPhaseValidationFailed
+		return state
+	}
+	if counts[validationCommandSuccessKey] > 0 {
+		state.Phase = DeliveryPhaseValidated
+		return state
+	}
+	if counts[testCommandSuccessKey] > 0 || counts[buildCommandSuccessKey] > 0 {
+		state.Phase = DeliveryPhaseValidating
+	}
+	return state
+}
+
 func engineerInValidatedPhase(session Session) bool {
-	state := session.EngineerDeliveryState()
-	return state.Phase == DeliveryPhaseValidated
+	switch session.EngineerDeliveryState().Phase {
+	case DeliveryPhaseValidated, DeliveryPhaseCommitting, DeliveryPhaseEvidenceRecording, DeliveryPhaseClosing:
+		return true
+	default:
+		return false
+	}
+}
+
+func engineerInValidatedBrowserCompletionPhase(root Root, session Session) bool {
+	if !engineerInValidatedPhase(session) {
+		return false
+	}
+	return repoBrowserFrameworkInfo(root).UsesFramework
+}
+
+func reviewerInValidatedPhase(session Session) bool {
+	switch session.ReviewDeliveryState().Phase {
+	case DeliveryPhaseValidated, DeliveryPhaseTerminalDisposition:
+		return true
+	default:
+		return false
+	}
+}
+
+func reviewerInValidationFailedPhase(session Session) bool {
+	return session.ReviewDeliveryState().Phase == DeliveryPhaseValidationFailed
 }

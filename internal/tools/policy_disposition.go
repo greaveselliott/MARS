@@ -574,7 +574,7 @@ func checkEngineerDispositionTicketState(root Root, session Session, status, tic
 	if successfulReviewDispositionStatus(status) && engineerInValidationFailedTestBuildLane(session) {
 		return unresolvedTestBuildValidationCompletionError("record a successful product disposition", session)
 	}
-	if successfulReviewDispositionStatus(status) {
+	if successfulReviewDispositionStatus(status) && engineerInValidatedBrowserCompletionPhase(root, session) {
 		if blockers := engineerBrowserFrameworkCompletionBlockers(root, session); len(blockers) > 0 {
 			return fmt.Errorf(
 				"policy: engineer cannot record a successful browser-framework disposition yet: %s. Fix the implementation or package build validation, rerun validation, update ticket evidence, and then record qa_review",

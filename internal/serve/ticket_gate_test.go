@@ -14,9 +14,61 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"github.com/greaveselliott/mars-harness/internal/orgstate"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
 )
+
+func TestEnforceEngineerTicketPrerequisite_ctoHandoffWithoutOpenTicketRoutesToQAWhenDone(t *testing.T) {
+	t.Parallel()
+	manifest := &bundle.Manifest{Roles: map[string]bundle.RoleConfig{
+		"qa":         {},
+		"cto-weekly": {},
+	}}
+	snap := ticketSnapshot{
+		Done: []string{"T-001-feature.md"},
+		Details: map[string]ticketstate.Ticket{
+			"T-001-feature.md": {ID: "T-001", Name: "T-001-feature.md", Status: ticketstate.StatusDone, Kind: "standard"},
+		},
+	}
+	source := &orgstate.Disposition{
+		Role:          "cto-weekly",
+		Status:        "completed",
+		NextNeed:      "implementation",
+		SuggestedRole: "engineer",
+	}
+	decision := orgstate.Decision{NextRole: "engineer", SourceRole: "orchestrator", Reason: "ready for implementation"}
+	got := enforceEngineerTicketPrerequisite(decision, snap, manifest, source)
+	if got.NextRole != "qa" {
+		t.Fatalf("expected qa, got %q", got.NextRole)
+	}
+	if got.NextNeed != "qa_review" {
+		t.Fatalf("expected qa_review, got %q", got.NextNeed)
+	}
+}
+
+func TestEnforceEngineerTicketPrerequisite_ctoHandoffWithoutOpenTicketEscalatesToCOO(t *testing.T) {
+	t.Parallel()
+	manifest := &bundle.Manifest{Roles: map[string]bundle.RoleConfig{
+		"coo":        {},
+		"cto-weekly": {},
+	}}
+	source := &orgstate.Disposition{
+		Role:          "cto-weekly",
+		Status:        "completed",
+		NextNeed:      "implementation",
+		SuggestedRole: "engineer",
+	}
+	decision := orgstate.Decision{NextRole: "engineer", SourceRole: "orchestrator"}
+	got := enforceEngineerTicketPrerequisite(decision, ticketSnapshot{}, manifest, source)
+	if got.NextRole != "coo" {
+		t.Fatalf("expected coo, got %q", got.NextRole)
+	}
+	if got.NextNeed != "ticket_breakdown" {
+		t.Fatalf("expected ticket_breakdown, got %q", got.NextNeed)
+	}
+}
 
 func TestTicketSnapshotRoutingHashIgnoresDeferredInterventionDebt(t *testing.T) {
 	base := ticketSnapshot{
