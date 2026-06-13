@@ -2,6 +2,26 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.51.0] - 2026-06-13
+<!-- mars-harness-release: version=0.51.0 commit=5196f6d72feb -->
+
+### Impact
+- **tools:** Operators gain new capability: close T-030/T-043 and land WS-D DeliveryState slices.
+
+### Why
+- **tools:** This matters because close T-030/T-043 and land WS-D DeliveryState slices was missing from the shipped capability set.
+
+### What Changed
+- **tools:** Changed close T-030/T-043 and land WS-D DeliveryState slices (5196f6d).
+
+### Features
+- **tools:** Close T-030/T-043 and land WS-D DeliveryState slices (5196f6d)
+
+### Delivery Evidence
+- Enabler work: T-030: Unwedge CTO scenario-batch handoff from ticket_create false-duplicate title matching
+- Enabler work: T-033: Verify profile-required model files at start so a profile swap cannot fail jobs with model_unavailable
+- Enabler work: T-043: Carve the validation lane and repair guardrails out of the policy monolith to close the AD-287 sequence
+
 ## [0.50.25] - 2026-06-12
 <!-- mars-harness-release: version=0.50.25 commit=1a1322fd4368 -->
 
