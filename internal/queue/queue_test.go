@@ -664,6 +664,23 @@ func TestJobCountsByHour(t *testing.T) {
 	assert.Equal(t, 4, counts[0].Total)
 }
 
+func TestQueue_PreemptPending(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	id, err := q.Enqueue(ctx, Job{RepoID: "repo-1", Role: "engineer"})
+	require.NoError(t, err)
+
+	n, err := q.PreemptPending(ctx, "orchestrator stopped with pending work")
+	require.NoError(t, err)
+	require.Equal(t, 1, n)
+
+	job, err := q.Get(ctx, id)
+	require.NoError(t, err)
+	require.Equal(t, StatusCancelled, job.Status)
+	require.Contains(t, job.Error, "orchestrator stopped")
+}
+
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }

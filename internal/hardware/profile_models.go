@@ -36,6 +36,17 @@ func MissingRequiredModelFiles(modelsDir, performanceProfile string) ([]string, 
 	return missing, nil
 }
 
+// EstimatedProfileRAMMiB sums RAMMinMiB for unique models required by the
+// effective performance profile (conservative footprint estimate for doctor).
+func EstimatedProfileRAMMiB(performanceProfile string) int {
+	hw := Detect()
+	total := 0
+	for _, spec := range UniqueModels(DefaultModelsForHardware(hw, performanceProfile)) {
+		total += spec.RAMMinMiB
+	}
+	return total
+}
+
 // ProfileModelPreflightError formats an actionable error when required weights
 // are missing for the active performance profile (T-033 / AD-032 extension).
 func ProfileModelPreflightError(performanceProfile string, missing []string) error {

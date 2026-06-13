@@ -434,6 +434,12 @@ func (s *Server) Stop(ctx context.Context) error {
 	shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
+	if n, err := s.queue.PreemptPending(shutdownCtx, "orchestrator stopped with pending work — resume with mars-harness start"); err != nil {
+		slog.Warn("serve: failed to preempt pending jobs on stop", "err", err)
+	} else if n > 0 {
+		slog.Warn("serve: preempted pending jobs on stop", "count", n)
+	}
+
 	var firstErr error
 	if err := s.http.Shutdown(shutdownCtx); err != nil {
 		firstErr = fmt.Errorf("serve: HTTP shutdown: %w", err)

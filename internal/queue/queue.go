@@ -428,6 +428,28 @@ WHERE id = ? AND status = 'pending'`, now.Unix(), jobID)
 	return nil
 }
 
+// PreemptPending marks all pending jobs cancelled with an explicit preemption
+// reason when the orchestrator stops while work remains queued (T-035).
+func (q *Queue) PreemptPending(ctx context.Context, reason string) (int, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = "orchestrator stopped with pending work"
+	}
+
+	now := time.Now().UTC()
+	res, err := q.db.ExecContext(ctx, `
+UPDATE jobs SET status = 'cancelled', error_msg = ?, updated_at = ?
+WHERE status = 'pending'`, reason, now.Unix())
+	if err != nil {
+		return 0, fmt.Errorf("queue: preempt pending: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
 // ResetOrphans marks all claimed/running jobs as failed. Call at startup
 // to clear jobs orphaned by a previous crash.
 func (q *Queue) ResetOrphans(ctx context.Context) (int, error) {
