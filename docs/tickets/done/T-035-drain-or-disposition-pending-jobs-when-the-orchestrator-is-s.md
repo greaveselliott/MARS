@@ -30,4 +30,4 @@ receive an auditable cancelled disposition instead of silent orphaning.
 
 - [x] Stopping with pending jobs marks them cancelled with explicit reason.
 - [x] Regression test `TestQueue_PreemptPending`.
-- [ ] Restart surfaces preempted jobs as resumable (deferred — next slice).
+- [x] Restart surfaces preempted jobs as resumable (T-035 resume slice 2026-06-12: cancelled idempotency-key jobs reactivate on re-enqueue).

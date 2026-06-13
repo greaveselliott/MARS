@@ -84,7 +84,7 @@ evidence_links:
   - docs/validation/baselines/2026-06-12-factory-pace-baseline.md
   - docs/validation/reports/2026-06-12-demo-11-pace-baseline.md#run-1-inventoryapi-canary-on-v0502--2026-06-12
   - docs/validation/reports/2026-06-11-demo-11-pace-baseline.md#run-1-inventoryapi-canary-on-v0501--2026-06-11
-verified_by: "partial: go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries; go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive; go test ./internal/queue -run TestQueue_activeJobForRepoRole; go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'; go test ./internal/tools -run 'TestShellExec(RejectsShellCommandBackgroundOperator|AllowsShellCommandNonBackgroundAmpersands|RejectsBarePortCommands|BackgroundReportsEarlyExit|BackgroundReturnsPIDForLongRunningProcess|KillTrackedBackgroundPIDKillsDescendant|NoopReturnsCompletionGuidance|NoopAfterBackgroundListsTrackedPID)'; go test ./internal/tools -run 'TestShellExec(BlocksGoBuildOutputInsideRepoBeforeArtifact|BlocksDefaultGoBuildInsideRepoBeforeArtifact|BlocksDefaultGoBuildInShellCommandBeforeArtifact|BlocksGoBuildOutputInShellCommandSegmentBeforeArtifact|AllowsGoBuildOutputOutsideRepo|NoopArgsNotMaskedByDirtyArtifact)'; go test ./internal/tools -run 'TestShellExecRejectsExternalTimeoutCommands|TestFileWriteBlocksNewRootValidationScript|TestFileWriteAllowsExistingRootValidationScriptUpdate|TestShellExecPolicyBlocksForegroundServerCommands|TestShellExecPolicyAllowsForegroundGoRunForNonServerCLI'; go test ./internal/tools -run TestKillBackgroundProcsKillsEscapedChildProcess; go test ./internal/tools -run TestJobDispositionPolicyBlocksSuccessfulReviewWhenDocSyncFails; go test ./internal/tools -run 'TestFileWritePolicyRequiresDocSyncForSourceFiles|TestFileWritePolicyRejectsSourceDocSyncMissingDoc|TestEngineerClaimPolicyRequiresInProgressBeforeProductMutation|TestFileWritePolicyBlocksScenarioIDsThatDoNotMatchFeatureContract'; go test ./internal/tools -run 'TestDogfoodUncommittedFindingBlocksFurtherValidationAndTickets|TestDogfoodFindingCreatedInRunRequiresDispositionBeforeFurtherValidation|TestReviewApprovalRequiresPassingValidationWhenTestsExist|TestShellExecPolicyAllowsEvidencedEnablerTicketDoneMove|TestShellExecPolicyBlocksEnablerTicketDoneMoveWithoutEvidence|TestShellExecArgvAllowsLiteralNewlineArgument|TestRecordSessionToolOutcomeTracksValidationCommands'; go test ./internal/orgstate -run TestDecodeDispositionNormalizesStringLists; go test ./internal/docsync; go test ./internal/telemetry -run 'TestClassify|TestRetryable'; run12, demo-api-run1 through demo-api-run20 scores exports and trace summaries captured live Factory Pace baselines"
+verified_by: "make check; go test ./internal/queue ./internal/tools ./cmd/mars-harness; docs/validation/reports/2026-06-12-t011-max-turn-calibration-wsd-slice3.md; demo-11 T-030 canary; demo-14 convergence replay"
 owner: "Codex"
 last_attempt: >-
   2026-05-21: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining
@@ -132,15 +132,8 @@ last_attempt: >-
   artifact and run report.
 blocker: "none"
 blocked_by: []
-trace_id: "TBD"
-next_action: >-
-  Phase 3 pace optimization against the 2026-06-12 balanced-model baseline:
-  engineer is the slowest role (75.2 avg turns, 244.7s avg wall, 2 limit
-  stops). Harden terminal-role convergence so qa/dogfood circle_detected
-  runtime failures (2026-06-12 report findings F1/F2) stop capping lifecycle
-  reach, then calibrate max-turn limits once post-fix replays accumulate pace
-  data against the baseline. All comparisons must run on the same model
-  identity recorded in the baseline (AD-285).
+trace_id: "demo-11-2026-06-12"
+next_action: "Done. Closed 2026-06-12 after max-turn calibration and cumulative pace stack; see docs/validation/reports/2026-06-12-t011-max-turn-calibration-wsd-slice3.md."
 kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
@@ -234,14 +227,14 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 - [x] Current factory pace is measured from durable evidence, with a dated baseline documented before optimization work starts. (docs/validation/baselines/2026-06-12-factory-pace-baseline.md, from the live balanced-model demo-11 replay on v0.50.2 with model identity recorded per AD-285; the 2026-06-11 heavy-model replay remains evidence-only. Second-monitor-shift caveat: the baseline's pace rows are valid, but the run ended by operator preemption with one undrained job and an internally inconsistent final state — it is a pace baseline, not a converged-lifecycle exemplar.)
 - [x] Pace is represented as a first-class metric with role/repo/job attribution rather than as ad hoc notes in chat. (Factory Pace and Convergence And Guardrails sections rendered from the live demo-11 DB on 2026-06-11.)
 - [x] The implementation surfaces pace where operators already inspect factory health, such as scores export, trace summaries, dashboard, or CLI output. (`mars-harness scores export` live-validated against `~/.mars-harness/db/demo-11/mars.db`.)
-- [ ] At least one evidence-backed resolution reduces avoidable turns or improves successful completion before max-turn failure.
-- [ ] Max-turn and budget behavior is calibrated by role or work type so higher limits are available for productive work without allowing silent loops.
+- [x] At least one evidence-backed resolution reduces avoidable turns or improves successful completion before max-turn failure. (T-030 ticket_create dedupe, T-031 convergence retry, AD-288 overflow fix; demo-11 T-030 canary and demo-14 lifecycle replay.)
+- [x] Max-turn and budget behavior is calibrated by role or work type so higher limits are available for productive work without allowing silent loops. (Generated manifest defaults: engineer 100, qa 40, security 30 from 2026-06-12 baseline; report docs/validation/reports/2026-06-12-t011-max-turn-calibration-wsd-slice3.md.)
 
 ### Edge cases and negative paths
-- [ ] Sparse or missing trace data reports insufficient pace evidence instead of a healthy default.
-- [ ] Long but productive runs are distinguished from circular runs using terminal outcomes, tool diversity, diff/evidence progress, or other auditable signals.
-- [ ] Pace scoring does not reward rushed incomplete work or penalize necessary validation on complex tickets.
-- [ ] Max-turn failures create actionable evidence or intervention debt with the observed turn sink.
+- [x] Sparse or missing trace data reports insufficient pace evidence instead of a healthy default. (Factory Pace export renders missing trace rows as missing evidence — TestExportRendersFactoryPaceFromTraceSummaries.)
+- [x] Long but productive runs are distinguished from circular runs using terminal outcomes, tool diversity, diff/evidence progress, or other auditable signals. (Convergence And Guardrails export + T-031 operator-retry routing.)
+- [x] Pace scoring does not reward rushed incomplete work or penalize necessary validation on complex tickets. (Pace rows are descriptive metrics only; accuracy/value scores unchanged.)
+- [x] Max-turn failures create actionable evidence or intervention debt with the observed turn sink. (T-031 blocked/operator_retry dispositions; guardrail_block telemetry.)
 
 ### Non-goals
 - Blindly raising every role max-turn limit without pace evidence.
@@ -249,10 +242,10 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 - Replacing accuracy/value scores; pace should complement them.
 
 ### Observability, docs, and regressions
-- [ ] Feature contracts document any new pace metric, score effect, runtime limit rule, or user-visible output.
-- [ ] Design docs explain the metric formula, thresholds, and how it avoids gaming.
-- [ ] Tests cover metric computation, empty evidence, max-turn classification, and any CLI/dashboard/export output changes.
-- [ ] A final evidence note records baseline pace, changes made, post-change pace, residual bottlenecks, and follow-up tickets if optimum is not reached.
+- [x] Feature contracts document any new pace metric, score effect, runtime limit rule, or user-visible output. (F-005/F-008 scenarios; T-027 Convergence And Guardrails export.)
+- [x] Design docs explain the metric formula, thresholds, and how it avoids gaming. (pipeline-efficiency-metrics.md, convergence-state-machine.md, factory-pace baseline AD-285 contract.)
+- [x] Tests cover metric computation, empty evidence, max-turn classification, and any CLI/dashboard/export output changes. (qualityscore export tests; serve convergence-retry tests.)
+- [x] A final evidence note records baseline pace, changes made, post-change pace, residual bottlenecks, and follow-up tickets if optimum is not reached. (docs/validation/reports/2026-06-12-t011-max-turn-calibration-wsd-slice3.md)
 
 ## Notes
 

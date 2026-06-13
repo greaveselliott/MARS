@@ -190,6 +190,27 @@ LIMIT 1`, job.IdempotencyKey).Scan(&existingID)
 		if err != sql.ErrNoRows {
 			return "", fmt.Errorf("queue: check idempotency: %w", err)
 		}
+
+		var cancelledID string
+		err = q.db.QueryRowContext(ctx, `
+SELECT id FROM jobs
+WHERE idempotency_key = ? AND status = 'cancelled'
+ORDER BY updated_at DESC
+LIMIT 1`, job.IdempotencyKey).Scan(&cancelledID)
+		if err == nil {
+			res, reactivateErr := q.db.ExecContext(ctx, `
+UPDATE jobs SET status = 'pending', error_msg = '', updated_at = ?, completed_at = NULL
+WHERE id = ? AND status = 'cancelled'`, now.Unix(), cancelledID)
+			if reactivateErr != nil {
+				return "", fmt.Errorf("queue: reactivate cancelled seed: %w", reactivateErr)
+			}
+			if n, _ := res.RowsAffected(); n == 1 {
+				slog.Info("queue: reactivated cancelled seed job", "job_id", cancelledID, "key", job.IdempotencyKey)
+				return cancelledID, nil
+			}
+		} else if err != sql.ErrNoRows {
+			return "", fmt.Errorf("queue: check cancelled idempotency: %w", err)
+		}
 	}
 
 	if job.ID == "" {

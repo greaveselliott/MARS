@@ -1,8 +1,10 @@
 /*
 MarsDocSync:
 docs:
-- docs/design-docs/convergence-state-machine.md
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/convergence-state-machine.md
+- docs/design-docs/tools-glossary.md
+- docs/features/F-005-agent-execution-runtime.md
 */
 package tools
 

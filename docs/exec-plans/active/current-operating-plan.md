@@ -34,12 +34,11 @@ plans to decide what to do next.
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
-  - `docs/tickets/in-progress/` contains `T-011`.
-  - `docs/tickets/backlog/` contains `T-010`, `T-013`, `T-033`–`T-035`, `MH-051` through
+  - `docs/tickets/in-progress/` is empty.
+  - `docs/tickets/backlog/` contains `T-010`, `T-013`, `MH-051` through
     `MH-061`, and any newly created live-loop follow-up tickets.
-  - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
-    through `T-009`, plus `T-012`, `T-014`, `T-015`, `T-016`, `T-017`,
-    and `T-019` through `T-043`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-050`, `T-001`
+    through `T-043`, and `T-011`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -117,9 +116,12 @@ the dominant remaining convergence consumer per the demo-14 report.
 extraction plus two-archetype final checkpoint PASS (demo-12 Run 4, demo-15
 Run 2). **AD-287 extraction sequence complete.**
 **T-030 closed 2026-06-12:** ticket_create title dedupe requires true keyword
-subset; demo-11 canary PASS (cto-weekly 2m 1s, 0 DUPLICATE). **Active WS-D
-slice:** migrate validation-failed rule cluster to `EngineerDeliveryState()`
-(AD-286).
+subset; demo-11 canary PASS (cto-weekly 2m 1s, 0 DUPLICATE). **T-011 closed
+2026-06-12:** max-turn calibration from balanced-model baseline (engineer
+100, qa 40, security 30) plus cumulative pace stack (T-030/T-031/AD-288).
+**WS-D slice 3 landed 2026-06-12:** validation-failed rework guard clusters
+migrated to `EngineerDeliveryState()`. Further WS-D clusters remain in the
+AD-286 migration queue.
 
 ## Current Priority Order
 

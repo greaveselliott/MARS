@@ -118,7 +118,7 @@ func engineerDirtyPostValidationGuidance(ticket ticketstate.Ticket, files []stri
 }
 
 func checkEngineerMissingArgumentCorrectionOnly(session Session, hasSession bool, name string) error {
-	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingRuntimeValidationFailures(session) == 0 {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || !engineerInValidationFailedRuntimeLane(session) {
 		return nil
 	}
 	if session.ToolState == nil || session.ToolState[unexpectedRuntimeValidationMissingArgKey] != "true" {
@@ -145,7 +145,7 @@ func missingArgumentCorrectionAttempted(session Session) bool {
 }
 
 func checkEngineerUnresolvedRuntimeValidationBeforeCompletion(ctx context.Context, root Root, session Session, hasSession bool, toolName string, raw json.RawMessage) error {
-	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingRuntimeValidationFailures(session) == 0 {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || !engineerInValidationFailedRuntimeLane(session) {
 		return nil
 	}
 	switch toolName {
@@ -315,7 +315,7 @@ func pathLooksLikeTestFile(rel string) bool {
 }
 
 func checkEngineerUnresolvedRuntimeValidationBeforeDoneFileWrite(session Session, hasSession bool, rel string) error {
-	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingRuntimeValidationFailures(session) == 0 {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || !engineerInValidationFailedRuntimeLane(session) {
 		return nil
 	}
 	_, state, ok := ticketLifecyclePathIdentity(cleanRepoPath(rel))
@@ -422,7 +422,7 @@ func runtimeValidationExactCorrection(session Session) string {
 }
 
 func checkEngineerTestBuildValidationReworkPolicy(root Root, session Session, hasSession bool, args shellExecArgs) error {
-	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingTestBuildValidationFailures(session) == 0 {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || !engineerInValidationFailedTestBuildLane(session) {
 		return nil
 	}
 	if shellExecSameJobTestBuildRepairCleanupNoRoot(session, args) {
@@ -497,7 +497,7 @@ func shellExecSameJobTestBuildRepairCleanup(root Root, session Session, hasSessi
 }
 
 func shellExecSameJobTestBuildRepairCleanupNoRoot(session Session, args shellExecArgs) bool {
-	if strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingTestBuildValidationFailures(session) == 0 {
+	if strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || !engineerInValidationFailedTestBuildLane(session) {
 		return false
 	}
 	if session.ToolState == nil {
@@ -566,7 +566,7 @@ func testBuildRepairWritePathKey(rel string) string {
 }
 
 func checkEngineerUnexpectedRuntimeValidationReworkPolicy(root Root, session Session, hasSession bool, args shellExecArgs) error {
-	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingRuntimeValidationFailures(session) == 0 {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || !engineerInValidationFailedRuntimeLane(session) {
 		return nil
 	}
 	if !shellExecRunsRuntimeOrArtifactValidationCommandForSession(&session, root, args) {
