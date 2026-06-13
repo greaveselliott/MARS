@@ -469,7 +469,10 @@ every cluster in a domain has migrated.
 - **2026-06-12 — AD-227/AD-239 are the template for T-031:** the bounded
   non-recursive `product_continuation` pattern already proven for Engineer
   is the natural shape for the missing terminal-role continuation edge.
-- **2026-06-12 — AD-289 sets the named-transition precedent:** the T-031
+- **2026-06-12 — WS-D slice 2 landed:** validation-failed test-build and
+  runtime commit/completion guards in `policy_validation.go` now consult
+  `EngineerDeliveryState()` via `engineerInValidationFailed*Lane()` helpers
+  instead of reading outstanding-failure counts directly.
   fix landed as the `operator-retry-routing` transition with its AD naming
   the guarded edge and this doc's mapping table updated in the same change
   — the first point fix delivered under the AD-286 rule that new

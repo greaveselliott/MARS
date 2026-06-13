@@ -449,8 +449,51 @@ func TestIsSubsetMatch(t *testing.T) {
 		[]string{"implement", "collision", "detection"},
 		[]string{"implement", "scoring", "system"},
 	))
+	assert.False(t, isSubsetMatch(
+		[]string{"implement", "health", "endpoint", "inventory", "api"},
+		[]string{"implement", "list", "items", "endpoint", "inventory", "api"},
+	))
 	assert.False(t, isSubsetMatch(nil, []string{"implement"}))
 	assert.False(t, isSubsetMatch([]string{"implement"}, nil))
+}
+
+func TestTicketCreate_allowsDistinctAPIEndpointTitles(t *testing.T) {
+	t.Parallel()
+	dir, root := setupTicketDir(t)
+	writeTicket(t, dir, "backlog", "T-001-implement-health-endpoint-for-inventory-api.md",
+		"Implement health endpoint for inventory API")
+
+	result, err := CreateTicket(root, TicketInput{
+		Title:        "Implement list items endpoint for inventory API",
+		Priority:     "high",
+		WorkType:     "feature",
+		BDDScenarios: []string{"F-001-S002"},
+		Source:       "feature contract batch",
+		Body:         "## Context\nSecond endpoint.\n\n## Requirements\nList items.\n\n## Acceptance criteria\n- [ ] GET /items",
+	})
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "created ticket T-002")
+
+	entries, err := os.ReadDir(filepath.Join(dir, "docs", "tickets", "backlog"))
+	require.NoError(t, err)
+	require.Len(t, entries, 2)
+}
+
+func TestTicketCreate_allowsSiblingEnablerTitlesAgainstDoneTicket(t *testing.T) {
+	t.Parallel()
+	dir, root := setupTicketDir(t)
+	writeTicket(t, dir, "done", "T-040-extract-ticket-lifecycle-policy-domain-into-policy-ticket-go-ad-287-step-5.md",
+		"Extract ticket-lifecycle policy domain into policy_ticket.go (AD-287 step 5)")
+
+	result, err := CreateTicket(root, TicketInput{
+		Title:    "Extract review-gates policy domain into policy_review.go (AD-287 step 6)",
+		Priority: "high",
+		WorkType: "enabler",
+		Source:   "AD-287 extraction sequence",
+		Body:     "## Context\nNext domain.\n\n## Requirements\nExtract review gates.\n\n## Acceptance criteria\n- [ ] Suite green",
+	})
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "created ticket T-041")
 }
 
 func TestSlugify(t *testing.T) {

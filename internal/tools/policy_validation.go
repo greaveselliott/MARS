@@ -161,8 +161,18 @@ func checkEngineerUnresolvedRuntimeValidationBeforeCompletion(ctx context.Contex
 	return nil
 }
 
+func engineerInValidationFailedTestBuildLane(session Session) bool {
+	state := session.EngineerDeliveryState()
+	return state.Phase == DeliveryPhaseValidationFailed && state.RepairLane == RepairLaneTestBuild
+}
+
+func engineerInValidationFailedRuntimeLane(session Session) bool {
+	state := session.EngineerDeliveryState()
+	return state.Phase == DeliveryPhaseValidationFailed && state.RepairLane == RepairLaneRuntime
+}
+
 func checkEngineerUnresolvedTestBuildValidationBeforeCompletion(ctx context.Context, root Root, session Session, hasSession bool, toolName string, raw json.RawMessage) error {
-	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingTestBuildValidationFailures(session) == 0 {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || !engineerInValidationFailedTestBuildLane(session) {
 		return nil
 	}
 	switch toolName {
@@ -179,14 +189,14 @@ func checkEngineerUnresolvedTestBuildValidationBeforeCompletion(ctx context.Cont
 }
 
 func checkEngineerUnresolvedRuntimeValidationBeforeCommit(session Session, hasSession bool) error {
-	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingRuntimeValidationFailures(session) == 0 {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || !engineerInValidationFailedRuntimeLane(session) {
 		return nil
 	}
 	return unresolvedRuntimeValidationCommitError(session)
 }
 
 func checkEngineerUnresolvedTestBuildValidationBeforeCommit(session Session, hasSession bool) error {
-	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingTestBuildValidationFailures(session) == 0 {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || !engineerInValidationFailedTestBuildLane(session) {
 		return nil
 	}
 	return unresolvedTestBuildValidationCommitError(session)

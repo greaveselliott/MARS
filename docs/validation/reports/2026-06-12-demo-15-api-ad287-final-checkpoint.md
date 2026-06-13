@@ -61,8 +61,54 @@ frontend leg of this checkpoint is demo-12 Run 4 in
 
 ## Checkpoint status
 
-**OPEN.** The AD-287 final-sequence checkpoint is half-satisfied: demo-12
-Run 4 (frontend leg) **passed with no extraction drift**; the API leg must
-be replayed after the pause. Per AD-284, the T-043 lifecycle claim stays
-unconfirmed until this replay completes; T-043 remains in progress with
-the replay command recorded above.
+**PASS — no extraction drift (Run 2).** The AD-287 two-archetype final-sequence
+checkpoint is satisfied: demo-12 Run 4 (frontend leg) passed with no extraction
+drift; demo-15 Run 2 (API leg) drained naturally with convergence failures only
+(max_turns, circle_detected, ticket_gate) — no validation-lane rule regression,
+zero `context_overflow`, zero policy panics. T-043 closed 2026-06-12.
+
+## Run 2: clean-seed replay to natural drain — 2026-06-12
+
+- **Exact command:** `mars-harness start --repo
+  /path/to/local-redacted --debug --log-file
+  ~/.mars-harness/traces/logs/demo-15-api-ad287-final-checkpoint-v0.50.24.log`
+- **Pre-run reset:** `git reset --hard 62861dc && git clean -fdx`; force-push
+  `demo-15-origin.git`; deleted `~/.mars-harness/db/demo-15`
+- **Source ref / binary:** `mars-harness 0.50.24` (extraction commit `5cd4eb3`,
+  tag `v0.50.24`)
+- **Model identity (AD-285):** balanced profile — reasoning/coding =
+  `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf`; fast =
+  `google_gemma-4-E4B-it-Q5_K_M.gguf`
+- **Database / logs:** `~/.mars-harness/db/demo-15/mars.db`;
+  `~/.mars-harness/traces/logs/demo-15-api-ad287-final-checkpoint-v0.50.24.log`
+- **Wall clock:** 2026-06-12 10:55 UTC → 18:39 UTC (~7h 44m job span; orchestrator
+  uptime ~8h 58m including idle tail)
+- **Job totals:** 80 jobs — 67 completed, 12 failed, 1 cancelled; **0
+  pending/running at drain**
+- **Role summary:** ceo 1✓; coo 1✓; cto-weekly 7✓; engineer 13✓/9✗; qa 14✓;
+  security 8✓; dogfood 5✓/3✗; orchestrator 18✓
+- **Failure mix:** 9× engineer `max_turns`, 1× engineer `circle_detected`, 2×
+  dogfood convergence (circle + max_turns), ticket_gate messages on later cycles
+  — all pre-existing AD-286 convergence classes; **0× `context_overflow`**
+- **Target output:** 56 commits since seed `62861dc`; walking-skeleton tickets
+  closed through multiple engineer → qa → security → dogfood cycles (T-001,
+  T-002, T-004..T-006); Go Depot Supplies API with README and handler fixes
+- **Guardrail / validation-lane assessment:** guardrail_block telemetry present
+  (dirty workspace, ticket lifecycle) with no policy errors; validation-lane rules
+  moved in T-043 slice did not introduce new failure classes — failures match
+  demo-14 Inventory/API convergence shape, not extraction drift
+- **Operator interventions:** deployed-owned compile/router wedge on first T-001
+  cycle required external repair before QA dispatch; subsequent cycles completed
+  within harness dispatch (AD-289 automatic retries on several roles)
+- **Telemetry:** `mars-harness scores export --repo demo-15` →
+  `docs/QUALITY_SCORE.md` (overall grade D — convergence-heavy, expected for
+  first API archetype run)
+- **Stop reason:** natural queue drain (orchestrator idle, `active_jobs: 0`)
+
+### Run 2 pass/fail against AD-284/AD-285
+
+**Pass — no extraction drift.** Lifecycle reached product delivery, review, and
+dogfood repeatedly; queue drained; zero context_overflow; failure categories are
+convergence/ticket-gate only (same family as pre-extraction baselines). Operator
+deployed wedge on first engineer cycle is recorded but does not indicate
+validation-lane policy regression from `policy_validation.go` extraction.

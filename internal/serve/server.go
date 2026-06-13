@@ -23,6 +23,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -143,6 +144,23 @@ func New(cfg Config) (*Server, error) {
 
 	hw := hardware.Detect()
 	modelSet := hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)
+
+	modelsDir := strings.TrimSpace(cfg.ModelsDir)
+	if modelsDir == "" {
+		home, homeErr := os.UserHomeDir()
+		if homeErr != nil {
+			db.Close()
+			return nil, fmt.Errorf("serve: resolve models directory: %w", homeErr)
+		}
+		modelsDir = filepath.Join(home, ".mars-harness", "models")
+	}
+	if missing, err := hardware.MissingRequiredModelFiles(modelsDir, cfg.PerformanceProfile); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("serve: verify profile model files: %w", err)
+	} else if err := hardware.ProfileModelPreflightError(cfg.PerformanceProfile, missing); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("serve: %w", err)
+	}
 
 	roleMapping := inference.DefaultRoleTierMapping()
 

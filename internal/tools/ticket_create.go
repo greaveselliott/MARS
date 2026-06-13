@@ -730,8 +730,10 @@ func normalizeToWords(s string) []string {
 	return words
 }
 
-// isSubsetMatch returns true if the shorter word set is a subset of the longer one.
-// This catches "implement scoring system" matching "implement scoring system component".
+// isSubsetMatch returns true when every word in the shorter normalized title
+// appears in the longer one (true keyword subset). The prior 80% fuzzy tolerance
+// for 5+ word titles falsely merged distinct API endpoint tickets and sibling
+// enabler titles that share archetype suffix words (T-030 wedge).
 func isSubsetMatch(a, b []string) bool {
 	shorter, longer := a, b
 	if len(a) > len(b) {
@@ -746,20 +748,12 @@ func isSubsetMatch(a, b []string) bool {
 		longerSet[w] = true
 	}
 
-	matches := 0
 	for _, w := range shorter {
-		if longerSet[w] {
-			matches++
+		if !longerSet[w] {
+			return false
 		}
 	}
-
-	// Require all words in the shorter set to match (subset),
-	// or at least 80% if the shorter set has 5+ words (fuzzy tolerance).
-	threshold := len(shorter)
-	if len(shorter) >= 5 {
-		threshold = len(shorter) * 4 / 5
-	}
-	return matches >= threshold
+	return true
 }
 
 func slugify(s string) string {
