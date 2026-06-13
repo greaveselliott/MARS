@@ -568,10 +568,10 @@ func checkEngineerDispositionTicketState(root Root, session Session, status, tic
 	if strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
 		return nil
 	}
-	if successfulReviewDispositionStatus(status) && engineerOutstandingRuntimeValidationFailures(session) > 0 {
+	if successfulReviewDispositionStatus(status) && engineerInValidationFailedRuntimeLane(session) {
 		return unresolvedRuntimeValidationCompletionError("record a successful product disposition", session)
 	}
-	if successfulReviewDispositionStatus(status) && engineerOutstandingTestBuildValidationFailures(session) > 0 {
+	if successfulReviewDispositionStatus(status) && engineerInValidationFailedTestBuildLane(session) {
 		return unresolvedTestBuildValidationCompletionError("record a successful product disposition", session)
 	}
 	if successfulReviewDispositionStatus(status) {

@@ -119,9 +119,10 @@ Run 2). **AD-287 extraction sequence complete.**
 subset; demo-11 canary PASS (cto-weekly 2m 1s, 0 DUPLICATE). **T-011 closed
 2026-06-12:** max-turn calibration from balanced-model baseline (engineer
 100, qa 40, security 30) plus cumulative pace stack (T-030/T-031/AD-288).
-**WS-D slice 3 landed 2026-06-12:** validation-failed rework guard clusters
-migrated to `EngineerDeliveryState()`. Further WS-D clusters remain in the
-AD-286 migration queue.
+**WS-D slice 4 landed 2026-06-12:** file_write repair-lane guard and engineer
+disposition validation-failed gates migrated to `EngineerDeliveryState()`.
+Further WS-D clusters remain in the AD-286 migration queue (browser validated
+→ dispose, post-validated phases).
 
 ## Current Priority Order
 

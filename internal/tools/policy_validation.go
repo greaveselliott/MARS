@@ -203,7 +203,7 @@ func checkEngineerUnresolvedTestBuildValidationBeforeCommit(session Session, has
 }
 
 func checkEngineerUnresolvedTestBuildValidationBeforeFileWrite(session Session, hasSession bool, rel string) error {
-	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || engineerOutstandingTestBuildValidationFailures(session) == 0 {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" || !engineerInValidationFailedTestBuildLane(session) {
 		return nil
 	}
 	rel = cleanRepoPath(rel)
