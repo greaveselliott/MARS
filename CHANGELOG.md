@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.57.0] - 2026-06-13
+<!-- mars-harness-release: version=0.57.0 commit=3937f7121ce1 -->
+
+### Impact
+- **validation:** Operators gain new capability: add closure assurity gate.
+
+### Why
+- **validation:** This matters because add closure assurity gate was missing from the shipped capability set.
+
+### What Changed
+- **validation:** Changed add closure assurity gate (3937f71).
+
+### Features
+- **validation:** Add closure assurity gate (3937f71)
+
 ## [0.56.1] - 2026-06-13
 <!-- mars-harness-release: version=0.56.1 commit=386dedf13dc9 -->
 
