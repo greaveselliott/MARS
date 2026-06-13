@@ -106,7 +106,8 @@ state. Do not use chat summaries as substitutes for the owning artifacts.
 ### When maintaining Mars Harness source or validating foundation runtime changes include this: `docs/design-docs/foundation-operating-model.md`
 
 Every foundation-owned runtime fix must be verified by running the installed
-binary against a clean validation project per AD-291 and AD-284. See also
+binary against a **fresh ephemeral validation run** per AD-291/AD-293 and AD-284
+(`node scripts/validation-target.mjs create --profile <slug>`). See also
 [validation-matrix-gating.md](validation-matrix-gating.md) and
 [docs/validation/README.md](../validation/README.md).
 

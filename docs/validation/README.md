@@ -9,8 +9,9 @@ and with which guardrails.
 
 ## Layout
 
-- `profiles/` contains reusable target profiles, trust level, guardrails,
-  command lists, and graduation criteria.
+- `profiles/` contains reusable target profiles (frontmatter + brief body), trust
+  level, guardrails, command lists, and graduation criteria. Foundation replays
+  use these via `scripts/validation-target.mjs create --profile <slug>` (AD-293).
 - `reports/` contains completed validation reports for source-owned dogfood
   or supersession trials. Create this directory when the first report lands.
 - `baselines/` contains dated factory-pace baselines (T-011): the
@@ -32,4 +33,21 @@ source-change classes to minimum archetype replays are defined in
 (AD-284, AD-285). The canonical **foundation** requirement to run those replays
 on a **clean project** before treating runtime fixes as done is
 [docs/design-docs/foundation-operating-model.md](../design-docs/foundation-operating-model.md)
-(AD-291, AD-292).
+(AD-291, AD-292, AD-293).
+
+## Ephemeral validation runs (AD-293)
+
+Foundation replays create a **new folder every time** under grouped storage:
+
+| Item | Default |
+| --- | --- |
+| Parent directory | `../demo/validation-runs/` (override `MH_VALIDATION_ROOT`) |
+| Create | `node scripts/validation-target.mjs create --profile <slug> [--label <purpose>]` |
+| List | `node scripts/validation-target.mjs list` |
+| Discard run + DB | `node scripts/validation-target.mjs discard <run-id>` |
+| Retention | `node scripts/validation-target.mjs cleanup --keep 3` |
+| Monitor | `node scripts/replay-progress.mjs --repo <run-folder-basename>` |
+
+Discarded runs archive `.validation-run.json` under
+`validation-runs/.discarded/` and delete the active folder and per-repo SQLite DB.
+Legacy numbered demos remain historical evidence only.

@@ -142,10 +142,14 @@ not unit tests alone.
 ## Next slice (plan closure)
 
 1. [ ] **`make install`** then run AD-284 batched validation for WS-D slices
-   6–8 + AD-290/AD-291: **demo-11** (static browser) + **demo-15** (API/service)
-   on clean seeds per [foundation-operating-model.md](../../design-docs/foundation-operating-model.md);
+   6–8 + AD-290/AD-291 on **fresh ephemeral targets** (AD-293):
+   `node scripts/validation-target.mjs create --profile static-browser-todo --label wsd-closure`
+   and
+   `create --profile depot-supplies-api --label wsd-closure`
+   per [foundation-operating-model.md](../../design-docs/foundation-operating-model.md);
    append evidence to
    `docs/validation/reports/2026-06-13-foundation-wsd-closure-replay.md`.
+   Discard runs when recorded (`validation-target.mjs discard`).
 2. [ ] Record pass/fail against AD-284/AD-285; if blocked, record exact replay
    command and leave closure unconfirmed (do not monitor wedged runs).
 3. [ ] Move this plan to `docs/exec-plans/completed/` when task 1–2 are satisfied
