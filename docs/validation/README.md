@@ -35,6 +35,16 @@ on a **clean project** before treating runtime fixes as done is
 [docs/design-docs/foundation-operating-model.md](../design-docs/foundation-operating-model.md)
 (AD-291, AD-292, AD-293).
 
+Closure reports that summarize AD-284 replay batches should be checked with:
+
+```bash
+mars-harness validation check-closure --report docs/validation/reports/<report>.md
+```
+
+The gate fails when a closure verdict claims confirmed or complete while a
+required archetype row is blocked, failed, or pending. It is an honesty gate for
+the report; it does not replace the fresh target runs themselves.
+
 ## Ephemeral validation runs (AD-293)
 
 Foundation replays create a **new folder every time** under grouped storage:

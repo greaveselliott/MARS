@@ -79,6 +79,13 @@ export function buildRunId(profileSlug, label, date = new Date()) {
     : `run-${stamp}-${profileSlug}`;
 }
 
+export function readmeFromProfile(meta, body) {
+  const title = meta.title || meta.slug;
+  const content = body.trimStart();
+  const withoutLeadingTitle = content.replace(/^#\s+.*(?:\r?\n)+/, "").trimStart();
+  return `# ${title}\n\n${withoutLeadingTitle || content}`.trimEnd() + "\n";
+}
+
 export function slugify(value) {
   return value
     .toLowerCase()
@@ -164,7 +171,8 @@ function createRun({ profile, label, root, skipInit }) {
 
   run(`git init -b main`, { cwd: runDir });
   fs.writeFileSync(path.join(runDir, "spec.md"), body.endsWith("\n") ? body : `${body}\n`);
-  run(`git add spec.md`, { cwd: runDir });
+  fs.writeFileSync(path.join(runDir, "README.md"), readmeFromProfile(meta, body));
+  run(`git add README.md spec.md`, { cwd: runDir });
   run(`git commit -m "chore: add validation brief"`, { cwd: runDir });
 
   if (!skipInit) {

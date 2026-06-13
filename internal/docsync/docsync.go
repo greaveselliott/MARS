@@ -314,7 +314,7 @@ func isDeployedSourcePath(rel string) bool {
 
 func Rules() []Rule {
 	return []Rule{
-		{Prefix: "Makefile", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/design-docs/dogfood-matrix.md", "docs/features/F-009-release-update-lifecycle.md"}},
+		{Prefix: "Makefile", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/design-docs/dogfood-matrix.md", "docs/design-docs/validation-matrix-gating.md", "docs/validation/README.md", "docs/features/F-009-release-update-lifecycle.md"}},
 		{Prefix: "cmd/mars-harness/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/cli-tool-skill-sync.md", "docs/design-docs/delivery-operating-model.md", "docs/design-docs/documentation-sync-architecture.md", "docs/design-docs/release-versioning.md", "docs/design-docs/self-reflective-telemetry.md", "docs/product-specs/product-surface.md", "docs/features/F-001-delivery-operating-model.md", "docs/features/F-002-zero-config-shell-path.md", "docs/features/F-004-target-harness-lifecycle.md", "docs/features/F-009-release-update-lifecycle.md", "docs/features/F-012-self-improvement-loop.md"}},
 		{Prefix: "examples/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/role-customization.md", "docs/features/F-004-target-harness-lifecycle.md"}},
 		{Prefix: "internal/agent/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/agent-runtime.md", "docs/features/F-005-agent-execution-runtime.md"}},
@@ -361,6 +361,7 @@ func Rules() []Rule {
 		{Prefix: "internal/tools/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/tools-glossary.md", "docs/features/F-005-agent-execution-runtime.md"}},
 		{Prefix: "internal/trace/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/agent-runtime.md", "docs/features/F-005-agent-execution-runtime.md"}},
 		{Prefix: "internal/trust/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/scoring-system.md", "docs/features/F-008-scoring-trust-quality.md"}},
+		{Prefix: "internal/validation/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/foundation-operating-model.md", "docs/design-docs/validation-matrix-gating.md", "docs/validation/README.md"}},
 		{Prefix: "internal/ui/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/agent-runtime.md", "docs/features/F-005-agent-execution-runtime.md"}},
 		{Prefix: "internal/updatecheck/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/features/F-004-target-harness-lifecycle.md"}},
 		{Prefix: "pkg/testutil/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/agent-runtime.md", "docs/features/F-005-agent-execution-runtime.md"}},

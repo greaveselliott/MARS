@@ -67,7 +67,7 @@ source file exists in the worktree.
 | `internal/buildinfo/` | `docs/design-docs/release-versioning.md` | F-009 |
 | `internal/bundle/` | `docs/design-docs/context-efficiency.md`, `docs/design-docs/role-customization.md` | F-004, F-005 |
 | `internal/config/` | `docs/product-specs/product-surface.md`, `docs/design-docs/release-versioning.md` | F-003, F-009 |
-| `Makefile` | `docs/design-docs/release-versioning.md`, `docs/design-docs/dogfood-matrix.md` | F-002, F-009 |
+| `Makefile` | `docs/design-docs/release-versioning.md`, `docs/design-docs/dogfood-matrix.md`, `docs/design-docs/validation-matrix-gating.md`, `docs/validation/README.md` | F-002, F-009, F-012 |
 | `internal/context/` | `docs/design-docs/context-efficiency.md` | F-005 |
 | `internal/dashboard/` | `docs/design-docs/dashboard.md` | F-010 |
 | `internal/docsconsistency/` | `docs/design-docs/delivery-operating-model.md` | F-001 |
@@ -110,6 +110,7 @@ source file exists in the worktree.
 | `internal/tools/` | `docs/design-docs/tools-glossary.md`, `docs/design-docs/guardrails.md` | F-005, F-006, F-007 |
 | `internal/trace/` | `docs/design-docs/agent-runtime.md` | F-005 |
 | `internal/trust/` | `docs/design-docs/scoring-system.md` | F-008 |
+| `internal/validation/` | `docs/design-docs/foundation-operating-model.md`, `docs/design-docs/validation-matrix-gating.md`, `docs/validation/README.md` | F-012 |
 | `internal/ui/` | `docs/design-docs/agent-runtime.md`, `docs/design-docs/dashboard.md` | F-005, F-010 |
 | `internal/updatecheck/` | `docs/design-docs/release-versioning.md` | F-004 |
 | `pkg/testutil/` | `docs/design-docs/agent-runtime.md` | F-005 |

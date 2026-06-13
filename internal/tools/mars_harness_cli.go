@@ -528,6 +528,13 @@ Global command surface:
     Flags: --repo <path>, --json
     Example: ["docsync", "audit", "--repo", "."]
 
+  validation check-closure
+    Check a foundation validation closure report for honest verdict/pass-table
+    consistency. Source-maintainer evidence gate; does not replace clean target
+    factory replays.
+    Flags: --report <path>
+    Example: ["validation", "check-closure", "--report", "docs/validation/reports/2026-06-13-foundation-wsd-closure-replay.md"]
+
   scores
     Show trunk-native accuracy scores.
     Flags: --repo <path>, --db <path>

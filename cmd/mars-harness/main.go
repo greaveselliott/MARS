@@ -73,6 +73,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/trust"
 	"github.com/greaveselliott/mars-harness/internal/ui"
 	"github.com/greaveselliott/mars-harness/internal/updatecheck"
+	foundationvalidation "github.com/greaveselliott/mars-harness/internal/validation"
 )
 
 var version = buildinfo.DefaultVersion
@@ -129,10 +130,56 @@ func newRootCommand() *cobra.Command {
 	root.AddCommand(releaseCmd())
 	root.AddCommand(checksCmd())
 	root.AddCommand(docsyncCmd())
+	root.AddCommand(validationCmd())
 	root.AddCommand(pathCmd())
 	root.AddCommand(authCmd())
 
 	return root
+}
+
+func validationCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "validation",
+		Short: "Validate foundation evidence artifacts",
+		Long: `Validate Mars Harness foundation evidence artifacts.
+
+These commands are source-maintainer gates for repo-owned validation reports.
+They do not replace clean-project factory replays required by the foundation
+operating model.`,
+	}
+	cmd.AddCommand(validationCheckClosureCmd())
+	return cmd
+}
+
+func validationCheckClosureCmd() *cobra.Command {
+	var reportPath string
+	cmd := &cobra.Command{
+		Use:   "check-closure",
+		Short: "Check closure report verdicts against pass/fail rows",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if strings.TrimSpace(reportPath) == "" {
+				return fmt.Errorf("validation check-closure: --report is required")
+			}
+			report, err := foundationvalidation.CheckClosureReport(reportPath)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), report.Summary())
+			for _, row := range report.Rows {
+				fmt.Fprintf(cmd.OutOrStdout(), "- %s %s: %s\n", row.Run, row.Archetype, row.Verdict)
+			}
+			for _, problem := range report.Problems {
+				fmt.Fprintf(cmd.OutOrStdout(), "FAIL: %s\n", problem)
+			}
+			if !report.OK() {
+				return fmt.Errorf("validation check-closure: report is inconsistent")
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "Status: ok")
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&reportPath, "report", "", "Path to a validation closure report markdown file")
+	return cmd
 }
 
 func docsyncCmd() *cobra.Command {

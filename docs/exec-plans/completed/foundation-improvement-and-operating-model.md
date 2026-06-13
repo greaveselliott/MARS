@@ -1,10 +1,11 @@
 # Foundation Improvement And Operating Model (Completed)
 
-**Status:** Completed
+**Status:** Completed (implementation)
+**Validation:** Open — TD-009 / closure replay
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Plan promotions until this file names the next slice
-**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, MH-051, MH-052, MH-053, MH-054, MH-055, MH-056, MH-057, MH-058, MH-059, MH-060, MH-061, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013, T-014, T-015, T-016, T-019, T-020, T-021, T-022, T-023
+**Related Tickets:** MH-034, MH-035, MH-037, MH-031, MH-030, MH-038, MH-039, MH-040, MH-041, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049, MH-050, MH-051, MH-052, MH-053, MH-054, MH-055, MH-056, MH-057, MH-058, MH-059, MH-060, MH-061, T-001, T-002, T-003, T-004, T-005, T-006, T-009, T-010, T-011, T-012, T-013, T-014, T-015, T-016, T-019, T-020, T-021, T-022, T-023, T-044
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-001, F-004, F-005, F-006, F-007, F-009, F-010, F-012
 **Hypothesis:** Treating factory pace as measured intervention debt, using the `demo-123` replay series as concrete evidence, will reduce avoidable turns without hiding productive long-running work.
@@ -153,14 +154,18 @@ not unit tests alone.
 2. [x] Record pass/fail against AD-284/AD-285; Run 2 blocked on COO max_turns —
    recorded with retry command and **TD-009**; Run 1 PASS; supplementary demo-14
    API evidence cited.
-3. [x] Move this plan to `docs/exec-plans/completed/` (2026-06-13).
+3. [x] Move this plan to `docs/exec-plans/completed/` (2026-06-13) with
+   implementation complete and validation open until TD-009 closure replay
+   passes both strict AD-284 rows.
 
 ## Completion (2026-06-13)
 
 Foundation improvement workstreams WS-A through WS-F and WS-D/WS-E landed.
-Closure replay: static-browser PASS; api-service ephemeral BLOCKED (TD-009).
+Implementation is complete; validation remains open. Closure replay:
+static-browser PASS; api-service ephemeral BLOCKED (TD-009).
 See [2026-06-13-foundation-wsd-closure-replay.md](../../validation/reports/2026-06-13-foundation-wsd-closure-replay.md).
-Successor active plan promotes factory-pace follow-up and optional dashboard epic.
+Successor active plan keeps closure assurity as the P0 slice before optional
+dashboard epic promotion.
 
 ## Current Priority Order
 

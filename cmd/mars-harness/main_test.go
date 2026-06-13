@@ -36,9 +36,9 @@ import (
 
 	"github.com/greaveselliott/mars-harness/internal/foundationtelemetry"
 	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars-harness/internal/release"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
-	"github.com/greaveselliott/mars-harness/internal/release"
 	"github.com/greaveselliott/mars-harness/internal/selfupdate"
 	"github.com/greaveselliott/mars-harness/internal/serve"
 	harnesstools "github.com/greaveselliott/mars-harness/internal/tools"
@@ -200,6 +200,41 @@ func TestMCPServeCommand(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), `"tools"`)
 	require.Contains(t, out.String(), `"tool_create"`)
+}
+
+func TestValidationCheckClosureCommand(t *testing.T) {
+	t.Parallel()
+	reportPath := filepath.Join(t.TempDir(), "closure.md")
+	require.NoError(t, os.WriteFile(reportPath, []byte(`# Validation Report
+
+## Pass/fail against AD-284/AD-285
+
+| Run | Archetype | Verdict |
+| --- | --- | --- |
+| 1 | static-browser | **PASS** |
+
+## Closure verdict
+
+**Closure: confirmed.**
+`), 0o644))
+
+	cmd := validationCheckClosureCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--report", reportPath})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "Status: ok")
+}
+
+func TestValidationCheckClosureCommandRequiresReport(t *testing.T) {
+	t.Parallel()
+	cmd := validationCheckClosureCmd()
+
+	err := cmd.Execute()
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "--report is required")
 }
 
 func TestReleaseBackfillNotesCommandChecksAndWrites(t *testing.T) {

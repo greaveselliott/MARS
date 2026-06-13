@@ -59,4 +59,5 @@ github.com/greaveselliott/mars-harness/internal/trace 70
 github.com/greaveselliott/mars-harness/internal/trust 63
 github.com/greaveselliott/mars-harness/internal/ui 61
 github.com/greaveselliott/mars-harness/internal/updatecheck 64
+github.com/greaveselliott/mars-harness/internal/validation 83
 github.com/greaveselliott/mars-harness/pkg/testutil 70

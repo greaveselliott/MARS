@@ -4,6 +4,7 @@ import {
   buildRunId,
   defaultValidationRoot,
   parseProfile,
+  readmeFromProfile,
   slugify,
 } from "./validation-target.mjs";
 
@@ -30,6 +31,17 @@ test("buildRunId includes profile and optional label", () => {
     "run-20260613-153045-inventory-api-wsd-closure",
   );
   assert.equal(buildRunId("static-browser-todo", "", date), "run-20260613-153045-static-browser-todo");
+});
+
+test("readmeFromProfile seeds README from frontmatter title and spec body", () => {
+  const content = readmeFromProfile(
+    { title: "Depot Supplies API Demo", slug: "depot-supplies-api" },
+    "# Profile Heading\n\nBuild a small standard-library Go HTTP JSON API.\n",
+  );
+  assert.equal(
+    content,
+    "# Depot Supplies API Demo\n\nBuild a small standard-library Go HTTP JSON API.\n",
+  );
 });
 
 test("slugify normalizes labels", () => {

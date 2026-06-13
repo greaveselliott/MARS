@@ -84,6 +84,9 @@ Replay evidence is durable, discoverable, and uniform:
 - **Cross-references:** the owning ticket links the report anchor in
   `evidence_links`, and grade-affecting runs are followed by a quality-score
   export per AD-278.
+- **Mechanical honesty gate:** closure reports that summarize required replay
+  rows are checked with `mars-harness validation check-closure --report <path>`
+  before the closure verdict can be treated as confirmed.
 
 ## Consequences
 

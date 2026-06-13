@@ -42,6 +42,7 @@ check:
 	$(GO) test ./... -race -count=1 -parallel=4 -coverprofile=coverage.out -covermode=atomic -cover | tee coverage-report.txt
 	$(GO) tool cover -func=coverage.out | tail -n 5
 	scripts/check-coverage.sh --input coverage-report.txt
+	$(GO) run ./cmd/mars-harness validation check-closure --report docs/validation/reports/2026-06-13-foundation-wsd-closure-replay.md
 	$(MAKE) vuln
 	$(MAKE) fuzz-smoke
 	$(MAKE) lint
