@@ -469,6 +469,11 @@ every cluster in a domain has migrated.
 - **2026-06-12 — AD-227/AD-239 are the template for T-031:** the bounded
   non-recursive `product_continuation` pattern already proven for Engineer
   is the natural shape for the missing terminal-role continuation edge.
+- **2026-06-12 — WS-D slice 5 landed:** `EngineerDeliveryState()` now derives
+  `validated` from successful validation evidence; post-validation shell guards
+  (`checkEngineerPostValidationCompletionShellPolicy`,
+  `checkEngineerRepeatedNoopPolicy` post-validation branch) consult
+  `engineerInValidatedPhase()`.
 - **2026-06-12 — WS-D slice 4 landed:** test-build repair-lane `file_write` guard
   (`checkEngineerUnresolvedTestBuildValidationBeforeFileWrite`) and engineer
   disposition validation-failed blockers in `policy_disposition.go`
