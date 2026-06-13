@@ -2,6 +2,35 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.55.0] - 2026-06-13
+<!-- mars-harness-release: version=0.55.0 commit=d4fbff4ca284 -->
+
+### Impact
+- **serve,tools:** Operators gain new capability: break CTO ticket-gate loop and complete WS-D slices 6-8.
+- Operators and future agents get clearer guidance because update operating plan for WS-D slices 4-5.
+- Operators and future agents get clearer delivery behavior because an operating-model rule, boundary, or workflow contract is now explicit in repo-owned guidance.
+- Operators and future agents get clearer guidance because record WS-D slice 5 in convergence state machine.
+
+### Why
+- **serve,tools:** This matters because break CTO ticket-gate loop and complete WS-D slices 6-8 was missing from the shipped capability set.
+- This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- This matters because autonomous work needs durable routing, evidence, and ownership rules rather than relying on chat memory or implicit handoffs.
+- This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **serve,tools:** Changed break CTO ticket-gate loop and complete WS-D slices 6-8 (e87c1d4).
+- Changed update operating plan for WS-D slices 4-5 (7d5c8a2).
+- The operating-model guidance was updated so adjacent docs, roles, tools, evidence paths, and generated target defaults describe the new workflow consistently (d4fbff4).
+- Changed record WS-D slice 5 in convergence state machine (e5e2846).
+
+### Features
+- **serve,tools:** Break CTO ticket-gate loop and complete WS-D slices 6-8 (e87c1d4)
+
+### Documentation
+- Update operating plan for WS-D slices 4-5 (7d5c8a2)
+- Add foundation operating model AD-291/292 (d4fbff4)
+- Record WS-D slice 5 in convergence state machine (e5e2846)
+
 ## [0.54.0] - 2026-06-13
 <!-- mars-harness-release: version=0.54.0 commit=04a82852ad33 -->
 
