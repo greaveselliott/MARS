@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.54.0] - 2026-06-13
+<!-- mars-harness-release: version=0.54.0 commit=04a82852ad33 -->
+
+### Impact
+- **tools:** Operators gain new capability: wS-D slice 5 — validated phase and post-validation shell guards.
+
+### Why
+- **tools:** This matters because wS-D slice 5 — validated phase and post-validation shell guards was missing from the shipped capability set.
+
+### What Changed
+- **tools:** Changed wS-D slice 5 — validated phase and post-validation shell guards (04a8285).
+
+### Features
+- **tools:** WS-D slice 5 — validated phase and post-validation shell guards (04a8285)
+
 ## [0.53.0] - 2026-06-13
 <!-- mars-harness-release: version=0.53.0 commit=128afecc0cfa -->
 
