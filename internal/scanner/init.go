@@ -665,6 +665,7 @@ roles:
     domain: engineer
     mode: ticket-delivery
     model: coding
+    max_turns: 100
     schedule: "0 0,6,12,18 * * 1-5"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
@@ -676,7 +677,7 @@ roles:
     domain: reviewer
     mode: quality-review
     model: reasoning
-    max_turns: 20
+    max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
     tools: [file_read, shell_exec, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff]
@@ -686,7 +687,7 @@ roles:
     domain: reviewer
     mode: security-review
     model: reasoning
-    max_turns: 20
+    max_turns: 30
     schedule: "0 22 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor

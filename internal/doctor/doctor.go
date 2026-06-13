@@ -74,6 +74,8 @@ func Run(cfg Config) []CheckResult {
 		checkConfigFile,
 		checkModelRegistry,
 		checkModelsDir,
+		checkProfileRequiredModels,
+		checkProfileRAMFootprint,
 		checkDBAccessible,
 		checkLlamaServer,
 		checkDiskSpace,
@@ -645,6 +647,101 @@ func checkModelsDir(cfg Config) CheckResult {
 		Name:     name,
 		Status:   statusOK,
 		Message:  fmt.Sprintf("%d model(s) in %s", ggufCount, modelsDir),
+		Duration: time.Since(start),
+	}
+}
+
+func checkProfileRequiredModels(cfg Config) CheckResult {
+	start := time.Now()
+	name := "profile-required-models"
+
+	home, _ := os.UserHomeDir()
+	modelsDir := filepath.Join(home, ".mars-harness", "models")
+	performanceProfile := "auto"
+	if cfgPath := strings.TrimSpace(cfg.ConfigPath); cfgPath != "" {
+		if data, err := os.ReadFile(cfgPath); err == nil {
+			for _, line := range strings.Split(string(data), "\n") {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, "performance_profile:") {
+					performanceProfile = strings.TrimSpace(strings.TrimPrefix(line, "performance_profile:"))
+					performanceProfile = strings.Trim(performanceProfile, `"'`)
+				}
+			}
+		}
+	}
+
+	missing, err := hardware.MissingRequiredModelFiles(modelsDir, performanceProfile)
+	if err != nil {
+		return CheckResult{
+			Name:     name,
+			Status:   statusFail,
+			Message:  err.Error(),
+			Duration: time.Since(start),
+			Fix:      "run 'mars-harness setup' to download required model weights",
+		}
+	}
+	if len(missing) > 0 {
+		effective := hardware.EffectivePerformanceProfile(hardware.Detect(), performanceProfile)
+		return CheckResult{
+			Name:     name,
+			Status:   statusFail,
+			Message:  fmt.Sprintf("performance_profile %q requires missing file(s): %s", effective, strings.Join(missing, ", ")),
+			Duration: time.Since(start),
+			Fix:      "run 'mars-harness setup' to download the weights for your active profile",
+		}
+	}
+
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  "required profile model files present",
+		Duration: time.Since(start),
+	}
+}
+
+func checkProfileRAMFootprint(cfg Config) CheckResult {
+	start := time.Now()
+	name := "profile-ram-footprint"
+
+	performanceProfile := "auto"
+	if cfgPath := strings.TrimSpace(cfg.ConfigPath); cfgPath != "" {
+		if data, err := os.ReadFile(cfgPath); err == nil {
+			for _, line := range strings.Split(string(data), "\n") {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, "performance_profile:") {
+					performanceProfile = strings.TrimSpace(strings.TrimPrefix(line, "performance_profile:"))
+					performanceProfile = strings.Trim(performanceProfile, `"'`)
+				}
+			}
+		}
+	}
+
+	hw := hardware.Detect()
+	estimated := hardware.EstimatedProfileRAMMiB(performanceProfile)
+	effective := hardware.EffectivePerformanceProfile(hw, performanceProfile)
+	physical := hw.RAMMiB
+	if physical <= 0 {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  "physical RAM unknown; cannot compare model footprint",
+			Duration: time.Since(start),
+		}
+	}
+	ratio := float64(estimated) / float64(physical)
+	if ratio >= 0.85 {
+		return CheckResult{
+			Name:     name,
+			Status:   statusWarn,
+			Message:  fmt.Sprintf("performance_profile %q estimated footprint ~%d MiB is %.0f%% of %d MiB RAM — inference may degrade", effective, estimated, ratio*100, physical),
+			Duration: time.Since(start),
+			Fix:      "set performance_profile to balanced or speed in ~/.mars-harness/config.yaml and run 'mars-harness setup'",
+		}
+	}
+	return CheckResult{
+		Name:     name,
+		Status:   statusOK,
+		Message:  fmt.Sprintf("profile %q footprint ~%d MiB within RAM headroom (%d MiB)", effective, estimated, physical),
 		Duration: time.Since(start),
 	}
 }

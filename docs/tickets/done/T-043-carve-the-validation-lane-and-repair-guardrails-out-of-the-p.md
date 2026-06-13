@@ -6,14 +6,17 @@ complexity: medium
 work_type: enabler
 bdd_scenarios: []
 end_to_end_evidence: required
-evidence_links: ["docs/design-docs/policy-decomposition.md"]
-verified_by: "go build ./..., full go test ./internal/tools, make check, docsync audit, docsconsistency, line-multiset pure-motion verification; final-sequence two-archetype replay checkpoint per AD-287/AD-284"
+evidence_links:
+  - docs/design-docs/policy-decomposition.md
+  - docs/validation/reports/2026-06-12-demo-12-package-managed-frontend-ad287-final-checkpoint.md
+  - docs/validation/reports/2026-06-12-demo-15-api-ad287-final-checkpoint.md
+verified_by: "go build ./..., full go test ./internal/tools, make check, docsync audit, docsconsistency, line-multiset pure-motion verification; final-sequence two-archetype replay checkpoint per AD-287/AD-284 — PASS both legs 2026-06-12"
 owner: "foundation-maintainer"
-last_attempt: "2026-06-12: extraction landed as 5cd4eb3 (v0.50.24, tagged, assets published+verified, trunk pushed). policy_validation.go (82 functions, 1,219 lines); policy.go 2,434 -> 1,070 lines / 51 functions; 30 validation-domain tests -> policy_validation_test.go (policy_ticket_test.go 2,982 -> 1,873 lines). Reassignments: packageBuildScriptNoop + packageBuildScriptOnlySyntaxCheck -> policy_browser.go; repoHasTestFiles + repoHasGoSourceFiles + testFilePath -> policy_review.go; capabilityStopWords/capabilityLabelKeepWords vars -> policy_capability.go (slice-4 residue). Settled: checkGitPushPolicy dispatcher-resident; checkFileWritePolicy children recorded as dispatcher-resident file-write surface. Pure motion verified (line-multiset, zero removed lines); dispatch order untouched. All gates green. Replay checkpoint: demo-12 Run 4 PASS (no extraction drift, 4 tickets closed, 0 operator retries, 0 context_overflow); demo-15 API-leg run preempted by operator pause before Engineer ran (evidence-only; one orphaned pending dogfood job, T-035 shape) — must be replayed from clean reset on resume."
-blocker: "paused by operator 2026-06-12; API-leg replay (demo-15) outstanding"
+last_attempt: "2026-06-12: extraction 5cd4eb3 (v0.50.24). Final checkpoint PASS — demo-12 Run 4 (frontend, no extraction drift); demo-15 Run 2 (API, natural drain, 67/80 jobs complete, 0 context_overflow, convergence failures only). AD-287 extraction sequence complete."
+blocker: ""
 blocked_by: []
-trace_id: "TBD"
-next_action: "Resume: reset demo-15 to 62861dc (git reset --hard + clean -fdx, force-push demo-15-origin.git, delete ~/.mars-harness/db/demo-15), rerun mars-harness start --repo .../demo-15 to natural drain, write the AD-285 run section, then close T-043 and record the AD-287 sequence completion in the active plan"
+trace_id: "demo-15-api-ad287-final-checkpoint-v0.50.24"
+next_action: ""
 dedupe_key: "public-example"
 source: docs/design-docs/policy-decomposition.md (AD-287) extraction sequence step 8; foundation improvement plan WS-E
 created: 2026-06-12
@@ -64,5 +67,5 @@ ticket_create false-duplicated this slice's first title against T-040 ("Extract 
 
 - go build ./... green; full go test ./internal/tools green; make check passes; docsync audit and docsconsistency green. [met 2026-06-12]
 - Pure motion verified (line-multiset equality; zero removed lines); dispatch order untouched. [met 2026-06-12]
-- One refactor(tools) semantic commit + release-note commit; trunk fast-forwarded, tagged, assets published and verified.
-- Final-sequence replay checkpoint: demo-12 and fresh demo-15 archetypes replayed with AD-285 reports and no rule-level drift.
+- One refactor(tools) semantic commit + release-note commit; trunk fast-forwarded, tagged, assets published and verified. [met 2026-06-12, v0.50.24]
+- Final-sequence replay checkpoint: demo-12 and fresh demo-15 archetypes replayed with AD-285 reports and no rule-level drift. [met 2026-06-12 — see validation reports; both legs PASS]

@@ -190,6 +190,27 @@ LIMIT 1`, job.IdempotencyKey).Scan(&existingID)
 		if err != sql.ErrNoRows {
 			return "", fmt.Errorf("queue: check idempotency: %w", err)
 		}
+
+		var cancelledID string
+		err = q.db.QueryRowContext(ctx, `
+SELECT id FROM jobs
+WHERE idempotency_key = ? AND status = 'cancelled'
+ORDER BY updated_at DESC
+LIMIT 1`, job.IdempotencyKey).Scan(&cancelledID)
+		if err == nil {
+			res, reactivateErr := q.db.ExecContext(ctx, `
+UPDATE jobs SET status = 'pending', error_msg = '', updated_at = ?, completed_at = NULL
+WHERE id = ? AND status = 'cancelled'`, now.Unix(), cancelledID)
+			if reactivateErr != nil {
+				return "", fmt.Errorf("queue: reactivate cancelled seed: %w", reactivateErr)
+			}
+			if n, _ := res.RowsAffected(); n == 1 {
+				slog.Info("queue: reactivated cancelled seed job", "job_id", cancelledID, "key", job.IdempotencyKey)
+				return cancelledID, nil
+			}
+		} else if err != sql.ErrNoRows {
+			return "", fmt.Errorf("queue: check cancelled idempotency: %w", err)
+		}
 	}
 
 	if job.ID == "" {
@@ -426,6 +447,28 @@ WHERE id = ? AND status = 'pending'`, now.Unix(), jobID)
 		return fmt.Errorf("queue: cancel: job %q not in pending state", jobID)
 	}
 	return nil
+}
+
+// PreemptPending marks all pending jobs cancelled with an explicit preemption
+// reason when the orchestrator stops while work remains queued (T-035).
+func (q *Queue) PreemptPending(ctx context.Context, reason string) (int, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = "orchestrator stopped with pending work"
+	}
+
+	now := time.Now().UTC()
+	res, err := q.db.ExecContext(ctx, `
+UPDATE jobs SET status = 'cancelled', error_msg = ?, updated_at = ?
+WHERE status = 'pending'`, reason, now.Unix())
+	if err != nil {
+		return 0, fmt.Errorf("queue: preempt pending: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
 }
 
 // ResetOrphans marks all claimed/running jobs as failed. Call at startup

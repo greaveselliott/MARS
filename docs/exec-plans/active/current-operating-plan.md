@@ -34,12 +34,11 @@ plans to decide what to do next.
 - Active goals live in `docs/goals/active.md`; the current plan references `G-001`, `G-002`, `G-003`, and `G-004`.
 - BDD feature contracts live in `docs/features/`; the current operating-model feature is `F-001`, target-harness mirroring is `F-004`, release publication discipline is `F-009`, and feedback/self-improvement routing is `F-012`.
 - Ticket state:
-  - `docs/tickets/in-progress/` contains `T-011`.
+  - `docs/tickets/in-progress/` is empty.
   - `docs/tickets/backlog/` contains `T-010`, `T-013`, `MH-051` through
     `MH-061`, and any newly created live-loop follow-up tickets.
-  - `docs/tickets/done/` contains `MH-001` through `MH-050` and `T-001`
-    through `T-009`, plus `T-012`, `T-014`, `T-015`, `T-016`, `T-017`,
-    and `T-019` through `T-028`.
+  - `docs/tickets/done/` contains `MH-001` through `MH-050`, `T-001`
+    through `T-043`, and `T-011`.
 - Exec-plan state:
   - `docs/exec-plans/active/` contains exactly one active plan: this file.
   - `docs/exec-plans/backlog/` contains prioritized waiting plans with dependencies and blockers.
@@ -79,7 +78,7 @@ provisional until `ticket_create` assigns them when each workstream starts.
 | WS-B Decision gates | Dashboard architecture AD and schedule-or-defer decision | `T-023` |
 | WS-C Production-grade gates | Coverage ratchet (`T-024` done 2026-06-11, AD-280), govulncheck + fuzz (`T-025` done 2026-06-11, AD-281), self-verifying release pipeline (`T-026` done 2026-06-11, AD-282, `release audit`), pace/convergence telemetry (`T-027` done 2026-06-11, AD-283, Convergence And Guardrails export) | `T-024`, `T-025`, `T-026`, `T-027` |
 | WS-D Convergence consolidation | Convergence state-machine AD and incremental rule-cluster migration, extending `T-011` | provisional (next IDs from `ticket_create`; originally drafted as `T-028`, `T-029`) |
-| WS-E God-file decomposition | Policy-domain decomposition AD and per-domain extractions | provisional (originally drafted as `T-030` through `T-039`) |
+| WS-E God-file decomposition | Policy-domain decomposition AD and per-domain extractions (`T-030`–`T-043` done 2026-06-12; AD-287 sequence complete) | `T-030`–`T-043` |
 | WS-F Validation matrix discipline | Matrix-gating AD (`T-028` done 2026-06-11, AD-284/AD-285, provisional `T-040`) and archetype-gap baseline replays | `T-028`, provisional `T-041` |
 
 Sequencing recorded 2026-06-11: WS-A and WS-B land first (docs/doctrine only,
@@ -113,6 +112,16 @@ separate edges (confirmed distinct code paths 2026-06-12). T-029-style
 extraction and state-machine slices follow in the AD-287 extraction order,
 with dogfood review convergence (6 failures in 10 demo-14 dogfood jobs) as
 the dominant remaining convergence consumer per the demo-14 report.
+**T-043 closed 2026-06-12** (AD-287 final slice, v0.50.24): validation-lane
+extraction plus two-archetype final checkpoint PASS (demo-12 Run 4, demo-15
+Run 2). **AD-287 extraction sequence complete.**
+**T-030 closed 2026-06-12:** ticket_create title dedupe requires true keyword
+subset; demo-11 canary PASS (cto-weekly 2m 1s, 0 DUPLICATE). **T-011 closed
+2026-06-12:** max-turn calibration from balanced-model baseline (engineer
+100, qa 40, security 30) plus cumulative pace stack (T-030/T-031/AD-288).
+**WS-D slice 3 landed 2026-06-12:** validation-failed rework guard clusters
+migrated to `EngineerDeliveryState()`. Further WS-D clusters remain in the
+AD-286 migration queue.
 
 ## Current Priority Order
 
@@ -162,6 +171,8 @@ the dominant remaining convergence consumer per the demo-14 report.
    demo-14 replay passed with zero operator retries),
    then one rule cluster or one policy domain per
    slice with a canary replay and recorded pace delta per the AD-138 loop.
+   **WS-E complete 2026-06-12** (`T-043`, AD-287); **WS-D is the active
+   refactor track** starting with AD-286 state-machine clusters.
 7. **Dashboard control-plane backlog (`MH-051` through `MH-061`)**: Decided
    2026-06-11 under `T-023` (WS-B): the epic is **deferred until `T-011`
    closes**, per AD-279. AD-279 also scopes the single-binary constraint to

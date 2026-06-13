@@ -664,6 +664,53 @@ func TestJobCountsByHour(t *testing.T) {
 	assert.Equal(t, 4, counts[0].Total)
 }
 
+func TestQueue_PreemptPending(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	id, err := q.Enqueue(ctx, Job{RepoID: "repo-1", Role: "engineer"})
+	require.NoError(t, err)
+
+	n, err := q.PreemptPending(ctx, "orchestrator stopped with pending work")
+	require.NoError(t, err)
+	require.Equal(t, 1, n)
+
+	job, err := q.Get(ctx, id)
+	require.NoError(t, err)
+	require.Equal(t, StatusCancelled, job.Status)
+	require.Contains(t, job.Error, "orchestrator stopped")
+}
+
+func TestQueue_EnqueueReactivatesCancelledSeed(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+	key := "seed:repo-1:ceo:bootstrap"
+
+	firstID, err := q.Enqueue(ctx, Job{
+		RepoID:         "repo-1",
+		Role:           "ceo",
+		IdempotencyKey: key,
+	})
+	require.NoError(t, err)
+
+	n, err := q.PreemptPending(ctx, "orchestrator stopped with pending work")
+	require.NoError(t, err)
+	require.Equal(t, 1, n)
+
+	secondID, err := q.Enqueue(ctx, Job{
+		RepoID:         "repo-1",
+		Role:           "ceo",
+		IdempotencyKey: key,
+	})
+	require.NoError(t, err)
+	require.Equal(t, firstID, secondID, "bootstrap restart should reactivate the cancelled seed job")
+
+	job, err := q.Get(ctx, secondID)
+	require.NoError(t, err)
+	require.Equal(t, StatusPending, job.Status)
+	require.Empty(t, job.Error)
+}
+
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }

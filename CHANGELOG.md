@@ -2,6 +2,64 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.52.0] - 2026-06-13
+<!-- mars-harness-release: version=0.52.0 commit=0a01dd9699f6 -->
+
+### Impact
+- **pace:** Operators gain new capability: close T-011 with max-turn calibration and WS-D slice 3.
+
+### Why
+- **pace:** This matters because close T-011 with max-turn calibration and WS-D slice 3 was missing from the shipped capability set.
+
+### What Changed
+- **pace:** Changed close T-011 with max-turn calibration and WS-D slice 3 (0a01dd9).
+
+### Features
+- **pace:** Close T-011 with max-turn calibration and WS-D slice 3 (0a01dd9)
+
+### Delivery Evidence
+- Enabler work: T-011: Measure and optimize factory pace
+- Enabler work: T-035: Drain or disposition pending jobs when the orchestrator is stopped so preemption cannot orphan mid-lifecycle work
+
+## [0.51.1] - 2026-06-13
+<!-- mars-harness-release: version=0.51.1 commit=e59ca9d82a8b -->
+
+### Impact
+- **queue:** Operators see improved reliability because preempt pending jobs on stop (T-035) and doctor RAM check (T-034).
+
+### Why
+- **queue:** This matters because preempt pending jobs on stop (T-035) and doctor RAM check (T-034) closes a failure mode or degraded path.
+
+### What Changed
+- **queue:** Changed preempt pending jobs on stop (T-035) and doctor RAM check (T-034) (e59ca9d).
+
+### Fixes
+- **queue:** Preempt pending jobs on stop (T-035) and doctor RAM check (T-034) (e59ca9d)
+
+### Delivery Evidence
+- Enabler work: T-034: Surface degraded-inference anomalies mechanically via pace telemetry and a doctor RAM-footprint check
+- Enabler work: T-035: Drain or disposition pending jobs when the orchestrator is stopped so preemption cannot orphan mid-lifecycle work
+
+## [0.51.0] - 2026-06-13
+<!-- mars-harness-release: version=0.51.0 commit=5196f6d72feb -->
+
+### Impact
+- **tools:** Operators gain new capability: close T-030/T-043 and land WS-D DeliveryState slices.
+
+### Why
+- **tools:** This matters because close T-030/T-043 and land WS-D DeliveryState slices was missing from the shipped capability set.
+
+### What Changed
+- **tools:** Changed close T-030/T-043 and land WS-D DeliveryState slices (5196f6d).
+
+### Features
+- **tools:** Close T-030/T-043 and land WS-D DeliveryState slices (5196f6d)
+
+### Delivery Evidence
+- Enabler work: T-030: Unwedge CTO scenario-batch handoff from ticket_create false-duplicate title matching
+- Enabler work: T-033: Verify profile-required model files at start so a profile swap cannot fail jobs with model_unavailable
+- Enabler work: T-043: Carve the validation lane and repair guardrails out of the policy monolith to close the AD-287 sequence
+
 ## [0.50.25] - 2026-06-12
 <!-- mars-harness-release: version=0.50.25 commit=1a1322fd4368 -->
 
