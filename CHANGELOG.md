@@ -2,6 +2,27 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.56.0] - 2026-06-13
+<!-- mars-harness-release: version=0.56.0 commit=d5ee4ef157d9 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer delivery behavior because an operating-model rule, boundary, or workflow contract is now explicit in repo-owned guidance.
+- **validation:** Operators and future agents get clearer guidance because start WS-D closure replay report on clean demo-11 seed.
+
+### Why
+- **validation:** This matters because autonomous work needs durable routing, evidence, and ownership rules rather than relying on chat memory or implicit handoffs.
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** The operating-model guidance was updated so adjacent docs, roles, tools, evidence paths, and generated target defaults describe the new workflow consistently (d5ee4ef).
+- **validation:** Changed start WS-D closure replay report on clean demo-11 seed (24e5aa7).
+
+### Features
+- **validation:** Add ephemeral validation-target script and profiles (AD-293) (d5ee4ef)
+
+### Documentation
+- **validation:** Start WS-D closure replay report on clean demo-11 seed (24e5aa7)
+
 ## [0.55.0] - 2026-06-13
 <!-- mars-harness-release: version=0.55.0 commit=d4fbff4ca284 -->
 
