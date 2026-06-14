@@ -2,6 +2,27 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.58.0] - 2026-06-14
+<!-- mars-harness-release: version=0.58.0 commit=fa782db3454d -->
+
+### Impact
+- **codeintel:** Operators gain new capability: add mirrored code graph capability.
+- Operators and future agents get clearer guidance because explain Go implementation language decision.
+
+### Why
+- **codeintel:** This matters because add mirrored code graph capability was missing from the shipped capability set.
+- This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **codeintel:** Changed add mirrored code graph capability (fa782db).
+- Changed explain Go implementation language decision (ebc069f).
+
+### Features
+- **codeintel:** Add mirrored code graph capability (fa782db)
+
+### Documentation
+- Explain Go implementation language decision (ebc069f)
+
 ## [0.55.1] - 2026-06-13
 <!-- mars-harness-release: version=0.55.1 commit=a66fd33b3b9c -->
 
