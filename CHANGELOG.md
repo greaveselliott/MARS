@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.61.0] - 2026-06-14
+<!-- mars-harness-release: version=0.61.0 commit=6d934d7c866b -->
+
+### Impact
+- **validation:** Operators gain new capability: validate single-server agent smoke.
+
+### Why
+- **validation:** This matters because validate single-server agent smoke was missing from the shipped capability set.
+
+### What Changed
+- **validation:** Changed validate single-server agent smoke (6d934d7).
+
+### Features
+- **validation:** Validate single-server agent smoke (6d934d7)
+
 ## [0.60.2] - 2026-06-14
 <!-- mars-harness-release: version=0.60.2 commit=775e1d1edf54 -->
 
