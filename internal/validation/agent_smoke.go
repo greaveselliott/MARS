@@ -73,6 +73,8 @@ type AgentSmokeOptions struct {
 	MaxTurns      int           `json:"max_turns"`
 	Timeout       time.Duration `json:"timeout"`
 	ModelEndpoint string        `json:"model_endpoint,omitempty"`
+	SingleServer  bool          `json:"single_server"`
+	SingleTier    string        `json:"single_server_tier,omitempty"`
 	FixtureOnly   bool          `json:"fixture_only"`
 	JSON          bool          `json:"json"`
 	ReportPath    string        `json:"report"`
@@ -83,19 +85,22 @@ type AgentSmokeOptions struct {
 
 // AgentSmokeReport is the machine-readable result emitted by agent-smoke.
 type AgentSmokeReport struct {
-	Root        string             `json:"root"`
-	Suite       string             `json:"suite"`
-	Evidence    string             `json:"evidence"`
-	ModelSource string             `json:"model_source"`
-	StartedAt   time.Time          `json:"started_at"`
-	FinishedAt  time.Time          `json:"finished_at"`
-	Selected    int                `json:"selected"`
-	Passed      int                `json:"passed"`
-	Failed      int                `json:"failed"`
-	Cleaned     int                `json:"cleaned"`
-	Results     []AgentSmokeResult `json:"results"`
-	ReportPath  string             `json:"report_path,omitempty"`
-	CleanupOnly bool               `json:"cleanup_only"`
+	Root           string             `json:"root"`
+	Suite          string             `json:"suite"`
+	Evidence       string             `json:"evidence"`
+	ModelSource    string             `json:"model_source"`
+	SingleServer   bool               `json:"single_server"`
+	SingleTier     string             `json:"single_server_tier,omitempty"`
+	ServerParallel int                `json:"server_parallel,omitempty"`
+	StartedAt      time.Time          `json:"started_at"`
+	FinishedAt     time.Time          `json:"finished_at"`
+	Selected       int                `json:"selected"`
+	Passed         int                `json:"passed"`
+	Failed         int                `json:"failed"`
+	Cleaned        int                `json:"cleaned"`
+	Results        []AgentSmokeResult `json:"results"`
+	ReportPath     string             `json:"report_path,omitempty"`
+	CleanupOnly    bool               `json:"cleanup_only"`
 }
 
 // OK reports whether all selected cases passed.
@@ -198,6 +203,9 @@ func RunAgentSmoke(ctx context.Context, opts AgentSmokeOptions) (AgentSmokeRepor
 		return AgentSmokeReport{}, err
 	}
 	defer runtime.Close()
+	report.SingleServer = runtime.singleServer
+	report.SingleTier = runtime.singleTier
+	report.ServerParallel = runtime.serverParallel
 	report.Selected = len(selected)
 	results := runAgentSmokeCases(ctx, runtime, root, selected, opts)
 	report.Results = results
@@ -239,6 +247,10 @@ func normalizeAgentSmokeOptions(opts AgentSmokeOptions) AgentSmokeOptions {
 	opts.CaseID = strings.TrimSpace(opts.CaseID)
 	opts.ProjectType = strings.TrimSpace(opts.ProjectType)
 	opts.ModelEndpoint = strings.TrimSpace(opts.ModelEndpoint)
+	opts.SingleTier = strings.ToLower(strings.TrimSpace(opts.SingleTier))
+	if opts.SingleServer && opts.SingleTier == "" {
+		opts.SingleTier = string(hardware.TierCoding)
+	}
 	return opts
 }
 
@@ -262,6 +274,9 @@ func agentSmokeModelSource(opts AgentSmokeOptions) string {
 	case "endpoint-override":
 		return "operator-supplied OpenAI-compatible endpoint; AD-296 requires this to be a real model endpoint for validation claims"
 	default:
+		if opts.SingleServer {
+			return fmt.Sprintf("local Mars Harness inference router; single local server tier %s", opts.SingleTier)
+		}
 		return "local Mars Harness inference router"
 	}
 }
@@ -417,7 +432,10 @@ func cycleIndex(cycle, role string, n int) int {
 }
 
 type agentSmokeRuntime struct {
-	router *inference.Router
+	router         *inference.Router
+	singleServer   bool
+	singleTier     string
+	serverParallel int
 }
 
 func newAgentSmokeRuntime(opts AgentSmokeOptions) (*agentSmokeRuntime, error) {
@@ -432,21 +450,51 @@ func newAgentSmokeRuntime(opts AgentSmokeOptions) (*agentSmokeRuntime, error) {
 		return nil, fmt.Errorf("validation agent-smoke: load local inference config: %w", err)
 	}
 	modelSet := hardware.DefaultModelsForHardware(hardware.Detect(), cfg.PerformanceProfile)
+	tuning := inference.ServerTuning{
+		Threads:        cfg.LlamaThreads,
+		ThreadsBatch:   cfg.LlamaThreadsBatch,
+		Parallel:       cfg.LlamaParallel,
+		BatchSize:      cfg.LlamaBatchSize,
+		UBatchSize:     cfg.LlamaUBatchSize,
+		FlashAttention: cfg.LlamaFlashAttention,
+		MLock:          cfg.LlamaMLock,
+	}
+	singleTier := hardware.Tier("")
+	if opts.SingleServer {
+		parsed, err := parseAgentSmokeSingleTier(opts.SingleTier)
+		if err != nil {
+			return nil, err
+		}
+		singleTier = parsed
+		if opts.Parallel > tuning.Parallel {
+			tuning.Parallel = opts.Parallel
+		}
+	}
 	return &agentSmokeRuntime{router: inference.NewRouter(inference.RouterConfig{
-		BinaryPath:  filepath.Join(cfg.BinDir, "llama-server"),
-		Models:      modelSet,
-		RoleMapping: inference.DefaultRoleTierMapping(),
-		ModelsDir:   cfg.ModelsDir,
-		Tuning: inference.ServerTuning{
-			Threads:        cfg.LlamaThreads,
-			ThreadsBatch:   cfg.LlamaThreadsBatch,
-			Parallel:       cfg.LlamaParallel,
-			BatchSize:      cfg.LlamaBatchSize,
-			UBatchSize:     cfg.LlamaUBatchSize,
-			FlashAttention: cfg.LlamaFlashAttention,
-			MLock:          cfg.LlamaMLock,
-		},
-	})}, nil
+		BinaryPath:       filepath.Join(cfg.BinDir, "llama-server"),
+		Models:           modelSet,
+		RoleMapping:      inference.DefaultRoleTierMapping(),
+		ModelsDir:        cfg.ModelsDir,
+		SingleServerTier: singleTier,
+		Tuning:           tuning,
+	}),
+		singleServer:   opts.SingleServer,
+		singleTier:     string(singleTier),
+		serverParallel: tuning.Parallel,
+	}, nil
+}
+
+func parseAgentSmokeSingleTier(value string) (hardware.Tier, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case string(hardware.TierCoding):
+		return hardware.TierCoding, nil
+	case string(hardware.TierReasoning):
+		return hardware.TierReasoning, nil
+	case string(hardware.TierFast):
+		return hardware.TierFast, nil
+	default:
+		return "", fmt.Errorf("validation agent-smoke: unsupported --single-server-tier %q; use coding, reasoning, or fast", value)
+	}
 }
 
 func (r *agentSmokeRuntime) Close() {
@@ -1065,6 +1113,11 @@ func writeAgentSmokeMarkdownReport(path string, report AgentSmokeReport) error {
 	}
 	if report.ModelSource != "" {
 		fmt.Fprintf(&b, "- Model source: %s\n", report.ModelSource)
+	}
+	if report.SingleServer {
+		fmt.Fprintf(&b, "- Inference topology: single local server tier `%s` with server parallel `%d`\n", report.SingleTier, report.ServerParallel)
+	} else if report.Evidence == "local-model" {
+		b.WriteString("- Inference topology: tiered local router\n")
 	}
 	if report.Evidence == "endpoint-override" {
 		b.WriteString("- Endpoint override note: fake, stub, mock, canned, or scripted endpoints are excluded from validation pass claims by AD-296.\n")

@@ -30,6 +30,7 @@ type Router struct {
 	modelsDir     string
 	binaryPath    string
 	tuning        ServerTuning
+	singleTier    hardware.Tier
 	fallback      *llm.Client // optional remote API fallback
 	remoteBaseURL string      // normalized base URL (no trailing /v1)
 }
@@ -40,9 +41,13 @@ type RouterConfig struct {
 	Models      map[hardware.Tier]hardware.ModelSpec
 	RoleMapping map[string]hardware.Tier // role → tier
 	ModelsDir   string                   // where model files live
-	FallbackURL string                   // optional remote API
-	FallbackKey string
-	Tuning      ServerTuning
+	// SingleServerTier forces every role and manifest model hint onto one tier.
+	// It is used by validation lanes that need parallel role execution through a
+	// single local llama-server instead of starting one server per model tier.
+	SingleServerTier hardware.Tier
+	FallbackURL      string // optional remote API
+	FallbackKey      string
+	Tuning           ServerTuning
 }
 
 // NewRouter creates a router (does not start servers).
@@ -77,6 +82,7 @@ func NewRouter(cfg RouterConfig) *Router {
 		modelsDir:     cfg.ModelsDir,
 		binaryPath:    cfg.BinaryPath,
 		tuning:        cfg.Tuning,
+		singleTier:    cfg.SingleServerTier,
 		fallback:      fb,
 		remoteBaseURL: fbBase,
 	}
@@ -145,10 +151,20 @@ func TierForRoleModel(role, modelHint string) hardware.Tier {
 }
 
 func (r *Router) tierForRole(role string) hardware.Tier {
+	if r.singleTier != "" {
+		return r.singleTier
+	}
 	if t, ok := r.mapping[role]; ok {
 		return t
 	}
 	return TierForRoleModel(role, "")
+}
+
+func (r *Router) tierForRoleModel(role, modelHint string) hardware.Tier {
+	if r.singleTier != "" {
+		return r.singleTier
+	}
+	return TierForRoleModel(role, modelHint)
 }
 
 func (r *Router) tierPort(tier hardware.Tier) int {
@@ -180,7 +196,7 @@ func (r *Router) ServerForRole(ctx context.Context, role string) (string, error)
 
 // ServerForRoleModel returns the base URL for a role using its manifest model tier.
 func (r *Router) ServerForRoleModel(ctx context.Context, role, modelHint string) (string, error) {
-	return r.serverForTier(ctx, role, TierForRoleModel(role, modelHint))
+	return r.serverForTier(ctx, role, r.tierForRoleModel(role, modelHint))
 }
 
 // ContextWindowForRoleModel returns the context window (tokens) actually
@@ -191,7 +207,7 @@ func (r *Router) ContextWindowForRoleModel(role, modelHint string) int {
 	if r == nil {
 		return 0
 	}
-	tier := TierForRoleModel(role, modelHint)
+	tier := r.tierForRoleModel(role, modelHint)
 	spec, ok := r.models[tier]
 	if !ok || spec.ContextLen <= 0 {
 		return 0
@@ -229,15 +245,11 @@ func (r *Router) serverForTier(ctx context.Context, role string, tier hardware.T
 	r.mu.Lock()
 	srv := r.servers[tier]
 	if srv == nil {
-		ctxLen := spec.ContextLen
-		if ctxLen <= 0 {
-			ctxLen = effectiveContextLength(0)
-		}
 		srv = NewServer(ServerConfig{
 			BinaryPath:    r.binaryPath,
 			ModelPath:     modelPath,
 			Port:          r.tierPort(tier),
-			ContextLength: ctxLen,
+			ContextLength: serverContextLength(spec, r.tuning),
 			GPULayers:     -1,
 			ServerTuning:  r.tuning,
 		})
@@ -268,6 +280,17 @@ func (r *Router) serverForTier(ctx context.Context, role string, tier hardware.T
 	}
 
 	return srv.BaseURL(), nil
+}
+
+func serverContextLength(spec hardware.ModelSpec, tuning ServerTuning) int {
+	ctxLen := spec.ContextLen
+	if ctxLen <= 0 {
+		ctxLen = effectiveContextLength(0)
+	}
+	if tuning.Parallel > 1 {
+		return ctxLen * tuning.Parallel
+	}
+	return ctxLen
 }
 
 func (r *Router) installedModelVariantHint(spec hardware.ModelSpec) string {

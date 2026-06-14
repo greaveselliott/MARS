@@ -223,6 +223,29 @@ func TestRunAgentSmokeExecutesCasesInParallel(t *testing.T) {
 	}
 }
 
+func TestNormalizeAgentSmokeOptionsDefaultsSingleServerTier(t *testing.T) {
+	opts := normalizeAgentSmokeOptions(AgentSmokeOptions{
+		SingleServer: true,
+		SingleTier:   "",
+	})
+	if opts.SingleTier != "coding" {
+		t.Fatalf("expected coding single-server tier, got %q", opts.SingleTier)
+	}
+}
+
+func TestParseAgentSmokeSingleTier(t *testing.T) {
+	tier, err := parseAgentSmokeSingleTier("reasoning")
+	if err != nil {
+		t.Fatalf("parse tier: %v", err)
+	}
+	if string(tier) != "reasoning" {
+		t.Fatalf("unexpected tier %q", tier)
+	}
+	if _, err := parseAgentSmokeSingleTier("not-a-tier"); err == nil {
+		t.Fatal("expected invalid tier error")
+	}
+}
+
 func TestSetManifestRoleMaxTurns(t *testing.T) {
 	in := "roles:\n  ceo:\n    prompt: roles/ceo.md\n    model: reasoning\n    tools: [file_read]\n  engineer:\n    prompt: roles/engineer.md\n    model: coding\n    max_turns: 100\n    tools: [file_read]\n"
 	out, changed, err := setManifestRoleMaxTurns(in, "ceo", 3)
@@ -247,12 +270,15 @@ func TestAgentSmokeReportSummaryAndMarkdown(t *testing.T) {
 		t.Fatalf("unexpected cleanup summary %q", got)
 	}
 	report := AgentSmokeReport{
-		Root:        "/tmp/smoke",
-		Suite:       AgentSmokeSuiteFast,
-		Evidence:    "endpoint-override",
-		ModelSource: "operator-supplied OpenAI-compatible endpoint; AD-296 requires this to be a real model endpoint for validation claims",
-		Selected:    1,
-		Passed:      1,
+		Root:           "/tmp/smoke",
+		Suite:          AgentSmokeSuiteFast,
+		Evidence:       "local-model",
+		ModelSource:    "local Mars Harness inference router; single local server tier coding",
+		SingleServer:   true,
+		SingleTier:     "coding",
+		ServerParallel: 2,
+		Selected:       1,
+		Passed:         1,
 		Results: []AgentSmokeResult{{
 			Role:                "ceo",
 			CaseID:              "static-web-empty",
@@ -274,8 +300,26 @@ func TestAgentSmokeReportSummaryAndMarkdown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read markdown report: %v", err)
 	}
-	if !strings.Contains(string(data), "`live`") || !strings.Contains(string(data), "`completed`") || !strings.Contains(string(data), "AD-296") {
+	if !strings.Contains(string(data), "`live`") || !strings.Contains(string(data), "`completed`") || !strings.Contains(string(data), "single local server tier `coding`") {
 		t.Fatalf("expected mode and disposition in report:\n%s", string(data))
+	}
+
+	endpointReport := report
+	endpointReport.Evidence = "endpoint-override"
+	endpointReport.ModelSource = "operator-supplied OpenAI-compatible endpoint; AD-296 requires this to be a real model endpoint for validation claims"
+	endpointReport.SingleServer = false
+	endpointReport.SingleTier = ""
+	endpointReport.ServerParallel = 0
+	out = filepath.Join(t.TempDir(), "endpoint-report.md")
+	if err := writeAgentSmokeMarkdownReport(out, endpointReport); err != nil {
+		t.Fatalf("write endpoint markdown report: %v", err)
+	}
+	data, err = os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read endpoint markdown report: %v", err)
+	}
+	if !strings.Contains(string(data), "AD-296") {
+		t.Fatalf("expected endpoint warning in report:\n%s", string(data))
 	}
 }
 

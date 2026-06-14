@@ -216,6 +216,8 @@ diagnosis unless --discard-failed is set.`,
 	cmd.Flags().IntVar(&opts.MaxTurns, "max-turns", 6, "Maximum role turns for live execution")
 	cmd.Flags().DurationVar(&opts.Timeout, "timeout", 10*time.Minute, "Per-case timeout")
 	cmd.Flags().StringVar(&opts.ModelEndpoint, "model-endpoint", "", "Optional real OpenAI-compatible model endpoint override; fake or scripted endpoints are not validation evidence")
+	cmd.Flags().BoolVar(&opts.SingleServer, "single-server", true, "Use one local inference server for all selected roles; pass --single-server=false for tiered routing")
+	cmd.Flags().StringVar(&opts.SingleTier, "single-server-tier", "coding", "Local model tier for --single-server: coding, reasoning, or fast")
 	cmd.Flags().BoolVar(&opts.FixtureOnly, "fixture-only", false, "Generate and lint ephemeral targets without running the role")
 	cmd.Flags().BoolVar(&opts.JSON, "json", false, "Write JSON report")
 	cmd.Flags().StringVar(&opts.ReportPath, "report", "", "Optional Markdown report path")

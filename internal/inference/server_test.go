@@ -180,6 +180,26 @@ func TestTierForRoleModel_usesManifestTierBeforeRoleFallback(t *testing.T) {
 	require.Equal(t, hardware.TierCoding, TierForRoleModel("custom-role", "unknown-model"))
 }
 
+func TestRouter_singleServerTierOverridesRoleAndManifestHints(t *testing.T) {
+	t.Parallel()
+
+	r := NewRouter(RouterConfig{
+		SingleServerTier: hardware.TierCoding,
+		RoleMapping: map[string]hardware.Tier{
+			"ceo": hardware.TierReasoning,
+		},
+		Models: map[hardware.Tier]hardware.ModelSpec{
+			hardware.TierCoding:    {Name: "c", File: "c.gguf", ContextLen: 32768},
+			hardware.TierReasoning: {Name: "r", File: "r.gguf", ContextLen: 131072},
+		},
+		ModelsDir: t.TempDir(),
+	})
+
+	require.Equal(t, hardware.TierCoding, r.tierForRole("ceo"))
+	require.Equal(t, hardware.TierCoding, r.tierForRoleModel("ceo", "reasoning"))
+	require.Equal(t, 32768, r.ContextWindowForRoleModel("ceo", "reasoning"))
+}
+
 func TestDefaultRoleTierMapping_coversStarterRoles(t *testing.T) {
 	t.Parallel()
 
@@ -267,6 +287,15 @@ func TestRouter_contextWindowForRoleModel(t *testing.T) {
 
 	var nilRouter *Router
 	require.Equal(t, 0, nilRouter.ContextWindowForRoleModel("engineer", ""))
+}
+
+func TestServerContextLengthPreservesPerSlotWindow(t *testing.T) {
+	t.Parallel()
+
+	spec := hardware.ModelSpec{ContextLen: 32768}
+	require.Equal(t, 32768, serverContextLength(spec, ServerTuning{Parallel: 1}))
+	require.Equal(t, 65536, serverContextLength(spec, ServerTuning{Parallel: 2}))
+	require.Equal(t, 4096, serverContextLength(hardware.ModelSpec{}, ServerTuning{}))
 }
 
 func TestRouter_serverForRoleModelMentionsInstalledVariant(t *testing.T) {

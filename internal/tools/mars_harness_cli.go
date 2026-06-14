@@ -556,9 +556,10 @@ Global command surface:
     server job path in parallel. Successful runs are discarded by default;
     failed runs are retained unless --discard-failed is set. --model-endpoint
     is only for a real OpenAI-compatible model endpoint; fake or scripted
-    endpoints are deterministic test plumbing, not validation evidence.
-    Flags: --role <role>, --case <id>, --project-type <type>, --suite <fast|default|full|held-out>, --parallel <n>, --cycle <key>, --max-turns <n>, --timeout <duration>, --model-endpoint <real-url>, --fixture-only, --json, --report <path>, --keep-runs, --cleanup-only, --discard-failed, --root <path>
-    Example: ["validation", "agent-smoke", "--suite", "fast", "--json"]
+    endpoints are deterministic test plumbing, not validation evidence. Local
+    runs default to --single-server so parallel cases share one llama-server.
+    Flags: --role <role>, --case <id>, --project-type <type>, --suite <fast|default|full|held-out>, --parallel <n>, --cycle <key>, --max-turns <n>, --timeout <duration>, --model-endpoint <real-url>, --single-server, --single-server-tier <coding|reasoning|fast>, --fixture-only, --json, --report <path>, --keep-runs, --cleanup-only, --discard-failed, --root <path>
+    Example: ["validation", "agent-smoke", "--suite", "fast", "--parallel", "2", "--json"]
 
   scores
     Show trunk-native accuracy scores.

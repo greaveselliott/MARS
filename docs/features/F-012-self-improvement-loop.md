@@ -122,9 +122,10 @@ Then each selected case creates a fresh ephemeral target repo, isolated database
 And target seed artifacts are generated through foundation scaffold/tool surfaces rather than long-lived snapshot repos
 And non-source-only selected roles execute live through the server job path with structured trigger context, isolated trust/org-state/trace persistence, and role tool policy
 And multiple selected cases can execute in parallel without sharing target repos, DBs, logs, or trace state
+And local-model smoke runs default to one shared local inference server tier while parallel selected cases execute concurrently through that server
 And follow-on dispatch is suppressed after the target role while the would-be next role and terminal disposition are recorded
 And successful runs are discarded by default while failed runs are retained for diagnosis unless explicitly discarded
-And the report records role, case, project type, execution mode, generation provenance, expected disposition, terminal disposition, would-be next role, cleanup status, and failure class
+And the report records role, case, project type, execution mode, inference topology, generation provenance, expected disposition, terminal disposition, would-be next role, cleanup status, and failure class
 And fake, stub, mock, canned, or scripted model endpoints are never counted as live validation evidence
 
 ## Out of Scope

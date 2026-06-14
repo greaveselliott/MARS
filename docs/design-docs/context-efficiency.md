@@ -56,7 +56,9 @@ Overflow is now impossible by construction through three cooperating rules:
    served context length (`ContextWindowForRoleModel`) and the server
    executor budgets the agent loop against it unless the manifest explicitly
    overrides `context_size`. Coding-tier roles budget at 32,768; reasoning
-   roles at their real 131,072.
+   roles at their real 131,072. When a validation or operator path starts a
+   server with multiple parallel slots, the router scales the server's total
+   context by the slot count so each slot still serves that advertised window.
 3. **Server-reported clamp with prune-and-retry.** The LLM client returns a
    typed `ContextSizeError` carrying llama.cpp's `n_prompt_tokens`/`n_ctx`.
    The client and loop never retry the doomed request verbatim; instead the

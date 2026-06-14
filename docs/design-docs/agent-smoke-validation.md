@@ -49,10 +49,17 @@ The primary behavior is **live role execution**:
    mutations fail the case.
 9. Write `result.json`, `manifest.json`, and any requested Markdown report.
 
-The runner constructs one shared inference router for a batch. `--parallel N`
-then runs up to N selected cases concurrently, each with its own target repo,
-DB, logs, and trace state. The shared router prevents local model port
-contention while preserving per-case execution isolation.
+The runner constructs one shared inference router for a batch. Local-model
+agent-smoke runs default to `--single-server --single-server-tier coding`,
+which forces every role and manifest model hint onto one local llama-server
+process. `--parallel N` then runs up to N selected cases concurrently, each
+with its own target repo, DB, logs, and trace state, while the single server's
+`--parallel` slot count is raised to at least N. The router scales the
+server's total context by that slot count so each concurrent request keeps the
+configured tier window instead of receiving a divided slice of context.
+Operators may pass `--single-server=false` to diagnose tier-routing behavior,
+but the primary Compartmentalised Agent Smoke claim is one shared local server
+with parallel case execution.
 
 Follow-on dispatch is intentionally suppressed. The runner directly invokes
 the executor and does not call the server job-completion callback that would
@@ -121,8 +128,12 @@ Agent-smoke evidence has two levels:
   successful ephemeral runs.
 - **Live model evidence:** operator-triggered runs without `--fixture-only`
   and backed by a real model endpoint prove model behavior for the selected
-  role/case matrix. These runs must be recorded under
-  `docs/validation/reports/` when used for a source-change claim.
+  role/case matrix. Primary agent-smoke validation reports must record the
+  inference topology, including `single_server`, `single_server_tier`, and
+  server parallel slots, so reviewers can distinguish the intended
+  single-server parallel lane from tiered-router diagnostics. These runs must
+  be recorded under `docs/validation/reports/` when used for a source-change
+  claim.
 
 A passing case requires the expected terminal disposition, required artifacts,
 forbidden mutations, generation provenance, cleanup status, and failure class
@@ -150,6 +161,7 @@ to match the case contract. Exit code alone never counts as a pass.
 | Smoke lane silently becomes fixture generation only | Live execution is default; `result.json` and Markdown reports record `execution_mode`; `--fixture-only` is explicitly diagnostic only. |
 | Agent smoke overfits one project type | Matrix spans API, web, game, CLI, library, docs-site, and maintenance cases, with `--cycle` and held-out suites. |
 | Parallel cases contaminate each other | Every case owns a target repo, DB, log file, and trace path; only the inference router is shared. |
+| Parallel validation silently starts one model server per tier | Local-model agent-smoke defaults to `--single-server`; reports record single-server topology and server parallel slots. |
 | Follow-on dispatch turns smoke into an unbounded lifecycle run | Runner calls `serve.Executor.Execute` directly and skips job-completion routing. |
 | Source-only roles leak into deployed manifests | `foundation-maintainer` is reported as source-only and is never added to target manifests. |
 | Fake-LLM tests are mistaken for real model validation | AD-296 bans fake endpoints as validation evidence; reports name endpoint overrides and classify fake-backed runs as evidence-only plumbing. |

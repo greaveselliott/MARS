@@ -51,7 +51,7 @@ The user config remains an escape hatch, not the normal path:
 - `performance_profile`: `auto`, `quality`, `balanced`, or `speed`. `quality` uses the detected hardware profile as-is; `balanced` caps high/multi hardware at the medium model set; `speed` uses the low model set when a GPU is present.
 - llama-server flags: `llama_parallel`, `llama_threads`, `llama_threads_batch`, `llama_batch_size`, `llama_ubatch_size`, `llama_flash_attention`, and `llama_mlock`.
 
-Default `llama_parallel` is `1` because the strict-trunk default pipeline is one active agent per repo. llama.cpp's auto parallelism can reserve multiple slots and extra KV/cache memory for throughput the default workflow does not use. Operators can set `llama_parallel: 0` to restore llama.cpp auto behavior.
+Default `llama_parallel` is `1` because the strict-trunk default pipeline is one active agent per repo. llama.cpp's auto parallelism can reserve multiple slots and extra KV/cache memory for throughput the default workflow does not use. Operators can set `llama_parallel: 0` to restore llama.cpp auto behavior. When the harness deliberately starts a server with multiple parallel slots, it scales the server `--ctx-size` by the slot count so each request keeps the tier's documented served context window instead of silently receiving a divided window.
 
 Changing the effective `performance_profile` may require additional model files. `mars-harness setup` now verifies the model files required by the active profile before accepting the download marker as complete.
 
@@ -75,11 +75,18 @@ Target manifests already declare each role's intended model tier with `model: fa
 
 This matters because executive/planning roles such as `ceo`, `coo`, and `cto-weekly` should not accidentally route to the heavy coding model just because their role name was omitted from a hardcoded router map. On constrained or newly configured machines, that causes bootstrap jobs to fail with "no local model for tier coding" even though the manifest asked for a reasoning-tier role.
 
-The router now resolves tiers in this order:
+The router normally resolves tiers in this order:
 
 1. manifest `role.model` when it is one of `fast`, `reasoning`, or `coding`
 2. built-in role fallback mapping for older/custom callers
 3. coding tier for truly unknown roles, preserving the conservative quality default
+
+Validation runners can deliberately force a single server tier for an entire
+batch. `validation agent-smoke --single-server` uses that path so role-local
+parallel smoke cases share one llama-server process while still preserving
+per-case repo, DB, trace, and log isolation. Forced-tier routing is an explicit
+validation topology override; ordinary autonomous execution keeps manifest-tier
+routing as the source of truth.
 
 Missing local-model errors also name the expected model file path and suggest `mars-harness setup` or remote fallback configuration. Telemetry classifies these as `model_unavailable` instead of `unknown`, routing repeated failures to inference/setup work. The reason is operator recovery: inference failures should tell the user which tier/file is missing and how to repair it.
 

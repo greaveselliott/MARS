@@ -7,6 +7,9 @@ ephemeral and live under `../demo/validation-runs/agent-smoke/` by default.
 The primary purpose is live per-agent execution: selected cases run through the
 same server job executor as autonomous jobs and can run in parallel across
 isolated repos and databases.
+Local-model runs default to `--single-server` with `--single-server-tier coding`
+so parallel selected cases share one llama-server process instead of quietly
+starting separate tier servers.
 
 ## Contract
 
@@ -21,6 +24,9 @@ isolated repos and databases.
   persistence, structured trigger context, and role tool policy.
 - Follow-on dispatch is suppressed by not invoking the job-completion routing
   callback; reports record the would-be next role and terminal disposition.
+- Reports record inference topology. A validation report for the primary lane
+  must show `single_server: true` or the Markdown single-server topology line
+  when claiming single-server parallel coverage.
 - Long-lived snapshot repos and checked-in generated target projects are not
   allowed.
 - Full clean-project `mars-harness start` sweeps still own end-to-end lifecycle
@@ -41,7 +47,7 @@ isolated repos and databases.
 ```bash
 mars-harness validation agent-smoke --suite fast --json
 mars-harness validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs
-mars-harness validation agent-smoke --suite held-out --parallel 2 --timeout 10m
+mars-harness validation agent-smoke --suite held-out --parallel 2 --single-server --single-server-tier coding --timeout 10m
 mars-harness validation agent-smoke --cleanup-only
 ```
 

@@ -42,12 +42,14 @@ Then the model store verifies SHA256, resumes partial files when possible, reuse
 Given an agent needs a local model endpoint
 When the llama.cpp server is started or reused
 Then argv, base URL, state transitions, health checks, and shutdown are managed by the harness instead of embedding llama.cpp in the Go binary
+And multi-slot local servers preserve each slot's tier context window by scaling total server context with the requested parallel slot count
 
 ### F-003-S004: Manifest-Tier Routing
 
 Given a role declares `model: fast`, `model: reasoning`, or `model: coding` in the manifest
 When the inference router resolves a server for that role
 Then the manifest tier is used before role-name fallback routing
+And validation-only single-server mode can explicitly force all roles and manifest hints onto one configured tier for batch smoke evidence
 
 ### F-003-S005: Actionable Missing Model Errors
 
