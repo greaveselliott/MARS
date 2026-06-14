@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/agent-smoke-validation.md
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
@@ -10,6 +11,8 @@ docs:
 - docs/design-docs/harness-operating-model.md
 - docs/design-docs/release-versioning.md
 - docs/design-docs/self-reflective-telemetry.md
+- docs/validation/README.md
+- docs/validation/agent-smoke/README.md
 - docs/product-specs/product-surface.md
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-002-zero-config-shell-path.md
@@ -212,7 +215,7 @@ diagnosis unless --discard-failed is set.`,
 	cmd.Flags().StringVar(&opts.Cycle, "cycle", "", "Stable cycle key for rotating fast/held-out selections")
 	cmd.Flags().IntVar(&opts.MaxTurns, "max-turns", 6, "Maximum role turns for live execution")
 	cmd.Flags().DurationVar(&opts.Timeout, "timeout", 10*time.Minute, "Per-case timeout")
-	cmd.Flags().StringVar(&opts.ModelEndpoint, "model-endpoint", "", "Optional OpenAI-compatible model endpoint for live smoke execution")
+	cmd.Flags().StringVar(&opts.ModelEndpoint, "model-endpoint", "", "Optional real OpenAI-compatible model endpoint override; fake or scripted endpoints are not validation evidence")
 	cmd.Flags().BoolVar(&opts.FixtureOnly, "fixture-only", false, "Generate and lint ephemeral targets without running the role")
 	cmd.Flags().BoolVar(&opts.JSON, "json", false, "Write JSON report")
 	cmd.Flags().StringVar(&opts.ReportPath, "report", "", "Optional Markdown report path")

@@ -29,6 +29,18 @@ Validation reports should cite the profile, exact target path or remote, trust
 level, commands run, skipped optional paths, ticket or telemetry outputs, and
 the decision about whether contributor-mode validation is allowed.
 
+Matrix run reports are required whenever a validation matrix is run or
+attempted. They must name the selected matrix or suite, all selected cases or
+archetypes, exact command, source ref or installed binary, model identity,
+target/run paths, DB/log/trace paths, per-case status, failure class, cleanup
+status, and any exact blocker or rerun command. A failed setup still gets a
+matrix run report; do not leave the result only in chat or terminal scrollback.
+
+Fake, stub, mock, canned, or scripted LLM endpoints are not validation
+evidence. Runs backed by those endpoints can be recorded only as deterministic
+plumbing checks and must be excluded from live role/model/lifecycle pass
+claims.
+
 Report naming, required run fields, pass criteria, and the mapping from
 source-change classes to minimum archetype replays are defined in
 [docs/design-docs/validation-matrix-gating.md](../design-docs/validation-matrix-gating.md)

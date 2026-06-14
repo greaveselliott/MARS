@@ -25,6 +25,9 @@ isolated repos and databases.
   allowed.
 - Full clean-project `mars-harness start` sweeps still own end-to-end lifecycle
   confidence; agent smoke is the fast compartmentalized lane.
+- `--model-endpoint` is only for a real OpenAI-compatible model endpoint.
+  Fake, stub, mock, canned, or scripted endpoints are test plumbing only and
+  must not be counted as validation evidence.
 
 ## Suites
 

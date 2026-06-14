@@ -2,9 +2,11 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/agent-smoke-validation.md
 - docs/design-docs/foundation-operating-model.md
 - docs/design-docs/validation-matrix-gating.md
 - docs/validation/README.md
+- docs/validation/agent-smoke/README.md
 - docs/product-specs/product-surface.md
 - docs/features/F-012-self-improvement-loop.md
 */
@@ -153,14 +155,14 @@ func TestRunAgentSmokeKeepRunsAndCleanupOnly(t *testing.T) {
 
 func TestRunAgentSmokeExecutesLiveRoleThroughServerPath(t *testing.T) {
 	root := t.TempDir()
-	fake := newAgentSmokeFakeChatServer(t, fakeAgentSmokeDisposition("completed", "ticket_breakdown", "cto-weekly"))
+	deterministic := newAgentSmokeDeterministicChatServer(t, deterministicAgentSmokeDisposition("completed", "ticket_breakdown", "cto-weekly"))
 	report, err := RunAgentSmoke(context.Background(), AgentSmokeOptions{
 		HarnessRoot:   repoRootForTest(t),
 		Root:          root,
 		Suite:         AgentSmokeSuiteFast,
 		Role:          "ceo",
 		ProjectType:   "static-web",
-		ModelEndpoint: fake.URL(),
+		ModelEndpoint: deterministic.URL(),
 		MaxTurns:      2,
 		Timeout:       30 * time.Second,
 		KeepRuns:      true,
@@ -178,8 +180,8 @@ func TestRunAgentSmokeExecutesLiveRoleThroughServerPath(t *testing.T) {
 	if result.JobID == "" || result.TerminalDisposition != "completed" || result.TerminalSuggested != "cto-weekly" {
 		t.Fatalf("expected terminal disposition fields, got %+v", result)
 	}
-	if fake.RequestCount() == 0 {
-		t.Fatal("expected fake model to be called")
+	if deterministic.RequestCount() == 0 {
+		t.Fatal("expected deterministic test endpoint to be called")
 	}
 	if _, err := os.Stat(filepath.Join(result.RunPath, "result.json")); err != nil {
 		t.Fatalf("expected retained result.json: %v", err)
@@ -188,13 +190,13 @@ func TestRunAgentSmokeExecutesLiveRoleThroughServerPath(t *testing.T) {
 
 func TestRunAgentSmokeExecutesCasesInParallel(t *testing.T) {
 	root := t.TempDir()
-	fake := newAgentSmokeFakeChatServer(t, fakeAgentSmokeDisposition("completed", "ticket_breakdown", "cto-weekly"))
+	deterministic := newAgentSmokeDeterministicChatServer(t, deterministicAgentSmokeDisposition("completed", "ticket_breakdown", "cto-weekly"))
 	report, err := RunAgentSmoke(context.Background(), AgentSmokeOptions{
 		HarnessRoot:   repoRootForTest(t),
 		Root:          root,
 		Suite:         AgentSmokeSuiteDefault,
 		Role:          "ceo",
-		ModelEndpoint: fake.URL(),
+		ModelEndpoint: deterministic.URL(),
 		MaxTurns:      2,
 		Parallel:      2,
 		Timeout:       30 * time.Second,
@@ -208,8 +210,8 @@ func TestRunAgentSmokeExecutesCasesInParallel(t *testing.T) {
 	if report.Selected < 2 {
 		t.Fatalf("expected multiple ceo cases, got %d", report.Selected)
 	}
-	if fake.RequestCount() != report.Selected {
-		t.Fatalf("expected one model call per case, got calls=%d selected=%d", fake.RequestCount(), report.Selected)
+	if deterministic.RequestCount() != report.Selected {
+		t.Fatalf("expected one model call per case, got calls=%d selected=%d", deterministic.RequestCount(), report.Selected)
 	}
 	for _, result := range report.Results {
 		if result.ExecutionMode != "live" || result.TerminalDisposition != "completed" {
@@ -245,10 +247,12 @@ func TestAgentSmokeReportSummaryAndMarkdown(t *testing.T) {
 		t.Fatalf("unexpected cleanup summary %q", got)
 	}
 	report := AgentSmokeReport{
-		Root:     "/tmp/smoke",
-		Suite:    AgentSmokeSuiteFast,
-		Selected: 1,
-		Passed:   1,
+		Root:        "/tmp/smoke",
+		Suite:       AgentSmokeSuiteFast,
+		Evidence:    "endpoint-override",
+		ModelSource: "operator-supplied OpenAI-compatible endpoint; AD-296 requires this to be a real model endpoint for validation claims",
+		Selected:    1,
+		Passed:      1,
 		Results: []AgentSmokeResult{{
 			Role:                "ceo",
 			CaseID:              "static-web-empty",
@@ -270,7 +274,7 @@ func TestAgentSmokeReportSummaryAndMarkdown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read markdown report: %v", err)
 	}
-	if !strings.Contains(string(data), "`live`") || !strings.Contains(string(data), "`completed`") {
+	if !strings.Contains(string(data), "`live`") || !strings.Contains(string(data), "`completed`") || !strings.Contains(string(data), "AD-296") {
 		t.Fatalf("expected mode and disposition in report:\n%s", string(data))
 	}
 }
@@ -411,16 +415,16 @@ func TestResolveAndValidateAgentSmokeErrors(t *testing.T) {
 	}
 }
 
-type agentSmokeFakeChatServer struct {
+type agentSmokeDeterministicChatServer struct {
 	server   *httptest.Server
 	mu       sync.Mutex
 	response llm.ChatCompletionResponse
 	requests int
 }
 
-func newAgentSmokeFakeChatServer(t *testing.T, response llm.ChatCompletionResponse) *agentSmokeFakeChatServer {
+func newAgentSmokeDeterministicChatServer(t *testing.T, response llm.ChatCompletionResponse) *agentSmokeDeterministicChatServer {
 	t.Helper()
-	f := &agentSmokeFakeChatServer{response: response}
+	f := &agentSmokeDeterministicChatServer{response: response}
 	f.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/chat/completions" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
@@ -429,30 +433,30 @@ func newAgentSmokeFakeChatServer(t *testing.T, response llm.ChatCompletionRespon
 		f.requests++
 		f.mu.Unlock()
 		if err := json.NewEncoder(w).Encode(f.response); err != nil {
-			t.Fatalf("encode fake response: %v", err)
+			t.Fatalf("encode deterministic test response: %v", err)
 		}
 	}))
 	t.Cleanup(f.server.Close)
 	return f
 }
 
-func (f *agentSmokeFakeChatServer) URL() string {
+func (f *agentSmokeDeterministicChatServer) URL() string {
 	return f.server.URL
 }
 
-func (f *agentSmokeFakeChatServer) RequestCount() int {
+func (f *agentSmokeDeterministicChatServer) RequestCount() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.requests
 }
 
-func fakeAgentSmokeDisposition(status, nextNeed, suggestedRole string) llm.ChatCompletionResponse {
+func deterministicAgentSmokeDisposition(status, nextNeed, suggestedRole string) llm.ChatCompletionResponse {
 	args, _ := json.Marshal(map[string]any{
 		"status":         status,
 		"next_need":      nextNeed,
 		"suggested_role": suggestedRole,
-		"reason":         "fake agent smoke terminal disposition",
-		"evidence_links": []string{"agent-smoke fake llm"},
+		"reason":         "deterministic executor-path test terminal disposition",
+		"evidence_links": []string{"agent-smoke deterministic executor-path test"},
 	})
 	return llm.ChatCompletionResponse{Choices: []llm.Choice{{
 		Message: llm.Message{

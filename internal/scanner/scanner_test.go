@@ -574,6 +574,7 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(agentGuide), "Deployed operating model")
 	assert.Contains(t, string(agentGuide), "Symbiotic operating-model change")
 	assert.Contains(t, string(agentGuide), "Live evidence improvement loop")
+	assert.Contains(t, string(agentGuide), "Matrix run report")
 	assert.Contains(t, string(agentGuide), "Failure ownership classification")
 	assert.Contains(t, string(agentGuide), "Foundation-owned failure")
 	assert.Contains(t, string(agentGuide), "Deployed-owned failure")

@@ -2,9 +2,11 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/agent-smoke-validation.md
 - docs/design-docs/foundation-operating-model.md
 - docs/design-docs/validation-matrix-gating.md
 - docs/validation/README.md
+- docs/validation/agent-smoke/README.md
 - docs/product-specs/product-surface.md
 - docs/features/F-012-self-improvement-loop.md
 */
@@ -83,6 +85,8 @@ type AgentSmokeOptions struct {
 type AgentSmokeReport struct {
 	Root        string             `json:"root"`
 	Suite       string             `json:"suite"`
+	Evidence    string             `json:"evidence"`
+	ModelSource string             `json:"model_source"`
 	StartedAt   time.Time          `json:"started_at"`
 	FinishedAt  time.Time          `json:"finished_at"`
 	Selected    int                `json:"selected"`
@@ -167,6 +171,8 @@ func RunAgentSmoke(ctx context.Context, opts AgentSmokeOptions) (AgentSmokeRepor
 	report := AgentSmokeReport{
 		Root:        root,
 		Suite:       opts.Suite,
+		Evidence:    agentSmokeEvidence(opts),
+		ModelSource: agentSmokeModelSource(opts),
 		StartedAt:   started,
 		CleanupOnly: opts.CleanupOnly,
 	}
@@ -234,6 +240,30 @@ func normalizeAgentSmokeOptions(opts AgentSmokeOptions) AgentSmokeOptions {
 	opts.ProjectType = strings.TrimSpace(opts.ProjectType)
 	opts.ModelEndpoint = strings.TrimSpace(opts.ModelEndpoint)
 	return opts
+}
+
+func agentSmokeEvidence(opts AgentSmokeOptions) string {
+	if opts.CleanupOnly {
+		return "cleanup-only"
+	}
+	if opts.FixtureOnly {
+		return "fixture-only"
+	}
+	if strings.TrimSpace(opts.ModelEndpoint) != "" {
+		return "endpoint-override"
+	}
+	return "local-model"
+}
+
+func agentSmokeModelSource(opts AgentSmokeOptions) string {
+	switch agentSmokeEvidence(opts) {
+	case "cleanup-only", "fixture-only":
+		return "none"
+	case "endpoint-override":
+		return "operator-supplied OpenAI-compatible endpoint; AD-296 requires this to be a real model endpoint for validation claims"
+	default:
+		return "local Mars Harness inference router"
+	}
 }
 
 func resolveAgentSmokeRoot(opts AgentSmokeOptions) (string, error) {
@@ -1027,7 +1057,17 @@ func writeAgentSmokeMarkdownReport(path string, report AgentSmokeReport) error {
 	var b strings.Builder
 	b.WriteString("# Agent Smoke Report\n\n")
 	b.WriteString(report.Summary())
-	b.WriteString("\n\n| Role | Case | Project | Mode | Disposition | Status | Failure | Run |\n")
+	b.WriteString("\n\n")
+	if report.Evidence != "" {
+		fmt.Fprintf(&b, "- Evidence source: `%s`\n", report.Evidence)
+	}
+	if report.ModelSource != "" {
+		fmt.Fprintf(&b, "- Model source: %s\n", report.ModelSource)
+	}
+	if report.Evidence == "endpoint-override" {
+		b.WriteString("- Endpoint override note: fake, stub, mock, canned, or scripted endpoints are excluded from validation pass claims by AD-296.\n")
+	}
+	b.WriteString("\n| Role | Case | Project | Mode | Disposition | Status | Failure | Run |\n")
 	b.WriteString("| --- | --- | --- | --- | --- | --- | --- | --- |\n")
 	for _, r := range report.Results {
 		failure := r.FailureClass

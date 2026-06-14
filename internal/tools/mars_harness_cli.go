@@ -2,10 +2,13 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/agent-smoke-validation.md
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/dashboard.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/tools-glossary.md
+- docs/validation/README.md
+- docs/validation/agent-smoke/README.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-012-self-improvement-loop.md
@@ -551,8 +554,10 @@ Global command surface:
     Run compartmentalised role smoke tests against fresh ephemeral targets
     generated through foundation tooling, executing selected roles through the
     server job path in parallel. Successful runs are discarded by default;
-    failed runs are retained unless --discard-failed is set.
-    Flags: --role <role>, --case <id>, --project-type <type>, --suite <fast|default|full|held-out>, --parallel <n>, --cycle <key>, --max-turns <n>, --timeout <duration>, --model-endpoint <url>, --fixture-only, --json, --report <path>, --keep-runs, --cleanup-only, --discard-failed, --root <path>
+    failed runs are retained unless --discard-failed is set. --model-endpoint
+    is only for a real OpenAI-compatible model endpoint; fake or scripted
+    endpoints are deterministic test plumbing, not validation evidence.
+    Flags: --role <role>, --case <id>, --project-type <type>, --suite <fast|default|full|held-out>, --parallel <n>, --cycle <key>, --max-turns <n>, --timeout <duration>, --model-endpoint <real-url>, --fixture-only, --json, --report <path>, --keep-runs, --cleanup-only, --discard-failed, --root <path>
     Example: ["validation", "agent-smoke", "--suite", "fast", "--json"]
 
   scores

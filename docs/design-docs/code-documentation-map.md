@@ -112,7 +112,7 @@ source file exists in the worktree.
 | `internal/trust/` | `docs/design-docs/scoring-system.md` | F-008 |
 | `internal/ui/` | `docs/design-docs/agent-runtime.md`, `docs/design-docs/dashboard.md` | F-005, F-010 |
 | `internal/updatecheck/` | `docs/design-docs/release-versioning.md` | F-004 |
-| `internal/validation/` | `docs/design-docs/foundation-operating-model.md`, `docs/design-docs/validation-matrix-gating.md`, `docs/validation/README.md` | F-012 |
+| `internal/validation/` | `docs/design-docs/foundation-operating-model.md`, `docs/design-docs/validation-matrix-gating.md`, `docs/design-docs/agent-smoke-validation.md`, `docs/validation/README.md`, `docs/validation/agent-smoke/README.md` | F-012 |
 | `pkg/testutil/` | `docs/design-docs/agent-runtime.md` | F-005 |
 
 Every row also implicitly includes this map. If a file crosses package

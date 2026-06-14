@@ -61,6 +61,12 @@ Replay evidence is durable, discoverable, and uniform:
   (the date is the date the report file is created; later runs append dated,
   anchor-linkable sections to the same file, as
   `2026-05-19-demo-123-live-lifecycle.md` already does).
+- **Matrix run report:** whenever a validation matrix is run or attempted, the
+  report names the selected matrix/suite, selected cases or archetypes, exact
+  command, source ref or binary, model identity, target/run paths,
+  DB/log/trace paths, per-case status, failure class, cleanup status, and the
+  exact blocker or rerun command. Setup failures are still reportable matrix
+  outcomes; do not leave them only in chat.
 - **Required fields per run section** (from AD-138 step 3 and
   `docs/validation/README.md`): exact command, target path or remote, source
   ref or binary, **model identity (model name, quantization, context size,
@@ -75,6 +81,10 @@ Replay evidence is durable, discoverable, and uniform:
   reclassified evidence-only and re-captured on the new model (discovered
   2026-06-12 when the quality-profile Q8_0 weights maxed unified memory and
   the harness moved to the balanced model mid-measurement).
+- **Fake endpoints are not validation evidence:** fake, stub, mock, canned, or
+  scripted LLM endpoints may be used only for deterministic automated tests.
+  Matrix reports backed by those endpoints are evidence-only plumbing and must
+  not be counted as live role, model, or lifecycle validation.
 - **What counts as a pass:** the rerun reaches at least the lifecycle stage
   of the prior baseline for that archetype; the failure signature the change
   claimed to fix does not reappear; no new foundation-owned failure class

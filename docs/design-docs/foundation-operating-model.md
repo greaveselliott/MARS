@@ -109,6 +109,20 @@ Batch related slices (for example WS-D policy migrations) into **one**
 post-change replay where AD-284 allows, instead of one multi-hour run per
 commit.
 
+### Matrix Run Reports
+
+Whenever a foundation maintainer runs or attempts a validation matrix, create
+or update a **matrix run report** under `docs/validation/reports/` in the same
+work. This applies to full lifecycle matrix replays and scoped lanes such as
+`mars-harness validation agent-smoke`.
+
+A matrix run report records the selected matrix or suite, all selected cases or
+archetypes, exact command, source ref or installed binary, model identity,
+target/run paths, DB/log/trace paths, per-case status, failure class, cleanup
+status, and any exact blocker or rerun command. A setup failure is still a
+matrix run result: write the report, classify the failure, and keep the
+validation claim unconfirmed until a passing rerun exists.
+
 ### AD-294: Compartmentalised Agent Smoke Complements Full Sweeps
 
 Mars Harness also provides a fast role-local validation lane:
@@ -161,6 +175,7 @@ checkpoints. The source matrix lives in
 | Monitoring a known-wedge canary until timeout | Wastes GPU; record invalid run and fix seed or source |
 | Claiming validation from a run that never reached the affected role | Report must name product progress or explicit blocked stage |
 | Treating agent-smoke as a full lifecycle sweep | Role-local fixtures can pass while cross-role handoffs still regress |
+| Using fake, stub, mock, canned, or scripted model endpoints as live validation evidence | Proves runner plumbing at most and creates false positives for role behavior |
 | Branch-only green replay | Trunk push is part of done per AD-138 |
 
 ## Discoveries

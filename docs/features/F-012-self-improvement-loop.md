@@ -125,6 +125,7 @@ And multiple selected cases can execute in parallel without sharing target repos
 And follow-on dispatch is suppressed after the target role while the would-be next role and terminal disposition are recorded
 And successful runs are discarded by default while failed runs are retained for diagnosis unless explicitly discarded
 And the report records role, case, project type, execution mode, generation provenance, expected disposition, terminal disposition, would-be next role, cleanup status, and failure class
+And fake, stub, mock, canned, or scripted model endpoints are never counted as live validation evidence
 
 ## Out of Scope
 
