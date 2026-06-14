@@ -4,6 +4,9 @@
 fresh, one-use target repositories. The checked-in files in this directory are
 generator recipes and matrix metadata only; generated target projects are
 ephemeral and live under `../demo/validation-runs/agent-smoke/` by default.
+The primary purpose is live per-agent execution: selected cases run through the
+same server job executor as autonomous jobs and can run in parallel across
+isolated repos and databases.
 
 ## Contract
 
@@ -13,6 +16,11 @@ ephemeral and live under `../demo/validation-runs/agent-smoke/` by default.
 - Seed data is created through foundation harness surfaces: target harness
   scaffold generation, `file_write`, `ticket_create`, `record_decision`,
   `git_status`, `git_commit`, `workspace_hygiene`, and related built-in tools.
+- Each non-source-only selected role is executed through the server job path
+  with the generated target repo, isolated DB, trust/org-state stores, trace
+  persistence, structured trigger context, and role tool policy.
+- Follow-on dispatch is suppressed by not invoking the job-completion routing
+  callback; reports record the would-be next role and terminal disposition.
 - Long-lived snapshot repos and checked-in generated target projects are not
   allowed.
 - Full clean-project `mars-harness start` sweeps still own end-to-end lifecycle
@@ -33,3 +41,6 @@ mars-harness validation agent-smoke --role engineer --project-type go-api --suit
 mars-harness validation agent-smoke --suite held-out --parallel 2 --timeout 10m
 mars-harness validation agent-smoke --cleanup-only
 ```
+
+Use `--fixture-only` only to debug generator recipes and fixture linting; it is
+not valid evidence that an agent role executed.

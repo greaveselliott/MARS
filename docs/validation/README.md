@@ -43,8 +43,11 @@ Use `mars-harness validation agent-smoke` when a source change should be
 checked against many role-stage target states faster than a full lifecycle
 sweep. The runner creates fresh one-use targets under
 `../demo/validation-runs/agent-smoke/` by default, seeds them through foundation
-scaffold/tool surfaces, runs the selected role smoke boundary, writes JSON or
-Markdown evidence, and discards successful runs unless `--keep-runs` is set.
+scaffold/tool surfaces, executes selected roles through the server job path,
+writes JSON or Markdown evidence, and discards successful runs unless
+`--keep-runs` is set. `--parallel` runs independent ephemeral repos and DBs at
+the same time, and the runner suppresses follow-on dispatch after the target
+role while recording the would-be next role and terminal disposition.
 
 Smoke examples:
 

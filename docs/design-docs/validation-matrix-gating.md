@@ -89,9 +89,11 @@ Replay evidence is durable, discoverable, and uniform:
 
 `mars-harness validation agent-smoke` is a source-only validation lane for
 role-local smoke coverage. It generates ephemeral targets through foundation
-tools, cycles cases across API, web, game, CLI, library, docs-site, and
-maintenance project shapes, and records per-role pass/fail results with failure
-classes.
+tools, executes selected roles through the server job path, cycles cases across
+API, web, game, CLI, library, docs-site, and maintenance project shapes, and
+records per-role pass/fail results with terminal dispositions and failure
+classes. Selected cases can run in parallel because each case owns its target
+repo, DB, logs, and trace state.
 
 Agent smoke can support a source-change claim by showing that affected roles
 still behave at their lifecycle checkpoints. It does not satisfy an AD-284

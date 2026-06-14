@@ -114,14 +114,20 @@ commit.
 Mars Harness also provides a fast role-local validation lane:
 `mars-harness validation agent-smoke`. This lane generates fresh ephemeral
 target repositories for selected roles and project types, seeds each target
-through foundation scaffold/tool surfaces, records generation provenance, and
-discards successful runs by default.
+through foundation scaffold/tool surfaces, executes the selected role through
+the server job path, records generation provenance and terminal disposition,
+and discards successful runs by default. Parallel smoke runs use independent
+target repos, DBs, logs, and traces.
 
 Agent smoke is appropriate for quickly checking whether a role still behaves
 correctly at a realistic lifecycle checkpoint: CEO on an empty brief, COO after
 strategy context, CTO after BDD planning, Engineer with an in-progress ticket,
 reviewers after implementation evidence, maintainers after validation reports,
 and Orchestrator with source disposition context.
+
+Agent smoke suppresses follow-on dispatch after the target role. The report
+records the would-be next role so route quality remains inspectable without
+letting one compartmentalised case become a full lifecycle sweep.
 
 Agent smoke does **not** replace the clean-project lifecycle replay required
 for broad runtime, orchestration, or release claims. It catches role-local

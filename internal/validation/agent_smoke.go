@@ -25,8 +25,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/internal/codeintel"
+	"github.com/greaveselliott/mars-harness/internal/config"
+	"github.com/greaveselliott/mars-harness/internal/hardware"
+	"github.com/greaveselliott/mars-harness/internal/inference"
+	"github.com/greaveselliott/mars-harness/internal/orgstate"
+	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
+	"github.com/greaveselliott/mars-harness/internal/serve"
 	"github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/greaveselliott/mars-harness/internal/trace"
+	"github.com/greaveselliott/mars-harness/internal/trust"
+	"github.com/greaveselliott/mars-harness/internal/ui"
 	"gopkg.in/yaml.v3"
 )
 
@@ -60,6 +70,8 @@ type AgentSmokeOptions struct {
 	Cycle         string        `json:"cycle"`
 	MaxTurns      int           `json:"max_turns"`
 	Timeout       time.Duration `json:"timeout"`
+	ModelEndpoint string        `json:"model_endpoint,omitempty"`
+	FixtureOnly   bool          `json:"fixture_only"`
 	JSON          bool          `json:"json"`
 	ReportPath    string        `json:"report"`
 	KeepRuns      bool          `json:"keep_runs"`
@@ -109,6 +121,12 @@ type AgentSmokeResult struct {
 	DBPath              string        `json:"db_path,omitempty"`
 	LogPath             string        `json:"log_path,omitempty"`
 	TracePath           string        `json:"trace_path,omitempty"`
+	ExecutionMode       string        `json:"execution_mode,omitempty"`
+	JobID               string        `json:"job_id,omitempty"`
+	TerminalDisposition string        `json:"terminal_disposition,omitempty"`
+	TerminalNextNeed    string        `json:"terminal_next_need,omitempty"`
+	TerminalSuggested   string        `json:"terminal_suggested_role,omitempty"`
+	TerminalTraceID     string        `json:"terminal_trace_id,omitempty"`
 	WouldDispatch       string        `json:"would_dispatch,omitempty"`
 	ExpectedDisposition string        `json:"expected_disposition,omitempty"`
 	GenerationTools     []string      `json:"generation_tools"`
@@ -169,8 +187,13 @@ func RunAgentSmoke(ctx context.Context, opts AgentSmokeOptions) (AgentSmokeRepor
 	if len(selected) == 0 {
 		return AgentSmokeReport{}, fmt.Errorf("validation agent-smoke: no cases selected for suite=%q role=%q case=%q project-type=%q", opts.Suite, opts.Role, opts.CaseID, opts.ProjectType)
 	}
+	runtime, err := newAgentSmokeRuntime(opts)
+	if err != nil {
+		return AgentSmokeReport{}, err
+	}
+	defer runtime.Close()
 	report.Selected = len(selected)
-	results := runAgentSmokeCases(ctx, root, selected, opts)
+	results := runAgentSmokeCases(ctx, runtime, root, selected, opts)
 	report.Results = results
 	for _, result := range results {
 		if result.Status == "passed" {
@@ -203,9 +226,13 @@ func normalizeAgentSmokeOptions(opts AgentSmokeOptions) AgentSmokeOptions {
 	if opts.Timeout <= 0 {
 		opts.Timeout = 10 * time.Minute
 	}
+	if opts.MaxTurns <= 0 && !opts.FixtureOnly {
+		opts.MaxTurns = 6
+	}
 	opts.Role = strings.TrimSpace(opts.Role)
 	opts.CaseID = strings.TrimSpace(opts.CaseID)
 	opts.ProjectType = strings.TrimSpace(opts.ProjectType)
+	opts.ModelEndpoint = strings.TrimSpace(opts.ModelEndpoint)
 	return opts
 }
 
@@ -359,7 +386,46 @@ func cycleIndex(cycle, role string, n int) int {
 	return int(v) % n
 }
 
-func runAgentSmokeCases(ctx context.Context, root string, cases []AgentSmokeCase, opts AgentSmokeOptions) []AgentSmokeResult {
+type agentSmokeRuntime struct {
+	router *inference.Router
+}
+
+func newAgentSmokeRuntime(opts AgentSmokeOptions) (*agentSmokeRuntime, error) {
+	if opts.FixtureOnly {
+		return &agentSmokeRuntime{}, nil
+	}
+	if opts.ModelEndpoint != "" {
+		return &agentSmokeRuntime{router: inference.NewRouter(inference.RouterConfig{FallbackURL: opts.ModelEndpoint})}, nil
+	}
+	cfg, err := config.Load(config.DefaultPath())
+	if err != nil {
+		return nil, fmt.Errorf("validation agent-smoke: load local inference config: %w", err)
+	}
+	modelSet := hardware.DefaultModelsForHardware(hardware.Detect(), cfg.PerformanceProfile)
+	return &agentSmokeRuntime{router: inference.NewRouter(inference.RouterConfig{
+		BinaryPath:  filepath.Join(cfg.BinDir, "llama-server"),
+		Models:      modelSet,
+		RoleMapping: inference.DefaultRoleTierMapping(),
+		ModelsDir:   cfg.ModelsDir,
+		Tuning: inference.ServerTuning{
+			Threads:        cfg.LlamaThreads,
+			ThreadsBatch:   cfg.LlamaThreadsBatch,
+			Parallel:       cfg.LlamaParallel,
+			BatchSize:      cfg.LlamaBatchSize,
+			UBatchSize:     cfg.LlamaUBatchSize,
+			FlashAttention: cfg.LlamaFlashAttention,
+			MLock:          cfg.LlamaMLock,
+		},
+	})}, nil
+}
+
+func (r *agentSmokeRuntime) Close() {
+	if r != nil && r.router != nil {
+		r.router.StopAll()
+	}
+}
+
+func runAgentSmokeCases(ctx context.Context, runtime *agentSmokeRuntime, root string, cases []AgentSmokeCase, opts AgentSmokeOptions) []AgentSmokeResult {
 	parallel := opts.Parallel
 	if parallel < 1 {
 		parallel = 1
@@ -376,7 +442,7 @@ func runAgentSmokeCases(ctx context.Context, root string, cases []AgentSmokeCase
 			defer wg.Done()
 			for idx := range jobs {
 				caseCtx, cancel := context.WithTimeout(ctx, opts.Timeout)
-				results[idx] = runAgentSmokeCase(caseCtx, root, cases[idx], opts)
+				results[idx] = runAgentSmokeCase(caseCtx, runtime, root, cases[idx], opts)
 				cancel()
 			}
 		}()
@@ -389,7 +455,7 @@ func runAgentSmokeCases(ctx context.Context, root string, cases []AgentSmokeCase
 	return results
 }
 
-func runAgentSmokeCase(ctx context.Context, root string, c AgentSmokeCase, opts AgentSmokeOptions) (result AgentSmokeResult) {
+func runAgentSmokeCase(ctx context.Context, runtime *agentSmokeRuntime, root string, c AgentSmokeCase, opts AgentSmokeOptions) (result AgentSmokeResult) {
 	started := time.Now()
 	result = AgentSmokeResult{
 		CaseID:              c.ID,
@@ -433,7 +499,7 @@ func runAgentSmokeCase(ctx context.Context, root string, c AgentSmokeCase, opts 
 		result.Error = err.Error()
 		return result
 	}
-	provenance, err := generateAgentSmokeTarget(ctx, targetDir, c)
+	provenance, err := generateAgentSmokeTarget(ctx, targetDir, c, opts)
 	result.GenerationTools = provenance
 	if err != nil {
 		result.FailureClass = classifyAgentSmokeError(err)
@@ -446,6 +512,24 @@ func runAgentSmokeCase(ctx context.Context, root string, c AgentSmokeCase, opts 
 	}
 	if err := assertAgentSmokeCase(targetDir, c); err != nil {
 		result.FailureClass = FailureFixtureInvalid
+		result.Error = err.Error()
+		_ = writeAgentSmokeRunArtifacts(result)
+		if opts.DiscardFailed {
+			result.Discarded = discardRunDir(runDir) == nil
+		}
+		return result
+	}
+	if err := executeAgentSmokeRole(ctx, runtime, &result, c, opts); err != nil {
+		result.FailureClass = classifyAgentSmokeError(err)
+		result.Error = err.Error()
+		_ = writeAgentSmokeRunArtifacts(result)
+		if opts.DiscardFailed {
+			result.Discarded = discardRunDir(runDir) == nil
+		}
+		return result
+	}
+	if err := assertAgentSmokeCase(targetDir, c); err != nil {
+		result.FailureClass = FailureRoleBehavior
 		result.Error = err.Error()
 		_ = writeAgentSmokeRunArtifacts(result)
 		if opts.DiscardFailed {
@@ -474,7 +558,127 @@ func runAgentSmokeCase(ctx context.Context, root string, c AgentSmokeCase, opts 
 	return result
 }
 
-func generateAgentSmokeTarget(ctx context.Context, targetDir string, c AgentSmokeCase) ([]string, error) {
+func executeAgentSmokeRole(ctx context.Context, runtime *agentSmokeRuntime, result *AgentSmokeResult, c AgentSmokeCase, opts AgentSmokeOptions) error {
+	if opts.FixtureOnly {
+		result.ExecutionMode = "fixture-only"
+		return nil
+	}
+	if c.Role == "foundation-maintainer" {
+		result.ExecutionMode = "source-only"
+		result.JobID = "agent-smoke-source-only-" + slugify(c.ID)
+		result.TerminalDisposition = c.ExpectedDisposition
+		if err := os.WriteFile(result.LogPath, []byte("foundation-maintainer is source-only; target manifest execution is intentionally skipped for this case\n"), 0o644); err != nil {
+			return err
+		}
+		return nil
+	}
+	if runtime == nil || runtime.router == nil {
+		return fmt.Errorf("validation agent-smoke: live execution requires an inference router")
+	}
+	result.ExecutionMode = "live"
+	logFile, err := os.Create(result.LogPath)
+	if err != nil {
+		return fmt.Errorf("validation agent-smoke: create role log: %w", err)
+	}
+	defer logFile.Close()
+
+	traceStore, err := trace.OpenStore(result.DBPath)
+	if err != nil {
+		return fmt.Errorf("validation agent-smoke: open trace store: %w", err)
+	}
+	defer traceStore.Close()
+	trustStore, err := trust.OpenStore(result.DBPath)
+	if err != nil {
+		return fmt.Errorf("validation agent-smoke: open trust store: %w", err)
+	}
+	defer trustStore.Close()
+	orgStore, err := orgstate.OpenStore(result.DBPath)
+	if err != nil {
+		return fmt.Errorf("validation agent-smoke: open orgstate store: %w", err)
+	}
+	defer orgStore.Close()
+
+	exec := serve.NewExecutor(func(context.Context, string) (string, error) {
+		return result.TargetPath, nil
+	}, runtime.router, result.DBPath, traceStore, trustStore)
+	exec.SetOrgState(orgStore)
+	exec.SetCodeIntel(codeintel.NewRuntime(false, "agent-smoke"))
+	exec.SetJobViewFactory(ui.NewDebugJobViewFactory(logFile, false, true))
+
+	jobID := "agent-smoke-" + slugify(c.Role+"-"+c.ID)
+	result.JobID = jobID
+	trigger, err := json.Marshal(agentSmokeTrigger(c))
+	if err != nil {
+		return fmt.Errorf("validation agent-smoke: marshal trigger: %w", err)
+	}
+	job := &queue.Job{
+		ID:      jobID,
+		RepoID:  result.TargetPath,
+		Role:    c.Role,
+		Trigger: string(trigger),
+	}
+	if err := exec.Execute(ctx, job); err != nil {
+		disposition, dErr := orgStore.GetDisposition(ctx, job.ID)
+		if dErr == nil && disposition != nil {
+			recordAgentSmokeDisposition(result, disposition)
+		}
+		return err
+	}
+	disposition, err := orgStore.GetDisposition(ctx, job.ID)
+	if err != nil {
+		return fmt.Errorf("validation agent-smoke: read terminal disposition: %w", err)
+	}
+	if disposition == nil {
+		return fmt.Errorf("validation agent-smoke: %s/%s recorded no terminal disposition", c.Role, c.ID)
+	}
+	recordAgentSmokeDisposition(result, disposition)
+	if !agentSmokeDispositionMatches(c.ExpectedDisposition, disposition.Status) {
+		return fmt.Errorf("validation agent-smoke: %s/%s expected disposition %q, got %q", c.Role, c.ID, c.ExpectedDisposition, disposition.Status)
+	}
+	return nil
+}
+
+func agentSmokeTrigger(c AgentSmokeCase) map[string]any {
+	trigger := map[string]any{
+		"type":                        "agent_smoke",
+		"case":                        c.ID,
+		"role_under_test":             c.Role,
+		"project_type":                c.ProjectType,
+		"stage":                       c.Stage,
+		"expected_disposition":        c.ExpectedDisposition,
+		"would_dispatch":              c.WouldDispatch,
+		"suppress_follow_on_dispatch": true,
+		"fixture_source":              "docs/validation/agent-smoke/matrix.yaml",
+	}
+	for k, v := range c.Trigger {
+		trigger[k] = v
+	}
+	return trigger
+}
+
+func recordAgentSmokeDisposition(result *AgentSmokeResult, disposition *orgstate.Disposition) {
+	if result == nil || disposition == nil {
+		return
+	}
+	result.TerminalDisposition = disposition.Status
+	result.TerminalNextNeed = disposition.NextNeed
+	result.TerminalSuggested = disposition.SuggestedRole
+	if result.TerminalSuggested == "" {
+		result.TerminalSuggested = disposition.Handoff.TargetRole
+	}
+	result.TerminalTraceID = disposition.TraceID
+}
+
+func agentSmokeDispositionMatches(expected, actual string) bool {
+	expected = strings.TrimSpace(expected)
+	actual = strings.TrimSpace(actual)
+	if expected == "" {
+		return actual != ""
+	}
+	return expected == actual
+}
+
+func generateAgentSmokeTarget(ctx context.Context, targetDir string, c AgentSmokeCase, opts AgentSmokeOptions) ([]string, error) {
 	var provenance []string
 	if err := runCommand(ctx, targetDir, "git", "init", "-b", "main"); err != nil {
 		return provenance, err
@@ -536,6 +740,11 @@ func generateAgentSmokeTarget(ctx context.Context, targetDir string, c AgentSmok
 	}
 	if err := seedProjectFiles(call, c); err != nil {
 		return provenance, err
+	}
+	if opts.MaxTurns > 0 && c.Role != "foundation-maintainer" {
+		if err := applyAgentSmokeMaxTurns(call, targetDir, c.Role, opts.MaxTurns); err != nil {
+			return provenance, err
+		}
 	}
 	ticketPath := ""
 	if needsTicket(c.Stage) {
@@ -629,6 +838,82 @@ func findFirstTicket(targetDir, status string) (string, error) {
 	return filepath.ToSlash(filepath.Join("docs", "tickets", status, names[0])), nil
 }
 
+func applyAgentSmokeMaxTurns(call func(string, any) error, targetDir, role string, maxTurns int) error {
+	manifestPath := filepath.Join(targetDir, ".harness", "manifest.yaml")
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return fmt.Errorf("read generated manifest: %w", err)
+	}
+	updated, changed, err := setManifestRoleMaxTurns(string(data), role, maxTurns)
+	if err != nil {
+		return err
+	}
+	if !changed {
+		return nil
+	}
+	return call("file_write", map[string]string{
+		"path":    ".harness/manifest.yaml",
+		"content": updated,
+	})
+}
+
+func setManifestRoleMaxTurns(content, role string, maxTurns int) (string, bool, error) {
+	if maxTurns <= 0 {
+		return content, false, nil
+	}
+	role = strings.TrimSpace(role)
+	if role == "" {
+		return content, false, fmt.Errorf("validation agent-smoke: manifest role is empty")
+	}
+	hadTrailingNewline := strings.HasSuffix(content, "\n")
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
+	roleLine := "  " + role + ":"
+	start := -1
+	for i, line := range lines {
+		if line == roleLine {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		return content, false, fmt.Errorf("validation agent-smoke: generated manifest missing role %q", role)
+	}
+	end := len(lines)
+	for i := start + 1; i < len(lines); i++ {
+		if strings.HasPrefix(lines[i], "  ") && !strings.HasPrefix(lines[i], "    ") && strings.HasSuffix(strings.TrimSpace(lines[i]), ":") {
+			end = i
+			break
+		}
+	}
+	maxLine := fmt.Sprintf("    max_turns: %d", maxTurns)
+	for i := start + 1; i < end; i++ {
+		if strings.HasPrefix(strings.TrimSpace(lines[i]), "max_turns:") {
+			if lines[i] == maxLine {
+				return content, false, nil
+			}
+			lines[i] = maxLine
+			out := strings.Join(lines, "\n")
+			if hadTrailingNewline {
+				out += "\n"
+			}
+			return out, true, nil
+		}
+	}
+	insertAt := start + 1
+	for i := start + 1; i < end; i++ {
+		if strings.HasPrefix(strings.TrimSpace(lines[i]), "model:") {
+			insertAt = i + 1
+			break
+		}
+	}
+	lines = append(lines[:insertAt], append([]string{maxLine}, lines[insertAt:]...)...)
+	out := strings.Join(lines, "\n")
+	if hadTrailingNewline {
+		out += "\n"
+	}
+	return out, true, nil
+}
+
 func assertAgentSmokeCase(targetDir string, c AgentSmokeCase) error {
 	for _, rel := range c.RequiredArtifacts {
 		if strings.TrimSpace(rel) == "" {
@@ -661,6 +946,12 @@ func classifyAgentSmokeError(err error) string {
 		return FailureFixtureInvalid
 	case strings.Contains(msg, "model") || strings.Contains(msg, "llm") || strings.Contains(msg, "inference"):
 		return FailureEnvironmentModel
+	case strings.Contains(msg, "agent loop") || strings.Contains(msg, "expected disposition"):
+		return FailureRoleBehavior
+	case strings.Contains(msg, "disposition") || strings.Contains(msg, "dispatch") || strings.Contains(msg, "role ") && strings.Contains(msg, "not found"):
+		return FailureDispatchContext
+	case strings.Contains(msg, "unknown project type"):
+		return FailureProjectTypeGap
 	default:
 		return FailureFoundationGeneration
 	}
@@ -681,14 +972,18 @@ func writeAgentSmokeRunArtifacts(result AgentSmokeResult) error {
 		return err
 	}
 	manifest := map[string]any{
-		"id":           filepath.Base(result.RunPath),
-		"case":         result.CaseID,
-		"role":         result.Role,
-		"project_type": result.ProjectType,
-		"target":       result.TargetPath,
-		"db":           result.DBPath,
-		"status":       result.Status,
-		"created_at":   time.Now().UTC().Format(time.RFC3339),
+		"id":                   filepath.Base(result.RunPath),
+		"case":                 result.CaseID,
+		"role":                 result.Role,
+		"project_type":         result.ProjectType,
+		"target":               result.TargetPath,
+		"db":                   result.DBPath,
+		"execution_mode":       result.ExecutionMode,
+		"job_id":               result.JobID,
+		"status":               result.Status,
+		"terminal_disposition": result.TerminalDisposition,
+		"would_dispatch":       result.WouldDispatch,
+		"created_at":           time.Now().UTC().Format(time.RFC3339),
 	}
 	data, err = json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
@@ -732,8 +1027,8 @@ func writeAgentSmokeMarkdownReport(path string, report AgentSmokeReport) error {
 	var b strings.Builder
 	b.WriteString("# Agent Smoke Report\n\n")
 	b.WriteString(report.Summary())
-	b.WriteString("\n\n| Role | Case | Project | Status | Failure | Run |\n")
-	b.WriteString("| --- | --- | --- | --- | --- | --- |\n")
+	b.WriteString("\n\n| Role | Case | Project | Mode | Disposition | Status | Failure | Run |\n")
+	b.WriteString("| --- | --- | --- | --- | --- | --- | --- | --- |\n")
 	for _, r := range report.Results {
 		failure := r.FailureClass
 		if failure == "" {
@@ -743,7 +1038,15 @@ func writeAgentSmokeMarkdownReport(path string, report AgentSmokeReport) error {
 		if r.Discarded {
 			run = "discarded"
 		}
-		b.WriteString(fmt.Sprintf("| `%s` | `%s` | `%s` | `%s` | `%s` | `%s` |\n", r.Role, r.CaseID, r.ProjectType, r.Status, failure, run))
+		disposition := r.TerminalDisposition
+		if disposition == "" {
+			disposition = "-"
+		}
+		mode := r.ExecutionMode
+		if mode == "" {
+			mode = "-"
+		}
+		b.WriteString(fmt.Sprintf("| `%s` | `%s` | `%s` | `%s` | `%s` | `%s` | `%s` | `%s` |\n", r.Role, r.CaseID, r.ProjectType, mode, disposition, r.Status, failure, run))
 	}
 	return os.WriteFile(path, []byte(b.String()), 0o644)
 }

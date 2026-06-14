@@ -158,7 +158,8 @@ func validationAgentSmokeCmd() *cobra.Command {
 		Use:   "agent-smoke",
 		Short: "Run compartmentalised role smoke tests against ephemeral targets",
 		Long: `Generate fresh ephemeral target repositories through foundation tools and
-run compartmentalised smoke validation cases for Mars Harness roles.
+run compartmentalised smoke validation cases for Mars Harness roles through
+the server job execution path.
 
 Successful runs are discarded by default. Failed runs are retained for
 diagnosis unless --discard-failed is set.`,
@@ -182,6 +183,12 @@ diagnosis unless --discard-failed is set.`,
 				fmt.Fprintln(cmd.OutOrStdout(), report.Summary())
 				for _, result := range report.Results {
 					fmt.Fprintf(cmd.OutOrStdout(), "- %s/%s %s %s", result.Role, result.CaseID, result.ProjectType, result.Status)
+					if result.ExecutionMode != "" {
+						fmt.Fprintf(cmd.OutOrStdout(), " mode=%s", result.ExecutionMode)
+					}
+					if result.TerminalDisposition != "" {
+						fmt.Fprintf(cmd.OutOrStdout(), " disposition=%s", result.TerminalDisposition)
+					}
 					if result.FailureClass != "" {
 						fmt.Fprintf(cmd.OutOrStdout(), " (%s)", result.FailureClass)
 					}
@@ -203,8 +210,10 @@ diagnosis unless --discard-failed is set.`,
 	cmd.Flags().StringVar(&opts.Suite, "suite", "fast", "Suite to run: fast, default, full, or held-out")
 	cmd.Flags().IntVar(&opts.Parallel, "parallel", 1, "Maximum cases to run concurrently")
 	cmd.Flags().StringVar(&opts.Cycle, "cycle", "", "Stable cycle key for rotating fast/held-out selections")
-	cmd.Flags().IntVar(&opts.MaxTurns, "max-turns", 0, "Maximum role turns for live execution (0 = deterministic smoke boundary)")
+	cmd.Flags().IntVar(&opts.MaxTurns, "max-turns", 6, "Maximum role turns for live execution")
 	cmd.Flags().DurationVar(&opts.Timeout, "timeout", 10*time.Minute, "Per-case timeout")
+	cmd.Flags().StringVar(&opts.ModelEndpoint, "model-endpoint", "", "Optional OpenAI-compatible model endpoint for live smoke execution")
+	cmd.Flags().BoolVar(&opts.FixtureOnly, "fixture-only", false, "Generate and lint ephemeral targets without running the role")
 	cmd.Flags().BoolVar(&opts.JSON, "json", false, "Write JSON report")
 	cmd.Flags().StringVar(&opts.ReportPath, "report", "", "Optional Markdown report path")
 	cmd.Flags().BoolVar(&opts.KeepRuns, "keep-runs", false, "Keep successful ephemeral run directories")
