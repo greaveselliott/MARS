@@ -294,6 +294,7 @@ func stripCapabilityCategoryPrefix(segment string) string {
 
 func cleanCapabilityPhrase(phrase string) string {
 	phrase = strings.TrimSpace(strings.ToLower(phrase))
+	phrase = stripCapabilityReferenceTail(phrase)
 	phrase = strings.Trim(phrase, "`*_ .:-")
 	for _, prefix := range []string{"a ", "an ", "the "} {
 		phrase = strings.TrimPrefix(phrase, prefix)
@@ -304,6 +305,41 @@ func cleanCapabilityPhrase(phrase string) string {
 	phrase = strings.Join(strings.Fields(phrase), " ")
 	if len(phrase) < 3 {
 		return ""
+	}
+	return phrase
+}
+
+func stripCapabilityReferenceTail(phrase string) string {
+	lower := strings.ToLower(phrase)
+	cut := len(phrase)
+	for _, marker := range []string{
+		" described in ",
+		" described by ",
+		" documented in ",
+		" documented by ",
+		" defined in ",
+		" defined by ",
+		" specified in ",
+		" specified by ",
+		" covered in ",
+		" covered by ",
+	} {
+		if idx := strings.Index(lower, marker); idx >= 0 && idx < cut {
+			cut = idx
+		}
+	}
+	for _, marker := range []string{
+		" docs/features/",
+		"(docs/features/",
+		"`docs/features/",
+		"[docs/features/",
+	} {
+		if idx := strings.Index(lower, marker); idx >= 0 && idx < cut {
+			cut = idx
+		}
+	}
+	if cut < len(phrase) {
+		return strings.TrimSpace(phrase[:cut])
 	}
 	return phrase
 }
@@ -629,10 +665,12 @@ func projectBriefNamesGoBackend(root Root) bool {
 var capabilityStopWords = map[string]bool{
 	"a": true, "an": true, "and": true, "another": true, "are": true, "as": true, "be": true, "by": true,
 	"can": true, "complete": true, "condition": true, "conditions": true, "described": true,
+	"doc": true, "docs": true, "document": true, "documents": true, "documentation": true,
 	"core": true, "detect": true, "detected": true, "detection": true, "display": true, "displayed": true, "displays": true,
-	"fall": true, "falling": true, "fill": true, "fills": true, "filled": true, "for": true, "from": true, "full": true,
+	"fall": true, "falling": true, "feature": true, "features": true, "fill": true, "fills": true, "filled": true, "for": true, "from": true, "full": true,
 	"gameplay": true, "handle": true, "handled": true, "game": true, "games": true, "in": true,
 	"include": true, "includes": true, "including": true, "inspect": true, "inspected": true, "into": true, "local": true, "locally": true, "of": true,
+	"markdown": true, "md": true,
 	"mechanic": true, "mechanics": true, "on": true, "open": true, "opened": true, "or": true, "product": true, "project": true,
 	"piece": true, "pieces": true, "playable": true, "player": true, "players": true, "reach": true, "reaches": true, "round": true, "rounds": true, "run": true, "see": true, "stack": true,
 	"show": true, "showing": true, "shows": true, "that": true, "the": true, "to": true, "using": true, "user": true, "users": true,

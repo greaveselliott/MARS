@@ -897,6 +897,90 @@ None.
 	}
 }
 
+func TestCOOCompletionTreatsFeatureDocReferenceAsCitation(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeScoreSummaryBrief(t, dir)
+	writeSupersededStarterFeature(t, dir)
+	writeScoreSummaryFeature(t, dir, true)
+	required := strings.Join(projectBriefCapabilityPhrases(root), ", ")
+	if !strings.Contains(required, "score summary") {
+		t.Fatalf("expected score summary capability, got %q", required)
+	}
+	for _, unexpected := range []string{"docs", "features", "score-summary", "md"} {
+		if strings.Contains(required, unexpected) {
+			t.Fatalf("expected feature doc reference to be ignored as citation, got %q", required)
+		}
+	}
+	ctx := WithSession(context.Background(), Session{Role: "coo", ToolCounts: map[string]int{}})
+
+	if err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"ticket_breakdown","suggested_role":"cto-weekly"}`)); err != nil {
+		t.Fatalf("expected score summary citation not to block covered capability, got %v", err)
+	}
+}
+
+func TestCOOCompletionMissingFeatureDocCapabilityNamesCapabilityNotCitation(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeScoreSummaryBrief(t, dir)
+	writeSupersededStarterFeature(t, dir)
+	writeScoreSummaryFeature(t, dir, false)
+	ctx := WithSession(context.Background(), Session{Role: "coo", ToolCounts: map[string]int{}})
+
+	err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"ticket_breakdown","suggested_role":"cto-weekly"}`))
+	if err == nil {
+		t.Fatal("expected missing score summary capability to block COO completion")
+	}
+	if !strings.Contains(err.Error(), "score summary") {
+		t.Fatalf("expected missing capability to name score summary, got %v", err)
+	}
+	for _, unexpected := range []string{"docs/features", "score-summary.md"} {
+		if strings.Contains(err.Error(), unexpected) {
+			t.Fatalf("expected missing capability guidance not to name citation path, got %v", err)
+		}
+	}
+}
+
+func TestCOORepeatedFeatureSpecificityBlockReturnsRepairGuidance(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeScoreSummaryBrief(t, dir)
+	writeSupersededStarterFeature(t, dir)
+	writeScoreSummaryFeature(t, dir, false)
+	reg, err := DefaultRegistry()
+	if err != nil {
+		t.Fatalf("default registry: %v", err)
+	}
+	exec := NewExecutor(reg)
+	exec.Session = &Session{Role: "coo", ToolCounts: map[string]int{}, ToolState: map[string]string{}}
+	raw := `{"status":"completed","next_need":"ticket_breakdown","suggested_role":"cto-weekly"}`
+	allow := []string{"job_disposition_record", "file_read", "file_write"}
+
+	_, err = exec.Execute(context.Background(), root, allow, "job_disposition_record", raw)
+	if err == nil {
+		t.Fatal("expected first blocked disposition")
+	}
+	if strings.Contains(err.Error(), "Guardrail repair required") {
+		t.Fatalf("expected first block to remain compact, got %v", err)
+	}
+	_, err = exec.Execute(context.Background(), root, allow, "job_disposition_record", raw)
+	if err == nil {
+		t.Fatal("expected repeated blocked disposition")
+	}
+	for _, want := range []string{
+		"Guardrail repair required",
+		"Do not call job_disposition_record again",
+		"score summary",
+		"file_read",
+		"file_write",
+		"docs/features/F-001-score-summary.md",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("expected repeated block guidance to contain %q, got %v", want, err)
+		}
+	}
+}
+
 func TestCTOCompletionRequiresEarlyScenarioTicketBatch(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)

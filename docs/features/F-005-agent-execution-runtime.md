@@ -62,6 +62,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 45. F-005-S056 - Browser-framework planning and review share the same product-smoke evidence path.
 46. F-005-S057 - Generic gameplay summary labels do not become standalone capability requirements.
 47. F-005-S058 - Alternate input exclusions do not descope basic keyboard movement.
+48. F-005-S064 - Repeated policy blocks return actionable repair guidance to the active role.
 
 ## Scenarios
 
@@ -761,6 +762,22 @@ When COO records a completed planning disposition after covering the actual prod
 Then capability extraction treats each Markdown bullet as a separate statement
 And non-goals such as optional future workflows, generic access wording, operational script constraints, and validation/build wording do not become required product scenarios
 And natural product qualifiers do not block when the scenario schedule clearly covers the requested behavior
+And documentation paths or Markdown references such as `docs/features/F-001-score-summary.md` are treated as citations rather than product capability tokens
+
+### F-005-S064: Repeated Policy Blocks Return Role Repair Guidance
+
+Given a role repeats the same guardrail or tool-policy blocked tool call in one job
+When the tool executor returns the repeated policy error to the model
+Then the tool result includes a compact `Guardrail repair required` section with the next allowed repair action instead of only replaying the original policy text
+
+Given COO repeats a blocked planning disposition because product capability coverage is missing
+When the repeated policy guidance is returned
+Then the message tells COO not to call `job_disposition_record` again for the same payload, names the missing capabilities, names the feature contract path to repair, and directs COO to use `file_read`, `file_write`, then retry the disposition only after scenario coverage is updated
+
+Given Engineer repeats a blocked `shell_exec` while an earlier test or build command is still unresolved
+When the repeated policy guidance is returned
+Then the message tells Engineer to stop trying alternate shell or dependency commands, repair the exact validation lane with `file_read` or `file_write`, and rerun the focused test/build before ticket moves, evidence, commits, runtime probes, or further shell exploration
+And missing Go assertion dependencies introduced by a new test are routed toward standard-library test rewrites or dependency removal before rerunning `go test`
 
 ### F-005-S033: Test-Build Repair Scope Is Recorded
 
@@ -957,3 +974,4 @@ None.
 - F-005-S061: `go test ./internal/tools -run TestCOOCompletionAllowsOutOfScopeIntroAndAdvancedScoringSystems`
 - F-005-S062: `go test ./internal/tools -run TestCapabilityMatchingIgnoresIncludingAndDetectionGlue`
 - F-005-S063: `go test ./cmd/mars-harness -run TestRunCommandFoundationMaintainer` and `go test ./internal/scanner -run TestInit_success`
+- F-005-S064: `go test ./internal/tools -run 'TestCOOCompletionTreatsFeatureDocReferenceAsCitation|TestCOOCompletionMissingFeatureDocCapabilityNamesCapabilityNotCitation|TestCOORepeatedFeatureSpecificityBlockReturnsRepairGuidance|TestRecordSessionToolPolicyFailureSeparatesRepeatedPolicyKeys|TestPolicyFailureRepairFeedbackGuidesUnresolvedShellValidationLane'`

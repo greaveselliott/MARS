@@ -257,6 +257,11 @@ Given a dispatch-mode role hits the same guardrail or tool-policy block three ti
 When the policy recorder observes the repeated block
 Then the server records a `guardrail_loop` telemetry signal, keeps it out of the target backlog, and records a bounded self-improvement review against role guidance or manifest workflow surfaces
 
+Given a dispatch-mode role repeats the same blocked tool call before the telemetry threshold
+When the tool result is returned to the role
+Then the role receives compact `Guardrail repair required` guidance naming the allowed next repair action so the same job can recover before max turns
+And unresolved test/build shell lanes tell Engineer to use file edits instead of alternate shell or dependency commands until the failed validation command passes
+
 Given the same ticket is still eligible in `docs/tickets/in-progress/`
 When the native survey loop sees that ticket before the runtime-failure cooldown expires
 Then the survey also refrains from same-role ticket-owner retry so runtime-failure containment cannot be bypassed by the watchdog

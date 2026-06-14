@@ -120,9 +120,11 @@ or equivalent source/runtime assertion, and tracked background PID cleanup.
 Product capability planning note: COO and CTO capability guards read explicit
 operator intent from README, goals, and the product brief, but validation
 phrases such as build evidence, smoke evidence, proof, and build artifacts are
-not product capabilities by themselves. Keyboard-control or directional-input
-language can satisfy a keyboard movement capability while rotation remains its
-own required behavior when named. Out-of-scope matching is line-aware, and
+not product capabilities by themselves. Documentation paths and Markdown links
+such as `docs/features/F-001-score-summary.md` are citations, not product
+capability tokens. Keyboard-control or directional-input language can satisfy a
+keyboard movement capability while rotation remains its own required behavior
+when named. Out-of-scope matching is line-aware, and
 advanced-only qualifiers such as "advanced scoring beyond basic line clearing",
 "animations for piece movement or line clearing", or "next-piece preview" do
 not descope the basic capability already covered by scenarios.

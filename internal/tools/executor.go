@@ -89,7 +89,8 @@ func (e *Executor) Execute(ctx context.Context, root Root, allowlist []string, n
 	}
 	if err := preToolPolicy(runCtx, root, name, raw); err != nil {
 		recordPolicyEvent(runCtx, "pre", name, err)
-		recordSessionToolPolicyFailure(e.Session, name, raw, err)
+		count := recordSessionToolPolicyFailure(e.Session, name, raw, err)
+		err = withPolicyFailureRepairFeedback(root, e.Session, "pre", name, err, count)
 		return ToolResult{Duration: time.Since(start)}, err
 	}
 	res, err := executeHandlerWithTimeout(runCtx, start, ttl, name, root, raw, h)
@@ -321,9 +322,9 @@ func recordTestBuildRepairWritePath(session *Session, raw json.RawMessage) {
 	session.ToolState[testBuildRepairWritePathKey(rel)] = "true"
 }
 
-func recordSessionToolPolicyFailure(session *Session, name string, raw json.RawMessage, err error) {
+func recordSessionToolPolicyFailure(session *Session, name string, raw json.RawMessage, err error) int {
 	if session == nil || err == nil {
-		return
+		return 0
 	}
 	if session.ToolCounts == nil {
 		session.ToolCounts = make(map[string]int)
@@ -332,6 +333,7 @@ func recordSessionToolPolicyFailure(session *Session, name string, raw json.RawM
 		session.ToolState = make(map[string]string)
 	}
 	session.ToolCounts["tool:"+name+":failure"]++
+	count := recordRepeatedPolicyFailure(session, "pre", name, err)
 	recordTicketCreationOutcome(session, name, raw, err)
 	if name == "shell_exec" {
 		args, decodeErr := decodeShellExecArgs(raw)
@@ -339,6 +341,7 @@ func recordSessionToolPolicyFailure(session *Session, name string, raw json.RawM
 			session.ToolCounts[shellNoopFailureKey]++
 		}
 	}
+	return count
 }
 
 func recordTicketCreationOutcome(session *Session, name string, raw json.RawMessage, err error) {

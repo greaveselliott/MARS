@@ -1688,6 +1688,82 @@ func writePolicyTicket(t *testing.T, repoRoot, status, name, content string) {
 	}
 }
 
+func writeScoreSummaryBrief(t *testing.T, repoRoot string) {
+	t.Helper()
+	content := `# Metrics CLI
+
+Implement score summary behavior described in docs/features/F-001-score-summary.md.
+`
+	if err := os.WriteFile(filepath.Join(repoRoot, "README.md"), []byte(content), 0o644); err != nil {
+		t.Fatalf("write README: %v", err)
+	}
+}
+
+func writeSupersededStarterFeature(t *testing.T, repoRoot string) {
+	t.Helper()
+	path := filepath.Join(repoRoot, "docs", "features", "F-001-product-walking-skeleton.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir feature: %v", err)
+	}
+	content := `# F-001: Product Walking Skeleton
+
+- Feature ID: F-001
+- Status: superseded by docs/features/F-001-score-summary.md
+
+## Business Logic
+
+This starter contract is superseded by the score summary contract.
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write starter feature: %v", err)
+	}
+}
+
+func writeScoreSummaryFeature(t *testing.T, repoRoot string, coversScoreSummary bool) {
+	t.Helper()
+	path := filepath.Join(repoRoot, "docs", "features", "F-001-score-summary.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir feature: %v", err)
+	}
+	scenarioTitle := "Generic Report Is Visible"
+	scheduleText := "generic report is visible"
+	thenText := "a generic report is visible"
+	if coversScoreSummary {
+		scenarioTitle = "Score Summary Is Visible"
+		scheduleText = "score summary is visible"
+		thenText = "the score summary is visible"
+	}
+	content := fmt.Sprintf(`# F-001: Score Summary
+
+## Business Logic
+
+The product behavior is documented as a bounded first slice.
+
+## Scenario Schedule
+
+1. F-001-S001 - %s
+
+## Scenarios
+
+### F-001-S001: %s
+
+Given score data exists
+When the user runs the summary command
+Then %s
+
+## Out of Scope
+
+- Persistence
+
+## Descoped Scenarios
+
+None.
+`, scheduleText, scenarioTitle, thenText)
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write score summary feature: %v", err)
+	}
+}
+
 func writeDetailedTetrisBrief(t *testing.T, repoRoot string) {
 	t.Helper()
 	content := `# Phaser Tetris Demo

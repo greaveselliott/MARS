@@ -623,6 +623,33 @@ func TestRecordSessionToolPolicyFailureTracksNoopFailuresWithoutForcingTerminal(
 	require.Equal(t, 0, session.ToolCounts[reviewTerminalDispositionRequiredKey])
 }
 
+func TestRecordSessionToolPolicyFailureSeparatesRepeatedPolicyKeys(t *testing.T) {
+	t.Parallel()
+	session := &Session{Role: "coo", ToolCounts: map[string]int{}, ToolState: map[string]string{}}
+
+	require.Equal(t, 1, recordSessionToolPolicyFailure(session, "job_disposition_record", json.RawMessage(`{}`), errors.New("policy: missing capability")))
+	require.Equal(t, 2, recordSessionToolPolicyFailure(session, "job_disposition_record", json.RawMessage(`{}`), errors.New("policy: missing capability")))
+	require.Equal(t, 1, recordSessionToolPolicyFailure(session, "job_disposition_record", json.RawMessage(`{}`), errors.New("policy: different capability")))
+	require.Equal(t, 1, recordSessionToolPolicyFailure(session, "file_write", json.RawMessage(`{}`), errors.New("policy: missing capability")))
+}
+
+func TestPolicyFailureRepairFeedbackGuidesUnresolvedShellValidationLane(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer"}
+	policyErr := errors.New(`policy: engineer cannot run that shell_exec while a failing test or build command is unresolved in this job. Do not run runtime probes, shell wrappers, placeholders, discovery, ticket moves, or unrelated shell commands yet. Use file_read/file_write to repair source, tests, fixtures, or package/build config, or remove duplicate/generated test files created or rewritten earlier in this job, then rerun a test/build command successfully. The exact unresolved command was: shell_exec {"argv":["go","test","./pkg/input"]}. Latest failing output (compact): pkg/input/input_test.go:13:2: no required module provides package github.com/stretchr/testify/assert`)
+
+	err = withPolicyFailureRepairFeedback(root, session, "pre", "shell_exec", policyErr, 2)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Guardrail repair required")
+	require.Contains(t, err.Error(), "Stop trying alternate shell_exec or dependency commands")
+	require.Contains(t, err.Error(), "repair the source, test, fixture, or package/build config")
+	require.Contains(t, err.Error(), "rewrite it with standard-library testing assertions")
+}
+
 func TestRecordSessionToolOutcomeTracksTicketCreationFailures(t *testing.T) {
 	t.Parallel()
 	session := &Session{Role: "cto-weekly", ToolCounts: map[string]int{}}
