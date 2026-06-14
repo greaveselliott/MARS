@@ -103,3 +103,35 @@ FROM traces WHERE job_id = ? ORDER BY created_at DESC LIMIT 1
 	rec.CreatedAt = time.Unix(created, 0).UTC()
 	return &rec, nil
 }
+
+// ListSince returns trace records created at or after since, newest first.
+func (s *Store) ListSince(ctx context.Context, since time.Time) ([]Record, error) {
+	if s == nil || s.db == nil {
+		return nil, fmt.Errorf("trace: store is nil")
+	}
+	rows, err := s.db.QueryContext(ctx, `
+SELECT trace_id, job_id, turns_jsonl, summary_json, created_at
+FROM traces
+WHERE created_at >= ?
+ORDER BY created_at DESC
+`, since.Unix())
+	if err != nil {
+		return nil, fmt.Errorf("trace: list since: %w", err)
+	}
+	defer rows.Close()
+
+	var records []Record
+	for rows.Next() {
+		var rec Record
+		var created int64
+		if err := rows.Scan(&rec.TraceID, &rec.JobID, &rec.TurnsJSONL, &rec.SummaryJSON, &created); err != nil {
+			return nil, fmt.Errorf("trace: scan trace: %w", err)
+		}
+		rec.CreatedAt = time.Unix(created, 0).UTC()
+		records = append(records, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("trace: iterate traces: %w", err)
+	}
+	return records, nil
+}

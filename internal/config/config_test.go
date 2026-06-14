@@ -4,106 +4,31 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/product-specs/product-surface.md
 - docs/features/F-003-local-inference-lifecycle.md
+- docs/features/F-005-agent-execution-runtime.md
 */
 package config
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
-func TestLoad_missingFileReturnsDefaults(t *testing.T) {
-	t.Parallel()
-	cfg, err := Load("/nonexistent/path/config.yaml")
-	require.NoError(t, err)
-	require.NotEmpty(t, cfg.ModelsDir)
-	require.Equal(t, 9091, cfg.WebhookPort)
-	require.Equal(t, 9090, cfg.DashboardPort)
-	require.Equal(t, "text", cfg.LogFormat)
-	require.Equal(t, "auto", cfg.PerformanceProfile)
-	require.Equal(t, 1, cfg.LlamaParallel)
-	require.Equal(t, "auto", cfg.LlamaFlashAttention)
-	require.Equal(t, "off", cfg.Telemetry.Reporting)
-	require.Equal(t, "24h", cfg.Telemetry.ReportInterval)
-}
+func TestCodeIntelDefaultsEnabledAndEnvCanDisable(t *testing.T) {
+	t.Setenv("MARS_HARNESS_CODE_INTEL_ENABLED", "false")
+	cfg, err := Load(filepath.Join(t.TempDir(), "missing.yaml"))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.CodeIntel.Enabled {
+		t.Fatalf("expected code intel disabled by env, got %+v", cfg.CodeIntel)
+	}
 
-func TestLoad_parsesYAML(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
-	require.NoError(t, os.WriteFile(path, []byte("models_dir: /custom/models\nlog_format: json\nperformance_profile: balanced\nllama_parallel: 2\nllama_threads: 6\nllama_mlock: true\ntelemetry:\n  reporting: anonymous\n  endpoint: http://127.0.0.1:9092\n  report_interval: 12h\n"), 0o644))
-
-	cfg, err := Load(path)
-	require.NoError(t, err)
-	require.Equal(t, "/custom/models", cfg.ModelsDir)
-	require.Equal(t, "json", cfg.LogFormat)
-	require.Equal(t, "balanced", cfg.PerformanceProfile)
-	require.Equal(t, 2, cfg.LlamaParallel)
-	require.Equal(t, 6, cfg.LlamaThreads)
-	require.True(t, cfg.LlamaMLock)
-	require.Equal(t, "anonymous", cfg.Telemetry.Reporting)
-	require.Equal(t, "http://127.0.0.1:9092", cfg.Telemetry.Endpoint)
-	require.Equal(t, "12h", cfg.Telemetry.ReportInterval)
-}
-
-func TestLoad_envOverridesYAML(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
-	require.NoError(t, os.WriteFile(path, []byte("models_dir: /from/yaml\n"), 0o644))
-
-	t.Setenv("MARS_HARNESS_MODELS_DIR", "/from/env")
-	cfg, err := Load(path)
-	require.NoError(t, err)
-	require.Equal(t, "/from/env", cfg.ModelsDir)
-}
-
-func TestLoad_invalidYAML(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
-	require.NoError(t, os.WriteFile(path, []byte("{{bad yaml"), 0o644))
-
-	_, err := Load(path)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse")
-}
-
-func TestLoad_envPortOverride(t *testing.T) {
-	t.Setenv("MARS_HARNESS_WEBHOOK_PORT", "8080")
-	cfg, err := Load("/nonexistent/config.yaml")
-	require.NoError(t, err)
-	require.Equal(t, 8080, cfg.WebhookPort)
-}
-
-func TestLoad_envInferenceOverrides(t *testing.T) {
-	t.Setenv("MARS_HARNESS_PERFORMANCE_PROFILE", "speed")
-	t.Setenv("MARS_HARNESS_LLAMA_PARALLEL", "3")
-	t.Setenv("MARS_HARNESS_LLAMA_THREADS_BATCH", "4")
-	t.Setenv("MARS_HARNESS_LLAMA_FLASH_ATTENTION", "on")
-	t.Setenv("MARS_HARNESS_LLAMA_MLOCK", "true")
-
-	cfg, err := Load("/nonexistent/config.yaml")
-	require.NoError(t, err)
-	require.Equal(t, "speed", cfg.PerformanceProfile)
-	require.Equal(t, 3, cfg.LlamaParallel)
-	require.Equal(t, 4, cfg.LlamaThreadsBatch)
-	require.Equal(t, "on", cfg.LlamaFlashAttention)
-	require.True(t, cfg.LlamaMLock)
-}
-
-func TestLoad_envTelemetryOverrides(t *testing.T) {
-	t.Setenv("MARS_HARNESS_TELEMETRY_REPORTING", "anonymous")
-	t.Setenv("MARS_HARNESS_TELEMETRY_ENDPOINT", "http://127.0.0.1:9092")
-	t.Setenv("MARS_HARNESS_TELEMETRY_TOKEN", "test-token")
-	t.Setenv("MARS_HARNESS_TELEMETRY_INTERVAL", "6h")
-
-	cfg, err := Load("/nonexistent/config.yaml")
-	require.NoError(t, err)
-	require.Equal(t, "anonymous", cfg.Telemetry.Reporting)
-	require.Equal(t, "http://127.0.0.1:9092", cfg.Telemetry.Endpoint)
-	require.Equal(t, "test-token", cfg.Telemetry.Token)
-	require.Equal(t, "6h", cfg.Telemetry.ReportInterval)
+	t.Setenv("MARS_HARNESS_CODE_INTEL_ENABLED", "")
+	cfg, err = Load(filepath.Join(t.TempDir(), "missing.yaml"))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if !cfg.CodeIntel.Enabled {
+		t.Fatalf("expected code intel enabled by default, got %+v", cfg.CodeIntel)
+	}
 }

@@ -628,7 +628,7 @@ roles:
     schedule: "0 20 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
 
   head-of-strategy:
     prompt: roles/head-of-strategy.md
@@ -637,7 +637,7 @@ roles:
     model: reasoning
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push]
 
   coo:
     prompt: roles/coo.md
@@ -646,7 +646,7 @@ roles:
     model: reasoning
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, file_search, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, file_search, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
   cto-weekly:
@@ -657,7 +657,7 @@ roles:
     schedule: "0 21 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, grep, workspace_hygiene, github_auth_check, record_decision, ticket_create, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, ticket_create, job_disposition_record, task_trace_summarize, git_status, git_diff, git_commit, git_push]
 
   # ── Delivery ─────────────────────────────────────────────
   engineer:
@@ -669,7 +669,7 @@ roles:
     schedule: "0 0,6,12,18 * * 1-5"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -680,7 +680,7 @@ roles:
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, shell_exec, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff]
+    tools: [file_read, shell_exec, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff]
 
   security:
     prompt: roles/security.md
@@ -691,7 +691,7 @@ roles:
     schedule: "0 22 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
@@ -702,7 +702,7 @@ roles:
     schedule: "0 23 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
 
   # ── Release ──────────────────────────────────────────────
   release-manager:
@@ -713,7 +713,7 @@ roles:
     schedule: "0 8 * * 1"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, docsync_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, docsync_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
   dogfood:
@@ -725,7 +725,7 @@ roles:
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── Delivery-gate repair ─────────────────────────────────
   pipeline-fixer:
@@ -737,7 +737,7 @@ roles:
       - workflow_run.conclusion == "failure"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Dispatch coordination ───────────────────────────────
   orchestrator:
@@ -748,7 +748,7 @@ roles:
     max_turns: 20
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff]
+    tools: [file_read, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_diff]
 
   # ── Backlog entropy management ─────────────────────────
   janitor:
@@ -762,7 +762,7 @@ roles:
     max_turns: 30
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_diff, git_commit, git_push]
 `, projectName, projectName)
 }
 
@@ -1029,7 +1029,8 @@ would otherwise live only in chat.
 - **Deployed-owned failure** — a failure caused by target product behavior, target architecture, local build/test setup, target docs, target skills, or project-specific policy; fix it inside this deployed harness or target project and mirror only reusable doctrine back to the foundation.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, code-intel tools, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
+- **Code graph context** — the compact ` + "`## CODE GRAPH CONTEXT`" + ` block assembled from the per-repo Mars SQLite code graph before deployed orchestrator jobs start the LLM loop. Foundation operators can consume the same graph through CLI/MCP from Codex, Cursor, Claude, or any other tool.
 - **Universal tool surface** — the mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + ` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale.
@@ -2435,7 +2436,8 @@ harness and deployed harnesses.
 | Deployed-owned failure | A failure caused by target product behavior, target architecture, local build/test setup, target docs, target skills, or project-specific policy; fix it inside this deployed harness or target project and mirror only reusable doctrine back to the foundation. |
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, code-intel tools, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
+| Code graph context | The compact ` + "`## CODE GRAPH CONTEXT`" + ` block assembled from the per-repo Mars SQLite code graph before deployed orchestrator jobs start the LLM loop. It is successful only when it reduces broad repo exploration and output volume while preserving freshness disclosure. |
 | Universal tool surface | The mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + `, so any MCP-compatible client or local harness agent can use the same tools through a model-provider-agnostic tool mechanism. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
@@ -2564,6 +2566,11 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. Engineer cannot populate in-progress ticket ` + "`evidence_links`" + ` or ` + "`verified_by`" + ` before the same job records successful validation; browser-framework packages also require a build script, successful same-job build evidence, and no obvious static lifecycle defects. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. New repo-root validation scripts such as ` + "`validate.sh`" + ` are blocked; use existing tests, direct build/run/curl evidence, or intentional durable tests. COO may only write planning artifacts. CTO may only write bounded technical planning artifacts; implementation, package/module, README usage, source, test, build, config, and root product-file edits belong to ticket-backed Engineer delivery. |
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
+| ` + "`code_index`" + ` | Refresh the Mars code-intel mirror for the current repo before structural search, trace, snippet, or impact work. | Non-mutating to the target repo. Writes only the per-repo Mars SQLite DB under ` + "`~/.mars-harness/db/<repo>/mars.db`" + `. Use incremental refresh by default; use ` + "`full:true`" + ` only for schema/parser changes, corruption repair, or explicit operator request. |
+| ` + "`code_search`" + ` | Search indexed files and symbols with language, kind, and path filters. | Non-mutating. Prefer before broad ` + "`grep`" + `, ` + "`file_search`" + `, or bulk ` + "`file_read`" + ` when locating implementation, tests, docs, or config. Results disclose ` + "`fresh`" + `, ` + "`stale`" + `, ` + "`partial`" + `, or ` + "`missing`" + ` state. |
+| ` + "`code_snippet`" + ` | Read an exact bounded source span for an indexed symbol or file slice. | Non-mutating. Use after ` + "`code_search`" + ` to avoid oversized reads. Snippets are path-contained inside the repo root and include freshness state. |
+| ` + "`code_trace`" + ` | Inspect inbound/outbound import and call relationships where Mars extractors know them. | Non-mutating. Treat the graph as structural evidence, not full LSP proof. Stale or partial traces require ` + "`code_index`" + ` or corroborating source reads before decisions. |
+| ` + "`code_impact`" + ` | Map changed paths or a git diff to related symbols, likely tests, docs, feature contracts, tickets, and validation targets. | Non-mutating. Use before Engineer edits, QA review plans, Dogfood validation, and Release risk summaries. MarsDocSync remains documentation authority; code-intel consumes its metadata and cross-links it into impact output. |
 | ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Simple malformed argv shapes are normalized before policy checks and execution, and literal newlines inside one argv argument are allowed because argv does not invoke shell parsing. Planner roles such as CEO, Head of Strategy, COO, CTO, and CTO-weekly may use read-only shell inspection when otherwise policy-safe, but mutating shell commands are blocked so strategy, planning, ticketing, dependency, and implementation ownership cannot be bypassed. Engineer runs with an ordinary backlog product ticket and no in-progress ticket must use ` + "`shell_exec`" + ` to claim that ticket with ` + "`git mv ... docs/tickets/in-progress/`" + ` before any other shell command. Engineer review rework with only done or in-review product tickets must reopen the dispatch-named source-disposition ticket before validation shell commands or product mutation. Use ` + "`expected_exit_code`" + ` only for intentional non-zero error-path validation probes; unexpected validation failures block review approval. Engineer cannot move, write, or commit product tickets to ` + "`docs/tickets/done/`" + ` while the same job has an unrepaired unexpected runtime validation failure; after Engineer observes an unexpected runtime failure, runtime probes are blocked until an implementation ` + "`file_write`" + ` occurs, and only a later successful run of that exact failed command repairs the blocker. Engineer may correct an obvious no-argument/missing-argument runtime probe by rerunning that exact command once with matching ` + "`expected_exit_code`" + `, but cannot retroactively add ` + "`expected_exit_code`" + ` to clear a failed positive acceptance path. During Engineer unresolved test/build repair, ` + "`go mod init <module>`" + ` is allowed only when the latest failure says Go cannot find a main module and no ` + "`go.mod`" + ` exists. QA/Security shell execution is validation-only: read-only inspection, tests, builds, fresh external validation binaries, runtime probes, and HTTP probes are allowed, while package/module initialization such as ` + "`go mod init`" + `, product mutation, broad discovery, cleanup, and placeholder no-ops are blocked. QA/Security retain the one-time exact-command ` + "`expected_exit_code`" + ` correction for review-procedure mistakes. HTTP probes that fail because no server is listening are validation-procedure failures, so reviewers may start the appropriate server with ` + "`background:true`" + ` and rerun a separate probe before approval. QA/Security must stop shell validation after any failing build, test, or unexpected runtime probe and record ` + "`changes_requested`" + ` with the failing command/output, except they may immediately rerun the exact same runtime probe once with matching ` + "`expected_exit_code`" + ` when the first run was an expected-negative case. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Likely server/watch commands such as ` + "`go run`" + ` HTTP entrypoints, ` + "`npm start`" + `, ` + "`npm run dev`" + `, ` + "`python -m http.server`" + `, ` + "`uvicorn`" + `, ` + "`vite`" + `, and ` + "`next`" + ` are blocked in foreground mode; rerun them with ` + "`background:true`" + `, probe readiness separately, and stop the tracked PID. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not call ` + "`shell_exec`" + ` with empty ` + "`argv`" + ` or a single ` + "`:`" + ` as a wait or placeholder command; no-op calls fail with guidance to stop tracked PIDs, commit, push, and record ` + "`job_disposition_record`" + `. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors. Background cleanup terminates wrapper processes and known descendants so ` + "`go run`" + ` child servers do not occupy ports after a job ends, and ` + "`kill <tracked-background-pid>`" + ` applies the same cleanup during a job. ` + "`go build`" + ` without ` + "`-o`" + `, ` + "`go build -o <path>`" + ` inside the target repo, and untracked temp outputs without a ` + "`-validation`" + ` suffix are blocked before execution; use ` + "`go test ./...`" + ` for compile validation or ` + "`go build -o /tmp/<project>-validation <entrypoint>`" + ` for runnable validation. |
 | ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading. |
 | ` + "`github_auth_check`" + ` | Check private Mars Harness GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
@@ -2588,6 +2595,15 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`git_commit`" + ` | Stage files and create a semantic commit. | Mutating. Requires meaningful diff and strict-trunk discipline. |
 | ` + "`git_branch`" + ` | Create or switch a local branch. | Mutating. Use only for explicit branch workflows; trunk-based delivery normally stays on ` + "`main`" + `. |
 | ` + "`git_push`" + ` | Push committed changes. | Mutating. Strict trunk allows pushing ` + "`main`" + `. |
+
+Code graph context note: roles with code-intel tools receive a compact
+` + "`## CODE GRAPH CONTEXT`" + ` block during context assembly before the LLM loop
+starts. This is the mirrored operating model path for both foundation CLI runs
+and deployed orchestrator jobs: the graph is a repo-local routing layer that
+should reduce broad ` + "`grep`" + `, ` + "`file_search`" + `, and bulk ` + "`file_read`" + ` calls, not a
+separate MCP dependency. Session evidence records ` + "`codeintel:*`" + ` counters and
+` + "`repo_exploration:*`" + ` counters so trace review can measure whether graph usage
+is actually reducing exploratory output volume.
 
 Runtime validation stderr note: ` + "`shell_exec`" + ` counts direct runtime probes as
 validation evidence only when they exit successfully without error-shaped
@@ -2683,8 +2699,11 @@ validation; concrete proof belongs after the behavior has been exercised.
 - Need to know which docs must be checked after touching a code file: read the
   file's ` + "`MarsDocSync`" + ` block and run ` + "`docsync_audit`" + ` or
   ` + "`mars-harness docsync audit --repo .`" + `.
-- Need ordinary repository inspection: use ` + "`file_search`" + `, ` + "`grep`" + `, ` + "`file_read`" + `,
-  ` + "`git_status`" + `, or ` + "`git_diff`" + `.
+- Need ordinary repository inspection: use ` + "`code_search`" + `, ` + "`code_snippet`" + `,
+  ` + "`code_trace`" + `, or ` + "`code_impact`" + ` first when structural context or change
+  blast radius matters; fall back to ` + "`file_search`" + `, ` + "`grep`" + `, ` + "`file_read`" + `,
+  ` + "`git_status`" + `, or ` + "`git_diff`" + ` when the index is missing, stale beyond
+  auto-refresh limits, or exact raw text is required.
 - Need ordinary repository mutation: use ` + "`file_write`" + `, ` + "`git_commit`" + `, and
   ` + "`git_push`" + ` with the repository's operating rules.
 - Need a command outside the built-in tool surface: use ` + "`shell_exec`" + `, keep the

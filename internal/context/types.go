@@ -53,6 +53,11 @@ type Input struct {
 	// awareness of what already exists and never create duplicates.
 	TicketIndex string
 
+	// CodeGraphContext is a compact code-intel routing bundle. It is injected
+	// before broad repo summaries so roles can use indexed symbols, impact,
+	// tests, docs, and tickets before spending tokens on exploratory reads.
+	CodeGraphContext string
+
 	// TokenBudget is estimated tokens for the full system string; 0 = unlimited (MH-004).
 	TokenBudget int
 }

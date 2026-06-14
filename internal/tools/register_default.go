@@ -22,6 +22,7 @@ func RegisterBuiltinTools(r *Registry) error {
 		registerFileWrite,
 		registerFileSearch,
 		registerGrep,
+		registerCodeIntelTools,
 		registerShellExec,
 		registerWorkspaceHygiene,
 		registerGithubAuthCheck,

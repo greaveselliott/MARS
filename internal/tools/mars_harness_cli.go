@@ -317,6 +317,8 @@ func marsHarnessCommandSupportsRepo(args []string) bool {
 	switch command {
 	case "init", "eject", "kill-switch", "uninstall", "upgrade", "scan", "doctor", "register", "start", "run":
 		return true
+	case "code-intel":
+		return sub == "metrics" || sub == "benchmark"
 	case "mcp":
 		return sub == "serve"
 	case "tools":
@@ -403,13 +405,13 @@ Global command surface:
 
   start
     Auto-init/register and run the autonomous orchestrator for one target repo.
-    Flags: --repo <path>, --concurrency <n>, --db <path>, --force, --debug, --log-file <path>
+    Flags: --repo <path>, --concurrency <n>, --db <path>, --force, --debug, --log-file <path>, --code-intel <true|false>
     Long-running; use background:true when starting it from an agent.
     Example: ["start", "--repo", ".", "--concurrency", "1"]
 
   serve
     Run multi-repo orchestrator, dashboard, webhooks, scheduler, and workers.
-    Flags: --addr <host:port>, --concurrency <n>, --db <path>, --debug, --log-file <path>
+    Flags: --addr <host:port>, --concurrency <n>, --db <path>, --debug, --log-file <path>, --code-intel <true|false>
     Long-running; use background:true when starting it from an agent.
     Example: ["serve", "--addr", ":9091", "--concurrency", "2"]
 
@@ -420,7 +422,7 @@ Global command surface:
 
   run <role>
     Manually execute one role against a target repository.
-    Flags: --repo <path>, --model-endpoint <url>, --debug, --log-file <path>, --trace, --dry-run, --no-init, --budget <tokens>, --max-turns <n>
+    Flags: --repo <path>, --model-endpoint <url>, --debug, --log-file <path>, --trace, --dry-run, --no-init, --code-intel <true|false>, --budget <tokens>, --max-turns <n>
     Default TTY output is a full-screen dashboard; --debug streams verbose trace/log output inline. --trace is kept as a run-only compatibility alias for debug-style trace detail. Use --dry-run --no-init for observer-safe inspection of uninitialized targets without scaffolding .harness/. Source work may run foundation-maintainer from the mars-harness source repo to preview the source-only foundation operating context without creating a source manifest.
     Example: ["run", "engineer", "--repo", ".", "--dry-run"]
 
@@ -428,6 +430,23 @@ Global command surface:
     Scan a repository for starter findings.
     Flags: --repo <path>, --tickets
     Example: ["scan", "--repo", ".", "--tickets"]
+
+  code-intel metrics
+    Summarize persisted local trace evidence for automatic code graph assistance:
+    graph enabled/disabled/unavailable jobs, code-intel tool calls, broad
+    exploration calls, context bytes, refreshes, LLM calls, tool invocations,
+    token estimates, and mode sources. Reads the per-repo Mars SQLite DB and
+    does not contact a model endpoint.
+    Flags: --repo <path>, --db <path>, --window-days <n>, --json
+    Example: ["code-intel", "metrics", "--repo", ".", "--window-days", "30"]
+
+  code-intel benchmark
+    Run a local no-model control/treatment measurement. Control disables graph
+    context; treatment builds the graph context and optionally evaluates
+    explicit changed-path fixtures against expected files, tests, and docs.
+    Writes only the Mars SQLite DB and an optional report path outside the repo.
+    Flags: --repo <path>, --db <path>, --case <name>, --trials <n>, --changed-paths <csv>, --expected-files <csv>, --expected-tests <csv>, --expected-docs <csv>, --report <path>, --json
+    Example: ["code-intel", "benchmark", "--repo", ".", "--trials", "1", "--changed-paths", "internal/app/app.go"]
 
   doctor
     Diagnose config, models, database, private release auth, repo, and operating-model health.

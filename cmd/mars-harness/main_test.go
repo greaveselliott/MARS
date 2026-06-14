@@ -25,6 +25,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -59,6 +60,48 @@ func TestToolsListCommandIncludesUniversalTools(t *testing.T) {
 	require.Contains(t, lines, "github_auth_check")
 	require.Contains(t, lines, "tool_create")
 	require.Contains(t, lines, "tool_creation_guard")
+}
+
+func TestCodeIntelMetricsCommandReportsEmptyLocalEvidence(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	cmd := codeIntelMetricsCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--repo", repo, "--db", dbPath})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "Code-intel metrics:")
+	require.Contains(t, out.String(), "Jobs: 0")
+}
+
+func TestCodeIntelBenchmarkCommandRunsLocalControlTreatment(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	writeToolRunRepoFile(t, repo, "go.mod", "module example.test/app\n\ngo 1.22\n")
+	writeToolRunRepoFile(t, repo, "internal/app/app.go", "package app\n\nfunc Run() string { return \"ok\" }\n")
+	writeToolRunRepoFile(t, repo, "internal/app/app_test.go", "package app\n\nfunc TestRun(t *testing.T) {}\n")
+	writeToolRunRepoFile(t, repo, "docs/design-docs/app.md", "Run is documented by internal/app/app.go.\n")
+	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	cmd := codeIntelBenchmarkCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{
+		"--repo", repo,
+		"--db", dbPath,
+		"--trials", "1",
+		"--changed-paths", "internal/app/app.go",
+		"--expected-tests", "internal/app/app_test.go",
+		"--expected-docs", "docs/design-docs/app.md",
+	})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "Code-intel benchmark:")
+	require.Contains(t, out.String(), "Control:")
+	require.Contains(t, out.String(), "Treatment:")
+	require.Contains(t, out.String(), "Expected tests hit rate: 1.00")
+	require.Contains(t, out.String(), "Expected docs hit rate: 1.00")
 }
 
 func TestToolsRunCommandExecutesRegisteredTool(t *testing.T) {
@@ -714,6 +757,70 @@ func TestRunCommandFoundationMaintainerDryRunUsesSourceProfileWithoutInit(t *tes
 	require.NoFileExists(t, filepath.Join(root, ".harness", "manifest.yaml"))
 }
 
+func TestRunCommandDryRunInjectsCodeGraphContextForGeneratedEngineer(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	t.Setenv("HOME", t.TempDir())
+	writeToolRunRepoFile(t, repoDir, "go.mod", "module example.test/target\n\ngo 1.22\n")
+	writeToolRunRepoFile(t, repoDir, "internal/app/app.go", "package app\n\nfunc Run() string { return \"ok\" }\n")
+	writeToolRunRepoFile(t, repoDir, "docs/features/F-001-demo.md", "Scenario covers internal/app/app.go and Run.\n")
+	runMainTestGit(t, repoDir, "init")
+	didInit, err := scanner.EnsureHarness(repoDir, false)
+	require.NoError(t, err)
+	require.True(t, didInit)
+
+	var runErr error
+	out := captureStdout(t, func() {
+		runErr = executeRun(runOpts{
+			roleName: "engineer",
+			repoPath: repoDir,
+			logFile:  filepath.Join(t.TempDir(), "run.log"),
+			dryRun:   true,
+			noInit:   true,
+		})
+	})
+
+	require.NoError(t, runErr)
+	require.Contains(t, out, "## CODE GRAPH CONTEXT")
+	require.Contains(t, out, "freshness: fresh")
+	require.Contains(t, out, "index_refresh:")
+	require.Contains(t, out, "internal/app/app.go")
+	require.Contains(t, out, "app.Run")
+	require.Contains(t, out, "operator_hint: use code_search")
+}
+
+func TestRunCommandDryRunSkipsCodeGraphContextWhenDisabled(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	t.Setenv("HOME", t.TempDir())
+	writeToolRunRepoFile(t, repoDir, "go.mod", "module example.test/target\n\ngo 1.22\n")
+	writeToolRunRepoFile(t, repoDir, "internal/app/app.go", "package app\n\nfunc Run() string { return \"ok\" }\n")
+	runMainTestGit(t, repoDir, "init")
+	didInit, err := scanner.EnsureHarness(repoDir, false)
+	require.NoError(t, err)
+	require.True(t, didInit)
+
+	var runErr error
+	out := captureStdout(t, func() {
+		runErr = executeRun(runOpts{
+			roleName:      "engineer",
+			repoPath:      repoDir,
+			logFile:       filepath.Join(t.TempDir(), "run.log"),
+			dryRun:        true,
+			noInit:        true,
+			codeIntelFlag: "false",
+		})
+	})
+
+	require.NoError(t, runErr)
+	require.NotContains(t, out, "## CODE GRAPH CONTEXT")
+	require.NotContains(t, out, "operator_hint: use code_search")
+}
+
 func TestRunCommandFoundationMaintainerRejectsNonSourceRepo(t *testing.T) {
 	repoDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "go.mod"), []byte("module example.com/not-mars\n"), 0o644))
@@ -971,6 +1078,28 @@ func writeToolRunRepoFile(t *testing.T, root, rel, content string) {
 	path := filepath.Join(root, rel)
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+}
+
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	done := make(chan string, 1)
+	go func() {
+		var buf bytes.Buffer
+		_, _ = io.Copy(&buf, r)
+		done <- buf.String()
+	}()
+	os.Stdout = w
+	defer func() {
+		os.Stdout = old
+	}()
+	fn()
+	require.NoError(t, w.Close())
+	out := <-done
+	require.NoError(t, r.Close())
+	return out
 }
 
 func mainTestSourceRoot(t *testing.T) string {

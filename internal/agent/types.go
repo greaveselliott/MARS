@@ -38,6 +38,15 @@ type LoopConfig struct {
 	ContextSize   int           // context window in tokens; default 32768 when zero
 }
 
+// PreflightToolCall is a deterministic tool invocation inserted into the loop
+// before the first model turn. It uses the same executor, allowlist, trace, and
+// session counters as model-selected tool calls.
+type PreflightToolCall struct {
+	Name      string
+	ArgsJSON  string
+	Rationale string
+}
+
 // LoopResult is the final transcript and why the loop stopped.
 type LoopResult struct {
 	Messages         []llm.Message

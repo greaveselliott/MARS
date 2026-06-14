@@ -145,6 +145,11 @@ it does not clone a fresh working directory per job
 `+"`tool_creation_guard`"+`
 `+"`tool_inventory_audit`"+`
 `+"`task_trace_summarize`"+`
+`+"`code_index`"+`
+`+"`code_search`"+`
+`+"`code_snippet`"+`
+`+"`code_trace`"+`
+`+"`code_impact`"+`
 `+"`file_read`"+`
 `+"`file_write`"+`
 `+"`file_search`"+`

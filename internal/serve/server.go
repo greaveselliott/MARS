@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"github.com/greaveselliott/mars-harness/internal/codeintel"
 	"github.com/greaveselliott/mars-harness/internal/dashboard"
 	"github.com/greaveselliott/mars-harness/internal/evolution"
 	gh "github.com/greaveselliott/mars-harness/internal/github"
@@ -71,6 +72,8 @@ type Config struct {
 	PerformanceProfile string
 	InferenceTuning    inference.ServerTuning
 	JobViews           ui.JobViewFactory
+	CodeIntelDisabled  bool
+	CodeIntelSource    string
 }
 
 func (c Config) concurrency() int {
@@ -211,7 +214,8 @@ func New(cfg Config) (*Server, error) {
 		slog.Warn("serve: orgstate store unavailable — dispatch-mode orchestration disabled", "err", err)
 	}
 
-	executor := NewExecutor(repoLookup, router, traceStore, trustStore)
+	executor := NewExecutor(repoLookup, router, cfg.DBPath, traceStore, trustStore)
+	executor.SetCodeIntel(codeintel.NewRuntime(!cfg.CodeIntelDisabled, cfg.CodeIntelSource))
 	if cfg.JobViews != nil {
 		executor.SetJobViewFactory(cfg.JobViews)
 	}

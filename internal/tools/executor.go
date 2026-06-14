@@ -126,6 +126,7 @@ func recordSessionToolOutcome(session *Session, root Root, name string, raw json
 	} else {
 		session.ToolCounts["tool:"+name+":failure"]++
 	}
+	recordCodeIntelEfficiencyOutcome(session, name, raw, res, err)
 	recordTicketCreationOutcome(session, name, raw, err)
 	if name == "file_write" && err == nil && strings.ToLower(strings.TrimSpace(session.Role)) == "engineer" {
 		recordTestBuildRepairWritePath(session, raw)
@@ -217,6 +218,89 @@ func recordSessionToolOutcome(session *Session, root Root, name string, raw json
 		session.ToolCounts[buildCommandFailureKey]++
 	}
 	recordFailedTestBuildValidation(session, args, res)
+}
+
+const (
+	codeIntelToolCallsKey      = "codeintel:tool_calls"
+	codeIntelToolSuccessKey    = "codeintel:tool_success"
+	codeIntelOutputBytesKey    = "codeintel:output_bytes"
+	broadRepoToolCallsKey      = "repo_exploration:broad_tool_calls"
+	broadRepoOutputBytesKey    = "repo_exploration:broad_output_bytes"
+	bulkFileReadCallsKey       = "repo_exploration:bulk_file_read_calls"
+	bulkFileReadOutputBytesKey = "repo_exploration:bulk_file_read_output_bytes"
+	broadShellSearchCallsKey   = "repo_exploration:broad_shell_search_calls"
+)
+
+func recordCodeIntelEfficiencyOutcome(session *Session, name string, raw json.RawMessage, res ToolResult, err error) {
+	outputBytes := len(res.Output) + len(res.Stderr)
+	if isCodeIntelTool(name) {
+		session.ToolCounts[codeIntelToolCallsKey]++
+		session.ToolCounts[codeIntelOutputBytesKey] += outputBytes
+		if err == nil {
+			session.ToolCounts[codeIntelToolSuccessKey]++
+		}
+		return
+	}
+	if !isBroadRepoExplorationTool(name, raw, res) {
+		return
+	}
+	session.ToolCounts[broadRepoToolCallsKey]++
+	session.ToolCounts[broadRepoOutputBytesKey] += outputBytes
+	if name == "file_read" {
+		session.ToolCounts[bulkFileReadCallsKey]++
+		session.ToolCounts[bulkFileReadOutputBytesKey] += outputBytes
+	}
+	if name == "shell_exec" {
+		session.ToolCounts[broadShellSearchCallsKey]++
+	}
+}
+
+func isCodeIntelTool(name string) bool {
+	switch strings.TrimSpace(name) {
+	case "code_index", "code_search", "code_snippet", "code_trace", "code_impact":
+		return true
+	default:
+		return false
+	}
+}
+
+func isBroadRepoExplorationTool(name string, raw json.RawMessage, res ToolResult) bool {
+	switch strings.TrimSpace(name) {
+	case "grep", "file_search":
+		return true
+	case "file_read":
+		return fileReadLooksBulk(raw, res)
+	case "shell_exec":
+		return shellExecLooksBroadRepoSearch(raw)
+	default:
+		return false
+	}
+}
+
+func fileReadLooksBulk(raw json.RawMessage, res ToolResult) bool {
+	var args fileReadArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return false
+	}
+	if args.StartLine != nil || args.EndLine != nil {
+		return false
+	}
+	return strings.TrimSpace(args.Path) != "" && len(res.Output)+len(res.Stderr) > 0
+}
+
+func shellExecLooksBroadRepoSearch(raw json.RawMessage) bool {
+	args, err := decodeShellExecArgs(raw)
+	if err != nil {
+		return false
+	}
+	if len(args.Argv) > 0 {
+		switch strings.TrimSpace(filepathBase(args.Argv[0])) {
+		case "rg", "grep", "find":
+			return true
+		}
+	}
+	cmd := strings.TrimSpace(args.ShellCommand)
+	return strings.HasPrefix(cmd, "rg ") || strings.HasPrefix(cmd, "grep ") || strings.HasPrefix(cmd, "find ")
 }
 
 func recordTestBuildRepairWritePath(session *Session, raw json.RawMessage) {

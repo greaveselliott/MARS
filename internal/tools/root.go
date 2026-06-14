@@ -17,7 +17,8 @@ import (
 
 // Root is an absolute, cleaned workspace directory; all tool file paths must resolve under it.
 type Root struct {
-	abs string
+	abs    string
+	dbPath string
 }
 
 // NewRoot resolves dir to an absolute path with symlinks evaluated where possible.
@@ -42,6 +43,17 @@ func NewRoot(dir string) (Root, error) {
 
 // Abs returns the absolute root path.
 func (r Root) Abs() string { return r.abs }
+
+// WithDBPath returns a root bound to the active Mars SQLite database for this
+// repo job. File containment remains based only on Abs().
+func (r Root) WithDBPath(dbPath string) Root {
+	r.dbPath = strings.TrimSpace(dbPath)
+	return r
+}
+
+// DBPath returns the active Mars SQLite database path, when the caller supplied
+// one. Empty means tools should use their package default.
+func (r Root) DBPath() string { return r.dbPath }
 
 // ResolvePath joins root with rel and ensures the result stays within root.
 // rel may use platform separators; leading slashes are stripped.

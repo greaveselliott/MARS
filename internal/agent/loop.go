@@ -169,15 +169,21 @@ type LoopUI interface {
 
 // Params drives one agent loop run (MH-003).
 type Params struct {
-	Completer    Completer
-	Registry     *tools.Registry
-	Executor     *tools.Executor
-	Root         tools.Root
-	Allowlist    []string
-	SystemPrompt string
-	UserMessage  string
-	Config       LoopConfig
-	UI           LoopUI
+	Completer           Completer
+	Registry            *tools.Registry
+	Executor            *tools.Executor
+	Root                tools.Root
+	Allowlist           []string
+	SystemPrompt        string
+	UserMessage         string
+	Preflight           []PreflightToolCall
+	CodeIntelMode       string
+	CodeIntelModeSource string
+	// MaintainCodeGraph refreshes code-intel after successful repository
+	// mutations so later turns see current graph state.
+	MaintainCodeGraph bool
+	Config            LoopConfig
+	UI                LoopUI
 
 	// RequiredTerminalTool keeps server jobs from ending with prose when a
 	// durable terminal tool call, such as job_disposition_record, is required.
@@ -210,6 +216,201 @@ func traceAppend(p Params, messages *[]llm.Message, defs []llm.ToolDefinition, m
 	}
 	est := llm.EstimateTokens(*messages, defs)
 	return p.Trace.WriteTurn(msg, est)
+}
+
+func executeLoopToolCall(ctx context.Context, p Params, messages *[]llm.Message, defs []llm.ToolDefinition, call llm.ToolCall, toolInvocations *int) (error, error) {
+	if p.UI != nil {
+		p.UI.WriteToolCall(call.Function.Name, call.Function.Arguments)
+	}
+	tres, execErr := p.Executor.Execute(ctx, p.Root, p.Allowlist, call.Function.Name, call.Function.Arguments)
+	*toolInvocations++
+	body := tres.FormatForModel()
+	if execErr != nil {
+		body = fmt.Sprintf("error: %v\n%s", execErr, body)
+	}
+	if p.UI != nil {
+		p.UI.WriteToolResult(call.Function.Name, body)
+	}
+	if err := traceAppend(p, messages, defs, llm.Message{
+		Role:       "tool",
+		ToolCallID: call.ID,
+		Content:    body,
+	}); err != nil {
+		return execErr, err
+	}
+	return execErr, nil
+}
+
+func maybeRefreshCodeGraphAfterMutation(ctx context.Context, p Params, messages *[]llm.Message, defs []llm.ToolDefinition, toolName, argsJSON string, toolInvocations *int) error {
+	if !p.MaintainCodeGraph || !tools.Allowlisted("code_index", p.Allowlist) || !codeGraphMutationTool(toolName, argsJSON) {
+		return nil
+	}
+	call := llm.ToolCall{
+		ID:   fmt.Sprintf("codegraph_refresh_%d", *toolInvocations+1),
+		Type: "function",
+		Function: llm.FunctionCall{
+			Name:      "code_index",
+			Arguments: `{}`,
+		},
+	}
+	if err := traceAppend(p, messages, defs, llm.Message{
+		Role:      "assistant",
+		Content:   "Mars code graph maintenance: refresh changed files after repository mutation.",
+		ToolCalls: []llm.ToolCall{call},
+	}); err != nil {
+		return err
+	}
+	_, traceErr := executeLoopToolCall(ctx, p, messages, defs, call, toolInvocations)
+	return traceErr
+}
+
+func codeGraphMutationTool(name, argsJSON string) bool {
+	switch strings.TrimSpace(name) {
+	case "file_write", "dependency_sync", "mars_harness_cli", "record_decision", "ticket_create", "tool_create", "persona_create":
+		return true
+	case "shell_exec":
+		return shellExecMayMutateRepo(argsJSON)
+	default:
+		return false
+	}
+}
+
+func shellExecMayMutateRepo(argsJSON string) bool {
+	var args struct {
+		Argv         []string `json:"argv"`
+		ShellCommand string   `json:"shell_command"`
+	}
+	if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {
+		return false
+	}
+	if len(args.Argv) > 0 {
+		return argvMayMutateRepo(args.Argv)
+	}
+	return shellCommandMayMutateRepo(args.ShellCommand)
+}
+
+func argvMayMutateRepo(argv []string) bool {
+	if len(argv) == 0 {
+		return false
+	}
+	program := commandBase(argv[0])
+	if program == "" {
+		return false
+	}
+	switch program {
+	case "touch", "mkdir", "mv", "cp", "rm", "rmdir", "tee":
+		return true
+	case "sed", "perl":
+		return argvContains(argv[1:], "-i") || argvContainsPrefix(argv[1:], "-i")
+	case "git":
+		if len(argv) < 2 {
+			return false
+		}
+		switch strings.ToLower(strings.TrimSpace(argv[1])) {
+		case "mv", "rm", "apply", "am", "merge", "rebase", "cherry-pick", "checkout", "switch", "restore", "reset", "clean", "pull", "stash":
+			return true
+		default:
+			return false
+		}
+	case "go":
+		if len(argv) < 2 {
+			return false
+		}
+		sub := strings.ToLower(strings.TrimSpace(argv[1]))
+		return sub == "generate" || (sub == "mod" && len(argv) >= 3 && goModSubcommandMayMutate(argv[2])) || sub == "get"
+	case "npm", "pnpm", "yarn", "bun":
+		return packageManagerArgsMayMutate(argv[1:])
+	case "cargo":
+		if len(argv) < 2 {
+			return false
+		}
+		switch strings.ToLower(strings.TrimSpace(argv[1])) {
+		case "add", "remove", "update", "generate-lockfile":
+			return true
+		default:
+			return false
+		}
+	case "mars-harness":
+		return marsHarnessArgsMayMutate(argv[1:])
+	default:
+		return false
+	}
+}
+
+func shellCommandMayMutateRepo(command string) bool {
+	command = strings.TrimSpace(command)
+	if command == "" {
+		return false
+	}
+	lower := strings.ToLower(command)
+	for _, token := range []string{">", ">>", " tee ", "sed -i", "perl -i", "git mv", "git rm", "git apply", "git checkout", "git switch", "git restore", "git reset", "git clean", "go generate", "go get", "go mod tidy", "npm install", "npm i ", "pnpm install", "yarn install", "bun install", "cargo add", "cargo update", "touch ", "mkdir ", "mv ", "cp ", "rm "} {
+		if strings.Contains(lower, token) {
+			return true
+		}
+	}
+	return false
+}
+
+func commandBase(cmd string) string {
+	cmd = strings.Trim(strings.TrimSpace(cmd), `"'`)
+	if cmd == "" {
+		return ""
+	}
+	if idx := strings.LastIndexAny(cmd, `/\`); idx >= 0 && idx < len(cmd)-1 {
+		cmd = cmd[idx+1:]
+	}
+	return strings.ToLower(cmd)
+}
+
+func argvContains(args []string, needle string) bool {
+	for _, arg := range args {
+		if strings.TrimSpace(arg) == needle {
+			return true
+		}
+	}
+	return false
+}
+
+func argvContainsPrefix(args []string, prefix string) bool {
+	for _, arg := range args {
+		if strings.HasPrefix(strings.TrimSpace(arg), prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func goModSubcommandMayMutate(sub string) bool {
+	switch strings.ToLower(strings.TrimSpace(sub)) {
+	case "tidy", "edit", "init", "vendor":
+		return true
+	default:
+		return false
+	}
+}
+
+func packageManagerArgsMayMutate(args []string) bool {
+	if len(args) == 0 {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(args[0])) {
+	case "install", "i", "add", "remove", "update", "upgrade", "ci":
+		return true
+	default:
+		return false
+	}
+}
+
+func marsHarnessArgsMayMutate(args []string) bool {
+	if len(args) == 0 {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(args[0])) {
+	case "init", "update", "scan", "release":
+		return true
+	default:
+		return false
+	}
 }
 
 // Run executes the synchronous tool loop until completion or a terminal condition.
@@ -269,6 +470,15 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			return
 		}
 		summ := p.Trace.Finalize(p.jobID(), string(res.EndReason), res.WallTime, res.LLMCalls, res.ToolInvocations, res.Err)
+		if counts := copyToolCounts(p.Executor); len(counts) > 0 {
+			summ.ToolCounts = counts
+		}
+		if mode := strings.TrimSpace(p.CodeIntelMode); mode != "" {
+			summ.CodeIntel = &trace.CodeIntelSummary{
+				Mode:   mode,
+				Source: strings.TrimSpace(p.CodeIntelModeSource),
+			}
+		}
 		sj, jErr := json.Marshal(summ)
 		if jErr != nil || p.TraceStore == nil {
 			return
@@ -296,6 +506,40 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 	terminalToolEvidenceReminderSent := false
 	terminalToolEvidenceRetrySent := false
 	var lastFingerprint string
+
+	for _, preflight := range p.Preflight {
+		name := strings.TrimSpace(preflight.Name)
+		if name == "" {
+			continue
+		}
+		args := strings.TrimSpace(preflight.ArgsJSON)
+		if args == "" {
+			args = `{}`
+		}
+		callID := fmt.Sprintf("preflight_%d", toolInvocations+1)
+		content := strings.TrimSpace(preflight.Rationale)
+		if content == "" {
+			content = fmt.Sprintf("Preflight %s", name)
+		}
+		assistantMsg := llm.Message{
+			Role:    "assistant",
+			Content: content,
+			ToolCalls: []llm.ToolCall{{
+				ID:   callID,
+				Type: "function",
+				Function: llm.FunctionCall{
+					Name:      name,
+					Arguments: args,
+				},
+			}},
+		}
+		if err := traceAppend(p, &messages, defs, assistantMsg); err != nil {
+			return LoopResult{}, err
+		}
+		if _, err := executeLoopToolCall(ctx, p, &messages, defs, assistantMsg.ToolCalls[0], &toolInvocations); err != nil {
+			return LoopResult{}, err
+		}
+	}
 
 	for {
 		if p.Config.WallTime > 0 && time.Since(start) >= p.Config.WallTime {
@@ -524,24 +768,9 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 		}
 
 		for _, tc := range calls {
-			if p.UI != nil {
-				p.UI.WriteToolCall(tc.Function.Name, tc.Function.Arguments)
-			}
-			tres, execErr := p.Executor.Execute(ctx, p.Root, p.Allowlist, tc.Function.Name, tc.Function.Arguments)
-			toolInvocations++
-			body := tres.FormatForModel()
-			if execErr != nil {
-				body = fmt.Sprintf("error: %v\n%s", execErr, body)
-			}
-			if p.UI != nil {
-				p.UI.WriteToolResult(tc.Function.Name, body)
-			}
-			if err := traceAppend(p, &messages, defs, llm.Message{
-				Role:       "tool",
-				ToolCallID: tc.ID,
-				Content:    body,
-			}); err != nil {
-				return LoopResult{}, err
+			execErr, traceErr := executeLoopToolCall(ctx, p, &messages, defs, tc, &toolInvocations)
+			if traceErr != nil {
+				return LoopResult{}, traceErr
 			}
 			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && strings.TrimSpace(tc.Function.Name) != required && !terminalToolEvidenceReminderSent && tools.ReviewTerminalEvidenceSatisfied(p.Root, p.Executor.Session) {
 				tools.MarkReviewTerminalDispositionRequired(p.Executor.Session)
@@ -557,12 +786,28 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 				}
 				terminalToolEvidenceReminderSent = true
 			}
+			if execErr == nil {
+				if err := maybeRefreshCodeGraphAfterMutation(ctx, p, &messages, defs, tc.Function.Name, tc.Function.Arguments, &toolInvocations); err != nil {
+					return LoopResult{}, err
+				}
+			}
 			if execErr == nil && p.Executor.StopAfterTool != nil && p.Executor.StopAfterTool() {
 				res = finish(messages, defs, EndCompleted, llmCalls, toolInvocations, start, "")
 				return res, nil
 			}
 		}
 	}
+}
+
+func copyToolCounts(ex *tools.Executor) map[string]int {
+	if ex == nil || ex.Session == nil || len(ex.Session.ToolCounts) == 0 {
+		return nil
+	}
+	out := make(map[string]int, len(ex.Session.ToolCounts))
+	for key, value := range ex.Session.ToolCounts {
+		out[key] = value
+	}
+	return out
 }
 
 func toolCallNamesForPrompt(calls []llm.ToolCall) string {

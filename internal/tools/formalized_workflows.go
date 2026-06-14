@@ -417,5 +417,10 @@ func isMirroredWorkflowTool(name string) bool {
 		"tool_creation_guard",
 		"tool_inventory_audit",
 		"task_trace_summarize",
+		"code_index",
+		"code_search",
+		"code_snippet",
+		"code_trace",
+		"code_impact",
 	}, name)
 }

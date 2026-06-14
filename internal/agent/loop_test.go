@@ -30,6 +30,15 @@ type seqMock struct {
 	i       int
 }
 
+type captureMock struct {
+	req llm.ChatCompletionRequest
+}
+
+func (c *captureMock) ChatCompletion(ctx context.Context, req llm.ChatCompletionRequest) (llm.ChatCompletionResponse, error) {
+	c.req = req
+	return textResp("done"), nil
+}
+
 func (s *seqMock) ChatCompletion(ctx context.Context, req llm.ChatCompletionRequest) (llm.ChatCompletionResponse, error) {
 	// Prefer scripted replies when present so tests can mix err-only and reply-only mocks.
 	if len(s.replies) > 0 && s.i < len(s.replies) {
@@ -79,6 +88,7 @@ func TestRun_persistsTraceToSQLite(t *testing.T) {
 	reg, err := tools.DefaultRegistry()
 	require.NoError(t, err)
 	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{Role: "engineer", ToolCounts: map[string]int{}}
 	dbPath := "file:" + filepath.Join(dir, "tr.sqlite") + "?mode=rwc"
 	st, err := trace.OpenStore(dbPath)
 	require.NoError(t, err)
@@ -90,17 +100,19 @@ func TestRun_persistsTraceToSQLite(t *testing.T) {
 		textResp("ok"),
 	}}
 	res, err := Run(context.Background(), Params{
-		Completer:    mock,
-		Registry:     reg,
-		Executor:     ex,
-		Root:         root,
-		Allowlist:    []string{"file_write"},
-		SystemPrompt: "s",
-		UserMessage:  "u",
-		Config:       LoopConfig{Model: "m", MaxTurns: 10},
-		JobID:        "job-sql",
-		Trace:        rec,
-		TraceStore:   st,
+		Completer:           mock,
+		Registry:            reg,
+		Executor:            ex,
+		Root:                root,
+		Allowlist:           []string{"file_write"},
+		SystemPrompt:        "s",
+		UserMessage:         "u",
+		Config:              LoopConfig{Model: "m", MaxTurns: 10},
+		JobID:               "job-sql",
+		Trace:               rec,
+		TraceStore:          st,
+		CodeIntelMode:       "enabled",
+		CodeIntelModeSource: "test",
 	})
 	require.NoError(t, err)
 	require.Equal(t, EndCompleted, res.EndReason)
@@ -110,6 +122,12 @@ func TestRun_persistsTraceToSQLite(t *testing.T) {
 	require.NotNil(t, got)
 	require.Contains(t, got.TurnsJSONL, `"type":"header"`)
 	require.Contains(t, got.SummaryJSON, `"outcome":"completed"`)
+	var summary trace.Summary
+	require.NoError(t, json.Unmarshal([]byte(got.SummaryJSON), &summary))
+	require.NotNil(t, summary.CodeIntel)
+	require.Equal(t, "enabled", summary.CodeIntel.Mode)
+	require.Equal(t, "test", summary.CodeIntel.Source)
+	require.Equal(t, 1, summary.ToolCounts["tool:file_write:success"]+summary.ToolCounts["tool:file_write:failure"])
 }
 
 func TestRun_multiToolThenComplete(t *testing.T) {
@@ -141,6 +159,121 @@ func TestRun_multiToolThenComplete(t *testing.T) {
 	require.Equal(t, EndCompleted, res.EndReason)
 	require.GreaterOrEqual(t, len(res.Messages), 4)
 	require.Equal(t, 2, res.LLMCalls)
+}
+
+func TestRun_executesPreflightToolBeforeFirstModelTurn(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{Role: "engineer", ToolCounts: map[string]int{}}
+	mock := &captureMock{}
+
+	res, err := Run(context.Background(), Params{
+		Completer:    mock,
+		Registry:     reg,
+		Executor:     ex,
+		Root:         root,
+		Allowlist:    []string{"code_impact"},
+		SystemPrompt: "s",
+		UserMessage:  "u",
+		Preflight: []PreflightToolCall{{
+			Name:      "code_impact",
+			ArgsJSON:  `{}`,
+			Rationale: "preflight",
+		}},
+		Config: LoopConfig{Model: "test", MaxTurns: 10},
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 1, res.ToolInvocations)
+	require.Equal(t, 1, res.LLMCalls)
+	require.GreaterOrEqual(t, len(mock.req.Messages), 4)
+	require.Equal(t, "assistant", mock.req.Messages[2].Role)
+	require.Equal(t, "code_impact", mock.req.Messages[2].ToolCalls[0].Function.Name)
+	require.Equal(t, "tool", mock.req.Messages[3].Role)
+	require.Equal(t, 1, ex.Session.ToolCounts["codeintel:tool_calls"])
+}
+
+func TestRun_refreshesCodeGraphAfterMutation(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	dir := t.TempDir()
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{Role: "engineer", ToolCounts: map[string]int{}}
+	mockResponse := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_write", "write1", `{"path":"notes.txt","content":"hello"}`),
+		textResp("done"),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:         mockResponse,
+		Registry:          reg,
+		Executor:          ex,
+		Root:              root,
+		Allowlist:         []string{"file_write", "code_index"},
+		SystemPrompt:      "s",
+		UserMessage:       "u",
+		MaintainCodeGraph: true,
+		Config:            LoopConfig{Model: "test", MaxTurns: 10},
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 2, res.ToolInvocations)
+	require.Equal(t, 2, res.LLMCalls)
+	require.Equal(t, 1, ex.Session.ToolCounts["codeintel:tool_calls"])
+	require.Contains(t, res.Messages[len(res.Messages)-3].Content, "Mars code graph maintenance")
+	require.Equal(t, "code_index", res.Messages[len(res.Messages)-3].ToolCalls[0].Function.Name)
+}
+
+func TestRun_skipsCodeGraphRefreshAfterReadOnlyShell(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	dir := t.TempDir()
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{Role: "engineer", ToolCounts: map[string]int{}}
+	mockResponse := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("shell_exec", "shell1", `{"argv":["printf","hello"],"timeout_seconds":5}`),
+		textResp("done"),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:         mockResponse,
+		Registry:          reg,
+		Executor:          ex,
+		Root:              root,
+		Allowlist:         []string{"shell_exec", "code_index"},
+		SystemPrompt:      "s",
+		UserMessage:       "u",
+		MaintainCodeGraph: true,
+		Config:            LoopConfig{Model: "test", MaxTurns: 10},
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 1, res.ToolInvocations)
+	require.Equal(t, 2, res.LLMCalls)
+	require.Equal(t, 0, ex.Session.ToolCounts["codeintel:tool_calls"])
+}
+
+func TestCodeGraphMutationToolShellHeuristics(t *testing.T) {
+	require.False(t, codeGraphMutationTool("shell_exec", `{"argv":["printf","hello"]}`))
+	require.False(t, codeGraphMutationTool("shell_exec", `{"argv":["go","test","./..."]}`))
+	require.False(t, codeGraphMutationTool("shell_exec", `{"argv":["curl","-fsS","http://127.0.0.1:5173/"]}`))
+
+	require.True(t, codeGraphMutationTool("shell_exec", `{"argv":["git","mv","docs/tickets/backlog/T-001.md","docs/tickets/in-progress/"]}`))
+	require.True(t, codeGraphMutationTool("shell_exec", `{"argv":["go","mod","tidy"]}`))
+	require.True(t, codeGraphMutationTool("shell_exec", `{"argv":["npm","install"]}`))
+	require.True(t, codeGraphMutationTool("shell_exec", `{"shell_command":"sed -i 's/a/b/' README.md"}`))
+	require.True(t, codeGraphMutationTool("file_write", `{}`))
 }
 
 func TestRun_stopsAfterTerminalTool(t *testing.T) {
@@ -1091,9 +1224,15 @@ func TestRun_overflowClampPrunesAndRecovers(t *testing.T) {
 		Body:          `{"error":{"code":400,"message":"request (33281 tokens) exceeds the available context size (32768 tokens), try increasing it","type":"exceed_context_size_error","n_prompt_tokens":33281,"n_ctx":32768}}`,
 	}
 	mock := &stepMock{steps: []func() (llm.ChatCompletionResponse, error){
-		func() (llm.ChatCompletionResponse, error) { return toolResp("file_read", "1", `{"path":"big1.txt"}`), nil },
-		func() (llm.ChatCompletionResponse, error) { return toolResp("file_read", "2", `{"path":"big2.txt"}`), nil },
-		func() (llm.ChatCompletionResponse, error) { return toolResp("file_read", "3", `{"path":"big3.txt"}`), nil },
+		func() (llm.ChatCompletionResponse, error) {
+			return toolResp("file_read", "1", `{"path":"big1.txt"}`), nil
+		},
+		func() (llm.ChatCompletionResponse, error) {
+			return toolResp("file_read", "2", `{"path":"big2.txt"}`), nil
+		},
+		func() (llm.ChatCompletionResponse, error) {
+			return toolResp("file_read", "3", `{"path":"big3.txt"}`), nil
+		},
 		func() (llm.ChatCompletionResponse, error) { return llm.ChatCompletionResponse{}, overflow },
 		func() (llm.ChatCompletionResponse, error) { return proseResp("done"), nil },
 	}}

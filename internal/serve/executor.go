@@ -29,6 +29,7 @@ import (
 
 	"github.com/greaveselliott/mars-harness/internal/agent"
 	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"github.com/greaveselliott/mars-harness/internal/codeintel"
 	harctx "github.com/greaveselliott/mars-harness/internal/context"
 	"github.com/greaveselliott/mars-harness/internal/dashboard"
 	"github.com/greaveselliott/mars-harness/internal/guardrails"
@@ -55,6 +56,8 @@ type RepoLookup func(ctx context.Context, repoID string) (string, error)
 type Executor struct {
 	lookupRepo RepoLookup
 	router     *inference.Router
+	dbPath     string
+	codeIntel  codeintel.Runtime
 	traceStore *trace.Store
 	trustStore *trust.Store
 	orgStore   *orgstate.Store
@@ -65,14 +68,24 @@ type Executor struct {
 
 // NewExecutor creates an executor bound to a repo lookup function and inference router.
 // traceStore is optional; pass nil to disable trace persistence.
-func NewExecutor(lookupRepo RepoLookup, router *inference.Router, traceStore *trace.Store, trustStore *trust.Store) *Executor {
+func NewExecutor(lookupRepo RepoLookup, router *inference.Router, dbPath string, traceStore *trace.Store, trustStore *trust.Store) *Executor {
 	return &Executor{
 		lookupRepo: lookupRepo,
 		router:     router,
+		dbPath:     strings.TrimSpace(dbPath),
+		codeIntel:  codeintel.NewRuntime(true, "default"),
 		traceStore: traceStore,
 		trustStore: trustStore,
 		jobViews:   ui.NewDebugJobViewFactory(os.Stdout, false, false),
 	}
+}
+
+// SetCodeIntel configures automatic code graph context and loop maintenance.
+func (e *Executor) SetCodeIntel(runtime codeintel.Runtime) {
+	if strings.TrimSpace(runtime.Mode) == "" {
+		runtime = codeintel.NewRuntime(true, "default")
+	}
+	e.codeIntel = runtime
 }
 
 // SetDashboard wires the dashboard for SSE event broadcasting.
@@ -96,6 +109,43 @@ func (e *Executor) SetJobViewFactory(factory ui.JobViewFactory) {
 	if factory != nil {
 		e.jobViews = factory
 	}
+}
+
+func recordCodeGraphContextCounters(counts map[string]int, graph codeintel.ContextResult, graphErr error) {
+	codeintel.RecordContextCounters(counts, graph, graphErr)
+}
+
+func codeGraphPreflight(roleTools []string, graph codeintel.ContextResult, graphErr error, runtime codeintel.Runtime) []agent.PreflightToolCall {
+	if !runtime.Enabled || graphErr != nil || graph.Status.Status != codeintel.FreshnessFresh || !tools.Allowlisted("code_impact", roleTools) {
+		return nil
+	}
+	args, ok := codeintel.ImpactPreflightArgs(graph, 0)
+	if !ok {
+		return nil
+	}
+	return []agent.PreflightToolCall{{
+		Name:      "code_impact",
+		ArgsJSON:  args,
+		Rationale: "Mars code graph preflight: inspect changed files, likely tests, docs, feature contracts, and tickets before broad repository exploration.",
+	}}
+}
+
+func codeGraphRuntimeForTrace(runtime codeintel.Runtime, roleTools []string, graphErr error) codeintel.Runtime {
+	if !runtime.Enabled {
+		return runtime
+	}
+	if !codeintel.ToolAllowed(roleTools) {
+		runtime.Mode = codeintel.ModeDisabled
+		return runtime
+	}
+	if graphErr != nil {
+		runtime.Mode = codeintel.ModeUnavailable
+	}
+	return runtime
+}
+
+func codeGraphMaintenanceEnabled(roleTools []string, graph codeintel.ContextResult, graphErr error) bool {
+	return graphErr == nil && graph.Status.Status == codeintel.FreshnessFresh && tools.Allowlisted("code_index", roleTools)
 }
 
 func roleDefaultTrustLevel(role bundle.RoleConfig) trust.Level {
@@ -125,6 +175,12 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		tw.WriteError(fmt.Sprintf("resolve repo %q: %v", job.RepoID, err))
 		return fmt.Errorf("executor: resolve repo %q: %w — ensure the repo is registered via `mars-harness register`", job.RepoID, err)
 	}
+	root, err := tools.NewRoot(repoPath)
+	if err != nil {
+		tw.WriteError(fmt.Sprintf("sandbox root: %v", err))
+		return fmt.Errorf("executor: create sandbox root for %q: %w", repoPath, err)
+	}
+	root = root.WithDBPath(e.dbPath)
 
 	manifest, err := bundle.Load(repoPath)
 	if err != nil {
@@ -222,17 +278,35 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		ticketIndex = BuildTicketIndex(repoPath)
 	}
 
+	toolCounts := map[string]int{}
+	var graphResult codeintel.ContextResult
+	var graphErr error
+	var codeGraphContext string
+	if e.codeIntel.Enabled && codeintel.ToolAllowed(role.Tools) {
+		graphResult, graphErr = codeintel.BuildContext(ctx, repoPath, codeintel.ContextOptions{Refresh: true, DBPath: e.dbPath})
+		if graphErr != nil {
+			log.Warn("executor: code graph context unavailable", "err", graphErr)
+			tw.WriteAssistant(fmt.Sprintf("Code graph context unavailable: %v", graphErr))
+			codeGraphContext = codeintel.UnavailableContext(graphErr)
+			recordCodeGraphContextCounters(toolCounts, codeintel.ContextResult{Text: codeGraphContext}, graphErr)
+		} else {
+			codeGraphContext = graphResult.Text
+			recordCodeGraphContextCounters(toolCounts, graphResult, nil)
+		}
+	}
+
 	system, stats, err := harctx.Assemble(harctx.Input{
-		RoleScope:       job.Role,
-		RolePrompt:      rolePrompt,
-		Guardrails:      promptGuardrails,
-		KnowledgeRoutes: knowledgeRoutes,
-		Skills:          skills,
-		Trigger:         job.Trigger,
-		PayloadMode:     job.PayloadMode,
-		Learnings:       learnData.FormatForContext(),
-		TicketIndex:     ticketIndex,
-		CurrentTime:     time.Now(),
+		RoleScope:        job.Role,
+		RolePrompt:       rolePrompt,
+		Guardrails:       promptGuardrails,
+		KnowledgeRoutes:  knowledgeRoutes,
+		Skills:           skills,
+		Trigger:          job.Trigger,
+		PayloadMode:      job.PayloadMode,
+		Learnings:        learnData.FormatForContext(),
+		TicketIndex:      ticketIndex,
+		CodeGraphContext: codeGraphContext,
+		CurrentTime:      time.Now(),
 	})
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("context assembly: %v", err))
@@ -275,6 +349,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		TrustLevel:   string(trustLevel),
 		Guardrails:   guardEngine,
 		SafetyLimits: safety.DefaultLimits(),
+		ToolCounts:   toolCounts,
 		PolicyRecorder: func(evt tools.PolicyEvent) {
 			if e.onSignal == nil {
 				return
@@ -315,12 +390,6 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 			terminalDispositionRecorded = true
 			return nil
 		},
-	}
-
-	root, err := tools.NewRoot(repoPath)
-	if err != nil {
-		tw.WriteError(fmt.Sprintf("sandbox root: %v", err))
-		return fmt.Errorf("executor: create sandbox root for %q: %w", repoPath, err)
 	}
 
 	repair, err := tools.RepairWorkspaceHygieneIgnorePolicy(ctx, root)
@@ -389,23 +458,28 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		}
 	}
 
+	traceRuntime := codeGraphRuntimeForTrace(e.codeIntel, allowlist, graphErr)
 	params := agent.Params{
-		Completer:    client,
-		Registry:     reg,
-		Executor:     toolExec,
-		Root:         root,
-		Allowlist:    allowlist,
-		SystemPrompt: system,
-		UserMessage:  userMessage,
+		Completer:         client,
+		Registry:          reg,
+		Executor:          toolExec,
+		Root:              root,
+		Allowlist:         allowlist,
+		SystemPrompt:      system,
+		UserMessage:       userMessage,
+		Preflight:         codeGraphPreflight(allowlist, graphResult, graphErr, e.codeIntel),
+		MaintainCodeGraph: e.codeIntel.Enabled && codeGraphMaintenanceEnabled(allowlist, graphResult, graphErr),
 		Config: agent.LoopConfig{
 			Model:       role.Model,
 			MaxTurns:    role.MaxTurns,
 			ContextSize: contextWindow,
 		},
-		JobID:      job.ID,
-		Trace:      rec,
-		TraceStore: e.traceStore,
-		UI:         tw,
+		JobID:               job.ID,
+		Trace:               rec,
+		TraceStore:          e.traceStore,
+		CodeIntelMode:       traceRuntime.Mode,
+		CodeIntelModeSource: traceRuntime.Source,
+		UI:                  tw,
 	}
 	if manifest.DispatchMode() {
 		params.RequiredTerminalTool = "job_disposition_record"

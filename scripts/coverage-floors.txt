@@ -15,6 +15,7 @@ github.com/greaveselliott/mars-harness/cmd/mars-harness 51
 github.com/greaveselliott/mars-harness/internal/agent 70
 github.com/greaveselliott/mars-harness/internal/buildinfo notest
 github.com/greaveselliott/mars-harness/internal/bundle 57
+github.com/greaveselliott/mars-harness/internal/codeintel 68
 github.com/greaveselliott/mars-harness/internal/config 64
 github.com/greaveselliott/mars-harness/internal/context 70
 github.com/greaveselliott/mars-harness/internal/dashboard 70

@@ -154,6 +154,28 @@ func TestAssemble_ticketIndexOmittedWhenEmpty(t *testing.T) {
 	require.NotContains(t, out, "## TICKET INDEX")
 }
 
+func TestAssemble_codeGraphContext(t *testing.T) {
+	t.Parallel()
+	in := Input{
+		RoleScope:        "engineer",
+		RolePrompt:       "You are the Engineer.",
+		CodeGraphContext: "freshness: fresh\nchanged_paths:\n- internal/tools/codeintel.go",
+	}
+	out, stats, err := Assemble(in)
+	require.NoError(t, err)
+	require.Contains(t, out, "## CODE GRAPH CONTEXT")
+	require.Contains(t, out, "internal/tools/codeintel.go")
+
+	var found bool
+	for _, s := range stats {
+		if s.Name == "code_graph" {
+			found = true
+			require.Greater(t, s.Tokens, 0)
+		}
+	}
+	require.True(t, found, "expected code_graph section in stats")
+}
+
 func TestAssemble_payloadModeInTriggerContext(t *testing.T) {
 	t.Parallel()
 	in := Input{

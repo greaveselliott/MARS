@@ -36,18 +36,26 @@ type Turn struct {
 
 // Summary is persisted alongside JSONL for quick queries (MH-005).
 type Summary struct {
-	TraceID          string   `json:"trace_id"`
-	JobID            string   `json:"job_id"`
-	Outcome          string   `json:"outcome"`
-	WallMs           int64    `json:"wall_ms"`
-	TotalTokens      int      `json:"total_tokens"`
-	ToolsCalled      []string `json:"tools_called"`
-	TurnCount        int      `json:"turn_count"`
-	ToolCallMessages int      `json:"tool_call_messages"` // tool_calls blocks on assistant turns
-	ToolInvocations  int      `json:"tool_invocations"`   // executor runs (from runtime)
-	LLMCalls         int      `json:"llm_calls,omitempty"`
-	Error            string   `json:"error,omitempty"`
-	CreatedAt        string   `json:"created_at"` // RFC3339Nano
+	TraceID          string            `json:"trace_id"`
+	JobID            string            `json:"job_id"`
+	Outcome          string            `json:"outcome"`
+	WallMs           int64             `json:"wall_ms"`
+	TotalTokens      int               `json:"total_tokens"`
+	ToolsCalled      []string          `json:"tools_called"`
+	TurnCount        int               `json:"turn_count"`
+	ToolCallMessages int               `json:"tool_call_messages"` // tool_calls blocks on assistant turns
+	ToolInvocations  int               `json:"tool_invocations"`   // executor runs (from runtime)
+	LLMCalls         int               `json:"llm_calls,omitempty"`
+	ToolCounts       map[string]int    `json:"tool_counts,omitempty"`
+	CodeIntel        *CodeIntelSummary `json:"code_intel,omitempty"`
+	Error            string            `json:"error,omitempty"`
+	CreatedAt        string            `json:"created_at"` // RFC3339Nano
+}
+
+// CodeIntelSummary records whether automatic graph assistance was active for a job.
+type CodeIntelSummary struct {
+	Mode   string `json:"mode"`
+	Source string `json:"source,omitempty"`
 }
 
 // Record is a trace row loaded from SQLite.

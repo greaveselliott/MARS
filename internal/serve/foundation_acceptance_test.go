@@ -23,6 +23,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/greaveselliott/mars-harness/internal/codeintel"
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/llm"
 	"github.com/greaveselliott/mars-harness/internal/queue"
@@ -101,6 +102,32 @@ func TestFoundationAcceptanceDispatchProseCompletionRepromptsForDisposition(t *t
 	require.Equal(t, "approved", disposition.Status)
 	require.Equal(t, "no_need", disposition.NextNeed)
 	require.Equal(t, []string{"git log --oneline -10"}, disposition.EvidenceLinks)
+}
+
+func TestFoundationAcceptancePipelinePersistsCodeIntelMetrics(t *testing.T) {
+	ctx := context.Background()
+	repo := setupFoundationTarget(t, false)
+	fake := newFakeChatServer(t,
+		fakeToolResponse("impact", "code_impact", `{}`),
+		fakeToolResponse("record-disposition", "job_disposition_record", `{"status":"approved","next_need":"no_need","reason":"QA reviewed code graph impact.","evidence_links":["code_impact"]}`),
+	)
+
+	srv, repoID, exec := setupFoundationServer(t, repo, fake.URL())
+	job := &queue.Job{ID: "job-codeintel-metrics", RepoID: repoID, Role: "qa", Trigger: `{"type":"acceptance"}`}
+
+	require.NoError(t, exec.Execute(ctx, job))
+	report, err := codeintel.Metrics(ctx, codeintel.MetricsOptions{
+		RepoPath:   repo,
+		DBPath:     srv.cfg.DBPath,
+		WindowDays: 1,
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, report.Jobs)
+	require.Equal(t, 1, report.GraphEnabledJobs)
+	require.Equal(t, 0, report.GraphUnavailableJobs)
+	require.Greater(t, report.CodeIntelContextBytes, 0)
+	require.GreaterOrEqual(t, report.CodeIntelToolCalls, 1)
+	require.GreaterOrEqual(t, report.ToolInvocations, 2)
 }
 
 func TestFoundationAcceptancePolicyBlockSuppressesTicketGateFallout(t *testing.T) {
@@ -318,7 +345,7 @@ func setupFoundationServer(t *testing.T, repo, fallbackURL string) (*Server, str
 		}
 		return rec.Path, nil
 	}
-	exec := NewExecutor(lookup, router, srv.traceStore, srv.trustStore)
+	exec := NewExecutor(lookup, router, srv.cfg.DBPath, srv.traceStore, srv.trustStore)
 	exec.SetInterventionSignalHandler(srv.recordInterventionDebtSignal)
 	exec.SetOrgState(srv.orgStore)
 	return srv, repoID, exec

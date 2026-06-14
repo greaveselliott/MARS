@@ -24,6 +24,7 @@ const (
 	headerKnowledge   = "## KNOWLEDGE ROUTES"
 	headerSkills      = "## SKILLS"
 	headerTrigger     = "## TRIGGER CONTEXT"
+	headerCodeGraph   = "## CODE GRAPH CONTEXT"
 	headerRepo        = "## REPO SUMMARY"
 	headerTickets     = "## TICKET INDEX"
 )
@@ -37,7 +38,8 @@ type block struct {
 }
 
 // Assemble builds the additive system prompt with section headers (AD-006).
-// Truncation order when over TokenBudget: repo summary → trigger → knowledge routes; role and guardrails are kept until those are exhausted, then guardrails body may shrink; role text is never truncated.
+// Truncation order when over TokenBudget starts with low-priority repo summary,
+// then trigger/knowledge-style routing sections. Role text is never truncated.
 func Assemble(in Input) (system string, stats []SectionStat, err error) {
 	role, err := loadRolePrompt(in)
 	if err != nil {
@@ -116,6 +118,9 @@ func Assemble(in Input) (system string, stats []SectionStat, err error) {
 	}
 	if strings.TrimSpace(in.TicketIndex) != "" {
 		parts = append(parts, block{name: "tickets", header: headerTickets, body: strings.TrimSpace(in.TicketIndex), truncPri: 75})
+	}
+	if strings.TrimSpace(in.CodeGraphContext) != "" {
+		parts = append(parts, block{name: "code_graph", header: headerCodeGraph, body: strings.TrimSpace(in.CodeGraphContext), truncPri: 70})
 	}
 	if strings.TrimSpace(in.RepoSummary) != "" {
 		parts = append(parts, block{name: "repo", header: headerRepo, body: strings.TrimSpace(in.RepoSummary), truncPri: 10})

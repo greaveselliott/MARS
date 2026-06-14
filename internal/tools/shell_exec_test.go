@@ -593,6 +593,26 @@ func TestRecordSessionToolOutcomeTracksNoopFailures(t *testing.T) {
 	require.Equal(t, 1, session.ToolCounts[shellNoopFailureKey])
 }
 
+func TestRecordSessionToolOutcomeTracksCodeIntelEfficiencyMetrics(t *testing.T) {
+	t.Parallel()
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+
+	recordSessionToolOutcome(session, Root{}, "code_search", json.RawMessage(`{"query":"BuildContext"}`), ToolResult{Output: `{"results":[]}`}, nil)
+	recordSessionToolOutcome(session, Root{}, "grep", json.RawMessage(`{"pattern":"BuildContext"}`), ToolResult{Output: "internal/codeintel/context.go:1:BuildContext"}, nil)
+	recordSessionToolOutcome(session, Root{}, "file_search", json.RawMessage(`{"pattern":"**/*.go"}`), ToolResult{Output: "main.go\ninternal/app/app.go"}, nil)
+	recordSessionToolOutcome(session, Root{}, "file_read", json.RawMessage(`{"path":"internal/app/app.go"}`), ToolResult{Output: strings.Repeat("x", 80)}, nil)
+	recordSessionToolOutcome(session, Root{}, "file_read", json.RawMessage(`{"path":"internal/app/app.go","start_line":1,"end_line":3}`), ToolResult{Output: "package app"}, nil)
+	recordSessionToolOutcome(session, Root{}, "shell_exec", json.RawMessage(`{"argv":["rg","BuildContext"]}`), ToolResult{Output: "hit"}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[codeIntelToolCallsKey])
+	require.Equal(t, 1, session.ToolCounts[codeIntelToolSuccessKey])
+	require.Equal(t, len(`{"results":[]}`), session.ToolCounts[codeIntelOutputBytesKey])
+	require.Equal(t, 4, session.ToolCounts[broadRepoToolCallsKey])
+	require.Equal(t, 1, session.ToolCounts[bulkFileReadCallsKey])
+	require.Equal(t, 1, session.ToolCounts[broadShellSearchCallsKey])
+	require.Equal(t, 80, session.ToolCounts[bulkFileReadOutputBytesKey])
+}
+
 func TestRecordSessionToolPolicyFailureTracksNoopFailuresWithoutForcingTerminal(t *testing.T) {
 	t.Parallel()
 	session := &Session{Role: "qa", ToolCounts: map[string]int{validationCommandSuccessKey: 1}}

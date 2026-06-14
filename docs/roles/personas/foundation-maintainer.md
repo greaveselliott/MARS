@@ -46,6 +46,9 @@ runtime language.
 - Start from remote trunk or record the blocker.
 - Keep foundation and deployed ownership explicit in tickets, decisions, and
   completion evidence.
+- Use `code_index`, `code_search`, `code_snippet`, `code_trace`, and
+  `code_impact` before broad grep or bulk file reads when structural context,
+  blast radius, tests, docs, feature contracts, or ticket links matter.
 - Use existing tools, role domains, docsync rules, and generated-target
   patterns before adding new surfaces.
 - Keep vendor-specific AI client files as thin adapters pointing at canonical

@@ -37,6 +37,7 @@ type Config struct {
 	LlamaFlashAttention string          `yaml:"llama_flash_attention"`
 	LlamaMLock          bool            `yaml:"llama_mlock"`
 	Telemetry           TelemetryConfig `yaml:"telemetry"`
+	CodeIntel           CodeIntelConfig `yaml:"code_intel"`
 }
 
 // TelemetryConfig controls optional anonymous foundation telemetry reporting.
@@ -45,6 +46,11 @@ type TelemetryConfig struct {
 	Endpoint       string `yaml:"endpoint"`
 	Token          string `yaml:"token"`
 	ReportInterval string `yaml:"report_interval"`
+}
+
+// CodeIntelConfig controls automatic Mars code graph assistance.
+type CodeIntelConfig struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 // DefaultPath returns the conventional config file location.
@@ -108,7 +114,15 @@ func defaults() Config {
 			Reporting:      "off",
 			ReportInterval: "24h",
 		},
+		CodeIntel: CodeIntelConfig{
+			Enabled: true,
+		},
 	}
+}
+
+// Defaults returns the built-in configuration without reading disk or env.
+func Defaults() Config {
+	return defaults()
 }
 
 func applyEnv(cfg *Config) {
@@ -153,6 +167,14 @@ func applyEnv(cfg *Config) {
 			cfg.LlamaMLock = true
 		case "0", "false", "no", "off":
 			cfg.LlamaMLock = false
+		}
+	}
+	if v := os.Getenv("MARS_HARNESS_CODE_INTEL_ENABLED"); strings.TrimSpace(v) != "" {
+		switch strings.ToLower(strings.TrimSpace(v)) {
+		case "1", "true", "yes", "on", "enabled":
+			cfg.CodeIntel.Enabled = true
+		case "0", "false", "no", "off", "disabled":
+			cfg.CodeIntel.Enabled = false
 		}
 	}
 }

@@ -46,6 +46,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/agent"
 	"github.com/greaveselliott/mars-harness/internal/buildinfo"
 	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"github.com/greaveselliott/mars-harness/internal/codeintel"
 	"github.com/greaveselliott/mars-harness/internal/config"
 	ctx "github.com/greaveselliott/mars-harness/internal/context"
 	"github.com/greaveselliott/mars-harness/internal/docsync"
@@ -124,6 +125,7 @@ func newRootCommand() *cobra.Command {
 	root.AddCommand(telemetryCmd())
 	root.AddCommand(trustCmd())
 	root.AddCommand(toolsCmd())
+	root.AddCommand(codeIntelCmd())
 	root.AddCommand(mcpCmd())
 	root.AddCommand(modelsCmd())
 	root.AddCommand(releaseCmd())
@@ -1581,6 +1583,7 @@ func runCmd() *cobra.Command {
 		logFile       string
 		dryRun        bool
 		noInit        bool
+		codeIntelFlag string
 		budget        int
 		maxTurns      int
 	)
@@ -1608,6 +1611,7 @@ manifest.`,
 				logFile:       logFile,
 				dryRun:        dryRun,
 				noInit:        noInit,
+				codeIntelFlag: codeIntelFlag,
 				budget:        budget,
 				maxTurns:      maxTurns,
 			})
@@ -1621,6 +1625,7 @@ manifest.`,
 	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-run.log)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print assembled system prompt and exit without calling the LLM")
 	cmd.Flags().BoolVar(&noInit, "no-init", false, "Do not auto-initialize missing .harness/ before running; useful with --dry-run for observer-safe previews")
+	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
 	cmd.Flags().IntVar(&budget, "budget", 0, "Token budget (0 = unlimited)")
 	cmd.Flags().IntVar(&maxTurns, "max-turns", 50, "Maximum LLM round-trips")
 	_ = cmd.MarkFlagRequired("repo")
@@ -1637,6 +1642,7 @@ type runOpts struct {
 	logFile       string
 	dryRun        bool
 	noInit        bool
+	codeIntelFlag string
 	budget        int
 	maxTurns      int
 }
@@ -1804,7 +1810,8 @@ func sourceFoundationRoleConfig() bundle.RoleConfig {
 		TrustLevel: string(trust.LevelContributor),
 		Tools: []string{
 			"file_read", "file_write", "shell_exec", "dependency_sync", "mars_harness_cli",
-			"grep", "workspace_hygiene", "github_auth_check", "record_decision",
+			"grep", "code_index", "code_search", "code_snippet", "code_trace",
+			"code_impact", "workspace_hygiene", "github_auth_check", "record_decision",
 			"ticket_create", "tool_create", "persona_create", "task_trace_summarize",
 			"docsync_audit", "git_status", "git_diff", "git_commit", "git_push",
 			"job_disposition_record", "release_orchestrate", "github_release_status",
@@ -1872,6 +1879,79 @@ func isMarsHarnessSourceRepo(repoRoot string) bool {
 	return true
 }
 
+func resolveCodeIntelRuntime(flagValue string, cfg config.Config) (codeintel.Runtime, error) {
+	if raw := strings.TrimSpace(flagValue); raw != "" {
+		enabled, err := parseCodeIntelBool(raw)
+		if err != nil {
+			return codeintel.Runtime{}, err
+		}
+		return codeintel.NewRuntime(enabled, "flag"), nil
+	}
+	if raw := strings.TrimSpace(os.Getenv("MARS_HARNESS_CODE_INTEL_ENABLED")); raw != "" {
+		enabled, err := parseCodeIntelBool(raw)
+		if err != nil {
+			return codeintel.Runtime{}, err
+		}
+		return codeintel.NewRuntime(enabled, "env"), nil
+	}
+	return codeintel.NewRuntime(cfg.CodeIntel.Enabled, "config"), nil
+}
+
+func parseCodeIntelBool(raw string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "1", "true", "yes", "on", "enabled":
+		return true, nil
+	case "0", "false", "no", "off", "disabled":
+		return false, nil
+	default:
+		return false, fmt.Errorf("code-intel: expected true or false, got %q", raw)
+	}
+}
+
+func buildRoleCodeGraphContext(repoRoot string, roleTools []string, runtime codeintel.Runtime) (codeintel.ContextResult, error) {
+	if !runtime.Enabled || !codeintel.ToolAllowed(roleTools) {
+		return codeintel.ContextResult{}, nil
+	}
+	result, err := codeintel.BuildContext(context.Background(), repoRoot, codeintel.ContextOptions{Refresh: true})
+	if err != nil {
+		return codeintel.ContextResult{}, err
+	}
+	return result, nil
+}
+
+func codeGraphRunPreflight(roleTools []string, graph codeintel.ContextResult, graphErr error, runtime codeintel.Runtime) []agent.PreflightToolCall {
+	if !runtime.Enabled || graphErr != nil || graph.Status.Status != codeintel.FreshnessFresh || !tools.Allowlisted("code_impact", roleTools) {
+		return nil
+	}
+	args, ok := codeintel.ImpactPreflightArgs(graph, 0)
+	if !ok {
+		return nil
+	}
+	return []agent.PreflightToolCall{{
+		Name:      "code_impact",
+		ArgsJSON:  args,
+		Rationale: "Mars code graph preflight: inspect changed files, likely tests, docs, feature contracts, and tickets before broad repository exploration.",
+	}}
+}
+
+func codeGraphRuntimeForTrace(runtime codeintel.Runtime, roleTools []string, graphErr error) codeintel.Runtime {
+	if !runtime.Enabled {
+		return runtime
+	}
+	if !codeintel.ToolAllowed(roleTools) {
+		runtime.Mode = codeintel.ModeDisabled
+		return runtime
+	}
+	if graphErr != nil {
+		runtime.Mode = codeintel.ModeUnavailable
+	}
+	return runtime
+}
+
+func codeGraphRunMaintenanceEnabled(roleTools []string, graph codeintel.ContextResult, graphErr error) bool {
+	return graphErr == nil && graph.Status.Status == codeintel.FreshnessFresh && tools.Allowlisted("code_index", roleTools)
+}
+
 func executeRun(opts runOpts) error {
 	absRepo, err := filepath.Abs(opts.repoPath)
 	if err != nil {
@@ -1917,6 +1997,15 @@ func executeRun(opts runOpts) error {
 	}
 	display.Start()
 	defer display.Close()
+	cfg, cfgErr := config.Load(config.DefaultPath())
+	if cfgErr != nil {
+		slog.Warn("config load failed, using defaults", "err", cfgErr)
+		cfg = config.Defaults()
+	}
+	codeIntelRuntime, err := resolveCodeIntelRuntime(opts.codeIntelFlag, cfg)
+	if err != nil {
+		return err
+	}
 	tw := display.jobViews.NewJobView(ui.JobViewMeta{
 		JobID:    fmt.Sprintf("run-%s", opts.roleName),
 		RepoID:   absRepo,
@@ -1980,12 +2069,20 @@ func executeRun(opts runOpts) error {
 		skills = append(skills, ctx.Skill{Name: sd.Name, Scope: sd.Scope, Body: sd.Body})
 	}
 
+	codeGraph, codeGraphErr := buildRoleCodeGraphContext(absRepo, role.Tools, codeIntelRuntime)
+	codeGraphContext := codeGraph.Text
+	if codeGraphErr != nil {
+		tw.WriteAssistant(fmt.Sprintf("Code graph context unavailable: %v", codeGraphErr))
+		codeGraphContext = codeintel.UnavailableContext(codeGraphErr)
+	}
+
 	assemblyInput := ctx.Input{
-		RoleScope:       opts.roleName,
-		RolePrompt:      rolePrompt,
-		Guardrails:      promptGuardrails,
-		KnowledgeRoutes: knowledgeRoutes,
-		Skills:          skills,
+		RoleScope:        opts.roleName,
+		RolePrompt:       rolePrompt,
+		Guardrails:       promptGuardrails,
+		KnowledgeRoutes:  knowledgeRoutes,
+		Skills:           skills,
+		CodeGraphContext: codeGraphContext,
 	}
 	if opts.budget > 0 {
 		assemblyInput.TokenBudget = opts.budget
@@ -2074,6 +2171,10 @@ func executeRun(opts runOpts) error {
 		TrustLevel:   string(trust.LevelContributor),
 		Guardrails:   guardEngine,
 		SafetyLimits: safety.DefaultLimits(),
+		ToolCounts:   map[string]int{},
+	}
+	if codeIntelRuntime.Enabled && codeintel.ToolAllowed(role.Tools) {
+		codeintel.RecordContextCounters(executor.Session.ToolCounts, codeGraph, codeGraphErr)
 	}
 
 	root, err := tools.NewRoot(absRepo)
@@ -2083,23 +2184,40 @@ func executeRun(opts runOpts) error {
 	}
 
 	recorder := trace.NewRecorder(nil)
+	traceDBPath := defaultDBPath(absRepo)
+	if err := os.MkdirAll(filepath.Dir(traceDBPath), 0o755); err != nil {
+		tw.WriteError(fmt.Sprintf("trace store: %v", err))
+		return fmt.Errorf("run: create trace db directory: %w", err)
+	}
+	traceStore, err := trace.OpenStore(traceDBPath)
+	if err != nil {
+		tw.WriteError(fmt.Sprintf("trace store: %v", err))
+		return fmt.Errorf("run: open trace store: %w", err)
+	}
+	defer traceStore.Close()
+	traceRuntime := codeGraphRuntimeForTrace(codeIntelRuntime, role.Tools, codeGraphErr)
 
 	result, err := agent.Run(sigCtx, agent.Params{
-		Completer:    client,
-		Registry:     registry,
-		Executor:     executor,
-		Root:         root,
-		Allowlist:    role.Tools,
-		SystemPrompt: systemPrompt,
-		UserMessage:  "Begin your task. Inspect the repository and take action.",
+		Completer:           client,
+		Registry:            registry,
+		Executor:            executor,
+		Root:                root,
+		Allowlist:           role.Tools,
+		SystemPrompt:        systemPrompt,
+		UserMessage:         "Begin your task. Inspect the repository and take action.",
+		Preflight:           codeGraphRunPreflight(role.Tools, codeGraph, codeGraphErr, codeIntelRuntime),
+		MaintainCodeGraph:   codeIntelRuntime.Enabled && codeGraphRunMaintenanceEnabled(role.Tools, codeGraph, codeGraphErr),
+		CodeIntelMode:       traceRuntime.Mode,
+		CodeIntelModeSource: traceRuntime.Source,
 		Config: agent.LoopConfig{
 			Model:       modelName,
 			MaxTurns:    opts.maxTurns,
 			TokenBudget: opts.budget,
 		},
-		JobID: fmt.Sprintf("%s-%s", manifest.Name, opts.roleName),
-		Trace: recorder,
-		UI:    tw,
+		JobID:      fmt.Sprintf("%s-%s", manifest.Name, opts.roleName),
+		Trace:      recorder,
+		TraceStore: traceStore,
+		UI:         tw,
 	})
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("agent error: %v", err))
@@ -2598,6 +2716,26 @@ If .harness/manifest.yaml is missing, mars-harness scaffolds it first (same as i
 			fmt.Printf("Language: %s | Framework: %s\n", result.Language, result.Framework)
 			fmt.Printf("CI: %v | Tests: %v | README: %v | LICENSE: %v\n",
 				result.HasCI, result.HasTests, result.HasReadme, result.HasLicense)
+			cfg, cfgErr := config.Load(config.DefaultPath())
+			if cfgErr != nil {
+				slog.Warn("config load failed, using defaults", "err", cfgErr)
+				cfg = config.Defaults()
+			}
+			codeIntelRuntime, runtimeErr := resolveCodeIntelRuntime("", cfg)
+			if runtimeErr != nil {
+				return runtimeErr
+			}
+			if !codeIntelRuntime.Enabled {
+				fmt.Printf("Code intel: disabled\n")
+			} else if status, err := codeIntelScanStatus(sigCtx, absPath); err == nil {
+				fmt.Printf("Code intel: %s | Files: %d | Stale: %d | New: %d | Symbols: %d | Edges: %d\n",
+					status.Status, status.Files, status.StaleFiles, status.NewFiles, status.Symbols, status.Edges)
+				if status.Message != "" {
+					fmt.Printf("Code intel message: %s\n", status.Message)
+				}
+			} else {
+				fmt.Printf("Code intel: unavailable (%v)\n", err)
+			}
 			fmt.Printf("Findings: %d\n", len(result.Findings))
 
 			for _, f := range result.Findings {
@@ -2619,6 +2757,15 @@ If .harness/manifest.yaml is missing, mars-harness scaffolds it first (same as i
 	cmd.Flags().BoolVar(&genTickets, "tickets", false, "Generate ticket files in docs/tickets/backlog/")
 
 	return cmd
+}
+
+func codeIntelScanStatus(ctx context.Context, repoPath string) (codeintel.Status, error) {
+	store, err := codeintel.Open(repoPath, "")
+	if err != nil {
+		return codeintel.Status{}, err
+	}
+	defer store.Close()
+	return store.Status(ctx)
 }
 
 func doctorCmd() *cobra.Command {
@@ -2762,6 +2909,184 @@ func scoresExportCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&createInterventionDebt, "create-intervention-debt", false, "Create or update deduped intervention-debt tickets from score and outcome evidence")
 	cmd.Flags().BoolVar(&noTicket, "no-ticket", false, "Deprecated: ticket creation is disabled by default unless --create-intervention-debt is set")
 	_ = cmd.Flags().MarkHidden("no-ticket")
+	return cmd
+}
+
+func codeIntelCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "code-intel",
+		Short: "Measure and benchmark Mars code graph assistance",
+		Long:  "Inspect local code-intel evidence from Mars SQLite traces and run model-free graph benchmarks.",
+	}
+	cmd.AddCommand(codeIntelMetricsCmd())
+	cmd.AddCommand(codeIntelBenchmarkCmd())
+	return cmd
+}
+
+func codeIntelMetricsCmd() *cobra.Command {
+	var (
+		repoPath   string
+		dbPath     string
+		windowDays int
+		jsonOut    bool
+	)
+	cmd := &cobra.Command{
+		Use:   "metrics",
+		Short: "Summarize persisted local code-intel efficiency evidence",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if strings.TrimSpace(repoPath) == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("code-intel metrics: cannot determine working directory: %w", err)
+				}
+			}
+			absRepo, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("code-intel metrics: resolve repo path: %w", err)
+			}
+			if strings.TrimSpace(dbPath) == "" {
+				dbPath = defaultDBPath(absRepo)
+			}
+			if err := validateRuntimeArtifactPathOutsideRepo("code-intel metrics", "--db", dbPath, absRepo, defaultDBPath(absRepo)); err != nil {
+				return err
+			}
+			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+				return fmt.Errorf("code-intel metrics: create db directory: %w", err)
+			}
+			report, err := codeintel.Metrics(cmd.Context(), codeintel.MetricsOptions{
+				RepoPath:   absRepo,
+				DBPath:     dbPath,
+				WindowDays: windowDays,
+			})
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return writeJSON(cmd.OutOrStdout(), report)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Code-intel metrics: %s\n", report.RepoPath)
+			fmt.Fprintf(cmd.OutOrStdout(), "Window: %dd | Jobs: %d\n", report.WindowDays, report.Jobs)
+			fmt.Fprintf(cmd.OutOrStdout(), "Graph jobs: enabled=%d disabled=%d unavailable=%d unused=%d\n",
+				report.GraphEnabledJobs, report.GraphDisabledJobs, report.GraphUnavailableJobs, report.UnusedGraphJobs)
+			fmt.Fprintf(cmd.OutOrStdout(), "Code-intel calls: %d | output_bytes=%d | context_bytes=%d | refreshes=%d\n",
+				report.CodeIntelToolCalls, report.CodeIntelOutputBytes, report.CodeIntelContextBytes, report.CodeIntelRefreshes)
+			fmt.Fprintf(cmd.OutOrStdout(), "Broad exploration: calls=%d output_bytes=%d bulk_reads=%d shell_searches=%d\n",
+				report.BroadExplorationCalls, report.BroadExplorationBytes, report.BulkFileReadCalls, report.BroadShellSearchCalls)
+			fmt.Fprintf(cmd.OutOrStdout(), "Runtime: llm_calls=%d tool_invocations=%d tokens=%d wall_ms=%d\n",
+				report.LLMCalls, report.ToolInvocations, report.TokenEstimate, report.WallMs)
+			if sources := codeintel.SortedModeSources(report.ModeSources); len(sources) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Mode sources: %s\n", strings.Join(sources, ", "))
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().IntVar(&windowDays, "window-days", 30, "Number of days of persisted traces to aggregate")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func codeIntelBenchmarkCmd() *cobra.Command {
+	var (
+		repoPath      string
+		dbPath        string
+		caseName      string
+		trials        int
+		reportPath    string
+		jsonOut       bool
+		changedPaths  string
+		expectedFiles string
+		expectedTests string
+		expectedDocs  string
+	)
+	cmd := &cobra.Command{
+		Use:   "benchmark",
+		Short: "Run a local no-model control/treatment code graph benchmark",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if strings.TrimSpace(repoPath) == "" {
+				var err error
+				repoPath, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("code-intel benchmark: cannot determine working directory: %w", err)
+				}
+			}
+			absRepo, err := filepath.Abs(repoPath)
+			if err != nil {
+				return fmt.Errorf("code-intel benchmark: resolve repo path: %w", err)
+			}
+			if strings.TrimSpace(dbPath) == "" {
+				dbPath = defaultDBPath(absRepo)
+			}
+			if err := validateRuntimeArtifactPathOutsideRepo("code-intel benchmark", "--db", dbPath, absRepo, defaultDBPath(absRepo)); err != nil {
+				return err
+			}
+			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+				return fmt.Errorf("code-intel benchmark: create db directory: %w", err)
+			}
+			if err := validateRuntimeArtifactPathOutsideRepo("code-intel benchmark", "--report", reportPath, absRepo, "a path outside the target repo"); err != nil {
+				return err
+			}
+			report, err := codeintel.Benchmark(cmd.Context(), codeintel.BenchmarkOptions{
+				RepoPath:      absRepo,
+				DBPath:        dbPath,
+				Case:          caseName,
+				Trials:        trials,
+				ChangedPaths:  splitCSV(changedPaths),
+				ExpectedFiles: splitCSV(expectedFiles),
+				ExpectedTests: splitCSV(expectedTests),
+				ExpectedDocs:  splitCSV(expectedDocs),
+			})
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(reportPath) != "" {
+				data, err := json.MarshalIndent(report, "", "  ")
+				if err != nil {
+					return err
+				}
+				if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
+					return fmt.Errorf("code-intel benchmark: create report directory: %w", err)
+				}
+				if err := os.WriteFile(reportPath, append(data, '\n'), 0o644); err != nil {
+					return fmt.Errorf("code-intel benchmark: write report: %w", err)
+				}
+			}
+			if jsonOut {
+				return writeJSON(cmd.OutOrStdout(), report)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Code-intel benchmark: %s\n", report.RepoPath)
+			fmt.Fprintf(cmd.OutOrStdout(), "Case: %s | Trials: %d | Local only: %v\n", report.Case, report.Trials, report.LocalOnly)
+			fmt.Fprintf(cmd.OutOrStdout(), "Control: avg_duration_ms=%d avg_context_bytes=%d\n",
+				report.Summary.ControlAvgDurationMS, report.Summary.ControlAvgContextBytes)
+			fmt.Fprintf(cmd.OutOrStdout(), "Treatment: avg_duration_ms=%d avg_context_bytes=%d\n",
+				report.Summary.TreatmentAvgDurationMS, report.Summary.TreatmentAvgContextBytes)
+			if report.Summary.ExpectedFilesHitRate > 0 || strings.TrimSpace(expectedFiles) != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Expected files hit rate: %.2f\n", report.Summary.ExpectedFilesHitRate)
+			}
+			if report.Summary.ExpectedTestsHitRate > 0 || strings.TrimSpace(expectedTests) != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Expected tests hit rate: %.2f\n", report.Summary.ExpectedTestsHitRate)
+			}
+			if report.Summary.ExpectedDocsHitRate > 0 || strings.TrimSpace(expectedDocs) != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Expected docs hit rate: %.2f\n", report.Summary.ExpectedDocsHitRate)
+			}
+			if strings.TrimSpace(reportPath) != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Report: %s\n", reportPath)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&caseName, "case", "current", "Benchmark case name")
+	cmd.Flags().IntVar(&trials, "trials", 2, "Number of control/treatment trials")
+	cmd.Flags().StringVar(&changedPaths, "changed-paths", "", "Comma-separated changed paths to evaluate instead of the current git diff")
+	cmd.Flags().StringVar(&expectedFiles, "expected-files", "", "Comma-separated changed paths expected in impact output")
+	cmd.Flags().StringVar(&expectedTests, "expected-tests", "", "Comma-separated test paths expected in impact output")
+	cmd.Flags().StringVar(&expectedDocs, "expected-docs", "", "Comma-separated doc paths expected in impact output")
+	cmd.Flags().StringVar(&reportPath, "report", "", "Optional JSON report path outside the target repo")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
 
@@ -3287,11 +3612,12 @@ func trustSetCmd() *cobra.Command {
 
 func serveCmd() *cobra.Command {
 	var (
-		webhookAddr string
-		concurrency int
-		dbPath      string
-		debug       bool
-		logFile     string
+		webhookAddr   string
+		concurrency   int
+		dbPath        string
+		debug         bool
+		logFile       string
+		codeIntelFlag string
 	)
 
 	cmd := &cobra.Command{
@@ -3314,6 +3640,10 @@ func serveCmd() *cobra.Command {
 			}
 			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 				return fmt.Errorf("serve: create db directory: %w", err)
+			}
+			codeIntelRuntime, err := resolveCodeIntelRuntime(codeIntelFlag, cfg)
+			if err != nil {
+				return err
 			}
 
 			webhookSecret := os.Getenv("MARS_HARNESS_WEBHOOK_SECRET")
@@ -3342,6 +3672,8 @@ func serveCmd() *cobra.Command {
 				PerformanceProfile: cfg.PerformanceProfile,
 				InferenceTuning:    inferenceTuningFromConfig(cfg),
 				JobViews:           display.jobViews,
+				CodeIntelDisabled:  !codeIntelRuntime.Enabled,
+				CodeIntelSource:    codeIntelRuntime.Source,
 			})
 			if err != nil {
 				return err
@@ -3382,6 +3714,7 @@ func serveCmd() *cobra.Command {
 	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/mars.db)")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
 	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-serve.log)")
+	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
 
 	return cmd
 }
@@ -3643,6 +3976,7 @@ func startCmd() *cobra.Command {
 		exitAfterSeed bool
 		debug         bool
 		logFile       string
+		codeIntelFlag string
 	)
 
 	cmd := &cobra.Command{
@@ -3721,6 +4055,10 @@ dispositions directly and uses Orchestrator for ambiguous handoffs.`,
 			if err != nil {
 				slog.Warn("config load failed, using defaults", "err", err)
 			}
+			codeIntelRuntime, err := resolveCodeIntelRuntime(codeIntelFlag, cfg)
+			if err != nil {
+				return err
+			}
 
 			if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 				return fmt.Errorf("start: create db directory: %w", err)
@@ -3744,6 +4082,8 @@ dispositions directly and uses Orchestrator for ambiguous handoffs.`,
 				PerformanceProfile: cfg.PerformanceProfile,
 				InferenceTuning:    inferenceTuningFromConfig(cfg),
 				JobViews:           display.jobViews,
+				CodeIntelDisabled:  !codeIntelRuntime.Enabled,
+				CodeIntelSource:    codeIntelRuntime.Source,
 			})
 			if err != nil {
 				display.Error(fmt.Sprintf("orchestrator init: %v", err))
@@ -3807,6 +4147,7 @@ dispositions directly and uses Orchestrator for ambiguous handoffs.`,
 	cmd.Flags().BoolVar(&force, "force", false, "Force re-init .harness/ even if it exists")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
 	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-start.log)")
+	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
 	cmd.Flags().BoolVar(&exitAfterSeed, "exit-after-seed", false, "Exit after init/register/seed; intended for deterministic smoke tests")
 	_ = cmd.Flags().MarkHidden("exit-after-seed")
 
