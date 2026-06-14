@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.58.1] - 2026-06-14
+<!-- mars-harness-release: version=0.58.1 commit=9d31ea00b64d -->
+
+### Impact
+- **telemetry:** Operators see improved reliability because record guardrail loops for self improvement.
+
+### Why
+- **telemetry:** This matters because record guardrail loops for self improvement closes a failure mode or degraded path.
+
+### What Changed
+- **telemetry:** Changed record guardrail loops for self improvement (9d31ea0).
+
+### Fixes
+- **telemetry:** Record guardrail loops for self improvement (9d31ea0)
+
 ## [0.58.0] - 2026-06-14
 <!-- mars-harness-release: version=0.58.0 commit=fa782db3454d -->
 
