@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.60.1] - 2026-06-14
+<!-- mars-harness-release: version=0.60.1 commit=cca8f2833d2c -->
+
+### Impact
+- **validation:** Operators and future agents now have a hard evidence rule: fake or scripted model endpoints cannot be counted as agent-smoke validation success.
+
+### Why
+- **validation:** Fake-backed smoke reports can create false positives for role behavior by proving only runner plumbing, not model reasoning or tool choice.
+
+### What Changed
+- **validation:** Added AD-296, updated validation doctrine, and made agent-smoke reports expose endpoint override provenance (cca8f28).
+
+### Documentation
+- **validation:** Recorded the blocked full-matrix evidence report and the one valid real-model probe (cca8f28)
+
 ## [0.60.0] - 2026-06-14
 <!-- mars-harness-release: version=0.60.0 commit=81f2cd61deb3 -->
 
