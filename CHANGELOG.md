@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.60.0] - 2026-06-14
+<!-- mars-harness-release: version=0.60.0 commit=81f2cd61deb3 -->
+
+### Impact
+- **validation:** Operators gain new capability: run agent smoke roles live.
+
+### Why
+- **validation:** This matters because run agent smoke roles live was missing from the shipped capability set.
+
+### What Changed
+- **validation:** Changed run agent smoke roles live (81f2cd6).
+
+### Features
+- **validation:** Run agent smoke roles live (81f2cd6)
+
 ## [0.59.0] - 2026-06-14
 <!-- mars-harness-release: version=0.59.0 commit=065ea7210d23 -->
 
