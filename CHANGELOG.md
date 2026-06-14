@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.58.2] - 2026-06-14
+<!-- mars-harness-release: version=0.58.2 commit=f68ca5c76d4c -->
+
+### Impact
+- **tools:** Operators see improved reliability because repeated guardrail blocks now return actionable repair guidance to the active agent.
+
+### Why
+- **tools:** This closes a failure mode where an agent could keep retrying a blocked tool call without a compact repair path.
+
+### What Changed
+- **tools:** Added repeated-guardrail repair guidance, COO feature-contract repair hints, and unresolved test/build lane guidance (f68ca5c).
+
+### Fixes
+- **tools:** Add repair guidance for repeated guardrails (f68ca5c)
+
 ## [0.58.1] - 2026-06-14
 <!-- mars-harness-release: version=0.58.1 commit=9d31ea00b64d -->
 
