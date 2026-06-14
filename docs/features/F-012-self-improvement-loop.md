@@ -25,6 +25,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 8. F-012-S008 - Deployed harnesses keep raw telemetry local and export only opt-in anonymous aggregate reports.
 9. F-012-S009 - Foundation telemetry collector intake triages repeated anonymous patterns into Mars Harness source work.
 10. F-012-S010 - Deterministic remediation recipes are registered with applicability, safety, and operator actions before LLM repair.
+11. F-012-S011 - Compartmentalised agent smoke tests generate ephemeral role-stage targets through foundation tools.
 
 ## Scenarios
 
@@ -113,6 +114,15 @@ And dirty-worktree and missing-optional-tool failures remain operator-visible gu
 And doctor reports known manifest and generated-docs recipe IDs with concrete fix commands before the same failures reach agent runtime
 And score export renders deterministic remediation attempt and execution summaries from failed outcome details
 
+### F-012-S011: Compartmentalised Agent Smoke Testing
+
+Given an operator runs `mars-harness validation agent-smoke`
+When the runner selects role cases from `docs/validation/agent-smoke/matrix.yaml`
+Then each selected case creates a fresh ephemeral target repo, isolated database, logs, trace directory, result file, and manifest
+And target seed artifacts are generated through foundation scaffold/tool surfaces rather than long-lived snapshot repos
+And successful runs are discarded by default while failed runs are retained for diagnosis unless explicitly discarded
+And the report records role, case, project type, generation provenance, expected disposition, would-be next role, cleanup status, and failure class
+
 ## Out of Scope
 
 - Unbounded self-modification.
@@ -135,3 +145,4 @@ None.
 - F-012-S008: `go test ./internal/telemetry -run TestBuildAnonymousReport` and `go test ./internal/config -run TestLoad_envTelemetryOverrides`
 - F-012-S009: `go test ./internal/foundationtelemetry`
 - F-012-S010: `go test ./internal/remediation`, `go test ./internal/serve -run 'TestHandleJobFailed(RecordsDeterministicRemediation|ExecutesGeneratedDocs)|TestHandleRemediation(ExecutableReadyRecipe|AutoSafeWithoutExecutor|OperatorRecipe)'`, `go test ./internal/doctor -run TestCheckDeterministicRemediationHealth`, and `go test ./internal/qualityscore -run TestExportRendersTelemetryAndOutcomeSignals`
+- F-012-S011: `go test ./internal/validation` and smoke commands `mars-harness validation agent-smoke --suite fast --json`, `mars-harness validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs`, `mars-harness validation agent-smoke --suite held-out --parallel 2 --timeout 10m`, and `mars-harness validation agent-smoke --cleanup-only`

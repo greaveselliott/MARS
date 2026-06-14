@@ -547,6 +547,13 @@ Global command surface:
     Flags: --repo <path>, --json
     Example: ["docsync", "audit", "--repo", "."]
 
+  validation agent-smoke
+    Run compartmentalised role smoke tests against fresh ephemeral targets
+    generated through foundation tooling. Successful runs are discarded by
+    default; failed runs are retained unless --discard-failed is set.
+    Flags: --role <role>, --case <id>, --project-type <type>, --suite <fast|default|full|held-out>, --parallel <n>, --cycle <key>, --max-turns <n>, --timeout <duration>, --json, --report <path>, --keep-runs, --cleanup-only, --discard-failed, --root <path>
+    Example: ["validation", "agent-smoke", "--suite", "fast", "--json"]
+
   scores
     Show trunk-native accuracy scores.
     Flags: --repo <path>, --db <path>

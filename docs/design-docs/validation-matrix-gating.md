@@ -85,6 +85,20 @@ Replay evidence is durable, discoverable, and uniform:
   `evidence_links`, and grade-affecting runs are followed by a quality-score
   export per AD-278.
 
+### AD-294: Agent Smoke Is A Complementary Fast Lane
+
+`mars-harness validation agent-smoke` is a source-only validation lane for
+role-local smoke coverage. It generates ephemeral targets through foundation
+tools, cycles cases across API, web, game, CLI, library, docs-site, and
+maintenance project shapes, and records per-role pass/fail results with failure
+classes.
+
+Agent smoke can support a source-change claim by showing that affected roles
+still behave at their lifecycle checkpoints. It does not satisfy an AD-284
+minimum archetype replay by itself unless the validation report explicitly says
+the required full replay was unavailable and leaves the lifecycle claim
+unconfirmed.
+
 ## Consequences
 
 - Lifecycle claims name their change class and replay evidence, so reviewers

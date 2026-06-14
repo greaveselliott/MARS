@@ -109,6 +109,25 @@ Batch related slices (for example WS-D policy migrations) into **one**
 post-change replay where AD-284 allows, instead of one multi-hour run per
 commit.
 
+### AD-294: Compartmentalised Agent Smoke Complements Full Sweeps
+
+Mars Harness also provides a fast role-local validation lane:
+`mars-harness validation agent-smoke`. This lane generates fresh ephemeral
+target repositories for selected roles and project types, seeds each target
+through foundation scaffold/tool surfaces, records generation provenance, and
+discards successful runs by default.
+
+Agent smoke is appropriate for quickly checking whether a role still behaves
+correctly at a realistic lifecycle checkpoint: CEO on an empty brief, COO after
+strategy context, CTO after BDD planning, Engineer with an in-progress ticket,
+reviewers after implementation evidence, maintainers after validation reports,
+and Orchestrator with source disposition context.
+
+Agent smoke does **not** replace the clean-project lifecycle replay required
+for broad runtime, orchestration, or release claims. It catches role-local
+regressions and project-shape overfitting earlier; full `mars-harness start`
+sweeps still prove cross-role handoff quality and lifecycle progress.
+
 ## Validation Matrix (Summary)
 
 Use the full table in [validation-matrix-gating.md](validation-matrix-gating.md).
@@ -122,6 +141,11 @@ Archetypes (AD-138 portfolio):
 | CLI/tooling | Command contracts, release notes, docsync |
 | Existing-repo maintenance | Resume, dirty-tree safety, backward-compatible edits |
 
+Compartmentalised agent smoke expands those archetypes with generated API, web,
+game, CLI, library, docs-site, and maintenance targets across individual role
+checkpoints. The source matrix lives in
+[docs/validation/agent-smoke/matrix.yaml](../validation/agent-smoke/matrix.yaml).
+
 ## Anti-Patterns
 
 | Anti-pattern | Why it fails |
@@ -130,6 +154,7 @@ Archetypes (AD-138 portfolio):
 | Checkpoint git + fresh DB for delivery validation | Ticket tree and bootstrap intent diverge (demo-14 CTO loop) |
 | Monitoring a known-wedge canary until timeout | Wastes GPU; record invalid run and fix seed or source |
 | Claiming validation from a run that never reached the affected role | Report must name product progress or explicit blocked stage |
+| Treating agent-smoke as a full lifecycle sweep | Role-local fixtures can pass while cross-role handoffs still regress |
 | Branch-only green replay | Trunk push is part of done per AD-138 |
 
 ## Discoveries

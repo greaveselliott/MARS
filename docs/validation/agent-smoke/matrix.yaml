@@ -1,0 +1,828 @@
+cases:
+  - id: static-web-empty
+    role: ceo
+    project_type: static-web
+    stage: empty
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/ceo.md]
+    expected_disposition: completed
+    would_dispatch: coo
+    required_artifacts: [.harness/manifest.yaml, spec.md, index.html]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: exec_plan}
+  - id: go-api-empty
+    role: ceo
+    project_type: go-api
+    stage: empty
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/ceo.md]
+    expected_disposition: completed
+    would_dispatch: coo
+    required_artifacts: [.harness/manifest.yaml, go.mod, cmd/api/main.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: exec_plan}
+  - id: browser-game-empty
+    role: ceo
+    project_type: browser-game-phaser
+    stage: empty
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/ceo.md]
+    expected_disposition: completed
+    would_dispatch: coo
+    required_artifacts: [.harness/manifest.yaml, package.json, src/game/scene.js]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: exec_plan}
+  - id: docs-site-ambiguous-heldout
+    role: ceo
+    project_type: docs-site
+    stage: empty
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/ceo.md]
+    expected_disposition: completed
+    would_dispatch: coo
+    required_artifacts: [.harness/manifest.yaml, docs/index.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: exec_plan}
+  - id: react-web-conflicting-goals-heldout
+    role: ceo
+    project_type: react-web
+    stage: empty
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/ceo.md]
+    expected_disposition: completed
+    would_dispatch: coo
+    required_artifacts: [.harness/manifest.yaml, package.json, src/App.jsx]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: exec_plan}
+
+  - id: go-api-conflicting-bets
+    role: head-of-strategy
+    project_type: go-api
+    stage: conflicting
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/head-of-strategy.md]
+    expected_disposition: completed
+    would_dispatch: ceo
+    required_artifacts: [.harness/learnings.yaml, docs/goals/ceo-strategy.md, go.mod]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: strategy_decision}
+  - id: browser-game-roadmap-tradeoff
+    role: head-of-strategy
+    project_type: browser-game-phaser
+    stage: roadmap
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/head-of-strategy.md]
+    expected_disposition: completed
+    would_dispatch: ceo
+    required_artifacts: [.harness/learnings.yaml, docs/goals/ceo-strategy.md, package.json]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: strategy_decision}
+  - id: go-cli-market-fit-heldout
+    role: head-of-strategy
+    project_type: go-cli
+    stage: conflicting
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/head-of-strategy.md]
+    expected_disposition: completed
+    would_dispatch: ceo
+    required_artifacts: [.harness/learnings.yaml, docs/goals/ceo-strategy.md, cmd/tool/main.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: strategy_decision}
+  - id: docs-site-executive-narrative-heldout
+    role: head-of-strategy
+    project_type: docs-site
+    stage: narrative
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/head-of-strategy.md]
+    expected_disposition: completed
+    would_dispatch: ceo
+    required_artifacts: [.harness/learnings.yaml, docs/goals/ceo-strategy.md, docs/content/intro.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: strategy_decision}
+
+  - id: static-web-after-ceo
+    role: coo
+    project_type: static-web
+    stage: after-ceo
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/coo.md]
+    expected_disposition: completed
+    would_dispatch: cto-weekly
+    required_artifacts: [docs/goals/ceo-strategy.md, docs/features/F-001-product-walking-skeleton.md, index.html]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: technical_planning}
+  - id: react-web-after-ceo
+    role: coo
+    project_type: react-web
+    stage: after-ceo
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/coo.md]
+    expected_disposition: completed
+    would_dispatch: cto-weekly
+    required_artifacts: [docs/goals/ceo-strategy.md, docs/features/F-001-product-walking-skeleton.md, src/App.jsx]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: technical_planning}
+  - id: browser-game-after-ceo
+    role: coo
+    project_type: browser-game-phaser
+    stage: after-ceo
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/coo.md]
+    expected_disposition: completed
+    would_dispatch: cto-weekly
+    required_artifacts: [docs/goals/ceo-strategy.md, docs/features/F-001-product-walking-skeleton.md, src/game/player.js]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: technical_planning}
+  - id: go-api-after-ceo
+    role: coo
+    project_type: go-api
+    stage: after-ceo
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/coo.md]
+    expected_disposition: completed
+    would_dispatch: cto-weekly
+    required_artifacts: [docs/goals/ceo-strategy.md, docs/features/F-001-product-walking-skeleton.md, internal/api/handler.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: technical_planning}
+  - id: go-cli-scope-change-heldout
+    role: coo
+    project_type: go-cli
+    stage: scope-change
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/coo.md]
+    expected_disposition: completed
+    would_dispatch: cto-weekly
+    required_artifacts: [docs/goals/ceo-strategy.md, docs/features/F-001-product-walking-skeleton.md, cmd/tool/main.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: technical_planning}
+  - id: docs-site-content-workflow-heldout
+    role: coo
+    project_type: docs-site
+    stage: after-ceo
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/coo.md]
+    expected_disposition: completed
+    would_dispatch: cto-weekly
+    required_artifacts: [docs/goals/ceo-strategy.md, docs/features/F-001-product-walking-skeleton.md, docs/content/intro.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: technical_planning}
+
+  - id: go-api-after-coo
+    role: cto-weekly
+    project_type: go-api
+    stage: after-coo
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/cto-weekly.md]
+    expected_disposition: completed
+    would_dispatch: engineer
+    required_artifacts: [docs/exec-plans/active/current-operating-plan.md, docs/features/F-001-product-walking-skeleton.md, go.mod]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation}
+  - id: react-web-after-coo
+    role: cto-weekly
+    project_type: react-web
+    stage: after-coo
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/cto-weekly.md]
+    expected_disposition: completed
+    would_dispatch: engineer
+    required_artifacts: [docs/exec-plans/active/current-operating-plan.md, docs/features/F-001-product-walking-skeleton.md, package.json]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation}
+  - id: browser-game-after-coo
+    role: cto-weekly
+    project_type: browser-game-phaser
+    stage: after-coo
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/cto-weekly.md]
+    expected_disposition: completed
+    would_dispatch: engineer
+    required_artifacts: [docs/exec-plans/active/current-operating-plan.md, docs/features/F-001-product-walking-skeleton.md, src/main.js]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation}
+  - id: go-cli-after-coo
+    role: cto-weekly
+    project_type: go-cli
+    stage: after-coo
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/cto-weekly.md]
+    expected_disposition: completed
+    would_dispatch: engineer
+    required_artifacts: [docs/exec-plans/active/current-operating-plan.md, docs/features/F-001-product-walking-skeleton.md, cmd/tool/main.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation}
+  - id: go-library-ticket-gap-heldout
+    role: cto-weekly
+    project_type: go-library
+    stage: ticket-gap
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/cto-weekly.md]
+    expected_disposition: completed
+    would_dispatch: engineer
+    required_artifacts: [docs/exec-plans/active/current-operating-plan.md, docs/features/F-001-product-walking-skeleton.md, pkg/smoke/smoke.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation}
+  - id: static-web-duplicate-scenario-risk-heldout
+    role: cto-weekly
+    project_type: static-web
+    stage: duplicate-scenario-risk
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/cto-weekly.md]
+    expected_disposition: completed
+    would_dispatch: engineer
+    required_artifacts: [docs/exec-plans/active/current-operating-plan.md, docs/features/F-001-product-walking-skeleton.md, index.html]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation}
+
+  - id: static-web-ticket
+    role: engineer
+    project_type: static-web
+    stage: ticket
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/engineer.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [docs/tickets/in-progress, index.html, docs/features/F-001-product-walking-skeleton.md]
+    forbidden_mutations: [docs/tickets/done/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: qa_review}
+  - id: go-api-ticket
+    role: engineer
+    project_type: go-api
+    stage: ticket
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/engineer.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [docs/tickets/in-progress, internal/api/handler_test.go]
+    forbidden_mutations: [docs/tickets/done/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: qa_review}
+  - id: react-web-ticket
+    role: engineer
+    project_type: react-web
+    stage: ticket
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/engineer.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [docs/tickets/in-progress, src/App.test.jsx]
+    forbidden_mutations: [docs/tickets/done/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: qa_review}
+  - id: browser-game-ticket
+    role: engineer
+    project_type: browser-game-phaser
+    stage: ticket
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/engineer.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [docs/tickets/in-progress, src/game/scene.js]
+    forbidden_mutations: [docs/tickets/done/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: qa_review}
+  - id: go-cli-rework-heldout
+    role: engineer
+    project_type: go-cli
+    stage: rework-ticket
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/engineer.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [docs/tickets/in-progress, internal/tool/parser_test.go]
+    forbidden_mutations: [docs/tickets/done/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: qa_review}
+  - id: canvas-game-smoke-gap-heldout
+    role: engineer
+    project_type: canvas-game-vanilla
+    stage: ticket
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/engineer.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [docs/tickets/in-progress, tests/game-state.test.js]
+    forbidden_mutations: [docs/tickets/done/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: qa_review}
+  - id: go-library-test-gap-heldout
+    role: engineer
+    project_type: go-library
+    stage: ticket
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/engineer.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [docs/tickets/in-progress, pkg/smoke/smoke_test.go]
+    forbidden_mutations: [docs/tickets/done/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: qa_review}
+
+  - id: static-web-after-engineer
+    role: qa
+    project_type: static-web
+    stage: after-engineer
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/qa.md]
+    expected_disposition: approved
+    would_dispatch: security
+    required_artifacts: [docs/tickets/in-review, docs/reports/qa/static-web-after-engineer.md, index.html]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: security_review}
+  - id: go-api-after-engineer
+    role: qa
+    project_type: go-api
+    stage: after-engineer
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/qa.md]
+    expected_disposition: approved
+    would_dispatch: security
+    required_artifacts: [docs/tickets/in-review, internal/api/handler_test.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: security_review}
+  - id: react-web-after-engineer
+    role: qa
+    project_type: react-web
+    stage: after-engineer
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/qa.md]
+    expected_disposition: approved
+    would_dispatch: security
+    required_artifacts: [docs/tickets/in-review, src/App.test.jsx]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: security_review}
+  - id: browser-game-after-engineer
+    role: qa
+    project_type: browser-game-phaser
+    stage: after-engineer
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/qa.md]
+    expected_disposition: approved
+    would_dispatch: security
+    required_artifacts: [docs/tickets/in-review, src/game/scene.js]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: security_review}
+  - id: canvas-game-bad-smoke-heldout
+    role: qa
+    project_type: canvas-game-vanilla
+    stage: after-engineer
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/qa.md]
+    expected_disposition: changes_requested
+    would_dispatch: engineer
+    required_artifacts: [docs/tickets/in-review, tests/game-state.test.js]
+    forbidden_mutations: [docs/tickets/done/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation_rework}
+  - id: go-cli-missing-evidence-heldout
+    role: qa
+    project_type: go-cli
+    stage: after-engineer
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/qa.md]
+    expected_disposition: changes_requested
+    would_dispatch: engineer
+    required_artifacts: [docs/tickets/in-review, internal/tool/parser_test.go]
+    forbidden_mutations: [docs/tickets/done/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation_rework}
+
+  - id: go-api-after-qa
+    role: security
+    project_type: go-api
+    stage: after-qa
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/security.md]
+    expected_disposition: approved
+    would_dispatch: dogfood
+    required_artifacts: [docs/tickets/done, docs/reports/security/go-api-after-qa.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: dogfood_validation}
+  - id: react-web-after-qa
+    role: security
+    project_type: react-web
+    stage: after-qa
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/security.md]
+    expected_disposition: approved
+    would_dispatch: dogfood
+    required_artifacts: [docs/tickets/done, docs/reports/security/react-web-after-qa.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: dogfood_validation}
+  - id: browser-game-after-qa
+    role: security
+    project_type: browser-game-phaser
+    stage: after-qa
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/security.md]
+    expected_disposition: approved
+    would_dispatch: dogfood
+    required_artifacts: [docs/tickets/done, docs/reports/security/browser-game-after-qa.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: dogfood_validation}
+  - id: go-cli-input-risk-heldout
+    role: security
+    project_type: go-cli
+    stage: after-qa
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/security.md]
+    expected_disposition: approved
+    would_dispatch: dogfood
+    required_artifacts: [docs/tickets/done, internal/tool/parser.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: dogfood_validation}
+  - id: docs-site-no-runtime-risk-heldout
+    role: security
+    project_type: docs-site
+    stage: after-qa
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/security.md]
+    expected_disposition: approved
+    would_dispatch: dogfood
+    required_artifacts: [docs/tickets/done, docs/content/intro.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: dogfood_validation}
+
+  - id: react-web-outdated
+    role: dependency-manager
+    project_type: react-web
+    stage: ready
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dependency-manager.md]
+    expected_disposition: completed
+    would_dispatch: release-manager
+    required_artifacts: [package.json, package-lock.json, docs/tickets/done]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: release_review}
+  - id: browser-game-outdated
+    role: dependency-manager
+    project_type: browser-game-phaser
+    stage: ready
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dependency-manager.md]
+    expected_disposition: completed
+    would_dispatch: release-manager
+    required_artifacts: [package.json, docs/tickets/done]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: release_review}
+  - id: go-api-stdlib-noop
+    role: dependency-manager
+    project_type: go-api
+    stage: ready
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dependency-manager.md]
+    expected_disposition: no_work
+    would_dispatch: release-manager
+    required_artifacts: [go.mod, docs/tickets/done]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: release_review}
+  - id: breaking-frontend-update-heldout
+    role: dependency-manager
+    project_type: react-web
+    stage: blocked
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dependency-manager.md]
+    expected_disposition: blocked
+    would_dispatch: release-manager
+    required_artifacts: [.mars/checks/latest.json, package.json]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: release_review}
+  - id: go-cli-module-drift-heldout
+    role: dependency-manager
+    project_type: go-cli
+    stage: ready
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dependency-manager.md]
+    expected_disposition: completed
+    would_dispatch: release-manager
+    required_artifacts: [go.mod, internal/tool/parser.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: release_review}
+
+  - id: release-go-api-ready
+    role: release-manager
+    project_type: go-api
+    stage: ready
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/release-manager.md]
+    expected_disposition: completed
+    would_dispatch: ""
+    required_artifacts: [VERSION, CHANGELOG.md, docs/reports/dogfood/release-go-api-ready.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: no_need}
+  - id: release-react-web-ready
+    role: release-manager
+    project_type: react-web
+    stage: ready
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/release-manager.md]
+    expected_disposition: completed
+    would_dispatch: ""
+    required_artifacts: [VERSION, CHANGELOG.md, package.json]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: no_need}
+  - id: release-browser-game-ready
+    role: release-manager
+    project_type: browser-game-phaser
+    stage: ready
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/release-manager.md]
+    expected_disposition: completed
+    would_dispatch: ""
+    required_artifacts: [VERSION, CHANGELOG.md, package.json]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: no_need}
+  - id: go-cli-blocked-heldout
+    role: release-manager
+    project_type: go-cli
+    stage: blocked
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/release-manager.md]
+    expected_disposition: blocked
+    would_dispatch: ""
+    required_artifacts: [.mars/checks/latest.json, cmd/tool/main.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: no_need}
+  - id: docs-site-notes-only-heldout
+    role: release-manager
+    project_type: docs-site
+    stage: ready
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/release-manager.md]
+    expected_disposition: completed
+    would_dispatch: ""
+    required_artifacts: [VERSION, CHANGELOG.md, docs/content/intro.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: no_need}
+
+  - id: dogfood-static-web-ready
+    role: dogfood
+    project_type: static-web
+    stage: ready
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dogfood.md]
+    expected_disposition: approved
+    would_dispatch: release-manager
+    required_artifacts: [docs/reports/dogfood/dogfood-static-web-ready.md, index.html]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: release_review}
+  - id: dogfood-go-api-ready
+    role: dogfood
+    project_type: go-api
+    stage: ready
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dogfood.md]
+    expected_disposition: approved
+    would_dispatch: release-manager
+    required_artifacts: [docs/reports/dogfood/dogfood-go-api-ready.md, internal/api/handler.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: release_review}
+  - id: dogfood-react-web-ready
+    role: dogfood
+    project_type: react-web
+    stage: ready
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dogfood.md]
+    expected_disposition: approved
+    would_dispatch: release-manager
+    required_artifacts: [docs/reports/dogfood/dogfood-react-web-ready.md, src/App.jsx]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: release_review}
+  - id: dogfood-browser-game-ready
+    role: dogfood
+    project_type: browser-game-phaser
+    stage: ready
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dogfood.md]
+    expected_disposition: approved
+    would_dispatch: release-manager
+    required_artifacts: [docs/reports/dogfood/dogfood-browser-game-ready.md, src/game/scene.js]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: release_review}
+  - id: canvas-game-defect-heldout
+    role: dogfood
+    project_type: canvas-game-vanilla
+    stage: defect
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dogfood.md]
+    expected_disposition: changes_requested
+    would_dispatch: engineer
+    required_artifacts: [docs/tickets/done, tests/game-state.test.js]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation_rework}
+  - id: go-cli-defect-heldout
+    role: dogfood
+    project_type: go-cli
+    stage: defect
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/dogfood.md]
+    expected_disposition: changes_requested
+    would_dispatch: engineer
+    required_artifacts: [docs/tickets/done, internal/tool/parser_test.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation_rework}
+
+  - id: go-api-test-failure
+    role: pipeline-fixer
+    project_type: go-api
+    stage: failure
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/pipeline-fixer.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [.mars/checks/latest.json, internal/api/handler_test.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: qa_review}
+  - id: react-web-build-failure
+    role: pipeline-fixer
+    project_type: react-web
+    stage: failure
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/pipeline-fixer.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [.mars/checks/latest.json, package.json]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: qa_review}
+  - id: browser-game-smoke-failure
+    role: pipeline-fixer
+    project_type: browser-game-phaser
+    stage: failure
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/pipeline-fixer.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [.mars/checks/latest.json, src/game/scene.js]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: qa_review}
+  - id: foundation-runtime-heldout
+    role: pipeline-fixer
+    project_type: existing-maintenance
+    stage: failure
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/pipeline-fixer.md]
+    expected_disposition: blocked
+    would_dispatch: ""
+    required_artifacts: [.mars/checks/latest.json, main.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: operator_review}
+  - id: dependency-ci-heldout
+    role: pipeline-fixer
+    project_type: react-web
+    stage: failure
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/pipeline-fixer.md]
+    expected_disposition: completed
+    would_dispatch: dependency-manager
+    required_artifacts: [.mars/checks/latest.json, package-lock.json]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: dependency_maintenance}
+
+  - id: cto-to-engineer-api
+    role: orchestrator
+    project_type: go-api
+    stage: after-coo
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/orchestrator.md]
+    expected_disposition: completed
+    would_dispatch: engineer
+    required_artifacts: [.mars/orgstate/source-disposition.json, docs/exec-plans/active/current-operating-plan.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: dispatch, next_need: implementation, suggested_role: engineer}
+  - id: engineer-to-qa-web
+    role: orchestrator
+    project_type: react-web
+    stage: after-engineer
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/orchestrator.md]
+    expected_disposition: completed
+    would_dispatch: qa
+    required_artifacts: [.mars/orgstate/source-disposition.json, docs/tickets/in-review]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: dispatch, next_need: qa_review, suggested_role: qa}
+  - id: qa-to-security-game
+    role: orchestrator
+    project_type: browser-game-phaser
+    stage: after-engineer
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/orchestrator.md]
+    expected_disposition: completed
+    would_dispatch: security
+    required_artifacts: [.mars/orgstate/source-disposition.json, docs/tickets/in-review]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: dispatch, next_need: security_review, suggested_role: security}
+  - id: release-blocked-stop-heldout
+    role: orchestrator
+    project_type: go-cli
+    stage: blocked
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/orchestrator.md]
+    expected_disposition: blocked
+    would_dispatch: ""
+    required_artifacts: [.mars/orgstate/source-disposition.json, .mars/checks/latest.json]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: dispatch, next_need: no_need, suggested_role: ""}
+  - id: runtime-failure-stop-heldout
+    role: orchestrator
+    project_type: existing-maintenance
+    stage: failure
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/orchestrator.md]
+    expected_disposition: blocked
+    would_dispatch: ""
+    required_artifacts: [.mars/orgstate/source-disposition.json, .mars/checks/latest.json]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: dispatch, next_need: operator_review, suggested_role: ""}
+
+  - id: stale-api-ticket
+    role: janitor
+    project_type: go-api
+    stage: stale
+    suites: [fast, default]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/janitor.md]
+    expected_disposition: completed
+    would_dispatch: engineer
+    required_artifacts: [.mars/checks/latest.json, docs/tickets/done]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation}
+  - id: stale-web-ticket
+    role: janitor
+    project_type: react-web
+    stage: stale
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/janitor.md]
+    expected_disposition: completed
+    would_dispatch: engineer
+    required_artifacts: [.mars/checks/latest.json, docs/tickets/done]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation}
+  - id: stale-game-rework
+    role: janitor
+    project_type: browser-game-phaser
+    stage: stale
+    suites: [default, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/janitor.md]
+    expected_disposition: completed
+    would_dispatch: engineer
+    required_artifacts: [.mars/checks/latest.json, docs/tickets/done]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation}
+  - id: clean-tree-heldout
+    role: janitor
+    project_type: docs-site
+    stage: ready
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/janitor.md]
+    expected_disposition: no_work
+    would_dispatch: ""
+    required_artifacts: [docs/tickets/done, docs/content/intro.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: no_need}
+  - id: blocked-cli-ticket-heldout
+    role: janitor
+    project_type: go-cli
+    stage: blocked
+    suites: [held-out, full]
+    source_contracts: [docs/roles/ROLES.md, docs/roles/personas/janitor.md]
+    expected_disposition: blocked
+    would_dispatch: engineer
+    required_artifacts: [.mars/checks/latest.json, internal/tool/parser.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: implementation}
+
+  - id: source-dry-run
+    role: foundation-maintainer
+    project_type: existing-maintenance
+    stage: source
+    suites: [fast, default]
+    source_contracts: [AGENTS.md, docs/roles/personas/foundation-maintainer.md, docs/design-docs/foundation-operating-model.md]
+    expected_disposition: completed
+    would_dispatch: ""
+    required_artifacts: [.harness/manifest.yaml, main.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: no_need}
+  - id: validation-classification
+    role: foundation-maintainer
+    project_type: existing-maintenance
+    stage: failure
+    suites: [default, full]
+    source_contracts: [AGENTS.md, docs/roles/personas/foundation-maintainer.md, docs/design-docs/foundation-operating-model.md]
+    expected_disposition: completed
+    would_dispatch: ""
+    required_artifacts: [.mars/checks/latest.json, main.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: no_need}
+  - id: generated-doctrine-drift-heldout
+    role: foundation-maintainer
+    project_type: docs-site
+    stage: drift
+    suites: [held-out, full]
+    source_contracts: [AGENTS.md, docs/roles/personas/foundation-maintainer.md, docs/design-docs/foundation-operating-model.md]
+    expected_disposition: completed
+    would_dispatch: ""
+    required_artifacts: [docs/reports/dogfood/doctrine-drift.md, docs/content/intro.md]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: no_need}
+  - id: release-blocker-heldout
+    role: foundation-maintainer
+    project_type: go-cli
+    stage: blocker
+    suites: [held-out, full]
+    source_contracts: [AGENTS.md, docs/roles/personas/foundation-maintainer.md, docs/design-docs/foundation-operating-model.md]
+    expected_disposition: blocked
+    would_dispatch: ""
+    required_artifacts: [docs/reports/release/release-blocked.md, cmd/tool/main.go]
+    forbidden_mutations: [docs/tickets/in-progress/T-999-forbidden.md]
+    trigger: {type: agent_smoke, next_need: no_need}

@@ -246,6 +246,9 @@ terms, including the agent/tool synchronization impact when relevant.
 - Tool-selection guidance explains when to use `mars_harness_cli` versus a
   narrower built-in tool.
 - CLI-affecting commits include docsync and CLI-sync evidence.
+- `validation agent-smoke` is mirrored as an operator validation command but
+  intentionally excluded from repo-shortcut support because it creates its own
+  ephemeral target repositories rather than operating on the current workspace.
 
 ## Failure Modes And Mitigations
 

@@ -74,6 +74,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/trust"
 	"github.com/greaveselliott/mars-harness/internal/ui"
 	"github.com/greaveselliott/mars-harness/internal/updatecheck"
+	foundationvalidation "github.com/greaveselliott/mars-harness/internal/validation"
 )
 
 var version = buildinfo.DefaultVersion
@@ -131,10 +132,86 @@ func newRootCommand() *cobra.Command {
 	root.AddCommand(releaseCmd())
 	root.AddCommand(checksCmd())
 	root.AddCommand(docsyncCmd())
+	root.AddCommand(validationCmd())
 	root.AddCommand(pathCmd())
 	root.AddCommand(authCmd())
 
 	return root
+}
+
+func validationCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "validation",
+		Short: "Run and check foundation validation evidence",
+		Long: `Run Mars Harness foundation validation helpers.
+
+These commands are source-maintainer gates for repo-owned validation evidence.
+They complement, but do not replace, full clean-project lifecycle sweeps.`,
+	}
+	cmd.AddCommand(validationAgentSmokeCmd())
+	return cmd
+}
+
+func validationAgentSmokeCmd() *cobra.Command {
+	var opts foundationvalidation.AgentSmokeOptions
+	cmd := &cobra.Command{
+		Use:   "agent-smoke",
+		Short: "Run compartmentalised role smoke tests against ephemeral targets",
+		Long: `Generate fresh ephemeral target repositories through foundation tools and
+run compartmentalised smoke validation cases for Mars Harness roles.
+
+Successful runs are discarded by default. Failed runs are retained for
+diagnosis unless --discard-failed is set.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if opts.HarnessRoot == "" {
+				wd, err := os.Getwd()
+				if err != nil {
+					return fmt.Errorf("validation agent-smoke: determine working directory: %w", err)
+				}
+				opts.HarnessRoot = wd
+			}
+			report, err := foundationvalidation.RunAgentSmoke(cmd.Context(), opts)
+			if err != nil {
+				return err
+			}
+			if opts.JSON {
+				if writeErr := writeJSON(cmd.OutOrStdout(), report); writeErr != nil {
+					return writeErr
+				}
+			} else {
+				fmt.Fprintln(cmd.OutOrStdout(), report.Summary())
+				for _, result := range report.Results {
+					fmt.Fprintf(cmd.OutOrStdout(), "- %s/%s %s %s", result.Role, result.CaseID, result.ProjectType, result.Status)
+					if result.FailureClass != "" {
+						fmt.Fprintf(cmd.OutOrStdout(), " (%s)", result.FailureClass)
+					}
+					if result.RunPath != "" && !result.Discarded {
+						fmt.Fprintf(cmd.OutOrStdout(), " run=%s", result.RunPath)
+					}
+					fmt.Fprintln(cmd.OutOrStdout())
+				}
+			}
+			if !report.OK() {
+				return fmt.Errorf("validation agent-smoke: %d case(s) failed", report.Failed)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&opts.Role, "role", "", "Run only cases for this role")
+	cmd.Flags().StringVar(&opts.CaseID, "case", "", "Run one case by ID")
+	cmd.Flags().StringVar(&opts.ProjectType, "project-type", "", "Run cases for one project type")
+	cmd.Flags().StringVar(&opts.Suite, "suite", "fast", "Suite to run: fast, default, full, or held-out")
+	cmd.Flags().IntVar(&opts.Parallel, "parallel", 1, "Maximum cases to run concurrently")
+	cmd.Flags().StringVar(&opts.Cycle, "cycle", "", "Stable cycle key for rotating fast/held-out selections")
+	cmd.Flags().IntVar(&opts.MaxTurns, "max-turns", 0, "Maximum role turns for live execution (0 = deterministic smoke boundary)")
+	cmd.Flags().DurationVar(&opts.Timeout, "timeout", 10*time.Minute, "Per-case timeout")
+	cmd.Flags().BoolVar(&opts.JSON, "json", false, "Write JSON report")
+	cmd.Flags().StringVar(&opts.ReportPath, "report", "", "Optional Markdown report path")
+	cmd.Flags().BoolVar(&opts.KeepRuns, "keep-runs", false, "Keep successful ephemeral run directories")
+	cmd.Flags().BoolVar(&opts.CleanupOnly, "cleanup-only", false, "Remove retained agent-smoke run directories and exit")
+	cmd.Flags().BoolVar(&opts.DiscardFailed, "discard-failed", false, "Discard failed run directories after recording results")
+	cmd.Flags().StringVar(&opts.Root, "root", "", "Parent directory for ephemeral agent-smoke runs")
+	return cmd
 }
 
 func docsyncCmd() *cobra.Command {

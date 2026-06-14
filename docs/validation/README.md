@@ -11,6 +11,9 @@ and with which guardrails.
 
 - `profiles/` contains reusable target profiles, trust level, guardrails,
   command lists, and graduation criteria.
+- `agent-smoke/` contains the checked-in matrix and generator recipes for
+  Compartmentalised Agent Smoke testing. Generated targets are ephemeral and
+  are not stored in this repo.
 - `reports/` contains completed validation reports for source-owned dogfood
   or supersession trials. Create this directory when the first report lands.
 - `baselines/` contains dated factory-pace baselines (T-011): the
@@ -33,3 +36,25 @@ source-change classes to minimum archetype replays are defined in
 on a **clean project** before treating runtime fixes as done is
 [docs/design-docs/foundation-operating-model.md](../design-docs/foundation-operating-model.md)
 (AD-291, AD-292).
+
+## Compartmentalised agent smoke
+
+Use `mars-harness validation agent-smoke` when a source change should be
+checked against many role-stage target states faster than a full lifecycle
+sweep. The runner creates fresh one-use targets under
+`../demo/validation-runs/agent-smoke/` by default, seeds them through foundation
+scaffold/tool surfaces, runs the selected role smoke boundary, writes JSON or
+Markdown evidence, and discards successful runs unless `--keep-runs` is set.
+
+Smoke examples:
+
+```bash
+mars-harness validation agent-smoke --suite fast --json
+mars-harness validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs
+mars-harness validation agent-smoke --suite held-out --parallel 2 --timeout 10m
+mars-harness validation agent-smoke --cleanup-only
+```
+
+Agent smoke complements full clean-project sweeps. It does not prove
+cross-agent handoff quality by itself, and it does not remove the AD-284/AD-291
+requirement for broad lifecycle or release claims.
