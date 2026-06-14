@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.59.0] - 2026-06-14
+<!-- mars-harness-release: version=0.59.0 commit=065ea7210d23 -->
+
+### Impact
+- **validation:** Operators gain new capability: add compartmentalised agent smoke.
+
+### Why
+- **validation:** This matters because add compartmentalised agent smoke was missing from the shipped capability set.
+
+### What Changed
+- **validation:** Changed add compartmentalised agent smoke (065ea72).
+
+### Features
+- **validation:** Add compartmentalised agent smoke (065ea72)
+
 ## [0.58.2] - 2026-06-14
 <!-- mars-harness-release: version=0.58.2 commit=f68ca5c76d4c -->
 
