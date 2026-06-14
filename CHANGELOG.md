@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.60.2] - 2026-06-14
+<!-- mars-harness-release: version=0.60.2 commit=775e1d1edf54 -->
+
+### Impact
+- **validation:** Agent-smoke reports now distinguish live role failures from fixture-generation failures, making failed matrix reports more useful for triage.
+
+### Why
+- **validation:** The validated full matrix exposed `max_turns`, ticket-gate, and empty-response outcomes that were previously grouped under generation failure even though they happened during live role execution.
+
+### What Changed
+- **validation:** Reclassified live execution stop signals as role behavior and recorded the real local-model full-matrix result: 21 passed, 53 failed, 74 selected (775e1d1).
+
+### Fixes
+- **validation:** Corrected agent-smoke failure classification for `max_turns`, `empty_response`, ticket-gate, and generic agent-ended signals (775e1d1)
+
 ## [0.60.1] - 2026-06-14
 <!-- mars-harness-release: version=0.60.1 commit=cca8f2833d2c -->
 
