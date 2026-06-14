@@ -5,6 +5,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 | Document | Status | Summary |
 |----------|--------|---------|
 | [tenets.md](tenets.md) | Accepted | The 9 founding tenets: plug and play, self-improving system, accuracy scoring, customisable guardrails, roadmap from init, blast radius containment, execution truth, progressive autonomy, context efficiency |
+| [implementation-language.md](implementation-language.md) | Accepted | Why Go is the foundation implementation language: single binary, low runtime dependency burden, local orchestration fit, and subprocess boundaries for inference. AD-001. |
 | [agent-runtime.md](agent-runtime.md) | Draft | Agent execution loop: multi-turn conversation, tool calling, error handling, budget enforcement. AD-004 (sync per-job), AD-005 (sequential tools), AD-006 (additive context) |
 | [local-inference.md](local-inference.md) | Draft | Local model serving: llama.cpp as subprocess, hardware profiles, model registry, download management. AD-007 (no CGO), AD-008 (weights in ~/.mars-harness/), AD-031 (inference resilience), AD-032 (zero-config performance tuning), AD-063 (benchmark-backed model promotion), AD-064 (manifest-tier routing), AD-066 (Ollama catalog/swap provider) |
 | [scoring-system.md](scoring-system.md) | Draft | Accuracy and value scoring: outcome tracking, rolling scores, progressive autonomy thresholds, noop detection |
@@ -44,7 +45,7 @@ Catalog of architectural decisions and design rationale for the Mars Harness pro
 
 | ID | Decision | Design Doc | Milestone |
 |---|---|---|---|
-| AD-001 | Go as implementation language. Single binary, no CGO. llama.cpp as subprocess. | local-inference.md | M0 |
+| AD-001 | Go as implementation language. Single binary, no CGO, local orchestration fit, and inference kept behind subprocess/provider boundaries. | implementation-language.md | M0 |
 | AD-002 | Apache 2.0 license | index.md | M0 |
 | AD-003 | Repo governance follows Mars conventions (AGENTS.md, design docs, exec plans, commit discipline) | AGENTS.md | M0 |
 | AD-004 | Synchronous single-threaded agent loop per job. Concurrency at job level. | agent-runtime.md | M1 |
