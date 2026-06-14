@@ -976,7 +976,9 @@ func classifyAgentSmokeError(err error) string {
 		return FailureFixtureInvalid
 	case strings.Contains(msg, "model") || strings.Contains(msg, "llm") || strings.Contains(msg, "inference"):
 		return FailureEnvironmentModel
-	case strings.Contains(msg, "agent loop") || strings.Contains(msg, "expected disposition"):
+	case strings.Contains(msg, "agent loop") || strings.Contains(msg, "expected disposition") ||
+		strings.Contains(msg, "max_turns") || strings.Contains(msg, "empty_response") ||
+		strings.Contains(msg, "ticket gate") || strings.Contains(msg, "agent ended"):
 		return FailureRoleBehavior
 	case strings.Contains(msg, "disposition") || strings.Contains(msg, "dispatch") || strings.Contains(msg, "role ") && strings.Contains(msg, "not found"):
 		return FailureDispatchContext
