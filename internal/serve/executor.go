@@ -7,12 +7,14 @@ docs:
 - docs/design-docs/guardrails.md
 - docs/design-docs/dashboard.md
 - docs/design-docs/pipeline-engine.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/context-efficiency.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-007-guardrails-and-safety.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-012-self-improvement-loop.md
 */
 package serve
 
@@ -153,6 +155,36 @@ func roleDefaultTrustLevel(role bundle.RoleConfig) trust.Level {
 		return level
 	}
 	return trust.LevelObserver
+}
+
+type policyBlockLoopTracker struct {
+	counts map[string]int
+}
+
+func (t *policyBlockLoopTracker) record(evt tools.PolicyEvent) (int, bool) {
+	key := policyBlockLoopKey(evt)
+	if key == "" {
+		return 0, false
+	}
+	if t.counts == nil {
+		t.counts = map[string]int{}
+	}
+	t.counts[key]++
+	return t.counts[key], t.counts[key] == telemetry.PatternThreshold
+}
+
+func policyBlockLoopKey(evt tools.PolicyEvent) string {
+	tool := normalizePolicyLoopField(evt.ToolName)
+	message := normalizePolicyLoopField(evt.Message)
+	if tool == "" || message == "" {
+		return ""
+	}
+	stage := normalizePolicyLoopField(evt.Stage)
+	return stage + "|" + tool + "|" + message
+}
+
+func normalizePolicyLoopField(value string) string {
+	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(value))), " ")
 }
 
 // Execute is the OnJob callback for the worker pool.
@@ -338,6 +370,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	rec := trace.NewRecorder(nil)
 	toolExec := tools.NewExecutor(reg)
 	terminalDispositionRecorded := false
+	policyLoops := &policyBlockLoopTracker{}
 	toolExec.StopAfterTool = func() bool {
 		return terminalDispositionRecorded
 	}
@@ -358,6 +391,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 			if category == telemetry.CategoryUnknown {
 				category = telemetry.CategoryGuardrailBlock
 			}
+			message := fmt.Sprintf("%s tool policy blocked %s: %s", evt.Stage, evt.ToolName, evt.Message)
 			e.onSignal(context.Background(), interventionDebtSignal{
 				Kind:           interventionDebtSignalKindForCategory(category),
 				RepoID:         job.RepoID,
@@ -367,8 +401,22 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 				EvidenceWindow: "24h",
 				TraceID:        rec.TraceID(),
 				ToolName:       evt.ToolName,
-				Message:        fmt.Sprintf("%s tool policy blocked %s: %s", evt.Stage, evt.ToolName, evt.Message),
+				Message:        message,
 			})
+			if count, threshold := policyLoops.record(evt); threshold {
+				e.onSignal(context.Background(), interventionDebtSignal{
+					Kind:           "guardrail_loop",
+					RepoID:         job.RepoID,
+					Role:           job.Role,
+					JobID:          job.ID,
+					Category:       telemetry.CategoryGuardrailLoop,
+					Count:          count,
+					EvidenceWindow: "same-job",
+					TraceID:        rec.TraceID(),
+					ToolName:       evt.ToolName,
+					Message:        fmt.Sprintf("repeated policy block loop after %d identical blocks: %s", count, message),
+				})
+			}
 		},
 		DispositionRecorder: func(ctx context.Context, raw json.RawMessage) error {
 			if e.orgStore == nil {

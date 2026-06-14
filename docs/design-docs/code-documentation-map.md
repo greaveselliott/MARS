@@ -101,7 +101,7 @@ source file exists in the worktree.
 | `internal/scheduler/` | `docs/design-docs/pipeline-engine.md` | F-006 |
 | `internal/scoring/` | `docs/design-docs/scoring-system.md` | F-008 |
 | `internal/selfupdate/` | `docs/design-docs/release-versioning.md` | F-009 |
-| `internal/serve/` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/orchestrated-organization-layer.md`, `docs/design-docs/dashboard.md` | F-006, F-010 |
+| `internal/serve/` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/orchestrated-organization-layer.md`, `docs/design-docs/dashboard.md`, `docs/design-docs/self-reflective-telemetry.md` | F-006, F-010, F-012 |
 | `internal/serve/remediation*.go` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/self-reflective-telemetry.md` | F-006, F-012 |
 | `internal/setup/` | `docs/design-docs/local-inference.md`, `docs/design-docs/release-versioning.md` | F-002, F-003, F-009 |
 | `internal/shellpath/` | `docs/design-docs/release-versioning.md` | F-002 |

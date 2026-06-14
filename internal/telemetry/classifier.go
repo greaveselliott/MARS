@@ -28,6 +28,7 @@ const (
 	CategoryTicketGate       FailureCategory = "ticket_gate"
 	CategoryDispatchProtocol FailureCategory = "dispatch_protocol"
 	CategoryGuardrailBlock   FailureCategory = "guardrail_block"
+	CategoryGuardrailLoop    FailureCategory = "guardrail_loop"
 	CategoryWorkspaceHygiene FailureCategory = "workspace_hygiene"
 	CategoryHumanFollowup    FailureCategory = "human_followup"
 	CategoryRevertedCommit   FailureCategory = "reverted_commit"
@@ -56,6 +57,10 @@ func Classify(errMsg string) FailureCategory {
 	lower := strings.ToLower(errMsg)
 
 	switch {
+	case strings.Contains(lower, "guardrail_loop"):
+		return CategoryGuardrailLoop
+	case strings.Contains(lower, "repeated policy block"):
+		return CategoryGuardrailLoop
 	case strings.Contains(lower, "guardrails: blocked"):
 		return CategoryGuardrailBlock
 	case strings.Contains(lower, "guardrail block"):

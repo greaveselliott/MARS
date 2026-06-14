@@ -30,13 +30,17 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 
 ### F-012-S001: Failure Classification And Remediation
 
-Given an agent run fails with context overflow, LLM unreachable, inference crash, model unavailable, tool timeout, loop, max turns, budget, manifest, ticket-gate, or unknown symptoms
+Given an agent run fails with context overflow, LLM unreachable, inference crash, model unavailable, tool timeout, loop, max turns, budget, manifest, ticket-gate, guardrail-loop, or unknown symptoms
 When telemetry records the failure
 Then it assigns a category and retry/remediation policy, and deterministic repair candidates can be selected by a remediation registry before an LLM repair role is considered
 
 Given a tool call is blocked by guardrail or tool policy and the error text also contains words such as `timeout`
 When telemetry classifies the failure
 Then the policy/guardrail ownership wins over generic timeout matching, so deterministic retry is not scheduled for a command the harness deliberately rejected
+
+Given the same guardrail or tool-policy block repeats three times inside one job
+When telemetry records the synthetic loop signal
+Then it classifies the signal as `guardrail_loop` rather than a generic guardrail block
 
 ### F-012-S002: Improvement Target Triage
 
@@ -49,6 +53,10 @@ Then the proposed target is one of prompt, skill, process, guardrail, context, i
 Given triage produces actionable or weak evidence
 When the harness records the proposal
 Then target-owned actionable evidence creates or updates active goals or intervention-debt tickets, weak evidence becomes an observation, foundation-owned harness failures stay local telemetry or anonymous foundation telemetry, and repeated intervention-debt updates are compacted instead of inflating future context
+
+Given a foundation-owned `guardrail_loop` signal is recorded
+When self-improvement routing evaluates it
+Then it remains out of the target backlog and still creates a bounded evolution review for role guidance, manifest workflow, or loop-boundary remediation
 
 ### F-012-S004: Intervention Detection
 

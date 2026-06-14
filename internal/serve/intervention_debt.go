@@ -3,8 +3,10 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/pipeline-engine.md
+- docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-012-self-improvement-loop.md
 */
 package serve
 
@@ -103,6 +105,9 @@ func (s *Server) recordInterventionDebtSignal(ctx context.Context, signal interv
 				"result":   "local telemetry only; eligible for anonymous foundation reporting",
 			})
 			s.dash.BroadcastEvent("foundation_telemetry_signal", string(payload))
+		}
+		if foundationTelemetrySignalShouldOfferEvolution(signal) {
+			s.offerInterventionDebtEvolution(ctx, signal.RepoID, proposal, "signal_"+interventionDebtCategory(proposal))
 		}
 		return
 	}
@@ -254,6 +259,13 @@ func interventionDebtRouting(proposal telemetry.ImprovementProposal) interventio
 	return interventionDebtRouteFoundationTelemetry
 }
 
+func foundationTelemetrySignalShouldOfferEvolution(signal interventionDebtSignal) bool {
+	if signal.Category == telemetry.CategoryGuardrailLoop {
+		return true
+	}
+	return signal.Count >= telemetry.PatternThreshold
+}
+
 func interventionDebtSignalWindow(signal interventionDebtSignal) string {
 	window := strings.TrimSpace(signal.EvidenceWindow)
 	if window == "" {
@@ -267,6 +279,8 @@ func interventionDebtSignalKind(signal interventionDebtSignal) string {
 		return kind
 	}
 	switch signal.Category {
+	case telemetry.CategoryGuardrailLoop:
+		return "guardrail_loop"
 	case telemetry.CategoryGuardrailBlock:
 		return "guardrail_block"
 	case telemetry.CategoryWorkspaceHygiene:

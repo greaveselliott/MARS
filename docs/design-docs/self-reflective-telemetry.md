@@ -54,13 +54,13 @@ The harness should proactively consume its own telemetry after jobs and on orche
 
 ### AD-065: Telemetry Triage Quarantines Foundation Failures By Default
 
-Self-reflection must create durable evidence, not only dashboard signals or evolution rows. When recurring telemetry patterns, non-success terminal agent results, guardrail or tool-policy blocks, repeated tool loops, manual stops, timeouts, low score snapshots, human follow-up, reverted agent commits, or stale in-progress tickets identify actionable improvement targets, Mars Harness records them in telemetry, quality evidence, or bounded evolution review first.
+Self-reflection must create durable evidence, not only dashboard signals or evolution rows. When recurring telemetry patterns, non-success terminal agent results, guardrail or tool-policy blocks, repeated policy-block loops, repeated tool loops, manual stops, timeouts, low score snapshots, human follow-up, reverted agent commits, or stale in-progress tickets identify actionable improvement targets, Mars Harness records them in telemetry, quality evidence, or bounded evolution review first.
 
 The dedupe key is repo, role, target, category, and evidence window. This keeps repeated failures from creating ticket storms while still letting a new evidence window reopen durable work when the issue returns. Tickets carry role, repo, target, category, severity, confidence, source event, trace ID, score snapshot, commit, outcome, evidence, recommendation, candidate files, and acceptance criteria when those fields are available locally.
 
 Target repo intervention-debt tickets are only the right durable work item when the remediation belongs to the target repository. Harness-owned failures such as dispatch protocol failures, loop/max-turn failures, guardrail/tool-policy workflow failures, context or inference failures, manifest/tool-policy gaps, and unknown terminal failures remain local telemetry first and are eligible for anonymous foundation telemetry reporting instead of being written into the target backlog.
 
-Direct evolution remains bounded. Harness/runtime, unknown, or unsafe changes default to foundation telemetry rather than target backlog. Target-owned human follow-up, reverted target commits, stale target tickets, and explicit operator requests may become intervention-debt tickets through the canonical ticket path.
+Direct evolution remains bounded. Harness/runtime, unknown, or unsafe changes default to foundation telemetry rather than target backlog. High-signal foundation telemetry such as `guardrail_loop` can still record bounded evolution reviews against role guidance, manifest workflow, or loop-boundary surfaces without creating target backlog work. Target-owned human follow-up, reverted target commits, stale target tickets, and explicit operator requests may become intervention-debt tickets through the canonical ticket path.
 
 ### AD-072: Quality Scores Are Generated Repo Artifacts
 
@@ -200,6 +200,7 @@ The first implementation is deliberately small:
 - manifest failures point at `.harness/manifest.yaml`
 - ticket-gate failures point at the role's ticket completion workflow, trust level, and target ticket state; self-chain auto-recovery does not retry them unchanged
 - guardrail and tool-policy blocks point at guardrail calibration, trust level, and role guidance without weakening enforcement first
+- `guardrail_loop` signals point at the repeated policy message, terminal disposition guidance, role workflow, and loop-boundary behavior before retrying unchanged
 - workspace hygiene failures point at `.gitignore`, package manager manifests,
   tracked generated paths, and the `workspace_hygiene`/`dependency_sync`
   recipe output before any retry

@@ -304,6 +304,44 @@ func TestRecordInterventionDebtSignalQuarantinesRuntimeFailures(t *testing.T) {
 	require.Len(t, srv.telemetry.Events(), 8)
 }
 
+func TestRecordInterventionDebtSignalOffersEvolutionForGuardrailLoop(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+	rec, err := srv.repos.FindByID(ctx, repoID)
+	require.NoError(t, err)
+	require.NotNil(t, rec)
+
+	srv.recordInterventionDebtSignal(ctx, interventionDebtSignal{
+		RepoID:         repoID,
+		Role:           "coo",
+		JobID:          "job-loop",
+		Category:       telemetry.CategoryGuardrailLoop,
+		Count:          telemetry.PatternThreshold,
+		EvidenceWindow: "same-job",
+		ToolName:       "job_disposition_record",
+		Message:        "repeated policy block loop after 3 identical blocks: post tool policy blocked job_disposition_record: missing feature contract coverage",
+	})
+
+	entries, err := os.ReadDir(filepath.Join(rec.Path, "docs", "tickets", "backlog"))
+	if os.IsNotExist(err) {
+		entries = nil
+	} else {
+		require.NoError(t, err)
+	}
+	require.Empty(t, entries)
+
+	events := srv.telemetry.Events()
+	require.Len(t, events, 1)
+	require.Equal(t, telemetry.CategoryGuardrailLoop, events[0].Category)
+
+	evolutions, err := srv.evoStore.GetEvolutions(ctx, "coo", 10)
+	require.NoError(t, err)
+	require.Len(t, evolutions, 1)
+	require.Contains(t, evolutions[0].Result, `"classification":"signal_guardrail_loop"`)
+	require.Contains(t, evolutions[0].Result, "repeatedly hit the same guardrail")
+	require.Contains(t, evolutions[0].Result, ".harness/roles/coo.md")
+}
+
 func TestRecordInterventionDebtSignalAllowsTargetOwnedFailures(t *testing.T) {
 	srv, repoID := newRecoveryTestServer(t)
 	ctx := context.Background()

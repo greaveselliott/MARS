@@ -163,6 +163,7 @@ func ReportableFoundationCategory(cat FailureCategory) bool {
 		CategoryTicketGate,
 		CategoryDispatchProtocol,
 		CategoryGuardrailBlock,
+		CategoryGuardrailLoop,
 		CategoryWorkspaceHygiene,
 		CategoryUnknown:
 		return true

@@ -121,6 +121,8 @@ func TestClassify_interventionSignals(t *testing.T) {
 	}{
 		{`guardrails: blocked by rule "no-secrets"`, CategoryGuardrailBlock},
 		{`post tool policy blocked shell_exec: blast radius exceeded: 127 files changed (limit 10)`, CategoryGuardrailBlock},
+		{`guardrail_loop signal for repo demo role coo category guardrail_loop in same-job`, CategoryGuardrailLoop},
+		{`repeated policy block loop after 3 identical blocks: post tool policy blocked job_disposition_record: missing required planning evidence`, CategoryGuardrailLoop},
 		{`pre tool policy blocked git_commit: blast radius exceeded: 127 files changed (limit 10)`, CategoryGuardrailBlock},
 		{`pre tool policy blocked shell_exec: shell_exec: external timeout command "timeout" is not portable inside harness-managed validation`, CategoryGuardrailBlock},
 		{`policy: trust level observer cannot run mutating tool "file_write"`, CategoryGuardrailBlock},
@@ -162,6 +164,7 @@ func TestRetryable(t *testing.T) {
 		CategoryManifestError,
 		CategoryTicketGate,
 		CategoryGuardrailBlock,
+		CategoryGuardrailLoop,
 		CategoryWorkspaceHygiene,
 		CategoryHumanFollowup,
 		CategoryRevertedCommit,
@@ -464,6 +467,7 @@ func TestTriagePattern_interventionSignalTargets(t *testing.T) {
 		title    string
 	}{
 		{CategoryGuardrailBlock, TargetGuardrail, "Calibrate guardrail workflow"},
+		{CategoryGuardrailLoop, TargetProcess, "Break repeated guardrail loop"},
 		{CategoryWorkspaceHygiene, TargetProcess, "Repair workspace hygiene"},
 		{CategoryHumanFollowup, TargetProcess, "Reduce human follow-up"},
 		{CategoryRevertedCommit, TargetProcess, "Prevent reverted agent commits"},

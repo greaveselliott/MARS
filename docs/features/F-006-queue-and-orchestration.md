@@ -253,6 +253,10 @@ Given a non-Orchestrator dispatch-mode job fails with a runtime-owned failure su
 When failure handling records telemetry
 Then the server keeps the signal as foundation telemetry and does not enqueue Orchestrator, CTO ticket shaping, Engineer retry, or target backlog intervention debt by default
 
+Given a dispatch-mode role hits the same guardrail or tool-policy block three times inside one job
+When the policy recorder observes the repeated block
+Then the server records a `guardrail_loop` telemetry signal, keeps it out of the target backlog, and records a bounded self-improvement review against role guidance or manifest workflow surfaces
+
 Given the same ticket is still eligible in `docs/tickets/in-progress/`
 When the native survey loop sees that ticket before the runtime-failure cooldown expires
 Then the survey also refrains from same-role ticket-owner retry so runtime-failure containment cannot be bypassed by the watchdog

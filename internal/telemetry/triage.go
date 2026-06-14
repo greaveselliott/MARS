@@ -145,6 +145,16 @@ func TriagePattern(p Pattern) ImprovementProposal {
 		}
 		proposal.Confidence = 0.8
 
+	case CategoryGuardrailLoop:
+		proposal.Target = TargetProcess
+		proposal.Title = "Break repeated guardrail loop"
+		proposal.Suggestion = fmt.Sprintf("Role %q repeatedly hit the same guardrail or tool-policy block inside one job; inspect the policy message, terminal disposition guidance, loop-boundary handling, and role workflow before retrying unchanged.", p.Role)
+		proposal.CandidateFiles = []string{
+			fmt.Sprintf(".harness/roles/%s.md", p.Role),
+			".harness/manifest.yaml",
+		}
+		proposal.Confidence = 0.9
+
 	case CategoryWorkspaceHygiene:
 		proposal.Target = TargetProcess
 		proposal.Title = "Repair workspace hygiene"
