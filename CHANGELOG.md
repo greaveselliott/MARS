@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.62.0] - 2026-06-15
+<!-- mars-harness-release: version=0.62.0 commit=c777ad93ace6 -->
+
+### Impact
+- **validation:** Operators gain new capability: harden live agent smoke matrix.
+
+### Why
+- **validation:** This matters because harden live agent smoke matrix was missing from the shipped capability set.
+
+### What Changed
+- **validation:** Changed harden live agent smoke matrix (c777ad9).
+
+### Features
+- **validation:** Harden live agent smoke matrix (c777ad9)
+
 ## [0.61.0] - 2026-06-14
 <!-- mars-harness-release: version=0.61.0 commit=6d934d7c866b -->
 
