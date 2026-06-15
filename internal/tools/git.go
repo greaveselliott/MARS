@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path"
 	"strings"
 )
 
@@ -170,12 +171,16 @@ func handleGitCommit(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 			return ToolResult{}, err
 		}
 	} else {
-		for _, p := range args.Paths {
+		paths, err := expandGitCommitPathsForTicketMoves(ctx, root, args.Paths)
+		if err != nil {
+			return ToolResult{}, err
+		}
+		for _, p := range paths {
 			abs, err := root.ResolvePath(p)
 			if err != nil {
 				return ToolResult{}, fmt.Errorf("git_commit: %w", err)
 			}
-			if err := runGitExit0(ctx, root, "add", "--", abs); err != nil {
+			if err := runGitExit0(ctx, root, "add", "-A", "--", abs); err != nil {
 				return ToolResult{}, err
 			}
 		}
@@ -191,6 +196,53 @@ func handleGitCommit(ctx context.Context, root Root, raw json.RawMessage) (ToolR
 		return ToolResult{Output: "commit completed"}, nil
 	}
 	return tr, nil
+}
+
+func expandGitCommitPathsForTicketMoves(ctx context.Context, root Root, paths []string) ([]string, error) {
+	ticketNames := map[string]bool{}
+	for _, p := range paths {
+		rel := cleanRepoPath(p)
+		if isTicketLifecyclePath(rel) {
+			ticketNames[path.Base(rel)] = true
+		}
+	}
+	if len(ticketNames) == 0 {
+		return paths, nil
+	}
+	tr, err := runGit(ctx, root, "status", "--porcelain", "--", "docs/tickets")
+	if err != nil {
+		return nil, err
+	}
+	if tr.ExitCode != 0 {
+		return nil, fmt.Errorf("git_commit: %s", strings.TrimSpace(tr.Stderr))
+	}
+	expanded := append([]string{}, paths...)
+	for _, line := range strings.Split(tr.Output, "\n") {
+		if len(line) < 4 {
+			continue
+		}
+		status := line[:2]
+		rel := cleanRepoPath(strings.TrimSpace(line[3:]))
+		if rel == "" || strings.Contains(rel, " -> ") {
+			continue
+		}
+		if status[0] != 'D' && status[1] != 'D' {
+			continue
+		}
+		if !isTicketLifecyclePath(rel) || !ticketNames[path.Base(rel)] {
+			continue
+		}
+		expanded = append(expanded, rel)
+	}
+	return compactStrings(expanded), nil
+}
+
+func isTicketLifecyclePath(rel string) bool {
+	rel = cleanRepoPath(rel)
+	return strings.HasPrefix(rel, "docs/tickets/backlog/") ||
+		strings.HasPrefix(rel, "docs/tickets/in-progress/") ||
+		strings.HasPrefix(rel, "docs/tickets/in-review/") ||
+		strings.HasPrefix(rel, "docs/tickets/done/")
 }
 
 func decodeGitDiffArgs(raw json.RawMessage) (gitDiffArgs, error) {

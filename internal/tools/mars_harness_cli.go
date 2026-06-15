@@ -558,6 +558,8 @@ Global command surface:
     is only for a real OpenAI-compatible model endpoint; fake or scripted
     endpoints are deterministic test plumbing, not validation evidence. Local
     runs default to --single-server so parallel cases share one llama-server.
+    Each target receives docs/validation/agent-smoke/current-case.md as the
+    target-local case contract. Default --max-turns is 32 for live execution.
     Flags: --role <role>, --case <id>, --project-type <type>, --suite <fast|default|full|held-out>, --parallel <n>, --cycle <key>, --max-turns <n>, --timeout <duration>, --model-endpoint <real-url>, --single-server, --single-server-tier <coding|reasoning|fast>, --fixture-only, --json, --report <path>, --keep-runs, --cleanup-only, --discard-failed, --root <path>
     Example: ["validation", "agent-smoke", "--suite", "fast", "--parallel", "2", "--json"]
 

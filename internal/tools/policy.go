@@ -91,14 +91,19 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 	if err := checkDogfoodFindingCommitPolicy(ctx, root, session, hasSession, name); err != nil {
 		return err
 	}
+	if err := checkAgentSmokeReviewReportCommitSequence(ctx, root, session, hasSession, name); err != nil {
+		return err
+	}
 	if err := checkEngineerMissingArgumentCorrectionOnly(session, hasSession, name); err != nil {
 		return err
 	}
-	if err := checkReviewTerminalDispositionOnly(root, session, hasSession, name); err != nil {
+	if err := checkReviewTerminalDispositionOnly(ctx, root, session, hasSession, name); err != nil {
 		return err
 	}
 
 	switch name {
+	case "file_read":
+		return checkFileReadPolicy(root, raw)
 	case "file_write":
 		if err := checkEngineerClaimBeforeProductMutation(ctx, root, session, hasSession, name, raw); err != nil {
 			return err
@@ -153,6 +158,12 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 			return err
 		}
 		if err := checkEngineerTestBuildValidationReworkPolicy(root, session, hasSession, args); err != nil {
+			return err
+		}
+		if err := checkDogfoodBrowserPostBuildSmokeOnlyPolicy(root, session, hasSession, args); err != nil {
+			return err
+		}
+		if err := checkAgentSmokePipelineFixerProjectValidationPolicy(root, session, hasSession, args); err != nil {
 			return err
 		}
 		if err := checkExternalValidationArtifactFreshness(root, session, hasSession, args); err != nil {

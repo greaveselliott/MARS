@@ -385,7 +385,33 @@ func TestTicketCreate_rejectsEmptyBody(t *testing.T) {
 	assert.Contains(t, err.Error(), "body is required")
 }
 
-func TestTicketCreate_parseHintForQuotedBDDScenarios(t *testing.T) {
+func TestTicketCreate_acceptsQuotedJSONListBDDScenarios(t *testing.T) {
+	t.Parallel()
+	dir, root := setupTicketDir(t)
+
+	result, err := handleTicketCreate(context.Background(), root, []byte(`{
+		"title":"Implement CLI",
+		"priority":"high",
+		"work_type":"feature",
+		"bdd_scenarios":"[\"F-001-S002\"]",
+		"blocked_by":"[\"T-001\"]",
+		"depends_on":"[\"T-001\"]",
+		"evidence_links":"[\"go test ./...\"]",
+		"body":"## Context\nTest.\n\n## Acceptance criteria\n- [ ] Works"
+	}`))
+
+	require.NoError(t, err)
+	assert.Contains(t, result.Output, "created ticket T-001")
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "backlog", "T-001-implement-cli.md"))
+	require.NoError(t, err)
+	text := string(data)
+	assert.Contains(t, text, `bdd_scenarios: ["F-001-S002"]`)
+	assert.Contains(t, text, `blocked_by: ["T-001"]`)
+	assert.Contains(t, text, `depends_on: [T-001]`)
+	assert.Contains(t, text, `evidence_links: ["go test ./..."]`)
+}
+
+func TestTicketCreate_parseHintForInvalidBDDScenarioString(t *testing.T) {
 	t.Parallel()
 	_, root := setupTicketDir(t)
 
@@ -393,12 +419,12 @@ func TestTicketCreate_parseHintForQuotedBDDScenarios(t *testing.T) {
 		"title":"Implement CLI",
 		"priority":"high",
 		"work_type":"feature",
-		"bdd_scenarios":"[\"F-001-S002\"]",
+		"bdd_scenarios":"F-001-S002",
 		"body":"## Context\nTest.\n\n## Acceptance criteria\n- [ ] Works"
 	}`))
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "bdd_scenarios must be a JSON array")
+	assert.Contains(t, err.Error(), "bdd_scenarios must be a JSON array or a quoted JSON-array string")
 	assert.Contains(t, err.Error(), `"bdd_scenarios":["F-001-S002"]`)
 }
 

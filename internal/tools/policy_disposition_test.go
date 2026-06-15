@@ -99,6 +99,201 @@ func TestSuccessfulDispositionBlocksUnresolvedTicketCreationFailure(t *testing.T
 	}
 }
 
+func TestJobDispositionPolicyBlocksAgentSmokeMissingRoleReport(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatalf("NewRoot: %v", err)
+	}
+	contractPath := filepath.Join(dir, "docs", "validation", "agent-smoke", "current-case.md")
+	if err := os.MkdirAll(filepath.Dir(contractPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contractPath, []byte(`# Agent Smoke Case Contract
+
+- Case: `+"`go-api-after-qa`"+`
+- Role under test: `+"`security`"+`
+- Project type: `+"`go-api`"+`
+- Stage: `+"`after-qa`"+`
+
+## Required Artifacts
+
+- `+"`docs/tickets/done`"+`
+- `+"`docs/reports/security/go-api-after-qa.md`"+`
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "docs", "tickets", "done"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ctx := WithSession(context.Background(), Session{Role: "security", ToolCounts: map[string]int{
+		testCommandSuccessKey:                1,
+		validationCommandSuccessKey:          1,
+		"tool:docsync_audit:success":         1,
+		reviewTerminalDispositionRequiredKey: 1,
+	}})
+	raw := []byte(`{"status":"approved","ticket_id":"T-001","next_need":"dogfood_validation","suggested_role":"dogfood"}`)
+
+	err = preToolPolicy(ctx, root, "job_disposition_record", raw)
+	if err == nil {
+		t.Fatal("expected missing agent-smoke role report to block disposition")
+	}
+	if !strings.Contains(err.Error(), "agent-smoke go-api-after-qa") || !strings.Contains(err.Error(), "docs/reports/security/go-api-after-qa.md") {
+		t.Fatalf("expected missing security report guidance, got %v", err)
+	}
+
+	reportPath := filepath.Join(dir, "docs", "reports", "security", "go-api-after-qa.md")
+	if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(reportPath, []byte("# Security\n\nNo material risk.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := preToolPolicy(ctx, root, "job_disposition_record", raw); err != nil {
+		t.Fatalf("expected disposition to pass after role report exists, got %v", err)
+	}
+}
+
+func TestJobDispositionPolicyBlocksAgentSmokeReleaseTagBeforeReport(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatalf("NewRoot: %v", err)
+	}
+	contractPath := filepath.Join(dir, "docs", "validation", "agent-smoke", "current-case.md")
+	if err := os.MkdirAll(filepath.Dir(contractPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contractPath, []byte(`# Agent Smoke Case Contract
+
+- Case: `+"`release-go-api-ready`"+`
+- Role under test: `+"`release-manager`"+`
+- Project type: `+"`go-api`"+`
+- Stage: `+"`ready`"+`
+
+## Required Artifacts
+
+- `+"`VERSION`"+`
+- `+"`CHANGELOG.md`"+`
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.0.1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte("# Changelog\n\n## 0.0.1\n\n- Release smoke.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runGitExit0(context.Background(), root, "add", "."); err != nil {
+		t.Fatalf("git add: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "commit", "-m", "release: notes 0.0.1"); err != nil {
+		t.Fatalf("git commit: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "tag", "v0.0.1"); err != nil {
+		t.Fatalf("git tag: %v", err)
+	}
+	reportPath := filepath.Join(dir, "docs", "reports", "release", "release-go-api-ready.md")
+	if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(reportPath, []byte("# Release Report\n\nReady.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runGitExit0(context.Background(), root, "add", "docs/reports/release/release-go-api-ready.md"); err != nil {
+		t.Fatalf("git add report: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "commit", "-m", "docs: add release report"); err != nil {
+		t.Fatalf("git commit report: %v", err)
+	}
+
+	ctx := WithSession(context.Background(), Session{Role: "release-manager", ToolCounts: map[string]int{}})
+	raw := []byte(`{"status":"completed","next_need":"no_need"}`)
+	err = preToolPolicy(ctx, root, "job_disposition_record", raw)
+	if err == nil {
+		t.Fatal("expected stale release tag to block disposition")
+	}
+	if !strings.Contains(err.Error(), "does not point at the current release-note evidence commit") || !strings.Contains(err.Error(), `["git","tag","-f","v0.0.1"]`) || !strings.Contains(err.Error(), "update CHANGELOG.md with a report evidence line") {
+		t.Fatalf("expected stale tag correction guidance, got %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte("# Changelog\n\n## 0.0.1\n\n- Release smoke.\n- Release report: docs/reports/release/release-go-api-ready.md.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runGitExit0(context.Background(), root, "add", "CHANGELOG.md"); err != nil {
+		t.Fatalf("git add changelog: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "commit", "-m", "release: notes 0.0.1"); err != nil {
+		t.Fatalf("git commit recovery release note: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "tag", "-f", "v0.0.1"); err != nil {
+		t.Fatalf("git tag -f: %v", err)
+	}
+	if err := preToolPolicy(ctx, root, "job_disposition_record", raw); err != nil {
+		t.Fatalf("expected disposition to pass after tag moves to release evidence commit, got %v", err)
+	}
+}
+
+func TestJobDispositionPolicyGuidesAgentSmokeDependencyLockCommit(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatalf("NewRoot: %v", err)
+	}
+	contractPath := filepath.Join(dir, "docs", "validation", "agent-smoke", "current-case.md")
+	if err := os.MkdirAll(filepath.Dir(contractPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(contractPath, []byte(`# Agent Smoke Case Contract
+
+- Case: `+"`dogfood-browser-game-ready`"+`
+- Role under test: `+"`dogfood`"+`
+- Project type: `+"`browser-game-phaser`"+`
+- Stage: `+"`ready`"+`
+
+## Required Artifacts
+
+- `+"`docs/reports/dogfood/dogfood-browser-game-ready.md`"+`
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	reportPath := filepath.Join(dir, "docs", "reports", "dogfood", "dogfood-browser-game-ready.md")
+	if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(reportPath, []byte("# Dogfood\n\nBuild and browser smoke passed.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runGitExit0(context.Background(), root, "add", "docs"); err != nil {
+		t.Fatalf("git add docs: %v", err)
+	}
+	if err := runGitExit0(context.Background(), root, "commit", "-m", "test: seed dogfood report"); err != nil {
+		t.Fatalf("git commit docs: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "package-lock.json"), []byte("{}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := WithSession(context.Background(), Session{Role: "dogfood", ToolCounts: map[string]int{}})
+	raw := []byte(`{"status":"approved","next_need":"release_review","suggested_role":"release-manager"}`)
+	err = preToolPolicy(ctx, root, "job_disposition_record", raw)
+	if err == nil {
+		t.Fatal("expected dirty package-lock disposition to be blocked")
+	}
+	for _, want := range []string{"dependency lockfiles created by dependency_sync", "Do not remove", `git_commit with paths ["package-lock.json"]`} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("expected lockfile guidance %q, got %v", want, err)
+		}
+	}
+}
+
 func TestCTODispositionAllowsCoveredBatchAfterDuplicateTicketCreateFailure(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)

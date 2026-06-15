@@ -38,6 +38,18 @@ func registerFileRead(r *Registry) error {
 	return r.Register("file_read", "Read a UTF-8 text file under the repository root, optionally by line range.", json.RawMessage(fileReadSchema), handleFileRead)
 }
 
+func checkFileReadPolicy(root Root, raw json.RawMessage) error {
+	var args fileReadArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return nil
+	}
+	rel := cleanRepoPath(args.Path)
+	if IsGeneratedWorkspacePath(rel) {
+		return fmt.Errorf("policy: file_read cannot read generated dependency/build output %q because it can flood context; use source files, package metadata, grep with generated-directory excludes, or workspace_hygiene instead", rel)
+	}
+	return nil
+}
+
 func handleFileRead(_ context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
 	var args fileReadArgs
 	if err := json.Unmarshal(raw, &args); err != nil {

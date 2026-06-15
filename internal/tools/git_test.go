@@ -10,6 +10,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -67,6 +68,30 @@ func TestGitCommit_andStatus(t *testing.T) {
 	res, err := handleGitStatus(context.Background(), root, []byte(`{}`))
 	require.NoError(t, err)
 	require.Equal(t, 0, res.ExitCode)
+	require.Equal(t, "", strings.TrimSpace(res.Output))
+}
+
+func TestGitCommitStagesDeletedTicketMoveSource(t *testing.T) {
+	t.Parallel()
+	requireGit(t)
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	oldPath := "docs/tickets/in-progress/T-001-ship.md"
+	newPath := "docs/tickets/done/T-001-ship.md"
+	testutil.WriteFile(t, filepath.Join(dir, oldPath), "---\nid: T-001\n---\n# Ship\n")
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, runGitExit0(context.Background(), root, "add", oldPath))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "seed ticket"))
+
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs/tickets/done"), 0o755))
+	require.NoError(t, os.Rename(filepath.Join(dir, oldPath), filepath.Join(dir, newPath)))
+	testutil.WriteFile(t, filepath.Join(dir, newPath), "---\nid: T-001\nevidence_links: [\".mars/checks/latest.json\"]\nverified_by: janitor\n---\n# Ship\n")
+
+	_, err = handleGitCommit(context.Background(), root, []byte(`{"message":"chore(tickets): move T-001 to done","paths":["docs/tickets/done/T-001-ship.md"]}`))
+	require.NoError(t, err)
+	res, err := handleGitStatus(context.Background(), root, []byte(`{}`))
+	require.NoError(t, err)
 	require.Equal(t, "", strings.TrimSpace(res.Output))
 }
 

@@ -1,5 +1,10 @@
 # Validation Report: Agent Smoke Full Matrix
 
+> Superseded for completion claims by
+> [2026-06-15-agent-smoke-full-matrix.md](2026-06-15-agent-smoke-full-matrix.md),
+> which records the final real local-model run: `74 passed`, `0 failed`,
+> `74 selected`. This report remains historical failure evidence.
+
 ## Status
 
 **Status:** validated single-server parallel setup and live execution path; matrix failing.

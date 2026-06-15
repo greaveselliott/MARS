@@ -64,6 +64,39 @@ func checkForegroundLongRunningShellPolicy(root Root, args shellExecArgs) error 
 	return fmt.Errorf("policy: shell_exec command %q is likely a long-running server or watcher; rerun it with background:true, probe readiness with a separate curl or equivalent command, then stop the tracked PID after validation", cmd)
 }
 
+func checkAgentSmokePipelineFixerProjectValidationPolicy(root Root, session Session, hasSession bool, args shellExecArgs) error {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "pipeline-fixer" {
+		return nil
+	}
+	fields := normalizedShellExecFields(args)
+	if len(fields) < 3 || filepathBase(fields[0]) != "go" || fields[1] != "test" {
+		return nil
+	}
+	hasAllPackages := false
+	for _, field := range fields[2:] {
+		if field == "./..." {
+			hasAllPackages = true
+			break
+		}
+	}
+	if !hasAllPackages || repoFileExists(root, "go.mod") {
+		return nil
+	}
+	contract, err := os.ReadFile(filepath.Join(root.Abs(), "docs", "validation", "agent-smoke", "current-case.md"))
+	if err != nil {
+		return nil
+	}
+	text := string(contract)
+	switch {
+	case strings.Contains(text, "Project type: `react-web`"):
+		return fmt.Errorf("policy: pipeline-fixer is running a React agent-smoke target, not a Go module. Use dependency_sync with frozen:false when dependencies or lockfile hydration are missing, then run npm run build and the React source/runtime smoke before writing .mars/checks/latest.json to passed")
+	case strings.Contains(text, "Project type: `browser-game-phaser`"):
+		return fmt.Errorf("policy: pipeline-fixer is running a Phaser agent-smoke target, not a Go module. Use dependency_sync with frozen:false when dependencies or lockfile hydration are missing, then run npm run build and the Phaser source/runtime smoke before writing .mars/checks/latest.json to passed")
+	default:
+		return nil
+	}
+}
+
 func likelyForegroundLongRunningCommand(root Root, args shellExecArgs) (string, bool) {
 	fields := normalizedShellExecFields(args)
 	if len(fields) == 0 {
@@ -330,6 +363,11 @@ func goBuildValidationCorrection(args shellExecArgs, suggestion string) string {
 		raw, _ := json.Marshal([]string{"go", "build", "-o", suggestion})
 		return "shell_exec argv " + string(raw)
 	}
+	if patterns := goBuildWildcardValidationPatterns(fields); len(patterns) > 0 {
+		corrected := append([]string{"go", "test"}, patterns...)
+		raw, _ := json.Marshal(corrected)
+		return "shell_exec argv " + string(raw)
+	}
 	corrected := make([]string, 0, len(fields)+2)
 	corrected = append(corrected, cleanShellDisplayToken(fields[0]), cleanShellDisplayToken(fields[1]))
 	inserted := false
@@ -374,6 +412,28 @@ func goBuildCommandFields(args shellExecArgs) []string {
 		}
 	}
 	return nil
+}
+
+func goBuildWildcardValidationPatterns(fields []string) []string {
+	patterns := make([]string, 0, 1)
+	for i := 2; i < len(fields); i++ {
+		field := strings.TrimSpace(fields[i])
+		if field == "" || shellControlToken(field) {
+			break
+		}
+		clean := cleanShellDisplayToken(field)
+		if clean == "-o" {
+			i++
+			continue
+		}
+		if strings.HasPrefix(clean, "-o=") || strings.HasPrefix(clean, "-") {
+			continue
+		}
+		if clean == "./..." || strings.HasSuffix(clean, "/...") {
+			patterns = append(patterns, clean)
+		}
+	}
+	return patterns
 }
 
 func validationBinaryOutputSuggestion(output string) string {

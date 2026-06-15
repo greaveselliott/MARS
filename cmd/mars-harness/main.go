@@ -213,7 +213,7 @@ diagnosis unless --discard-failed is set.`,
 	cmd.Flags().StringVar(&opts.Suite, "suite", "fast", "Suite to run: fast, default, full, or held-out")
 	cmd.Flags().IntVar(&opts.Parallel, "parallel", 1, "Maximum cases to run concurrently")
 	cmd.Flags().StringVar(&opts.Cycle, "cycle", "", "Stable cycle key for rotating fast/held-out selections")
-	cmd.Flags().IntVar(&opts.MaxTurns, "max-turns", 6, "Maximum role turns for live execution")
+	cmd.Flags().IntVar(&opts.MaxTurns, "max-turns", 32, "Maximum role turns for live execution")
 	cmd.Flags().DurationVar(&opts.Timeout, "timeout", 10*time.Minute, "Per-case timeout")
 	cmd.Flags().StringVar(&opts.ModelEndpoint, "model-endpoint", "", "Optional real OpenAI-compatible model endpoint override; fake or scripted endpoints are not validation evidence")
 	cmd.Flags().BoolVar(&opts.SingleServer, "single-server", true, "Use one local inference server for all selected roles; pass --single-server=false for tiered routing")

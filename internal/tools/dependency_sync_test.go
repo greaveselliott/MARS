@@ -12,6 +12,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -73,6 +74,14 @@ func TestDependencySyncRequiresReasonWhenFrozenFalse(t *testing.T) {
 	_, err := RunDependencySync(context.Background(), root, dependencySyncArgs{Action: "install", PackageManager: "npm", Frozen: &frozen})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "reason is required")
+}
+
+func TestDependencySyncAcceptsQuotedFrozenBoolean(t *testing.T) {
+	var args dependencySyncArgs
+	require.NoError(t, json.Unmarshal([]byte(`{"action":"install","package_manager":"npm","frozen":"false","reason":"hydrate ephemeral React validation dependencies"}`), &args))
+	require.NotNil(t, args.Frozen)
+	require.False(t, *args.Frozen)
+	require.Equal(t, "hydrate ephemeral React validation dependencies", args.Reason)
 }
 
 func TestDependencySyncBlocksPostInstallGeneratedPollution(t *testing.T) {

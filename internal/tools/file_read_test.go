@@ -50,3 +50,16 @@ func TestFileRead_missingFile(t *testing.T) {
 	require.Error(t, err)
 	require.True(t, errors.Is(err, os.ErrNotExist), "expected ErrNotExist in chain: %v", err)
 }
+
+func TestFileReadPolicyBlocksGeneratedWorkspaceOutput(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(dir, "dist", "assets", "index.js"), "minified bundle")
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	err = preToolPolicy(context.Background(), root, "file_read", []byte(`{"path":"dist/assets/index.js"}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "generated dependency/build output")
+	require.Contains(t, err.Error(), "dist/assets/index.js")
+}

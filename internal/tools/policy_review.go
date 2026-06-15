@@ -11,6 +11,7 @@ docs:
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -68,7 +69,7 @@ func checkReviewDispositionValidationEvidence(root Root, session Session, status
 	if strings.ToLower(strings.TrimSpace(session.Role)) == "qa" && repoHasGoSourceFiles(root) && !repoHasTestFiles(root) {
 		return fmt.Errorf("policy: qa cannot approve %s because Go source files exist but no _test.go files are present; request Engineer tests that assert the ticket and BDD expected behavior before approval", strings.ToUpper(strings.TrimSpace(ticketID)))
 	}
-	if counts[validationCommandSuccessKey] == 0 {
+	if !reviewSuccessfulValidationEvidence(counts) {
 		return fmt.Errorf("policy: %s must run at least one authoritative validation command successfully before approving %s; use tests, build, or an end-to-end command that exercises the completed ticket", strings.ToLower(strings.TrimSpace(session.Role)), strings.ToUpper(strings.TrimSpace(ticketID)))
 	}
 	if blockers := browserFrameworkCompletionBlockers(root, session, true); len(blockers) > 0 {
@@ -90,14 +91,82 @@ func checkReviewDispositionValidationEvidence(root Root, session Session, status
 	return nil
 }
 
-func checkReviewTerminalDispositionOnly(root Root, session Session, hasSession bool, name string) error {
+func checkReviewTerminalDispositionOnly(ctx context.Context, root Root, session Session, hasSession bool, name string) error {
 	if !hasSession || !reviewRoleRequiresValidationEvidence(session.Role) || name == "job_disposition_record" {
 		return nil
+	}
+	if path := missingAgentSmokeReviewReportPath(root, session); path != "" && ReviewTerminalEvidenceSatisfied(root, &session) {
+		switch name {
+		case "file_write", "git_status", "git_commit":
+			return nil
+		default:
+			return fmt.Errorf("policy: %s already has sufficient validation for agent-smoke but the required report is missing. Do not call more tools except file_write to %s, git_status, git_commit, then job_disposition_record", strings.ToLower(strings.TrimSpace(session.Role)), path)
+		}
+	}
+	if agentSmokeReviewReportHasUncommittedChanges(ctx, root, session) {
+		switch name {
+		case "file_write", "git_status", "git_commit":
+			return nil
+		}
 	}
 	if session.ToolCounts == nil || session.ToolCounts[reviewTerminalDispositionRequiredKey] == 0 {
 		return nil
 	}
+	if path := missingAgentSmokeReviewReportPath(root, session); path != "" {
+		switch name {
+		case "file_write", "git_status", "git_commit", "job_disposition_record":
+			return nil
+		default:
+			return fmt.Errorf("policy: %s already has sufficient validation for agent-smoke but the required report is missing. Do not call more tools except file_write to %s, git_status, git_commit, then job_disposition_record", strings.ToLower(strings.TrimSpace(session.Role)), path)
+		}
+	}
 	return fmt.Errorf("policy: %s already received terminal disposition guidance after successful validation and a blocked shell_exec no-op. Do not call more tools except job_disposition_record. %s", strings.ToLower(strings.TrimSpace(session.Role)), reviewTerminalDispositionGuidance(root, session))
+}
+
+func checkAgentSmokeReviewReportCommitSequence(ctx context.Context, root Root, session Session, hasSession bool, name string) error {
+	if !hasSession {
+		return nil
+	}
+	blocking := agentSmokeReviewReportBlockingFiles(ctx, root, session)
+	if len(blocking) == 0 {
+		return nil
+	}
+	switch name {
+	case "file_write", "git_status", "git_commit":
+		return nil
+	default:
+		return fmt.Errorf("policy: agent-smoke role report is written but uncommitted: %s. Next run git_status, git_commit the report, then continue with docsync_audit or job_disposition_record", strings.Join(blocking, ", "))
+	}
+}
+
+func agentSmokeReviewReportHasUncommittedChanges(ctx context.Context, root Root, session Session) bool {
+	return len(agentSmokeReviewReportBlockingFiles(ctx, root, session)) > 0
+}
+
+func agentSmokeReviewReportBlockingFiles(ctx context.Context, root Root, session Session) []string {
+	reportPath := agentSmokeReviewReportPath(root, session)
+	if reportPath == "" {
+		return nil
+	}
+	abs, err := root.ResolvePath(reportPath)
+	if err != nil {
+		return nil
+	}
+	if _, err := os.Stat(abs); err != nil {
+		return nil
+	}
+	files, err := changedFiles(ctx, root)
+	if err != nil {
+		return nil
+	}
+	var blocking []string
+	for _, file := range files {
+		file = filepath.ToSlash(strings.TrimSpace(file))
+		if file == reportPath {
+			blocking = append(blocking, file)
+		}
+	}
+	return blocking
 }
 
 func reviewTerminalDispositionGuidance(root Root, session Session) string {
@@ -121,7 +190,52 @@ func reviewTerminalDispositionGuidance(root Root, session Session) string {
 	if roleRequiresDocSyncForSuccessfulDisposition(role) && counts["tool:docsync_audit:success"] == 0 {
 		return "Run docsync_audit before approval, or record job_disposition_record with status changes_requested if documentation sync cannot be verified."
 	}
+	if path := missingAgentSmokeReviewReportPath(root, session); path != "" {
+		return "Write the exact agent-smoke report with file_write path " + path + ", run git_status and git_commit, then call job_disposition_record with the required terminal disposition fields."
+	}
 	return "Call job_disposition_record now with status approved, ticket_id, next_need security_review or no_need, and evidence_links naming the build/test/runtime commands that passed."
+}
+
+func reviewSuccessfulValidationEvidence(counts map[string]int) bool {
+	if counts == nil {
+		return false
+	}
+	return counts[validationCommandSuccessKey] > 0 ||
+		counts[testCommandSuccessKey] > 0 ||
+		counts[buildCommandSuccessKey] > 0 ||
+		counts[browserProductSmokeSuccessKey] > 0
+}
+
+func missingAgentSmokeReviewReportPath(root Root, session Session) string {
+	reportPath := agentSmokeReviewReportPath(root, session)
+	if reportPath == "" {
+		return ""
+	}
+	abs, err := root.ResolvePath(reportPath)
+	if err != nil {
+		return ""
+	}
+	if _, err := os.Stat(abs); err == nil {
+		return ""
+	}
+	return reportPath
+}
+
+func agentSmokeReviewReportPath(root Root, session Session) string {
+	role := strings.ToLower(strings.TrimSpace(session.Role))
+	if role != "qa" && role != "security" && role != "dogfood" {
+		return ""
+	}
+	contractPath := filepath.Join(root.Abs(), "docs", "validation", "agent-smoke", "current-case.md")
+	data, err := os.ReadFile(contractPath)
+	if err != nil || !strings.Contains(string(data), "# Agent Smoke Case Contract") {
+		return ""
+	}
+	caseID := agentSmokeContractField(string(data), "Case")
+	if caseID == "" {
+		return ""
+	}
+	return "docs/reports/" + role + "/" + caseID + ".md"
 }
 
 // ReviewTerminalEvidenceSatisfied reports whether a review role has gathered

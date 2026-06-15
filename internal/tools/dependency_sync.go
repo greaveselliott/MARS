@@ -38,6 +38,57 @@ type dependencySyncArgs struct {
 	Reason         string `json:"reason"`
 }
 
+type flexibleOptionalBool bool
+
+func (b *flexibleOptionalBool) UnmarshalJSON(raw []byte) error {
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" || trimmed == "null" {
+		return nil
+	}
+	var value bool
+	if err := json.Unmarshal(raw, &value); err == nil {
+		*b = flexibleOptionalBool(value)
+		return nil
+	}
+	var text string
+	if err := json.Unmarshal(raw, &text); err != nil {
+		return err
+	}
+	switch strings.ToLower(strings.TrimSpace(text)) {
+	case "true":
+		*b = true
+		return nil
+	case "false":
+		*b = false
+		return nil
+	default:
+		return fmt.Errorf("expected boolean or quoted boolean string")
+	}
+}
+
+func (args *dependencySyncArgs) UnmarshalJSON(raw []byte) error {
+	type dependencySyncArgsWire struct {
+		Action         string                `json:"action"`
+		Frozen         *flexibleOptionalBool `json:"frozen"`
+		PackageManager string                `json:"package_manager"`
+		Reason         string                `json:"reason"`
+	}
+	var decoded dependencySyncArgsWire
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		return err
+	}
+	*args = dependencySyncArgs{
+		Action:         decoded.Action,
+		PackageManager: decoded.PackageManager,
+		Reason:         decoded.Reason,
+	}
+	if decoded.Frozen != nil {
+		value := bool(*decoded.Frozen)
+		args.Frozen = &value
+	}
+	return nil
+}
+
 func registerDependencySync(r *Registry) error {
 	return r.Register("dependency_sync", "Run package-manager dependency sync through deterministic workspace hygiene gates.", json.RawMessage(dependencySyncSchema), handleDependencySync)
 }

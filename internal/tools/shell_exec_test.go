@@ -86,6 +86,22 @@ func TestShellExecPolicyBlocksMarsHarnessBinaryShellCommand(t *testing.T) {
 	require.Contains(t, err.Error(), `["release","backfill-notes","--repo",".","--check"]`)
 }
 
+func TestPipelineFixerAgentSmokeReactRejectsGoValidation(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "validation", "agent-smoke"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "validation", "agent-smoke", "current-case.md"), []byte("# Agent Smoke Case Contract\n\n- Project type: `react-web`\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"scripts":{"build":"vite build"}}`+"\n"), 0o644))
+
+	ctx := WithSession(context.Background(), Session{Role: "pipeline-fixer", ToolCounts: map[string]int{}})
+	err = preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["go","test","./..."]}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "React agent-smoke target")
+	require.Contains(t, err.Error(), "npm run build")
+}
+
 func TestRecordSessionToolOutcomeTracksValidationCommands(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -1258,6 +1274,24 @@ func TestShellExecPolicyBlocksReleaseTagBeforeReleaseNotesCommit(t *testing.T) {
 	require.Contains(t, err.Error(), "release: notes 0.2.0")
 }
 
+func TestShellExecPolicyAllowsReleaseTagWithOnlyRuntimeLearningsDirty(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".harness"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.2.0\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte("# Changelog\n\n## [0.2.0]\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".harness", "learnings.yaml"), []byte("schema_version: 1\n"), 0o644))
+	require.NoError(t, runGitExit0(context.Background(), root, "add", "VERSION", "CHANGELOG.md", ".harness/learnings.yaml"))
+	require.NoError(t, runGitExit0(context.Background(), root, "commit", "-m", "release: notes 0.2.0"))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".harness", "learnings.yaml"), []byte("schema_version: 1\nconventions:\n  release: local\n"), 0o644))
+
+	err = preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"argv":["git","tag","v0.2.0","HEAD"]}`))
+	require.NoError(t, err)
+}
+
 func TestShellExecPolicyBlocksReleaseTagTargetThatIsNotReleaseNotesHead(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -1568,8 +1602,8 @@ func TestShellExecBlocksDefaultGoBuildInsideRepoBeforeArtifact(t *testing.T) {
 	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":["go","build","./..."]}`)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "go build without -o")
-	require.Contains(t, err.Error(), "/tmp/task-notes-api-validation")
-	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/task-notes-api-validation","./..."]`)
+	require.Contains(t, err.Error(), `shell_exec argv ["go","test","./..."]`)
+	require.NotContains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/task-notes-api-validation","./..."]`)
 	require.NoFileExists(t, filepath.Join(dir, "task-notes-api"))
 }
 
@@ -1591,8 +1625,8 @@ func TestShellExecBlocksDefaultGoBuildInShellCommandBeforeArtifact(t *testing.T)
 	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"shell_command":"go build ./... && go test ./..."}`)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "go build without -o")
-	require.Contains(t, err.Error(), "/tmp/task-notes-api-validation")
-	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/task-notes-api-validation","./..."]`)
+	require.Contains(t, err.Error(), `shell_exec argv ["go","test","./..."]`)
+	require.NotContains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/task-notes-api-validation","./..."]`)
 	require.NoFileExists(t, filepath.Join(dir, "task-notes-api"))
 }
 

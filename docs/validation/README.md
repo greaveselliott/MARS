@@ -60,16 +60,26 @@ writes JSON or Markdown evidence, and discards successful runs unless
 `--keep-runs` is set. `--parallel` runs independent ephemeral repos and DBs at
 the same time, and the runner suppresses follow-on dispatch after the target
 role while recording the would-be next role and terminal disposition.
+Live runs default to a 32-turn role budget so ticket claim, implementation,
+validation evidence, ticket closure, and terminal disposition can complete.
+Each generated target contains `docs/validation/agent-smoke/current-case.md`;
+agents read that target-local contract instead of trying to inspect the
+foundation matrix from inside the ephemeral repo.
 
 Smoke examples:
 
 ```bash
 mars-harness validation agent-smoke --suite fast --json
 mars-harness validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs
-mars-harness validation agent-smoke --suite held-out --parallel 2 --timeout 10m
+mars-harness validation agent-smoke --suite held-out --parallel 2 --single-server --single-server-tier coding --timeout 10m
 mars-harness validation agent-smoke --cleanup-only
 ```
 
 Agent smoke complements full clean-project sweeps. It does not prove
 cross-agent handoff quality by itself, and it does not remove the AD-284/AD-291
 requirement for broad lifecycle or release claims.
+
+Current completion evidence for the full live matrix is
+[2026-06-15-agent-smoke-full-matrix.md](reports/2026-06-15-agent-smoke-full-matrix.md):
+`74 passed`, `0 failed`, `74 selected` with `--parallel 2` against the local
+model router.

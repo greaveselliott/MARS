@@ -9,6 +9,7 @@ docs:
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/context-efficiency.md
+- docs/design-docs/agent-smoke-validation.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-010-dashboard-control-plane.md
@@ -49,7 +50,31 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/ui"
 )
 
-const userMessage = "A trigger event has fired. Inspect the repository and execute your role. Trigger context is in the system prompt."
+const defaultUserMessage = "A trigger event has fired. Inspect the repository and execute your role. Trigger context is in the system prompt."
+
+func userMessageForJob(job *queue.Job) string {
+	if job != nil && strings.EqualFold(strings.TrimSpace(job.PayloadMode), "agent_smoke") {
+		msg := "An agent-smoke validation case has fired. Follow the ## TRIGGER CONTEXT case_contract_summary and terminal_disposition_instruction first, read the target-local case contract if needed, execute only this role's bounded smoke contract, commit required evidence, and call job_disposition_record with every required terminal_disposition_contract field. If a tool returns a policy error, immediately call the corrective tool named by that error; do not finish in prose while required evidence is missing. Do not continue broad discovery after the smoke contract is satisfied."
+		if summary, terminal := agentSmokeJobSummary(job); summary != "" || terminal != "" {
+			msg += " Case contract summary: " + summary + " Terminal disposition instruction: " + terminal
+		}
+		return msg
+	}
+	return defaultUserMessage
+}
+
+func agentSmokeJobSummary(job *queue.Job) (string, string) {
+	if job == nil || strings.TrimSpace(job.Trigger) == "" {
+		return "", ""
+	}
+	var trigger map[string]any
+	if err := json.Unmarshal([]byte(job.Trigger), &trigger); err != nil {
+		return "", ""
+	}
+	summary, _ := trigger["case_contract_summary"].(string)
+	terminal, _ := trigger["terminal_disposition_instruction"].(string)
+	return strings.TrimSpace(summary), strings.TrimSpace(terminal)
+}
 
 // RepoLookup resolves a repo ID to its local filesystem path.
 type RepoLookup func(ctx context.Context, repoID string) (string, error)
@@ -514,7 +539,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		Root:              root,
 		Allowlist:         allowlist,
 		SystemPrompt:      system,
-		UserMessage:       userMessage,
+		UserMessage:       userMessageForJob(job),
 		Preflight:         codeGraphPreflight(allowlist, graphResult, graphErr, e.codeIntel),
 		MaintainCodeGraph: e.codeIntel.Enabled && codeGraphMaintenanceEnabled(allowlist, graphResult, graphErr),
 		Config: agent.LoopConfig{

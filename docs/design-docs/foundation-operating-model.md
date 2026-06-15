@@ -165,6 +165,10 @@ Compartmentalised agent smoke expands those archetypes with generated API, web,
 game, CLI, library, docs-site, and maintenance targets across individual role
 checkpoints. The source matrix lives in
 [docs/validation/agent-smoke/matrix.yaml](../validation/agent-smoke/matrix.yaml).
+Each ephemeral target also receives a generated
+`docs/validation/agent-smoke/current-case.md` contract so live roles can read
+the bounded case expectation from inside the target repo without depending on
+foundation-only files.
 
 ## Anti-Patterns
 
@@ -176,6 +180,7 @@ checkpoints. The source matrix lives in
 | Claiming validation from a run that never reached the affected role | Report must name product progress or explicit blocked stage |
 | Treating agent-smoke as a full lifecycle sweep | Role-local fixtures can pass while cross-role handoffs still regress |
 | Using fake, stub, mock, canned, or scripted model endpoints as live validation evidence | Proves runner plumbing at most and creates false positives for role behavior |
+| Expecting target agents to inspect the foundation agent-smoke matrix | Generated targets only contain target-local contracts; agents must read `docs/validation/agent-smoke/current-case.md` |
 | Branch-only green replay | Trunk push is part of done per AD-138 |
 
 ## Discoveries

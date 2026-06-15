@@ -72,6 +72,140 @@ type ticketCreateArgs struct {
 	Body             string            `json:"body"`
 }
 
+type flexibleStringList []string
+
+func parseFlexibleStringList(raw []byte) ([]string, error) {
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" || trimmed == "null" {
+		return nil, nil
+	}
+	if strings.HasPrefix(trimmed, "[") {
+		var values []string
+		if err := json.Unmarshal(raw, &values); err != nil {
+			return nil, err
+		}
+		return values, nil
+	}
+	if strings.HasPrefix(trimmed, `"`) {
+		var encoded string
+		if err := json.Unmarshal(raw, &encoded); err != nil {
+			return nil, err
+		}
+		encoded = strings.TrimSpace(encoded)
+		if encoded == "" {
+			return nil, nil
+		}
+		var values []string
+		if err := json.Unmarshal([]byte(encoded), &values); err != nil {
+			return nil, fmt.Errorf("expected JSON array or quoted JSON-array string: %w", err)
+		}
+		return values, nil
+	}
+	return nil, fmt.Errorf("expected JSON array or quoted JSON-array string")
+}
+
+func (list *flexibleStringList) UnmarshalJSON(raw []byte) error {
+	values, err := parseFlexibleStringList(raw)
+	if err != nil {
+		return err
+	}
+	*list = values
+	return nil
+}
+
+type bddScenarioList []string
+type blockedByList []string
+type dependsOnList []string
+type evidenceLinkList []string
+
+func (list *bddScenarioList) UnmarshalJSON(raw []byte) error {
+	values, err := parseFlexibleStringList(raw)
+	if err != nil {
+		return fmt.Errorf("bdd_scenarios must be a JSON array or a quoted JSON-array string; use \"bdd_scenarios\":[\"F-001-S002\"] or \"bdd_scenarios\":\"[\\\"F-001-S002\\\"]\": %w", err)
+	}
+	*list = values
+	return nil
+}
+
+func (list *blockedByList) UnmarshalJSON(raw []byte) error {
+	values, err := parseFlexibleStringList(raw)
+	if err != nil {
+		return fmt.Errorf("blocked_by must be a JSON array or a quoted JSON-array string; use \"blocked_by\":[\"T-001\"] or \"blocked_by\":\"[\\\"T-001\\\"]\": %w", err)
+	}
+	*list = values
+	return nil
+}
+
+func (list *dependsOnList) UnmarshalJSON(raw []byte) error {
+	values, err := parseFlexibleStringList(raw)
+	if err != nil {
+		return fmt.Errorf("depends_on must be a JSON array or a quoted JSON-array string; use \"depends_on\":[\"T-001\"] or \"depends_on\":\"[\\\"T-001\\\"]\": %w", err)
+	}
+	*list = values
+	return nil
+}
+
+func (list *evidenceLinkList) UnmarshalJSON(raw []byte) error {
+	values, err := parseFlexibleStringList(raw)
+	if err != nil {
+		return fmt.Errorf("evidence_links must be a JSON array or a quoted JSON-array string; use \"evidence_links\":[\"go test ./...\"] or \"evidence_links\":\"[\\\"go test ./...\\\"]\": %w", err)
+	}
+	*list = values
+	return nil
+}
+
+func (args *ticketCreateArgs) UnmarshalJSON(raw []byte) error {
+	type ticketCreateArgsWire struct {
+		Title            string            `json:"title"`
+		Priority         string            `json:"priority"`
+		Complexity       string            `json:"complexity"`
+		Kind             string            `json:"kind"`
+		WorkType         string            `json:"work_type"`
+		BDDScenarios     bddScenarioList   `json:"bdd_scenarios"`
+		EndToEndEvidence string            `json:"end_to_end_evidence"`
+		EvidenceLinks    evidenceLinkList  `json:"evidence_links"`
+		VerifiedBy       string            `json:"verified_by"`
+		Owner            string            `json:"owner"`
+		LastAttempt      string            `json:"last_attempt"`
+		Blocker          string            `json:"blocker"`
+		BlockedBy        blockedByList     `json:"blocked_by"`
+		TraceID          string            `json:"trace_id"`
+		NextAction       string            `json:"next_action"`
+		DedupeKey        string            `json:"dedupe_key"`
+		Metadata         map[string]string `json:"metadata"`
+		Source           string            `json:"source"`
+		DependsOn        dependsOnList     `json:"depends_on"`
+		Body             string            `json:"body"`
+	}
+	var decoded ticketCreateArgsWire
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		return err
+	}
+	*args = ticketCreateArgs{
+		Title:            decoded.Title,
+		Priority:         decoded.Priority,
+		Complexity:       decoded.Complexity,
+		Kind:             decoded.Kind,
+		WorkType:         decoded.WorkType,
+		BDDScenarios:     []string(decoded.BDDScenarios),
+		EndToEndEvidence: decoded.EndToEndEvidence,
+		EvidenceLinks:    []string(decoded.EvidenceLinks),
+		VerifiedBy:       decoded.VerifiedBy,
+		Owner:            decoded.Owner,
+		LastAttempt:      decoded.LastAttempt,
+		Blocker:          decoded.Blocker,
+		BlockedBy:        []string(decoded.BlockedBy),
+		TraceID:          decoded.TraceID,
+		NextAction:       decoded.NextAction,
+		DedupeKey:        decoded.DedupeKey,
+		Metadata:         decoded.Metadata,
+		Source:           decoded.Source,
+		DependsOn:        []string(decoded.DependsOn),
+		Body:             decoded.Body,
+	}
+	return nil
+}
+
 // TicketInput is the shared ticket creation shape used by agents and scanner-generated backlog items.
 type TicketInput struct {
 	Title            string
@@ -177,17 +311,17 @@ func ticketCreateScenarioIDsFromArgs(args ticketCreateArgs) []string {
 
 func ticketCreateParseHint(err error) string {
 	msg := err.Error()
-	if strings.Contains(msg, "bdd_scenarios") && strings.Contains(msg, "[]string") {
-		return fmt.Sprintf("bdd_scenarios must be a JSON array, not a quoted string; use \"bdd_scenarios\":[\"F-001-S002\"]: %s", msg)
+	if strings.Contains(msg, "bdd_scenarios") && strings.Contains(msg, "flexibleStringList") {
+		return fmt.Sprintf("bdd_scenarios must be a JSON array or a quoted JSON-array string; use \"bdd_scenarios\":[\"F-001-S002\"] or \"bdd_scenarios\":\"[\\\"F-001-S002\\\"]\": %s", msg)
 	}
-	if strings.Contains(msg, "blocked_by") && strings.Contains(msg, "[]string") {
-		return fmt.Sprintf("blocked_by must be a JSON array, not a quoted string; use \"blocked_by\":[\"T-001\"]: %s", msg)
+	if strings.Contains(msg, "blocked_by") && strings.Contains(msg, "flexibleStringList") {
+		return fmt.Sprintf("blocked_by must be a JSON array or a quoted JSON-array string; use \"blocked_by\":[\"T-001\"] or \"blocked_by\":\"[\\\"T-001\\\"]\": %s", msg)
 	}
-	if strings.Contains(msg, "depends_on") && strings.Contains(msg, "[]string") {
-		return fmt.Sprintf("depends_on must be a JSON array, not a quoted string; use \"depends_on\":[\"T-001\"]: %s", msg)
+	if strings.Contains(msg, "depends_on") && strings.Contains(msg, "flexibleStringList") {
+		return fmt.Sprintf("depends_on must be a JSON array or a quoted JSON-array string; use \"depends_on\":[\"T-001\"] or \"depends_on\":\"[\\\"T-001\\\"]\": %s", msg)
 	}
-	if strings.Contains(msg, "evidence_links") && strings.Contains(msg, "[]string") {
-		return fmt.Sprintf("evidence_links must be a JSON array, not a quoted string; use \"evidence_links\":[\"go test ./...\"]: %s", msg)
+	if strings.Contains(msg, "evidence_links") && strings.Contains(msg, "flexibleStringList") {
+		return fmt.Sprintf("evidence_links must be a JSON array or a quoted JSON-array string; use \"evidence_links\":[\"go test ./...\"] or \"evidence_links\":\"[\\\"go test ./...\\\"]\": %s", msg)
 	}
 	return msg
 }

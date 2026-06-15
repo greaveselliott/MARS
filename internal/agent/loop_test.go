@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -115,6 +116,13 @@ func TestRun_persistsTraceToSQLite(t *testing.T) {
 		CodeIntelModeSource: "test",
 	})
 	require.NoError(t, err)
+	if res.EndReason != EndCompleted {
+		for _, msg := range res.Messages {
+			if msg.Role == "tool" || msg.Role == "user" {
+				t.Logf("%s: %s", msg.Role, msg.Content)
+			}
+		}
+	}
 	require.Equal(t, EndCompleted, res.EndReason)
 
 	got, err := st.GetLatestByJobID(context.Background(), "job-sql")
@@ -156,6 +164,13 @@ func TestRun_multiToolThenComplete(t *testing.T) {
 		Config:       LoopConfig{Model: "test", MaxTurns: 10},
 	})
 	require.NoError(t, err)
+	if res.EndReason != EndCompleted {
+		for _, msg := range res.Messages {
+			if msg.Role == "tool" || msg.Role == "user" {
+				t.Logf("%s: %s", msg.Role, msg.Content)
+			}
+		}
+	}
 	require.Equal(t, EndCompleted, res.EndReason)
 	require.GreaterOrEqual(t, len(res.Messages), 4)
 	require.Equal(t, 2, res.LLMCalls)
@@ -688,6 +703,75 @@ func TestRun_reviewEvidenceReminderAllowsOneTerminalCorrection(t *testing.T) {
 	require.True(t, correctionFound, "loop should give one bounded correction after a non-terminal response")
 }
 
+func TestRun_agentSmokeReviewEvidenceAllowsReportCommitBeforeDisposition(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeReviewEvidenceFixture(t, dir)
+	initLoopGitRepo(t, dir)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "validation", "agent-smoke"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "validation", "agent-smoke", "current-case.md"), []byte("# Agent Smoke Case Contract\n\n- Case: `go-cli-input-risk-heldout`\n- Role under test: `security`\n"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs", "tickets", "done"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "tickets", "done", "T-001-ship.md"), []byte("---\nid: T-001\nevidence_links: [\"go test ./...\"]\nverified_by: qa\n---\n# Ship\n"), 0o644))
+	require.NoError(t, runLoopGit(t, dir, "add", "-A"))
+	require.NoError(t, runLoopGit(t, dir, "commit", "-m", "seed"))
+
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	dispositions := 0
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{
+		Role:       "security",
+		ToolCounts: map[string]int{},
+		DispositionRecorder: func(context.Context, json.RawMessage) error {
+			dispositions++
+			return nil
+		},
+	}
+	ex.StopAfterTool = func() bool { return dispositions > 0 }
+
+	mock := &seqMock{replies: []llm.ChatCompletionResponse{
+		toolResp("file_read", "read", `{"path":"README.md"}`),
+		toolResp("shell_exec", "test", `{"argv":["./go","test","./..."]}`),
+		toolResp("docsync_audit", "docsync", `{}`),
+		textResp("Security review complete."),
+		toolResp("file_write", "report", `{"path":"docs/reports/security/go-cli-input-risk-heldout.md","content":"# Security Report\n\n- Evidence: go test ./...\n- Result: approved\n"}`),
+		toolResp("git_status", "status", `{}`),
+		toolResp("git_commit", "commit", `{"message":"security: record agent smoke go-cli risk review","paths":["docs/reports/security/go-cli-input-risk-heldout.md"]}`),
+		toolResp("job_disposition_record", "terminal", `{"status":"approved","ticket_id":"T-001","next_need":"dogfood_validation","suggested_role":"dogfood","evidence_links":["docs/reports/security/go-cli-input-risk-heldout.md","go test ./..."]}`),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:            mock,
+		Registry:             reg,
+		Executor:             ex,
+		Root:                 root,
+		Allowlist:            []string{"file_read", "shell_exec", "docsync_audit", "file_write", "git_status", "git_commit", "job_disposition_record"},
+		SystemPrompt:         "You are a security reviewer.",
+		UserMessage:          "Review the completed ticket.",
+		Config:               LoopConfig{Model: "test", MaxTurns: 12},
+		RequiredTerminalTool: "job_disposition_record",
+	})
+	require.NoError(t, err)
+	if res.EndReason != EndCompleted {
+		for _, msg := range res.Messages {
+			if msg.Role == "tool" || msg.Role == "user" {
+				t.Logf("%s: %s", msg.Role, msg.Content)
+			}
+		}
+	}
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 8, res.LLMCalls)
+	require.Equal(t, 7, res.ToolInvocations)
+	require.Equal(t, 1, dispositions)
+
+	status, err := exec.Command("git", "-C", dir, "status", "--porcelain").CombinedOutput()
+	require.NoError(t, err, string(status))
+	require.Empty(t, strings.TrimSpace(string(status)))
+	require.Equal(t, 8, mock.i)
+}
+
 func TestRun_reviewEvidenceReminderRejectsRepeatedNonTerminalTool(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -950,6 +1034,26 @@ func writeReviewEvidenceFixture(t *testing.T, dir string) {
 	t.Helper()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Demo\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "go"), []byte("#!/bin/sh\nexit 0\n"), 0o755))
+}
+
+func initLoopGitRepo(t *testing.T, dir string) {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	require.NoError(t, runLoopGit(t, dir, "init"))
+	require.NoError(t, runLoopGit(t, dir, "config", "user.email", "harness@test.local"))
+	require.NoError(t, runLoopGit(t, dir, "config", "user.name", "Harness Test"))
+}
+
+func runLoopGit(t *testing.T, dir string, args ...string) error {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git %v: %w: %s", args, err, string(out))
+	}
+	return nil
 }
 
 func TestRun_maxTurns(t *testing.T) {

@@ -87,6 +87,9 @@ func checkJobDispositionRecordPolicy(ctx context.Context, root Root, session Ses
 	if err := checkDogfoodDispositionValidationEvidence(root, session, args.Status); err != nil {
 		return err
 	}
+	if err := checkAgentSmokeDispositionRequiredEvidence(root, session, args.Status); err != nil {
+		return err
+	}
 	if err := checkSuccessfulDispositionUnresolvedTicketCreation(root, session, args.Status, args.NextNeed, args.SuggestedRole); err != nil {
 		return err
 	}
@@ -101,7 +104,49 @@ func checkJobDispositionRecordPolicy(ctx context.Context, root Root, session Ses
 	if len(files) == 0 {
 		return checkSuccessfulDispositionDocSync(root, session, args.Status)
 	}
+	if guidance := agentSmokeDependencyLockDispositionGuidance(root, files); guidance != "" {
+		return fmt.Errorf("policy: job_disposition_record cannot complete while repository has uncommitted changes: %s. %s", summarizeChangedFiles(files), guidance)
+	}
 	return fmt.Errorf("policy: job_disposition_record cannot complete while repository has uncommitted changes: %s. Run git_status, commit the changed work with git_commit, then record the disposition", summarizeChangedFiles(files))
+}
+
+func agentSmokeDependencyLockDispositionGuidance(root Root, files []string) string {
+	if !agentSmokeContractPresent(root) {
+		return ""
+	}
+	var locks []string
+	for _, file := range files {
+		rel := filepath.ToSlash(strings.TrimSpace(file))
+		switch rel {
+		case "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lock", "bun.lockb":
+			locks = append(locks, rel)
+		}
+	}
+	if len(locks) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("In agent-smoke, dependency lockfiles created by dependency_sync are validation provenance, not cleanup debris. Do not remove them with shell_exec. Run git_status, then git_commit with paths [%s], then retry job_disposition_record.", quotedPathList(locks))
+}
+
+func agentSmokeContractPresent(root Root) bool {
+	contractPath := filepath.Join(root.Abs(), "docs", "validation", "agent-smoke", "current-case.md")
+	data, err := os.ReadFile(contractPath)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(data), "# Agent Smoke Case Contract")
+}
+
+func quotedPathList(paths []string) string {
+	quoted := make([]string, 0, len(paths))
+	for _, path := range paths {
+		path = strings.TrimSpace(path)
+		if path == "" {
+			continue
+		}
+		quoted = append(quoted, fmt.Sprintf("%q", path))
+	}
+	return strings.Join(quoted, ", ")
 }
 
 func checkCTODispositionTicketBatch(root Root, session Session, status, nextNeed, suggestedRole string) error {
@@ -313,6 +358,154 @@ func orderedFeatureScenarioSections(content string) []featureScenarioSection {
 			ID:   id,
 			Text: content[start:end],
 		})
+	}
+	return out
+}
+
+func checkAgentSmokeDispositionRequiredEvidence(root Root, session Session, status string) error {
+	if !agentSmokeDispositionStatusRequiresEvidence(status) {
+		return nil
+	}
+	contractPath := filepath.Join(root.Abs(), "docs", "validation", "agent-smoke", "current-case.md")
+	data, err := os.ReadFile(contractPath)
+	if err != nil {
+		return nil
+	}
+	contract := string(data)
+	if !strings.Contains(contract, "# Agent Smoke Case Contract") {
+		return nil
+	}
+	caseID := agentSmokeContractField(contract, "Case")
+	role := strings.ToLower(strings.TrimSpace(session.Role))
+	required := agentSmokeRequiredArtifactsFromContract(contract)
+	switch role {
+	case "qa":
+		if caseID != "" {
+			required = append(required, "docs/reports/qa/"+caseID+".md")
+		}
+	case "security":
+		if caseID != "" {
+			required = append(required, "docs/reports/security/"+caseID+".md")
+		}
+	case "dogfood":
+		if caseID != "" {
+			required = append(required, "docs/reports/dogfood/"+caseID+".md")
+		}
+	case "release-manager":
+		stage := strings.ToLower(agentSmokeContractField(contract, "Stage"))
+		if caseID != "" && strings.Contains(stage, "ready") {
+			required = append(required, "docs/reports/release/"+caseID+".md")
+		}
+	}
+	required = uniqueNonEmptyPaths(required)
+	var missing []string
+	for _, rel := range required {
+		abs, err := root.ResolvePath(rel)
+		if err != nil {
+			continue
+		}
+		if _, err := os.Stat(abs); err != nil {
+			missing = append(missing, rel)
+		}
+	}
+	if len(missing) == 0 {
+		if role == "release-manager" && successfulDispositionStatus(status) {
+			stage := strings.ToLower(agentSmokeContractField(contract, "Stage"))
+			if caseID != "" && strings.Contains(stage, "ready") {
+				return checkAgentSmokeReleaseTagAtHead(root, caseID)
+			}
+		}
+		return nil
+	}
+	if caseID == "" {
+		caseID = "unknown"
+	}
+	return fmt.Errorf("policy: agent-smoke %s cannot record terminal disposition before required evidence exists: %s. Create the missing artifact(s), run git_status, git_commit any changes, then retry job_disposition_record", caseID, strings.Join(missing, ", "))
+}
+
+func checkAgentSmokeReleaseTagAtHead(root Root, caseID string) error {
+	versionPath, err := root.ResolvePath("VERSION")
+	if err != nil {
+		return nil
+	}
+	versionData, err := os.ReadFile(versionPath)
+	if err != nil {
+		return nil
+	}
+	version := strings.TrimSpace(string(versionData))
+	if version == "" {
+		return nil
+	}
+	tag := "v" + strings.TrimPrefix(version, "v")
+	list, err := runGit(context.Background(), root, "tag", "--list", tag)
+	if err != nil {
+		return nil
+	}
+	if strings.TrimSpace(list.Output) != tag {
+		return fmt.Errorf("policy: agent-smoke %s cannot record release completion before local tag %s exists at HEAD. Write docs/reports/release/%s.md before the release-note commit, commit VERSION, CHANGELOG, and the report together with git_commit message %q, then create the tag with shell_exec argv [\"git\",\"tag\",\"%s\"] and retry job_disposition_record", caseID, tag, caseID, "release: notes "+strings.TrimPrefix(tag, "v"), tag)
+	}
+	tagCommit, err := runGit(context.Background(), root, "rev-list", "-n", "1", tag)
+	if err != nil || tagCommit.ExitCode != 0 {
+		return nil
+	}
+	headCommit, err := runGit(context.Background(), root, "rev-parse", "HEAD")
+	if err != nil || headCommit.ExitCode != 0 {
+		return nil
+	}
+	if strings.TrimSpace(tagCommit.Output) == strings.TrimSpace(headCommit.Output) {
+		return nil
+	}
+	return fmt.Errorf("policy: agent-smoke %s cannot record release completion because local tag %s does not point at the current release-note evidence commit. The tag must point at a commit whose subject is %q and whose history includes docs/reports/release/%s.md. If the report was committed after the tag, update CHANGELOG.md with a report evidence line, commit it with git_commit message %q, then move the local tag to HEAD with shell_exec argv [\"git\",\"tag\",\"-f\",\"%s\"] and retry job_disposition_record", caseID, tag, "release: notes "+strings.TrimPrefix(tag, "v"), caseID, "release: notes "+strings.TrimPrefix(tag, "v"), tag)
+}
+
+func agentSmokeDispositionStatusRequiresEvidence(status string) bool {
+	if successfulDispositionStatus(status) {
+		return true
+	}
+	return strings.EqualFold(strings.TrimSpace(status), "changes_requested")
+}
+
+func agentSmokeContractField(contract, field string) string {
+	pattern := regexp.MustCompile(`(?m)^-\s+` + regexp.QuoteMeta(field) + `:\s+` + "`" + `([^` + "`" + `]+)` + "`")
+	match := pattern.FindStringSubmatch(contract)
+	if len(match) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(match[1])
+}
+
+func agentSmokeRequiredArtifactsFromContract(contract string) []string {
+	lines := strings.Split(contract, "\n")
+	inSection := false
+	var required []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "## ") {
+			inSection = trimmed == "## Required Artifacts"
+			continue
+		}
+		if !inSection || !strings.HasPrefix(trimmed, "- ") {
+			continue
+		}
+		value := strings.TrimSpace(strings.TrimPrefix(trimmed, "- "))
+		value = strings.Trim(value, "`")
+		if value != "" {
+			required = append(required, value)
+		}
+	}
+	return required
+}
+
+func uniqueNonEmptyPaths(paths []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, path := range paths {
+		path = filepath.ToSlash(strings.TrimSpace(path))
+		if path == "" || seen[path] {
+			continue
+		}
+		seen[path] = true
+		out = append(out, path)
 	}
 	return out
 }

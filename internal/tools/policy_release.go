@@ -32,6 +32,7 @@ func checkShellReleaseTagPolicy(ctx context.Context, root Root, args shellExecAr
 	if err != nil {
 		return err
 	}
+	files = dispositionBlockingFiles(files)
 	if len(files) > 0 {
 		return fmt.Errorf("policy: release tag %s must be created after VERSION and CHANGELOG.md are committed; uncommitted changes remain: %s. Commit them with git_commit message %q, then tag that release-note commit", expectedTag, summarizeChangedFiles(files), "release: notes "+version)
 	}

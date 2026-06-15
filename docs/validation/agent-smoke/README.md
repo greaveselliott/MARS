@@ -19,9 +19,16 @@ starting separate tier servers.
 - Seed data is created through foundation harness surfaces: target harness
   scaffold generation, `file_write`, `ticket_create`, `record_decision`,
   `git_status`, `git_commit`, `workspace_hygiene`, and related built-in tools.
+- Every generated target includes
+  `docs/validation/agent-smoke/current-case.md`, a target-local case contract
+  derived from the checked-in matrix. Agents read that file during live smoke
+  runs; generated targets do not contain the foundation matrix itself.
 - Each non-source-only selected role is executed through the server job path
   with the generated target repo, isolated DB, trust/org-state stores, trace
   persistence, structured trigger context, and role tool policy.
+- Live execution defaults to `--max-turns 32`, because the smoke contract may
+  include ticket claim, implementation, focused validation, ticket closure,
+  push-or-skip behavior, and terminal disposition in one role run.
 - Follow-on dispatch is suppressed by not invoking the job-completion routing
   callback; reports record the would-be next role and terminal disposition.
 - Reports record inference topology. A validation report for the primary lane

@@ -115,6 +115,27 @@ func checkEngineerBrowserPostBuildSmokeOnlyPolicy(ctx context.Context, root Root
 	)
 }
 
+func checkDogfoodBrowserPostBuildSmokeOnlyPolicy(root Root, session Session, hasSession bool, args shellExecArgs) error {
+	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "dogfood" {
+		return nil
+	}
+	info := repoBrowserFrameworkInfo(root)
+	if !info.UsesFramework || !browserFrameworkRequiresProductSmoke(root) {
+		return nil
+	}
+	counts := session.ToolCounts
+	if counts == nil || counts[buildCommandSuccessKey] == 0 || counts[browserProductSmokeSuccessKey] > 0 {
+		return nil
+	}
+	if shellExecRunsBuildCommand(args) || shellExecRunsBrowserProductSmokeCommand(args) || shellExecStopsTrackedBackgroundPID(args) {
+		return nil
+	}
+	return fmt.Errorf(
+		"policy: dogfood has successful browser-framework build evidence but still needs browser-product smoke before more shell validation. Run %s. Do not inspect dist/assets, start static servers, sleep, use no-op shell commands, or treat curl/HTTP reachability as mounted product UI evidence",
+		browserProductSmokeCommandGuidance(root),
+	)
+}
+
 func engineerPostCommitBrowserValidationAllowed(root Root, session Session, args shellExecArgs) bool {
 	info := repoBrowserFrameworkInfo(root)
 	if !info.UsesFramework {
@@ -457,6 +478,9 @@ func browserProductSmokeCommandGuidance(root Root) string {
 	info := repoBrowserFrameworkInfo(root)
 	if frameworkListContains(info.FrameworkNames, "phaser") {
 		return `shell_exec argv ["node","-e","const fs=require('fs'); const htmlPath=['src/index.html','index.html'].find(p=>fs.existsSync(p)); if(!htmlPath) throw new Error('missing index.html'); const html=fs.readFileSync(htmlPath,'utf8'); const lower=html.toLowerCase(); if(lower.includes('phaser')&&(lower.includes('cdn')||lower.includes('http'))) throw new Error('CDN Phaser script tag is not bundled'); if(!html.includes('main.js')) throw new Error('missing main.js module script'); const mainPath=fs.existsSync('src/main.js')?'src/main.js':'main.js'; const main=fs.readFileSync(mainPath,'utf8'); if(!main.includes(\"import Phaser from 'phaser'\")&&!main.includes('import Phaser from \"phaser\"')) throw new Error('missing import Phaser from phaser'); const games=main.split('new Phaser.Game').length-1; if(games!==1) throw new Error('expected exactly one new Phaser.Game'); if(!main.includes('parent')) throw new Error('missing parent game container'); console.log('browser smoke: Phaser canvas #game new Phaser.Game');"]`
+	}
+	if frameworkListContains(info.FrameworkNames, "react") {
+		return `shell_exec argv ["node","-e","const fs=require('fs'); const html=fs.readFileSync('index.html','utf8'); const main=fs.readFileSync('src/main.jsx','utf8'); const app=fs.readFileSync('src/App.jsx','utf8'); if(!html.includes('/src/main.jsx')) throw new Error('missing main.jsx module script'); if(!main.includes('createRoot')) throw new Error('missing createRoot mount'); if(!app.includes('id=\"game\"')) throw new Error('missing #game UI marker'); if(!app.toLowerCase().includes('score')) throw new Error('missing score UI state'); console.log('browser smoke: React document.querySelector #game score UI state');"]`
 	}
 	return "Playwright/Puppeteer or an equivalent source/runtime assertion that proves the browser app mounts real UI state"
 }

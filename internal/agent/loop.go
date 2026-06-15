@@ -651,6 +651,22 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 		content := strings.TrimSpace(am.Content)
 		if len(calls) == 0 {
 			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && terminalToolEvidenceReminderSent {
+				if !terminalToolEvidenceRetrySent {
+					if err := traceAppend(p, &messages, defs, llm.Message{
+						Role: "user",
+						Content: fmt.Sprintf(
+							"Your last response had no tool call after review evidence was already sufficient. %s",
+							reviewTerminalEvidencePrompt(required, tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session)),
+						),
+					}); err != nil {
+						return LoopResult{}, err
+					}
+					terminalToolEvidenceRetrySent = true
+					if llmCalls >= maxTurns {
+						maxTurns++
+					}
+					continue
+				}
 				res = finish(messages, defs, EndCircleDetected, llmCalls, toolInvocations, start, "terminal evidence reminder received prose-only response")
 				return res, nil
 			}
@@ -663,6 +679,18 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			}
 			if err := traceAppend(p, &messages, defs, llm.Message{Role: "assistant", Content: am.Content}); err != nil {
 				return LoopResult{}, err
+			}
+			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && !terminalToolEvidenceReminderSent && tools.ReviewTerminalEvidenceSatisfied(p.Root, p.Executor.Session) {
+				tools.MarkReviewTerminalDispositionRequired(p.Executor.Session)
+				guidance := tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session)
+				if err := traceAppend(p, &messages, defs, llm.Message{
+					Role:    "user",
+					Content: reviewTerminalEvidencePrompt(required, guidance),
+				}); err != nil {
+					return LoopResult{}, err
+				}
+				terminalToolEvidenceReminderSent = true
+				continue
 			}
 			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && !terminalToolReminderSent {
 				if err := traceAppend(p, &messages, defs, llm.Message{
@@ -695,7 +723,8 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			}
 		}
 		if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && terminalToolEvidenceReminderSent {
-			if len(calls) != 1 || strings.TrimSpace(calls[0].Function.Name) != required {
+			guidance := tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session)
+			if (len(calls) != 1 || strings.TrimSpace(calls[0].Function.Name) != required) && !reviewTerminalEvidenceAllowsReportTool(guidance, calls) {
 				if terminalToolEvidenceRetrySent {
 					res = finish(messages, defs, EndCircleDetected, llmCalls, toolInvocations, start, "terminal evidence reminder received repeated non-terminal tool")
 					return res, nil
@@ -703,10 +732,9 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 				if err := traceAppend(p, &messages, defs, llm.Message{
 					Role: "user",
 					Content: fmt.Sprintf(
-						"Your last response called %s after review evidence was already sufficient; that tool was not executed. Call `%s` in the next response only. %s Do not call any other tool.",
+						"Your last response called %s after review evidence was already sufficient; that tool was not executed. %s",
 						toolCallNamesForPrompt(calls),
-						required,
-						tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session),
+						reviewTerminalEvidencePrompt(required, tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session)),
 					),
 				}); err != nil {
 					return LoopResult{}, err
@@ -775,12 +803,8 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && strings.TrimSpace(tc.Function.Name) != required && !terminalToolEvidenceReminderSent && tools.ReviewTerminalEvidenceSatisfied(p.Root, p.Executor.Session) {
 				tools.MarkReviewTerminalDispositionRequired(p.Executor.Session)
 				if err := traceAppend(p, &messages, defs, llm.Message{
-					Role: "user",
-					Content: fmt.Sprintf(
-						"Review evidence is sufficient for a terminal decision. Stop inspection and validation now. Call `%s` in the next response only. %s Do not call any other tool.",
-						required,
-						tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session),
-					),
+					Role:    "user",
+					Content: reviewTerminalEvidencePrompt(required, tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session)),
 				}); err != nil {
 					return LoopResult{}, err
 				}
@@ -823,6 +847,37 @@ func toolCallNamesForPrompt(calls []llm.ToolCall) string {
 		names = append(names, "`"+name+"`")
 	}
 	return strings.Join(names, ", ")
+}
+
+func reviewTerminalEvidenceAllowsReportTool(guidance string, calls []llm.ToolCall) bool {
+	if len(calls) == 0 {
+		return false
+	}
+	reportMissing := strings.Contains(guidance, "file_write path")
+	for _, call := range calls {
+		switch strings.TrimSpace(call.Function.Name) {
+		case "file_write":
+			if !reportMissing {
+				return false
+			}
+		case "git_status", "git_commit":
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func reviewTerminalEvidencePrompt(required, guidance string) string {
+	guidance = strings.TrimSpace(guidance)
+	if strings.Contains(guidance, "file_write path") {
+		return "Review evidence is sufficient, but required report evidence is missing. " + guidance + " Do not call unrelated tools or finish in prose."
+	}
+	return fmt.Sprintf(
+		"Review evidence is sufficient for a terminal decision. Stop inspection and validation now. Call `%s` in the next response only. %s Do not call any other tool.",
+		required,
+		guidance,
+	)
 }
 
 func finish(msgs []llm.Message, defs []llm.ToolDefinition, reason EndReason, llmCalls, tools int, start time.Time, circle string) LoopResult {

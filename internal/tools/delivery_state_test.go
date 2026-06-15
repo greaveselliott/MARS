@@ -132,7 +132,13 @@ func TestReviewDeliveryState_phases(t *testing.T) {
 		Role:       "qa",
 		ToolCounts: map[string]int{buildCommandSuccessKey: 1},
 	}.ReviewDeliveryState()
-	assert.Equal(t, DeliveryPhaseValidating, state.Phase)
+	assert.Equal(t, DeliveryPhaseValidated, state.Phase)
+
+	state = Session{
+		Role:       "security",
+		ToolCounts: map[string]int{testCommandSuccessKey: 1},
+	}.ReviewDeliveryState()
+	assert.Equal(t, DeliveryPhaseValidated, state.Phase)
 
 	state = Session{
 		Role:       "qa",

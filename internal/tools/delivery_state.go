@@ -125,7 +125,7 @@ func (s Session) ReviewDeliveryState() DeliveryState {
 		state.Phase = DeliveryPhaseValidationFailed
 		return state
 	}
-	if counts[validationCommandSuccessKey] > 0 {
+	if reviewSuccessfulValidationEvidence(counts) {
 		state.Phase = DeliveryPhaseValidated
 		return state
 	}

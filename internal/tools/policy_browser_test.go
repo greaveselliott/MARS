@@ -19,6 +19,83 @@ import (
 	"testing"
 )
 
+func TestBrowserProductSmokeGuidanceUsesReactSourceSmoke(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"scripts":{"build":"vite build"},"dependencies":{"react":"latest","react-dom":"latest","vite":"latest"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte(`<script type="module" src="/src/main.jsx"></script>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "src", "main.jsx"), []byte(`createRoot(document.getElementById('root'));`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "src", "App.jsx"), []byte(`export default function App(){return <main id="game">Score</main>}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := browserProductSmokeCommandGuidance(root)
+	if !strings.Contains(got, "browser smoke: React document.querySelector #game score UI state") ||
+		!strings.Contains(got, "src/App.jsx") ||
+		!strings.Contains(got, "createRoot") {
+		t.Fatalf("expected React source smoke guidance, got %s", got)
+	}
+}
+
+func TestDogfoodPostBuildRequiresReactProductSmokeBeforeMoreShell(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"scripts":{"build":"vite build"},"dependencies":{"react":"latest","react-dom":"latest","vite":"latest"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte(`<main id="root"></main><script type="module" src="/src/main.jsx"></script>`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "src", "main.jsx"), []byte(`import { createRoot } from 'react-dom/client'; createRoot(document.getElementById('root'));`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "src", "App.jsx"), []byte(`export default function App(){return <main id="game">Score</main>}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root, err := NewRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := WithSession(context.Background(), Session{Role: "dogfood", ToolCounts: map[string]int{buildCommandSuccessKey: 1}})
+	distRaw, err := json.Marshal(shellExecArgs{Argv: []string{"ls", "-la", "dist"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = preToolPolicy(ctx, root, "shell_exec", distRaw)
+	if err == nil {
+		t.Fatal("expected dogfood post-build dist inspection to be blocked")
+	}
+	if !strings.Contains(err.Error(), "dogfood has successful browser-framework build evidence") ||
+		!strings.Contains(err.Error(), "browser smoke: React document.querySelector #game score UI state") ||
+		!strings.Contains(err.Error(), "Do not inspect dist/assets") {
+		t.Fatalf("expected React dogfood source-smoke guidance, got %v", err)
+	}
+
+	smokeRaw, err := json.Marshal(shellExecArgs{Argv: []string{"node", "-e", "console.log('browser smoke: React document.querySelector #game score UI state')"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := preToolPolicy(ctx, root, "shell_exec", smokeRaw); err != nil {
+		t.Fatalf("expected React browser-product smoke to be allowed, got %v", err)
+	}
+}
+
 func TestEngineerPostValidationAllowsMissingBrowserBuildAfterCommit(t *testing.T) {
 	t.Parallel()
 	requireGit(t)

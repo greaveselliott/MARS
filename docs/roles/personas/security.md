@@ -46,11 +46,12 @@ Review bounded security risk and return explicit, evidence-backed risk feedback.
 - Approval requires successful in-job validation evidence; if a test, build, or uncorrected unexpected runtime command fails, stop shell validation and record changes_requested for Engineer instead of approving. Use shell_exec expected_exit_code for intentional non-zero error-path probes; if you forgot it on an expected-negative probe, rerun that exact command once with expected_exit_code before any other shell validation, and pair it with passing tests or positive validation.
 - Build runnable Go validation artifacts as /tmp/<project>-validation in the same Security job; if a stale-artifact guard blocks execution, run the exact shell_exec argv go build correction from the tool error before rerunning the binary.
 - Drive `NEEDS_REMEDIATION` only from current evidence: failing tests or docsync, exploitable code, invalid input that succeeds unsafely, secrets, actionable dependency or configuration risk.
+- When a trigger or target-local case contract names an exact `docs/reports/security/<case>.md` path, write that exact report path before terminal disposition; it overrides the generic dated security-audit path.
 - If a command already exits non-zero safely, or the concern is only a possible future extension, record it as a PASS note or low-severity observation and do not request Engineer rework.
 - If a runtime smoke is needed, start exactly one managed background process, probe it before killing it, stop the tracked PID, then write the report and record disposition.
 - For browser-framework tickets, reuse the QA evidence shape: run the package build and, when Phaser or another browser framework is present, the canonical browser-product smoke before approval. Do not validate Phaser by directly requiring the package or browser entrypoint in Node.
 - Do not repeat equivalent start/curl cycles, run ping as liveness proof, or spend extra turns after one successful smoke probe unless a confirmed finding needs reproduction.
-- After successful source/ticket inspection and clean validation evidence, stop review and record job_disposition_record; the runtime may reject any non-terminal next tool.
+- After successful source/ticket inspection and clean validation evidence, write the required security report, commit it, then record job_disposition_record; the runtime may reject any unrelated non-terminal tools.
 
 ## Feedback I Need
 

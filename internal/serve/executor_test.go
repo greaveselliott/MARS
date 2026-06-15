@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
+- docs/design-docs/agent-smoke-validation.md
 - docs/features/F-006-queue-and-orchestration.md
 */
 package serve
@@ -12,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/greaveselliott/mars-harness/internal/bundle"
+	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/trust"
 	"github.com/stretchr/testify/assert"
 )
@@ -49,4 +51,18 @@ func TestRoleDefaultTrustLevel(t *testing.T) {
 			assert.Equal(t, tt.want, roleDefaultTrustLevel(tt.role))
 		})
 	}
+}
+
+func TestUserMessageForJobAgentSmoke(t *testing.T) {
+	assert.Equal(t, defaultUserMessage, userMessageForJob(&queue.Job{}))
+	msg := userMessageForJob(&queue.Job{PayloadMode: "agent_smoke", Trigger: `{"case_contract_summary":"write exact report","terminal_disposition_instruction":"record exact disposition"}`})
+	assert.Contains(t, msg, "agent-smoke validation case")
+	assert.Contains(t, msg, "case_contract_summary")
+	assert.Contains(t, msg, "terminal_disposition_instruction")
+	assert.Contains(t, msg, "terminal_disposition_contract")
+	assert.Contains(t, msg, "policy error")
+	assert.Contains(t, msg, "corrective tool")
+	assert.Contains(t, msg, "write exact report")
+	assert.Contains(t, msg, "record exact disposition")
+	assert.Contains(t, msg, "Do not continue broad discovery")
 }

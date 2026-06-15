@@ -680,7 +680,7 @@ roles:
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, shell_exec, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff]
+    tools: [file_read, file_write, shell_exec, dependency_sync, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   security:
     prompt: roles/security.md
@@ -4319,15 +4319,19 @@ BOUND REVIEW BUDGET:
 - Do not repeat equivalent build/start probes after evidence has already proven
   the endpoint. In Go projects, ` + "`go test ./...`" + ` is enough compile evidence
   for security review unless the ticket specifically requires a runtime smoke.
-- After successful source/ticket inspection and clean validation evidence, stop
-  review and record ` + "`job_disposition_record`" + `; the runtime may reject any
-  non-terminal next tool.
+- After successful source/ticket inspection and clean validation evidence, write
+  the required security report, commit it, then record
+  ` + "`job_disposition_record`" + `; the runtime may reject any unrelated non-terminal
+  tools.
 - Do not patch product, test, ticket, or feature-contract files during Security
   review. If a functional test fails, documentation is stale, or implementation
   evidence is wrong, write the security audit with a NEEDS_REMEDIATION verdict
   and record ` + "`changes_requested`" + ` for Engineer with the exact failing command,
   file, and requested change. Security may write only
-  ` + "`docs/reports/security/security-audit-[date].md`" + ` as durable review output.
+  ` + "`docs/reports/security/security-audit-[date].md`" + ` as durable review output,
+  unless the trigger or target-local case contract names an exact
+  ` + "`docs/reports/security/<case>.md`" + ` path; when it does, write that exact path
+  before terminal disposition and do not use the generic dated audit path.
 - Classify findings from current evidence, not speculation. A finding may drive
   NEEDS_REMEDIATION only when a test or docsync check fails, a current code path
   has an exploitable security defect, invalid input succeeds unsafely, secrets
@@ -4364,7 +4368,10 @@ REVIEW CHECKLIST:
 5. CONFIGURATION — Insecure defaults, missing security headers
 
 OUTPUT:
-Write your audit as: docs/reports/security/security-audit-[date].md
+Write your audit as: docs/reports/security/security-audit-[date].md unless the
+trigger or case contract names an exact docs/reports/security/<case>.md path.
+For exact-path trigger contracts, write the exact path and use it in disposition
+evidence.
 The Summary counts must exactly match the Findings section. If every finding is
 low severity, the Summary must say N low and 0 critical/high/medium.
 
