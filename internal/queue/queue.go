@@ -287,6 +287,42 @@ LIMIT 1`, repoID, role)
 	return job, nil
 }
 
+// ActiveJobsForRepo returns pending, claimed, or running jobs for one repo,
+// newest first. Startup reconciliation uses this before seeding bootstrap work
+// so a resumed factory run cannot accidentally create a second lifecycle.
+func (q *Queue) ActiveJobsForRepo(ctx context.Context, repoID string, limit int) ([]Job, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	repoID = strings.TrimSpace(repoID)
+	if repoID == "" {
+		return nil, nil
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	rows, err := q.db.QueryContext(ctx, `
+SELECT id, repo_id, role, trigger_payload, payload_mode, concurrency_group, daily_cap, idempotency_key, status,
+       claimed_by, created_at, updated_at, completed_at, error_msg
+FROM jobs
+WHERE repo_id = ? AND status IN ('pending','claimed','running')
+ORDER BY updated_at DESC
+LIMIT ?`, repoID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("queue: active jobs for repo %q: %w", repoID, err)
+	}
+	defer rows.Close()
+	var out []Job
+	for rows.Next() {
+		j, err := scanJobFromRows(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, j)
+	}
+	return out, rows.Err()
+}
+
 func (q *Queue) dailyCapReached(ctx context.Context, group string, cap int, now time.Time) (string, bool, error) {
 	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix()
 	var count int
@@ -483,6 +519,33 @@ UPDATE jobs SET status = 'failed', error_msg = 'orphaned by process restart', up
 WHERE status IN ('claimed','running')`, now.Unix(), now.Unix())
 	if err != nil {
 		return 0, fmt.Errorf("queue: reset orphans: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
+// ResetOrphansForRepo marks claimed/running jobs for one repo as failed. A
+// fresh `mars-harness start --repo` process has no live worker ownership for
+// previous claimed/running rows in that scoped repo, so startup reconciliation
+// can make them explicit recoverable evidence before deciding the next role.
+func (q *Queue) ResetOrphansForRepo(ctx context.Context, repoID, reason string) (int, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	repoID = strings.TrimSpace(repoID)
+	if repoID == "" {
+		return 0, nil
+	}
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = "interrupted by previous process before startup reconciliation"
+	}
+	now := time.Now().UTC()
+	res, err := q.db.ExecContext(ctx, `
+UPDATE jobs SET status = 'failed', claimed_by = '', error_msg = ?, updated_at = ?, completed_at = ?
+WHERE repo_id = ? AND status IN ('claimed','running')`, reason, now.Unix(), now.Unix(), repoID)
+	if err != nil {
+		return 0, fmt.Errorf("queue: reset repo orphans: %w", err)
 	}
 	n, _ := res.RowsAffected()
 	return int(n), nil

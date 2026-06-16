@@ -7754,3 +7754,64 @@ from environment failures:
   state-machine transition (`operator-retry-routing` in the dispatch
   overlay); the post-max_turns handoff cascades and T-035 graceful-stop
   draining remain separate missing edges with their own tickets.
+
+## AD-297: Start Reconciles Existing Lifecycle State Before Planning
+
+**Status:** Accepted
+**Date:** 2026-06-16
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The Phaser/Tetris observation showed two generic factory failures that are not
+specific to a game target: `mars-harness start` could spend a long time in
+planner/review oscillation before the first executable build, and restarting a
+dirty or partially completed lifecycle could seed CEO again instead of routing
+the existing work. The same run also exposed weak rework pinning: a
+`changes_requested` handoff could name a ticket while Engineer policy accepted
+some other available backlog or in-progress ticket as sufficient progress.
+
+This is foundation-owned because the failure sits in startup reconciliation,
+dispatch trigger preservation, planner tool policy, and ticket-routing
+preconditions. It is not a new validation framework and it must not overfit to
+Tetris or Phaser.
+
+### Decision
+
+`mars-harness start` now classifies repo-scoped lifecycle state before seeding
+CEO. The startup action is one of `seeded_ceo`, `resumed_lifecycle`,
+`recovered_stale_job`, `routed_existing_ticket`, or
+`refused_ambiguous_state`, and CLI/log output names the evidence. Normal start
+does not seed CEO over pending/running jobs, recoverable stale jobs,
+in-progress tickets, in-review tickets, pinned implementation rework, or recent
+deterministic dispositions. Dirty product or lifecycle work without a
+deterministic ticket/disposition route refuses as ambiguous instead of guessing
+a new planner owner. Operators must pass `--new-lifecycle` to reseed
+intentionally; that path creates a fresh seed job instead of reusing the
+bootstrap idempotency key.
+
+Planner ownership is enforced at tool-policy boundaries. CEO, Head of
+Strategy, COO, CTO, and CTO-weekly may not mutate implementation via
+`shell_exec`; they also may not `git_commit` product/source/package paths they
+do not own. Head of Strategy is strategy-artifact only, COO owns feature
+contracts and active plans, CTO owns design/ticket shaping, and Engineer owns
+product source, package manifests, tests, and implementation ticket work.
+
+Review rework pins are stateful. A dispatch trigger that carries
+`source_disposition.ticket_id` with `changes_requested` and
+`implementation_rework` pins Engineer to that ticket even if another backlog or
+in-progress product ticket exists. If Orchestrator sits between the reviewer
+and Engineer, the final Engineer dispatch preserves the original review source
+disposition so the policy can fail closed when the pinned ticket is missing or
+not reopened.
+
+### Consequences
+
+- Restarts resume or refuse based on observed lifecycle state instead of
+  silently creating another planning loop.
+- Time-to-first-build pressure shifts from repeated CEO/COO/CTO planning
+  toward the first implementation ticket and Engineer job once the minimum
+  contract/ticket exists.
+- Rework cannot drift onto a different ticket and produce false progress.
+- `validation agent-smoke` remains a role-local validation lane; these startup
+  constraints apply to the normal full-lifecycle `start` path.

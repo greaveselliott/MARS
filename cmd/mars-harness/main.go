@@ -18,6 +18,7 @@ docs:
 - docs/features/F-002-zero-config-shell-path.md
 - docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-012-self-improvement-loop.md
@@ -4065,6 +4066,7 @@ func startCmd() *cobra.Command {
 		dbPath        string
 		force         bool
 		exitAfterSeed bool
+		newLifecycle  bool
 		debug         bool
 		logFile       string
 		codeIntelFlag string
@@ -4073,10 +4075,11 @@ func startCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Bootstrap and run the full autonomous pipeline",
-		Long: `Initialise .harness/ if needed, register the repo, seed the CEO agent,
-and start the orchestrator. Bootstrap order is exec plan first, then feature
-contracts, then tickets, then delivery. Dispatch routes deterministic role
-dispositions directly and uses Orchestrator for ambiguous handoffs.`,
+		Long: `Initialise .harness/ if needed, register the repo, reconcile any
+existing lifecycle state, and start the orchestrator. Bootstrap order is exec
+plan first, then feature contracts, then tickets, then delivery. Dispatch
+routes deterministic role dispositions directly and uses Orchestrator for
+ambiguous handoffs.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if repoPath == "" {
 				var err error
@@ -4202,13 +4205,31 @@ dispositions directly and uses Orchestrator for ambiguous handoffs.`,
 			}
 			display.Event("repo", fmt.Sprintf("Registered repo %s (ID: %s)", filepath.Base(absPath), repoID))
 
-			triggerJSON := `{"type":"bootstrap","source":"mars-harness start"}`
-			jobID, err := srv.SeedBootstrapJob(sigCtx, repoID, "ceo", triggerJSON)
+			startup, err := srv.ReconcileStartup(sigCtx, repoID, absPath, newLifecycle)
 			if err != nil {
-				display.Error(fmt.Sprintf("seed CEO: %v", err))
+				display.Error(fmt.Sprintf("startup reconciliation: %v", err))
 				return err
 			}
-			display.Event("queue", fmt.Sprintf("Seeded CEO agent (job %s) — bootstrap order: exec plan → features → tickets → delivery; Orchestrator selects each next role", jobID))
+			display.Event("startup", startup.Summary())
+			if startup.Action == serve.StartupActionRefusedAmbiguous {
+				return fmt.Errorf("start: %s; inspect the repo/DB or rerun with --new-lifecycle to intentionally seed CEO", startup.Summary())
+			}
+			if startup.ShouldSeed {
+				triggerJSON := fmt.Sprintf(`{"type":"bootstrap","source":"mars-harness start","startup_action":%q}`, startup.Action)
+				var jobID string
+				if newLifecycle {
+					jobID, err = srv.SeedJob(sigCtx, repoID, "ceo", triggerJSON)
+				} else {
+					jobID, err = srv.SeedBootstrapJob(sigCtx, repoID, "ceo", triggerJSON)
+				}
+				if err != nil {
+					display.Error(fmt.Sprintf("seed CEO: %v", err))
+					return err
+				}
+				display.Event("queue", fmt.Sprintf("Seeded CEO agent (job %s) — bootstrap order: exec plan → features → tickets → delivery; Orchestrator selects each next role", jobID))
+			} else if startup.JobID != "" {
+				display.Event("queue", fmt.Sprintf("Resuming lifecycle with %s job %s", startup.Role, startup.JobID))
+			}
 
 			if exitAfterSeed {
 				return srv.Stop(context.Background())
@@ -4236,6 +4257,7 @@ dispositions directly and uses Orchestrator for ambiguous handoffs.`,
 	cmd.Flags().IntVar(&concurrency, "concurrency", 1, "Number of concurrent agent workers (1 = sequential pipeline)")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
 	cmd.Flags().BoolVar(&force, "force", false, "Force re-init .harness/ even if it exists")
+	cmd.Flags().BoolVar(&newLifecycle, "new-lifecycle", false, "Intentionally seed a fresh CEO lifecycle even when resumable state exists")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
 	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-start.log)")
 	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")

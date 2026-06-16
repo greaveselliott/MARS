@@ -37,9 +37,9 @@ import (
 
 	"github.com/greaveselliott/mars-harness/internal/foundationtelemetry"
 	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars-harness/internal/release"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
-	"github.com/greaveselliott/mars-harness/internal/release"
 	"github.com/greaveselliott/mars-harness/internal/selfupdate"
 	"github.com/greaveselliott/mars-harness/internal/serve"
 	harnesstools "github.com/greaveselliott/mars-harness/internal/tools"
@@ -654,6 +654,103 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	require.Contains(t, log, "chore(harness): initialize mars harness")
 	status := runMainTestGit(t, repoDir, "status", "--short")
 	require.Empty(t, strings.TrimSpace(status))
+}
+
+func TestStartCommandRoutesExistingInProgressTicketInsteadOfSeedingCEO(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	logPath := filepath.Join(t.TempDir(), "start.log")
+	t.Setenv("MARS_HARNESS_WEBHOOK_PORT", "0")
+	t.Setenv("MARS_HARNESS_DASHBOARD_PORT", "0")
+	t.Setenv("MARS_HARNESS_SKIP_START_CLEANUP", "1")
+
+	preInitChanges, err := gitChangedPaths(repoDir)
+	require.NoError(t, err)
+	didInit, err := scanner.EnsureHarness(repoDir, false)
+	require.NoError(t, err)
+	require.True(t, didInit)
+	committed, err := commitGeneratedHarnessBaseline(repoDir, preInitChanges)
+	require.NoError(t, err)
+	require.True(t, committed)
+
+	ticketDir := filepath.Join(repoDir, "docs", "tickets", "in-progress")
+	require.NoError(t, os.MkdirAll(ticketDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(ticketDir, "T-001-first-slice.md"), []byte(`---
+id: T-001
+title: First slice
+blocker: none
+blocked_by: []
+---
+
+# First slice
+`), 0o644))
+
+	cmd := startCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{
+		"--repo", repoDir,
+		"--db", dbPath,
+		"--log-file", logPath,
+		"--exit-after-seed",
+	})
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, out.String(), "startup_action=routed_existing_ticket")
+	require.Contains(t, out.String(), "role=engineer")
+	require.Contains(t, out.String(), "Resuming lifecycle with engineer job")
+	require.NotContains(t, out.String(), "Seeded CEO agent")
+
+	q, err := queue.Open(dbPath)
+	require.NoError(t, err)
+	defer q.Close()
+	jobs, err := q.RecentJobs(context.Background(), 10)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+	require.Equal(t, "engineer", jobs[0].Role)
+	require.Contains(t, jobs[0].Trigger, `"type":"startup_reconciliation"`)
+	require.Contains(t, jobs[0].Trigger, `"ticket_id":"T-001"`)
+}
+
+func TestStartCommandRefusesDirtyWorkspaceWithoutDeterministicRoute(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	dbPath := filepath.Join(t.TempDir(), "mars.db")
+	logPath := filepath.Join(t.TempDir(), "start.log")
+	t.Setenv("MARS_HARNESS_WEBHOOK_PORT", "0")
+	t.Setenv("MARS_HARNESS_DASHBOARD_PORT", "0")
+	t.Setenv("MARS_HARNESS_SKIP_START_CLEANUP", "1")
+
+	preInitChanges, err := gitChangedPaths(repoDir)
+	require.NoError(t, err)
+	didInit, err := scanner.EnsureHarness(repoDir, false)
+	require.NoError(t, err)
+	require.True(t, didInit)
+	committed, err := commitGeneratedHarnessBaseline(repoDir, preInitChanges)
+	require.NoError(t, err)
+	require.True(t, committed)
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "index.html"), []byte("<main>dirty product</main>\n"), 0o644))
+
+	cmd := startCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{
+		"--repo", repoDir,
+		"--db", dbPath,
+		"--log-file", logPath,
+		"--exit-after-seed",
+	})
+
+	err = cmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "refused_ambiguous_state")
+	require.Contains(t, out.String(), "dirty workspace without deterministic ticket route")
+	require.NotContains(t, out.String(), "Seeded CEO agent")
 }
 
 func TestStartCommandRejectsRepoLocalDBPath(t *testing.T) {

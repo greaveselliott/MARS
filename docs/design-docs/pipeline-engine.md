@@ -43,6 +43,12 @@ Startup cleanup now treats SQLite sidecars as recoverable database state. When a
 
 ## Discoveries
 
+- 2026-06-16: The factory forward-progress guard needs repo-scoped startup
+  queue evidence before the worker pool starts. `mars-harness start` now resets
+  stale claimed/running jobs for the selected repo, inspects active pending
+  work through a repo-scoped queue query, and only seeds CEO when AD-297's
+  lifecycle classifier finds no resumable state. This keeps restart recovery
+  from racing ahead of existing implementation or review work.
 - 2026-05-21: `demo-temp-run60` reproduced a retry-after-bind-failure edge:
   the first sandboxed start registered the target and enqueued a CEO bootstrap
   job, then the escalated retry logged removal of `demo-temp-run60.db-wal` and

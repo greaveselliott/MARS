@@ -652,6 +652,12 @@ func TestHandleJobComplete_reviewReworkReusesExistingDoneProductTicket(t *testin
 	if dispatchJob.Role != "engineer" {
 		t.Fatalf("expected engineer rework dispatch for existing done ticket, got %s", dispatchJob.Role)
 	}
+	if !strings.Contains(dispatchJob.Trigger, `"source_role":"qa"`) ||
+		!strings.Contains(dispatchJob.Trigger, `"source_job":"job-qa"`) ||
+		!strings.Contains(dispatchJob.Trigger, `"ticket_id":"T-001"`) ||
+		!strings.Contains(dispatchJob.Trigger, `"reason":"test evidence is missing"`) {
+		t.Fatalf("expected engineer trigger to preserve original QA source disposition, got %s", dispatchJob.Trigger)
+	}
 }
 
 func TestHandleJobComplete_completedEngineerWithoutOpenTicketRoutesQA(t *testing.T) {

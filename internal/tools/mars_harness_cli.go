@@ -407,8 +407,9 @@ Global command surface:
     Destructive example: ["eject", "--repo", ".", "--apply", "--confirm", "my-repo"]
 
   start
-    Auto-init/register and run the autonomous orchestrator for one target repo.
-    Flags: --repo <path>, --concurrency <n>, --db <path>, --force, --debug, --log-file <path>, --code-intel <true|false>
+    Auto-init/register, reconcile existing lifecycle state, and run the autonomous orchestrator for one target repo. It resumes active jobs, stale recoverable jobs, in-progress/rework tickets, or recent deterministic dispositions before seeding CEO.
+    Flags: --repo <path>, --concurrency <n>, --db <path>, --force, --new-lifecycle, --debug, --log-file <path>, --code-intel <true|false>
+    Use --new-lifecycle only when intentionally reseeding CEO over existing lifecycle state.
     Long-running; use background:true when starting it from an agent.
     Example: ["start", "--repo", ".", "--concurrency", "1"]
 

@@ -7,6 +7,7 @@ docs:
 - docs/design-docs/tools-glossary.md
 - docs/features/F-001-delivery-operating-model.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-007-guardrails-and-safety.md
 */
 package tools
@@ -33,13 +34,17 @@ func checkTicketCreatePolicy(ctx context.Context, root Root, session Session, ha
 		return nil
 	}
 	args = withInferredTicketCreateScenarios(ctx, args)
+	role := strings.ToLower(strings.TrimSpace(session.Role))
+	switch role {
+	case "ceo", "coo", "head-of-strategy":
+		return fmt.Errorf("policy: %s cannot create implementation tickets; CEO/strategy define goals, COO writes the feature contract, and CTO owns ticket_create before Engineer delivery", role)
+	}
 	if err := checkTicketCreatePlanningOrder(root, session, hasSession, args); err != nil {
 		return err
 	}
 	if err := checkBrowserFrameworkTicketCreatePolicy(root, session, hasSession, args); err != nil {
 		return err
 	}
-	role := strings.ToLower(strings.TrimSpace(session.Role))
 	switch role {
 	case "engineer":
 		return checkEngineerTicketCreatePolicy(root, args)
@@ -440,6 +445,9 @@ func checkEngineerClaimBeforeProductMutation(ctx context.Context, root Root, ses
 	if engineerCompletedTicketThisRun(session) {
 		return fmt.Errorf("policy: engineer already moved product ticket %s to docs/tickets/done in this run. Do not claim or mutate another ticket in the same job; commit any remaining lifecycle changes, git_push if a remote exists, then record job_disposition_record with ticket_id %s and next_need qa_review", engineerCompletedTicketID(session), engineerCompletedTicketID(session))
 	}
+	if err := checkEngineerPinnedReworkBeforeProductMutation(root, session, toolName); err != nil {
+		return err
+	}
 	inProgress, err := ticketstate.ListStatus(root.Abs(), ticketstate.StatusInProgress)
 	if err != nil {
 		return fmt.Errorf("policy: inspect in-progress tickets before %s: %w", toolName, err)
@@ -480,6 +488,9 @@ func checkEngineerClaimBeforeProductMutation(ctx context.Context, root Root, ses
 func checkEngineerShellExecBeforeTicketClaim(ctx context.Context, root Root, session Session, hasSession bool, raw json.RawMessage, generatedArtifactCleanup bool) error {
 	if generatedArtifactCleanup || !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
 		return nil
+	}
+	if err := checkEngineerPinnedReworkBeforeShellExec(root, session, raw); err != nil {
+		return err
 	}
 	if shellExecMovesTicketToInProgress(raw) {
 		if worktreeHasInProgressToDoneTicketMove(ctx, root) {
@@ -529,6 +540,53 @@ func checkEngineerShellExecBeforeTicketClaim(ctx context.Context, root Root, ses
 		backlog[0].ID,
 		backlog[0].RelPath,
 		backlog[0].ID,
+	)
+}
+
+func checkEngineerPinnedReworkBeforeProductMutation(root Root, session Session, toolName string) error {
+	targetID := engineerReworkTicketIDFromTrigger(session.Trigger)
+	if targetID == "" {
+		return nil
+	}
+	ticket, err := engineerPinnedReworkTicket(root, targetID)
+	if err != nil {
+		return err
+	}
+	if ticket.Status == ticketstate.StatusInProgress {
+		return nil
+	}
+	return fmt.Errorf(
+		"policy: engineer is pinned to review rework ticket %s; reopen it before %s mutates product files by moving %s from %s to docs/tickets/in-progress/ with git mv, committing the rework claim, then continuing",
+		targetID,
+		toolName,
+		targetID,
+		ticket.RelPath,
+	)
+}
+
+func checkEngineerPinnedReworkBeforeShellExec(root Root, session Session, raw json.RawMessage) error {
+	targetID := engineerReworkTicketIDFromTrigger(session.Trigger)
+	if targetID == "" {
+		return nil
+	}
+	if moveID, ok := shellExecTicketMoveToInProgressID(raw); ok {
+		if strings.EqualFold(moveID, targetID) {
+			return nil
+		}
+		return fmt.Errorf("policy: engineer is pinned to review rework ticket %s and cannot claim or reopen unrelated ticket %s in this job", targetID, moveID)
+	}
+	ticket, err := engineerPinnedReworkTicket(root, targetID)
+	if err != nil {
+		return err
+	}
+	if ticket.Status == ticketstate.StatusInProgress {
+		return nil
+	}
+	return fmt.Errorf(
+		"policy: engineer must reopen %s before running shell_exec for review rework; run shell_exec with argv [\"git\", \"mv\", %q, \"docs/tickets/in-progress/\"] and then git_commit \"chore(tickets): reopen %s for rework\" before discovery, validation, or implementation shell commands",
+		targetID,
+		ticket.RelPath,
+		targetID,
 	)
 }
 
@@ -594,6 +652,13 @@ func gitCommitTouchesOnlyWorkspaceNoise(ctx context.Context, root Root, raw json
 }
 
 func engineerReworkTickets(root Root, session Session) ([]ticketstate.Ticket, error) {
+	if targetID := engineerReworkTicketIDFromTrigger(session.Trigger); targetID != "" {
+		ticket, err := engineerPinnedReworkTicket(root, targetID)
+		if err != nil {
+			return nil, err
+		}
+		return []ticketstate.Ticket{ticket}, nil
+	}
 	var out []ticketstate.Ticket
 	for _, status := range []string{ticketstate.StatusInReview, ticketstate.StatusDone} {
 		tickets, err := ticketstate.ListStatus(root.Abs(), status)
@@ -602,15 +667,24 @@ func engineerReworkTickets(root Root, session Session) ([]ticketstate.Ticket, er
 		}
 		out = append(out, ordinaryProductTickets(tickets)...)
 	}
-	if targetID := engineerReworkTicketIDFromTrigger(session.Trigger); targetID != "" {
-		for _, ticket := range out {
-			if strings.EqualFold(strings.TrimSpace(ticket.ID), targetID) {
-				return []ticketstate.Ticket{ticket}, nil
-			}
-		}
-		return nil, nil
-	}
 	return out, nil
+}
+
+func engineerPinnedReworkTicket(root Root, targetID string) (ticketstate.Ticket, error) {
+	targetID = strings.ToUpper(strings.TrimSpace(targetID))
+	if targetID == "" {
+		return ticketstate.Ticket{}, fmt.Errorf("dispatch-named rework ticket is empty")
+	}
+	tickets, err := ticketstate.List(root.Abs())
+	if err != nil {
+		return ticketstate.Ticket{}, fmt.Errorf("inspect dispatch-named rework ticket %s: %w", targetID, err)
+	}
+	for _, ticket := range ordinaryProductTickets(tickets) {
+		if strings.EqualFold(strings.TrimSpace(ticket.ID), targetID) {
+			return ticket, nil
+		}
+	}
+	return ticketstate.Ticket{}, fmt.Errorf("dispatch-named rework ticket %s not found", targetID)
 }
 
 func engineerReworkTicketIDFromTrigger(raw string) string {
@@ -873,9 +947,14 @@ func ticketDoneMoveSources(fields []string) []string {
 }
 
 func shellExecMovesTicketToInProgress(raw json.RawMessage) bool {
+	_, ok := shellExecTicketMoveToInProgressID(raw)
+	return ok
+}
+
+func shellExecTicketMoveToInProgressID(raw json.RawMessage) (string, bool) {
 	args, err := decodeShellExecArgs(raw)
 	if err != nil {
-		return false
+		return "", false
 	}
 	fields := args.Argv
 	if strings.TrimSpace(args.ShellCommand) != "" {
@@ -890,10 +969,11 @@ func shellExecMovesTicketToInProgress(raw json.RawMessage) bool {
 		}
 		source, dest, ok := ticketMoveOperands(fields[i+2:])
 		if ok && ticketMoveTargetsInProgress(source, dest) {
-			return true
+			id, _, idOK := ticketLifecyclePathIdentity(cleanRepoPath(cleanShellPathToken(source)))
+			return id, idOK
 		}
 	}
-	return false
+	return "", false
 }
 
 func shellExecMovesInProgressTicketToDone(raw json.RawMessage) bool {

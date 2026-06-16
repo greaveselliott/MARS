@@ -3631,6 +3631,8 @@ If the trigger or source disposition contains ` + "`changes_requested`" + ` for 
 already in ` + "`docs/tickets/done/`" + ` or ` + "`docs/tickets/in-review/`" + `, do not restart
 broad implementation. Read the review feedback, the named report or evidence
 link, the done ticket, and the exact files or commands named by the reviewer.
+Do not claim or mutate any other product ticket while the dispatch-named ticket
+is pinned to the job.
 If a shell command or product/source edit is required, first reopen the named
 ticket with ` + "`git mv docs/tickets/done/<ticket>.md docs/tickets/in-progress/`" + `
 or from ` + "`docs/tickets/in-review/`" + ` to ` + "`docs/tickets/in-progress/`" + `,

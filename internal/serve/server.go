@@ -1409,7 +1409,11 @@ func (s *Server) handleDispatchComplete(ctx context.Context, job *queue.Job, rec
 		return
 	}
 
-	triggerJSON, err := json.Marshal(newDispatchTriggerPayload(job, decision, *disposition))
+	triggerPayload := newDispatchTriggerPayload(job, decision, *disposition)
+	if source != nil && isPinnedEngineerReworkSource(*source) && strings.EqualFold(decision.NextRole, "engineer") {
+		triggerPayload = newDispatchTriggerPayloadForSource(source.Role, source.JobID, decision, *source)
+	}
+	triggerJSON, err := json.Marshal(triggerPayload)
 	if err != nil {
 		log.Error("serve: failed to marshal dispatch trigger", "target_role", decision.NextRole, "err", err)
 		return

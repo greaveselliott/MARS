@@ -90,7 +90,19 @@ Then the scheduler records the skip and does not enqueue another same-role job f
 
 Given a user runs `mars-harness start --repo <path>`
 When the target needs scaffolding or registration
-Then the harness initializes if needed through the same committed generated-scaffold baseline used by `init`, `run`, `register`, and `scan`, registers the repo, seeds the CEO role, and runs with repo-scoped state
+Then the harness initializes if needed through the same committed generated-scaffold baseline used by `init`, `run`, `register`, and `scan`, registers the repo, classifies lifecycle state, and runs with repo-scoped state
+
+Given a user runs `mars-harness start --repo <path>`
+When pending/running jobs, in-progress tickets, review rework, recent deterministic dispositions, dirty unowned work, or stale recoverable jobs already exist
+Then startup prints one of `seeded_ceo`, `resumed_lifecycle`, `recovered_stale_job`, `routed_existing_ticket`, or `refused_ambiguous_state` with evidence, routes the deterministic next role, and does not seed CEO over active lifecycle state
+
+Given an operator intentionally wants a fresh lifecycle over existing state
+When they run `mars-harness start --repo <path> --new-lifecycle`
+Then startup records `seeded_ceo` evidence for the override and creates a fresh CEO seed job instead of reusing the bootstrap idempotency key
+
+Given CEO, Head of Strategy, COO, CTO, or CTO-weekly are running
+When they try to commit or mutate product/source/package implementation paths outside their owned planning artifacts
+Then tool policy blocks the mutation or commit and directs implementation work to Engineer while preserving CTO ticket creation as the ticket-shaping boundary
 
 ### F-006-S006: Serve Orchestrator
 
@@ -484,6 +496,14 @@ Then Orchestrator routes to CTO for technical decomposition and implementation t
 Given QA records `changes_requested` with `next_need: implementation_rework` for an existing ordinary product ticket
 When that ticket is already in `docs/tickets/done/` or `docs/tickets/in-review/` and Orchestrator selects Engineer
 Then dispatch routes Engineer to rework the same ticket instead of rewriting to CTO ticket shaping or creating a duplicate product ticket
+
+Given Engineer receives a dispatch trigger pinned to `source_disposition.ticket_id`
+When another backlog or in-progress product ticket is also available
+Then Engineer must reopen or continue the dispatch-named ticket and cannot claim, mutate, validate, or complete unrelated product tickets until that pin resolves, blocks, requests operator review, or is explicitly overridden by Orchestrator
+
+Given Orchestrator sits between a review role and Engineer rework
+When the original review disposition names `changes_requested`, `implementation_rework`, and a ticket ID
+Then the Engineer dispatch trigger preserves that original source disposition so ticket policy can fail closed instead of losing the pin
 
 Given Orchestrator suggests a canonical role alias such as `cto`, `release`, or `dependency`
 When the target manifest contains the corresponding executable role key such as `cto-weekly`, `release-manager`, or `dependency-manager`

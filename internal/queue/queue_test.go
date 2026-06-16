@@ -96,6 +96,48 @@ func TestQueue_enqueueAndClaim(t *testing.T) {
 	assert.NotNil(t, got.CompletedAt)
 }
 
+func TestQueueActiveJobsAndRepoScopedOrphanReset(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+
+	first, err := q.Enqueue(ctx, Job{RepoID: "repo-1", Role: "engineer", Trigger: `{"n":1}`})
+	require.NoError(t, err)
+	second, err := q.Enqueue(ctx, Job{RepoID: "repo-1", Role: "qa", Trigger: `{"n":2}`})
+	require.NoError(t, err)
+	other, err := q.Enqueue(ctx, Job{RepoID: "repo-2", Role: "ceo", Trigger: `{"n":3}`})
+	require.NoError(t, err)
+
+	claimed, err := q.Claim(ctx, "worker-1")
+	require.NoError(t, err)
+	require.Equal(t, first, claimed.ID)
+	require.NoError(t, q.MarkRunning(ctx, claimed.ID))
+
+	active, err := q.ActiveJobsForRepo(ctx, "repo-1", 10)
+	require.NoError(t, err)
+	require.Len(t, active, 2)
+
+	reset, err := q.ResetOrphansForRepo(ctx, "repo-1", "restart reconciliation")
+	require.NoError(t, err)
+	require.Equal(t, 1, reset)
+
+	gotFirst, err := q.Get(ctx, first)
+	require.NoError(t, err)
+	require.Equal(t, StatusFailed, gotFirst.Status)
+	require.Contains(t, gotFirst.Error, "restart reconciliation")
+
+	gotSecond, err := q.Get(ctx, second)
+	require.NoError(t, err)
+	require.Equal(t, StatusPending, gotSecond.Status)
+	gotOther, err := q.Get(ctx, other)
+	require.NoError(t, err)
+	require.Equal(t, StatusPending, gotOther.Status)
+
+	active, err = q.ActiveJobsForRepo(ctx, "repo-1", 10)
+	require.NoError(t, err)
+	require.Len(t, active, 1)
+	require.Equal(t, second, active[0].ID)
+}
+
 func TestQueue_idempotency(t *testing.T) {
 	q := tempQueue(t)
 	ctx := context.Background()

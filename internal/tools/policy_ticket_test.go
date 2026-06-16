@@ -71,7 +71,7 @@ func TestTicketCreatePolicyRequiresPlanBeforeTickets(t *testing.T) {
 	t.Parallel()
 	_, root := setupPolicyTicketRepo(t)
 
-	ctx := WithSession(context.Background(), Session{Role: "coo", ToolCounts: map[string]int{}})
+	ctx := WithSession(context.Background(), Session{Role: "cto", ToolCounts: map[string]int{}})
 	err := preToolPolicy(ctx, root, "ticket_create", []byte(`{"title":"Implement checkout","priority":"high","work_type":"enabler","body":"## Context\nx"}`))
 	if err == nil {
 		t.Fatal("expected ticket creation to require active exec plan")
@@ -86,7 +86,7 @@ func TestTicketCreatePolicyRequiresFeatureContractBeforeFeatureTicket(t *testing
 	dir, root := setupPolicyTicketRepo(t)
 	writePolicyPlan(t, dir)
 
-	ctx := WithSession(context.Background(), Session{Role: "coo", ToolCounts: map[string]int{}})
+	ctx := WithSession(context.Background(), Session{Role: "cto", ToolCounts: map[string]int{}})
 	raw := []byte(`{"title":"Implement checkout","priority":"high","work_type":"feature","bdd_scenarios":["F-002-S001"],"body":"## Context\nx"}`)
 	err := preToolPolicy(ctx, root, "ticket_create", raw)
 	if err == nil {
@@ -99,6 +99,27 @@ func TestTicketCreatePolicyRequiresFeatureContractBeforeFeatureTicket(t *testing
 	writePolicyFeature(t, dir, "F-002-checkout.md")
 	if err := preToolPolicy(ctx, root, "ticket_create", raw); err != nil {
 		t.Fatalf("expected feature ticket to pass after feature contract exists, got %v", err)
+	}
+}
+
+func TestTicketCreatePolicyBlocksNonTicketPlanningRoles(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyPlan(t, dir)
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
+
+	for _, role := range []string{"ceo", "coo", "head-of-strategy"} {
+		role := role
+		t.Run(role, func(t *testing.T) {
+			ctx := WithSession(context.Background(), Session{Role: role, ToolCounts: map[string]int{}})
+			err := preToolPolicy(ctx, root, "ticket_create", []byte(`{"title":"Implement checkout","priority":"high","work_type":"feature","bdd_scenarios":["F-001-S001"],"body":"## Context\nx"}`))
+			if err == nil {
+				t.Fatalf("expected %s ticket_create to be blocked", role)
+			}
+			if !strings.Contains(err.Error(), role+" cannot create implementation tickets") {
+				t.Fatalf("expected role ticket ownership error, got %v", err)
+			}
+		})
 	}
 }
 
@@ -664,6 +685,54 @@ func TestCOOFileWritePolicyBlocksSecondActiveExecPlanWithSpecificGuidance(t *tes
 	}
 }
 
+func TestHeadOfStrategyFileWritePolicyAllowsStrategyOnly(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+	ctx := WithSession(context.Background(), Session{Role: "head-of-strategy", ToolCounts: map[string]int{}})
+
+	for _, path := range []string{
+		"docs/reports/strategy/market-risk.md",
+		"docs/goals/observations.md",
+		"docs/product-specs/vision.md",
+	} {
+		raw := []byte(`{"path":"` + path + `","content":"# Strategy\n"}`)
+		if err := preToolPolicy(ctx, root, "file_write", raw); err != nil {
+			t.Fatalf("expected head-of-strategy strategy write %s to pass, got %v", path, err)
+		}
+	}
+
+	for _, path := range []string{"docs/features/F-001-product-walking-skeleton.md", "docs/exec-plans/active/current-operating-plan.md", "index.html"} {
+		raw := []byte(`{"path":"` + path + `","content":"# Not Strategy\n"}`)
+		err := preToolPolicy(ctx, root, "file_write", raw)
+		if err == nil {
+			t.Fatalf("expected head-of-strategy write %s to be blocked", path)
+		}
+		if !strings.Contains(err.Error(), "head-of-strategy may only write strategy artifacts") {
+			t.Fatalf("expected strategy boundary error for %s, got %v", path, err)
+		}
+	}
+}
+
+func TestPlannerGitCommitPolicyBlocksProductPaths(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+
+	if err := checkPlannerGitCommitPolicy(context.Background(), root, Session{Role: "cto"}, true, gitCommitArgs{Paths: []string{"docs/tickets/backlog/T-001-first-slice.md"}}); err != nil {
+		t.Fatalf("expected CTO ticket commit to pass, got %v", err)
+	}
+	if err := checkPlannerGitCommitPolicy(context.Background(), root, Session{Role: "coo"}, true, gitCommitArgs{Paths: []string{"docs/features/F-001-product-walking-skeleton.md"}}); err != nil {
+		t.Fatalf("expected COO feature commit to pass, got %v", err)
+	}
+
+	err := checkPlannerGitCommitPolicy(context.Background(), root, Session{Role: "ceo"}, true, gitCommitArgs{Paths: []string{"src/app.js"}})
+	if err == nil {
+		t.Fatal("expected CEO product git_commit to be blocked")
+	}
+	if !strings.Contains(err.Error(), "ceo cannot git_commit product") {
+		t.Fatalf("expected planner commit boundary error, got %v", err)
+	}
+}
+
 func TestCTOFileWritePolicyAllowsTechnicalPlanningAndBlocksImplementation(t *testing.T) {
 	t.Parallel()
 	_, root := setupPolicyTicketRepo(t)
@@ -805,6 +874,85 @@ docs:
 	}
 	if err := preToolPolicy(ctx, root, "file_write", raw); err != nil {
 		t.Fatalf("expected product file_write after claim to pass, got %v", err)
+	}
+}
+
+func TestEngineerReworkPinBeatsUnrelatedTicketAvailability(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyTicket(t, dir, "backlog", "T-001-new-work.md", `---
+id: T-001
+title: New work
+blocker: none
+blocked_by: []
+---
+
+# New work
+`)
+	writePolicyTicket(t, dir, "done", "T-003-review-rework.md", `---
+id: T-003
+title: Review rework
+blocker: none
+blocked_by: []
+---
+
+# Review rework
+`)
+	session := Session{
+		Role:       "engineer",
+		ToolCounts: map[string]int{},
+		Trigger:    `{"type":"dispatch","target_role":"engineer","source_disposition":{"status":"changes_requested","next_need":"implementation_rework","ticket_id":"T-003"}}`,
+	}
+	ctx := WithSession(context.Background(), session)
+
+	err := preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["git","mv","docs/tickets/backlog/T-001-new-work.md","docs/tickets/in-progress/"]}`))
+	if err == nil {
+		t.Fatal("expected unrelated ticket claim to be blocked while rework is pinned")
+	}
+	if !strings.Contains(err.Error(), "pinned to review rework ticket T-003") ||
+		!strings.Contains(err.Error(), "unrelated ticket T-001") {
+		t.Fatalf("expected pinned rework guidance, got %v", err)
+	}
+
+	err = preToolPolicy(ctx, root, "file_write", []byte(`{"path":"src/app.js","content":"console.log('ship')\n"}`))
+	if err == nil {
+		t.Fatal("expected product mutation to require reopening pinned rework")
+	}
+	if !strings.Contains(err.Error(), "reopen it before file_write mutates product files") ||
+		!strings.Contains(err.Error(), "docs/tickets/done/T-003-review-rework.md") {
+		t.Fatalf("expected pinned rework reopen guidance, got %v", err)
+	}
+
+	if err := preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["git","mv","docs/tickets/done/T-003-review-rework.md","docs/tickets/in-progress/"]}`)); err != nil {
+		t.Fatalf("expected reopening pinned rework to pass, got %v", err)
+	}
+}
+
+func TestEngineerReworkPinMissingTicketFailsClosed(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyTicket(t, dir, "done", "T-001-other.md", `---
+id: T-001
+title: Other
+blocker: none
+blocked_by: []
+---
+
+# Other
+`)
+	session := Session{
+		Role:       "engineer",
+		ToolCounts: map[string]int{},
+		Trigger:    `{"type":"dispatch","target_role":"engineer","source_disposition":{"status":"changes_requested","next_need":"implementation_rework","ticket_id":"T-003"}}`,
+	}
+	ctx := WithSession(context.Background(), session)
+
+	err := preToolPolicy(ctx, root, "file_write", []byte(`{"path":"src/app.js","content":"console.log('ship')\n"}`))
+	if err == nil {
+		t.Fatal("expected missing pinned ticket to fail closed")
+	}
+	if !strings.Contains(err.Error(), "dispatch-named rework ticket T-003 not found") {
+		t.Fatalf("expected missing pinned ticket error, got %v", err)
 	}
 }
 

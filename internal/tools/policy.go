@@ -128,8 +128,10 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 		if err := checkEngineerUnresolvedRuntimeValidationBeforeCommit(session, hasSession); err != nil {
 			return err
 		}
-		var args gitCommitArgs
-		if err := json.Unmarshal(raw, &args); err == nil {
+		if args, err := decodeGitCommitArgs(raw); err == nil {
+			if err := checkPlannerGitCommitPolicy(ctx, root, session, hasSession, args); err != nil {
+				return err
+			}
 			if err := checkGitCommitGeneratedWorkspacePolicy(ctx, root, args); err != nil {
 				return err
 			}
@@ -446,6 +448,11 @@ func checkPlannerFileWritePolicy(session Session, hasSession bool, rel string) e
 	}
 	rel = cleanRepoPath(rel)
 	switch strings.ToLower(strings.TrimSpace(session.Role)) {
+	case "head-of-strategy":
+		if headOfStrategyWritePath(rel) {
+			return nil
+		}
+		return fmt.Errorf("policy: head-of-strategy may only write strategy artifacts under docs/goals/observations.md, docs/product-specs/vision.md, or docs/reports/strategy/; implementation path %s belongs behind COO/CTO handoff and Engineer delivery", rel)
 	case "coo":
 		if cooPlanningWritePath(rel) {
 			return nil
@@ -469,6 +476,59 @@ func checkPlannerFileWritePolicy(session Session, hasSession bool, rel string) e
 	}
 }
 
+func checkPlannerGitCommitPolicy(ctx context.Context, root Root, session Session, hasSession bool, args gitCommitArgs) error {
+	if !hasSession || !planningRoleCannotMutateWithShell(session.Role) {
+		return nil
+	}
+	role := strings.ToLower(strings.TrimSpace(session.Role))
+	paths := make([]string, 0, len(args.Paths))
+	for _, path := range args.Paths {
+		rel := cleanRepoPath(path)
+		if rel != "" {
+			paths = append(paths, rel)
+		}
+	}
+	if len(paths) == 0 {
+		var err error
+		paths, err = changedFiles(ctx, root)
+		if err != nil {
+			return fmt.Errorf("policy: inspect changed files before %s git_commit: %w", role, err)
+		}
+	}
+	for _, rel := range paths {
+		rel = cleanRepoPath(rel)
+		if rel == "" || plannerCommitAllowedPath(role, rel) {
+			continue
+		}
+		return fmt.Errorf("policy: %s cannot git_commit product or downstream implementation path %s; leave product/source/package changes for Engineer and commit only owned planning artifacts", role, rel)
+	}
+	return nil
+}
+
+func plannerCommitAllowedPath(role, rel string) bool {
+	rel = cleanRepoPath(rel)
+	if rel == runtimeLearningsPath {
+		return true
+	}
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "ceo":
+		return ceoStrategyWritePath(rel)
+	case "head-of-strategy":
+		return headOfStrategyWritePath(rel)
+	case "coo":
+		return cooPlanningWritePath(rel)
+	case "cto", "cto-weekly":
+		return ctoTechnicalPlanningWritePath(rel) || ticketWritePath(rel)
+	default:
+		return true
+	}
+}
+
+func ticketWritePath(rel string) bool {
+	rel = filepath.ToSlash(strings.TrimSpace(rel))
+	return rel == "docs/tickets/readme.md" || (strings.HasPrefix(rel, "docs/tickets/") && strings.HasSuffix(strings.ToLower(rel), ".md"))
+}
+
 func cooPlanningWritePath(rel string) bool {
 	rel = filepath.ToSlash(strings.TrimSpace(rel))
 	if rel == filepath.ToSlash(filepath.Join("docs", "goals", "observations.md")) {
@@ -484,6 +544,17 @@ func cooPlanningWritePath(rel string) bool {
 		return true
 	}
 	return false
+}
+
+func headOfStrategyWritePath(rel string) bool {
+	rel = filepath.ToSlash(strings.TrimSpace(rel))
+	if rel == filepath.ToSlash(filepath.Join("docs", "goals", "observations.md")) {
+		return true
+	}
+	if rel == filepath.ToSlash(filepath.Join("docs", "product-specs", "vision.md")) {
+		return true
+	}
+	return strings.HasPrefix(rel, "docs/reports/strategy/") && strings.HasSuffix(strings.ToLower(rel), ".md")
 }
 
 func ctoTechnicalPlanningWritePath(rel string) bool {

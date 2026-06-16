@@ -61,6 +61,15 @@ Review roles are the exception: if QA, Security, or Dogfood completes and names
 its own review category, dispatch treats that as completed review evidence and
 routes to the next configured review or release owner.
 
+When a review role records `changes_requested` with
+`next_need: implementation_rework` and a ticket ID, that ticket remains the
+rework identity until Engineer resolves, blocks, or an explicit Orchestrator
+override replaces it. If Orchestrator is inserted between the reviewer and
+Engineer, the final Engineer trigger preserves the original review
+`source_disposition` rather than replacing it with Orchestrator's summary, so
+tool policy can enforce the dispatch-named ticket and fail closed when the
+ticket is missing.
+
 ## Runtime Contract
 
 In dispatch mode, successful roles must record a job disposition before they
