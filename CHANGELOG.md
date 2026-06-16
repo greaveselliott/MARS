@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.62.1] - 2026-06-16
+<!-- mars-harness-release: version=0.62.1 commit=25988bbd5be6 -->
+
+### Impact
+- **orchestration:** `mars-harness start` now resumes or refuses existing lifecycle state before seeding CEO, reducing restart loops and preserving implementation progress.
+
+### Why
+- **orchestration:** Restarting over dirty work, active tickets, or review rework could previously create another planning loop and delay the first executable build.
+
+### What Changed
+- **orchestration:** Added startup reconciliation actions, repo-scoped stale-job recovery, in-progress ticket routing, dirty-state refusal, explicit `--new-lifecycle`, planner commit boundaries, and pinned Engineer rework routing (25988bb).
+
+### Fixes
+- **orchestration:** Guard startup forward progress (25988bb)
+
 ## [0.62.0] - 2026-06-15
 <!-- mars-harness-release: version=0.62.0 commit=c777ad93ace6 -->
 
