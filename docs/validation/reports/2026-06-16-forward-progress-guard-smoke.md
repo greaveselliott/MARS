@@ -53,9 +53,16 @@ mars-harness start --repo <validation-root> --db <validation-root> --log-file <v
 | Explicit reseed | Pass | Printed `startup_action=seeded_ceo role=ceo evidence=--new-lifecycle requested`. |
 | Dirty ambiguous state | Pass | Exited non-zero and printed `startup_action=refused_ambiguous_state evidence=dirty workspace without deterministic ticket route: index.html`. |
 
-## Remaining Live Sweep
+## Live Sweep Follow-Up
 
-The model-backed live validation requested by AD-297 remains unrun here:
+The model-backed live validation requested by AD-297 was run later the same
+day and is recorded separately:
+
+```text
+docs/validation/reports/2026-06-16-forward-progress-guard-live-run.md
+```
+
+The live run command shape was:
 
 ```bash
 mars-harness start --repo <ephemeral-static-web>
@@ -63,9 +70,7 @@ mars-harness start --repo <ephemeral-phaser-game>
 mars-harness start --repo <ephemeral-go-api>
 ```
 
-That sweep is intentionally recorded as remaining evidence because previous
-MacBook Pro M1 Max full sweeps have taken around 20 hours. The startup guard
-has installed-binary smoke evidence and full deterministic tests, but claims
-about time-to-first-Engineer, time-to-first-build, no planner oscillation in a
-real model loop, and first successful smoke still require the full lifecycle
-runner/hardware lane.
+That follow-up partially proved the Go API forward path through Engineer and
+successful validation, but static web and Phaser did not reach Engineer. The
+live report records the foundation-owned blockers: shared inference-port
+contention and CTO ticket-shaping guardrail wedges.
