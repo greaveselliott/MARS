@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.62.5] - 2026-06-16
+<!-- mars-harness-release: version=0.62.5 commit=e811af95e396 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer live-validation evidence because the report now states the real-endpoint override gap as a direct non-claim.
+
+### Why
+- **validation:** This matters because fake, scripted, or unexecuted endpoints must not raise confidence for live behavior claims.
+
+### What Changed
+- **validation:** Clarified the confidence-gated live validation report so the real-endpoint override remains explicitly unproven until a real endpoint run is completed (e811af9).
+
+### Documentation
+- **validation:** Clarify live endpoint non-claim (e811af9)
+
 ## [0.62.4] - 2026-06-16
 <!-- mars-harness-release: version=0.62.4 commit=a240804d6391 -->
 
