@@ -261,10 +261,10 @@ prior inventory pass are marked **(corrected)**.
 | AD-229 | planner handoff gate | starter-placeholder guard does not flag durable BDD vocabulary |
 | AD-235 | `claim` ordering (mixed: plus browser write guards) | tickets start at the earliest uncovered scenario |
 | AD-240 | `claim` batching | bootstrap can seed a small ordered ticket batch |
-| AD-241 | CTO handoff gate | multi-scenario features need two-to-three early tickets before Engineer handoff |
+| AD-241 | CTO handoff gate | fresh features need one first-slice ticket before Engineer handoff; post-proof planning can seed the next ordered batch |
 | AD-243 | `claim` dedupe + one-ticket-per-job | covered scenarios rejected; close one ticket before claiming the next |
 | AD-246 | CTO handoff gate | handoff counts product scenarios, not process-only scenarios |
-| AD-247 | `claim` recovery | pending scenario batches recoverable from session state |
+| AD-247 | `claim` recovery | pending post-proof scenario batches recoverable from session state |
 | AD-254 | CTO handoff gate | duplicate-ticket failures do not poison covered batches |
 | AD-256 | planner boundary | duplicate feature-path guidance respects planner ownership |
 | AD-275 | CTO handoff gate **(corrected: was interpretation-layer)** | handoff gates follow the active plan feature |

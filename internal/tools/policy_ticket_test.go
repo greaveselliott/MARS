@@ -96,7 +96,7 @@ func TestTicketCreatePolicyRequiresFeatureContractBeforeFeatureTicket(t *testing
 		t.Fatalf("expected feature contract path error, got %v", err)
 	}
 
-	writePolicyFeature(t, dir, "F-002-checkout.md")
+	writeTetrisFeatureContract(t, dir, "F-002-checkout.md", []string{"F-002-S001"})
 	if err := preToolPolicy(ctx, root, "ticket_create", raw); err != nil {
 		t.Fatalf("expected feature ticket to pass after feature contract exists, got %v", err)
 	}
@@ -1514,12 +1514,13 @@ func TestCTOTicketCreateRequiresEarliestUncoveredFeatureScenario(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected CTO ticket_create to require earliest uncovered scenario")
 	}
-	if !strings.Contains(err.Error(), "earliest uncovered scenario F-001-S001") {
-		t.Fatalf("expected earliest-scenario guidance, got %v", err)
+	if !strings.Contains(err.Error(), "exactly one first-slice scenario") ||
+		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) {
+		t.Fatalf("expected first-slice guidance, got %v", err)
 	}
 }
 
-func TestCTOTicketCreateAllowsNextScenarioWhenEarlierScenarioAlreadyTicketed(t *testing.T) {
+func TestCTOTicketCreateRejectsNextScenarioBeforeFirstProofWhenEarlierScenarioTicketed(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)
 	writeDetailedTetrisBrief(t, dir)
@@ -1553,8 +1554,13 @@ blocked_by: []
 		t.Fatalf("marshal: %v", err)
 	}
 
-	if err := preToolPolicy(ctx, root, "ticket_create", raw); err != nil {
-		t.Fatalf("expected next scenario ticket to pass once earlier scenario is already ticketed, got %v", err)
+	err = preToolPolicy(ctx, root, "ticket_create", raw)
+	if err == nil {
+		t.Fatal("expected next scenario ticket to be blocked before first proof")
+	}
+	if !strings.Contains(err.Error(), "exactly one first-slice") ||
+		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) {
+		t.Fatalf("expected first-proof handoff guidance, got %v", err)
 	}
 }
 
@@ -1611,9 +1617,10 @@ blocked_by: []
 	if err == nil {
 		t.Fatal("expected already-covered scenarios to be blocked")
 	}
-	if !strings.Contains(err.Error(), "already-covered scenario(s) F-001-S001, F-001-S002") ||
-		!strings.Contains(err.Error(), "Create the next ticket for F-001-S003 only") {
-		t.Fatalf("expected covered-scenario guidance, got %v", err)
+	if !strings.Contains(err.Error(), "cannot create additional or grouped feature tickets") ||
+		!strings.Contains(err.Error(), "before first build/smoke proof") ||
+		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) {
+		t.Fatalf("expected first-proof additional-ticket guidance, got %v", err)
 	}
 
 	raw, err = json.Marshal(ticketCreateArgs{
@@ -1627,12 +1634,13 @@ blocked_by: []
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	if err := preToolPolicy(ctx, root, "ticket_create", raw); err != nil {
-		t.Fatalf("expected next uncovered scenario alone to pass, got %v", err)
+	err = preToolPolicy(ctx, root, "ticket_create", raw)
+	if err == nil {
+		t.Fatal("expected next uncovered scenario to remain blocked before first proof")
 	}
 }
 
-func TestCTOTicketCreateAllowsScenarioGroupStartingWithEarliestUncoveredScenario(t *testing.T) {
+func TestCTOTicketCreateRejectsScenarioGroupBeforeFirstProof(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)
 	writeDetailedTetrisBrief(t, dir)
@@ -1651,44 +1659,45 @@ func TestCTOTicketCreateAllowsScenarioGroupStartingWithEarliestUncoveredScenario
 		t.Fatalf("marshal: %v", err)
 	}
 
-	if err := preToolPolicy(ctx, root, "ticket_create", raw); err != nil {
-		t.Fatalf("expected scenario group with earliest scenario to pass, got %v", err)
+	err = preToolPolicy(ctx, root, "ticket_create", raw)
+	if err == nil {
+		t.Fatal("expected pre-proof scenario group to be rejected")
+	}
+	if !strings.Contains(err.Error(), "exactly one first-slice scenario") ||
+		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) {
+		t.Fatalf("expected first-slice ticket_create guidance, got %v", err)
 	}
 }
 
-func TestCTOTicketCreateInfersPendingHandoffScenarios(t *testing.T) {
+func TestCTOTicketCreateAllowsPostProofScenarioGroupStartingWithEarliestUncoveredScenario(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)
 	writeDetailedTetrisBrief(t, dir)
 	writePolicyPlan(t, dir)
 	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
-	writePolicyTicket(t, dir, "backlog", "T-001-visible-playfield.md", `---
+	writePolicyTicket(t, dir, "done", "T-001-visible-playfield.md", `---
 id: T-001
 title: Implement visible playfield
 work_type: feature
 bdd_scenarios:
 - F-001-S001
 end_to_end_evidence: required
-evidence_links: []
-verified_by: TBD
+evidence_links:
+- npm run build
+- npm run smoke
+verified_by: engineer
 blocker: none
 blocked_by: []
 ---
 
 # T-001
 `)
-	session := Session{
-		Role:       "cto-weekly",
-		ToolCounts: map[string]int{},
-		ToolState: map[string]string{
-			ctoHandoffRequiredScenariosKey: "F-001-S002,F-001-S003",
-		},
-	}
-	ctx := WithSession(context.Background(), session)
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
 	raw, err := json.Marshal(ticketCreateArgs{
 		Title:            "Implement tetromino movement and rotation",
 		Priority:         "high",
 		WorkType:         "feature",
+		BDDScenarios:     []string{"F-001-S002", "F-001-S003"},
 		EndToEndEvidence: "required",
 		Body:             "## Requirements\nImplement keyboard movement and rotation for falling tetrominoes.",
 	})
@@ -1697,18 +1706,48 @@ blocked_by: []
 	}
 
 	if err := preToolPolicy(ctx, root, "ticket_create", raw); err != nil {
-		t.Fatalf("expected pending CTO handoff scenarios to satisfy ticket_create policy, got %v", err)
+		t.Fatalf("expected post-proof scenario group with earliest scenario to pass, got %v", err)
+	}
+}
+
+func TestCTOTicketCreateInfersPendingFirstSliceScenario(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeDetailedTetrisBrief(t, dir)
+	writePolicyPlanForFeature(t, dir, "F-001", "F-001-S001, F-001-S002, F-001-S003", "F-001-S001")
+	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
+	session := Session{
+		Role:       "cto-weekly",
+		ToolCounts: map[string]int{},
+		ToolState: map[string]string{
+			ctoHandoffRequiredScenariosKey: "F-001-S001",
+		},
+	}
+	ctx := WithSession(context.Background(), session)
+	raw, err := json.Marshal(ticketCreateArgs{
+		Title:            "Implement first visible playfield slice",
+		Priority:         "high",
+		WorkType:         "feature",
+		EndToEndEvidence: "required",
+		Body:             "## Requirements\nImplement the current failing scenario as the first executable slice.",
+	})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	if err := preToolPolicy(ctx, root, "ticket_create", raw); err != nil {
+		t.Fatalf("expected pending first-slice scenario to satisfy ticket_create policy, got %v", err)
 	}
 	if _, err := handleTicketCreate(ctx, root, raw); err != nil {
 		t.Fatalf("ticket_create: %v", err)
 	}
-	data, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "backlog", "T-002-implement-tetromino-movement-and-rotation.md"))
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "tickets", "backlog", "T-001-implement-first-visible-playfield-slice.md"))
 	if err != nil {
 		t.Fatalf("read created ticket: %v", err)
 	}
 	content := string(data)
-	if !strings.Contains(content, "F-001-S002") || !strings.Contains(content, "F-001-S003") {
-		t.Fatalf("expected inferred BDD scenarios in created ticket, got:\n%s", content)
+	if !strings.Contains(content, "F-001-S001") || strings.Contains(content, "F-001-S002") {
+		t.Fatalf("expected only inferred first-slice BDD scenario in created ticket, got:\n%s", content)
 	}
 }
 

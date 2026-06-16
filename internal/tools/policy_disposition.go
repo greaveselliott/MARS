@@ -164,6 +164,22 @@ func checkCTODispositionTicketBatch(root Root, session Session, status, nextNeed
 	}
 	for _, featureID := range ctoHandoffFeatureContractIDs(root) {
 		scenarios, covered := featureScenarioCoverage(root, featureID)
+		if len(scenarios) == 0 {
+			continue
+		}
+		if !featureHasCompletedValidationTicket(root, featureID) {
+			requiredScenarios := firstSliceCTOHandoffRequiredScenarios(root, featureID, scenarios)
+			if len(requiredScenarios) == 0 {
+				continue
+			}
+			required := requiredScenarios[0]
+			if featureHasExactFirstSliceTicket(root, featureID, required) {
+				continue
+			}
+			next := []string{required}
+			recordCTOHandoffRequiredScenarios(session, next)
+			return fmt.Errorf("policy: cto cannot hand off implementation for %s before the first executable slice is ticketed. %s", featureID, ctoFirstSliceTicketCreateGuidance(next))
+		}
 		if len(scenarios) < 2 {
 			continue
 		}
@@ -183,11 +199,149 @@ func checkCTODispositionTicketBatch(root Root, session Session, status, nextNeed
 	return nil
 }
 
+func firstSliceCTOHandoffRequiredScenarios(root Root, featureID string, scenarios []string) []string {
+	if len(scenarios) == 0 {
+		return nil
+	}
+	if current := activePlanCurrentFailingScenarios(root, featureID, scenarios); len(current) > 0 {
+		return current[:1]
+	}
+	if productScenarios := productScenarioIDsForHandoff(root, featureID, scenarios); len(productScenarios) > 0 {
+		return productScenarios[:1]
+	}
+	return scenarios[:1]
+}
+
+func activePlanCurrentFailingScenarios(root Root, featureID string, scenarios []string) []string {
+	path, err := root.ResolvePath(filepath.Join("docs", "exec-plans", "active", "current-operating-plan.md"))
+	if err != nil {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	scenarioSet := map[string]bool{}
+	for _, scenario := range scenarios {
+		scenarioSet[strings.ToUpper(strings.TrimSpace(scenario))] = true
+	}
+	var out []string
+	seen := map[string]bool{}
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "**Current Failing Scenario:**") {
+			continue
+		}
+		for _, scenario := range toolsFeatureScenarioIDPattern.FindAllString(trimmed, -1) {
+			scenario = strings.ToUpper(strings.TrimSpace(scenario))
+			if seen[scenario] || !scenarioSet[scenario] || featureIDFromScenarioIDMust(scenario) != featureID {
+				continue
+			}
+			seen[scenario] = true
+			out = append(out, scenario)
+		}
+	}
+	return out
+}
+
+func featureHasCompletedValidationTicket(root Root, featureID string) bool {
+	tickets, err := ticketstate.List(root.Abs())
+	if err != nil {
+		return false
+	}
+	for _, t := range tickets {
+		if t.Status != ticketstate.StatusDone || t.Kind == "intervention-debt" {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(root.Abs(), filepath.FromSlash(t.RelPath)))
+		if err != nil {
+			continue
+		}
+		if !scenarioListIncludesFeature(orderedFeatureScenarioIDs(string(data)), featureID) {
+			continue
+		}
+		frontmatter := parseTicketPolicyFrontmatter(string(data))
+		if hasFirstProofBuildSmokeEvidence(frontmatter) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasFirstProofBuildSmokeEvidence(frontmatter map[string]string) bool {
+	if len(missingFeatureTicketEvidence(frontmatter)) > 0 {
+		return false
+	}
+	evidence := strings.ToLower(frontmatter["evidence_links"] + "\n" + frontmatter["verified_by"])
+	hasBuildOrTest := strings.Contains(evidence, "go test") ||
+		strings.Contains(evidence, "go build") ||
+		strings.Contains(evidence, "npm test") ||
+		strings.Contains(evidence, "npm run build") ||
+		strings.Contains(evidence, "npm run test") ||
+		strings.Contains(evidence, "cargo test") ||
+		strings.Contains(evidence, "cargo build")
+	hasSmoke := strings.Contains(evidence, "smoke") ||
+		strings.Contains(evidence, "curl") ||
+		strings.Contains(evidence, "http") ||
+		strings.Contains(evidence, "browser") ||
+		strings.Contains(evidence, "playwright") ||
+		strings.Contains(evidence, "python -m http.server") ||
+		strings.Contains(evidence, "/health")
+	return hasBuildOrTest && hasSmoke
+}
+
+func featureHasExactFirstSliceTicket(root Root, featureID, requiredScenario string) bool {
+	tickets, err := ticketstate.List(root.Abs())
+	if err != nil {
+		return false
+	}
+	requiredScenario = strings.ToUpper(strings.TrimSpace(requiredScenario))
+	for _, t := range tickets {
+		if t.Kind == "intervention-debt" || (t.Status != ticketstate.StatusBacklog && t.Status != ticketstate.StatusInProgress) {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(root.Abs(), filepath.FromSlash(t.RelPath)))
+		if err != nil {
+			continue
+		}
+		scenarios := featureScenariosForID(orderedFeatureScenarioIDs(string(data)), featureID)
+		if len(scenarios) == 1 && scenarios[0] == requiredScenario {
+			return true
+		}
+	}
+	return false
+}
+
+func scenarioListIncludesFeature(scenarios []string, featureID string) bool {
+	featureID = strings.ToUpper(strings.TrimSpace(featureID))
+	for _, scenario := range scenarios {
+		if featureIDFromScenarioIDMust(scenario) == featureID {
+			return true
+		}
+	}
+	return false
+}
+
 func recordCTOHandoffRequiredScenarios(session Session, scenarios []string) {
 	if len(scenarios) == 0 || session.ToolState == nil {
 		return
 	}
 	session.ToolState[ctoHandoffRequiredScenariosKey] = strings.Join(scenarios, ",")
+}
+
+func featureScenariosForID(scenarios []string, featureID string) []string {
+	featureID = strings.ToUpper(strings.TrimSpace(featureID))
+	var out []string
+	seen := map[string]bool{}
+	for _, scenario := range scenarios {
+		scenario = strings.ToUpper(strings.TrimSpace(scenario))
+		if scenario == "" || featureIDFromScenarioIDMust(scenario) != featureID || seen[scenario] {
+			continue
+		}
+		seen[scenario] = true
+		out = append(out, scenario)
+	}
+	return out
 }
 
 func ctoHandoffFeatureContractIDs(root Root) []string {

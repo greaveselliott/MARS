@@ -6424,11 +6424,13 @@ was clean.
 
 ### Decision
 
-CTO implementation handoff is now mechanically blocked when a feature has
-multiple early scheduled scenarios but ordinary tickets cover fewer than the
-first two or three. CTO may satisfy this with separate ordered tickets or one
-bounded grouped ticket when adjacent early scenarios are naturally the same
-walking skeleton slice.
+CTO implementation handoff now prioritizes first executable proof over upfront
+backlog completeness. When a feature has no completed product ticket with build/smoke evidence,
+CTO is blocked only until an ordinary first-slice ticket covers the active
+plan's current failing scenario or the earliest uncovered product scenario.
+After the first product ticket reaches done with build/smoke evidence, CTO may
+resume the small ordered backlog-batch behavior for the next one or two early
+product scenarios.
 
 QA changes-requested routing is also narrowed for browser-framework projects.
 When build evidence exists and source inspection has no framework lifecycle
@@ -6439,8 +6441,9 @@ evidence, or record a foundation/dogfood validation finding.
 
 ### Consequences
 
-- Fresh project builds have enough early product backlog to continue after the
-  first visible slice.
+- Fresh project builds reach Engineer faster because the first visible slice is
+  ticketed before broader backlog expansion, while post-proof planning can still
+  seed a small ordered follow-on backlog.
 - QA can still block real browser-framework defects, missing build evidence, or
   missing product-smoke evidence.
 - QA-owned validation setup failures become foundation evidence rather than
@@ -6638,16 +6641,16 @@ or three scheduled scenarios so generic projects still get a small backlog.
 
 The next `demo-tetris-35` loop confirmed that COO could now produce a good
 product scenario outline and that CTO could create the first product ticket.
-The handoff gate correctly asked CTO to add `F-001-S002` and `F-001-S003`
-before Engineer handoff. CTO then repeatedly retried `ticket_create`, but the
+After first proof, the handoff gate correctly asked CTO to add `F-001-S002` and
+`F-001-S003` before follow-on Engineer handoff. CTO then repeatedly retried `ticket_create`, but the
 tool arguments omitted the `bdd_scenarios` array or re-covered `F-001-S001`,
 so the role burned turns against policy instead of creating the next product
 ticket.
 
 ### Decision
 
-When the CTO handoff gate blocks implementation because specific product
-scenarios are still missing, that pending scenario batch is stored in the tool
+When the post-proof CTO handoff gate blocks implementation because specific product
+scenarios are still missing, that pending post-proof scenario batch is stored in the tool
 session. A later CTO `ticket_create` with no usable `bdd_scenarios` can infer
 the missing BDD scenario IDs from either the ticket title/body/metadata or the
 pending handoff state before the ticket is created. Policy feedback still tells

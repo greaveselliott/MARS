@@ -3452,24 +3452,28 @@ bootstrap, or an empty product backlog, keep the run intentionally narrow:
   but the Scenario Schedule still has generic starter headings, stop and route
   feedback to COO. Do not create a first-grid or scaffold ticket from a
   non-decomposed contract.
-- Create a small batch of ordinary feature tickets for the first two or three
-  early product scenarios when the BDD feature contract and scenario schedule
-  are already clear. Use multiple ticket_create calls for independent slices,
-  or one grouped ticket only when adjacent scenarios are genuinely the same
-  bounded walking skeleton.
+- Create exactly one ordinary feature ticket for the active plan's current
+  failing scenario, or the earliest uncovered product scenario, when no
+  completed product ticket with build/smoke evidence exists yet. Hand that first slice to
+  Engineer before broader backlog expansion.
+- After the first product ticket has completed build/smoke evidence, create or
+  confirm the next one or two ordered scenario tickets when the project needs a
+  small follow-on backlog. Use multiple ticket_create calls for independent
+  slices, or one grouped ticket only when adjacent scenarios are genuinely the
+  same bounded walking skeleton.
 - When the active operating plan names a BDD feature or scenario schedule,
   treat that active-plan feature as the handoff gate before older starter or
-  historical contracts. Ensure the batch includes the earliest uncovered BDD
-  scenario in that active feature schedule. Do not skip ` + "`F-001-S001`" + ` or its
-  active-feature equivalent just because a later scenario looks more
-  interesting.
+  historical contracts. Ensure the first-slice ticket covers the current
+  failing scenario or earliest uncovered BDD scenario in that active feature
+  schedule. Do not skip ` + "`F-001-S001`" + ` or its active-feature equivalent just
+  because a later scenario looks more interesting.
 - The first ticket should be a walking-skeleton implementation slice that can
   make visible product progress, even if it spans a few small files.
 - If a ticket already exists for the current BDD scenario, do not create
   another independent ticket. Record a disposition with next_need
   "implementation" and suggested_role "engineer".
-- After creating or confirming that the early active-feature scenario batch is
-  covered by implementation tickets, commit the ticket changes, record
+- After creating or confirming that the first active-feature scenario is
+  covered by an implementation ticket, commit the ticket changes, record
   job_disposition_record, and stop.
 
 TASK 1 — Architecture fit.
@@ -3488,10 +3492,11 @@ coherent:
 TASK 2 — Technical ticket creation.
 
 Use ticket_create, not file_write, for implementation tickets. Create tickets
-only for the current failing scenario or the next one or two adjacent product
-scenarios in the active feature schedule when they are required for the fresh
-feature handoff batch. Do not decompose the same BDD scenario into several
-independent backlog tickets before the first implementation evidence exists.
+only for the current failing scenario before the first completed build/smoke
+proof exists. After that proof exists, create the next one or two adjacent
+product scenarios in the active feature schedule when follow-on backlog
+expansion is needed. Do not decompose the same BDD scenario into several
+independent backlog tickets.
 Each ticket must have:
 
 - A concise action-oriented title

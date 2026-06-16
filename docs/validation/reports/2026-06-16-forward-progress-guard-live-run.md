@@ -18,17 +18,21 @@ planner or CTO loop before that evidence.
 
 **Primary Status:** `primary_failed`
 
-**Current Primary Blocker:** Static web and Phaser/browser-game did not reach
-Engineer; CTO scenario/ticket shaping and handoff remained blocked on those
-paths. Go API is partial supporting evidence only.
+**Current Primary Blocker:** The CTO first-slice policy blocker has a source fix
+with unit/docs coverage, but the follow-up live greenfield rerun did not reach
+CTO or Engineer. Parallel local inference on this machine remained in CEO for
+15+ minutes across all three targets, so the primary build/smoke outcome is
+still unproven.
 
-**Next Primary Action:** Fix the CTO handoff blocker for static web and
-Phaser/browser-game, then rerun the same greenfield validation until all three
-targets reach Engineer build/smoke evidence.
+**Next Primary Action:** Rerun the same static web, Phaser/browser-game, and Go
+API greenfield validation on sufficient runner capacity, or run a harness-native
+farm/runner, until all three targets reach Engineer product mutation and
+build/smoke evidence.
 
 **Supporting Evidence:** Startup reconciliation, isolated target/DB execution,
-and the Go API path through Engineer validation are supporting evidence; they do
-not satisfy the full cross-target primary pass gate.
+the Go API path through Engineer validation from the earlier run, and the CTO
+first-slice source/unit evidence are supporting evidence; they do not satisfy
+the full cross-target primary pass gate.
 
 ## Scope
 
@@ -118,6 +122,101 @@ e995847 feat(api): implement minimal Go HTTP API for reading-list items (T-001)
 5b48115 chore(tickets): claim T-001
 fc43545 tickets: create implementation tickets for current scenario
 ```
+
+## 2026-06-16 CTO First-Slice Handoff Rerun
+
+### Primary Outcome Contract
+
+**Primary Outcome:** Greenfield `mars-harness start` reaches Engineer and
+records first successful build/smoke evidence for static web,
+Phaser/browser-game, and Go API targets.
+
+**Primary Pass Gate:** Each target reaches Engineer, gets product mutation, and
+records first build/smoke evidence without planner or CTO handoff blockage.
+
+**Primary Status:** `primary_failed`
+
+**Current Primary Blocker:** The source fix for CTO first-slice handoff did not
+receive live lifecycle proof because the three parallel local-inference runs did
+not leave CEO before the bounded rerun was stopped.
+
+**Next Primary Action:** Rerun on sufficient harness-native runner capacity, or
+a machine farm, until the static web, Phaser/browser-game, and Go API targets
+all reach Engineer product mutation and build/smoke evidence.
+
+**Supporting Evidence:** Unit tests, docs consistency, generated CTO prompt
+checks, and docsync passed for the first-slice policy. The live rerun proved
+startup isolation again and exposed runner-capacity limits, but did not prove
+the primary lifecycle outcome.
+
+### Source Change Evidence
+
+The source fix changed CTO handoff from pre-proof batching to exact first-slice
+handoff:
+
+- Fresh first-proof mode requires one ordinary first-slice ticket for the active
+  current failing scenario or earliest uncovered product scenario.
+- A grouped first ticket such as `F-001-S001,F-001-S002` no longer satisfies CTO
+  handoff before first proof.
+- Post-proof backlog expansion only unlocks after a done product ticket has
+  build/smoke evidence, not generic evidence metadata.
+- Generated target CTO guidance now says one first-slice ticket before broader
+  expansion.
+
+Validation passed before live rerun:
+
+```bash
+go test ./internal/tools ./internal/scanner ./internal/docsconsistency/...
+go test ./cmd/mars-harness ./internal/serve ./internal/agent
+build/mars-harness tools run docsync_audit --repo . --args-json '{}'
+git diff --check
+go build -o build/mars-harness ./cmd/mars-harness
+```
+
+### Live Rerun Setup
+
+Run root:
+
+```text
+<validation-root>
+```
+
+Commands:
+
+```bash
+build/mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+build/mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+build/mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+```
+
+No fake endpoint or scripted model fallback was used.
+
+### Live Rerun Result
+
+| Target | Startup Action | Final Observed State | Primary Gate Result |
+| --- | --- | --- | --- |
+| Static web | `startup_action=seeded_ceo` | CEO interrupted after 15m38s, 3 turns, 4 tool invocations. No CTO, Engineer, product mutation, build, or smoke. | Failed |
+| Phaser/browser-game | `startup_action=seeded_ceo` | CEO interrupted after 15m39s, 4 turns, 5 tool invocations. No CTO, Engineer, product mutation, build, or smoke. | Failed |
+| Go API | `startup_action=seeded_ceo` | CEO interrupted after 15m50s, 2 turns, 3 tool invocations. No CTO, Engineer, product mutation, build, or smoke. | Failed |
+
+SQLite job evidence after stopping:
+
+```text
+static-web: ceo|failed|2026-06-16 23:35:36|2026-06-16 23:51:51|executor: agent loop error (llm_unreachable): context canceled
+phaser-game: ceo|failed|2026-06-16 23:35:36|2026-06-16 23:51:52|executor: agent loop error (llm_unreachable): context canceled
+go-api: ceo|failed|2026-06-16 23:35:36|2026-06-16 23:51:53|executor: agent loop error (llm_unreachable): context canceled
+```
+
+The `llm_unreachable/context canceled` category was caused by the operator stop
+after diagnosing that the rerun had not reached the primary code path. The
+evidence before stop showed very slow local generation under three parallel
+30B-model servers, with no lifecycle role handoff beyond CEO.
+
+### Conclusion
+
+The implementation is source-validated but not live primary-validated. This
+report must remain `primary_failed` until a real greenfield run reaches Engineer
+build/smoke evidence on all three target types.
 
 ## What Worked
 

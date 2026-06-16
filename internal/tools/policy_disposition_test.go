@@ -1176,7 +1176,28 @@ func TestCOORepeatedFeatureSpecificityBlockReturnsRepairGuidance(t *testing.T) {
 	}
 }
 
-func TestCTOCompletionRequiresEarlyScenarioTicketBatch(t *testing.T) {
+func TestCTOCompletionFreshBootstrapRequiresFirstSliceTicketOnly(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeDetailedTetrisBrief(t, dir)
+	writePolicyPlan(t, dir)
+	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
+
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
+
+	err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"implementation","suggested_role":"engineer"}`))
+	if err == nil {
+		t.Fatal("expected CTO implementation handoff to require a first-slice ticket")
+	}
+	if !strings.Contains(err.Error(), "first executable slice") ||
+		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) ||
+		strings.Contains(err.Error(), "F-001-S002") ||
+		!strings.Contains(err.Error(), "git_status -> git_commit -> job_disposition_record") {
+		t.Fatalf("expected first-slice ticket guidance, got %v", err)
+	}
+}
+
+func TestCTOCompletionFreshBootstrapAllowsEngineerHandoffAfterFirstSliceTicket(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)
 	writeDetailedTetrisBrief(t, dir)
@@ -1199,6 +1220,36 @@ blocked_by: []
 `)
 	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
 
+	if err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"implementation","suggested_role":"engineer"}`)); err != nil {
+		t.Fatalf("expected first-slice ticket to permit Engineer handoff before backlog expansion, got %v", err)
+	}
+}
+
+func TestCTOCompletionRequiresEarlyScenarioTicketBatchAfterFirstProof(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeDetailedTetrisBrief(t, dir)
+	writePolicyPlan(t, dir)
+	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
+	writePolicyTicket(t, dir, "done", "T-001-visible-playfield.md", `---
+id: T-001
+title: Implement visible playfield
+work_type: feature
+bdd_scenarios:
+- F-001-S001
+end_to_end_evidence: required
+evidence_links:
+- npm run build
+- npm run smoke
+verified_by: engineer
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
+
 	err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"implementation","suggested_role":"engineer"}`))
 	if err == nil {
 		t.Fatal("expected CTO implementation handoff to require an early ticket batch")
@@ -1207,6 +1258,40 @@ blocked_by: []
 		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S002","F-001-S003"]`) ||
 		!strings.Contains(err.Error(), "git_status -> git_commit -> job_disposition_record") {
 		t.Fatalf("expected ticket batch guidance, got %v", err)
+	}
+}
+
+func TestCTOCompletionWeakEvidenceDoesNotUnlockPostProofBacklogExpansion(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeDetailedTetrisBrief(t, dir)
+	writePolicyPlan(t, dir)
+	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
+	writePolicyTicket(t, dir, "done", "T-001-visible-playfield.md", `---
+id: T-001
+title: Implement visible playfield
+work_type: feature
+bdd_scenarios:
+- F-001-S001
+end_to_end_evidence: required
+evidence_links:
+- go test ./...
+verified_by: engineer
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
+
+	err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"implementation","suggested_role":"engineer"}`))
+	if err == nil {
+		t.Fatal("expected weak done-ticket evidence to keep CTO in first-proof mode")
+	}
+	if !strings.Contains(err.Error(), "first executable slice") ||
+		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) {
+		t.Fatalf("expected first-proof guidance instead of post-proof backlog expansion, got %v", err)
 	}
 }
 
@@ -1229,7 +1314,9 @@ work_type: feature
 bdd_scenarios:
 - F-002-S001
 end_to_end_evidence: required
-evidence_links: []
+evidence_links:
+- npm run build
+- npm run smoke
 verified_by: engineer
 blocker: none
 blocked_by: []
@@ -1263,12 +1350,10 @@ func TestCTOCompletionIgnoresUnselectedStarterFeatureWhenActivePlanBatchIsCovere
 	})
 	writePolicyTicket(t, dir, "backlog", "T-001-active-plan-batch.md", `---
 id: T-001
-title: Implement active plan batch
+title: Implement active plan first slice
 work_type: feature
 bdd_scenarios:
-- F-002-S001
 - F-002-S002
-- F-002-S003
 end_to_end_evidence: required
 evidence_links: []
 verified_by: TBD
@@ -1281,11 +1366,11 @@ blocked_by: []
 	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
 
 	if err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"implementation","suggested_role":"engineer"}`)); err != nil {
-		t.Fatalf("expected active-plan batch to permit Engineer handoff despite unselected starter feature, got %v", err)
+		t.Fatalf("expected active-plan first-slice ticket to permit Engineer handoff despite unselected starter feature, got %v", err)
 	}
 }
 
-func TestCTOCompletionAllowsGroupedEarlyScenarioCoverage(t *testing.T) {
+func TestCTOCompletionRejectsGroupedFreshBootstrapScenarioCoverage(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)
 	writeDetailedTetrisBrief(t, dir)
@@ -1310,8 +1395,12 @@ blocked_by: []
 `)
 	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
 
-	if err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"implementation","suggested_role":"engineer"}`)); err != nil {
-		t.Fatalf("expected CTO handoff to pass once early scenarios are ticketed, got %v", err)
+	err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"implementation","suggested_role":"engineer"}`))
+	if err == nil {
+		t.Fatal("expected grouped fresh bootstrap ticket to remain blocked before first proof")
+	}
+	if !strings.Contains(err.Error(), "first executable slice") || !strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) {
+		t.Fatalf("expected exact first-slice guidance, got %v", err)
 	}
 }
 
@@ -1326,7 +1415,6 @@ id: T-001
 title: Implement first playable Tetris slice
 work_type: feature
 bdd_scenarios:
-- F-001-S001
 - F-001-S002
 end_to_end_evidence: required
 evidence_links: []

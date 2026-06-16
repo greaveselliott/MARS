@@ -45,8 +45,9 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 28. F-006-S041 - Engineer test/build repair writes stay inside the failed package scope when one is known.
 29. F-006-S042 - Engineer can remove duplicate test files it created earlier in the same job while repairing a failing test lane.
 30. F-006-S045 - Release review waits for open product tickets and uncovered generated feature scenarios.
-31. F-006-S046 - Fresh bootstrap CTO ticketing can seed a small ordered product backlog batch from early product scenarios so later product work is ready after the first slice.
-32. F-006-S047 - Engineer closes one product ticket per job before claiming another product ticket.
+31. F-006-S046 - Engineer product progress continues after max-turn or circle detection while a product ticket is active.
+32. F-006-S047 - Convergence failures get one automatic retry before recorded operator escalation.
+33. F-006-S048 - Fresh bootstrap CTO ticketing sends one first-slice ticket to Engineer before broader ordered backlog expansion.
 
 ## Scenarios
 
@@ -204,16 +205,20 @@ When an ordinary product ticket exists in backlog or in-progress
 Then dispatch may enqueue Engineer and the ticket gate remains responsible for claim, completion, evidence, and handoff correctness
 
 Given CTO is shaping a fresh product feature with a clear scenario schedule
-When the earliest uncovered scenario is already covered by an ordinary ticket in backlog, in-progress, in-review, or done
-Then CTO may create the next scenario ticket instead of being forced to wait for the earlier ticket to reach done, allowing a small ordered backlog batch for the project build
+When no completed product ticket has build/smoke evidence yet
+Then CTO creates exactly one first-slice ticket for the active plan's current failing scenario or earliest uncovered product scenario before handing off to Engineer
 
-Given CTO records an implementation handoff for a feature with multiple early scheduled product scenarios
-When fewer than the first two or three early product scenarios are covered by ordinary tickets
-Then the disposition is blocked until CTO creates a small product backlog batch or deliberately groups adjacent early product scenarios in one bounded ticket
+Given CTO records an implementation handoff for a fresh feature with no completed product ticket with build/smoke evidence
+When the active plan's current failing scenario or earliest uncovered product scenario is not covered by an ordinary single-scenario ticket
+Then the disposition is blocked until CTO creates exactly one first-slice implementation ticket for that scenario
+
+Given CTO records an implementation handoff after the feature already has a completed product ticket with build/smoke evidence
+When fewer than the next early product scenarios are covered by ordinary tickets
+Then the disposition is blocked until CTO creates a small ordered product backlog batch or deliberately groups adjacent early product scenarios in one bounded ticket
 
 Given the active operating plan names a specific BDD feature and scenario schedule
 When other active feature contracts still exist from starter planning or historical slices
-Then the CTO implementation handoff batch is evaluated against the active-plan feature first, so stale unselected contracts do not block the current Engineer handoff
+Then the CTO implementation handoff gate is evaluated against the active-plan feature first, so stale unselected contracts do not block the current Engineer handoff
 
 Given a later scheduled scenario is only about evidence ordering, governance, telemetry, or intervention-debt containment
 When the early product scenarios are already covered by ordinary tickets
@@ -682,8 +687,12 @@ Given CTO needs to record architecture rationale before ticketing
 When it writes bounded technical planning artifacts under `docs/design-docs/`, `docs/reports/strategy/`, or `docs/goals/observations.md`
 Then those writes remain available and can be committed before the CTO disposition
 
-Given CTO tries to hand off implementation before the required early product scenarios are covered by tickets
+Given CTO tries to hand off implementation before the first executable product scenario is covered by a ticket
 When policy blocks the disposition or a follow-up `ticket_create` omits `bdd_scenarios`
+Then the error names the exact first-slice `bdd_scenarios` JSON array and the required sequence `ticket_create -> git_status -> git_commit -> job_disposition_record`
+
+Given the feature already has a completed product ticket with build/smoke evidence
+When CTO tries to hand off implementation before the required follow-on early product scenarios are covered by tickets
 Then the error names the exact next valid `bdd_scenarios` JSON array and the required sequence `ticket_create -> git_status -> git_commit -> job_disposition_record`
 
 ### F-006-S038: Test/Build Repair Allows Same-Lane Validation
@@ -805,6 +814,20 @@ Given a dispatch job fails with an environment failure such as `model_unavailabl
 When failure handling classifies the category
 Then the runtime-failure halt is preserved with no automatic retry, because redispatching the same state reproduces the failure deterministically
 
+### F-006-S048: Fresh Bootstrap CTO First-Slice Handoff
+
+Given CTO is shaping a fresh product feature with no completed product ticket that has build/smoke evidence
+When CTO creates or confirms implementation tickets for Engineer handoff
+Then exactly one ordinary first-slice ticket may satisfy the handoff, and its `bdd_scenarios` list contains only the active plan's current failing scenario or earliest uncovered product scenario
+
+Given CTO creates a grouped ticket covering multiple scenarios before first proof
+When CTO tries to hand off implementation
+Then the disposition remains blocked and the guidance names the single first-slice `bdd_scenarios` array plus the required `ticket_create -> git_status -> git_commit -> job_disposition_record` sequence
+
+Given the feature already has a completed product ticket with build/smoke evidence
+When CTO creates or confirms follow-on implementation tickets
+Then the existing small ordered backlog behavior applies, allowing the next one or two adjacent product scenarios to be ticketed or grouped when they form one bounded walking skeleton
+
 ## Out of Scope
 
 - External queue systems such as Redis.
@@ -860,3 +883,4 @@ None.
 - F-006-S045: `go test ./internal/serve -run 'TestHandleJobComplete_(openProductTicketRoutesBeforeRelease|uncoveredGeneratedFeatureScenarioRoutesCTOBeforeRelease)'`
 - F-006-S046: `go test ./internal/serve -run 'TestHandleJobFailed_maxTurnsWithActiveProductTicketEnqueuesContinuation|TestHandleJobFailed_circleDetectedWithActiveProductTicketEnqueuesContinuation|TestHandleJobFailed_productContinuationDoesNotReenqueue|TestOrchestratorSurveyPausesTicketOwnerAfterRecentRuntimeFailure'`
 - F-006-S047: `go test ./internal/serve -run 'TestHandleJobFailed_qaMaxTurnsEnqueuesConvergenceRetry|TestHandleJobFailed_dogfoodCircleDetectedEnqueuesConvergenceRetry|TestHandleJobFailed_engineerMaxTurnsWithoutTicketEnqueuesConvergenceRetry|TestHandleJobFailed_convergenceRetryFailureEscalatesWithDisposition|TestHandleJobFailed_productContinuationFailureEscalatesWithDisposition|TestHandleJobFailed_failedRetryFingerprintEscalatesNextFailure|TestHandleJobFailed_environmentFailureStillHaltsWithoutRetry'`
+- F-006-S048: `go test ./internal/tools -run 'TestCTOCompletion(FreshBootstrap|RequiresEarlyScenarioTicketBatchAfterFirstProof|WeakEvidence)|TestCTOTicketCreate(RejectsScenarioGroup|AllowsPostProofScenarioGroup|InfersPendingFirstSliceScenario)'` and `go test ./internal/scanner -run TestInit_success`

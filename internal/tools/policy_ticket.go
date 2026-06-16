@@ -115,10 +115,23 @@ func checkTicketCreatePlanningOrder(root Root, session Session, hasSession bool,
 		if len(alreadyCovered) > 0 {
 			sort.Strings(alreadyCovered)
 			firstMissing := firstUncoveredFeatureScenarioFromCoverage(scenarios, covered)
+			if hasSession && (strings.EqualFold(strings.TrimSpace(session.Role), "cto") || strings.EqualFold(strings.TrimSpace(session.Role), "cto-weekly")) && !featureHasCompletedValidationTicket(root, id) {
+				required := firstSliceCTOHandoffRequiredScenarios(root, id, scenarios)
+				return fmt.Errorf("policy: cto cannot create additional or grouped feature tickets for %s before first build/smoke proof. Hand off the exact first-slice ticket to Engineer, or create it if missing. %s", id, ctoFirstSliceTicketCreateGuidance(required))
+			}
 			if firstMissing != "" {
 				return fmt.Errorf("policy: feature ticket_create cannot include already-covered scenario(s) %s for %s. Create the next ticket for %s only, or group it with later uncovered adjacent scenarios", strings.Join(alreadyCovered, ", "), id, firstMissing)
 			}
 			return fmt.Errorf("policy: feature ticket_create cannot include already-covered scenario(s) %s for %s; all contract scenarios appear to be ticketed already", strings.Join(alreadyCovered, ", "), id)
+		}
+		if hasSession && (strings.EqualFold(strings.TrimSpace(session.Role), "cto") || strings.EqualFold(strings.TrimSpace(session.Role), "cto-weekly")) && !featureHasCompletedValidationTicket(root, id) {
+			required := firstSliceCTOHandoffRequiredScenarios(root, id, scenarios)
+			if len(required) > 0 {
+				selected := featureScenariosForID(args.BDDScenarios, id)
+				if len(selected) != 1 || selected[0] != required[0] {
+					return fmt.Errorf("policy: cto fresh first-proof ticket_create must create exactly one first-slice scenario for %s before broader backlog expansion. %s", id, ctoFirstSliceTicketCreateGuidance(required[:1]))
+				}
+			}
 		}
 		firstMissing := firstUncoveredFeatureScenario(root, id)
 		if firstMissing != "" && !scenarioListContains(args.BDDScenarios, firstMissing) {
@@ -133,7 +146,15 @@ func ctoTicketCreateGuidance(next []string) string {
 	if nextText == "" {
 		nextText = "the next uncovered product scenario"
 	}
-	return fmt.Sprintf("Create the next valid implementation ticket with ticket_create using bdd_scenarios:%s (JSON array), covering %s, or group adjacent bounded product scenarios in one ticket when that is the clearer first slice. Required follow-up sequence: git_status -> git_commit -> job_disposition_record with next_need implementation and suggested_role engineer.", quoteStringArray(next), nextText)
+	return fmt.Sprintf("Create the next valid implementation ticket with ticket_create using bdd_scenarios:%s (JSON array), covering %s, or group adjacent bounded product scenarios in one ticket when that is the clearer post-proof slice. Required follow-up sequence: git_status -> git_commit -> job_disposition_record with next_need implementation and suggested_role engineer.", quoteStringArray(next), nextText)
+}
+
+func ctoFirstSliceTicketCreateGuidance(next []string) string {
+	nextText := strings.Join(next, ", ")
+	if nextText == "" {
+		nextText = "the current failing product scenario"
+	}
+	return fmt.Sprintf("Create exactly one first-slice implementation ticket with ticket_create using bdd_scenarios:%s (JSON array), covering %s. Required follow-up sequence: git_status -> git_commit -> job_disposition_record with next_need implementation and suggested_role engineer.", quoteStringArray(next), nextText)
 }
 
 func featureIDsFromScenarios(scenarios []string) []string {
