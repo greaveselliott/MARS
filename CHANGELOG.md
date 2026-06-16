@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.62.4] - 2026-06-16
+<!-- mars-harness-release: version=0.62.4 commit=a240804d6391 -->
+
+### Impact
+- **runtime:** Parallel scoped lifecycle validation can start multiple clean targets on one machine without default control-port bind failures or duplicate local inference port launches.
+
+### Why
+- **runtime:** Compartmentalised and confidence-gated validation depends on running static web, browser-game, and API targets side by side. The previous setup failed before useful agent evidence when `start` processes fought over `:9091/:9090` or raced on llama-server port locks.
+
+### What Changed
+- **runtime:** Scoped `start` now uses safe SQLite-only cleanup, falls back to ephemeral local control/dashboard listeners on default-port conflicts, reserves bounded inference ports with fresh-lock race protection, exposes real endpoint/address controls, and records live validation evidence with explicit confidence limits (a240804).
+
+### Fixes
+- **runtime:** Isolate parallel lifecycle validation (a240804)
+
 ## [0.62.3] - 2026-06-16
 <!-- mars-harness-release: version=0.62.3 commit=81a6f9080edc -->
 
