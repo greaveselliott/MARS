@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.62.6] - 2026-06-16
+<!-- mars-harness-release: version=0.62.6 commit=39bfea6f5426 -->
+
+### Impact
+- **operating-model:** Foundation agents can no longer treat ancillary validation wins as completion when the operator's primary outcome remains unproven.
+
+### Why
+- **operating-model:** This matters because supporting evidence such as startup or port isolation can be useful while still failing the core lifecycle goal; the harness now makes that distinction mechanically visible.
+
+### What Changed
+- **operating-model:** Added the source-only Primary Outcome Contract, migrated affected validation reports to `primary_failed`/`supporting_only`, and added docs-consistency lint so reports from the cutover date must declare primary status before summary/result claims (39bfea6).
+
+### Documentation
+- **operating-model:** Enforce primary outcome claim gate (39bfea6)
+
 ## [0.62.5] - 2026-06-16
 <!-- mars-harness-release: version=0.62.5 commit=e811af95e396 -->
 
