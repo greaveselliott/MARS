@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.62.2] - 2026-06-16
+<!-- mars-harness-release: version=0.62.2 commit=0f9bbec5d59f -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because record forward progress live run.
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed record forward progress live run (0f9bbec).
+
+### Documentation
+- **validation:** Record forward progress live run (0f9bbec)
+
 ## [0.62.1] - 2026-06-16
 <!-- mars-harness-release: version=0.62.1 commit=25988bbd5be6 -->
 
