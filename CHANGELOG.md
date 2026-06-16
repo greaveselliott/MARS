@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.62.7] - 2026-06-16
+<!-- mars-harness-release: version=0.62.7 commit=ede85ef0f6d4 -->
+
+### Impact
+- **lifecycle:** Operators see improved reliability because require CTO first-slice handoff before backlog expansion.
+
+### Why
+- **lifecycle:** This matters because require CTO first-slice handoff before backlog expansion closes a failure mode or degraded path.
+
+### What Changed
+- **lifecycle:** Changed require CTO first-slice handoff before backlog expansion (ede85ef).
+
+### Fixes
+- **lifecycle:** Require CTO first-slice handoff before backlog expansion (ede85ef)
+
 ## [0.62.6] - 2026-06-16
 <!-- mars-harness-release: version=0.62.6 commit=39bfea6f5426 -->
 
