@@ -1515,6 +1515,55 @@ func TestHandleJobFailed_qaMaxTurnsEnqueuesConvergenceRetry(t *testing.T) {
 	}
 }
 
+func TestHandleJobFailed_unremediatedGuardrailLoopRecordsBlockedDisposition(t *testing.T) {
+	repoRoot, dbPath := setupDispatchFixture(t)
+
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        dbPath,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ctx := context.Background()
+	repoID, err := srv.repos.Register(ctx, repoRoot, "owner/qa-guardrail-loop", "main")
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+
+	failedJob := &queue.Job{
+		ID:     "job-qa-guardrail-loop",
+		RepoID: repoID,
+		Role:   "qa",
+	}
+	srv.telemetry.Record(failedJob.ID, failedJob.RepoID, failedJob.Role, "repeated policy block loop after 3 identical blocks: post tool policy blocked job_disposition_record: missing feature contract coverage")
+	srv.handleJobFailed(ctx, failedJob, errTest("executor: agent ended with max_turns"))
+
+	disposition, err := srv.orgStore.GetDisposition(ctx, failedJob.ID)
+	if err != nil {
+		t.Fatalf("GetDisposition: %v", err)
+	}
+	if disposition == nil {
+		t.Fatal("expected blocked disposition")
+	}
+	if disposition.Status != "blocked" || disposition.NextNeed != "operator_retry" {
+		t.Fatalf("expected blocked/operator_retry disposition, got %#v", disposition)
+	}
+	if !strings.Contains(disposition.Reason, "guardrail_loop") || !strings.Contains(disposition.Reason, "missing feature contract coverage") {
+		t.Fatalf("expected exact guardrail-loop evidence in reason, got %q", disposition.Reason)
+	}
+
+	retryJob, err := srv.queue.Claim(ctx, "test-worker")
+	if err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	if retryJob != nil {
+		t.Fatalf("expected guardrail loop to stop instead of enqueueing generic retry, got role=%s", retryJob.Role)
+	}
+}
+
 func TestHandleJobFailed_dogfoodCircleDetectedEnqueuesConvergenceRetry(t *testing.T) {
 	repoRoot, dbPath := setupDispatchFixture(t)
 

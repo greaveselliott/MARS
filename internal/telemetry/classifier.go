@@ -16,25 +16,26 @@ import (
 type FailureCategory string
 
 const (
-	CategoryContextOverflow  FailureCategory = "context_overflow"
-	CategoryLLMUnreachable   FailureCategory = "llm_unreachable"
-	CategoryInferenceCrash   FailureCategory = "inference_crash"
-	CategoryModelUnavailable FailureCategory = "model_unavailable"
-	CategoryToolTimeout      FailureCategory = "tool_timeout"
-	CategoryCircleDetected   FailureCategory = "circle_detected"
-	CategoryMaxTurns         FailureCategory = "max_turns"
-	CategoryBudgetExceeded   FailureCategory = "budget_exceeded"
-	CategoryManifestError    FailureCategory = "manifest_error"
-	CategoryTicketGate       FailureCategory = "ticket_gate"
-	CategoryDispatchProtocol FailureCategory = "dispatch_protocol"
-	CategoryGuardrailBlock   FailureCategory = "guardrail_block"
-	CategoryGuardrailLoop    FailureCategory = "guardrail_loop"
-	CategoryWorkspaceHygiene FailureCategory = "workspace_hygiene"
-	CategoryHumanFollowup    FailureCategory = "human_followup"
-	CategoryRevertedCommit   FailureCategory = "reverted_commit"
-	CategoryStaleTicket      FailureCategory = "stale_in_progress_ticket"
-	CategoryManualStop       FailureCategory = "manual_stop"
-	CategoryUnknown          FailureCategory = "unknown"
+	CategoryContextOverflow       FailureCategory = "context_overflow"
+	CategoryLLMUnreachable        FailureCategory = "llm_unreachable"
+	CategoryInferenceCrash        FailureCategory = "inference_crash"
+	CategoryInferencePortConflict FailureCategory = "inference_port_conflict"
+	CategoryModelUnavailable      FailureCategory = "model_unavailable"
+	CategoryToolTimeout           FailureCategory = "tool_timeout"
+	CategoryCircleDetected        FailureCategory = "circle_detected"
+	CategoryMaxTurns              FailureCategory = "max_turns"
+	CategoryBudgetExceeded        FailureCategory = "budget_exceeded"
+	CategoryManifestError         FailureCategory = "manifest_error"
+	CategoryTicketGate            FailureCategory = "ticket_gate"
+	CategoryDispatchProtocol      FailureCategory = "dispatch_protocol"
+	CategoryGuardrailBlock        FailureCategory = "guardrail_block"
+	CategoryGuardrailLoop         FailureCategory = "guardrail_loop"
+	CategoryWorkspaceHygiene      FailureCategory = "workspace_hygiene"
+	CategoryHumanFollowup         FailureCategory = "human_followup"
+	CategoryRevertedCommit        FailureCategory = "reverted_commit"
+	CategoryStaleTicket           FailureCategory = "stale_in_progress_ticket"
+	CategoryManualStop            FailureCategory = "manual_stop"
+	CategoryUnknown               FailureCategory = "unknown"
 )
 
 // Event is a single telemetry observation from the pipeline.
@@ -98,6 +99,9 @@ func Classify(errMsg string) FailureCategory {
 		return CategoryLLMUnreachable
 	case strings.Contains(lower, "connection refused"):
 		return CategoryLLMUnreachable
+
+	case strings.Contains(lower, "inference_port_conflict"):
+		return CategoryInferencePortConflict
 
 	case strings.Contains(lower, "inference") && (strings.Contains(lower, "crash") || strings.Contains(lower, "health check")):
 		return CategoryInferenceCrash

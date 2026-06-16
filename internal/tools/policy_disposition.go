@@ -178,7 +178,7 @@ func checkCTODispositionTicketBatch(root Root, session Session, status, nextNeed
 		}
 		next := firstUncoveredFeatureScenarios(requiredScenarios, covered, required-coveredCount)
 		recordCTOHandoffRequiredScenarios(session, next)
-		return fmt.Errorf("policy: cto cannot hand off implementation for %s after covering only %d/%d early product scenario(s). Create a small product backlog batch with ticket_create before Engineer handoff: cover the next product scenario(s) %s, or group adjacent bounded product scenarios in one ticket when that is the clearer slice", featureID, coveredCount, required, strings.Join(next, ", "))
+		return fmt.Errorf("policy: cto cannot hand off implementation for %s after covering only %d/%d early product scenario(s). %s", featureID, coveredCount, required, ctoTicketCreateGuidance(next))
 	}
 	return nil
 }

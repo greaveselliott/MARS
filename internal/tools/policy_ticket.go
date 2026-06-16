@@ -92,7 +92,7 @@ func checkTicketCreatePlanningOrder(root Root, session Session, hasSession bool,
 	if len(featureIDs) == 0 {
 		if hasSession && (strings.EqualFold(strings.TrimSpace(session.Role), "cto") || strings.EqualFold(strings.TrimSpace(session.Role), "cto-weekly")) {
 			if next := pendingCTOHandoffRequiredScenarios(session); len(next) > 0 {
-				return fmt.Errorf("policy: feature ticket_create is missing bdd_scenarios. Retry ticket_create with bdd_scenarios as a JSON array, for example %s, matching the next product scenario(s) before Engineer handoff", quoteStringArray(next))
+				return fmt.Errorf("policy: feature ticket_create is missing bdd_scenarios. %s", ctoTicketCreateGuidance(next))
 			}
 		}
 		return fmt.Errorf("policy: feature ticket_create requires bdd_scenarios from an existing docs/features contract; planning order is exec plan, feature contract, ticket, delivery")
@@ -126,6 +126,14 @@ func checkTicketCreatePlanningOrder(root Root, session Session, hasSession bool,
 		}
 	}
 	return nil
+}
+
+func ctoTicketCreateGuidance(next []string) string {
+	nextText := strings.Join(next, ", ")
+	if nextText == "" {
+		nextText = "the next uncovered product scenario"
+	}
+	return fmt.Sprintf("Create the next valid implementation ticket with ticket_create using bdd_scenarios:%s (JSON array), covering %s, or group adjacent bounded product scenarios in one ticket when that is the clearer first slice. Required follow-up sequence: git_status -> git_commit -> job_disposition_record with next_need implementation and suggested_role engineer.", quoteStringArray(next), nextText)
 }
 
 func featureIDsFromScenarios(scenarios []string) []string {

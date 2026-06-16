@@ -198,6 +198,18 @@ func (t *policyBlockLoopTracker) record(evt tools.PolicyEvent) (int, bool) {
 	return t.counts[key], t.counts[key] == telemetry.PatternThreshold
 }
 
+func (t *policyBlockLoopTracker) remediable() bool {
+	if t == nil {
+		return false
+	}
+	for _, count := range t.counts {
+		if count >= telemetry.PatternThreshold {
+			return true
+		}
+	}
+	return false
+}
+
 func policyBlockLoopKey(evt tools.PolicyEvent) string {
 	tool := normalizePolicyLoopField(evt.ToolName)
 	message := normalizePolicyLoopField(evt.Message)
@@ -461,6 +473,36 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 				return err
 			}
 			terminalDispositionRecorded = true
+			if e.onSignal != nil {
+				switch {
+				case policyLoops.remediable():
+					e.onSignal(context.Background(), interventionDebtSignal{
+						Kind:           "guardrail_loop_remediated",
+						RepoID:         job.RepoID,
+						Role:           job.Role,
+						JobID:          job.ID,
+						Category:       telemetry.CategoryGuardrailLoop,
+						EvidenceWindow: "same-job",
+						TraceID:        rec.TraceID(),
+						ToolName:       "job_disposition_record",
+						Outcome:        "remedied",
+						Message:        "guardrail loop remediated by later terminal job_disposition_record",
+					})
+				case dispositionRemediatesPriorGuardrailLoop(d):
+					e.onSignal(context.Background(), interventionDebtSignal{
+						Kind:           "guardrail_loop_remediated",
+						RepoID:         job.RepoID,
+						Role:           job.Role,
+						JobID:          job.ID,
+						Category:       telemetry.CategoryGuardrailLoop,
+						EvidenceWindow: "later-job",
+						TraceID:        rec.TraceID(),
+						ToolName:       "job_disposition_record",
+						Outcome:        strings.TrimSpace(d.Status),
+						Message:        "prior guardrail loop remediated by later accepted job_disposition_record",
+					})
+				}
+			}
 			return nil
 		},
 	}
@@ -659,6 +701,15 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	tw.WriteHandoff(job.Role, handoff)
 
 	return nil
+}
+
+func dispositionRemediatesPriorGuardrailLoop(d orgstate.Disposition) bool {
+	switch strings.ToLower(strings.TrimSpace(d.Status)) {
+	case "completed", "approved", "blocked", "in_review", "changes_requested", "no_work":
+		return true
+	default:
+		return false
+	}
 }
 
 func appendDispatchCompletionInstruction(rolePrompt string) string {

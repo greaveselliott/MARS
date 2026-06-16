@@ -70,6 +70,11 @@ func TestClassify_modelUnavailable(t *testing.T) {
 	}
 }
 
+func TestClassify_inferencePortConflict(t *testing.T) {
+	t.Parallel()
+	require.Equal(t, CategoryInferencePortConflict, Classify("executor: get inference endpoint for role \"ceo\": inference_port_conflict: port=18081 owning_pid=1234 tier=reasoning role=ceo remediation=stop the process"))
+}
+
 func TestClassify_toolTimeout(t *testing.T) {
 	t.Parallel()
 	cases := []string{
@@ -145,6 +150,67 @@ func TestClassify_unknown(t *testing.T) {
 	require.Equal(t, CategoryDispatchProtocol, Classify("executor: dispatch mode requires ceo to call job_disposition_record before completing"))
 }
 
+func TestCollectorMarkRemediedUpdatesMemoryAndStore(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store, err := OpenStore(filepath.Join(t.TempDir(), "telemetry.db"))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, store.Close()) })
+
+	collector := NewCollector(nil, store)
+	evt := collector.Record("job-1", "repo-1", "coo", "repeated policy block loop after 3 identical blocks")
+	require.False(t, evt.Remedied)
+
+	changed := collector.MarkRemedied(ctx, "job-1", "repo-1", "coo", CategoryGuardrailLoop, "same_job_disposition")
+	require.Equal(t, 1, changed)
+	events := collector.Events()
+	require.Len(t, events, 1)
+	require.True(t, events[0].Remedied)
+	require.Equal(t, "same_job_disposition", events[0].Action)
+
+	persisted, err := store.Recent(1)
+	require.NoError(t, err)
+	require.Len(t, persisted, 1)
+	require.True(t, persisted[0].Remedied)
+	require.Equal(t, "same_job_disposition", persisted[0].Action)
+}
+
+func TestCollectorMarkRemediedForRepoRoleUpdatesPriorJobs(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store, err := OpenStore(filepath.Join(t.TempDir(), "telemetry.db"))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, store.Close()) })
+
+	collector := NewCollector(nil, store)
+	collector.Record("job-1", "repo-1", "coo", "repeated policy block loop after 3 identical blocks")
+	collector.Record("job-2", "repo-1", "coo", "repeated policy block loop after 3 identical blocks")
+	collector.Record("job-3", "repo-2", "coo", "repeated policy block loop after 3 identical blocks")
+
+	changed := collector.MarkRemediedForRepoRole(ctx, "repo-1", "coo", CategoryGuardrailLoop, "later_successful_disposition")
+	require.Equal(t, 2, changed)
+
+	events := collector.Events()
+	for _, evt := range events {
+		if evt.RepoID == "repo-1" {
+			require.True(t, evt.Remedied)
+			require.Equal(t, "later_successful_disposition", evt.Action)
+		} else {
+			require.False(t, evt.Remedied)
+		}
+	}
+
+	persisted, err := store.Recent(10)
+	require.NoError(t, err)
+	var remedied int
+	for _, evt := range persisted {
+		if evt.RepoID == "repo-1" && evt.Remedied && evt.Action == "later_successful_disposition" {
+			remedied++
+		}
+	}
+	require.Equal(t, 2, remedied)
+}
+
 func TestRetryable(t *testing.T) {
 	t.Parallel()
 	retryable := []FailureCategory{
@@ -158,6 +224,7 @@ func TestRetryable(t *testing.T) {
 	nonRetryable := []FailureCategory{
 		CategoryContextOverflow,
 		CategoryModelUnavailable,
+		CategoryInferencePortConflict,
 		CategoryCircleDetected,
 		CategoryMaxTurns,
 		CategoryBudgetExceeded,
@@ -183,6 +250,7 @@ func TestRemediate_actions(t *testing.T) {
 	require.Equal(t, ActionRestartInference, Remediate(CategoryLLMUnreachable))
 	require.Equal(t, ActionRestartInference, Remediate(CategoryInferenceCrash))
 	require.Equal(t, ActionNone, Remediate(CategoryModelUnavailable))
+	require.Equal(t, ActionNone, Remediate(CategoryInferencePortConflict))
 	require.Equal(t, ActionRetryLonger, Remediate(CategoryToolTimeout))
 	require.Equal(t, ActionNone, Remediate(CategoryCircleDetected))
 	require.Equal(t, ActionNone, Remediate(CategoryMaxTurns))
@@ -392,6 +460,22 @@ func TestTriagePattern_modelUnavailableTargetsInference(t *testing.T) {
 	require.Equal(t, "Install or route model tier", proposal.Title)
 	require.Contains(t, proposal.Suggestion, "setup")
 	require.Contains(t, proposal.CandidateFiles, "~/.mars-harness/config.yaml")
+}
+
+func TestTriagePattern_inferencePortConflictTargetsInference(t *testing.T) {
+	t.Parallel()
+
+	proposal := TriagePattern(Pattern{
+		Role:     "ceo",
+		Category: CategoryInferencePortConflict,
+		Count:    3,
+	})
+
+	require.Equal(t, TargetInference, proposal.Target)
+	require.Equal(t, "Resolve inference port conflict", proposal.Title)
+	require.Contains(t, proposal.Suggestion, "--model-endpoint")
+	require.Contains(t, proposal.CandidateFiles, "docs/design-docs/local-inference.md")
+	require.GreaterOrEqual(t, proposal.Confidence, 0.9)
 }
 
 func TestTriagePattern_contextOverflowTargetsContext(t *testing.T) {

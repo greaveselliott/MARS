@@ -130,6 +130,41 @@ VALUES(?,?,?,?,?,?,?,?,?)`,
 	return nil
 }
 
+// MarkRemedied marks matching unremedied telemetry events as remediated.
+func (s *Store) MarkRemedied(ctx context.Context, jobID, repoID, role string, cat FailureCategory, action string) (int, error) {
+	if s == nil || s.db == nil {
+		return 0, nil
+	}
+	res, err := s.db.ExecContext(ctx, `
+UPDATE telemetry_events
+SET remedied = 1, action = CASE WHEN action = '' THEN ? ELSE action END
+WHERE job_id = ? AND repo_id = ? AND role = ? AND category = ? AND remedied = 0`,
+		strings.TrimSpace(action), strings.TrimSpace(jobID), strings.TrimSpace(repoID), strings.TrimSpace(role), string(cat))
+	if err != nil {
+		return 0, fmt.Errorf("telemetry: mark remedied: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
+// MarkRemediedForRepoRole marks matching unremedied telemetry events for a
+// role/repo when later accepted disposition evidence proves recovery.
+func (s *Store) MarkRemediedForRepoRole(ctx context.Context, repoID, role string, cat FailureCategory, action string) (int, error) {
+	if s == nil || s.db == nil {
+		return 0, nil
+	}
+	res, err := s.db.ExecContext(ctx, `
+UPDATE telemetry_events
+SET remedied = 1, action = CASE WHEN action = '' THEN ? ELSE action END
+WHERE repo_id = ? AND role = ? AND category = ? AND remedied = 0`,
+		strings.TrimSpace(action), strings.TrimSpace(repoID), strings.TrimSpace(role), string(cat))
+	if err != nil {
+		return 0, fmt.Errorf("telemetry: mark repo/role remedied: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
 // Recent returns the most recent N events ordered by timestamp descending.
 func (s *Store) Recent(limit int) ([]Event, error) {
 	if s == nil || s.db == nil {

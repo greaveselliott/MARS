@@ -3,6 +3,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/dashboard.md
+- docs/design-docs/local-inference.md
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-006-queue-and-orchestration.md
@@ -90,6 +91,30 @@ func TestServer_healthHandler_healthy(t *testing.T) {
 	}
 	if body["status"] != "healthy" {
 		t.Errorf("expected status=healthy, got %q", body["status"])
+	}
+}
+
+func TestServerNewModelEndpointSkipsLocalModelPreflight(t *testing.T) {
+	srv, err := New(Config{
+		WebhookAddr:   ":0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+		ModelsDir:     filepath.Join(t.TempDir(), "missing-models"),
+		BinDir:        filepath.Join(t.TempDir(), "missing-bin"),
+		ModelEndpoint: "http://127.0.0.1:9999/v1",
+	})
+	if err != nil {
+		t.Fatalf("New returned error with model endpoint override: %v", err)
+	}
+	if srv.router == nil {
+		t.Fatal("expected inference router")
+	}
+	got, err := srv.router.ServerForRole(context.Background(), "ceo")
+	if err != nil {
+		t.Fatalf("expected endpoint-only router to return fallback endpoint: %v", err)
+	}
+	if got != "http://127.0.0.1:9999" {
+		t.Fatalf("fallback endpoint = %q, want normalized endpoint", got)
 	}
 }
 
@@ -184,6 +209,74 @@ func TestServer_startStop(t *testing.T) {
 
 	if srv.Healthy() {
 		t.Error("expected server to be unhealthy after stop")
+	}
+}
+
+func TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy(t *testing.T) {
+	busyWebhook, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("busy webhook listen: %v", err)
+	}
+	defer busyWebhook.Close()
+	busyDashboard, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("busy dashboard listen: %v", err)
+	}
+	defer busyDashboard.Close()
+
+	webhookAddr := busyWebhook.Addr().String()
+	dashboardAddr := busyDashboard.Addr().String()
+	srv, err := New(Config{
+		WebhookAddr:           webhookAddr,
+		DashboardAddr:         dashboardAddr,
+		DBPath:                testDBPath(t),
+		EphemeralHTTPFallback: true,
+	})
+	if err != nil {
+		t.Fatalf("New returned error: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() {
+		cancel()
+		_ = srv.Stop(context.Background())
+	})
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- srv.Start(ctx)
+	}()
+
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		if srv.Healthy() {
+			break
+		}
+		select {
+		case err := <-errCh:
+			t.Fatalf("Start returned before fallback became healthy: %v", err)
+		default:
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	if !srv.Healthy() {
+		t.Fatal("expected server to be healthy on ephemeral fallback ports")
+	}
+	if srv.http.Addr == webhookAddr {
+		t.Fatalf("expected webhook addr to fall back from busy %s", webhookAddr)
+	}
+	if srv.dashHTTP.Addr == dashboardAddr {
+		t.Fatalf("expected dashboard addr to fall back from busy %s", dashboardAddr)
+	}
+	waitForHTTPStatus(t, "http://"+srv.dashHTTP.Addr+"/api/status", http.StatusOK)
+
+	cancel()
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Errorf("expected clean shutdown, got %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not shut down within 5 seconds")
 	}
 }
 

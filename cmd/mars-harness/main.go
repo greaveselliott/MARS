@@ -9,6 +9,7 @@ docs:
 - docs/design-docs/dashboard.md
 - docs/design-docs/harness-glossary.md
 - docs/design-docs/harness-operating-model.md
+- docs/design-docs/local-inference.md
 - docs/design-docs/release-versioning.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/validation/README.md
@@ -4061,15 +4062,18 @@ func legacyDBPath() string {
 
 func startCmd() *cobra.Command {
 	var (
-		repoPath      string
-		concurrency   int
-		dbPath        string
-		force         bool
-		exitAfterSeed bool
-		newLifecycle  bool
-		debug         bool
-		logFile       string
-		codeIntelFlag string
+		repoPath          string
+		concurrency       int
+		dbPath            string
+		force             bool
+		exitAfterSeed     bool
+		newLifecycle      bool
+		debug             bool
+		logFile           string
+		codeIntelFlag     string
+		modelEndpoint     string
+		webhookAddrFlag   string
+		dashboardAddrFlag string
 	)
 
 	cmd := &cobra.Command{
@@ -4158,26 +4162,35 @@ ambiguous handoffs.`,
 				return fmt.Errorf("start: create db directory: %w", err)
 			}
 
-			webhookAddr := fmt.Sprintf(":%d", cfg.WebhookPort)
-			dashboardAddr := fmt.Sprintf(":%d", cfg.DashboardPort)
+			webhookAddr := strings.TrimSpace(webhookAddrFlag)
+			if webhookAddr == "" {
+				webhookAddr = fmt.Sprintf(":%d", cfg.WebhookPort)
+			}
+			dashboardAddr := strings.TrimSpace(dashboardAddrFlag)
+			if dashboardAddr == "" {
+				dashboardAddr = fmt.Sprintf(":%d", cfg.DashboardPort)
+			}
+			allowHTTPFallback := strings.TrimSpace(webhookAddrFlag) == "" && strings.TrimSpace(dashboardAddrFlag) == ""
 
 			if os.Getenv("MARS_HARNESS_SKIP_START_CLEANUP") != "1" {
-				serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
+				serve.CleanupScopedLifecycle(dbPath)
 			}
 
 			srv, err := serve.New(serve.Config{
-				WebhookAddr:        webhookAddr,
-				DBPath:             dbPath,
-				Concurrency:        concurrency,
-				ModelsDir:          cfg.ModelsDir,
-				BinDir:             cfg.BinDir,
-				DashboardAddr:      dashboardAddr,
-				RepoScope:          absPath,
-				PerformanceProfile: cfg.PerformanceProfile,
-				InferenceTuning:    inferenceTuningFromConfig(cfg),
-				JobViews:           display.jobViews,
-				CodeIntelDisabled:  !codeIntelRuntime.Enabled,
-				CodeIntelSource:    codeIntelRuntime.Source,
+				WebhookAddr:           webhookAddr,
+				DBPath:                dbPath,
+				Concurrency:           concurrency,
+				ModelsDir:             cfg.ModelsDir,
+				BinDir:                cfg.BinDir,
+				DashboardAddr:         dashboardAddr,
+				RepoScope:             absPath,
+				PerformanceProfile:    cfg.PerformanceProfile,
+				InferenceTuning:       inferenceTuningFromConfig(cfg),
+				ModelEndpoint:         modelEndpoint,
+				EphemeralHTTPFallback: allowHTTPFallback,
+				JobViews:              display.jobViews,
+				CodeIntelDisabled:     !codeIntelRuntime.Enabled,
+				CodeIntelSource:       codeIntelRuntime.Source,
 			})
 			if err != nil {
 				display.Error(fmt.Sprintf("orchestrator init: %v", err))
@@ -4261,6 +4274,9 @@ ambiguous handoffs.`,
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
 	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-start.log)")
 	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
+	cmd.Flags().StringVar(&modelEndpoint, "model-endpoint", "", "Optional real OpenAI-compatible model endpoint override; skips local llama-server startup. Fake or scripted endpoints are not live validation evidence")
+	cmd.Flags().StringVar(&webhookAddrFlag, "addr", "", "Webhook/control listen address (default from config; scoped start falls back to an ephemeral local port on conflict)")
+	cmd.Flags().StringVar(&dashboardAddrFlag, "dashboard-addr", "", "Dashboard listen address (default from config; scoped start falls back to an ephemeral local port on conflict)")
 	cmd.Flags().BoolVar(&exitAfterSeed, "exit-after-seed", false, "Exit after init/register/seed; intended for deterministic smoke tests")
 	_ = cmd.Flags().MarkHidden("exit-after-seed")
 

@@ -2,6 +2,7 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/local-inference.md
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-006-queue-and-orchestration.md
@@ -30,6 +31,12 @@ func Cleanup(webhookPort int, dbPath string, extraPorts ...int) {
 		killStalePort(p)
 	}
 	killStaleLlamaServers()
+	cleanStaleSQLite(dbPath)
+}
+
+// CleanupScopedLifecycle recovers per-repo SQLite sidecars for `start` without
+// killing shared control ports or llama-server processes owned by parallel runs.
+func CleanupScopedLifecycle(dbPath string) {
 	cleanStaleSQLite(dbPath)
 }
 

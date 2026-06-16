@@ -5,11 +5,14 @@ docs:
 - docs/design-docs/agent-smoke-validation.md
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/dashboard.md
+- docs/design-docs/local-inference.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/tools-glossary.md
 - docs/validation/README.md
 - docs/validation/agent-smoke/README.md
+- docs/features/F-003-local-inference-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-012-self-improvement-loop.md
 */
@@ -408,8 +411,9 @@ Global command surface:
 
   start
     Auto-init/register, reconcile existing lifecycle state, and run the autonomous orchestrator for one target repo. It resumes active jobs, stale recoverable jobs, in-progress/rework tickets, or recent deterministic dispositions before seeding CEO.
-    Flags: --repo <path>, --concurrency <n>, --db <path>, --force, --new-lifecycle, --debug, --log-file <path>, --code-intel <true|false>
+    Flags: --repo <path>, --concurrency <n>, --db <path>, --force, --new-lifecycle, --debug, --log-file <path>, --code-intel <true|false>, --model-endpoint <real-url>, --addr <host:port>, --dashboard-addr <host:port>
     Use --new-lifecycle only when intentionally reseeding CEO over existing lifecycle state.
+    --model-endpoint is only for real OpenAI-compatible endpoints; fake or scripted endpoints are test fixtures, not live validation evidence. Default scoped starts fall back to ephemeral local control/dashboard ports on conflict; explicit --addr or --dashboard-addr values are deterministic and fail if occupied.
     Long-running; use background:true when starting it from an agent.
     Example: ["start", "--repo", ".", "--concurrency", "1"]
 

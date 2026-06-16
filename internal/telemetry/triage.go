@@ -84,6 +84,13 @@ func TriagePattern(p Pattern) ImprovementProposal {
 		proposal.Suggestion = fmt.Sprintf("Role %q hit repeated inference availability failures; review local model profile, llama server tuning, restart policy, and doctor checks before changing the role prompt.", p.Role)
 		proposal.Confidence = 0.8
 
+	case CategoryInferencePortConflict:
+		proposal.Target = TargetInference
+		proposal.Title = "Resolve inference port conflict"
+		proposal.Suggestion = fmt.Sprintf("Role %q could not start local inference because every allowed tier port was occupied; stop the owning process, wait for the previous harness run to exit, or rerun lifecycle validation with a real --model-endpoint.", p.Role)
+		proposal.CandidateFiles = []string{"docs/design-docs/local-inference.md", "docs/features/F-003-local-inference-lifecycle.md"}
+		proposal.Confidence = 0.9
+
 	case CategoryModelUnavailable:
 		proposal.Target = TargetInference
 		proposal.Title = "Install or route model tier"

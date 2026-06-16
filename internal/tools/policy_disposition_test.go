@@ -1203,7 +1203,9 @@ blocked_by: []
 	if err == nil {
 		t.Fatal("expected CTO implementation handoff to require an early ticket batch")
 	}
-	if !strings.Contains(err.Error(), "small product backlog batch") || !strings.Contains(err.Error(), "F-001-S002") {
+	if !strings.Contains(err.Error(), "ticket_create") ||
+		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S002","F-001-S003"]`) ||
+		!strings.Contains(err.Error(), "git_status -> git_commit -> job_disposition_record") {
 		t.Fatalf("expected ticket batch guidance, got %v", err)
 	}
 }

@@ -9,6 +9,9 @@ package inference
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -157,6 +160,161 @@ func TestServer_healthCheck(t *testing.T) {
 	require.NoError(t, err)
 	s2 := NewServer(ServerConfig{Port: p2})
 	require.False(t, s2.Healthy())
+}
+
+func TestPortReservationDetectsLiveAndStaleLocks(t *testing.T) {
+	t.Parallel()
+
+	reservation, err := acquirePortReservation(25301)
+	require.NoError(t, err)
+	t.Cleanup(reservation.Release)
+
+	_, err = acquirePortReservation(25301)
+	var conflict *PortConflictError
+	require.ErrorAs(t, err, &conflict)
+	require.Equal(t, 25301, conflict.Port)
+	require.Equal(t, os.Getpid(), conflict.PID)
+	require.Contains(t, conflict.Error(), "inference_port_conflict")
+
+	stalePath := filepath.Join(os.TempDir(), "mars-harness-inference-ports", "25302.lock")
+	require.NoError(t, os.MkdirAll(filepath.Dir(stalePath), 0o755))
+	require.NoError(t, os.WriteFile(stalePath, []byte("-1\n"), 0o644))
+	staleReservation, err := acquirePortReservation(25302)
+	require.NoError(t, err)
+	t.Cleanup(staleReservation.Release)
+	info := readPortLockInfo(stalePath)
+	require.Equal(t, os.Getpid(), info.PID)
+	require.Equal(t, "mars-harness", info.Owner)
+}
+
+func TestRouterResolveServerPortAllocatesNextPortWhenLockIsUnhealthy(t *testing.T) {
+	t.Parallel()
+
+	first, err := acquirePortReservation(25310)
+	require.NoError(t, err)
+	t.Cleanup(first.Release)
+
+	r := NewRouter(RouterConfig{PortBases: map[hardware.Tier]int{hardware.TierCoding: 25310}})
+	port, reservation, reuse, err := r.resolveServerPort(context.Background(), hardware.TierCoding, "engineer")
+	require.NoError(t, err)
+	t.Cleanup(reservation.Release)
+	require.Equal(t, 25320, port)
+	require.False(t, reuse)
+	require.NotNil(t, reservation)
+}
+
+func TestRouterResolveServerPortTreatsFreshInvalidLockAsActive(t *testing.T) {
+	port := 25410
+	lockPath := filepath.Join(os.TempDir(), "mars-harness-inference-ports", fmt.Sprintf("%d.lock", port))
+	require.NoError(t, os.MkdirAll(filepath.Dir(lockPath), 0o755))
+	require.NoError(t, os.WriteFile(lockPath, nil, 0o644))
+	t.Cleanup(func() { _ = os.Remove(lockPath) })
+
+	r := NewRouter(RouterConfig{PortBases: map[hardware.Tier]int{hardware.TierCoding: port}})
+	got, reservation, reuse, err := r.resolveServerPort(context.Background(), hardware.TierCoding, "engineer")
+	require.NoError(t, err)
+	t.Cleanup(reservation.Release)
+	require.Equal(t, port+10, got)
+	require.False(t, reuse)
+	require.NotNil(t, reservation)
+	require.FileExists(t, lockPath)
+}
+
+func TestRouterResolveServerPortReusesHealthyLockedEndpoint(t *testing.T) {
+	t.Parallel()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	port := ln.Addr().(*net.TCPAddr).Port
+	require.NoError(t, ln.Close())
+
+	meta := portReservationMetadata{
+		Tier:       hardware.TierCoding,
+		ModelPath:  "/models/coding.gguf",
+		ModelName:  "coding",
+		ContextLen: 4096,
+		Parallel:   1,
+	}
+	lock, err := acquirePortReservation(port, meta)
+	require.NoError(t, err)
+	t.Cleanup(lock.Release)
+
+	healthSrv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/health" {
+			http.NotFound(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	healthLn, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	require.NoError(t, err)
+	healthSrv.Listener = healthLn
+	healthSrv.Start()
+	t.Cleanup(healthSrv.Close)
+
+	r := NewRouter(RouterConfig{PortBases: map[hardware.Tier]int{hardware.TierCoding: port}})
+	got, reservation, reuse, err := r.resolveServerPort(context.Background(), hardware.TierCoding, "engineer", meta)
+	require.NoError(t, err)
+	require.Equal(t, port, got)
+	require.True(t, reuse)
+	require.Nil(t, reservation)
+}
+
+func TestRouterResolveServerPortDoesNotReuseMismatchedHealthyEndpoint(t *testing.T) {
+	t.Parallel()
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	port := ln.Addr().(*net.TCPAddr).Port
+	require.NoError(t, ln.Close())
+
+	lock, err := acquirePortReservation(port, portReservationMetadata{
+		Tier:       hardware.TierReasoning,
+		ModelPath:  "/models/reasoning.gguf",
+		ContextLen: 8192,
+		Parallel:   1,
+	})
+	require.NoError(t, err)
+	t.Cleanup(lock.Release)
+
+	healthSrv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/health" {
+			http.NotFound(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	healthLn, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	require.NoError(t, err)
+	healthSrv.Listener = healthLn
+	healthSrv.Start()
+	t.Cleanup(healthSrv.Close)
+
+	r := NewRouter(RouterConfig{PortBases: map[hardware.Tier]int{hardware.TierCoding: port}})
+	got, reservation, reuse, err := r.resolveServerPort(context.Background(), hardware.TierCoding, "engineer", portReservationMetadata{
+		Tier:       hardware.TierCoding,
+		ModelPath:  "/models/coding.gguf",
+		ContextLen: 4096,
+		Parallel:   1,
+	})
+	require.NoError(t, err)
+	t.Cleanup(reservation.Release)
+	require.NotEqual(t, port, got)
+	require.False(t, reuse)
+	require.NotNil(t, reservation)
+}
+
+func TestPortConflictErrorIsTypedAndActionable(t *testing.T) {
+	t.Parallel()
+
+	err := &PortConflictError{Port: 18081, PID: 1234, Tier: hardware.TierReasoning, Role: "ceo"}
+	var conflict *PortConflictError
+	require.True(t, errors.As(err, &conflict))
+	require.Contains(t, err.Error(), "inference_port_conflict")
+	require.Contains(t, err.Error(), "port=18081")
+	require.Contains(t, err.Error(), "owning_pid=1234")
+	require.Contains(t, err.Error(), "tier=reasoning")
+	require.Contains(t, err.Error(), "--model-endpoint")
 }
 
 func TestRouter_defaultsToCodingTier(t *testing.T) {

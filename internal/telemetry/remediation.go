@@ -33,6 +33,9 @@ func Remediate(cat FailureCategory) RemediationAction {
 	case CategoryModelUnavailable:
 		return ActionNone
 
+	case CategoryInferencePortConflict:
+		return ActionNone
+
 	case CategoryCircleDetected,
 		CategoryContextOverflow,
 		CategoryMaxTurns,

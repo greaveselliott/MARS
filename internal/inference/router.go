@@ -10,6 +10,7 @@ package inference
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -25,12 +26,14 @@ import (
 type Router struct {
 	mu            sync.RWMutex
 	servers       map[hardware.Tier]*Server
+	reservations  map[hardware.Tier]*portReservation
 	mapping       map[string]hardware.Tier // role name → tier
 	models        map[hardware.Tier]hardware.ModelSpec
 	modelsDir     string
 	binaryPath    string
 	tuning        ServerTuning
 	singleTier    hardware.Tier
+	portBases     map[hardware.Tier]int
 	fallback      *llm.Client // optional remote API fallback
 	remoteBaseURL string      // normalized base URL (no trailing /v1)
 }
@@ -45,7 +48,8 @@ type RouterConfig struct {
 	// It is used by validation lanes that need parallel role execution through a
 	// single local llama-server instead of starting one server per model tier.
 	SingleServerTier hardware.Tier
-	FallbackURL      string // optional remote API
+	PortBases        map[hardware.Tier]int // optional test/runtime overrides for tier base ports
+	FallbackURL      string                // optional remote API
 	FallbackKey      string
 	Tuning           ServerTuning
 }
@@ -77,12 +81,14 @@ func NewRouter(cfg RouterConfig) *Router {
 
 	return &Router{
 		servers:       make(map[hardware.Tier]*Server),
+		reservations:  make(map[hardware.Tier]*portReservation),
 		mapping:       mapping,
 		models:        models,
 		modelsDir:     cfg.ModelsDir,
 		binaryPath:    cfg.BinaryPath,
 		tuning:        cfg.Tuning,
 		singleTier:    cfg.SingleServerTier,
+		portBases:     cfg.PortBases,
 		fallback:      fb,
 		remoteBaseURL: fbBase,
 	}
@@ -168,6 +174,11 @@ func (r *Router) tierForRoleModel(role, modelHint string) hardware.Tier {
 }
 
 func (r *Router) tierPort(tier hardware.Tier) int {
+	if r != nil && r.portBases != nil {
+		if port, ok := r.portBases[tier]; ok && port > 0 {
+			return port
+		}
+	}
 	switch tier {
 	case hardware.TierCoding:
 		return 18080
@@ -245,19 +256,37 @@ func (r *Router) serverForTier(ctx context.Context, role string, tier hardware.T
 	r.mu.Lock()
 	srv := r.servers[tier]
 	if srv == nil {
+		contextLen := serverContextLength(spec, r.tuning)
+		port, reservation, reuse, err := r.resolveServerPort(ctx, tier, role, portReservationMetadata{
+			Tier:       tier,
+			ModelPath:  modelPath,
+			ModelName:  spec.Name,
+			ContextLen: contextLen,
+			Parallel:   r.tuning.Parallel,
+		})
+		if err != nil {
+			r.mu.Unlock()
+			return "", err
+		}
+		if reuse {
+			r.mu.Unlock()
+			return fmt.Sprintf("http://localhost:%d", port), nil
+		}
 		srv = NewServer(ServerConfig{
 			BinaryPath:    r.binaryPath,
 			ModelPath:     modelPath,
-			Port:          r.tierPort(tier),
-			ContextLength: serverContextLength(spec, r.tuning),
+			Port:          port,
+			ContextLength: contextLen,
 			GPULayers:     -1,
 			ServerTuning:  r.tuning,
 		})
 		r.servers[tier] = srv
+		r.reservations[tier] = reservation
 	}
 	r.mu.Unlock()
 
 	if err := srv.Start(ctx); err != nil {
+		r.releaseReservation(tier)
 		if base := r.fallbackBase(); base != "" {
 			slog.Warn("inference router: local server start failed; using remote fallback",
 				"tier", string(tier),
@@ -271,15 +300,88 @@ func (r *Router) serverForTier(ctx context.Context, role string, tier hardware.T
 
 	if !srv.Healthy() {
 		slog.Warn("inference router: server reports healthy but failed spot check; restarting",
-			"tier", string(tier), "role", role, "port", r.tierPort(tier))
+			"tier", string(tier), "role", role, "port", srv.cfg.Port)
 		r.mu.Lock()
 		delete(r.servers, tier)
 		r.mu.Unlock()
+		r.releaseReservation(tier)
 		_ = srv.Stop()
 		return r.serverForTier(ctx, role, tier)
 	}
 
 	return srv.BaseURL(), nil
+}
+
+func (r *Router) resolveServerPort(ctx context.Context, tier hardware.Tier, role string, metas ...portReservationMetadata) (int, *portReservation, bool, error) {
+	start := r.tierPort(tier)
+	var meta portReservationMetadata
+	if len(metas) > 0 {
+		meta = metas[0]
+	}
+	var lastConflict *PortConflictError
+	for i := 0; i < defaultTierPortRange; i++ {
+		port := start + (i * 10)
+		reservation, err := acquirePortReservation(port, meta)
+		if err != nil {
+			var conflict *PortConflictError
+			if errors.As(err, &conflict) {
+				conflict.Tier = tier
+				conflict.Role = role
+				if compatiblePortLock(conflict, meta) && healthyLocalEndpoint(ctx, port) {
+					return port, nil, true, nil
+				}
+				lastConflict = conflict
+				continue
+			}
+			return 0, nil, false, err
+		}
+		available, pid := portAvailable(port)
+		if available {
+			return port, reservation, false, nil
+		}
+		reservation.Release()
+		lastConflict = &PortConflictError{Port: port, PID: pid, Tier: tier, Role: role}
+	}
+	if lastConflict != nil {
+		return 0, nil, false, lastConflict
+	}
+	return 0, nil, false, &PortConflictError{Port: start, Tier: tier, Role: role}
+}
+
+func compatiblePortLock(conflict *PortConflictError, meta portReservationMetadata) bool {
+	if conflict == nil {
+		return false
+	}
+	if strings.TrimSpace(conflict.Owner) != "mars-harness" {
+		return false
+	}
+	if conflict.LockedTier != meta.Tier {
+		return false
+	}
+	if strings.TrimSpace(conflict.ModelPath) == "" || strings.TrimSpace(meta.ModelPath) == "" {
+		return false
+	}
+	if filepath.Clean(conflict.ModelPath) != filepath.Clean(meta.ModelPath) {
+		return false
+	}
+	if conflict.ContextLen > 0 && meta.ContextLen > 0 && conflict.ContextLen != meta.ContextLen {
+		return false
+	}
+	if conflict.Parallel > 0 && meta.Parallel > 0 && conflict.Parallel != meta.Parallel {
+		return false
+	}
+	return true
+}
+
+func (r *Router) releaseReservation(tier hardware.Tier) {
+	r.mu.Lock()
+	reservation := r.reservations[tier]
+	delete(r.reservations, tier)
+	delete(r.servers, tier)
+	r.mu.Unlock()
+	if reservation != nil {
+		reservation.Release()
+	}
 }
 
 func serverContextLength(spec hardware.ModelSpec, tuning ServerTuning) int {
@@ -335,12 +437,22 @@ func (r *Router) StopAll() {
 			list = append(list, srv)
 		}
 	}
+	reservations := make([]*portReservation, 0, len(r.reservations))
+	for _, reservation := range r.reservations {
+		if reservation != nil {
+			reservations = append(reservations, reservation)
+		}
+	}
+	r.reservations = make(map[hardware.Tier]*portReservation)
 	r.mu.Unlock()
 
 	for _, srv := range list {
 		if err := srv.Stop(); err != nil {
 			slog.Warn("inference router: stop server failed", "err", err)
 		}
+	}
+	for _, reservation := range reservations {
+		reservation.Release()
 	}
 	slog.Info("inference router: stopped managed servers", "count", len(list))
 }
@@ -356,13 +468,23 @@ func (r *Router) RestartAll() {
 			list = append(list, srv)
 		}
 	}
+	reservations := make([]*portReservation, 0, len(r.reservations))
+	for _, reservation := range r.reservations {
+		if reservation != nil {
+			reservations = append(reservations, reservation)
+		}
+	}
 	r.servers = make(map[hardware.Tier]*Server, len(r.servers))
+	r.reservations = make(map[hardware.Tier]*portReservation)
 	r.mu.Unlock()
 
 	for _, srv := range list {
 		if err := srv.Stop(); err != nil {
 			slog.Warn("inference router: restart stop failed", "err", err)
 		}
+	}
+	for _, reservation := range reservations {
+		reservation.Release()
 	}
 	slog.Info("inference router: restarted — servers will re-launch on next request", "stopped", len(list))
 }

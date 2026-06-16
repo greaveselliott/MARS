@@ -70,6 +70,30 @@ func (s *Server) recordInterventionDebtSignal(ctx context.Context, signal interv
 	if signal.Category == "" {
 		signal.Category = telemetry.Classify(signal.Message)
 	}
+	if signal.Kind == "guardrail_loop_remediated" {
+		if s.telemetry != nil {
+			action := "same_job_disposition"
+			if strings.EqualFold(strings.TrimSpace(signal.EvidenceWindow), "later-job") {
+				action = "later_successful_disposition"
+			}
+			n := 0
+			if action == "later_successful_disposition" {
+				n = s.telemetry.MarkRemediedForRepoRole(ctx, signal.RepoID, signal.Role, telemetry.CategoryGuardrailLoop, action)
+			} else {
+				n = s.telemetry.MarkRemedied(ctx, signal.JobID, signal.RepoID, signal.Role, telemetry.CategoryGuardrailLoop, action)
+			}
+			if n > 0 {
+				slog.Info("serve: guardrail loop telemetry remediated",
+					"repo_id", signal.RepoID,
+					"role", signal.Role,
+					"job_id", signal.JobID,
+					"events", n,
+					"action", action,
+				)
+			}
+		}
+		return
+	}
 	if signal.Event == nil && s.telemetry != nil && strings.TrimSpace(signal.Message) != "" && strings.TrimSpace(signal.JobID) != "" {
 		evt := s.telemetry.Record(signal.JobID, signal.RepoID, signal.Role, signal.Message)
 		signal.Event = &evt

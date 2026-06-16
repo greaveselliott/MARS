@@ -7,6 +7,7 @@ docs:
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/harness-operating-model.md
+- docs/design-docs/local-inference.md
 - docs/design-docs/release-versioning.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/product-specs/product-surface.md
@@ -580,6 +581,17 @@ func TestRunStartServeExposeDebugAndLogFileFlags(t *testing.T) {
 		require.NotNil(t, cmd.Flags().Lookup("debug"), "%s missing --debug", name)
 		require.NotNil(t, cmd.Flags().Lookup("log-file"), "%s missing --log-file", name)
 	}
+}
+
+func TestStartCommandExposesRealModelEndpointOverride(t *testing.T) {
+	cmd := startCmd()
+	require.NotNil(t, cmd.Flags().Lookup("model-endpoint"))
+}
+
+func TestStartCommandExposesParallelAddressControls(t *testing.T) {
+	cmd := startCmd()
+	require.NotNil(t, cmd.Flags().Lookup("addr"))
+	require.NotNil(t, cmd.Flags().Lookup("dashboard-addr"))
 }
 
 func TestScoresExportExposesCreateInterventionDebtFlag(t *testing.T) {

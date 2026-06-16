@@ -154,6 +154,7 @@ func ReportableFoundationCategory(cat FailureCategory) bool {
 	case CategoryContextOverflow,
 		CategoryLLMUnreachable,
 		CategoryInferenceCrash,
+		CategoryInferencePortConflict,
 		CategoryModelUnavailable,
 		CategoryToolTimeout,
 		CategoryCircleDetected,

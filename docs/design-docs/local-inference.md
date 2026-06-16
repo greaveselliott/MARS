@@ -90,6 +90,38 @@ routing as the source of truth.
 
 Missing local-model errors also name the expected model file path and suggest `mars-harness setup` or remote fallback configuration. Telemetry classifies these as `model_unavailable` instead of `unknown`, routing repeated failures to inference/setup work. The reason is operator recovery: inference failures should tell the user which tier/file is missing and how to repair it.
 
+### AD-299: Lifecycle Start Uses Real Endpoint Overrides, Safe Scoped Cleanup, And Port Reservations
+
+Full lifecycle validation often runs multiple `mars-harness start` processes in
+parallel. Those processes must not fight over the same control-plane port,
+dashboard port, or llama-server tier port, and a scoped lifecycle start must not
+kill live processes owned by another run. `start --model-endpoint <url>` is the
+operator escape hatch for a real OpenAI-compatible endpoint: when present, the
+server uses that endpoint, skips local model-file preflight, and does not start
+local llama-server processes. Fake, stub, mock, canned, or scripted endpoints
+are still deterministic test fixtures only and do not raise confidence for live
+behavior claims.
+
+Scoped `mars-harness start` performs SQLite sidecar recovery only. It does not
+kill processes on the configured webhook/dashboard ports and does not globally
+kill `llama-server`. When the default scoped control-plane or dashboard address
+is already occupied, the server falls back to an ephemeral local address and logs
+the requested and actual listener. Operators that need deterministic ports can
+pass `--addr` and `--dashboard-addr`; explicit addresses fail on conflict instead
+of being silently remapped.
+
+When local inference is used, the router reserves tier ports before launching a
+server. A live locked port with a healthy `/health` endpoint may be reused;
+otherwise the router allocates the next bounded port in that tier range. If no
+allowed port is safe, startup returns and telemetry classifies the terminal
+class `inference_port_conflict` with the tier, role, port, owning PID when
+known, and the remediation to stop the owner or rerun with `--model-endpoint`.
+Fresh lock files with incomplete metadata are treated as active startup locks
+for a short grace window rather than being deleted as stale. This prevents two
+parallel `start` processes from racing between exclusive lock creation and
+metadata write completion, which otherwise can launch duplicate llama-server
+processes on the same port.
+
 ### AD-066: Ollama Is A Catalog And Swap Provider, Not Automatic Default Promotion
 
 Mars Harness should make it easy to evaluate and explicitly run any model available through Ollama. The model registry should not be the only way to try a model. Operators should be able to list local Ollama models, reference published Ollama model names as evaluation candidates, and swap a tier or role to an Ollama model without editing several files by hand.

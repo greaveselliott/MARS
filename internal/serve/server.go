@@ -3,6 +3,7 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/dashboard.md
+- docs/design-docs/local-inference.md
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/design-docs/self-reflective-telemetry.md
@@ -29,6 +30,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/bundle"
@@ -61,19 +63,21 @@ const (
 
 // Config controls the serve command.
 type Config struct {
-	WebhookAddr        string
-	WebhookSecret      string
-	DBPath             string
-	Concurrency        int
-	ModelsDir          string
-	BinDir             string
-	DashboardAddr      string
-	RepoScope          string // if set, only operate on repos whose path matches this absolute path
-	PerformanceProfile string
-	InferenceTuning    inference.ServerTuning
-	JobViews           ui.JobViewFactory
-	CodeIntelDisabled  bool
-	CodeIntelSource    string
+	WebhookAddr           string
+	WebhookSecret         string
+	DBPath                string
+	Concurrency           int
+	ModelsDir             string
+	BinDir                string
+	DashboardAddr         string
+	RepoScope             string // if set, only operate on repos whose path matches this absolute path
+	PerformanceProfile    string
+	InferenceTuning       inference.ServerTuning
+	ModelEndpoint         string
+	EphemeralHTTPFallback bool
+	JobViews              ui.JobViewFactory
+	CodeIntelDisabled     bool
+	CodeIntelSource       string
 }
 
 func (c Config) concurrency() int {
@@ -145,6 +149,7 @@ func New(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("serve: open job queue: %w", err)
 	}
 
+	modelEndpoint := strings.TrimSpace(cfg.ModelEndpoint)
 	hw := hardware.Detect()
 	modelSet := hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)
 
@@ -157,12 +162,16 @@ func New(cfg Config) (*Server, error) {
 		}
 		modelsDir = filepath.Join(home, ".mars-harness", "models")
 	}
-	if missing, err := hardware.MissingRequiredModelFiles(modelsDir, cfg.PerformanceProfile); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("serve: verify profile model files: %w", err)
-	} else if err := hardware.ProfileModelPreflightError(cfg.PerformanceProfile, missing); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("serve: %w", err)
+	if modelEndpoint != "" {
+		modelSet = map[hardware.Tier]hardware.ModelSpec{}
+	} else {
+		if missing, err := hardware.MissingRequiredModelFiles(modelsDir, cfg.PerformanceProfile); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("serve: verify profile model files: %w", err)
+		} else if err := hardware.ProfileModelPreflightError(cfg.PerformanceProfile, missing); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("serve: %w", err)
+		}
 	}
 
 	roleMapping := inference.DefaultRoleTierMapping()
@@ -173,6 +182,7 @@ func New(cfg Config) (*Server, error) {
 		Models:      modelSet,
 		RoleMapping: roleMapping,
 		ModelsDir:   cfg.ModelsDir,
+		FallbackURL: modelEndpoint,
 		Tuning:      cfg.InferenceTuning,
 	})
 
@@ -374,6 +384,21 @@ func (s *Server) Start(ctx context.Context) error {
 
 	s.registerCronSchedules(repos)
 
+	ln, err := s.listenControlSocket("webhook", s.cfg.WebhookAddr)
+	if err != nil {
+		return fmt.Errorf("serve: failed to bind %s — check if the port is already in use: %w",
+			s.cfg.WebhookAddr, err)
+	}
+
+	dashLn, err := s.listenControlSocket("dashboard", s.dashHTTP.Addr)
+	if err != nil {
+		_ = ln.Close()
+		return fmt.Errorf("serve: failed to bind dashboard %s — check if the port is already in use: %w",
+			s.dashHTTP.Addr, err)
+	}
+	s.http.Addr = ln.Addr().String()
+	s.dashHTTP.Addr = dashLn.Addr().String()
+
 	s.workers.Start(ctx)
 	s.scheduler.Start(ctx)
 	go s.runQueueSelfHeal(ctx)
@@ -381,22 +406,10 @@ func (s *Server) Start(ctx context.Context) error {
 
 	power.StartWatchdog(ctx, s.handleWake)
 
-	ln, err := net.Listen("tcp", s.cfg.WebhookAddr)
-	if err != nil {
-		return fmt.Errorf("serve: failed to bind %s — check if the port is already in use: %w",
-			s.cfg.WebhookAddr, err)
-	}
-
-	dashLn, err := net.Listen("tcp", s.dashHTTP.Addr)
-	if err != nil {
-		return fmt.Errorf("serve: failed to bind dashboard %s — check if the port is already in use: %w",
-			s.dashHTTP.Addr, err)
-	}
-
 	s.health.Store(true)
 	slog.Info("serve: orchestrator ready",
 		"addr", ln.Addr().String(),
-		"dashboard", "http://localhost"+s.dashHTTP.Addr,
+		"dashboard", httpURLForListener(dashLn.Addr()),
 		"concurrency", s.cfg.concurrency(),
 		"repos", len(repos),
 	)
@@ -424,6 +437,49 @@ func (s *Server) Start(ctx context.Context) error {
 		s.health.Store(false)
 		return err
 	}
+}
+
+func (s *Server) listenControlSocket(label, addr string) (net.Listener, error) {
+	ln, err := net.Listen("tcp", addr)
+	if err == nil {
+		return ln, nil
+	}
+	if !s.cfg.EphemeralHTTPFallback || !isAddrInUse(err) {
+		return nil, err
+	}
+	fallbackAddr := "127.0.0.1:0"
+	fallbackLn, fallbackErr := net.Listen("tcp", fallbackAddr)
+	if fallbackErr != nil {
+		return nil, fmt.Errorf("%w; fallback %s bind failed: %v", err, fallbackAddr, fallbackErr)
+	}
+	slog.Warn("serve: control address in use, using ephemeral scoped lifecycle address",
+		"listener", label,
+		"requested", addr,
+		"actual", fallbackLn.Addr().String(),
+	)
+	return fallbackLn, nil
+}
+
+func isAddrInUse(err error) bool {
+	if errors.Is(err, syscall.EADDRINUSE) {
+		return true
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "address already in use")
+}
+
+func httpURLForListener(addr net.Addr) string {
+	if addr == nil {
+		return ""
+	}
+	host, port, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		return "http://" + addr.String()
+	}
+	switch host {
+	case "", "::", "0.0.0.0", "[::]":
+		host = "localhost"
+	}
+	return "http://" + net.JoinHostPort(host, port)
 }
 
 // Stop gracefully shuts down all subsystems.
@@ -1553,6 +1609,10 @@ func (s *Server) handleJobFailed(ctx context.Context, job *queue.Job, jobErr err
 				}
 				return
 			}
+			if evt, ok := s.latestUnremediatedGuardrailLoop(job.ID); ok {
+				s.recordGuardrailLoopEscalation(ctx, job, evt, jobErr, traceID)
+				return
+			}
 			if cat == telemetry.CategoryMaxTurns && job.Role == "engineer" && !isTicketGateRepairTrigger(job.Trigger) && s.jobHadTicketLifecyclePolicyBlock(job.ID) {
 				log.Warn("serve: enqueueing bounded ticket-gate repair after max turns followed ticket lifecycle policy blocks",
 					"error", jobErr,
@@ -1898,6 +1958,41 @@ func (s *Server) recordConvergenceEscalation(ctx context.Context, job *queue.Job
 	}
 }
 
+func (s *Server) recordGuardrailLoopEscalation(ctx context.Context, job *queue.Job, evt telemetry.Event, jobErr error, traceID string) {
+	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
+	reason := fmt.Sprintf(
+		"guardrail_loop reached threshold without same-job remediation; policy evidence: %s; last error: %s; operator retry required after correcting the blocked action or role guidance",
+		evt.Message, jobErr.Error(),
+	)
+	log.Warn("serve: guardrail loop escalated to blocked operator retry",
+		"event_id", evt.ID,
+		"category", string(evt.Category),
+	)
+	if s.orgStore != nil {
+		if err := s.orgStore.RecordDisposition(ctx, orgstate.Disposition{
+			JobID:    job.ID,
+			RepoID:   job.RepoID,
+			Role:     job.Role,
+			Status:   "blocked",
+			NextNeed: "operator_retry",
+			Reason:   reason,
+			TraceID:  traceID,
+		}); err != nil {
+			log.Error("serve: failed to record guardrail loop escalation disposition", "err", err)
+		}
+	}
+	if s.dash != nil {
+		payload, _ := json.Marshal(map[string]string{
+			"job_id":   job.ID,
+			"role":     job.Role,
+			"repo":     job.RepoID,
+			"event_id": evt.ID,
+			"reason":   reason,
+		})
+		s.dash.BroadcastEvent("guardrail_loop_escalated", string(payload))
+	}
+}
+
 func (s *Server) dispatchFallbackAfterOrchestratorFailure(ctx context.Context, job *queue.Job, rec *RepoRecord, manifest *bundle.Manifest, jobErr error) bool {
 	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
 	var trigger dispatchTriggerPayload
@@ -2091,6 +2186,7 @@ func dispatchRuntimeFailureStops(cat telemetry.FailureCategory) bool {
 	case telemetry.CategoryContextOverflow,
 		telemetry.CategoryLLMUnreachable,
 		telemetry.CategoryInferenceCrash,
+		telemetry.CategoryInferencePortConflict,
 		telemetry.CategoryModelUnavailable,
 		telemetry.CategoryToolTimeout,
 		telemetry.CategoryCircleDetected,
@@ -2183,6 +2279,20 @@ func (s *Server) jobHadTicketLifecyclePolicyBlock(jobID string) bool {
 		}
 	}
 	return false
+}
+
+func (s *Server) latestUnremediatedGuardrailLoop(jobID string) (telemetry.Event, bool) {
+	if s == nil || s.telemetry == nil || strings.TrimSpace(jobID) == "" {
+		return telemetry.Event{}, false
+	}
+	events := s.telemetry.Events()
+	for i := len(events) - 1; i >= 0; i-- {
+		evt := events[i]
+		if evt.JobID == jobID && evt.Category == telemetry.CategoryGuardrailLoop && !evt.Remedied {
+			return evt, true
+		}
+	}
+	return telemetry.Event{}, false
 }
 
 func (s *Server) latestTraceID(ctx context.Context, jobID string) string {

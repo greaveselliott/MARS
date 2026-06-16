@@ -22,6 +22,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 5. F-003-S005 - Missing model errors name the tier, expected artifact, and remediation command.
 6. F-003-S006 - Model evaluation supports benchmark-backed candidate comparison before default promotion.
 7. F-003-S007 - Ollama can be used for explicit catalog/evaluation/swap workflows without changing zero-config defaults automatically.
+8. F-003-S008 - Full lifecycle start can use an explicit real model endpoint and isolates control-plane and local inference ports across parallel runs.
 
 ## Scenarios
 
@@ -69,6 +70,27 @@ Given an operator wants to try an Ollama model
 When the model is used as an ad-hoc candidate or explicit override
 Then the harness keeps that state separate from default registry promotion, which still requires pinned artifacts and benchmark evidence
 
+### F-003-S008: Start Endpoint Override And Port Isolation
+
+Given an operator runs `mars-harness start --model-endpoint <url>`
+When the lifecycle server starts
+Then the server uses that real OpenAI-compatible endpoint and skips local llama-server startup and local model-file preflight
+And fake, stub, mock, canned, or scripted endpoints remain test-only evidence and cannot support live validation claims
+
+Given multiple scoped lifecycle starts run on one machine
+When the configured webhook or dashboard address is already occupied
+Then default scoped starts fall back to an ephemeral local listener and explicit `--addr` or `--dashboard-addr` overrides remain deterministic conflict checks
+And scoped start cleanup recovers the per-repo SQLite database without killing shared control-plane listeners or live llama-server processes from another run
+
+Given multiple lifecycle servers request the same local inference tier concurrently
+When a tier port is locked by another live harness process
+Then the router reuses the healthy locked endpoint or allocates the next bounded tier port instead of entering a bind/restart loop
+And a fresh lock file with incomplete metadata is treated as an active startup lock for a short grace window rather than deleted as stale
+
+Given every allowed tier port is occupied by an unhealthy or unknown process
+When local inference cannot start safely
+Then the terminal error and telemetry are classified as `inference_port_conflict` and name the tier, role, port, owning PID when known, and remediation through process cleanup or `--model-endpoint`
+
 ## Out of Scope
 
 - Hosted inference as the default runtime.
@@ -89,3 +111,4 @@ None.
 - F-003-S005: `go test ./internal/inference -run TestRouter_serverForRole`
 - F-003-S006: `go test ./internal/models -run TestEvaluate`
 - F-003-S007: planned evidence for the remaining Ollama catalog and swap workflow tracked by `MH-030`
+- F-003-S008: `go test ./internal/inference`, `go test ./internal/serve -run 'TestServerNewModelEndpointSkipsLocalModelPreflight|TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy'`, and `go test ./cmd/mars-harness -run 'TestStartCommandExposesRealModelEndpointOverride|TestStartCommandExposesParallelAddressControls'`

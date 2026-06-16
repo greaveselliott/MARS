@@ -42,6 +42,7 @@ Then the policy/guardrail ownership wins over generic timeout matching, so deter
 Given the same guardrail or tool-policy block repeats three times inside one job
 When telemetry records the synthetic loop signal
 Then it classifies the signal as `guardrail_loop` rather than a generic guardrail block
+And if later same-job evidence or a later accepted disposition for the same role/repo proves the blocked state was resolved, matching `guardrail_loop` events are updated to `remedied=true` with the remediation action
 
 ### F-012-S002: Improvement Target Triage
 
@@ -140,7 +141,7 @@ None.
 
 ## Evidence
 
-- F-012-S001: `go test ./internal/telemetry -run 'TestClassify|TestRetryable|TestRemediate'`
+- F-012-S001: `go test ./internal/telemetry -run 'TestClassify|TestRetryable|TestRemediate|TestCollectorMarkRemediedUpdatesMemoryAndStore'`
 - F-012-S002: `go test ./internal/telemetry -run TestTriage`
 - F-012-S003: `go test ./internal/telemetry -run TestRecordGoalFromProposal`, `go test ./internal/serve -run TestCreateInterventionDebt`, and `go test ./internal/tools -run TestTicketCreate_interventionDebtDedupeCompactsRepeatedUpdates`
 - F-012-S004: `go test ./internal/evolution -run TestDetect`

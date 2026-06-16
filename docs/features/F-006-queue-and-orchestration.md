@@ -92,6 +92,11 @@ Given a user runs `mars-harness start --repo <path>`
 When the target needs scaffolding or registration
 Then the harness initializes if needed through the same committed generated-scaffold baseline used by `init`, `run`, `register`, and `scan`, registers the repo, classifies lifecycle state, and runs with repo-scoped state
 
+Given multiple scoped lifecycle starts run on the same machine
+When one run already owns the configured webhook or dashboard address
+Then later default `start` processes bind an ephemeral local control-plane address instead of failing before work can begin
+And scoped start cleanup does not kill another live lifecycle run's control-plane listener or llama-server process
+
 Given a user runs `mars-harness start --repo <path>`
 When pending/running jobs, in-progress tickets, review rework, recent deterministic dispositions, dirty unowned work, or stale recoverable jobs already exist
 Then startup prints one of `seeded_ceo`, `resumed_lifecycle`, `recovered_stale_job`, `routed_existing_ticket`, or `refused_ambiguous_state` with evidence, routes the deterministic next role, and does not seed CEO over active lifecycle state
@@ -268,6 +273,8 @@ Then the server keeps the signal as foundation telemetry and does not enqueue Or
 Given a dispatch-mode role hits the same guardrail or tool-policy block three times inside one job
 When the policy recorder observes the repeated block
 Then the server records a `guardrail_loop` telemetry signal, keeps it out of the target backlog, and records a bounded self-improvement review against role guidance or manifest workflow surfaces
+And if the same job or a later accepted disposition for the same role/repo proves recovery, matching prior `guardrail_loop` telemetry is marked `remedied=true`
+And if the same job fails without remediation, the server records a blocked `operator_retry` disposition with the exact loop evidence instead of routing a generic retry
 
 Given a dispatch-mode role repeats the same blocked tool call before the telemetry threshold
 When the tool result is returned to the role
@@ -675,6 +682,10 @@ Given CTO needs to record architecture rationale before ticketing
 When it writes bounded technical planning artifacts under `docs/design-docs/`, `docs/reports/strategy/`, or `docs/goals/observations.md`
 Then those writes remain available and can be committed before the CTO disposition
 
+Given CTO tries to hand off implementation before the required early product scenarios are covered by tickets
+When policy blocks the disposition or a follow-up `ticket_create` omits `bdd_scenarios`
+Then the error names the exact next valid `bdd_scenarios` JSON array and the required sequence `ticket_create -> git_status -> git_commit -> job_disposition_record`
+
 ### F-006-S038: Test/Build Repair Allows Same-Lane Validation
 
 Given Engineer observes a failing test command in the current job
@@ -810,12 +821,12 @@ None.
 - F-006-S002: `go test ./internal/queue -run TestQueue`
 - F-006-S003: `go test ./internal/queue -run TestWorkerPool`
 - F-006-S004: `go test ./internal/serve -run 'TestTriggerRouter|TestResolveSchedule|TestHandleJobComplete'`
-- F-006-S005: `go test ./cmd/mars-harness -run 'Test(Start|Init|Run|Register|Scan).*GeneratedHarnessBaseline'`
+- F-006-S005: `go test ./cmd/mars-harness -run 'Test(Start|Init|Run|Register|Scan).*GeneratedHarnessBaseline|TestStartCommandExposesParallelAddressControls'` and `go test ./internal/serve -run TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy`
 - F-006-S006: `go test ./internal/serve -run TestServer`
 - F-006-S007: `go test ./internal/serve -run 'TestHandleJobFailed|TestSelfHealRecoveryQueue'` and `go test ./internal/queue -run TestQueue_repairActiveRecoveryJobs`
 - F-006-S008: `go test ./internal/serve -run 'TestValidateEngineerTicketGate|TestBuildTicketIndex|TestFirstBacklogInterventionDebt'`
 - F-006-S009: `go test ./internal/serve -run TestOrchestratorSurvey` and `go test ./internal/queue -run 'TestQueue_concurrencyGroupSerialization|TestQueue_dailyCapConstrainsRepeatedScheduling|TestQueue_claimDoesNotResetHealthyRunningJob|TestQueue_failStuckRunningJobs'`
-- F-006-S010: `go test ./internal/orchestration ./internal/orgstate` and `go test ./internal/serve -run TestFoundationAcceptance`
+- F-006-S010: `go test ./internal/orchestration ./internal/orgstate` and `go test ./internal/serve -run 'TestFoundationAcceptance|TestRecordInterventionDebtSignalMarksGuardrailLoopRemediated|TestHandleJobFailed_unremediatedGuardrailLoopRecordsBlockedDisposition'`
 - F-006-S011: `go test ./internal/serve -run TestHandleJobComplete_reviewReworkReusesExistingDoneProductTicket`
 - F-006-S012: `go test ./internal/tools -run 'TestShellExecPolicy.*FeatureTicketDone(Move|Copy)|TestFileWritePolicyBlocksDoneFeatureTicket'`
 - F-006-S013: `go test ./internal/serve -run TestHandleJobFailed_maxTurnsDoesNotRouteOrchestrator`
@@ -839,7 +850,7 @@ None.
 - F-006-S034: `go test ./internal/tools -run 'TestRecordSessionToolOutcome(TracksTicketCreationFailures|IgnoresEngineerTicketEvidencePolicyFailure)|TestSuccessfulDispositionBlocksUnresolvedTicketCreationFailure'`
 - F-006-S035: `go test ./internal/tools -run 'TestReviewShellExecPolicyRoutesNoTestGoRepoToChangesRequested|TestReviewTerminalDispositionRequiredBlocksFurtherShellExec|TestPlanningRoleCanHandOffUnownedTicketCreationFailure'`
 - F-006-S036: `go test ./internal/tools -run 'TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation|TestEngineerFailingTestBlocksCommitTicketEvidenceAndDisposition|TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane'`
-- F-006-S037: `go test ./internal/tools -run TestCTOFileWritePolicyAllowsTechnicalPlanningAndBlocksImplementation`
+- F-006-S037: `go test ./internal/tools -run 'TestCTOFileWritePolicyAllowsTechnicalPlanningAndBlocksImplementation|TestCTOCompletionRequiresEarlyScenarioTicketBatch'`
 - F-006-S038: `go test ./internal/tools -run 'TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation|TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane'`
 - F-006-S039: `go test ./internal/tools -run 'TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation|TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane'`
 - F-006-S040: `go test ./internal/agent -run TestRun_reviewEvidenceReminder`

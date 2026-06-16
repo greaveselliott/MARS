@@ -342,6 +342,73 @@ func TestRecordInterventionDebtSignalOffersEvolutionForGuardrailLoop(t *testing.
 	require.Contains(t, evolutions[0].Result, ".harness/roles/coo.md")
 }
 
+func TestRecordInterventionDebtSignalMarksGuardrailLoopRemediated(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+
+	srv.recordInterventionDebtSignal(ctx, interventionDebtSignal{
+		RepoID:         repoID,
+		Role:           "coo",
+		JobID:          "job-loop",
+		Category:       telemetry.CategoryGuardrailLoop,
+		Count:          telemetry.PatternThreshold,
+		EvidenceWindow: "same-job",
+		ToolName:       "job_disposition_record",
+		Message:        "repeated policy block loop after 3 identical blocks: post tool policy blocked job_disposition_record: missing feature contract coverage",
+	})
+
+	events := srv.telemetry.Events()
+	require.Len(t, events, 1)
+	require.False(t, events[0].Remedied)
+
+	srv.recordInterventionDebtSignal(ctx, interventionDebtSignal{
+		Kind:     "guardrail_loop_remediated",
+		RepoID:   repoID,
+		Role:     "coo",
+		JobID:    "job-loop",
+		Category: telemetry.CategoryGuardrailLoop,
+		Outcome:  "remedied",
+		Message:  "guardrail loop remediated by later terminal job_disposition_record",
+	})
+
+	events = srv.telemetry.Events()
+	require.Len(t, events, 1)
+	require.True(t, events[0].Remedied)
+	require.Equal(t, "same_job_disposition", events[0].Action)
+}
+
+func TestRecordInterventionDebtSignalMarksPriorGuardrailLoopRemediatedByLaterJob(t *testing.T) {
+	srv, repoID := newRecoveryTestServer(t)
+	ctx := context.Background()
+
+	srv.recordInterventionDebtSignal(ctx, interventionDebtSignal{
+		RepoID:         repoID,
+		Role:           "coo",
+		JobID:          "job-loop",
+		Category:       telemetry.CategoryGuardrailLoop,
+		Count:          telemetry.PatternThreshold,
+		EvidenceWindow: "same-job",
+		ToolName:       "job_disposition_record",
+		Message:        "repeated policy block loop after 3 identical blocks: post tool policy blocked job_disposition_record: missing feature contract coverage",
+	})
+
+	srv.recordInterventionDebtSignal(ctx, interventionDebtSignal{
+		Kind:           "guardrail_loop_remediated",
+		RepoID:         repoID,
+		Role:           "coo",
+		JobID:          "job-later",
+		Category:       telemetry.CategoryGuardrailLoop,
+		EvidenceWindow: "later-job",
+		Outcome:        "completed",
+		Message:        "prior guardrail loop remediated by later accepted job_disposition_record",
+	})
+
+	events := srv.telemetry.Events()
+	require.Len(t, events, 1)
+	require.True(t, events[0].Remedied)
+	require.Equal(t, "later_successful_disposition", events[0].Action)
+}
+
 func TestRecordInterventionDebtSignalAllowsTargetOwnedFailures(t *testing.T) {
 	srv, repoID := newRecoveryTestServer(t)
 	ctx := context.Background()

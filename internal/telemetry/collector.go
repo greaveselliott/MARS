@@ -8,10 +8,12 @@ docs:
 package telemetry
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 )
@@ -141,6 +143,68 @@ func (c *Collector) Events() []Event {
 	out := make([]Event, len(c.events))
 	copy(out, c.events)
 	return out
+}
+
+// MarkRemedied updates matching prior events after later evidence proves the
+// blocked state was resolved.
+func (c *Collector) MarkRemedied(ctx context.Context, jobID, repoID, role string, cat FailureCategory, action string) int {
+	c.mu.Lock()
+	changed := 0
+	for i := range c.events {
+		evt := &c.events[i]
+		if evt.JobID != jobID || evt.RepoID != repoID || evt.Role != role || evt.Category != cat || evt.Remedied {
+			continue
+		}
+		evt.Remedied = true
+		if evt.Action == "" {
+			evt.Action = strings.TrimSpace(action)
+		}
+		changed++
+	}
+	store := c.store
+	c.mu.Unlock()
+
+	if store != nil {
+		n, err := store.MarkRemedied(ctx, jobID, repoID, role, cat, action)
+		if err != nil {
+			slog.Warn("telemetry: mark remedied failed", "err", err)
+		}
+		if n > changed {
+			changed = n
+		}
+	}
+	return changed
+}
+
+// MarkRemediedForRepoRole updates matching prior events when a later accepted
+// disposition for the same role/repo proves the guardrail loop was resolved.
+func (c *Collector) MarkRemediedForRepoRole(ctx context.Context, repoID, role string, cat FailureCategory, action string) int {
+	c.mu.Lock()
+	changed := 0
+	for i := range c.events {
+		evt := &c.events[i]
+		if evt.RepoID != repoID || evt.Role != role || evt.Category != cat || evt.Remedied {
+			continue
+		}
+		evt.Remedied = true
+		if evt.Action == "" {
+			evt.Action = strings.TrimSpace(action)
+		}
+		changed++
+	}
+	store := c.store
+	c.mu.Unlock()
+
+	if store != nil {
+		n, err := store.MarkRemediedForRepoRole(ctx, repoID, role, cat, action)
+		if err != nil {
+			slog.Warn("telemetry: mark repo/role remedied failed", "err", err)
+		}
+		if n > changed {
+			changed = n
+		}
+	}
+	return changed
 }
 
 // Stats returns per-category failure counts from the event buffer.

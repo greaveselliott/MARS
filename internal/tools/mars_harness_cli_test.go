@@ -3,9 +3,12 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/cli-tool-skill-sync.md
+- docs/design-docs/local-inference.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/tools-glossary.md
+- docs/features/F-003-local-inference-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-012-self-improvement-loop.md
 */
 package tools
@@ -40,6 +43,9 @@ func TestMarsHarnessCLI_reference(t *testing.T) {
 	} {
 		require.Contains(t, res.Output, command)
 	}
+	require.Contains(t, res.Output, "--model-endpoint <real-url>")
+	require.Contains(t, res.Output, "--dashboard-addr <host:port>")
+	require.Contains(t, res.Output, "Default scoped starts fall back to ephemeral local control/dashboard ports")
 }
 
 func TestMarsHarnessCLI_repoShortcutAppendsRepoFlagForSyncedCommands(t *testing.T) {
