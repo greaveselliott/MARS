@@ -5,6 +5,7 @@ docs:
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/foundation-operating-model.md
 - docs/design-docs/harness-operating-model.md
 - docs/features/F-001-delivery-operating-model.md
 */
@@ -92,6 +93,48 @@ func TestActivePlanReferencesActiveGoalAndFeatureContract(t *testing.T) {
 		}
 		if !strings.Contains(planText, marker) {
 			t.Fatalf("active plan must reference %s", marker)
+		}
+	}
+}
+
+func TestConfidenceGatedPlanningOperatingModelIsDocumented(t *testing.T) {
+	root := repoRoot(t)
+	required := map[string][]string{
+		"docs/design-docs/foundation-operating-model.md": {
+			"AD-298",
+			"Confidence-Gated Planning For Foundation Observations",
+			"Evidence And Classification",
+			"Assumption Confidence Matrix",
+			"`Assumption`",
+			"`Evidence`",
+			"`Confidence`",
+			"`Validation Required`",
+			"`0.0` to `1.0`",
+			"below `0.9`",
+			"scripted model endpoints cannot increase confidence",
+		},
+		"docs/design-docs/index.md": {
+			"AD-298",
+			"confidence-gated planning",
+			"foundation-operating-model.md",
+		},
+		"docs/roles/personas/foundation-maintainer.md": {
+			"confidence-gated planning",
+			"Assumption Confidence Matrix",
+			"decision-complete",
+		},
+	}
+
+	for rel, needles := range required {
+		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+		if err != nil {
+			t.Fatalf("read %s: %v", rel, err)
+		}
+		text := string(data)
+		for _, needle := range needles {
+			if !strings.Contains(text, needle) {
+				t.Fatalf("%s must document confidence-gated planning; missing %q", rel, needle)
+			}
 		}
 	}
 }

@@ -148,6 +148,46 @@ for broad runtime, orchestration, or release claims. It catches role-local
 regressions and project-shape overfitting earlier; full `mars-harness start`
 sweeps still prove cross-role handoff quality and lifecycle progress.
 
+### AD-298: Confidence-Gated Planning For Foundation Observations
+
+Foundation planning created from live validation, telemetry, operator feedback,
+subagent notes, or source investigations must be confidence-gated before it can
+drive implementation. A plan is not decision-complete when high-impact
+assumptions are hidden in prose, when discoverable repo facts have not been
+checked, or when validation evidence is not mapped to the claim it supports.
+
+This rule is source-only first. It applies to `foundation-maintainer` plans for
+the Mars Harness software factory and is not mirrored into generated target
+harnesses until the pattern proves reusable beyond foundation work.
+
+Every non-trivial foundation plan created from observations uses this template:
+
+1. **Summary** — goal, observation source, and intended outcome.
+2. **Evidence And Classification** — source paths, logs, reports, traces, DB
+   evidence, and each finding classified as `foundation-owned`,
+   `deployed-owned`, `mirrored doctrine`, `evidence-only`, or `mixed/unclear`.
+3. **Key Changes** — concrete behavior changes grouped by subsystem; no vague
+   "improve" bullets without naming the runtime, document, tool, or validation
+   surface being changed.
+4. **Assumption Confidence Matrix** — columns exactly named `Assumption`,
+   `Evidence`, `Confidence`, and `Validation Required`; confidence is scored
+   from `0.0` to `1.0`, and any assumption below `0.9` needs explicit follow-up
+   validation before completion can be claimed.
+5. **Test And Validation Plan** — unit, integration, live, or docs validation
+   that names which assumptions each test validates.
+6. **Assumptions And Defaults** — defaults selected where the operator has not
+   specified a preference, with unvalidated assumptions kept visible.
+
+Planning starts with repo and system exploration before asking the operator for
+preferences. Discoverable facts are inspected directly, not recorded as guesses.
+Live validation observations do not become doctrine until the reusable
+foundation-owned rule is separated from target-specific subject matter. Fake,
+stub, mock, canned, or scripted model endpoints cannot increase confidence for
+live behavior claims.
+
+Completion evidence must revisit the plan's confidence matrix and state which
+assumptions were proven, disproven, or still below threshold.
+
 ## Validation Matrix (Summary)
 
 Use the full table in [validation-matrix-gating.md](validation-matrix-gating.md).
@@ -181,6 +221,7 @@ foundation-only files.
 | Treating agent-smoke as a full lifecycle sweep | Role-local fixtures can pass while cross-role handoffs still regress |
 | Using fake, stub, mock, canned, or scripted model endpoints as live validation evidence | Proves runner plumbing at most and creates false positives for role behavior |
 | Expecting target agents to inspect the foundation agent-smoke matrix | Generated targets only contain target-local contracts; agents must read `docs/validation/agent-smoke/current-case.md` |
+| Treating assumptions as prose | Plans hide uncertainty, so implementers cannot tell which claims need validation |
 | Branch-only green replay | Trunk push is part of done per AD-138 |
 
 ## Discoveries

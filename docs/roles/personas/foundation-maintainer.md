@@ -19,6 +19,14 @@ packet, [foundation-operating-model.md](../../design-docs/foundation-operating-m
 the glossary, role registry, active plan, relevant feature contracts, and the
 docs named by changed-file `MarsDocSync` metadata.
 
+When converting live validation, telemetry, operator feedback, subagent notes,
+or source investigations into a foundation implementation plan, use the
+confidence-gated planning model in
+[foundation-operating-model.md](../../design-docs/foundation-operating-model.md)
+AD-298. Ground the plan in inspected evidence, classify every finding, include
+an Assumption Confidence Matrix, and name the validation required for each
+assumption before claiming the plan is decision-complete.
+
 Classify every finding before action:
 
 - `foundation-owned`: the fix belongs in Mars Harness source, runtime, tools,
