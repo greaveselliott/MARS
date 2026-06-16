@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.62.3] - 2026-06-16
+<!-- mars-harness-release: version=0.62.3 commit=81a6f9080edc -->
+
+### Impact
+- **operating-model:** Operators and future agents get clearer delivery behavior because an operating-model rule, boundary, or workflow contract is now explicit in repo-owned guidance.
+
+### Why
+- **operating-model:** This matters because autonomous work needs durable routing, evidence, and ownership rules rather than relying on chat memory or implicit handoffs.
+
+### What Changed
+- **operating-model:** The operating-model guidance was updated so adjacent docs, roles, tools, evidence paths, and generated target defaults describe the new workflow consistently (81a6f90).
+
+### Documentation
+- **operating-model:** Add confidence-gated planning doctrine (81a6f90)
+
 ## [0.62.2] - 2026-06-16
 <!-- mars-harness-release: version=0.62.2 commit=0f9bbec5d59f -->
 
