@@ -5,6 +5,27 @@ Source ref: local working tree before commit
 Binary: installed with `make install` to `/path/to/local-redacted`
 Owner: foundation
 
+## Primary Outcome Contract
+
+**Primary Outcome:** Exercise startup and restart safety checks that support the
+Factory Forward Progress Guard.
+
+**Primary Pass Gate:** Bounded startup smoke records supporting evidence for
+seeded startup, existing ticket routing, explicit reseed, and dirty
+ambiguous-state refusal through the installed CLI.
+
+**Primary Status:** `supporting_only`
+
+**Current Primary Blocker:** Full greenfield lifecycle validation still needs
+static web, Phaser/browser-game, and Go API targets to reach Engineer
+build/smoke evidence.
+
+**Next Primary Action:** Use this smoke evidence only as support, then rely on
+the live lifecycle report or a rerun to prove the full primary pass gate.
+
+**Supporting Evidence:** Installed-binary startup/restart behavior, focused
+tests, full Go suite, and docsync audit passed for the startup guard.
+
 ## Scope
 
 Validated the foundation-owned startup and routing guard added by AD-297:
@@ -41,17 +62,17 @@ mars-harness start --repo <validation-root> --db <validation-root> --log-file <v
 mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed
 ```
 
-## Results
+## Supporting Smoke Results
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| Focused tests | Pass | `cmd/mars-harness`, `internal/queue`, `internal/serve`, and `internal/tools` passed. |
-| Full Go suite | Pass | `go test ./...` passed. |
-| Docusync | Pass | `docsync: checked 303 files, findings 0`. |
-| Fresh startup | Pass | Printed `startup_action=seeded_ceo role=ceo evidence=no active jobs, tickets, or dispositions found`. |
-| Existing in-progress ticket | Pass | Printed `startup_action=routed_existing_ticket role=engineer ... evidence=in-progress ticket T-001`. |
-| Explicit reseed | Pass | Printed `startup_action=seeded_ceo role=ceo evidence=--new-lifecycle requested`. |
-| Dirty ambiguous state | Pass | Exited non-zero and printed `startup_action=refused_ambiguous_state evidence=dirty workspace without deterministic ticket route: index.html`. |
+| Focused tests | Supporting smoke pass only | `cmd/mars-harness`, `internal/queue`, `internal/serve`, and `internal/tools` passed. |
+| Full Go suite | Supporting smoke pass only | `go test ./...` passed. |
+| Docusync | Supporting smoke pass only | `docsync: checked 303 files, findings 0`. |
+| Fresh startup | Supporting smoke pass only | Printed `startup_action=seeded_ceo role=ceo evidence=no active jobs, tickets, or dispositions found`. |
+| Existing in-progress ticket | Supporting smoke pass only | Printed `startup_action=routed_existing_ticket role=engineer ... evidence=in-progress ticket T-001`. |
+| Explicit reseed | Supporting smoke pass only | Printed `startup_action=seeded_ceo role=ceo evidence=--new-lifecycle requested`. |
+| Dirty ambiguous state | Supporting smoke pass only | Exited non-zero and printed `startup_action=refused_ambiguous_state evidence=dirty workspace without deterministic ticket route: index.html`. |
 
 ## Live Sweep Follow-Up
 

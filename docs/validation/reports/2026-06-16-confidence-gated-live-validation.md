@@ -4,9 +4,38 @@
 **Source build:** local `build/mars-harness` from the working tree  
 **Scope:** forward-progress guard follow-up, parallel scoped `start`, local inference port isolation, and planner handoff observations
 
+## Primary Outcome Contract
+
+**Primary Outcome:** Greenfield `mars-harness start` reaches Engineer and records
+first successful build/smoke evidence for static web, Phaser/browser-game, and
+Go API targets.
+
+**Primary Pass Gate:** All selected targets reach Engineer, produce product
+mutation, and record project-appropriate build/smoke evidence without planner or
+CTO handoff blockage.
+
+**Primary Status:** `primary_failed`
+
+**Current Primary Blocker:** CTO scenario-ticket coverage and Engineer handoff
+remain unproven for the static web and Phaser/browser-game paths.
+
+**Next Primary Action:** Fix the CTO ticket-shaping/handoff blocker, then rerun
+the clean greenfield lifecycle until first Engineer build/smoke evidence exists
+for static web, Phaser/browser-game, and Go API.
+
+**Supporting Evidence:** Parallel scoped startup, safe scoped cleanup, and
+distinct local inference port allocation were proven as setup-layer support, not
+as completion of the primary lifecycle outcome.
+
 ## Summary
 
-This report records live validation performed while implementing the confidence-gated follow-up fixes. The run used real `mars-harness start` processes against ephemeral static-web, Phaser/browser-game, and Go API targets under `/tmp`. No fake model endpoint or scripted endpoint was used.
+Primary validation failed: this run did not prove greenfield lifecycle progress
+through Engineer build/smoke for the selected static web, Phaser/browser-game,
+and Go API targets. It records supporting live validation performed while
+implementing the confidence-gated follow-up fixes. The run used real
+`mars-harness start` processes against ephemeral static-web, Phaser/browser-game,
+and Go API targets under `/tmp`. No fake model endpoint or scripted
+endpoint was used.
 
 The validation did not prove end-to-end product build/smoke completion. It did prove the setup layer now supports same-machine parallel scoped starts without webhook/dashboard bind failure, and it proved the corrected inference lock path allocates distinct local llama-server ports under real multi-process contention. Full lifecycle build/smoke confidence remains below completion threshold until a long-running sweep reaches Engineer build/smoke evidence.
 
@@ -53,9 +82,11 @@ build/mars-harness start --repo <validation-root> --db <validation-root> --log-f
 build/mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
 ```
 
-## Completion Claim
+## Supporting Claims
 
-Claimed:
+Primary outcome not claimed: `Primary Status` is `primary_failed`.
+
+Supporting setup-layer claims:
 
 - Same-machine scoped `start` setup no longer fails on default control/dashboard port conflicts.
 - Scoped `start` avoids destructive peer-process cleanup.

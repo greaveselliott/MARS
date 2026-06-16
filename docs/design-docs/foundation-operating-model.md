@@ -162,20 +162,25 @@ harnesses until the pattern proves reusable beyond foundation work.
 
 Every non-trivial foundation plan created from observations uses this template:
 
-1. **Summary** — goal, observation source, and intended outcome.
-2. **Evidence And Classification** — source paths, logs, reports, traces, DB
+1. **Primary Outcome Contract** — `Primary Outcome`, `Primary Pass Gate`,
+   `Primary Status`, `Current Primary Blocker`, `Next Primary Action`, and
+   `Supporting Evidence`, so the operator's core goal is not replaced by
+   ancillary progress.
+2. **Summary** — goal, observation source, and intended outcome, stated in a
+   way that preserves the primary outcome status.
+3. **Evidence And Classification** — source paths, logs, reports, traces, DB
    evidence, and each finding classified as `foundation-owned`,
    `deployed-owned`, `mirrored doctrine`, `evidence-only`, or `mixed/unclear`.
-3. **Key Changes** — concrete behavior changes grouped by subsystem; no vague
+4. **Key Changes** — concrete behavior changes grouped by subsystem; no vague
    "improve" bullets without naming the runtime, document, tool, or validation
    surface being changed.
-4. **Assumption Confidence Matrix** — columns exactly named `Assumption`,
+5. **Assumption Confidence Matrix** — columns exactly named `Assumption`,
    `Evidence`, `Confidence`, and `Validation Required`; confidence is scored
    from `0.0` to `1.0`, and any assumption below `0.9` needs explicit follow-up
    validation before completion can be claimed.
-5. **Test And Validation Plan** — unit, integration, live, or docs validation
+6. **Test And Validation Plan** — unit, integration, live, or docs validation
    that names which assumptions each test validates.
-6. **Assumptions And Defaults** — defaults selected where the operator has not
+7. **Assumptions And Defaults** — defaults selected where the operator has not
    specified a preference, with unvalidated assumptions kept visible.
 
 Planning starts with repo and system exploration before asking the operator for
@@ -185,8 +190,33 @@ foundation-owned rule is separated from target-specific subject matter. Fake,
 stub, mock, canned, or scripted model endpoints cannot increase confidence for
 live behavior claims.
 
-Completion evidence must revisit the plan's confidence matrix and state which
-assumptions were proven, disproven, or still below threshold.
+Completion evidence must revisit the plan's confidence matrix and primary
+outcome status, then state which assumptions were proven, disproven, or still
+below threshold.
+
+### AD-300: Primary Outcome Contract Blocks Support-Only Success Claims
+
+Foundation plans and validation reports must lead with the operator's core
+goal before naming supporting work. The required contract fields are:
+`Primary Outcome`, `Primary Pass Gate`, `Primary Status`,
+`Current Primary Blocker`, `Next Primary Action`, and `Supporting Evidence`.
+This rule is source-only foundation doctrine until a separate generated-target
+mirroring decision is recorded.
+
+Allowed `Primary Status` values are `primary_passed`, `primary_failed`,
+`primary_blocked`, and `supporting_only`.
+
+When the primary pass gate is not met, the artifact must use
+`primary_failed` or `primary_blocked` and lead with that status. Passing
+supporting work is recorded as `Supporting Evidence`; it cannot be described as
+completion of the primary outcome. `supporting_only` is reserved for bounded
+checks such as startup smoke, role-local plumbing, or release asset verification
+that deliberately support a larger lifecycle claim without satisfying it.
+
+If the primary status is not `primary_passed`, the next plan or completion
+report targets `Current Primary Blocker` through `Next Primary Action` unless
+the operator explicitly changes the goal. This keeps useful infrastructure work
+visible without letting it displace the outcome the operator asked to prove.
 
 ## Validation Matrix (Summary)
 

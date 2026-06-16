@@ -36,6 +36,14 @@ target/run paths, DB/log/trace paths, per-case status, failure class, cleanup
 status, and any exact blocker or rerun command. A failed setup still gets a
 matrix run report; do not leave the result only in chat or terminal scrollback.
 
+Reports created on or after 2026-06-16 must lead with a Primary Outcome Contract:
+`Primary Outcome`, `Primary Pass Gate`, `Primary Status`,
+`Current Primary Blocker`, `Next Primary Action`, and `Supporting Evidence`.
+Allowed `Primary Status` values are `primary_passed`, `primary_failed`,
+`primary_blocked`, and `supporting_only`. If `Primary Status` is not
+`primary_passed`, supporting checks remain evidence only and cannot be framed as
+completion of the core validation claim.
+
 Fake, stub, mock, canned, or scripted LLM endpoints are not validation
 evidence. Runs backed by those endpoints can be recorded only as deterministic
 plumbing checks and must be excluded from live role/model/lifecycle pass

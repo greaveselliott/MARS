@@ -67,6 +67,14 @@ Replay evidence is durable, discoverable, and uniform:
   DB/log/trace paths, per-case status, failure class, cleanup status, and the
   exact blocker or rerun command. Setup failures are still reportable matrix
   outcomes; do not leave them only in chat.
+- **Primary outcome contract:** every report created on or after 2026-06-16
+  names `Primary Outcome`, `Primary Pass Gate`, `Primary Status`,
+  `Current Primary Blocker`, `Next Primary Action`, and `Supporting Evidence`
+  before summary/result language. `Primary Status` must be one of
+  `primary_passed`, `primary_failed`, `primary_blocked`, or `supporting_only`.
+  If the primary pass gate is unmet, the report leads with
+  `primary_failed`/`primary_blocked`; support evidence cannot be framed as the
+  validation pass.
 - **Required fields per run section** (from AD-138 step 3 and
   `docs/validation/README.md`): exact command, target path or remote, source
   ref or binary, **model identity (model name, quantization, context size,

@@ -6,6 +6,30 @@ Binary: `build/mars-harness` built from this checkout, reporting `mars-harness 0
 Run root: `<validation-root>`
 Owner: foundation
 
+## Primary Outcome Contract
+
+**Primary Outcome:** Greenfield `mars-harness start` reaches Engineer and records
+first successful build/smoke evidence across the static web, Phaser/browser-game,
+and Go API validation targets.
+
+**Primary Pass Gate:** Each selected target reaches Engineer, records first
+product mutation, records first successful build/smoke evidence, and avoids a
+planner or CTO loop before that evidence.
+
+**Primary Status:** `primary_failed`
+
+**Current Primary Blocker:** Static web and Phaser/browser-game did not reach
+Engineer; CTO scenario/ticket shaping and handoff remained blocked on those
+paths. Go API is partial supporting evidence only.
+
+**Next Primary Action:** Fix the CTO handoff blocker for static web and
+Phaser/browser-game, then rerun the same greenfield validation until all three
+targets reach Engineer build/smoke evidence.
+
+**Supporting Evidence:** Startup reconciliation, isolated target/DB execution,
+and the Go API path through Engineer validation are supporting evidence; they do
+not satisfy the full cross-target primary pass gate.
+
 ## Scope
 
 This report records a model-backed live validation attempt for AD-297 Factory

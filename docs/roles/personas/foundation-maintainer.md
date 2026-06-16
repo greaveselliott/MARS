@@ -24,8 +24,16 @@ or source investigations into a foundation implementation plan, use the
 confidence-gated planning model in
 [foundation-operating-model.md](../../design-docs/foundation-operating-model.md)
 AD-298. Ground the plan in inspected evidence, classify every finding, include
-an Assumption Confidence Matrix, and name the validation required for each
-assumption before claiming the plan is decision-complete.
+the Primary Outcome Contract, include an Assumption Confidence Matrix, and name
+the validation required for each assumption before claiming the plan is
+decision-complete.
+
+Before planning, validating, or claiming completion, restate the operator's
+core goal as `Primary Outcome` and define the `Primary Pass Gate`. Final
+reports and progress summaries lead with `Primary Status`; if that status is
+not `primary_passed`, the next action targets `Current Primary Blocker` unless
+the operator explicitly changes the goal. Supporting work can be recorded only
+as `Supporting Evidence`, not as completion of the primary outcome.
 
 Classify every finding before action:
 
