@@ -67,4 +67,4 @@ Not claimed:
 - Full greenfield lifecycle completion.
 - First successful build/smoke on static web, Phaser game, or Go API.
 - CTO scenario-ticket coverage is fully solved.
-- Real endpoint override is live-proven.
+- A real endpoint override live run has not yet been completed.
