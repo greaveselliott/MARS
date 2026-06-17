@@ -44,3 +44,22 @@ func TestCapabilityMatchingIgnoresIncludingAndDetectionGlue(t *testing.T) {
 		t.Fatal("expected show/display glue not to block game-over coverage")
 	}
 }
+
+func TestCapabilityMatchingAcceptsSplitDirectionalMovementScenarios(t *testing.T) {
+	t.Parallel()
+
+	surface := `
+## Scenario Schedule
+
+1. F-001-S004 - User Can Control A Falling Block With Left Movement
+2. F-001-S005 - User Can Control A Falling Block With Right Movement
+3. F-001-S006 - User Can Control A Falling Block With Down Movement
+
+### F-001-S004: User Can Control A Falling Block With Left Movement
+### F-001-S005: User Can Control A Falling Block With Right Movement
+### F-001-S006: User Can Control A Falling Block With Down Movement
+`
+	if !capabilityPhraseCovered(surface, "basic left right down movement") {
+		t.Fatal("expected split left/right/down movement scenarios to cover compound movement capability")
+	}
+}

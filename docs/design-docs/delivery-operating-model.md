@@ -2614,6 +2614,11 @@ for them.
 commands that start with `go build`. Shell commands such as
 `mkdir -p bin && go build -o bin/app ...` are rejected before execution when
 the Go build output would land inside the target repository.
+The same source-only validation guard applies when agents write or run
+`make build` and the Makefile `build` recipe shells out to
+`go build -o bin/...` or another repo-local output path; agents should run
+`go test ./...` or an explicit
+`go build -o <validation-root> <entrypoint>` instead.
 
 ### Consequences
 
@@ -6426,8 +6431,11 @@ was clean.
 
 CTO implementation handoff now prioritizes first executable proof over upfront
 backlog completeness. When a feature has no completed product ticket with build/smoke evidence,
-CTO is blocked only until an ordinary first-slice ticket covers the active
-plan's current failing scenario or the earliest uncovered product scenario.
+CTO is blocked only until an ordinary first-slice ticket covers the earliest
+uncovered product scenario. If the active plan has accidentally advanced its
+current failing scenario before first proof exists, runtime ticket policy still
+forces CTO back to the earliest uncovered product scenario instead of letting
+the lifecycle skip the first executable slice.
 After the first product ticket reaches done with build/smoke evidence, CTO may
 resume the small ordered backlog-batch behavior for the next one or two early
 product scenarios.
@@ -7818,3 +7826,69 @@ not reopened.
 - Rework cannot drift onto a different ticket and produce false progress.
 - `validation agent-smoke` remains a role-local validation lane; these startup
   constraints apply to the normal full-lifecycle `start` path.
+
+## AD-301: Static Browser Validation Must Prove Served Product Smoke
+
+**Status:** Accepted
+**Date:** 2026-06-16
+**Owner:** Mars Harness maintainers
+
+### Context
+
+The sequential static-web replay for the forward-progress guard proved the
+CTO first-slice handoff reached Engineer quickly, but it also exposed a
+validation-truth failure. Engineer wrote `package.json` with a static server on
+reserved Mars Harness inference port `18080`; the server startup failed with
+address-in-use, then the ticket was still moved to done after `node --check`
+and a canned `node -e "console.log(...)"` command. QA approved the ticket from
+that weak evidence, and Security repeated the canned console probe.
+
+This is foundation-owned because the runtime/tool policy allowed support-layer
+or fake validation evidence to satisfy lifecycle completion. It is not a
+static-web-only prompt issue: reserved harness ports and canned validation
+claims can create false positives for any target shape.
+
+### Decision
+
+Static browser completion now has a distinct same-session evidence signal.
+Syntax checks such as `node --check` remain useful, but they do not prove that
+a browser page can be served or loaded. Static browser tickets require a
+served-page product smoke: start the app/static server on a non-reserved
+application port such as `5173` or `5174`, run a separate HTTP probe such as
+`curl -fsS http://127.0.0.1:<port>/`, stop any tracked PID, and record those
+exact commands. HTTP reachability alone is not enough: a successful probe only
+counts as static product smoke when the response body is the served product
+page, not a Python/HTTP server directory listing, repository index, or other
+generic host page.
+
+`package.json` script writes are guarded for all target shapes, not only Phaser
+or framework projects. Scripts may not use Mars Harness reserved ports
+`18080`-`18089`, and `smoke` scripts may not be canned output such as `echo`,
+`true`, or pure `node -e "console.log(...)"`. `node -e` remains valid when it
+performs a real source/runtime assertion that reads product files, checks
+product state, and fails on mismatch.
+
+Engineer cannot populate static browser ticket evidence from syntax-only or
+canned validation, and QA/Security cannot approve static browser tickets until
+the same job records the served-page smoke. Runtime validation tool errors now
+also record outstanding runtime failure state when the command was a genuine
+runtime validation command, so a failed runtime path cannot be overwritten by a
+later weak success signal. If Engineer has already committed static source
+after syntax validation, the post-validation shell convergence gate still
+allows the missing static server setup and HTTP probe while blocking unrelated
+shell exploration. Missing ad hoc validation helpers, such as a `python -c`
+HTML parser probe that fails because `html5lib` is not installed, are recorded
+as validation-procedure failures rather than unrepaired product runtime
+failures so Engineer can recover by running the canonical served-page smoke.
+
+### Consequences
+
+- Static HTML/CSS/JS targets can no longer reach done/approval from
+  syntax-only or printed-success evidence.
+- Target app scripts avoid local inference ports, preventing false server
+  collisions with reasoning/coding model endpoints.
+- Framework-specific browser-product smoke rules remain intact; this decision
+  fills the static browser gap beneath them.
+- The primary forward-progress validation remains failed until a clean
+  sequential rerun reaches Engineer build/smoke evidence without this evidence
+  gap.

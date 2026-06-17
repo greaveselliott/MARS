@@ -88,6 +88,14 @@ func checkReviewDispositionValidationEvidence(root Root, session Session, status
 			browserProductSmokeCommandGuidance(root),
 		)
 	}
+	if blockers := staticBrowserCompletionBlockers(root, session); len(blockers) > 0 {
+		return fmt.Errorf(
+			"policy: %s cannot approve static browser ticket %s yet: %s. Record changes_requested with feedback.for_role engineer when the served-page smoke cannot be produced",
+			strings.ToLower(strings.TrimSpace(session.Role)),
+			strings.ToUpper(strings.TrimSpace(ticketID)),
+			strings.Join(blockers, "; "),
+		)
+	}
 	return nil
 }
 
@@ -181,6 +189,9 @@ func reviewTerminalDispositionGuidance(root Root, session Session) string {
 	if guidance := browserFrameworkTerminalDispositionGuidance(root, session); guidance != "" {
 		return guidance
 	}
+	if blockers := staticBrowserCompletionBlockers(root, session); len(blockers) > 0 {
+		return "Call job_disposition_record with status changes_requested, ticket_id, next_need implementation_rework, feedback.for_role engineer, and evidence_links explaining that static browser completion is not proven: " + strings.Join(blockers, "; ") + "."
+	}
 	if repoHasGoSourceFiles(root) && !repoHasTestFiles(root) {
 		return "Call job_disposition_record with status changes_requested, ticket_id, next_need implementation_rework, feedback.for_role engineer, and evidence_links explaining that Go source files exist but no _test.go files assert the completed behavior."
 	}
@@ -264,6 +275,9 @@ func ReviewTerminalEvidenceSatisfied(root Root, session *Session) bool {
 		return false
 	}
 	if info.UsesFramework && info.HasBuildScript && counts[buildCommandSuccessKey] > 0 && counts[browserProductSmokeSuccessKey] == 0 {
+		return false
+	}
+	if len(staticBrowserCompletionBlockers(root, *session)) > 0 {
 		return false
 	}
 	if roleRequiresDocSyncForSuccessfulDisposition(session.Role) && counts["tool:docsync_audit:success"] == 0 {

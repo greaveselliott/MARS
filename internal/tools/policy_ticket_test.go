@@ -1461,6 +1461,106 @@ verified_by:
 	}
 }
 
+func TestEngineerStaticBrowserTicketEvidenceRequiresStaticSmoke(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<main>Focus Timer</main>\n"), 0o644); err != nil {
+		t.Fatalf("write index: %v", err)
+	}
+	path := filepath.Join("docs", "tickets", "in-progress", "T-001-static-web.md")
+	writePolicyTicket(t, dir, "in-progress", "T-001-static-web.md", `---
+id: T-001
+title: Ship static web slice
+work_type: feature
+bdd_scenarios: ["F-001-S001"]
+end_to_end_evidence: required
+evidence_links: []
+verified_by: TBD
+---
+
+# Ship static web slice
+`)
+	content := `---
+id: T-001
+title: Ship static web slice
+work_type: feature
+bdd_scenarios: ["F-001-S001"]
+end_to_end_evidence: required
+evidence_links:
+- node --check app.js
+verified_by:
+- engineer
+---
+
+# Ship static web slice
+`
+	ctx := WithSession(context.Background(), Session{Role: "engineer", ToolCounts: map[string]int{
+		validationCommandSuccessKey: 1,
+	}})
+	raw, err := json.Marshal(fileWriteArgs{Path: path, Content: content})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	err = preToolPolicy(ctx, root, "file_write", raw)
+	if err == nil {
+		t.Fatal("expected static browser evidence write to require served-page smoke")
+	}
+	if !strings.Contains(err.Error(), "static browser product smoke has not passed") ||
+		!strings.Contains(err.Error(), "node --check") {
+		t.Fatalf("expected static smoke guidance, got %v", err)
+	}
+}
+
+func TestEngineerStaticBrowserTicketEvidenceAllowedAfterStaticSmoke(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<main>Focus Timer</main>\n"), 0o644); err != nil {
+		t.Fatalf("write index: %v", err)
+	}
+	path := filepath.Join("docs", "tickets", "in-progress", "T-001-static-web.md")
+	writePolicyTicket(t, dir, "in-progress", "T-001-static-web.md", `---
+id: T-001
+title: Ship static web slice
+work_type: feature
+bdd_scenarios: ["F-001-S001"]
+end_to_end_evidence: required
+evidence_links: []
+verified_by: TBD
+---
+
+# Ship static web slice
+`)
+	content := `---
+id: T-001
+title: Ship static web slice
+work_type: feature
+bdd_scenarios: ["F-001-S001"]
+end_to_end_evidence: required
+evidence_links:
+- node --check app.js
+- python3 -m http.server 5173 --bind 127.0.0.1
+- curl -fsS http://127.0.0.1:5173/
+verified_by:
+- engineer
+---
+
+# Ship static web slice
+`
+	ctx := WithSession(context.Background(), Session{Role: "engineer", ToolCounts: map[string]int{
+		validationCommandSuccessKey:  1,
+		staticProductSmokeSuccessKey: 1,
+	}})
+	raw, err := json.Marshal(fileWriteArgs{Path: path, Content: content})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	if err := preToolPolicy(ctx, root, "file_write", raw); err != nil {
+		t.Fatalf("expected static browser evidence after served-page smoke to pass, got %v", err)
+	}
+}
+
 func TestCTOTicketCreateRequiresBriefCapabilitiesInScenarioSchedule(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)
@@ -1517,6 +1617,80 @@ func TestCTOTicketCreateRequiresEarliestUncoveredFeatureScenario(t *testing.T) {
 	if !strings.Contains(err.Error(), "exactly one first-slice scenario") ||
 		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) {
 		t.Fatalf("expected first-slice guidance, got %v", err)
+	}
+}
+
+func TestCTOTicketCreateUsesEarliestFirstSliceBeforeProofEvenWhenPlanAdvanced(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeDetailedTetrisBrief(t, dir)
+	writePolicyPlanForFeature(t, dir, "F-001", "F-001-S001, F-001-S002, F-001-S003", "F-001-S002")
+	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
+	raw, err := json.Marshal(ticketCreateArgs{
+		Title:            "Implement falling tetrominoes",
+		Priority:         "high",
+		WorkType:         "feature",
+		BDDScenarios:     []string{"F-001-S002"},
+		EndToEndEvidence: "required",
+		Body:             "## Requirements\nImplement falling tetrominoes after the playfield exists.",
+	})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	err = preToolPolicy(ctx, root, "ticket_create", raw)
+	if err == nil {
+		t.Fatal("expected CTO ticket_create to require earliest first slice despite advanced current scenario")
+	}
+	if !strings.Contains(err.Error(), "exactly one first-slice scenario") ||
+		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) ||
+		!strings.Contains(err.Error(), "Do not retry later-scenario titles") {
+		t.Fatalf("expected concrete first-slice guidance, got %v", err)
+	}
+}
+
+func TestCTOTicketCreateAllowsGoAPIStructuralFirstSliceBeforeProof(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeGoAPIBrief(t, dir)
+	writePolicyPlanForFeature(t, dir, "F-001", "F-001-S001, F-001-S002, F-001-S003, F-001-S004", "F-001-S001")
+	writeGoAPIFeatureWithScenarioSchedule(t, dir)
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
+
+	firstSlice, err := json.Marshal(ticketCreateArgs{
+		Title:            "Create Go HTTP server structure",
+		Priority:         "high",
+		WorkType:         "feature",
+		BDDScenarios:     []string{"F-001-S001"},
+		EndToEndEvidence: "required",
+		Body:             "## Requirements\nCreate main.go and a health handler as the first executable API slice.",
+	})
+	if err != nil {
+		t.Fatalf("marshal first slice: %v", err)
+	}
+	if err := preToolPolicy(ctx, root, "ticket_create", firstSlice); err != nil {
+		t.Fatalf("expected Go API structural first slice to satisfy fresh first-proof ticket policy, got %v", err)
+	}
+
+	laterSlice, err := json.Marshal(ticketCreateArgs{
+		Title:            "Add focused health handler test",
+		Priority:         "high",
+		WorkType:         "feature",
+		BDDScenarios:     []string{"F-001-S003"},
+		EndToEndEvidence: "required",
+		Body:             "## Requirements\nAdd the focused handler test after the server structure exists.",
+	})
+	if err != nil {
+		t.Fatalf("marshal later slice: %v", err)
+	}
+	err = preToolPolicy(ctx, root, "ticket_create", laterSlice)
+	if err == nil {
+		t.Fatal("expected later Go API scenario to remain blocked before first proof")
+	}
+	if !strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) ||
+		strings.Contains(err.Error(), `bdd_scenarios:["F-001-S003"]`) {
+		t.Fatalf("expected first-slice guidance to require F-001-S001, got %v", err)
 	}
 }
 
@@ -1963,6 +2137,83 @@ behavior.
 `
 	if err := os.WriteFile(filepath.Join(repoRoot, "README.md"), []byte(content), 0o644); err != nil {
 		t.Fatalf("write README: %v", err)
+	}
+}
+
+func writeGoAPIBrief(t *testing.T, repoRoot string) {
+	t.Helper()
+	content := `# Go Health API
+
+Build a small Go HTTP API. The first visible slice should run as a server,
+expose a GET /health endpoint returning JSON status, include a focused test for
+the handler, and include build/test commands that prove the API compiles and the
+endpoint behavior works.
+`
+	if err := os.WriteFile(filepath.Join(repoRoot, "README.md"), []byte(content), 0o644); err != nil {
+		t.Fatalf("write README: %v", err)
+	}
+}
+
+func writeGoAPIFeatureWithScenarioSchedule(t *testing.T, repoRoot string) {
+	t.Helper()
+	path := filepath.Join(repoRoot, "docs", "features", "F-001-product-walking-skeleton.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir feature: %v", err)
+	}
+	content := `# F-001: Go Health API
+
+## Business Logic
+
+The product must run as a Go HTTP API, expose GET /health with JSON status,
+include a focused handler test, and provide build/test evidence.
+
+## Step-By-Step Behavior
+
+The scenarios below define the minimum executable API slice.
+
+## Scenario Schedule
+
+1. F-001-S001 - Create Go HTTP server structure with main.go and handler function
+2. F-001-S002 - Implement GET /health endpoint that returns JSON status
+3. F-001-S003 - Add focused test for the health handler function
+4. F-001-S004 - Include build/test commands that prove API compiles and endpoint behavior works
+
+## Scenarios
+
+### F-001-S001: Create Go HTTP Server Structure With Main.go And Handler Function
+
+Given the API project is empty
+When the first implementation ticket is completed
+Then the repo contains a Go server entrypoint and health handler function
+
+### F-001-S002: Implement GET /health Endpoint That Returns JSON Status
+
+Given the server is running
+When a client requests GET /health
+Then the API returns JSON status with HTTP 200
+
+### F-001-S003: Add Focused Test For The Health Handler Function
+
+Given the health handler exists
+When tests run
+Then the handler JSON response is asserted
+
+### F-001-S004: Include Build/Test Commands That Prove API Compiles And Endpoint Behavior Works
+
+Given the API source exists
+When build and test commands run
+Then the API compiles and the endpoint behavior works
+
+## Out of Scope
+
+- Persistence
+
+## Descoped Scenarios
+
+None.
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write feature: %v", err)
 	}
 }
 

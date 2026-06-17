@@ -289,6 +289,37 @@ func TestReviewTerminalEvidenceWaitsForDocSyncAudit(t *testing.T) {
 	}
 }
 
+func TestReviewApprovalBlocksStaticBrowserWithoutStaticSmoke(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<main>Focus Timer</main>\n"), 0o644); err != nil {
+		t.Fatalf("write index: %v", err)
+	}
+	raw := []byte(`{"status":"approved","ticket_id":"T-001","next_need":"no_need"}`)
+	ctx := WithSession(context.Background(), Session{Role: "qa", ToolCounts: map[string]int{
+		validationCommandSuccessKey: 1,
+	}})
+
+	err := preToolPolicy(ctx, root, "job_disposition_record", raw)
+	if err == nil {
+		t.Fatal("expected QA approval to require static product smoke")
+	}
+	if !strings.Contains(err.Error(), "static browser ticket T-001") ||
+		!strings.Contains(err.Error(), "static browser product smoke has not passed") {
+		t.Fatalf("expected static smoke approval guidance, got %v", err)
+	}
+
+	session := &Session{Role: "qa", ToolCounts: map[string]int{
+		validationCommandSuccessKey:  1,
+		staticProductSmokeSuccessKey: 1,
+		"tool:file_read:success":     1,
+		"tool:docsync_audit:success": 1,
+	}}
+	if !ReviewTerminalEvidenceSatisfied(root, session) {
+		t.Fatal("expected review terminal evidence after static product smoke")
+	}
+}
+
 func TestReviewTerminalEvidenceIgnoresBackgroundServerStart(t *testing.T) {
 	t.Parallel()
 	_, root := setupPolicyTicketRepo(t)

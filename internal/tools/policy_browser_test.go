@@ -50,6 +50,88 @@ func TestBrowserProductSmokeGuidanceUsesReactSourceSmoke(t *testing.T) {
 	}
 }
 
+func TestPackageWriteBlocksReservedHarnessPortForStaticWeb(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyTicket(t, dir, "in-progress", "T-001-static-web.md", "# T-001\n")
+	content := `{
+  "scripts": {
+    "start": "python3 -m http.server 18080 --bind 127.0.0.1",
+    "smoke": "curl -fsS http://127.0.0.1:5173/"
+  }
+}`
+	raw, err := json.Marshal(fileWriteArgs{Path: "package.json", Content: content})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := WithSession(context.Background(), Session{Role: "engineer", ToolCounts: map[string]int{}})
+
+	err = preToolPolicy(ctx, root, "file_write", raw)
+	if err == nil {
+		t.Fatal("expected reserved port script to be blocked")
+	}
+	if !strings.Contains(err.Error(), "reserved Mars Harness port 18080") {
+		t.Fatalf("expected reserved-port guidance, got %v", err)
+	}
+}
+
+func TestPackageWriteBlocksCannedSmokeScriptForStaticWeb(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyTicket(t, dir, "in-progress", "T-001-static-web.md", "# T-001\n")
+	content := `{
+  "scripts": {
+    "start": "python3 -m http.server 5173 --bind 127.0.0.1",
+    "smoke": "node -e \"console.log('Smoke test: Server start command available')\""
+  }
+}`
+	raw, err := json.Marshal(fileWriteArgs{Path: "package.json", Content: content})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := WithSession(context.Background(), Session{Role: "engineer", ToolCounts: map[string]int{}})
+
+	err = preToolPolicy(ctx, root, "file_write", raw)
+	if err == nil {
+		t.Fatal("expected canned smoke script to be blocked")
+	}
+	if !strings.Contains(err.Error(), "not real smoke evidence") {
+		t.Fatalf("expected smoke-script guidance, got %v", err)
+	}
+}
+
+func TestEngineerPostValidationAllowsMissingStaticSmokeAfterCommit(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyTicket(t, dir, "in-progress", "T-001-static-web.md", "# T-001\n")
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<main>Focus Timer</main>\n"), 0o644); err != nil {
+		t.Fatalf("write index: %v", err)
+	}
+	ctx := WithSession(context.Background(), Session{Role: "engineer", ToolCounts: map[string]int{
+		validationCommandSuccessKey: 1,
+		"tool:git_commit:success":   1,
+	}})
+
+	startRaw := json.RawMessage(`{"argv":["python3","-m","http.server","5173","--bind","127.0.0.1"],"background":true}`)
+	if err := preToolPolicy(ctx, root, "shell_exec", startRaw); err != nil {
+		t.Fatalf("expected static server setup after syntax commit to pass, got %v", err)
+	}
+
+	curlRaw := json.RawMessage(`{"argv":["curl","-fsS","http://127.0.0.1:5173/"]}`)
+	if err := preToolPolicy(ctx, root, "shell_exec", curlRaw); err != nil {
+		t.Fatalf("expected static product smoke after syntax commit to pass, got %v", err)
+	}
+
+	exploreRaw := json.RawMessage(`{"argv":["git","status"]}`)
+	err := preToolPolicy(ctx, root, "shell_exec", exploreRaw)
+	if err == nil {
+		t.Fatal("expected unrelated shell exploration to remain blocked")
+	}
+	if !strings.Contains(err.Error(), "already has successful validation") {
+		t.Fatalf("expected post-validation convergence block, got %v", err)
+	}
+}
+
 func TestDogfoodPostBuildRequiresReactProductSmokeBeforeMoreShell(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -1259,7 +1341,7 @@ func TestEngineerFileWriteBlocksPhaserPackageWithoutBuildScript(t *testing.T) {
 	content := `{
   "name": "phaser-tetris-demo",
   "scripts": {
-    "start": "python3 -m http.server 18081 --bind 127.0.0.1"
+    "start": "python3 -m http.server 5173 --bind 127.0.0.1"
   },
   "dependencies": {
     "phaser": "^3.70.0"

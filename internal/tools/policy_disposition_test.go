@@ -1341,7 +1341,7 @@ func TestCTOCompletionIgnoresUnselectedStarterFeatureWhenActivePlanBatchIsCovere
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)
 	writeDetailedTetrisBrief(t, dir)
-	writePolicyPlanForFeature(t, dir, "F-002", "F-002-S001, F-002-S002, F-002-S003", "F-002-S002")
+	writePolicyPlanForFeature(t, dir, "F-002", "F-002-S001, F-002-S002, F-002-S003", "F-002-S001")
 	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
 	writeTetrisFeatureContract(t, dir, "F-002-core-mechanics.md", []string{
 		"F-002-S001",
@@ -1353,7 +1353,7 @@ id: T-001
 title: Implement active plan first slice
 work_type: feature
 bdd_scenarios:
-- F-002-S002
+- F-002-S001
 end_to_end_evidence: required
 evidence_links: []
 verified_by: TBD

@@ -75,6 +75,7 @@ const (
 	reviewTerminalDispositionRequiredKey      = "review:terminal_disposition:required"
 	ticketCreationOutstandingFailureKey       = "ticket_create:failure:outstanding"
 	browserProductSmokeSuccessKey             = "validation:browser_product_smoke:success"
+	staticProductSmokeSuccessKey              = "validation:static_product_smoke:success"
 	unexpectedRuntimeValidationCommandKey     = "validation:runtime_unexpected_failure:command"
 	unexpectedRuntimeValidationCorrectionKey  = "validation:runtime_unexpected_failure:correction"
 	unexpectedRuntimeValidationMissingArgKey  = "validation:runtime_unexpected_failure:missing_argument"
@@ -365,6 +366,12 @@ func checkFileWritePolicy(root Root, session Session, hasSession bool, raw json.
 		return err
 	}
 	if err := checkEngineerBrowserFrameworkImplementationShapePolicy(root, session, hasSession, args.Path); err != nil {
+		return err
+	}
+	if err := checkPackageScriptRuntimePolicy(args.Path, args.Content); err != nil {
+		return err
+	}
+	if err := checkMakefileBuildOutputWritePolicy(root, args.Path, args.Content); err != nil {
 		return err
 	}
 	if err := checkEngineerBrowserFrameworkPackageWritePolicy(root, session, hasSession, args.Path, args.Content); err != nil {

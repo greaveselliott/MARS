@@ -553,6 +553,9 @@ func capabilityPhraseCovered(surface, phrase string) bool {
 	if len(keys) == 0 {
 		return true
 	}
+	if directionalMovementCapabilityCovered(surfaceKeys, keys) {
+		return true
+	}
 	for _, key := range keys {
 		if key == "move" && (surfaceKeys["left"] || surfaceKeys["right"] || surfaceKeys["down"] || (surfaceKeys["control"] && surfaceKeys["keyboard"])) {
 			continue
@@ -562,6 +565,28 @@ func capabilityPhraseCovered(surface, phrase string) bool {
 		}
 	}
 	return true
+}
+
+func directionalMovementCapabilityCovered(surfaceKeys map[string]bool, keys []string) bool {
+	requiredDirections := map[string]bool{}
+	hasMovement := false
+	for _, key := range keys {
+		switch key {
+		case "move":
+			hasMovement = true
+		case "left", "right", "down":
+			requiredDirections[key] = true
+		}
+	}
+	if !hasMovement || len(requiredDirections) < 2 {
+		return false
+	}
+	for direction := range requiredDirections {
+		if !surfaceKeys[direction] {
+			return false
+		}
+	}
+	return surfaceKeys["move"] || surfaceKeys["control"] || surfaceKeys["keyboard"]
 }
 
 func normalizeCapabilitySurface(text string) string {
@@ -664,7 +689,7 @@ func projectBriefNamesGoBackend(root Root) bool {
 
 var capabilityStopWords = map[string]bool{
 	"a": true, "an": true, "and": true, "another": true, "are": true, "as": true, "be": true, "by": true,
-	"can": true, "complete": true, "condition": true, "conditions": true, "described": true,
+	"basic": true, "can": true, "complete": true, "condition": true, "conditions": true, "described": true,
 	"doc": true, "docs": true, "document": true, "documents": true, "documentation": true,
 	"core": true, "detect": true, "detected": true, "detection": true, "display": true, "displayed": true, "displays": true,
 	"fall": true, "falling": true, "feature": true, "features": true, "fill": true, "fills": true, "filled": true, "for": true, "from": true, "full": true,

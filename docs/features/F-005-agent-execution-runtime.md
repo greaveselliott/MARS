@@ -480,6 +480,10 @@ Given a role runs `go build` without `-o` or with an unsafe output path
 When shell policy blocks the build before creating an artifact
 Then the error includes an exact `shell_exec argv` correction that writes to `<validation-root>`
 
+Given a role writes or runs `make build` and the Makefile build target writes a Go binary into the repository such as `bin/<name>`
+When file-write or shell policy inspects the target recipe
+Then the Makefile write or command is blocked with guidance to run `go test ./...` or `go build -o <validation-root> <entrypoint>` so validation does not leave dirty build artifacts
+
 Given the original build targeted `./...`, `./cmd/<name>`, or a concrete Go file
 When the correction is generated
 Then the target argument is preserved exactly so the next role does not guess `.` for a cmd-layout project
@@ -905,6 +909,30 @@ And it does not scaffold a source `.harness/manifest.yaml`
 And running `foundation-maintainer` against a non-source repository fails with an actionable source-only role error
 And generated target manifests do not include `foundation-maintainer`
 
+### F-005-S065: Static Browser Smoke Requires Served Product Evidence
+
+Given Engineer implements an intentionally static browser ticket
+And `node --check` or another syntax command has passed
+When Engineer tries to populate ticket evidence or move toward done without a same-job served-page smoke
+Then the runtime blocks completion until the job starts the static server on an application port such as `5173` or `5174`, runs a separate HTTP probe such as `curl -fsS http://127.0.0.1:<port>/`, and records those exact commands
+And a successful HTTP probe only counts as static product smoke when the response body is the served product page rather than a directory listing or generic host page
+And package scripts using reserved Mars Harness ports `18080`-`18089` or canned smoke scripts such as `node -e "console.log(...)"`, `echo`, or `true` are blocked before they become product evidence
+
+Given QA or Security reviews a static browser ticket
+When the only successful validation is a syntax check or a canned console-output command
+Then approval is blocked and terminal guidance routes to `changes_requested` unless a served-page static smoke on an application port has passed in the same job
+And `node -e` remains valid only when it performs a real source/runtime assertion that reads product files, checks product state, and fails on mismatch
+
+Given Engineer has already committed static browser source after syntax validation
+And the product ticket remains in progress without served-page smoke evidence
+When Engineer starts a static server on a non-reserved application port or runs the matching HTTP probe
+Then post-validation convergence allows those missing smoke commands while continuing to block unrelated shell exploration
+
+Given Engineer attempts an ad hoc parser validation such as a Python `html5lib` probe
+When the helper dependency is missing from the local environment
+Then the runtime records a validation-procedure failure rather than an unrepaired product runtime failure
+And Engineer can recover by running the canonical static served-page smoke instead of looping on the missing helper
+
 ## Out of Scope
 
 - Parallel tool execution inside a single agent turn.
@@ -975,3 +1003,4 @@ None.
 - F-005-S062: `go test ./internal/tools -run TestCapabilityMatchingIgnoresIncludingAndDetectionGlue`
 - F-005-S063: `go test ./cmd/mars-harness -run TestRunCommandFoundationMaintainer` and `go test ./internal/scanner -run TestInit_success`
 - F-005-S064: `go test ./internal/tools -run 'TestCOOCompletionTreatsFeatureDocReferenceAsCitation|TestCOOCompletionMissingFeatureDocCapabilityNamesCapabilityNotCitation|TestCOORepeatedFeatureSpecificityBlockReturnsRepairGuidance|TestRecordSessionToolPolicyFailureSeparatesRepeatedPolicyKeys|TestPolicyFailureRepairFeedbackGuidesUnresolvedShellValidationLane'`
+- F-005-S065: `go test ./internal/tools -run 'TestRecordSessionToolOutcomeTracksStaticProductSmoke|TestRecordSessionToolOutcomeDoesNotTreatReservedPortHTTPAsStaticProductSmoke|TestRecordSessionToolOutcomeDoesNotCountCannedNodeEvalValidation|TestRecordSessionToolOutcomeTracksRuntimeToolErrorAsOutstandingFailure|TestPackageWriteBlocksReservedHarnessPortForStaticWeb|TestPackageWriteBlocksCannedSmokeScriptForStaticWeb|TestEngineerPostValidationAllowsMissingStaticSmokeAfterCommit|TestEngineerStaticBrowserTicketEvidenceRequiresStaticSmoke|TestEngineerStaticBrowserTicketEvidenceAllowedAfterStaticSmoke|TestReviewApprovalBlocksStaticBrowserWithoutStaticSmoke'`

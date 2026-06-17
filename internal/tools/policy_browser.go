@@ -155,6 +155,50 @@ func engineerPostCommitBrowserValidationAllowed(root Root, session Session, args
 	return false
 }
 
+func engineerPostCommitStaticValidationAllowed(root Root, session Session, args shellExecArgs) bool {
+	if !staticBrowserRequiresProductSmoke(root) {
+		return false
+	}
+	counts := session.ToolCounts
+	if counts == nil || counts[staticProductSmokeSuccessKey] > 0 {
+		return false
+	}
+	return shellExecStartsStaticServerOnApplicationPort(args) || shellExecRunsStaticProductSmokeCommand(args)
+}
+
+func shellExecStartsStaticServerOnApplicationPort(args shellExecArgs) bool {
+	if !args.Background {
+		return false
+	}
+	fields := normalizedShellExecFields(args)
+	if len(fields) == 0 {
+		return false
+	}
+	cmd := filepathBase(fields[0])
+	switch cmd {
+	case "python", "python3":
+		for i := 1; i < len(fields)-1; i++ {
+			if fields[i] != "-m" || fields[i+1] != "http.server" {
+				continue
+			}
+			port := "8000"
+			if i+2 < len(fields) && regexp.MustCompile(`^[0-9]+$`).MatchString(fields[i+2]) {
+				port = fields[i+2]
+			}
+			return !reservedHarnessPort(port)
+		}
+	case "npm", "pnpm", "yarn", "bun":
+		if len(fields) < 2 {
+			return false
+		}
+		if fields[1] == "run" {
+			return len(fields) >= 3 && runtimeScriptName(fields[2])
+		}
+		return runtimeScriptName(fields[1])
+	}
+	return false
+}
+
 func checkEngineerBrowserFrameworkImplementationShapePolicy(root Root, session Session, hasSession bool, rel string) error {
 	if !hasSession || strings.ToLower(strings.TrimSpace(session.Role)) != "engineer" {
 		return nil
@@ -247,6 +291,86 @@ func checkEngineerBrowserFrameworkPackageWritePolicy(root Root, session Session,
 		}
 	}
 	return nil
+}
+
+func checkPackageScriptRuntimePolicy(rel, content string) error {
+	rel = cleanRepoPath(rel)
+	if strings.ToLower(rel) != "package.json" {
+		return nil
+	}
+	var pkg struct {
+		Scripts map[string]string `json:"scripts"`
+	}
+	if err := json.Unmarshal([]byte(content), &pkg); err != nil {
+		return nil
+	}
+	for name, script := range pkg.Scripts {
+		if port := reservedHarnessPortInScript(script); port != "" {
+			return fmt.Errorf("policy: package.json script %q uses reserved Mars Harness port %s. Use an application dev port such as 5173 or 5174 so target servers do not collide with local inference/runtime ports", name, port)
+		}
+		if smokeScriptName(name) && packageSmokeScriptNoop(script) {
+			return fmt.Errorf("policy: package.json script %q is not real smoke evidence. Replace canned console output, echo, true, or server-start-only scripts with a command that can fail, such as a curl probe against a served page, Playwright/Puppeteer, or a source/runtime assertion that reads product files and throws on mismatch", name)
+		}
+	}
+	return nil
+}
+
+func smokeScriptName(name string) bool {
+	name = strings.TrimSpace(strings.ToLower(name))
+	return name == "smoke" || strings.HasPrefix(name, "smoke:") || strings.Contains(name, "smoke")
+}
+
+func packageSmokeScriptNoop(script string) bool {
+	script = strings.TrimSpace(script)
+	if script == "" {
+		return true
+	}
+	for _, rawPart := range strings.Split(strings.ToLower(script), "&&") {
+		part := strings.TrimSpace(rawPart)
+		if part == "" {
+			continue
+		}
+		if strings.Contains(part, "curl ") ||
+			strings.Contains(part, "wget ") ||
+			strings.Contains(part, "playwright") ||
+			strings.Contains(part, "puppeteer") ||
+			strings.Contains(part, "cypress") ||
+			strings.Contains(part, "vitest") ||
+			strings.Contains(part, "jest") ||
+			strings.Contains(part, "node scripts/") ||
+			strings.Contains(part, "node ./scripts/") ||
+			strings.Contains(part, "node tests/") ||
+			strings.Contains(part, "node ./tests/") ||
+			strings.Contains(part, "npm run ") ||
+			strings.Contains(part, "pnpm run ") ||
+			strings.Contains(part, "yarn ") ||
+			strings.Contains(part, "bun run ") ||
+			strings.Contains(part, "go test") ||
+			strings.Contains(part, "go run") ||
+			strings.Contains(part, "python -m pytest") ||
+			strings.Contains(part, "python3 -m pytest") {
+			return false
+		}
+		if strings.Contains(part, "node -e") || strings.Contains(part, "node --eval") {
+			raw := json.RawMessage(fmt.Sprintf(`{"argv":["node","-e",%q]}`, script))
+			args, err := decodeShellExecArgs(raw)
+			if err == nil && !shellExecRunsCannedConsoleValidation(args) {
+				return false
+			}
+		}
+		if part == ":" || part == "true" || part == "exit 0" ||
+			strings.HasPrefix(part, "echo ") ||
+			strings.HasPrefix(part, "printf ") ||
+			strings.Contains(part, "console.log") ||
+			strings.Contains(part, "python -m http.server") ||
+			strings.Contains(part, "python3 -m http.server") ||
+			strings.HasPrefix(part, "http-server") ||
+			strings.HasPrefix(part, "serve ") {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func phaserRuntimeScriptUsesStaticSourceServer(script string) bool {
@@ -511,6 +635,63 @@ func browserFrameworkTerminalDispositionGuidance(root Root, session Session) str
 func browserFrameworkRequiresProductSmoke(root Root) bool {
 	info := repoBrowserFrameworkInfo(root)
 	return info.UsesFramework
+}
+
+func staticBrowserRequiresProductSmoke(root Root) bool {
+	if repoBrowserFrameworkInfo(root).UsesFramework {
+		return false
+	}
+	return repoHasStaticBrowserSurface(root)
+}
+
+func staticBrowserCompletionBlockers(root Root, session Session) []string {
+	if !staticBrowserRequiresProductSmoke(root) {
+		return nil
+	}
+	var blockers []string
+	if counts := session.ToolCounts; counts == nil || counts[staticProductSmokeSuccessKey] == 0 {
+		blockers = append(blockers, "static browser product smoke has not passed in this job; start the static server on an application port such as 5173/5174 with background:true, run a separate curl -fsS http://127.0.0.1:<port>/ probe, stop the tracked PID, and record those exact commands")
+	}
+	if findings := packageRuntimeScriptFindings(root); len(findings) > 0 {
+		blockers = append(blockers, findings...)
+	}
+	return blockers
+}
+
+func repoHasStaticBrowserSurface(root Root) bool {
+	for _, rel := range []string{
+		"index.html",
+		filepath.ToSlash(filepath.Join("src", "index.html")),
+		filepath.ToSlash(filepath.Join("public", "index.html")),
+	} {
+		if _, err := os.Stat(filepath.Join(root.Abs(), filepath.FromSlash(rel))); err == nil {
+			return true
+		}
+	}
+	return packageRuntimeScriptFindings(root) != nil
+}
+
+func packageRuntimeScriptFindings(root Root) []string {
+	data, err := os.ReadFile(filepath.Join(root.Abs(), "package.json"))
+	if err != nil {
+		return nil
+	}
+	var pkg struct {
+		Scripts map[string]string `json:"scripts"`
+	}
+	if err := json.Unmarshal(data, &pkg); err != nil {
+		return nil
+	}
+	var findings []string
+	for name, script := range pkg.Scripts {
+		if port := reservedHarnessPortInScript(script); port != "" {
+			findings = append(findings, fmt.Sprintf("package.json script %q uses reserved Mars Harness port %s", name, port))
+		}
+		if smokeScriptName(name) && packageSmokeScriptNoop(script) {
+			findings = append(findings, fmt.Sprintf("package.json script %q is canned/no-op smoke evidence", name))
+		}
+	}
+	return findings
 }
 
 func browserFrameworkSourceFindings(root Root) []string {

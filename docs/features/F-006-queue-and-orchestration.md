@@ -206,10 +206,11 @@ Then dispatch may enqueue Engineer and the ticket gate remains responsible for c
 
 Given CTO is shaping a fresh product feature with a clear scenario schedule
 When no completed product ticket has build/smoke evidence yet
-Then CTO creates exactly one first-slice ticket for the active plan's current failing scenario or earliest uncovered product scenario before handing off to Engineer
+Then CTO creates exactly one first-slice ticket for the earliest uncovered product scenario before handing off to Engineer
+And an accidentally advanced active-plan current failing scenario cannot skip that earliest uncovered first slice before proof exists
 
 Given CTO records an implementation handoff for a fresh feature with no completed product ticket with build/smoke evidence
-When the active plan's current failing scenario or earliest uncovered product scenario is not covered by an ordinary single-scenario ticket
+When the earliest uncovered product scenario is not covered by an ordinary single-scenario ticket
 Then the disposition is blocked until CTO creates exactly one first-slice implementation ticket for that scenario
 
 Given CTO records an implementation handoff after the feature already has a completed product ticket with build/smoke evidence
@@ -818,7 +819,8 @@ Then the runtime-failure halt is preserved with no automatic retry, because redi
 
 Given CTO is shaping a fresh product feature with no completed product ticket that has build/smoke evidence
 When CTO creates or confirms implementation tickets for Engineer handoff
-Then exactly one ordinary first-slice ticket may satisfy the handoff, and its `bdd_scenarios` list contains only the active plan's current failing scenario or earliest uncovered product scenario
+Then exactly one ordinary first-slice ticket may satisfy the handoff, and its `bdd_scenarios` list contains only the earliest uncovered product scenario
+And the active plan's current failing scenario cannot advance CTO past the earliest uncovered scenario until first proof exists
 
 Given CTO creates a grouped ticket covering multiple scenarios before first proof
 When CTO tries to hand off implementation

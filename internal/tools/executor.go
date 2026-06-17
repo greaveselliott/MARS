@@ -175,6 +175,9 @@ func recordSessionToolOutcome(session *Session, root Root, name string, raw json
 		if shellExecRunsBrowserProductSmokeCommand(args) {
 			session.ToolCounts[browserProductSmokeSuccessKey]++
 		}
+		if shellExecRunsStaticProductSmokeCommand(args) && staticProductSmokeResponseLooksProduct(res) {
+			session.ToolCounts[staticProductSmokeSuccessKey]++
+		}
 		if runtimeValidation {
 			if recordSuccessfulRuntimeValidationRepair(session, args) && session.ToolCounts[validationCommandFailureKey] > 0 {
 				session.ToolCounts[validationCommandFailureKey]--
@@ -204,8 +207,11 @@ func recordSessionToolOutcome(session *Session, root Root, name string, raw json
 		return
 	}
 	session.ToolCounts[validationCommandFailureKey]++
-	if err == nil && (res.ExitCode != 0 || runtimeStderrFailure) && runtimeValidation {
+	if (err != nil || res.ExitCode != 0 || runtimeStderrFailure) && runtimeValidation {
 		exitCode := res.ExitCode
+		if err != nil && exitCode == 0 {
+			exitCode = 1
+		}
 		session.ToolCounts[unexpectedRuntimeValidationFailureKey(args, exitCode)]++
 		session.ToolCounts[unexpectedRuntimeValidationFailureFingerprintKey(args)]++
 		session.ToolCounts[runtimeValidationFailureEditWatermarkKey(args)] = session.ToolCounts[runtimeValidationEditAfterFailureKey]
@@ -464,6 +470,9 @@ func validationProcedureFailure(session *Session, root Root, args shellExecArgs,
 	if nodeEvalBrowserFrameworkProcedureFailure(root, args, res) {
 		return true
 	}
+	if pythonInlineValidationHelperProcedureFailure(args, res) {
+		return true
+	}
 	if shellExecRunsHTTPProbe(args) && httpProbeFailedBeforeServerStart(res) {
 		return true
 	}
@@ -477,6 +486,93 @@ func validationProcedureFailure(session *Session, root Root, args shellExecArgs,
 		return true
 	}
 	return false
+}
+
+func staticProductSmokeResponseLooksProduct(res ToolResult) bool {
+	body := strings.ToLower(strings.TrimSpace(res.Output))
+	if body == "" {
+		return false
+	}
+	for _, marker := range []string{
+		"directory listing for",
+		"<title>directory listing",
+		"index of /",
+		`href=".git/`,
+		`href=".harness/`,
+	} {
+		if strings.Contains(body, marker) {
+			return false
+		}
+	}
+	return strings.Contains(body, "<!doctype html") || strings.Contains(body, "<html")
+}
+
+func pythonInlineValidationHelperProcedureFailure(args shellExecArgs, res ToolResult) bool {
+	module, ok := missingPythonInlineImportModule(args, res)
+	if !ok {
+		return false
+	}
+	switch module {
+	case "html5lib", "bs4", "lxml", "selenium", "playwright":
+		return true
+	default:
+		return false
+	}
+}
+
+func missingPythonInlineImportModule(args shellExecArgs, res ToolResult) (string, bool) {
+	code := ""
+	fields := normalizedShellExecFields(args)
+	for i := 0; i < len(fields); i++ {
+		switch filepathBase(fields[i]) {
+		case "python", "python3":
+			for j := i + 1; j < len(fields); j++ {
+				flag := fields[j]
+				if flag == "--" {
+					break
+				}
+				if flag == "-c" {
+					if j+1 < len(fields) {
+						code = fields[j+1]
+					}
+					break
+				}
+				if strings.HasPrefix(flag, "-c") && len(flag) > 2 {
+					code = strings.TrimPrefix(flag, "-c")
+					break
+				}
+			}
+		}
+		if code != "" {
+			break
+		}
+	}
+	if strings.TrimSpace(code) == "" {
+		return "", false
+	}
+	output := strings.ToLower(strings.TrimSpace(res.Stderr + "\n" + res.Output))
+	var module string
+	for _, marker := range []string{"no module named '", `no module named "`} {
+		idx := strings.Index(output, marker)
+		if idx < 0 {
+			continue
+		}
+		rest := output[idx+len(marker):]
+		end := strings.IndexAny(rest, `'"`)
+		if end <= 0 {
+			continue
+		}
+		module = strings.TrimSpace(rest[:end])
+		break
+	}
+	if module == "" || (!strings.Contains(output, "modulenotfounderror") && !strings.Contains(output, "importerror")) {
+		return "", false
+	}
+	lowerCode := strings.ToLower(code)
+	if !strings.Contains(lowerCode, "import "+module) && !strings.Contains(lowerCode, "import "+strings.Split(module, ".")[0]) {
+		return "", false
+	}
+	return module, true
 }
 
 func nodeEvalBrowserFrameworkProcedureFailure(root Root, args shellExecArgs, res ToolResult) bool {

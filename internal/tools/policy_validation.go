@@ -15,6 +15,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,6 +42,9 @@ func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root 
 		return nil
 	}
 	if err == nil && engineerPostCommitBrowserValidationAllowed(root, session, args) {
+		return nil
+	}
+	if err == nil && engineerPostCommitStaticValidationAllowed(root, session, args) {
 		return nil
 	}
 	if err == nil {
@@ -774,6 +778,9 @@ func shellExecRunsValidationCommandForSession(session *Session, root Root, args 
 }
 
 func shellExecCountsAsValidationEvidence(args shellExecArgs) bool {
+	if shellExecRunsCannedConsoleValidation(args) {
+		return false
+	}
 	if shellExecRunsTestCommand(args) || shellExecRunsBuildCommand(args) || shellExecRunsHTTPProbe(args) {
 		return true
 	}
@@ -1100,6 +1107,76 @@ func shellExecRunsHTTPProbe(args shellExecArgs) bool {
 	default:
 		return false
 	}
+}
+
+func shellExecRunsStaticProductSmokeCommand(args shellExecArgs) bool {
+	if !shellExecRunsHTTPProbe(args) {
+		return false
+	}
+	fields := normalizedShellExecFields(args)
+	for _, field := range fields[1:] {
+		if staticSmokeProbeURL(field) {
+			return true
+		}
+	}
+	return false
+}
+
+func staticSmokeProbeURL(raw string) bool {
+	raw = strings.TrimSpace(strings.Trim(raw, `"'`))
+	if raw == "" || strings.HasPrefix(raw, "-") {
+		return false
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return false
+	}
+	switch strings.ToLower(parsed.Scheme) {
+	case "http", "https":
+	default:
+		return false
+	}
+	host := strings.ToLower(parsed.Hostname())
+	if host != "localhost" && host != "127.0.0.1" && host != "::1" {
+		return false
+	}
+	port := parsed.Port()
+	if port == "" || reservedHarnessPort(port) {
+		return false
+	}
+	return true
+}
+
+func reservedHarnessPort(port string) bool {
+	switch strings.TrimSpace(port) {
+	case "18080", "18081", "18082", "18083", "18084", "18085", "18086", "18087", "18088", "18089":
+		return true
+	default:
+		return false
+	}
+}
+
+func shellExecRunsCannedConsoleValidation(args shellExecArgs) bool {
+	code, ok := shellExecNodeEvalCode(args)
+	if !ok {
+		return false
+	}
+	code = strings.ToLower(strings.TrimSpace(code))
+	if code == "" || !strings.Contains(code, "console.log") {
+		return false
+	}
+	for _, marker := range []string{
+		"require(", "import(", "readfilesync", "existssync", "statsync",
+		"document.", "queryselector", "getelementbyid", "fetch(",
+		"throw ", "throw new", "process.exit", "assert", " if", "if ", "if(",
+		".includes(", ".match(", ".test(", "===", "!==", ">=", "<=",
+		"http://", "https://",
+	} {
+		if strings.Contains(code, marker) {
+			return false
+		}
+	}
+	return true
 }
 
 func testScriptName(name string) bool {

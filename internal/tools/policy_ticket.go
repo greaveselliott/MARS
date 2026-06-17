@@ -154,7 +154,7 @@ func ctoFirstSliceTicketCreateGuidance(next []string) string {
 	if nextText == "" {
 		nextText = "the current failing product scenario"
 	}
-	return fmt.Sprintf("Create exactly one first-slice implementation ticket with ticket_create using bdd_scenarios:%s (JSON array), covering %s. Required follow-up sequence: git_status -> git_commit -> job_disposition_record with next_need implementation and suggested_role engineer.", quoteStringArray(next), nextText)
+	return fmt.Sprintf("Create exactly one first-slice implementation ticket with ticket_create using bdd_scenarios:%s (JSON array), covering %s. Do not retry later-scenario titles or grouped scenario lists before first proof; the ticket title/body must describe this first scenario only. Required follow-up sequence: git_status -> git_commit -> job_disposition_record with next_need implementation and suggested_role engineer.", quoteStringArray(next), nextText)
 }
 
 func featureIDsFromScenarios(scenarios []string) []string {
@@ -857,6 +857,13 @@ func checkEngineerTicketEvidenceWriteRequiresValidation(root Root, session Sessi
 			)
 		}
 		return nil
+	}
+	if blockers := staticBrowserCompletionBlockers(root, session); len(blockers) > 0 {
+		return fmt.Errorf(
+			"policy: engineer cannot populate ticket evidence for static browser work in %s yet: %s. `node --check` is useful syntax evidence, but it does not prove the page can be served or loaded",
+			rel,
+			strings.Join(blockers, "; "),
+		)
 	}
 	if engineerInValidatedPhase(session) {
 		return nil

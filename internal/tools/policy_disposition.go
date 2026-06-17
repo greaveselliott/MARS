@@ -203,13 +203,40 @@ func firstSliceCTOHandoffRequiredScenarios(root Root, featureID string, scenario
 	if len(scenarios) == 0 {
 		return nil
 	}
-	if current := activePlanCurrentFailingScenarios(root, featureID, scenarios); len(current) > 0 {
-		return current[:1]
-	}
-	if productScenarios := productScenarioIDsForHandoff(root, featureID, scenarios); len(productScenarios) > 0 {
-		return productScenarios[:1]
+	if firstSliceScenarioLooksProcessOnly(root, featureID, scenarios[0]) {
+		if productScenarios := productScenarioIDsForHandoff(root, featureID, scenarios); len(productScenarios) > 0 {
+			return productScenarios[:1]
+		}
 	}
 	return scenarios[:1]
+}
+
+func firstSliceScenarioLooksProcessOnly(root Root, featureID, scenario string) bool {
+	featurePath := featureContractPath(root, featureID)
+	if featurePath == "" {
+		return false
+	}
+	data, err := os.ReadFile(featurePath)
+	if err != nil {
+		return false
+	}
+	for _, section := range orderedFeatureScenarioSections(string(data)) {
+		if section.ID != strings.ToUpper(strings.TrimSpace(scenario)) {
+			continue
+		}
+		surface := normalizeCapabilitySurface(section.Text)
+		if strings.Contains(surface, "generic harness operations") ||
+			strings.Contains(surface, "planning pass") ||
+			strings.Contains(surface, "harness telemetry") ||
+			strings.Contains(surface, "intervention debt") ||
+			strings.Contains(surface, "governance expansion") ||
+			strings.Contains(surface, "wider automation") ||
+			strings.Contains(surface, "product evidence comes before") {
+			return true
+		}
+		return false
+	}
+	return false
 }
 
 func activePlanCurrentFailingScenarios(root Root, featureID string, scenarios []string) []string {

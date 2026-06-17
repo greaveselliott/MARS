@@ -170,6 +170,45 @@ func TestRecordSessionToolOutcomeEngineerGoBuildProcedureFailureDoesNotPoisonRep
 	require.NoError(t, err)
 }
 
+func TestRecordSessionToolOutcomeEngineerPythonValidationHelperProcedureFailureDoesNotPoisonRepairLane(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}, ToolState: map[string]string{}}
+	raw := json.RawMessage(`{"argv":["python3","-c","import html5lib; parser = html5lib.HTMLParser(); parser.parse('index.html')"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{
+		ExitCode: 1,
+		Stderr:   "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'html5lib'\n",
+	}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandAttemptKey])
+	require.Equal(t, 1, session.ToolCounts[validationProcedureFailureKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 0, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+	require.NotEmpty(t, session.ToolState[validationProcedureFailureCommandKey])
+
+	ctx := WithSession(context.Background(), *session)
+	err := preToolPolicy(ctx, root, "shell_exec", []byte(`{"argv":["python3","-m","http.server","5173","--bind","127.0.0.1"],"background":true}`))
+	require.NoError(t, err)
+}
+
+func TestRecordSessionToolOutcomeEngineerProjectPythonModuleMissingRemainsRuntimeFailure(t *testing.T) {
+	t.Parallel()
+	_, root := setupPolicyTicketRepo(t)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}, ToolState: map[string]string{}}
+	raw := json.RawMessage(`{"argv":["python3","-c","import app; app.main()"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{
+		ExitCode: 1,
+		Stderr:   "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'app'\n",
+	}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandAttemptKey])
+	require.Equal(t, 0, session.ToolCounts[validationProcedureFailureKey])
+	require.Equal(t, 1, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 1, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
+}
+
 func TestRecordSessionToolOutcomeReviewerRootBuildProcedureFailureDoesNotPoisonReview(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -312,6 +351,83 @@ func TestRecordSessionToolOutcomeTracksHTTPProbeValidation(t *testing.T) {
 	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
 	require.Equal(t, 0, session.ToolCounts[testCommandSuccessKey])
 	require.Equal(t, 0, session.ToolCounts[buildCommandSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeTracksStaticProductSmoke(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["curl","-fsS","http://127.0.0.1:5173/"]}`)
+	body := "<!DOCTYPE html><html><head><title>Static Focus Timer</title></head><body><h1>Focus Timer</h1></body></html>"
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 0, Output: body}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
+	require.Equal(t, 1, session.ToolCounts[staticProductSmokeSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeDoesNotTreatDirectoryListingAsStaticProductSmoke(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["curl","-fsS","http://127.0.0.1:5173/"]}`)
+	body := `<!DOCTYPE HTML>
+<html lang="en">
+<head><meta charset="utf-8"><title>Directory listing for /</title></head>
+<body><h1>Directory listing for /</h1><ul><li><a href=".git/">.git/</a></li></ul></body>
+</html>`
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 0, Output: body}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
+	require.Equal(t, 0, session.ToolCounts[staticProductSmokeSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeDoesNotTreatReservedPortHTTPAsStaticProductSmoke(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["curl","-fsS","http://127.0.0.1:18080/"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 0}, nil)
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandSuccessKey])
+	require.Equal(t, 0, session.ToolCounts[staticProductSmokeSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeDoesNotCountCannedNodeEvalValidation(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "qa", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["node","-e","console.log('Timer displays initial state correctly as 25:00'); console.log('Start button is visible')"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{ExitCode: 0}, nil)
+
+	require.Equal(t, 0, session.ToolCounts[validationCommandAttemptKey])
+	require.Equal(t, 0, session.ToolCounts[validationCommandSuccessKey])
+}
+
+func TestRecordSessionToolOutcomeTracksRuntimeToolErrorAsOutstandingFailure(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+	session := &Session{Role: "engineer", ToolCounts: map[string]int{}}
+	raw := json.RawMessage(`{"argv":["npm","run","start"]}`)
+
+	recordSessionToolOutcome(session, root, "shell_exec", raw, ToolResult{}, errors.New("shell_exec: command timed out"))
+
+	require.Equal(t, 1, session.ToolCounts[validationCommandAttemptKey])
+	require.Equal(t, 1, session.ToolCounts[validationCommandFailureKey])
+	require.Equal(t, 1, session.ToolCounts[unexpectedRuntimeValidationOutstandingKey])
 }
 
 func TestRecordSessionToolOutcomeDoesNotCountBackgroundServerAsValidation(t *testing.T) {
@@ -1676,6 +1792,58 @@ func TestShellExecBlocksGoBuildOutputInShellCommandSegmentBeforeArtifact(t *test
 	require.Contains(t, err.Error(), "/tmp/note-stats-validation")
 	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/note-stats-validation","cmd/note-stats/main.go"]`)
 	require.NoFileExists(t, filepath.Join(dir, "bin", "note-stats"))
+}
+
+func TestShellExecBlocksMakeBuildTargetWritingGoBinaryInsideRepo(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module health-api\n\ngo 1.24\n"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cmd", "health-api"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "cmd", "health-api", "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "Makefile"), []byte(".PHONY: build test\n\nbuild:\n\tgo build -o bin/health-api cmd/health-api/main.go\n\ntest:\n\tgo test ./...\n"), 0o644))
+
+	reg, err := DefaultRegistry()
+	require.NoError(t, err)
+	ex := NewExecutor(reg)
+	ex.Session = &Session{
+		Role:         "engineer",
+		RepoID:       "repo-1",
+		TrustLevel:   "contributor",
+		SafetyLimits: safety.DefaultLimits(),
+	}
+
+	_, err = ex.Execute(context.Background(), root, []string{"shell_exec"}, "shell_exec", `{"argv":["make","build"]}`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "make build target writes Go build output")
+	require.Contains(t, err.Error(), "bin/health-api")
+	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/health-api-validation","cmd/health-api/main.go"]`)
+	require.Contains(t, err.Error(), `shell_exec argv ["go","test","./..."]`)
+	require.NoFileExists(t, filepath.Join(dir, "bin", "health-api"))
+}
+
+func TestFileWriteBlocksMakefileBuildTargetWritingGoBinaryInsideRepo(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module health-api\n\ngo 1.24\n"), 0o644))
+	content := ".PHONY: build test\n\nbuild:\n\tgo build -o go-health-api ./cmd/go-health-api\n\ntest:\n\tgo test ./...\n"
+	raw, err := json.Marshal(fileWriteArgs{Path: "Makefile", Content: content})
+	require.NoError(t, err)
+
+	err = preToolPolicy(context.Background(), root, "file_write", raw)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Makefile build target writes Go build output")
+	require.Contains(t, err.Error(), "go-health-api")
+	require.Contains(t, err.Error(), `shell_exec argv ["go","build","-o","/tmp/go-health-api-validation","./cmd/go-health-api"]`)
+}
+
+func TestFileWriteAllowsMakefileBuildTargetWritingValidationBinaryOutsideRepo(t *testing.T) {
+	dir, root := setupDirtyGitRepo(t, 0)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module health-api\n\ngo 1.24\n"), 0o644))
+	content := ".PHONY: build test\n\nbuild:\n\tgo build -o /tmp/go-health-api-validation ./cmd/go-health-api\n\ntest:\n\tgo test ./...\n"
+	raw, err := json.Marshal(fileWriteArgs{Path: "Makefile", Content: content})
+	require.NoError(t, err)
+
+	if err := preToolPolicy(context.Background(), root, "file_write", raw); err != nil {
+		t.Fatalf("expected external validation build output to be allowed in Makefile, got %v", err)
+	}
 }
 
 func TestShellExecAllowsGoBuildOutputOutsideRepo(t *testing.T) {

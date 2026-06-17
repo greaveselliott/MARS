@@ -331,6 +331,9 @@ func shellExecGeneratedArtifactCleanup(ctx context.Context, root Root, args shel
 }
 
 func checkShellBuildOutputPolicy(root Root, args shellExecArgs) error {
+	if output, correction, ok := makeBuildRepoLocalGoOutput(root, args); ok {
+		return fmt.Errorf("policy: make build target writes Go build output %q inside the target repo; use source-only validation instead. Rerun exactly: %s, or run shell_exec argv [\"go\",\"test\",\"./...\"] when tests prove the API behavior", output, correction)
+	}
 	output, implicit, ok := goBuildOutputPath(root, args)
 	if !ok || strings.TrimSpace(output) == "" {
 		return nil
@@ -355,6 +358,106 @@ func checkShellBuildOutputPolicy(root Root, args shellExecArgs) error {
 	suggestion := validationBinaryOutputSuggestion(output)
 	correction := goBuildValidationCorrection(args, suggestion)
 	return fmt.Errorf("policy: go build output %q would create a build artifact inside the target repo; rerun exactly: %s, then run or delete that external validation binary and keep repo diffs source-only", output, correction)
+}
+
+func makeBuildRepoLocalGoOutput(root Root, args shellExecArgs) (string, string, bool) {
+	fields := args.Argv
+	if strings.TrimSpace(args.ShellCommand) != "" {
+		fields = shellCommandFields(args.ShellCommand)
+	}
+	if !shellFieldsInvokeMakeBuild(fields) {
+		return "", "", false
+	}
+	makefilePath := filepath.Join(root.Abs(), "Makefile")
+	data, err := os.ReadFile(makefilePath)
+	if err != nil {
+		return "", "", false
+	}
+	for _, line := range makeTargetRecipeLines(string(data), "build") {
+		line = strings.TrimSpace(strings.TrimPrefix(line, "@"))
+		if !strings.Contains(line, "go build") {
+			continue
+		}
+		output, implicit, ok := goBuildOutputPathFromFields(root, shellCommandFields(line))
+		if !ok || implicit || strings.TrimSpace(output) == "" {
+			continue
+		}
+		inside, err := pathResolvesInsideRepo(root, output)
+		if err != nil || !inside {
+			continue
+		}
+		return output, goBuildValidationCorrection(shellExecArgs{Argv: shellCommandFields(line)}, validationBinaryOutputSuggestion(output)), true
+	}
+	return "", "", false
+}
+
+func checkMakefileBuildOutputWritePolicy(root Root, path, content string) error {
+	if cleanRepoPath(path) != "Makefile" {
+		return nil
+	}
+	for _, line := range makeTargetRecipeLines(content, "build") {
+		line = strings.TrimSpace(strings.TrimPrefix(line, "@"))
+		if !strings.Contains(line, "go build") {
+			continue
+		}
+		fields := shellCommandFields(line)
+		output, implicit, ok := goBuildOutputPathFromFields(root, fields)
+		if !ok || strings.TrimSpace(output) == "" {
+			continue
+		}
+		inside, err := pathResolvesInsideRepo(root, output)
+		if err != nil || !inside {
+			continue
+		}
+		correction := goBuildValidationCorrection(shellExecArgs{Argv: fields}, validationBinaryOutputSuggestion(output))
+		if implicit {
+			return fmt.Errorf("policy: Makefile build target uses go build without a safe external output and would create %q inside the target repo. Use `go test ./...` for compile validation, or use %s for runnable validation evidence", output, correction)
+		}
+		return fmt.Errorf("policy: Makefile build target writes Go build output %q inside the target repo. Use `go test ./...` for compile validation, or use %s for runnable validation evidence", output, correction)
+	}
+	return nil
+}
+
+func shellFieldsInvokeMakeBuild(fields []string) bool {
+	for i := 0; i < len(fields); i++ {
+		field := cleanShellPathToken(fields[i])
+		if filepathBase(field) != "make" {
+			continue
+		}
+		for j := i + 1; j < len(fields); j++ {
+			next := cleanShellPathToken(fields[j])
+			if shellControlToken(next) {
+				break
+			}
+			if strings.HasPrefix(next, "-") {
+				continue
+			}
+			return next == "build"
+		}
+		return false
+	}
+	return false
+}
+
+func makeTargetRecipeLines(content, target string) []string {
+	lines := strings.Split(content, "\n")
+	var out []string
+	inTarget := false
+	targetPrefix := target + ":"
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if !strings.HasPrefix(line, "\t") && strings.HasSuffix(strings.Fields(trimmed)[0], ":") {
+			inTarget = strings.HasPrefix(trimmed, targetPrefix)
+			continue
+		}
+		if inTarget && strings.HasPrefix(line, "\t") {
+			out = append(out, strings.TrimSpace(line))
+		}
+	}
+	return out
 }
 
 func goBuildValidationCorrection(args shellExecArgs, suggestion string) string {
