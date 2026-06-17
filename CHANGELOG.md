@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.62.8] - 2026-06-17
+<!-- mars-harness-release: version=0.62.8 commit=2b020167a4ac -->
+
+### Impact
+- **lifecycle:** Operators see improved reliability because pass first-slice build smoke handoff.
+
+### Why
+- **lifecycle:** This matters because pass first-slice build smoke handoff closes a failure mode or degraded path.
+
+### What Changed
+- **lifecycle:** Changed pass first-slice build smoke handoff (2b02016).
+
+### Fixes
+- **lifecycle:** Pass first-slice build smoke handoff (2b02016)
+
 ## [0.62.7] - 2026-06-16
 <!-- mars-harness-release: version=0.62.7 commit=ede85ef0f6d4 -->
 
