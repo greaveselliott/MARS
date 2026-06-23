@@ -2,21 +2,6 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
-## [0.64.1] - 2026-06-23
-<!-- mars-harness-release: version=0.64.1 commit=eee21e50ae99 -->
-
-### Impact
-- **jira:** Board-driven JIRA polling now targets Atlassian Cloud's current JQL search route instead of the legacy search endpoint that returned HTTP 410 during live verification.
-
-### Why
-- **jira:** Live Example Target Project read verification must exercise the harness-owned JIRA integration, not Codex connectors; the poller needs to reach Atlassian's supported endpoint before scoped ticket generation can be proven.
-
-### What Changed
-- **jira:** Changed poll request construction to call `/rest/api/3/search/jql`, updated the poll test expectation, and recorded the live-read blocker report showing current local credentials return HTTP 401 (eee21e5).
-
-### Fixes
-- **jira:** Use current JIRA search JQL endpoint (eee21e5)
-
 ## [0.64.0] - 2026-06-23
 <!-- mars-harness-release: version=0.64.0 commit=fad78dcdbdd4 -->
 
