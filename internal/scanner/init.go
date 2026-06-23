@@ -5,6 +5,7 @@ docs:
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/board-driven-integrations.md
 - docs/design-docs/foundation-deployed-harness-architecture.md
 - docs/design-docs/harness-glossary.md
 - docs/design-docs/harness-operating-model.md
@@ -15,6 +16,7 @@ docs:
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-013-board-driven-integrations.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/roles/ROLES.md
 */
@@ -767,6 +769,49 @@ roles:
 }
 
 var defaultHarnessFiles = map[string]string{
+	"integrations.example.yaml": `# Optional Mars Harness integrations.
+# Copy this file to .harness/integrations.yaml to opt in.
+# If this file is absent, or flow_profile is ceo-led, Mars Harness keeps the
+# default CEO-led / GitHub-only / strict-trunk behavior.
+version: 1
+flow_profile: ceo-led # ceo-led | board-driven
+
+ingestion:
+  jira:
+    enabled: false
+    base_url: "" # e.g. https://jira.example.invalid
+    auth:
+      email_env: JIRA_EMAIL
+      api_token_env: JIRA_API_TOKEN
+    webhook_secret_env: JIRA_WEBHOOK_SECRET
+    poll_interval: 60s
+    jql: ""
+    project_repo_map:
+      - { project: "", repo: "" }
+    fields:
+      # Instance-specific custom-field IDs. Examples only; resolve from your JIRA instance.
+      sprint: <jira-custom-field-id>
+      rank: <jira-custom-field-id>
+      epic_link: <jira-custom-field-id>
+      story_points: <jira-custom-field-id>
+    prioritisation:
+      scope: active_sprint
+      ready_statuses: ["To Do", "Ready for Dev", "Selected for Development"]
+      order: [priority, rank, age]
+      respect_blocked_by: true
+
+design_sources:
+  figma:
+    enabled: false
+    token_env: FIGMA_TOKEN
+    base_url: https://api.figma.com
+
+delivery:
+  mode: trunk # trunk | pull_request
+  branch_pattern: "mars/{ticket}-{slug}"
+  min_trust: contributor
+`,
+
 	"knowledge/context-glossary.yaml": `routes:
   - when: project terminology, domain concepts, architecture vocabulary, naming, unclear intent, conversation record discipline, durable decisions, investigation findings, quality evidence, or completed-work state
     paths: AGENTS.md, docs/design-docs/harness-glossary.md, docs/design-docs/context-glossary.md, docs/design-docs/conversation-as-system-record.md, docs/design-docs/index.md

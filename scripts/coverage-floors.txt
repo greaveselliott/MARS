@@ -29,6 +29,7 @@ github.com/greaveselliott/mars-harness/internal/githubauth 60
 github.com/greaveselliott/mars-harness/internal/guardrails 70
 github.com/greaveselliott/mars-harness/internal/hardware 50
 github.com/greaveselliott/mars-harness/internal/inference 43
+github.com/greaveselliott/mars-harness/internal/integrations 70
 github.com/greaveselliott/mars-harness/internal/learnings 60
 github.com/greaveselliott/mars-harness/internal/llm 64
 github.com/greaveselliott/mars-harness/internal/mcpstdio 70

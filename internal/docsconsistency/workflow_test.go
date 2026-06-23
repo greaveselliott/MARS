@@ -2,8 +2,10 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/board-driven-integrations.md
 - docs/design-docs/delivery-operating-model.md
 - docs/features/F-001-delivery-operating-model.md
+- docs/features/F-013-board-driven-integrations.md
 */
 package docsconsistency
 
@@ -171,8 +173,9 @@ func checkStrictTrunkFile(t *testing.T, root, path string) {
 	if err != nil {
 		t.Fatalf("rel %s: %v", path, err)
 	}
-	for lineNo, line := range strings.Split(string(data), "\n") {
-		if isHistoricalCompatibilityNote(line) {
+	text := string(data)
+	for lineNo, line := range strings.Split(text, "\n") {
+		if isHistoricalCompatibilityNote(line) || isOptionalBoardDrivenWorkflowNote(rel, text) {
 			continue
 		}
 		for _, phrase := range forbiddenWorkflowPhrases {
@@ -189,4 +192,23 @@ func isHistoricalCompatibilityNote(line string) bool {
 	return strings.Contains(lower, "historical/compatibility") ||
 		strings.Contains(lower, "legacy compatibility") ||
 		strings.Contains(lower, "external research")
+}
+
+func isOptionalBoardDrivenWorkflowNote(rel, text string) bool {
+	lowerText := strings.ToLower(text)
+	if !strings.Contains(lowerText, "flow_profile") ||
+		!strings.Contains(lowerText, "board-driven") ||
+		!strings.Contains(lowerText, "ceo-led") ||
+		!strings.Contains(lowerText, "strict-trunk") {
+		return false
+	}
+	switch rel {
+	case "docs/design-docs/board-driven-integrations.md",
+		"docs/features/F-013-board-driven-integrations.md",
+		"docs/exec-plans/active/current-operating-plan.md",
+		"internal/scanner/init.go":
+		return true
+	default:
+		return false
+	}
 }

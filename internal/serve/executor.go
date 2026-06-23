@@ -7,6 +7,7 @@ docs:
 - docs/design-docs/guardrails.md
 - docs/design-docs/dashboard.md
 - docs/design-docs/pipeline-engine.md
+- docs/design-docs/board-driven-integrations.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/context-efficiency.md
 - docs/design-docs/agent-smoke-validation.md
@@ -15,6 +16,7 @@ docs:
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-007-guardrails-and-safety.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-013-board-driven-integrations.md
 - docs/features/F-012-self-improvement-loop.md
 */
 package serve
@@ -37,6 +39,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/dashboard"
 	"github.com/greaveselliott/mars-harness/internal/guardrails"
 	"github.com/greaveselliott/mars-harness/internal/inference"
+	"github.com/greaveselliott/mars-harness/internal/integrations"
 	"github.com/greaveselliott/mars-harness/internal/learnings"
 	"github.com/greaveselliott/mars-harness/internal/llm"
 	"github.com/greaveselliott/mars-harness/internal/orgstate"
@@ -390,6 +393,11 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		tw.WriteError(fmt.Sprintf("tool registry: %v", err))
 		return fmt.Errorf("executor: init tool registry: %w", err)
 	}
+	integrationCfg, err := integrations.Load(repoPath)
+	if err != nil {
+		log.Warn("executor: integrations config unavailable; using ceo-led defaults", "err", err)
+		integrationCfg = integrations.Defaults()
+	}
 
 	tools.RecordDecisionRole = job.Role
 
@@ -559,7 +567,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		return fmt.Errorf("executor: create LLM client: %w", err)
 	}
 
-	allowlist := role.Tools
+	allowlist := effectiveToolAllowlist(role.Tools, integrationCfg, reg)
 	if len(allowlist) == 0 {
 		return fmt.Errorf("executor: role %q has no tools configured; strict trunk requires an explicit tools allowlist in .harness/manifest.yaml", job.Role)
 	}
@@ -701,6 +709,30 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	tw.WriteHandoff(job.Role, handoff)
 
 	return nil
+}
+
+func effectiveToolAllowlist(base []string, cfg integrations.Config, reg *tools.Registry) []string {
+	out := append([]string(nil), base...)
+	if reg == nil || !cfg.BoardDriven() {
+		return out
+	}
+	if cfg.FigmaEnabled() {
+		out = appendRegisteredTool(out, reg, "figma_fetch")
+	}
+	if cfg.PullRequestDelivery() {
+		out = appendRegisteredTool(out, reg, "github_pr_open")
+	}
+	return out
+}
+
+func appendRegisteredTool(base []string, reg *tools.Registry, name string) []string {
+	if tools.Allowlisted(name, base) {
+		return base
+	}
+	if _, _, ok := reg.Lookup(name); !ok {
+		return base
+	}
+	return append(base, name)
 }
 
 func dispositionRemediatesPriorGuardrailLoop(d orgstate.Disposition) bool {

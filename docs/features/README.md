@@ -108,6 +108,7 @@ affected skills synchronized using
 | F-010 | [Dashboard And Control Plane](F-010-dashboard-control-plane.md) | partially-passing | Dashboard pages, status APIs, orchestration state, pause/resume/restart/scan/run-role controls |
 | F-011 | [Optional GitHub Integration](F-011-optional-github-integration.md) | partially-passing | GitHub App setup, webhooks, statuses, comments |
 | F-012 | [Self-Improvement Loop](F-012-self-improvement-loop.md) | partially-passing | Telemetry, intervention detection, skills, tool creation, bounded evolution |
+| F-013 | [Board-Driven Integrations](F-013-board-driven-integrations.md) | active | Optional JIRA board intake, board prioritisation, Figma context, human-reviewed delivery, and traceability |
 
 ## Historical Feature Audit
 

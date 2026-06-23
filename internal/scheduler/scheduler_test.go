@@ -205,6 +205,31 @@ func TestScheduler_registerValidation(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestScheduler_replaceSchedulesSwapsSet(t *testing.T) {
+	t.Parallel()
+	q := tempQueue(t)
+	s := New(q)
+	require.NoError(t, s.Register(Schedule{Name: "old", Cron: "0 1 * * *"}))
+	require.NoError(t, s.ReplaceSchedules([]Schedule{{Name: "new", Cron: "0 2 * * *"}}))
+
+	got := s.Schedules()
+	require.Len(t, got, 1)
+	require.Equal(t, "new", got[0].Name)
+}
+
+func TestScheduler_replaceSchedulesRejectsInvalidWithoutChangingSet(t *testing.T) {
+	t.Parallel()
+	q := tempQueue(t)
+	s := New(q)
+	require.NoError(t, s.ReplaceSchedules([]Schedule{{Name: "kept", Cron: "0 2 * * *"}}))
+
+	err := s.ReplaceSchedules([]Schedule{{Name: "bad", Cron: "not-cron"}})
+	require.Error(t, err)
+	got := s.Schedules()
+	require.Len(t, got, 1)
+	require.Equal(t, "kept", got[0].Name)
+}
+
 func formatMinuteHour(minute, hour int) string {
 	return fmt.Sprintf("%d %d * * *", minute, hour)
 }

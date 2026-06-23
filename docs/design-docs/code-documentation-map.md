@@ -80,6 +80,7 @@ source file exists in the worktree.
 | `internal/guardrails/` | `docs/design-docs/guardrails.md` | F-007 |
 | `internal/hardware/` | `docs/design-docs/local-inference.md` | F-003 |
 | `internal/inference/` | `docs/design-docs/local-inference.md` | F-003 |
+| `internal/integrations/` | `docs/design-docs/board-driven-integrations.md` | F-013 |
 | `internal/learnings/` | `docs/design-docs/dogfood-and-decisions.md` | F-012 |
 | `internal/llm/` | `docs/design-docs/agent-runtime.md`, `docs/design-docs/local-inference.md`, `docs/design-docs/context-efficiency.md` | F-003, F-005 |
 | `internal/mcpstdio/` | `docs/design-docs/tools-glossary.md` | F-005 |
@@ -123,6 +124,13 @@ Notable cross-boundary files:
 - `internal/scanner/init.go` and its tests generate target doctrine, role
   registries, tools guidance, release guidance, and F-001 operating-model
   feature docs, so their metadata lists those extra docs directly.
+- `internal/scanner/init.go` and its tests also generate the optional
+  integrations example config, so their metadata points directly to
+  [board-driven-integrations.md](board-driven-integrations.md) and F-013.
+- `internal/serve/server.go`, `internal/serve/executor.go`, and their focused
+  tests add board-driven profile visibility, schedule suppression, and future
+  tool injection hooks, so their metadata points directly to
+  [board-driven-integrations.md](board-driven-integrations.md) and F-013.
 - `internal/tools/formalized_workflows.go` and its tests own `docsync_audit`,
   so their metadata also points to the delivery operating model and F-001.
 - `internal/tools/mars_harness_cli.go` and its tests mirror the CLI command

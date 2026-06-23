@@ -332,6 +332,7 @@ func Rules() []Rule {
 		{Prefix: "internal/guardrails/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/guardrails.md", "docs/features/F-007-guardrails-and-safety.md"}},
 		{Prefix: "internal/hardware/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/local-inference.md", "docs/features/F-003-local-inference-lifecycle.md"}},
 		{Prefix: "internal/inference/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/local-inference.md", "docs/features/F-003-local-inference-lifecycle.md"}},
+		{Prefix: "internal/integrations/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/board-driven-integrations.md", "docs/features/F-013-board-driven-integrations.md"}},
 		{Prefix: "internal/learnings/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/dogfood-and-decisions.md", "docs/features/F-012-self-improvement-loop.md"}},
 		{Prefix: "internal/llm/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/agent-runtime.md", "docs/design-docs/local-inference.md", "docs/features/F-003-local-inference-lifecycle.md", "docs/features/F-005-agent-execution-runtime.md"}},
 		{Prefix: "internal/mcpstdio/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/tools-glossary.md", "docs/features/F-005-agent-execution-runtime.md"}},

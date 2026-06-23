@@ -52,6 +52,41 @@ func New(q *queue.Queue) *Scheduler {
 
 // Register adds a schedule. Must be called before Start.
 func (s *Scheduler) Register(sched Schedule) error {
+	if err := validateSchedule(sched); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.schedules = append(s.schedules, sched)
+	slog.Info("scheduler: registered", "name", sched.Name, "cron", sched.Cron)
+	return nil
+}
+
+// ReplaceSchedules atomically swaps the schedule set while preserving fire history.
+func (s *Scheduler) ReplaceSchedules(schedules []Schedule) error {
+	replacement := make([]Schedule, len(schedules))
+	for i, sched := range schedules {
+		if err := validateSchedule(sched); err != nil {
+			return err
+		}
+		replacement[i] = sched
+	}
+	s.mu.Lock()
+	s.schedules = replacement
+	s.mu.Unlock()
+	slog.Info("scheduler: schedules replaced", "count", len(replacement))
+	return nil
+}
+
+func (s *Scheduler) Schedules() []Schedule {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]Schedule, len(s.schedules))
+	copy(out, s.schedules)
+	return out
+}
+
+func validateSchedule(sched Schedule) error {
 	if _, err := parseCron(sched.Cron); err != nil {
 		return fmt.Errorf("scheduler: invalid cron %q: %w", sched.Cron, err)
 	}
@@ -60,10 +95,6 @@ func (s *Scheduler) Register(sched Schedule) error {
 			return fmt.Errorf("scheduler: invalid timezone %q: %w", sched.Timezone, err)
 		}
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.schedules = append(s.schedules, sched)
-	slog.Info("scheduler: registered", "name", sched.Name, "cron", sched.Cron)
 	return nil
 }
 

@@ -87,6 +87,11 @@ Given a manifest schedule fires for a repo and role
 When that same repo and role already has a pending, claimed, or running job
 Then the scheduler records the skip and does not enqueue another same-role job for that repo, so periodic triggers cannot stack duplicate product workers behind an active lifecycle
 
+Given a server warm restart reloads registered repos and manifests
+When role schedules were removed, changed, or suppressed by an optional profile
+Then the scheduler replaces the registered schedule set instead of appending to it
+And stale cron entries from the previous schedule set cannot fire after restart
+
 ### F-006-S005: Single-Repo Start
 
 Given a user runs `mars-harness start --repo <path>`

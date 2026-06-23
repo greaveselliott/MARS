@@ -32,6 +32,19 @@ Foreign keys and indexes should be designed assuming **many repos** even when th
 
 Startup cleanup now treats SQLite sidecars as recoverable database state. When a database file and sidecars are present, the harness opens the database with a busy timeout and asks SQLite to run a passive WAL checkpoint. If recovery/checkpointing fails, the sidecars are left in place and the operator sees a warning rather than losing state. Explicit destructive cleanup remains limited to operator-controlled flows such as `eject --apply`.
 
+### AD-302: Warm restart replaces manifest schedule registrations
+
+Warm restart rebuilds manifest-derived cron schedules from current repo state
+and replaces the scheduler's registered schedule set atomically after
+validation. This preserves per-schedule fire history while preventing stale
+cron entries from surviving role schedule edits or optional profile changes.
+
+The first profile that depends on this is board-driven integrations:
+`flow_profile: board-driven` suppresses only planning cron schedules for
+`ceo`, `coo`, `head-of-strategy`, and `cto-weekly`, while keeping the roles
+available for manual or explicit dispatch. Missing integrations config keeps
+the CEO-led schedule set unchanged.
+
 ### Open topics
 
 - **Job queue:** states (queued, running, succeeded, failed, cancelled), idempotency keys, lease/timeout semantics, dead-letter handling for poison jobs.
@@ -43,6 +56,10 @@ Startup cleanup now treats SQLite sidecars as recoverable database state. When a
 
 ## Discoveries
 
+- 2026-06-23: Board-driven integrations require warm restart to rebuild the
+  scheduler by replacement rather than append. Without replacement, a repo that
+  opts into board-driven scheduling could keep stale CEO-led planning cron
+  entries alive until process restart.
 - 2026-06-16: The factory forward-progress guard needs repo-scoped startup
   queue evidence before the worker pool starts. `mars-harness start` now resets
   stale claimed/running jobs for the selected repo, inspects active pending

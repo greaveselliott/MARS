@@ -336,6 +336,8 @@ func TestInit_success(t *testing.T) {
 	assert.DirExists(t, filepath.Join(dir, ".harness", "knowledge"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "manifest.yaml"))
 	assert.FileExists(t, filepath.Join(dir, ".harness", "metadata.yaml"))
+	assert.FileExists(t, filepath.Join(dir, ".harness", "integrations.example.yaml"))
+	assert.NoFileExists(t, filepath.Join(dir, ".harness", "integrations.yaml"))
 
 	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "backlog"))
 	assert.DirExists(t, filepath.Join(dir, "docs", "tickets", "in-progress"))
@@ -1613,6 +1615,8 @@ func TestUpgrade_preservesUserConfiguredManifestAndPrompts(t *testing.T) {
 
 	missingPrompt := filepath.Join(dir, ".harness", "roles", "qa.md")
 	require.NoError(t, os.Remove(missingPrompt))
+	missingExample := filepath.Join(dir, ".harness", "integrations.example.yaml")
+	require.NoError(t, os.Remove(missingExample))
 
 	updated, err := Upgrade(dir)
 	require.NoError(t, err)
@@ -1620,6 +1624,7 @@ func TestUpgrade_preservesUserConfiguredManifestAndPrompts(t *testing.T) {
 	assert.NotContains(t, updated, "roles/coo.md")
 	assert.NotContains(t, updated, "knowledge/context-glossary.yaml")
 	assert.Contains(t, updated, "roles/qa.md")
+	assert.Contains(t, updated, "integrations.example.yaml")
 
 	metadata, err := ReadHarnessMetadata(dir)
 	require.NoError(t, err)
@@ -1640,6 +1645,9 @@ func TestUpgrade_preservesUserConfiguredManifestAndPrompts(t *testing.T) {
 	createdPrompt, err := os.ReadFile(missingPrompt)
 	require.NoError(t, err)
 	assert.Contains(t, string(createdPrompt), "Quality Reviewer")
+	example, err := os.ReadFile(missingExample)
+	require.NoError(t, err)
+	assert.Contains(t, string(example), "flow_profile: ceo-led")
 }
 
 func TestUpgrade_failsWithoutHarness(t *testing.T) {

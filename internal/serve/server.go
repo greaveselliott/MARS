@@ -5,11 +5,13 @@ docs:
 - docs/design-docs/dashboard.md
 - docs/design-docs/local-inference.md
 - docs/design-docs/pipeline-engine.md
+- docs/design-docs/board-driven-integrations.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/design-docs/self-reflective-telemetry.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/convergence-state-machine.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-013-board-driven-integrations.md
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-012-self-improvement-loop.md
 */
@@ -40,6 +42,7 @@ import (
 	gh "github.com/greaveselliott/mars-harness/internal/github"
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
+	"github.com/greaveselliott/mars-harness/internal/integrations"
 	"github.com/greaveselliott/mars-harness/internal/orchestration"
 	"github.com/greaveselliott/mars-harness/internal/orgstate"
 	"github.com/greaveselliott/mars-harness/internal/power"
@@ -656,8 +659,9 @@ type StatusResponse struct {
 
 // RepoInfo is a lightweight repo descriptor for control-surface responses.
 type RepoInfo struct {
-	ID   string `json:"id"`
-	Path string `json:"path"`
+	ID          string `json:"id"`
+	Path        string `json:"path"`
+	FlowProfile string `json:"flow_profile"`
 }
 
 // Pause stops the worker pool from claiming new jobs.
@@ -839,7 +843,8 @@ func (s *Server) Status() StatusResponse {
 	repos, _ := s.repos.List(ctx)
 	repoInfos := make([]RepoInfo, len(repos))
 	for i, r := range repos {
-		repoInfos[i] = RepoInfo{ID: r.ID, Path: r.Path}
+		cfg := s.integrationConfigForRepo(r)
+		repoInfos[i] = RepoInfo{ID: r.ID, Path: r.Path, FlowProfile: cfg.FlowProfile}
 	}
 
 	active, _ := s.queue.CountByStatus(ctx, "running")
@@ -2539,6 +2544,7 @@ func roleDashboardOrder(role string) int {
 }
 
 func (s *Server) registerCronSchedules(repos []RepoRecord) {
+	var schedules []scheduler.Schedule
 	for _, repo := range repos {
 		manifest, err := bundle.Load(repo.Path)
 		if err != nil {
@@ -2546,6 +2552,11 @@ func (s *Server) registerCronSchedules(repos []RepoRecord) {
 				"repo_id", repo.ID, "err", err)
 			continue
 		}
+		integrationCfg := s.integrationConfigForRepo(repo)
+		slog.Info("serve: integrations profile loaded",
+			"repo", repo.ID,
+			"flow_profile", integrationCfg.FlowProfile,
+		)
 
 		for roleName, roleCfg := range manifest.Roles {
 			cron := resolveSchedule(roleCfg.Schedule)
@@ -2562,6 +2573,15 @@ func (s *Server) registerCronSchedules(repos []RepoRecord) {
 			if cron == "" {
 				continue
 			}
+			if integrationCfg.SuppressesSchedule(roleName) {
+				slog.Info("serve: cron schedule suppressed by integrations profile",
+					"repo", repo.ID,
+					"role", roleName,
+					"cron", cron,
+					"flow_profile", integrationCfg.FlowProfile,
+				)
+				continue
+			}
 
 			sched := scheduler.Schedule{
 				Name:             fmt.Sprintf("%s:%s", repo.ID, roleName),
@@ -2574,22 +2594,30 @@ func (s *Server) registerCronSchedules(repos []RepoRecord) {
 				ConcurrencyGroup: fmt.Sprintf("schedule:%s:%s", repo.ID, roleName),
 				DailyCap:         scheduleDailyCap(cron),
 			}
-			if err := s.scheduler.Register(sched); err != nil {
-				slog.Warn("serve: failed to register cron schedule",
-					"repo", repo.ID,
-					"role", roleName,
-					"cron", cron,
-					"err", err,
-				)
-			} else {
-				slog.Info("serve: cron schedule registered",
-					"repo", repo.ID,
-					"role", roleName,
-					"cron", cron,
-				)
-			}
+			schedules = append(schedules, sched)
+			slog.Info("serve: cron schedule prepared",
+				"repo", repo.ID,
+				"role", roleName,
+				"cron", cron,
+			)
 		}
 	}
+	if err := s.scheduler.ReplaceSchedules(schedules); err != nil {
+		slog.Warn("serve: failed to replace cron schedules", "err", err)
+	}
+}
+
+func (s *Server) integrationConfigForRepo(repo RepoRecord) integrations.Config {
+	cfg, err := integrations.Load(repo.Path)
+	if err != nil {
+		slog.Warn("serve: integrations config unavailable; using ceo-led defaults",
+			"repo", repo.ID,
+			"path", repo.Path,
+			"err", err,
+		)
+		return integrations.Defaults()
+	}
+	return cfg
 }
 
 var presetCron = map[string]string{

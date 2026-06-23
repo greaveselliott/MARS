@@ -5,8 +5,10 @@ docs:
 - docs/design-docs/dashboard.md
 - docs/design-docs/local-inference.md
 - docs/design-docs/pipeline-engine.md
+- docs/design-docs/board-driven-integrations.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-013-board-driven-integrations.md
 - docs/features/F-010-dashboard-control-plane.md
 */
 package serve
@@ -20,14 +22,17 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
+	"github.com/greaveselliott/mars-harness/internal/scheduler"
 	"github.com/greaveselliott/mars-harness/internal/scoring"
 	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
+	"github.com/stretchr/testify/require"
 )
 
 func testDBPath(t *testing.T) string {
@@ -178,6 +183,7 @@ func TestServer_startStop(t *testing.T) {
 		WebhookAddr:   "127.0.0.1:0",
 		DashboardAddr: "127.0.0.1:0",
 		DBPath:        testDBPath(t),
+		ModelEndpoint: "http://127.0.0.1:9999/v1",
 	})
 	if err != nil {
 		t.Fatalf("New returned error: %v", err)
@@ -329,6 +335,7 @@ func TestServer_doubleStart(t *testing.T) {
 		WebhookAddr:   "127.0.0.1:0",
 		DashboardAddr: "127.0.0.1:0",
 		DBPath:        testDBPath(t),
+		ModelEndpoint: "http://127.0.0.1:9999/v1",
 	})
 	if err != nil {
 		t.Fatalf("New returned error: %v", err)
@@ -392,6 +399,107 @@ func TestFilterReposByPath_empty(t *testing.T) {
 	if len(filtered) != 0 {
 		t.Fatalf("expected 0 repos for nil input, got %d", len(filtered))
 	}
+}
+
+func TestServer_registerCronSchedulesNoConfigPreservesPlanningSchedules(t *testing.T) {
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+		ModelEndpoint: "http://127.0.0.1:9999/v1",
+	})
+	require.NoError(t, err)
+
+	repo := writeIntegrationScheduleRepo(t, "")
+	srv.registerCronSchedules([]RepoRecord{{ID: "repo-1", Path: repo}})
+
+	require.Equal(t, []string{"repo-1:ceo", "repo-1:coo", "repo-1:cto-weekly", "repo-1:engineer"}, scheduleNames(srv.scheduler.Schedules()))
+	status := srv.Status()
+	require.Len(t, status.Repos, 0)
+}
+
+func TestServer_registerCronSchedulesBoardDrivenSuppressesPlanningSchedules(t *testing.T) {
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+		ModelEndpoint: "http://127.0.0.1:9999/v1",
+	})
+	require.NoError(t, err)
+
+	repo := writeIntegrationScheduleRepo(t, `version: 1
+flow_profile: board-driven
+`)
+	_, err = srv.Repos().Register(context.Background(), repo, "owner/repo", "main")
+	require.NoError(t, err)
+	srv.registerCronSchedules([]RepoRecord{{ID: "repo-1", Path: repo}})
+
+	require.Equal(t, []string{"repo-1:engineer"}, scheduleNames(srv.scheduler.Schedules()))
+	status := srv.Status()
+	require.Len(t, status.Repos, 1)
+	require.Equal(t, "board-driven", status.Repos[0].FlowProfile)
+}
+
+func TestServer_registerCronSchedulesReplacesStaleSchedules(t *testing.T) {
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+		ModelEndpoint: "http://127.0.0.1:9999/v1",
+	})
+	require.NoError(t, err)
+
+	repo := writeIntegrationScheduleRepo(t, "")
+	srv.registerCronSchedules([]RepoRecord{{ID: "repo-1", Path: repo}})
+	require.Len(t, srv.scheduler.Schedules(), 4)
+
+	mustWriteFile(t, filepath.Join(repo, ".harness", "integrations.yaml"), []byte("version: 1\nflow_profile: board-driven\n"))
+	srv.registerCronSchedules([]RepoRecord{{ID: "repo-1", Path: repo}})
+	require.Equal(t, []string{"repo-1:engineer"}, scheduleNames(srv.scheduler.Schedules()))
+}
+
+func writeIntegrationScheduleRepo(t *testing.T, integrationsYAML string) string {
+	t.Helper()
+	repo := t.TempDir()
+	harnessDir := filepath.Join(repo, ".harness")
+	require.NoError(t, os.MkdirAll(harnessDir, 0o755))
+	manifest := `name: test
+roles:
+  ceo:
+    prompt: roles/ceo.md
+    model: fast
+    schedule: "0 20 * * 0"
+    tools: [file_read]
+  coo:
+    prompt: roles/coo.md
+    model: fast
+    schedule: "0 21 * * 0"
+    tools: [file_read]
+  cto-weekly:
+    prompt: roles/cto.md
+    model: fast
+    schedule: "0 22 * * 0"
+    tools: [file_read]
+  engineer:
+    prompt: roles/engineer.md
+    model: fast
+    schedule: "0 23 * * 0"
+    tools: [file_read]
+`
+	mustWriteFile(t, filepath.Join(harnessDir, "manifest.yaml"), []byte(manifest))
+	if strings.TrimSpace(integrationsYAML) != "" {
+		mustWriteFile(t, filepath.Join(harnessDir, "integrations.yaml"), []byte(integrationsYAML))
+	}
+	return repo
+}
+
+func scheduleNames(schedules []scheduler.Schedule) []string {
+	names := make([]string, 0, len(schedules))
+	for _, sched := range schedules {
+		names = append(names, sched.Name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 func TestRepoScope_isolatesStartup(t *testing.T) {
