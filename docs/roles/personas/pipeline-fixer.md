@@ -61,4 +61,3 @@ Repair one bounded CI or check failure with evidence, then return to QA instead 
 - Use next_need qa_review after successful repair.
 - Use feedback.for_role engineer for code rework.
 - Use status blocked with evidence when external systems prevent repair.
-

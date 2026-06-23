@@ -61,4 +61,3 @@ Clean stale ticket, backlog, and state hygiene without becoming the default deli
 - Use next_need for the role that owns the substantive follow-up after hygiene.
 - Use status no_work when no cleanup is needed.
 - Do not route Janitor as a default fallback for product work.
-

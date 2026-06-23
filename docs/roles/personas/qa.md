@@ -83,4 +83,3 @@ Validate the delivered work against BDD scenarios, tickets, tests, and evidence;
 - Use status changes_requested with feedback.for_role engineer when implementation rework is needed.
 - Use feedback.for_role cto/coo/ceo when the defect is a ticket, planning, or scope problem.
 - In the default QA role, shell_exec is only for bounded validation evidence and file_write is limited to QA reports and committed review evidence; disposition output is the durable review handoff.
-

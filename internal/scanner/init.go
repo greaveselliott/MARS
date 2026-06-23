@@ -3562,7 +3562,11 @@ harness is written in Go. For browser JavaScript targets, especially briefs
 that name Phaser, React, Vue, Three, or similar frameworks, default affected
 files to ` + "`package.json`" + `, ` + "`index.html`" + `, ` + "`src/*.js`" + `/` + "`src/*.ts`" + `,
 tests, and build config, with evidence such as ` + "`npm run build`" + ` plus a
-browser/runtime smoke. Do not mention ` + "`go.mod`" + `, ` + "`cmd/*`" + `, or Go
+browser/runtime smoke. If the README or BDD contract explicitly says no package
+manager, no external dependencies, or no build step, do not prescribe
+` + "`package.json`" + `, npm/yarn/pnpm/bun commands, framework dependencies, or
+package-manager evidence; keep the ticket to plain static files and direct
+browser/source smoke evidence. Do not mention ` + "`go.mod`" + `, ` + "`cmd/*`" + `, or Go
 module setup in those tickets unless README explicitly names a Go backend. Do
 not prescribe CDN-only browser-framework runtime loading or CDN acceptance
 criteria for Phaser tickets; require local package dependencies, deterministic

@@ -1033,6 +1033,35 @@ func TestEngineerFailingTestAllowsIntegrationTestRepairWrite(t *testing.T) {
 	}
 }
 
+func TestEngineerFailingGoIntegrationTestAllowsProductSourceRepairWrite(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
+	writePolicyTicket(t, dir, "in-progress", "T-001-api.md", "# T-001\n")
+	if err := os.MkdirAll(filepath.Join(dir, "internal", "api"), 0o755); err != nil {
+		t.Fatalf("mkdir internal/api: %v", err)
+	}
+
+	session := Session{
+		Role: "engineer",
+		ToolCounts: map[string]int{
+			testBuildValidationOutstandingKey: 1,
+			testCommandFailureKey:             1,
+		},
+		ToolState: map[string]string{
+			testBuildValidationCommandKey: `shell_exec {"argv":["go","test","-v","./tests/integration"]}`,
+			testBuildValidationScopeKey:   "tests/integration",
+			testBuildValidationOutputKey:  "tests/integration/tasknotesapi_test.go:91:16: handler.AddTaskNote undefined",
+		},
+	}
+	ctx := WithSession(context.Background(), session)
+	raw := []byte(`{"path":"internal/api/handlers.go","content":"/*\nMarsDocSync:\ndocs:\n- docs/features/F-001-product-walking-skeleton.md\n*/\npackage api\n"}`)
+
+	if err := preToolPolicy(ctx, root, "file_write", raw); err != nil {
+		t.Fatalf("expected integration test source repair write to be allowed, got %v", err)
+	}
+}
+
 func TestEngineerFailingTestBlocksCommitTicketEvidenceAndDisposition(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)

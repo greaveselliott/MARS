@@ -702,13 +702,13 @@ func executeAgentSmokeRole(ctx context.Context, runtime *agentSmokeRuntime, resu
 		PayloadMode: "agent_smoke",
 	}
 	if err := exec.Execute(ctx, job); err != nil {
-		disposition, dErr := orgStore.GetDisposition(ctx, job.ID)
+		disposition, dErr := readAgentSmokeDisposition(orgStore, job.ID)
 		if dErr == nil && disposition != nil {
 			recordAgentSmokeDisposition(result, disposition)
 		}
 		return err
 	}
-	disposition, err := orgStore.GetDisposition(ctx, job.ID)
+	disposition, err := readAgentSmokeDisposition(orgStore, job.ID)
 	if err != nil {
 		return fmt.Errorf("validation agent-smoke: read terminal disposition: %w", err)
 	}
@@ -723,6 +723,12 @@ func executeAgentSmokeRole(ctx context.Context, runtime *agentSmokeRuntime, resu
 		return err
 	}
 	return nil
+}
+
+func readAgentSmokeDisposition(store *orgstate.Store, jobID string) (*orgstate.Disposition, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return store.GetDisposition(ctx, jobID)
 }
 
 func agentSmokeTrigger(c AgentSmokeCase) map[string]any {

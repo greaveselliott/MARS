@@ -77,6 +77,7 @@ type Config struct {
 	PerformanceProfile    string
 	InferenceTuning       inference.ServerTuning
 	ModelEndpoint         string
+	RequireModelPreflight bool
 	EphemeralHTTPFallback bool
 	JobViews              ui.JobViewFactory
 	CodeIntelDisabled     bool
@@ -167,7 +168,7 @@ func New(cfg Config) (*Server, error) {
 	}
 	if modelEndpoint != "" {
 		modelSet = map[hardware.Tier]hardware.ModelSpec{}
-	} else {
+	} else if cfg.RequireModelPreflight {
 		if missing, err := hardware.MissingRequiredModelFiles(modelsDir, cfg.PerformanceProfile); err != nil {
 			db.Close()
 			return nil, fmt.Errorf("serve: verify profile model files: %w", err)

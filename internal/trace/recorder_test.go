@@ -10,6 +10,7 @@ package trace
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,10 +26,26 @@ func TestRecorder_headerAndTurns(t *testing.T) {
 	t.Parallel()
 	var buf bytes.Buffer
 	rec := NewRecorder(&buf)
+	require.False(t, rec.Started())
 	require.NoError(t, rec.WriteHeader("job-1", "tr-1", "m1"))
+	require.True(t, rec.Started())
+	require.Equal(t, "tr-1", rec.TraceID())
 	require.NoError(t, rec.WriteTurn(llm.Message{Role: "user", Content: "hi"}, 5))
 	require.Contains(t, rec.JSONL(), `"type":"header"`)
 	require.Contains(t, rec.JSONL(), `"type":"turn"`)
+}
+
+func TestRecorderRejectsTurnsBeforeHeaderAndDuplicateHeader(t *testing.T) {
+	t.Parallel()
+	rec := NewRecorder(nil)
+	require.ErrorContains(t, rec.WriteTurn(llm.Message{Role: "user", Content: "hi"}, 1), "WriteHeader before WriteTurn")
+	require.NoError(t, rec.WriteHeader("job", "trace", "model"))
+	require.ErrorContains(t, rec.WriteHeader("job", "trace-again", "model"), "header already written")
+}
+
+func TestNewIDUsesTracePrefix(t *testing.T) {
+	t.Parallel()
+	require.True(t, strings.HasPrefix(NewID(), "tr-"))
 }
 
 func TestRecorder_truncatesLargeContent(t *testing.T) {
@@ -40,6 +57,16 @@ func TestRecorder_truncatesLargeContent(t *testing.T) {
 	require.NoError(t, rec.WriteTurn(llm.Message{Role: "tool", Content: big}, 1))
 	require.Contains(t, rec.JSONL(), "truncated")
 	require.Less(t, len(rec.JSONL()), len(big)+200)
+}
+
+func TestRecorderTruncatesAtUTF8Boundary(t *testing.T) {
+	t.Parallel()
+	rec := NewRecorder(nil)
+	rec.SetMaxBody(5)
+	require.NoError(t, rec.WriteHeader("j", "t", ""))
+	require.NoError(t, rec.WriteTurn(llm.Message{Role: "assistant", Content: "ab🙂cd"}, 1))
+	require.Contains(t, rec.JSONL(), "ab")
+	require.NotContains(t, rec.JSONL(), "\ufffd")
 }
 
 func TestRecorder_finalizeFiveTurns(t *testing.T) {
@@ -64,12 +91,23 @@ func TestRecorder_finalizeFiveTurns(t *testing.T) {
 	}, 12))
 
 	s := rec.Finalize("job", "completed", 12*time.Millisecond, 3, 1, nil)
+	require.Equal(t, "tid", s.TraceID)
+	require.Equal(t, "job", s.JobID)
 	require.Equal(t, 5, s.TurnCount)
 	require.Equal(t, int64(12), s.WallMs)
 	require.Equal(t, "completed", s.Outcome)
 	require.Equal(t, 65, s.TotalTokens) // 10+8+15+20+12
 	require.Equal(t, 3, s.LLMCalls)
 	require.Equal(t, 1, s.ToolInvocations)
+}
+
+func TestRecorderFinalizeCapturesError(t *testing.T) {
+	t.Parallel()
+	rec := NewRecorder(nil)
+	require.NoError(t, rec.WriteHeader("job", "trace", "model"))
+	s := rec.Finalize("job", "failed", time.Second, 1, 0, io.ErrUnexpectedEOF)
+	require.Equal(t, "unexpected EOF", s.Error)
+	require.NotEmpty(t, s.CreatedAt)
 }
 
 func TestRecorder_toolNamesInSummary(t *testing.T) {

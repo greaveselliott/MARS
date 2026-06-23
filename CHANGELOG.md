@@ -3591,7 +3591,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **release:** Ignore stale changelog markers (MH-031) (ccd36bc)
 
 ## [0.12.1] - 2026-05-03
-<!-- mars-harness-release: version=0.12.1 commit=d8e8c6fcc990 -->
+<!-- mars-harness-release: version=0.12.1 commit=907fa9fefacd -->
 
 ### Impact
 - **glossary:** Operators and future agents get clearer guidance because define operating model distinctions.
@@ -3606,7 +3606,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **glossary:** Define operating model distinctions (d8e8c6f)
 
 ## [0.12.0] - 2026-05-03
-<!-- mars-harness-release: version=0.12.0 commit=416a91bd5fa1 -->
+<!-- mars-harness-release: version=0.12.0 commit=68db9447c577 -->
 
 ### Impact
 - **scoring:** Operators gain new capability: export repo quality score (MH-037).
@@ -3624,7 +3624,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - Enabler work: MH-037: Automate quality score export
 
 ## [0.11.1] - 2026-05-03
-<!-- mars-harness-release: version=0.11.1 commit=450d1bbbbbd9 -->
+<!-- mars-harness-release: version=0.11.1 commit=d4b35848d056 -->
 
 ### Impact
 - **tools:** Operators see improved reliability because mirror tool_create in target harness.
@@ -3639,7 +3639,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **tools:** Mirror tool_create in target harness (450d1bb)
 
 ## [0.11.0] - 2026-05-03
-<!-- mars-harness-release: version=0.11.0 commit=a00bb9e11730 -->
+<!-- mars-harness-release: version=0.11.0 commit=375467415d21 -->
 
 ### Impact
 - **tools:** Operators gain new capability: add tool creation scaffold.
@@ -3654,7 +3654,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **tools:** Add tool creation scaffold (a00bb9e)
 
 ## [0.10.4] - 2026-05-03
-<!-- mars-harness-release: version=0.10.4 commit=f133e393f97a -->
+<!-- mars-harness-release: version=0.10.4 commit=7d464103fc65 -->
 
 ### Impact
 - **glossary:** Operators and future agents get clearer guidance because mirror harness terminology.
@@ -3669,7 +3669,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **glossary:** Mirror harness terminology (f133e39)
 
 ## [0.10.3] - 2026-05-03
-<!-- mars-harness-release: version=0.10.3 commit=9e444541196c -->
+<!-- mars-harness-release: version=0.10.3 commit=b2293a22a70a -->
 
 ### Impact
 - **planning:** Operators and future agents get clearer guidance because materialize mars parity backlog tickets (MH-035).
@@ -3687,7 +3687,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - Enabler work: MH-035: Materialize Mars parity workstreams as tickets
 
 ## [0.10.2] - 2026-05-03
-<!-- mars-harness-release: version=0.10.2 commit=e2bcf2f7a080 -->
+<!-- mars-harness-release: version=0.10.2 commit=e2df420a7612 -->
 
 ### Impact
 - **telemetry:** Operators see improved reliability because classify ticket gate failures.
@@ -3702,7 +3702,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **telemetry:** Classify ticket gate failures (e2bcf2f)
 
 ## [0.10.1] - 2026-05-03
-<!-- mars-harness-release: version=0.10.1 commit=bb885cd5ad7e -->
+<!-- mars-harness-release: version=0.10.1 commit=f2142ee7ffb7 -->
 
 ### Impact
 - **inference:** Operators see improved reliability because surface installed model variants.
@@ -3717,7 +3717,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **inference:** Surface installed model variants (bb885cd)
 
 ## [0.10.0] - 2026-05-03
-<!-- mars-harness-release: version=0.10.0 commit=0f4d9ec86ceb -->
+<!-- mars-harness-release: version=0.10.0 commit=fc88823c0c09 -->
 
 ### Impact
 - **planhygiene:** Operators gain new capability: add active plan hygiene checker (MH-034).
@@ -3735,7 +3735,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - Enabler work: MH-034: Implement active-plan hygiene checker
 
 ## [0.9.0] - 2026-05-02
-<!-- mars-harness-release: version=0.9.0 commit=c3a87e2179e3 -->
+<!-- mars-harness-release: version=0.9.0 commit=09af86276340 -->
 
 ### Impact
 - **setup:** Operators gain new capability: configure shell path automatically (MH-041).
@@ -3753,7 +3753,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - Shipped feature scenarios: MH-041: F-002-S001, F-002-S002, F-002-S003, F-002-S004, F-002-S005
 
 ## [0.8.0] - 2026-05-02
-<!-- mars-harness-release: version=0.8.0 commit=cd7514dfdce5 -->
+<!-- mars-harness-release: version=0.8.0 commit=25080e6728f7 -->
 
 ### Impact
 - **operating-model:** Operators gain new capability: implement BDD-led delivery loop (MH-040).
@@ -3771,7 +3771,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - Shipped feature scenarios: MH-040: F-001-S001, F-001-S002, F-001-S003, F-001-S004, F-001-S005, F-001-S006
 
 ## [0.7.5] - 2026-05-02
-<!-- mars-harness-release: version=0.7.5 commit=e39e335c8fc2 -->
+<!-- mars-harness-release: version=0.7.5 commit=f0184c53a77e -->
 
 ### Impact
 - **plans:** Operators and future agents get clearer guidance because add exec plan dependency metadata.
@@ -3786,7 +3786,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **plans:** Add exec plan dependency metadata (e39e335)
 
 ## [0.7.4] - 2026-05-02
-<!-- mars-harness-release: version=0.7.4 commit=c7dbdf3dbb6e -->
+<!-- mars-harness-release: version=0.7.4 commit=b3303af3dd9b -->
 
 ### Impact
 - **plans:** Operators and future agents get clearer guidance because enforce single active exec plan.
@@ -3801,7 +3801,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **plans:** Enforce single active exec plan (c7dbdf3)
 
 ## [0.7.3] - 2026-05-02
-<!-- mars-harness-release: version=0.7.3 commit=9a4ced42bdad -->
+<!-- mars-harness-release: version=0.7.3 commit=4a9616e51bee -->
 
 ### Impact
 - **scoring:** Operators and future agents get clearer guidance because seed quality score artifact.
@@ -3816,7 +3816,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **scoring:** Seed quality score artifact (9a4ced4)
 
 ## [0.7.2] - 2026-05-02
-<!-- mars-harness-release: version=0.7.2 commit=dac23b716ce3 -->
+<!-- mars-harness-release: version=0.7.2 commit=72f6db42b14e -->
 
 ### Impact
 - **plans:** Operators and future agents get clearer guidance because reconcile current execution state.
@@ -3831,7 +3831,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **plans:** Reconcile current execution state (dac23b7)
 
 ## [0.7.1] - 2026-05-02
-<!-- mars-harness-release: version=0.7.1 commit=21d617f832ef -->
+<!-- mars-harness-release: version=0.7.1 commit=159b2814acaf -->
 
 ### Impact
 - **update:** The release carries stronger evidence because keep version drift fixtures release-agnostic.
@@ -3846,7 +3846,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **update:** Keep version drift fixtures release-agnostic (21d617f)
 
 ## [0.7.0] - 2026-05-02
-<!-- mars-harness-release: version=0.7.0 commit=ce831c5cd4de -->
+<!-- mars-harness-release: version=0.7.0 commit=2ca7108b4a22 -->
 
 ### Impact
 - **update:** Operators gain new capability: check tool and harness version drift.
@@ -3861,7 +3861,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **update:** Check tool and harness version drift (ce831c5)
 
 ## [0.6.0] - 2026-05-02
-<!-- mars-harness-release: version=0.6.0 commit=2187d5a379c3 -->
+<!-- mars-harness-release: version=0.6.0 commit=c52f542ffab9 -->
 
 ### Impact
 - **update:** Operators gain new capability: unify tool and harness updates.
@@ -3876,7 +3876,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **update:** Unify tool and harness updates (2187d5a)
 
 ## [0.5.3] - 2026-05-02
-<!-- mars-harness-release: version=0.5.3 commit=781c1e5051dd -->
+<!-- mars-harness-release: version=0.5.3 commit=59cb2039bb56 -->
 
 ### Impact
 - **setup:** Operators see improved reliability because clarify source install workflow.
@@ -3891,7 +3891,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **setup:** Clarify source install workflow (781c1e5)
 
 ## [0.5.2] - 2026-05-02
-<!-- mars-harness-release: version=0.5.2 commit=4a599310de29 -->
+<!-- mars-harness-release: version=0.5.2 commit=1b93bb266766 -->
 
 ### Impact
 - **models:** Operators and future agents get clearer guidance because define ollama swap policy.
@@ -3906,7 +3906,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **models:** Define ollama swap policy (4a59931)
 
 ## [0.5.1] - 2026-05-02
-<!-- mars-harness-release: version=0.5.1 commit=8f0a44f12017 -->
+<!-- mars-harness-release: version=0.5.1 commit=7ae220a609f9 -->
 
 ### Impact
 - **telemetry:** Operators see improved reliability because keep intervention tickets independent.
@@ -3921,7 +3921,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **telemetry:** Keep intervention tickets independent (8f0a44f)
 
 ## [0.5.0] - 2026-05-02
-<!-- mars-harness-release: version=0.5.0 commit=0ca0257223cd -->
+<!-- mars-harness-release: version=0.5.0 commit=29b95eea91ae -->
 
 ### Impact
 - **telemetry:** Operators gain new capability: create intervention-debt tickets.
@@ -3936,7 +3936,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **telemetry:** Create intervention-debt tickets (0ca0257)
 
 ## [0.4.1] - 2026-05-02
-<!-- mars-harness-release: version=0.4.1 commit=548fb73403a1 -->
+<!-- mars-harness-release: version=0.4.1 commit=41a04b91e2a6 -->
 
 ### Impact
 - **inference:** Operators see improved reliability because route roles by manifest tier.
@@ -3951,7 +3951,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **inference:** Route roles by manifest tier (548fb73)
 
 ## [0.4.0] - 2026-05-02
-<!-- mars-harness-release: version=0.4.0 commit=72032c5985e4 -->
+<!-- mars-harness-release: version=0.4.0 commit=f87ef439379f -->
 
 ### Impact
 - **models:** Operators gain new capability: add benchmark evaluation path.
@@ -3966,7 +3966,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **models:** Add benchmark evaluation path (72032c5)
 
 ## [0.3.6] - 2026-05-02
-<!-- mars-harness-release: version=0.3.6 commit=ecf0f5596249 -->
+<!-- mars-harness-release: version=0.3.6 commit=ac76b2ad763b -->
 
 ### Impact
 - **queue:** Operators see improved reliability because self-heal recovery storms.
@@ -3981,7 +3981,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **queue:** Self-heal recovery storms (ecf0f55)
 
 ## [0.3.5] - 2026-05-02
-<!-- mars-harness-release: version=0.3.5 commit=4769fb4172da -->
+<!-- mars-harness-release: version=0.3.5 commit=99241d545347 -->
 
 ### Impact
 - **serve:** Operators see improved reliability because contain recursive recovery jobs.
@@ -3996,7 +3996,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **serve:** Contain recursive recovery jobs (4769fb4)
 
 ## [0.3.4] - 2026-05-02
-<!-- mars-harness-release: version=0.3.4 commit=5fef93f4bc04 -->
+<!-- mars-harness-release: version=0.3.4 commit=af390cf707a1 -->
 
 ### Impact
 - **release:** Operators and future agents get clearer guidance because require github release publication.
@@ -4011,7 +4011,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **release:** Require github release publication (5fef93f)
 
 ## [0.3.3] - 2026-05-02
-<!-- mars-harness-release: version=0.3.3 commit=3232920f527f -->
+<!-- mars-harness-release: version=0.3.3 commit=e3e1d117495a -->
 
 ### Impact
 - **harness:** Operators and future agents get clearer guidance because mirror operating rules into targets.
@@ -4026,7 +4026,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **harness:** Mirror operating rules into targets (3232920)
 
 ## [0.3.2] - 2026-05-02
-<!-- mars-harness-release: version=0.3.2 commit=5c5bc2d6761b -->
+<!-- mars-harness-release: version=0.3.2 commit=817182f2845d -->
 
 ### Impact
 - **release:** Operators and future agents get clearer guidance because mirror versioning rule into targets.
@@ -4041,7 +4041,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **release:** Mirror versioning rule into targets (5c5bc2d)
 
 ## [0.3.1] - 2026-05-02
-<!-- mars-harness-release: version=0.3.1 commit=466bc65ad438 -->
+<!-- mars-harness-release: version=0.3.1 commit=a16a56680e9f -->
 
 ### Impact
 - **release:** Operators and future agents get clearer guidance because require versioning after source commits.
@@ -4056,7 +4056,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **release:** Require versioning after source commits (466bc65)
 
 ## [0.3.0] - 2026-05-02
-<!-- mars-harness-release: version=0.3.0 commit=b2cd7df5f2e5 -->
+<!-- mars-harness-release: version=0.3.0 commit=3e5008845140 -->
 
 ### Impact
 - **skills:** Operators gain new capability: guide self-improving skill evolution.
@@ -4071,7 +4071,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **skills:** Guide self-improving skill evolution (b2cd7df)
 
 ## [0.2.0] - 2026-05-02
-<!-- mars-harness-release: version=0.2.0 commit=15f4b154182d -->
+<!-- mars-harness-release: version=0.2.0 commit=dab8f1454599 -->
 
 ### Impact
 - **release:** Operators gain new capability: automate semantic patch notes.
@@ -4086,7 +4086,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **release:** Automate semantic patch notes (15f4b15)
 
 ## [0.1.0] - 2026-05-02
-<!-- mars-harness-release: version=0.1.0 commit=edaafeacae3a -->
+<!-- mars-harness-release: version=0.1.0 commit=e9b41022d41b -->
 
 ### Impact
 - **tools:** Operators gain new capability: mechanical ticket deduplication with ticket_create tool (AD-030).

@@ -617,6 +617,7 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 		"--repo", repoDir,
 		"--db", dbPath,
 		"--log-file", logPath,
+		"--model-endpoint", "http://127.0.0.1:9999/v1",
 		"--exit-after-seed",
 	})
 
@@ -655,6 +656,7 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 		"--repo", repoDir,
 		"--db", dbPath,
 		"--log-file", logPath,
+		"--model-endpoint", "http://127.0.0.1:9999/v1",
 		"--exit-after-seed",
 	})
 	require.NoError(t, second.Execute())
@@ -707,6 +709,7 @@ blocked_by: []
 		"--repo", repoDir,
 		"--db", dbPath,
 		"--log-file", logPath,
+		"--model-endpoint", "http://127.0.0.1:9999/v1",
 		"--exit-after-seed",
 	})
 
@@ -755,6 +758,7 @@ func TestStartCommandRefusesDirtyWorkspaceWithoutDeterministicRoute(t *testing.T
 		"--repo", repoDir,
 		"--db", dbPath,
 		"--log-file", logPath,
+		"--model-endpoint", "http://127.0.0.1:9999/v1",
 		"--exit-after-seed",
 	})
 

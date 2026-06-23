@@ -36,10 +36,13 @@ func checkBrowserFrameworkTicketCreatePolicy(root Root, session Session, hasSess
 	if err := checkProductCapabilityScenarioCoverage(root); err != nil {
 		return err
 	}
+	body := strings.ToLower(ticketCreatePolicySurface(args))
+	if projectBriefForbidsPackageManager(root) && ticketPrescribesPackageManager(body) {
+		return fmt.Errorf("policy: this target explicitly forbids package managers or external dependencies. CTO tickets must not prescribe package.json, npm/yarn/pnpm/bun commands, or framework dependency setup; use plain static files and direct browser/source smoke evidence instead")
+	}
 	if !projectBriefMentionsFramework(root, "phaser") || projectBriefNamesGoBackend(root) {
 		return nil
 	}
-	body := strings.ToLower(args.Title + "\n" + args.Source + "\n" + args.Body)
 	badGoShape := []string{"go.mod", "go module", "go cli", "golang", "cmd/"}
 	for _, marker := range badGoShape {
 		if strings.Contains(body, marker) {
@@ -50,6 +53,69 @@ func checkBrowserFrameworkTicketCreatePolicy(root Root, session Session, hasSess
 		return fmt.Errorf("policy: Phaser/JavaScript target tickets must require a local phaser npm dependency, package build evidence, and browser-product smoke evidence. Do not prescribe CDN-only Phaser script tags or CDN loading acceptance criteria")
 	}
 	return nil
+}
+
+func ticketCreatePolicySurface(args ticketCreateArgs) string {
+	return strings.Join([]string{
+		args.Title,
+		args.Source,
+		args.Body,
+		args.VerifiedBy,
+		strings.Join(args.EvidenceLinks, "\n"),
+		strings.Join(args.BDDScenarios, "\n"),
+	}, "\n")
+}
+
+func projectBriefForbidsPackageManager(root Root) bool {
+	lower := strings.ToLower(projectBriefSourceText(root) + "\n" + projectFeatureContractText(root))
+	for _, marker := range []string{
+		"no package manager",
+		"no package managers",
+		"without package manager",
+		"without a package manager",
+		"no external dependencies",
+		"without external dependencies",
+		"single-page browser app with local state only",
+	} {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func projectFeatureContractText(root Root) string {
+	abs, err := root.ResolvePath(filepath.Join("docs", "features", "F-001-product-walking-skeleton.md"))
+	if err != nil {
+		return ""
+	}
+	data, err := os.ReadFile(abs)
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
+func ticketPrescribesPackageManager(body string) bool {
+	for _, marker := range []string{
+		"package.json",
+		"package-lock.json",
+		"node_modules",
+		"npm ",
+		"npm run",
+		"yarn ",
+		"pnpm ",
+		"bun ",
+		"vite",
+		"vitest",
+		"jest",
+		"@testing-library",
+	} {
+		if strings.Contains(body, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func phaserTicketPrescribesCDNRuntime(body string) bool {

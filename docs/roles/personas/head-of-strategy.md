@@ -65,4 +65,3 @@ Turn messy ambition into crisp strategic choices, measurable bets, and executive
 - Use next_need goal_decision and suggested_role ceo when the CEO must accept, reject, or modify a recommendation.
 - Use status no_work when the request is not strategic.
 - Never place Head of Strategy in the default delivery loop.
-

@@ -82,4 +82,3 @@ Deliver exactly one eligible ticket with tests, docs sync, evidence, and clean c
 - Use next_need qa_review when work is complete with evidence.
 - Use next_need ticket_breakdown or architecture_review when the ticket is not technically actionable.
 - Use next_need exec_plan or goal_decision only when upstream planning or scope is the blocker.
-

@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greaveselliott/mars-harness/internal/bundle"
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scheduler"
@@ -123,6 +124,23 @@ func TestServerNewModelEndpointSkipsLocalModelPreflight(t *testing.T) {
 	}
 }
 
+func TestServerNewRequiresLocalModelPreflightWhenConfigured(t *testing.T) {
+	_, err := New(Config{
+		WebhookAddr:           ":0",
+		DashboardAddr:         "127.0.0.1:0",
+		DBPath:                testDBPath(t),
+		ModelsDir:             filepath.Join(t.TempDir(), "missing-models"),
+		BinDir:                filepath.Join(t.TempDir(), "missing-bin"),
+		RequireModelPreflight: true,
+	})
+	if err == nil {
+		t.Fatal("expected missing local model preflight error")
+	}
+	if !strings.Contains(err.Error(), "missing model file") {
+		t.Fatalf("expected missing model file error, got %v", err)
+	}
+}
+
 func TestServer_healthHandler_unhealthy(t *testing.T) {
 	srv, err := New(Config{
 		WebhookAddr:   ":0",
@@ -148,6 +166,70 @@ func TestServer_healthHandler_unhealthy(t *testing.T) {
 	}
 	if body["status"] != "unhealthy" {
 		t.Errorf("expected status=unhealthy, got %q", body["status"])
+	}
+}
+
+func TestServerPauseResumeAndStatus(t *testing.T) {
+	srv, err := New(Config{
+		WebhookAddr:   ":0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+		ModelEndpoint: "http://127.0.0.1:9999/v1",
+	})
+	if err != nil {
+		t.Fatalf("New returned error: %v", err)
+	}
+
+	if srv.IsPaused() {
+		t.Fatal("expected new server to start unpaused")
+	}
+	srv.Pause()
+	if !srv.IsPaused() {
+		t.Fatal("expected Pause to mark worker pool paused")
+	}
+	srv.Resume()
+	if srv.IsPaused() {
+		t.Fatal("expected Resume to clear worker pool pause")
+	}
+
+	status := srv.Status()
+	if status.Paused {
+		t.Fatalf("expected status paused=false after resume: %+v", status)
+	}
+	if len(status.Repos) != 0 {
+		t.Fatalf("expected no repos for fresh server: %+v", status.Repos)
+	}
+
+	view := srv.buildPipelineView()
+	if view.Mode != "none" || !strings.Contains(view.Description, "No repositories") {
+		t.Fatalf("expected no-repo pipeline view, got %+v", view)
+	}
+}
+
+func TestDashboardRoleNodesOrdersAndFiltersRoles(t *testing.T) {
+	manifest := &bundle.Manifest{Roles: map[string]bundle.RoleConfig{
+		"orchestrator": {Domain: "orchestrator", Mode: "routing"},
+		"custom":       {Domain: "planner", Mode: "custom"},
+		"qa":           {Domain: "reviewer", Mode: "quality"},
+		"engineer":     {Domain: "engineer", Mode: "ticket-delivery"},
+	}}
+
+	if got := dashboardRoleNodes(nil, true); got != nil {
+		t.Fatalf("expected nil nodes for nil manifest, got %+v", got)
+	}
+	nodes := dashboardRoleNodes(manifest, true)
+	if len(nodes) != 3 {
+		t.Fatalf("expected orchestrator filtered out, got %+v", nodes)
+	}
+	names := []string{nodes[0].Name, nodes[1].Name, nodes[2].Name}
+	if strings.Join(names, ",") != "engineer,qa,custom" {
+		t.Fatalf("unexpected dashboard role order: %+v", nodes)
+	}
+	if nodes[0].Domain != "engineer" || nodes[0].Mode != "ticket-delivery" {
+		t.Fatalf("expected role metadata copied into node: %+v", nodes[0])
+	}
+	if roleDashboardOrder("unknown-role") <= roleDashboardOrder("janitor") {
+		t.Fatal("expected unknown roles after known dashboard roles")
 	}
 }
 

@@ -63,4 +63,3 @@ Turn approved, verified changes into versioned release notes, tags, assets, and 
 - Use status completed when release artifacts are verified.
 - Use feedback.for_role qa/security/dependency-manager when approval evidence is missing.
 - Use status blocked with release_blocked when operator or external system action is required.
-

@@ -148,7 +148,11 @@ func Run() string {
 	writeFile(t, repo, "docs/features/F-001-demo.md", "Scenario covers internal/app/app.go and Run.\n")
 	initGitRepo(t, repo)
 
-	result, err := BuildContext(context.Background(), repo, ContextOptions{Refresh: true, MaxFiles: 100})
+	result, err := BuildContext(context.Background(), repo, ContextOptions{
+		Refresh:  true,
+		DBPath:   filepath.Join(t.TempDir(), "mars.db"),
+		MaxFiles: 100,
+	})
 	if err != nil {
 		t.Fatalf("BuildContext: %v", err)
 	}

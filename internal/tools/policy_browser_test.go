@@ -100,6 +100,36 @@ func TestPackageWriteBlocksCannedSmokeScriptForStaticWeb(t *testing.T) {
 	}
 }
 
+func TestCTOTicketCreateBlocksPackageManagerEvidenceWhenBriefForbidsIt(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Static Habit Timer\n\nBuild a single-page browser habit timer with local state, visible controls, and no package manager.\n"), 0o644); err != nil {
+		t.Fatalf("write README: %v", err)
+	}
+	writePolicyPlan(t, dir)
+	writePolicyFeature(t, dir, "F-001-product-walking-skeleton.md")
+	raw, err := json.Marshal(ticketCreateArgs{
+		Title:            "Implement timer interface",
+		Priority:         "high",
+		WorkType:         "feature",
+		BDDScenarios:     []string{"F-001-S001"},
+		EndToEndEvidence: "required",
+		EvidenceLinks:    []string{"npm run test:e2e"},
+		Body:             "## Requirements\nCreate index.html and src/App.jsx for the timer UI.",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = preToolPolicy(WithSession(context.Background(), Session{Role: "cto-weekly"}), root, "ticket_create", raw)
+	if err == nil {
+		t.Fatal("expected package-manager evidence to be blocked")
+	}
+	if !strings.Contains(err.Error(), "forbids package managers") || !strings.Contains(err.Error(), "plain static files") {
+		t.Fatalf("expected no-package-manager guidance, got %v", err)
+	}
+}
+
 func TestEngineerPostValidationAllowsMissingStaticSmokeAfterCommit(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)

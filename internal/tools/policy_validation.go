@@ -248,6 +248,9 @@ func engineerTestBuildRepairWritePathInScope(session Session, rel string) bool {
 		if scope == "" || scope == "." || scope == "./..." {
 			return true
 		}
+		if sourceFileRequiresDocSync(rel) && strings.HasPrefix(scope, "tests/") {
+			return true
+		}
 		if scopeDir {
 			if strings.HasPrefix(rel, strings.TrimSuffix(scope, "/")+"/") {
 				return true

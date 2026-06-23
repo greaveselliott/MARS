@@ -493,6 +493,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(ctoPrompt), "browser JavaScript targets")
 	assert.Contains(t, string(ctoPrompt), "package.json")
 	assert.Contains(t, string(ctoPrompt), "npm run build")
+	assert.Contains(t, string(ctoPrompt), "no package manager")
+	assert.Contains(t, string(ctoPrompt), "plain static files")
 	assert.Contains(t, string(ctoPrompt), "cmd/<target-or-product-name>")
 	assert.Contains(t, string(ctoPrompt), "Never put `cmd/mars-harness`")
 

@@ -69,7 +69,7 @@ VALUES('outcome-legacy', 'job-1', 'repo-1', 'engineer', 'passed', '{}', 17791488
 	t.Cleanup(func() { _ = s.Close() })
 	testutil.AssertSQLiteIndexes(t, s.db, "idx_outcomes_role_repo_time")
 
-	score, err := s.ComputeScore(context.Background(), "engineer", "repo-1", 30)
+	score, err := s.ComputeScoreAt(context.Background(), "engineer", "repo-1", 30, time.Unix(1779148800, 0).UTC().Add(24*time.Hour))
 	require.NoError(t, err)
 	require.Equal(t, 1, score.SampleSize)
 	require.Equal(t, 1.0, score.Value)

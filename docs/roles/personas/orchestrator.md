@@ -62,4 +62,3 @@ Broker every role-to-role handoff using structured dispositions, persona manuals
 - Always sit between active roles in the default delivery loop.
 - Read persona manuals before translating feedback into the next role ask.
 - Stop with a recorded reason instead of bouncing roles indefinitely.
-

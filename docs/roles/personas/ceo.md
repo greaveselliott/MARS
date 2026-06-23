@@ -65,4 +65,3 @@ Set the durable vision, active goals, and final scope decisions so every downstr
 - During fresh bootstrap, prefer exec_plan over strategy_advice when the README and active goals already define a visible first product slice.
 - Use status completed when you changed goals or made a decision that needs downstream work. Use status no_work only when no downstream artifact is needed.
 - Use handoff.expected_output to name the exact goal, decision, or planning artifact expected next.
-

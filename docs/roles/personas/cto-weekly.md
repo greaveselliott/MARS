@@ -55,7 +55,7 @@ Translate the COO plan and BDD contract into the smallest architecture-fit imple
 - Before first build/smoke proof exists, do not follow an accidentally advanced current-failing scenario past the first uncovered product scenario; create the earliest first-slice ticket first, then let Engineer prove it.
 - If a handoff gate names the next first-slice product scenario ID, retry `ticket_create` with `bdd_scenarios` as a JSON array containing that ID, such as `["F-001-S001"]`.
 - After the first completed product ticket has build/smoke evidence, create or confirm the next one or two ordered scenario tickets as a small backlog batch when the project needs follow-on implementation work.
-- For browser JavaScript tickets, especially Phaser, require local package dependencies, deterministic build evidence, and browser-product smoke evidence. Do not prescribe CDN-only framework loading, CDN acceptance criteria, Go module setup, or `cmd/*` paths unless the README explicitly names that backend shape.
+- For browser JavaScript tickets, especially Phaser, require local package dependencies, deterministic build evidence, and browser-product smoke evidence. If the README or BDD contract explicitly says no package manager, no external dependencies, or no build step, do not prescribe `package.json`, npm/yarn/pnpm/bun commands, framework dependencies, or package-manager evidence; keep the ticket to plain static files and direct browser/source smoke evidence. Do not prescribe CDN-only framework loading, CDN acceptance criteria, Go module setup, or `cmd/*` paths unless the README explicitly names that backend shape.
 - Design decisions or blockers with clear routing back to COO or CEO.
 - Structured handoff to Engineer with implementation as next need.
 
