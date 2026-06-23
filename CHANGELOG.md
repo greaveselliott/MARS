@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.64.0] - 2026-06-23
+<!-- mars-harness-release: version=0.64.0 commit=fad78dcdbdd4 -->
+
+### Impact
+- **jira:** Board-driven repos can mirror explicitly scoped JIRA issues into local Mars tickets while no-config and `ceo-led` repos keep JIRA ingress disabled.
+
+### Why
+- **jira:** Example Target Project-style board intake needs blast-radius containment: explicit project-to-repo mapping, config-owned workspace and label guards, env-backed secrets, pull-only reconciliation, and no direct LLM job per JIRA event.
+
+### What Changed
+- **jira:** Added `internal/jira` webhook and poll ingestion, scoped ticket materialization by `jira_key`, field-level reconciliation that preserves harness-owned lifecycle evidence, generated example config for workspace/label guards, serve route/poller gates, and validation evidence for Plan 2 (fad78dc).
+
+### Features
+- **jira:** Add config-scoped board mirror ingestion (fad78dc)
+
 ## [0.63.1] - 2026-06-23
 <!-- mars-harness-release: version=0.63.1 commit=532c824ee83a -->
 
