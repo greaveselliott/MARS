@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.63.1] - 2026-06-23
+<!-- mars-harness-release: version=0.63.1 commit=532c824ee83a -->
+
+### Impact
+- **validation:** Operators see improved reliability because close example-target-project optionality plan 1 blockers.
+
+### Why
+- **validation:** This matters because close example-target-project optionality plan 1 blockers closes a failure mode or degraded path.
+
+### What Changed
+- **validation:** Changed close example-target-project optionality plan 1 blockers (532c824).
+
+### Fixes
+- **validation:** Close example-target-project optionality plan 1 blockers (532c824)
+
 ## [0.63.0] - 2026-06-23
 <!-- mars-harness-release: version=0.63.0 commit=f0cb84b14c99 -->
 
