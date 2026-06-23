@@ -61,6 +61,9 @@ were attempted and failed for environment reasons listed below.
 | `GOCACHE=<validation-root> go test -count=1 ./internal/docsconsistency` | PASS | Active plan, feature catalog, strict-trunk default docs, and docsync audit pass. |
 | `GOCACHE=<validation-root> go test ./...` | FAIL | Environment blockers: private release auth missing, model files missing, Go module stat-cache writes denied, `httptest` listener bind denied, codeintel DB open denied, background process kill tests could not observe child termination. |
 | `GOCACHE=<validation-root> make check` | BLOCKED | Began `CGO_ENABLED=0 go build` and race/coverage tests, hit the same environment blockers, then was interrupted after two quiet minutes with prior hard failures. |
+| `mars-harness release notes --repo . --bump auto` | BLOCKED | Installed `mars-harness` was not found on PATH. |
+| `GOCACHE=<validation-root> go run ./cmd/mars-harness release notes --repo . --bump auto` | PASS | Generated `0.63.0` release files from commit `f0cb84b`. |
+| `GOCACHE=<validation-root> go run ./cmd/mars-harness release backfill-notes --repo . --check` | BLOCKED | Legacy marker `d8e8c6fcc990` is unavailable in this checkout, so the required backfill check cannot complete. |
 
 ## Failure Classes
 
@@ -69,6 +72,9 @@ were attempted and failed for environment reasons listed below.
 - **Environment/blocked:** Missing private release auth, missing model weights,
   sandboxed home/cache/log writes, sandboxed localhost listener binds, sandboxed
   codeintel DB opens, process-inspection limitations.
+- **Release/blocked:** Installed `mars-harness` was absent from PATH; source
+  `go run` generated `0.63.0` notes, but the required backfill check could not
+  resolve legacy marker commit `d8e8c6fcc990`.
 - **Mixed/unclear:** Full `make check` did not reach a clean terminal report
   before interruption, so the official gate remains blocked rather than failed
   by Plan 1 code.
@@ -80,6 +86,7 @@ mars-harness auth github check
 mars-harness setup
 GOCACHE=<validation-root> go test ./...
 GOCACHE=<validation-root> make check
+GOCACHE=<validation-root> go run ./cmd/mars-harness release backfill-notes --repo . --check
 make install
 mars-harness validation agent-smoke --suite fast --role engineer --project-type static-web --keep-runs
 mars-harness validation agent-smoke --suite fast --role engineer --project-type go-api --keep-runs

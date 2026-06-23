@@ -129,6 +129,15 @@ kill assertions cannot observe child termination. Replay commands and failure
 classification are recorded in
 `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`.
 
+Release workflow status on 2026-06-23: installed `mars-harness` was not on
+PATH, so release notes were generated through
+`GOCACHE=<validation-root> go run ./cmd/mars-harness release notes --repo . --bump auto`,
+which produced `0.63.0`. The required backfill check is blocked because legacy
+base marker `d8e8c6fcc990` is unavailable in this checkout. Do not promote Plan
+2 until the backfill check, release-note commit, push, tag, asset publication,
+and asset verification path is completed or an operator explicitly accepts the
+recorded blocker.
+
 ## Validation And Release
 
 Each plan independently requires targeted tests, `go test ./...`, `make check`, docsync/docs consistency, installed-binary clean-project validation, and a matrix report under `docs/validation/reports/`.

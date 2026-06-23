@@ -59,4 +59,6 @@ The Example Target Project Ways Of Working program needs a default-off configura
 - PASS: `GOCACHE=<validation-root> go test -count=1 ./internal/docsconsistency`
 - BLOCKED: `GOCACHE=<validation-root> go test ./...`
 - BLOCKED: `GOCACHE=<validation-root> make check`
+- PASS: `GOCACHE=<validation-root> go run ./cmd/mars-harness release notes --repo . --bump auto`
+- BLOCKED: `GOCACHE=<validation-root> go run ./cmd/mars-harness release backfill-notes --repo . --check`
 - Report: `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`

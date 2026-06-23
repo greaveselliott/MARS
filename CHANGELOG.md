@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.63.0] - 2026-06-23
+<!-- mars-harness-release: version=0.63.0 commit=f0cb84b14c99 -->
+
+### Impact
+- **integrations:** Operators gain new capability: add board-driven optionality foundation.
+
+### Why
+- **integrations:** This matters because add board-driven optionality foundation was missing from the shipped capability set.
+
+### What Changed
+- **integrations:** Changed add board-driven optionality foundation (f0cb84b).
+
+### Features
+- **integrations:** Add board-driven optionality foundation (f0cb84b)
+
 ## [0.62.8] - 2026-06-17
 <!-- mars-harness-release: version=0.62.8 commit=2b020167a4ac -->
 
