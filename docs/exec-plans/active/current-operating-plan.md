@@ -12,7 +12,7 @@
 **Success Evidence:** No-config repos keep the 2026-06-23 baseline routes, scheduler behavior, effective role tool lists, strict-trunk policy, and CEO-led planning. Board-driven repos can progressively mirror JIRA tickets, select ready work by active sprint -> P1/P2/P3 priority -> LexoRank -> age, scope through `cto-weekly`, deliver through Engineer/QA, and open human-merged PRs.
 **Falsification Evidence:** Missing config changes runtime behavior, board-driven behavior is inferred from partial config, JIRA events enqueue LLM work directly, future tools appear in generated default manifests, branch/PR delivery leaks into strict-trunk default mode, credentials leak, or clean-project validation cannot distinguish real idle from misconfiguration.
 **Scenario Schedule:** F-013-S001, F-013-S002, F-013-S003, F-013-S004, F-013-S005, F-013-S006
-**Current Failing Scenario:** F-013-S001 Optionality foundation is implemented in the local working tree, but primary completion is blocked until broad gates, installed-binary clean-project validation, release notes, push, tag, and asset verification complete. Current blocker is the 2026-06-23 local environment recorded in `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`.
+**Current Failing Scenario:** F-013-S001 Optionality foundation is implemented and released as `v0.63.0`, but primary completion remains blocked until the remaining broad-source, clean-project live-run, and release-backfill blockers are resolved or explicitly accepted. Current blocker evidence is recorded in `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`.
 **Walking Skeleton Slice:** Implement Plan 1 only: optional `.harness/integrations.yaml` loading, generated `.harness/integrations.example.yaml`, `flow_profile` gates, schedule replacement/suppression, inert future-tool allowlist hooks, and profile status/logging. Do not implement JIRA sync, prioritisation, Figma, PR delivery, or frontier model routing in this slice.
 **Learning Or MVP Outcome:** Establish a reversible, observable, default-off substrate that every later Example Target Project plan can import without changing existing target behavior.
 **Created:** 2026-06-23
@@ -120,24 +120,28 @@ Model routing remains in `.harness/model-overrides.yaml`. Config stores env-var 
 
 As of 2026-06-23, focused Plan 1 tests pass for `internal/integrations`,
 `internal/scheduler`, targeted `internal/serve`, targeted `internal/scanner`,
-`internal/docsync`, and `internal/docsconsistency`. Repo-wide `go test ./...`,
-`make check`, and installed-binary clean-project validation are blocked by local
-environment constraints: private release auth is not configured, quality-profile
-model files are missing, sandboxed home/cache/log writes are denied, sandboxed
-localhost `httptest` binds are denied, codeintel DB opens are denied, and process
-kill assertions cannot observe child termination. Replay commands and failure
-classification are recorded in
-`docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`.
+`internal/docsync`, and `internal/docsconsistency`. `mars-harness auth github
+check`, `make install`, local asset verification, and GitHub release mirror
+verification pass for `v0.63.0`.
 
-Release workflow status on 2026-06-23: installed `mars-harness` was not on
-PATH, so release notes were generated through
-`GOCACHE=<validation-root> go run ./cmd/mars-harness release notes --repo . --bump auto`,
-which produced `0.63.0`. The release-note commit `968250c`, `origin/main`,
-tag `v0.63.0`, local release assets, local asset verification, and GitHub
-mirror verification completed. The required backfill check remains blocked
-because legacy base marker `d8e8c6fcc990` is unavailable in this checkout. Do
-not promote Plan 2 until the broad validation blockers and this backfill blocker
-are resolved or an operator explicitly accepts the recorded blocker.
+On 2026-06-23, hosted-model clean-project validation ran through a real
+OpenAI-compatible endpoint. The operator provided `OPENAI_API_KEY` through
+`launchctl`, Codex did not print the key, and a temporary local proxy mapped
+harness role model names to `gpt-4.1-mini-2025-04-14`. Static browser and Go
+API clean targets both generated `.harness/integrations.example.yaml`, did not
+write `.harness/integrations.yaml`, loaded `flow_profile="ceo-led"`, replaced
+8 cron schedules, and completed CEO -> COO -> CTO through the installed binary.
+
+Primary completion remains blocked. Repo-wide `go test ./...` and `make check`
+fail in source tests that still require missing local
+`google_gemma-4-E4B-it-Q5_K_M.gguf` despite the hosted validation path, plus
+unrelated existing fixture/coverage failures in `cmd/mars-harness`,
+`internal/codeintel`, `internal/personas`, `internal/scoring`, and coverage
+floors. Static and API live replays both reached Engineer and then exposed
+foundation-owned Engineer/guardrail loops. The required release backfill check
+also remains blocked because legacy base marker `d8e8c6fcc990` is unavailable
+after full remote fetch. Do not promote Plan 2 until these blockers are resolved
+or an operator explicitly accepts the recorded blocker set.
 
 ## Validation And Release
 

@@ -137,7 +137,7 @@ None.
 
 ## Evidence
 
-- F-013-S001: planned `go test ./internal/integrations`, scheduler/serve/executor/scanner targeted tests, `go test ./...`, `make check`, docsync/docs consistency, and clean-project matrix report.
+- F-013-S001: implemented and released as `v0.63.0`. Focused tests pass for `internal/integrations`, `internal/scheduler`, targeted `internal/serve`, targeted `internal/scanner`, `internal/docsync`, and `internal/docsconsistency`; release assets and GitHub mirror verify. OpenAI-backed clean-project validation proves generated defaults, default `ceo-led` profile, schedule registration, and CEO -> COO -> CTO orchestration on static browser and Go API targets. Closure remains blocked by broad source-test failures, Engineer/guardrail live-run loops, and unavailable historical backfill marker `d8e8c6fcc990`; see `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`.
 - F-013-S002: planned JIRA webhook/poll/reconcile/redaction tests.
 - F-013-S003: planned selector, survey dispatch, DailyCap, circuit breaker, and dashboard/log signal tests.
 - F-013-S004: planned request-capturing gateway tests for endpoint/model/Bearer behavior.

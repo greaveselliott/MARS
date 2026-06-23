@@ -6,14 +6,15 @@ complexity: medium
 work_type: feature
 bdd_scenarios: [F-013-S001]
 end_to_end_evidence: required
-evidence_links: []
-verified_by: ""
+evidence_links:
+  - docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md
+verified_by: "Codex foundation-maintainer + QA/Dogfood subagents"
 owner: "foundation-maintainer"
 last_attempt: "2026-06-23"
-blocker: "Focused Plan 1 tests pass, but broad gates and clean-project installed-binary validation are blocked by local environment constraints; see docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md."
+blocker: "Focused Plan 1 tests pass and OpenAI-backed clean-project validation now proves generated defaults plus CEO->COO->CTO orchestration, but broad source gates, Engineer live-run loops, and the historical release backfill marker remain blocked; see docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md."
 blocked_by: []
 trace_id: ""
-next_action: "Implement the optional integrations loader, generated example, flow-profile runtime gates, schedule rebuild/suppression, effective-tool hook, and profile visibility without enabling JIRA/Figma/PR behavior."
+next_action: "Resolve or explicitly accept the remaining Plan 1 validation blockers before moving this ticket out of backlog or creating F-013-S002."
 dedupe_key: "public-example"
 source: docs/exec-plans/active/current-operating-plan.md
 created: 2026-06-23
@@ -57,8 +58,13 @@ The Example Target Project Ways Of Working program needs a default-off configura
 - PASS: `GOCACHE=<validation-root> go test -count=1 ./internal/scanner -run 'TestInit_success|TestUpgrade_preservesUserConfiguredManifestAndPrompts'`
 - PASS: `GOCACHE=<validation-root> go test -count=1 ./internal/docsync`
 - PASS: `GOCACHE=<validation-root> go test -count=1 ./internal/docsconsistency`
-- BLOCKED: `GOCACHE=<validation-root> go test ./...`
-- BLOCKED: `GOCACHE=<validation-root> make check`
+- PASS: `/path/to/local-redacted auth github check`
+- PASS: `GOCACHE=<validation-root> make install`
+- PASS: OpenAI-compatible proxy probe returned `OK` from `gpt-4.1-mini-2025-04-14` with `OPENAI_API_KEY` supplied via `launchctl`; no key value recorded.
+- FAIL: `GOCACHE=<validation-root> GOMODCACHE=<validation-root> go test ./...`
+- FAIL: `GOCACHE=<validation-root> GOMODCACHE=<validation-root> make check`
+- PARTIAL PASS/BLOCKED: installed-binary clean static-browser replay generated defaults, loaded `ceo-led`, registered schedules, completed CEO->COO->CTO, then wedged in Engineer/guardrail loop.
+- PARTIAL PASS/BLOCKED: installed-binary clean Go API replay generated defaults, loaded `ceo-led`, registered schedules, completed CEO->COO->CTO, then wedged in Engineer/test-repair guardrail loop.
 - PASS: `GOCACHE=<validation-root> go run ./cmd/mars-harness release notes --repo . --bump auto`
 - BLOCKED: `GOCACHE=<validation-root> go run ./cmd/mars-harness release backfill-notes --repo . --check`
 - PASS: `git push origin main`
