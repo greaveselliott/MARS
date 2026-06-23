@@ -129,3 +129,6 @@ Plan 6 will mirror deployed-harness operating context and release traceability.
 - 2026-06-23: JIRA mirror intake needs more containment than project mapping
   alone. Board/workspace URLs and labels remain configuration values, with
   `example-required-label` usable as an opt-in Example Target Project label gate.
+- 2026-06-23: Live JIRA read verification against Atlassian Cloud showed the
+  legacy `/rest/api/3/search` endpoint returns HTTP 410. Poll ingestion uses
+  the current `/rest/api/3/search/jql` endpoint for configured JQL reads.

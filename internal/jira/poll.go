@@ -87,7 +87,7 @@ func buildSearchRequest(ctx context.Context, repo Repository, lookup func(string
 	if err != nil {
 		return nil, err
 	}
-	endpoint, err := url.Parse(baseURL + "/rest/api/3/search")
+	endpoint, err := url.Parse(baseURL + "/rest/api/3/search/jql")
 	if err != nil {
 		return nil, fmt.Errorf("jira: invalid base_url: %w", err)
 	}
