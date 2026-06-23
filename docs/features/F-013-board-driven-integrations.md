@@ -18,6 +18,8 @@ The board-driven profile is never inferred. Unknown, empty, or missing `flow_pro
 
 JIRA is the system of record for ticket requirements, priority, sprint, rank, workflow status, blockers, and epic context. The local Markdown ticket is a pull-only mirror for the harness to consume. The harness preserves its own lifecycle directory, evidence fields, scoped marker, and agent progress notes.
 
+JIRA ingestion is contained by configuration before any local ticket write. A JIRA issue may mirror only when it matches exactly one `project_repo_map` entry and, when configured, the issue also matches `ingestion.jira.scope.allowed_workspaces` and carries every label in `ingestion.jira.scope.required_labels`. For the Example Target Project rollout, operators can configure the DEMO board URL `<jira-site-url>/jira/software/c/projects/DEMO/boards/<board-id>/backlog` and the `example-required-label` label; these values live in `.harness/integrations.yaml`, not Go constants.
+
 Board text can contain private program details. Durable artifacts must not store raw credentials, tokens, private board dumps, or unnecessary personal data. If raw board content is needed for diagnosis, it stays in local redacted evidence or a controlled fixture with explicit privacy classification.
 
 Failure ownership is classified before ticketing. Connector failures, runtime policy gaps, tool behavior, and generated doctrine gaps are foundation-owned. Incorrect board content, missing business rules, unavailable program decisions, and target-specific process gaps are deployed/program-owned. Mixed or unclear failures remain blocked until evidence separates ownership.
@@ -73,6 +75,12 @@ When a signed webhook or poll result is received
 Then the issue is normalized without entering the GitHub webhook trigger spine
 And the first sighting creates exactly one backlog ticket carrying `jira_key`, `jira_updated`, `jira_created`, `priority`, `sprint`, `sprint_active`, `rank`, `jira_status`, `blocked_by`, and `epic` front matter
 And no LLM job is enqueued by the ingestion event.
+
+Given JIRA ingestion config includes `scope.allowed_workspaces` and `scope.required_labels`
+When an issue is outside the configured workspace or lacks a required label
+Then the ingestion event is dropped with an operator-visible reason
+And no local ticket is created or updated
+And no LLM job is enqueued.
 
 Given a previously mirrored issue changes in JIRA
 When the next poll or webhook refreshes the mirror
@@ -138,7 +146,7 @@ None.
 ## Evidence
 
 - F-013-S001: complete. Focused tests, `go test ./...`, `make check`, release backfill, and OpenAI-backed installed-binary clean-project validation pass. Static browser and Go API targets prove generated defaults, default `ceo-led` profile, schedule replacement, no generated `.harness/integrations.yaml`, and CEO -> COO -> CTO -> Engineer handoff with product evidence; see `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`.
-- F-013-S002: planned JIRA webhook/poll/reconcile/redaction tests.
+- F-013-S002: complete. Focused JIRA mirror, webhook, poll, config, and serve route tests pass; broad `go test ./...`, `make check`, explicit `go vet ./...`, and installed-binary validation pass. The installed smoke proves no-config `/webhooks/jira` returns 404, missing-label DEMO issues are dropped with `scope_required_label_missing`, scoped DEMO issues with `example-required-label` create one local backlog ticket, and JIRA webhooks do not change the SQLite queue count; see `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md`.
 - F-013-S003: planned selector, survey dispatch, DailyCap, circuit breaker, and dashboard/log signal tests.
 - F-013-S004: planned request-capturing gateway tests for endpoint/model/Bearer behavior.
 - F-013-S005: planned Figma bounded-output tests, PR policy/trust tests, and disposable repo PR validation.

@@ -81,6 +81,7 @@ source file exists in the worktree.
 | `internal/hardware/` | `docs/design-docs/local-inference.md` | F-003 |
 | `internal/inference/` | `docs/design-docs/local-inference.md` | F-003 |
 | `internal/integrations/` | `docs/design-docs/board-driven-integrations.md` | F-013 |
+| `internal/jira/` | `docs/design-docs/board-driven-integrations.md` | F-013 |
 | `internal/learnings/` | `docs/design-docs/dogfood-and-decisions.md` | F-012 |
 | `internal/llm/` | `docs/design-docs/agent-runtime.md`, `docs/design-docs/local-inference.md`, `docs/design-docs/context-efficiency.md` | F-003, F-005 |
 | `internal/mcpstdio/` | `docs/design-docs/tools-glossary.md` | F-005 |
@@ -131,6 +132,9 @@ Notable cross-boundary files:
   tests add board-driven profile visibility, schedule suppression, and future
   tool injection hooks, so their metadata points directly to
   [board-driven-integrations.md](board-driven-integrations.md) and F-013.
+- `internal/jira/` owns board-driven JIRA webhook and poll ingestion, scoped
+  project/workspace/label containment, ticket materialization by `jira_key`,
+  and pull-only reconciliation.
 - `internal/tools/formalized_workflows.go` and its tests own `docsync_audit`,
   so their metadata also points to the delivery operating model and F-001.
 - `internal/tools/mars_harness_cli.go` and its tests mirror the CLI command

@@ -4,7 +4,7 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Board-driven Example Target Project integration claims until each sequential plan is implemented, validated, released, pushed, tagged, and asset-verified
-**Related Tickets:** T-044, T-045
+**Related Tickets:** T-044, T-045, T-046
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-013
 **Related Feature Contracts:** F-001, F-013
@@ -12,8 +12,8 @@
 **Success Evidence:** No-config repos keep the 2026-06-23 baseline routes, scheduler behavior, effective role tool lists, strict-trunk policy, and CEO-led planning. Board-driven repos can progressively mirror JIRA tickets, select ready work by active sprint -> P1/P2/P3 priority -> LexoRank -> age, scope through `cto-weekly`, deliver through Engineer/QA, and open human-merged PRs.
 **Falsification Evidence:** Missing config changes runtime behavior, board-driven behavior is inferred from partial config, JIRA events enqueue LLM work directly, future tools appear in generated default manifests, branch/PR delivery leaks into strict-trunk default mode, credentials leak, or clean-project validation cannot distinguish real idle from misconfiguration.
 **Scenario Schedule:** F-013-S001, F-013-S002, F-013-S003, F-013-S004, F-013-S005, F-013-S006
-**Current Failing Scenario:** F-013-S002 JIRA mirror and sync model. F-013-S001 Optionality foundation is complete and recorded in `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`.
-**Walking Skeleton Slice:** Start Plan 2 only after T-045 is selected: JIRA webhook/poll ingestion, ticket materialization by `jira_key`, and safe reconciliation of JIRA-owned fields while preserving harness-owned lifecycle and evidence. Do not implement prioritisation, Figma, PR delivery, or frontier model routing in this slice.
+**Current Failing Scenario:** F-013-S003 Board prioritisation and cost guards. F-013-S001 Optionality foundation is complete and recorded in `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`; F-013-S002 JIRA mirror and sync is complete and recorded in `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md`.
+**Walking Skeleton Slice:** Start Plan 3 only after T-046 is selected: ready-ticket selection by active sprint, configured priority order, LexoRank, and age; skip blocked/non-ready/closed-sprint tickets; dispatch one `cto-weekly` job; ship DailyCap, interval floors, cost/turn telemetry, circuit breaker, and dashboard/log signals. Do not implement Figma, PR delivery, or frontier model routing in this slice.
 **Learning Or MVP Outcome:** Establish a reversible, observable, default-off substrate that every later Example Target Project plan can import without changing existing target behavior.
 **Created:** 2026-06-23
 **Owner:** foundation-maintainer
@@ -53,7 +53,11 @@ No behavior changes without config. No JIRA route, poller, prioritisation, Figma
 
 Add `internal/jira` webhook and poll ingestion. JIRA stays the source of record. The first sighting of a `jira_key` materializes a backlog Markdown ticket; later pulls reconcile JIRA-owned fields and requirements body in place while preserving harness-owned lifecycle directory, delivery evidence fields, scoped marker, and agent progress notes.
 
+Contain intake with config-owned guardrails before any file write: an issue must match exactly one `project_repo_map` entry and, when configured, `ingestion.jira.scope.allowed_workspaces` and `ingestion.jira.scope.required_labels`. The Example Target Project rollout may configure the DEMO board/backlog URL and `example-required-label` label in `.harness/integrations.yaml`; these values must not be hardcoded into Go.
+
 JIRA events do not use the GitHub webhook spine, do not register `jira_issue.*` triggers, and do not enqueue LLM work per event.
+
+Status: complete as of 2026-06-23. Evidence is recorded in `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md`.
 
 ### Plan 3: Board Prioritisation And Cost Guards
 
@@ -86,7 +90,7 @@ Release notes surface `jira_key` in CHANGELOG entries beside Mars ticket IDs.
 The v1 schema contains:
 
 - `flow_profile: ceo-led | board-driven`
-- `ingestion.jira`: enabled, base URL, env-var names, webhook secret env, poll interval, JQL, project-to-repo map, custom field IDs, ready statuses, priority/rank/age ordering, blocked-by handling
+- `ingestion.jira`: enabled, base URL, env-var names, webhook secret env, poll interval, JQL, project-to-repo map, workspace/label scope guards, custom field IDs, ready statuses, priority/rank/age ordering, blocked-by handling
 - `design_sources.figma`: enabled, token env, base URL
 - `delivery`: `trunk | pull_request`, branch pattern, minimum trust
 
@@ -110,11 +114,11 @@ Model routing remains in `.harness/model-overrides.yaml`. Config stores env-var 
 - Sync clobbering: reconcile tests preserve lifecycle directory, evidence fields, scoped marker, and agent notes byte-for-byte.
 - Secret leakage: config holds env-var names only; redaction tests ensure no token or signed URL appears in logs/traces.
 - Push-policy creep: strict-trunk tests remain green; PR branch allow-cases are gated by delivery mode.
-- Wrong repo ingestion: explicit `project_repo_map` is required; unmapped or ambiguous projects drop with a log and never fan out.
+- Wrong repo ingestion: explicit `project_repo_map` is required; unmapped or ambiguous projects drop with a log and never fan out. Configured workspace and required-label scope guards drop outside-board or unlabelled issues before ticket writes.
 
 ## Current Ticket
 
-`T-044` completed F-013-S001. `T-045` is the first Plan 2 ticket for F-013-S002 and must be scoped before any Plan 2 implementation code starts.
+`T-044` completed F-013-S001. `T-045` completed F-013-S002. `T-046` is the first Plan 3 ticket for F-013-S003 and must be scoped before any Plan 3 implementation code starts.
 
 ## Plan 1 Evidence Snapshot
 
@@ -133,8 +137,28 @@ to `gpt-4.1-mini`. Static browser and Go API clean targets both generated
 schedules, completed CEO -> COO -> CTO -> Engineer through the installed
 binary, and produced product validation evidence without local GGUF models.
 
-Plan 2 may start only from T-045. No JIRA, Figma, PR, board-prioritisation, or
-frontier model-routing implementation code shipped in Plan 1.
+Plan 2 started only from T-045. No Figma, PR, board-prioritisation, or frontier
+model-routing implementation code shipped in Plan 1.
+
+## Plan 2 Evidence Snapshot
+
+F-013-S002 is complete as of 2026-06-23. Focused Plan 2 tests pass for
+`internal/jira`, targeted `internal/integrations`, targeted `internal/serve`,
+`internal/scanner`, `internal/docsync`, and `internal/docsconsistency`. Broad
+`go test ./...`, `make check`, explicit `go vet ./...`, `make install`, and the
+installed-binary JIRA smoke all pass.
+
+Installed-binary validation used a clean no-config target and a clean
+board-driven target with `.harness/integrations.yaml` configured for the Example Target Project
+DEMO board URL and `example-required-label` label. The no-config target
+returned 404 for `/webhooks/jira` and did not write `.harness/integrations.yaml`.
+The board-driven target dropped a DEMO issue missing the required label, created
+exactly one backlog ticket for a scoped DEMO issue, returned
+`llm_jobs_enqueued:0`, and kept the SQLite queue count unchanged across JIRA
+webhook delivery.
+
+Plan 3 may start only from T-046. No Figma, PR, or frontier model-routing
+implementation code shipped in Plan 2.
 
 ## Validation And Release
 

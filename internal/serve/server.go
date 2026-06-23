@@ -43,6 +43,7 @@ import (
 	"github.com/greaveselliott/mars-harness/internal/hardware"
 	"github.com/greaveselliott/mars-harness/internal/inference"
 	"github.com/greaveselliott/mars-harness/internal/integrations"
+	jiraintegration "github.com/greaveselliott/mars-harness/internal/jira"
 	"github.com/greaveselliott/mars-harness/internal/orchestration"
 	"github.com/greaveselliott/mars-harness/internal/orgstate"
 	"github.com/greaveselliott/mars-harness/internal/power"
@@ -333,6 +334,11 @@ func New(cfg Config) (*Server, error) {
 		s.handleEvent,
 	)
 	s.mux.Handle("/webhook", webhookHandler)
+	s.mux.Handle("/webhooks/jira", jiraintegration.WebhookHandler(jiraintegration.WebhookConfig{
+		Repositories: s.jiraRepositories,
+		EnvLookup:    os.LookupEnv,
+		Logger:       slog.Default(),
+	}))
 	s.mux.Handle("/healthz", s.HealthHandler())
 
 	s.http = &http.Server{
@@ -387,6 +393,7 @@ func (s *Server) Start(ctx context.Context) error {
 	slog.Info("serve: trigger index built", "repos", len(repos), "entries", s.triggers.Len())
 
 	s.registerCronSchedules(repos)
+	s.startJIRAPollers(ctx, repos)
 
 	ln, err := s.listenControlSocket("webhook", s.cfg.WebhookAddr)
 	if err != nil {
@@ -2619,6 +2626,88 @@ func (s *Server) integrationConfigForRepo(repo RepoRecord) integrations.Config {
 		return integrations.Defaults()
 	}
 	return cfg
+}
+
+func (s *Server) jiraRepositories(ctx context.Context) ([]jiraintegration.Repository, error) {
+	repos, err := s.repos.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if s.cfg.RepoScope != "" {
+		repos = filterReposByPath(repos, s.cfg.RepoScope)
+	}
+	out := make([]jiraintegration.Repository, 0, len(repos))
+	for _, repo := range repos {
+		out = append(out, jiraintegration.Repository{
+			ID:     repo.ID,
+			Path:   repo.Path,
+			Remote: repo.Remote,
+			Config: s.integrationConfigForRepo(repo),
+		})
+	}
+	return out, nil
+}
+
+func (s *Server) startJIRAPollers(ctx context.Context, repos []RepoRecord) {
+	for _, repo := range repos {
+		integrationCfg := s.integrationConfigForRepo(repo)
+		if !integrationCfg.JIRAEnabled() {
+			continue
+		}
+		interval, ok := jiraintegration.ParsePollInterval(integrationCfg.Ingestion.JIRA.PollInterval)
+		if !ok {
+			slog.Warn("serve: jira poller disabled by invalid poll_interval",
+				"repo", repo.ID,
+				"poll_interval", integrationCfg.Ingestion.JIRA.PollInterval,
+			)
+			continue
+		}
+		jiraRepo := jiraintegration.Repository{
+			ID:     repo.ID,
+			Path:   repo.Path,
+			Remote: repo.Remote,
+			Config: integrationCfg,
+		}
+		go s.runJIRAPoller(ctx, jiraRepo, interval)
+		slog.Info("serve: jira poller started",
+			"repo", repo.ID,
+			"flow_profile", integrationCfg.FlowProfile,
+			"poll_interval", interval.String(),
+		)
+	}
+}
+
+func (s *Server) runJIRAPoller(ctx context.Context, repo jiraintegration.Repository, interval time.Duration) {
+	poll := func() {
+		results, err := jiraintegration.Poll(ctx, jiraintegration.PollConfig{Repository: repo})
+		if err != nil {
+			slog.Warn("serve: jira poll failed",
+				"repo", repo.ID,
+				"err", err,
+			)
+			return
+		}
+		for _, result := range results {
+			slog.Info("serve: jira poll mirrored issue",
+				"repo", repo.ID,
+				"jira_key", result.JiraKey,
+				"status", result.Status,
+				"reason", result.Reason,
+				"ticket", result.TicketPath,
+			)
+		}
+	}
+	poll()
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			poll()
+		}
+	}
 }
 
 var presetCron = map[string]string{

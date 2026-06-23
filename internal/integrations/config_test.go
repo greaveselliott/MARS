@@ -49,6 +49,11 @@ ingestion:
     jql: project = DEMO
     project_repo_map:
       - { project: DEMO, repo: owner/repo }
+    scope:
+      allowed_workspaces:
+        - https://jira.example/jira/software/c/projects/DEMO/boards/42/backlog
+      required_labels:
+        - allowed-intake
     fields:
       sprint: <jira-custom-field-id>
       rank: <jira-custom-field-id>
@@ -77,6 +82,8 @@ delivery:
 	require.True(t, cfg.SectionEnabled(SectionDelivery))
 	require.False(t, cfg.SectionEnabled("unknown"))
 	require.Equal(t, "2m", cfg.Ingestion.JIRA.PollInterval)
+	require.Equal(t, []string{"https://jira.example/jira/software/c/projects/DEMO/boards/42/backlog"}, cfg.Ingestion.JIRA.Scope.AllowedWorkspaces)
+	require.Equal(t, []string{"allowed-intake"}, cfg.Ingestion.JIRA.Scope.RequiredLabels)
 	require.Equal(t, []string{"Ready"}, cfg.Ingestion.JIRA.Prioritisation.ReadyStatuses)
 	require.Equal(t, []string{"priority", "rank", "age"}, cfg.Ingestion.JIRA.Prioritisation.Order)
 	require.Equal(t, "https://api.figma.com", cfg.DesignSources.Figma.BaseURL)

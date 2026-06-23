@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/greaveselliott/mars-harness/internal/bundle"
+	jiraintegration "github.com/greaveselliott/mars-harness/internal/jira"
 	"github.com/greaveselliott/mars-harness/internal/queue"
 	"github.com/greaveselliott/mars-harness/internal/scanner"
 	"github.com/greaveselliott/mars-harness/internal/scheduler"
@@ -538,6 +539,76 @@ func TestServer_registerCronSchedulesReplacesStaleSchedules(t *testing.T) {
 	mustWriteFile(t, filepath.Join(repo, ".harness", "integrations.yaml"), []byte("version: 1\nflow_profile: board-driven\n"))
 	srv.registerCronSchedules([]RepoRecord{{ID: "repo-1", Path: repo}})
 	require.Equal(t, []string{"repo-1:engineer"}, scheduleNames(srv.scheduler.Schedules()))
+}
+
+func TestServerJIRAWebhookNoConfigReturnsNotFoundAndNoQueueJobs(t *testing.T) {
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+		ModelEndpoint: "http://127.0.0.1:9999/v1",
+	})
+	require.NoError(t, err)
+	repo := writeIntegrationScheduleRepo(t, "")
+	_, err = srv.Repos().Register(context.Background(), repo, "owner/repo", "main")
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhooks/jira", strings.NewReader(`{"issue":{"key":"DEMO-1"}}`))
+	rec := httptest.NewRecorder()
+	srv.mux.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusNotFound, rec.Code)
+	jobs, err := srv.queue.RecentJobs(context.Background(), 10)
+	require.NoError(t, err)
+	require.Empty(t, jobs)
+}
+
+func TestServerJIRAWebhookMirrorsScopedIssueWithoutQueueJob(t *testing.T) {
+	t.Setenv("JIRA_WEBHOOK_SECRET", "serve-secret")
+	srv, err := New(Config{
+		WebhookAddr:   "127.0.0.1:0",
+		DashboardAddr: "127.0.0.1:0",
+		DBPath:        testDBPath(t),
+		ModelEndpoint: "http://127.0.0.1:9999/v1",
+	})
+	require.NoError(t, err)
+	repo := writeIntegrationScheduleRepo(t, `version: 1
+flow_profile: board-driven
+ingestion:
+  jira:
+    enabled: true
+    base_url: https://jira.example
+    webhook_secret_env: JIRA_WEBHOOK_SECRET
+    project_repo_map:
+      - { project: DEMO, repo: owner/repo }
+    scope:
+      allowed_workspaces:
+        - https://jira.example/jira/software/c/projects/DEMO/boards/42/backlog
+      required_labels:
+        - allowed-intake
+`)
+	_, err = srv.Repos().Register(context.Background(), repo, "owner/repo", "main")
+	require.NoError(t, err)
+	body := []byte(`{"issue":{"key":"DEMO-99","self":"https://jira.example/rest/api/3/issue/DEMO-99","fields":{"project":{"key":"DEMO"},"summary":"Scoped opportunity","description":"Mirror this scoped issue.","priority":{"name":"P1"},"status":{"name":"Ready for Dev"},"labels":["allowed-intake"]}}}`)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhooks/jira", strings.NewReader(string(body)))
+	req.Header.Set("X-Atlassian-Webhook-Identifier", "serve-delivery-1")
+	req.Header.Set("X-Mars-Harness-Jira-Signature", jiraintegration.SignWebhookPayloadForTest("serve-secret", body))
+	rec := httptest.NewRecorder()
+	srv.mux.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	jobs, err := srv.queue.RecentJobs(context.Background(), 10)
+	require.NoError(t, err)
+	require.Empty(t, jobs)
+	tickets, err := ticketstate.List(repo)
+	require.NoError(t, err)
+	require.Len(t, tickets, 1)
+	require.Equal(t, "backlog", tickets[0].Status)
+	content, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(tickets[0].RelPath)))
+	require.NoError(t, err)
+	require.Contains(t, string(content), `jira_key: "DEMO-99"`)
+	require.Contains(t, string(content), "allowed-intake")
 }
 
 func writeIntegrationScheduleRepo(t *testing.T, integrationsYAML string) string {

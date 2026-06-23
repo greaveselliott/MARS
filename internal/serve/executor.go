@@ -399,8 +399,6 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		integrationCfg = integrations.Defaults()
 	}
 
-	tools.RecordDecisionRole = job.Role
-
 	trustLevel := roleDefaultTrustLevel(role)
 	if e.trustStore != nil {
 		entry, tErr := e.trustStore.Get(ctx, job.Role, job.RepoID)

@@ -32,11 +32,6 @@ type recordDecisionArgs struct {
 	Rationale string `json:"rationale"`
 }
 
-// RecordDecisionRole is set per-job by the executor so the tool knows
-// which role is recording the decision. Protected by the agent loop's
-// sequential tool execution.
-var RecordDecisionRole string
-
 func registerRecordDecision(r *Registry) error {
 	return r.Register(
 		"record_decision",
@@ -46,7 +41,7 @@ func registerRecordDecision(r *Registry) error {
 	)
 }
 
-func handleRecordDecision(_ context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
+func handleRecordDecision(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
 	var args recordDecisionArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return ToolResult{}, fmt.Errorf("record_decision: parse arguments: %w", err)
@@ -56,9 +51,9 @@ func handleRecordDecision(_ context.Context, root Root, raw json.RawMessage) (To
 	}
 
 	store := learnings.NewStore(root.Abs())
-	role := RecordDecisionRole
-	if role == "" {
-		role = "unknown"
+	role := "unknown"
+	if session, ok := SessionFromContext(ctx); ok && strings.TrimSpace(session.Role) != "" {
+		role = strings.TrimSpace(session.Role)
 	}
 
 	added, err := store.AddDecision(role, strings.TrimSpace(args.Summary), strings.TrimSpace(args.Rationale))

@@ -47,14 +47,38 @@ Plan 1 creates only the substrate:
 No JIRA route, JIRA poller, board selector, Figma fetcher, pull-request tool, or
 frontier-model gateway behavior is enabled by this decision.
 
+### AD-303: JIRA Mirroring Is Pull-Only And Scope-Gated
+
+Plan 2 adds JIRA webhook and poll ingestion as a mirror only. JIRA events use a
+dedicated `/webhooks/jira` handler, not the GitHub webhook trigger spine. The
+handler validates a repo-mapped webhook secret, normalizes the issue, and
+creates or reconciles one Markdown ticket by stable `jira_key`; it does not
+register `jira_issue.*` triggers and does not enqueue LLM work.
+
+Materialization is contained by configuration before any file write:
+
+- `project_repo_map` must map the JIRA project to exactly one registered repo.
+- `scope.allowed_workspaces`, when set, must match the Atlassian host and
+  project from the issue URL or configured JIRA base URL. Board/backlog URLs may
+  be used as operator-readable workspace scopes.
+- `scope.required_labels`, when set, requires every configured label on the
+  issue. The Example Target Project rollout can use `example-required-label` in config to
+  limit intake to explicitly marked opportunities.
+
+Unmapped, ambiguous, outside-workspace, or missing-label issues drop with a
+sanitized operator-visible reason and no fan-out. Reconciliation updates only
+JIRA-owned front matter and the JIRA-owned requirements block, preserving the
+ticket lifecycle directory, evidence fields, scoped marker, and agent notes.
+
 ## Configuration Surface
 
 The v1 config is intentionally vendor-neutral:
 
 - `flow_profile: ceo-led | board-driven`
 - `ingestion.jira`: enablement, endpoint, auth env-var names, webhook secret
-  env var, poll interval, JQL, project-to-repo map, field IDs, ready statuses,
-  priority/rank/age ordering, and blocker handling
+  env var, poll interval, JQL, project-to-repo map, workspace and required-label
+  scope guards, field IDs, ready statuses, priority/rank/age ordering, and
+  blocker handling
 - `design_sources.figma`: enablement, token env-var name, and base URL
 - `delivery`: `trunk | pull_request`, branch pattern, and minimum trust
 
@@ -86,6 +110,8 @@ Plan 6 will mirror deployed-harness operating context and release traceability.
 - No-config repos do not mount JIRA routes or start pollers.
 - Project-to-repo mapping is required before future JIRA ingestion can fan out
   work.
+- Workspace and required-label scope guards are config-owned and enforced
+  before ticket writes when configured.
 - Secrets remain in environment variables and are never stored in generated
   config, traces, or logs.
 - Pull-request delivery will be gated by explicit delivery mode, sanitized
@@ -100,3 +126,6 @@ Plan 6 will mirror deployed-harness operating context and release traceability.
 - 2026-06-23: Future integration tools must be injected after registry
   construction and profile/section checks. Static generated manifest tool lists
   would violate the no-config invariant.
+- 2026-06-23: JIRA mirror intake needs more containment than project mapping
+  alone. Board/workspace URLs and labels remain configuration values, with
+  `example-required-label` usable as an opt-in Example Target Project label gate.

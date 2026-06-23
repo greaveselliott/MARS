@@ -51,6 +51,7 @@ type JIRAConfig struct {
 	PollInterval     string               `yaml:"poll_interval,omitempty" json:"poll_interval,omitempty"`
 	JQL              string               `yaml:"jql,omitempty" json:"jql,omitempty"`
 	ProjectRepoMap   []ProjectRepoMapping `yaml:"project_repo_map,omitempty" json:"project_repo_map,omitempty"`
+	Scope            JIRAScopeConfig      `yaml:"scope,omitempty" json:"scope,omitempty"`
 	Fields           JIRAFieldsConfig     `yaml:"fields,omitempty" json:"fields,omitempty"`
 	Prioritisation   PrioritisationConfig `yaml:"prioritisation,omitempty" json:"prioritisation,omitempty"`
 }
@@ -63,6 +64,11 @@ type JIRAAuthConfig struct {
 type ProjectRepoMapping struct {
 	Project string `yaml:"project" json:"project"`
 	Repo    string `yaml:"repo" json:"repo"`
+}
+
+type JIRAScopeConfig struct {
+	AllowedWorkspaces []string `yaml:"allowed_workspaces,omitempty" json:"allowed_workspaces,omitempty"`
+	RequiredLabels    []string `yaml:"required_labels,omitempty" json:"required_labels,omitempty"`
 }
 
 type JIRAFieldsConfig struct {
@@ -132,6 +138,16 @@ func normalize(cfg Config) Config {
 	cfg.Ingestion.JIRA.WebhookSecretEnv = strings.TrimSpace(cfg.Ingestion.JIRA.WebhookSecretEnv)
 	cfg.Ingestion.JIRA.PollInterval = strings.TrimSpace(cfg.Ingestion.JIRA.PollInterval)
 	cfg.Ingestion.JIRA.JQL = strings.TrimSpace(cfg.Ingestion.JIRA.JQL)
+	for i := range cfg.Ingestion.JIRA.ProjectRepoMap {
+		cfg.Ingestion.JIRA.ProjectRepoMap[i].Project = strings.TrimSpace(cfg.Ingestion.JIRA.ProjectRepoMap[i].Project)
+		cfg.Ingestion.JIRA.ProjectRepoMap[i].Repo = strings.TrimSpace(cfg.Ingestion.JIRA.ProjectRepoMap[i].Repo)
+	}
+	cfg.Ingestion.JIRA.Scope.AllowedWorkspaces = cleanStringList(cfg.Ingestion.JIRA.Scope.AllowedWorkspaces)
+	cfg.Ingestion.JIRA.Scope.RequiredLabels = cleanStringList(cfg.Ingestion.JIRA.Scope.RequiredLabels)
+	cfg.Ingestion.JIRA.Fields.Sprint = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.Sprint)
+	cfg.Ingestion.JIRA.Fields.Rank = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.Rank)
+	cfg.Ingestion.JIRA.Fields.EpicLink = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.EpicLink)
+	cfg.Ingestion.JIRA.Fields.StoryPoints = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.StoryPoints)
 	cfg.Ingestion.JIRA.Prioritisation.Scope = defaultString(cfg.Ingestion.JIRA.Prioritisation.Scope, "active_sprint")
 	if len(cfg.Ingestion.JIRA.Prioritisation.Order) == 0 {
 		cfg.Ingestion.JIRA.Prioritisation.Order = []string{"priority", "rank", "age"}
@@ -163,6 +179,20 @@ func defaultString(s, fallback string) string {
 		return trimmed
 	}
 	return fallback
+}
+
+func cleanStringList(values []string) []string {
+	out := make([]string, 0, len(values))
+	seen := map[string]bool{}
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" || seen[value] {
+			continue
+		}
+		seen[value] = true
+		out = append(out, value)
+	}
+	return out
 }
 
 func (c Config) BoardDriven() bool {

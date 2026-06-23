@@ -788,6 +788,16 @@ ingestion:
     jql: ""
     project_repo_map:
       - { project: "", repo: "" }
+    scope:
+      # Optional containment guard. Use Atlassian project/board URLs, hostnames,
+      # or project keys, plus required labels, to prevent broad JIRA mirroring.
+      # Example:
+      # allowed_workspaces:
+      #   - <jira-site-url>/jira/software/c/projects/DEMO/boards/<board-id>/backlog
+      # required_labels:
+      #   - example-required-label
+      allowed_workspaces: []
+      required_labels: []
     fields:
       # Instance-specific custom-field IDs. Examples only; resolve from your JIRA instance.
       sprint: <jira-custom-field-id>
