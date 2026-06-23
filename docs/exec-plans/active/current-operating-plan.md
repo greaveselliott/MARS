@@ -132,11 +132,12 @@ classification are recorded in
 Release workflow status on 2026-06-23: installed `mars-harness` was not on
 PATH, so release notes were generated through
 `GOCACHE=<validation-root> go run ./cmd/mars-harness release notes --repo . --bump auto`,
-which produced `0.63.0`. The required backfill check is blocked because legacy
-base marker `d8e8c6fcc990` is unavailable in this checkout. Do not promote Plan
-2 until the backfill check, release-note commit, push, tag, asset publication,
-and asset verification path is completed or an operator explicitly accepts the
-recorded blocker.
+which produced `0.63.0`. The release-note commit `968250c`, `origin/main`,
+tag `v0.63.0`, local release assets, local asset verification, and GitHub
+mirror verification completed. The required backfill check remains blocked
+because legacy base marker `d8e8c6fcc990` is unavailable in this checkout. Do
+not promote Plan 2 until the broad validation blockers and this backfill blocker
+are resolved or an operator explicitly accepts the recorded blocker.
 
 ## Validation And Release
 

@@ -64,6 +64,12 @@ were attempted and failed for environment reasons listed below.
 | `mars-harness release notes --repo . --bump auto` | BLOCKED | Installed `mars-harness` was not found on PATH. |
 | `GOCACHE=<validation-root> go run ./cmd/mars-harness release notes --repo . --bump auto` | PASS | Generated `0.63.0` release files from commit `f0cb84b`. |
 | `GOCACHE=<validation-root> go run ./cmd/mars-harness release backfill-notes --repo . --check` | BLOCKED | Legacy marker `d8e8c6fcc990` is unavailable in this checkout, so the required backfill check cannot complete. |
+| `git push origin main` | PASS | Pushed feature commit `f0cb84b` and release-note commit `968250c` to `origin/main`. |
+| `git tag -f v0.63.0 968250c` | PASS | Tagged the release-note commit locally. |
+| `git push origin v0.63.0` | PASS | Pushed tag `v0.63.0`. |
+| `GOCACHE=<validation-root> go run ./cmd/mars-harness release publish-assets --repo . --version v0.63.0 --upload auto` | PASS | Built local assets and uploaded the GitHub mirror. |
+| `GOCACHE=<validation-root> go run ./cmd/mars-harness release verify-assets --dist dist/releases --version v0.63.0` | PASS | Verified local dist assets and checksums. |
+| `gh release view v0.63.0 --repo greaveselliott/mars-harness --json tagName,name,url,isDraft,isPrerelease` | PASS | Verified GitHub release mirror at `https://github.com/greaveselliott/mars-harness/releases/tag/v0.63.0`. |
 
 ## Failure Classes
 
@@ -72,9 +78,11 @@ were attempted and failed for environment reasons listed below.
 - **Environment/blocked:** Missing private release auth, missing model weights,
   sandboxed home/cache/log writes, sandboxed localhost listener binds, sandboxed
   codeintel DB opens, process-inspection limitations.
-- **Release/blocked:** Installed `mars-harness` was absent from PATH; source
-  `go run` generated `0.63.0` notes, but the required backfill check could not
-  resolve legacy marker commit `d8e8c6fcc990`.
+- **Release/partial:** Installed `mars-harness` was absent from PATH, so source
+  `go run` drove release commands. `0.63.0` notes, push, tag, local assets,
+  local verification, and GitHub mirror verification passed. The required
+  backfill check remains blocked because legacy marker commit `d8e8c6fcc990`
+  is unavailable in this checkout.
 - **Mixed/unclear:** Full `make check` did not reach a clean terminal report
   before interruption, so the official gate remains blocked rather than failed
   by Plan 1 code.

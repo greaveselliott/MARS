@@ -61,4 +61,9 @@ The Example Target Project Ways Of Working program needs a default-off configura
 - BLOCKED: `GOCACHE=<validation-root> make check`
 - PASS: `GOCACHE=<validation-root> go run ./cmd/mars-harness release notes --repo . --bump auto`
 - BLOCKED: `GOCACHE=<validation-root> go run ./cmd/mars-harness release backfill-notes --repo . --check`
+- PASS: `git push origin main`
+- PASS: `git push origin v0.63.0`
+- PASS: `GOCACHE=<validation-root> go run ./cmd/mars-harness release publish-assets --repo . --version v0.63.0 --upload auto`
+- PASS: `GOCACHE=<validation-root> go run ./cmd/mars-harness release verify-assets --dist dist/releases --version v0.63.0`
+- PASS: `gh release view v0.63.0 --repo greaveselliott/mars-harness --json tagName,name,url,isDraft,isPrerelease`
 - Report: `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`
