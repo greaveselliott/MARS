@@ -18,8 +18,8 @@ operation is designed for a GPU-backed local model.
 ## Install From Source
 
 ```bash
-git clone https://github.com/greaveselliott/mars-harness.git
-cd mars-harness
+git clone https://github.com/greaveselliott/software-factory.git
+cd software-factory
 make install
 ```
 

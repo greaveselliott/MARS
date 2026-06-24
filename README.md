@@ -1,26 +1,50 @@
 # Mars Harness
 
-A self-hosted autonomous AI delivery system. Run it on your own hardware with open models. No cloud API costs, no data exfiltration, no vendor lock-in.
+Mars Harness is a self-hosted autonomous AI delivery system. Install one Go
+command, let it prepare local inference, point it at a separate git checkout,
+and it gives that target repo a repo-owned agent operating system: roles,
+guardrails, tickets, BDD feature contracts, execution plans, scoring, traces,
+and release discipline.
 
-You provide a machine with a GPU. Mars Harness autonomously manages your development pipeline: CI diagnosis and repair, code generation from tickets, trunk checks and review, release management, documentation maintenance. All inference runs locally.
+The default path is local-first and strict-trunk. Open-weight models run on
+your hardware through llama.cpp by default, optional integrations are explicit,
+and the repository remains the system of record.
 
-**Status:** Under active development. See the [current operating plan](docs/exec-plans/active/current-operating-plan.md).
+## Mental Model
 
-## The Nine Tenets
+There are three related things:
 
-1. **Plug and Play** — zero to running in one command, extends to full lifecycle
-2. **Self-Improving System** — evolves from human interventions and its own failures
-3. **Accuracy and Value Scoring** — per-role health scores from real outcomes
-4. **Customisable Guardrails** — user-defined rules enforced during execution
-5. **Roadmap from Init** — tickets and backlog deployed on day one
-6. **Blast Radius Containment** — never cause irreversible damage
-7. **Execution Truth and Transparency** — auditable, attributable, everything in git
-8. **Progressive Autonomy** — earn trust, graduate from observer to autonomous
-9. **Context Efficiency** — minimal context assembly, retrieval over stuffing
+- **mars-harness**: this source repo and the installed `mars-harness` command.
+- **Deployed harness**: the `.harness/`, `AGENTS.md`, docs, tickets, and release
+  files that `mars-harness init`, `start`, or `upgrade` writes into a target
+  repo.
+- **Target project**: the app or service Mars Harness is building, testing, and
+  managing. The harness operates on target projects; its agents do not treat
+  this source repo as an ordinary target.
 
-Full text: [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
+For the full product contract, start with the
+[product vision](docs/product-specs/vision.md) and
+[product surface](docs/product-specs/product-surface.md).
 
-## System Requirements
+## Current Status
+
+Mars Harness is under active development. The supported first path today is a
+source checkout install, local setup, and a scoped target run.
+
+- **Ready default path**: install from source, run setup, run `doctor`, and use
+  `mars-harness start --repo <target>` to scaffold, register, reconcile, and run
+  one target repository.
+- **Implemented and still hardening**: local inference lifecycle, generated
+  target harness lifecycle, `run`/`start`/`serve`, embedded dashboard,
+  release/update workflows, scoring, trust, telemetry, tools, and MCP.
+- **Optional or planned surfaces**: GitHub release/auth workflows, board-driven
+  JIRA intake, and the future TanStack dashboard control plane. The current
+  dashboard is the embedded Go, htmx, Chart.js, and SSE surface.
+
+The active source plan is tracked in
+[docs/exec-plans/active/current-operating-plan.md](docs/exec-plans/active/current-operating-plan.md).
+
+## Requirements
 
 - macOS or Linux
 - Git
@@ -29,28 +53,119 @@ Full text: [docs/design-docs/tenets.md](docs/design-docs/tenets.md)
 - Disk space for multi-GB GGUF model files under `~/.mars-harness/models`
 - Recommended GPU: Apple Silicon/Metal, NVIDIA CUDA, or AMD ROCm
 
-CPU fallback exists for development and dry runs, but the normal autonomous
-workflow is designed for a GPU-backed local model.
+CPU fallback exists for development and dry runs, but ordinary autonomous
+operation is designed for a GPU-backed local model.
 
 ## Quick Start
 
 ```bash
-# Clone and install from source
-git clone https://github.com/greaveselliott/mars-harness.git
-cd mars-harness
+# Install the command from this source checkout.
+git clone https://github.com/greaveselliott/software-factory.git
+cd software-factory
 make install
 
-# Download local inference assets and verify the machine
+# Download local inference assets and verify the machine.
 mars-harness setup --skip-github
 mars-harness doctor
 
-# Prepare a target repo and preview an agent run
-mars-harness init --repo /path/to/your/repo
-mars-harness run engineer --repo /path/to/your/repo --dry-run
-
-# Start the full autonomous pipeline
-mars-harness start --repo /path/to/your/repo
+# Bootstrap and run a target repository.
+mars-harness start --repo /path/to/target-repo
 ```
+
+`start` initializes a missing target harness, registers the repo, reconciles
+existing lifecycle state, and runs the autonomous loop for that repo.
+
+If you want to inspect before running agents:
+
+```bash
+mars-harness init --repo /path/to/target-repo
+mars-harness run engineer --repo /path/to/target-repo --dry-run
+```
+
+See [docs/quickstart.md](docs/quickstart.md) for the detailed walkthrough,
+common flags, PATH repair, binary updater notes, and release examples.
+
+## What It Creates
+
+In a target repo, Mars Harness creates or fills in a deployed harness:
+
+- `AGENTS.md` as the compact first-read map for agents and humans.
+- `.harness/manifest.yaml`, role prompts, guardrails, skills, and knowledge
+  routes.
+- `docs/goals/`, `docs/features/`, `docs/exec-plans/`, and `docs/tickets/` for
+  strategy, BDD contracts, active plans, and work items.
+- `docs/QUALITY_SCORE.md`, `VERSION`, `CHANGELOG.md`, design docs, references,
+  and generated guidance needed by the operating model.
+
+`upgrade` fills missing defaults without overwriting user-owned target
+configuration. `eject` previews and then, only with explicit confirmation,
+removes the deployed harness files and the associated per-repo SQLite database.
+
+## First-Run Safety
+
+Mars Harness is built around blast-radius containment:
+
+- `run --dry-run` previews assembled role context without calling the model.
+- `doctor --repo <path> --json` checks target health and drift.
+- Each registered repo gets isolated SQLite state under
+  `~/.mars-harness/db/{repo-name}/mars.db` unless `--db` overrides it.
+- `start` and `serve` expose interactive controls for pause, resume, restart,
+  scan, stop, and role runs; the default web dashboard is served locally.
+- `eject` is dry-run by default:
+
+```bash
+mars-harness eject --repo /path/to/target-repo
+mars-harness eject --repo /path/to/target-repo --apply --confirm target-repo
+```
+
+The apply path removes generated harness artifacts and the associated database;
+it does not rewrite git history.
+
+## Operating Model
+
+Mars Harness turns product intent into small, verifiable trunk commits:
+
+- Goals and one active execution plan define priority.
+- BDD feature contracts in `docs/features/` define business behavior and done.
+- Tickets scope the next walking-skeleton slice.
+- Roles implement, review, validate, release, and maintain with explicit tools,
+  guardrails, trust levels, and scores.
+- Evidence lives in the repo: commits, tests, traces, quality score, validation
+  reports, release notes, and design decisions.
+
+For the deeper model, read
+[docs/features/README.md](docs/features/README.md),
+[docs/design-docs/delivery-operating-model.md](docs/design-docs/delivery-operating-model.md),
+and [docs/roles/ROLES.md](docs/roles/ROLES.md).
+
+## Common Commands
+
+```bash
+# Target lifecycle and execution
+mars-harness start --repo /path/to/repo
+mars-harness run engineer --repo /path/to/repo --dry-run
+mars-harness upgrade --repo /path/to/repo
+mars-harness eject --repo /path/to/repo
+
+# Health, drift, and updates
+mars-harness doctor --repo /path/to/repo --json
+mars-harness update check --repo /path/to/repo --json
+mars-harness update harness --repo /path/to/repo
+
+# Tool and MCP surfaces for agents or external clients
+mars-harness tools list --json
+mars-harness tools run git_status --repo /path/to/repo --args-json '{}'
+mars-harness mcp serve --repo /path/to/repo --trust observer
+
+# Multi-repo daemon path
+mars-harness register --repo /path/to/repo --remote owner/repo
+mars-harness serve --addr :9091 --concurrency 2
+```
+
+Use `--trust contributor` for MCP only when the connected client should be able
+to call mutating tools.
+
+## Install, Update, And Release Notes
 
 `make install` installs the current checkout exactly as-is. It uses `go install`
 and then runs shell PATH setup through the installed binary so new terminals can
@@ -60,89 +175,83 @@ Avoid `go build ./cmd/mars-harness; ./mars-harness ...`: the semicolon can run
 a stale old binary if the build fails, and the source-tree binary is easy to
 confuse with the installed command.
 
-## Local Models And Setup
-
-`mars-harness setup --skip-github` is the source-checkout first-run path. It:
-
-- creates `~/.mars-harness/`
-- writes default config
-- detects hardware
-- installs the pinned `llama-server` binary
-- downloads pinned GGUF model files into `~/.mars-harness/models`
-- configures shell PATH for the installed command
-
-Use `--skip-download` only when compatible model files are already present. Use
-`--test-mode` for dry/local setup paths that intentionally avoid downloads and
-external services.
-
-## Updating From A Clone
-
-Run this from the Mars Harness source checkout:
+Update a source checkout install from a clean worktree with:
 
 ```bash
 make update-tool
 ```
 
-`make update-tool` fast-forwards the checkout from `origin/main` when the
-worktree is clean, installs the updated command with `go install`, refreshes
-shell PATH setup, and prints the installed version. If you have local changes,
-commit or stash them first, or run `make install` to install the current checkout
-without pulling.
-
-Update generated harness files in a target repo with:
+Binary release assets and GitHub Release mirrors are optional compatibility
+surfaces. If you use them, configure release auth once:
 
 ```bash
-mars-harness update check --repo /path/to/target-repo
-mars-harness update harness --repo /path/to/target-repo
+mars-harness auth github setup
+mars-harness auth github check
+mars-harness update tool
 ```
 
-## Optional Binary Releases
-
-The source checkout path above is the supported path for anyone pulling this
-repo today. Binary release assets and GitHub Release mirrors remain available
-for compatibility, but they are not required for source onboarding.
-
-If you use the binary updater, run `mars-harness auth github setup` once so
-private release-asset workflows can reuse GitHub CLI or token auth. Source users
-can ignore that step and use `make update-tool` instead.
-
-Remove Mars Harness from a target repo with a dry-run kill switch:
-
-```bash
-mars-harness eject --repo /path/to/target-repo
-mars-harness eject --repo /path/to/target-repo --apply --confirm sample-target
-```
-
-The apply path removes generated harness artifacts and the associated per-repo
-SQLite database, but does not rewrite git history.
-
-Generate semantic-versioned patch notes from commits:
+Mars Harness and initialized target repos use semantic versions and generated
+patch notes:
 
 ```bash
 mars-harness release notes --repo . --bump auto
+mars-harness release backfill-notes --repo . --check
 ```
 
-For changes to this source repo and repos initialized by Mars Harness, that release command is part of the commit flow: every non-release semantic commit is followed by a generated `release: notes X.Y.Z` commit before `main` is pushed.
-For source releases, push tag `vX.Y.Z` at the release-note commit, publish
-local assets with `mars-harness release publish-assets --repo . --version
-vX.Y.Z --upload auto`, then verify the local dist with `mars-harness release
-verify-assets --dist dist/releases --version vX.Y.Z`. When GitHub release
-credentials are configured, the same command may mirror those assets to GitHub
-Releases as an optional distribution surface.
+Source releases are tagged as `vX.Y.Z`, published locally with
+`mars-harness release publish-assets`, and verified with
+`mars-harness release verify-assets`. See
+[docs/design-docs/release-versioning.md](docs/design-docs/release-versioning.md)
+for the full contract.
+
+## Optional Integrations
+
+Mars Harness is useful without remote services. Optional integration surfaces
+include:
+
+- GitHub auth and release/update helpers.
+- GitHub/webhook coordination where configured.
+- Board-driven JIRA intake through `.harness/integrations.yaml`; this is
+  default-off and currently under active staged delivery.
+- MCP exposure for Codex, Cursor, Claude, and other compatible clients.
+
+Board-driven details live in
+[docs/design-docs/board-driven-integrations.md](docs/design-docs/board-driven-integrations.md)
+and the [Atlassian MCP runbook](docs/runbooks/atlassian-mcp-jira-intake.md).
+
+## Contributor Notes
+
+When changing this source repo, start with [AGENTS.md](AGENTS.md) and the
+[foundation-maintainer role packet](docs/roles/personas/foundation-maintainer.md).
+Source work follows remote-trunk freshness, no-stale-docs, BDD evidence,
+release notes, local asset publication, and source validation rules.
+
+Docs-only README work does not require clean-project lifecycle validation, but
+runtime, generated-target, dashboard, model/provider, release/update, scoring,
+safety, or orchestration changes do. See
+[docs/validation/README.md](docs/validation/README.md) and
+[docs/design-docs/foundation-operating-model.md](docs/design-docs/foundation-operating-model.md).
+
+## Documentation Map
+
+- [docs/quickstart.md](docs/quickstart.md): detailed install and first run.
+- [ARCHITECTURE.md](ARCHITECTURE.md): system architecture.
+- [docs/product-specs/index.md](docs/product-specs/index.md): product contract.
+- [docs/features/README.md](docs/features/README.md): BDD feature contracts.
+- [docs/bundle-reference.md](docs/bundle-reference.md): target harness format.
+- [docs/guardrails-guide.md](docs/guardrails-guide.md): safety rule authoring.
+- [docs/design-docs/index.md](docs/design-docs/index.md): decisions and design
+  rationale.
+- [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md): repo-visible quality evidence.
 
 ## Lineage
 
-Mars Harness is an evolution of the [Mars](https://github.com/elliottgreaves/mars) monorepo's automation pipeline. Mars proved the model works — 11 autonomous roles running a full development lifecycle via Cursor Automations. This product extracts that into a standalone system that runs on your own hardware against any repo.
-
-## Documentation
-
-- [AGENTS.md](AGENTS.md) — project guide for AI agents working in this repo
-- [ARCHITECTURE.md](ARCHITECTURE.md) — system architecture
-- [docs/design-docs/](docs/design-docs/) — architectural decisions
-- [docs/exec-plans/](docs/exec-plans/) — delivery plans and trackers
-- [docs/product-specs/index.md](docs/product-specs/index.md) — living product specs
-- [docs/references/](docs/references/) — research findings and external sources
+Mars Harness is an evolution of the
+[Mars](https://github.com/elliottgreaves/mars) monorepo's automation pipeline.
+Mars proved the model with 11 autonomous roles running a full development
+lifecycle via Cursor Automations; Mars Harness extracts that into a standalone,
+self-hosted system for any target repo.
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Apache 2.0. See [LICENSE](LICENSE).
