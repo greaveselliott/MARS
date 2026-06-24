@@ -32,6 +32,7 @@ count as done.
 | Source-change class → minimum archetype replays | [validation-matrix-gating.md](validation-matrix-gating.md) AD-284 |
 | Validation report recording contract | [validation-matrix-gating.md](validation-matrix-gating.md) AD-285 |
 | Foundation maintainer role contract | [docs/roles/personas/foundation-maintainer.md](../roles/personas/foundation-maintainer.md) |
+| AI-client role-subagent work model | This document AD-304 |
 | Validation artifacts directory | [docs/validation/README.md](../validation/README.md) |
 
 ## Key Design Decisions
@@ -217,6 +218,68 @@ If the primary status is not `primary_passed`, the next plan or completion
 report targets `Current Primary Blocker` through `Next Primary Action` unless
 the operator explicitly changes the goal. This keeps useful infrastructure work
 visible without letting it displace the outcome the operator asked to prove.
+
+### AD-304: External AI Clients Use Role-Assuming Subagents For Foundation Work
+
+When Codex, Cursor, Claude, Gemini, Copilot, or another capable AI coding
+client changes the Mars Harness source repo, the primary client instance acts
+as `foundation-maintainer` and Orchestrator/integrator. For non-trivial source
+work, the primary client uses role-assuming subagents, separate worktree
+threads, or explicit role-labelled work packets that assume existing Mars
+personas. Vendor-specific client files remain thin adapters; this document and
+the `foundation-maintainer` role packet are the canonical doctrine.
+
+A foundation work item is **non-trivial** when it changes durable behavior,
+changes generated target doctrine, creates or updates an exec plan, modifies
+release/update/validation/orchestration behavior, touches secrets or external
+integrations, or needs more than a single mechanical docs correction. Tiny
+typos, one-off command answers, and explicitly throwaway experiments may stay
+single-agent.
+
+The standard role packet is:
+
+| Role | Foundation responsibility |
+| --- | --- |
+| COO | Maintain the active exec-plan slice, BDD scenario schedule, Primary Outcome Contract, and plan status. |
+| CTO-weekly | Decompose the technical approach, create or refine the first implementation ticket, and name assumptions and blast radius. |
+| Engineer | Implement one bounded ticket with tests, docs, and `MarsDocSync` evidence. |
+| QA | Review acceptance criteria, rerun relevant tests, inspect docsync evidence, and challenge unsupported completion claims. |
+| Security | Review secrets, auth, config containment, trust boundaries, external-service scope, and irreversible-action blast radius. |
+| Dogfood | Own installed-binary clean-project validation, matrix reports, replay blockers, and failure ownership classification. |
+| Release Manager | Generate release notes, run backfill checks, tag, publish and verify assets, or record release blockers after the primary pass gate is met or explicitly accepted as blocked. |
+
+CEO or Head of Strategy packets are used only when the operator's goal,
+product direction, or program shape is unclear. Extra specialist packets are
+allowed when they map to a current Mars role, skill, or validation lane, but
+they do not create independent doctrine.
+
+The primary `foundation-maintainer` keeps final accountability:
+
+1. Read `AGENTS.md`, the foundation role packet, this operating model, the
+   active plan, relevant feature contracts, and docs named by changed-file
+   `MarsDocSync` metadata.
+2. Assign each subagent a bounded scope, expected artifact, file ownership, and
+   validation question. Parallel subagents may run only when write scopes are
+   disjoint.
+3. Require each subagent output to classify findings as `foundation-owned`,
+   `deployed-owned`, `mirrored doctrine`, `evidence-only`, or `mixed/unclear`.
+4. Integrate outputs into repo-owned artifacts: exec plans, tickets, feature
+   contracts, design docs, validation reports, release notes, or blockers.
+   Chat summaries and tool transcripts are not durable system records.
+5. Resolve conflicts, run the relevant gates, preserve dirty work it did not
+   create, and make the final claim with the Primary Outcome status.
+
+Subagents inherit all foundation constraints. They must not bypass trust
+settings, guardrails, release rules, trunk discipline, credential hygiene,
+tool allowlists, or the source/deployed ownership boundary. A subagent can
+recommend a commit, release, or blocker classification, but the primary
+`foundation-maintainer` owns the final decision and must not cut a release for
+a failed ticket unless the blocker is explicitly recorded and accepted.
+
+If a client does not support native subagents, the same model is expressed as
+role-labelled sections in the main thread or as separate role-specific notes in
+the owning artifact. The requirement is collective role coverage and durable
+evidence, not a vendor-specific concurrency feature.
 
 ## Validation Matrix (Summary)
 

@@ -33,6 +33,7 @@ would otherwise live only in chat.
 - **Role registry** — a checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior.
 - **Foundation operating model** — the operating model for `mars-harness` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
 - **Foundation maintainer role** — the source-only `foundation-maintainer` role for agents maintaining this software factory; it is manual/operator-invoked, consumes the foundation operating model, classifies foundation/deployed ownership before changes, and is not mirrored into deployed harnesses.
+- **Role-assuming foundation subagent** — a bounded assistant, thread, or role-labelled work packet used by external AI clients during non-trivial source work to assume an existing Mars persona such as COO, CTO-weekly, Engineer, QA, Security, Dogfood, or Release Manager while the primary client remains accountable as `foundation-maintainer` and Orchestrator.
 - **Deployed operating model** — the operating model inside a target application harness, governing how agents build that target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Live demo improvement loop** — the foundation stabilization loop for lifecycle work: run a clean representative target from the validation matrix, review findings, implement one or two bounded source actions, rerun, and claim improvement only after rerun evidence is confirmed, merged or fast-forwarded to trunk, and pushed to the remote.
@@ -73,6 +74,13 @@ Agents always operate on a target project. The harness is never the target of it
 The foundation operating model must work with any capable AI coding client.
 `AGENTS.md` and `docs/roles/personas/foundation-maintainer.md` are the source
 of truth; vendor files are compatibility adapters only.
+
+For non-trivial source work, the primary client works as
+`foundation-maintainer` and Orchestrator while using role-assuming subagents or
+role-labelled packets for planning, build, review, validation, security, and
+release evidence. See
+[docs/design-docs/foundation-operating-model.md](docs/design-docs/foundation-operating-model.md)
+AD-304.
 
 | Client | Instruction surface | Foundation mode entry |
 | --- | --- | --- |

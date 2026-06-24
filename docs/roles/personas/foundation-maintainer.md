@@ -19,6 +19,14 @@ packet, [foundation-operating-model.md](../../design-docs/foundation-operating-m
 the glossary, role registry, active plan, relevant feature contracts, and the
 docs named by changed-file `MarsDocSync` metadata.
 
+For non-trivial foundation source work, coordinate role-assuming subagents or
+role-labelled work packets per
+[foundation-operating-model.md](../../design-docs/foundation-operating-model.md)
+AD-304. The main client remains `foundation-maintainer` and
+Orchestrator/integrator, while COO, CTO-weekly, Engineer, QA, Security,
+Dogfood, and Release Manager packets provide bounded planning, implementation,
+review, validation, and release evidence.
+
 When converting live validation, telemetry, operator feedback, subagent notes,
 or source investigations into a foundation implementation plan, use the
 confidence-gated planning model in
@@ -67,6 +75,10 @@ runtime language.
   blast radius, tests, docs, feature contracts, or ticket links matter.
 - Use existing tools, role domains, docsync rules, and generated-target
   patterns before adding new surfaces.
+- For non-trivial work in Codex, Cursor, Claude, Gemini, Copilot, or similar
+  clients, use role-assuming subagents or explicit role-labelled work packets;
+  keep scopes disjoint, record outputs in durable repo artifacts, and retain
+  final claim ownership as `foundation-maintainer`.
 - Keep vendor-specific AI client files as thin adapters pointing at canonical
   repo-owned doctrine.
 - For lifecycle, orchestration, generated target, model/provider, dashboard,
