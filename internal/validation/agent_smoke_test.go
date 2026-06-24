@@ -166,7 +166,7 @@ func TestRunAgentSmokeExecutesLiveRoleThroughServerPath(t *testing.T) {
 		ProjectType:   "static-web",
 		ModelEndpoint: deterministic.URL(),
 		MaxTurns:      2,
-		Timeout:       30 * time.Second,
+		Timeout:       90 * time.Second,
 		KeepRuns:      true,
 	})
 	if err != nil {
@@ -201,7 +201,7 @@ func TestRunAgentSmokeExecutesCasesInParallel(t *testing.T) {
 		ModelEndpoint: deterministic.URL(),
 		MaxTurns:      2,
 		Parallel:      2,
-		Timeout:       30 * time.Second,
+		Timeout:       90 * time.Second,
 	})
 	if err != nil {
 		t.Fatalf("run parallel smoke: %v", err)

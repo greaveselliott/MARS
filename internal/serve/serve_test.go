@@ -278,12 +278,7 @@ func TestServer_startStop(t *testing.T) {
 		errCh <- srv.Start(ctx)
 	}()
 
-	// Give the server time to start
-	time.Sleep(100 * time.Millisecond)
-
-	if !srv.Healthy() {
-		t.Error("expected server to be healthy after start")
-	}
+	require.Eventually(t, srv.Healthy, 3*time.Second, 25*time.Millisecond, "expected server to be healthy after start")
 
 	cancel()
 
@@ -583,7 +578,7 @@ ingestion:
       - { project: DEMO, repo: owner/repo }
     scope:
       allowed_workspaces:
-        - https://jira.example/jira/software/c/projects/DEMO/boards/42/backlog
+        - https://jira.example/jira/software/c/projects/DEMO/boards/board-example/backlog
       required_labels:
         - allowed-intake
 `)
