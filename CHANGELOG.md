@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.65.5] - 2026-06-24
+<!-- mars-harness-release: version=0.65.5 commit=cfd026c8e12c -->
+
+### Impact
+- **company-explainer:** Operators and future agents get clearer guidance because add design decision explorer.
+
+### Why
+- **company-explainer:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **company-explainer:** Changed add design decision explorer (cfd026c).
+
+### Documentation
+- **company-explainer:** Add design decision explorer (cfd026c)
+
 ## [0.65.4] - 2026-06-24
 <!-- mars-harness-release: version=0.65.4 commit=673237cb0d14 -->
 
