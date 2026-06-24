@@ -327,3 +327,13 @@ blocker that gates dispatch.
   publish-assets --repo . --version v0.45.1 --upload github`. Not executed
   from the `codex/main-lifecycle-stabilization-rebased` branch because release
   publication belongs to trunk state, not in-flight branch work.
+- `v0.65.2`: release notes were generated on 2026-06-24 for the README
+  operator-overview refresh, but `<repo>
+  release backfill-notes --repo . --check` is blocked before it can evaluate
+  the new entry because historical `CHANGELOG.md` release markers reference
+  commits that are unavailable in the current `main` history. The immediate
+  failing base marker is `b76d8f2b9512` from the `0.65.1` entry; `git fetch
+  origin --tags --prune-tags` did not recover it, and `git ls-remote origin
+  b76d8f2b9512` returned no remote ref. Remediation: repair or regenerate
+  historical release markers against reachable release tags in a dedicated
+  release-history cleanup before treating the global backfill check as green.

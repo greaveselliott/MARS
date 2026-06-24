@@ -2,6 +2,39 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.65.2] - 2026-06-24
+<!-- mars-harness-release: version=0.65.2 commit=7c41741ab135 -->
+
+### Impact
+- **readme:** Operators and future agents get clearer guidance because refresh operator overview.
+- **security:** The release carries stronger evidence because avoid static secret scanner fixtures.
+- **security:** The release carries stronger evidence because avoid scanner noise for mcp tool allowlist.
+- **security:** The release carries stronger evidence because keep intervention debt fixture generic.
+- **mcpclient:** The release carries stronger evidence because tolerate malformed stdio shutdown.
+
+### Why
+- **readme:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+- **security:** This matters because the project needs durable evidence that the behavior keeps working.
+- **security:** This matters because the project needs durable evidence that the behavior keeps working.
+- **security:** This matters because the project needs durable evidence that the behavior keeps working.
+- **mcpclient:** This matters because the project needs durable evidence that the behavior keeps working.
+
+### What Changed
+- **readme:** Changed refresh operator overview (7c41741).
+- **security:** Changed avoid static secret scanner fixtures (1cc9b94).
+- **security:** Changed avoid scanner noise for mcp tool allowlist (2aace6d).
+- **security:** Changed keep intervention debt fixture generic (2b15064).
+- **mcpclient:** Changed tolerate malformed stdio shutdown (deb2e72).
+
+### Documentation
+- **readme:** Refresh operator overview (7c41741)
+
+### Tests
+- **security:** Avoid static secret scanner fixtures (1cc9b94)
+- **security:** Avoid scanner noise for mcp tool allowlist (2aace6d)
+- **security:** Keep intervention debt fixture generic (2b15064)
+- **mcpclient:** Tolerate malformed stdio shutdown (deb2e72)
+
 ## [0.65.1] - 2026-06-24
 <!-- mars-harness-release: version=0.65.1 commit=b76d8f2b9512 -->
 
