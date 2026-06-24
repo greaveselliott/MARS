@@ -32,10 +32,11 @@ under `docs/company-harness-ecosystem/`. The repository GitHub Pages site is
 published from `/docs`, and `docs/index.html` redirects the site root to the
 explainer. The explainer is
 documentation, not runtime infrastructure: it presents the value case,
-foundation/deployed boundary, operating model, DocSync, telemetry, safety, and
-pilot adoption path for mixed leadership and engineering audiences. The source
-page remains self-contained with local assets only, so it can be reviewed from
-the repo and deployed without a frontend build step.
+foundation/deployed boundary, design-decision trade-offs, operating model,
+DocSync, telemetry, safety, and pilot adoption path for mixed leadership and
+engineering audiences. The source page remains self-contained with local assets
+only, so it can be reviewed from the repo and deployed without a frontend build
+step.
 
 ## CLI Contract
 

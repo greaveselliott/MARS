@@ -31,8 +31,9 @@ For the full product contract, start with the
 For a high-level company adoption walkthrough, use the interactive
 [Mars Harness company explainer](https://greaveselliott.github.io/software-factory/).
 It explains the software-factory problem, the value case, the foundation vs.
-deployed harness boundary, operating model, DocSync, telemetry, safety, and a
-pilot adoption path for mixed leadership and engineering audiences.
+deployed harness boundary, design decisions, operating model, DocSync,
+telemetry, safety, and a pilot adoption path for mixed leadership and
+engineering audiences.
 
 The source lives in
 [docs/company-harness-ecosystem/](docs/company-harness-ecosystem/). The

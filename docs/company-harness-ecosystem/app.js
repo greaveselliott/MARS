@@ -8,9 +8,19 @@ docs:
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/self-reflective-telemetry.md
+- docs/design-docs/index.md
+- docs/design-docs/implementation-language.md
+- docs/design-docs/pipeline-engine.md
+- docs/design-docs/dashboard.md
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/cli-tool-skill-sync.md
+- docs/design-docs/dogfood-and-decisions.md
+- docs/design-docs/scoring-system.md
+- docs/design-docs/validation-matrix-gating.md
 - docs/design-docs/tools-glossary.md
 - docs/design-docs/guardrails.md
 - docs/design-docs/local-inference.md
+- docs/design-docs/release-versioning.md
 */
 (function () {
   const surfaces = {
@@ -92,6 +102,12 @@ docs:
       category: "delivery",
       text:
         "The documented way intent becomes shipped, verifiable work through goals, BDD contracts, active plans, tickets, roles, evidence, release, scoring, and improvement."
+    },
+    {
+      term: "Architecture decision",
+      category: "governance",
+      text:
+        "A durable design choice recorded with an AD number, rationale, trade-off, consequences, and source document so future work can preserve or deliberately change it."
     },
     {
       term: "BDD feature contract",
@@ -260,6 +276,179 @@ docs:
     }
   };
 
+  const decisions = {
+    distribution: {
+      title: "Single-binary default with explicit sidecar exceptions",
+      summary:
+        "Mars Harness optimizes the default operator path for one Go binary, local state, embedded dashboard assets, and a supervised inference subprocess instead of a mandatory SaaS, Node, Python, Redis, or Postgres stack.",
+      refs: ["AD-001", "AD-007", "AD-011", "AD-279"],
+      value:
+        "Teams can trial and operate the factory on controlled hardware without first standing up a platform team around the tool.",
+      tradeoff:
+        "The default UI and runtime stay deliberately conservative; richer frontend work becomes an explicit sidecar exception.",
+      implication:
+        "New dependencies must justify their impact on setup, release, offline use, support, and generated target simplicity.",
+      proof:
+        "Install from a clean machine, run setup and doctor, start a target, and verify no hidden service dependency appears.",
+      revisit:
+        "Install friction is no longer the adoption bottleneck, or a sidecar produces proven operator value without weakening the core path.",
+      sources: "implementation-language.md, local-inference.md, dashboard.md"
+    },
+    boundary: {
+      title: "Foundation and deployed harnesses stay separate",
+      summary:
+        "The source harness, runtime binary, deployed target harness, and target product each own different artifacts and failures. The shared operating model mirrors reusable doctrine without leaking source-only mechanics into target repos.",
+      refs: ["AD-139", "AD-252"],
+      value:
+        "Teams avoid turning runtime defects into product backlog noise, and they can tell whether a fix belongs in Mars Harness, generated defaults, or the target application.",
+      tradeoff:
+        "Every finding needs an ownership classification step before ticketing or patching, which adds discipline to early runs.",
+      implication:
+        "Reviewers should ask whether a failure is foundation-owned, deployed-owned, mixed, or evidence-only before approving remediation.",
+      proof:
+        "Run one target pilot and classify every observed failure. A healthy loop should route source issues to foundation evidence and target issues to target work.",
+      revisit:
+        "Ownership classification repeatedly blocks delivery without improving routing accuracy, or target teams need a deliberate local override.",
+      sources: "foundation-deployed-harness-architecture.md, delivery-operating-model.md"
+    },
+    state: {
+      title: "SQLite keeps state local, durable, and repo-scoped",
+      summary:
+        "Jobs, traces, scores, telemetry, schedules, and repo registry state live in SQLite rather than a mandatory external database. Schema includes repo identity early, and startup preserves WAL sidecars as recoverable state.",
+      refs: ["AD-009", "AD-010", "AD-029", "AD-214"],
+      value:
+        "The factory can survive restarts and support multiple target repos without requiring Postgres, Redis, or hosted infrastructure.",
+      tradeoff:
+        "The first architecture optimizes single-machine reliability and clear backup paths, not distributed multi-tenant scale.",
+      implication:
+        "Operators should treat the per-repo database as important run evidence and avoid cleanup flows that erase queue or telemetry history.",
+      proof:
+        "Start a target, interrupt and restart, then verify pending work, trace state, and repo identity recover instead of reseeding as new work.",
+      revisit:
+        "Many concurrent repos outgrow single-machine contention, or enterprise deployment requires a managed state backend.",
+      sources: "pipeline-engine.md, dogfood-and-decisions.md"
+    },
+    operating: {
+      title: "BDD-led delivery turns agent activity into product proof",
+      summary:
+        "Goals, BDD feature contracts, the active plan, ticket lifecycle, validation evidence, and release notes form the path from intent to shipped work.",
+      refs: ["AD-097", "AD-108", "AD-138"],
+      value:
+        "Delivery leaders can ask whether a user-visible scenario passed instead of interpreting diff size or agent confidence.",
+      tradeoff:
+        "Teams pay an up-front cost to write behavior contracts and maintain plans before broad implementation work.",
+      implication:
+        "A ticket is not done until the scenario evidence, repo state, docs, and release trail support the completion claim.",
+      proof:
+        "Pick one bounded feature and require the final handoff to cite the scenario, command evidence, ticket move, and release-note entry.",
+      revisit:
+        "The documentation overhead exceeds the review waste it removes, or a team has an equivalent artifact that can be mechanically checked.",
+      sources: "delivery-operating-model.md, validation-matrix-gating.md"
+    },
+    docsync: {
+      title: "DocSync makes documentation freshness mechanical",
+      summary:
+        "Audited files declare their owning docs through MarsDocSync metadata. Agents must read, update or verify those docs, then run the audit before completion.",
+      refs: ["AD-098", "AD-101", "AD-102"],
+      value:
+        "Reviewers get a concrete doc checklist for changed code, reducing stale architecture, stale product specs, and repeated archaeology.",
+      tradeoff:
+        "Source files carry metadata, and changes that look code-only may require doc review before they can land.",
+      implication:
+        "Every new audited source file needs a meaningful doc owner, not a vague link chosen only to satisfy the parser.",
+      proof:
+        "Change a small JS or Go file in the pilot and verify that the agent names the right docs, updates or confirms them, and passes docsync audit.",
+      revisit:
+        "Metadata becomes noisy or broad enough that reviewers no longer trust it as a useful checklist.",
+      sources: "documentation-sync-architecture.md, code-documentation-map.md"
+    },
+    safety: {
+      title: "Deterministic guardrails come before semantic ambition",
+      summary:
+        "The first hard safety layer uses path, regex, file-existence, workspace hygiene, lifecycle, dependency, and blast-radius checks before relying on deeper semantic analysis.",
+      refs: ["AD-012", "AD-107", "AD-115", "AD-142"],
+      value:
+        "Security and platform teams get fast pre-mutation blocks for destructive, noisy, or misleading actions instead of prompt-only governance.",
+      tradeoff:
+        "Syntactic rules can miss nuanced semantic defects and can produce false positives when policy is too broad.",
+      implication:
+        "Policy blocks should be measured and tuned; repeated false positives are product feedback, not an excuse to remove the safety layer.",
+      proof:
+        "Track pilot guardrail blocks by class, correctness, recovery path, and whether the block happened before harmful mutation.",
+      revisit:
+        "False positives routinely stop valid work, or the highest-risk failures are semantic and require a richer analyzer.",
+      sources: "guardrails.md, delivery-operating-model.md"
+    },
+    telemetry: {
+      title: "Telemetry and scores route improvement work",
+      summary:
+        "Traces, outcomes, guardrail blocks, no-ops, timeouts, human follow-up, quality scores, and stale tickets are classified into improvement targets before becoming work.",
+      refs: ["AD-037", "AD-038", "AD-065", "AD-072"],
+      value:
+        "Managers can see whether the factory is learning from failures instead of collecting dashboards that do not change behavior.",
+      tradeoff:
+        "The system must preserve enough evidence and sample counts to avoid overreacting to one noisy run.",
+      implication:
+        "Low scores are inspection triggers. They should route to prompt, skill, guardrail, context, inference, manifest, tool policy, or process work based on evidence.",
+      proof:
+        "After several pilot runs, export the quality score and confirm that repeated failure categories have specific owners and acceptance criteria.",
+      revisit:
+        "Scores fail to predict review pain, or telemetry creates more triage overhead than repeated failure reduction.",
+      sources: "self-reflective-telemetry.md, scoring-system.md"
+    },
+    tools: {
+      title: "Universal tools separate authority from instructions",
+      summary:
+        "Mars Harness exposes governed operations through role runs, mars-harness tools run, and MCP. Skills teach workflows, while tools carry authority, policy, and structured arguments.",
+      refs: ["AD-022", "AD-077", "AD-103"],
+      value:
+        "Different AI clients can use the same safe operations instead of each inventing shell conventions that are hard to audit.",
+      tradeoff:
+        "Useful repeated workflows must be promoted into registered tools or maintained skills, which requires inventory discipline.",
+      implication:
+        "When a process is repeated, risky, validation-heavy, or likely to recur, it should become a first-class tool rather than chat memory.",
+      proof:
+        "Have a harness role and an external MCP client perform the same DocSync or ticket-create action through the same tool surface.",
+      revisit:
+        "Tool upkeep exceeds the risk reduction, or external clients need capabilities that cannot be expressed through the shared registry.",
+      sources: "tools-glossary.md, cli-tool-skill-sync.md, dogfood-and-decisions.md"
+    },
+    release: {
+      title: "Versioned release evidence follows source work",
+      summary:
+        "Semantic commits are followed by generated version and changelog updates. Source releases are tagged, assets are built locally, checksums are verified, and GitHub mirroring is optional.",
+      refs: ["AD-049", "AD-050", "AD-056", "AD-059", "AD-078", "AD-099", "AD-141"],
+      value:
+        "Stakeholders can inspect what changed, why it mattered, what impact to expect, and whether the shipped binary assets match the release.",
+      tradeoff:
+        "Even documentation changes carry versioning overhead in the source harness, which slows casual edits but improves traceability.",
+      implication:
+        "Completion is not only a code commit. It includes release-note generation, tag discipline, local asset publication, and verification or an explicit blocker.",
+      proof:
+        "Audit one release from semantic commit through changelog, VERSION, tag, checksums, and release asset verification.",
+      revisit:
+        "The source release cadence becomes too heavy for low-risk doc-only changes, or target repos need a lighter local policy.",
+      sources: "release-versioning.md, product-surface.md"
+    },
+    dashboard: {
+      title: "Embedded dashboard stays core; richer control plane is optional",
+      summary:
+        "The current dashboard remains embedded and offline-capable. A future TanStack control plane can exist as an operator-installed sidecar behind the Go gateway without weakening the core single-binary path.",
+      refs: ["AD-011", "AD-156", "AD-279"],
+      value:
+        "Operators get local visibility immediately, while the product can still evolve toward a richer UI when evidence justifies the sidecar cost.",
+      tradeoff:
+        "The product carries two dashboard horizons: a conservative shipped surface and a deferred optional sidecar plan.",
+      implication:
+        "Dashboard proposals must state whether they affect the core embedded path or the optional sidecar, and they must keep Go as the trusted gateway.",
+      proof:
+        "Run the embedded dashboard without Node installed, then evaluate whether a sidecar prototype improves operator decisions enough to justify prerequisites.",
+      revisit:
+        "The embedded dashboard prevents critical operational workflows, or the sidecar proves enough value to justify explicit operator installation.",
+      sources: "dashboard.md, product-surface.md"
+    }
+  };
+
   const navToggle = document.querySelector(".nav-toggle");
   const mobileNav = document.querySelector("#mobileNav");
   if (navToggle && mobileNav) {
@@ -328,6 +517,52 @@ docs:
       const card = button.closest(".concept-card");
       const isOpen = card.classList.toggle("is-open");
       button.setAttribute("aria-expanded", String(isOpen));
+    });
+  });
+
+  const decisionTabs = document.querySelectorAll(".decision-tab");
+  const decisionPanel = document.querySelector("#decisionPanel");
+  decisionTabs.forEach((button) => {
+    button.addEventListener("click", () => {
+      const data = decisions[button.dataset.decision];
+      if (!data || !decisionPanel) return;
+      decisionTabs.forEach((item) => item.classList.toggle("is-active", item === button));
+      decisionPanel.innerHTML = `
+        <div class="decision-panel-header">
+          <p class="eyebrow">Decision cluster</p>
+          <h3>${data.title}</h3>
+          <p>${data.summary}</p>
+          <div class="decision-refs" aria-label="Architecture decision references">
+            ${data.refs.map((ref) => `<span>${ref}</span>`).join("")}
+          </div>
+        </div>
+        <div class="decision-columns">
+          <div>
+            <h4>Company value</h4>
+            <p>${data.value}</p>
+          </div>
+          <div>
+            <h4>Trade-off</h4>
+            <p>${data.tradeoff}</p>
+          </div>
+          <div>
+            <h4>Operating implication</h4>
+            <p>${data.implication}</p>
+          </div>
+          <div>
+            <h4>Pilot proof</h4>
+            <p>${data.proof}</p>
+          </div>
+          <div>
+            <h4>Revisit when</h4>
+            <p>${data.revisit}</p>
+          </div>
+          <div>
+            <h4>Source docs</h4>
+            <p>${data.sources}</p>
+          </div>
+        </div>
+      `;
     });
   });
 
