@@ -278,50 +278,56 @@ docs:
 
   const decisions = {
     distribution: {
-      title: "Single-binary default with explicit sidecar exceptions",
+      title: "Single-binary default",
       summary:
-        "Mars Harness optimizes the default operator path for one Go binary, local state, embedded dashboard assets, and a supervised inference subprocess instead of a mandatory SaaS, Node, Python, Redis, or Postgres stack.",
+        "The first adoption risk is setup drag. Mars Harness starts as one Go binary with local state, embedded UI assets, and a supervised inference subprocess.",
       refs: ["AD-001", "AD-007", "AD-011", "AD-279"],
+      problem:
+        "A pilot becomes a platform project before anyone sees whether the agent loop is useful.",
+      choice:
+        "Keep the default path local, small, and runnable without SaaS, Node, Redis, Postgres, or hosted infrastructure.",
       value:
-        "Teams can trial and operate the factory on controlled hardware without first standing up a platform team around the tool.",
-      tradeoff:
-        "The default UI and runtime stay deliberately conservative; richer frontend work becomes an explicit sidecar exception.",
-      implication:
-        "New dependencies must justify their impact on setup, release, offline use, support, and generated target simplicity.",
+        "Teams can trial the factory on controlled hardware and judge the work before buying into an operating platform.",
+      cost:
+        "The default UI stays conservative. Richer frontend work must justify itself as an explicit sidecar.",
       proof:
-        "Install from a clean machine, run setup and doctor, start a target, and verify no hidden service dependency appears.",
+        "Install on a clean machine, run setup and doctor, start a target, and verify no hidden service dependency appears.",
       revisit:
-        "Install friction is no longer the adoption bottleneck, or a sidecar produces proven operator value without weakening the core path.",
+        "Install friction is no longer the adoption bottleneck, or a sidecar proves clear operator value without weakening the core path.",
       sources: "implementation-language.md, local-inference.md, dashboard.md"
     },
     boundary: {
-      title: "Foundation and deployed harnesses stay separate",
+      title: "Source/target boundary",
       summary:
-        "The source harness, runtime binary, deployed target harness, and target product each own different artifacts and failures. The shared operating model mirrors reusable doctrine without leaking source-only mechanics into target repos.",
+        "Mars Harness separates the factory, runtime, generated target harness, and product code so failures land in the right place.",
       refs: ["AD-139", "AD-252"],
+      problem:
+        "Runtime defects, generated-guidance gaps, and product bugs all look like ordinary backlog unless ownership is explicit.",
+      choice:
+        "Classify every finding as foundation-owned, deployed-owned, mixed, unclear, or evidence-only before creating work.",
       value:
-        "Teams avoid turning runtime defects into product backlog noise, and they can tell whether a fix belongs in Mars Harness, generated defaults, or the target application.",
-      tradeoff:
-        "Every finding needs an ownership classification step before ticketing or patching, which adds discipline to early runs.",
-      implication:
-        "Reviewers should ask whether a failure is foundation-owned, deployed-owned, mixed, or evidence-only before approving remediation.",
+        "Teams can tell whether the fix belongs in Mars Harness, generated defaults, or the target application.",
+      cost:
+        "Early runs require one extra routing step before ticketing or patching.",
       proof:
-        "Run one target pilot and classify every observed failure. A healthy loop should route source issues to foundation evidence and target issues to target work.",
+        "Run one target pilot and classify each failure. Source issues should become foundation evidence; product issues should become target work.",
       revisit:
         "Ownership classification repeatedly blocks delivery without improving routing accuracy, or target teams need a deliberate local override.",
       sources: "foundation-deployed-harness-architecture.md, delivery-operating-model.md"
     },
     state: {
-      title: "SQLite keeps state local, durable, and repo-scoped",
+      title: "Local SQLite state",
       summary:
-        "Jobs, traces, scores, telemetry, schedules, and repo registry state live in SQLite rather than a mandatory external database. Schema includes repo identity early, and startup preserves WAL sidecars as recoverable state.",
+        "Jobs, traces, scores, telemetry, schedules, and repo registry state live in SQLite rather than a mandatory service stack.",
       refs: ["AD-009", "AD-010", "AD-029", "AD-214"],
+      problem:
+        "A multi-service state layer makes the first install harder and can mix evidence between repos if repo identity is not explicit.",
+      choice:
+        "Use per-repo SQLite databases, include repo identity early, and preserve WAL sidecars as recoverable run state.",
       value:
-        "The factory can survive restarts and support multiple target repos without requiring Postgres, Redis, or hosted infrastructure.",
-      tradeoff:
-        "The first architecture optimizes single-machine reliability and clear backup paths, not distributed multi-tenant scale.",
-      implication:
-        "Operators should treat the per-repo database as important run evidence and avoid cleanup flows that erase queue or telemetry history.",
+        "The factory can survive restarts and support multiple target repos without Postgres, Redis, or hosted infrastructure.",
+      cost:
+        "The first architecture optimizes single-machine reliability, not distributed multi-tenant scale.",
       proof:
         "Start a target, interrupt and restart, then verify pending work, trace state, and repo identity recover instead of reseeding as new work.",
       revisit:
@@ -329,16 +335,18 @@ docs:
       sources: "pipeline-engine.md, dogfood-and-decisions.md"
     },
     operating: {
-      title: "BDD-led delivery turns agent activity into product proof",
+      title: "BDD-led delivery",
       summary:
-        "Goals, BDD feature contracts, the active plan, ticket lifecycle, validation evidence, and release notes form the path from intent to shipped work.",
+        "Goals, BDD contracts, active plans, tickets, validation evidence, and release notes form the path from intent to shipped work.",
       refs: ["AD-097", "AD-108", "AD-138"],
+      problem:
+        "Agents can produce large diffs that do not prove the user-visible behavior leadership asked for.",
+      choice:
+        "Define behavior first, implement the next walking-skeleton slice, and close only with repo-visible evidence.",
       value:
-        "Delivery leaders can ask whether a user-visible scenario passed instead of interpreting diff size or agent confidence.",
-      tradeoff:
-        "Teams pay an up-front cost to write behavior contracts and maintain plans before broad implementation work.",
-      implication:
-        "A ticket is not done until the scenario evidence, repo state, docs, and release trail support the completion claim.",
+        "Reviewers can ask whether a scenario passed instead of interpreting diff size or agent confidence.",
+      cost:
+        "Teams spend time writing behavior contracts and maintaining plans before broad implementation.",
       proof:
         "Pick one bounded feature and require the final handoff to cite the scenario, command evidence, ticket move, and release-note entry.",
       revisit:
@@ -346,16 +354,18 @@ docs:
       sources: "delivery-operating-model.md, validation-matrix-gating.md"
     },
     docsync: {
-      title: "DocSync makes documentation freshness mechanical",
+      title: "DocSync",
       summary:
-        "Audited files declare their owning docs through MarsDocSync metadata. Agents must read, update or verify those docs, then run the audit before completion.",
+        "Audited files declare their owning docs. Agents must read, update or verify those docs, then run the audit before completion.",
       refs: ["AD-098", "AD-101", "AD-102"],
+      problem:
+        "Autonomous code changes can make design docs, product specs, role guidance, and release notes stale faster than reviewers notice.",
+      choice:
+        "Put MarsDocSync metadata at the top of audited files and treat linked docs as part of the change surface.",
       value:
-        "Reviewers get a concrete doc checklist for changed code, reducing stale architecture, stale product specs, and repeated archaeology.",
-      tradeoff:
-        "Source files carry metadata, and changes that look code-only may require doc review before they can land.",
-      implication:
-        "Every new audited source file needs a meaningful doc owner, not a vague link chosen only to satisfy the parser.",
+        "Reviewers get a concrete doc checklist for changed code, reducing stale architecture and repeated archaeology.",
+      cost:
+        "Source files carry metadata, and changes that look code-only may require doc review before they land.",
       proof:
         "Change a small JS or Go file in the pilot and verify that the agent names the right docs, updates or confirms them, and passes docsync audit.",
       revisit:
@@ -363,16 +373,18 @@ docs:
       sources: "documentation-sync-architecture.md, code-documentation-map.md"
     },
     safety: {
-      title: "Deterministic guardrails come before semantic ambition",
+      title: "Guardrails before autonomy",
       summary:
-        "The first hard safety layer uses path, regex, file-existence, workspace hygiene, lifecycle, dependency, and blast-radius checks before relying on deeper semantic analysis.",
+        "The first hard safety layer blocks obvious risk before relying on deeper semantic judgment.",
       refs: ["AD-012", "AD-107", "AD-115", "AD-142"],
+      problem:
+        "Prompt-only governance can still allow unsafe writes, destructive commands, secret leaks, dependency churn, or false completion claims.",
+      choice:
+        "Use path, regex, file-existence, workspace hygiene, lifecycle, dependency, and blast-radius checks at tool execution time.",
       value:
-        "Security and platform teams get fast pre-mutation blocks for destructive, noisy, or misleading actions instead of prompt-only governance.",
-      tradeoff:
-        "Syntactic rules can miss nuanced semantic defects and can produce false positives when policy is too broad.",
-      implication:
-        "Policy blocks should be measured and tuned; repeated false positives are product feedback, not an excuse to remove the safety layer.",
+        "Security and platform teams get fast pre-mutation blocks for destructive, noisy, or misleading actions.",
+      cost:
+        "Syntactic rules can miss nuanced defects and can produce false positives when policy is too broad.",
       proof:
         "Track pilot guardrail blocks by class, correctness, recovery path, and whether the block happened before harmful mutation.",
       revisit:
@@ -380,16 +392,18 @@ docs:
       sources: "guardrails.md, delivery-operating-model.md"
     },
     telemetry: {
-      title: "Telemetry and scores route improvement work",
+      title: "Telemetry routes improvement",
       summary:
-        "Traces, outcomes, guardrail blocks, no-ops, timeouts, human follow-up, quality scores, and stale tickets are classified into improvement targets before becoming work.",
+        "Run evidence is classified into improvement targets before it becomes new work.",
       refs: ["AD-037", "AD-038", "AD-065", "AD-072"],
+      problem:
+        "Teams collect logs, scores, reverts, no-ops, and human rescues but keep repeating the same failures.",
+      choice:
+        "Classify traces, outcomes, guardrail blocks, timeouts, quality scores, and stale tickets by root cause and owner.",
       value:
-        "Managers can see whether the factory is learning from failures instead of collecting dashboards that do not change behavior.",
-      tradeoff:
-        "The system must preserve enough evidence and sample counts to avoid overreacting to one noisy run.",
-      implication:
-        "Low scores are inspection triggers. They should route to prompt, skill, guardrail, context, inference, manifest, tool policy, or process work based on evidence.",
+        "Managers can see whether the factory is learning from failures instead of collecting dashboard noise.",
+      cost:
+        "The system must preserve enough sample counts and evidence to avoid overreacting to one noisy run.",
       proof:
         "After several pilot runs, export the quality score and confirm that repeated failure categories have specific owners and acceptance criteria.",
       revisit:
@@ -397,16 +411,18 @@ docs:
       sources: "self-reflective-telemetry.md, scoring-system.md"
     },
     tools: {
-      title: "Universal tools separate authority from instructions",
+      title: "Shared governed tools",
       summary:
-        "Mars Harness exposes governed operations through role runs, mars-harness tools run, and MCP. Skills teach workflows, while tools carry authority, policy, and structured arguments.",
+        "Mars Harness exposes the same governed operations through role runs, `mars-harness tools run`, and MCP.",
       refs: ["AD-022", "AD-077", "AD-103"],
+      problem:
+        "Each AI client can invent different shell habits, permissions, and argument shapes, making runs harder to compare or audit.",
+      choice:
+        "Keep authority in registered tools with trust policy and structured arguments. Let skills teach workflows without granting authority.",
       value:
-        "Different AI clients can use the same safe operations instead of each inventing shell conventions that are hard to audit.",
-      tradeoff:
-        "Useful repeated workflows must be promoted into registered tools or maintained skills, which requires inventory discipline.",
-      implication:
-        "When a process is repeated, risky, validation-heavy, or likely to recur, it should become a first-class tool rather than chat memory.",
+        "Codex, Cursor, local harness agents, and other MCP clients can use the same safe operations.",
+      cost:
+        "Repeated workflows need inventory discipline: promote risky recurring work into tools and maintain reusable guidance as skills.",
       proof:
         "Have a harness role and an external MCP client perform the same DocSync or ticket-create action through the same tool surface.",
       revisit:
@@ -414,16 +430,18 @@ docs:
       sources: "tools-glossary.md, cli-tool-skill-sync.md, dogfood-and-decisions.md"
     },
     release: {
-      title: "Versioned release evidence follows source work",
+      title: "Versioned release evidence",
       summary:
-        "Semantic commits are followed by generated version and changelog updates. Source releases are tagged, assets are built locally, checksums are verified, and GitHub mirroring is optional.",
+        "Semantic commits are followed by generated version and changelog updates, then source releases build and verify local assets.",
       refs: ["AD-049", "AD-050", "AD-056", "AD-059", "AD-078", "AD-099", "AD-141"],
+      problem:
+        "Agent work can land without a durable explanation of impact, version state, or binary asset provenance.",
+      choice:
+        "Generate release notes after semantic commits, tag versions, build assets locally, verify checksums, and mirror to GitHub only when available.",
       value:
         "Stakeholders can inspect what changed, why it mattered, what impact to expect, and whether the shipped binary assets match the release.",
-      tradeoff:
+      cost:
         "Even documentation changes carry versioning overhead in the source harness, which slows casual edits but improves traceability.",
-      implication:
-        "Completion is not only a code commit. It includes release-note generation, tag discipline, local asset publication, and verification or an explicit blocker.",
       proof:
         "Audit one release from semantic commit through changelog, VERSION, tag, checksums, and release asset verification.",
       revisit:
@@ -431,16 +449,18 @@ docs:
       sources: "release-versioning.md, product-surface.md"
     },
     dashboard: {
-      title: "Embedded dashboard stays core; richer control plane is optional",
+      title: "Embedded dashboard first",
       summary:
-        "The current dashboard remains embedded and offline-capable. A future TanStack control plane can exist as an operator-installed sidecar behind the Go gateway without weakening the core single-binary path.",
+        "The shipped dashboard stays embedded and offline-capable. A richer control plane can exist later as an explicit sidecar.",
       refs: ["AD-011", "AD-156", "AD-279"],
+      problem:
+        "A mandatory frontend stack would weaken the single-binary promise before the operational value is proven.",
+      choice:
+        "Keep the core dashboard embedded behind the Go runtime and treat richer UI as an operator-installed sidecar.",
       value:
         "Operators get local visibility immediately, while the product can still evolve toward a richer UI when evidence justifies the sidecar cost.",
-      tradeoff:
+      cost:
         "The product carries two dashboard horizons: a conservative shipped surface and a deferred optional sidecar plan.",
-      implication:
-        "Dashboard proposals must state whether they affect the core embedded path or the optional sidecar, and they must keep Go as the trusted gateway.",
       proof:
         "Run the embedded dashboard without Node installed, then evaluate whether a sidecar prototype improves operator decisions enough to justify prerequisites.",
       revisit:
@@ -538,19 +558,23 @@ docs:
         </div>
         <div class="decision-columns">
           <div>
-            <h4>Adoption value</h4>
+            <h4>What breaks without it</h4>
+            <p>${data.problem}</p>
+          </div>
+          <div>
+            <h4>Choice</h4>
+            <p>${data.choice}</p>
+          </div>
+          <div>
+            <h4>Value</h4>
             <p>${data.value}</p>
           </div>
           <div>
-            <h4>Trade-off</h4>
-            <p>${data.tradeoff}</p>
+            <h4>Cost</h4>
+            <p>${data.cost}</p>
           </div>
           <div>
-            <h4>Operating implication</h4>
-            <p>${data.implication}</p>
-          </div>
-          <div>
-            <h4>Pilot proof</h4>
+            <h4>Pilot check</h4>
             <p>${data.proof}</p>
           </div>
           <div>

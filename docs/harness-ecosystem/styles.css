@@ -1198,6 +1198,24 @@ h3 {
   background: #ebe6d8;
 }
 
+.repo-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  border: 1px solid var(--graphite);
+  border-radius: 8px;
+  background: var(--graphite);
+  color: var(--paper);
+  padding: 0 14px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.repo-link:hover {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
 .source-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
