@@ -12,8 +12,8 @@
 **Success Evidence:** No-config repos keep the 2026-06-23 baseline routes, scheduler behavior, effective role tool lists, strict-trunk policy, and CEO-led planning. Board-driven repos can progressively mirror JIRA tickets, select ready work by active sprint -> P1/P2/P3 priority -> LexoRank -> age, scope through `cto-weekly`, deliver through Engineer/QA, and open human-merged PRs.
 **Falsification Evidence:** Missing config changes runtime behavior, board-driven behavior is inferred from partial config, JIRA events enqueue LLM work directly, future tools appear in generated default manifests, branch/PR delivery leaks into strict-trunk default mode, credentials leak, or clean-project validation cannot distinguish real idle from misconfiguration.
 **Scenario Schedule:** F-013-S001, F-013-S002, F-013-S003, F-013-S004, F-013-S005, F-013-S006
-**Current Failing Scenario:** F-013-S003 Plan 3 is next after the validated T-047 Atlassian MCP provider revision is committed, released, pushed, tagged, and asset-verified. F-013-S001 Optionality foundation is complete and recorded in `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`; the initial F-013-S002 JIRA mirror and sync is recorded in `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md`; the T-047 MCP provider revision is validated in `docs/validation/reports/2026-06-24-example-target-project-atlassian-mcp-jira-intake.md`.
-**Walking Skeleton Slice:** Finish T-047 release publication first. Then start Plan 3 only after T-046 is selected: ready-ticket selection by active sprint, configured priority order, LexoRank, and age; skip blocked/non-ready/closed-sprint tickets; dispatch one `cto-weekly` job; ship DailyCap, interval floors, cost/turn telemetry, circuit breaker, and dashboard/log signals. Do not implement Figma, PR delivery, or frontier model routing in this slice.
+**Current Failing Scenario:** F-013-S003 Plan 3 is the current slice and starts from T-046. F-013-S001 Optionality foundation is complete and recorded in `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`; F-013-S002 JIRA mirror and sync is complete through T-045 plus the T-047 Atlassian MCP provider revision, with evidence in `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md` and `docs/validation/reports/2026-06-24-example-target-project-atlassian-mcp-jira-intake.md`.
+**Walking Skeleton Slice:** Start Plan 3 from T-046: ready-ticket selection by active sprint, configured priority order, LexoRank, and age; skip blocked/non-ready/closed-sprint tickets; dispatch one `cto-weekly` job; ship DailyCap, interval floors, cost/turn telemetry, circuit breaker, and dashboard/log signals. Do not implement Figma, PR delivery, or frontier model routing in this slice.
 **Learning Or MVP Outcome:** Establish a reversible, observable, default-off substrate that every later Example Target Project plan can import without changing existing target behavior.
 **Created:** 2026-06-23
 **Owner:** foundation-maintainer
@@ -61,7 +61,7 @@ If `scope.board_id` is configured and the MCP provider exposes a board-aware rea
 
 JIRA events do not use the GitHub webhook spine, do not register `jira_issue.*` triggers, and do not enqueue LLM work per event.
 
-Status: revision validated as of 2026-06-24 under T-047, pending semantic commit and release publication. Initial mirror evidence is recorded in `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md`; focused Atlassian MCP implementation tests, broad tests, `make check`, and live OAuth-backed stdio MCP read verification pass.
+Status: complete as of 2026-06-24. The T-047 Atlassian MCP provider revision is committed, pushed, tagged, asset-verified, and released as `v0.65.0`. Initial mirror evidence is recorded in `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md`; focused Atlassian MCP implementation tests, broad tests, `make check`, and live OAuth-backed stdio MCP read verification pass.
 
 ### Plan 3: Board Prioritisation And Cost Guards
 
@@ -122,7 +122,7 @@ Model routing remains in `.harness/model-overrides.yaml`. Config stores env-var 
 
 ## Current Ticket
 
-`T-044` completed F-013-S001. `T-045` completed the initial F-013-S002 mirror. `T-047` is the active Plan 2 provider revision and is blocked on Atlassian MCP JIRA search tool availability for the configured credential. `T-046` is the first Plan 3 ticket for F-013-S003 and must wait until T-047 is complete or the recorded live blocker is explicitly accepted.
+`T-044` completed F-013-S001. `T-045` completed the initial F-013-S002 mirror. `T-047` completed the Plan 2 Atlassian MCP provider revision and was released as `v0.65.0`. As of 2026-06-24, `T-046` is the first Plan 3 ticket for F-013-S003 and the next implementation slice.
 
 ## Plan 1 Evidence Snapshot
 

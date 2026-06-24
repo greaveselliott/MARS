@@ -13,7 +13,7 @@ last_attempt: "2026-06-24"
 blocker: "none"
 blocked_by: ["T-045"]
 trace_id: "TBD"
-next_action: "Commit and release the validated T-047 changes, then resume Plan 3 from T-046."
+next_action: "Plan 2 provider revision is complete and released as v0.65.0; resume Plan 3 from T-046."
 dedupe_key: "public-example"
 source: operator request 2026-06-24 — Plan 2 Revision: Ephemeral Atlassian MCP Jira Intake
 created: 2026-06-24
@@ -53,6 +53,10 @@ The initial Plan 2 JIRA poll path was direct REST and live verification exposed 
 - PASS: `git diff --check`
 - PASS: `GOCACHE=<validation-root> go test ./...`
 - PASS: `GOCACHE=<validation-root> make check`
+- PASS: `mars-harness release backfill-notes --repo . --check`
+- PASS: `mars-harness release publish-assets --repo . --version v0.65.0 --upload auto`
+- PASS: `mars-harness release verify-assets --dist dist/releases --version v0.65.0`
+- PASS: GitHub release mirror published for `v0.65.0`.
 - BLOCKED: `MARS_JIRA_LIVE=1 MARS_JIRA_CLOUD_ID=<cloud-id-or-empty-when-site-url-works> MARS_JIRA_SITE_URL=<jira-site-url> GOCACHE=<validation-root> go test -count=1 ./internal/jira -run TestLiveAtlassianMCPJiraIntake -v`
 - BLOCKED: `MARS_JIRA_LIVE=1 MARS_JIRA_MCP_ENDPOINT=https://mcp.atlassian.com/v1/mcp/authv2 MARS_JIRA_CLOUD_ID=<cloud-id-or-empty-when-site-url-works> MARS_JIRA_SITE_URL=<jira-site-url> GOCACHE=<validation-root> go test -count=1 ./internal/jira -run TestLiveAtlassianMCPJiraIntake -v`
 - PASS: manual `npx -y mcp-remote https://mcp.atlassian.com/v1/mcp/authv2` diagnostic with OAuth/SSO exposed `searchJiraIssuesUsingJql` and returned scoped DEMO issues carrying `example-required-label`.
