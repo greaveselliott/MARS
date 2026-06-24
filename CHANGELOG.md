@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.65.1] - 2026-06-24
+<!-- mars-harness-release: version=0.65.1 commit=b76d8f2b9512 -->
+
+### Impact
+- **plan:** Operators and future agents get clearer guidance because close plan 2 lifecycle loop.
+
+### Why
+- **plan:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **plan:** Changed close plan 2 lifecycle loop (b76d8f2).
+
+### Documentation
+- **plan:** Close plan 2 lifecycle loop (b76d8f2)
+
 ## [0.65.0] - 2026-06-24
 <!-- mars-harness-release: version=0.65.0 commit=06ada3562112 -->
 
