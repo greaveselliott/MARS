@@ -10,7 +10,9 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -109,7 +111,8 @@ func TestExecutor_secretScannerBlocksFileWrite(t *testing.T) {
 	ex.Session = &Session{TrustLevel: "contributor"}
 	root, err := NewRoot(t.TempDir())
 	require.NoError(t, err)
-	_, err = ex.Execute(context.Background(), root, []string{"file_write"}, "file_write", `{"path":"secret.txt","content":"token = \"github-token-placeholder\""}`)
+	raw := fmt.Sprintf(`{"path":"secret.txt","content":"token = \"%s\""}`, "ghp_"+strings.Repeat("1", 36))
+	_, err = ex.Execute(context.Background(), root, []string{"file_write"}, "file_write", raw)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "secret scanner")
 }

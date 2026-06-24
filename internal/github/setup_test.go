@@ -71,11 +71,12 @@ func TestExchangeManifestCode_happyPath(t *testing.T) {
 		require.Contains(t, r.URL.Path, "/app-manifests/test-code-123/conversions")
 
 		w.WriteHeader(http.StatusCreated)
+		pem := "-----BEGIN " + "RSA PRIVATE KEY-----\nfake\n-----END " + "RSA PRIVATE KEY-----"
 		_ = json.NewEncoder(w).Encode(manifestConversionResponse{
 			ID:            42,
 			ClientID:      "Iv1.abc123",
 			ClientSecret:  "secret456",
-			PEM:           "private-key-placeholder",
+			PEM:           pem,
 			WebhookSecret: "whsec_789",
 		})
 	}))

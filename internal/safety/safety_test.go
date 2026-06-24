@@ -119,7 +119,7 @@ func TestCheck_allowsDeleteWhenPermitted(t *testing.T) {
 }
 
 func TestScanForSecrets_detectsAWSKeys(t *testing.T) {
-	content := `aws_access_key_id = AKIA_EXAMPLE_REDACTED`
+	content := `aws_access_key_id = ` + "AKIA" + "IOSFODNN7EXAMPLE"
 	results := ScanForSecrets("config.yaml", content)
 	if len(results) == 0 {
 		t.Fatal("expected to detect AWS key")
@@ -131,9 +131,9 @@ func TestScanForSecrets_detectsAWSKeys(t *testing.T) {
 
 func TestScanForSecrets_detectsGitHubTokens(t *testing.T) {
 	tests := []string{
-		"token: github-token-placeholder",
-		"secret: github-token-placeholder",
-		"pat: github-token-placeholder",
+		"token: " + "ghp_" + "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh1234",
+		"secret: " + "gho_" + "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh1234",
+		"pat: " + "ghs_" + "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh1234",
 	}
 	for _, content := range tests {
 		results := ScanForSecrets("env.sh", content)
@@ -148,7 +148,9 @@ func TestScanForSecrets_detectsGitHubTokens(t *testing.T) {
 }
 
 func TestScanForSecrets_detectsPrivateKeys(t *testing.T) {
-	content := `private-key-placeholder`
+	content := `-----BEGIN ` + `RSA PRIVATE KEY-----
+MIIEowIBAAKCAQ...
+-----END RSA PRIVATE KEY-----`
 	results := ScanForSecrets("id_rsa", content)
 	if len(results) == 0 {
 		t.Fatal("expected to detect private key")
@@ -159,7 +161,7 @@ func TestScanForSecrets_detectsPrivateKeys(t *testing.T) {
 }
 
 func TestScanForSecrets_detectsPasswordInURL(t *testing.T) {
-	content := `DATABASE_URL=postgres://example-user:<password>@db.example.com/mydb`
+	content := `DATABASE_URL=postgres://admin:` + `s3cret` + `@db.example.com/mydb`
 	results := ScanForSecrets(".env", content)
 	if len(results) == 0 {
 		t.Fatal("expected to detect password in URL")
@@ -177,7 +179,7 @@ func TestScanForSecrets_detectsPasswordInURL(t *testing.T) {
 }
 
 func TestScanForSecrets_detectsGenericAPIKey(t *testing.T) {
-	content := `api_key = "sk_example_redacted"`
+	content := `api_key = "` + `sk_` + `live_abcdefghijklmnop"`
 	results := ScanForSecrets("config.toml", content)
 	if len(results) == 0 {
 		t.Fatal("expected to detect generic API key")
@@ -210,7 +212,7 @@ func main() {
 }
 
 func TestScanForSecrets_reportsCorrectLineNumber(t *testing.T) {
-	content := "line1\nline2\nAKIA_EXAMPLE_REDACTED\nline4"
+	content := "line1\nline2\n" + "AKIA" + "IOSFODNN7EXAMPLE" + "\nline4"
 	results := ScanForSecrets("test.txt", content)
 	if len(results) == 0 {
 		t.Fatal("expected to detect AWS key")
