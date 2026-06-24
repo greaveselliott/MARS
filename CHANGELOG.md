@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.65.7] - 2026-06-25
+<!-- mars-harness-release: version=0.65.7 commit=ca9605847c50 -->
+
+### Impact
+- **explainer:** Operators and future agents get clearer guidance because remove decision briefing section.
+
+### Why
+- **explainer:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **explainer:** Changed remove decision briefing section (ca96058).
+
+### Documentation
+- **explainer:** Remove decision briefing section (ca96058)
+
 ## [0.65.6] - 2026-06-24
 <!-- mars-harness-release: version=0.65.6 commit=4f72ab681a4c -->
 
