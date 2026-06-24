@@ -1,0 +1,732 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/product-specs/vision.md
+- docs/product-specs/product-surface.md
+- docs/design-docs/foundation-deployed-harness-architecture.md
+- docs/design-docs/delivery-operating-model.md
+- docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/self-reflective-telemetry.md
+- docs/design-docs/tools-glossary.md
+- docs/design-docs/guardrails.md
+- docs/design-docs/local-inference.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mars Harness | Company Software Factory Explainer</title>
+    <meta
+      name="description"
+      content="A company-facing explainer for Mars Harness, the local-first autonomous software factory and engineering operating ecosystem."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="topbar" aria-label="Primary">
+      <div class="brand-lockup" aria-label="Mars Harness">
+        <span class="brand-mark" aria-hidden="true">MH</span>
+        <span>
+          <strong>Mars Harness</strong>
+          <small>Software factory ecosystem</small>
+        </span>
+      </div>
+      <nav class="nav-links" aria-label="Page sections">
+        <a href="#why">Why</a>
+        <a href="#value">Value</a>
+        <a href="#system">System</a>
+        <a href="#operating-model">Operating Model</a>
+        <a href="#drilldown">Details</a>
+        <a href="#adoption">Adoption</a>
+        <a href="#glossary">Glossary</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobileNav">
+        Menu
+      </button>
+      <div class="readiness-pill" aria-label="Artifact status">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        External briefing artifact
+      </div>
+      <div class="mobile-nav" id="mobileNav">
+        <a href="#why">Why</a>
+        <a href="#value">Value</a>
+        <a href="#system">System</a>
+        <a href="#operating-model">Operating Model</a>
+        <a href="#drilldown">Details</a>
+        <a href="#adoption">Adoption</a>
+        <a href="#glossary">Glossary</a>
+      </div>
+      <div class="progress-bar" aria-hidden="true">
+        <span id="pageProgress"></span>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero section-observed" id="overview" aria-labelledby="hero-title">
+        <div class="hero-bg" role="img" aria-label="Abstract network of autonomous delivery signals"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <p class="eyebrow">Company adoption briefing</p>
+          <h1 id="hero-title">A local-first software factory for agentic engineering.</h1>
+          <p class="hero-copy">
+            Mars Harness gives a company a practical way to use engineering agents without losing
+            control of source code, release evidence, documentation truth, or safety boundaries.
+            It turns each agent run into repo-owned work that can be reviewed, scored, improved,
+            and stopped.
+          </p>
+          <div class="hero-actions" aria-label="Primary actions">
+            <a class="button primary" href="#value">Show the value</a>
+            <a class="button secondary" href="#drilldown">Drill into details</a>
+          </div>
+        </div>
+        <div class="hero-ribbon" aria-label="Core promises">
+          <span>Keep code local</span>
+          <span>Reduce review guesswork</span>
+          <span>Prevent stale docs</span>
+          <span>Trace every action</span>
+          <span>Turn failures into fixes</span>
+        </div>
+      </section>
+
+      <section class="section section-observed" id="why" aria-labelledby="why-title">
+        <div class="section-heading">
+          <p class="eyebrow">The company problem</p>
+          <h2 id="why-title">AI delivery work fails when the engineering system is not explicit.</h2>
+          <p>
+            Most companies can give an agent a ticket and a codebase. Fewer can give it a complete operating
+            system: priorities, boundaries, safety rules, evidence standards, release discipline, and feedback
+            loops that survive the chat.
+          </p>
+        </div>
+        <div class="problem-grid">
+          <article>
+            <span class="icon-square">01</span>
+            <h3>Work is not grounded in durable intent</h3>
+            <p>Plans, tickets, decisions, and review notes often live in disconnected tools or chat memory.</p>
+            <small>Cost: the next agent repeats discovery or ships the wrong slice.</small>
+          </article>
+          <article>
+            <span class="icon-square">02</span>
+            <h3>Documentation drifts from behavior</h3>
+            <p>Agents can change code faster than the surrounding docs, contracts, and release notes stay true.</p>
+            <small>Cost: reviewers lose the source of truth for what the system is supposed to do.</small>
+          </article>
+          <article>
+            <span class="icon-square">03</span>
+            <h3>Automation lacks a safety envelope</h3>
+            <p>Without hard guardrails, trust levels, and blast-radius checks, autonomy becomes a governance risk.</p>
+            <small>Cost: teams cannot safely move beyond demos and read-only experiments.</small>
+          </article>
+          <article>
+            <span class="icon-square">04</span>
+            <h3>Telemetry is passive</h3>
+            <p>Failures, human follow-up, reverts, no-ops, and slow loops are collected but rarely routed into improvement.</p>
+            <small>Cost: the same class of failure burns time again next week.</small>
+          </article>
+        </div>
+      </section>
+
+      <section class="section section-observed" id="value" aria-labelledby="value-title">
+        <div class="section-heading">
+          <p class="eyebrow">Value lens</p>
+          <h2 id="value-title">The point is not "agents"; the point is higher-trust delivery.</h2>
+          <p>
+            Mars Harness is valuable when it reduces the hidden cost of agentic engineering: unclear
+            intent, unsafe mutation, unverifiable completion, stale documentation, and repeated human rescue.
+          </p>
+        </div>
+        <div class="value-outcome-grid">
+          <article>
+            <span>Delivery leadership</span>
+            <h3>Know whether autonomous work is actually moving product outcomes.</h3>
+            <p>
+              Goals, BDD feature contracts, active plans, tickets, and evidence connect agent work to
+              shipped scenarios instead of activity reports.
+            </p>
+            <ul>
+              <li>Measure: scenario pass rate, ticket cycle time, false-done count.</li>
+              <li>Ask in pilot: did the agent finish a valuable slice or just produce scaffolding?</li>
+            </ul>
+          </article>
+          <article>
+            <span>Engineering managers</span>
+            <h3>Reduce review ambiguity and handoff waste.</h3>
+            <p>
+              Every run leaves durable state: what was attempted, which docs constrained it, what tests
+              passed, what failed, and who owns the next action.
+            </p>
+            <ul>
+              <li>Measure: reviewer rework requests, missing evidence, repeated discovery.</li>
+              <li>Ask in pilot: could another engineer resume without reading the chat?</li>
+            </ul>
+          </article>
+          <article>
+            <span>Security and platform</span>
+            <h3>Keep autonomy inside company-controlled boundaries.</h3>
+            <p>
+              Local inference, explicit tool allowlists, trust levels, guardrails, secret scanning,
+              and blast-radius checks make mutation governable.
+            </p>
+            <ul>
+              <li>Measure: policy blocks, secret-scan findings, unapproved network dependency.</li>
+              <li>Ask in pilot: did safety block bad behavior before code landed?</li>
+            </ul>
+          </article>
+          <article>
+            <span>Operations and finance</span>
+            <h3>Avoid opaque vendor spend and hidden learning loops.</h3>
+            <p>
+              The default path uses local open models and repo-local telemetry. Optional integrations
+              stay explicit, and quality signals are visible as artifacts.
+            </p>
+            <ul>
+              <li>Measure: local run cost, intervention trend, repeated failure categories.</li>
+              <li>Ask in pilot: did each failure produce a reusable improvement target?</li>
+            </ul>
+          </article>
+        </div>
+        <div class="metric-strip" aria-label="Pilot measurement examples">
+          <div><strong>Lead time</strong><span>Brief to evidence-backed ticket completion</span></div>
+          <div><strong>Containment</strong><span>Blocked unsafe operations before mutation</span></div>
+          <div><strong>Truth</strong><span>Completion claims backed by tests, traces, docs, release notes</span></div>
+          <div><strong>Learning</strong><span>Repeat failures routed to prompts, skills, guardrails, tools, or model config</span></div>
+        </div>
+      </section>
+
+      <section class="band section-observed" id="solution" aria-labelledby="solution-title">
+        <div class="split">
+          <div>
+            <p class="eyebrow">The solution</p>
+            <h2 id="solution-title">Mars Harness packages the operating model with the runtime.</h2>
+            <p>
+              The binary runs the local automation. The harness docs tell agents how to operate safely.
+              Generated target repositories receive a compact version of the same discipline, so delivery
+              behavior is consistent across foundation work and product work.
+            </p>
+          </div>
+          <div class="value-stack" aria-label="Mars Harness value stack">
+            <div><strong>Data control</strong><span>Open-weight models run locally by default; optional external integrations are explicit.</span></div>
+            <div><strong>Completion truth</strong><span>Done means BDD scenario evidence, docs checked, release state updated, and traceable handoff.</span></div>
+            <div><strong>Governed mutation</strong><span>Roles, trust, tool allowlists, guardrails, and blast-radius limits constrain what agents can change.</span></div>
+            <div><strong>Reusable learning</strong><span>Telemetry becomes improvement work instead of another tribal-memory note.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-observed" id="system" aria-labelledby="system-title">
+        <div class="section-heading">
+          <p class="eyebrow">System map</p>
+          <h2 id="system-title">Four surfaces make the boundary clear.</h2>
+          <p>
+            The most important adoption concept is the separation between the software factory,
+            the runtime binary, the generated target harness, and the product being built.
+          </p>
+        </div>
+
+        <div class="system-map" aria-label="Foundation to target system map">
+          <button class="surface-card is-active" type="button" data-surface="foundation">
+            <span>01</span>
+            <strong>Foundation harness</strong>
+            <small>Source doctrine and product system</small>
+          </button>
+          <button class="surface-card" type="button" data-surface="runtime">
+            <span>02</span>
+            <strong>Runtime substrate</strong>
+            <small>Single Go binary and SQLite execution layer</small>
+          </button>
+          <button class="surface-card" type="button" data-surface="deployed">
+            <span>03</span>
+            <strong>Deployed harness</strong>
+            <small>Generated agent operating system inside a target repo</small>
+          </button>
+          <button class="surface-card" type="button" data-surface="target">
+            <span>04</span>
+            <strong>Target project</strong>
+            <small>The product code, tests, and release value</small>
+          </button>
+        </div>
+
+        <article class="surface-detail" id="surfaceDetail" aria-live="polite">
+          <p class="eyebrow">Selected surface</p>
+          <h3>Foundation harness</h3>
+          <p>
+            The Mars Harness source repository owns the operating doctrine, generated target defaults,
+            release discipline, product specifications, role registry, and foundation validation evidence.
+          </p>
+          <ul>
+            <li>Owns source operating model and generated target doctrine.</li>
+            <li>Classifies findings as foundation-owned, deployed-owned, mixed, or evidence-only.</li>
+            <li>Does not become the target of its own agents during active target runs.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="section section-observed" id="operating-model" aria-labelledby="op-title">
+        <div class="section-heading">
+          <p class="eyebrow">Operating model</p>
+          <h2 id="op-title">Intent becomes shipped work through an evidence loop.</h2>
+          <p>
+            Mars Harness is not only "agent runs code." It is an operating model that requires
+            feature completeness, step-by-step business logic, ownership, validation, release state,
+            and feedback to remain durable.
+          </p>
+        </div>
+
+        <div class="flow-rail" aria-label="Delivery flow from goal to improvement">
+          <div class="flow-step">
+            <span>1</span>
+            <strong>Goals</strong>
+            <small>Define outcomes and tradeoffs.</small>
+          </div>
+          <div class="flow-step">
+            <span>2</span>
+            <strong>BDD contracts</strong>
+            <small>Define behavior and done.</small>
+          </div>
+          <div class="flow-step">
+            <span>3</span>
+            <strong>Active plan</strong>
+            <small>Ranks failing scenarios.</small>
+          </div>
+          <div class="flow-step">
+            <span>4</span>
+            <strong>Tickets</strong>
+            <small>Scope one walking-skeleton slice.</small>
+          </div>
+          <div class="flow-step">
+            <span>5</span>
+            <strong>Roles execute</strong>
+            <small>Engineer, QA, Dogfood, Release.</small>
+          </div>
+          <div class="flow-step">
+            <span>6</span>
+            <strong>Evidence</strong>
+            <small>Tests, traces, commits, releases.</small>
+          </div>
+          <div class="flow-step">
+            <span>7</span>
+            <strong>Telemetry</strong>
+            <small>Scores and failures improve the system.</small>
+          </div>
+        </div>
+
+        <div class="callout-grid">
+          <article class="callout">
+            <h3>BDD defines done</h3>
+            <p>
+              Feature contracts document business logic, workflow branches, state transitions,
+              validations, permissions, scoring behavior, routing rules, and user-visible outcomes.
+            </p>
+          </article>
+          <article class="callout">
+            <h3>Walking skeleton defines the slice</h3>
+            <p>
+              Agents implement the thinnest real end-to-end path that proves the next failing scenario,
+              rather than widening scope or shipping scaffold-only work.
+            </p>
+          </article>
+          <article class="callout">
+            <h3>Evidence closes the loop</h3>
+            <p>
+              Completion claims require repo-visible proof: tests, dogfood evidence, quality scores,
+              traces, release notes, and clear ownership of any remaining blocker.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="band section-observed" id="concepts" aria-labelledby="concepts-title">
+        <div class="section-heading">
+          <p class="eyebrow">Concept library</p>
+          <h2 id="concepts-title">The ecosystem is a stack, not a single feature.</h2>
+          <p>
+            Use the cards below as the first-pass mental model. Each concept starts with the executive
+            meaning, then expands into the engineering behavior that makes it real.
+          </p>
+        </div>
+
+        <div class="concept-grid">
+          <article class="concept-card">
+            <button class="concept-toggle" type="button" aria-expanded="false">
+              <span>Terminology</span>
+              <strong>Shared language for agents and humans</strong>
+            </button>
+            <div class="concept-body">
+              <p>
+                The glossary prevents teams from blurring the lines between Mars Harness source work,
+                runtime defects, generated target doctrine, and product backlog work.
+              </p>
+              <p class="detail">
+                Key terms include foundation harness, runtime substrate, deployed harness, target project,
+                mirrored doctrine, universal tool surface, skills, and failure ownership classification.
+              </p>
+            </div>
+          </article>
+
+          <article class="concept-card">
+            <button class="concept-toggle" type="button" aria-expanded="false">
+              <span>DocSync</span>
+              <strong>No stale documentation as an enforceable contract</strong>
+            </button>
+            <div class="concept-body">
+              <p>
+                Source files declare which docs constrain them. Before a code change is complete,
+                agents read those docs, update or verify them, then run the audit.
+              </p>
+              <p class="detail">
+                DocSync connects code, BDD contracts, design decisions, product specs, role guidance,
+                generated target defaults, and release evidence through top-of-file metadata.
+              </p>
+            </div>
+          </article>
+
+          <article class="concept-card">
+            <button class="concept-toggle" type="button" aria-expanded="false">
+              <span>Telemetry</span>
+              <strong>Failures become improvement signals</strong>
+            </button>
+            <div class="concept-body">
+              <p>
+                The harness records terminal outcomes, guardrail blocks, no-ops, timeouts, human follow-up,
+                trace pace, dogfood findings, scores, and stale work.
+              </p>
+              <p class="detail">
+                Triage routes patterns to prompt, skill, process, guardrail, context, inference, manifest,
+                tool policy, or foundation telemetry before creating tickets.
+              </p>
+            </div>
+          </article>
+
+          <article class="concept-card">
+            <button class="concept-toggle" type="button" aria-expanded="false">
+              <span>Roles</span>
+              <strong>Explicit responsibilities, not one overloaded agent</strong>
+            </button>
+            <div class="concept-body">
+              <p>
+                Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, and Orchestrator domains
+                group memory and responsibility while executable manifest roles remain explicit.
+              </p>
+              <p class="detail">
+                CEO owns goals, COO owns plans and BDD contracts, CTO owns technical tickets,
+                Engineer implements, QA reviews, Dogfood validates, Release Manager versions, and Janitor keeps state truthful.
+              </p>
+            </div>
+          </article>
+
+          <article class="concept-card">
+            <button class="concept-toggle" type="button" aria-expanded="false">
+              <span>Tools and skills</span>
+              <strong>Deterministic authority separated from reusable guidance</strong>
+            </button>
+            <div class="concept-body">
+              <p>
+                Tools mutate or inspect state through allowlists and trust policy. Skills teach compact
+                workflows but do not grant authority.
+              </p>
+              <p class="detail">
+                The same universal tool surface is exposed through role runs, `mars-harness tools run`,
+                and MCP so external AI clients can use governed operations without shell folklore.
+              </p>
+            </div>
+          </article>
+
+          <article class="concept-card">
+            <button class="concept-toggle" type="button" aria-expanded="false">
+              <span>Safety</span>
+              <strong>Autonomy constrained by policy and blast radius</strong>
+            </button>
+            <div class="concept-body">
+              <p>
+                Observer, contributor, and autonomous trust levels determine what a role may do.
+                Guardrails block unsafe writes, destructive commands, secret leaks, and misleading completion.
+              </p>
+              <p class="detail">
+                Policy is enforced at tool execution, not only in prompts. Workspace hygiene, dependency sync,
+                ticket lifecycle, validation, and DocSync gates keep mutations bounded and auditable.
+              </p>
+            </div>
+          </article>
+
+          <article class="concept-card">
+            <button class="concept-toggle" type="button" aria-expanded="false">
+              <span>Local inference</span>
+              <strong>Default delivery without source-code exfiltration</strong>
+            </button>
+            <div class="concept-body">
+              <p>
+                The harness manages llama.cpp as a subprocess, stores model weights outside the repo,
+                detects hardware, and routes roles by model tier.
+              </p>
+              <p class="detail">
+                OpenAI-compatible endpoints and Ollama overrides can be evaluated explicitly, but default
+                model promotion requires harness-specific benchmark evidence and pinned artifacts.
+              </p>
+            </div>
+          </article>
+
+          <article class="concept-card">
+            <button class="concept-toggle" type="button" aria-expanded="false">
+              <span>Release and update</span>
+              <strong>Versioned evidence follows semantic work</strong>
+            </button>
+            <div class="concept-body">
+              <p>
+                Non-release semantic commits are followed by generated version and changelog updates.
+                Source releases build and verify local assets before optional GitHub mirroring.
+              </p>
+              <p class="detail">
+                Target repos inherit release-note discipline, while Mars Harness source has extra binary
+                publication rules for `mars-harness` assets.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section section-observed" id="drilldown" aria-labelledby="drilldown-title">
+        <div class="section-heading">
+          <p class="eyebrow">Drill-down workbench</p>
+          <h2 id="drilldown-title">Click a capability to see the problem, value, mechanism, and proof.</h2>
+          <p>
+            This is the section for the skeptical reader. Each drill-down translates a Mars Harness concept
+            into a company problem it solves, the concrete operating mechanism, and how to test whether it
+            is worth adopting.
+          </p>
+        </div>
+
+        <div class="drilldown-shell">
+          <div class="drilldown-menu" aria-label="Detail topics">
+            <button class="drilldown-tab is-active" type="button" data-drill="operating">
+              <span>01</span>
+              BDD operating model
+            </button>
+            <button class="drilldown-tab" type="button" data-drill="docsync">
+              <span>02</span>
+              DocSync
+            </button>
+            <button class="drilldown-tab" type="button" data-drill="safety">
+              <span>03</span>
+              Safety and trust
+            </button>
+            <button class="drilldown-tab" type="button" data-drill="telemetry">
+              <span>04</span>
+              Telemetry and scoring
+            </button>
+            <button class="drilldown-tab" type="button" data-drill="local">
+              <span>05</span>
+              Local inference
+            </button>
+            <button class="drilldown-tab" type="button" data-drill="tools">
+              <span>06</span>
+              Tools, skills, MCP
+            </button>
+          </div>
+
+          <article class="drilldown-panel" id="drilldownPanel" aria-live="polite">
+            <div class="drilldown-panel-header">
+              <p class="eyebrow">Selected drill-down</p>
+              <h3>BDD operating model</h3>
+              <p>
+                Agent work is valuable only when it proves an intended product behavior. Mars Harness
+                turns goals into BDD contracts, plans, tickets, validation evidence, and release notes.
+              </p>
+            </div>
+            <div class="drilldown-columns">
+              <div>
+                <h4>Problem it solves</h4>
+                <p>Agents can complete tasks that look busy but do not ship the user-visible capability leadership asked for.</p>
+              </div>
+              <div>
+                <h4>Company value</h4>
+                <p>Delivery leaders can ask whether a scenario passed, not whether an agent produced a large diff.</p>
+              </div>
+              <div>
+                <h4>How it works</h4>
+                <p>Goals define outcomes, BDD contracts define behavior, the active plan ranks failing scenarios, and tickets implement the next walking-skeleton slice.</p>
+              </div>
+              <div>
+                <h4>Proof in a pilot</h4>
+                <p>Pick one product slice and require the final claim to cite a BDD scenario, validation command, ticket state, and release-note entry.</p>
+              </div>
+            </div>
+            <div class="drilldown-proof">
+              <strong>Watch for:</strong>
+              <span>False-done tickets, scenario evidence gaps, and enabler work described as shipped product value.</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section section-observed" id="telemetry" aria-labelledby="telemetry-title">
+        <div class="split">
+          <div>
+            <p class="eyebrow">Self-reflective telemetry</p>
+            <h2 id="telemetry-title">The factory learns from the work it performs.</h2>
+            <p>
+              Scores are not vanity metrics. They are control signals that tell the harness where to inspect:
+              prompt quality, guardrail calibration, missing skills, tool policy, model configuration,
+              stale ticket flow, or generated target guidance.
+            </p>
+            <ul class="check-list">
+              <li>Raw telemetry remains local by default in per-repo SQLite.</li>
+              <li>Anonymous foundation telemetry is opt-in and aggregate-only.</li>
+              <li>Target-owned failures become target work; foundation-owned failures stay foundation evidence.</li>
+              <li>Quality scores export to `docs/QUALITY_SCORE.md` so agents can see current readiness.</li>
+            </ul>
+          </div>
+          <div class="signal-panel">
+            <canvas id="signalCanvas" width="720" height="520" aria-label="Animated telemetry flow diagram"></canvas>
+            <div class="signal-legend">
+              <span><i class="legend trace"></i>Trace</span>
+              <span><i class="legend score"></i>Score</span>
+              <span><i class="legend improve"></i>Improvement target</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-observed" id="target" aria-labelledby="target-title">
+        <div class="section-heading">
+          <p class="eyebrow">What a target repo receives</p>
+          <h2 id="target-title">A deployed harness is more than a manifest.</h2>
+          <p>
+            `mars-harness init` creates a repo-owned operating surface so agents, humans, and external
+            AI clients all know how to plan, execute, review, validate, release, and improve the product.
+          </p>
+        </div>
+        <div class="repo-layout" aria-label="Generated target harness layout">
+          <div class="file-tree">
+            <div><span>AGENTS.md</span><small>first-read map</small></div>
+            <div><span>.harness/manifest.yaml</span><small>roles, tools, triggers, models</small></div>
+            <div><span>.harness/roles/</span><small>role prompts</small></div>
+            <div><span>.harness/guardrails/</span><small>policy inputs</small></div>
+            <div><span>.harness/skills/</span><small>reusable workflows</small></div>
+            <div><span>.harness/knowledge/</span><small>context routing</small></div>
+            <div><span>docs/goals/</span><small>active and superseded goals</small></div>
+            <div><span>docs/features/</span><small>BDD contracts</small></div>
+            <div><span>docs/exec-plans/</span><small>one active plan</small></div>
+            <div><span>docs/tickets/</span><small>backlog to done lifecycle</small></div>
+            <div><span>docs/QUALITY_SCORE.md</span><small>repo-visible grade</small></div>
+            <div><span>VERSION + CHANGELOG.md</span><small>release state</small></div>
+          </div>
+          <div class="repo-note">
+            <h3>Important ownership rule</h3>
+            <p>
+              Existing target files remain user-owned. `upgrade` fills missing defaults without overwriting
+              deliberate local policy. Source-only Mars Harness release mechanics stay in the foundation harness.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="band section-observed" id="adoption" aria-labelledby="adoption-title">
+        <div class="section-heading">
+          <p class="eyebrow">Adoption proposal</p>
+          <h2 id="adoption-title">Start with a controlled pilot, not broad autonomy.</h2>
+          <p>
+            The adoption path should prove value, safety, and fit against one representative repository before
+            wider rollout. The goal is to make the company software factory more explicit while preserving
+            local governance.
+          </p>
+        </div>
+        <div class="timeline">
+          <article>
+            <span>Phase 1</span>
+            <h3>Orientation and safety review</h3>
+            <p>Map company constraints to Mars Harness tenets, trust levels, guardrails, source control policy, and telemetry boundaries.</p>
+          </article>
+          <article>
+            <span>Phase 2</span>
+            <h3>Read-only target assessment</h3>
+            <p>Run doctor, dry-run role context, scan output, generated harness review, and DocSync fit without mutating product code.</p>
+          </article>
+          <article>
+            <span>Phase 3</span>
+            <h3>Contributor pilot</h3>
+            <p>Select one non-critical repo and one bounded feature or repair path. Require human-triggered runs, review, and visible evidence.</p>
+          </article>
+          <article>
+            <span>Phase 4</span>
+            <h3>Operationalize learning</h3>
+            <p>Evaluate scores, guardrail blocks, human follow-up, release notes, and team feedback before expanding roles or autonomy.</p>
+          </article>
+        </div>
+        <div class="pilot-scorecard" aria-label="Pilot success scorecard">
+          <div>
+            <strong>Pilot passes when</strong>
+            <p>One bounded product slice moves from brief to evidence-backed completion with no unreviewed repo mutation.</p>
+          </div>
+          <div>
+            <strong>Expand when</strong>
+            <p>Reviewers can trust the evidence trail, safety blocks are mostly correct, and repeated failures become specific improvement targets.</p>
+          </div>
+          <div>
+            <strong>Pause when</strong>
+            <p>The agent repeatedly claims false done, bypasses policy, needs constant human rescue, or creates target backlog noise from foundation-owned defects.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-observed" id="glossary" aria-labelledby="glossary-title">
+        <div class="section-heading compact">
+          <p class="eyebrow">Glossary</p>
+          <h2 id="glossary-title">Search the core concepts.</h2>
+          <p>
+            These definitions are compressed for briefing use. The canonical wording remains in the Mars Harness docs.
+          </p>
+        </div>
+        <div class="glossary-tools">
+          <label for="glossarySearch">Search glossary</label>
+          <input id="glossarySearch" type="search" placeholder="Try DocSync, telemetry, deployed, trust...">
+          <div class="filter-row" aria-label="Glossary filters">
+            <button type="button" class="filter-chip is-active" data-filter="all">All</button>
+            <button type="button" class="filter-chip" data-filter="architecture">Architecture</button>
+            <button type="button" class="filter-chip" data-filter="delivery">Delivery</button>
+            <button type="button" class="filter-chip" data-filter="governance">Governance</button>
+            <button type="button" class="filter-chip" data-filter="learning">Learning</button>
+          </div>
+        </div>
+        <div class="glossary-list" id="glossaryList" aria-live="polite"></div>
+      </section>
+
+      <section class="section source-notes section-observed" id="sources" aria-labelledby="sources-title">
+        <div class="section-heading compact">
+          <p class="eyebrow">Source material</p>
+          <h2 id="sources-title">Canonical docs used for this briefing.</h2>
+          <p>
+            This app is an external artifact. The paths below name the Mars Harness repository documents
+            used as source material; the app does not need them to render.
+          </p>
+        </div>
+        <div class="source-grid">
+          <code>README.md</code>
+          <code>ARCHITECTURE.md</code>
+          <code>docs/product-specs/vision.md</code>
+          <code>docs/product-specs/product-surface.md</code>
+          <code>docs/design-docs/harness-glossary.md</code>
+          <code>docs/design-docs/foundation-deployed-harness-architecture.md</code>
+          <code>docs/design-docs/delivery-operating-model.md</code>
+          <code>docs/design-docs/documentation-sync-architecture.md</code>
+          <code>docs/design-docs/self-reflective-telemetry.md</code>
+          <code>docs/design-docs/tools-glossary.md</code>
+          <code>docs/design-docs/guardrails.md</code>
+          <code>docs/design-docs/local-inference.md</code>
+          <code>docs/design-docs/release-versioning.md</code>
+          <code>docs/roles/ROLES.md</code>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Mars Harness company explainer. External, portable, static artifact.</p>
+      <a href="#overview">Back to top</a>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>

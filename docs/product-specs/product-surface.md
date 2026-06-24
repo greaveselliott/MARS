@@ -27,6 +27,15 @@ changes the dashboard prerequisite model by requiring an external Node.js
 `24.x` and `pnpm@11.1.1` sidecar while preserving Go as the authoritative
 gateway, auth boundary, and runtime state owner.
 
+Company-facing explainer status: the repo includes a static adoption explainer
+under `docs/company-harness-ecosystem/`, published to the repository GitHub
+Pages site by `.github/workflows/company-explainer-pages.yml`. The explainer is
+documentation, not runtime infrastructure: it presents the value case,
+foundation/deployed boundary, operating model, DocSync, telemetry, safety, and
+pilot adoption path for mixed leadership and engineering audiences. The source
+page remains self-contained with local assets only, so it can be reviewed from
+the repo and deployed without a frontend build step.
+
 ## CLI Contract
 
 | Command | Status | Product behavior |
