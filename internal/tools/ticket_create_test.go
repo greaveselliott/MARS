@@ -225,7 +225,7 @@ func TestTicketCreate_interventionDebtWritesMetadata(t *testing.T) {
 	assert.Contains(t, text, "kind: intervention-debt")
 	assert.Contains(t, text, "work_type: intervention-debt")
 	assert.Contains(t, text, "end_to_end_evidence: not_applicable")
-	assert.Contains(t, text, `dedupe_key: "public-example"`)
+	assert.Contains(t, text, `dedupe_key: "intervention-debt:repo-1:engineer:context:context_overflow:24h"`)
 	assert.Contains(t, text, "metadata:")
 	assert.Contains(t, text, `  role: "engineer"`)
 	assert.Contains(t, text, `  severity: "high"`)
