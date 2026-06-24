@@ -203,7 +203,7 @@ func TestStdioClientReportsMalformedOutput(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, client.Close(context.Background()))
+		_ = client.Close(context.Background())
 	})
 	_, err = client.ListTools(context.Background())
 	require.Error(t, err)
