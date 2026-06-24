@@ -49,7 +49,6 @@ docs:
         <a href="#why">Why</a>
         <a href="#value">Value</a>
         <a href="#system">System</a>
-        <a href="#decisions">Decisions</a>
         <a href="#operating-model">Operating Model</a>
         <a href="#drilldown">Details</a>
         <a href="#adoption">Adoption</a>
@@ -66,7 +65,6 @@ docs:
         <a href="#why">Why</a>
         <a href="#value">Value</a>
         <a href="#system">System</a>
-        <a href="#decisions">Decisions</a>
         <a href="#operating-model">Operating Model</a>
         <a href="#drilldown">Details</a>
         <a href="#adoption">Adoption</a>
@@ -272,138 +270,6 @@ docs:
             <li>Does not become the target of its own agents during active target runs.</li>
           </ul>
         </article>
-      </section>
-
-      <section class="section section-observed" id="decisions" aria-labelledby="decisions-title">
-        <div class="section-heading">
-          <p class="eyebrow">Design decisions</p>
-          <h2 id="decisions-title">Why the system is shaped this way.</h2>
-          <p>
-            Mars Harness makes opinionated choices so autonomy stays installable, reviewable,
-            local, and bounded. This section explains the problem behind each choice, what the
-            system does, what it costs, and how to test whether the choice is right for your use case.
-          </p>
-        </div>
-
-        <div class="decision-lens-grid" aria-label="How to read design decisions">
-          <article>
-            <span>01</span>
-            <h3>Problem</h3>
-            <p>What breaks in ordinary agent workflows if this decision does not exist.</p>
-          </article>
-          <article>
-            <span>02</span>
-            <h3>Choice</h3>
-            <p>The default Mars Harness takes, and the value that default is meant to protect.</p>
-          </article>
-          <article>
-            <span>03</span>
-            <h3>Evidence</h3>
-            <p>The pilot signal that proves the choice is working, or shows when it should change.</p>
-          </article>
-        </div>
-
-        <div class="decision-shell">
-          <div class="decision-menu" aria-label="Decision clusters">
-            <button class="decision-tab is-active" type="button" data-decision="distribution">
-              <span>AD-001 AD-007 AD-011</span>
-              <strong>Single-binary default</strong>
-              <small>No platform stack before the first useful run</small>
-            </button>
-            <button class="decision-tab" type="button" data-decision="boundary">
-              <span>AD-139 AD-252</span>
-              <strong>Foundation vs deployed boundary</strong>
-              <small>Know whether the fix belongs in source or target</small>
-            </button>
-            <button class="decision-tab" type="button" data-decision="state">
-              <span>AD-009 AD-010 AD-029</span>
-              <strong>SQLite and repo isolation</strong>
-              <small>Recoverable state without Postgres or Redis</small>
-            </button>
-            <button class="decision-tab" type="button" data-decision="operating">
-              <span>AD-097 AD-108 AD-138</span>
-              <strong>BDD-led delivery loop</strong>
-              <small>Done means behavior proved</small>
-            </button>
-            <button class="decision-tab" type="button" data-decision="docsync">
-              <span>AD-098 AD-101 AD-102</span>
-              <strong>DocSync</strong>
-              <small>Docs stay tied to changed code</small>
-            </button>
-            <button class="decision-tab" type="button" data-decision="safety">
-              <span>AD-012 AD-107 AD-115</span>
-              <strong>Deterministic guardrails first</strong>
-              <small>Block obvious risk before mutation</small>
-            </button>
-            <button class="decision-tab" type="button" data-decision="telemetry">
-              <span>AD-037 AD-038 AD-065</span>
-              <strong>Telemetry into improvement</strong>
-              <small>Failures become owned improvement work</small>
-            </button>
-            <button class="decision-tab" type="button" data-decision="tools">
-              <span>AD-022 AD-077 AD-103</span>
-              <strong>Universal tool surface</strong>
-              <small>Same governed actions across clients</small>
-            </button>
-            <button class="decision-tab" type="button" data-decision="release">
-              <span>AD-049 AD-056 AD-078</span>
-              <strong>Versioned release evidence</strong>
-              <small>Changes ship with versioned evidence</small>
-            </button>
-            <button class="decision-tab" type="button" data-decision="dashboard">
-              <span>AD-011 AD-156 AD-279</span>
-              <strong>Embedded dashboard, optional sidecar</strong>
-              <small>Offline core, optional richer UI</small>
-            </button>
-          </div>
-
-          <article class="decision-panel" id="decisionPanel" aria-live="polite">
-            <div class="decision-panel-header">
-              <p class="eyebrow">Decision cluster</p>
-              <h3>Single-binary default</h3>
-              <p>
-                The first adoption risk is setup drag. Mars Harness starts as one Go binary with
-                local state, embedded UI assets, and a supervised inference subprocess.
-              </p>
-              <div class="decision-refs" aria-label="Architecture decision references">
-                <span>AD-001</span>
-                <span>AD-007</span>
-                <span>AD-011</span>
-                <span>AD-279</span>
-              </div>
-            </div>
-            <div class="decision-columns">
-              <div>
-                <h4>What breaks without it</h4>
-                <p>A pilot becomes a platform project before anyone sees whether the agent loop is useful.</p>
-              </div>
-              <div>
-                <h4>Choice</h4>
-                <p>Keep the default path local, small, and runnable without SaaS, Node, Redis, Postgres, or hosted infrastructure.</p>
-              </div>
-              <div>
-                <h4>Value</h4>
-                <p>Teams can trial the factory on controlled hardware and judge the work before buying into an operating platform.</p>
-              </div>
-              <div>
-                <h4>Cost</h4>
-                <p>The default UI stays conservative. Richer frontend work must justify itself as an explicit sidecar.</p>
-              </div>
-              <div>
-                <h4>Pilot check</h4>
-                <p>Install on a clean machine, run setup and doctor, start a target, and verify no hidden service dependency appears.</p>
-              </div>
-              <div>
-                <h4>Revisit when</h4>
-                <p>Install friction is no longer the adoption bottleneck, or a sidecar proves clear operator value without weakening the core path.</p>
-              </div>
-              <div>
-                <h4>Source docs</h4>
-                <p>implementation-language.md, local-inference.md, dashboard.md</p>
-              </div>
-            </div>
-          </article>
-        </div>
       </section>
 
       <section class="section section-observed" id="operating-model" aria-labelledby="op-title">

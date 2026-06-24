@@ -348,8 +348,6 @@ h3 {
 .surface-detail,
 .flow-rail,
 .callout-grid,
-.decision-lens-grid,
-.decision-shell,
 .concept-grid,
 .drilldown-shell,
 .repo-layout,
@@ -650,130 +648,6 @@ h3 {
 
 .callout {
   padding: 24px;
-}
-
-.decision-lens-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.decision-lens-grid article {
-  min-height: 210px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--paper-strong);
-  padding: 22px;
-  box-shadow: var(--shadow);
-}
-
-.decision-lens-grid span {
-  display: inline-block;
-  margin-bottom: 28px;
-  color: var(--teal);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.decision-lens-grid p,
-.decision-panel-header p:not(.eyebrow),
-.decision-columns p {
-  color: var(--ink-soft);
-}
-
-.decision-shell {
-  display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
-}
-
-.decision-menu {
-  position: sticky;
-  top: 96px;
-  display: grid;
-  gap: 8px;
-}
-
-.decision-tab {
-  display: grid;
-  gap: 7px;
-  min-height: 102px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--paper-strong);
-  color: var(--ink);
-  padding: 14px;
-  text-align: left;
-}
-
-.decision-tab span,
-.decision-refs span {
-  color: var(--copper);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.decision-tab small {
-  color: var(--ink-soft);
-}
-
-.decision-tab:hover,
-.decision-tab.is-active {
-  border-color: var(--teal);
-  background: #eef8f5;
-  box-shadow: 0 14px 32px rgba(15, 140, 130, 0.13);
-}
-
-.decision-panel {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--paper-strong);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-
-.decision-panel-header {
-  padding: 28px 28px 20px;
-}
-
-.decision-refs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 18px;
-}
-
-.decision-refs span {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #fff9ec;
-  padding: 5px 8px;
-}
-
-.decision-columns {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1px;
-  background: var(--line);
-  border-top: 1px solid var(--line);
-}
-
-.decision-columns div {
-  min-height: 172px;
-  background: var(--paper-strong);
-  padding: 24px;
-}
-
-.decision-columns h4 {
-  margin: 0 0 12px;
-  color: var(--teal);
-  font-size: 13px;
-  text-transform: uppercase;
 }
 
 .concept-grid {
@@ -1302,7 +1176,6 @@ h3 {
   .problem-grid,
   .value-outcome-grid,
   .system-map,
-  .decision-lens-grid,
   .concept-grid,
   .timeline {
     grid-template-columns: repeat(2, 1fr);
@@ -1318,15 +1191,6 @@ h3 {
 
   .drilldown-shell {
     grid-template-columns: 1fr;
-  }
-
-  .decision-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .decision-menu {
-    position: static;
-    grid-template-columns: repeat(2, 1fr);
   }
 
   .drilldown-menu {
@@ -1397,7 +1261,6 @@ h3 {
   .value-outcome-grid,
   .system-map,
   .callout-grid,
-  .decision-lens-grid,
   .concept-grid,
   .timeline,
   .metric-strip,
@@ -1408,8 +1271,6 @@ h3 {
     grid-template-columns: 1fr;
   }
 
-  .decision-menu,
-  .decision-columns,
   .drilldown-menu,
   .drilldown-columns {
     grid-template-columns: 1fr;
