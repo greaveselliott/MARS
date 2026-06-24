@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.65.4] - 2026-06-24
+<!-- mars-harness-release: version=0.65.4 commit=673237cb0d14 -->
+
+### Impact
+- **company-explainer:** Operators and future agents get clearer guidance because publish Pages from docs root.
+
+### Why
+- **company-explainer:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **company-explainer:** Changed publish Pages from docs root (673237c).
+
+### Documentation
+- **company-explainer:** Publish Pages from docs root (673237c)
+
 ## [0.65.3] - 2026-06-24
 <!-- mars-harness-release: version=0.65.3 commit=755e17b7d38f -->
 
