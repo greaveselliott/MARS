@@ -247,7 +247,7 @@ docs:
     local: {
       title: "Local inference",
       summary:
-        "The default operating path keeps source code on company-controlled hardware while still allowing explicit model/provider evaluation.",
+        "The default operating path keeps source code on operator-controlled hardware while still allowing explicit model/provider evaluation.",
       problem:
         "Cloud-only agent systems can create data-exposure concerns, variable API costs, and dependence on opaque external model behavior.",
       value:
@@ -538,7 +538,7 @@ docs:
         </div>
         <div class="decision-columns">
           <div>
-            <h4>Company value</h4>
+            <h4>Adoption value</h4>
             <p>${data.value}</p>
           </div>
           <div>
@@ -585,7 +585,7 @@ docs:
             <p>${data.problem}</p>
           </div>
           <div>
-            <h4>Company value</h4>
+            <h4>Adoption value</h4>
             <p>${data.value}</p>
           </div>
           <div>

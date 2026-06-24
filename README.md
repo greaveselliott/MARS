@@ -26,17 +26,17 @@ For the full product contract, start with the
 [product vision](docs/product-specs/vision.md) and
 [product surface](docs/product-specs/product-surface.md).
 
-## Company Explainer
+## Harness Explainer
 
-For a high-level company adoption walkthrough, use the interactive
-[Mars Harness company explainer](https://greaveselliott.github.io/software-factory/).
+For a high-level adoption walkthrough, use the interactive
+[Mars Harness explainer](https://greaveselliott.github.io/software-factory/).
 It explains the software-factory problem, the value case, the foundation vs.
 deployed harness boundary, design decisions, operating model, DocSync,
 telemetry, safety, and a pilot adoption path for mixed leadership and
 engineering audiences.
 
 The source lives in
-[docs/company-harness-ecosystem/](docs/company-harness-ecosystem/). The
+[docs/harness-ecosystem/](docs/harness-ecosystem/). The
 repository GitHub Pages site publishes from `/docs`, with
 [docs/index.html](docs/index.html) redirecting the site root to the explainer.
 
@@ -249,8 +249,8 @@ safety, or orchestration changes do. See
 ## Documentation Map
 
 - [docs/quickstart.md](docs/quickstart.md): detailed install and first run.
-- [docs/company-harness-ecosystem/](docs/company-harness-ecosystem/):
-  interactive company adoption explainer published to GitHub Pages.
+- [docs/harness-ecosystem/](docs/harness-ecosystem/):
+  interactive adoption explainer published to GitHub Pages.
 - [ARCHITECTURE.md](ARCHITECTURE.md): system architecture.
 - [docs/product-specs/index.md](docs/product-specs/index.md): product contract.
 - [docs/features/README.md](docs/features/README.md): BDD feature contracts.
