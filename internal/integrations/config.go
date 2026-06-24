@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/board-driven-integrations.md
 - docs/features/F-013-board-driven-integrations.md
+- docs/runbooks/atlassian-mcp-jira-intake.md
 */
 package integrations
 
@@ -25,6 +26,12 @@ const (
 	DeliveryModeTrunk       = "trunk"
 	DeliveryModePullRequest = "pull_request"
 
+	JIRAProviderREST         = "rest"
+	JIRAProviderAtlassianMCP = "atlassian_mcp"
+
+	JIRAMCPProxyTransportSidecar = "sidecar"
+	JIRAMCPProxyTransportStdio   = "stdio"
+
 	SectionJIRA     = "jira"
 	SectionFigma    = "figma"
 	SectionDelivery = "delivery"
@@ -45,8 +52,11 @@ type IngestionConfig struct {
 
 type JIRAConfig struct {
 	Enabled          bool                 `yaml:"enabled" json:"enabled"`
+	Provider         string               `yaml:"provider,omitempty" json:"provider,omitempty"`
 	BaseURL          string               `yaml:"base_url,omitempty" json:"base_url,omitempty"`
+	BaseURLEnv       string               `yaml:"base_url_env,omitempty" json:"base_url_env,omitempty"`
 	Auth             JIRAAuthConfig       `yaml:"auth,omitempty" json:"auth,omitempty"`
+	MCP              JIRAMCPConfig        `yaml:"mcp,omitempty" json:"mcp,omitempty"`
 	WebhookSecretEnv string               `yaml:"webhook_secret_env,omitempty" json:"webhook_secret_env,omitempty"`
 	PollInterval     string               `yaml:"poll_interval,omitempty" json:"poll_interval,omitempty"`
 	JQL              string               `yaml:"jql,omitempty" json:"jql,omitempty"`
@@ -57,8 +67,28 @@ type JIRAConfig struct {
 }
 
 type JIRAAuthConfig struct {
-	EmailEnv    string `yaml:"email_env,omitempty" json:"email_env,omitempty"`
-	APITokenEnv string `yaml:"api_token_env,omitempty" json:"api_token_env,omitempty"`
+	EmailEnv       string `yaml:"email_env,omitempty" json:"email_env,omitempty"`
+	APITokenEnv    string `yaml:"api_token_env,omitempty" json:"api_token_env,omitempty"`
+	BearerTokenEnv string `yaml:"bearer_token_env,omitempty" json:"bearer_token_env,omitempty"`
+}
+
+type JIRAMCPConfig struct {
+	EndpointURL string             `yaml:"endpoint_url,omitempty" json:"endpoint_url,omitempty"`
+	CloudID     string             `yaml:"cloud_id,omitempty" json:"cloud_id,omitempty"`
+	CloudIDEnv  string             `yaml:"cloud_id_env,omitempty" json:"cloud_id_env,omitempty"`
+	SiteURL     string             `yaml:"site_url,omitempty" json:"site_url,omitempty"`
+	SiteURLEnv  string             `yaml:"site_url_env,omitempty" json:"site_url_env,omitempty"`
+	Timeout     string             `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	Proxy       JIRAMCPProxyConfig `yaml:"proxy,omitempty" json:"proxy,omitempty"`
+}
+
+type JIRAMCPProxyConfig struct {
+	Enabled        bool     `yaml:"enabled" json:"enabled"`
+	Transport      string   `yaml:"transport,omitempty" json:"transport,omitempty"`
+	Command        string   `yaml:"command,omitempty" json:"command,omitempty"`
+	Args           []string `yaml:"args,omitempty" json:"args,omitempty"`
+	StartupTimeout string   `yaml:"startup_timeout,omitempty" json:"startup_timeout,omitempty"`
+	EnvPassthrough []string `yaml:"env_passthrough,omitempty" json:"env_passthrough,omitempty"`
 }
 
 type ProjectRepoMapping struct {
@@ -67,15 +97,22 @@ type ProjectRepoMapping struct {
 }
 
 type JIRAScopeConfig struct {
-	AllowedWorkspaces []string `yaml:"allowed_workspaces,omitempty" json:"allowed_workspaces,omitempty"`
-	RequiredLabels    []string `yaml:"required_labels,omitempty" json:"required_labels,omitempty"`
+	AllowedWorkspaces    []string `yaml:"allowed_workspaces,omitempty" json:"allowed_workspaces,omitempty"`
+	AllowedWorkspacesEnv string   `yaml:"allowed_workspaces_env,omitempty" json:"allowed_workspaces_env,omitempty"`
+	RequiredLabels       []string `yaml:"required_labels,omitempty" json:"required_labels,omitempty"`
+	BoardID              string   `yaml:"board_id,omitempty" json:"board_id,omitempty"`
+	BoardIDEnv           string   `yaml:"board_id_env,omitempty" json:"board_id_env,omitempty"`
 }
 
 type JIRAFieldsConfig struct {
-	Sprint      string `yaml:"sprint,omitempty" json:"sprint,omitempty"`
-	Rank        string `yaml:"rank,omitempty" json:"rank,omitempty"`
-	EpicLink    string `yaml:"epic_link,omitempty" json:"epic_link,omitempty"`
-	StoryPoints string `yaml:"story_points,omitempty" json:"story_points,omitempty"`
+	Sprint         string `yaml:"sprint,omitempty" json:"sprint,omitempty"`
+	SprintEnv      string `yaml:"sprint_env,omitempty" json:"sprint_env,omitempty"`
+	Rank           string `yaml:"rank,omitempty" json:"rank,omitempty"`
+	RankEnv        string `yaml:"rank_env,omitempty" json:"rank_env,omitempty"`
+	EpicLink       string `yaml:"epic_link,omitempty" json:"epic_link,omitempty"`
+	EpicLinkEnv    string `yaml:"epic_link_env,omitempty" json:"epic_link_env,omitempty"`
+	StoryPoints    string `yaml:"story_points,omitempty" json:"story_points,omitempty"`
+	StoryPointsEnv string `yaml:"story_points_env,omitempty" json:"story_points_env,omitempty"`
 }
 
 type PrioritisationConfig struct {
@@ -132,9 +169,21 @@ func normalize(cfg Config) Config {
 		cfg.Version = 1
 	}
 	cfg.FlowProfile = normalizeFlowProfile(cfg.FlowProfile)
-	cfg.Ingestion.JIRA.BaseURL = strings.TrimSpace(cfg.Ingestion.JIRA.BaseURL)
+	cfg.Ingestion.JIRA.Provider = normalizeJIRAProvider(cfg.Ingestion.JIRA.Provider)
+	cfg.Ingestion.JIRA.BaseURL = strings.TrimRight(strings.TrimSpace(cfg.Ingestion.JIRA.BaseURL), "/")
+	cfg.Ingestion.JIRA.BaseURLEnv = strings.TrimSpace(cfg.Ingestion.JIRA.BaseURLEnv)
 	cfg.Ingestion.JIRA.Auth.EmailEnv = strings.TrimSpace(cfg.Ingestion.JIRA.Auth.EmailEnv)
 	cfg.Ingestion.JIRA.Auth.APITokenEnv = strings.TrimSpace(cfg.Ingestion.JIRA.Auth.APITokenEnv)
+	cfg.Ingestion.JIRA.Auth.BearerTokenEnv = strings.TrimSpace(cfg.Ingestion.JIRA.Auth.BearerTokenEnv)
+	cfg.Ingestion.JIRA.MCP.EndpointURL = defaultString(cfg.Ingestion.JIRA.MCP.EndpointURL, "https://mcp.atlassian.com/v1/mcp")
+	cfg.Ingestion.JIRA.MCP.CloudID = strings.TrimSpace(cfg.Ingestion.JIRA.MCP.CloudID)
+	cfg.Ingestion.JIRA.MCP.CloudIDEnv = strings.TrimSpace(cfg.Ingestion.JIRA.MCP.CloudIDEnv)
+	cfg.Ingestion.JIRA.MCP.SiteURL = strings.TrimRight(strings.TrimSpace(cfg.Ingestion.JIRA.MCP.SiteURL), "/")
+	cfg.Ingestion.JIRA.MCP.SiteURLEnv = strings.TrimSpace(cfg.Ingestion.JIRA.MCP.SiteURLEnv)
+	cfg.Ingestion.JIRA.MCP.Timeout = defaultString(cfg.Ingestion.JIRA.MCP.Timeout, "30s")
+	cfg.Ingestion.JIRA.MCP.Proxy.Command = strings.TrimSpace(cfg.Ingestion.JIRA.MCP.Proxy.Command)
+	cfg.Ingestion.JIRA.MCP.Proxy.StartupTimeout = defaultString(cfg.Ingestion.JIRA.MCP.Proxy.StartupTimeout, "5s")
+	cfg.Ingestion.JIRA.MCP.Proxy.EnvPassthrough = cleanStringList(cfg.Ingestion.JIRA.MCP.Proxy.EnvPassthrough)
 	cfg.Ingestion.JIRA.WebhookSecretEnv = strings.TrimSpace(cfg.Ingestion.JIRA.WebhookSecretEnv)
 	cfg.Ingestion.JIRA.PollInterval = strings.TrimSpace(cfg.Ingestion.JIRA.PollInterval)
 	cfg.Ingestion.JIRA.JQL = strings.TrimSpace(cfg.Ingestion.JIRA.JQL)
@@ -143,11 +192,18 @@ func normalize(cfg Config) Config {
 		cfg.Ingestion.JIRA.ProjectRepoMap[i].Repo = strings.TrimSpace(cfg.Ingestion.JIRA.ProjectRepoMap[i].Repo)
 	}
 	cfg.Ingestion.JIRA.Scope.AllowedWorkspaces = cleanStringList(cfg.Ingestion.JIRA.Scope.AllowedWorkspaces)
+	cfg.Ingestion.JIRA.Scope.AllowedWorkspacesEnv = strings.TrimSpace(cfg.Ingestion.JIRA.Scope.AllowedWorkspacesEnv)
 	cfg.Ingestion.JIRA.Scope.RequiredLabels = cleanStringList(cfg.Ingestion.JIRA.Scope.RequiredLabels)
+	cfg.Ingestion.JIRA.Scope.BoardID = strings.TrimSpace(cfg.Ingestion.JIRA.Scope.BoardID)
+	cfg.Ingestion.JIRA.Scope.BoardIDEnv = strings.TrimSpace(cfg.Ingestion.JIRA.Scope.BoardIDEnv)
 	cfg.Ingestion.JIRA.Fields.Sprint = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.Sprint)
+	cfg.Ingestion.JIRA.Fields.SprintEnv = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.SprintEnv)
 	cfg.Ingestion.JIRA.Fields.Rank = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.Rank)
+	cfg.Ingestion.JIRA.Fields.RankEnv = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.RankEnv)
 	cfg.Ingestion.JIRA.Fields.EpicLink = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.EpicLink)
+	cfg.Ingestion.JIRA.Fields.EpicLinkEnv = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.EpicLinkEnv)
 	cfg.Ingestion.JIRA.Fields.StoryPoints = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.StoryPoints)
+	cfg.Ingestion.JIRA.Fields.StoryPointsEnv = strings.TrimSpace(cfg.Ingestion.JIRA.Fields.StoryPointsEnv)
 	cfg.Ingestion.JIRA.Prioritisation.Scope = defaultString(cfg.Ingestion.JIRA.Prioritisation.Scope, "active_sprint")
 	if len(cfg.Ingestion.JIRA.Prioritisation.Order) == 0 {
 		cfg.Ingestion.JIRA.Prioritisation.Order = []string{"priority", "rank", "age"}
@@ -171,6 +227,17 @@ func normalizeFlowProfile(profile string) string {
 		return FlowProfileBoardDriven
 	default:
 		return FlowProfileCEOLed
+	}
+}
+
+func normalizeJIRAProvider(provider string) string {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "", JIRAProviderREST:
+		return JIRAProviderREST
+	case JIRAProviderAtlassianMCP:
+		return JIRAProviderAtlassianMCP
+	default:
+		return strings.ToLower(strings.TrimSpace(provider))
 	}
 }
 

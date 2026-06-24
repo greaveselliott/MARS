@@ -9,6 +9,7 @@ docs:
 package jira
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -18,16 +19,28 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/greaveselliott/mars-harness/internal/integrations"
 )
 
 type PollConfig struct {
-	Repository Repository
-	EnvLookup  func(string) (string, bool)
-	HTTPClient *http.Client
+	Repository      Repository
+	EnvLookup       func(string) (string, bool)
+	HTTPClient      *http.Client
+	MCPProxyStarter MCPProxyStarter
 }
 
 func Poll(ctx context.Context, cfg PollConfig) ([]MirrorResult, error) {
+	if cfg.EnvLookup == nil {
+		cfg.EnvLookup = os.LookupEnv
+	}
 	repo := cfg.Repository
+	resolvedConfig, err := resolveEnvBackedConfig(repo.Config, cfg.EnvLookup)
+	if err != nil {
+		return nil, err
+	}
+	repo.Config = resolvedConfig
+	cfg.Repository = repo
 	if !repo.Config.JIRAEnabled() {
 		return []MirrorResult{{
 			Status:          StatusDisabled,
@@ -35,8 +48,12 @@ func Poll(ctx context.Context, cfg PollConfig) ([]MirrorResult, error) {
 			LLMJobsEnqueued: 0,
 		}}, nil
 	}
-	if cfg.EnvLookup == nil {
-		cfg.EnvLookup = os.LookupEnv
+	switch repo.Config.Ingestion.JIRA.Provider {
+	case integrations.JIRAProviderAtlassianMCP:
+		return pollAtlassianMCP(ctx, cfg)
+	case integrations.JIRAProviderREST:
+	default:
+		return nil, fmt.Errorf("jira: unsupported provider %q", repo.Config.Ingestion.JIRA.Provider)
 	}
 	client := cfg.HTTPClient
 	if client == nil {
@@ -91,18 +108,21 @@ func buildSearchRequest(ctx context.Context, repo Repository, lookup func(string
 	if err != nil {
 		return nil, fmt.Errorf("jira: invalid base_url: %w", err)
 	}
-	query := endpoint.Query()
+	body := map[string]any{"maxResults": 50}
 	if strings.TrimSpace(jiraCfg.JQL) != "" {
-		query.Set("jql", jiraCfg.JQL)
+		body["jql"] = jiraCfg.JQL
 	}
-	query.Set("maxResults", "50")
-	endpoint.RawQuery = query.Encode()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	bodyData, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("jira: build poll body: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), bytes.NewReader(bodyData))
 	if err != nil {
 		return nil, fmt.Errorf("jira: build poll request: %w", err)
 	}
 	req.SetBasicAuth(email, token)
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 	return req, nil
 }
 

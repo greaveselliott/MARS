@@ -63,6 +63,21 @@ gateway, auth boundary, and runtime state owner.
 | `mars-harness release publish-assets --repo <path> --version <tag> --upload none\|github\|auto` | Implemented | Builds local source-release binaries for linux/darwin x amd64/arm64, writes `checksums.txt`, verifies the dist, and optionally mirrors the same assets to GitHub Releases. |
 | `mars-harness release verify-assets [--dist <path>] [--version <tag>]` | Implemented | Fails a release check unless all four platform binaries and `checksums.txt` exist in the local dist or, without `--dist`, on the GitHub Release mirror. |
 
+## Optional Board Integrations
+
+Target repos may opt into board-driven intake by copying
+`.harness/integrations.example.yaml` to `.harness/integrations.yaml` and setting
+`flow_profile: board-driven`. JIRA ingestion is disabled unless explicitly
+enabled. The default `rest` provider uses direct Atlassian REST search; the
+preferred Example Target Project path can set `provider: atlassian_mcp` to use a job-scoped
+Atlassian MCP read session, including an optional stdio proxy such as
+`mcp-remote` for OAuth-backed sessions. Both providers require explicit
+project-to-repo mapping and enforce configured workspace, board, and
+required-label containment before local tickets are written. Tenant-specific
+values such as JIRA site URLs, Atlassian cloud IDs, board IDs, ID-bearing
+workspace URLs, and JIRA custom field IDs can be supplied through configured
+environment variable names so they do not need to be committed to the repo.
+
 ## Generated Target Harness
 
 `mars-harness init` must produce a target repo that is immediately usable by Codex, Cursor, Mars Harness roles, and humans.

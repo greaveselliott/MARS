@@ -4,7 +4,7 @@
 **Priority:** P0
 **Depends On:** None
 **Blocks:** Board-driven Example Target Project integration claims until each sequential plan is implemented, validated, released, pushed, tagged, and asset-verified
-**Related Tickets:** T-044, T-045, T-046
+**Related Tickets:** T-044, T-045, T-046, T-047
 **Goals:** G-001, G-002, G-003, G-004
 **BDD Feature:** F-013
 **Related Feature Contracts:** F-001, F-013
@@ -12,8 +12,8 @@
 **Success Evidence:** No-config repos keep the 2026-06-23 baseline routes, scheduler behavior, effective role tool lists, strict-trunk policy, and CEO-led planning. Board-driven repos can progressively mirror JIRA tickets, select ready work by active sprint -> P1/P2/P3 priority -> LexoRank -> age, scope through `cto-weekly`, deliver through Engineer/QA, and open human-merged PRs.
 **Falsification Evidence:** Missing config changes runtime behavior, board-driven behavior is inferred from partial config, JIRA events enqueue LLM work directly, future tools appear in generated default manifests, branch/PR delivery leaks into strict-trunk default mode, credentials leak, or clean-project validation cannot distinguish real idle from misconfiguration.
 **Scenario Schedule:** F-013-S001, F-013-S002, F-013-S003, F-013-S004, F-013-S005, F-013-S006
-**Current Failing Scenario:** F-013-S003 Board prioritisation and cost guards. F-013-S001 Optionality foundation is complete and recorded in `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`; F-013-S002 JIRA mirror and sync is complete and recorded in `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md`.
-**Walking Skeleton Slice:** Start Plan 3 only after T-046 is selected: ready-ticket selection by active sprint, configured priority order, LexoRank, and age; skip blocked/non-ready/closed-sprint tickets; dispatch one `cto-weekly` job; ship DailyCap, interval floors, cost/turn telemetry, circuit breaker, and dashboard/log signals. Do not implement Figma, PR delivery, or frontier model routing in this slice.
+**Current Failing Scenario:** F-013-S003 Plan 3 is next after the validated T-047 Atlassian MCP provider revision is committed, released, pushed, tagged, and asset-verified. F-013-S001 Optionality foundation is complete and recorded in `docs/validation/reports/2026-06-23-example-target-project-optionality-foundation.md`; the initial F-013-S002 JIRA mirror and sync is recorded in `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md`; the T-047 MCP provider revision is validated in `docs/validation/reports/2026-06-24-example-target-project-atlassian-mcp-jira-intake.md`.
+**Walking Skeleton Slice:** Finish T-047 release publication first. Then start Plan 3 only after T-046 is selected: ready-ticket selection by active sprint, configured priority order, LexoRank, and age; skip blocked/non-ready/closed-sprint tickets; dispatch one `cto-weekly` job; ship DailyCap, interval floors, cost/turn telemetry, circuit breaker, and dashboard/log signals. Do not implement Figma, PR delivery, or frontier model routing in this slice.
 **Learning Or MVP Outcome:** Establish a reversible, observable, default-off substrate that every later Example Target Project plan can import without changing existing target behavior.
 **Created:** 2026-06-23
 **Owner:** foundation-maintainer
@@ -53,11 +53,15 @@ No behavior changes without config. No JIRA route, poller, prioritisation, Figma
 
 Add `internal/jira` webhook and poll ingestion. JIRA stays the source of record. The first sighting of a `jira_key` materializes a backlog Markdown ticket; later pulls reconcile JIRA-owned fields and requirements body in place while preserving harness-owned lifecycle directory, delivery evidence fields, scoped marker, and agent progress notes.
 
+JIRA polling supports provider selection. `provider: rest` remains the fallback direct Atlassian REST search provider. `provider: atlassian_mcp` is the preferred Example Target Project read path: Mars opens a short-lived Atlassian MCP session, probes capabilities, calls only approved read/search tools, closes the session, and terminates any configured local proxy before the poll job completes. Direct HTTP/API-token auth remains fail-closed when Atlassian advertises only Teamwork Graph tools; OAuth-backed stdio proxy transport such as `npx mcp-remote https://mcp.atlassian.com/v1/mcp/authv2` is the validated Example Target Project route.
+
 Contain intake with config-owned guardrails before any file write: an issue must match exactly one `project_repo_map` entry and, when configured, `ingestion.jira.scope.allowed_workspaces` and `ingestion.jira.scope.required_labels`. The Example Target Project rollout may configure the DEMO board/backlog URL and `example-required-label` label in `.harness/integrations.yaml`; these values must not be hardcoded into Go.
+
+If `scope.board_id` is configured and the MCP provider exposes a board-aware read tool, Mars passes the configured board id. If the provider does not expose such a tool, Mars records `board_scope_not_enforced_by_provider` and continues only under project, workspace, required-label, and JQL containment.
 
 JIRA events do not use the GitHub webhook spine, do not register `jira_issue.*` triggers, and do not enqueue LLM work per event.
 
-Status: complete as of 2026-06-23. Evidence is recorded in `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md`.
+Status: revision validated as of 2026-06-24 under T-047, pending semantic commit and release publication. Initial mirror evidence is recorded in `docs/validation/reports/2026-06-23-example-target-project-jira-mirror-sync.md`; focused Atlassian MCP implementation tests, broad tests, `make check`, and live OAuth-backed stdio MCP read verification pass.
 
 ### Plan 3: Board Prioritisation And Cost Guards
 
@@ -90,7 +94,7 @@ Release notes surface `jira_key` in CHANGELOG entries beside Mars ticket IDs.
 The v1 schema contains:
 
 - `flow_profile: ceo-led | board-driven`
-- `ingestion.jira`: enabled, base URL, env-var names, webhook secret env, poll interval, JQL, project-to-repo map, workspace/label scope guards, custom field IDs, ready statuses, priority/rank/age ordering, blocked-by handling
+- `ingestion.jira`: enabled, provider, base URL, env-var names, optional MCP endpoint/cloud/site/proxy settings, webhook secret env, poll interval, JQL, project-to-repo map, workspace/board/label scope guards, custom field IDs, ready statuses, priority/rank/age ordering, blocked-by handling
 - `design_sources.figma`: enabled, token env, base URL
 - `delivery`: `trunk | pull_request`, branch pattern, minimum trust
 
@@ -118,7 +122,7 @@ Model routing remains in `.harness/model-overrides.yaml`. Config stores env-var 
 
 ## Current Ticket
 
-`T-044` completed F-013-S001. `T-045` completed F-013-S002. `T-046` is the first Plan 3 ticket for F-013-S003 and must be scoped before any Plan 3 implementation code starts.
+`T-044` completed F-013-S001. `T-045` completed the initial F-013-S002 mirror. `T-047` is the active Plan 2 provider revision and is blocked on Atlassian MCP JIRA search tool availability for the configured credential. `T-046` is the first Plan 3 ticket for F-013-S003 and must wait until T-047 is complete or the recorded live blocker is explicitly accepted.
 
 ## Plan 1 Evidence Snapshot
 
@@ -159,6 +163,14 @@ webhook delivery.
 
 Plan 3 may start only from T-046. No Figma, PR, or frontier model-routing
 implementation code shipped in Plan 2.
+
+2026-06-24 T-047 revision evidence: focused MCP/JIRA/config/scanner/docs tests,
+`go test ./...`, `make check`, and live OAuth-backed stdio MCP smoke pass for
+job-scoped Atlassian MCP read support, including session close, proxy cleanup,
+read-tool allowlisting, board-tool selection when available, board warning when
+unavailable, API-gateway URL containment, and label/workspace containment.
+Direct HTTP/API-token auth remains fail-closed when `tools/list` advertises
+only Teamwork Graph tools.
 
 ## Validation And Release
 

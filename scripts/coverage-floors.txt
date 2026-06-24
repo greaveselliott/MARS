@@ -33,6 +33,7 @@ github.com/greaveselliott/mars-harness/internal/integrations 70
 github.com/greaveselliott/mars-harness/internal/jira 70
 github.com/greaveselliott/mars-harness/internal/learnings 60
 github.com/greaveselliott/mars-harness/internal/llm 64
+github.com/greaveselliott/mars-harness/internal/mcpclient 82
 github.com/greaveselliott/mars-harness/internal/mcpstdio 70
 github.com/greaveselliott/mars-harness/internal/models 70
 github.com/greaveselliott/mars-harness/internal/operatingmodel 70

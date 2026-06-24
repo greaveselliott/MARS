@@ -4,6 +4,7 @@
 **Date:** 2026-06-23
 **Owner:** Mars Harness maintainers
 **Feature Contract:** [F-013-board-driven-integrations.md](../features/F-013-board-driven-integrations.md)
+**Operator Runbook:** [atlassian-mcp-jira-intake.md](../runbooks/atlassian-mcp-jira-intake.md)
 
 ## Context
 
@@ -55,6 +56,18 @@ handler validates a repo-mapped webhook secret, normalizes the issue, and
 creates or reconciles one Markdown ticket by stable `jira_key`; it does not
 register `jira_issue.*` triggers and does not enqueue LLM work.
 
+Polling supports provider selection. The default `rest` provider keeps the
+direct Atlassian REST search path. The preferred Example Target Project read path is
+`provider: atlassian_mcp`, which opens a short-lived session to Atlassian's
+official MCP endpoint, probes read capabilities, calls only approved JIRA
+read/search tools, and closes the session when the sync job completes. If an
+operator configures a local MCP proxy, Mars starts it for that sync job and
+terminates it before the job claims success. Proxy transport is explicit:
+`sidecar` starts a helper while Mars still speaks HTTP to `endpoint_url`;
+`stdio` speaks MCP JSON-RPC directly to the helper subprocess, which supports
+OAuth-capable helpers such as `npx mcp-remote`. No JIRA MCP sidecar is part of
+`serve`, `start`, setup, or no-config repos.
+
 Materialization is contained by configuration before any file write:
 
 - `project_repo_map` must map the JIRA project to exactly one registered repo.
@@ -64,6 +77,11 @@ Materialization is contained by configuration before any file write:
 - `scope.required_labels`, when set, requires every configured label on the
   issue. The Example Target Project rollout can use `example-required-label` in config to
   limit intake to explicitly marked opportunities.
+- `scope.board_id`, when set, is enforced only when the MCP provider advertises
+  a board-aware read tool. If the provider lacks such a tool, Mars records a
+  `board_scope_not_enforced_by_provider` warning and continues to rely on the
+  hard project, workspace, label, and JQL containment gates rather than widening
+  scope silently.
 
 Unmapped, ambiguous, outside-workspace, or missing-label issues drop with a
 sanitized operator-visible reason and no fan-out. Reconciliation updates only
@@ -75,16 +93,22 @@ ticket lifecycle directory, evidence fields, scoped marker, and agent notes.
 The v1 config is intentionally vendor-neutral:
 
 - `flow_profile: ceo-led | board-driven`
-- `ingestion.jira`: enablement, endpoint, auth env-var names, webhook secret
-  env var, poll interval, JQL, project-to-repo map, workspace and required-label
-  scope guards, field IDs, ready statuses, priority/rank/age ordering, and
-  blocker handling
+- `ingestion.jira`: enablement, provider (`rest` or `atlassian_mcp`), endpoint,
+  auth env-var names, optional MCP endpoint/cloud/site/proxy transport settings,
+  webhook secret env var, poll interval, JQL, project-to-repo map, workspace,
+  board, and required-label scope guards, env-var indirection for
+  tenant-specific values such as base URL, MCP site URL, cloud ID, board ID,
+  ID-bearing workspace URLs, and custom field IDs,
+  ready statuses, priority/rank/age ordering, and blocker handling
 - `design_sources.figma`: enablement, token env-var name, and base URL
 - `delivery`: `trunk | pull_request`, branch pattern, and minimum trust
 
-Config stores names of environment variables, never secret values. Example Target Project
-field IDs may appear only as commented examples in the generated example file,
-not as Go constants.
+Config stores names of environment variables, never secret values.
+Tenant-specific values that operators do not want committed, including JIRA
+site URLs, Atlassian cloud IDs, board IDs, ID-bearing workspace URLs, and JIRA
+custom-field IDs, should use env-var indirection. Example Target Project field IDs may appear
+only as local environment values or operator-owned local config, never as Go
+constants.
 
 Model routing remains in `.harness/model-overrides.yaml`.
 
@@ -132,3 +156,19 @@ Plan 6 will mirror deployed-harness operating context and release traceability.
 - 2026-06-23: Live JIRA read verification against Atlassian Cloud showed the
   legacy `/rest/api/3/search` endpoint returns HTTP 410. Poll ingestion uses
   the current `/rest/api/3/search/jql` endpoint for configured JQL reads.
+- 2026-06-24: The operator selected Atlassian's official MCP server as the
+  preferred Example Target Project JIRA read provider. Mars treats it as a job-scoped external
+  integration runtime: the Go binary owns provider selection, read-tool
+  allowlisting, session/proxy cleanup, containment, and local ticket mirroring.
+- 2026-06-24: Live Atlassian MCP probing with the current API-token credential
+  reached the MCP server but advertised only Teamwork Graph tools. Atlassian's
+  support docs list `searchJiraIssuesUsingJql` under the `search_jira`
+  permission group and note API-token tool availability depends on token/admin
+  scopes, so T-047 is blocked on credential/tool availability rather than on
+  Mars MCP transport.
+- 2026-06-24: Live OAuth probing through the official `mcp-remote` stdio proxy
+  completed SSO and exposed `searchJiraIssuesUsingJql`, `getJiraIssue`, and the
+  wider JIRA tool surface. A scoped JQL read for project `DEMO` with label
+  `example-required-label` returned issues. The remaining Mars-owned gap
+  was support for stdio MCP proxy transport and Atlassian's array-shaped
+  `fields` argument, not JIRA MCP availability.

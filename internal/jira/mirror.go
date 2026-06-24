@@ -430,6 +430,9 @@ func workspaceMatchesIssue(workspace, baseURL string, issue Issue) bool {
 			strings.EqualFold(workspace, hostFromURL(baseURL))
 	}
 	issueHost := hostFromURL(issue.URL)
+	if isAtlassianAPIGatewayHost(issueHost) && hostFromURL(baseURL) != "" {
+		issueHost = hostFromURL(baseURL)
+	}
 	if issueHost == "" {
 		issueHost = hostFromURL(baseURL)
 	}
@@ -456,6 +459,10 @@ func hostFromURL(value string) string {
 		return ""
 	}
 	return parsed.Host
+}
+
+func isAtlassianAPIGatewayHost(host string) bool {
+	return strings.EqualFold(strings.TrimSpace(host), "api.atlassian.com")
 }
 
 func projectFromWorkspacePath(path string) string {

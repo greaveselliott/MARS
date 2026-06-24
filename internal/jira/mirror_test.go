@@ -179,7 +179,7 @@ func TestMirrorIssueRequiresConfiguredWorkspaceAndLabels(t *testing.T) {
 	cfg.Ingestion.JIRA.ProjectRepoMap = []integrations.ProjectRepoMapping{{Project: "DEMO", Repo: filepath.Base(repoRoot)}}
 	cfg.Ingestion.JIRA.BaseURL = "https://jira.example"
 	cfg.Ingestion.JIRA.Scope.AllowedWorkspaces = []string{
-		"https://jira.example/jira/software/c/projects/DEMO/boards/42/backlog",
+		"https://jira.example/jira/software/c/projects/DEMO/boards/board-example/backlog",
 	}
 	cfg.Ingestion.JIRA.Scope.RequiredLabels = []string{"allowed-intake"}
 
@@ -215,6 +215,24 @@ func TestMirrorIssueRequiresConfiguredWorkspaceAndLabels(t *testing.T) {
 		t.Fatalf("expected workspace drop, got %#v", result)
 	}
 	assertNoMarkdownTickets(t, repoRoot)
+
+	apiGatewayIssue := baseIssue
+	apiGatewayIssue.Key = "DEMO-2"
+	apiGatewayIssue.URL = "https://api.atlassian.com/ex/jira/cloud-example/rest/api/3/issue/10001"
+	apiGatewayIssue.Labels = []string{"allowed-intake"}
+	result, err = MirrorIssue(context.Background(), []Repository{{ID: "repo-1", Path: repoRoot, Config: cfg}}, apiGatewayIssue)
+	if err != nil {
+		t.Fatalf("MirrorIssue API gateway URL: %v", err)
+	}
+	if result.Status != StatusCreated {
+		t.Fatalf("expected API gateway issue to create under configured base URL containment, got %#v", result)
+	}
+	if got := countMarkdownTickets(t, repoRoot); got != 1 {
+		t.Fatalf("expected one mirrored API gateway ticket, got %d", got)
+	}
+	if err := os.RemoveAll(filepath.Join(repoRoot, "docs", "tickets")); err != nil {
+		t.Fatalf("remove API gateway ticket tree: %v", err)
+	}
 
 	allowed := baseIssue
 	allowed.Labels = []string{"allowed-intake", "product"}

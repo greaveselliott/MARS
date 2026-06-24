@@ -18,6 +18,7 @@ docs:
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-013-board-driven-integrations.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/runbooks/atlassian-mcp-jira-intake.md
 - docs/roles/ROLES.md
 */
 package scanner
@@ -779,10 +780,30 @@ flow_profile: ceo-led # ceo-led | board-driven
 ingestion:
   jira:
     enabled: false
+    provider: rest # rest | atlassian_mcp
     base_url: "" # e.g. https://jira.example.invalid
+    base_url_env: "" # e.g. JIRA_SITE_URL
     auth:
       email_env: JIRA_EMAIL
       api_token_env: JIRA_API_TOKEN
+      bearer_token_env: JIRA_BEARER_TOKEN # optional for atlassian_mcp
+    mcp:
+      # Official Atlassian MCP endpoint. Used only when provider: atlassian_mcp.
+      endpoint_url: https://mcp.atlassian.com/v1/mcp
+      cloud_id: "" # optional direct value for local-only configs
+      cloud_id_env: "" # e.g. ATLASSIAN_CLOUD_ID
+      site_url: "" # e.g. https://jira.example.invalid
+      site_url_env: "" # e.g. JIRA_SITE_URL
+      timeout: 30s
+      proxy:
+        enabled: false
+        transport: sidecar # sidecar | stdio
+        command: ""
+        # For OAuth via the official remote MCP proxy:
+        # command: npx
+        # args: ["-y", "mcp-remote", "https://mcp.atlassian.com/v1/mcp/authv2"]
+        args: []
+        env_passthrough: []
     webhook_secret_env: JIRA_WEBHOOK_SECRET
     poll_interval: 60s
     jql: ""
@@ -792,18 +813,25 @@ ingestion:
       # Optional containment guard. Use Atlassian project/board URLs, hostnames,
       # or project keys, plus required labels, to prevent broad JIRA mirroring.
       # Example:
-      # allowed_workspaces:
-      #   - <jira-site-url>/jira/software/c/projects/DEMO/boards/<board-id>/backlog
+      # allowed_workspaces_env: JIRA_ALLOWED_WORKSPACES
       # required_labels:
       #   - example-required-label
+      # board_id_env: JIRA_BOARD_ID
       allowed_workspaces: []
+      allowed_workspaces_env: ""
       required_labels: []
+      board_id: ""
+      board_id_env: ""
     fields:
-      # Instance-specific custom-field IDs. Examples only; resolve from your JIRA instance.
-      sprint: <jira-custom-field-id>
-      rank: <jira-custom-field-id>
-      epic_link: <jira-custom-field-id>
-      story_points: <jira-custom-field-id>
+      # Instance-specific custom-field IDs. Prefer env vars for committed config.
+      sprint: ""
+      sprint_env: "" # e.g. JIRA_FIELD_SPRINT
+      rank: ""
+      rank_env: "" # e.g. JIRA_FIELD_RANK
+      epic_link: ""
+      epic_link_env: "" # e.g. JIRA_FIELD_EPIC
+      story_points: ""
+      story_points_env: "" # e.g. JIRA_FIELD_STORY_POINTS
     prioritisation:
       scope: active_sprint
       ready_statuses: ["To Do", "Ready for Dev", "Selected for Development"]

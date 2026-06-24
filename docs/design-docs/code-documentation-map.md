@@ -80,10 +80,11 @@ source file exists in the worktree.
 | `internal/guardrails/` | `docs/design-docs/guardrails.md` | F-007 |
 | `internal/hardware/` | `docs/design-docs/local-inference.md` | F-003 |
 | `internal/inference/` | `docs/design-docs/local-inference.md` | F-003 |
-| `internal/integrations/` | `docs/design-docs/board-driven-integrations.md` | F-013 |
-| `internal/jira/` | `docs/design-docs/board-driven-integrations.md` | F-013 |
+| `internal/integrations/` | `docs/design-docs/board-driven-integrations.md`, `docs/runbooks/atlassian-mcp-jira-intake.md` | F-013 |
+| `internal/jira/` | `docs/design-docs/board-driven-integrations.md`, `docs/runbooks/atlassian-mcp-jira-intake.md` | F-013 |
 | `internal/learnings/` | `docs/design-docs/dogfood-and-decisions.md` | F-012 |
 | `internal/llm/` | `docs/design-docs/agent-runtime.md`, `docs/design-docs/local-inference.md`, `docs/design-docs/context-efficiency.md` | F-003, F-005 |
+| `internal/mcpclient/` | `docs/design-docs/board-driven-integrations.md`, `docs/runbooks/atlassian-mcp-jira-intake.md` | F-013 |
 | `internal/mcpstdio/` | `docs/design-docs/tools-glossary.md` | F-005 |
 | `internal/models/` | `docs/design-docs/local-inference.md` | F-003 |
 | `internal/operatingmodel/` | `docs/design-docs/harness-operating-model.md` | F-001 |
@@ -135,6 +136,10 @@ Notable cross-boundary files:
 - `internal/jira/` owns board-driven JIRA webhook and poll ingestion, scoped
   project/workspace/label containment, ticket materialization by `jira_key`,
   and pull-only reconciliation.
+- `internal/mcpclient/` owns short-lived outbound MCP-over-HTTP and MCP-over-stdio
+  sessions for optional integration providers such as Atlassian MCP. It is
+  client-side integration plumbing, separate from the Mars Harness MCP stdio
+  server exposed by `internal/mcpstdio/`.
 - `internal/tools/formalized_workflows.go` and its tests own `docsync_audit`,
   so their metadata also points to the delivery operating model and F-001.
 - `internal/tools/mars_harness_cli.go` and its tests mirror the CLI command

@@ -59,6 +59,12 @@ func WebhookHandler(cfg WebhookConfig) http.Handler {
 			http.Error(w, "jira webhook repository lookup failed", http.StatusInternalServerError)
 			return
 		}
+		repos, err = resolveEnvBackedRepositories(repos, cfg.EnvLookup)
+		if err != nil {
+			cfg.Logger.Warn("jira webhook: env-backed config unavailable", "err", sanitizeError(err))
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
 		if len(enabledJIRARepos(repos)) == 0 {
 			http.NotFound(w, r)
 			return

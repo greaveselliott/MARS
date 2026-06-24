@@ -187,10 +187,17 @@ func TestPollFetchesAndMirrorsMappedIssueWithoutQueueWork(t *testing.T) {
 	cfg.Ingestion.JIRA.BaseURL = "https://jira.example"
 	cfg.Ingestion.JIRA.JQL = "project = DEMO"
 	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected poll method %s", r.Method)
+		}
 		if r.URL.Path != "/rest/api/3/search/jql" {
 			t.Fatalf("unexpected poll path %s", r.URL.Path)
 		}
-		if got := r.URL.Query().Get("jql"); got != "project = DEMO" {
+		var requestBody map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+			t.Fatalf("decode poll body: %v", err)
+		}
+		if got := requestBody["jql"]; got != "project = DEMO" {
 			t.Fatalf("unexpected poll jql %q", got)
 		}
 		user, pass, ok := r.BasicAuth()

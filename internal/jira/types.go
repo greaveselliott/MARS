@@ -59,14 +59,15 @@ type Issue struct {
 }
 
 type MirrorResult struct {
-	Status          string `json:"status"`
-	Reason          string `json:"reason,omitempty"`
-	JiraKey         string `json:"jira_key,omitempty"`
-	RepoID          string `json:"repo_id,omitempty"`
-	RepoPath        string `json:"repo_path,omitempty"`
-	TicketPath      string `json:"ticket_path,omitempty"`
-	Created         bool   `json:"created"`
-	LLMJobsEnqueued int    `json:"llm_jobs_enqueued"`
+	Status          string   `json:"status"`
+	Reason          string   `json:"reason,omitempty"`
+	JiraKey         string   `json:"jira_key,omitempty"`
+	RepoID          string   `json:"repo_id,omitempty"`
+	RepoPath        string   `json:"repo_path,omitempty"`
+	TicketPath      string   `json:"ticket_path,omitempty"`
+	Created         bool     `json:"created"`
+	LLMJobsEnqueued int      `json:"llm_jobs_enqueued"`
+	Warnings        []string `json:"warnings,omitempty"`
 }
 
 func RawIssueFromWebhookPayload(data []byte) (RawIssue, error) {
@@ -109,6 +110,12 @@ func rawIssueFromMap(issue map[string]any) (RawIssue, error) {
 	fields, _ := asMap(issue["fields"])
 	project := projectKey(fields)
 	if project == "" {
+		project = projectKey(issue)
+	}
+	if project == "" {
+		project = strings.TrimSpace(stringValue(issue["project"]))
+	}
+	if project == "" {
 		project = projectFromKey(key)
 	}
 	if key == "" {
@@ -122,13 +129,13 @@ func (r RawIssue) Normalize(fieldsCfg integrations.JIRAFieldsConfig) Issue {
 	issue := Issue{
 		Key:         strings.TrimSpace(r.Key),
 		Project:     strings.TrimSpace(r.Project),
-		Summary:     fieldString(fields, "summary"),
-		Description: textFromAny(fields["description"]),
-		URL:         stringValue(r.Data["self"]),
-		Created:     fieldString(fields, "created"),
-		Updated:     fieldString(fields, "updated"),
-		Priority:    nestedName(fields["priority"]),
-		Status:      nestedName(fields["status"]),
+		Summary:     firstNonEmpty(fieldString(fields, "summary"), stringValue(r.Data["summary"])),
+		Description: firstNonEmpty(textFromAny(fields["description"]), textFromAny(r.Data["description"])),
+		URL:         firstNonEmpty(stringValue(r.Data["self"]), stringValue(r.Data["url"]), stringValue(r.Data["browseUrl"])),
+		Created:     firstNonEmpty(fieldString(fields, "created"), stringValue(r.Data["created"])),
+		Updated:     firstNonEmpty(fieldString(fields, "updated"), stringValue(r.Data["updated"])),
+		Priority:    firstNonEmpty(nestedName(fields["priority"]), nestedName(r.Data["priority"])),
+		Status:      firstNonEmpty(nestedName(fields["status"]), nestedName(r.Data["status"])),
 		Sprint:      customFieldString(fields, fieldsCfg.Sprint),
 		Rank:        customFieldString(fields, fieldsCfg.Rank),
 		Epic:        customFieldString(fields, fieldsCfg.EpicLink),
@@ -142,9 +149,24 @@ func (r RawIssue) Normalize(fieldsCfg integrations.JIRAFieldsConfig) Issue {
 		issue.Project = projectFromKey(issue.Key)
 	}
 	if issue.Sprint == "" {
-		issue.Sprint = customFieldString(fields, "sprint")
+		issue.Sprint = firstNonEmpty(customFieldString(fields, "sprint"), textFromAny(r.Data["sprint"]))
+	}
+	if issue.Rank == "" {
+		issue.Rank = textFromAny(r.Data["rank"])
+	}
+	if issue.Epic == "" {
+		issue.Epic = firstNonEmpty(textFromAny(r.Data["epic"]), textFromAny(r.Data["epicKey"]))
+	}
+	if len(issue.BlockedBy) == 0 {
+		issue.BlockedBy = cleanStringList(stringSliceFromAny(r.Data["blockedBy"]))
+	}
+	if len(issue.Labels) == 0 {
+		issue.Labels = cleanStringList(stringSliceFromAny(r.Data["labels"]))
 	}
 	issue.SprintActive = sprintActive(fields, fieldsCfg.Sprint)
+	if !issue.SprintActive {
+		issue.SprintActive = activeValue(r.Data["sprint"])
+	}
 	return issue.Sanitized()
 }
 
@@ -187,6 +209,15 @@ func projectFromKey(key string) string {
 
 func fieldString(fields map[string]any, key string) string {
 	return strings.TrimSpace(stringValue(fields[key]))
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
 
 func nestedName(v any) string {
@@ -278,6 +309,22 @@ func labels(fields map[string]any) []string {
 		}
 	}
 	return cleanStringList(out)
+}
+
+func stringSliceFromAny(v any) []string {
+	if items, ok := asSlice(v); ok {
+		var out []string
+		for _, item := range items {
+			if value := strings.TrimSpace(stringValue(item)); value != "" {
+				out = append(out, value)
+			}
+		}
+		return out
+	}
+	if value := strings.TrimSpace(stringValue(v)); value != "" {
+		return []string{value}
+	}
+	return nil
 }
 
 func asMap(v any) (map[string]any, bool) {
