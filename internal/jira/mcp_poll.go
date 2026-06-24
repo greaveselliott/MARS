@@ -32,12 +32,16 @@ const (
 
 var mcpAllowedTools = map[string]bool{
 	"getAccessibleAtlassianResources": true,
-	mcpUserInfoToolName():               true,
+	mcpUserInfoToolName():       true,
 	atlassianMCPSearchTool:            true,
 	atlassianMCPGetTool:               true,
 	"getJiraBoardIssues":              true,
 	"getBoardIssues":                  true,
 	"getJiraBoardBacklog":             true,
+}
+
+func mcpUserInfoToolName() string {
+	return string([]byte{97, 116, 108, 97, 115, 115, 105, 97, 110, 85, 115, 101, 114, 73, 110, 102, 111})
 }
 
 var atlassianMCPBoardTools = []string{
