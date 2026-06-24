@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.65.3] - 2026-06-24
+<!-- mars-harness-release: version=0.65.3 commit=755e17b7d38f -->
+
+### Impact
+- **company-explainer:** Operators and future agents get clearer guidance because add GitHub Pages adoption explainer.
+
+### Why
+- **company-explainer:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **company-explainer:** Changed add GitHub Pages adoption explainer (755e17b).
+
+### Documentation
+- **company-explainer:** Add GitHub Pages adoption explainer (755e17b)
+
 ## [0.65.2] - 2026-06-24
 <!-- mars-harness-release: version=0.65.2 commit=7c41741ab135 -->
 
@@ -36,7 +51,7 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **mcpclient:** Tolerate malformed stdio shutdown (deb2e72)
 
 ## [0.65.1] - 2026-06-24
-<!-- mars-harness-release: version=0.65.1 commit=b76d8f2b9512 -->
+<!-- mars-harness-release: version=0.65.1 commit=8d04914d061d -->
 
 ### Impact
 - **plan:** Operators and future agents get clearer guidance because close plan 2 lifecycle loop.
@@ -45,10 +60,10 @@ Patch notes are generated with `mars-harness release notes` from semantic commit
 - **plan:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
 
 ### What Changed
-- **plan:** Changed close plan 2 lifecycle loop (b76d8f2).
+- **plan:** Changed close plan 2 lifecycle loop (8d04914).
 
 ### Documentation
-- **plan:** Close plan 2 lifecycle loop (b76d8f2)
+- **plan:** Close plan 2 lifecycle loop (8d04914)
 
 ## [0.65.0] - 2026-06-24
 <!-- mars-harness-release: version=0.65.0 commit=06ada3562112 -->
