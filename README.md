@@ -35,8 +35,9 @@ deployed harness boundary, operating model, DocSync, telemetry, safety, and a
 pilot adoption path for mixed leadership and engineering audiences.
 
 The source lives in
-[docs/company-harness-ecosystem/](docs/company-harness-ecosystem/). GitHub
-Pages publishes that folder through the `Company Explainer Pages` workflow.
+[docs/company-harness-ecosystem/](docs/company-harness-ecosystem/). The
+repository GitHub Pages site publishes from `/docs`, with
+[docs/index.html](docs/index.html) redirecting the site root to the explainer.
 
 ## Current Status
 

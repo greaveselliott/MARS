@@ -28,8 +28,9 @@ changes the dashboard prerequisite model by requiring an external Node.js
 gateway, auth boundary, and runtime state owner.
 
 Company-facing explainer status: the repo includes a static adoption explainer
-under `docs/company-harness-ecosystem/`, published to the repository GitHub
-Pages site by `.github/workflows/company-explainer-pages.yml`. The explainer is
+under `docs/company-harness-ecosystem/`. The repository GitHub Pages site is
+published from `/docs`, and `docs/index.html` redirects the site root to the
+explainer. The explainer is
 documentation, not runtime infrastructure: it presents the value case,
 foundation/deployed boundary, operating model, DocSync, telemetry, safety, and
 pilot adoption path for mixed leadership and engineering audiences. The source
