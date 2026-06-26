@@ -7896,3 +7896,52 @@ failures so Engineer can recover by running the canonical served-page smoke.
 - The primary forward-progress validation remains failed until a clean
   sequential rerun reaches Engineer build/smoke evidence without this evidence
   gap.
+
+## AD-305: Weak First-Slice Proof Must Stay Recoverable
+
+**Status:** Accepted
+**Date:** 2026-06-26
+**Owner:** Mars Harness maintainers
+
+### Context
+
+An OpenAI-backed Space Invaders continuation replay validated the
+reviewer-validation capability guard, then exposed a second foundation-owned
+handoff loop. CTO initially created a first-slice ticket that verified project
+brief visibility rather than executable product implementation. Engineer, QA,
+and Security were able to complete that weak ticket with no-op build/test
+evidence. Dogfood correctly noticed there was no `index.html` or start script,
+but the next CTO pass could neither create the real gameplay ticket nor hand
+off to Engineer: `ticket_create` treated `F-001-S001` as already covered, while
+`job_disposition_record` still required a first executable slice.
+
+### Decision
+
+Fresh first-proof CTO ticketing now requires the first-slice ticket title/body
+to describe executable product implementation. Verification-only tickets such
+as project-brief visibility or role-understanding checks are rejected before
+they can occupy the first product scenario.
+
+If a weak done ticket already claimed the first-slice scenario without
+build/smoke proof, CTO may create a new ticket for that exact same first-slice
+scenario when no backlog or in-progress first-slice ticket is waiting. This is
+only a recovery path for the pre-proof state; grouped or later-scenario tickets
+remain blocked until the first executable slice has build/smoke evidence.
+
+### Consequences
+
+- CTO gets a deterministic path out of weak first-slice evidence without
+  opening broad backlog expansion.
+- Fresh lifecycle runs are steered toward Engineer-buildable product work
+  rather than planning or understanding artifacts.
+- Existing post-proof backlog expansion rules still require build/smoke proof
+  before adjacent product scenarios can be grouped.
+
+### Validation
+
+A fresh OpenAI-backed Space Invaders replay after this policy change created an
+executable first-slice ticket for player keyboard movement, handed it to
+Engineer, built the browser slice, and reached QA, Security, and Dogfood
+approval with `npm run test`, `npm run build`, DocSync, static-server, and HTTP
+smoke evidence. The same replay exposed and then validated a separate
+agent-runtime fix for OpenAI-compatible multi-tool response adjacency.

@@ -63,6 +63,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 46. F-005-S057 - Generic gameplay summary labels do not become standalone capability requirements.
 47. F-005-S058 - Alternate input exclusions do not descope basic keyboard movement.
 48. F-005-S064 - Repeated policy blocks return actionable repair guidance to the active role.
+49. F-005-S065 - OpenAI-compatible tool-call batches receive all model-requested tool results before synthetic runtime messages.
 
 ## Scenarios
 
@@ -101,6 +102,12 @@ Then the agent loop stops immediately with a completed outcome instead of asking
 Given a server job requires a terminal tool such as `job_disposition_record`
 When the model attempts to finish with prose and no tool call
 Then the loop appends one corrective user turn requiring the terminal tool call, and if the model still finishes without the tool the executor's normal completion validation fails the job
+
+Given an OpenAI-compatible model emits multiple tool calls in one assistant message
+And one of those tool calls triggers a runtime-injected follow-up such as `code_index` refresh or review terminal-evidence guidance
+When the agent loop processes the batch
+Then every model-provided `tool_call_id` receives a tool response immediately after the assistant message before any synthetic assistant/tool pair or user reminder is appended
+And if a terminal tool completes the job before the whole batch executes, the remaining model-provided tool calls receive skipped tool responses so the transcript remains provider-valid
 
 ### F-005-S003: Tool Execution Containment
 

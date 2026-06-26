@@ -241,10 +241,11 @@ func executeLoopToolCall(ctx context.Context, p Params, messages *[]llm.Message,
 	return execErr, nil
 }
 
-func maybeRefreshCodeGraphAfterMutation(ctx context.Context, p Params, messages *[]llm.Message, defs []llm.ToolDefinition, toolName, argsJSON string, toolInvocations *int) error {
-	if !p.MaintainCodeGraph || !tools.Allowlisted("code_index", p.Allowlist) || !codeGraphMutationTool(toolName, argsJSON) {
-		return nil
-	}
+func shouldRefreshCodeGraphAfterMutation(p Params, toolName, argsJSON string) bool {
+	return p.MaintainCodeGraph && tools.Allowlisted("code_index", p.Allowlist) && codeGraphMutationTool(toolName, argsJSON)
+}
+
+func refreshCodeGraph(ctx context.Context, p Params, messages *[]llm.Message, defs []llm.ToolDefinition, toolInvocations *int) error {
 	call := llm.ToolCall{
 		ID:   fmt.Sprintf("codegraph_refresh_%d", *toolInvocations+1),
 		Type: "function",
@@ -262,6 +263,13 @@ func maybeRefreshCodeGraphAfterMutation(ctx context.Context, p Params, messages 
 	}
 	_, traceErr := executeLoopToolCall(ctx, p, messages, defs, call, toolInvocations)
 	return traceErr
+}
+
+func maybeRefreshCodeGraphAfterMutation(ctx context.Context, p Params, messages *[]llm.Message, defs []llm.ToolDefinition, toolName, argsJSON string, toolInvocations *int) error {
+	if !shouldRefreshCodeGraphAfterMutation(p, toolName, argsJSON) {
+		return nil
+	}
+	return refreshCodeGraph(ctx, p, messages, defs, toolInvocations)
 }
 
 func codeGraphMutationTool(name, argsJSON string) bool {
@@ -795,29 +803,51 @@ func Run(ctx context.Context, p Params) (res LoopResult, err error) {
 			return res, nil
 		}
 
+		refreshCodeGraphAfterBatch := false
+		reviewTerminalEvidencePromptAfterBatch := ""
+		stopAfterToolBatch := false
 		for _, tc := range calls {
+			if stopAfterToolBatch {
+				if err := traceAppend(p, &messages, defs, llm.Message{
+					Role:       "tool",
+					ToolCallID: tc.ID,
+					Content:    "skipped: terminal tool already completed this job",
+				}); err != nil {
+					return LoopResult{}, err
+				}
+				continue
+			}
 			execErr, traceErr := executeLoopToolCall(ctx, p, &messages, defs, tc, &toolInvocations)
 			if traceErr != nil {
 				return LoopResult{}, traceErr
 			}
 			if required := strings.TrimSpace(p.RequiredTerminalTool); required != "" && strings.TrimSpace(tc.Function.Name) != required && !terminalToolEvidenceReminderSent && tools.ReviewTerminalEvidenceSatisfied(p.Root, p.Executor.Session) {
 				tools.MarkReviewTerminalDispositionRequired(p.Executor.Session)
-				if err := traceAppend(p, &messages, defs, llm.Message{
-					Role:    "user",
-					Content: reviewTerminalEvidencePrompt(required, tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session)),
-				}); err != nil {
-					return LoopResult{}, err
-				}
+				reviewTerminalEvidencePromptAfterBatch = reviewTerminalEvidencePrompt(required, tools.ReviewTerminalDispositionGuidance(p.Root, p.Executor.Session))
 				terminalToolEvidenceReminderSent = true
 			}
 			if execErr == nil {
-				if err := maybeRefreshCodeGraphAfterMutation(ctx, p, &messages, defs, tc.Function.Name, tc.Function.Arguments, &toolInvocations); err != nil {
-					return LoopResult{}, err
-				}
+				refreshCodeGraphAfterBatch = refreshCodeGraphAfterBatch || shouldRefreshCodeGraphAfterMutation(p, tc.Function.Name, tc.Function.Arguments)
 			}
 			if execErr == nil && p.Executor.StopAfterTool != nil && p.Executor.StopAfterTool() {
-				res = finish(messages, defs, EndCompleted, llmCalls, toolInvocations, start, "")
-				return res, nil
+				stopAfterToolBatch = true
+			}
+		}
+		if stopAfterToolBatch {
+			res = finish(messages, defs, EndCompleted, llmCalls, toolInvocations, start, "")
+			return res, nil
+		}
+		if refreshCodeGraphAfterBatch {
+			if err := refreshCodeGraph(ctx, p, &messages, defs, &toolInvocations); err != nil {
+				return LoopResult{}, err
+			}
+		}
+		if reviewTerminalEvidencePromptAfterBatch != "" {
+			if err := traceAppend(p, &messages, defs, llm.Message{
+				Role:    "user",
+				Content: reviewTerminalEvidencePromptAfterBatch,
+			}); err != nil {
+				return LoopResult{}, err
 			}
 		}
 	}

@@ -1843,6 +1843,76 @@ func TestCTOTicketCreateRejectsScenarioGroupBeforeFirstProof(t *testing.T) {
 	}
 }
 
+func TestCTOTicketCreateRejectsVerificationOnlyFirstSliceTicket(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeDetailedTetrisBrief(t, dir)
+	writePolicyPlan(t, dir)
+	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
+	raw, err := json.Marshal(ticketCreateArgs{
+		Title:            "Verify project brief visibility and understanding",
+		Priority:         "high",
+		WorkType:         "feature",
+		BDDScenarios:     []string{"F-001-S001"},
+		EndToEndEvidence: "required",
+		Body:             "## Requirements\nConfirm the README brief is visible to the harness and understood by the roles.",
+	})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	err = preToolPolicy(ctx, root, "ticket_create", raw)
+	if err == nil {
+		t.Fatal("expected verification-only first-slice ticket to be rejected")
+	}
+	if !strings.Contains(err.Error(), "executable product implementation") ||
+		!strings.Contains(err.Error(), `bdd_scenarios:["F-001-S001"]`) {
+		t.Fatalf("expected executable first-slice guidance, got %v", err)
+	}
+}
+
+func TestCTOTicketCreateAllowsFirstSliceReticketAfterWeakDoneTicket(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	writeDetailedTetrisBrief(t, dir)
+	writePolicyPlan(t, dir)
+	writeTetrisFeatureWithFullScenarioSchedule(t, dir)
+	writePolicyTicket(t, dir, "done", "T-001-verify-project-brief.md", `---
+id: T-001
+title: Verify project brief visibility
+work_type: feature
+bdd_scenarios:
+- F-001-S001
+end_to_end_evidence: required
+evidence_links:
+- npm run build
+- npm run test
+verified_by: engineer
+blocker: none
+blocked_by: []
+---
+
+# T-001
+`)
+	ctx := WithSession(context.Background(), Session{Role: "cto-weekly", ToolCounts: map[string]int{}})
+	raw, err := json.Marshal(ticketCreateArgs{
+		Title:            "Implement visible playfield first slice",
+		Priority:         "high",
+		WorkType:         "feature",
+		BDDScenarios:     []string{"F-001-S001"},
+		EndToEndEvidence: "required",
+		Body:             "## Requirements\nBuild the browser-visible playfield as the executable first product slice.",
+	})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	if err := preToolPolicy(ctx, root, "ticket_create", raw); err != nil {
+		t.Fatalf("expected exact first-slice reticket to recover from weak proof, got %v", err)
+	}
+}
+
 func TestCTOTicketCreateAllowsPostProofScenarioGroupStartingWithEarliestUncoveredScenario(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)

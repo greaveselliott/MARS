@@ -831,6 +831,14 @@ Given CTO creates a grouped ticket covering multiple scenarios before first proo
 When CTO tries to hand off implementation
 Then the disposition remains blocked and the guidance names the single first-slice `bdd_scenarios` array plus the required `ticket_create -> git_status -> git_commit -> job_disposition_record` sequence
 
+Given CTO creates the first-slice ticket before first proof
+When the ticket title and body only verify, confirm, or understand the project brief without executable product implementation
+Then `ticket_create` is blocked and the guidance requires exactly one executable first-slice implementation ticket
+
+Given an already-done first-slice ticket lacks build/smoke proof
+When CTO creates a new ticket for the exact same first-slice scenario and no Engineer-ready first-slice ticket is waiting
+Then `ticket_create` allows that recovery ticket so Engineer can build the executable slice instead of leaving CTO in a pre-proof deadlock
+
 Given the feature already has a completed product ticket with build/smoke evidence
 When CTO creates or confirms follow-on implementation tickets
 Then the existing small ordered backlog behavior applies, allowing the next one or two adjacent product scenarios to be ticketed or grouped when they form one bounded walking skeleton

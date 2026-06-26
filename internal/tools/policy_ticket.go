@@ -117,6 +117,16 @@ func checkTicketCreatePlanningOrder(root Root, session Session, hasSession bool,
 			firstMissing := firstUncoveredFeatureScenarioFromCoverage(scenarios, covered)
 			if hasSession && (strings.EqualFold(strings.TrimSpace(session.Role), "cto") || strings.EqualFold(strings.TrimSpace(session.Role), "cto-weekly")) && !featureHasCompletedValidationTicket(root, id) {
 				required := firstSliceCTOHandoffRequiredScenarios(root, id, scenarios)
+				selected := featureScenariosForID(args.BDDScenarios, id)
+				if len(required) > 0 && len(selected) == 1 && selected[0] == required[0] {
+					if featureHasExactFirstSliceTicket(root, id, required[0]) {
+						return fmt.Errorf("policy: cto already has an Engineer-ready first-slice ticket for %s before first build/smoke proof. Hand off that exact ticket to Engineer instead of creating a duplicate. %s", id, ctoFirstSliceTicketCreateGuidance(required[:1]))
+					}
+					if err := checkCTOFirstSliceImplementationTicket(args, required[:1]); err != nil {
+						return err
+					}
+					continue
+				}
 				return fmt.Errorf("policy: cto cannot create additional or grouped feature tickets for %s before first build/smoke proof. Hand off the exact first-slice ticket to Engineer, or create it if missing. %s", id, ctoFirstSliceTicketCreateGuidance(required))
 			}
 			if firstMissing != "" {
@@ -130,6 +140,9 @@ func checkTicketCreatePlanningOrder(root Root, session Session, hasSession bool,
 				selected := featureScenariosForID(args.BDDScenarios, id)
 				if len(selected) != 1 || selected[0] != required[0] {
 					return fmt.Errorf("policy: cto fresh first-proof ticket_create must create exactly one first-slice scenario for %s before broader backlog expansion. %s", id, ctoFirstSliceTicketCreateGuidance(required[:1]))
+				}
+				if err := checkCTOFirstSliceImplementationTicket(args, required[:1]); err != nil {
+					return err
 				}
 			}
 		}
@@ -155,6 +168,49 @@ func ctoFirstSliceTicketCreateGuidance(next []string) string {
 		nextText = "the current failing product scenario"
 	}
 	return fmt.Sprintf("Create exactly one first-slice implementation ticket with ticket_create using bdd_scenarios:%s (JSON array), covering %s. Do not retry later-scenario titles or grouped scenario lists before first proof; the ticket title/body must describe this first scenario only. Required follow-up sequence: git_status -> git_commit -> job_disposition_record with next_need implementation and suggested_role engineer.", quoteStringArray(next), nextText)
+}
+
+func checkCTOFirstSliceImplementationTicket(args ticketCreateArgs, next []string) error {
+	if ticketCreateDescribesExecutableImplementation(args) {
+		return nil
+	}
+	return fmt.Errorf("policy: cto first-slice ticket must describe executable product implementation, not only brief verification, planning, or understanding evidence. %s", ctoFirstSliceTicketCreateGuidance(next))
+}
+
+func ticketCreateDescribesExecutableImplementation(args ticketCreateArgs) bool {
+	surface := normalizeCapabilitySurface(ticketCreatePolicySurface(args))
+	for _, marker := range []string{
+		"implement",
+		"implementation",
+		"build",
+		"create",
+		"render",
+		"ship",
+		"wire",
+		"add",
+		"deliver",
+		"make",
+		"code",
+		"playable",
+		"gameplay",
+		"interactive",
+		"browser",
+		"html",
+		"css",
+		"javascript",
+		"component",
+		"view",
+		"screen",
+		"endpoint",
+		"handler",
+		"server",
+		"api",
+	} {
+		if strings.Contains(surface, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func featureIDsFromScenarios(scenarios []string) []string {

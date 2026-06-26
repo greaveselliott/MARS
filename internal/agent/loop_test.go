@@ -73,11 +73,43 @@ func toolResp(name, id, args string) llm.ChatCompletionResponse {
 	}
 }
 
+func multiToolResp(calls ...llm.ToolCall) llm.ChatCompletionResponse {
+	return llm.ChatCompletionResponse{
+		Choices: []llm.Choice{{
+			Message: llm.Message{
+				Role:      "assistant",
+				ToolCalls: calls,
+			},
+		}},
+	}
+}
+
 func textResp(content string) llm.ChatCompletionResponse {
 	return llm.ChatCompletionResponse{
 		Choices: []llm.Choice{{
 			Message: llm.Message{Role: "assistant", Content: content},
 		}},
+	}
+}
+
+func requireOpenAIToolCallAdjacency(t *testing.T, messages []llm.Message) {
+	t.Helper()
+	for i, msg := range messages {
+		if msg.Role != "assistant" || len(msg.ToolCalls) == 0 {
+			continue
+		}
+		want := make(map[string]bool, len(msg.ToolCalls))
+		for _, call := range msg.ToolCalls {
+			want[call.ID] = true
+		}
+		for j := 1; j <= len(msg.ToolCalls); j++ {
+			require.Less(t, i+j, len(messages), "assistant tool calls at message %d missing tool response", i)
+			next := messages[i+j]
+			require.Equal(t, "tool", next.Role, "message after assistant tool call batch must be a tool response")
+			require.True(t, want[next.ToolCallID], "unexpected tool_call_id %q after assistant tool call batch", next.ToolCallID)
+			delete(want, next.ToolCallID)
+		}
+		require.Empty(t, want, "assistant tool calls at message %d missing responses", i)
 	}
 }
 
@@ -245,6 +277,68 @@ func TestRun_refreshesCodeGraphAfterMutation(t *testing.T) {
 	require.Equal(t, 1, ex.Session.ToolCounts["codeintel:tool_calls"])
 	require.Contains(t, res.Messages[len(res.Messages)-3].Content, "Mars code graph maintenance")
 	require.Equal(t, "code_index", res.Messages[len(res.Messages)-3].ToolCalls[0].Function.Name)
+}
+
+func TestRunRefreshesCodeGraphAfterCompletingModelToolCallBatch(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	dir := t.TempDir()
+	root, err := tools.NewRoot(dir)
+	require.NoError(t, err)
+	reg, err := tools.DefaultRegistry()
+	require.NoError(t, err)
+	ex := tools.NewExecutor(reg)
+	ex.Session = &tools.Session{Role: "engineer", ToolCounts: map[string]int{}}
+	mockResponse := &seqMock{replies: []llm.ChatCompletionResponse{
+		multiToolResp(
+			llm.ToolCall{
+				ID:   "write-plan",
+				Type: "function",
+				Function: llm.FunctionCall{
+					Name:      "file_write",
+					Arguments: `{"path":"plan.md","content":"plan"}`,
+				},
+			},
+			llm.ToolCall{
+				ID:   "write-feature",
+				Type: "function",
+				Function: llm.FunctionCall{
+					Name:      "file_write",
+					Arguments: `{"path":"feature.md","content":"feature"}`,
+				},
+			},
+		),
+		textResp("done"),
+	}}
+
+	res, err := Run(context.Background(), Params{
+		Completer:         mockResponse,
+		Registry:          reg,
+		Executor:          ex,
+		Root:              root,
+		Allowlist:         []string{"file_write", "code_index"},
+		SystemPrompt:      "s",
+		UserMessage:       "u",
+		MaintainCodeGraph: true,
+		Config:            LoopConfig{Model: "test", MaxTurns: 10},
+	})
+	require.NoError(t, err)
+	require.Equal(t, EndCompleted, res.EndReason)
+	require.Equal(t, 3, res.ToolInvocations)
+	require.Equal(t, 1, ex.Session.ToolCounts["codeintel:tool_calls"])
+	requireOpenAIToolCallAdjacency(t, res.Messages)
+
+	var batchIndex, refreshIndex = -1, -1
+	for i, msg := range res.Messages {
+		if msg.Role == "assistant" && len(msg.ToolCalls) == 2 {
+			batchIndex = i
+		}
+		if msg.Role == "assistant" && len(msg.ToolCalls) == 1 && msg.ToolCalls[0].Function.Name == "code_index" {
+			refreshIndex = i
+		}
+	}
+	require.NotEqual(t, -1, batchIndex)
+	require.NotEqual(t, -1, refreshIndex)
+	require.Greater(t, refreshIndex, batchIndex+2)
 }
 
 func TestRun_skipsCodeGraphRefreshAfterReadOnlyShell(t *testing.T) {
