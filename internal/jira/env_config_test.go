@@ -34,7 +34,7 @@ func TestResolveEnvBackedConfigUsesIDEnvVars(t *testing.T) {
 			"JIRA_BASE_URL":           "https://jira.example.invalid",
 			"JIRA_CLOUD_ID":           "cloud-example-env",
 			"JIRA_SITE_URL":           "https://jira.example.invalid",
-			"JIRA_ALLOWED_WORKSPACES": "https://jira.example.invalid",
+			"JIRA_ALLOWED_WORKSPACES": "https://jira.example.invalid,https://jira-alt.example.invalid",
 			"JIRA_BOARD_ID":           "board-example-env",
 			"JIRA_FIELD_SPRINT":       "customfield_sprint_env",
 			"JIRA_FIELD_RANK":         "customfield_rank_env",
@@ -115,7 +115,7 @@ func TestPollAtlassianMCPUsesEnvBackedIDs(t *testing.T) {
 				"JIRA_BASE_URL":           "https://jira.example.invalid",
 				"JIRA_CLOUD_ID":           "cloud-example-env",
 				"JIRA_SITE_URL":           "https://jira.example.invalid",
-				"JIRA_ALLOWED_WORKSPACES": "https://jira.example.invalid",
+				"JIRA_ALLOWED_WORKSPACES": "https://jira.example.invalid,https://jira-alt.example.invalid",
 				"JIRA_BOARD_ID":           "board-example-env",
 			}
 			value, ok := values[name]

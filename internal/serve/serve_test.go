@@ -448,12 +448,12 @@ func TestServer_defaultConcurrency(t *testing.T) {
 
 func TestFilterReposByPath(t *testing.T) {
 	repos := []RepoRecord{
-		{ID: "aaa", Path: "<home-path>"},
-		{ID: "bbb", Path: "<home-path>"},
-		{ID: "ccc", Path: "<home-path>"},
+		{ID: "aaa", Path: "workspace/repo-a"},
+		{ID: "bbb", Path: "workspace/repo-b"},
+		{ID: "ccc", Path: "workspace/repo-c"},
 	}
 
-	filtered := filterReposByPath(repos, "<home-path>")
+	filtered := filterReposByPath(repos, "workspace/repo-a")
 	if len(filtered) != 1 {
 		t.Fatalf("expected 1 repo, got %d", len(filtered))
 	}
@@ -464,9 +464,9 @@ func TestFilterReposByPath(t *testing.T) {
 
 func TestFilterReposByPath_noMatch(t *testing.T) {
 	repos := []RepoRecord{
-		{ID: "aaa", Path: "<home-path>"},
+		{ID: "aaa", Path: "workspace/repo-a"},
 	}
-	filtered := filterReposByPath(repos, "<home-path>")
+	filtered := filterReposByPath(repos, "workspace/repo-b")
 	if len(filtered) != 0 {
 		t.Fatalf("expected 0 repos, got %d", len(filtered))
 	}
