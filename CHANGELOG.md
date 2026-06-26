@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars-harness release notes` from semantic commits on `main`.
 
+## [0.65.9] - 2026-06-26
+<!-- mars-harness-release: version=0.65.9 commit=826ba565b1db -->
+
+### Impact
+- **agent:** OpenAI-backed lifecycle runs can now progress through first-slice ticketing, implementation, review, and dogfood without provider transcript errors or weak verification-only tickets blocking delivery.
+
+### Why
+- **agent:** Live validation showed two foundation-owned blockers: CTO could strand a fresh product run with a verification-only first-slice ticket, and OpenAI-compatible providers rejected transcripts when runtime-injected code-index refreshes interrupted multi-tool response batches.
+
+### What Changed
+- **agent:** Require executable first-slice CTO tickets before first proof, allow exact recovery re-ticketing after weak done evidence, and preserve OpenAI tool-call adjacency before synthetic runtime follow-ups (826ba56).
+
+### Fixes
+- **agent:** Unblock OpenAI first-slice delivery (826ba56)
+
 ## [0.65.8] - 2026-06-26
 <!-- mars-harness-release: version=0.65.8 commit=e38bad2b3f21 -->
 
