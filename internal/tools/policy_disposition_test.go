@@ -718,6 +718,130 @@ func TestCOOCompletionIgnoresValidationEvidenceAndAcceptsControlSynonym(t *testi
 	}
 }
 
+func TestCOOCompletionIgnoresReviewerValidationInstructions(t *testing.T) {
+	t.Parallel()
+	dir, root := setupPolicyTicketRepo(t)
+	readme := `# Space Invaders Validation Target
+
+Build a browser-playable Space Invaders style game.
+
+Initial playable slice:
+
+- Static HTML, CSS, and JavaScript are preferred unless the harness selects a better minimal stack.
+- The player ship moves left and right with the keyboard.
+- The player can fire upward.
+- Alien rows move horizontally, step downward at the edge, and can be destroyed by shots.
+- The game tracks score, lives, win, lose, and restart states.
+- Keep implementation dependency-light and runnable from the repository.
+- Include enough validation instructions for a reviewer to confirm the game works.
+`
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte(readme), 0o644); err != nil {
+		t.Fatalf("write README: %v", err)
+	}
+	featurePath := filepath.Join(dir, "docs", "features", "F-001-product-walking-skeleton.md")
+	if err := os.MkdirAll(filepath.Dir(featurePath), 0o755); err != nil {
+		t.Fatalf("mkdir feature dir: %v", err)
+	}
+	feature := `# Feature Contract: F-001 - Space Invaders Product Walking Skeleton
+
+**Feature ID:** F-001
+**Goals:** G-001
+**Status:** Draft
+
+## Business Logic
+
+This minimal playable browser game covers movement, firing, aliens, collision,
+score, lives, win, lose, restart, and manual reviewer validation.
+
+## Scenario Schedule
+
+1. F-001-S001 - Player ship moves left and right with keyboard input within screen bounds.
+2. F-001-S002 - Player fires shots upward via keyboard input.
+3. F-001-S003 - Shots collide with aliens to destroy aliens and increment score.
+4. F-001-S004 - Alien rows move horizontally, reverse at edges, and step downward.
+5. F-001-S005 - Game tracks player lives and triggers lose condition at zero.
+6. F-001-S006 - Game tracks score and displays updated score.
+7. F-001-S007 - Game signals win condition when all aliens are destroyed.
+8. F-001-S008 - Game supports restart after win or lose.
+9. F-001-S009 - Reviewer opens game and confirms UI elements and no console errors.
+
+## Scenarios
+
+### F-001-S001: Player Ship Moves Left And Right
+
+Given the game is loaded
+When the player presses left or right keys
+Then the ship moves within screen bounds
+And reviewer validation confirms keyboard control responsiveness
+
+### F-001-S002: Player Fires Shots Upward
+
+Given the player ship is visible
+When the player presses the fire key
+Then shots travel upward
+And reviewer validation confirms shots are visible
+
+### F-001-S003: Shots Destroy Aliens And Increment Score
+
+Given aliens are visible
+When a shot hits an alien
+Then the alien is destroyed and score increments
+And reviewer validation confirms alien destruction and score update
+
+### F-001-S004: Alien Rows Move And Step Down
+
+Given alien rows are active
+When the formation reaches an edge
+Then aliens reverse direction and step downward
+
+### F-001-S005: Lives And Lose State
+
+Given the player has limited lives
+When aliens reach the bottom or hit the player until lives reach zero
+Then the lose state appears
+
+### F-001-S006: Score Display Updates
+
+Given aliens can be destroyed
+When score changes
+Then the displayed score updates in real time
+
+### F-001-S007: Win State
+
+Given all aliens can be destroyed
+When the final alien is destroyed
+Then the win state appears
+
+### F-001-S008: Restart
+
+Given the game is won or lost
+When the player restarts
+Then score, lives, player, shots, and aliens reset for a new round
+
+### F-001-S009: Manual Reviewer Validation
+
+Given a reviewer opens the game
+When they follow the validation checklist
+Then they can confirm the game works without console errors
+
+## Descoped Scenarios
+
+None.
+`
+	if err := os.WriteFile(featurePath, []byte(feature), 0o644); err != nil {
+		t.Fatalf("write feature: %v", err)
+	}
+	required := strings.Join(projectBriefCapabilityPhrases(root), ", ")
+	if strings.Contains(required, "validation instruction") || strings.Contains(required, "reviewer") {
+		t.Fatalf("expected reviewer validation instructions to be ignored as product capabilities, got %q", required)
+	}
+	ctx := WithSession(context.Background(), Session{Role: "coo", ToolCounts: map[string]int{}})
+
+	if err := preToolPolicy(ctx, root, "job_disposition_record", json.RawMessage(`{"status":"completed","next_need":"ticket_breakdown","suggested_role":"cto-weekly"}`)); err != nil {
+		t.Fatalf("expected reviewer validation instructions not to block covered scenario schedule, got %v", err)
+	}
+}
+
 func TestCOOCompletionDoesNotTreatMobileTouchControlsAsMovementDescoped(t *testing.T) {
 	t.Parallel()
 	dir, root := setupPolicyTicketRepo(t)

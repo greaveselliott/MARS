@@ -719,6 +719,11 @@ When COO or CTO capability checks extract explicit requirements from the brief
 Then those validation-evidence fragments are not treated as product capabilities
 And short proof tails such as "mounts" or "plays" do not force standalone product scenarios
 
+Given a product brief asks for validation instructions, manual reviewer validation, or enough instructions for a reviewer to confirm that the product works
+When COO or CTO capability checks extract explicit requirements from the brief
+Then that reviewer-validation wording is treated as validation procedure rather than product capability scope
+And it does not require a standalone Scenario Schedule entry when the actual product behaviors are already represented
+
 Given the brief names keyboard movement
 When the feature scenario schedule covers keyboard controls, left/right/down input, and rotation
 Then the capability guard treats the movement requirement as covered

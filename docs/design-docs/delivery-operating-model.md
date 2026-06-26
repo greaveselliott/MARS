@@ -6597,6 +6597,10 @@ in the scenario schedule entries or scenario headings, or to be listed under
 Descoped Scenarios with reasons. A feature contract cannot hide multiple
 requested capabilities inside a single broad runnable/inspectable scenario body
 and then hand off to CTO as if the product backlog were decomposed.
+Validation-procedure wording such as build evidence, smoke evidence, validation
+instructions, or manual reviewer confirmation stays outside product capability
+scope; it can appear as acceptance/evidence guidance without forcing a
+standalone product scenario when the actual behaviors are already represented.
 
 ### Consequences
 

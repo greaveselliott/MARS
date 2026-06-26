@@ -354,6 +354,10 @@ func isValidationEvidenceCapabilityPhrase(phrase string) bool {
 		"smoke evidence",
 		"smoke test",
 		"validation evidence",
+		"validation instruction",
+		"validation instructions",
+		"manual validation",
+		"reviewer validation",
 		"test evidence",
 		"prove",
 		"proves",
@@ -364,6 +368,12 @@ func isValidationEvidenceCapabilityPhrase(phrase string) bool {
 		if strings.Contains(normalized, marker) {
 			return true
 		}
+	}
+	if strings.Contains(normalized, "reviewer") &&
+		(strings.Contains(normalized, "confirm") ||
+			strings.Contains(normalized, "verify") ||
+			strings.Contains(normalized, "check")) {
+		return true
 	}
 	return false
 }

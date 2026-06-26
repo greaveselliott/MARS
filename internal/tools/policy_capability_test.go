@@ -45,6 +45,20 @@ func TestCapabilityMatchingIgnoresIncludingAndDetectionGlue(t *testing.T) {
 	}
 }
 
+func TestCapabilityExtractionIgnoresReviewerValidationInstructions(t *testing.T) {
+	t.Parallel()
+
+	for _, phrase := range []string{
+		"enough validation instructions for a reviewer to confirm the game works",
+		"reviewer validation steps for keyboard movement",
+		"manual validation that verifies the restart flow",
+	} {
+		if !isValidationEvidenceCapabilityPhrase(phrase) {
+			t.Fatalf("expected reviewer validation phrase %q to be treated as validation procedure", phrase)
+		}
+	}
+}
+
 func TestCapabilityMatchingAcceptsSplitDirectionalMovementScenarios(t *testing.T) {
 	t.Parallel()
 
