@@ -11,10 +11,11 @@ evidence_links: ["docs/exec-plans/active/current-operating-plan.md", "docs/featu
 verified_by: "GOCACHE=/private/tmp/mars-go-cache make check; go build -o /private/tmp/mars-rename-smoke ./cmd/mars; /private/tmp/mars-rename-smoke init --repo /private/tmp/mars-rename-target; /private/tmp/mars-rename-smoke docsync audit --repo ."
 owner: "foundation-maintainer"
 last_attempt: 2026-06-28
+completed: 2026-06-28
 blocker: none
 blocked_by: []
 trace_id: none
-next_action: "Commit semantic rename, generate release notes/backfill, publish and verify assets, or record release blocker."
+next_action: "Done. Broader lifecycle matrix replay is a separate validation follow-up if a lifecycle claim is needed."
 dedupe_key: foundation:mars-rename
 source: operator request 2026-06-28
 created: 2026-06-28
@@ -81,5 +82,5 @@ tracked-reference migration. The CLI is lowercase `mars`; the Go module path is
 - Broad `go test ./...` and `make check`: complete.
 - `go build ./cmd/mars`: complete with `/private/tmp/mars-rename-smoke`.
 - Generated target smoke with `mars init --repo <clean-temp-target>`: complete.
-- Old-name grep and old-path grep with allowlist: complete for working tree; staged-path audit runs before commit.
-- Release notes/backfill/assets evidence or explicit blocker: pending semantic commit.
+- Old-name grep and old-path grep with allowlist: complete for working tree and staged index.
+- Release notes/backfill/assets evidence: complete with `v0.66.0`, local verification, and GitHub release verification.

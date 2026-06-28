@@ -3,7 +3,7 @@
 **Status:** Active
 **Priority:** P0
 **Depends On:** None
-**Blocks:** Release and operator documentation claims until old `mars-harness` naming is migrated or deliberately classified.
+**Blocks:** Nothing; MARS rename completion evidence is recorded below.
 **Related Tickets:** MH-060
 **Goals:** G-001; rename the source repo, product surfaces, CLI, module path, generated target doctrine, release/update pipeline, and docs from old Mars Harness naming to MARS.
 **BDD Feature:** F-014
@@ -12,7 +12,7 @@
 **Success Evidence:** `rg` finds no unclassified `mars-harness`, `Mars Harness`, `mars_harness`, `MARS_HARNESS`, `.mars-harness`, or old module references; targeted rename tests pass; `go test ./...`, docsync/docs consistency, generated target checks, build/smoke, release notes/backfill, and release asset verification either pass or record exact blockers.
 **Falsification Evidence:** Any unclassified old-name reference remains; canonical docs or generated target guidance still instruct users to run `mars-harness`; new writes default to `~/.mars-harness`; release/update assets still target `mars-harness`; compatibility aliases are untested; module imports still use `github.com/greaveselliott/mars-harness`.
 **Scenario Schedule:** F-014-S001, F-014-S002, F-014-S003, F-014-S004, F-014-S005, F-014-S006, F-014-S007, F-014-S008
-**Current Failing Scenario:** F-014-S001 through F-014-S008 are in progress under MH-060.
+**Current Failing Scenario:** None for F-014; F-014-S001 through F-014-S008 completed on 2026-06-28 under MH-060.
 **Walking Skeleton Slice:** Rename module, command path, root CLI identity, tool surface, runtime state defaults, release/update paths, generated target defaults, and docs in one coordinated compatibility-aware change.
 **Learning Or MVP Outcome:** The repo becomes consistently named MARS, and legacy old-name behavior is explicitly retained only where needed for migration.
 **Created:** 2026-06-28
@@ -85,8 +85,13 @@ Old-name strings may remain only in these categories:
 - Docs sync passed: `/private/tmp/mars-rename-smoke docsync audit --repo .`.
 - Full source gate passed with local-listener/process-cleanup access: `GOCACHE=/private/tmp/mars-go-cache make check`; coverage ratchets passed at total 73.6%, `internal/release` 67.0%, and `internal/serve` 66.3%.
 - Old-name grep is classified to this plan/feature/ticket plus compatibility code/tests for old envs, state paths, tool alias, binary alias, release assets/markers, shell markers, JIRA signature header, and generated metadata.
+- Semantic rename commit `419a5a3 feat(rename): adopt MARS identity` was pushed to `origin/main` on 2026-06-28.
+- Release commit `f200f68 release: notes 0.66.0` was pushed to `origin/main` on 2026-06-28.
+- Tag `v0.66.0` was pushed on 2026-06-28.
+- Release asset publication passed on 2026-06-28: `GOCACHE=/private/tmp/mars-go-cache go run ./cmd/mars release publish-assets --repo . --version v0.66.0 --upload auto`.
+- Local release asset verification passed on 2026-06-28: `GOCACHE=/private/tmp/mars-go-cache go run ./cmd/mars release verify-assets --dist dist/releases --version v0.66.0`.
+- GitHub release verification passed on 2026-06-28: `gh release view v0.66.0 --repo greaveselliott/MARS`, showing canonical `mars-*`, legacy `mars-harness-*`, and `checksums.txt` assets.
 
-## Blockers
+## Residual Risks
 
-- Release notes, commit, push, tag, publish-assets, and release asset verification remain pending until the semantic rename commit exists.
 - Full lifecycle clean-project validation beyond generated-target smoke is not run in this slice; the exact supporting smoke evidence above is recorded, and any broader lifecycle claim remains unconfirmed until a matrix replay is scheduled.
