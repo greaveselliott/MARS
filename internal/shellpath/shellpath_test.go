@@ -9,6 +9,7 @@ package shellpath
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -74,6 +75,42 @@ func TestEnsureZshIsIdempotent(t *testing.T) {
 	}
 	if strings.Count(string(data), startMarker) != 1 {
 		t.Fatalf("expected one managed block, got:\n%s", string(data))
+	}
+}
+
+func TestEnsureZshManagedBlockMovesInstallDirToFront(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	installDir := filepath.Join(home, "go", "bin")
+	otherDir := filepath.Join(home, "other", "bin")
+	cfg := Config{
+		InstallDir: installDir,
+		ShellPath:  "/bin/zsh",
+		HomeDir:    home,
+		EnvPath:    otherDir + string(os.PathListSeparator) + installDir + string(os.PathListSeparator) + "/usr/bin",
+	}
+
+	result, err := Ensure(cfg)
+	if err != nil {
+		t.Fatalf("Ensure: %v", err)
+	}
+	if !result.Changed {
+		t.Fatalf("expected profile change, got %+v", result)
+	}
+	profile := filepath.Join(home, ".zshrc")
+	cmd := exec.Command("/bin/sh", "-c", ". "+posixQuote(profile)+"; printf '%s' \"$PATH\"")
+	cmd.Env = []string{"PATH=" + cfg.EnvPath}
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("source generated profile: %v", err)
+	}
+	got := string(out)
+	parts := filepath.SplitList(got)
+	if len(parts) == 0 || parts[0] != installDir {
+		t.Fatalf("install dir should be first after sourcing profile, got %q", got)
+	}
+	if strings.Count(string(os.PathListSeparator)+got+string(os.PathListSeparator), string(os.PathListSeparator)+installDir+string(os.PathListSeparator)) != 1 {
+		t.Fatalf("install dir should appear once after sourcing profile, got %q", got)
 	}
 }
 

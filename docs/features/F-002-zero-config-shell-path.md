@@ -21,6 +21,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 4. F-002-S004 - PATH setup is idempotent and does not duplicate profile snippets.
 5. F-002-S005 - Unsupported shells get clear manual remediation instead of a misleading success claim.
 6. F-002-S006 - Source `make update-tool` refreshes a clean clone and configures shell PATH after installing the updated binary.
+7. F-002-S007 - PATH setup gives the MARS install directory precedence over same-name commands earlier in PATH.
 
 ## Scenarios
 
@@ -67,6 +68,15 @@ Given the source checkout has uncommitted changes, no `origin` remote, or diverg
 When the developer runs `make update-tool`
 Then the command refuses to install and tells the developer to resolve the checkout or use `make install` for a local-only install
 
+### F-002-S007: Installed MARS Binary Takes Precedence
+
+Given another command named `mars` already exists earlier in PATH
+And the MARS install directory already appears later in PATH
+When `mars path setup --install-dir <dir>` writes or repairs the shell profile
+Then the managed profile block moves `<dir>` to the front of PATH
+And the managed profile block removes duplicate `<dir>` entries
+And opening an interactive shell or sourcing the profile resolves `mars` to `<dir>/mars`
+
 ## Out of Scope
 
 - Rewriting system-wide `/etc/paths` or administrator-owned shell profiles.
@@ -85,3 +95,4 @@ None.
 - F-002-S004: `go test ./internal/shellpath -run TestEnsureZshIsIdempotent`
 - F-002-S005: `go test ./internal/shellpath -run TestEvaluateUnsupportedShellDoesNotWrite`
 - F-002-S006: `go test ./internal/selfupdate -run TestUpdateToolScript`
+- F-002-S007: `go test ./internal/shellpath -run TestEnsureZshManagedBlockMovesInstallDirToFront`

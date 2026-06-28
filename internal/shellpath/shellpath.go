@@ -209,7 +209,10 @@ func profileHasPath(profilePath, installDir string) (bool, error) {
 		return false, fmt.Errorf("shell path: read %s: %w", profilePath, err)
 	}
 	text := string(data)
-	return strings.Contains(text, installDir) || strings.Contains(text, startMarker), nil
+	if strings.Contains(text, legacyStartMarker) {
+		return false, nil
+	}
+	return strings.Contains(text, startMarker) && strings.Contains(text, installDir), nil
 }
 
 func profileContent(shellName, installDir string) string {
@@ -227,10 +230,18 @@ func profileContent(shellName, installDir string) string {
 	default:
 		return startMarker + "\n" +
 			"# Managed by mars; safe to remove this block.\n" +
-			"case \":$PATH:\" in\n" +
-			fmt.Sprintf("  *:%s:*) ;;\n", installDir) +
-			fmt.Sprintf("  *) export PATH=%s:\"$PATH\" ;;\n", posixQuote(installDir)) +
-			"esac\n" +
+			fmt.Sprintf("_mars_install_dir=%s\n", posixQuote(installDir)) +
+			"_mars_new_path=\"$_mars_install_dir\"\n" +
+			"_mars_old_ifs=$IFS\n" +
+			"IFS=:\n" +
+			"for _mars_path_entry in $PATH; do\n" +
+			"  if [ \"$_mars_path_entry\" != \"$_mars_install_dir\" ] && [ -n \"$_mars_path_entry\" ]; then\n" +
+			"    _mars_new_path=\"$_mars_new_path:$_mars_path_entry\"\n" +
+			"  fi\n" +
+			"done\n" +
+			"IFS=$_mars_old_ifs\n" +
+			"export PATH=\"$_mars_new_path\"\n" +
+			"unset _mars_install_dir _mars_new_path _mars_old_ifs _mars_path_entry\n" +
 			endMarker + "\n"
 	}
 }
