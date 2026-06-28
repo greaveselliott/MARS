@@ -15,6 +15,7 @@ docs:
 - docs/dashboard-api-reference.html
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
+- docs/guardrails-reference.html
 -->
 <html lang="en">
   <head>
@@ -45,6 +46,7 @@ docs:
         <a href="operations-guide.html">Operations</a>
         <a href="models-guide.html">Models</a>
         <a href="tools-mcp-guide.html">Tools/MCP</a>
+        <a href="guardrails-reference.html">Guardrails</a>
         <a href="harness-ecosystem/">Explainer</a>
       </nav>
     </header>
@@ -319,8 +321,8 @@ mars serve --addr :9091 --concurrency 2</code></pre></dd>
               <tbody>
                 <tr><td><code>mars doctor</code></td><td>Checks Go, config, model registry, models directory, database, llama-server, disk space, private release auth, guardrails, workflow health, mirrored operating-model health, and update drift.</td><td><code>--repo</code>, <code>--db</code>, <code>--config</code>, <code>--skip-remote</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars checks run</code></td><td>Runs a local check command and records the result for orchestration evidence.</td><td><code>--repo</code>, <code>--db</code>, <code>--name</code>, <code>--role</code>, then <code>-- &lt;command&gt;</code>.</td></tr>
-                <tr><td><code>mars guardrails secret-scan</code></td><td>Scans repository files for common secret patterns.</td><td><code>--repo</code>, <code>--staged</code>, <code>--json</code>.</td></tr>
-                <tr><td><code>mars guardrails install-hooks</code></td><td>Installs optional git hooks for local guardrail checks.</td><td><code>--repo</code>, <code>--json</code>.</td></tr>
+                <tr><td><code>mars guardrails secret-scan</code></td><td>Scans repository files for common secret patterns. See the <a href="guardrails-reference.html">Guardrails Reference</a>.</td><td><code>--repo</code>, <code>--staged</code>, <code>--json</code>.</td></tr>
+                <tr><td><code>mars guardrails install-hooks</code></td><td>Installs optional git hooks for local guardrail checks. See the <a href="guardrails-reference.html">Guardrails Reference</a>.</td><td><code>--repo</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars completion</code></td><td>Generates shell completion scripts through Cobra.</td><td>Use command-specific help for supported shells.</td></tr>
               </tbody>
             </table>

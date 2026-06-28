@@ -2,6 +2,10 @@
 
 Guardrails are safety rules that constrain what MARS agents can do. They prevent agents from making dangerous changes, leaking secrets, or violating project conventions.
 
+The primary user-facing site reference is
+[guardrails-reference.html](guardrails-reference.html). This Markdown file
+remains a compact repo-readable companion.
+
 ## Severity Levels
 
 | Severity | Behaviour |
@@ -35,7 +39,7 @@ rules:
     pattern: 'regex'        # Content regex (optional)
     file_pattern: '*.go'    # File glob (optional)
     message: Explanation shown when the rule triggers
-    stale_days: 90          # Auto-expire after N days (0 = never)
+    stale_days: 90          # Review after N days; negative = never stale
 ```
 
 | Field | Required | Description |
@@ -44,10 +48,10 @@ rules:
 | `name` | Yes | Short name displayed in violations. |
 | `severity` | Yes | `hard` (blocks) or `advisory` (warns). |
 | `scope` | Yes | `global` applies to all roles, or specify a role name. |
-| `pattern` | No | Regex matched against file content. Rule triggers on match. |
-| `file_pattern` | No | Glob matched against filenames. Limits which files the rule applies to. |
+| `pattern` | No | Regex matched against file content. Hard rules need a matching pattern to block file content. |
+| `file_pattern` | No | Glob matched against the file basename. Limits which files the rule applies to. |
 | `message` | Yes | Explanation shown when the rule triggers. |
-| `stale_days` | No | Days until the rule is flagged as stale. Default: 90. Set to -1 for never. |
+| `stale_days` | No | Days until the rule is flagged as stale. Omitted or `0` uses the default review window. Set to a negative value for never. |
 
 ## Examples
 
@@ -128,15 +132,16 @@ Overrides are logged and auditable. Use them sparingly.
 
 ## Stale Rules
 
-Rules auto-expire after `stale_days` (default: 90 days). The `mars doctor` command flags stale rules. Review and either refresh or remove them.
+Rules are flagged for review after `stale_days` (default: 90 days). The `mars doctor` command flags stale rules. Review and either refresh or remove them.
 
-Set `stale_days: -1` for permanent rules that should never expire.
+Set `stale_days: -1` for permanent rules that should never be flagged stale. Omitted or `0` uses the default review window.
 
 ## Best Practices
 
-1. **Start with advisory rules** — observe how agents behave before adding hard blocks.
-2. **Scope narrowly** — prefer role-specific rules over global ones to avoid blocking unrelated roles.
-3. **Write clear messages** — the message is shown to the agent and to humans reviewing violations.
-4. **Review regularly** — stale rules with outdated patterns create false positives.
-5. **Test your patterns** — regex mistakes can block legitimate operations or miss violations.
-6. **Use `file_pattern` to limit scope** — a broad content regex combined with a narrow file glob is safer than a broad content regex alone.
+1. **Start with advisory rules** - observe how agents behave before adding hard blocks.
+2. **Scope narrowly** - prefer role-specific rules over global ones to avoid blocking unrelated roles.
+3. **Write clear messages** - the message is shown to the agent and to humans reviewing violations.
+4. **Review regularly** - stale rules with outdated patterns create false positives.
+5. **Test your patterns** - regex mistakes can block legitimate operations or miss violations.
+6. **Use `file_pattern` to limit scope** - a broad content regex combined with a narrow file glob is safer than a broad content regex alone.
+7. **Prefer the HTML reference for full behavior** - [guardrails-reference.html](guardrails-reference.html) covers secret scanning, hooks, matching semantics, stale-rule review, and troubleshooting.

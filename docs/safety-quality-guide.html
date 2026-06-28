@@ -4,6 +4,7 @@ MarsDocSync:
 docs:
 - README.md
 - docs/index.html
+- docs/guardrails-reference.html
 - docs/guardrails-guide.md
 - docs/product-specs/product-surface.md
 - docs/design-docs/guardrails.md
@@ -39,6 +40,7 @@ docs:
         <a href="index.html">Docs Home</a>
         <a href="harness-guide.html">Harness</a>
         <a href="operations-guide.html">Operations</a>
+        <a href="guardrails-reference.html">Guardrails</a>
         <a href="tools-mcp-guide.html">Tools/MCP</a>
         <a href="release-update-guide.html">Release</a>
       </nav>
@@ -87,6 +89,9 @@ docs:
             Guardrails are runtime rules that constrain agent output and repo
             mutation. They live in the target harness, are attached through the
             manifest, and can be hard-blocking or advisory.
+            For the full YAML schema, matching behavior, secret-scan details,
+            hook behavior, stale-rule rules, and troubleshooting, open the
+            <a href="guardrails-reference.html">Guardrails Reference</a>.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
@@ -113,6 +118,8 @@ docs:
             Start with narrow, explainable rules. A useful guardrail tells the
             agent exactly what was blocked and what a safe next action looks
             like.
+            The <a href="guardrails-reference.html">Guardrails Reference</a>
+            documents exact field defaults and matching semantics.
           </p>
           <div class="reference-stack">
             <article data-doc-filter>

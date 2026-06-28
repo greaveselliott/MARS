@@ -60,7 +60,10 @@ dashboard state, terminal status, logs, traces, quality score, telemetry,
 code-intelligence metrics, diagnostics, and symptom-driven recovery. The
 delivery operating path lives in `docs/planning-delivery-guide.html`, covering
 the user-facing goal, active plan, BDD contract, ticket, role handoff, evidence,
-review, and release chain. The repo also includes a static adoption explainer
+review, and release chain. Guardrail behavior now has a dedicated site
+reference at `docs/guardrails-reference.html`, covering YAML rules, hard and
+advisory severity, scope, matching semantics, secret scanning, optional hooks,
+stale-rule review, overrides, and recovery. The repo also includes a static adoption explainer
 under `docs/harness-ecosystem/`; the explainer remains a linked page for the
 value case, foundation/deployed boundary, operating model, DocSync, telemetry,
 safety, and pilot adoption path for mixed leadership and engineering audiences.

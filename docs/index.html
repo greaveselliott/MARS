@@ -8,6 +8,7 @@ docs:
 - docs/product-specs/product-surface.md
 - docs/product-specs/vision.md
 - docs/bundle-reference.md
+- docs/guardrails-reference.html
 - docs/guardrails-guide.md
 - docs/features/README.md
 - docs/design-docs/dashboard.md
@@ -69,6 +70,7 @@ docs:
         <a href="documentation-sync-guide.html">DocSync</a>
         <a href="observability-guide.html">Observe</a>
         <a href="safety-quality-guide.html">Safety</a>
+        <a href="guardrails-reference.html">Guardrails</a>
         <a href="release-update-guide.html">Release</a>
         <a href="integrations-validation-guide.html">Integrations</a>
         <a href="troubleshooting-guide.html">Troubleshoot</a>
@@ -192,6 +194,7 @@ docs:
             <a href="observability-guide.html">Observability And Evidence Guide</a>
             <a href="troubleshooting-guide.html">Troubleshooting Guide</a>
             <a href="safety-quality-guide.html">Safety, Trust, And Quality Guide</a>
+            <a href="guardrails-reference.html">Guardrails Reference</a>
             <a href="release-update-guide.html">Release And Update Guide</a>
             <a href="integrations-validation-guide.html">Integrations And Validation Guide</a>
             <a href="harness-ecosystem/">Adoption Explainer</a>
@@ -704,7 +707,8 @@ mars models override --repo ~/my-project --role engineer --provider openai-compa
             <a href="safety-quality-guide.html">Safety, Trust, And Quality Guide</a>.
             It covers guardrail authoring, secret scanning, blast-radius
             containment, trust levels, scoring, quality score export, and
-            telemetry.
+            telemetry. For the rule-level YAML schema and command behavior,
+            open the <a href="guardrails-reference.html">Guardrails Reference</a>.
           </p>
           <div class="concept-grid">
             <article data-doc-filter>
@@ -712,6 +716,7 @@ mars models override --repo ~/my-project --role engineer --provider openai-compa
               <p>YAML rules under <code>.harness/guardrails/</code> can be hard-blocking or advisory. Hard rules are enforced during execution, not merely suggested in prompts.</p>
               <pre><code>mars guardrails secret-scan --repo ~/my-project
 mars guardrails install-hooks --repo ~/my-project</code></pre>
+              <p><a href="guardrails-reference.html">Open the guardrails reference</a></p>
             </article>
             <article data-doc-filter>
               <h3>Trust levels</h3>
@@ -941,6 +946,7 @@ roles:
             <a href="observability-guide.html">Observability and evidence guide</a>
             <a href="troubleshooting-guide.html">Troubleshooting guide</a>
             <a href="safety-quality-guide.html">Safety, trust, and quality guide</a>
+            <a href="guardrails-reference.html">Guardrails reference</a>
             <a href="release-update-guide.html">Release and update guide</a>
             <a href="integrations-validation-guide.html">Integrations and validation guide</a>
             <a href="planning-delivery-guide.html">Planning and delivery guide</a>
@@ -948,7 +954,7 @@ roles:
             <a href="https://github.com/greaveselliott/MARS/blob/main/AGENTS.md">Agent guide</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/ARCHITECTURE.md">Architecture</a>
             <a href="bundle-reference.md">Bundle reference</a>
-            <a href="guardrails-guide.md">Guardrails guide</a>
+            <a href="guardrails-guide.md">Guardrails Markdown companion</a>
             <a href="features/README.md">BDD feature contracts</a>
             <a href="roles/ROLES.md">Role registry</a>
             <a href="product-specs/product-surface.md">Product surface</a>

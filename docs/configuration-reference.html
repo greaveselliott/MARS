@@ -6,6 +6,7 @@ docs:
 - docs/index.html
 - docs/product-specs/product-surface.md
 - docs/bundle-reference.md
+- docs/guardrails-reference.html
 - docs/guardrails-guide.md
 - docs/design-docs/local-inference.md
 - docs/design-docs/board-driven-integrations.md
@@ -43,6 +44,7 @@ docs:
         <a href="harness-guide.html">Harness</a>
         <a href="roles-guide.html">Roles</a>
         <a href="documentation-sync-guide.html">DocSync</a>
+        <a href="guardrails-reference.html">Guardrails</a>
         <a href="models-guide.html">Models</a>
         <a href="integrations-validation-guide.html">Integrations</a>
         <a href="operations-guide.html">Operations</a>
@@ -301,6 +303,9 @@ delivery:
           <p>
             Guardrails are YAML policies referenced from manifest roles. Hard
             rules block operations; advisory rules appear in role context.
+            For full field defaults, matching semantics, secret scanning, git
+            hooks, and troubleshooting, open the
+            <a href="guardrails-reference.html">Guardrails Reference</a>.
           </p>
           <pre><code>rules:
   - id: no-hardcoded-secrets

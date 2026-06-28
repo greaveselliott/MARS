@@ -1,0 +1,430 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/guardrails-guide.md
+- docs/safety-quality-guide.html
+- docs/configuration-reference.html
+- docs/cli-reference.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/guardrails.md
+- docs/features/F-007-guardrails-and-safety.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Guardrails Reference</title>
+    <meta
+      name="description"
+      content="Detailed user reference for MARS guardrail YAML rules, hard and advisory severity, role scope, regex and file matching, secret scanning, git hooks, stale-rule review, overrides, and troubleshooting."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to guardrails reference</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Guardrails</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="safety-quality-guide.html">Safety</a>
+        <a href="configuration-reference.html">Configuration</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="troubleshooting-guide.html">Troubleshoot</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Guardrails sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search guardrails</label>
+          <input id="docSearch" type="search" placeholder="hard, secret, stale">
+          <p class="search-hint">Filters rule fields, commands, recipes, and troubleshooting rows.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#mental-model">Mental Model</a>
+          <a href="#locations">Files And Attachment</a>
+          <a href="#schema">Rule Schema</a>
+          <a href="#matching">Matching Semantics</a>
+          <a href="#examples">Examples</a>
+          <a href="#secret-scan">Secret Scan</a>
+          <a href="#hooks">Git Hooks</a>
+          <a href="#stale">Stale Rules</a>
+          <a href="#overrides">Overrides</a>
+          <a href="#workflow">Authoring Workflow</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Policy reference</p>
+            <h1>Constrain agent work with reviewable, repo-owned rules.</h1>
+            <p class="lede">
+              Guardrails are the safety layer between agent intent and target
+              repo mutation. They make policy explicit: which roles receive
+              which warnings, which writes are blocked, which secret patterns
+              stop commits, and how operators review or retire policy over
+              time.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="mental-model">
+          <h2>Mental Model</h2>
+          <p>
+            MARS uses guardrails in two complementary ways. Repo-owned YAML
+            rules define target-specific policy, while built-in runtime policy
+            blocks unsafe tool behavior such as secret leakage, dangerous shell
+            commands, dirty generated output, and unreviewable blast radius.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Layer</th><th>User controls</th><th>Effect</th></tr></thead>
+              <tbody>
+                <tr><td>Advisory rules</td><td><code>severity: advisory</code></td><td>Added to role context. The model is warned, but the rule does not mechanically block a write.</td></tr>
+                <tr><td>Hard rules</td><td><code>severity: hard</code> with a content <code>pattern</code></td><td>Checked by the guardrails engine and blocks matching file content for matching roles.</td></tr>
+                <tr><td>Secret scanning</td><td><code>mars guardrails secret-scan</code> and optional hook</td><td>Finds common credential patterns with redacted output and exits non-zero on findings.</td></tr>
+                <tr><td>Runtime policy</td><td>Tool allowlists, trust, and built-in policy checks</td><td>Prevents unsafe tool calls and oversized or untracked mutations before they become accepted work.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Useful rule of thumb:</strong>
+            put project conventions and target-specific restrictions in
+            <code>.harness/guardrails/</code>. Leave general tool safety,
+            shell safety, and workspace hygiene to the built-in policy layer.
+          </div>
+        </section>
+
+        <section class="doc-section" id="locations">
+          <h2>Files And Attachment</h2>
+          <p>
+            Guardrail files live inside the target harness and are attached per
+            role from <code>.harness/manifest.yaml</code>. A role only receives
+            the guardrail files listed on that role.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Directory layout</h3>
+              <pre><code>.harness/
+|-- manifest.yaml
+|-- roles/
+|-- guardrails/
+|   |-- safety.yaml
+|   `-- conventions.yaml
+`-- knowledge/</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Role attachment</h3>
+              <pre><code>roles:
+  engineer:
+    prompt: roles/engineer.md
+    tools: [file_read, file_write, shell_exec, grep]
+    guardrails:
+      - guardrails/safety.yaml
+      - guardrails/conventions.yaml</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Safe inspection</h3>
+              <pre><code>mars run engineer --repo /path/to/target-repo --dry-run
+mars guardrails secret-scan --repo /path/to/target-repo --staged</code></pre>
+              <p>Use dry-run to see assembled advisory context before calling a model.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="schema">
+          <h2>Rule Schema</h2>
+          <p>
+            A guardrail file has a top-level <code>rules</code> list. MARS
+            defaults missing <code>scope</code> to <code>global</code>, missing
+            <code>severity</code> to <code>advisory</code>, and missing creation
+            time to the time the file is loaded.
+          </p>
+          <pre data-doc-filter><code>rules:
+  - id: no-hardcoded-secrets
+    name: No hardcoded secrets
+    severity: hard
+    scope: global
+    pattern: '(?i)(password|secret|api_key|token)\s*[:=]\s*["''][^"'']{8,}'
+    file_pattern: '*.go'
+    message: Do not hardcode secrets. Use environment variables or local secret storage.
+    stale_days: -1</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Field</th><th>Required?</th><th>User behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>Yes</td><td>Stable machine-readable identifier. Use lower-kebab-case and do not reuse it for a different policy.</td></tr>
+                <tr><td><code>name</code></td><td>Yes</td><td>Short human label shown in violations and advisory context.</td></tr>
+                <tr><td><code>severity</code></td><td>No</td><td><code>advisory</code> or <code>hard</code>. Missing severity defaults to <code>advisory</code>.</td></tr>
+                <tr><td><code>scope</code></td><td>No</td><td><code>global</code> or a role name. Missing scope defaults to <code>global</code>.</td></tr>
+                <tr><td><code>pattern</code></td><td>No</td><td>RE2-compatible content regex. Invalid regex fails closed when rules are loaded.</td></tr>
+                <tr><td><code>file_pattern</code></td><td>No</td><td>Glob matched against the file basename, such as <code>*.go</code> or <code>*.sql</code>.</td></tr>
+                <tr><td><code>message</code></td><td>Yes</td><td>Actionable remediation shown to agents and operators.</td></tr>
+                <tr><td><code>stale_days</code></td><td>No</td><td><code>0</code> or omitted uses the default review window. A negative value means never stale.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="matching">
+          <h2>Matching Semantics</h2>
+          <p>
+            Understanding matching prevents surprise blocks and false
+            confidence. Guardrails are intentionally syntactic in the current
+            implementation: regex content checks, role scope, and basename
+            file glob checks.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Role scope</h3>
+              <p><code>scope: global</code> applies to every role that loads the file. A role name such as <code>engineer</code> applies only to that role.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Content regex</h3>
+              <p><code>pattern</code> is compiled before execution. Invalid regexes reject the rule file instead of running under unknown policy.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>File glob</h3>
+              <p><code>file_pattern</code> uses basename matching. <code>*.go</code> matches <code>internal/app/main.go</code>; path-prefix matching is not part of this v1 rule engine.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Hard rule trigger</h3>
+              <p>A hard rule blocks when the role scope matches, the file glob matches, and the content regex matches. A hard rule without <code>pattern</code> is not useful as a file-content blocker.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Advisory prompt</h3>
+              <p>Advisory rules are deduplicated by <code>id</code> and inserted once into the role context for matching roles.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>V1 boundary</h3>
+              <p>AST-aware checks, semantic validation, and path-prefix predicates belong to future or built-in policy surfaces, not the YAML rule matcher.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="examples">
+          <h2>Rule Examples</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Block hardcoded secrets</h3>
+              <pre><code>rules:
+  - id: no-hardcoded-secrets
+    name: No hardcoded secrets
+    severity: hard
+    scope: global
+    pattern: '(?i)(password|secret|api_key|token)\s*[:=]\s*["''][^"'']{8,}'
+    message: Do not hardcode secrets. Use environment variables or .harness/.env.local.</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Protect migration files</h3>
+              <pre><code>rules:
+  - id: no-drop-table
+    name: No destructive migrations
+    severity: hard
+    scope: engineer
+    file_pattern: '*.sql'
+    pattern: '(?i)\bDROP\s+TABLE\b'
+    message: Destructive migrations need explicit human approval and a rollback plan.</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Warn reviewers about API compatibility</h3>
+              <pre><code>rules:
+  - id: public-api-compatibility
+    name: Preserve public API
+    severity: advisory
+    scope: reviewer
+    message: Check exported names, CLI flags, config keys, and documented behavior before approval.</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="secret-scan">
+          <h2>Secret Scan Command</h2>
+          <p>
+            <code>mars guardrails secret-scan</code> scans common credential
+            shapes and returns a blocking exit code when findings exist. Output
+            includes file, line, and pattern name; the matched value is
+            redacted.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Scan tracked and untracked repo files</h3>
+              <pre><code>mars guardrails secret-scan --repo /path/to/target-repo</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Scan staged changes only</h3>
+              <pre><code>mars guardrails secret-scan --repo /path/to/target-repo --staged</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Use machine-readable output</h3>
+              <pre><code>mars guardrails secret-scan --repo /path/to/target-repo --json</code></pre>
+            </article>
+          </div>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Pattern class</th><th>Examples caught</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td>AWS access key</td><td><code>AKIA...</code></td><td>Common long-lived AWS key prefix.</td></tr>
+                <tr><td>GitHub token</td><td><code>ghp_</code>, <code>gho_</code>, <code>ghs_</code></td><td>Matched value is redacted in text and JSON output.</td></tr>
+                <tr><td>Private key block</td><td>RSA, DSA, EC, OpenSSH, or PGP private key header.</td><td>Treat as leaked until rotated.</td></tr>
+                <tr><td>Password in URL</td><td>Credentials embedded before <code>@</code>.</td><td>Remove the credential from source and history as needed.</td></tr>
+                <tr><td>Generic API key assignment</td><td><code>api_key</code>, <code>secret_key</code>, <code>access_token</code>.</td><td>Review false positives carefully; do not commit real values.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            The scanner skips <code>.git/</code> and the ignored local secret
+            file <code>.harness/.env.local</code>. Commit only
+            <code>.harness/.env.example</code> with environment variable names,
+            not values.
+          </p>
+        </section>
+
+        <section class="doc-section" id="hooks">
+          <h2>Optional Git Hooks</h2>
+          <p>
+            The hook installer adds an idempotent MARS-managed block to the
+            target repo's pre-commit hook. The hook runs staged secret scanning
+            before a local commit completes.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Install or refresh the hook</h3>
+              <pre><code>mars guardrails install-hooks --repo /path/to/target-repo
+mars guardrails install-hooks --repo /path/to/target-repo --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>What the managed block runs</h3>
+              <pre><code>mars guardrails secret-scan --repo /path/to/target-repo --staged</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>When to install it</h3>
+              <p>Install it for local developer safety. Keep CI or release gates separate if your team needs server-side enforcement.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="stale">
+          <h2>Stale Rule Review</h2>
+          <p>
+            Guardrails should age on purpose. A stale rule is not necessarily
+            wrong; it is a signal to review whether the policy still describes
+            the current product, team, and agent behavior.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Setting</th><th>Meaning</th><th>Use it for</th></tr></thead>
+              <tbody>
+                <tr><td>Omitted</td><td>Default review window.</td><td>Most rules.</td></tr>
+                <tr><td><code>stale_days: 0</code></td><td>Default review window.</td><td>Equivalent to omission in the current engine.</td></tr>
+                <tr><td><code>stale_days: 30</code></td><td>Review after 30 days from creation/load time.</td><td>Temporary conventions and newly tuned policies.</td></tr>
+                <tr><td><code>stale_days: -1</code></td><td>Never stale.</td><td>Permanent safety rules such as no committed secrets.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            If a stale rule still matters, keep it and refresh the rationale in
+            the rule message or adjacent docs. If it produces false positives,
+            narrow the regex, add a <code>file_pattern</code>, change it to
+            advisory, or remove it with a commit that explains why.
+          </p>
+        </section>
+
+        <section class="doc-section" id="overrides">
+          <h2>Overrides And Break Glass</h2>
+          <p>
+            The guardrails engine has an override model for active hard-rule
+            exemptions, but users should treat overrides as exceptional. There
+            is no general <code>mars guardrails bypass</code> command in the
+            public guardrails CLI. Prefer fixing the violation or narrowing an
+            overbroad rule in git.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Good reason</h3>
+              <p>The rule is correct, but a one-off human-approved operation needs a time-bounded exception.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Bad reason</h3>
+              <p>The rule fires often during normal work. That means the rule should be refined or converted to advisory.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Audit expectation</h3>
+              <p>Record who approved the exception, which rule ID was bypassed, why, and when the exception expires.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Safer alternative</h3>
+              <p>Commit a narrower policy change and release notes so future agents inherit the corrected behavior.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="workflow">
+          <h2>Authoring Workflow</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Start advisory</h3>
+              <p>Use <code>severity: advisory</code> while observing whether the instruction helps roles make better choices.</p>
+            </li>
+            <li>
+              <h3>Promote only deterministic checks</h3>
+              <p>Use <code>severity: hard</code> for syntactic checks with a reliable regex and a clear remediation path.</p>
+            </li>
+            <li>
+              <h3>Attach narrowly</h3>
+              <p>List the rule file only on roles that need it, and use role-specific <code>scope</code> when possible.</p>
+            </li>
+            <li>
+              <h3>Validate before relying on it</h3>
+              <pre><code>mars run engineer --repo /path/to/target-repo --dry-run
+mars guardrails secret-scan --repo /path/to/target-repo --staged
+mars doctor --repo /path/to/target-repo --json</code></pre>
+            </li>
+            <li>
+              <h3>Commit the policy and rationale</h3>
+              <p>Guardrail changes are repo-owned behavior. Commit the YAML and any affected docs together.</p>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Next action</th></tr></thead>
+              <tbody>
+                <tr><td>Role ignores a rule</td><td>The role does not list that guardrail file, or the rule is scoped to another role.</td><td>Check <code>.harness/manifest.yaml</code> and the rule <code>scope</code>.</td></tr>
+                <tr><td>Hard rule never blocks</td><td>The rule has no <code>pattern</code>, the file basename misses <code>file_pattern</code>, or the regex does not match.</td><td>Test the regex, remove over-narrow file globbing, or make it advisory.</td></tr>
+                <tr><td>Rule file fails to load</td><td>Invalid YAML or invalid regex.</td><td>Fix the parse error before running agents; invalid policy should fail closed.</td></tr>
+                <tr><td>Secret scan blocks commit</td><td>A staged or repo file matches a credential pattern.</td><td>Remove the value, rotate it if real, and rerun <code>mars guardrails secret-scan --staged</code>.</td></tr>
+                <tr><td>False positive in secret scan</td><td>A test fixture or placeholder looks like a secret.</td><td>Use safer placeholder strings. Do not weaken real secret patterns casually.</td></tr>
+                <tr><td>Hook install fails</td><td>The path is not a git checkout or the hook file is not writable.</td><td>Run from the target repo, fix permissions, then rerun <code>install-hooks</code>.</td></tr>
+                <tr><td>Rule feels too broad</td><td>Content regex is too general or applies globally.</td><td>Add <code>file_pattern</code>, scope it to one role, or make it advisory first.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>MARS keeps autonomy local, auditable, and repo-owned. Documentation changes should stay aligned with implementation truth.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

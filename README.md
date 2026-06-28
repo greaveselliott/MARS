@@ -309,6 +309,9 @@ safety, or orchestration changes do. See
 - [docs/safety-quality-guide.html](docs/safety-quality-guide.html):
   guardrails, secret scanning, blast radius, trust, scores, quality export,
   and telemetry.
+- [docs/guardrails-reference.html](docs/guardrails-reference.html):
+  guardrail YAML schema, severity, role scope, matching semantics, secret
+  scanning, optional hooks, stale-rule review, overrides, and recovery.
 - [docs/release-update-guide.html](docs/release-update-guide.html): update
   checks, CLI self-update, harness update, release notes, assets, and audit.
 - [docs/integrations-validation-guide.html](docs/integrations-validation-guide.html):
@@ -325,7 +328,8 @@ safety, or orchestration changes do. See
 - [docs/product-specs/index.md](docs/product-specs/index.md): product contract.
 - [docs/features/README.md](docs/features/README.md): BDD feature contracts.
 - [docs/bundle-reference.md](docs/bundle-reference.md): target harness format.
-- [docs/guardrails-guide.md](docs/guardrails-guide.md): safety rule authoring.
+- [docs/guardrails-guide.md](docs/guardrails-guide.md): compact Markdown
+  companion for safety rule authoring.
 - [docs/design-docs/index.md](docs/design-docs/index.md): decisions and design
   rationale.
 - [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md): repo-visible quality evidence.
