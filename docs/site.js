@@ -2,6 +2,9 @@
 MarsDocSync:
 docs:
 - docs/index.html
+- docs/cli-reference.html
+- docs/workflows.html
+- docs/harness-guide.html
 - README.md
 - docs/product-specs/product-surface.md
 */

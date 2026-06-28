@@ -31,13 +31,16 @@ Documentation site status: the repository GitHub Pages site is published from
 `/docs`, and `docs/index.html` is the user-facing developer documentation front
 door. It documents installation, setup, CLI workflows, target harness
 lifecycle, operations, models, safety, telemetry, release management,
-extension, troubleshooting, and links into durable source docs. The repo also
-includes a static adoption explainer under `docs/harness-ecosystem/`; the
-explainer remains a linked page for the value case, foundation/deployed
-boundary, operating model, DocSync, telemetry, safety, and pilot adoption path
-for mixed leadership and engineering audiences. Both pages remain
-self-contained with local assets only, so they can be reviewed from the repo
-and deployed without a frontend build step.
+extension, troubleshooting, and links into durable source docs. The site also
+includes dedicated pages for the detailed CLI reference
+(`docs/cli-reference.html`), task-oriented user workflows
+(`docs/workflows.html`), and target harness structure/customization
+(`docs/harness-guide.html`). The repo also includes a static adoption explainer
+under `docs/harness-ecosystem/`; the explainer remains a linked page for the
+value case, foundation/deployed boundary, operating model, DocSync, telemetry,
+safety, and pilot adoption path for mixed leadership and engineering audiences.
+These static pages remain self-contained with local assets only, so they can be
+reviewed from the repo and deployed without a frontend build step.
 
 ## CLI Contract
 

@@ -2,6 +2,9 @@
 MarsDocSync:
 docs:
 - docs/index.html
+- docs/cli-reference.html
+- docs/workflows.html
+- docs/harness-guide.html
 - README.md
 - docs/product-specs/product-surface.md
 */
@@ -255,6 +258,11 @@ main {
   box-shadow: var(--shadow);
 }
 
+.compact-hero {
+  min-height: auto;
+  grid-template-columns: 1fr;
+}
+
 .eyebrow {
   margin: 0 0 0.75rem;
   color: var(--coral);
@@ -354,8 +362,17 @@ h3 {
   margin-top: 1rem;
 }
 
+.reference-stack,
+.step-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
 .concept-grid article,
-.workflow-list article {
+.workflow-list article,
+.reference-stack article,
+.step-list li {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 1rem;
@@ -381,6 +398,40 @@ h3 {
 
 .workflow-list pre {
   margin-top: 0.8rem;
+}
+
+.reference-stack dl {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0 0;
+}
+
+.reference-stack dt {
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.reference-stack dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+.step-list {
+  list-style: none;
+  padding: 0;
+}
+
+.step-list li {
+  counter-increment: step-counter;
+}
+
+.step-list {
+  counter-reset: step-counter;
+}
+
+.step-list h3::before {
+  content: counter(step-counter) ". ";
+  color: var(--coral);
 }
 
 .code-card {

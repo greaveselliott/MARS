@@ -1,0 +1,326 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/quickstart.md
+- docs/product-specs/product-surface.md
+- docs/design-docs/dashboard.md
+- docs/design-docs/local-inference.md
+- docs/design-docs/release-versioning.md
+- docs/design-docs/foundation-operating-model.md
+- docs/validation/README.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS User Workflows</title>
+    <meta
+      name="description"
+      content="Task-oriented MARS documentation for installing, bootstrapping, running agents, operating the dashboard, managing models, updating, releasing, and troubleshooting."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to workflows</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>User workflows</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="harness-guide.html">Harness Guide</a>
+        <a href="harness-ecosystem/">Explainer</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Workflow sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search workflows</label>
+          <input id="docSearch" type="search" placeholder="install, dashboard, release">
+          <p class="search-hint">Filters workflow cards and tables.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#source-install">Source Install</a>
+          <a href="#first-target">First Target</a>
+          <a href="#safe-inspection">Safe Inspection</a>
+          <a href="#run-loop">Run The Loop</a>
+          <a href="#dashboard">Dashboard</a>
+          <a href="#models">Model Routing</a>
+          <a href="#updates">Updates</a>
+          <a href="#release">Release</a>
+          <a href="#remove">Remove MARS</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Task guide</p>
+            <h1>Run MARS from install to daily operations.</h1>
+            <p class="lede">
+              These workflows describe what users actually do: install the
+              command, prepare local inference, bootstrap a target repo, inspect
+              agent context safely, run roles, operate the dashboard, choose
+              models, update surfaces, release changes, and recover from common
+              failures.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="source-install">
+          <h2>Install From Source</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Clone the repository</h3>
+              <pre><code>git clone https://github.com/greaveselliott/MARS.git
+cd MARS</code></pre>
+            </li>
+            <li>
+              <h3>Install the command</h3>
+              <pre><code>make install
+mars version</code></pre>
+              <p><code>make install</code> installs the current checkout and runs shell PATH setup through the installed binary.</p>
+            </li>
+            <li>
+              <h3>Prepare local inference</h3>
+              <pre><code>mars setup --skip-github
+mars doctor</code></pre>
+              <p>Use <code>--skip-github</code> for source onboarding unless you need binary release updates immediately.</p>
+            </li>
+          </ol>
+          <div class="callout">
+            <strong>Avoid stale binaries:</strong>
+            Do not use <code>go build ./cmd/mars; ./mars ...</code>. Prefer
+            <code>make install</code> or <code>go build -o build/mars ./cmd/mars</code>.
+          </div>
+        </section>
+
+        <section class="doc-section" id="first-target">
+          <h2>Bootstrap Your First Target Repository</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Choose a separate git checkout</h3>
+              <p>The target project is the repo MARS will manage. Do not point ordinary autonomous runs at the MARS source repo.</p>
+            </li>
+            <li>
+              <h3>Initialize the deployed harness</h3>
+              <pre><code>mars init --repo ~/my-project</code></pre>
+              <p>This writes <code>.harness/</code>, <code>AGENTS.md</code>, goals, feature contracts, tickets, plans, release files, and guidance docs.</p>
+            </li>
+            <li>
+              <h3>Review generated ownership</h3>
+              <p>After init, role prompts, manifests, guardrails, knowledge routes, tickets, and docs are target-owned. Edit them deliberately.</p>
+            </li>
+            <li>
+              <h3>Run a health check</h3>
+              <pre><code>mars doctor --repo ~/my-project --json</code></pre>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="safe-inspection">
+          <h2>Inspect Before You Let Agents Mutate</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Preview a role prompt</h3>
+              <pre><code>mars run engineer --repo ~/my-project --dry-run</code></pre>
+              <p>Dry-run mode prints assembled context and exits before calling the model.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Inspect an uninitialized repo</h3>
+              <pre><code>mars run engineer --repo ~/legacy-project --dry-run --no-init</code></pre>
+              <p><code>--no-init</code> prevents automatic harness scaffolding.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>List tools without mutation</h3>
+              <pre><code>mars tools list --json
+mars mcp serve --repo ~/my-project --trust observer</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="run-loop">
+          <h2>Run Agents And The Autonomous Loop</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Manual role run</h3>
+              <pre><code>mars run engineer --repo ~/my-project
+mars run qa --repo ~/my-project --debug</code></pre>
+              <p>Use <code>run</code> for one role, one repo, one bounded job.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Single-repo lifecycle</h3>
+              <pre><code>mars start --repo ~/my-project</code></pre>
+              <p>Use <code>start</code> for the normal autonomous path: init if missing, register, reconcile, seed, serve dashboard/control APIs, and run the repo pipeline.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Multi-repo daemon</h3>
+              <pre><code>mars register --repo ~/my-project --remote owner/repo
+mars serve --addr :9091 --concurrency 2</code></pre>
+              <p>Use <code>serve</code> when you want a persistent orchestrator for registered repositories.</p>
+            </article>
+          </div>
+          <h3>Control Keys</h3>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Key</th><th>Action</th><th>Result</th></tr></thead>
+              <tbody>
+                <tr><td><kbd>p</kbd></td><td>Pause or resume</td><td>Running jobs finish; no new jobs are claimed while paused.</td></tr>
+                <tr><td><kbd>r</kbd></td><td>Warm restart</td><td>Reloads manifests and triggers without killing HTTP.</td></tr>
+                <tr><td><kbd>s</kbd></td><td>Scan</td><td>Scans registered repos and can create findings/tickets.</td></tr>
+                <tr><td><kbd>q</kbd></td><td>Stop</td><td>Graceful shutdown through the normal cancellation path.</td></tr>
+                <tr><td><kbd>h</kbd></td><td>Help</td><td>Shows terminal control help.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="dashboard">
+          <h2>Operate The Dashboard</h2>
+          <p>
+            The dashboard is local and embedded in the Go binary today. Use it
+            to observe role state, quality, queue flow, throughput, telemetry,
+            and evolution history. Use <code>--debug</code> when you want
+            inline trace/log streaming instead of the TTY dashboard.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>View</th><th>What to inspect</th><th>Operator action</th></tr></thead>
+              <tbody>
+                <tr><td>Pipeline Flow</td><td>Role state, trust, score, and next trigger.</td><td>Pause, scan, stop, restart, or enqueue a role.</td></tr>
+                <tr><td>Orchestration</td><td>Dispatch mode, topology, decisions, and stop reasons.</td><td>Identify why work routed or stopped.</td></tr>
+                <tr><td>Role Health</td><td>Scores, guardrail violations, and quality links.</td><td>Decide whether to tune prompts, trust, skills, or guardrails.</td></tr>
+                <tr><td>Throughput</td><td>Job stats, inference speed, and output counts.</td><td>Diagnose pace or model performance.</td></tr>
+                <tr><td>Debug</td><td>Job timeline, trace viewer, webhook log, and errors.</td><td>Investigate blocked jobs.</td></tr>
+                <tr><td>Evolution History</td><td>Self-improvement timeline and guardrail inventory.</td><td>Review whether repeated failures become durable improvements.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="models">
+          <h2>Choose Local, Cloud, Or Deferred Model Routing</h2>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Local default</h3>
+              <p>Use local open models through llama.cpp for data control and no API cost.</p>
+              <pre><code>mars setup --inference local --local-bundle auto</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Cloud route</h3>
+              <p>Use supported cloud providers when the machine cannot run local models or a target needs remote model quality.</p>
+              <pre><code>mars init --repo ~/my-project --model-routing cloud --cloud-provider openai --cloud-model gpt-4.1-mini --api-key-env OPENAI_API_KEY --yes</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Explicit override</h3>
+              <p>Override one tier or role after init without changing defaults for every repo.</p>
+              <pre><code>mars models override --repo ~/my-project --tier coding --provider ollama --model qwen3.6:27b</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Evaluate before promotion</h3>
+              <p>Default model changes need benchmark evidence, immutable artifact revision, SHA256, and docs rationale.</p>
+              <pre><code>mars models evaluate --provider ollama --model qwen3.6:27b</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="updates">
+          <h2>Update Installed And Deployed Surfaces</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Check drift</h3>
+              <pre><code>mars update check --repo ~/my-project --json</code></pre>
+            </li>
+            <li>
+              <h3>Update the installed command if needed</h3>
+              <pre><code>mars auth github check
+mars update tool</code></pre>
+            </li>
+            <li>
+              <h3>Update target harness defaults if needed</h3>
+              <pre><code>mars update harness --repo ~/my-project</code></pre>
+              <p>Updates fill missing defaults while preserving user-owned target config.</p>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="release">
+          <h2>Release Workflows</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Target repo release notes</h3>
+              <pre><code>mars release notes --repo . --bump auto
+mars release backfill-notes --repo . --check
+git commit -m "release: notes X.Y.Z"</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>MARS source release assets</h3>
+              <pre><code>git tag -f vX.Y.Z
+git push origin vX.Y.Z
+mars release publish-assets --repo . --version vX.Y.Z --upload auto
+mars release verify-assets --dist dist/releases --version vX.Y.Z</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Optional GitHub mirror</h3>
+              <pre><code>gh release view vX.Y.Z --repo greaveselliott/MARS
+mars release verify-assets --version vX.Y.Z
+mars release audit --repo .</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="remove">
+          <h2>Remove MARS From A Target Repo</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Preview removal</h3>
+              <pre><code>mars eject --repo ~/my-project</code></pre>
+            </li>
+            <li>
+              <h3>Apply only after reviewing the preview</h3>
+              <pre><code>mars eject --repo ~/my-project --apply --confirm my-project</code></pre>
+            </li>
+            <li>
+              <h3>Choose database behavior</h3>
+              <p>Use <code>--keep-db</code> to leave the associated database in place. Use <code>--delete-shared-db</code> only when deliberately deleting the legacy shared DB.</p>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting Decision Table</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Problem</th><th>First check</th><th>Likely fix</th></tr></thead>
+              <tbody>
+                <tr><td>Command not found</td><td><code>command -v mars</code></td><td>Open a new shell, run <code>mars path setup</code>, or refresh shell cache with <code>hash -r</code>.</td></tr>
+                <tr><td>Auth failure during update</td><td><code>mars auth github check</code></td><td>Run <code>gh auth login</code>, set <code>GH_TOKEN</code>/<code>GITHUB_TOKEN</code>, or run <code>mars auth github setup</code>.</td></tr>
+                <tr><td>Missing local model</td><td><code>mars doctor --json</code></td><td>Run <code>mars setup --download --local-bundle auto</code> or configure cloud/deferred routing.</td></tr>
+                <tr><td>Slow local generation</td><td><code>mars models eligible</code></td><td>Use a smaller local bundle, balanced profile, or a real OpenAI-compatible endpoint.</td></tr>
+                <tr><td>Dashboard port conflict</td><td>Command log listener line</td><td>Pass <code>--addr</code> or <code>--dashboard-addr</code>, or free the port.</td></tr>
+                <tr><td>Guardrail block</td><td>Rule ID and message</td><td>Change the work, narrow the rule, or use an audited override only when policy allows.</td></tr>
+                <tr><td>Release notes fail backfill check</td><td><code>mars release backfill-notes --repo . --check</code></td><td>Run backfill and commit the corrected changelog in the release-note commit.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="site-footer">
+      <p><a href="index.html">Back to documentation home</a></p>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>

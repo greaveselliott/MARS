@@ -1,0 +1,366 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/bundle-reference.md
+- docs/guardrails-guide.md
+- docs/features/README.md
+- docs/roles/ROLES.md
+- docs/design-docs/harness-glossary.md
+- docs/design-docs/harness-operating-model.md
+- docs/design-docs/foundation-deployed-harness-architecture.md
+- docs/design-docs/documentation-sync-architecture.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Target Harness Guide</title>
+    <meta
+      name="description"
+      content="User guide to the target harness MARS writes into repositories: manifest, roles, guardrails, skills, knowledge routes, goals, feature contracts, tickets, release files, and customization."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to harness guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Harness guide</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="harness-ecosystem/">Explainer</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Harness guide sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search harness docs</label>
+          <input id="docSearch" type="search" placeholder="manifest, role, guardrail">
+          <p class="search-hint">Filters harness concepts and examples.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#structure">Directory Structure</a>
+          <a href="#manifest">Manifest</a>
+          <a href="#roles">Roles</a>
+          <a href="#knowledge">Knowledge Routes</a>
+          <a href="#guardrails">Guardrails</a>
+          <a href="#skills">Skills</a>
+          <a href="#operating-model">Operating Model</a>
+          <a href="#quality">Quality And Release</a>
+          <a href="#customize">Customization</a>
+          <a href="#upgrade">Upgrade And Eject</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Target harness</p>
+            <h1>The repo-owned agent operating system MARS deploys.</h1>
+            <p class="lede">
+              A deployed harness is not a black box. It is a set of files in
+              the target repo that users can read, review, commit, tune, update,
+              and remove. This guide explains what each part does and how to
+              customize it safely.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="structure">
+          <h2>Directory Structure</h2>
+          <p>
+            <code>mars init</code> creates a target-owned harness plus durable
+            planning, delivery, quality, and release artifacts.
+          </p>
+          <pre><code>.
+|-- AGENTS.md
+|-- VERSION
+|-- CHANGELOG.md
+|-- .harness/
+|   |-- manifest.yaml
+|   |-- metadata.yaml
+|   |-- roles/
+|   |-- skills/
+|   |-- guardrails/
+|   +-- knowledge/
++-- docs/
+    |-- goals/
+    |-- features/
+    |-- tickets/
+    |-- exec-plans/
+    |-- design-docs/
+    |-- references/
+    +-- QUALITY_SCORE.md</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Surface</th><th>User purpose</th><th>Upgrade behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>AGENTS.md</code></td><td>Compact first-read map for agents and humans.</td><td>Preserved after init.</td></tr>
+                <tr><td><code>.harness/manifest.yaml</code></td><td>Executable role, model, tool, trigger, guardrail, and context routing config.</td><td>Preserved after init.</td></tr>
+                <tr><td><code>.harness/metadata.yaml</code></td><td>Generated harness version drift signal.</td><td>Harness-owned.</td></tr>
+                <tr><td><code>.harness/roles/</code></td><td>Editable role prompts.</td><td>Existing prompts are preserved.</td></tr>
+                <tr><td><code>.harness/skills/</code></td><td>Reusable compact procedures.</td><td>Existing skills are preserved.</td></tr>
+                <tr><td><code>.harness/guardrails/</code></td><td>Hard and advisory safety rules.</td><td>User-owned.</td></tr>
+                <tr><td><code>.harness/knowledge/</code></td><td>Context routes into repo docs.</td><td>User-owned.</td></tr>
+                <tr><td><code>docs/features/</code></td><td>BDD contracts and business logic.</td><td>User-owned source of truth.</td></tr>
+                <tr><td><code>docs/tickets/</code></td><td>Work item lifecycle.</td><td>User-owned source of truth.</td></tr>
+                <tr><td><code>VERSION</code>, <code>CHANGELOG.md</code></td><td>Semantic version and generated patch notes.</td><td>User-owned release state.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="manifest">
+          <h2>Manifest</h2>
+          <p>
+            <code>.harness/manifest.yaml</code> is the entrypoint for executable
+            agent behavior. It names roles, prompts, canonical domains, modes,
+            model tiers, tool allowlists, guardrails, knowledge routes, and
+            triggers.
+          </p>
+          <pre><code>name: my-project
+description: MARS bundle for my-project
+
+roles:
+  engineer:
+    prompt: roles/engineer.md
+    domain: engineer
+    mode: ticket-delivery
+    model: coding
+    tools:
+      - file_read
+      - file_write
+      - shell_exec
+      - grep
+      - mars_cli
+    guardrails:
+      - guardrails/safety.yaml
+    knowledge:
+      - knowledge/context-glossary.yaml
+    triggers:
+      - ticket.assigned</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Field</th><th>Meaning</th><th>User guidance</th></tr></thead>
+              <tbody>
+                <tr><td><code>name</code></td><td>Bundle identifier.</td><td>Keep stable unless renaming the target harness.</td></tr>
+                <tr><td><code>description</code></td><td>Human-readable bundle description.</td><td>Use domain-specific language for your project.</td></tr>
+                <tr><td><code>roles</code></td><td>Map of executable role keys.</td><td>Role keys are what you pass to <code>mars run &lt;role&gt;</code>.</td></tr>
+                <tr><td><code>prompt</code></td><td>Role prompt file path relative to <code>.harness/</code>.</td><td>Keep prompts focused and route longer context through knowledge files.</td></tr>
+                <tr><td><code>domain</code></td><td>Canonical operating domain.</td><td>Use planner, engineer, reviewer, maintainer, end-to-end-tester, or orchestrator vocabulary.</td></tr>
+                <tr><td><code>mode</code></td><td>Lower-kebab-case reason the role runs.</td><td>Examples: <code>ticket-delivery</code>, <code>quality-review</code>, <code>pipeline-repair</code>.</td></tr>
+                <tr><td><code>model</code></td><td>Model tier or hint.</td><td>Prefer <code>fast</code>, <code>reasoning</code>, or <code>coding</code> for tier routing.</td></tr>
+                <tr><td><code>tools</code></td><td>Allowed tool names.</td><td>Grant the smallest tool set that can do the role's job.</td></tr>
+                <tr><td><code>guardrails</code></td><td>Guardrail YAML files.</td><td>Attach role-specific policies instead of making every rule global.</td></tr>
+                <tr><td><code>knowledge</code></td><td>Route files for contextual docs.</td><td>Point to docs; avoid stuffing long content into the manifest.</td></tr>
+                <tr><td><code>triggers</code></td><td>Events or schedules that enqueue work.</td><td>Use explicit triggers for automation and manual <code>mars run</code> for one-off work.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="roles">
+          <h2>Roles</h2>
+          <p>
+            Roles are executable personas with prompts, tools, guardrails,
+            knowledge routes, model tiers, trust levels, scores, and triggers.
+            Generated roles are starter defaults. Target owners should tune
+            them to their product domain and risk tolerance.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Planner domain</h3>
+              <p>Strategy, goals, plans, architecture fit, scenario schedules, and tradeoffs.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Engineer domain</h3>
+              <p>Ticket-bound implementation through the next thin, verifiable slice.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Reviewer domain</h3>
+              <p>Quality review, regression risk, missing tests, and completion truth.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Maintainer domain</h3>
+              <p>Dependency, release, docs, housekeeping, and sustained repo health.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>End-to-End Tester domain</h3>
+              <p>Reproducible user-path validation and evidence collection.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Orchestrator domain</h3>
+              <p>Routing ambiguous follow-up, respecting active plans and work state.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="knowledge">
+          <h2>Knowledge Routes</h2>
+          <p>
+            Knowledge routes are compact YAML maps that tell MARS which repo
+            docs to include when a role needs specific context. They are the
+            antidote to giant prompts: keep instructions small and route the
+            right durable docs only when relevant.
+          </p>
+          <pre><code>routes:
+  - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
+    paths: AGENTS.md, docs/design-docs/context-glossary.md, docs/design-docs/index.md</code></pre>
+          <div class="callout">
+            <strong>User rule:</strong>
+            If a role keeps rediscovering the same concept, add or improve a
+            knowledge route before bloating the role prompt.
+          </div>
+        </section>
+
+        <section class="doc-section" id="guardrails">
+          <h2>Guardrails</h2>
+          <p>
+            Guardrails are YAML rules that constrain file writes and tool use.
+            Hard rules block operations; advisory rules become prompt guidance.
+          </p>
+          <pre><code>rules:
+  - id: no-hardcoded-secrets
+    name: No hardcoded secrets
+    severity: hard
+    scope: global
+    pattern: '(?i)(password|secret|api_key|token)\s*[:=]\s*["''][^"'']{8,}'
+    message: Do not hardcode secrets. Use environment variables or a secrets manager.
+    stale_days: -1</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Field</th><th>Use</th></tr></thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>Stable unique rule ID shown in violations.</td></tr>
+                <tr><td><code>severity</code></td><td><code>hard</code> blocks; <code>advisory</code> informs.</td></tr>
+                <tr><td><code>scope</code></td><td><code>global</code> or a role key.</td></tr>
+                <tr><td><code>pattern</code></td><td>Regex matched against content.</td></tr>
+                <tr><td><code>file_pattern</code></td><td>Optional file glob to narrow the rule.</td></tr>
+                <tr><td><code>message</code></td><td>Actionable explanation for the agent and human reviewer.</td></tr>
+                <tr><td><code>stale_days</code></td><td>Review cadence; use <code>-1</code> only for permanent rules.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="skills">
+          <h2>Skills</h2>
+          <p>
+            Skills are compact reusable workflows in
+            <code>.harness/skills/&lt;name&gt;/SKILL.md</code>. They guide an
+            agent through recurring judgment-heavy procedures without granting
+            new tool authority. Use skills when a human recovery step repeats,
+            when a process is easy to forget, or when the role prompt would
+            otherwise grow too large.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Good skill candidates</h3>
+              <p>Release publication, private release auth, persona design, validation replay, recurring dependency update checks.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Poor skill candidates</h3>
+              <p>One-off project facts, secrets, raw data dumps, or behavior that should be enforced mechanically by a tool or guardrail.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="operating-model">
+          <h2>Operating Model Artifacts</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Artifact</th><th>What users put there</th><th>Why it matters</th></tr></thead>
+              <tbody>
+                <tr><td><code>docs/goals/active.md</code></td><td>Current user-visible priorities.</td><td>Prevents agents from optimizing for stale chat context.</td></tr>
+                <tr><td><code>docs/exec-plans/active/</code></td><td>The one active plan and evidence schedule.</td><td>Keeps delivery order explicit.</td></tr>
+                <tr><td><code>docs/features/</code></td><td>BDD feature contracts and business logic.</td><td>Defines done before implementation claims.</td></tr>
+                <tr><td><code>docs/tickets/</code></td><td>Backlog, in-progress, review, and done tickets.</td><td>Scopes the next walking-skeleton slice.</td></tr>
+                <tr><td><code>docs/design-docs/</code></td><td>Architecture and product decisions.</td><td>Gives future agents rationale, not just final code.</td></tr>
+                <tr><td><code>docs/references/</code></td><td>Research and external context.</td><td>Keeps evidence durable and linkable.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Business Logic Rule</h3>
+          <p>
+            Product rules, state transitions, validations, permissions,
+            scoring/trust behavior, routing rules, release classification, and
+            user-visible outcomes belong in BDD feature contracts before or
+            alongside implementation.
+          </p>
+        </section>
+
+        <section class="doc-section" id="quality">
+          <h2>Quality, Scores, Trust, And Release State</h2>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Quality score</h3>
+              <p><code>docs/QUALITY_SCORE.md</code> is refreshed from live score, telemetry, ticket, dogfood, guardrail, check, no-op, and human follow-up evidence.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Trust levels</h3>
+              <p><code>observer</code>, <code>contributor</code>, and <code>autonomous</code> determine what roles and clients may mutate.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Semantic release</h3>
+              <p><code>VERSION</code> and <code>CHANGELOG.md</code> are generated release state in both MARS source and initialized target repos.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Traceability</h3>
+              <p>Completion claims should link to tests, traces, commits, docs, release notes, and validation evidence.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="customize">
+          <h2>Customization Checklist</h2>
+          <ol class="step-list" data-doc-filter>
+            <li><h3>Rename and describe roles for your domain</h3><p>Keep role keys stable once automation depends on them.</p></li>
+            <li><h3>Tune tool allowlists</h3><p>Grant mutation only where the role's job requires it.</p></li>
+            <li><h3>Attach focused guardrails</h3><p>Prefer scoped rules over broad global blocks.</p></li>
+            <li><h3>Add knowledge routes</h3><p>Route architecture, API, domain, and style guidance from durable docs.</p></li>
+            <li><h3>Choose model routing deliberately</h3><p>Use local by default, cloud when configured, and overrides for explicit repo or role needs.</p></li>
+            <li><h3>Keep generated docs alive</h3><p>When behavior changes, update the owning docs in the same change.</p></li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="upgrade">
+          <h2>Upgrade And Eject Behavior</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Upgrade preserves user-owned files</h3>
+              <pre><code>mars update harness --repo ~/my-project</code></pre>
+              <p>Missing defaults are filled, but local prompts, manifests, guardrails, knowledge routes, tickets, plans, references, and target docs are preserved.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Compare new defaults deliberately</h3>
+              <p>To adopt changed starter prompts, initialize a temporary repo with the new binary and copy only the changes you want.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Eject is dry-run first</h3>
+              <pre><code>mars eject --repo ~/my-project
+mars eject --repo ~/my-project --apply --confirm my-project</code></pre>
+              <p>Removal deletes working-tree harness artifacts and the associated database unless you pass <code>--keep-db</code>. It does not rewrite git history.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="site-footer">
+      <p><a href="index.html">Back to documentation home</a></p>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>

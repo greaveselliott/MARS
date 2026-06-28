@@ -32,7 +32,9 @@ The repository GitHub Pages site publishes from `/docs` and starts at the
 [MARS developer documentation](https://greaveselliott.github.io/MARS/).
 It is the user-facing front door for installation, setup, CLI workflows,
 target harness lifecycle, operations, models, safety, telemetry, release
-management, extension, and troubleshooting.
+management, extension, and troubleshooting. Deeper site pages now cover the
+[CLI reference](docs/cli-reference.html), [user workflows](docs/workflows.html),
+and [target harness guide](docs/harness-guide.html).
 
 For a high-level adoption walkthrough, the documentation site links to the
 interactive [MARS explainer](docs/harness-ecosystem/). It explains the
@@ -253,6 +255,11 @@ safety, or orchestration changes do. See
 
 - [docs/index.html](docs/index.html): GitHub Pages developer documentation
   front door.
+- [docs/cli-reference.html](docs/cli-reference.html): detailed CLI command
+  reference.
+- [docs/workflows.html](docs/workflows.html): task-oriented user workflows.
+- [docs/harness-guide.html](docs/harness-guide.html): target harness structure
+  and customization guide.
 - [docs/quickstart.md](docs/quickstart.md): detailed install and first run.
 - [docs/harness-ecosystem/](docs/harness-ecosystem/):
   interactive adoption explainer linked from the docs site.
