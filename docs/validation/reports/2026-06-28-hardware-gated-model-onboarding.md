@@ -1,18 +1,18 @@
 # Hardware-Gated Model Onboarding Proof
 
 **Date:** 2026-06-28
-**Source Ref:** working tree after hardware-gated model onboarding implementation
-**Validation Type:** Focused unit/golden gates, clean target init replays, installed-style binary runtime preflight
-**Model:** Local route blocked before model launch because GGUF weights are not installed; cloud route blocked before model launch because `ANTHROPIC_API_KEY` is not set.
+**Source Ref:** `0c0636a` plus local runtime continuation evidence gathered with installed `/Users/elliottgreaves/go/bin/mars` reporting `0.67.0`
+**Validation Type:** Focused unit/golden gates, clean target init replays, installed-binary local setup/download, installed-binary runtime preflight
+**Model:** Local route passed after downloading the eligible `local-balanced-q4` bundle. Cloud route remains blocked before provider use because no supported provider credential environment variable is set.
 
 ## Primary Outcome Contract
 
 **Primary Outcome:** Earn a real 10/10 confidence claim for hardware-gated setup/init, local eligibility, cloud routing, secret safety, CLI polish, and mirrored Fact-Validated Planning.
 **Primary Pass Gate:** Confidence is 10/10 only after every proof gate passes or records a `primary_blocked` report with exact rerun commands for unavailable hardware, weights, or credentials.
 **Primary Status:** `primary_blocked`
-**Current Primary Blocker:** This host is eligible for `local-balanced-q4`, but the required local GGUF weights are missing. `ANTHROPIC_API_KEY` is also not set, so the cloud runtime proof cannot reach a live provider.
-**Next Primary Action:** Install local weights and/or export cloud credentials, then rerun the commands in "Continuation Commands".
-**Supporting Evidence:** Focused package tests, full `go test ./...`, docs/tool sync, secret scan, `make check`, `make install`, clean local/cloud init replays, installed-binary JSON runtime preflights, raw-key rejection, provider request-capture tests, and generated target doctrine checks passed.
+**Current Primary Blocker:** Local runtime proof now passes. Cloud runtime proof cannot reach a live provider because `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`, `XAI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, and `COHERE_API_KEY` are all absent from the process environment.
+**Next Primary Action:** Export a supported cloud provider credential, write it into the target's ignored local env file, then rerun the cloud start proof in "Continuation Commands".
+**Supporting Evidence:** Focused package tests, full `go test ./...`, docs/tool sync, secret scan, `make check`, `make install`, clean local/cloud init replays, installed-binary local setup/download, installed-binary local JSON runtime pass, installed-binary cloud JSON credential block, raw-key rejection, provider request-capture tests, and generated target doctrine checks passed.
 
 ## Proof Commands
 
@@ -20,11 +20,13 @@
 go test ./internal/hardware ./internal/models ./internal/setup ./internal/inference ./internal/serve ./internal/safety ./internal/guardrails ./internal/scanner ./internal/tools ./cmd/mars
 go test ./internal/tools -run TestMarsCLI
 go test ./cmd/mars -run 'Test.*Command|Test.*CLI|Test.*Setup|Test.*Init'
-/private/tmp/mars-proof-bin/mars guardrails secret-scan --repo . --json
-/private/tmp/mars-proof-bin/mars docsync audit --repo . --json
+/Users/elliottgreaves/go/bin/mars guardrails secret-scan --repo . --json
+/Users/elliottgreaves/go/bin/mars docsync audit --repo . --json
 go test ./...
 make check
 make install
+/Users/elliottgreaves/go/bin/mars version
+/Users/elliottgreaves/go/bin/mars setup --inference local --local-bundle auto --download --yes --json
 ```
 
 ## Gate Results
@@ -37,14 +39,16 @@ make install
 - Full `go test ./...`: passed.
 - `make check`: passed after rerunning with normal Go cache access outside the sandbox; coverage ratchet passed with `internal/serve` at 66.2%, vulnerability scan found no called vulnerabilities, and fuzz smoke passed.
 - `make install`: passed and installed `/Users/elliottgreaves/go/bin/mars`.
+- Installed binary version: passed with `mars 0.67.0 darwin/arm64`.
+- Local setup/download: passed with `{"status":"ok","steps_run":5,"steps_skipped":2}` after downloading `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` and `google_gemma-4-E4B-it-Q5_K_M.gguf`.
 
 ## Clean Local Target Replay
 
-**Target repo:** `/private/tmp/mars-validation-local-json-ihGJFd`
+**Target repo:** `/private/tmp/mars-confidence10-local-2ah3cK`
 
 ```bash
-/private/tmp/mars-proof-bin/mars init \
-  --repo /private/tmp/mars-validation-local-json-ihGJFd \
+/Users/elliottgreaves/go/bin/mars init \
+  --repo /private/tmp/mars-confidence10-local-2ah3cK \
   --model-routing local \
   --local-bundle auto \
   --yes \
@@ -55,30 +59,31 @@ make install
 
 ```bash
 /Users/elliottgreaves/go/bin/mars start \
-  --repo /private/tmp/mars-validation-local-json-ihGJFd \
+  --repo /private/tmp/mars-confidence10-local-2ah3cK \
   --exit-after-seed \
   --yes \
   --json \
-  --db /private/tmp/mars-validation-local-json-ihGJFd.installed.mars.db \
-  --log-file /private/tmp/mars-validation-local-json-ihGJFd.installed.start.log
+  --db /private/tmp/mars-confidence10-local-2ah3cK.mars.db \
+  --log-file /private/tmp/mars-confidence10-local-2ah3cK.start.log
 ```
 
-**Result:** `primary_blocked`. Hardware eligibility passed and selected `local-balanced-q4`, but runtime preflight blocked before launch because the required weights are missing:
+**Result:** Passed. Hardware eligibility selected `local-balanced-q4`, local model files were present after setup/download, the generated harness baseline was committed, and the seed path returned JSON-only success:
 
 ```json
 {
-  "status": "error",
-  "remediation": "run mars setup --inference local --local-bundle auto --download --yes --json, then rerun the command"
+  "repo": "/private/tmp/mars-confidence10-local-2ah3cK",
+  "seeded": true,
+  "status": "ok"
 }
 ```
 
 ## Clean Cloud Target Replay
 
-**Target repo:** `/private/tmp/mars-validation-cloud-json-5huKDM`
+**Target repo:** `/private/tmp/mars-confidence10-cloud-iGtSnZ`
 
 ```bash
-/private/tmp/mars-proof-bin/mars init \
-  --repo /private/tmp/mars-validation-cloud-json-5huKDM \
+/Users/elliottgreaves/go/bin/mars init \
+  --repo /private/tmp/mars-confidence10-cloud-iGtSnZ \
   --model-routing cloud \
   --cloud-provider anthropic \
   --cloud-model claude-test \
@@ -90,8 +95,8 @@ make install
 **Result:** Passed. Output was JSON only, the generated harness baseline was committed, `.harness/model-overrides.yaml` stored `api_key_env: ANTHROPIC_API_KEY`, `.harness/.env.example` contained only `ANTHROPIC_API_KEY=`, `.gitignore` contained `.harness/.env.local`, and generated `AGENTS.md` contained Fact-Validated Planning.
 
 ```bash
-/private/tmp/mars-proof-bin/mars models credentials write-local-env \
-  --repo /private/tmp/mars-validation-cloud-json-5huKDM \
+/Users/elliottgreaves/go/bin/mars models credentials write-local-env \
+  --repo /private/tmp/mars-confidence10-cloud-iGtSnZ \
   --api-key-env ANTHROPIC_API_KEY \
   --yes \
   --json
@@ -101,15 +106,28 @@ make install
 
 ```bash
 /Users/elliottgreaves/go/bin/mars start \
-  --repo /private/tmp/mars-validation-cloud-json-5huKDM \
+  --repo /private/tmp/mars-confidence10-cloud-iGtSnZ \
   --exit-after-seed \
   --yes \
   --json \
-  --db /private/tmp/mars-validation-cloud-json-5huKDM.installed.mars.db \
-  --log-file /private/tmp/mars-validation-cloud-json-5huKDM.installed.start.log
+  --db /private/tmp/mars-confidence10-cloud-iGtSnZ.mars.db \
+  --log-file /private/tmp/mars-confidence10-cloud-iGtSnZ.start.log
 ```
 
 **Result:** `primary_blocked`. Runtime blocked before provider use because `ANTHROPIC_API_KEY` was not set. No raw key value was accepted or printed.
+
+Credential presence probe, by variable name only, found no usable cloud provider credential:
+
+```text
+ANTHROPIC_API_KEY=missing
+OPENAI_API_KEY=missing
+GEMINI_API_KEY=missing
+MISTRAL_API_KEY=missing
+XAI_API_KEY=missing
+DEEPSEEK_API_KEY=missing
+GROQ_API_KEY=missing
+COHERE_API_KEY=missing
+```
 
 ## Secret And JSON Proof
 
@@ -136,12 +154,10 @@ Official documentation URLs recorded in the provider registry:
 
 ## Continuation Commands
 
-Local runtime proof after weights are available:
+Local runtime proof has passed. Rerun command if the local model directory changes:
 
 ```bash
-make install
-mars setup --inference local --local-bundle auto --download --yes --json
-mars start --repo /private/tmp/mars-validation-local-json-ihGJFd --exit-after-seed --yes --json --db /private/tmp/mars-validation-local-json-ihGJFd.mars.db --log-file /private/tmp/mars-validation-local-json-ihGJFd.start.log
+mars start --repo /private/tmp/mars-confidence10-local-2ah3cK --exit-after-seed --yes --json --db /private/tmp/mars-confidence10-local-2ah3cK.mars.db --log-file /private/tmp/mars-confidence10-local-2ah3cK.start.log
 ```
 
 Cloud runtime proof after credentials are available:
@@ -149,13 +165,13 @@ Cloud runtime proof after credentials are available:
 ```bash
 export ANTHROPIC_API_KEY=<secret>
 make install
-mars models credentials write-local-env --repo /private/tmp/mars-validation-cloud-json-5huKDM --api-key-env ANTHROPIC_API_KEY --yes --json
-mars start --repo /private/tmp/mars-validation-cloud-json-5huKDM --exit-after-seed --yes --json --db /private/tmp/mars-validation-cloud-json-5huKDM.mars.db --log-file /private/tmp/mars-validation-cloud-json-5huKDM.start.log
+mars models credentials write-local-env --repo /private/tmp/mars-confidence10-cloud-iGtSnZ --api-key-env ANTHROPIC_API_KEY --yes --json
+mars start --repo /private/tmp/mars-confidence10-cloud-iGtSnZ --exit-after-seed --yes --json --db /private/tmp/mars-confidence10-cloud-iGtSnZ.mars.db --log-file /private/tmp/mars-confidence10-cloud-iGtSnZ.start.log
 ```
 
 ## Classification
 
 - Hardware gating, local bundle selection, setup/init routing, runtime preflight, provider routing, JSON output, generated doctrine, and secret handling: foundation-owned, implemented and covered by supporting evidence.
-- Missing local weights: environment blocker, recorded as `primary_blocked`.
-- Missing Anthropic credential: environment blocker, recorded as `primary_blocked`.
-- Final 10/10 confidence claim: not made in this report; claim is allowed only after one local runtime proof and one cloud runtime proof pass, or after the relevant unavailable resources remain recorded as blockers.
+- Missing local weights: resolved by installed-binary `mars setup --inference local --local-bundle auto --download --yes --json`.
+- Missing cloud provider credential: environment blocker, recorded as `primary_blocked`.
+- Final 10/10 confidence claim: not made in this report; the remaining missing evidence is one live cloud runtime proof using a real provider credential.
