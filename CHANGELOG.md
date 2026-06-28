@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.4] - 2026-06-28
+<!-- mars-release: version=0.68.4 commit=173d6d26eea9 -->
+
+### Impact
+- **validation:** Operators and future agents now have evidence that distinguishes route plumbing from real OpenAI API usage.
+
+### Why
+- **validation:** This matters because `start --exit-after-seed` did not consume the OpenAI key; the confidence claim needed actual provider-call evidence.
+
+### What Changed
+- **validation:** Added `mars models evaluate` token-usage proof and a one-turn `mars run orchestrator` proof with `llm_calls=1` against synthetic ephemeral content.
+
+### Documentation
+- **validation:** Prove real openai provider usage (173d6d2)
+
 ## [0.68.3] - 2026-06-28
 <!-- mars-release: version=0.68.3 commit=ddff172fb2cc -->
 
