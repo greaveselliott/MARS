@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.66.2] - 2026-06-28
+<!-- mars-release: version=0.66.2 commit=e199cf546ec2 -->
+
+### Impact
+- **shellpath:** Operators see improved reliability because prioritize installed mars binary.
+
+### Why
+- **shellpath:** This matters because prioritize installed mars binary closes a failure mode or degraded path.
+
+### What Changed
+- **shellpath:** Changed prioritize installed mars binary (e199cf5).
+
+### Fixes
+- **shellpath:** Prioritize installed mars binary (e199cf5)
+
 ## [0.66.1] - 2026-06-28
 <!-- mars-release: version=0.66.1 commit=bd2a115b9b9d -->
 
