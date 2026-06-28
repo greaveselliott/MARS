@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.11] - 2026-06-28
+<!-- mars-release: version=0.68.11 commit=5097d9466b11 -->
+
+### Impact
+- **site:** Operators and agents now have dedicated user guides for role behavior, harness configuration, and documentation sync, making the developer docs site more complete for day-to-day MARS use.
+
+### Why
+- **site:** The documentation site covered commands, workflows, harness structure, operations, models, tools, safety, release, and integrations, but users still had to piece together roles, configuration schemas, and no-stale-docs behavior from design docs and source references.
+
+### What Changed
+- **site:** Added static Roles/Agents, Configuration Reference, and Documentation Sync guide pages; linked them from the homepage, top navigation, README documentation map, shared site metadata, and product-surface contract (5097d94).
+
+### Documentation
+- **site:** Add roles config and docsync guides (5097d94)
+
 ## [0.68.10] - 2026-06-28
 <!-- mars-release: version=0.68.10 commit=b4df7030b593 -->
 
