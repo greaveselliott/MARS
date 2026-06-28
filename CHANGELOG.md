@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.14] - 2026-06-28
+<!-- mars-release: version=0.68.14 commit=71933c8d8884 -->
+
+### Impact
+- **site:** Operators, agents, and companion-tool builders now have a dedicated reference for using the embedded dashboard pages, control endpoints, read APIs, SSE stream, response shapes, and safe scripting patterns.
+
+### Why
+- **site:** Dashboard functionality was documented across the operations, observability, workflow, and CLI pages, but users still lacked one endpoint-level reference for request bodies, response/error handling, address boundaries, and operator recipes.
+
+### What Changed
+- **site:** Added a static Dashboard API Reference and linked it from the docs homepage, CLI reference, workflows, operations guide, observability guide, README documentation map, shared site metadata, and product-surface contract (71933c8).
+
+### Documentation
+- **site:** Add dashboard API reference (71933c8)
+
 ## [0.68.13] - 2026-06-28
 <!-- mars-release: version=0.68.13 commit=1f11798ff1db -->
 
