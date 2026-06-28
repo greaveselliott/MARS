@@ -18,6 +18,7 @@ docs:
 - docs/integrations-validation-guide.html
 - docs/planning-delivery-guide.html
 - docs/dashboard-api-reference.html
+- docs/files-state-reference.html
 - README.md
 - docs/product-specs/product-surface.md
 */

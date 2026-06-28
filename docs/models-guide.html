@@ -11,6 +11,7 @@ docs:
 - docs/features/F-003-local-inference-lifecycle.md
 - docs/references/model-landscape-may-2026.md
 - docs/validation/reports/2026-06-28-hardware-gated-model-onboarding.md
+- docs/files-state-reference.html
 -->
 <html lang="en">
   <head>
@@ -89,7 +90,8 @@ docs:
             Go binary stays CGO-free; llama.cpp runs as a supervised subprocess
             with model files stored outside the repo. Local model artifacts are
             large, so MARS downloads and verifies them under the user cache
-            instead of committing them.
+            instead of committing them. For the full filesystem ownership map,
+            use the <a href="files-state-reference.html">Files And State Reference</a>.
           </p>
           <div class="concept-grid">
             <article data-doc-filter>

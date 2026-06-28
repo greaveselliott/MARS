@@ -1,0 +1,452 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/harness-guide.html
+- docs/operations-guide.html
+- docs/models-guide.html
+- docs/release-update-guide.html
+- docs/troubleshooting-guide.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/dashboard.md
+- docs/design-docs/delivery-operating-model.md
+- docs/design-docs/local-inference.md
+- docs/design-docs/release-versioning.md
+- docs/features/F-003-local-inference-lifecycle.md
+- docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-009-release-update-lifecycle.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Files And State Reference</title>
+    <meta
+      name="description"
+      content="User reference for the files, directories, databases, logs, model artifacts, secrets, release assets, generated docs, and cleanup behavior MARS uses."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to files and state reference</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Files and state</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="models-guide.html">Models</a>
+        <a href="release-update-guide.html">Release</a>
+        <a href="troubleshooting-guide.html">Troubleshoot</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Files and state sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search files and state</label>
+          <input id="docSearch" type="search" placeholder=".harness, db, traces">
+          <p class="search-hint">Filters artifacts, ownership rules, cleanup paths, and recipes.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#ownership">Ownership Model</a>
+          <a href="#target">Target Repo Files</a>
+          <a href="#harness">Harness Directory</a>
+          <a href="#operating-docs">Operating Docs</a>
+          <a href="#local-state">Local State</a>
+          <a href="#databases">Databases</a>
+          <a href="#logs-traces">Logs And Traces</a>
+          <a href="#models-secrets">Models And Secrets</a>
+          <a href="#release-assets">Release Assets</a>
+          <a href="#lifecycle">Lifecycle Behavior</a>
+          <a href="#eject">Eject And Cleanup</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Filesystem contract</p>
+            <h1>Know what MARS writes, preserves, reads, and removes.</h1>
+            <p class="lede">
+              MARS keeps the target repo as the durable system of record and
+              keeps runtime state outside the repo by default. This reference
+              maps the important files, directories, databases, logs, model
+              artifacts, secrets, release assets, generated evidence, upgrade
+              behavior, and cleanup paths users need to understand before
+              trusting autonomous work.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="ownership">
+          <h2>Ownership Model</h2>
+          <p>
+            MARS separates durable repo truth from local runtime machinery. If
+            a file describes product intent, agent doctrine, tickets, evidence,
+            release state, or target-specific policy, it belongs in git. If it
+            is a queue, local model, process log, cache, secret value, or
+            machine-specific setting, it belongs outside git or in an ignored
+            local file.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Class</th><th>Where it lives</th><th>Who owns it</th><th>Commit?</th></tr></thead>
+              <tbody>
+                <tr><td>Target operating model</td><td><code>AGENTS.md</code>, <code>docs/</code>, <code>.harness/</code></td><td>Target repo owner and agents.</td><td>Yes.</td></tr>
+                <tr><td>Role and tool configuration</td><td><code>.harness/manifest.yaml</code>, role prompts, guardrails, knowledge routes, skills.</td><td>Target repo owner.</td><td>Yes, except local secrets.</td></tr>
+                <tr><td>Runtime queue and telemetry</td><td><code>~/.mars/db/...</code></td><td>Local MARS runtime.</td><td>No.</td></tr>
+                <tr><td>Models and managed binaries</td><td><code>~/.mars/models/</code>, <code>~/.mars/bin/</code></td><td>User machine.</td><td>No.</td></tr>
+                <tr><td>Logs and traces</td><td><code>~/.mars/traces/</code></td><td>User machine.</td><td>No, unless manually copied into a validation report.</td></tr>
+                <tr><td>Release assets</td><td><code>dist/releases/</code>, GitHub Releases mirror.</td><td>Release process.</td><td>No for binaries; yes for <code>VERSION</code> and <code>CHANGELOG.md</code>.</td></tr>
+                <tr><td>Secret values</td><td>Environment variables or ignored <code>.harness/.env.local</code>.</td><td>Operator.</td><td>Never.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Practical rule:</strong>
+            if a future agent or reviewer must understand the decision, commit
+            the repo artifact. If it is machine state, credential material, or
+            disposable runtime output, keep it out of git.
+          </div>
+        </section>
+
+        <section class="doc-section" id="target">
+          <h2>Target Repo Files</h2>
+          <p>
+            <code>mars init</code>, <code>mars start</code>, <code>mars run</code>,
+            <code>mars register</code>, and <code>mars scan</code> all ensure a
+            target harness exists unless the command is explicitly run with
+            <code>--no-init</code> where supported. The first scaffold is
+            committed as a generated harness baseline when possible.
+          </p>
+          <pre><code>.
+|-- AGENTS.md
+|-- VERSION
+|-- CHANGELOG.md
+|-- .gitignore
+|-- .harness/
+|-- docs/
+    |-- goals/
+    |-- exec-plans/
+    |-- features/
+    |-- tickets/
+    |-- design-docs/
+    |-- references/
+    |-- reports/
+    +-- QUALITY_SCORE.md</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Artifact</th><th>Purpose</th><th>Default behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>AGENTS.md</code></td><td>Compact first-read map for humans and agents.</td><td>Created at init; preserved by upgrade.</td></tr>
+                <tr><td><code>VERSION</code></td><td>Current semantic version for source or target repo.</td><td>Created at init; updated by release notes.</td></tr>
+                <tr><td><code>CHANGELOG.md</code></td><td>Generated patch notes with Impact, Why, and What Changed.</td><td>Created at init; updated by release notes.</td></tr>
+                <tr><td><code>.gitignore</code></td><td>Workspace hygiene for generated dependencies, build output, and ignored secrets.</td><td>MARS appends missing hygiene entries without removing user entries.</td></tr>
+                <tr><td><code>docs/QUALITY_SCORE.md</code></td><td>Repo-visible quality evidence generated from scores, telemetry, tickets, and checks.</td><td>Created at init; refreshed by <code>mars scores export</code>.</td></tr>
+                <tr><td><code>docs/generated/</code></td><td>Generated reference outputs such as saved model evaluation reports when enabled.</td><td>Generated by specific commands; review before committing.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="harness">
+          <h2>Harness Directory</h2>
+          <p>
+            <code>.harness/</code> is executable agent configuration. It is
+            repo-owned, reviewable, and intentionally editable. Existing user
+            content is preserved by ordinary init/upgrade paths; <code>--force</code>
+            refreshes missing scaffold and rewrites only selected generated
+            defaults while preserving user-owned content such as custom prompts
+            and tickets.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>User rule</th></tr></thead>
+              <tbody>
+                <tr><td><code>.harness/manifest.yaml</code></td><td>Role registry, model tiers, tools, triggers, guardrails, and knowledge routes.</td><td>Edit deliberately; this is the executable harness entrypoint.</td></tr>
+                <tr><td><code>.harness/metadata.yaml</code></td><td>Generator and generated harness version drift signal.</td><td>Generated metadata; use for update drift, not product policy.</td></tr>
+                <tr><td><code>.harness/roles/*.md</code></td><td>Role prompts and role-specific operating instructions.</td><td>User-owned after init; preserve local tuning.</td></tr>
+                <tr><td><code>.harness/skills/*/SKILL.md</code></td><td>Reusable workflow procedures for recurring agent work.</td><td>Keep compact and task-oriented.</td></tr>
+                <tr><td><code>.harness/guardrails/*.yaml</code></td><td>Hard or advisory safety rules.</td><td>Use for policy that must shape agent execution.</td></tr>
+                <tr><td><code>.harness/knowledge/*.yaml</code></td><td>Context routes from situations to repo docs.</td><td>Route to durable docs instead of stuffing long context into prompts.</td></tr>
+                <tr><td><code>.harness/integrations.example.yaml</code></td><td>Example integration profile.</td><td>Generated reference only; copy deliberately before opt-in.</td></tr>
+                <tr><td><code>.harness/integrations.yaml</code></td><td>Real local integration profile when opted in.</td><td>User-created. Do not assume it exists.</td></tr>
+                <tr><td><code>.harness/model-overrides.yaml</code></td><td>Repo default, tier, or role model routing overrides.</td><td>Commit when model routing policy should travel with the repo.</td></tr>
+                <tr><td><code>.harness/.env.example</code></td><td>Credential environment variable names without values.</td><td>Commit names only; never secret values.</td></tr>
+                <tr><td><code>.harness/.env.local</code></td><td>Ignored local credential values.</td><td>Owner-only local file; never commit.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="operating-docs">
+          <h2>Operating Docs</h2>
+          <p>
+            MARS uses repo docs as live operating state. These artifacts are not
+            background notes. Agents read and update them as part of delivery,
+            review, validation, and release.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>What it records</th><th>Why users care</th></tr></thead>
+              <tbody>
+                <tr><td><code>docs/goals/</code></td><td>Active, observed, superseded, invalidated, merged, or split goals.</td><td>Prevents agents from optimizing for stale chat context.</td></tr>
+                <tr><td><code>docs/exec-plans/active/current-operating-plan.md</code></td><td>The active plan, scenario schedule, current failing scenario, and walking skeleton slice.</td><td>Keeps delivery order explicit.</td></tr>
+                <tr><td><code>docs/features/F-NNN-*.md</code></td><td>BDD feature contracts, business logic, scenarios, and evidence.</td><td>Defines done before feature claims.</td></tr>
+                <tr><td><code>docs/tickets/backlog/</code></td><td>Waiting work.</td><td>Feeds bounded future slices.</td></tr>
+                <tr><td><code>docs/tickets/in-progress/</code></td><td>Claimed active work.</td><td>Shows what an agent is currently responsible for.</td></tr>
+                <tr><td><code>docs/tickets/in-review/</code></td><td>Work awaiting review or requested changes.</td><td>Separates implementation from approval.</td></tr>
+                <tr><td><code>docs/tickets/done/</code></td><td>Completed ticket files with evidence metadata.</td><td>Supports release notes and audit.</td></tr>
+                <tr><td><code>docs/design-docs/</code></td><td>Architecture decisions and durable design rationale.</td><td>Preserves why behavior changed.</td></tr>
+                <tr><td><code>docs/references/</code></td><td>Research, external inputs, or durable reference material.</td><td>Keeps discoveries out of chat-only memory.</td></tr>
+                <tr><td><code>docs/reports/qa</code>, <code>security</code>, <code>dependencies</code>, <code>dogfood</code>, <code>strategy</code></td><td>Role-specific review and validation reports.</td><td>Turns runtime findings into durable evidence.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="local-state">
+          <h2>Local State</h2>
+          <p>
+            The user machine state under <code>~/.mars/</code> is not part of a
+            target repo. It stores configuration, downloaded models, managed
+            binaries, SQLite state, traces, logs, and auth setup needed for
+            local operation.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Commit?</th></tr></thead>
+              <tbody>
+                <tr><td><code>~/.mars/config.yaml</code></td><td>Local ports, model paths, install paths, performance profile, and machine settings.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/models/</code></td><td>Downloaded GGUF model files and model cache.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/bin/</code></td><td>Managed runtime binaries such as llama-server artifacts.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/db/</code></td><td>SQLite databases for queue, telemetry, trust, scoring, traces, and registry state.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/traces/</code></td><td>Role traces and command logs.</td><td>No.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars doctor --json
+mars doctor --repo /path/to/repo --json</code></pre>
+        </section>
+
+        <section class="doc-section" id="databases">
+          <h2>Databases</h2>
+          <p>
+            SQLite state is isolated by default for repo-scoped operation. Use
+            explicit <code>--db</code> paths only when you understand the
+            lifecycle and cleanup implications.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Used by</th><th>Contains</th><th>Cleanup behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>~/.mars/db/{repo-name}/mars.db</code></td><td><code>start</code>, <code>register</code>, repo-scoped flows.</td><td>Queue, telemetry, repo registry, trust, scoring, trace summaries.</td><td><code>eject</code> removes this DB and <code>-shm</code>/<code>-wal</code> files unless <code>--keep-db</code>.</td></tr>
+                <tr><td><code>~/.mars/db/mars.db</code></td><td>Legacy shared <code>serve</code> default.</td><td>Multi-repo registry and runtime state.</td><td><code>eject</code> unregisters the repo but keeps the shared DB unless <code>--delete-shared-db</code>.</td></tr>
+                <tr><td>Custom <code>--db</code></td><td>Any command with explicit override.</td><td>Whatever runtime state that command writes.</td><td>Keep outside source and target repos; remove intentionally.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Containment:</strong>
+            lifecycle commands reject database paths inside the target repo so
+            runtime state cannot dirty the project worktree.
+          </div>
+        </section>
+
+        <section class="doc-section" id="logs-traces">
+          <h2>Logs And Traces</h2>
+          <p>
+            <code>run</code>, <code>start</code>, and <code>serve</code> write
+            durable command logs under <code>~/.mars/traces/logs/</code> unless
+            <code>--log-file</code> is supplied. Role traces and summaries are
+            local runtime evidence. Copy only the relevant finding into repo
+            reports or tickets when the evidence needs to become durable.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Use default log location</h3>
+              <pre><code>mars start --repo /path/to/repo
+mars run engineer --repo /path/to/repo</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Choose an explicit external log file</h3>
+              <pre><code>mars start --repo /path/to/repo \
+  --log-file ~/.mars/traces/logs/my-project-start.log</code></pre>
+            </article>
+          </div>
+          <p>
+            Do not put logs inside the target repo. MARS validates lifecycle log
+            paths so process output does not become accidental source churn.
+          </p>
+        </section>
+
+        <section class="doc-section" id="models-secrets">
+          <h2>Models And Secrets</h2>
+          <p>
+            Model files, provider keys, and local routing choices have different
+            persistence rules. Keep large model artifacts and secret values out
+            of git. Commit only reusable routing policy and empty example keys.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Artifact</th><th>Where</th><th>Rule</th></tr></thead>
+              <tbody>
+                <tr><td>Local model files</td><td><code>~/.mars/models/</code></td><td>Downloaded by setup; never commit.</td></tr>
+                <tr><td>llama-server or managed runtime binaries</td><td><code>~/.mars/bin/</code></td><td>Installed by setup/update; never commit.</td></tr>
+                <tr><td>Default, tier, or role routing policy</td><td><code>.harness/model-overrides.yaml</code></td><td>Commit when the repo should use that route.</td></tr>
+                <tr><td>Credential env var names</td><td><code>.harness/.env.example</code></td><td>Commit names with empty values.</td></tr>
+                <tr><td>Credential values</td><td>Process environment or <code>.harness/.env.local</code></td><td>Never commit; file is ignored and written owner-only.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars models override --repo /path/to/repo --role engineer --provider openai --model gpt-4.1
+export OPENAI_API_KEY=...
+mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENAI_API_KEY --yes</code></pre>
+        </section>
+
+        <section class="doc-section" id="release-assets">
+          <h2>Release Assets</h2>
+          <p>
+            Release notes are repo-owned. Binary release assets are generated
+            output. The local dist is the source of truth before any optional
+            GitHub mirror is trusted.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Artifact</th><th>Where</th><th>Rule</th></tr></thead>
+              <tbody>
+                <tr><td><code>VERSION</code></td><td>Repo root.</td><td>Commit after <code>mars release notes</code>.</td></tr>
+                <tr><td><code>CHANGELOG.md</code></td><td>Repo root.</td><td>Commit after generated notes and any required prose polish.</td></tr>
+                <tr><td><code>internal/buildinfo/version.go</code></td><td>MARS source repo only.</td><td>Commit with source release notes.</td></tr>
+                <tr><td><code>dist/releases/</code></td><td>Local source repo workspace.</td><td>Generated binaries and checksums; verify, do not treat as source docs.</td></tr>
+                <tr><td>GitHub Release assets</td><td>Optional remote mirror.</td><td>Verify after upload when credentials are available.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars release notes --repo . --bump auto
+mars release publish-assets --repo . --version vX.Y.Z --upload auto
+mars release verify-assets --dist dist/releases --version vX.Y.Z
+mars release verify-assets --version vX.Y.Z</code></pre>
+        </section>
+
+        <section class="doc-section" id="lifecycle">
+          <h2>Lifecycle Behavior</h2>
+          <p>
+            Different commands touch different surfaces. This table is the
+            user-level map for expected filesystem changes.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Command</th><th>Writes or reads</th><th>User expectation</th></tr></thead>
+              <tbody>
+                <tr><td><code>mars setup</code></td><td><code>~/.mars/config.yaml</code>, <code>~/.mars/models/</code>, <code>~/.mars/bin/</code>.</td><td>Machine setup outside target repos.</td></tr>
+                <tr><td><code>mars init --repo</code></td><td>Target harness, operating docs, release files, hygiene <code>.gitignore</code>.</td><td>Creates baseline and commits it when possible.</td></tr>
+                <tr><td><code>mars start --repo</code></td><td>Ensures harness, registers repo, writes per-repo DB, logs, traces, and tickets as agents work.</td><td>Scoped autonomous lifecycle.</td></tr>
+                <tr><td><code>mars register --repo</code></td><td>Ensures harness and writes registry entry to DB.</td><td>Prepares target for serve.</td></tr>
+                <tr><td><code>mars scan --repo --tickets</code></td><td>Reads repo, writes backlog tickets for findings.</td><td>Scanner output becomes repo-owned work items.</td></tr>
+                <tr><td><code>mars run &lt;role&gt; --repo</code></td><td>Reads harness and docs, may write role outputs, tickets, docs, source, logs, traces.</td><td>Role behavior depends on manifest, trust, tools, and prompt.</td></tr>
+                <tr><td><code>mars upgrade --repo</code></td><td>Writes missing generated defaults only.</td><td>Preserves existing manifest, prompts, knowledge routes, guardrails, tickets, plans, design docs, references, and AGENTS.md.</td></tr>
+                <tr><td><code>mars eject --repo</code></td><td>Dry-run plan unless <code>--apply --confirm</code>.</td><td>Preview before destructive cleanup.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="eject">
+          <h2>Eject And Cleanup</h2>
+          <p>
+            <code>mars eject</code> is the repo-level kill switch. It previews
+            first. Destructive cleanup requires <code>--apply</code> and a
+            <code>--confirm</code> value equal to the target repo directory name.
+            It removes the deployed MARS surface and associated DB artifacts
+            without rewriting git history or deleting unrelated app files.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Removed by apply</th><th>Preserved</th><th>Database rule</th></tr></thead>
+              <tbody>
+                <tr><td><code>.harness/</code>, <code>AGENTS.md</code>, <code>VERSION</code>, <code>CHANGELOG.md</code>.</td><td>Application source files and unrelated project docs.</td><td>Per-repo DB and <code>-shm</code>/<code>-wal</code> files removed unless <code>--keep-db</code>.</td></tr>
+                <tr><td><code>docs/QUALITY_SCORE.md</code>, <code>docs/tickets</code>, <code>docs/exec-plans</code>, <code>docs/features</code>, <code>docs/goals</code>.</td><td>Non-MARS docs such as <code>docs/app.md</code>.</td><td>Shared DB is kept by default; repo registration is removed on apply.</td></tr>
+                <tr><td><code>docs/roles</code>, <code>docs/references</code>, <code>docs/reports/*</code>, <code>docs/design-docs</code>.</td><td>Git history and remote releases.</td><td>Pass <code>--delete-shared-db</code> only when intentionally deleting the shared DB.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars eject --repo /path/to/repo
+mars eject --repo /path/to/repo --apply --confirm repo
+mars eject --repo /path/to/repo --apply --confirm repo --keep-db</code></pre>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Inspect what MARS would remove</h3>
+              <pre><code>mars eject --repo /path/to/repo</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Check whether runtime state is outside the repo</h3>
+              <pre><code>mars doctor --repo /path/to/repo --json
+git -C /path/to/repo status --short --branch</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Find local logs for a run</h3>
+              <pre><code>ls ~/.mars/traces/logs
+mars run engineer --repo /path/to/repo --log-file ~/.mars/traces/logs/engineer.log</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Cleanly opt into cloud routing without committing a secret</h3>
+              <pre><code>mars models override --repo /path/to/repo \
+  --tier coding \
+  --provider openai \
+  --model gpt-4.1 \
+  --api-key-env OPENAI_API_KEY
+export OPENAI_API_KEY=...
+mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENAI_API_KEY --yes</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Verify source release assets</h3>
+              <pre><code>mars release verify-assets --dist dist/releases --version vX.Y.Z
+mars release audit --repo .</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td>Git status shows runtime DB or log files.</td><td>A manual <code>--db</code> or <code>--log-file</code> path was pointed inside the repo.</td><td>Move runtime paths under <code>~/.mars/</code> and remove accidental files from the index.</td></tr>
+                <tr><td><code>.harness/.env.local</code> appears in git status.</td><td>The ignore policy is missing or was edited.</td><td>Add <code>.harness/.env.local</code> to <code>.gitignore</code>; never commit the file.</td></tr>
+                <tr><td>Upgrade did not rewrite a customized role prompt.</td><td>Existing prompts are user-owned and preserved.</td><td>Compare against a fresh temporary init if you want new defaults.</td></tr>
+                <tr><td><code>mars eject</code> did not remove files.</td><td>Default mode is dry-run.</td><td>Rerun with <code>--apply --confirm repo-name</code> only after reviewing the preview.</td></tr>
+                <tr><td>Shared DB remains after eject.</td><td>The legacy shared DB is protected by default.</td><td>Use <code>--delete-shared-db</code> only if deleting shared runtime state is intentional.</td></tr>
+                <tr><td>Release assets are missing or stale.</td><td>Release notes were committed without publish/verify.</td><td>Run <code>mars release publish-assets</code>, verify local dist, then verify the optional GitHub mirror.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>Repo files are durable truth. Local state is runtime machinery. Secret values and generated binaries stay out of git.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>
