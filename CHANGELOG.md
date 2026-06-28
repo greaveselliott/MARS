@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.6] - 2026-06-28
+<!-- mars-release: version=0.68.6 commit=3612017c0b4a -->
+
+### Impact
+- **inference:** Supported-provider docs now present DeepSeek and xAI plainly as supported cloud routes.
+
+### Why
+- **inference:** Public support wording should stay concise and avoid exposing provider account-state details in the main platform matrix.
+
+### What Changed
+- **inference:** Removed Groq and Cohere references from the supported-platform documentation and simplified DeepSeek/xAI status text (3612017).
+
+### Documentation
+- **inference:** Simplify supported provider wording (3612017)
+
 ## [0.68.5] - 2026-06-28
 <!-- mars-release: version=0.68.5 commit=10afe3d8093d -->
 
