@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.8] - 2026-06-28
+<!-- mars-release: version=0.68.8 commit=79935c1dcf46 -->
+
+### Impact
+- **site:** Developers now have deeper task and reference paths for using MARS beyond the homepage, covering the CLI, daily workflows, and target harness customization.
+
+### Why
+- **site:** The documentation goal requires exhaustive user-facing coverage, and the first documentation front door needed dedicated pages for command detail, task sequencing, and the repo-owned harness model.
+
+### What Changed
+- **site:** Added static CLI reference, user workflow, and target harness guide pages; wired them into the homepage, shared styling/search behavior, README, and product-surface contract (79935c1).
+
+### Documentation
+- **site:** Expand developer documentation depth (79935c1)
+
 ## [0.68.7] - 2026-06-28
 <!-- mars-release: version=0.68.7 commit=b94a25c2fa7d -->
 
