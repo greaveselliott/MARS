@@ -1,0 +1,441 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/workflows.html
+- docs/cli-reference.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/dashboard.md
+- docs/design-docs/pipeline-engine.md
+- docs/design-docs/local-inference.md
+- docs/design-docs/foundation-operating-model.md
+- docs/validation/README.md
+- docs/roles/ROLES.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Operations Guide</title>
+    <meta
+      name="description"
+      content="User operations guide for running MARS start and serve, dashboard pages, local control APIs, databases, logs, traces, queue recovery, and troubleshooting."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to operations guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Operations guide</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="models-guide.html">Models</a>
+        <a href="tools-mcp-guide.html">Tools/MCP</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Operations sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search operations</label>
+          <input id="docSearch" type="search" placeholder="dashboard, db, pause">
+          <p class="search-hint">Filters commands, endpoints, paths, and recovery notes.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#modes">Start Vs Serve</a>
+          <a href="#startup">Startup Lifecycle</a>
+          <a href="#dashboard">Dashboard</a>
+          <a href="#controls">Controls API</a>
+          <a href="#terminal">Terminal Controls</a>
+          <a href="#state">State And Paths</a>
+          <a href="#queue">Queue And Recovery</a>
+          <a href="#logs">Logs And Traces</a>
+          <a href="#recipes">Operator Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Runtime operations</p>
+            <h1>Operate MARS while agents are running.</h1>
+            <p class="lede">
+              MARS has two runtime shapes: a scoped single-repo lifecycle with
+              <code>mars start</code>, and a persistent multi-repo orchestrator
+              with <code>mars serve</code>. This guide documents the visible
+              runtime surfaces users operate day to day: dashboard pages,
+              local control endpoints, terminal controls, state paths, queue
+              recovery, logs, traces, and safe shutdown.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="modes">
+          <h2>Start Vs Serve</h2>
+          <p>
+            Choose the runtime mode from the operating need. Both use the same
+            queue, dashboard package, controls, tools, traces, and local
+            inference routing; the difference is scope and default database
+            behavior.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Mode</th><th>Use when</th><th>Default scope</th><th>Default database</th></tr></thead>
+              <tbody>
+                <tr><td><code>mars start --repo /path/to/repo</code></td><td>You want one target repo initialized, registered, reconciled, and run from one command.</td><td>Single target repo.</td><td><code>~/.mars/db/{repo-name}/mars.db</code>.</td></tr>
+                <tr><td><code>mars serve</code></td><td>You already registered repos and want a long-running orchestrator that receives webhooks and cron triggers.</td><td>All repos in the configured DB.</td><td>Legacy shared DB <code>~/.mars/db/mars.db</code> unless <code>--db</code> is passed.</td></tr>
+                <tr><td><code>mars run &lt;role&gt; --repo /path/to/repo</code></td><td>You need one manual role execution rather than the full orchestrator loop.</td><td>One role, one repo, one job.</td><td>Uses the selected repo and command options; not the dashboard loop.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Scoped lifecycle</h3>
+              <pre><code>mars start --repo ~/my-project
+mars start --repo ~/my-project --dashboard-addr :9090 --addr :9091</code></pre>
+              <p>Use explicit addresses when scripts or users depend on stable ports. With default addresses, scoped start can fall back to ephemeral local ports on conflict.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Persistent daemon</h3>
+              <pre><code>mars register --repo ~/my-project --remote owner/repo
+mars serve --addr :9091 --concurrency 2 --db ~/.mars/db/mars.db</code></pre>
+              <p>Use this when webhooks, schedules, and multiple registered repos should share one orchestrator.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="startup">
+          <h2>Startup Lifecycle</h2>
+          <p>
+            <code>mars start</code> is intentionally more than a process
+            launcher. It prepares the target harness, creates a clean initial
+            scaffold commit when needed, registers the repo, reconciles stale or
+            resumable lifecycle state, then either resumes work or seeds the
+            bootstrap role.
+          </p>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Resolve target repository</h3>
+              <p>If <code>--repo</code> is omitted, the current directory is used. MARS rejects runtime DB or log paths that would live inside the target repo.</p>
+            </li>
+            <li>
+              <h3>Ensure the deployed harness exists</h3>
+              <p>If <code>.harness/manifest.yaml</code> is missing, MARS runs the same scaffold path as <code>mars init</code>. Generated first-run files are committed as <code>chore(harness): initialize mars harness</code> so agents start from a clean baseline.</p>
+            </li>
+            <li>
+              <h3>Open the per-repo database</h3>
+              <p>The default path is <code>~/.mars/db/{repo-name}/mars.db</code>. Use <code>--db</code> only when you deliberately want another database location outside the repo.</p>
+            </li>
+            <li>
+              <h3>Build runtime dependencies</h3>
+              <p>MARS resolves local configuration, code graph settings, dashboard/control addresses, model endpoint override, local model preflight, and inference tuning.</p>
+            </li>
+            <li>
+              <h3>Reconcile lifecycle state</h3>
+              <p>Existing active jobs, stale recoverable jobs, in-progress tickets, rework states, and deterministic dispositions are resumed before a fresh CEO bootstrap is seeded.</p>
+            </li>
+            <li>
+              <h3>Run until stopped</h3>
+              <p>The worker pool claims jobs, records telemetry and traces, updates the dashboard, and responds to terminal or HTTP controls.</p>
+            </li>
+          </ol>
+          <div class="callout">
+            <strong>Ambiguous startup:</strong>
+            if MARS cannot safely decide whether to resume or start fresh, it
+            refuses and asks you to inspect the repo or rerun with
+            <code>--new-lifecycle</code> when you intentionally want to seed a
+            new CEO lifecycle.
+          </div>
+        </section>
+
+        <section class="doc-section" id="dashboard">
+          <h2>Dashboard</h2>
+          <p>
+            The current dashboard is embedded in the Go binary. It uses
+            server-rendered HTML, embedded static assets, Chart.js, htmx-style
+            interaction, and server-sent events. It is local by default and
+            requires no frontend build step.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Page</th><th>User purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>/</code></td><td>Redirect</td><td>Redirects to <code>/pipeline</code>.</td></tr>
+                <tr><td><code>/pipeline</code></td><td>Pipeline Flow</td><td>Shows live role routing and active pipeline mode.</td></tr>
+                <tr><td><code>/orchestration</code></td><td>Orchestration</td><td>Summarizes orchestrator state and runtime control context.</td></tr>
+                <tr><td><code>/roles</code></td><td>Role Health</td><td>Surfaces role health and execution status.</td></tr>
+                <tr><td><code>/throughput</code></td><td>Throughput</td><td>Shows throughput-oriented runtime signals.</td></tr>
+                <tr><td><code>/debug</code></td><td>Debug</td><td>Debug-oriented operator view for runtime events.</td></tr>
+                <tr><td><code>/evolution</code></td><td>Evolution History</td><td>Self-improvement and intervention history surface.</td></tr>
+                <tr><td><code>/api/events</code></td><td>SSE stream</td><td>Streams recent dashboard events and live updates.</td></tr>
+                <tr><td><code>/api/telemetry</code></td><td>Telemetry API</td><td>Serve-attached read API for telemetry view data.</td></tr>
+                <tr><td><code>/api/evolution</code></td><td>Evolution API</td><td>Serve-attached read API for evolution history.</td></tr>
+                <tr><td><code>/api/roles</code></td><td>Roles API</td><td>Serve-attached read API for role health and score data.</td></tr>
+                <tr><td><code>/api/quality-score</code></td><td>Quality score API</td><td>Serve-attached read API for repo-visible quality score output.</td></tr>
+                <tr><td><code>/api/throughput</code></td><td>Throughput API</td><td>Serve-attached read API for job and runtime throughput data.</td></tr>
+                <tr><td><code>/api/orchestration</code></td><td>Orchestration API</td><td>Serve-attached read API for routing and orchestration state.</td></tr>
+                <tr><td><code>/api/orchestration/decisions</code></td><td>Decision API</td><td>Serve-attached read API for recent orchestration decisions.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Two local HTTP servers:</strong>
+            the dashboard address serves the pages and dashboard APIs. The
+            webhook/control address serves webhook traffic and
+            <code>GET /healthz</code>.
+          </div>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Open the dashboard</h3>
+              <pre><code>mars start --repo ~/my-project --dashboard-addr :9090
+open http://localhost:9090</code></pre>
+              <p>The dashboard URL is also printed in the runtime display when the terminal dashboard is active.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Stream events manually</h3>
+              <pre><code>curl -N http://localhost:9090/api/events</code></pre>
+              <p>Late subscribers receive buffered recent events, then live event payloads.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="controls">
+          <h2>Controls API</h2>
+          <p>
+            The dashboard exposes local JSON endpoints for operators and
+            companion UIs. Mutating endpoints require <code>POST</code>. Missing
+            callbacks return a not-implemented response rather than pretending
+            a control succeeded.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Endpoint</th><th>Method</th><th>Request</th><th>Behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>/healthz</code></td><td><code>GET</code></td><td>Control address only.</td><td>Returns orchestrator health on the webhook/control HTTP server.</td></tr>
+                <tr><td><code>/api/status</code></td><td><code>GET</code></td><td>None.</td><td>Returns the live runtime status object supplied by the orchestrator.</td></tr>
+                <tr><td><code>/api/repos</code></td><td><code>GET</code></td><td>None.</td><td>Returns registered repos as <code>id</code> and <code>path</code>.</td></tr>
+                <tr><td><code>/api/repo-roles?repo_id=...</code></td><td><code>GET</code></td><td><code>repo_id</code> query parameter.</td><td>Returns role names available for a repo.</td></tr>
+                <tr><td><code>/api/pause</code></td><td><code>POST</code></td><td>Empty body.</td><td>Stops claiming new jobs. Running jobs are allowed to finish.</td></tr>
+                <tr><td><code>/api/resume</code></td><td><code>POST</code></td><td>Empty body.</td><td>Allows workers to claim jobs again.</td></tr>
+                <tr><td><code>/api/restart</code></td><td><code>POST</code></td><td>Empty body.</td><td>Warm restart: reload manifests and triggers without dropping HTTP.</td></tr>
+                <tr><td><code>/api/stop</code></td><td><code>POST</code></td><td>Empty body.</td><td>Requests graceful orchestrator stop.</td></tr>
+                <tr><td><code>/api/scan</code></td><td><code>POST</code></td><td><code>{"repo_id":"..."}</code></td><td>Runs a scanner pass for the selected registered repo.</td></tr>
+                <tr><td><code>/api/run-role</code></td><td><code>POST</code></td><td><code>{"repo_id":"...","role":"engineer"}</code></td><td>Queues or invokes a selected role for the selected repo.</td></tr>
+                <tr><td><code>/api/emergency-stop</code></td><td><code>POST</code></td><td>Empty body.</td><td>Runs the configured emergency-stop callback and reports any errors.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Serve-Attached Read APIs</h3>
+          <p>
+            When the dashboard is created by the orchestrator, <code>serve</code>
+            attaches additional read APIs used by the dashboard pages:
+            <code>/api/telemetry</code>, <code>/api/evolution</code>,
+            <code>/api/roles</code>, <code>/api/quality-score</code>,
+            <code>/api/throughput</code>, <code>/api/orchestration</code>, and
+            <code>/api/orchestration/decisions</code>.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Pause and resume</h3>
+              <pre><code>curl -X POST http://localhost:9090/api/pause
+curl http://localhost:9090/api/status
+curl -X POST http://localhost:9090/api/resume</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Run a role from an external UI</h3>
+              <pre><code>repo_id=$(curl -s http://localhost:9090/api/repos)
+curl -X POST http://localhost:9090/api/run-role \
+  -H 'Content-Type: application/json' \
+  -d '{"repo_id":"REPO_ID","role":"engineer"}'</code></pre>
+              <p>Resolve the repo ID first; do not guess it from the filesystem path.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="terminal">
+          <h2>Terminal Controls</h2>
+          <p>
+            When <code>start</code> or <code>serve</code> is attached to an
+            interactive terminal, MARS exposes keyboard controls and a status
+            bar. The same operations are available through the dashboard API.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Key</th><th>Action</th><th>Operational note</th></tr></thead>
+              <tbody>
+                <tr><td><kbd>p</kbd></td><td>Pause or resume</td><td>Paused workers finish current jobs but do not claim new ones.</td></tr>
+                <tr><td><kbd>r</kbd></td><td>Warm restart</td><td>Reloads manifests, triggers, and workers while HTTP stays up.</td></tr>
+                <tr><td><kbd>s</kbd></td><td>Scan repos</td><td>Runs scanner passes for registered repos.</td></tr>
+                <tr><td><kbd>q</kbd></td><td>Graceful stop</td><td>Same intent as Ctrl+C or <code>POST /api/stop</code>.</td></tr>
+                <tr><td><kbd>h</kbd></td><td>Help</td><td>Prints the key binding help text.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="state">
+          <h2>State And Paths</h2>
+          <p>
+            MARS keeps durable runtime state outside target repos by default.
+            Target repositories remain the system of record for plans, tickets,
+            feature contracts, changelogs, and committed work; runtime queues,
+            traces, local model artifacts, and process logs live under
+            <code>~/.mars/</code>.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Owned by</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>~/.mars/config.yaml</code></td><td>User machine</td><td>Local configuration such as ports, model directories, performance profile, and install paths.</td></tr>
+                <tr><td><code>~/.mars/models/</code></td><td>User machine</td><td>Downloaded GGUF model files and local model cache.</td></tr>
+                <tr><td><code>~/.mars/bin/</code></td><td>User machine</td><td>Managed runtime binaries such as llama-server artifacts.</td></tr>
+                <tr><td><code>~/.mars/db/{repo-name}/mars.db</code></td><td>Scoped target runtime</td><td>Default queue, telemetry, trust, scoring, and registry state for <code>mars start</code>.</td></tr>
+                <tr><td><code>~/.mars/db/mars.db</code></td><td>Shared runtime</td><td>Legacy shared DB used by <code>mars serve</code> unless <code>--db</code> is explicit.</td></tr>
+                <tr><td><code>~/.mars/traces/</code></td><td>User machine</td><td>Trace and log artifacts from role runs and runtime commands.</td></tr>
+                <tr><td><code>.harness/</code></td><td>Target repo</td><td>Repo-owned role, guardrail, skill, knowledge, manifest, and metadata files.</td></tr>
+                <tr><td><code>docs/</code>, <code>VERSION</code>, <code>CHANGELOG.md</code></td><td>Target repo</td><td>Durable operating model artifacts and release state.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Database isolation:</strong>
+            prefer the per-repo default from <code>mars start</code> unless you
+            intentionally need a multi-repo shared database. Passing
+            <code>--db</code> should be deliberate and outside the target repo.
+          </div>
+        </section>
+
+        <section class="doc-section" id="queue">
+          <h2>Queue And Recovery</h2>
+          <p>
+            The orchestrator is designed to resume useful work and avoid
+            restarting broad jobs blindly. Startup reconciliation inspects jobs,
+            tickets, deterministic dispositions, stale recoverable work, and
+            ambiguous states before deciding what to seed next.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Resumable work</h3>
+              <p>Active jobs, stale recoverable jobs, rework tickets, in-progress tickets, and recent deterministic dispositions can be resumed rather than discarded.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Ambiguous work</h3>
+              <p>When the next safe role is unclear, MARS refuses startup and asks for inspection or explicit <code>--new-lifecycle</code>.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Pause semantics</h3>
+              <p>Pause is not a kill switch. It prevents new claims while current jobs finish or reach their own timeout.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Warm restart</h3>
+              <p>Restart reloads manifests and triggers, then restarts workers while keeping the local HTTP server available.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="logs">
+          <h2>Logs And Traces</h2>
+          <p>
+            Use debug output when you are actively diagnosing a run, and log
+            files when you need a durable artifact outside the repo. Role traces
+            record the turn-level evidence needed for quality, scoring, and
+            troubleshooting.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Inline debug output</h3>
+              <pre><code>mars start --repo ~/my-project --debug
+mars serve --debug</code></pre>
+              <p>Debug mode streams verbose trace and logs inline instead of relying on the TTY dashboard.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Write command logs</h3>
+              <pre><code>mars start --repo ~/my-project --log-file ~/.mars/traces/logs/my-project-start.log
+mars serve --log-file ~/.mars/traces/logs/orchestrator.log</code></pre>
+              <p>Keep logs outside source and target repos. MARS rejects lifecycle log paths that would live inside the target repo.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Run one role with a trace</h3>
+              <pre><code>mars run engineer --repo ~/my-project --trace --debug</code></pre>
+              <p>Use this to inspect one role's prompt, tools, model tier, and turn evidence without the full queue loop.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Check runtime health</h3>
+              <pre><code>mars doctor --repo ~/my-project --json
+mars trust --repo ~/my-project</code></pre>
+              <p>Doctor checks setup, model, database, repo, and operating-model health; trust shows progressive autonomy levels.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Operator Recipes</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Run a controlled first lifecycle</h3>
+              <pre><code>mars init --repo ~/my-project
+mars doctor --repo ~/my-project --json
+mars run engineer --repo ~/my-project --dry-run
+mars start --repo ~/my-project --concurrency 1</code></pre>
+              <p>Initialize, inspect, then run sequentially. This is the safest first target path.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Use a real remote model endpoint</h3>
+              <pre><code>mars start --repo ~/my-project \
+  --model-endpoint http://127.0.0.1:8088/v1</code></pre>
+              <p>The endpoint must be a real OpenAI-compatible model endpoint. Fake, stub, mock, canned, or scripted endpoints are test fixtures, not live validation evidence.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Recover from occupied local ports</h3>
+              <pre><code>mars start --repo ~/my-project --dashboard-addr :9190 --addr :9191
+mars start --repo ~/my-project --model-endpoint http://127.0.0.1:8088/v1</code></pre>
+              <p>Use alternate dashboard/control ports, or bypass local llama-server startup with a real OpenAI-compatible endpoint.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Drain before maintenance</h3>
+              <pre><code>curl -X POST http://localhost:9090/api/pause
+curl http://localhost:9090/api/status
+curl -X POST http://localhost:9090/api/stop</code></pre>
+              <p>Pause first when you want current jobs to finish without new claims before shutdown.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>User action</th></tr></thead>
+              <tbody>
+                <tr><td>Dashboard does not open on the expected port.</td><td>Another process owns the address, or scoped start fell back to an ephemeral port.</td><td>Pass <code>--dashboard-addr :PORT</code> explicitly and watch the runtime display for the final URL.</td></tr>
+                <tr><td><code>/api/scan</code> or <code>/api/run-role</code> returns a bad request.</td><td>Missing <code>repo_id</code> or role payload.</td><td>Call <code>GET /api/repos</code> and <code>GET /api/repo-roles?repo_id=...</code> first.</td></tr>
+                <tr><td>Startup refuses ambiguous lifecycle state.</td><td>MARS found state that could be resumed or restarted, but cannot choose safely.</td><td>Inspect tickets, queue, and DB state; rerun with <code>--new-lifecycle</code> only when intentionally starting fresh.</td></tr>
+                <tr><td>Model preflight fails before agents run.</td><td>Required local model file is missing or the active profile changed.</td><td>Run <code>mars setup</code> or provide a real <code>--model-endpoint</code>. See <a href="models-guide.html">Models Guide</a>.</td></tr>
+                <tr><td>Serve appears to use the wrong repo history.</td><td><code>serve</code> defaults to the shared legacy DB.</td><td>Use <code>mars start --repo ...</code> for isolated state, or pass <code>--db</code> deliberately.</td></tr>
+                <tr><td>Trace/log files clutter the repo.</td><td>A manual path was pointed inside the source or target checkout.</td><td>Move runtime logs under <code>~/.mars/traces/</code>; lifecycle commands validate these paths.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="site-footer">
+      <p><a href="index.html">Back to documentation home</a></p>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>

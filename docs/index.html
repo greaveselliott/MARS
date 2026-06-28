@@ -15,6 +15,9 @@ docs:
 - docs/design-docs/harness-operating-model.md
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/documentation-sync-architecture.md
+- docs/operations-guide.html
+- docs/models-guide.html
+- docs/tools-mcp-guide.html
 -->
 <html lang="en">
   <head>
@@ -43,8 +46,9 @@ docs:
         <a href="cli-reference.html">CLI Reference</a>
         <a href="workflows.html">Workflows</a>
         <a href="harness-guide.html">Harness Guide</a>
-        <a href="#operate">Operate</a>
-        <a href="#extend">Extend</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="models-guide.html">Models</a>
+        <a href="tools-mcp-guide.html">Tools/MCP</a>
         <a href="harness-ecosystem/">Explainer</a>
       </nav>
     </header>
@@ -149,6 +153,9 @@ docs:
             <a href="cli-reference.html">CLI Reference</a>
             <a href="workflows.html">User Workflows</a>
             <a href="harness-guide.html">Target Harness Guide</a>
+            <a href="operations-guide.html">Operations Guide</a>
+            <a href="models-guide.html">Models And Inference Guide</a>
+            <a href="tools-mcp-guide.html">Tools And MCP Guide</a>
             <a href="harness-ecosystem/">Adoption Explainer</a>
           </div>
         </section>
@@ -438,6 +445,13 @@ mars serve --addr :9091 --concurrency 2</code></pre>
 
         <section class="doc-section" id="operate">
           <h2>Operate MARS</h2>
+          <p>
+            For the complete runtime reference, open the
+            <a href="operations-guide.html">Operations Guide</a>. It covers
+            <code>start</code> vs <code>serve</code>, startup reconciliation,
+            dashboard pages, local control APIs, databases, logs, traces,
+            queue recovery, and operator recipes.
+          </p>
           <h3>Dashboard</h3>
           <p>
             <code>mars start</code> and <code>mars serve</code> expose an embedded local dashboard.
@@ -486,6 +500,8 @@ mars serve --addr :9091 --concurrency 2</code></pre>
             subprocess. The Go binary remains CGO-free, model files live outside
             repos, and setup chooses a practical local bundle from detected
             hardware unless you explicitly configure cloud or deferred routing.
+            For a full user reference, open the
+            <a href="models-guide.html">Models And Inference Guide</a>.
           </p>
           <div class="workflow-list">
             <article data-doc-filter>
@@ -633,6 +649,11 @@ mars update harness --repo ~/my-project</code></pre>
 
         <section class="doc-section" id="extend">
           <h2>Customize And Extend MARS</h2>
+          <p>
+            For the user-facing tool bridge, MCP setup, trust levels,
+            allowlists, and formal tool creation path, open the
+            <a href="tools-mcp-guide.html">Tools And MCP Guide</a>.
+          </p>
           <div class="concept-grid">
             <article data-doc-filter>
               <h3>Edit roles</h3>
@@ -747,6 +768,9 @@ roles:
             <a href="cli-reference.html">CLI reference</a>
             <a href="workflows.html">User workflows</a>
             <a href="harness-guide.html">Target harness guide</a>
+            <a href="operations-guide.html">Operations guide</a>
+            <a href="models-guide.html">Models and inference guide</a>
+            <a href="tools-mcp-guide.html">Tools and MCP guide</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/README.md">Repository README</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/AGENTS.md">Agent guide</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/ARCHITECTURE.md">Architecture</a>

@@ -1,0 +1,432 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/cli-reference.html
+- docs/workflows.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/local-inference.md
+- docs/features/F-003-local-inference-lifecycle.md
+- docs/references/model-landscape-may-2026.md
+- docs/validation/reports/2026-06-28-hardware-gated-model-onboarding.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Models And Inference Guide</title>
+    <meta
+      name="description"
+      content="User guide to MARS local inference, model bundles, routing precedence, Ollama, cloud providers, credentials, overrides, evaluation, and troubleshooting."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to models guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Models guide</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="tools-mcp-guide.html">Tools/MCP</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Model sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search models</label>
+          <input id="docSearch" type="search" placeholder="ollama, qwen, provider">
+          <p class="search-hint">Filters model commands, providers, and troubleshooting rows.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#local-first">Local First</a>
+          <a href="#bundles">Local Bundles</a>
+          <a href="#setup">Setup</a>
+          <a href="#routing">Routing</a>
+          <a href="#overrides">Overrides</a>
+          <a href="#providers">Cloud Providers</a>
+          <a href="#credentials">Credentials</a>
+          <a href="#ollama">Ollama</a>
+          <a href="#evaluation">Evaluation</a>
+          <a href="#operations">Runtime Operations</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Inference and routing</p>
+            <h1>Choose, run, override, and evaluate models safely.</h1>
+            <p class="lede">
+              MARS is local-first by default: it detects hardware, selects an
+              eligible local bundle, starts llama-server as a managed
+              subprocess, and routes roles to fast, reasoning, or coding tiers.
+              Operators can also use real OpenAI-compatible endpoints, Ollama,
+              or supported cloud provider routes through explicit
+              configuration.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="local-first">
+          <h2>Local-First Inference</h2>
+          <p>
+            The default model path keeps inference on the user's machine. The
+            Go binary stays CGO-free; llama.cpp runs as a supervised subprocess
+            with model files stored outside the repo. Local model artifacts are
+            large, so MARS downloads and verifies them under the user cache
+            instead of committing them.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>llama.cpp boundary</h3>
+              <p>MARS manages llama-server as a separate process. That keeps packaging simple and gives the runtime a stable HTTP contract.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Artifact storage</h3>
+              <p>GGUF model files live under <code>~/.mars/models/</code>. Managed binaries live under <code>~/.mars/bin/</code>.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Verification before use</h3>
+              <p>Corrupt or partial downloads must not be loaded silently. Setup verifies required model files before marking a bundle ready.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Long local timeouts</h3>
+              <p>Complex local coding turns can take minutes on large models. MARS uses longer local client timeouts and avoids retrying prompt-context errors that cannot succeed.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="bundles">
+          <h2>Local Bundles And Performance Profiles</h2>
+          <p>
+            A local bundle maps the fast, reasoning, and coding tiers to model
+            artifacts that fit the detected machine. The performance profile
+            controls how aggressive that choice should be.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Choice</th><th>Meaning</th><th>User guidance</th></tr></thead>
+              <tbody>
+                <tr><td><code>auto</code></td><td>Highest-ranked eligible local bundle for detected hardware.</td><td>Recommended default for most users.</td></tr>
+                <tr><td><code>local-cpu-q3</code></td><td>Conservative CPU-capable local bundle.</td><td>Use for development, dry runs, and low-memory machines.</td></tr>
+                <tr><td><code>local-balanced-q4</code></td><td>Balanced local bundle for practical autonomous work.</td><td>Recommended for Apple Silicon and unified-memory systems below very large RAM sizes.</td></tr>
+                <tr><td><code>local-quality-q8</code></td><td>Higher-quality local bundle with larger quantized models.</td><td>Use only when VRAM or unified memory can absorb the model comfortably.</td></tr>
+                <tr><td><code>performance_profile: auto</code></td><td>Detect and cap profile where needed.</td><td>Apple Silicon below 96 GiB tends to cap high/multi hardware to balanced.</td></tr>
+                <tr><td><code>performance_profile: speed</code></td><td>Favor smaller local models.</td><td>Useful when generation latency matters more than quality.</td></tr>
+                <tr><td><code>performance_profile: quality</code></td><td>Use detected hardware profile as-is.</td><td>Use on dedicated GPUs or large-memory machines after setup verifies files.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>See eligible bundles</h3>
+              <pre><code>mars models eligible
+mars models eligible --json
+mars models list --eligible --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Inspect registry defaults</h3>
+              <pre><code>mars models list
+mars models list --provider registry --json</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="setup">
+          <h2>Setup And Download</h2>
+          <p>
+            <code>mars setup</code> prepares local inference. It creates the
+            MARS user directory, writes config, detects hardware, installs
+            llama-server artifacts, downloads model files when requested, and
+            verifies the active local bundle before runtime.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Recommended source install path</h3>
+              <pre><code>make install
+mars setup --skip-github
+mars doctor</code></pre>
+              <p><code>--skip-github</code> skips private release auth when you are installing from a source checkout.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Force local inference and download</h3>
+              <pre><code>mars setup \
+  --inference local \
+  --local-bundle auto \
+  --download \
+  --yes \
+  --json</code></pre>
+              <p>Use JSON and <code>--yes</code> for deterministic setup automation.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Defer model setup</h3>
+              <pre><code>mars setup --inference defer --skip-download
+mars run engineer --repo ~/my-project --dry-run</code></pre>
+              <p>Dry-run inspection does not need a live model endpoint.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="routing">
+          <h2>Routing Precedence</h2>
+          <p>
+            Role manifests declare intent with <code>model: fast</code>,
+            <code>model: reasoning</code>, or <code>model: coding</code>.
+            Runtime routing uses explicit overrides first, then manifest tiers,
+            then role-name defaults, then a coding fallback. This prevents
+            planning roles from accidentally using the heaviest coding tier
+            when the manifest requested a lighter tier.
+          </p>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Repo model override</h3>
+              <p><code>.harness/model-overrides.yaml</code> can override one tier or one role.</p>
+            </li>
+            <li>
+              <h3>Manifest tier</h3>
+              <p>The role's <code>model</code> field wins when it names <code>fast</code>, <code>reasoning</code>, or <code>coding</code>.</p>
+            </li>
+            <li>
+              <h3>Role-name default</h3>
+              <p>Known role names can route to an established tier when no explicit tier is present.</p>
+            </li>
+            <li>
+              <h3>Coding fallback</h3>
+              <p>If nothing else matches, MARS falls back to the coding tier.</p>
+            </li>
+          </ol>
+          <div class="callout">
+            <strong>Endpoint override:</strong>
+            <code>mars start --model-endpoint &lt;url&gt;</code> is an escape hatch
+            for a real OpenAI-compatible endpoint. It skips local model-file
+            preflight and does not start local llama-server processes.
+          </div>
+        </section>
+
+        <section class="doc-section" id="overrides">
+          <h2>Repo-Owned Overrides</h2>
+          <p>
+            Overrides are deliberate target-repo configuration. They are useful
+            when a project needs a different model for one tier, one role, or a
+            remote provider route. They should be committed and reviewed like
+            other harness changes.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Override a tier to Ollama</h3>
+              <pre><code>mars models override \
+  --repo ~/my-project \
+  --tier coding \
+  --provider ollama \
+  --model qwen3.6:27b \
+  --reason "Evaluate local coding candidate"</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Override one role to a local endpoint</h3>
+              <pre><code>mars models override \
+  --repo ~/my-project \
+  --role engineer \
+  --provider openai-compatible \
+  --endpoint http://127.0.0.1:8088/v1 \
+  --model repo-coder \
+  --reason "Use dedicated coding server"</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Override a tier to a cloud provider</h3>
+              <pre><code>mars models override \
+  --repo ~/my-project \
+  --tier reasoning \
+  --routing cloud \
+  --provider anthropic \
+  --model claude-sonnet-family \
+  --api-key-env ANTHROPIC_API_KEY \
+  --reason "Temporary high-quality review route"</code></pre>
+              <p>Store the environment variable name, not the secret value.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="providers">
+          <h2>Cloud Providers And OpenAI-Compatible Routes</h2>
+          <p>
+            Cloud routing is explicit. MARS stores provider metadata and
+            <code>api_key_env</code> names in repo-owned config; it does not
+            accept raw provider keys in flags, committed files, logs, traces,
+            telemetry, JSON output, or errors.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Provider</th><th>Default endpoint</th><th>Credential env</th><th>User note</th></tr></thead>
+              <tbody>
+                <tr><td>OpenAI</td><td><code>https://api.openai.com/v1</code></td><td><code>OPENAI_API_KEY</code></td><td>Supported provider route with OpenAI-compatible chat behavior.</td></tr>
+                <tr><td>Anthropic</td><td><code>https://api.anthropic.com/v1</code></td><td><code>ANTHROPIC_API_KEY</code></td><td>Uses Anthropic message adapter behind the provider route.</td></tr>
+                <tr><td>Gemini</td><td><code>https://generativelanguage.googleapis.com/v1beta/openai</code></td><td><code>GEMINI_API_KEY</code></td><td>Uses Google's OpenAI-compatible endpoint.</td></tr>
+                <tr><td>Mistral</td><td>Provider catalog route.</td><td><code>MISTRAL_API_KEY</code></td><td>Optional cloud provider route.</td></tr>
+                <tr><td>DeepSeek</td><td><code>https://api.deepseek.com/v1</code></td><td><code>DEEPSEEK_API_KEY</code></td><td>OpenAI-compatible chat route.</td></tr>
+                <tr><td>xAI</td><td>Provider catalog route.</td><td><code>XAI_API_KEY</code></td><td>Optional cloud provider route.</td></tr>
+                <tr><td>Groq</td><td>Provider catalog route.</td><td><code>GROQ_API_KEY</code></td><td>Optional cloud provider route.</td></tr>
+                <tr><td>Cohere</td><td>Provider catalog route.</td><td><code>COHERE_API_KEY</code></td><td>Optional cloud provider route.</td></tr>
+                <tr><td>OpenAI-compatible</td><td>User supplied.</td><td>User supplied.</td><td>Use for local gateways, private endpoints, or compatible model servers.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="credentials">
+          <h2>Credentials</h2>
+          <p>
+            Credentials are machine-local. A target repo can document which env
+            names it expects, but secret values stay in the user environment or
+            an ignored local file.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Use environment variables directly</h3>
+              <pre><code>export ANTHROPIC_API_KEY=...
+mars models evaluate \
+  --provider anthropic \
+  --model claude-sonnet-family \
+  --api-key-env ANTHROPIC_API_KEY</code></pre>
+              <p>Do not paste secret values into repo files, logs, traces, docs, tickets, or chat.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Write ignored local env file</h3>
+              <pre><code>mars models credentials write-local-env \
+  --repo ~/my-project \
+  --api-key-env ANTHROPIC_API_KEY \
+  --yes \
+  --json</code></pre>
+              <p>This reads the secret from the process environment, writes ignored <code>.harness/.env.local</code> with owner-only permissions, and updates the committed example with env names only.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="ollama">
+          <h2>Ollama</h2>
+          <p>
+            Ollama is a broad catalog and explicit swap provider, not an
+            automatic default-promotion path. Operators can list local Ollama
+            models, evaluate any model by name, and configure an explicit tier
+            or role override when they accept responsibility for that route.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>List local Ollama models</h3>
+              <pre><code>mars models list --provider ollama
+mars models list --provider ollama --json</code></pre>
+              <p>Ollama defaults to <code>http://127.0.0.1:11434/v1</code> for OpenAI-compatible calls.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Evaluate an Ollama candidate</h3>
+              <pre><code>mars models evaluate \
+  --provider ollama \
+  --model qwen3.6:27b \
+  --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Make an explicit Ollama override</h3>
+              <pre><code>mars models override \
+  --repo ~/my-project \
+  --tier coding \
+  --provider ollama \
+  --model qwen3.6:27b</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="evaluation">
+          <h2>Model Evaluation</h2>
+          <p>
+            MARS treats new models as candidates until they pass harness-specific
+            benchmark evidence. Newer or larger models do not become defaults
+            because of model-card claims. A promotion must preserve tool-call
+            reliability, structured JSON behavior, repo-ticket reasoning, speed,
+            memory practicality, immutable artifact metadata, and checksum
+            reproducibility.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Print the current evaluation plan</h3>
+              <pre><code>mars models evaluate
+mars models evaluate --json</code></pre>
+              <p>Without endpoint and model flags, the command prints the refresh plan, candidates, benchmark cases, and promotion rules.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Run a live endpoint benchmark</h3>
+              <pre><code>mars models evaluate \
+  --endpoint http://127.0.0.1:8088/v1 \
+  --model repo-coder \
+  --provider openai-compatible \
+  --repo ~/my-project \
+  --save-report \
+  --json</code></pre>
+              <p>Reports are stored under <code>docs/generated/model-evaluations/</code> by default when saving is enabled.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Record promotion metadata</h3>
+              <pre><code>mars models evaluate \
+  --endpoint http://127.0.0.1:8088/v1 \
+  --model repo-coder \
+  --revision immutable-artifact-id \
+  --sha256 SHA256_VALUE \
+  --source https://example.invalid/model-card</code></pre>
+              <p>Default promotion requires immutable revision and SHA256 metadata, not only a passing live run.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="operations">
+          <h2>Runtime Operations</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Need</th><th>Command</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td>Check machine and repo health.</td><td><code>mars doctor --repo ~/my-project --json</code></td><td>Reports config, model, database, auth, repo, and operating-model health.</td></tr>
+                <tr><td>Bypass local llama-server.</td><td><code>mars start --repo ~/my-project --model-endpoint URL</code></td><td>Use only a real OpenAI-compatible endpoint. Fake endpoints are not live evidence.</td></tr>
+                <tr><td>Change local bundle.</td><td><code>mars setup --local-bundle auto --download</code></td><td>Setup verifies required files for the active profile before accepting the marker.</td></tr>
+                <tr><td>Reduce memory pressure.</td><td>Use <code>performance_profile: speed</code> or a smaller override.</td><td>Apple Silicon generation can be memory-bandwidth bound even when CPU looks idle.</td></tr>
+                <tr><td>Diagnose port conflicts.</td><td>Use alternate <code>--addr</code>, <code>--dashboard-addr</code>, or <code>--model-endpoint</code>.</td><td>Inference port conflicts are classified with remediation rather than retried blindly.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Meaning</th><th>User action</th></tr></thead>
+              <tbody>
+                <tr><td>Missing local model for a tier.</td><td>The active role requires a model file not present under <code>~/.mars/models/</code>.</td><td>Run <code>mars setup</code>, lower the local bundle/profile, or use a real <code>--model-endpoint</code>.</td></tr>
+                <tr><td>Prompt exceeds context.</td><td>The request cannot fit the served context window.</td><td>Reduce routed context, choose a tier with a larger context, or fix the source of context bloat.</td></tr>
+                <tr><td>Ollama override fails.</td><td>The named Ollama model is not installed or Ollama is unreachable.</td><td>Install/pull the model in Ollama, start Ollama, or remove the override.</td></tr>
+                <tr><td>Cloud route fails auth.</td><td>The configured <code>api_key_env</code> is missing in the process environment or local env file.</td><td>Export the env var or run <code>mars models credentials write-local-env</code>.</td></tr>
+                <tr><td>Local generation is slow but CPU is low.</td><td>Metal/GPU and memory bandwidth may be the limiting resource.</td><td>Use balanced/speed profiles, smaller quantization, or fewer parallel slots.</td></tr>
+                <tr><td>Model tests pass but defaults should not change yet.</td><td>Evaluation evidence is not the same as default promotion.</td><td>Record report, compare to current defaults, add immutable revision and SHA256, then make a deliberate registry change.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="site-footer">
+      <p><a href="index.html">Back to documentation home</a></p>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>

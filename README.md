@@ -34,7 +34,10 @@ It is the user-facing front door for installation, setup, CLI workflows,
 target harness lifecycle, operations, models, safety, telemetry, release
 management, extension, and troubleshooting. Deeper site pages now cover the
 [CLI reference](docs/cli-reference.html), [user workflows](docs/workflows.html),
-and [target harness guide](docs/harness-guide.html).
+[target harness guide](docs/harness-guide.html),
+[operations guide](docs/operations-guide.html),
+[models and inference guide](docs/models-guide.html), and
+[tools and MCP guide](docs/tools-mcp-guide.html).
 
 For a high-level adoption walkthrough, the documentation site links to the
 interactive [MARS explainer](docs/harness-ecosystem/). It explains the
@@ -260,6 +263,12 @@ safety, or orchestration changes do. See
 - [docs/workflows.html](docs/workflows.html): task-oriented user workflows.
 - [docs/harness-guide.html](docs/harness-guide.html): target harness structure
   and customization guide.
+- [docs/operations-guide.html](docs/operations-guide.html): runtime operations,
+  dashboard APIs, databases, logs, queue recovery, and troubleshooting.
+- [docs/models-guide.html](docs/models-guide.html): local inference, model
+  bundles, routing, providers, credentials, overrides, and evaluation.
+- [docs/tools-mcp-guide.html](docs/tools-mcp-guide.html): universal tools,
+  MCP setup, trust, allowlists, tool categories, and formal tool creation.
 - [docs/quickstart.md](docs/quickstart.md): detailed install and first run.
 - [docs/harness-ecosystem/](docs/harness-ecosystem/):
   interactive adoption explainer linked from the docs site.

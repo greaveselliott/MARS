@@ -1,0 +1,379 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/cli-reference.html
+- docs/harness-guide.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/tools-glossary.md
+- docs/design-docs/cli-tool-skill-sync.md
+- docs/design-docs/harness-operating-model.md
+- docs/design-docs/documentation-sync-architecture.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Tools And MCP Guide</title>
+    <meta
+      name="description"
+      content="User guide to MARS universal tools, tools list and run commands, MCP server setup, trust levels, allowlists, built-in tool categories, and safe tool creation."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to tools and MCP guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Tools and MCP</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="models-guide.html">Models</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Tools sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search tools</label>
+          <input id="docSearch" type="search" placeholder="mcp, trust, file_write">
+          <p class="search-hint">Filters tool categories, examples, and safety guidance.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#surfaces">User Surfaces</a>
+          <a href="#list">List Tools</a>
+          <a href="#run">Run A Tool</a>
+          <a href="#mcp">MCP Server</a>
+          <a href="#trust">Trust And Allowlists</a>
+          <a href="#categories">Tool Categories</a>
+          <a href="#selection">Selection Rules</a>
+          <a href="#creation">Tool Creation</a>
+          <a href="#external">External Clients</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Universal tool surface</p>
+            <h1>Expose the same governed MARS tools to users, agents, and MCP clients.</h1>
+            <p class="lede">
+              MARS tools are deterministic capabilities for repository work:
+              file access, shell execution, git, ticket lifecycle, release,
+              documentation sync, validation, trust, scoring, dependency
+              repair, and meta-tool creation. The same registry is available to
+              agent runs, the CLI, and local MCP clients with trust and
+              allowlist gates.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="surfaces">
+          <h2>User Surfaces</h2>
+          <p>
+            Tools are not only an internal model feature. They are a user-facing
+            control surface for operators and external AI clients that need the
+            same repo-root resolution, safety policies, JSON arguments, and
+            output limits that MARS agents use.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Surface</th><th>Command</th><th>Use</th></tr></thead>
+              <tbody>
+                <tr><td>Discover tools</td><td><code>mars tools list --json</code></td><td>Print OpenAI-style tool definitions from the registered built-in registry.</td></tr>
+                <tr><td>Run one tool</td><td><code>mars tools run &lt;name&gt; --repo /path --args-json '{...}'</code></td><td>Execute a registered tool through the same executor and policy path as agents.</td></tr>
+                <tr><td>Expose MCP</td><td><code>mars mcp serve --repo /path --trust observer</code></td><td>Launch a stdio MCP server for local clients.</td></tr>
+                <tr><td>Role agent runs</td><td><code>mars run engineer --repo /path</code></td><td>Tools are filtered by the role manifest allowlist and trust policy.</td></tr>
+                <tr><td>Harness manifest</td><td><code>.harness/manifest.yaml</code></td><td>Target owners decide which tools each role may use.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="list">
+          <h2>List Tools</h2>
+          <p>
+            Use <code>tools list</code> when you need to see what the installed
+            binary actually exposes. The JSON form is the best input for
+            another model, MCP adapter, or local integration.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Human list</h3>
+              <pre><code>mars tools list</code></pre>
+              <p>Prints one registered tool name per line.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Machine-readable definitions</h3>
+              <pre><code>mars tools list --json</code></pre>
+              <p>Prints tool names, descriptions, and JSON schemas in an OpenAI-style format.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="run">
+          <h2>Run A Tool From The CLI</h2>
+          <p>
+            <code>tools run</code> executes one tool with JSON object
+            arguments. It resolves the repository root, applies the requested
+            trust level, enforces output limits, and returns either formatted
+            model output or structured JSON.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Inspect git state</h3>
+              <pre><code>mars tools run git_status \
+  --repo ~/my-project \
+  --args-json '{}' \
+  --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Search files with a registered tool</h3>
+              <pre><code>mars tools run grep \
+  --repo ~/my-project \
+  --args-json '{"pattern":"MarsDocSync","glob":"**/*.go"}'</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Run a mutating tool deliberately</h3>
+              <pre><code>mars tools run record_decision \
+  --repo ~/my-project \
+  --trust contributor \
+  --args-json '{"title":"Use local model override","decision":"Route engineer to repo-coder for validation."}'</code></pre>
+              <p>Observer trust blocks mutating tools. Use contributor only when the caller is allowed to change repo state.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Limit output for external clients</h3>
+              <pre><code>mars tools run file_read \
+  --repo ~/my-project \
+  --max-output-bytes 6000 \
+  --args-json '{"path":"README.md"}'</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="mcp">
+          <h2>MCP Server</h2>
+          <p>
+            <code>mars mcp serve</code> starts a newline-delimited JSON-RPC
+            stdio MCP server. Configure an MCP-compatible client to launch the
+            command locally. The server exposes <code>tools/list</code> and
+            <code>tools/call</code> against the MARS tool registry.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Observer MCP server</h3>
+              <pre><code>mars mcp serve \
+  --repo ~/my-project \
+  --trust observer \
+  --role mcp-client</code></pre>
+              <p>Use observer by default. It can inspect, but mutating tools are blocked.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Contributor MCP server</h3>
+              <pre><code>mars mcp serve \
+  --repo ~/my-project \
+  --trust contributor \
+  --role mcp-client \
+  --allowlist file_read,grep,mars_cli,git_status,record_decision</code></pre>
+              <p>Use contributor only for a trusted local client and keep the allowlist as narrow as possible.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Example client entry</h3>
+              <pre><code>{
+  "mcpServers": {
+    "mars": {
+      "command": "mars",
+      "args": [
+        "mcp",
+        "serve",
+        "--repo",
+        "/absolute/path/to/my-project",
+        "--trust",
+        "observer"
+      ]
+    }
+  }
+}</code></pre>
+              <p>Use an absolute repo path so the MCP client does not depend on its launch directory.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="trust">
+          <h2>Trust And Allowlists</h2>
+          <p>
+            MARS applies two separate gates: the tool must be exposed by the
+            allowlist, and the current trust level must permit the requested
+            action. Role runs also use the role's manifest allowlist.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Gate</th><th>Where it is set</th><th>How users should apply it</th></tr></thead>
+              <tbody>
+                <tr><td>Role manifest allowlist</td><td><code>.harness/manifest.yaml</code></td><td>Give each role the smallest tool set that can do its job.</td></tr>
+                <tr><td>CLI run allowlist</td><td><code>mars tools run --allowlist</code></td><td>Defaults to the named tool. Use only when a tool call needs a specific set.</td></tr>
+                <tr><td>MCP allowlist</td><td><code>mars mcp serve --allowlist</code></td><td>Use a narrow list for external clients, especially with contributor trust.</td></tr>
+                <tr><td>Observer trust</td><td><code>--trust observer</code></td><td>Safe default for read-only inspection. Mutating tools are blocked.</td></tr>
+                <tr><td>Contributor trust</td><td><code>--trust contributor</code></td><td>Allows deliberate mutation through governed tools.</td></tr>
+                <tr><td>Autonomous trust</td><td>Role trust store and policy.</td><td>Reserved for roles that have earned more autonomy through evidence.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Inspect trust</h3>
+              <pre><code>mars trust --repo ~/my-project</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Set trust explicitly</h3>
+              <pre><code>mars trust set engineer REPO_ID contributor \
+  --reason "Human approved bounded write access"</code></pre>
+              <p>Use the repo ID from MARS state, not only the filesystem path.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="categories">
+          <h2>Built-In Tool Categories</h2>
+          <p>
+            The exact installed set is authoritative from
+            <code>mars tools list</code>. These categories explain how users
+            should think about the built-in surface.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Category</th><th>Representative tools</th><th>User purpose</th></tr></thead>
+              <tbody>
+                <tr><td>File inspection</td><td><code>file_read</code>, <code>file_search</code>, <code>grep</code>, code-intel tools</td><td>Read known files, search bounded globs, and inspect code graph context.</td></tr>
+                <tr><td>File mutation</td><td><code>file_write</code></td><td>Create or update repo files with docsync and policy checks.</td></tr>
+                <tr><td>Shell execution</td><td><code>shell_exec</code></td><td>Run subprocesses through policy, validation, background process, and output controls.</td></tr>
+                <tr><td>MARS command bridge</td><td><code>mars_cli</code></td><td>Run MARS commands through a structured argv path that avoids stale binary and shell parsing mistakes.</td></tr>
+                <tr><td>Git lifecycle</td><td><code>git_status</code>, <code>git_commit</code>, <code>git_push</code></td><td>Inspect, commit, and publish work under trunk and safety rules.</td></tr>
+                <tr><td>Ticket and planning</td><td><code>ticket_create</code>, <code>record_decision</code>, disposition tools</td><td>Create durable work and decisions rather than leaving them in chat.</td></tr>
+                <tr><td>Documentation and doctrine</td><td><code>docsync_audit</code>, doctrine sync tools</td><td>Keep code, feature contracts, design docs, and generated harness doctrine aligned.</td></tr>
+                <tr><td>Dependency and workspace health</td><td><code>dependency_sync</code>, <code>workspace_hygiene</code></td><td>Repair dependencies and detect unsafe workspace state.</td></tr>
+                <tr><td>Meta tools</td><td><code>tool_create</code>, <code>persona_create</code>, <code>tool_creation_guard</code></td><td>Create or validate new tools and personas through governed paths.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="selection">
+          <h2>Tool Selection Rules</h2>
+          <p>
+            Users and external agents should choose the most specific governed
+            capability that fits the job. This makes runs easier to audit and
+            keeps safety policy effective.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Use <code>mars_cli</code> for MARS behavior</h3>
+              <p>Setup, init, upgrade, doctor, scan, run, start, release, scores, trust, models, and update workflows belong through <code>mars_cli</code> in agent runs.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Use file tools for repo files</h3>
+              <p>Prefer <code>file_read</code>, <code>file_search</code>, and <code>grep</code> for ordinary inspection. Use <code>file_write</code> for controlled mutation.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Use shell only when needed</h3>
+              <p><code>shell_exec</code> is for tests, builds, runtime probes, and subprocesses where no purpose-built tool fits.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Use durable records for decisions</h3>
+              <p>Important discoveries, architecture decisions, and intervention outcomes belong in repo artifacts through the appropriate tools.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="creation">
+          <h2>Tool Creation</h2>
+          <p>
+            Repeated, risky, validation-heavy, or likely-to-recur procedures
+            should become first-class tools instead of staying as chat memory or
+            ad hoc shell scripts. New built-in tools must originate through
+            <code>tool_create</code> unless a prior durable decision explains
+            why the meta-tool path was bypassed.
+          </p>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Confirm the trigger</h3>
+              <p>Create a tool when the process is repeated, risky, validation-heavy, or broadly reusable across foundation and deployed harnesses.</p>
+            </li>
+            <li>
+              <h3>Run the meta-tool</h3>
+              <pre><code>mars tools run tool_create \
+  --repo . \
+  --trust contributor \
+  --args-json '{"tool_name":"example_tool"}'</code></pre>
+            </li>
+            <li>
+              <h3>Finish implementation and tests</h3>
+              <p>Complete the generated Go implementation, registration, trust policy, allowlists, tests, and documentation.</p>
+            </li>
+            <li>
+              <h3>Validate the path</h3>
+              <pre><code>mars tools run tool_creation_guard \
+  --repo . \
+  --args-json '{"tool_name":"example_tool"}'</code></pre>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="external">
+          <h2>External AI Clients</h2>
+          <p>
+            External clients should treat MARS as the source of tool truth
+            rather than recreating local shell shortcuts. Use observer trust for
+            read-only support and contributor trust only when the client should
+            mutate the repo.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Client need</th><th>Recommended setup</th><th>Why</th></tr></thead>
+              <tbody>
+                <tr><td>Read-only repository understanding.</td><td><code>mars mcp serve --repo /path --trust observer --allowlist file_read,file_search,grep,git_status</code></td><td>Prevents accidental mutation while still exposing useful context tools.</td></tr>
+                <tr><td>MARS lifecycle command access.</td><td>Add <code>mars_cli</code> to the allowlist.</td><td>Routes MARS commands through the active harness executable and structured args.</td></tr>
+                <tr><td>Controlled docs or ticket edits.</td><td>Use contributor trust with <code>file_read,file_write,git_status,record_decision,ticket_create</code>.</td><td>Allows mutation while keeping policy, docsync, and durable-record rules active.</td></tr>
+                <tr><td>Tool development.</td><td>Use contributor trust and include <code>tool_create</code>, <code>tool_creation_guard</code>, test tools, and git tools.</td><td>Keeps formalized tool creation auditable.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>User action</th></tr></thead>
+              <tbody>
+                <tr><td><code>tools run</code> says a tool is not allowed.</td><td>The named tool is outside the active allowlist.</td><td>Pass a narrower correct <code>--allowlist</code>, or use the default named-tool allowlist.</td></tr>
+                <tr><td>A mutating tool is blocked.</td><td>The session is running with observer trust.</td><td>Use <code>--trust contributor</code> only when mutation is intended and authorized.</td></tr>
+                <tr><td>MCP client cannot find repo files.</td><td>The MCP server was launched with the wrong working directory or a relative repo path.</td><td>Configure <code>--repo /absolute/path/to/repo</code>.</td></tr>
+                <tr><td>Output is truncated.</td><td>The executor output budget was reached.</td><td>Use a more specific tool query or raise <code>--max-output-bytes</code> deliberately.</td></tr>
+                <tr><td>Direct shell MARS command fails in an agent run.</td><td>Policy prefers the <code>mars_cli</code> tool for MARS commands.</td><td>Use <code>mars_cli</code> or the operator CLI outside the agent run.</td></tr>
+                <tr><td>New tool work fails review.</td><td>The governed <code>tool_create</code> path or documentation sync was skipped.</td><td>Run <code>tool_creation_guard</code>, update design docs, tests, registration, allowlists, and MarsDocSync metadata.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="site-footer">
+      <p><a href="index.html">Back to documentation home</a></p>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>

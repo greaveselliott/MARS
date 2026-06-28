@@ -1,7 +1,7 @@
 # Product Surface
 
 **Status:** Accepted
-**Updated:** 2026-05-20
+**Updated:** 2026-06-28
 **Owner:** MARS maintainers
 **Sources:** [AGENTS.md](../../AGENTS.md), [quickstart](../quickstart.md), [design docs](../design-docs/index.md), [vision](vision.md)
 
@@ -35,7 +35,10 @@ extension, troubleshooting, and links into durable source docs. The site also
 includes dedicated pages for the detailed CLI reference
 (`docs/cli-reference.html`), task-oriented user workflows
 (`docs/workflows.html`), and target harness structure/customization
-(`docs/harness-guide.html`). The repo also includes a static adoption explainer
+(`docs/harness-guide.html`). The site now also includes deep user guides for
+runtime operations (`docs/operations-guide.html`), models and inference
+(`docs/models-guide.html`), and the universal tools/MCP bridge
+(`docs/tools-mcp-guide.html`). The repo also includes a static adoption explainer
 under `docs/harness-ecosystem/`; the explainer remains a linked page for the
 value case, foundation/deployed boundary, operating model, DocSync, telemetry,
 safety, and pilot adoption path for mixed leadership and engineering audiences.

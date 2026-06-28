@@ -5,6 +5,9 @@ docs:
 - docs/cli-reference.html
 - docs/workflows.html
 - docs/harness-guide.html
+- docs/operations-guide.html
+- docs/models-guide.html
+- docs/tools-mcp-guide.html
 - README.md
 - docs/product-specs/product-surface.md
 */
