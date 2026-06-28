@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.67.0] - 2026-06-28
+<!-- mars-release: version=0.67.0 commit=c1eba03dee7d -->
+
+### Impact
+- **models:** Operators gain new capability: gate onboarding by hardware and safe routing.
+
+### Why
+- **models:** This matters because gate onboarding by hardware and safe routing was missing from the shipped capability set.
+
+### What Changed
+- **models:** Changed gate onboarding by hardware and safe routing (c1eba03).
+
+### Features
+- **models:** Gate onboarding by hardware and safe routing (c1eba03)
+
 ## [0.66.2] - 2026-06-28
 <!-- mars-release: version=0.66.2 commit=e199cf546ec2 -->
 
