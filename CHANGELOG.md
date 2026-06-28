@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.0] - 2026-06-28
+<!-- mars-release: version=0.68.0 commit=cc091d6b874c -->
+
+### Impact
+- **models:** Operators gain new capability: expose custom cloud endpoint init.
+
+### Why
+- **models:** This matters because expose custom cloud endpoint init was missing from the shipped capability set.
+
+### What Changed
+- **models:** Changed expose custom cloud endpoint init (cc091d6).
+
+### Features
+- **models:** Expose custom cloud endpoint init (cc091d6)
+
 ## [0.67.1] - 2026-06-28
 <!-- mars-release: version=0.67.1 commit=9124ff2ff5ca -->
 
