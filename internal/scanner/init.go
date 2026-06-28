@@ -526,6 +526,7 @@ var defaultWorkspaceNoiseIgnores = []string{
 	"build/",
 	"coverage/",
 	".vite/",
+	".harness/.env.local",
 }
 
 func ensureWorkspaceNoiseGitignore(repoRoot string) (bool, error) {
@@ -1167,6 +1168,12 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - Bootstrap and delivery order is strict: exec plan first, then feature contract,
   then tickets, then implementation delivery. Do not create feature contracts,
   tickets, or delivery work until the active exec plan names the current slice.
+- Fact-Validated Planning: before non-trivial planning or implementation claims,
+  inspect discoverable repo and system facts directly, keep assumptions visible,
+  classify failures as foundation-owned, deployed-owned, mixed/unclear, or
+  evidence-only, and cite real validation evidence before claiming live
+  behavior. Do not let guesses about files, commands, hardware, credentials, or
+  runtime state drive tickets or completion claims.
 - BDD feature contracts define feature completeness; walking skeleton is the implementation strategy: make the next failing scenario pass through the thinnest real end-to-end path.
 - Business logic is first-class BDD: every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, or user-visible outcome must be documented step by step in ` + "`docs/features/`" + ` before or alongside implementation.
 - No stale documentation: when writing or materially changing code, add or update the top-of-file ` + "`MarsDocSync`" + ` comment block with a ` + "`docs:`" + ` list of associated docs, run or satisfy the docsync audit where applicable, then update those docs in the same commit or record why no doc change was needed.

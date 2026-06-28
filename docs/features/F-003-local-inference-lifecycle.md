@@ -23,6 +23,9 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 6. F-003-S006 - Model evaluation supports benchmark-backed candidate comparison before default promotion.
 7. F-003-S007 - Ollama can be used for explicit catalog/evaluation/swap workflows without changing zero-config defaults automatically.
 8. F-003-S008 - Full lifecycle start can use an explicit real model endpoint and isolates control-plane and local inference ports across parallel runs.
+9. F-003-S009 - Setup/init/model runtime paths reject local bundles that are not eligible for detected hardware.
+10. F-003-S010 - Cloud/frontier model routing stores only credential environment names in committed configuration.
+11. F-003-S011 - Human setup/init output is polished for TTYs while agent `--yes --json` output stays prompt-free and machine-readable.
 
 ## Scenarios
 
@@ -91,12 +94,49 @@ Given every allowed tier port is occupied by an unhealthy or unknown process
 When local inference cannot start safely
 Then the terminal error and telemetry are classified as `inference_port_conflict` and name the tier, role, port, owning PID when known, and remediation through process cleanup or `--model-endpoint`
 
+### F-003-S009: Hardware-Gated Local Bundle Eligibility
+
+Given setup, init, model override, run, start, or serve selects a local model bundle
+When detected hardware lacks required RAM, dedicated VRAM, unified memory, OS, arch, backend, or known disk capacity for that bundle
+Then the selection is disabled in TTY prompts, rejected in flag/config/runtime paths, and the error names the missing resource and a cloud/defer/local-auto remediation
+
+Given a command receives `--local-bundle auto`
+When hardware resources are known
+Then the shared resolver selects the highest-ranked eligible local bundle for the detected machine
+And when hardware resources are unknown, risky local bundles are disabled rather than guessed
+
+### F-003-S010: Secret-Safe Cloud Routing
+
+Given a repo uses cloud/frontier routing
+When `mars init`, `mars models override`, `mars run`, `mars start`, or `mars serve` resolves the route
+Then committed files contain provider, model, endpoint when needed, and `api_key_env` only
+And raw API key values are never accepted as CLI flags, written to committed files, printed, logged, traced, or emitted in JSON
+
+Given `mars models credentials write-local-env --repo <path> --api-key-env <ENV>` runs
+When the named environment variable exists in the process environment
+Then `.harness/.env.local` receives the secret value with `0600` permissions and `.harness/.env.example` receives only the variable name
+
+### F-003-S011: Human And Agent CLI Output Contracts
+
+Given a human runs setup/init/models commands on a TTY
+When choices include unsupported local bundles
+Then output uses concise aligned sections, tables, muted styling, progress state, and disabled choices with reasons
+
+Given an agent runs the same commands with `--yes --json`
+When required inputs are missing
+Then the command fails without prompting and emits JSON with the exact remediation command
+
+Given output is non-TTY, `NO_COLOR`, `TERM=dumb`, or `--plain`
+When setup/init/models output is rendered
+Then animation and styling are disabled
+
 ## Out of Scope
 
 - Hosted inference as the default runtime.
 - Embedding llama.cpp through CGO.
 - Promoting models from leaderboard claims without local harness evidence.
 - Treating every locally installed Ollama model as a zero-config default.
+- Storing raw cloud provider API keys in committed harness files.
 
 ## Descoped Scenarios
 
@@ -112,3 +152,6 @@ None.
 - F-003-S006: `go test ./internal/models -run TestEvaluate`
 - F-003-S007: planned evidence for the remaining Ollama catalog and swap workflow tracked by `MH-030`
 - F-003-S008: `go test ./internal/inference`, `go test ./internal/serve -run 'TestServerNewModelEndpointSkipsLocalModelPreflight|TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy'`, and `go test ./cmd/mars -run 'TestStartCommandExposesRealModelEndpointOverride|TestStartCommandExposesParallelAddressControls'`
+- F-003-S009: `go test ./internal/models -run TestEligibility` and rejection tests in `./cmd/mars`, `./internal/setup`, `./internal/serve`, and `./internal/inference`
+- F-003-S010: `go test ./internal/models -run 'TestProvider|TestCredentials|TestOverride'` and redaction tests in `./internal/llm`
+- F-003-S011: `go test ./cmd/mars -run 'TestSetup.*Output|TestInit.*Output|TestModels.*Output'`

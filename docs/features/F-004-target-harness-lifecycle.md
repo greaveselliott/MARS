@@ -23,6 +23,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 6. F-004-S006 - Auto-harness scaffolding runs before register, scan, run, or start when the manifest is missing.
 7. F-004-S007 - Generated target doctrine stays mirrored when source operating rules change.
 8. F-004-S008 - `mars eject` removes generated harness artifacts and the associated per-repo database only after explicit confirmation.
+9. F-004-S009 - Generated targets mirror Fact-Validated Planning and secret-safe model routing defaults.
 
 ## Scenarios
 
@@ -74,6 +75,17 @@ Given generated role guidance describes BDD scenarios, DocSync metadata, validat
 When a fresh target is initialized
 Then Engineer guidance distinguishes scenario IDs from feature-contract paths, shows the structured `MarsDocSync` block form, QA and Security guidance names terminal-only review convergence after clean read plus validation evidence, and QA, Security, Dogfood, and Release Manager guidance treat `docsync_audit` `FAIL:` output as a blocker instead of approving stale source documentation
 
+### F-004-S009: Fact-Validated Planning And Model Routing Defaults
+
+Given a fresh target harness is initialized
+When generated `AGENTS.md`, context routes, docs, and ignore policy are inspected
+Then they require agents to validate discoverable repo/system facts before non-trivial planning claims, keep assumptions visible, classify failures by ownership, and cite real evidence before live behavior claims
+And `.harness/.env.local` is ignored while `.harness/.env.example` remains commit-safe for credential environment variable names
+
+Given a target initializes local or cloud model routing non-interactively
+When `--yes --json` is supplied
+Then missing required model routing inputs fail with JSON remediation instead of prompting
+
 ### F-004-S008: Target Harness Eject Kill Switch
 
 Given a target repo has generated MARS artifacts and a repo-scoped SQLite database
@@ -104,3 +116,4 @@ None.
 - F-004-S006: `go test ./internal/scanner -run TestEnsureHarness`
 - F-004-S007: `go test ./internal/scanner -run TestInit_success` and `go test ./internal/docsconsistency`
 - F-004-S008: `go test ./internal/scanner -run TestEject`
+- F-004-S009: `go test ./internal/scanner -run 'TestInit_success|TestUpgrade_preservesUserConfiguredManifestAndPrompts'` and a fresh `mars init --repo <clean-target> --model-routing local --local-bundle auto --yes --json` replay

@@ -158,6 +158,40 @@ Evaluation reports include a promotion section; ad-hoc Ollama candidates and
 cloud-only candidates are blocked from default promotion unless pinned artifact
 revision, SHA256, benchmark evidence, and docs rationale are present.
 
+### AD-306: Hardware-Gated Model Routing And Secret-Safe Cloud Credentials
+
+Model selection must pass through one shared resolver before setup downloads
+weights, init writes routing config, overrides are accepted, or run/start/serve
+create an LLM client. The resolver owns local bundle eligibility, `auto`
+selection, cloud provider routing, and credential environment validation.
+Duplicating bundle checks in individual commands is not allowed because it
+lets unsupported local models reach runtime through config or override paths.
+
+Local bundle metadata records the tier-to-GGUF mapping plus required RAM,
+dedicated VRAM, unified memory, disk estimate, OS, arch, backend, and profile.
+`auto` means the highest-ranked eligible bundle for the detected machine.
+Unknown hardware resources disable risky bundles and return a remediation that
+offers local-auto, cloud, or deferred setup instead of guessing.
+
+Committed target configuration stores only provider routing metadata and
+`api_key_env`. Raw cloud provider keys are never accepted by flags, generated
+config, logs, telemetry, traces, JSON output, or errors. `mars models
+credentials write-local-env` may read a secret from the named process
+environment variable and write it to ignored `.harness/.env.local` with `0600`
+permissions; `.harness/.env.example` records only the variable name.
+
+Cloud providers are not considered selectable merely because a name appears in
+the registry. Each selectable provider must have official-documentation fixture
+evidence and request-capturing tests that prove the request shape, auth header,
+and redaction behavior. Providers without that evidence are listed as
+unavailable with a reason.
+
+TTY setup/init/model commands may use aligned sections, concise tables, muted
+color, disabled choices, and progress state. Non-TTY output is plain, `NO_COLOR`
+and `TERM=dumb` disable styling, `--plain` forces plain text, and `--json`
+emits JSON only. `--yes` never prompts; missing required choices produce a
+machine-readable remediation.
+
 ### Open topics (M2 and beyond)
 
 - **Hardware detection:** CPU vs GPU paths, memory ceilings, and safe default model bundles; degrade gracefully when VRAM is insufficient.

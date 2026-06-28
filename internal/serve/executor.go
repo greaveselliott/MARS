@@ -38,10 +38,12 @@ import (
 	harctx "github.com/greaveselliott/mars/internal/context"
 	"github.com/greaveselliott/mars/internal/dashboard"
 	"github.com/greaveselliott/mars/internal/guardrails"
+	"github.com/greaveselliott/mars/internal/hardware"
 	"github.com/greaveselliott/mars/internal/inference"
 	"github.com/greaveselliott/mars/internal/integrations"
 	"github.com/greaveselliott/mars/internal/learnings"
 	"github.com/greaveselliott/mars/internal/llm"
+	"github.com/greaveselliott/mars/internal/models"
 	"github.com/greaveselliott/mars/internal/orgstate"
 	"github.com/greaveselliott/mars/internal/queue"
 	"github.com/greaveselliott/mars/internal/safety"
@@ -541,7 +543,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		return fmt.Errorf("executor: dirty worktree containment before role %q run: %w", job.Role, err)
 	}
 
-	endpoint, err := e.router.ServerForRoleModel(ctx, job.Role, role.Model)
+	clientCfg, err := e.clientConfigForRole(ctx, repoPath, job.Role, role.Model)
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("inference for %q: %v", job.Role, err))
 		return fmt.Errorf("executor: get inference endpoint for role %q: %w", job.Role, err)
@@ -556,10 +558,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		contextWindow = e.router.ContextWindowForRoleModel(job.Role, role.Model)
 	}
 
-	client, err := llm.NewClient(llm.Config{
-		BaseURL: endpoint,
-		Model:   role.Model,
-	})
+	client, err := llm.NewClient(clientCfg)
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("LLM client: %v", err))
 		return fmt.Errorf("executor: create LLM client: %w", err)
@@ -580,6 +579,10 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	}
 
 	traceRuntime := codeGraphRuntimeForTrace(e.codeIntel, allowlist, graphErr)
+	loopModel := role.Model
+	if strings.TrimSpace(clientCfg.Model) != "" {
+		loopModel = clientCfg.Model
+	}
 	params := agent.Params{
 		Completer:         client,
 		Registry:          reg,
@@ -591,7 +594,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 		Preflight:         codeGraphPreflight(allowlist, graphResult, graphErr, e.codeIntel),
 		MaintainCodeGraph: e.codeIntel.Enabled && codeGraphMaintenanceEnabled(allowlist, graphResult, graphErr),
 		Config: agent.LoopConfig{
-			Model:       role.Model,
+			Model:       loopModel,
 			MaxTurns:    role.MaxTurns,
 			ContextSize: contextWindow,
 		},
@@ -707,6 +710,38 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	tw.WriteHandoff(job.Role, handoff)
 
 	return nil
+}
+
+func (e *Executor) clientConfigForRole(ctx context.Context, repoPath, roleName, modelHint string) (llm.Config, error) {
+	override, ok, err := models.ResolveModelOverride(repoPath, roleName, modelHint)
+	if err != nil {
+		return llm.Config{}, err
+	}
+	if ok {
+		switch override.Routing {
+		case models.RoutingCloud:
+			route, err := models.ResolveProviderRoute(repoPath, models.ProviderRoute{
+				Routing:   models.RoutingCloud,
+				Provider:  override.Provider,
+				Model:     override.Model,
+				Endpoint:  override.Endpoint,
+				APIKeyEnv: override.APIKeyEnv,
+			})
+			if err != nil {
+				return llm.Config{}, err
+			}
+			return llm.Config{BaseURL: route.Endpoint, APIKey: route.APIKey, Provider: route.Provider, Model: route.Model}, nil
+		case models.RoutingLocal:
+			if _, _, err := models.ResolveLocalBundle(hardware.Detect(), override.LocalBundle); err != nil {
+				return llm.Config{}, err
+			}
+		case models.RoutingDefer:
+			return llm.Config{}, fmt.Errorf("model routing is deferred — configure local or cloud routing before running role %q", roleName)
+		default:
+			return llm.Config{}, fmt.Errorf("unsupported model routing %q", override.Routing)
+		}
+	}
+	return e.router.ClientConfigForRoleModel(ctx, roleName, modelHint)
 }
 
 func effectiveToolAllowlist(base []string, cfg integrations.Config, reg *tools.Registry) []string {

@@ -142,6 +142,60 @@ func TestServerNewRequiresLocalModelPreflightWhenConfigured(t *testing.T) {
 	}
 }
 
+func TestServerNewRepoDefaultCloudRoutingSkipsLocalPreflight(t *testing.T) {
+	repo := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(repo, ".harness"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(repo, ".harness", "model-overrides.yaml"), []byte(`version: 2
+default:
+  routing: cloud
+  provider: openai-compatible
+  endpoint: http://127.0.0.1:9999/v1
+  model: route-test
+  api_key_env: TEST_PROVIDER_KEY
+`), 0o644))
+	t.Setenv("TEST_PROVIDER_KEY", "secret-value")
+
+	srv, err := New(Config{
+		WebhookAddr:           ":0",
+		DashboardAddr:         "127.0.0.1:0",
+		DBPath:                testDBPath(t),
+		RepoScope:             repo,
+		ModelsDir:             filepath.Join(t.TempDir(), "missing-models"),
+		BinDir:                filepath.Join(t.TempDir(), "missing-bin"),
+		RequireModelPreflight: true,
+	})
+	require.NoError(t, err)
+	got, err := srv.router.ServerForRole(context.Background(), "ceo")
+	require.NoError(t, err)
+	require.Equal(t, "http://127.0.0.1:9999", got)
+	clientCfg, err := srv.router.ClientConfigForRoleModel(context.Background(), "ceo", "")
+	require.NoError(t, err)
+	require.Equal(t, "openai-compatible", clientCfg.Provider)
+	require.Equal(t, "route-test", clientCfg.Model)
+	require.Equal(t, "secret-value", clientCfg.APIKey)
+}
+
+func TestServerNewRepoDefaultDeferredRoutingBlocksRuntime(t *testing.T) {
+	repo := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(repo, ".harness"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(repo, ".harness", "model-overrides.yaml"), []byte(`version: 2
+default:
+  routing: defer
+`), 0o644))
+
+	_, err := New(Config{
+		WebhookAddr:           ":0",
+		DashboardAddr:         "127.0.0.1:0",
+		DBPath:                testDBPath(t),
+		RepoScope:             repo,
+		ModelsDir:             filepath.Join(t.TempDir(), "missing-models"),
+		BinDir:                filepath.Join(t.TempDir(), "missing-bin"),
+		RequireModelPreflight: true,
+	})
+	require.ErrorContains(t, err, "model routing is deferred")
+	require.ErrorContains(t, err, "configure cloud routing")
+}
+
 func TestServer_healthHandler_unhealthy(t *testing.T) {
 	srv, err := New(Config{
 		WebhookAddr:   ":0",

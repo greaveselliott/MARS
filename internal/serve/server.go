@@ -44,6 +44,7 @@ import (
 	"github.com/greaveselliott/mars/internal/inference"
 	"github.com/greaveselliott/mars/internal/integrations"
 	jiraintegration "github.com/greaveselliott/mars/internal/jira"
+	"github.com/greaveselliott/mars/internal/models"
 	"github.com/greaveselliott/mars/internal/orchestration"
 	"github.com/greaveselliott/mars/internal/orgstate"
 	"github.com/greaveselliott/mars/internal/power"
@@ -78,6 +79,10 @@ type Config struct {
 	PerformanceProfile    string
 	InferenceTuning       inference.ServerTuning
 	ModelEndpoint         string
+	ModelProvider         string
+	ModelName             string
+	ModelAPIKey           string
+	LocalBundle           string
 	RequireModelPreflight bool
 	EphemeralHTTPFallback bool
 	JobViews              ui.JobViewFactory
@@ -155,8 +160,42 @@ func New(cfg Config) (*Server, error) {
 	}
 
 	modelEndpoint := strings.TrimSpace(cfg.ModelEndpoint)
+	modelProvider := strings.TrimSpace(cfg.ModelProvider)
+	modelName := strings.TrimSpace(cfg.ModelName)
+	modelAPIKey := strings.TrimSpace(cfg.ModelAPIKey)
+	localBundle := strings.TrimSpace(cfg.LocalBundle)
+	if modelEndpoint == "" && strings.TrimSpace(cfg.RepoScope) != "" {
+		if override, ok, err := models.ResolveDefaultModelRouting(cfg.RepoScope); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("serve: resolve model routing: %w", err)
+		} else if ok {
+			switch override.Routing {
+			case models.RoutingCloud:
+				route, err := models.ResolveProviderRoute(cfg.RepoScope, models.ProviderRoute{
+					Routing:   models.RoutingCloud,
+					Provider:  override.Provider,
+					Model:     override.Model,
+					Endpoint:  override.Endpoint,
+					APIKeyEnv: override.APIKeyEnv,
+				})
+				if err != nil {
+					db.Close()
+					return nil, fmt.Errorf("serve: resolve cloud model route: %w", err)
+				}
+				modelEndpoint = route.Endpoint
+				modelProvider = route.Provider
+				modelName = route.Model
+				modelAPIKey = route.APIKey
+			case models.RoutingLocal:
+				localBundle = override.LocalBundle
+			case models.RoutingDefer:
+				db.Close()
+				return nil, fmt.Errorf("serve: model routing is deferred — run `mars init --repo %s --model-routing local --local-bundle auto` or configure cloud routing before start/serve", cfg.RepoScope)
+			}
+		}
+	}
 	hw := hardware.Detect()
-	modelSet := hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)
+	var modelSet map[hardware.Tier]hardware.ModelSpec
 
 	modelsDir := strings.TrimSpace(cfg.ModelsDir)
 	if modelsDir == "" {
@@ -170,25 +209,41 @@ func New(cfg Config) (*Server, error) {
 	if modelEndpoint != "" {
 		modelSet = map[hardware.Tier]hardware.ModelSpec{}
 	} else if cfg.RequireModelPreflight {
-		if missing, err := hardware.MissingRequiredModelFiles(modelsDir, cfg.PerformanceProfile); err != nil {
-			db.Close()
-			return nil, fmt.Errorf("serve: verify profile model files: %w", err)
-		} else if err := hardware.ProfileModelPreflightError(cfg.PerformanceProfile, missing); err != nil {
+		bundle, _, err := models.ResolveLocalBundle(hw, localBundle)
+		if err != nil {
 			db.Close()
 			return nil, fmt.Errorf("serve: %w", err)
 		}
+		modelSet = bundle.Models
+		if missing, err := models.MissingLocalBundleFiles(modelsDir, bundle); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("serve: verify local bundle model files: %w", err)
+		} else if err := models.LocalBundlePreflightError(bundle.ID, missing); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("serve: %w", err)
+		}
+	} else {
+		bundle, _, err := models.ResolveLocalBundle(hw, localBundle)
+		if err != nil {
+			db.Close()
+			return nil, fmt.Errorf("serve: %w", err)
+		}
+		modelSet = bundle.Models
 	}
 
 	roleMapping := inference.DefaultRoleTierMapping()
 
 	binaryPath := filepath.Join(cfg.BinDir, "llama-server")
 	router := inference.NewRouter(inference.RouterConfig{
-		BinaryPath:  binaryPath,
-		Models:      modelSet,
-		RoleMapping: roleMapping,
-		ModelsDir:   cfg.ModelsDir,
-		FallbackURL: modelEndpoint,
-		Tuning:      cfg.InferenceTuning,
+		BinaryPath:       binaryPath,
+		Models:           modelSet,
+		RoleMapping:      roleMapping,
+		ModelsDir:        modelsDir,
+		FallbackURL:      modelEndpoint,
+		FallbackKey:      modelAPIKey,
+		FallbackProvider: modelProvider,
+		FallbackModel:    modelName,
+		Tuning:           cfg.InferenceTuning,
 	})
 
 	triggerRouter := NewTriggerRouter()

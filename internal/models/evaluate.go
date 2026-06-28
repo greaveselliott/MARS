@@ -78,6 +78,7 @@ type Config struct {
 	Model           string
 	Provider        string
 	APIKey          string
+	APIKeyEnv       string
 	RepoRoot        string
 	ReportsDir      string
 	HardwareProfile string
@@ -253,8 +254,26 @@ func DefaultPlan(now time.Time) Plan {
 // NormalizeProvider returns the supported provider name used in reports and overrides.
 func NormalizeProvider(provider string) string {
 	switch strings.ToLower(strings.TrimSpace(provider)) {
-	case "", ProviderOpenAICompatible, "openai":
+	case "":
 		return ProviderOpenAICompatible
+	case ProviderOpenAICompatible, "custom", "openai_compatible":
+		return ProviderOpenAICompatible
+	case "openai", "chatgpt":
+		return ProviderOpenAI
+	case "anthropic", "claude":
+		return ProviderAnthropic
+	case "google", "gemini":
+		return ProviderGemini
+	case "mistral":
+		return ProviderMistral
+	case "xai", "grok":
+		return ProviderXAI
+	case "deepseek":
+		return ProviderDeepSeek
+	case "groq":
+		return ProviderGroq
+	case "cohere":
+		return ProviderCohere
 	case ProviderOllama:
 		return ProviderOllama
 	case ProviderRegistry:
@@ -283,10 +302,19 @@ func Evaluate(ctx context.Context, cfg Config) (Report, error) {
 			repoRoot = cwd
 		}
 	}
+	apiKey := strings.TrimSpace(cfg.APIKey)
+	if apiKey == "" && strings.TrimSpace(cfg.APIKeyEnv) != "" {
+		var ok bool
+		apiKey, ok = LookupCredential(repoRoot, cfg.APIKeyEnv)
+		if !ok {
+			return Report{}, fmt.Errorf("models evaluate: credential env %s is not set — export %s=<secret> and retry", cfg.APIKeyEnv, cfg.APIKeyEnv)
+		}
+	}
 
 	client, err := llm.NewClient(llm.Config{
 		BaseURL:    cfg.Endpoint,
-		APIKey:     cfg.APIKey,
+		APIKey:     apiKey,
+		Provider:   provider,
 		Model:      cfg.Model,
 		HTTPClient: cfg.HTTPClient,
 		Timeout:    timeout,

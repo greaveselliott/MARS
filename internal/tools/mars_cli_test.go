@@ -38,7 +38,7 @@ func TestMarsCLI_reference(t *testing.T) {
 		"scan", "doctor", "auth github check", "auth github setup", "update check", "update tool", "update harness",
 		"path setup", "release notes", "release backfill-notes", "release publish-assets", "release verify-assets", "checks run", "scores", "scores export",
 		"telemetry status", "telemetry preview", "telemetry export", "telemetry send", "telemetry collect", "telemetry triage-foundation",
-		"docsync audit", "trust", "trust set", "models evaluate", "models list", "models override",
+		"docsync audit", "trust", "trust set", "models evaluate", "models eligible", "models list", "models override", "models credentials write-local-env", "guardrails secret-scan", "guardrails install-hooks",
 		"tools list", "tools run <name>", "mcp serve",
 	} {
 		require.Contains(t, res.Output, command)
@@ -56,6 +56,9 @@ func TestMarsCLI_repoShortcutAppendsRepoFlagForSyncedCommands(t *testing.T) {
 		{"docsync", "audit"},
 		{"models", "evaluate", "--json"},
 		{"models", "override", "--tier", "coding", "--provider", "ollama", "--model", "qwen"},
+		{"models", "credentials", "write-local-env", "--api-key-env", "ANTHROPIC_API_KEY", "--yes", "--json"},
+		{"guardrails", "secret-scan", "--staged", "--json"},
+		{"guardrails", "install-hooks", "--json"},
 		{"scores"},
 		{"telemetry", "preview"},
 		{"telemetry", "triage-foundation", "--db", "intake.db"},

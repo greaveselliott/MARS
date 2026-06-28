@@ -42,6 +42,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -85,14 +86,21 @@ import (
 var version = buildinfo.DefaultVersion
 
 var (
-	commit = "unknown"
-	date   = "unknown"
+	commit           = "unknown"
+	date             = "unknown"
+	jsonErrorWritten bool
 )
 
 func main() {
 	root := newRootCommand()
 	if err := root.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		if jsonRequestedFromArgs(os.Args[1:]) {
+			if !jsonErrorWritten {
+				_ = writeJSONError(err)
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
 		os.Exit(1)
 	}
 }
@@ -134,6 +142,7 @@ func newRootCommand() *cobra.Command {
 	root.AddCommand(codeIntelCmd())
 	root.AddCommand(mcpCmd())
 	root.AddCommand(modelsCmd())
+	root.AddCommand(guardrailsCmd())
 	root.AddCommand(releaseCmd())
 	root.AddCommand(checksCmd())
 	root.AddCommand(docsyncCmd())
@@ -584,21 +593,33 @@ func modelsCmd() *cobra.Command {
 		Use:   "models",
 		Short: "Inspect and evaluate model candidates",
 	}
+	cmd.AddCommand(modelsEligibleCmd())
 	cmd.AddCommand(modelsListCmd())
 	cmd.AddCommand(modelsEvaluateCmd())
 	cmd.AddCommand(modelsOverrideCmd())
+	cmd.AddCommand(modelsCredentialsCmd())
 	return cmd
 }
 
 func modelsListCmd() *cobra.Command {
 	var (
 		provider string
+		eligible bool
 		jsonOut  bool
 	)
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List model candidates from a provider",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			defer silenceLogsForJSON(jsonOut)()
+			if eligible {
+				report := models.EvaluateLocalBundles(hardware.Detect())
+				if jsonOut {
+					return writeJSON(os.Stdout, report.Bundles)
+				}
+				printEligibleBundles(report)
+				return nil
+			}
 			switch models.NormalizeProvider(provider) {
 			case models.ProviderOllama:
 				rows, err := models.ListOllamaModels(cmd.Context(), nil)
@@ -636,6 +657,26 @@ func modelsListCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&provider, "provider", models.ProviderRegistry, "Provider to list: registry or ollama")
+	cmd.Flags().BoolVar(&eligible, "eligible", false, "Show only local bundle eligibility from detected hardware")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func modelsEligibleCmd() *cobra.Command {
+	var jsonOut bool
+	cmd := &cobra.Command{
+		Use:   "eligible",
+		Short: "Show local model bundles eligible for detected hardware",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			defer silenceLogsForJSON(jsonOut)()
+			report := models.EvaluateLocalBundles(hardware.Detect())
+			if jsonOut {
+				return writeJSON(os.Stdout, report)
+			}
+			printEligibleBundles(report)
+			return nil
+		},
+	}
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
@@ -645,7 +686,7 @@ func modelsEvaluateCmd() *cobra.Command {
 		endpoint        string
 		model           string
 		provider        string
-		apiKey          string
+		apiKeyEnv       string
 		repoRoot        string
 		reportDir       string
 		saveReport      bool
@@ -695,7 +736,7 @@ promotion rules. Defaults are not changed by this command.`,
 				Endpoint:        endpoint,
 				Model:           model,
 				Provider:        provider,
-				APIKey:          apiKey,
+				APIKeyEnv:       apiKeyEnv,
 				RepoRoot:        absRepo,
 				ReportsDir:      resolvedReportDir,
 				HardwareProfile: string(hw.Profile),
@@ -717,8 +758,8 @@ promotion rules. Defaults are not changed by this command.`,
 	}
 	cmd.Flags().StringVar(&endpoint, "endpoint", "", "OpenAI-compatible base URL to evaluate")
 	cmd.Flags().StringVar(&model, "model", "", "Model name to evaluate")
-	cmd.Flags().StringVar(&provider, "provider", models.ProviderOpenAICompatible, "Provider label: openai-compatible or ollama")
-	cmd.Flags().StringVar(&apiKey, "api-key", "", "Optional API key for the endpoint")
+	cmd.Flags().StringVar(&provider, "provider", models.ProviderOpenAICompatible, "Provider label: openai-compatible, ollama, openai, anthropic, gemini, mistral, xai, deepseek, groq, or cohere")
+	cmd.Flags().StringVar(&apiKeyEnv, "api-key-env", "", "Environment variable containing the provider API key")
 	cmd.Flags().StringVar(&repoRoot, "repo", ".", "Repo root for repo-backed benchmark cases")
 	cmd.Flags().StringVar(&reportDir, "report-dir", filepath.Join("docs", "generated", "model-evaluations"), "Directory for persisted evaluation reports")
 	cmd.Flags().BoolVar(&saveReport, "save-report", true, "Persist live evaluation reports")
@@ -733,14 +774,17 @@ promotion rules. Defaults are not changed by this command.`,
 
 func modelsOverrideCmd() *cobra.Command {
 	var (
-		repoRoot string
-		tier     string
-		role     string
-		provider string
-		model    string
-		endpoint string
-		reason   string
-		jsonOut  bool
+		repoRoot    string
+		tier        string
+		role        string
+		routing     string
+		localBundle string
+		provider    string
+		model       string
+		endpoint    string
+		apiKeyEnv   string
+		reason      string
+		jsonOut     bool
 	)
 	cmd := &cobra.Command{
 		Use:   "override",
@@ -751,10 +795,13 @@ func modelsOverrideCmd() *cobra.Command {
 				return fmt.Errorf("models override: resolve repo %s: %w", repoRoot, err)
 			}
 			path, err := models.SetModelOverride(absRepo, tier, role, models.ModelOverride{
-				Provider: provider,
-				Model:    model,
-				Endpoint: endpoint,
-				Reason:   reason,
+				Routing:     routing,
+				LocalBundle: localBundle,
+				Provider:    provider,
+				Model:       model,
+				Endpoint:    endpoint,
+				APIKeyEnv:   apiKeyEnv,
+				Reason:      reason,
 			})
 			if err != nil {
 				return err
@@ -769,18 +816,347 @@ func modelsOverrideCmd() *cobra.Command {
 	cmd.Flags().StringVar(&repoRoot, "repo", ".", "Target repo root")
 	cmd.Flags().StringVar(&tier, "tier", "", "Tier to override: fast, reasoning, or coding")
 	cmd.Flags().StringVar(&role, "role", "", "Role name to override")
-	cmd.Flags().StringVar(&provider, "provider", models.ProviderOllama, "Provider: ollama or openai-compatible")
+	cmd.Flags().StringVar(&routing, "routing", "", "Routing mode: local, cloud, or defer")
+	cmd.Flags().StringVar(&localBundle, "local-bundle", "", "Local bundle: auto, local-cpu-q3, local-balanced-q4, or local-quality-q8")
+	cmd.Flags().StringVar(&provider, "provider", models.ProviderOllama, "Provider: ollama, openai-compatible, openai, anthropic, gemini, mistral, xai, deepseek, groq, or cohere")
 	cmd.Flags().StringVar(&model, "model", "", "Provider model name")
 	cmd.Flags().StringVar(&endpoint, "endpoint", "", "OpenAI-compatible endpoint; Ollama defaults to local Ollama")
+	cmd.Flags().StringVar(&apiKeyEnv, "api-key-env", "", "Environment variable containing the provider API key")
 	cmd.Flags().StringVar(&reason, "reason", "", "Operator rationale saved with the override")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
+}
+
+func modelsCredentialsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "credentials",
+		Short: "Manage local model provider credentials",
+	}
+	cmd.AddCommand(modelsCredentialsWriteLocalEnvCmd())
+	return cmd
+}
+
+func modelsCredentialsWriteLocalEnvCmd() *cobra.Command {
+	var (
+		repoRoot  string
+		apiKeyEnv string
+		yes       bool
+		jsonOut   bool
+	)
+	cmd := &cobra.Command{
+		Use:   "write-local-env",
+		Short: "Write a provider credential from the process environment into ignored .harness/.env.local",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if !yes && !jsonOut && !ui.IsTerminal(os.Stdin) {
+				return fmt.Errorf("models credentials: non-interactive use requires --yes")
+			}
+			absRepo, err := filepath.Abs(repoRoot)
+			if err != nil {
+				return fmt.Errorf("models credentials: resolve repo %s: %w", repoRoot, err)
+			}
+			localPath, examplePath, err := models.WriteLocalCredential(absRepo, apiKeyEnv)
+			if err != nil {
+				if jsonOut {
+					return writeJSONError(err)
+				}
+				return err
+			}
+			if jsonOut {
+				return writeJSON(os.Stdout, map[string]string{"status": "ok", "local_env": localPath, "example": examplePath})
+			}
+			fmt.Printf("Wrote local credential env file: %s\n", localPath)
+			fmt.Printf("Updated example env names: %s\n", examplePath)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoRoot, "repo", ".", "Target repo root")
+	cmd.Flags().StringVar(&apiKeyEnv, "api-key-env", "", "Environment variable containing the provider API key")
+	cmd.Flags().BoolVar(&yes, "yes", false, "Do not prompt; fail with remediation when required input is missing")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func guardrailsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "guardrails",
+		Short: "Inspect and install repository safety guardrails",
+	}
+	cmd.AddCommand(guardrailsSecretScanCmd())
+	cmd.AddCommand(guardrailsInstallHooksCmd())
+	return cmd
+}
+
+type cliSecretFinding struct {
+	File    string `json:"file"`
+	Line    int    `json:"line"`
+	Pattern string `json:"pattern"`
+	Match   string `json:"match"`
+}
+
+func guardrailsSecretScanCmd() *cobra.Command {
+	var (
+		repoRoot string
+		staged   bool
+		jsonOut  bool
+	)
+	cmd := &cobra.Command{
+		Use:   "secret-scan",
+		Short: "Scan repository files for common secret patterns",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			absRepo, err := filepath.Abs(repoRoot)
+			if err != nil {
+				return fmt.Errorf("guardrails secret-scan: resolve repo %s: %w", repoRoot, err)
+			}
+			findings, err := runCLISecretScan(absRepo, staged)
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				_ = writeJSON(os.Stdout, map[string]any{"status": secretScanStatus(findings), "findings": findings})
+			} else if len(findings) == 0 {
+				fmt.Println("No secrets detected.")
+			} else {
+				for _, finding := range findings {
+					fmt.Printf("%s:%d %s %s\n", finding.File, finding.Line, finding.Pattern, finding.Match)
+				}
+			}
+			if len(findings) > 0 {
+				return fmt.Errorf("guardrails secret-scan: %d finding(s)", len(findings))
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoRoot, "repo", ".", "Repository root")
+	cmd.Flags().BoolVar(&staged, "staged", false, "Scan staged files only")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func guardrailsInstallHooksCmd() *cobra.Command {
+	var (
+		repoRoot string
+		jsonOut  bool
+	)
+	cmd := &cobra.Command{
+		Use:   "install-hooks",
+		Short: "Install optional git hooks for MARS guardrails",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			absRepo, err := filepath.Abs(repoRoot)
+			if err != nil {
+				return fmt.Errorf("guardrails install-hooks: resolve repo %s: %w", repoRoot, err)
+			}
+			path, changed, err := installSecretScanHook(absRepo)
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return writeJSON(os.Stdout, map[string]any{"status": "ok", "hook": path, "changed": changed})
+			}
+			if changed {
+				fmt.Printf("Installed MARS pre-commit secret scan hook: %s\n", path)
+			} else {
+				fmt.Printf("MARS pre-commit secret scan hook already installed: %s\n", path)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&repoRoot, "repo", ".", "Repository root")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	return cmd
+}
+
+func secretScanStatus(findings []cliSecretFinding) string {
+	if len(findings) > 0 {
+		return "blocked"
+	}
+	return "ok"
+}
+
+func runCLISecretScan(repoRoot string, staged bool) ([]cliSecretFinding, error) {
+	paths, err := secretScanCandidatePaths(repoRoot, staged)
+	if err != nil {
+		return nil, err
+	}
+	var findings []cliSecretFinding
+	for _, rel := range paths {
+		rel = filepath.ToSlash(strings.TrimSpace(rel))
+		if rel == "" || rel == ".harness/.env.local" || strings.HasPrefix(rel, ".git/") {
+			continue
+		}
+		abs := filepath.Join(repoRoot, filepath.FromSlash(rel))
+		info, err := os.Stat(abs)
+		if err != nil || info.IsDir() {
+			continue
+		}
+		data, err := os.ReadFile(abs)
+		if err != nil {
+			continue
+		}
+		for _, hit := range safety.ScanForSecrets(rel, string(data)) {
+			findings = append(findings, cliSecretFinding{
+				File:    hit.File,
+				Line:    hit.Line,
+				Pattern: hit.Pattern,
+				Match:   "[REDACTED]",
+			})
+		}
+	}
+	return findings, nil
+}
+
+func secretScanCandidatePaths(repoRoot string, staged bool) ([]string, error) {
+	if _, err := os.Stat(filepath.Join(repoRoot, ".git")); os.IsNotExist(err) {
+		paths, err := filesystemPaths(repoRoot)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]string, 0, len(paths))
+		for path := range paths {
+			out = append(out, path)
+		}
+		sort.Strings(out)
+		return out, nil
+	}
+	args := []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard"}
+	if staged {
+		args = []string{"diff", "--cached", "--name-only", "-z", "--diff-filter=ACMRT"}
+	}
+	gitCmd := exec.Command("git", args...)
+	gitCmd.Dir = repoRoot
+	out, err := gitCmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("guardrails secret-scan: git %s failed: %w", strings.Join(args, " "), err)
+	}
+	var paths []string
+	for _, rel := range strings.Split(string(out), "\x00") {
+		rel = strings.TrimSpace(rel)
+		if rel != "" {
+			paths = append(paths, rel)
+		}
+	}
+	sort.Strings(paths)
+	return paths, nil
+}
+
+func installSecretScanHook(repoRoot string) (string, bool, error) {
+	gitDir := filepath.Join(repoRoot, ".git")
+	if info, err := os.Stat(gitDir); err != nil || !info.IsDir() {
+		return "", false, fmt.Errorf("guardrails install-hooks: %s is missing — run inside a git checkout", gitDir)
+	}
+	hooksDir := filepath.Join(gitDir, "hooks")
+	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
+		return "", false, fmt.Errorf("guardrails install-hooks: create %s: %w", hooksDir, err)
+	}
+	hookPath := filepath.Join(hooksDir, "pre-commit")
+	const begin = "# BEGIN MARS SECRET SCAN\n"
+	const end = "# END MARS SECRET SCAN\n"
+	block := begin + "mars guardrails secret-scan --repo " + shellQuote(repoRoot) + " --staged\n" + end
+	existing, _ := os.ReadFile(hookPath)
+	content := string(existing)
+	if strings.Contains(content, begin) && strings.Contains(content, end) {
+		start := strings.Index(content, begin)
+		stop := strings.Index(content, end) + len(end)
+		updated := content[:start] + block + content[stop:]
+		if updated == content {
+			return hookPath, false, nil
+		}
+		if err := os.WriteFile(hookPath, []byte(updated), 0o755); err != nil {
+			return "", false, fmt.Errorf("guardrails install-hooks: write %s: %w", hookPath, err)
+		}
+		return hookPath, true, nil
+	}
+	var b strings.Builder
+	if content == "" {
+		b.WriteString("#!/bin/sh\n")
+	} else {
+		b.WriteString(content)
+		if !strings.HasSuffix(content, "\n") {
+			b.WriteString("\n")
+		}
+	}
+	b.WriteString("\n")
+	b.WriteString(block)
+	if err := os.WriteFile(hookPath, []byte(b.String()), 0o755); err != nil {
+		return "", false, fmt.Errorf("guardrails install-hooks: write %s: %w", hookPath, err)
+	}
+	return hookPath, true, nil
+}
+
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
 }
 
 func writeJSON(w io.Writer, v any) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)
+}
+
+func writeJSONError(err error) error {
+	jsonErrorWritten = true
+	_ = writeJSON(os.Stdout, map[string]any{
+		"status":      "error",
+		"error":       err.Error(),
+		"remediation": remediationForError(err),
+	})
+	return err
+}
+
+func jsonRequestedFromArgs(args []string) bool {
+	for _, arg := range args {
+		if arg == "--json" || strings.HasPrefix(arg, "--json=") {
+			return true
+		}
+	}
+	return false
+}
+
+func remediationForError(err error) string {
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "unknown flag: --api-key"):
+		return "rerun with --api-key-env <ENV_NAME>; raw API key values are never accepted"
+	case strings.Contains(msg, "--api-key-env is required"):
+		return "rerun with --api-key-env <ENV_NAME>; raw API key values are never accepted"
+	case strings.Contains(msg, "credential env") && strings.Contains(msg, "is not set"):
+		return "export the named environment variable, then rerun mars models credentials write-local-env --repo <repo> --api-key-env <ENV_NAME> --yes --json"
+	case strings.Contains(msg, "environment variable") && strings.Contains(msg, "is not set"):
+		return "export the named environment variable, then rerun mars models credentials write-local-env --repo <repo> --api-key-env <ENV_NAME> --yes --json"
+	case strings.Contains(msg, "missing model file(s)") || (strings.Contains(msg, "local model bundle") && strings.Contains(msg, "missing")):
+		return "run mars setup --inference local --local-bundle auto --download --yes --json, then rerun the command"
+	case strings.Contains(msg, "--log-file path") || strings.Contains(msg, "--db path"):
+		return "pass a writable runtime artifact path outside the target repo or use the documented default"
+	case strings.Contains(msg, "non-interactive") && strings.Contains(msg, "--yes"):
+		return "rerun with --yes and all required flags, or run interactively in a TTY"
+	default:
+		return "fix the reported input or environment issue, then rerun the same command"
+	}
+}
+
+func silenceLogsForJSON(enabled bool) func() {
+	if !enabled {
+		return func() {}
+	}
+	old := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	return func() { slog.SetDefault(old) }
+}
+
+func printEligibleBundles(report models.EligibilityReport) {
+	fmt.Println("Eligible local model bundles")
+	fmt.Printf("Hardware: profile=%s os=%s arch=%s ram=%dMiB gpus=%d\n\n",
+		report.Hardware.Profile, report.Hardware.OS, report.Hardware.Arch, report.Hardware.RAMMiB, len(report.Hardware.GPUs))
+	fmt.Printf("%-20s %-10s %-9s %s\n", "BUNDLE", "PROFILE", "STATUS", "REASON")
+	for _, row := range report.Bundles {
+		status := "disabled"
+		if row.Eligible {
+			status = "eligible"
+		}
+		if row.Selected {
+			status = "selected"
+		}
+		fmt.Printf("%-20s %-10s %-9s %s\n", row.ID, row.Profile, status, row.DisabledReason)
+	}
 }
 
 func printModelEvaluationPlan(plan models.Plan) {
@@ -2223,6 +2599,8 @@ func executeRun(opts runOpts) error {
 
 	endpoint := opts.modelEndpoint
 	modelName := role.Model
+	provider := models.ProviderOpenAICompatible
+	apiKey := ""
 	var router *inference.Router
 
 	if endpoint == "" {
@@ -2232,29 +2610,68 @@ func executeRun(opts runOpts) error {
 			return overrideErr
 		}
 		if ok {
-			endpoint = override.Endpoint
-			modelName = override.Model
-			slog.Info("model override selected",
-				"role", opts.roleName,
-				"provider", override.Provider,
-				"model", modelName,
-				"endpoint", endpoint,
-			)
+			switch override.Routing {
+			case models.RoutingCloud:
+				route, err := models.ResolveProviderRoute(absRepo, models.ProviderRoute{
+					Routing:   models.RoutingCloud,
+					Provider:  override.Provider,
+					Model:     override.Model,
+					Endpoint:  override.Endpoint,
+					APIKeyEnv: override.APIKeyEnv,
+				})
+				if err != nil {
+					tw.WriteError(fmt.Sprintf("model route failed: %v", err))
+					return err
+				}
+				endpoint = route.Endpoint
+				modelName = route.Model
+				provider = route.Provider
+				apiKey = route.APIKey
+				slog.Info("model override selected",
+					"role", opts.roleName,
+					"provider", provider,
+					"model", modelName,
+					"endpoint", endpoint,
+				)
+			case models.RoutingLocal:
+				var clientCfg llm.Config
+				router, clientCfg, err = autoStartInference(sigCtx, opts.roleName, role.Model, override.LocalBundle)
+				if err != nil {
+					tw.WriteError(fmt.Sprintf("inference startup failed: %v", err))
+					return err
+				}
+				defer router.StopAll()
+				endpoint = clientCfg.BaseURL
+				modelName = clientCfg.Model
+				provider = clientCfg.Provider
+				apiKey = clientCfg.APIKey
+			case models.RoutingDefer:
+				return fmt.Errorf("run: model routing is deferred — configure local or cloud routing before running role %q", opts.roleName)
+			default:
+				return fmt.Errorf("run: unsupported model routing %q", override.Routing)
+			}
 		} else {
-			router, endpoint, err = autoStartInference(sigCtx, opts.roleName, role.Model)
+			var clientCfg llm.Config
+			router, clientCfg, err = autoStartInference(sigCtx, opts.roleName, role.Model, models.LocalBundleAuto)
 			if err != nil {
 				tw.WriteError(fmt.Sprintf("inference startup failed: %v", err))
 				return err
 			}
 			defer router.StopAll()
+			endpoint = clientCfg.BaseURL
+			modelName = clientCfg.Model
+			provider = clientCfg.Provider
+			apiKey = clientCfg.APIKey
 		}
 	}
 
 	tw.WriteReady()
 
 	client, err := llm.NewClient(llm.Config{
-		BaseURL: endpoint,
-		Model:   modelName,
+		BaseURL:  endpoint,
+		Model:    modelName,
+		Provider: provider,
+		APIKey:   apiKey,
 	})
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("failed to create LLM client: %v", err))
@@ -2352,10 +2769,10 @@ func executeRun(opts runOpts) error {
 // autoStartInference loads config, detects hardware, and starts llama-server
 // for the requested role via the inference Router. Returns the router (for
 // cleanup) and the base URL of the running server.
-func autoStartInference(ctx context.Context, roleName, modelHint string) (*inference.Router, string, error) {
+func autoStartInference(ctx context.Context, roleName, modelHint, localBundle string) (*inference.Router, llm.Config, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return nil, "", fmt.Errorf("cannot determine home directory: %w", err)
+		return nil, llm.Config{}, fmt.Errorf("cannot determine home directory: %w", err)
 	}
 	baseDir := filepath.Join(home, ".mars")
 
@@ -2375,27 +2792,30 @@ func autoStartInference(ctx context.Context, roleName, modelHint string) (*infer
 
 	binaryPath := filepath.Join(binDir, "llama-server")
 	if _, err := os.Stat(binaryPath); err != nil {
-		return nil, "", fmt.Errorf("llama-server not found at %s — run 'mars setup' first", binaryPath)
+		return nil, llm.Config{}, fmt.Errorf("llama-server not found at %s — run 'mars setup' first", binaryPath)
 	}
 
 	hw := hardware.Detect()
-	modelSet := hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)
+	bundle, _, err := models.ResolveLocalBundle(hw, localBundle)
+	if err != nil {
+		return nil, llm.Config{}, err
+	}
 
 	router := inference.NewRouter(inference.RouterConfig{
 		BinaryPath:  binaryPath,
-		Models:      modelSet,
+		Models:      bundle.Models,
 		RoleMapping: inference.DefaultRoleTierMapping(),
 		ModelsDir:   modelsDir,
 		Tuning:      inferenceTuningFromConfig(cfg),
 	})
 
-	endpoint, err := router.ServerForRoleModel(ctx, roleName, modelHint)
+	clientCfg, err := router.ClientConfigForRoleModel(ctx, roleName, modelHint)
 	if err != nil {
-		return nil, "", err
+		return nil, llm.Config{}, err
 	}
 
-	slog.Info("inference ready", "role", roleName, "endpoint", endpoint)
-	return router, endpoint, nil
+	slog.Info("inference ready", "role", roleName, "endpoint", clientCfg.BaseURL, "local_bundle", bundle.ID)
+	return router, clientCfg, nil
 }
 
 func inferenceTuningFromConfig(cfg config.Config) inference.ServerTuning {
@@ -2412,12 +2832,18 @@ func inferenceTuningFromConfig(cfg config.Config) inference.ServerTuning {
 
 func setupCmd() *cobra.Command {
 	var (
-		skipDownload bool
-		skipGitHub   bool
-		enableGitHub bool
-		testMode     bool
-		dryRun       bool
-		installDir   string
+		skipDownload  bool
+		download      bool
+		skipGitHub    bool
+		enableGitHub  bool
+		testMode      bool
+		dryRun        bool
+		installDir    string
+		inferenceMode string
+		localBundle   string
+		yes           bool
+		jsonOut       bool
+		plain         bool
 	)
 
 	cmd := &cobra.Command{
@@ -2425,6 +2851,7 @@ func setupCmd() *cobra.Command {
 		Short: "First-time setup wizard",
 		Long:  "Create ~/.mars/, detect hardware, install local inference, and download pinned models. GitHub integration is optional.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			defer silenceLogsForJSON(jsonOut)()
 			result, err := setup.Run(setup.Config{
 				SkipDownload: skipDownload,
 				SkipGitHub:   skipGitHub,
@@ -2432,9 +2859,24 @@ func setupCmd() *cobra.Command {
 				TestMode:     testMode,
 				DryRun:       dryRun,
 				InstallDir:   installDir,
+				Inference:    inferenceMode,
+				LocalBundle:  localBundle,
 			})
 			if err != nil {
+				if jsonOut {
+					return writeJSONError(err)
+				}
 				return err
+			}
+			_ = download
+			_ = yes
+			_ = plain
+			if jsonOut {
+				return writeJSON(os.Stdout, map[string]any{
+					"status":        "ok",
+					"steps_run":     result.StepsRun,
+					"steps_skipped": result.StepsSkipped,
+				})
 			}
 			fmt.Printf("Setup complete: %d steps run, %d skipped\n", result.StepsRun, result.StepsSkipped)
 			return nil
@@ -2442,19 +2884,33 @@ func setupCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&skipDownload, "skip-download", false, "Skip model download")
+	cmd.Flags().BoolVar(&download, "download", false, "Download selected local model bundle artifacts")
 	cmd.Flags().BoolVar(&skipGitHub, "skip-github", false, "Skip GitHub private release auth and optional GitHub integration checks")
 	cmd.Flags().BoolVar(&enableGitHub, "github", false, "Configure optional GitHub status/check integration")
 	cmd.Flags().BoolVar(&testMode, "test-mode", false, "Skip downloads and external services")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print steps without executing")
 	cmd.Flags().StringVar(&installDir, "install-dir", "", "Directory containing mars for shell PATH setup; default resolves automatically")
+	cmd.Flags().StringVar(&inferenceMode, "inference", models.RoutingLocal, "Inference mode: local, cloud, or defer")
+	cmd.Flags().StringVar(&localBundle, "local-bundle", models.LocalBundleAuto, "Local bundle: auto, local-cpu-q3, local-balanced-q4, or local-quality-q8")
+	cmd.Flags().BoolVar(&yes, "yes", false, "Do not prompt; fail with remediation when required input is missing")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	cmd.Flags().BoolVar(&plain, "plain", false, "Disable styling and animation")
 
 	return cmd
 }
 
 func initCmd() *cobra.Command {
 	var (
-		repoPath string
-		force    bool
+		repoPath      string
+		force         bool
+		modelRouting  string
+		localBundle   string
+		cloudProvider string
+		cloudModel    string
+		apiKeyEnv     string
+		yes           bool
+		jsonOut       bool
+		plain         bool
 	)
 
 	cmd := &cobra.Command{
@@ -2462,6 +2918,7 @@ func initCmd() *cobra.Command {
 		Short: "Scaffold .harness/ in a repository",
 		Long:  "Create the .harness/ directory with manifest.yaml, roles/, guardrails/, and knowledge/ subdirectories.",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			defer silenceLogsForJSON(jsonOut)()
 			if repoPath == "" {
 				var err error
 				repoPath, err = os.Getwd()
@@ -2478,13 +2935,42 @@ func initCmd() *cobra.Command {
 				return fmt.Errorf("init: inspect pre-init git status: %w", err)
 			}
 			if err := scanner.Init(absPath, force); err != nil {
+				if jsonOut {
+					return writeJSONError(err)
+				}
 				return err
 			}
+			routePath := ""
+			if strings.TrimSpace(modelRouting) != "" {
+				path, err := writeInitModelRouting(absPath, modelRouting, localBundle, cloudProvider, cloudModel, apiKeyEnv)
+				if err != nil {
+					if jsonOut {
+						return writeJSONError(err)
+					}
+					return err
+				}
+				routePath = path
+			}
+			_ = yes
+			_ = plain
 			out := cmd.OutOrStdout()
-			fmt.Fprintf(out, "Initialized .harness/ in %s\n", absPath)
+			if !jsonOut {
+				fmt.Fprintf(out, "Initialized .harness/ in %s\n", absPath)
+				if routePath != "" {
+					fmt.Fprintf(out, "Wrote model routing in %s\n", routePath)
+				}
+			}
 			committed, err := commitGeneratedHarnessBaseline(absPath, preInitChanges)
 			if err != nil {
 				return fmt.Errorf("init: commit generated harness baseline: %w", err)
+			}
+			if jsonOut {
+				return writeJSON(os.Stdout, map[string]any{
+					"status":             "ok",
+					"repo":               absPath,
+					"model_routing_path": routePath,
+					"committed":          committed,
+				})
 			}
 			if committed {
 				fmt.Fprintf(out, "Committed generated harness baseline in %s\n", absPath)
@@ -2495,8 +2981,64 @@ func initCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
 	cmd.Flags().BoolVar(&force, "force", false, "Refresh missing scaffold and rewrite manifest if .harness/ already exists")
+	cmd.Flags().StringVar(&modelRouting, "model-routing", "", "Model routing mode: local, cloud, or defer")
+	cmd.Flags().StringVar(&localBundle, "local-bundle", models.LocalBundleAuto, "Local bundle: auto, local-cpu-q3, local-balanced-q4, or local-quality-q8")
+	cmd.Flags().StringVar(&cloudProvider, "cloud-provider", "", "Cloud provider: openai, anthropic, gemini, mistral, xai, deepseek, groq, cohere, or openai-compatible")
+	cmd.Flags().StringVar(&cloudModel, "cloud-model", "", "Cloud provider model name")
+	cmd.Flags().StringVar(&apiKeyEnv, "api-key-env", "", "Environment variable containing the provider API key")
+	cmd.Flags().BoolVar(&yes, "yes", false, "Do not prompt; fail with remediation when required input is missing")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
+	cmd.Flags().BoolVar(&plain, "plain", false, "Disable styling and animation")
 
 	return cmd
+}
+
+func writeInitModelRouting(repoRoot, routing, localBundle, cloudProvider, cloudModel, apiKeyEnv string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(routing)) {
+	case models.RoutingLocal:
+		if _, _, err := models.ResolveLocalBundle(hardware.Detect(), localBundle); err != nil {
+			return "", fmt.Errorf("init: %w", err)
+		}
+		return models.SetDefaultModelRouting(repoRoot, models.ModelOverride{
+			Routing:     models.RoutingLocal,
+			LocalBundle: localBundle,
+			Reason:      "configured by mars init",
+		})
+	case models.RoutingCloud:
+		if strings.TrimSpace(cloudProvider) == "" {
+			return "", fmt.Errorf("init: --cloud-provider is required when --model-routing cloud")
+		}
+		if strings.TrimSpace(cloudModel) == "" {
+			return "", fmt.Errorf("init: --cloud-model is required when --model-routing cloud")
+		}
+		path, err := models.SetDefaultModelRouting(repoRoot, models.ModelOverride{
+			Routing:   models.RoutingCloud,
+			Provider:  cloudProvider,
+			Model:     cloudModel,
+			APIKeyEnv: apiKeyEnv,
+			Reason:    "configured by mars init",
+		})
+		if err != nil {
+			return "", err
+		}
+		envName := strings.TrimSpace(apiKeyEnv)
+		if envName == "" {
+			if spec, ok := models.ProviderSpecByName(cloudProvider); ok {
+				envName = spec.DefaultAPIKeyEnv
+			}
+		}
+		if _, err := models.EnsureEnvExample(repoRoot, envName); err != nil {
+			return "", err
+		}
+		return path, nil
+	case models.RoutingDefer:
+		return models.SetDefaultModelRouting(repoRoot, models.ModelOverride{
+			Routing: models.RoutingDefer,
+			Reason:  "model routing deferred by mars init",
+		})
+	default:
+		return "", fmt.Errorf("init: unsupported --model-routing %q — use local, cloud, or defer", routing)
+	}
 }
 
 type ejectDBResult struct {
@@ -4085,6 +4627,9 @@ func startCmd() *cobra.Command {
 		modelEndpoint     string
 		webhookAddrFlag   string
 		dashboardAddrFlag string
+		yes               bool
+		jsonOut           bool
+		plain             bool
 	)
 
 	cmd := &cobra.Command{
@@ -4096,6 +4641,7 @@ plan first, then feature contracts, then tickets, then delivery. Dispatch
 routes deterministic role dispositions directly and uses Orchestrator for
 ambiguous handoffs.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			defer silenceLogsForJSON(jsonOut)()
 			if repoPath == "" {
 				var err error
 				repoPath, err = os.Getwd()
@@ -4127,7 +4673,13 @@ ambiguous handoffs.`,
 				}
 			}
 
-			display, err := newRuntimeDisplay("start", logFile, debug, cmd.OutOrStdout(), cmd.ErrOrStderr(), nil, ui.DashboardOptions{
+			displayOut := cmd.OutOrStdout()
+			displayLog := cmd.ErrOrStderr()
+			if jsonOut {
+				displayOut = io.Discard
+				displayLog = io.Discard
+			}
+			display, err := newRuntimeDisplay("start", logFile, debug, displayOut, displayLog, nil, ui.DashboardOptions{
 				Title:    "MARS",
 				RepoPath: absPath,
 				Controls: "[p] pause  [r] restart  [s] scan  [q] quit  [h] help",
@@ -4257,7 +4809,20 @@ ambiguous handoffs.`,
 			}
 
 			if exitAfterSeed {
-				return srv.Stop(context.Background())
+				if err := srv.Stop(context.Background()); err != nil {
+					return err
+				}
+				_ = yes
+				_ = plain
+				if jsonOut {
+					return writeJSON(os.Stdout, map[string]any{
+						"status":  "ok",
+						"repo":    absPath,
+						"repo_id": repoID,
+						"seeded":  startup.ShouldSeed,
+					})
+				}
+				return nil
 			}
 
 			var notifier ui.StatusNotifier
@@ -4289,6 +4854,9 @@ ambiguous handoffs.`,
 	cmd.Flags().StringVar(&modelEndpoint, "model-endpoint", "", "Optional real OpenAI-compatible model endpoint override; skips local llama-server startup. Fake or scripted endpoints are not live validation evidence")
 	cmd.Flags().StringVar(&webhookAddrFlag, "addr", "", "Webhook/control listen address (default from config; scoped start falls back to an ephemeral local port on conflict)")
 	cmd.Flags().StringVar(&dashboardAddrFlag, "dashboard-addr", "", "Dashboard listen address (default from config; scoped start falls back to an ephemeral local port on conflict)")
+	cmd.Flags().BoolVar(&yes, "yes", false, "Do not prompt; fail with remediation when required input is missing")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output for deterministic setup/seed paths")
+	cmd.Flags().BoolVar(&plain, "plain", false, "Disable styling and animation")
 	cmd.Flags().BoolVar(&exitAfterSeed, "exit-after-seed", false, "Exit after init/register/seed; intended for deterministic smoke tests")
 	_ = cmd.Flags().MarkHidden("exit-after-seed")
 

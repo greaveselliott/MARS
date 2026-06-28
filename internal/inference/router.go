@@ -24,18 +24,21 @@ import (
 
 // Router maps role names to running inference servers.
 type Router struct {
-	mu            sync.RWMutex
-	servers       map[hardware.Tier]*Server
-	reservations  map[hardware.Tier]*portReservation
-	mapping       map[string]hardware.Tier // role name → tier
-	models        map[hardware.Tier]hardware.ModelSpec
-	modelsDir     string
-	binaryPath    string
-	tuning        ServerTuning
-	singleTier    hardware.Tier
-	portBases     map[hardware.Tier]int
-	fallback      *llm.Client // optional remote API fallback
-	remoteBaseURL string      // normalized base URL (no trailing /v1)
+	mu             sync.RWMutex
+	servers        map[hardware.Tier]*Server
+	reservations   map[hardware.Tier]*portReservation
+	mapping        map[string]hardware.Tier // role name → tier
+	models         map[hardware.Tier]hardware.ModelSpec
+	modelsDir      string
+	binaryPath     string
+	tuning         ServerTuning
+	singleTier     hardware.Tier
+	portBases      map[hardware.Tier]int
+	fallback       *llm.Client // optional remote API fallback
+	remoteBaseURL  string      // normalized base URL (no trailing /v1)
+	remoteAPIKey   string
+	remoteProvider string
+	remoteModel    string
 }
 
 // RouterConfig configures the router.
@@ -51,6 +54,8 @@ type RouterConfig struct {
 	PortBases        map[hardware.Tier]int // optional test/runtime overrides for tier base ports
 	FallbackURL      string                // optional remote API
 	FallbackKey      string
+	FallbackProvider string
+	FallbackModel    string
 	Tuning           ServerTuning
 }
 
@@ -80,17 +85,20 @@ func NewRouter(cfg RouterConfig) *Router {
 	}
 
 	return &Router{
-		servers:       make(map[hardware.Tier]*Server),
-		reservations:  make(map[hardware.Tier]*portReservation),
-		mapping:       mapping,
-		models:        models,
-		modelsDir:     cfg.ModelsDir,
-		binaryPath:    cfg.BinaryPath,
-		tuning:        cfg.Tuning,
-		singleTier:    cfg.SingleServerTier,
-		portBases:     cfg.PortBases,
-		fallback:      fb,
-		remoteBaseURL: fbBase,
+		servers:        make(map[hardware.Tier]*Server),
+		reservations:   make(map[hardware.Tier]*portReservation),
+		mapping:        mapping,
+		models:         models,
+		modelsDir:      cfg.ModelsDir,
+		binaryPath:     cfg.BinaryPath,
+		tuning:         cfg.Tuning,
+		singleTier:     cfg.SingleServerTier,
+		portBases:      cfg.PortBases,
+		fallback:       fb,
+		remoteBaseURL:  fbBase,
+		remoteAPIKey:   strings.TrimSpace(cfg.FallbackKey),
+		remoteProvider: strings.TrimSpace(cfg.FallbackProvider),
+		remoteModel:    strings.TrimSpace(cfg.FallbackModel),
 	}
 }
 
@@ -208,6 +216,23 @@ func (r *Router) ServerForRole(ctx context.Context, role string) (string, error)
 // ServerForRoleModel returns the base URL for a role using its manifest model tier.
 func (r *Router) ServerForRoleModel(ctx context.Context, role, modelHint string) (string, error) {
 	return r.serverForTier(ctx, role, r.tierForRoleModel(role, modelHint))
+}
+
+// ClientConfigForRoleModel resolves the endpoint and auth metadata for a role.
+func (r *Router) ClientConfigForRoleModel(ctx context.Context, role, modelHint string) (llm.Config, error) {
+	endpoint, err := r.ServerForRoleModel(ctx, role, modelHint)
+	if err != nil {
+		return llm.Config{}, err
+	}
+	cfg := llm.Config{BaseURL: endpoint, Model: modelHint}
+	if r.remoteBaseURL != "" && strings.TrimRight(endpoint, "/") == strings.TrimRight(r.remoteBaseURL, "/") {
+		cfg.APIKey = r.remoteAPIKey
+		cfg.Provider = r.remoteProvider
+		if r.remoteModel != "" {
+			cfg.Model = r.remoteModel
+		}
+	}
+	return cfg, nil
 }
 
 // ContextWindowForRoleModel returns the context window (tokens) actually

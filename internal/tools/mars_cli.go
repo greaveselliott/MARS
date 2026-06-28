@@ -352,7 +352,12 @@ func marsCommandSupportsRepo(args []string) bool {
 	case "docsync":
 		return sub == "audit"
 	case "models":
+		if sub == "credentials" && len(args) > 2 {
+			return args[2] == "write-local-env"
+		}
 		return sub == "evaluate" || sub == "override"
+	case "guardrails":
+		return sub == "secret-scan" || sub == "install-hooks"
 	case "scores":
 		return sub == "" || sub == "export"
 	case "telemetry":
@@ -401,13 +406,13 @@ Global command surface:
 
   setup
     First-time install: config, shell PATH, hardware detection, optional GitHub setup, model/binary download.
-    Flags: --skip-download, --github, --test-mode, --dry-run, --install-dir <dir>
-    Example: ["setup", "--test-mode", "--dry-run"]
+    Flags: --inference <local|cloud|defer>, --local-bundle <auto|local-cpu-q3|local-balanced-q4|local-quality-q8>, --download, --yes, --json, --plain, --skip-download, --github, --test-mode, --dry-run, --install-dir <dir>
+    Example: ["setup", "--inference", "local", "--local-bundle", "auto", "--download", "--yes", "--json"]
 
   init
     Scaffold a deployed .harness/ bundle and starter docs in a target repository.
-    Flags: --repo <path>, --force
-    Example: ["init", "--repo", "."]
+    Flags: --repo <path>, --force, --model-routing <local|cloud|defer>, --local-bundle <auto|local-cpu-q3|local-balanced-q4|local-quality-q8>, --cloud-provider <provider>, --cloud-model <model>, --api-key-env <ENV>, --yes, --json, --plain
+    Example: ["init", "--repo", ".", "--model-routing", "local", "--local-bundle", "auto", "--yes", "--json"]
 
   upgrade
     Fill missing generated target harness defaults while preserving target-owned files.
@@ -634,18 +639,38 @@ Global command surface:
 
   models evaluate
     Print model evaluation plan or run live benchmark against an OpenAI-compatible/Ollama endpoint.
-    Flags: --endpoint <url>, --model <name>, --provider <openai-compatible|ollama>, --repo <path>, --report-dir <path>, --save-report, --api-key <key>, --timeout <duration>, --json
+    Flags: --endpoint <url>, --model <name>, --provider <provider>, --repo <path>, --report-dir <path>, --save-report, --api-key-env <ENV>, --timeout <duration>, --json
     Example: ["models", "evaluate", "--json"]
 
+  models eligible
+    Show local model bundles eligible for detected hardware.
+    Flags: --json
+    Example: ["models", "eligible", "--json"]
+
   models list
-    List registry defaults or locally installed Ollama models.
-    Flags: --provider <registry|ollama>, --json
-    Example: ["models", "list", "--provider", "ollama", "--json"]
+    List registry defaults, local eligibility, or locally installed Ollama models.
+    Flags: --provider <registry|ollama>, --eligible, --json
+    Example: ["models", "list", "--eligible", "--json"]
 
   models override
     Set a repo-owned tier or role model override in .harness/model-overrides.yaml.
-    Flags: --repo <path>, --tier <fast|reasoning|coding>, --role <name>, --provider <ollama|openai-compatible>, --model <name>, --endpoint <url>, --reason <text>, --json
+    Flags: --repo <path>, --tier <fast|reasoning|coding>, --role <name>, --routing <local|cloud|defer>, --local-bundle <bundle>, --provider <provider>, --model <name>, --endpoint <url>, --api-key-env <ENV>, --reason <text>, --json
     Example: ["models", "override", "--repo", ".", "--tier", "coding", "--provider", "ollama", "--model", "qwen3.6:27b"]
+
+  models credentials write-local-env
+    Read a provider key from the named process environment variable and write ignored .harness/.env.local with 0600 permissions; committed .harness/.env.example receives env names only.
+    Flags: --repo <path>, --api-key-env <ENV>, --yes, --json
+    Example: ["models", "credentials", "write-local-env", "--repo", ".", "--api-key-env", "ANTHROPIC_API_KEY", "--yes", "--json"]
+
+  guardrails secret-scan
+    Scan repository files or staged changes for common secret patterns with redacted output.
+    Flags: --repo <path>, --staged, --json
+    Example: ["guardrails", "secret-scan", "--repo", ".", "--staged", "--json"]
+
+  guardrails install-hooks
+    Install or update an optional managed pre-commit hook that runs guardrails secret-scan --staged.
+    Flags: --repo <path>, --json
+    Example: ["guardrails", "install-hooks", "--repo", ".", "--json"]
 
 Operational guidance:
   Prefer --json when available for machine-readable output.

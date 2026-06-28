@@ -40,6 +40,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 23. F-007-S035 - Engineer command-procedure failures stay out of the product repair guardrail.
 24. F-007-S036 - Test/build repair cleanup is limited to same-job test-like files.
 25. F-007-S037 - Test/build repair source writes are limited to the failed package scope when known.
+26. F-007-S038 - CLI secret scanning and optional hooks block credential leaks without printing secret values.
 
 ## Scenarios
 
@@ -72,6 +73,10 @@ Then nested repo paths are allowed and absolute paths or parent escapes are reje
 Given a tool would write AWS keys, GitHub tokens, private keys, password URLs, or generic API keys
 When the write is evaluated
 Then secret scanning blocks the mutation and reports the finding
+
+Given `.harness/.env.local` contains local cloud provider credentials
+When scanning committed or staged files
+Then the file is treated as ignored local state and the scan still blocks any secret-like value that appears in committed harness files, docs, logs, traces, or JSON reports
 
 ### F-007-S006: Sandbox Limits
 
@@ -138,6 +143,17 @@ Then policy allows the cleanup only when the file is untracked, root-level, bina
 Given a role calls `shell_exec` for `go build` during validation
 When the output path is omitted or an explicit `-o <path>` resolves inside the target repository
 Then tool policy blocks the command before process execution, no compiled artifact is created, and the error instructs the role to use `go test ./...` for compile validation or write validation binaries to an external temp path so repository diffs stay source-only
+
+### F-007-S038: CLI Secret Scan And Hooks
+
+Given an operator runs `mars guardrails secret-scan --repo <path>`
+When staged, tracked, or working-tree files contain common credential patterns
+Then the command exits non-zero, names the file, line, and pattern, and redacts the matched value in text and JSON output
+
+Given an operator runs `mars guardrails install-hooks --repo <path>`
+When the repository has no managed MARS pre-commit block
+Then the hook is installed idempotently and invokes `mars guardrails secret-scan --repo <path> --staged`
+And existing non-MARS hook content is preserved
 
 Given a role wraps validation in shell syntax such as `mkdir -p bin && go build -o bin/app ...`
 When any command segment would write a Go build output inside the target repository
@@ -523,6 +539,7 @@ None.
 - F-007-S026: `go test ./internal/tools -run 'TestReviewShellExecPolicyRoutesNoTestGoRepoToChangesRequested|TestReviewTerminalDispositionRequiredBlocksFurtherShellExec|TestRecordSessionToolPolicyFailureTracksNoopFailures'`
 - F-007-S027: `go test ./internal/tools -run 'TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation|TestEngineerFailingTestBlocksCommitTicketEvidenceAndDisposition|TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane'`
 - F-007-S028: `go test ./internal/tools -run TestCTOFileWritePolicyAllowsTechnicalPlanningAndBlocksImplementation`
+- F-007-S038: `go test ./internal/safety ./cmd/mars -run 'TestGuardrailsSecretScan|TestGuardrailsInstallHooks'`
 - F-007-S029: `go test ./internal/tools -run 'TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation|TestFileWriteBlocksNewRootScratchProbe'`
 - F-007-S030: `go test ./internal/tools -run 'TestEngineerFailingTestBlocksRuntimeProbeUntilSourceEditAndSameLaneValidation|TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane'`
 - F-007-S031: `go test ./internal/agent -run TestRun_reviewEvidenceReminder`

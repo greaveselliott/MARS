@@ -21,15 +21,19 @@ const modelOverridesPath = ".harness/model-overrides.yaml"
 
 // ModelOverride is an explicit repo-owned model provider selection.
 type ModelOverride struct {
-	Provider string `yaml:"provider" json:"provider"`
-	Model    string `yaml:"model" json:"model"`
-	Endpoint string `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
-	Reason   string `yaml:"reason,omitempty" json:"reason,omitempty"`
+	Routing     string `yaml:"routing,omitempty" json:"routing,omitempty"`
+	LocalBundle string `yaml:"local_bundle,omitempty" json:"local_bundle,omitempty"`
+	Provider    string `yaml:"provider,omitempty" json:"provider,omitempty"`
+	Model       string `yaml:"model,omitempty" json:"model,omitempty"`
+	Endpoint    string `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
+	APIKeyEnv   string `yaml:"api_key_env,omitempty" json:"api_key_env,omitempty"`
+	Reason      string `yaml:"reason,omitempty" json:"reason,omitempty"`
 }
 
 // ModelOverrides is the .harness/model-overrides.yaml shape.
 type ModelOverrides struct {
 	Version int                      `yaml:"version" json:"version"`
+	Default *ModelOverride           `yaml:"default,omitempty" json:"default,omitempty"`
 	Tiers   map[string]ModelOverride `yaml:"tiers,omitempty" json:"tiers,omitempty"`
 	Roles   map[string]ModelOverride `yaml:"roles,omitempty" json:"roles,omitempty"`
 }
@@ -64,7 +68,7 @@ func SetModelOverride(repoRoot, tier, role string, override ModelOverride) (stri
 		return "", err
 	}
 	if overrides.Version == 0 {
-		overrides.Version = 1
+		overrides.Version = 2
 	}
 	if tier != "" {
 		if overrides.Tiers == nil {
@@ -84,6 +88,38 @@ func SetModelOverride(repoRoot, tier, role string, override ModelOverride) (stri
 	}
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return "", fmt.Errorf("models override: write %s: %w", path, err)
+	}
+	return path, nil
+}
+
+// SetDefaultModelRouting writes the repo default model route used when no role
+// or tier override exists.
+func SetDefaultModelRouting(repoRoot string, override ModelOverride) (string, error) {
+	repoRoot = strings.TrimSpace(repoRoot)
+	if repoRoot == "" {
+		return "", fmt.Errorf("models routing: --repo is required")
+	}
+	normalized, err := normalizeOverride(override)
+	if err != nil {
+		return "", err
+	}
+	harnessDir := filepath.Join(repoRoot, ".harness")
+	if info, err := os.Stat(harnessDir); err != nil || !info.IsDir() {
+		return "", fmt.Errorf("models routing: %s is missing — run `mars init --repo %s` first", harnessDir, repoRoot)
+	}
+	path := filepath.Join(repoRoot, modelOverridesPath)
+	overrides, err := LoadModelOverrides(repoRoot)
+	if err != nil {
+		return "", err
+	}
+	overrides.Version = 2
+	overrides.Default = &normalized
+	data, err := yaml.Marshal(overrides)
+	if err != nil {
+		return "", fmt.Errorf("models routing: marshal overrides: %w", err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return "", fmt.Errorf("models routing: write %s: %w", path, err)
 	}
 	return path, nil
 }
@@ -126,16 +162,71 @@ func ResolveModelOverride(repoRoot, roleName, roleModel string) (ModelOverride, 
 		normalized, err := normalizeOverride(override)
 		return normalized, err == nil, err
 	}
+	if overrides.Default != nil {
+		normalized, err := normalizeOverride(*overrides.Default)
+		return normalized, err == nil, err
+	}
 	return ModelOverride{}, false, nil
 }
 
+// ResolveDefaultModelRouting returns only the repo default route, if present.
+func ResolveDefaultModelRouting(repoRoot string) (ModelOverride, bool, error) {
+	overrides, err := LoadModelOverrides(repoRoot)
+	if err != nil {
+		return ModelOverride{}, false, err
+	}
+	if overrides.Default == nil {
+		return ModelOverride{}, false, nil
+	}
+	normalized, err := normalizeOverride(*overrides.Default)
+	return normalized, err == nil, err
+}
+
 func normalizeOverride(override ModelOverride) (ModelOverride, error) {
+	override.Routing = normalizeRouting(override.Routing)
+	override.LocalBundle = strings.ToLower(strings.TrimSpace(override.LocalBundle))
 	override.Provider = NormalizeProvider(override.Provider)
 	override.Model = strings.TrimSpace(override.Model)
 	override.Endpoint = strings.TrimSpace(override.Endpoint)
+	override.APIKeyEnv = strings.TrimSpace(override.APIKeyEnv)
 	override.Reason = strings.TrimSpace(override.Reason)
+
+	if override.Routing == "" {
+		if override.LocalBundle != "" {
+			override.Routing = RoutingLocal
+		} else {
+			override.Routing = RoutingCloud
+		}
+	}
+	if override.Routing == RoutingLocal {
+		if override.LocalBundle == "" {
+			override.LocalBundle = LocalBundleAuto
+		}
+		if override.LocalBundle != LocalBundleAuto {
+			if _, ok := BundleByID(override.LocalBundle); !ok {
+				return ModelOverride{}, fmt.Errorf("models override: unsupported local bundle %q — use auto, %s, %s, or %s", override.LocalBundle, LocalBundleCPU, LocalBundleBalanced, LocalBundleQuality)
+			}
+		}
+		override.Provider = ""
+		override.Endpoint = ""
+		override.APIKeyEnv = ""
+		return override, nil
+	}
+	if override.Routing == RoutingDefer {
+		return override, nil
+	}
+	if override.Routing != RoutingCloud {
+		return ModelOverride{}, fmt.Errorf("models override: unsupported routing %q — use local, cloud, or defer", override.Routing)
+	}
 	if override.Model == "" {
-		return ModelOverride{}, fmt.Errorf("models override: --model is required")
+		return ModelOverride{}, fmt.Errorf("models override: --model is required for cloud/provider routing")
+	}
+	spec, ok := ProviderSpecByName(override.Provider)
+	if !ok || override.Provider == ProviderRegistry {
+		return ModelOverride{}, fmt.Errorf("models override: unsupported provider %q", override.Provider)
+	}
+	if !spec.Selectable {
+		return ModelOverride{}, fmt.Errorf("models override: provider %q is not selectable: %s", spec.Name, spec.UnavailableReason)
 	}
 	switch override.Provider {
 	case ProviderOllama:
@@ -147,7 +238,15 @@ func normalizeOverride(override ModelOverride) (ModelOverride, error) {
 			return ModelOverride{}, fmt.Errorf("models override: --endpoint is required for provider %s", ProviderOpenAICompatible)
 		}
 	default:
-		return ModelOverride{}, fmt.Errorf("models override: unsupported provider %q — use ollama or openai-compatible", override.Provider)
+		if override.Endpoint == "" {
+			override.Endpoint = spec.DefaultEndpoint
+		}
+		if override.APIKeyEnv == "" {
+			override.APIKeyEnv = spec.DefaultAPIKeyEnv
+		}
+		if override.APIKeyEnv == "" {
+			return ModelOverride{}, fmt.Errorf("models override: --api-key-env is required for provider %s", override.Provider)
+		}
 	}
 	return override, nil
 }

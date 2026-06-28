@@ -143,6 +143,9 @@ func memTotalLinux() int {
 }
 
 func memTotalDarwin() int {
+	if mib := memTotalDarwinSyscall(); mib > 0 {
+		return mib
+	}
 	out, err := exec.Command("sysctl", "-n", "hw.memsize").Output()
 	if err != nil {
 		slog.Debug("sysctl hw.memsize failed", "err", err)

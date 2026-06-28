@@ -63,6 +63,7 @@ type Config struct {
 	BaseURL    string        // e.g. http://127.0.0.1:8080/v1 (no trailing slash required)
 	APIKey     string        // optional; sent as Bearer when non-empty
 	Model      string        // default model name when request.Model is empty
+	Provider   string        // optional provider adapter: openai-compatible, anthropic, gemini, ...
 	HTTPClient *http.Client  // optional; sensible default with Timeout when nil
 	Timeout    time.Duration // per-attempt timeout when HTTPClient is nil
 	MaxRetries int           // total attempts for retryable failures (default 3)
@@ -70,8 +71,9 @@ type Config struct {
 
 // Client speaks OpenAI-compatible chat completions over HTTP.
 type Client struct {
-	cfg    Config
-	prefix string // normalized base + /v1 if needed
+	cfg      Config
+	provider string
+	prefix   string // normalized provider API base
 }
 
 // NewClient returns a Client using cfg. BaseURL must be non-empty.
@@ -79,10 +81,8 @@ func NewClient(cfg Config) (*Client, error) {
 	if strings.TrimSpace(cfg.BaseURL) == "" {
 		return nil, fmt.Errorf("llm: BaseURL is required")
 	}
-	prefix := strings.TrimRight(cfg.BaseURL, "/")
-	if !strings.HasSuffix(prefix, "/v1") {
-		prefix = prefix + "/v1"
-	}
+	provider := normalizeProvider(cfg.Provider)
+	prefix := normalizeClientPrefix(provider, cfg.BaseURL)
 	if cfg.MaxRetries < 1 {
 		cfg.MaxRetries = defaultMaxRetries
 	}
@@ -93,7 +93,35 @@ func NewClient(cfg Config) (*Client, error) {
 		}
 		cfg.HTTPClient = &http.Client{Timeout: timeout}
 	}
-	return &Client{cfg: cfg, prefix: prefix}, nil
+	return &Client{cfg: cfg, provider: provider, prefix: prefix}, nil
+}
+
+func normalizeProvider(provider string) string {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "", "custom":
+		return "openai-compatible"
+	case "openai", "openai-compatible", "ollama", "gemini", "mistral", "xai", "deepseek", "groq":
+		return strings.ToLower(strings.TrimSpace(provider))
+	case "anthropic", "claude":
+		return "anthropic"
+	case "cohere":
+		return "cohere"
+	default:
+		return strings.ToLower(strings.TrimSpace(provider))
+	}
+}
+
+func normalizeClientPrefix(provider, baseURL string) string {
+	prefix := strings.TrimRight(baseURL, "/")
+	switch provider {
+	case "anthropic", "cohere", "gemini":
+		return prefix
+	default:
+		if !strings.HasSuffix(prefix, "/v1") {
+			prefix = prefix + "/v1"
+		}
+		return prefix
+	}
 }
 
 // ChatCompletion performs a non-streaming completion.
@@ -102,6 +130,12 @@ func (c *Client) ChatCompletion(ctx context.Context, req ChatCompletionRequest) 
 		req.Model = c.cfg.Model
 	}
 	req.Stream = false
+	if c.provider == "anthropic" {
+		return c.anthropicChatCompletion(ctx, req)
+	}
+	if c.provider == "cohere" {
+		return ChatCompletionResponse{}, fmt.Errorf("llm: provider cohere requires a native adapter fixture before runtime use")
+	}
 
 	var out ChatCompletionResponse
 	if err := c.postJSON(ctx, "/chat/completions", req, &out); err != nil {
@@ -119,6 +153,9 @@ func (c *Client) ChatCompletionStream(ctx context.Context, req ChatCompletionReq
 		req.Model = c.cfg.Model
 	}
 	req.Stream = true
+	if c.provider != "openai-compatible" && c.provider != "openai" && c.provider != "ollama" && c.provider != "gemini" && c.provider != "mistral" && c.provider != "xai" && c.provider != "deepseek" && c.provider != "groq" {
+		return fmt.Errorf("llm: streaming is not implemented for provider %s", c.provider)
+	}
 
 	u := c.prefix + "/chat/completions"
 	body, err := json.Marshal(req)

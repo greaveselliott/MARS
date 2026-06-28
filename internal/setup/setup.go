@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/greaveselliott/mars/internal/config"
@@ -47,6 +48,8 @@ type Config struct {
 	TestMode     bool
 	DryRun       bool
 	InstallDir   string
+	Inference    string
+	LocalBundle  string
 }
 
 // Result reports what happened during setup.
@@ -101,6 +104,10 @@ func Run(cfg Config) (*Result, error) {
 }
 
 func buildSteps(baseDir string, cfg Config) []Step {
+	inferenceMode := strings.ToLower(strings.TrimSpace(cfg.Inference))
+	if inferenceMode == "" {
+		inferenceMode = models.RoutingLocal
+	}
 	steps := []Step{
 		createDirectoriesStep(baseDir),
 		writeDefaultConfigStep(baseDir),
@@ -112,9 +119,12 @@ func buildSteps(baseDir string, cfg Config) []Step {
 		steps = append(steps, githubPrivateReleaseAuthStep())
 	}
 
+	if inferenceMode != models.RoutingLocal {
+		cfg.SkipDownload = true
+	}
 	if !cfg.SkipDownload && !cfg.TestMode {
 		steps = append(steps, installLlamaServerStep(baseDir))
-		steps = append(steps, downloadModelsStep(baseDir))
+		steps = append(steps, downloadModelsStep(baseDir, cfg.LocalBundle))
 	}
 
 	if cfg.EnableGitHub && !cfg.SkipGitHub && !cfg.TestMode {
@@ -269,7 +279,7 @@ type hardwareSnapshot struct {
 // downloadModelsStep detects hardware, selects models for the profile, and downloads
 // each unique GGUF from HuggingFace with resume support. Idempotent: re-running
 // skips models whose files already exist in the models directory.
-func downloadModelsStep(baseDir string) Step {
+func downloadModelsStep(baseDir, localBundle string) Step {
 	modelsDir := filepath.Join(baseDir, "models")
 	markerPath := filepath.Join(modelsDir, ".download-complete")
 
@@ -279,12 +289,12 @@ func downloadModelsStep(baseDir string) Step {
 			if _, err := os.Stat(markerPath); err != nil {
 				return false, nil
 			}
-			cfg, err := config.Load(filepath.Join(baseDir, "config.yaml"))
+			hw := hardware.Detect()
+			bundle, _, err := models.ResolveLocalBundle(hw, localBundle)
 			if err != nil {
 				return false, err
 			}
-			hw := hardware.Detect()
-			for _, spec := range hardware.UniqueModels(hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)) {
+			for _, spec := range hardware.UniqueModels(bundle.Models) {
 				if _, err := os.Stat(filepath.Join(modelsDir, spec.File)); err != nil {
 					return false, nil
 				}
@@ -297,16 +307,15 @@ func downloadModelsStep(baseDir string) Step {
 			}
 
 			hw := hardware.Detect()
-			cfg, err := config.Load(filepath.Join(baseDir, "config.yaml"))
+			bundle, _, err := models.ResolveLocalBundle(hw, localBundle)
 			if err != nil {
-				slog.Warn("setup: config load failed while selecting models; using quality profile", "err", err)
+				return err
 			}
-			modelSet := hardware.DefaultModelsForHardware(hw, cfg.PerformanceProfile)
-			unique := hardware.UniqueModels(modelSet)
+			unique := hardware.UniqueModels(bundle.Models)
 
 			slog.Info("model download plan",
 				"profile", string(hw.Profile),
-				"performance_profile", hardware.EffectivePerformanceProfile(hw, cfg.PerformanceProfile),
+				"local_bundle", bundle.ID,
 				"models_to_download", len(unique),
 			)
 
