@@ -8,6 +8,9 @@ docs:
 - docs/operations-guide.html
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
+- docs/safety-quality-guide.html
+- docs/release-update-guide.html
+- docs/integrations-validation-guide.html
 - README.md
 - docs/product-specs/product-surface.md
 */

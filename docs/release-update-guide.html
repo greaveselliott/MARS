@@ -1,0 +1,373 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/cli-reference.html
+- docs/workflows.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/release-versioning.md
+- docs/features/F-009-release-update-lifecycle.md
+- docs/validation/README.md
+- CHANGELOG.md
+- VERSION
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Release And Update Guide</title>
+    <meta
+      name="description"
+      content="User guide to MARS update checks, CLI self-update, harness update, release notes, changelog backfill, release asset publication, verification, and audit."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to release and update guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Release and update</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="safety-quality-guide.html">Safety</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Release and update sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search release</label>
+          <input id="docSearch" type="search" placeholder="update, notes, assets">
+          <p class="search-hint">Filters update commands, release gates, and troubleshooting rows.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#versions">Version Files</a>
+          <a href="#update-check">Update Check</a>
+          <a href="#tool-update">Tool Update</a>
+          <a href="#harness-update">Harness Update</a>
+          <a href="#auth">Release Auth</a>
+          <a href="#release-notes">Release Notes</a>
+          <a href="#source-release">Source Release</a>
+          <a href="#target-release">Target Release</a>
+          <a href="#assets">Assets And Audit</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Shipping and drift</p>
+            <h1>Update the command, update deployed harnesses, and publish verifiable releases.</h1>
+            <p class="lede">
+              MARS uses repo-owned semantic versions, generated changelog
+              entries, target harness version metadata, checksum-verified CLI
+              updates, local release assets, and optional GitHub Release
+              mirrors. This guide separates day-to-day user updates from source
+              maintainer release publication.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="versions">
+          <h2>Version Files</h2>
+          <p>
+            Source and initialized target repos both use a root
+            <code>VERSION</code> and <code>CHANGELOG.md</code>. Source releases
+            also update <code>internal/buildinfo/version.go</code> so local
+            source-tree builds report the same version.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>File</th><th>Where</th><th>User purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>VERSION</code></td><td>Source and targets.</td><td>Repo-owned semantic version source.</td></tr>
+                <tr><td><code>CHANGELOG.md</code></td><td>Source and targets.</td><td>Generated patch notes with Impact, Why, and What Changed sections.</td></tr>
+                <tr><td><code>internal/buildinfo/version.go</code></td><td>MARS source only.</td><td>Fallback version for source-tree builds when release ldflags are absent.</td></tr>
+                <tr><td><code>.harness/metadata.yaml</code></td><td>Target repos.</td><td>Generated harness version drift signal.</td></tr>
+                <tr><td><code>dist/releases/</code></td><td>MARS source release work.</td><td>Local release assets and checksums. This is the mandatory source-of-truth gate.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="update-check">
+          <h2>Update Check</h2>
+          <p>
+            Use <code>mars update check</code> to see whether the installed tool
+            or a deployed target harness is behind. Remote release lookup
+            failures are reported as unknown so local target checks can still
+            complete.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Check a target</h3>
+              <pre><code>mars update check --repo ~/my-project
+mars update check --repo ~/my-project --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Skip remote release lookup</h3>
+              <pre><code>mars update check --repo ~/my-project --skip-remote</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Use a custom latest-release endpoint</h3>
+              <pre><code>mars update check \
+  --repo ~/my-project \
+  --latest-release-url https://api.example.invalid/repos/org/project/releases/latest</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="tool-update">
+          <h2>Tool Update</h2>
+          <p>
+            <code>mars update tool</code> upgrades the installed command without
+            changing into the source repo. Packaged updates download the
+            platform release asset, verify <code>checksums.txt</code>, and
+            atomically replace the running binary. Source users can choose the
+            source update path.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Command</th><th>Use when</th></tr></thead>
+              <tbody>
+                <tr><td>Dry run</td><td><code>mars update tool --dry-run</code></td><td>Preview asset, install directory, shell PATH impact, and replacement plan.</td></tr>
+                <tr><td>Latest release</td><td><code>mars update tool</code></td><td>Packaged users upgrading from release assets.</td></tr>
+                <tr><td>Specific release</td><td><code>mars update tool --version v0.68.9</code></td><td>Pin a known version for reproduction or rollback.</td></tr>
+                <tr><td>Source install</td><td><code>mars update tool --source</code></td><td>Use Go source installation instead of release assets.</td></tr>
+                <tr><td>Main branch source</td><td><code>mars update tool --version main</code></td><td>Source-development update path for users who intentionally track main.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Source checkout users:</strong>
+            <code>make install</code> installs the current checkout. Use
+            <code>make update-tool</code> from a clean clone when you want the
+            source-maintained update helper to fast-forward, reinstall, and run
+            path setup.
+          </div>
+        </section>
+
+        <section class="doc-section" id="harness-update">
+          <h2>Harness Update</h2>
+          <p>
+            <code>mars update harness</code> fills in missing generated defaults
+            in a target repo. It preserves target-owned manifests, role
+            prompts, guardrails, skills, knowledge routes, tickets, plans,
+            design docs, references, and release state.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Update missing defaults</h3>
+              <pre><code>mars update harness --repo ~/my-project
+mars upgrade --repo ~/my-project</code></pre>
+              <p><code>upgrade</code> and <code>update harness</code> use the same user-facing intent.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Review generated drift</h3>
+              <pre><code>git -C ~/my-project status --short
+git -C ~/my-project diff</code></pre>
+              <p>Generated additions belong to the target repo after review.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="auth">
+          <h2>Release Auth</h2>
+          <p>
+            Private release auth is only for release assets, binary update, and
+            optional GitHub mirror verification. Normal source checkout install
+            can use <code>mars setup --skip-github</code>.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Recommended interactive setup</h3>
+              <pre><code>gh auth login
+mars auth github setup
+mars auth github check</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Headless setup</h3>
+              <pre><code>export GH_TOKEN=...
+mars auth github check --json</code></pre>
+              <p>Token values must not be committed, printed in logs, pasted into docs, or included in traces.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Persist an owner-only fallback</h3>
+              <pre><code>mars auth github setup --token "$GH_TOKEN"</code></pre>
+              <p>Prefer GitHub CLI auth when possible. The local fallback belongs under <code>~/.mars/</code>, never in a repo.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="release-notes">
+          <h2>Release Notes</h2>
+          <p>
+            Release notes are generated from semantic commits and should explain
+            user-facing impact. The generator ignores <code>release:</code>
+            commits so the release-note commit does not create an infinite loop.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Preview notes</h3>
+              <pre><code>mars release notes --repo . --bump auto --dry-run</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Generate notes</h3>
+              <pre><code>mars release notes --repo . --bump auto
+mars release backfill-notes --repo . --check</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Backfill historical narrative if required</h3>
+              <pre><code>mars release backfill-notes --repo . --dry-run
+mars release backfill-notes --repo .
+mars release backfill-notes --repo . --check</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="source-release">
+          <h2>MARS Source Release Flow</h2>
+          <p>
+            Source maintainers have an extra binary publication gate. A source
+            release is not complete just because <code>CHANGELOG.md</code> was
+            updated; it needs a pushed release-note commit, a tag at that
+            commit, local assets, verification, and mirror audit.
+          </p>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Commit the semantic change</h3>
+              <pre><code>git commit -m "docs(site): expand release documentation"</code></pre>
+            </li>
+            <li>
+              <h3>Generate and commit release notes</h3>
+              <pre><code>mars release notes --repo . --bump auto
+mars release backfill-notes --repo . --check
+git add VERSION CHANGELOG.md internal/buildinfo/version.go
+git commit -m "release: notes X.Y.Z"</code></pre>
+            </li>
+            <li>
+              <h3>Push main and tag the release-note commit</h3>
+              <pre><code>git push origin main
+git tag -f vX.Y.Z
+git push origin vX.Y.Z</code></pre>
+            </li>
+            <li>
+              <h3>Publish and verify assets</h3>
+              <pre><code>mars release publish-assets --repo . --version vX.Y.Z --upload auto
+mars release verify-assets --dist dist/releases --version vX.Y.Z
+mars release verify-assets --version vX.Y.Z</code></pre>
+            </li>
+            <li>
+              <h3>Audit recent release mirrors</h3>
+              <pre><code>mars release audit --repo .</code></pre>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="target-release">
+          <h2>Target Repo Release Flow</h2>
+          <p>
+            Initialized target repos inherit semantic versioning and generated
+            patch notes, but they do not inherit MARS source binary publication.
+            Target release publication depends on the target product's own
+            deployment model.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Generate target notes</h3>
+              <pre><code>mars release notes --repo ~/my-project --bump auto
+mars release backfill-notes --repo ~/my-project --check</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Commit target release state</h3>
+              <pre><code>git -C ~/my-project add VERSION CHANGELOG.md
+git -C ~/my-project commit -m "release: notes X.Y.Z"
+git -C ~/my-project push origin main</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="assets">
+          <h2>Assets And Audit</h2>
+          <p>
+            Local dist assets are the mandatory source release gate. GitHub
+            Releases are an optional mirror used by packaged installers and
+            self-update workflows when credentials and API access are available.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Command</th><th>Gate</th><th>What success proves</th></tr></thead>
+              <tbody>
+                <tr><td><code>mars release publish-assets</code></td><td>Build/package</td><td>Platform binaries and <code>checksums.txt</code> were produced in <code>dist/releases</code>.</td></tr>
+                <tr><td><code>mars release verify-assets --dist</code></td><td>Local gate</td><td>Required local assets exist for the version.</td></tr>
+                <tr><td><code>gh release view vX.Y.Z</code></td><td>Mirror object</td><td>GitHub Release object exists when mirroring is enabled.</td></tr>
+                <tr><td><code>mars release verify-assets --version</code></td><td>Mirror assets</td><td>GitHub Release contains all required assets and checksums.</td></tr>
+                <tr><td><code>mars release audit</code></td><td>Recent release health</td><td>Recent tags do not have missing or notes-only release mirrors.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Upgrade a target safely</h3>
+              <pre><code>mars update check --repo ~/my-project --json
+mars update tool --dry-run
+mars update harness --repo ~/my-project
+mars doctor --repo ~/my-project --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Repair a packaged install</h3>
+              <pre><code>mars auth github check
+mars update tool --dry-run
+mars update tool
+mars version</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Verify a source release mirror</h3>
+              <pre><code>gh release view vX.Y.Z --repo greaveselliott/MARS
+mars release verify-assets --version vX.Y.Z
+mars release audit --repo .</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>User action</th></tr></thead>
+              <tbody>
+                <tr><td><code>update check</code> reports remote unknown.</td><td>Latest-release API could not be reached or auth is missing.</td><td>Use <code>--skip-remote</code> for local drift checks, or run <code>mars auth github check</code>.</td></tr>
+                <tr><td><code>update tool</code> cannot download private assets.</td><td>No valid private release auth source.</td><td>Run <code>gh auth login</code>, then <code>mars auth github setup</code>, or set <code>GH_TOKEN</code>/<code>GITHUB_TOKEN</code>.</td></tr>
+                <tr><td>Release notes sound generic.</td><td>The semantic commit lacks explicit Impact, Why, or What details.</td><td>Polish the top changelog entry before committing release notes.</td></tr>
+                <tr><td>Local asset verification fails.</td><td>The dist directory is missing a required platform binary or checksums file.</td><td>Rerun <code>mars release publish-assets</code> and inspect build output.</td></tr>
+                <tr><td>GitHub release is notes-only.</td><td>The tag/release object exists but binary assets were not uploaded.</td><td>Run the exact <code>publish-assets</code> command reported by <code>mars release audit</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="site-footer">
+      <p><a href="index.html">Back to documentation home</a></p>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>

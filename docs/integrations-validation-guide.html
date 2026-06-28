@@ -1,0 +1,385 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/board-driven-integrations.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-013-board-driven-integrations.md
+- docs/runbooks/atlassian-mcp-jira-intake.md
+- docs/validation/README.md
+- docs/design-docs/validation-matrix-gating.md
+- docs/design-docs/foundation-operating-model.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Integrations And Validation Guide</title>
+    <meta
+      name="description"
+      content="User guide to optional MARS GitHub, JIRA, Atlassian MCP, board-driven integrations, validation reports, agent smoke matrices, and clean-project evidence."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to integrations and validation guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Integrations and validation</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="tools-mcp-guide.html">Tools/MCP</a>
+        <a href="models-guide.html">Models</a>
+        <a href="release-update-guide.html">Release</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Integrations and validation sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search integrations</label>
+          <input id="docSearch" type="search" placeholder="github, jira, validation">
+          <p class="search-hint">Filters integration status, configuration, and evidence guidance.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#local-first">Local First</a>
+          <a href="#github">GitHub</a>
+          <a href="#jira">JIRA Mirror</a>
+          <a href="#atlassian-mcp">Atlassian MCP</a>
+          <a href="#board-driven">Board-Driven Profile</a>
+          <a href="#configuration">Configuration</a>
+          <a href="#validation">Validation Artifacts</a>
+          <a href="#agent-smoke">Agent Smoke</a>
+          <a href="#evidence">Evidence Rules</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Optional external systems</p>
+            <h1>Connect external signals without giving up local-first control.</h1>
+            <p class="lede">
+              MARS can integrate with GitHub, JIRA, Atlassian MCP, future design
+              sources, and validation matrices, but those surfaces are optional
+              and scope-gated. No credentials, board content, or remote-only
+              state should replace repo-owned plans, tickets, commits, tests,
+              and evidence.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="local-first">
+          <h2>Local-First Integration Model</h2>
+          <p>
+            External systems augment the repo-owned operating model. They do
+            not become the system of record by default, and missing credentials
+            should not block source install, local setup, dry runs, or scoped
+            target operation.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Opt-in profiles</h3>
+              <p>Missing or unknown integration config falls back to <code>ceo-led</code>. Board-driven behavior is never inferred from partial config.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Secrets by env-var name</h3>
+              <p>Config stores names such as <code>base_url_env</code> and <code>webhook_secret_env</code>, not secret values.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Mirror before fan-out</h3>
+              <p>JIRA ingestion creates or reconciles local tickets. It does not enqueue LLM work directly from webhooks.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Evidence stays durable</h3>
+              <p>Validation reports, matrix runs, ticket evidence, and release blockers live in repo docs, not only dashboard state or chat.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="github">
+          <h2>Optional GitHub Integration</h2>
+          <p>
+            GitHub support is optional. It can verify webhook signatures,
+            deduplicate deliveries, create PRs, create or update check runs, and
+            post comments when configured. It does not replace strict-trunk
+            repo-owned commits as the default delivery model.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Capability</th><th>Status</th><th>User guidance</th></tr></thead>
+              <tbody>
+                <tr><td>PAT and App client modes</td><td>Implemented client validation.</td><td>Use actionable configuration errors to fix auth mode, token, or base URL issues.</td></tr>
+                <tr><td>App setup flow</td><td>Implemented setup, manifest, callback, and code exchange tests.</td><td>Use setup when you want GitHub App credentials rather than PAT mode.</td></tr>
+                <tr><td>Webhook receiver</td><td>Implemented signature, duplicate, method, and size handling.</td><td>Use a configured webhook secret and keep unsupported events bounded.</td></tr>
+                <tr><td>Remote reporting</td><td>Client supports PRs, check runs, and comments.</td><td>Use remote signals as coordination, not as the only source of truth.</td></tr>
+                <tr><td>Local-first absent credentials</td><td>Required behavior.</td><td>Commands should report unavailable integration status rather than fail core local operation.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Separate release auth:</strong>
+            <code>mars auth github</code> is primarily for private MARS release
+            assets and binary update. Optional code-host integration uses its
+            own configured credentials.
+          </div>
+        </section>
+
+        <section class="doc-section" id="jira">
+          <h2>JIRA Mirror</h2>
+          <p>
+            JIRA ingestion is a mirror, not a direct trigger-to-agent path. A
+            scoped issue can create or update one local Markdown ticket by
+            stable <code>jira_key</code>; the local ticket lifecycle remains the
+            work item that agents deliver.
+          </p>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Map project to exactly one repo</h3>
+              <p><code>project_repo_map</code> must disambiguate where mirrored tickets belong.</p>
+            </li>
+            <li>
+              <h3>Apply workspace and label scope</h3>
+              <p>Allowed workspaces and required labels prevent broad board content from entering the repo.</p>
+            </li>
+            <li>
+              <h3>Normalize issue fields</h3>
+              <p>Mirrored tickets carry front matter such as <code>jira_key</code>, priority, sprint, rank, status, blockers, and epic.</p>
+            </li>
+            <li>
+              <h3>Preserve target-owned work</h3>
+              <p>Reconciliation updates JIRA-owned front matter and requirements blocks while preserving lifecycle directory, evidence fields, scoped markers, and agent notes.</p>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="atlassian-mcp">
+          <h2>Atlassian MCP</h2>
+          <p>
+            Atlassian MCP is a job-scoped JIRA read provider. MARS can start an
+            explicit local proxy, probe available tools, call approved JIRA
+            search/read tools, close the session, and then apply the same
+            containment rules before writing local tickets.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Provider detail</th><th>User meaning</th><th>Safety boundary</th></tr></thead>
+              <tbody>
+                <tr><td><code>provider: rest</code></td><td>Use direct Atlassian REST search.</td><td>Still needs project, workspace, label, and mapping gates.</td></tr>
+                <tr><td><code>provider: atlassian_mcp</code></td><td>Use Atlassian MCP tools for scoped reads.</td><td>Session/proxy is job-scoped and cleaned up after sync.</td></tr>
+                <tr><td><code>proxy_transport: sidecar</code></td><td>Start helper while MARS speaks HTTP to the endpoint.</td><td>Helper command is explicit config.</td></tr>
+                <tr><td><code>proxy_transport: stdio</code></td><td>Speak MCP JSON-RPC to a helper subprocess.</td><td>Supports OAuth helpers such as <code>npx mcp-remote</code>.</td></tr>
+                <tr><td>Board-aware read tool missing</td><td>MARS records <code>board_scope_not_enforced_by_provider</code>.</td><td>It relies on project, workspace, label, and JQL containment instead of silently widening scope.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre data-doc-filter><code># Operator-owned example only; keep tenant values in env vars.
+npx mcp-remote https://mcp.atlassian.com/v1/mcp/authv2</code></pre>
+        </section>
+
+        <section class="doc-section" id="board-driven">
+          <h2>Board-Driven Profile</h2>
+          <p>
+            The default target flow is <code>ceo-led</code>. The
+            <code>board-driven</code> profile is an opt-in operating mode for
+            teams that use JIRA as work-order input. Current implementation
+            covers the config substrate and initial JIRA mirror paths; selector,
+            cost guard, Figma, PR delivery, and release-traceability plans are
+            staged work.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Area</th><th>Current user contract</th><th>Boundary</th></tr></thead>
+              <tbody>
+                <tr><td>No config</td><td>Falls back to CEO-led behavior.</td><td>No JIRA routes, pollers, or board dispatch are enabled.</td></tr>
+                <tr><td>Profile loading</td><td><code>.harness/integrations.example.yaml</code> may be generated; real config is operator-created.</td><td><code>.harness/integrations.yaml</code> is never written by default.</td></tr>
+                <tr><td>Schedule changes</td><td>Board-driven suppresses CEO-led planning cron registrations when enabled.</td><td>Roles remain available for explicit dispatch.</td></tr>
+                <tr><td>Tool injection</td><td>Future integration tools are appended only when profile, section gate, and registry agree.</td><td>No static broad tool grants in generated manifests.</td></tr>
+                <tr><td>PR delivery</td><td>Planned explicit mode.</td><td>No force-push, no auto-merge, base remains <code>main</code>, and trust gates apply.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="configuration">
+          <h2>Configuration</h2>
+          <p>
+            Integration config belongs to the target harness and should keep
+            tenant-specific identifiers behind environment variable names when
+            operators do not want those values committed.
+          </p>
+          <pre data-doc-filter><code>version: 1
+flow_profile: board-driven
+
+ingestion:
+  jira:
+    enabled: true
+    provider: atlassian_mcp
+    site_url_env: JIRA_SITE_URL
+    cloud_id_env: JIRA_CLOUD_ID
+    webhook_secret_env: JIRA_WEBHOOK_SECRET
+    scope:
+      allowed_workspaces_env: JIRA_ALLOWED_WORKSPACES
+      required_labels:
+        - example-required-label
+      board_id_env: JIRA_BOARD_ID
+    project_repo_map:
+      DEMO: /absolute/path/to/my-project
+
+delivery:
+  mode: trunk</code></pre>
+          <ul class="check-list">
+            <li>Do not commit raw tokens, board dumps, private issue bodies, or unnecessary personal data.</li>
+            <li>Use env-var name fields for site URLs, cloud IDs, board IDs, workspace URLs, and custom-field IDs when those are sensitive.</li>
+            <li>Classify failures as foundation-owned, deployed-owned, mixed/unclear, or evidence-only before creating tickets.</li>
+          </ul>
+        </section>
+
+        <section class="doc-section" id="validation">
+          <h2>Validation Artifacts</h2>
+          <p>
+            Validation evidence is durable repo documentation. Matrix run
+            reports, clean-project lifecycle reports, release blockers, and
+            target dogfood reports should be inspectable without relying on
+            terminal scrollback.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Artifact</th><th>Location</th><th>Use</th></tr></thead>
+              <tbody>
+                <tr><td>Reusable profiles</td><td><code>docs/validation/profiles/</code></td><td>Target profile, trust level, command list, and graduation criteria.</td></tr>
+                <tr><td>Agent smoke matrix</td><td><code>docs/validation/agent-smoke/</code></td><td>Checked-in cases and generators for compartmentalized role smoke tests.</td></tr>
+                <tr><td>Run reports</td><td><code>docs/validation/reports/</code></td><td>Completed or blocked validation evidence.</td></tr>
+                <tr><td>Baselines</td><td><code>docs/validation/baselines/</code></td><td>Dated factory-pace before measurements.</td></tr>
+                <tr><td>Release blockers</td><td><code>docs/validation/release-blockers.md</code></td><td>Per-version asset, mirror, or publication blockers.</td></tr>
+                <tr><td>Target dogfood reports</td><td><code>docs/reports/dogfood/</code> in target repos</td><td>Evidence written during deployed target validation.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="agent-smoke">
+          <h2>Agent Smoke</h2>
+          <p>
+            <code>mars validation agent-smoke</code> creates ephemeral target
+            repos, seeds them through foundation scaffold/tool surfaces,
+            executes selected roles through the server job path, records
+            evidence, and discards successful runs unless told otherwise.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Fast smoke suite</h3>
+              <pre><code>mars validation agent-smoke --suite fast --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Keep one run for inspection</h3>
+              <pre><code>mars validation agent-smoke \
+  --role engineer \
+  --project-type go-api \
+  --suite fast \
+  --keep-runs</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Held-out parallel smoke</h3>
+              <pre><code>mars validation agent-smoke \
+  --suite held-out \
+  --parallel 2 \
+  --single-server \
+  --single-server-tier coding \
+  --timeout 10m</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Clean up retained runs</h3>
+              <pre><code>mars validation agent-smoke --cleanup-only</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="evidence">
+          <h2>Evidence Rules</h2>
+          <p>
+            Validation claims need the right kind of evidence. A narrow passing
+            check should not be used to claim a broad lifecycle fix, and fake
+            model endpoints must not be used as live model evidence.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Primary Outcome Contract</h3>
+              <p>Reports lead with Primary Outcome, Primary Pass Gate, Primary Status, Current Primary Blocker, Next Primary Action, and Supporting Evidence.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Clean-project replay</h3>
+              <p>Foundation runtime changes need representative clean target validation before broad lifecycle claims.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>No fake live evidence</h3>
+              <p>Fake, stub, mock, canned, or scripted LLM endpoints prove plumbing only, not live role/model/lifecycle quality.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Failure ownership</h3>
+              <p>Classify observed failures as foundation-owned, deployed-owned, mixed/unclear, or evidence-only before creating fixes or tickets.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Enable a scoped JIRA mirror</h3>
+              <pre><code>cp .harness/integrations.example.yaml .harness/integrations.yaml
+$EDITOR .harness/integrations.yaml
+mars doctor --repo ~/my-project --json</code></pre>
+              <p>Keep values in env vars where possible and verify scope before writing local tickets.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Validate a source runtime change</h3>
+              <pre><code>make install
+mars validation agent-smoke --suite fast --json
+mars docsync audit --repo .</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Record a blocked matrix attempt</h3>
+              <pre><code>mkdir -p docs/validation/reports
+$EDITOR docs/validation/reports/YYYY-MM-DD-short-name.md</code></pre>
+              <p>Record the matrix, command, source ref, model identity, paths, result, failure class, cleanup status, and exact rerun command.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>User action</th></tr></thead>
+              <tbody>
+                <tr><td>No JIRA route appears in a target.</td><td>No real <code>.harness/integrations.yaml</code> exists or profile remains <code>ceo-led</code>.</td><td>Copy the example config deliberately and set <code>flow_profile: board-driven</code>.</td></tr>
+                <tr><td>JIRA issue is dropped.</td><td>Project map, workspace, board, label, or JQL scope did not match.</td><td>Inspect sanitized drop reason, adjust config, and rerun mirror only for intended scope.</td></tr>
+                <tr><td>Atlassian MCP shows no JIRA search tool.</td><td>Credential or permission group lacks JIRA tool availability.</td><td>Use OAuth-capable helper or adjust Atlassian permissions; do not bypass containment with raw board dumps.</td></tr>
+                <tr><td>Validation passes with a fake endpoint.</td><td>The run only proved deterministic plumbing.</td><td>Record it as supporting evidence and run real model validation before claiming live role quality.</td></tr>
+                <tr><td>Matrix run fails before execution.</td><td>Setup, model, auth, or environment blocked the run.</td><td>Create a matrix report with the blocker and exact replay command.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="site-footer">
+      <p><a href="index.html">Back to documentation home</a></p>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>

@@ -18,6 +18,9 @@ docs:
 - docs/operations-guide.html
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
+- docs/safety-quality-guide.html
+- docs/release-update-guide.html
+- docs/integrations-validation-guide.html
 -->
 <html lang="en">
   <head>
@@ -49,6 +52,9 @@ docs:
         <a href="operations-guide.html">Operations</a>
         <a href="models-guide.html">Models</a>
         <a href="tools-mcp-guide.html">Tools/MCP</a>
+        <a href="safety-quality-guide.html">Safety</a>
+        <a href="release-update-guide.html">Release</a>
+        <a href="integrations-validation-guide.html">Integrations</a>
         <a href="harness-ecosystem/">Explainer</a>
       </nav>
     </header>
@@ -156,6 +162,9 @@ docs:
             <a href="operations-guide.html">Operations Guide</a>
             <a href="models-guide.html">Models And Inference Guide</a>
             <a href="tools-mcp-guide.html">Tools And MCP Guide</a>
+            <a href="safety-quality-guide.html">Safety, Trust, And Quality Guide</a>
+            <a href="release-update-guide.html">Release And Update Guide</a>
+            <a href="integrations-validation-guide.html">Integrations And Validation Guide</a>
             <a href="harness-ecosystem/">Adoption Explainer</a>
           </div>
         </section>
@@ -548,6 +557,13 @@ mars models override --repo ~/my-project --role engineer --provider openai-compa
 
         <section class="doc-section" id="safety">
           <h2>Safety, Guardrails, Trust, And Tools</h2>
+          <p>
+            For the complete governance reference, open the
+            <a href="safety-quality-guide.html">Safety, Trust, And Quality Guide</a>.
+            It covers guardrail authoring, secret scanning, blast-radius
+            containment, trust levels, scoring, quality score export, and
+            telemetry.
+          </p>
           <div class="concept-grid">
             <article data-doc-filter>
               <h3>Guardrails</h3>
@@ -590,6 +606,8 @@ mars mcp serve --repo ~/my-project --trust contributor --allowlist file_read,gre
             MARS uses local telemetry, scores, quality artifacts, and optional
             anonymous aggregate reporting to turn real outcomes into safer,
             better automation. Raw events stay local by default.
+            The <a href="safety-quality-guide.html">Safety, Trust, And Quality Guide</a>
+            documents score, trust, quality, and telemetry workflows in depth.
           </p>
           <div class="workflow-list">
             <article data-doc-filter>
@@ -621,6 +639,8 @@ mars telemetry triage-foundation --repo /path/to/MARS</code></pre>
             MARS and initialized target repos use semantic versions and
             generated patch notes. Source releases also publish local binary
             assets and may mirror them to GitHub Releases.
+            For the complete release lifecycle, open the
+            <a href="release-update-guide.html">Release And Update Guide</a>.
           </p>
           <div class="workflow-list">
             <article data-doc-filter>
@@ -771,6 +791,9 @@ roles:
             <a href="operations-guide.html">Operations guide</a>
             <a href="models-guide.html">Models and inference guide</a>
             <a href="tools-mcp-guide.html">Tools and MCP guide</a>
+            <a href="safety-quality-guide.html">Safety, trust, and quality guide</a>
+            <a href="release-update-guide.html">Release and update guide</a>
+            <a href="integrations-validation-guide.html">Integrations and validation guide</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/README.md">Repository README</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/AGENTS.md">Agent guide</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/ARCHITECTURE.md">Architecture</a>

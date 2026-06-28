@@ -1,0 +1,364 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/guardrails-guide.md
+- docs/product-specs/product-surface.md
+- docs/design-docs/guardrails.md
+- docs/design-docs/scoring-system.md
+- docs/design-docs/self-reflective-telemetry.md
+- docs/features/F-007-guardrails-and-safety.md
+- docs/features/F-008-scoring-trust-quality.md
+- docs/QUALITY_SCORE.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Safety, Trust, And Quality Guide</title>
+    <meta
+      name="description"
+      content="User guide to MARS guardrails, blast-radius containment, secret scanning, trust levels, scoring, quality score export, and anonymous telemetry."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to safety and quality guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Safety and quality</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="tools-mcp-guide.html">Tools/MCP</a>
+        <a href="release-update-guide.html">Release</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Safety and quality sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search safety</label>
+          <input id="docSearch" type="search" placeholder="guardrail, trust, quality">
+          <p class="search-hint">Filters policy surfaces, commands, and recovery notes.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#guardrails">Guardrails</a>
+          <a href="#rule-authoring">Rule Authoring</a>
+          <a href="#secret-scan">Secret Scanning</a>
+          <a href="#blast-radius">Blast Radius</a>
+          <a href="#trust">Trust Levels</a>
+          <a href="#scores">Scores</a>
+          <a href="#quality-score">Quality Score</a>
+          <a href="#telemetry">Telemetry</a>
+          <a href="#recipes">Operator Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Governed autonomy</p>
+            <h1>Keep agent work bounded, auditable, and evidence-backed.</h1>
+            <p class="lede">
+              MARS does not treat autonomy as a single on/off switch. Users
+              govern agents through guardrails, role tool allowlists, trust
+              levels, blast-radius checks, secret scanning, scoring, telemetry,
+              and repo-visible quality artifacts. This guide explains what each
+              surface does and how operators use it safely.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="guardrails">
+          <h2>Guardrails</h2>
+          <p>
+            Guardrails are runtime rules that constrain agent output and repo
+            mutation. They live in the target harness, are attached through the
+            manifest, and can be hard-blocking or advisory.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Surface</th><th>Where users configure it</th><th>Behavior</th></tr></thead>
+              <tbody>
+                <tr><td>Rule files</td><td><code>.harness/guardrails/*.yaml</code></td><td>YAML rules with IDs, messages, severity, scope, patterns, and stale-rule policy.</td></tr>
+                <tr><td>Role attachment</td><td><code>.harness/manifest.yaml</code></td><td>Each role names the guardrail files that apply to its run.</td></tr>
+                <tr><td>Hard guardrails</td><td><code>severity: hard</code></td><td>Block an operation until the violation is repaired or an explicit override path exists.</td></tr>
+                <tr><td>Advisory guardrails</td><td><code>severity: advisory</code></td><td>Inject guidance into role context without blocking a tool call.</td></tr>
+                <tr><td>Built-in policy</td><td>MARS tool executor and runtime</td><td>Blocks unsafe shell, ticket, file, dependency, validation, deletion, and release operations before mutation.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Fail closed:</strong>
+            invalid guardrail files should stop a job with an actionable parse
+            error instead of letting an agent run under unknown policy.
+          </div>
+        </section>
+
+        <section class="doc-section" id="rule-authoring">
+          <h2>Rule Authoring</h2>
+          <p>
+            Start with narrow, explainable rules. A useful guardrail tells the
+            agent exactly what was blocked and what a safe next action looks
+            like.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Attach a rule file to a role</h3>
+              <pre><code>roles:
+  engineer:
+    guardrails:
+      - guardrails/safety.yaml
+      - guardrails/conventions.yaml</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Block a content pattern</h3>
+              <pre><code>rules:
+  - id: no-hardcoded-secrets
+    name: No hardcoded secrets
+    severity: hard
+    scope: global
+    pattern: '(?i)(password|secret|api_key|token)'
+    message: Use environment variables or local secret storage.</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Give role-scoped guidance</h3>
+              <pre><code>rules:
+  - id: require-tests
+    name: New code needs tests
+    severity: advisory
+    scope: engineer
+    message: Add or update tests before asking for review.</code></pre>
+            </article>
+          </div>
+          <ul class="check-list">
+            <li>Prefer role-scoped rules when only one role needs the policy.</li>
+            <li>Use <code>file_pattern</code> to keep broad regex checks from firing on unrelated files.</li>
+            <li>Set realistic <code>stale_days</code> values and review stale rules during <code>doctor</code>.</li>
+            <li>Keep secret values, credentials, and private customer data out of rule files.</li>
+          </ul>
+        </section>
+
+        <section class="doc-section" id="secret-scan">
+          <h2>Secret Scanning</h2>
+          <p>
+            Secret scanning is available as an operator command and as an
+            optional git hook. Findings are redacted and should be treated as
+            blockers until the secret is removed and rotated if necessary.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Scan a repo</h3>
+              <pre><code>mars guardrails secret-scan --repo ~/my-project
+mars guardrails secret-scan --repo ~/my-project --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Scan staged files</h3>
+              <pre><code>mars guardrails secret-scan --repo ~/my-project --staged</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Install the optional hook</h3>
+              <pre><code>mars guardrails install-hooks --repo ~/my-project
+git commit</code></pre>
+              <p>The managed pre-commit hook runs <code>mars guardrails secret-scan --staged</code>.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="blast-radius">
+          <h2>Blast Radius And Workspace Hygiene</h2>
+          <p>
+            MARS keeps agent changes small enough to inspect. Built-in policies
+            classify generated output, dependency churn, ticket lifecycle moves,
+            source writes, validation artifacts, and destructive commands before
+            they can turn into confusing repo state.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Generated output</h3>
+              <p>Dependency folders, build output, root validation scripts, and dirty generated trees are blocked or routed through explicit cleanup guidance.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Ticket lifecycle moves</h3>
+              <p>Moving the same ticket ID between lifecycle directories is allowed as a bounded deletion exception; unpaired deletions remain blocked.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Source writes need docs</h3>
+              <p>Audited source roots require valid top-of-file <code>MarsDocSync</code> metadata so code and docs stay connected.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Validation binaries stay outside repos</h3>
+              <p>Use external temp outputs such as <code>/tmp/project-validation</code> instead of writing build artifacts into a target checkout.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="trust">
+          <h2>Trust Levels</h2>
+          <p>
+            Trust controls what roles and external clients may do. Manual
+            overrides are allowed, but they require a reason so the audit trail
+            explains why capability changed.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Level</th><th>Meaning</th><th>User guidance</th></tr></thead>
+              <tbody>
+                <tr><td><code>observer</code></td><td>Read-only or inspection-oriented access.</td><td>Default for external MCP clients and early target evaluation.</td></tr>
+                <tr><td><code>contributor</code></td><td>Can perform governed mutation through allowed tools.</td><td>Use for trusted roles or clients doing bounded repo work.</td></tr>
+                <tr><td><code>autonomous</code></td><td>Higher-trust autonomy earned through evidence and policy.</td><td>Reserve for roles with proven outcomes and explicit operating rules.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Inspect trust state</h3>
+              <pre><code>mars trust --repo ~/my-project
+mars trust --repo ~/my-project --db ~/.mars/db/my-project/mars.db</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Set a trust override</h3>
+              <pre><code>mars trust set engineer ~/my-project contributor \
+  --reason "Human approved bounded ticket delivery"</code></pre>
+              <p>The reason is required and should say what evidence or approval justified the change.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="scores">
+          <h2>Scores</h2>
+          <p>
+            Scores turn job outcomes into role health signals. They are not
+            vanity numbers; they help operators understand whether roles are
+            delivering real value, stalling, hitting guardrails, or needing
+            self-improvement work.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Signal</th><th>Examples</th><th>User outcome</th></tr></thead>
+              <tbody>
+                <tr><td>Terminal outcomes</td><td>Success, partial, failure, timeout, no-op, revert, human follow-up.</td><td>Feeds rolling score and trust decisions.</td></tr>
+                <tr><td>Validation evidence</td><td>Tests, builds, runtime probes, check results, ticket evidence.</td><td>Shows whether work actually shipped behavior.</td></tr>
+                <tr><td>Guardrail outcomes</td><td>Policy blocks, secret findings, unsafe shell, dirty workspace.</td><td>Identifies safety friction or real unsafe behavior.</td></tr>
+                <tr><td>Factory pace</td><td>Turns, tool calls, LLM calls, wall time, limit stops.</td><td>Finds roles that are slow, looping, or under-instrumented.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre data-doc-filter><code>mars scores --repo ~/my-project
+mars scores --repo ~/my-project --db ~/.mars/db/my-project/mars.db</code></pre>
+        </section>
+
+        <section class="doc-section" id="quality-score">
+          <h2>Quality Score Export</h2>
+          <p>
+            <code>docs/QUALITY_SCORE.md</code> is the repo-visible quality
+            artifact. It summarizes score evidence, telemetry, ticket state,
+            dogfood findings, guardrails, check outcomes, no-op signals, human
+            follow-up, convergence failures, and factory pace while preserving
+            manual notes.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Refresh the artifact</h3>
+              <pre><code>mars scores export --repo ~/my-project
+mars scores export --repo ~/my-project --window-days 30</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Create intervention-debt tickets deliberately</h3>
+              <pre><code>mars scores export \
+  --repo ~/my-project \
+  --create-intervention-debt</code></pre>
+              <p>Ticket creation is opt-in unless the signal is clearly target-owned.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Use explicit DB evidence</h3>
+              <pre><code>mars scores export \
+  --repo ~/my-project \
+  --db ~/.mars/db/my-project/mars.db</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="telemetry">
+          <h2>Anonymous Telemetry</h2>
+          <p>
+            Telemetry is local-first and off by default. When enabled, MARS can
+            preview, enqueue, send, collect, and triage sanitized aggregate
+            reports. Raw target details stay local; foundation triage works
+            from repeated anonymous patterns.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Command</th><th>Purpose</th><th>Network behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>mars telemetry status</code></td><td>Shows reporting mode, collector endpoint, DB path, and outbox counts.</td><td>No report sent.</td></tr>
+                <tr><td><code>mars telemetry preview</code></td><td>Prints the exact anonymous payload for review.</td><td>No report sent.</td></tr>
+                <tr><td><code>mars telemetry export --anonymous</code></td><td>Enqueues a sanitized report in the local outbox.</td><td>No collector call by itself.</td></tr>
+                <tr><td><code>mars telemetry send</code></td><td>Sends pending reports only when reporting is configured as anonymous.</td><td>Calls configured collector.</td></tr>
+                <tr><td><code>mars telemetry collect</code></td><td>Runs a local SQLite-backed collector.</td><td>Listens locally on the configured address.</td></tr>
+                <tr><td><code>mars telemetry triage-foundation</code></td><td>Creates MARS source tickets from repeated anonymous collector patterns.</td><td>Reads collector DB only.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Operator Recipes</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Run a pre-commit safety check</h3>
+              <pre><code>mars guardrails secret-scan --repo ~/my-project --staged
+mars docsync audit --repo ~/my-project
+mars scores export --repo ~/my-project</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Investigate a role that keeps stalling</h3>
+              <pre><code>mars scores --repo ~/my-project
+mars scores export --repo ~/my-project --window-days 14
+mars telemetry preview --repo ~/my-project</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Prepare a read-only external client</h3>
+              <pre><code>mars mcp serve \
+  --repo ~/my-project \
+  --trust observer \
+  --allowlist file_read,file_search,grep,git_status</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>User action</th></tr></thead>
+              <tbody>
+                <tr><td>A hard guardrail blocks a role.</td><td>The attempted operation matched a blocking rule or built-in safety policy.</td><td>Read the message, repair the specific issue, or record a deliberate override path if your policy allows it.</td></tr>
+                <tr><td>Secret scan reports a finding.</td><td>A staged or repo file looks like a credential.</td><td>Remove the value, rotate the secret if it was real, and rerun the scan.</td></tr>
+                <tr><td><code>scores</code> says no scores are recorded.</td><td>The selected DB has no scoring evidence yet or the wrong DB was selected.</td><td>Use <code>mars start --repo</code> to generate per-repo evidence or pass the expected <code>--db</code>.</td></tr>
+                <tr><td>Quality export says evidence is insufficient.</td><td>There are not enough score, trace, ticket, or validation inputs for a claim.</td><td>Run real roles, tests, and validation; do not treat sparse data as healthy state.</td></tr>
+                <tr><td>Telemetry send does nothing.</td><td>Anonymous telemetry reporting is off or no collector endpoint is configured.</td><td>Use <code>mars telemetry status</code> and configure reporting intentionally before sending.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="site-footer">
+      <p><a href="index.html">Back to documentation home</a></p>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>

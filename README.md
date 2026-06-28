@@ -37,7 +37,10 @@ management, extension, and troubleshooting. Deeper site pages now cover the
 [target harness guide](docs/harness-guide.html),
 [operations guide](docs/operations-guide.html),
 [models and inference guide](docs/models-guide.html), and
-[tools and MCP guide](docs/tools-mcp-guide.html).
+[tools and MCP guide](docs/tools-mcp-guide.html). The next layer covers
+[safety, trust, and quality](docs/safety-quality-guide.html),
+[release and update](docs/release-update-guide.html), and
+[integrations and validation](docs/integrations-validation-guide.html).
 
 For a high-level adoption walkthrough, the documentation site links to the
 interactive [MARS explainer](docs/harness-ecosystem/). It explains the
@@ -269,6 +272,14 @@ safety, or orchestration changes do. See
   bundles, routing, providers, credentials, overrides, and evaluation.
 - [docs/tools-mcp-guide.html](docs/tools-mcp-guide.html): universal tools,
   MCP setup, trust, allowlists, tool categories, and formal tool creation.
+- [docs/safety-quality-guide.html](docs/safety-quality-guide.html):
+  guardrails, secret scanning, blast radius, trust, scores, quality export,
+  and telemetry.
+- [docs/release-update-guide.html](docs/release-update-guide.html): update
+  checks, CLI self-update, harness update, release notes, assets, and audit.
+- [docs/integrations-validation-guide.html](docs/integrations-validation-guide.html):
+  optional GitHub/JIRA/Atlassian MCP integration, board-driven profile, and
+  validation evidence.
 - [docs/quickstart.md](docs/quickstart.md): detailed install and first run.
 - [docs/harness-ecosystem/](docs/harness-ecosystem/):
   interactive adoption explainer linked from the docs site.
