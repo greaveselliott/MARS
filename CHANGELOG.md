@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.66.0] - 2026-06-28
+<!-- mars-release: version=0.66.0 commit=419a5a3d2d93 -->
+
+### Impact
+- **rename:** Operators gain the MARS identity across the source repo, CLI, generated target guidance, release assets, and operator docs.
+
+### Why
+- **rename:** This matters because the old product and CLI references created drift after the repository was renamed.
+
+### What Changed
+- **rename:** Adopted MARS naming while retaining tested migration compatibility for legacy env vars, state paths, tool aliases, release assets, and markers (419a5a3).
+
+### Features
+- **rename:** Adopt MARS identity (419a5a3)
+
 ## [0.65.9] - 2026-06-26
 <!-- mars-release: version=0.65.9 commit=826ba565b1db -->
 
