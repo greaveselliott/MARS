@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.3] - 2026-06-28
+<!-- mars-release: version=0.68.3 commit=ddff172fb2cc -->
+
+### Impact
+- **validation:** Operators and future agents can trace the confidence-10 proof to the exact `v0.68.1` binary used during the OpenAI cloud replay.
+
+### Why
+- **validation:** This matters because proof reports should not contain stale commit IDs after release publication.
+
+### What Changed
+- **validation:** Corrected the hardware-gated onboarding report's source reference from a stale hash to the `v0.68.1` tag commit used for runtime proof.
+
+### Documentation
+- **validation:** Correct cloud proof source ref (ddff172)
+
 ## [0.68.2] - 2026-06-28
 <!-- mars-release: version=0.68.2 commit=20fdfd1cde08 -->
 
