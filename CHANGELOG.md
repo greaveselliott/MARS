@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.18] - 2026-06-29
+<!-- mars-release: version=0.68.18 commit=499af8cd9886 -->
+
+### Impact
+- **site:** Users now have a first-class bundle and manifest reference for understanding the `.harness/` files that make a target repo executable by MARS, including role fields, routing modes, schedules, tools, guardrails, knowledge routes, skills, generated defaults, and manifest recovery.
+
+### Why
+- **site:** The docs site explained harness concepts across harness, configuration, and roles pages, but the exact manifest contract still lived in a compact Markdown reference that lagged current schema details such as `orchestration_mode`, `trust_level`, schedules, and legacy chain validation.
+
+### What Changed
+- **site:** Added a static Bundle And Manifest Reference, linked it from the homepage, README, harness guide, configuration reference, roles guide, and product contract, and refreshed the Markdown companion with current schema fields and ASCII examples (499af8c).
+
+### Documentation
+- **site:** Add bundle reference (499af8c)
+
 ## [0.68.17] - 2026-06-29
 <!-- mars-release: version=0.68.17 commit=8f9381940a33 -->
 
