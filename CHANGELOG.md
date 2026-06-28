@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.20] - 2026-06-29
+<!-- mars-release: version=0.68.20 commit=c1aaffabe32e -->
+
+### Impact
+- **site:** Users now have a dedicated install and setup reference for getting the `mars` command onto PATH, preparing `~/.mars/`, configuring private-release auth, choosing inference mode and local bundles, understanding machine-local state, and diagnosing first-run setup failures.
+
+### Why
+- **site:** The quickstart explained the happy path and the CLI reference listed flags, but users still had to piece together shell PATH repair, `mars setup` step behavior, GitHub auth, local downloads, automation mode, and `doctor` interpretation from several pages and source contracts.
+
+### What Changed
+- **site:** Added a static Install And Setup Reference, linked it from the homepage, README, quickstart, CLI reference, models guide, files/state reference, and product contract, and documented source install, PATH setup, setup flags, GitHub auth, inference modes, local bundles, local state, automation recipes, doctor checks, and setup troubleshooting (c1aaffa).
+
+### Documentation
+- **site:** Add install setup reference (c1aaffa)
+
 ## [0.68.19] - 2026-06-29
 <!-- mars-release: version=0.68.19 commit=6fbca5ef62a3 -->
 
