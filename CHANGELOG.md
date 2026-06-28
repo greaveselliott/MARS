@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.12] - 2026-06-28
+<!-- mars-release: version=0.68.12 commit=a3fc0c1f48fb -->
+
+### Impact
+- **site:** Users now have a central observability and recovery path for understanding live agent behavior, evidence, diagnostics, and safe troubleshooting.
+
+### Why
+- **site:** The documentation site covered individual runtime, safety, telemetry, and configuration topics, but users still had to stitch together dashboard state, logs, traces, quality evidence, privacy boundaries, and symptom-driven recovery from several pages.
+
+### What Changed
+- **site:** Added static Observability/Evidence and Troubleshooting guide pages; linked them from the homepage, top navigation, README documentation map, shared site metadata, and product-surface contract (a3fc0c1).
+
+### Documentation
+- **site:** Add observability and troubleshooting guides (a3fc0c1)
+
 ## [0.68.11] - 2026-06-28
 <!-- mars-release: version=0.68.11 commit=5097d9466b11 -->
 
