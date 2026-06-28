@@ -45,7 +45,10 @@ management, extension, and troubleshooting. Deeper site pages now cover the
 [troubleshooting](docs/troubleshooting-guide.html),
 [safety, trust, and quality](docs/safety-quality-guide.html),
 [release and update](docs/release-update-guide.html), and
-[integrations and validation](docs/integrations-validation-guide.html).
+[integrations and validation](docs/integrations-validation-guide.html). The
+delivery layer documents goals, active plans, BDD feature contracts, tickets,
+role handoffs, evidence gates, and release review in the
+[planning and delivery guide](docs/planning-delivery-guide.html).
 
 For a high-level adoption walkthrough, the documentation site links to the
 interactive [MARS explainer](docs/harness-ecosystem/). It explains the
@@ -299,6 +302,9 @@ safety, or orchestration changes do. See
 - [docs/integrations-validation-guide.html](docs/integrations-validation-guide.html):
   optional GitHub/JIRA/Atlassian MCP integration, board-driven profile, and
   validation evidence.
+- [docs/planning-delivery-guide.html](docs/planning-delivery-guide.html):
+  goals, active plans, BDD feature contracts, ticket lifecycle, role handoffs,
+  evidence gates, and release review.
 - [docs/quickstart.md](docs/quickstart.md): detailed install and first run.
 - [docs/harness-ecosystem/](docs/harness-ecosystem/):
   interactive adoption explainer linked from the docs site.

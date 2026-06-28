@@ -21,6 +21,7 @@ docs:
 - docs/safety-quality-guide.html
 - docs/release-update-guide.html
 - docs/integrations-validation-guide.html
+- docs/planning-delivery-guide.html
 - docs/roles-guide.html
 - docs/documentation-sync-guide.html
 - docs/configuration-reference.html
@@ -53,6 +54,7 @@ docs:
         <a href="#quickstart">Quickstart</a>
         <a href="cli-reference.html">CLI Reference</a>
         <a href="workflows.html">Workflows</a>
+        <a href="planning-delivery-guide.html">Delivery</a>
         <a href="harness-guide.html">Harness Guide</a>
         <a href="operations-guide.html">Operations</a>
         <a href="models-guide.html">Models</a>
@@ -81,6 +83,7 @@ docs:
           <a href="#deep-guides">Deep Guides</a>
           <a href="#quickstart">Quickstart</a>
           <a href="#install">Install and Setup</a>
+          <a href="#planning-delivery">Planning and Delivery</a>
           <a href="#target-harness">Target Harness</a>
           <a href="#cli">CLI Reference</a>
           <a href="#run-agents">Run Agents</a>
@@ -170,6 +173,7 @@ docs:
           <div class="reference-grid">
             <a href="cli-reference.html">CLI Reference</a>
             <a href="workflows.html">User Workflows</a>
+            <a href="planning-delivery-guide.html">Planning And Delivery Guide</a>
             <a href="harness-guide.html">Target Harness Guide</a>
             <a href="operations-guide.html">Operations Guide</a>
             <a href="models-guide.html">Models And Inference Guide</a>
@@ -286,6 +290,44 @@ mars run engineer --repo /path/to/target-repo --dry-run</code></pre>
             Prefer <code>make install</code> for day-to-day use or
             <code>go build -o build/mars ./cmd/mars</code> for one-off binaries.
           </p>
+        </section>
+
+        <section class="doc-section" id="planning-delivery">
+          <h2>Planning And Delivery</h2>
+          <p>
+            MARS turns user intent into verifiable delivery through a strict
+            chain: active goals, one active execution plan, BDD feature
+            contracts, bounded tickets, evidence, review, and release notes.
+            The chain keeps autonomous work from drifting into random backlog
+            churn or unsupported completion claims.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Goal to plan</h3>
+              <p>
+                Goals define outcomes and tradeoffs. The active exec plan names
+                which goal, BDD feature, scenario schedule, current failing
+                scenario, and walking-skeleton slice is allowed to drive work.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>BDD to ticket</h3>
+              <p>
+                Feature contracts define user-visible behavior step by step.
+                Tickets implement only the current failing scenario or scenario
+                group and carry scenario evidence before moving to done.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>Evidence to release</h3>
+              <p>
+                Tests, commands, traces, quality score, validation reports, and
+                docs checks prove the work. Release notes distinguish shipped
+                scenarios from enabler work.
+              </p>
+            </article>
+          </div>
+          <p><a href="planning-delivery-guide.html">Open the planning and delivery guide</a></p>
         </section>
 
         <section class="doc-section" id="target-harness">
@@ -885,6 +927,7 @@ roles:
             <a href="safety-quality-guide.html">Safety, trust, and quality guide</a>
             <a href="release-update-guide.html">Release and update guide</a>
             <a href="integrations-validation-guide.html">Integrations and validation guide</a>
+            <a href="planning-delivery-guide.html">Planning and delivery guide</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/README.md">Repository README</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/AGENTS.md">Agent guide</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/ARCHITECTURE.md">Architecture</a>

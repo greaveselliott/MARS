@@ -1,0 +1,416 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/product-specs/product-surface.md
+- docs/goals/README.md
+- docs/exec-plans/README.md
+- docs/features/README.md
+- docs/features/F-001-delivery-operating-model.md
+- docs/tickets/README.md
+- docs/design-docs/delivery-operating-model.md
+- docs/documentation-sync-guide.html
+- docs/roles-guide.html
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Planning And Delivery Guide</title>
+    <meta
+      name="description"
+      content="User guide to MARS goals, active execution plans, BDD feature contracts, tickets, walking skeleton delivery, evidence gates, and role handoffs."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to planning and delivery guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Planning and delivery</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="roles-guide.html">Roles</a>
+        <a href="documentation-sync-guide.html">DocSync</a>
+        <a href="observability-guide.html">Observability</a>
+        <a href="cli-reference.html">CLI Reference</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Planning and delivery sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search delivery</label>
+          <input id="docSearch" type="search" placeholder="goal, BDD, ticket">
+          <p class="search-hint">Filters workflow stages, evidence rules, and examples.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#spine">Delivery Spine</a>
+          <a href="#goals">Goals</a>
+          <a href="#plans">Active Plan</a>
+          <a href="#bdd">BDD Contracts</a>
+          <a href="#tickets">Tickets</a>
+          <a href="#roles">Role Handoffs</a>
+          <a href="#evidence">Evidence Gates</a>
+          <a href="#release">Review And Release</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Delivery operating model</p>
+            <h1>Turn intent into small, verifiable, shipped work.</h1>
+            <p class="lede">
+              MARS does not start with random tickets. It turns user intent into
+              goals, one active execution plan, BDD feature contracts, a current
+              failing scenario, ticketed walking-skeleton slices, evidence,
+              review, release notes, and quality signals.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="spine">
+          <h2>Delivery Spine</h2>
+          <p>
+            The core order is strict: active goal, active plan, feature
+            contract, ticket, delivery evidence. If a repo has tickets or code
+            work without that chain, repair the planning state before calling
+            the work complete.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Stage</th><th>Source of truth</th><th>Primary owner</th><th>Done signal</th></tr></thead>
+              <tbody>
+                <tr><td>Outcome</td><td><code>docs/goals/</code></td><td>CEO</td><td>Active goal has hypothesis, success evidence, falsification evidence, and review trigger.</td></tr>
+                <tr><td>Plan</td><td><code>docs/exec-plans/active/current-operating-plan.md</code></td><td>COO</td><td>Exactly one active plan names the goal, BDD feature, scenario schedule, current failing scenario, and walking skeleton slice.</td></tr>
+                <tr><td>Behavior</td><td><code>docs/features/F-NNN-*.md</code></td><td>COO with CTO input</td><td>Business logic and scenarios describe the full feature step by step.</td></tr>
+                <tr><td>Work item</td><td><code>docs/tickets/</code></td><td>CTO for shaping, Engineer for delivery</td><td>One bounded ticket implements the current failing scenario or scenario group.</td></tr>
+                <tr><td>Implementation</td><td>Target source, tests, docs, commits</td><td>Engineer</td><td>Code, tests, docs, ticket evidence, and lifecycle move are committed.</td></tr>
+                <tr><td>Review</td><td>Ticket, trace, tests, BDD, quality evidence</td><td>QA, Security, Dogfood</td><td>Review approves, requests changes, or records a blocker with concrete next action.</td></tr>
+                <tr><td>Release</td><td><code>VERSION</code>, <code>CHANGELOG.md</code>, release artifacts</td><td>Release Manager or maintainer</td><td>Shipped scenarios and enabler work are classified honestly.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Short form:</strong>
+            exec plan first, feature contract second, ticket third, delivery fourth.
+          </div>
+        </section>
+
+        <section class="doc-section" id="goals">
+          <h2>Goals</h2>
+          <p>
+            Goals are outcome decisions, not tickets. They carry priority,
+            confidence, source, hypothesis, competing goals, support links,
+            review triggers, and success or falsification evidence.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Status</th><th>Meaning</th><th>User action</th></tr></thead>
+              <tbody>
+                <tr><td><code>observation</code></td><td>Weak or noisy evidence not ready to drive work.</td><td>Keep it in observations until confidence improves.</td></tr>
+                <tr><td><code>active</code></td><td>Allowed to influence the active execution plan.</td><td>Ensure COO plan alignment before tickets are created.</td></tr>
+                <tr><td><code>paused</code></td><td>Valid but deliberately not active.</td><td>Do not schedule work from it until reactivated.</td></tr>
+                <tr><td><code>validated</code></td><td>Success evidence closed the goal.</td><td>Record evidence and move it out of active decision flow.</td></tr>
+                <tr><td><code>superseded</code>, <code>invalidated</code>, <code>merged</code>, <code>split</code></td><td>Closed, replaced, absorbed, or divided.</td><td>Preserve lineage and point to the current owner goal.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>docs/goals/active.md
+docs/goals/observations.md
+docs/goals/superseded.md</code></pre>
+        </section>
+
+        <section class="doc-section" id="plans">
+          <h2>Active Plan</h2>
+          <p>
+            There must be exactly one active execution plan. It decides which
+            scenario is next and why that scenario advances the active goal.
+            Backlog plans wait their turn; superseded plans are history.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Required plan field</th><th>User purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>Status</code>, <code>Priority</code>, <code>Depends On</code>, <code>Blocks</code></td><td>Make ordering and blockers explicit.</td></tr>
+                <tr><td><code>Related Tickets</code></td><td>Keep plan state connected to work items.</td></tr>
+                <tr><td><code>Goals</code></td><td>Show which active goal this plan advances.</td></tr>
+                <tr><td><code>BDD Feature</code></td><td>Name the behavior contract that defines done.</td></tr>
+                <tr><td><code>Hypothesis</code></td><td>State why the plan should produce value or learning.</td></tr>
+                <tr><td><code>Success Evidence</code> and <code>Falsification Evidence</code></td><td>Make completion and failure tests concrete.</td></tr>
+                <tr><td><code>Scenario Schedule</code></td><td>Order the failing scenarios or scenario groups.</td></tr>
+                <tr><td><code>Current Failing Scenario</code></td><td>Name the next scenario that tickets may implement.</td></tr>
+                <tr><td><code>Walking Skeleton Slice</code></td><td>Describe the thinnest real end-to-end path for the current scenario.</td></tr>
+                <tr><td><code>Learning Or MVP Outcome</code></td><td>Explain what the slice should prove, ship, or teach.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars doctor --repo /path/to/repo
+go test ./internal/docsconsistency/...</code></pre>
+          <p>
+            Plan hygiene checks catch drift such as multiple active plans,
+            stale status claims, missing feature pointers, or active tickets
+            that no longer match the plan.
+          </p>
+        </section>
+
+        <section class="doc-section" id="bdd">
+          <h2>BDD Feature Contracts</h2>
+          <p>
+            BDD contracts define feature completeness. They are not optional
+            notes. Business logic belongs here before or alongside
+            implementation.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Business logic</h3>
+              <p>Product rules, workflow branches, validations, permissions, state transitions, scoring, trust, routing, release classification, and user-visible outcomes.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Step-by-step behavior</h3>
+              <p>The durable description of how the feature behaves from a user's point of view.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Scenario schedule</h3>
+              <p>The ordered list of failing scenarios or scenario groups the active plan schedules.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Evidence</h3>
+              <p>Integration, E2E, dogfood, command, or docs-consistency evidence mapped to scenario IDs.</p>
+            </article>
+          </div>
+          <h3>Contract Status</h3>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>draft</code></td><td>Planned behavior exists, but evidence is not expected yet.</td></tr>
+                <tr><td><code>active</code></td><td>Current or near-current work is executing against the schedule.</td></tr>
+                <tr><td><code>partially-passing</code></td><td>Some scenarios have evidence and some remain unproven or pending.</td></tr>
+                <tr><td><code>passing</code></td><td>All in-scope scenarios have evidence or are explicitly descoped.</td></tr>
+                <tr><td><code>superseded</code></td><td>Kept for lineage; do not schedule new tickets from it.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>docs/features/F-001-delivery-operating-model.md
+docs/features/README.md</code></pre>
+        </section>
+
+        <section class="doc-section" id="tickets">
+          <h2>Tickets</h2>
+          <p>
+            Tickets scope one bounded slice of work. Feature tickets implement
+            the current failing BDD scenario or scenario group. Enabler,
+            research, docs, and intervention-debt tickets must not claim shipped
+            feature behavior unless scenario evidence exists.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Lifecycle directory</th><th>Meaning</th><th>Operator rule</th></tr></thead>
+              <tbody>
+                <tr><td><code>docs/tickets/backlog/</code></td><td>Waiting work.</td><td>Do not pick ordinary backlog while eligible in-progress work exists.</td></tr>
+                <tr><td><code>docs/tickets/in-progress/</code></td><td>Active work.</td><td>Drain lowest-numbered eligible ticket first and update blocker metadata when stuck.</td></tr>
+                <tr><td><code>docs/tickets/in-review/</code></td><td>Awaiting review, approval, or requested changes.</td><td>Review against BDD, ticket evidence, tests, docs, and trace.</td></tr>
+                <tr><td><code>docs/tickets/done/</code></td><td>Completed and committed work.</td><td>Feature tickets need BDD scenario evidence before moving here.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Feature Evidence Gate</h3>
+          <p>
+            Before a feature ticket moves to <code>done/</code>, it needs
+            non-empty <code>bdd_scenarios</code>,
+            <code>end_to_end_evidence: required</code>, non-empty
+            <code>evidence_links</code>, and a real
+            <code>verified_by</code> value.
+          </p>
+          <pre><code>---
+work_type: feature
+bdd_scenarios: ["F-001-S002"]
+end_to_end_evidence: required
+evidence_links:
+  - go test ./internal/serve -run TestValidateEngineerTicketGate
+verified_by: command
+blocker: none
+next_action: none
+---</code></pre>
+          <div class="callout">
+            <strong>Ticket creation rule:</strong>
+            agents should use <code>ticket_create</code> for new tickets instead
+            of hand-writing ticket files. Ticket markdown belongs only in
+            <code>backlog/</code>, <code>in-progress/</code>,
+            <code>in-review/</code>, or <code>done/</code>.
+          </div>
+        </section>
+
+        <section class="doc-section" id="roles">
+          <h2>Role Handoffs</h2>
+          <p>
+            The delivery model depends on role boundaries. Dispatch mode keeps
+            those boundaries explicit through dispositions rather than prose.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Role</th><th>Owns</th><th>Hands off when</th></tr></thead>
+              <tbody>
+                <tr><td>CEO</td><td>Goals, scope, tradeoffs, final strategy decisions.</td><td>A goal decision needs an execution plan.</td></tr>
+                <tr><td>COO</td><td>Active plan, BDD contracts, scenario schedule, current failing scenario.</td><td>Technical decomposition is needed.</td></tr>
+                <tr><td>CTO</td><td>Architecture fit and implementation tickets for the current scenario.</td><td>A bounded ticket is ready for Engineer.</td></tr>
+                <tr><td>Engineer</td><td>One ticket, implementation, tests, docs, evidence, commit, ticket lifecycle move.</td><td>QA review or blocker handling is needed.</td></tr>
+                <tr><td>QA</td><td>Evidence review against ticket and BDD contract.</td><td>Approval, changes requested, or blocker is recorded.</td></tr>
+                <tr><td>Security</td><td>Security posture and safe remediation.</td><td>Security approval or remediation work is needed.</td></tr>
+                <tr><td>Dogfood</td><td>Real user, runtime, or agent path validation.</td><td>Evidence is recorded or target/foundation ownership is classified.</td></tr>
+                <tr><td>Release Manager</td><td>Version, changelog, tag, assets, and release evidence.</td><td>Release is verified or blocked with next action.</td></tr>
+                <tr><td>Orchestrator</td><td>Routing the next valid role and stopping unclear loops.</td><td>A deterministic next owner is chosen or work stops with a reason.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Disposition Statuses</h3>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>completed</code></td><td>Work reached the required evidence and lifecycle state.</td></tr>
+                <tr><td><code>blocked</code></td><td>Ticket or run has a concrete blocker, blocked-by link, and next action.</td></tr>
+                <tr><td><code>in_review</code></td><td>Work moved to review with reviewer or approval metadata.</td></tr>
+                <tr><td><code>changes_requested</code></td><td>Review sends bounded correction back to the owning role.</td></tr>
+                <tr><td><code>no_work</code></td><td>No repo change was needed and the evidence says why.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="evidence">
+          <h2>Evidence Gates</h2>
+          <p>
+            Evidence should be executable or durable. A chat summary is not a
+            substitute for repo-owned proof.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Evidence type</th><th>Good example</th><th>Use when</th></tr></thead>
+              <tbody>
+                <tr><td>Command</td><td><code>mars doctor --repo /path/to/repo --json</code></td><td>Health, drift, setup, or target readiness matters.</td></tr>
+                <tr><td>Test</td><td><code>go test ./internal/serve -run TestValidateEngineerTicketGate</code></td><td>Deterministic Go behavior matters.</td></tr>
+                <tr><td>Dogfood or validation report</td><td><code>docs/validation/reports/YYYY-MM-DD-name.md</code></td><td>A runtime, lifecycle, or user path claim is broad.</td></tr>
+                <tr><td>Trace or log</td><td>Trace ID, job ID, command log path.</td><td>Agent behavior or failure cause matters.</td></tr>
+                <tr><td>Quality score</td><td><code>mars scores export --repo /path/to/repo</code></td><td>A quality or readiness claim cites role outcomes.</td></tr>
+                <tr><td>Docs consistency</td><td><code>mars docsync audit --repo .</code></td><td>Code, CLI, or docs behavior changed.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Unit tests can support deterministic helpers, but user-visible
+            features need scenario-level evidence: integration, E2E, dogfood,
+            command, or docs-consistency proof mapped to the BDD scenario ID.
+          </p>
+        </section>
+
+        <section class="doc-section" id="release">
+          <h2>Review And Release</h2>
+          <p>
+            Review checks the delivered slice against the ticket and BDD
+            contract. Release notes then classify what shipped. Enabler work
+            can be valuable, but it must not be described as a shipped feature
+            scenario unless the BDD evidence exists.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Review the slice</h3>
+              <pre><code>mars run qa --repo /path/to/repo --dry-run
+mars docsync audit --repo /path/to/repo
+mars scores export --repo /path/to/repo --window-days 30</code></pre>
+              <p>Use dry run for review prompt inspection, then run the actual review when the evidence trail is ready.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Generate release notes</h3>
+              <pre><code>mars release notes --repo /path/to/repo --bump auto --dry-run
+mars release notes --repo /path/to/repo --bump auto
+mars release backfill-notes --repo /path/to/repo --check</code></pre>
+              <p>Patch notes should explain impact, why, and what changed before commit buckets.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Keep source releases complete</h3>
+              <pre><code>mars release publish-assets --repo . --version vX.Y.Z --upload auto
+mars release verify-assets --dist dist/releases --version vX.Y.Z
+mars release audit --repo .</code></pre>
+              <p>Source releases require versioned assets and verification before they are considered complete.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Start a new product slice</h3>
+              <pre><code>read docs/goals/active.md
+edit docs/exec-plans/active/current-operating-plan.md
+edit docs/features/F-NNN-feature-name.md
+mars run cto-weekly --repo /path/to/repo --dry-run</code></pre>
+              <p>Make the plan and feature contract explicit before creating implementation tickets.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Claim and finish a feature ticket</h3>
+              <pre><code>git mv docs/tickets/backlog/T-001-example.md docs/tickets/in-progress/
+run the implementation and scenario evidence
+edit the ticket evidence fields
+git mv docs/tickets/in-progress/T-001-example.md docs/tickets/done/
+git commit -m "feat(scope): implement scenario T-001"</code></pre>
+              <p>The actual evidence command must be real for the target repo; placeholders do not satisfy completion.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Record a blocker</h3>
+              <pre><code>blocker: "Cloud model endpoint returned 401 with configured api_key_env"
+blocked_by: ["T-014"]
+trace_id: tr-...
+next_action: "Repair model credential env and rerun engineer on T-001"</code></pre>
+              <p>Blocked state should be specific enough for Janitor, Doctor, or the next role to resume intelligently.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Check delivery hygiene</h3>
+              <pre><code>mars doctor --repo /path/to/repo --json
+mars docsync audit --repo /path/to/repo
+git status --short --branch</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td>Feature tickets exist without an active plan pointer</td><td>Planning order drifted.</td><td>Update <code>docs/exec-plans/active/current-operating-plan.md</code> before adding more tickets.</td></tr>
+                <tr><td>Ticket claims shipped behavior but has no BDD scenario</td><td>Feature evidence gate was skipped.</td><td>Add or update the feature contract and ticket <code>bdd_scenarios</code>, then rerun evidence.</td></tr>
+                <tr><td>Engineer keeps picking backlog while in-progress exists</td><td>Ticket drain metadata or cooldown state is misleading.</td><td>Repair blocker, <code>blocked_by</code>, trace ID, and <code>next_action</code> fields.</td></tr>
+                <tr><td>Review requests broad extra work</td><td>Review scope is not tied to current ticket and scenario.</td><td>Route only bounded corrections back to Engineer; create separate tickets for unrelated findings.</td></tr>
+                <tr><td>Release notes overclaim feature value</td><td>Enabler work was not separated from scenario evidence.</td><td>Rewrite release narrative to distinguish shipped scenarios, enablers, and remaining blockers.</td></tr>
+                <tr><td>Docs disagree with code or ticket state</td><td>No-stale-docs workflow missed an owning artifact.</td><td>Read changed-file <code>MarsDocSync</code> metadata, update docs, and run <code>mars docsync audit</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>Delivery truth lives in the chain: goal, plan, BDD contract, ticket, evidence, review, release, and quality signal.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>
