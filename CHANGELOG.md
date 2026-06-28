@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.66.1] - 2026-06-28
+<!-- mars-release: version=0.66.1 commit=bd2a115b9b9d -->
+
+### Impact
+- **rename:** Operators and future agents get clearer guidance because close MARS rename tracker.
+
+### Why
+- **rename:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **rename:** Changed close MARS rename tracker (bd2a115).
+
+### Documentation
+- **rename:** Close MARS rename tracker (bd2a115)
+
 ## [0.66.0] - 2026-06-28
 <!-- mars-release: version=0.66.0 commit=419a5a3d2d93 -->
 
