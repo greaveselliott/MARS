@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.9] - 2026-06-28
+<!-- mars-release: version=0.68.9 commit=a37db775019c -->
+
+### Impact
+- **site:** Users now have dedicated deep guides for operating MARS, configuring inference and model routing, and exposing governed tools through CLI or MCP clients.
+
+### Why
+- **site:** The documentation site is moving toward exhaustive user-facing coverage, and the previous slice still made operators piece together runtime, model, and tool behavior from design docs and source references.
+
+### What Changed
+- **site:** Added static Operations, Models and Inference, and Tools/MCP guide pages; wired them into the homepage, shared navigation, README documentation map, MarsDocSync metadata, and product-surface contract (a37db77).
+
+### Documentation
+- **site:** Add operations models and tools guides (a37db77)
+
 ## [0.68.8] - 2026-06-28
 <!-- mars-release: version=0.68.8 commit=79935c1dcf46 -->
 
