@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.13] - 2026-06-28
+<!-- mars-release: version=0.68.13 commit=1f11798ff1db -->
+
+### Impact
+- **site:** Users and agents now have a dedicated guide for turning intent into verifiable shipped work through goals, active plans, BDD feature contracts, tickets, evidence, review, and release notes.
+
+### Why
+- **site:** The documentation site already covered commands, workflows, roles, DocSync, operations, models, tools, safety, releases, integrations, observability, and troubleshooting, but users still had to piece together the delivery operating model from durable source docs.
+
+### What Changed
+- **site:** Added a static Planning and Delivery guide; linked it from the homepage, top navigation, deep-guide grid, reference map, README documentation map, shared site metadata, and product-surface contract (1f11798).
+
+### Documentation
+- **site:** Add planning and delivery guide (1f11798)
+
 ## [0.68.12] - 2026-06-28
 <!-- mars-release: version=0.68.12 commit=a3fc0c1f48fb -->
 
