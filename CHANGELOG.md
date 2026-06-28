@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.1] - 2026-06-28
+<!-- mars-release: version=0.68.1 commit=c34bb5b2ada5 -->
+
+### Impact
+- **validation:** Operators and future agents now see that the confidence-10 claim remains blocked until a live cloud credential proof runs.
+
+### Why
+- **validation:** This matters because supporting evidence must not be mistaken for primary completion evidence.
+
+### What Changed
+- **validation:** Updated the hardware-gated onboarding proof report with the missing provider credential blocker, custom endpoint supporting proof, and exact continuation commands.
+
+### Documentation
+- **validation:** Record cloud proof blocker (c34bb5b)
+
 ## [0.68.0] - 2026-06-28
 <!-- mars-release: version=0.68.0 commit=cc091d6b874c -->
 
