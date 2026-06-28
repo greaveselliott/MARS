@@ -1,7 +1,7 @@
 # Hardware-Gated Model Onboarding Proof
 
 **Date:** 2026-06-28
-**Source Ref:** `fd3d9cf` with installed `/Users/elliottgreaves/go/bin/mars` reporting `0.68.1`
+**Source Ref:** `adb5ab7` (`v0.68.1`) with installed `/Users/elliottgreaves/go/bin/mars` reporting `0.68.1`; proof report released in `v0.68.2`
 **Validation Type:** Focused unit/golden gates, clean target init replays, installed-binary local setup/download, installed-binary runtime preflight, installed-binary OpenAI cloud credential proof
 **Model:** Local route passed after downloading the eligible `local-balanced-q4` bundle. Cloud route passed with an OpenAI-routed clean target using `OPENAI_API_KEY` by environment variable name only.
 
