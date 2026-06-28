@@ -35,8 +35,12 @@ extension, troubleshooting, and links into durable source docs. First-run
 onboarding has a dedicated static guide at `docs/quickstart.html`, covering
 requirements, source install, local inference setup, target initialization,
 safe inspection, dashboard checks, update paths, file ownership, and
-troubleshooting. The site also includes dedicated pages for the detailed CLI reference
-(`docs/cli-reference.html`), task-oriented user workflows
+troubleshooting. Install and setup now has a dedicated reference at
+`docs/install-setup-reference.html`, covering source install, shell PATH setup,
+`mars setup`, private-release auth, inference mode, local bundles, machine
+state, automation, `doctor`, and first-run recovery. The site also includes
+dedicated pages for the detailed CLI reference (`docs/cli-reference.html`),
+task-oriented user workflows
 (`docs/workflows.html`), command-by-command target repository lifecycle
 (`docs/target-lifecycle-reference.html`), target harness
 structure/customization (`docs/harness-guide.html`), and the exact

@@ -275,6 +275,10 @@ safety, or orchestration changes do. See
 - [docs/quickstart.html](docs/quickstart.html): first-run guide for source
   install, local setup, target initialization, safe inspection, dashboard
   checks, update paths, and troubleshooting.
+- [docs/install-setup-reference.html](docs/install-setup-reference.html):
+  source install, shell PATH setup, `mars setup`, GitHub private-release auth,
+  inference modes, local bundles, machine state, automation, `doctor`, and
+  first-run troubleshooting.
 - [docs/cli-reference.html](docs/cli-reference.html): detailed CLI command
   reference.
 - [docs/workflows.html](docs/workflows.html): task-oriented user workflows.

@@ -1,0 +1,430 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/quickstart.html
+- docs/cli-reference.html
+- docs/models-guide.html
+- docs/files-state-reference.html
+- docs/configuration-reference.html
+- docs/troubleshooting-guide.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/local-inference.md
+- docs/design-docs/release-versioning.md
+- docs/features/F-002-zero-config-shell-path.md
+- docs/features/F-003-local-inference-lifecycle.md
+- docs/features/F-009-release-update-lifecycle.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Install And Setup Reference</title>
+    <meta
+      name="description"
+      content="Detailed user reference for installing MARS, running setup, configuring shell PATH, preparing GitHub private release auth, choosing inference mode and local bundles, understanding ~/.mars state, and diagnosing first-run issues."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to install and setup reference</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Install and setup</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="quickstart.html">Quickstart</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="target-lifecycle-reference.html">Lifecycle</a>
+        <a href="models-guide.html">Models</a>
+        <a href="files-state-reference.html">Files</a>
+        <a href="troubleshooting-guide.html">Troubleshoot</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Install and setup sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search setup reference</label>
+          <input id="docSearch" type="search" placeholder="setup, auth, path">
+          <p class="search-hint">Filters install paths, flags, files, recipes, and troubleshooting rows.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#requirements">Requirements</a>
+          <a href="#source-install">Source Install</a>
+          <a href="#path">Shell PATH</a>
+          <a href="#setup">Setup Command</a>
+          <a href="#github-auth">GitHub Auth</a>
+          <a href="#inference">Inference Modes</a>
+          <a href="#local-bundles">Local Bundles</a>
+          <a href="#state">Local State</a>
+          <a href="#doctor">Doctor</a>
+          <a href="#automation">Automation</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Machine setup contract</p>
+            <h1>Install the command, prepare local runtime state, and verify the machine.</h1>
+            <p class="lede">
+              MARS setup is intentionally local and repeatable. The source
+              install writes the <code>mars</code> command to the Go bin
+              directory, PATH setup makes new shells find it, and
+              <code>mars setup</code> prepares <code>~/.mars/</code>, hardware
+              detection, private-release auth checks, llama.cpp artifacts,
+              model files, and optional integration readiness.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="requirements">
+          <h2>Requirements</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Requirement</th><th>Why it matters</th><th>Check</th></tr></thead>
+              <tbody>
+                <tr><td>macOS or Linux</td><td>MARS configures Unix-like shells and publishes darwin/linux binaries.</td><td><code>uname -s</code></td></tr>
+                <tr><td>Git</td><td>Source install, target harness review, release notes, and generated docs all rely on git.</td><td><code>git --version</code></td></tr>
+                <tr><td>Go 1.22 or newer</td><td>Source checkout installs build the CLI locally.</td><td><code>go version</code></td></tr>
+                <tr><td>Disk space</td><td>Local GGUF model bundles are large and live under <code>~/.mars/models/</code>.</td><td><code>df -h ~</code></td></tr>
+                <tr><td>Network for setup</td><td>First setup may contact GitHub and download llama.cpp/model artifacts.</td><td><code>mars setup --dry-run</code></td></tr>
+                <tr><td>GPU recommended</td><td>Autonomous coding work is designed for local model throughput.</td><td><code>mars doctor</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Two separate repos:</strong>
+            the MARS source repo installs the software factory. Your
+            application repo is the target that receives a deployed harness.
+          </div>
+        </section>
+
+        <section class="doc-section" id="source-install">
+          <h2>Source Install</h2>
+          <p>
+            The day-to-day source development path is <code>make install</code>.
+            It installs the binary into the Go bin directory and runs the
+            installed command's shell PATH setup.
+          </p>
+          <pre data-doc-filter><code>git clone https://github.com/greaveselliott/MARS.git
+cd MARS
+make install
+mars version</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Command</th><th>Use</th><th>User note</th></tr></thead>
+              <tbody>
+                <tr><td><code>make install</code></td><td>Normal source checkout install.</td><td>Recommended for local development and docs validation.</td></tr>
+                <tr><td><code>make update-tool</code></td><td>Fast-forward a clean source checkout and reinstall.</td><td>Fails deliberately on dirty, missing-origin, or diverged checkouts.</td></tr>
+                <tr><td><code>go build -o build/mars ./cmd/mars</code></td><td>One-off local binary.</td><td>Use an explicit output path to avoid stale source-root binaries.</td></tr>
+                <tr><td><code>mars version</code></td><td>Confirm installed binary, OS, architecture, commit, and build date.</td><td>Run this after install and after updates.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Avoid stale binary traps:</strong>
+            do not run <code>go build ./cmd/mars; ./mars ...</code>. If the
+            build fails, your shell can still execute an older
+            source-root binary.
+          </div>
+        </section>
+
+        <section class="doc-section" id="path">
+          <h2>Shell PATH</h2>
+          <p>
+            <code>mars path setup</code> detects Fish, Zsh, Bash, POSIX sh,
+            Ksh, Csh, or Tcsh and writes an idempotent profile snippet so new
+            terminals can resolve <code>mars</code>.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Repair the current install</h3>
+              <pre><code>mars path setup
+hash -r
+mars version</code></pre>
+              <p><code>hash -r</code> clears a cached command path in many shells.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Preview profile changes</h3>
+              <pre><code>mars path setup --dry-run
+mars path setup --dry-run --json</code></pre>
+              <p>Use this before changing shell profile files on shared or managed machines.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Configure a specific shell or install directory</h3>
+              <pre><code>mars path setup --shell zsh --install-dir "$HOME/go/bin"</code></pre>
+              <p>Useful when <code>$SHELL</code> does not match the shell users actually open.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="setup">
+          <h2>Setup Command</h2>
+          <p>
+            <code>mars setup</code> is idempotent. Each step checks whether it
+            is already satisfied before running. A dry run increments skipped
+            steps and prints the setup plan without changing local state.
+          </p>
+          <pre data-doc-filter><code>mars setup --skip-github
+mars setup --inference local --local-bundle auto --yes --json
+mars setup --dry-run</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Step</th><th>When it runs</th><th>Writes</th></tr></thead>
+              <tbody>
+                <tr><td>Create directories</td><td>Always considered unless dry run.</td><td><code>~/.mars/</code> subdirectories.</td></tr>
+                <tr><td>Write default config</td><td>When config is missing or needs defaults.</td><td><code>~/.mars/config.yaml</code>.</td></tr>
+                <tr><td>Detect hardware</td><td>During setup.</td><td>Hardware profile metadata in local config/state.</td></tr>
+                <tr><td>Configure shell path</td><td>When profile is not already configured.</td><td>User shell profile snippet.</td></tr>
+                <tr><td>Check private release auth</td><td>Unless <code>--skip-github</code> or <code>--test-mode</code> is used.</td><td>No token output; may require auth setup first.</td></tr>
+                <tr><td>Install llama-server</td><td>For local inference unless downloads are skipped/tested away.</td><td><code>~/.mars/bin/</code>.</td></tr>
+                <tr><td>Download models</td><td>For local inference unless <code>--skip-download</code>, <code>--test-mode</code>, or non-local inference is used.</td><td><code>~/.mars/models/</code>.</td></tr>
+                <tr><td>Optional GitHub integration placeholder</td><td>Only with <code>--github</code> and GitHub checks enabled.</td><td>Local setup metadata.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Flag</th><th>User behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>--skip-github</code></td><td>Skip private-release auth and optional GitHub integration checks. Common for source checkout installs.</td></tr>
+                <tr><td><code>--github</code></td><td>Opt into optional GitHub status/check integration setup.</td></tr>
+                <tr><td><code>--skip-download</code></td><td>Skip llama-server and model download steps. Use only when compatible artifacts already exist or inference is deferred/cloud.</td></tr>
+                <tr><td><code>--download</code></td><td>Accepted as explicit setup intent; local inference already downloads unless skipped.</td></tr>
+                <tr><td><code>--test-mode</code></td><td>Skip downloads and external services for test automation.</td></tr>
+                <tr><td><code>--dry-run</code></td><td>Print planned setup steps without executing them.</td></tr>
+                <tr><td><code>--install-dir</code></td><td>Override the directory added to shell PATH.</td></tr>
+                <tr><td><code>--yes --json</code></td><td>Use deterministic output and fail with remediation instead of prompting where applicable.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="github-auth">
+          <h2>GitHub Private Release Auth</h2>
+          <p>
+            Private release auth is used by update and release asset flows. The
+            resolver checks <code>GH_TOKEN</code>, <code>GITHUB_TOKEN</code>,
+            GitHub CLI auth, then the optional owner-only local config token.
+            Token values must never be pasted into chat, docs, commits, logs,
+            traces, or screenshots.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Recommended interactive path</h3>
+              <pre><code>gh auth login
+mars auth github setup
+mars auth github check</code></pre>
+              <p>Setup verifies GitHub CLI auth and stores an owner-only local fallback for future update runs.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Headless path</h3>
+              <pre><code>GH_TOKEN=... mars auth github setup --json
+mars auth github check --json</code></pre>
+              <p>Use environment variables in CI-like setup. Do not print token values.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Custom config path</h3>
+              <pre><code>mars auth github setup --config /private/tmp/mars-config.yaml
+mars auth github check --config /private/tmp/mars-config.yaml --json</code></pre>
+              <p>Useful for isolated validation or temporary machines.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="inference">
+          <h2>Inference Modes</h2>
+          <p>
+            Setup can prepare local inference, skip local model work for cloud
+            routing, or defer inference preparation entirely. Target-level
+            routing is configured later through init, model overrides, and
+            runtime flags.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Mode</th><th>Setup behavior</th><th>Use when</th></tr></thead>
+              <tbody>
+                <tr><td><code>local</code></td><td>Default. Installs local llama-server artifacts and downloads selected local bundle unless skipped.</td><td>You want local-first autonomous work.</td></tr>
+                <tr><td><code>cloud</code></td><td>Skips local model downloads during setup.</td><td>You will configure explicit cloud/provider routing.</td></tr>
+                <tr><td><code>defer</code></td><td>Skips local model downloads during setup.</td><td>You want PATH/config/auth first and will choose models later.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Open the <a href="models-guide.html">Models And Inference Guide</a>
+            for routing precedence, model overrides, providers, Ollama, and
+            evaluation commands.
+          </p>
+        </section>
+
+        <section class="doc-section" id="local-bundles">
+          <h2>Local Bundles</h2>
+          <p>
+            A local bundle maps MARS role tiers to model artifacts. The
+            recommended default is <code>auto</code>, which selects an eligible
+            bundle for the detected hardware.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Bundle</th><th>User guidance</th></tr></thead>
+              <tbody>
+                <tr><td><code>auto</code></td><td>Use the highest-ranked eligible local bundle for the machine.</td></tr>
+                <tr><td><code>local-cpu-q3</code></td><td>Use for CPU fallback, dry runs, and smaller machines.</td></tr>
+                <tr><td><code>local-balanced-q4</code></td><td>Use for practical local autonomous work on capable developer machines.</td></tr>
+                <tr><td><code>local-quality-q8</code></td><td>Use only when VRAM or unified memory can comfortably handle larger models.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre data-doc-filter><code>mars setup --inference local --local-bundle auto
+mars models eligible --json
+mars models list --provider registry --json</code></pre>
+        </section>
+
+        <section class="doc-section" id="state">
+          <h2>Local State</h2>
+          <p>
+            Setup state is machine-local. Keep it out of target repos unless a
+            specific report intentionally copies sanitized evidence.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Commit?</th></tr></thead>
+              <tbody>
+                <tr><td><code>~/.mars/config.yaml</code></td><td>Machine config, local performance tuning, optional private-release token fallback.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/bin/</code></td><td>Managed helper binaries such as llama-server.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/models/</code></td><td>Downloaded GGUF model artifacts.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/db/{repo}/mars.db</code></td><td>Per-target queue, telemetry, scores, and runtime state.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/db/mars.db</code></td><td>Shared multi-repo serve database.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/traces/</code></td><td>Local command logs and traces.</td><td>No, unless sanitized into evidence deliberately.</td></tr>
+                <tr><td><code>.harness/.env.local</code></td><td>Ignored target-local provider credentials.</td><td>Never.</td></tr>
+                <tr><td><code>.harness/.env.example</code></td><td>Credential environment variable names only.</td><td>Yes.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Open the <a href="files-state-reference.html">Files And State
+            Reference</a> for the full repository and runtime ownership map.
+          </p>
+        </section>
+
+        <section class="doc-section" id="doctor">
+          <h2>Doctor</h2>
+          <p>
+            <code>mars doctor</code> is the first command to run after setup and
+            whenever a target behaves strangely. It checks Go, config, models,
+            database paths, llama-server, disk, remote connectivity where
+            enabled, and target-specific health when <code>--repo</code> is
+            supplied.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Machine health</h3>
+              <pre><code>mars doctor
+mars doctor --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Target health</h3>
+              <pre><code>mars doctor --repo /path/to/repo
+mars doctor --repo /path/to/repo --db ~/.mars/db/my-repo/mars.db --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Offline-friendly check</h3>
+              <pre><code>mars doctor --skip-remote
+mars update check --repo /path/to/repo --skip-remote</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="automation">
+          <h2>Automation Mode</h2>
+          <p>
+            For scripts and validation jobs, prefer JSON output, explicit
+            repo/config paths, and non-interactive failure modes.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Need</th><th>Pattern</th></tr></thead>
+              <tbody>
+                <tr><td>Preview setup without writes.</td><td><code>mars setup --dry-run --json</code></td></tr>
+                <tr><td>Configure local setup deterministically.</td><td><code>mars setup --inference local --local-bundle auto --yes --json</code></td></tr>
+                <tr><td>Skip external services in tests.</td><td><code>mars setup --test-mode --json</code></td></tr>
+                <tr><td>Check private release auth.</td><td><code>mars auth github check --json</code></td></tr>
+                <tr><td>Repair PATH predictably.</td><td><code>mars path setup --shell zsh --install-dir "$HOME/go/bin" --json</code></td></tr>
+                <tr><td>Diagnose a target.</td><td><code>mars doctor --repo /path/to/repo --json</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Source checkout, local models, no private release auth</h3>
+              <pre><code>make install
+mars setup --skip-github
+mars doctor</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Private release update-ready machine</h3>
+              <pre><code>gh auth login
+mars auth github setup
+mars setup
+mars auth github check
+mars update check --repo /path/to/repo</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Cloud or deferred inference first pass</h3>
+              <pre><code>mars setup --inference defer --skip-download --yes --json
+mars doctor --skip-remote</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Fix command not found after install</h3>
+              <pre><code>mars path setup --dry-run
+mars path setup
+exec "$SHELL" -l
+mars version</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Next action</th></tr></thead>
+              <tbody>
+                <tr><td><code>mars: command not found</code></td><td>The install directory is not in the current shell PATH.</td><td>Run <code>mars path setup</code> from a shell that can find the binary, open a fresh terminal, or use the full binary path once.</td></tr>
+                <tr><td>Old version still runs.</td><td>The shell cached an earlier path or another binary appears earlier in PATH.</td><td>Run <code>hash -r</code>, <code>which mars</code>, and <code>mars version</code>.</td></tr>
+                <tr><td>Setup fails on GitHub auth.</td><td>Private release auth is not configured and <code>--skip-github</code> was not supplied.</td><td>Run <code>gh auth login</code> then <code>mars auth github setup</code>, or use <code>mars setup --skip-github</code> for source-only use.</td></tr>
+                <tr><td>Setup tries to download models on a machine that should not.</td><td>Local inference is the default and downloads run unless skipped.</td><td>Use <code>mars setup --inference defer --skip-download</code> or <code>--inference cloud</code>.</td></tr>
+                <tr><td>Model download is interrupted.</td><td>Network, disk, or artifact availability issue.</td><td>Free disk, rerun <code>mars setup</code>, then check <code>mars doctor</code>.</td></tr>
+                <tr><td><code>doctor</code> reports database path problems.</td><td>The selected SQLite path is missing, unwritable, or inside a target repo.</td><td>Use the default <code>~/.mars/db/{repo}/mars.db</code> or pass a writable <code>--db</code> outside the worktree.</td></tr>
+                <tr><td>Token appears in output or docs.</td><td>Credential handling was done outside the intended path.</td><td>Rotate the token, remove it from durable artifacts, and use env vars, GitHub CLI auth, or owner-only local config instead.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>MARS keeps autonomy local, auditable, and repo-owned. Documentation changes should stay aligned with implementation truth.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>
