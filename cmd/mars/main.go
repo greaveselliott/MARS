@@ -2907,6 +2907,7 @@ func initCmd() *cobra.Command {
 		localBundle   string
 		cloudProvider string
 		cloudModel    string
+		cloudEndpoint string
 		apiKeyEnv     string
 		yes           bool
 		jsonOut       bool
@@ -2942,7 +2943,7 @@ func initCmd() *cobra.Command {
 			}
 			routePath := ""
 			if strings.TrimSpace(modelRouting) != "" {
-				path, err := writeInitModelRouting(absPath, modelRouting, localBundle, cloudProvider, cloudModel, apiKeyEnv)
+				path, err := writeInitModelRouting(absPath, modelRouting, localBundle, cloudProvider, cloudModel, cloudEndpoint, apiKeyEnv)
 				if err != nil {
 					if jsonOut {
 						return writeJSONError(err)
@@ -2985,6 +2986,7 @@ func initCmd() *cobra.Command {
 	cmd.Flags().StringVar(&localBundle, "local-bundle", models.LocalBundleAuto, "Local bundle: auto, local-cpu-q3, local-balanced-q4, or local-quality-q8")
 	cmd.Flags().StringVar(&cloudProvider, "cloud-provider", "", "Cloud provider: openai, anthropic, gemini, mistral, xai, deepseek, groq, cohere, or openai-compatible")
 	cmd.Flags().StringVar(&cloudModel, "cloud-model", "", "Cloud provider model name")
+	cmd.Flags().StringVar(&cloudEndpoint, "cloud-endpoint", "", "Cloud provider endpoint; required for openai-compatible custom routes")
 	cmd.Flags().StringVar(&apiKeyEnv, "api-key-env", "", "Environment variable containing the provider API key")
 	cmd.Flags().BoolVar(&yes, "yes", false, "Do not prompt; fail with remediation when required input is missing")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
@@ -2993,7 +2995,7 @@ func initCmd() *cobra.Command {
 	return cmd
 }
 
-func writeInitModelRouting(repoRoot, routing, localBundle, cloudProvider, cloudModel, apiKeyEnv string) (string, error) {
+func writeInitModelRouting(repoRoot, routing, localBundle, cloudProvider, cloudModel, cloudEndpoint, apiKeyEnv string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(routing)) {
 	case models.RoutingLocal:
 		if _, _, err := models.ResolveLocalBundle(hardware.Detect(), localBundle); err != nil {
@@ -3015,6 +3017,7 @@ func writeInitModelRouting(repoRoot, routing, localBundle, cloudProvider, cloudM
 			Routing:   models.RoutingCloud,
 			Provider:  cloudProvider,
 			Model:     cloudModel,
+			Endpoint:  cloudEndpoint,
 			APIKeyEnv: apiKeyEnv,
 			Reason:    "configured by mars init",
 		})

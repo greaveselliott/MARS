@@ -112,6 +112,11 @@ When `mars init`, `mars models override`, `mars run`, `mars start`, or `mars ser
 Then committed files contain provider, model, endpoint when needed, and `api_key_env` only
 And raw API key values are never accepted as CLI flags, written to committed files, printed, logged, traced, or emitted in JSON
 
+Given the selected cloud provider is `openai-compatible`
+When `mars init --model-routing cloud` runs
+Then the operator can provide the required custom base URL with `--cloud-endpoint`
+And the generated default route stores that endpoint without storing any raw credential value
+
 Given `mars models credentials write-local-env --repo <path> --api-key-env <ENV>` runs
 When the named environment variable exists in the process environment
 Then `.harness/.env.local` receives the secret value with `0600` permissions and `.harness/.env.example` receives only the variable name

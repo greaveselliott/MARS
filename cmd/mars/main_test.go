@@ -987,6 +987,35 @@ func TestInitCommandCommitsGeneratedHarnessBaseline(t *testing.T) {
 	require.Empty(t, strings.TrimSpace(runMainTestGit(t, repoDir, "status", "--short")))
 }
 
+func TestInitCommandWritesCustomCloudEndpoint(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	repoDir := t.TempDir()
+	cmd := initCmd()
+	cmd.SetArgs([]string{
+		"--repo", repoDir,
+		"--model-routing", "cloud",
+		"--cloud-provider", "openai-compatible",
+		"--cloud-model", "openai/gpt-4.1-mini",
+		"--cloud-endpoint", "https://models.example.test/inference/v1",
+		"--api-key-env", "GITHUB_TOKEN",
+		"--yes",
+		"--json",
+	})
+
+	require.NoError(t, cmd.Execute())
+	data, err := os.ReadFile(filepath.Join(repoDir, ".harness", "model-overrides.yaml"))
+	require.NoError(t, err)
+	require.Contains(t, string(data), "provider: openai-compatible")
+	require.Contains(t, string(data), "model: openai/gpt-4.1-mini")
+	require.Contains(t, string(data), "endpoint: https://models.example.test/inference/v1")
+	require.Contains(t, string(data), "api_key_env: GITHUB_TOKEN")
+	example, err := os.ReadFile(filepath.Join(repoDir, ".harness", ".env.example"))
+	require.NoError(t, err)
+	require.Contains(t, string(example), "GITHUB_TOKEN=")
+}
+
 func TestEjectCommandDryRunLeavesRepoAndDBUntouched(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not in PATH")

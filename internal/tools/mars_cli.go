@@ -411,7 +411,7 @@ Global command surface:
 
   init
     Scaffold a deployed .harness/ bundle and starter docs in a target repository.
-    Flags: --repo <path>, --force, --model-routing <local|cloud|defer>, --local-bundle <auto|local-cpu-q3|local-balanced-q4|local-quality-q8>, --cloud-provider <provider>, --cloud-model <model>, --api-key-env <ENV>, --yes, --json, --plain
+    Flags: --repo <path>, --force, --model-routing <local|cloud|defer>, --local-bundle <auto|local-cpu-q3|local-balanced-q4|local-quality-q8>, --cloud-provider <provider>, --cloud-model <model>, --cloud-endpoint <url>, --api-key-env <ENV>, --yes, --json, --plain
     Example: ["init", "--repo", ".", "--model-routing", "local", "--local-bundle", "auto", "--yes", "--json"]
 
   upgrade
