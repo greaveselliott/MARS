@@ -12,6 +12,7 @@ docs:
 - docs/design-docs/foundation-operating-model.md
 - docs/validation/README.md
 - docs/operations-guide.html
+- docs/dashboard-api-reference.html
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
 -->
@@ -199,7 +200,9 @@ mars serve --addr :9091 --concurrency 2</code></pre>
             The dashboard is local and embedded in the Go binary today. Use it
             to observe role state, quality, queue flow, throughput, telemetry,
             and evolution history. Use <code>--debug</code> when you want
-            inline trace/log streaming instead of the TTY dashboard.
+            inline trace/log streaming instead of the TTY dashboard. Use the
+            <a href="dashboard-api-reference.html">Dashboard API Reference</a>
+            when scripting dashboard controls or building a companion UI.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>

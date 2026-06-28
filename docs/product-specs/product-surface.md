@@ -38,7 +38,10 @@ includes dedicated pages for the detailed CLI reference
 (`docs/harness-guide.html`). The site now also includes deep user guides for
 runtime operations (`docs/operations-guide.html`), models and inference
 (`docs/models-guide.html`), and the universal tools/MCP bridge
-(`docs/tools-mcp-guide.html`), plus governance and release guides for safety,
+(`docs/tools-mcp-guide.html`). Dashboard API reference coverage lives in
+`docs/dashboard-api-reference.html`, documenting pages, local control
+endpoints, request bodies, response shapes, SSE events, errors, and operator
+recipes. The site also includes governance and release guides for safety,
 trust, quality, telemetry (`docs/safety-quality-guide.html`), release/update
 operations (`docs/release-update-guide.html`), and optional integration plus
 validation workflows (`docs/integrations-validation-guide.html`). The site now

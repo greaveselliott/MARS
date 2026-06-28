@@ -36,6 +36,7 @@ management, extension, and troubleshooting. Deeper site pages now cover the
 [CLI reference](docs/cli-reference.html), [user workflows](docs/workflows.html),
 [target harness guide](docs/harness-guide.html),
 [operations guide](docs/operations-guide.html),
+[dashboard API reference](docs/dashboard-api-reference.html),
 [models and inference guide](docs/models-guide.html), and
 [tools and MCP guide](docs/tools-mcp-guide.html). The next layer covers
 [roles and agents](docs/roles-guide.html),
@@ -276,6 +277,9 @@ safety, or orchestration changes do. See
   and customization guide.
 - [docs/operations-guide.html](docs/operations-guide.html): runtime operations,
   dashboard APIs, databases, logs, queue recovery, and troubleshooting.
+- [docs/dashboard-api-reference.html](docs/dashboard-api-reference.html):
+  dashboard pages, local control endpoints, request bodies, response shapes,
+  SSE events, error handling, security notes, and operator curl recipes.
 - [docs/models-guide.html](docs/models-guide.html): local inference, model
   bundles, routing, providers, credentials, overrides, and evaluation.
 - [docs/tools-mcp-guide.html](docs/tools-mcp-guide.html): universal tools,

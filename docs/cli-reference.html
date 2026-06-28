@@ -12,6 +12,7 @@ docs:
 - docs/design-docs/dashboard.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/operations-guide.html
+- docs/dashboard-api-reference.html
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
 -->
@@ -329,7 +330,9 @@ mars serve --addr :9091 --concurrency 2</code></pre></dd>
             The dashboard runs locally during <code>start</code> and
             <code>serve</code>. The current shipped dashboard is the embedded
             Go, htmx, Chart.js, and SSE surface; it is not the planned optional
-            TanStack sidecar.
+            TanStack sidecar. For request bodies, response shapes, errors, and
+            scripting recipes, use the
+            <a href="dashboard-api-reference.html">Dashboard API Reference</a>.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>

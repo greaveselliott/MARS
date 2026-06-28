@@ -13,6 +13,7 @@ docs:
 - docs/design-docs/foundation-operating-model.md
 - docs/validation/README.md
 - docs/roles/ROLES.md
+- docs/dashboard-api-reference.html
 -->
 <html lang="en">
   <head>
@@ -168,7 +169,9 @@ mars serve --addr :9091 --concurrency 2 --db ~/.mars/db/mars.db</code></pre>
             The current dashboard is embedded in the Go binary. It uses
             server-rendered HTML, embedded static assets, Chart.js, htmx-style
             interaction, and server-sent events. It is local by default and
-            requires no frontend build step.
+            requires no frontend build step. For endpoint-level request,
+            response, error, and scripting details, use the
+            <a href="dashboard-api-reference.html">Dashboard API Reference</a>.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>

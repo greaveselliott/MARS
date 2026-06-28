@@ -17,6 +17,7 @@ docs:
 - docs/release-update-guide.html
 - docs/integrations-validation-guide.html
 - docs/planning-delivery-guide.html
+- docs/dashboard-api-reference.html
 - README.md
 - docs/product-specs/product-surface.md
 */

@@ -1,0 +1,361 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/operations-guide.html
+- docs/observability-guide.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/dashboard.md
+- docs/features/F-010-dashboard-control-plane.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Dashboard API Reference</title>
+    <meta
+      name="description"
+      content="User reference for MARS dashboard pages, local control APIs, server-sent events, request bodies, response shapes, errors, and operator recipes."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to dashboard API reference</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Dashboard API</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="observability-guide.html">Observability</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="troubleshooting-guide.html">Troubleshoot</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Dashboard API sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search dashboard API</label>
+          <input id="docSearch" type="search" placeholder="status, run-role, SSE">
+          <p class="search-hint">Filters pages, endpoints, responses, and recipes.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#start">Start The Dashboard</a>
+          <a href="#addresses">Addresses</a>
+          <a href="#pages">Pages</a>
+          <a href="#events">Events Stream</a>
+          <a href="#control">Control Endpoints</a>
+          <a href="#read">Read APIs</a>
+          <a href="#responses">Responses And Errors</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#security">Security</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Local control surface</p>
+            <h1>Drive and observe MARS through the embedded dashboard API.</h1>
+            <p class="lede">
+              The shipped dashboard is part of the Go binary. It serves local
+              HTML pages, JSON control endpoints, read APIs, and a
+              server-sent-events stream for live updates. Use this reference
+              when building an operator script, companion UI, automation, or
+              incident playbook around a running <code>mars start</code> or
+              <code>mars serve</code> process.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="start">
+          <h2>Start The Dashboard</h2>
+          <p>
+            <code>mars start</code> runs a scoped single-repo lifecycle.
+            <code>mars serve</code> runs the persistent orchestrator. Both can
+            expose the embedded dashboard. Prefer explicit loopback addresses
+            when you are operating from the same machine.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Single target lifecycle</h3>
+              <pre><code>mars start --repo /path/to/repo \
+  --dashboard-addr 127.0.0.1:9090 \
+  --addr 127.0.0.1:9091</code></pre>
+              <p>Use this when one target repo is the active autonomous lifecycle.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Persistent orchestrator</h3>
+              <pre><code>mars serve \
+  --addr 127.0.0.1:9091 \
+  --concurrency 2</code></pre>
+              <p>Use this when webhooks, cron, and multiple registered repos are managed by one process.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Open and verify</h3>
+              <pre><code>open http://127.0.0.1:9090
+curl http://127.0.0.1:9091/healthz
+curl http://127.0.0.1:9090/api/status</code></pre>
+            </article>
+          </div>
+          <div class="callout">
+            <strong>Port fallback:</strong>
+            scoped <code>start</code> can fall back to an available local
+            dashboard port when the requested dashboard address is occupied.
+            Use the URL printed by the running command.
+          </div>
+        </section>
+
+        <section class="doc-section" id="addresses">
+          <h2>Addresses</h2>
+          <p>
+            MARS uses two HTTP surfaces during runtime. Keep them distinct
+            when scripting checks or debugging a port issue.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Surface</th><th>Default shape</th><th>Contains</th><th>Use it for</th></tr></thead>
+              <tbody>
+                <tr><td>Dashboard address</td><td><code>--dashboard-addr</code></td><td>Dashboard pages, <code>/static/</code>, <code>/api/events</code>, control endpoints, dashboard read APIs.</td><td>Browser UI, operator scripts, local companion apps.</td></tr>
+                <tr><td>Webhook/control address</td><td><code>--addr</code></td><td><code>/healthz</code>, GitHub webhook receiver, Jira webhook receiver.</td><td>Health checks and external event ingress.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>curl http://127.0.0.1:9091/healthz
+curl http://127.0.0.1:9090/api/status</code></pre>
+        </section>
+
+        <section class="doc-section" id="pages">
+          <h2>Pages</h2>
+          <p>
+            The HTML pages are operator views. They do not replace repo-owned
+            artifacts such as tickets, feature contracts, traces, release notes,
+            or quality score documents.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Page</th><th>User question</th></tr></thead>
+              <tbody>
+                <tr><td><code>/</code></td><td>Redirect</td><td>Redirects to <code>/pipeline</code>.</td></tr>
+                <tr><td><code>/pipeline</code></td><td>Pipeline Flow</td><td>Which lifecycle role is active and what path is next?</td></tr>
+                <tr><td><code>/orchestration</code></td><td>Orchestration</td><td>Which dispatch mode, role topology, decisions, and stop reasons are visible?</td></tr>
+                <tr><td><code>/roles</code></td><td>Role Health</td><td>Which roles have recent score, success, failure, or quality signals?</td></tr>
+                <tr><td><code>/throughput</code></td><td>Throughput</td><td>How many jobs are pending, running, completed, or failed?</td></tr>
+                <tr><td><code>/debug</code></td><td>Debug</td><td>What does the operator need to inspect during a runtime incident?</td></tr>
+                <tr><td><code>/evolution</code></td><td>Evolution History</td><td>What telemetry, repeated patterns, or self-improvement events are visible?</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="events">
+          <h2>Events Stream</h2>
+          <p>
+            <code>GET /api/events</code> is a server-sent-events stream. It
+            sends an initial keepalive comment, replays buffered recent events,
+            then streams new events as they are broadcast. Event payloads are
+            JSON strings with <code>type</code> and <code>data</code> fields.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Subscribe</h3>
+              <pre><code>curl -N http://127.0.0.1:9090/api/events</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Typical event line</h3>
+              <pre><code>data: {"type":"status_change","data":"{\"state\":\"paused\"}"}</code></pre>
+            </article>
+          </div>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Event type</th><th>When users see it</th><th>Common reaction</th></tr></thead>
+              <tbody>
+                <tr><td><code>status_change</code></td><td>Pause, resume, restart, stop, or worker state changes.</td><td>Refresh status or update companion UI state.</td></tr>
+                <tr><td><code>scan_complete</code></td><td>A dashboard-triggered scanner pass finishes.</td><td>Inspect generated tickets and findings count.</td></tr>
+                <tr><td>Job and telemetry events</td><td>Runtime components broadcast dashboard updates.</td><td>Use as notification hints, then read durable repo evidence.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="control">
+          <h2>Control Endpoints</h2>
+          <p>
+            Mutating dashboard endpoints require <code>POST</code>. They return
+            JSON with <code>{"ok":true}</code> on success, or an
+            <code>error</code> field when the request cannot be applied.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Endpoint</th><th>Method</th><th>Request</th><th>Behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>/api/pause</code></td><td><code>POST</code></td><td>Empty body.</td><td>Pauses worker claims; running jobs are allowed to finish.</td></tr>
+                <tr><td><code>/api/resume</code></td><td><code>POST</code></td><td>Empty body.</td><td>Resumes worker claims after a pause.</td></tr>
+                <tr><td><code>/api/restart</code></td><td><code>POST</code></td><td>Empty body.</td><td>Warm restart: stop workers, reload manifests and triggers, start workers again. HTTP stays up.</td></tr>
+                <tr><td><code>/api/stop</code></td><td><code>POST</code></td><td>Empty body.</td><td>Requests graceful orchestrator shutdown.</td></tr>
+                <tr><td><code>/api/scan</code></td><td><code>POST</code></td><td><code>{"repo_id":"..."}</code></td><td>Runs scanner for a registered repo and can enqueue stale-ticket hygiene.</td></tr>
+                <tr><td><code>/api/run-role</code></td><td><code>POST</code></td><td><code>{"repo_id":"...","role":"engineer"}</code></td><td>Validates the role in the repo manifest and enqueues a manual run.</td></tr>
+                <tr><td><code>/api/emergency-stop</code></td><td><code>POST</code></td><td>Empty body.</td><td>Runs configured emergency-stop callbacks and returns callback errors if any.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Status And Selection Endpoints</h3>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Endpoint</th><th>Method</th><th>Response</th><th>User purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>/api/status</code></td><td><code>GET</code></td><td><code>healthy</code>, <code>paused</code>, <code>active_jobs</code>, <code>uptime_secs</code>, <code>repos</code>.</td><td>Read live orchestrator state.</td></tr>
+                <tr><td><code>/api/repos</code></td><td><code>GET</code></td><td>Array of registered repos with <code>id</code> and <code>path</code>.</td><td>Resolve repo IDs before scan or run-role.</td></tr>
+                <tr><td><code>/api/repo-roles?repo_id=...</code></td><td><code>GET</code></td><td>Array of role names.</td><td>Populate role selectors for a repo.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="read">
+          <h2>Read APIs</h2>
+          <p>
+            When the dashboard is created by the orchestrator, <code>serve</code>
+            attaches read APIs that power the dashboard pages. Treat these as
+            local operational evidence views, not as durable storage.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Endpoint</th><th>Response shape</th><th>User purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>/api/telemetry</code></td><td><code>{"events":[...],"stats":{...}}</code></td><td>Inspect recent telemetry events and failure category counts.</td></tr>
+                <tr><td><code>/api/evolution</code></td><td><code>{"evolutions":[...],"telemetry":[...],"patterns":[...]}</code></td><td>Inspect self-improvement history and repeated telemetry patterns.</td></tr>
+                <tr><td><code>/api/roles</code></td><td><code>{"roles":[...]}</code></td><td>Inspect role scores, sample sizes, success counts, and failure counts.</td></tr>
+                <tr><td><code>/api/quality-score</code></td><td><code>text/markdown</code></td><td>Serve the first registered repo's <code>docs/QUALITY_SCORE.md</code> or the scoped repo quality score.</td></tr>
+                <tr><td><code>/api/throughput</code></td><td><code>{"hourly":[...],"recent_jobs":[...],"summary":{...}}</code></td><td>Inspect recent job throughput and status distribution.</td></tr>
+                <tr><td><code>/api/orchestration</code></td><td><code>{"repos":[...],"dispositions":[...],"decisions":[...]}</code></td><td>Inspect dispatch mode, role topology, dispositions, and decisions.</td></tr>
+                <tr><td><code>/api/orchestration/decisions</code></td><td><code>{"decisions":[...]}</code></td><td>Inspect recent decisions, optionally filtered with <code>?repo_id=...</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="responses">
+          <h2>Responses And Errors</h2>
+          <p>
+            Scripts should branch on HTTP status and then read the response
+            body. The dashboard favors actionable text over opaque codes.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Status</th><th>When it appears</th><th>What to do</th></tr></thead>
+              <tbody>
+                <tr><td><code>200</code></td><td>Successful page, stream, read API, or control action.</td><td>Parse the JSON, markdown, HTML, or SSE response for the endpoint.</td></tr>
+                <tr><td><code>400</code></td><td>Missing <code>repo_id</code>, missing <code>role</code>, or malformed control request body.</td><td>Call <code>/api/repos</code> and <code>/api/repo-roles</code>, then retry with the correct payload.</td></tr>
+                <tr><td><code>404</code></td><td>Unknown page, unknown static asset, or unavailable quality score because no repo is registered.</td><td>Verify the dashboard URL and repo registration state.</td></tr>
+                <tr><td><code>405</code></td><td>Using <code>GET</code> for a post-only endpoint, or <code>POST</code> for a get-only endpoint.</td><td>Use the method in this reference.</td></tr>
+                <tr><td><code>500</code></td><td>Callback failure, render failure, or control action error.</td><td>Read the <code>error</code> body and inspect the command log.</td></tr>
+                <tr><td><code>501</code></td><td>A dashboard was created without the corresponding callback.</td><td>Use the endpoint only from a full <code>start</code> or <code>serve</code> runtime.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Successful control response</h3>
+              <pre><code>{"ok":true}</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Control error response</h3>
+              <pre><code>{"ok":false,"error":"repo_id and role are required"}</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Emergency-stop callback errors</h3>
+              <pre><code>{"ok":false,"errors":["agent stuck","queue locked"]}</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Pause safely, inspect, then resume</h3>
+              <pre><code>curl -X POST http://127.0.0.1:9090/api/pause
+curl http://127.0.0.1:9090/api/status
+curl -X POST http://127.0.0.1:9090/api/resume</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Resolve repo and role before manual run</h3>
+              <pre><code>curl http://127.0.0.1:9090/api/repos
+curl "http://127.0.0.1:9090/api/repo-roles?repo_id=REPO_ID"
+curl -X POST http://127.0.0.1:9090/api/run-role \
+  -H 'Content-Type: application/json' \
+  -d '{"repo_id":"REPO_ID","role":"engineer"}'</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Run a scanner pass</h3>
+              <pre><code>curl -X POST http://127.0.0.1:9090/api/scan \
+  -H 'Content-Type: application/json' \
+  -d '{"repo_id":"REPO_ID"}'</code></pre>
+              <p>After the scan, inspect generated tickets and any <code>scan_complete</code> SSE event.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Watch orchestration decisions</h3>
+              <pre><code>curl http://127.0.0.1:9090/api/orchestration
+curl "http://127.0.0.1:9090/api/orchestration/decisions?repo_id=REPO_ID"</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Stop gracefully from a script</h3>
+              <pre><code>curl -X POST http://127.0.0.1:9090/api/stop</code></pre>
+              <p>Use terminal <kbd>q</kbd> or Ctrl+C when you are operating directly in the interactive terminal.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="security">
+          <h2>Security</h2>
+          <p>
+            The dashboard API is an operator control surface. Bind it to a
+            trusted interface, keep it behind your own network controls, and do
+            not expose mutating endpoints on an untrusted network.
+          </p>
+          <ul class="check-list">
+            <li>Use <code>127.0.0.1:PORT</code> for local-only operation.</li>
+            <li>Treat <code>/api/run-role</code>, <code>/api/scan</code>, <code>/api/restart</code>, <code>/api/stop</code>, and <code>/api/emergency-stop</code> as privileged operations.</li>
+            <li>Do not put secrets in query strings or request bodies; use configured environment variables and local MARS auth setup.</li>
+            <li>Prefer repo-owned evidence and logs for audit trails; dashboard responses are live operational views.</li>
+          </ul>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td><code>/healthz</code> works but <code>/api/status</code> fails</td><td>You are calling the webhook/control address instead of the dashboard address.</td><td>Use the dashboard URL printed by <code>start</code> or <code>serve</code>.</td></tr>
+                <tr><td><code>/api/repo-roles</code> returns <code>400</code></td><td>Missing <code>repo_id</code> query parameter.</td><td>Call <code>/api/repos</code>, copy an ID, and retry with <code>?repo_id=...</code>.</td></tr>
+                <tr><td><code>/api/run-role</code> returns an error</td><td>Role is not present in that repo's manifest or the repo ID is wrong.</td><td>Call <code>/api/repo-roles?repo_id=...</code> and choose one of the returned roles.</td></tr>
+                <tr><td>SSE stream connects but no updates arrive</td><td>No new dashboard events have been broadcast yet.</td><td>Trigger a benign status change, such as pause and resume, or inspect <code>/api/status</code>.</td></tr>
+                <tr><td>Quality score endpoint returns <code>404</code></td><td>No repo is registered or no scoped repo is available.</td><td>Register or start a repo, then run <code>mars scores export --repo /path/to/repo</code> if the artifact is missing.</td></tr>
+                <tr><td>Control endpoint returns <code>501</code></td><td>The dashboard was created without that callback.</td><td>Use a full MARS runtime rather than a test or standalone dashboard handler.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>The dashboard is live operational state. The repo remains the durable record for decisions, evidence, tickets, traces, docs, and releases.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>
