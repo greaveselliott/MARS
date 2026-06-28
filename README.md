@@ -47,6 +47,11 @@ source checkout install, local setup, and a scoped target run.
 - **Ready default path**: install from source, run setup, run `doctor`, and use
   `mars start --repo <target>` to scaffold, register, reconcile, and run
   one target repository.
+- **Supported cloud routing**: optional provider routes are supported for
+  OpenAI, Anthropic, Gemini, Mistral, DeepSeek, and xAI through `api_key_env`
+  credential indirection. OpenAI, Anthropic, Gemini, and Mistral have live
+  generation proof; DeepSeek and xAI have integration proof and require provider
+  account balance or licensing before generation.
 - **Implemented and still hardening**: local inference lifecycle, generated
   target harness lifecycle, `run`/`start`/`serve`, embedded dashboard,
   release/update workflows, scoring, trust, telemetry, tools, and MCP.

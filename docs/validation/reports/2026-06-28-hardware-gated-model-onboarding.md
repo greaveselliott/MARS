@@ -1,9 +1,9 @@
 # Hardware-Gated Model Onboarding Proof
 
 **Date:** 2026-06-28
-**Source Ref:** `1455efb` (`v0.68.3`) with installed `/Users/elliottgreaves/go/bin/mars` reporting `0.68.3`; corrected live-provider proof gathered after this ref
-**Validation Type:** Focused unit/golden gates, clean target init replays, installed-binary local setup/download, installed-binary runtime preflight, installed-binary OpenAI route plumbing, installed-binary OpenAI provider-call proof
-**Model:** Local route passed after downloading the eligible `local-balanced-q4` bundle. Cloud route plumbing passed with an OpenAI-routed clean target using `OPENAI_API_KEY` by environment variable name only. Real OpenAI usage was proven separately by `mars models evaluate` and a one-turn `mars run orchestrator` on synthetic ephemeral content.
+**Source Ref:** `9018843` (`v0.68.4`) with installed `/Users/elliottgreaves/go/bin/mars` reporting `0.68.4`
+**Validation Type:** Focused unit/golden gates, clean target init replays, installed-binary local setup/download, installed-binary runtime preflight, installed-binary cloud route plumbing, installed-binary provider-call proof, and supported cloud-platform validation
+**Model:** Local route passed after downloading the eligible `local-balanced-q4` bundle. Cloud route plumbing passed with secret-safe env-var credential names. Real OpenAI, Anthropic, Gemini, and Mistral usage was proven by `mars models evaluate` token usage and one-turn `mars run orchestrator` route selection. DeepSeek and xAI routes reached the live provider APIs and are provider-blocked by account balance/licensing, not MARS routing.
 
 ## Primary Outcome Contract
 
@@ -12,7 +12,7 @@
 **Primary Status:** `passed`
 **Current Primary Blocker:** None. The remaining blocker was resolved by a fish universal `OPENAI_API_KEY`, an OpenAI-routed clean target, ignored local env-file write, `mars models evaluate` token-usage proof, and a one-turn installed-binary `mars run orchestrator` proof with `llm_calls=1`.
 **Next Primary Action:** Keep this report and release evidence as the durable proof record; rotate the external OpenAI credential if operator policy requires it.
-**Supporting Evidence:** Focused package tests, full `go test ./...`, docs/tool sync, secret scan, `make check`, `make install`, clean local/cloud init replays, installed-binary local setup/download, installed-binary local JSON runtime pass, installed-binary cloud JSON credential block, custom OpenAI-compatible endpoint init proof, installed-binary OpenAI route/seed pass, real OpenAI `models evaluate` pass with token usage, real OpenAI `run orchestrator` pass with `llm_calls=1`, raw-key rejection, provider request-capture tests, and generated target doctrine checks passed.
+**Supporting Evidence:** Focused package tests, full `go test ./...`, docs/tool sync, secret scan, `make check`, `make install`, clean local/cloud init replays, installed-binary local setup/download, installed-binary local JSON runtime pass, installed-binary cloud JSON credential block, custom OpenAI-compatible endpoint init proof, installed-binary OpenAI route/seed pass, real OpenAI/Anthropic/Gemini/Mistral `models evaluate` evidence, one-turn provider runtime smokes for OpenAI/Anthropic/Gemini/Mistral, provider-blocked xAI/DeepSeek API evidence, raw-key rejection, provider request-capture tests, and generated target doctrine checks passed.
 
 ## Proof Commands
 
@@ -51,6 +51,7 @@ fish -lc 'mars run orchestrator --repo /private/tmp/mars-openai-ephemeral-UZMsOV
 - OpenAI route/seed proof: passed with JSON-only init, ignored `0600` `.harness/.env.local`, `.harness/.env.example` containing only `OPENAI_API_KEY=`, cloud route using `provider: openai`, `model: gpt-4.1-mini`, and installed-binary `mars start --exit-after-seed --yes --json` returning `status: ok`. This proved route and credential plumbing, not provider usage.
 - OpenAI provider-call proof: passed with `mars models evaluate` against a synthetic ephemeral ticket, producing 3/3 passing benchmark cases and token usage from OpenAI responses.
 - OpenAI agent-runtime proof: passed as a provider-use proof with one `mars run orchestrator` turn against the synthetic ephemeral target; the command intentionally stopped at `max_turns` but reported `llm_calls=1` and no source repo content was sent.
+- Supported platform proof: passed for OpenAI, Anthropic, Gemini, and Mistral with real provider calls. xAI and DeepSeek reached the live provider APIs and are recorded as supported integration routes with provider-side account blockers.
 
 ## Clean Local Target Replay
 
@@ -332,6 +333,28 @@ api_key_env: GITHUB_TOKEN
 
 This is supporting evidence for custom cloud/frontier routing. The primary cloud proof above uses OpenAI because an `OPENAI_API_KEY` was available to the fish environment without printing or committing the raw value.
 
+## Supported Cloud Platform Addendum
+
+This addendum documents the supported cloud providers validated after the
+primary OpenAI proof. All commands used env-var names only; raw key values were
+not printed or committed. Clean temp targets wrote `.harness/.env.local` with
+`0600`, ignored the file through `.gitignore`, wrote only env names to
+`.harness/.env.example`, and passed `mars guardrails secret-scan`.
+
+| Provider | Model used | Target | Evidence | Status |
+| --- | --- | --- | --- | --- |
+| OpenAI | `gpt-4.1-mini` | `/private/tmp/mars-openai-ephemeral-UZMsOV` | `mars models evaluate` returned 3/3 passing cases and token usage; one-turn `mars run orchestrator` selected OpenAI and reported `llm_calls=1`. | Supported with live generation proof. |
+| Anthropic | `claude-haiku-4-5-20251001` | `/private/tmp/mars-anthropic-clean-cI01OQ` | Clean init/credential/seed passed; `mars models evaluate` returned token usage; one-turn `mars run orchestrator` selected Anthropic and reported `llm_calls=1`. | Supported with live generation proof. |
+| Gemini | `gemini-2.5-flash` | `/private/tmp/mars-gemini-clean-T3lpcw` | Clean init/credential/seed passed; `mars models evaluate` returned token usage with 2/3 benchmark cases passing; one-turn `mars run orchestrator` selected Gemini and reported `llm_calls=1`. | Supported with live generation proof. |
+| Mistral | `mistral-small-latest` | `/private/tmp/mars-mistral-clean-RKu1w8` | Clean init/credential/seed passed; `mars models evaluate` returned token usage with 2/3 benchmark cases passing; one-turn `mars run orchestrator` selected Mistral and reported `llm_calls=1`. | Supported with live generation proof. |
+| DeepSeek | `deepseek-v4-flash` | `/private/tmp/mars-deepseek-clean-rOX2OS` | Clean init/credential/seed passed; model listing succeeded; `mars models evaluate` and one-turn `mars run orchestrator` selected DeepSeek and reached the provider, which returned `402 Payment Required` for insufficient balance. | Supported integration route; provider account balance blocks generation. |
+| xAI | model list blocked before selection | n/a | `XAI_API_KEY` was present and the live `/v1/models` request reached xAI, which returned `403` because the team lacked credits or licenses. | Supported integration route; provider credits/licensing block generation. |
+
+Groq and Cohere were intentionally not included in this supported-platform
+claim. Groq remains registry-backed but unvalidated in this pass. Cohere remains
+unavailable for runtime selection until its native request-capture adapter is
+implemented.
+
 ## Secret And JSON Proof
 
 - Raw `--api-key` is rejected with JSON-only output and remediation to use `--api-key-env <ENV_NAME>`.
@@ -377,6 +400,20 @@ fish -lc 'mars models evaluate --repo /private/tmp/mars-openai-ephemeral-UZMsOV 
 fish -lc 'mars run orchestrator --repo /private/tmp/mars-openai-ephemeral-UZMsOV --max-turns 1 --budget 12000 --debug --log-file /private/tmp/mars-openai-ephemeral-UZMsOV.run.log'
 ```
 
+Supported platform reruns, when corresponding env vars and provider account
+state are available:
+
+```bash
+fish -lc 'mars models evaluate --repo /private/tmp/mars-anthropic-clean-cI01OQ --provider anthropic --endpoint https://api.anthropic.com/v1 --model claude-haiku-4-5-20251001 --api-key-env ANTHROPIC_API_KEY --cloud --json'
+fish -lc 'mars run orchestrator --repo /private/tmp/mars-anthropic-clean-cI01OQ --max-turns 1 --budget 12000 --debug --log-file /private/tmp/mars-anthropic-clean-cI01OQ.run.log'
+fish -lc 'mars models evaluate --repo /private/tmp/mars-gemini-clean-T3lpcw --provider gemini --endpoint https://generativelanguage.googleapis.com/v1beta/openai --model gemini-2.5-flash --api-key-env GEMINI_API_KEY --cloud --json'
+fish -lc 'mars run orchestrator --repo /private/tmp/mars-gemini-clean-T3lpcw --max-turns 1 --budget 12000 --debug --log-file /private/tmp/mars-gemini-clean-T3lpcw.run.log'
+fish -lc 'mars models evaluate --repo /private/tmp/mars-mistral-clean-RKu1w8 --provider mistral --endpoint https://api.mistral.ai/v1 --model mistral-small-latest --api-key-env MISTRAL_API_KEY --cloud --json'
+fish -lc 'mars run orchestrator --repo /private/tmp/mars-mistral-clean-RKu1w8 --max-turns 1 --budget 12000 --debug --log-file /private/tmp/mars-mistral-clean-RKu1w8.run.log'
+fish -lc 'mars models evaluate --repo /private/tmp/mars-deepseek-clean-rOX2OS --provider deepseek --endpoint https://api.deepseek.com/v1 --model deepseek-v4-flash --api-key-env DEEPSEEK_API_KEY --cloud --json'
+fish -lc 'mars run orchestrator --repo /private/tmp/mars-deepseek-clean-rOX2OS --max-turns 1 --budget 12000 --debug --log-file /private/tmp/mars-deepseek-clean-rOX2OS.run.log'
+```
+
 Custom OpenAI-compatible endpoint proof, if GitHub Models or another OpenAI-compatible endpoint is explicitly approved:
 
 ```bash
@@ -389,7 +426,8 @@ mars start --repo /private/tmp/mars-custom-endpoint-proof-oMVrjM --exit-after-se
 
 - Hardware gating, local bundle selection, setup/init routing, runtime preflight, provider routing, JSON output, generated doctrine, and secret handling: foundation-owned, implemented and covered by supporting evidence.
 - Missing local weights: resolved by installed-binary `mars setup --inference local --local-bundle auto --download --yes --json`.
-- Missing cloud provider credential: resolved for the OpenAI proof by fish universal `OPENAI_API_KEY`; the raw value was not printed, committed, logged, or included in this report.
+- Missing cloud provider credential: resolved for OpenAI, Anthropic, Gemini, Mistral, DeepSeek, and xAI by fish environment variables; raw values were not printed, committed, logged, or included in this report.
+- Supported cloud platforms: OpenAI, Anthropic, Gemini, and Mistral are supported with live generation proof. DeepSeek and xAI are supported at the MARS integration-routing level and blocked only by provider account balance/licensing.
 - GitHub Models token use: no longer required for the primary proof; it still requires explicit approval and a token with the required model scope if used as an additional custom OpenAI-compatible proof.
 - Correction to earlier evidence: `mars start --exit-after-seed` only proved cloud route/credential plumbing; real provider usage was not proven until `mars models evaluate` returned OpenAI token usage and `mars run orchestrator` reported `llm_calls=1`.
 - Final 10/10 confidence claim: earned for the requested proof plan because every required gate has either passed or has durable supporting/blocker evidence, and the last primary blocker, real cloud provider usage through the MARS CLI and agent runtime, passed with a real OpenAI credential path.

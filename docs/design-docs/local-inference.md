@@ -186,6 +186,21 @@ evidence and request-capturing tests that prove the request shape, auth header,
 and redaction behavior. Providers without that evidence are listed as
 unavailable with a reason.
 
+Supported cloud provider routes after the 2026-06-28 validation pass:
+
+| Provider | Default endpoint | Credential env | Support status |
+| --- | --- | --- | --- |
+| OpenAI | `https://api.openai.com/v1` | `OPENAI_API_KEY` | Supported with live generation and one-turn runtime proof. |
+| Anthropic | `https://api.anthropic.com/v1` | `ANTHROPIC_API_KEY` | Supported with live generation and one-turn runtime proof. |
+| Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | `GEMINI_API_KEY` | Supported with live generation and one-turn runtime proof through Google's OpenAI-compatible endpoint. |
+| Mistral | `https://api.mistral.ai/v1` | `MISTRAL_API_KEY` | Supported with live generation and one-turn runtime proof. |
+| DeepSeek | `https://api.deepseek.com/v1` | `DEEPSEEK_API_KEY` | Supported integration route; live requests reached DeepSeek and were provider-blocked by insufficient account balance. |
+| xAI | `https://api.x.ai/v1` | `XAI_API_KEY` | Supported integration route; live requests reached xAI and were provider-blocked by missing account credits or licenses. |
+
+Groq remains registry-backed but was intentionally not claimed in this
+validation pass. Cohere remains unavailable for runtime selection until the
+native request-capture adapter is implemented.
+
 TTY setup/init/model commands may use aligned sections, concise tables, muted
 color, disabled choices, and progress state. Non-TTY output is plain, `NO_COLOR`
 and `TERM=dumb` disable styling, `--plain` forces plain text, and `--json`
@@ -209,3 +224,4 @@ machine-readable remediation.
 - **Apple Silicon performance diagnosis:** Low CPU with high RAM during Qwen Q8 generation is expected when Metal is active. The limiting resource is usually memory bandwidth and model size, not CPU thread count. Reducing quantization/profile size and limiting parallel slots are the first knobs to try.
 - **Manifest/router mismatch:** A sample-target bootstrap CEO job failed because `ceo` was missing from the static router map and unknown roles defaulted to coding, even though the generated manifest declared `model: reasoning`. Routing by manifest tier fixes the mismatch and makes bootstrap failures less likely on partial local-model installs.
 - **RAM pressure silently degrades inference and confounds pace data (2026-06-12):** During the 2026-06-11 demo-11 baseline, the quality-profile `Qwen3-Coder-30B-A3B-Instruct-Q8_0` weights (32.5 GB per tier server, both resident) maxed a 64 GiB unified-memory machine and drastically degraded inference: cto-weekly wedged at 12.1 minutes versus 205s for the same stage on the balanced model — same harness, target, and prompts. This motivated the operator's swap to `performance_profile: balanced` for all subsequent runs. The convergence/pace data captured under RAM pressure is confounded by the degradation and was reclassified evidence-only (see the AD-285 model-identity amendment in validation-matrix-gating.md). The degradation was caught only by human observation; T-034 proposes the mechanical guard (pace-anomaly telemetry rows and/or a doctor check flagging configured model footprint approaching physical RAM) so degraded inference becomes a visible finding.
+- **Cloud provider support classification (2026-06-28):** Provider support has two evidence levels. Live generation proof requires token usage from `mars models evaluate` and a one-turn `mars run` selecting the provider with `llm_calls=1`. Provider-blocked integration proof requires MARS to load the env-var credential, select the provider route, reach the provider API, and receive a provider-side account, quota, balance, license, or model-availability response. DeepSeek and xAI are supported at the integration-routing level until their provider accounts can generate.

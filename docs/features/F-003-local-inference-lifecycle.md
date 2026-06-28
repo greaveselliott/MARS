@@ -112,6 +112,11 @@ When `mars init`, `mars models override`, `mars run`, `mars start`, or `mars ser
 Then committed files contain provider, model, endpoint when needed, and `api_key_env` only
 And raw API key values are never accepted as CLI flags, written to committed files, printed, logged, traced, or emitted in JSON
 
+Given a repo selects a supported cloud provider
+When the provider is OpenAI, Anthropic, Gemini, Mistral, DeepSeek, or xAI
+Then MARS treats the provider route as supported when the official-doc-backed adapter, request capture coverage, env-var credential path, and live or provider-blocked validation evidence exist
+And provider account balance, quota, license, or model availability errors are reported as external provider blockers rather than MARS routing failures
+
 Given the selected cloud provider is `openai-compatible`
 When `mars init --model-routing cloud` runs
 Then the operator can provide the required custom base URL with `--cloud-endpoint`
@@ -158,5 +163,5 @@ None.
 - F-003-S007: planned evidence for the remaining Ollama catalog and swap workflow tracked by `MH-030`
 - F-003-S008: `go test ./internal/inference`, `go test ./internal/serve -run 'TestServerNewModelEndpointSkipsLocalModelPreflight|TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy'`, and `go test ./cmd/mars -run 'TestStartCommandExposesRealModelEndpointOverride|TestStartCommandExposesParallelAddressControls'`
 - F-003-S009: `go test ./internal/models -run TestEligibility` and rejection tests in `./cmd/mars`, `./internal/setup`, `./internal/serve`, and `./internal/inference`
-- F-003-S010: `go test ./internal/models -run 'TestProvider|TestCredentials|TestOverride'` and redaction tests in `./internal/llm`
+- F-003-S010: `go test ./internal/models -run 'TestProvider|TestCredentials|TestOverride'`, redaction tests in `./internal/llm`, and the live/provider-blocked platform evidence in `docs/validation/reports/2026-06-28-hardware-gated-model-onboarding.md`
 - F-003-S011: `go test ./cmd/mars -run 'TestSetup.*Output|TestInit.*Output|TestModels.*Output'`
