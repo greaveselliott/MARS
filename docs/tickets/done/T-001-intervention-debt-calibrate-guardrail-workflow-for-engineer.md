@@ -5,9 +5,9 @@ priority: medium
 complexity: medium
 work_type: intervention-debt
 bdd_scenarios: []
-end_to_end_evidence: "go run ./cmd/mars-harness scores export --repo ."
+end_to_end_evidence: "go run ./cmd/mars scores export --repo ."
 evidence_links: ["docs/QUALITY_SCORE.md", "internal/qualityscore/export_test.go"]
-verified_by: "go test ./internal/qualityscore -run 'TestExport(CreatesOutcomeSignalTickets|RendersTelemetryAndOutcomeSignals)'; go test ./internal/docsconsistency ./internal/docsync; go run ./cmd/mars-harness scores export --repo ."
+verified_by: "go test ./internal/qualityscore -run 'TestExport(CreatesOutcomeSignalTickets|RendersTelemetryAndOutcomeSignals)'; go test ./internal/docsconsistency ./internal/docsync; go run ./cmd/mars scores export --repo ."
 owner: "Codex"
 last_attempt: "2026-05-19"
 blocker: "none"
@@ -23,11 +23,11 @@ metadata:
   origin_kind: "quality_score_outcome"
   outcome_count: "1"
   outcome_type: "guardrail_blocked"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   role: "engineer"
   severity: "medium"
   target: "guardrail"
-source: quality-score-outcome:mars-harness:engineer:guardrail_blocked:30d
+source: quality-score-outcome:mars:engineer:guardrail_blocked:30d
 created: 2026-05-03
 depends_on: []
 ---
@@ -36,12 +36,12 @@ depends_on: []
 
 ## Context
 
-`mars-harness scores export` detected an intervention-debt outcome signal while refreshing `docs/QUALITY_SCORE.md`.
+`mars scores export` detected an intervention-debt outcome signal while refreshing `docs/QUALITY_SCORE.md`.
 
 ## Evidence
 
 - Role: engineer
-- Repo ID: mars-harness
+- Repo ID: mars
 - Outcome: guardrail_blocked
 - Count: 1
 - Evidence window: 30d

@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/roleregistry"
-	"github.com/greaveselliott/mars-harness/internal/scanner"
+	"github.com/greaveselliott/mars/internal/roleregistry"
+	"github.com/greaveselliott/mars/internal/scanner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

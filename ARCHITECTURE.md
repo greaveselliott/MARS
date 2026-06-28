@@ -1,8 +1,8 @@
-# Mars Harness - Architecture
+# MARS - Architecture
 
 ## System Overview
 
-Mars Harness is a single Go binary and repo-owned operating system for local
+MARS is a single Go binary and repo-owned operating system for local
 autonomous delivery. It installs local inference support, initializes target
 repositories with an agent harness, registers repos into an isolated SQLite
 runtime, executes role jobs through a bounded tool registry, records traces and
@@ -25,8 +25,8 @@ evidence, release, scoring, trust, and self-improvement.
 ```mermaid
 flowchart TB
   subgraph LocalMachine ["Developer or operator machine"]
-    CLI["mars-harness single Go binary"]
-    CONFIG["~/.mars-harness config, caches, per-repo DBs"]
+    CLI["mars single Go binary"]
+    CONFIG["~/.mars config, caches, per-repo DBs"]
     LLM["Local or compatible LLM endpoint"]
     LLAMA["llama.cpp server subprocess"]
     GPU["Local GPU or CPU fallback"]
@@ -46,7 +46,7 @@ flowchart TB
     SETUP --> CONFIG
     UPDATE --> CONFIG
     CHECKS --> QUEUE
-    RELEASE --> SOURCE["mars-harness source repo"]
+    RELEASE --> SOURCE["mars source repo"]
     RELEASE --> DIST["Local dist/releases assets"]
     TARGETOPS --> TARGET["Target repository"]
     EXECOPS --> SERVER["Orchestrator server"]
@@ -110,7 +110,7 @@ flowchart TB
 
 ## Product Layers
 
-Mars Harness has six visible layers:
+MARS has six visible layers:
 
 | Layer | Primary surface | Responsibility |
 | --- | --- | --- |
@@ -123,7 +123,7 @@ Mars Harness has six visible layers:
 
 ## Local Delivery Architecture
 
-Mars Harness treats local execution as the authoritative delivery path. GitHub
+MARS treats local execution as the authoritative delivery path. GitHub
 can still receive webhooks or mirror release assets, but the repo-owned gates,
 recorded check outcomes, repair routing, release binaries, and checksum
 verification all run locally through the harness.
@@ -135,7 +135,7 @@ flowchart LR
     Sync["Fetch and rebase main"]
     CheckGate["make check\nbuild, race tests, coverage, lint or go vet"]
     DogfoodGate["make dogfood\nnon-mutating role dry-runs"]
-    ChecksRun["mars-harness checks run\nnamed local command"]
+    ChecksRun["mars checks run\nnamed local command"]
     ReleaseNotes["release notes\nVERSION, CHANGELOG, buildinfo"]
     TagGuard["git_release_guard\nclean tree, release-note HEAD, tag at HEAD"]
     Publish["release publish-assets\nlinux/darwin x amd64/arm64"]
@@ -143,7 +143,7 @@ flowchart LR
     VerifyLocal["verify-assets --dist\nchecksum and asset gate"]
   end
 
-  subgraph MarsRuntime ["Mars Harness runtime"]
+  subgraph MarsRuntime ["MARS runtime"]
     RepoDB["Per-repo SQLite DB\nchecks, scores, traces, telemetry"]
     Scoring["Outcome scoring"]
     Survey["Orchestrator survey"]
@@ -175,37 +175,37 @@ they do not replace the local gates.
 
 ## CLI Contract
 
-`cmd/mars-harness/` is the single command entry point. The current implemented
+`cmd/mars/` is the single command entry point. The current implemented
 surface is:
 
 | Command | Purpose |
 | --- | --- |
-| `mars-harness version` | Print version, OS/architecture, commit, and build date. |
-| `mars-harness setup` | Create config/cache state, configure supported shell profiles, detect hardware, and install inference assets unless skipped. |
-| `mars-harness path setup` | Idempotently add the install directory to supported user shell profiles. |
-| `mars-harness update check --repo <path>` | Report installed CLI, remote release, target metadata, and mirrored operating-model drift. |
-| `mars-harness update tool` | Upgrade or reinstall the installed binary from release assets or source-development mode. |
-| `mars-harness update harness --repo <path>` | Fill missing generated target harness defaults without overwriting user-owned files. |
-| `mars-harness init --repo <path>` | Scaffold `.harness/`, target `AGENTS.md`, goals, BDD features, tickets, exec plans, design docs, references, release state, and quality score. |
-| `mars-harness upgrade --repo <path>` | Preserve existing target policy while adding missing generated defaults. |
-| `mars-harness scan --repo <path> --tickets` | Scan a repo for starter findings and optionally create deduplicated backlog tickets. |
-| `mars-harness register --repo <path>` | Register a repo into the configured SQLite database. |
-| `mars-harness start --repo <path>` | Auto-init if needed, register the repo, seed the CEO role, and run the per-repo orchestrator. |
-| `mars-harness serve` | Run the legacy multi-repo orchestrator, dashboard, webhooks, cron scheduler, workers, and recovery watchdog. |
-| `mars-harness run <role> --repo <path>` | Execute one role against a target repo, with `--dry-run` for prompt preview. |
-| `mars-harness checks run --repo <path> --name <name> -- <command...>` | Run a named local delivery check, record pass/fail in the repo database, and feed failed checks into scoring and pipeline repair routing. |
-| `mars-harness tools list [--json]` | List the universal registered built-in tool surface available to foundation and deployed harness contexts. |
-| `mars-harness tools run <name> --repo <path> --args-json <json>` | Execute one registered tool through the same executor, allowlist, trust policy, repo root, and JSON argument path used by agent runs. |
-| `mars-harness mcp serve --repo <path>` | Expose registered tools through stdio MCP so any MCP-compatible client or local harness agent can use Mars Harness tools through a model-provider-agnostic tool mechanism. |
-| `mars-harness doctor [--repo <path>] [--json]` | Diagnose setup, models, DB, repo, guardrail/workflow health, operating-model drift, active-plan hygiene, and integration state. |
-| `mars-harness scores [--repo <path>]` | Print stored role scores. |
-| `mars-harness scores export --repo <path>` | Refresh `docs/QUALITY_SCORE.md` from score, telemetry, ticket, dogfood, guardrail, check, no-op, and human-follow-up evidence. |
-| `mars-harness trust [--repo <path>]` | Show role trust levels. |
-| `mars-harness trust set <role> <repo> <level> --reason <text>` | Apply an audited trust override. |
-| `mars-harness models evaluate` | Print or run model evaluation probes against an OpenAI-compatible endpoint. |
-| `mars-harness release notes --repo <path> --bump auto` | Generate semantic patch notes, update `VERSION`, `CHANGELOG.md`, and source build info. |
-| `mars-harness release publish-assets --repo <path> --version vX.Y.Z --upload none|github|auto` | Build local source release binaries, write checksums, verify local assets, and optionally mirror them to GitHub Releases. |
-| `mars-harness release verify-assets [--dist <path>] [--version <tag>]` | Check that local dist assets or an optional GitHub Release mirror has the required platform binaries and checksums. |
+| `mars version` | Print version, OS/architecture, commit, and build date. |
+| `mars setup` | Create config/cache state, configure supported shell profiles, detect hardware, and install inference assets unless skipped. |
+| `mars path setup` | Idempotently add the install directory to supported user shell profiles. |
+| `mars update check --repo <path>` | Report installed CLI, remote release, target metadata, and mirrored operating-model drift. |
+| `mars update tool` | Upgrade or reinstall the installed binary from release assets or source-development mode. |
+| `mars update harness --repo <path>` | Fill missing generated target harness defaults without overwriting user-owned files. |
+| `mars init --repo <path>` | Scaffold `.harness/`, target `AGENTS.md`, goals, BDD features, tickets, exec plans, design docs, references, release state, and quality score. |
+| `mars upgrade --repo <path>` | Preserve existing target policy while adding missing generated defaults. |
+| `mars scan --repo <path> --tickets` | Scan a repo for starter findings and optionally create deduplicated backlog tickets. |
+| `mars register --repo <path>` | Register a repo into the configured SQLite database. |
+| `mars start --repo <path>` | Auto-init if needed, register the repo, seed the CEO role, and run the per-repo orchestrator. |
+| `mars serve` | Run the legacy multi-repo orchestrator, dashboard, webhooks, cron scheduler, workers, and recovery watchdog. |
+| `mars run <role> --repo <path>` | Execute one role against a target repo, with `--dry-run` for prompt preview. |
+| `mars checks run --repo <path> --name <name> -- <command...>` | Run a named local delivery check, record pass/fail in the repo database, and feed failed checks into scoring and pipeline repair routing. |
+| `mars tools list [--json]` | List the universal registered built-in tool surface available to foundation and deployed harness contexts. |
+| `mars tools run <name> --repo <path> --args-json <json>` | Execute one registered tool through the same executor, allowlist, trust policy, repo root, and JSON argument path used by agent runs. |
+| `mars mcp serve --repo <path>` | Expose registered tools through stdio MCP so any MCP-compatible client or local harness agent can use MARS tools through a model-provider-agnostic tool mechanism. |
+| `mars doctor [--repo <path>] [--json]` | Diagnose setup, models, DB, repo, guardrail/workflow health, operating-model drift, active-plan hygiene, and integration state. |
+| `mars scores [--repo <path>]` | Print stored role scores. |
+| `mars scores export --repo <path>` | Refresh `docs/QUALITY_SCORE.md` from score, telemetry, ticket, dogfood, guardrail, check, no-op, and human-follow-up evidence. |
+| `mars trust [--repo <path>]` | Show role trust levels. |
+| `mars trust set <role> <repo> <level> --reason <text>` | Apply an audited trust override. |
+| `mars models evaluate` | Print or run model evaluation probes against an OpenAI-compatible endpoint. |
+| `mars release notes --repo <path> --bump auto` | Generate semantic patch notes, update `VERSION`, `CHANGELOG.md`, and source build info. |
+| `mars release publish-assets --repo <path> --version vX.Y.Z --upload none|github|auto` | Build local source release binaries, write checksums, verify local assets, and optionally mirror them to GitHub Releases. |
+| `mars release verify-assets [--dist <path>] [--version <tag>]` | Check that local dist assets or an optional GitHub Release mirror has the required platform binaries and checksums. |
 
 There is no current top-level `status`, `interventions`, or `stop --now`
 command. Graceful stop is exposed through Ctrl+C, terminal key `q`, and the
@@ -213,7 +213,7 @@ dashboard/API stop controls while `start` or `serve` is running.
 
 ## Component Responsibilities
 
-### CLI (`cmd/mars-harness/`)
+### CLI (`cmd/mars/`)
 
 Owns all operator and agent-facing commands. CLI commands must produce
 actionable errors, prefer repo-local defaults, and keep setup/update/release
@@ -268,9 +268,9 @@ where applicable.
 
 The universal tool surface is the same registry exposed three ways:
 
-- role tool allowlists during Mars Harness agent runs
-- `mars-harness tools list/run` for operator and smoke-test workflows
-- `mars-harness mcp serve` for MCP-compatible clients and local harness agents
+- role tool allowlists during MARS agent runs
+- `mars tools list/run` for operator and smoke-test workflows
+- `mars mcp serve` for MCP-compatible clients and local harness agents
 
 This surface is intentionally model-provider agnostic. It describes capability
 transport, schemas, trust, and execution policy, not where inference runs.
@@ -279,7 +279,7 @@ Current mirrored built-in tools are:
 
 - `file_read`, `file_write`, `file_search`
 - `grep`, `shell_exec`
-- `mars_harness_cli`
+- `mars_cli`
 - `record_decision`
 - `ticket_create`
 - `tool_create`
@@ -310,7 +310,7 @@ checks.
 Sandboxing is process-level. Linux probes PID, mount, and network namespaces
 before applying clone flags, then degrades with a warning to process groups and
 ulimit wrappers when namespaces are denied by the host. Operators can force the
-fallback with `MARS_HARNESS_DISABLE_LINUX_NAMESPACES=1`. Non-Linux platforms
+fallback with `MARS_DISABLE_LINUX_NAMESPACES=1`. Non-Linux platforms
 use process groups, current working directory restriction, and ulimit wrappers.
 Current execution roots tools in the registered repo path; it does not clone a
 fresh working directory per job.
@@ -360,8 +360,8 @@ confirms the local asset source of truth, while `release verify-assets` without
 
 ## Generated Target Harness Layout
 
-`mars-harness init` writes a deployed harness that is immediately usable by
-local Mars Harness roles, MCP-compatible clients, and humans:
+`mars init` writes a deployed harness that is immediately usable by
+local MARS roles, MCP-compatible clients, and humans:
 
 ```text
 target-repo/
@@ -415,7 +415,7 @@ for drift detection, not destructive replacements of user-owned policy.
 
 ## Operating Model
 
-Mars Harness uses BDD-led, goal-driven walking-skeleton delivery:
+MARS uses BDD-led, goal-driven walking-skeleton delivery:
 
 1. Goals define outcomes and competing priorities.
 2. BDD feature contracts define the intended capability.
@@ -476,7 +476,7 @@ The default database is isolated per target repo for `start`, `register`, and
 `doctor --repo`:
 
 ```text
-~/.mars-harness/db/{repo-name}/mars.db
+~/.mars/db/{repo-name}/mars.db
 ```
 
 `serve` uses the legacy shared path unless `--db` is supplied. Explicit `--db`
@@ -487,15 +487,15 @@ from different projects physically separate by default.
 
 Every non-release semantic source commit is followed by:
 
-1. `mars-harness release notes --repo . --bump auto`
+1. `mars release notes --repo . --bump auto`
 2. A `release: notes X.Y.Z` commit containing `VERSION`, `CHANGELOG.md`, and
    source build-info updates.
 3. Push to `main`.
 4. Tag `vX.Y.Z` at the release-note commit.
 5. Push the tag.
-6. `mars-harness release publish-assets --repo . --version vX.Y.Z --upload auto`.
-7. `mars-harness release verify-assets --dist dist/releases --version vX.Y.Z`.
-8. When GitHub mirroring is configured, `mars-harness release verify-assets --version vX.Y.Z`.
+6. `mars release publish-assets --repo . --version vX.Y.Z --upload auto`.
+7. `mars release verify-assets --dist dist/releases --version vX.Y.Z`.
+8. When GitHub mirroring is configured, `mars release verify-assets --version vX.Y.Z`.
 
 Initialized target repos receive the same release-note discipline through
 generated guidance, adjusted to their own release capability.

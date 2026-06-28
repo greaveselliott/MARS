@@ -9,8 +9,8 @@ end_to_end_evidence: not_applicable
 evidence_links:
   - docs/roles/personas/foundation-maintainer.md
   - docs/features/F-005-agent-execution-runtime.md#F-005-S063
-  - cmd/mars-harness/main_test.go
-verified_by: "go test ./cmd/mars-harness ./internal/context ./internal/scanner ./internal/personas ./internal/tools; go test ./internal/docsconsistency ./internal/docsync ./internal/roleregistry"
+  - cmd/mars/main_test.go
+verified_by: "go test ./cmd/mars ./internal/context ./internal/scanner ./internal/personas ./internal/tools; go test ./internal/docsconsistency ./internal/docsync ./internal/roleregistry"
 owner: "foundation-maintainer"
 last_attempt: "2026-05-23"
 blocker: "none"
@@ -27,18 +27,18 @@ depends_on: []
 
 ## Context
 
-Agents working on mars-harness need a role-shaped way to consume the foundation operating model without turning deployed targets into source-maintenance contexts.
+Agents working on mars need a role-shaped way to consume the foundation operating model without turning deployed targets into source-maintenance contexts.
 
 ## Requirements
 
 - Define foundation-maintainer as source-only and manual/operator-invoked.
-- Support mars-harness run foundation-maintainer --repo . --dry-run --no-init without scaffolding .harness/manifest.yaml into the source repo.
+- Support mars run foundation-maintainer --repo . --dry-run --no-init without scaffolding .harness/manifest.yaml into the source repo.
 - Reject foundation-maintainer for non-source repositories with an actionable error.
 - Keep generated target manifests free of foundation-maintainer.
 
 ## Affected Files
 
-- cmd/mars-harness/main.go
+- cmd/mars/main.go
 - docs/roles/personas/foundation-maintainer.md
 - docs/roles/ROLES.md
 - docs/design-docs/harness-operating-model.md
@@ -57,6 +57,6 @@ Use the existing role, domain, mode, context assembly, and docsync vocabulary. T
 ## Completion Evidence
 
 - Added the canonical source-only foundation role packet at `docs/roles/personas/foundation-maintainer.md`.
-- Added `mars-harness run foundation-maintainer --repo . --dry-run --no-init` support from source context without target scaffolding.
+- Added `mars run foundation-maintainer --repo . --dry-run --no-init` support from source context without target scaffolding.
 - Added non-source rejection coverage and generated target exclusion coverage.
 - Added source registry generation for source-only rows while preserving deployed target registries.

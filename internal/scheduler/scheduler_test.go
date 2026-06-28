@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars/internal/queue"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

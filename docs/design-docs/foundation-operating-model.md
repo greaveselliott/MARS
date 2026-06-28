@@ -3,11 +3,11 @@
 **Status:** Accepted
 **Date:** 2026-06-13
 **Author:** foundation-maintainer
-**Scope:** Source-only (`mars-harness` software factory). Not mirrored into generated target harnesses.
+**Scope:** Source-only (`mars` software factory). Not mirrored into generated target harnesses.
 
 ## Context
 
-Mars Harness is a software factory: agents, queue, orchestration, tool policy,
+MARS is a software factory: agents, queue, orchestration, tool policy,
 inference, and generated target defaults. Unit tests and `make check` catch
 regressions in isolated packages, but they cannot prove that the autonomous
 lifecycle still advances from brief to ticket to implementation to review on a
@@ -40,11 +40,11 @@ count as done.
 ### AD-291: Foundation Harness Changes Require Clean-Project Harness Validation
 
 Every change to **foundation-owned runtime behavior** must be validated by
-running the **installed** `mars-harness` binary against a **clean validation
+running the **installed** `mars` binary against a **clean validation
 project** before the change is treated as fixed or complete.
 
 **Foundation-owned runtime behavior** includes any change that can alter what
-happens when `mars-harness start`, `serve`, or `run <role>` executes against a
+happens when `mars start`, `serve`, or `run <role>` executes against a
 target: orchestration and ticket gates (`internal/orchestration`,
 `internal/serve`, `internal/orgstate`), queue and scheduler behavior, agent loop
 and parser, tool policy and guards (`internal/tools`), inference routing,
@@ -55,12 +55,12 @@ intervention-debt routing.
 **Clean validation project** means all of:
 
 1. **Clean git state for the validation intent** — either a fresh
-   `mars-harness init` target for greenfield lifecycle work, or a documented
+   `mars init` target for greenfield lifecycle work, or a documented
    matrix profile whose ticket tree and scenario schedule match the replay
    purpose. Do **not** pair a finished checkpoint repo (all product tickets in
    `done/`) with a wiped per-repo DB unless the test explicitly targets
    post-lifecycle review/resume behavior.
-2. **Isolated per-repo database** — default `~/.mars-harness/db/{repo-name}/mars.db`
+2. **Isolated per-repo database** — default `~/.mars/db/{repo-name}/mars.db`
    or an explicit `--db` path reserved for the run. Wipe or use a fresh path
    when bootstrap intent must match git state.
 3. **Built binary under test** — `make install` (or an explicit release binary)
@@ -94,7 +94,7 @@ rules:
 1. Fetch remote trunk or record the blocker.
 2. **`make check`** (and affected package tests) on the source change.
 3. **Install** the candidate binary (`make install`).
-4. **Run** `mars-harness start --repo <clean-target>` (or a scoped matrix
+4. **Run** `mars start --repo <clean-target>` (or a scoped matrix
    command documented in the validation report) until the failure signature
    under test is exercised or the expected lifecycle stage is reached.
 5. **Review** queue health, role mix, ticket tree deltas, and traces — stop
@@ -115,7 +115,7 @@ commit.
 Whenever a foundation maintainer runs or attempts a validation matrix, create
 or update a **matrix run report** under `docs/validation/reports/` in the same
 work. This applies to full lifecycle matrix replays and scoped lanes such as
-`mars-harness validation agent-smoke`.
+`mars validation agent-smoke`.
 
 A matrix run report records the selected matrix or suite, all selected cases or
 archetypes, exact command, source ref or installed binary, model identity,
@@ -126,8 +126,8 @@ validation claim unconfirmed until a passing rerun exists.
 
 ### AD-294: Compartmentalised Agent Smoke Complements Full Sweeps
 
-Mars Harness also provides a fast role-local validation lane:
-`mars-harness validation agent-smoke`. This lane generates fresh ephemeral
+MARS also provides a fast role-local validation lane:
+`mars validation agent-smoke`. This lane generates fresh ephemeral
 target repositories for selected roles and project types, seeds each target
 through foundation scaffold/tool surfaces, executes the selected role through
 the server job path, records generation provenance and terminal disposition,
@@ -146,7 +146,7 @@ letting one compartmentalised case become a full lifecycle sweep.
 
 Agent smoke does **not** replace the clean-project lifecycle replay required
 for broad runtime, orchestration, or release claims. It catches role-local
-regressions and project-shape overfitting earlier; full `mars-harness start`
+regressions and project-shape overfitting earlier; full `mars start`
 sweeps still prove cross-role handoff quality and lifecycle progress.
 
 ### AD-298: Confidence-Gated Planning For Foundation Observations
@@ -158,7 +158,7 @@ assumptions are hidden in prose, when discoverable repo facts have not been
 checked, or when validation evidence is not mapped to the claim it supports.
 
 This rule is source-only first. It applies to `foundation-maintainer` plans for
-the Mars Harness software factory and is not mirrored into generated target
+the MARS software factory and is not mirrored into generated target
 harnesses until the pattern proves reusable beyond foundation work.
 
 Every non-trivial foundation plan created from observations uses this template:
@@ -222,7 +222,7 @@ visible without letting it displace the outcome the operator asked to prove.
 ### AD-304: External AI Clients Use Role-Assuming Subagents For Foundation Work
 
 When Codex, Cursor, Claude, Gemini, Copilot, or another capable AI coding
-client changes the Mars Harness source repo, the primary client instance acts
+client changes the MARS source repo, the primary client instance acts
 as `foundation-maintainer` and Orchestrator/integrator. For non-trivial source
 work, the primary client uses role-assuming subagents, separate worktree
 threads, or explicit role-labelled work packets that assume existing Mars

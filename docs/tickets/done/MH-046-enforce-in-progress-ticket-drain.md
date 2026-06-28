@@ -20,7 +20,7 @@ source: Mars parity workstream E
 created: 2026-05-03
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "ticket-queue"
   category: "active_ticket_accumulation"
   severity: "high"

@@ -35,29 +35,29 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/codeintel"
-	"github.com/greaveselliott/mars-harness/internal/dashboard"
-	"github.com/greaveselliott/mars-harness/internal/evolution"
-	gh "github.com/greaveselliott/mars-harness/internal/github"
-	"github.com/greaveselliott/mars-harness/internal/hardware"
-	"github.com/greaveselliott/mars-harness/internal/inference"
-	"github.com/greaveselliott/mars-harness/internal/integrations"
-	jiraintegration "github.com/greaveselliott/mars-harness/internal/jira"
-	"github.com/greaveselliott/mars-harness/internal/orchestration"
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
-	"github.com/greaveselliott/mars-harness/internal/power"
-	"github.com/greaveselliott/mars-harness/internal/queue"
-	"github.com/greaveselliott/mars-harness/internal/remediation"
-	"github.com/greaveselliott/mars-harness/internal/safety"
-	"github.com/greaveselliott/mars-harness/internal/scanner"
-	"github.com/greaveselliott/mars-harness/internal/scheduler"
-	"github.com/greaveselliott/mars-harness/internal/scoring"
-	"github.com/greaveselliott/mars-harness/internal/telemetry"
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
-	"github.com/greaveselliott/mars-harness/internal/trace"
-	"github.com/greaveselliott/mars-harness/internal/trust"
-	"github.com/greaveselliott/mars-harness/internal/ui"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/codeintel"
+	"github.com/greaveselliott/mars/internal/dashboard"
+	"github.com/greaveselliott/mars/internal/evolution"
+	gh "github.com/greaveselliott/mars/internal/github"
+	"github.com/greaveselliott/mars/internal/hardware"
+	"github.com/greaveselliott/mars/internal/inference"
+	"github.com/greaveselliott/mars/internal/integrations"
+	jiraintegration "github.com/greaveselliott/mars/internal/jira"
+	"github.com/greaveselliott/mars/internal/orchestration"
+	"github.com/greaveselliott/mars/internal/orgstate"
+	"github.com/greaveselliott/mars/internal/power"
+	"github.com/greaveselliott/mars/internal/queue"
+	"github.com/greaveselliott/mars/internal/remediation"
+	"github.com/greaveselliott/mars/internal/safety"
+	"github.com/greaveselliott/mars/internal/scanner"
+	"github.com/greaveselliott/mars/internal/scheduler"
+	"github.com/greaveselliott/mars/internal/scoring"
+	"github.com/greaveselliott/mars/internal/telemetry"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
+	"github.com/greaveselliott/mars/internal/trace"
+	"github.com/greaveselliott/mars/internal/trust"
+	"github.com/greaveselliott/mars/internal/ui"
 )
 
 const (
@@ -134,7 +134,7 @@ func New(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("serve: WebhookAddr is required — set it to e.g. \":9091\"")
 	}
 	if cfg.DBPath == "" {
-		return nil, fmt.Errorf("serve: DBPath is required — set it to e.g. \"~/.mars-harness/db/mars.db\"")
+		return nil, fmt.Errorf("serve: DBPath is required — set it to e.g. \"~/.mars/db/mars.db\"")
 	}
 
 	db, err := sql.Open("sqlite", cfg.DBPath+"?_journal=WAL&_busy_timeout=5000")
@@ -165,7 +165,7 @@ func New(cfg Config) (*Server, error) {
 			db.Close()
 			return nil, fmt.Errorf("serve: resolve models directory: %w", homeErr)
 		}
-		modelsDir = filepath.Join(home, ".mars-harness", "models")
+		modelsDir = filepath.Join(home, ".mars", "models")
 	}
 	if modelEndpoint != "" {
 		modelSet = map[hardware.Tier]hardware.ModelSpec{}
@@ -505,7 +505,7 @@ func (s *Server) Stop(ctx context.Context) error {
 	shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	if n, err := s.queue.PreemptPending(shutdownCtx, "orchestrator stopped with pending work — resume with mars-harness start"); err != nil {
+	if n, err := s.queue.PreemptPending(shutdownCtx, "orchestrator stopped with pending work — resume with mars start"); err != nil {
 		slog.Warn("serve: failed to preempt pending jobs on stop", "err", err)
 	} else if n > 0 {
 		slog.Warn("serve: preempted pending jobs on stop", "count", n)
@@ -1202,7 +1202,7 @@ func (s *Server) SeedJob(ctx context.Context, repoID, role, trigger string) (str
 }
 
 // SeedBootstrapJob enqueues the first bootstrap job with a stable key so
-// restarting `mars-harness start` cannot duplicate an already-active pipeline.
+// restarting `mars start` cannot duplicate an already-active pipeline.
 func (s *Server) SeedBootstrapJob(ctx context.Context, repoID, role, trigger string) (string, error) {
 	idempotencyKey := fmt.Sprintf("seed:%s:%s:bootstrap", repoID, role)
 	return s.seedJob(ctx, repoID, role, trigger, idempotencyKey)
@@ -1937,7 +1937,7 @@ func (s *Server) enqueueConvergenceRetry(ctx context.Context, job *queue.Job, ca
 func (s *Server) recordConvergenceEscalation(ctx context.Context, job *queue.Job, cat telemetry.FailureCategory, fingerprint string, jobErr error, traceID, why string) {
 	log := slog.With("job_id", job.ID, "role", job.Role, "repo_id", job.RepoID)
 	reason := fmt.Sprintf(
-		"convergence failure %s exhausted its automatic retry budget (%s); operator retry required: POST /api/run-role {\"repo_id\":%q,\"role\":%q} or mars-harness run %s --repo <repo-path>; fingerprint=%s; last error: %s",
+		"convergence failure %s exhausted its automatic retry budget (%s); operator retry required: POST /api/run-role {\"repo_id\":%q,\"role\":%q} or mars run %s --repo <repo-path>; fingerprint=%s; last error: %s",
 		cat, why, job.RepoID, job.Role, job.Role, fingerprint, jobErr.Error(),
 	)
 	log.Warn("serve: convergence failure escalated to operator after automatic retry budget",

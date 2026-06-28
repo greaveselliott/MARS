@@ -115,7 +115,7 @@ func requiredArtifactsForRepo(absRepo string) []requiredArtifact {
 	return filtered
 }
 
-// IsFoundationHarnessRepo reports whether repoPath is the mars-harness source
+// IsFoundationHarnessRepo reports whether repoPath is the mars source
 // repo. The source harness records doctrine in AGENTS.md and docs rather than
 // in generated target .harness metadata.
 func IsFoundationHarnessRepo(absRepo string) bool {
@@ -123,13 +123,23 @@ func IsFoundationHarnessRepo(absRepo string) bool {
 	if err != nil {
 		return false
 	}
-	if !strings.Contains(string(data), "module github.com/greaveselliott/mars-harness") {
+	if !goModDeclaresModule(string(data), "github.com/greaveselliott/mars") {
 		return false
 	}
 	if _, err := os.Stat(filepath.Join(absRepo, "internal", "scanner", "init.go")); err != nil {
 		return false
 	}
 	return true
+}
+
+func goModDeclaresModule(text, modulePath string) bool {
+	for _, line := range strings.Split(text, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 2 && fields[0] == "module" && fields[1] == modulePath {
+			return true
+		}
+	}
+	return false
 }
 
 func containsFold(text, needle string) bool {

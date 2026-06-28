@@ -2,11 +2,11 @@
 
 **Status:** Accepted
 **Updated:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ## Purpose
 
-This directory is the living product contract for Mars Harness. It answers what the product promises, who it serves, what surfaces users and agents can rely on, and how the specs stay current as the harness evolves.
+This directory is the living product contract for MARS. It answers what the product promises, who it serves, what surfaces users and agents can rely on, and how the specs stay current as the harness evolves.
 
 Design docs remain the place for architecture decisions. Exec plans remain the place for active delivery work. Product specs define the durable product shape those docs and plans are trying to serve.
 
@@ -17,7 +17,7 @@ Design docs remain the place for architecture decisions. Exec plans remain the p
 | [vision.md](vision.md) | Product promise, audience, principles, success measures, and north star. | The product promise, target user, tenets, or success measures change. |
 | [product-surface.md](product-surface.md) | Current user-facing commands, generated artifacts, roles, safety model, scoring, trust, inference, and open hardening areas. | CLI behavior, generated target harness files, role semantics, scoring, trust, setup, doctor, safety, or integrations change. |
 | [dashboard-control-plane.md](dashboard-control-plane.md) | Planned TanStack dashboard control plane contract: external Node prerequisite, local-admin auth, nonblocking APIs, Overview, Active Work, Preview, Agent Roster, Models, and GitHub-derived DORA. | Dashboard architecture, runtime prerequisites, auth, dashboard APIs, preview behavior, roster/model mutation proposals, or delivery metrics change. |
-| [mars-relationship.md](mars-relationship.md) | How Mars informs Mars Harness and what supersession means. | Mars parity work changes, a Mars lesson is imported, or supersession criteria move. |
+| [mars-relationship.md](mars-relationship.md) | How Mars informs MARS and what supersession means. | Mars parity work changes, a Mars lesson is imported, or supersession criteria move. |
 | [spec-maintenance.md](spec-maintenance.md) | How product specs self-document as the harness evolves. | Documentation governance, consistency checks, or product-spec ownership changes. |
 
 ## Freshness Contract

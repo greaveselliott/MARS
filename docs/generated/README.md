@@ -2,11 +2,11 @@
 
 **Status:** Accepted
 **Updated:** 2026-05-02
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ## Purpose
 
-This directory is reserved for committed, reproducible reference documents generated from Mars Harness source state. It exists so agents can read stable summaries without re-scanning the whole codebase every run.
+This directory is reserved for committed, reproducible reference documents generated from MARS source state. It exists so agents can read stable summaries without re-scanning the whole codebase every run.
 
 It is not a place for hand-written design decisions, product specs, tickets, or plans. Those belong in their normal directories.
 
@@ -14,7 +14,7 @@ It is not a place for hand-written design decisions, product specs, tickets, or 
 
 No generated reference artifacts are committed yet. Model evaluation reports may
 be generated under `docs/generated/model-evaluations/` by
-`mars-harness models evaluate`; commit only reports that support a default-model
+`mars models evaluate`; commit only reports that support a default-model
 decision or benchmark record.
 
 ## Intended Artifacts
@@ -27,7 +27,7 @@ Future generated docs should be small, deterministic, and useful as context rout
 | Tool inventory | `internal/tools/` registry | Lets agents inspect tool names, mutability, and policy constraints without reading every tool file. |
 | Package map | `internal/` and `cmd/` packages | Gives agents a compact codebase map before deep file reads. |
 | Model inventory | hardware registry and setup config | Shows pinned model choices, revisions, checksums, and hardware profile mapping. |
-| Model evaluation reports | `mars-harness models evaluate` benchmark output | Records provider, model, hardware profile, benchmark pass/fail, timing, token counts, and promotion blockers for candidate review. |
+| Model evaluation reports | `mars models evaluate` benchmark output | Records provider, model, hardware profile, benchmark pass/fail, timing, token counts, and promotion blockers for candidate review. |
 | Score export | scoring database or exported score state | Makes role health visible in the repo when exported intentionally. |
 | Bundle schema reference | bundle structs and examples | Documents generated target harness inputs without duplicating implementation docs. |
 

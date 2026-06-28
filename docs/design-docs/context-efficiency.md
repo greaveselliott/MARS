@@ -2,7 +2,7 @@
 
 **Status:** Draft  
 **Date:** 2026-04-11  
-**Author:** Mars Harness contributors
+**Author:** MARS contributors
 
 How the harness keeps prompts **small, relevant, and bounded** while still giving roles enough signal to succeed—complements additive assembly in [agent-runtime.md](agent-runtime.md) (AD-006).
 
@@ -111,5 +111,5 @@ Document default budgets in `.harness/` examples so new repos inherit sensible c
   this measurement.
 
 - **2026-04-11 — MH-004 assembler:** `internal/context.Assemble` builds fixed-order sections (`## ROLE`, `## GUARDRAILS`, `## KNOWLEDGE ROUTES`, `## TRIGGER CONTEXT`, `## REPO SUMMARY`), omits optional blocks when empty, filters guardrails by `Scope` (empty/`all` = global), formats knowledge as bullet lines `When working on X, read Y`, and applies a token **budget** using `llm.EstimateTokens` by iteratively shrinking lowest-priority bodies first (`repo` < `trigger` < `knowledge`; `role` is never truncated; shrinking stops if the budget still cannot be met without editing the role text).
-- **2026-05-02 — Context glossary default:** `mars-harness init` now emits a target `AGENTS.md`, `docs/design-docs/context-glossary.md`, and `.harness/knowledge/context-glossary.yaml`. Default roles reference the glossary route file so the base prompt carries a compact map, not full project doctrine.
+- **2026-05-02 — Context glossary default:** `mars init` now emits a target `AGENTS.md`, `docs/design-docs/context-glossary.md`, and `.harness/knowledge/context-glossary.yaml`. Default roles reference the glossary route file so the base prompt carries a compact map, not full project doctrine.
 - **2026-05-21 — Run metadata grounding:** `internal/context.Assemble` can include a compact `## RUN METADATA` section with current date, timestamp, and timezone. Server jobs populate it from the executor clock, and budget trimming preserves it alongside the role prompt so dated artifacts cannot drift to stale model-memory dates when shell time commands are unavailable.

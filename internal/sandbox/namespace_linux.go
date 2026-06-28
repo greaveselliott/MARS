@@ -12,12 +12,13 @@ package sandbox
 import (
 	"context"
 	"log/slog"
-	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/greaveselliott/mars/internal/config"
 )
 
 const linuxNamespaceFlags = syscall.CLONE_NEWNS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNET
@@ -53,7 +54,7 @@ func linuxNamespacesAvailable() bool {
 }
 
 func linuxNamespacesDisabledByEnv() bool {
-	value := strings.ToLower(strings.TrimSpace(os.Getenv("MARS_HARNESS_DISABLE_LINUX_NAMESPACES")))
+	value := strings.ToLower(strings.TrimSpace(config.Env("MARS_DISABLE_LINUX_NAMESPACES")))
 	switch value {
 	case "1", "true", "yes", "on":
 		return true

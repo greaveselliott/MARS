@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/hardware"
+	"github.com/greaveselliott/mars/internal/hardware"
 	"gopkg.in/yaml.v3"
 )
 
@@ -55,7 +55,7 @@ func SetModelOverride(repoRoot, tier, role string, override ModelOverride) (stri
 
 	harnessDir := filepath.Join(repoRoot, ".harness")
 	if info, err := os.Stat(harnessDir); err != nil || !info.IsDir() {
-		return "", fmt.Errorf("models override: %s is missing — run `mars-harness init --repo %s` first", harnessDir, repoRoot)
+		return "", fmt.Errorf("models override: %s is missing — run `mars init --repo %s` first", harnessDir, repoRoot)
 	}
 
 	path := filepath.Join(repoRoot, modelOverridesPath)

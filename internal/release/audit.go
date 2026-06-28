@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/selfupdate"
+	"github.com/greaveselliott/mars/internal/selfupdate"
 )
 
 // AuditConfig controls release mirror auditing.
@@ -125,7 +125,7 @@ func Audit(ctx context.Context, cfg AuditConfig) (AuditResult, error) {
 				TagName: tag,
 				Class:   AuditMissingRelease,
 				Remediation: fmt.Sprintf(
-					"checkout the %s release-note commit, then run: mars-harness release publish-assets --repo . --version %s --upload github",
+					"checkout the %s release-note commit, then run: mars release publish-assets --repo . --version %s --upload github",
 					tag, tag),
 			})
 			continue
@@ -137,7 +137,7 @@ func Audit(ctx context.Context, cfg AuditConfig) (AuditResult, error) {
 				Class:   AuditNotesOnly,
 				Missing: report.Missing,
 				Remediation: fmt.Sprintf(
-					"checkout the %s release-note commit, then run: mars-harness release publish-assets --repo . --version %s --upload github",
+					"checkout the %s release-note commit, then run: mars release publish-assets --repo . --version %s --upload github",
 					tag, tag),
 			})
 		}
@@ -222,7 +222,7 @@ func fetchGitHubReleases(ctx context.Context, client *http.Client, repoFullName 
 	if err != nil {
 		return nil, fmt.Errorf("release audit: build request: %w", err)
 	}
-	selfupdate.SetGitHubAPIHeaders(req, "mars-harness-release-audit")
+	selfupdate.SetGitHubAPIHeaders(req, "mars-release-audit")
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("release audit: request %s: %w", url, err)

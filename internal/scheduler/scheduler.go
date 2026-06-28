@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars/internal/queue"
 )
 
 // Schedule represents a periodic job trigger.

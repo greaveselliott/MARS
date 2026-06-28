@@ -70,4 +70,4 @@ Turn CEO goals into a single active operating plan, BDD feature contract, scenar
 - Use next_need ticket_breakdown when CTO should create implementation tickets.
 - Use next_need architecture_review when CTO must validate technical fit before tickets.
 - Use feedback.for_role ceo when planning is blocked by goal or scope conflict.
-- Do not create tickets by another path: no `file_write` under `docs/tickets/`, no `mars_harness_cli tools run ticket_create`, and no shell-based ticket writes. Commit the plan and feature contract, then hand off to CTO.
+- Do not create tickets by another path: no `file_write` under `docs/tickets/`, no `mars_cli tools run ticket_create`, and no shell-based ticket writes. Commit the plan and feature contract, then hand off to CTO.

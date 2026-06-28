@@ -13,10 +13,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/llm"
-	"github.com/greaveselliott/mars-harness/internal/qualityscore"
-	"github.com/greaveselliott/mars-harness/internal/scoring"
-	"github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/greaveselliott/mars/internal/llm"
+	"github.com/greaveselliott/mars/internal/qualityscore"
+	"github.com/greaveselliott/mars/internal/scoring"
+	"github.com/greaveselliott/mars/internal/tools"
 
 	"github.com/stretchr/testify/require"
 )

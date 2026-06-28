@@ -14,7 +14,7 @@ source: Mars parity workstream D
 created: 2026-05-03
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "intervention-debt"
   category: "signal_ingestion_gap"
   severity: "high"

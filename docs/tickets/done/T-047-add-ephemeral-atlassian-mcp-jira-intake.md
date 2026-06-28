@@ -53,9 +53,9 @@ The initial Plan 2 JIRA poll path was direct REST and live verification exposed 
 - PASS: `git diff --check`
 - PASS: `GOCACHE=<validation-root> go test ./...`
 - PASS: `GOCACHE=<validation-root> make check`
-- PASS: `mars-harness release backfill-notes --repo . --check`
-- PASS: `mars-harness release publish-assets --repo . --version v0.65.0 --upload auto`
-- PASS: `mars-harness release verify-assets --dist dist/releases --version v0.65.0`
+- PASS: `mars release backfill-notes --repo . --check`
+- PASS: `mars release publish-assets --repo . --version v0.65.0 --upload auto`
+- PASS: `mars release verify-assets --dist dist/releases --version v0.65.0`
 - PASS: GitHub release mirror published for `v0.65.0`.
 - BLOCKED: `MARS_JIRA_LIVE=1 MARS_JIRA_CLOUD_ID=<cloud-id-or-empty-when-site-url-works> MARS_JIRA_SITE_URL=<jira-site-url> GOCACHE=<validation-root> go test -count=1 ./internal/jira -run TestLiveAtlassianMCPJiraIntake -v`
 - BLOCKED: `MARS_JIRA_LIVE=1 MARS_JIRA_MCP_ENDPOINT=https://mcp.atlassian.com/v1/mcp/authv2 MARS_JIRA_CLOUD_ID=<cloud-id-or-empty-when-site-url-works> MARS_JIRA_SITE_URL=<jira-site-url> GOCACHE=<validation-root> go test -count=1 ./internal/jira -run TestLiveAtlassianMCPJiraIntake -v`

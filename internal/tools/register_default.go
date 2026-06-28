@@ -27,7 +27,7 @@ func RegisterBuiltinTools(r *Registry) error {
 		registerWorkspaceHygiene,
 		registerGithubAuthCheck,
 		registerDependencySync,
-		registerMarsHarnessCLI,
+		registerMarsCLI,
 		registerGitTools,
 		registerRecordDecision,
 		registerTicketCreate,

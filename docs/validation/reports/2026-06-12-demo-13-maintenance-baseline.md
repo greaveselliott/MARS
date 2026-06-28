@@ -8,23 +8,23 @@ Recorded per the AD-285 evidence contract including model identity.
 
 ## Run 1: Phaser/Tetris maintenance target on v0.50.2 — 2026-06-12
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-13-balanced-maintenance-start.log`
+  ~/.mars/traces/logs/demo-13-balanced-maintenance-start.log`
 - **Target:** `/path/to/local-redacted` — an
   existing repo with prior history (Phaser/Tetris game copied from the
   demo-10 session: prior harness scaffold, claimed ticket, in-progress
   product code) plus a maintenance brief recording a known start-screen
   bug; local bare origin `demo-13-origin.git`; no per-repo DB existed
   before the run
-- **Source ref / binary:** `mars-harness 0.50.2` built from `c0ebceb` on
+- **Source ref / binary:** `mars 0.50.2` built from `c0ebceb` on
   `codex/main-lifecycle-stabilization-rebased`
 - **Model identity (AD-285):** reasoning + coding =
   `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` (ctx 131072 reasoning :18081,
   ctx 32768 coding :18080); fast = `google_gemma-4-E4B-it-Q5_K_M.gguf`;
   resolved from `performance_profile: balanced`
-- **Database / logs:** `~/.mars-harness/db/demo-13/mars.db`;
-  `~/.mars-harness/traces/logs/demo-13-balanced-maintenance-start.log`
+- **Database / logs:** `~/.mars/db/demo-13/mars.db`;
+  `~/.mars/traces/logs/demo-13-balanced-maintenance-start.log`
 - **Job sequence (5 jobs, ~45 min):** ceo 70s → engineer failed
   (**context_overflow**, 1079s) → coo 126s → cto-weekly 122s → engineer
   failed (**context_overflow**, 448s; 32,923 prompt tokens vs 32,768 ctx);
@@ -98,16 +98,16 @@ Validates T-032 / AD-288 on the existing-repo-maintenance archetype — the
 second of the two archetype replays the matrix gate requires for this fix
 (see the demo-12 report Run 2 for the first).
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-13-balanced-maintenance-replay-v0.50.11.log`
+  ~/.mars/traces/logs/demo-13-balanced-maintenance-replay-v0.50.11.log`
 - **Target:** `/path/to/local-redacted` restored to
   its pre-run committed state `fb08fdf` (maintenance brief; prior
   Phaser/Tetris product history and harness scaffold retained per the
   archetype definition), `git clean -fdx`, local bare origin force-pushed
-  back to `fb08fdf`; per-repo DB `~/.mars-harness/db/demo-13` removed
+  back to `fb08fdf`; per-repo DB `~/.mars/db/demo-13` removed
   before the run
-- **Source ref / binary:** `mars-harness 0.50.11` built from `12af153` on
+- **Source ref / binary:** `mars 0.50.11` built from `12af153` on
   `codex/main-lifecycle-stabilization-rebased` (fix commit `bee4f5b`,
   tag `v0.50.11`)
 - **Model identity (AD-285):** unchanged from Run 1 — reasoning + coding =
@@ -115,8 +115,8 @@ second of the two archetype replays the matrix gate requires for this fix
   ctx 32768 coding :18080); fast = `google_gemma-4-E4B-it-Q5_K_M.gguf`;
   resolved from `performance_profile: balanced` — pace comparison with
   Run 1 is valid
-- **Database / logs:** `~/.mars-harness/db/demo-13/mars.db`;
-  `~/.mars-harness/traces/logs/demo-13-balanced-maintenance-replay-v0.50.11.log`
+- **Database / logs:** `~/.mars/db/demo-13/mars.db`;
+  `~/.mars/traces/logs/demo-13-balanced-maintenance-replay-v0.50.11.log`
 - **Job sequence (8 jobs, 02:57:08–03:36 UTC; ~42 min, queue drained):**
   ceo `9ec8f113` 99s → engineer `4b2a331c` failed (max_turns, 616s) →
   coo `554404ff` 99s → cto-weekly `d1be85e4` 163s → engineer `09eab37b`

@@ -2,7 +2,7 @@
 
 **Target:** `../mars`
 **Mode:** observer
-**Purpose:** supersession benchmark for proving Mars Harness can inspect the
+**Purpose:** supersession benchmark for proving MARS can inspect the
 legacy Mars repo without writing to it, committing to it, or claiming delivery
 before evidence exists.
 
@@ -11,10 +11,10 @@ before evidence exists.
 Run from this repo with the target path resolved explicitly:
 
 ```bash
-mars-harness doctor --repo ../mars --json
-mars-harness update check --repo ../mars --skip-remote --json
-mars-harness run engineer --repo ../mars --dry-run --trace --no-init
-mars-harness tools run git_status --repo ../mars --trust observer
+mars doctor --repo ../mars --json
+mars update check --repo ../mars --skip-remote --json
+mars run engineer --repo ../mars --dry-run --trace --no-init
+mars tools run git_status --repo ../mars --trust observer
 ```
 
 Use `--no-init` for the dry-run step when `.harness/manifest.yaml` is missing.
@@ -23,7 +23,7 @@ scaffolds for plug-and-play execution; observer validation must opt out so the
 real target remains unchanged.
 
 The first validation pass must not call `file_write`, `shell_exec`,
-`mars_harness_cli`, `git_commit`, `git_push`, `record_decision`,
+`mars_cli`, `git_commit`, `git_push`, `record_decision`,
 `ticket_create`, `tool_create`, or `release_orchestrate` unless the command is
 run against a temporary copy of the target repo.
 

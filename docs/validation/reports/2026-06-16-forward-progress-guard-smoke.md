@@ -30,7 +30,7 @@ tests, full Go suite, and docsync audit passed for the startup guard.
 
 Validated the foundation-owned startup and routing guard added by AD-297:
 
-- startup action is printed through the installed `mars-harness start` surface
+- startup action is printed through the installed `mars start` surface
 - fresh target seeds CEO only when no resumable state exists
 - existing in-progress ticket routes to Engineer instead of reseeding CEO
 - `--new-lifecycle` explicitly reseeds CEO over existing work
@@ -44,9 +44,9 @@ Phaser, and Go API lifecycle sweep.
 Unit and integration coverage:
 
 ```bash
-go test ./cmd/mars-harness ./internal/queue ./internal/serve ./internal/tools
+go test ./cmd/mars ./internal/queue ./internal/serve ./internal/tools
 go test ./...
-mars-harness tools run docsync_audit --repo . --args-json '{}'
+mars tools run docsync_audit --repo . --args-json '{}'
 ```
 
 Installed-binary smoke setup:
@@ -54,19 +54,19 @@ Installed-binary smoke setup:
 ```bash
 make install
 mktemp -d <validation-root>
-mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed
-mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed
-mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed --new-lifecycle
+mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed
+mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed
+mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed --new-lifecycle
 mktemp -d <validation-root>
-mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed
-mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed
+mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed
+mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug --exit-after-seed
 ```
 
 ## Supporting Smoke Results
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| Focused tests | Supporting smoke pass only | `cmd/mars-harness`, `internal/queue`, `internal/serve`, and `internal/tools` passed. |
+| Focused tests | Supporting smoke pass only | `cmd/mars`, `internal/queue`, `internal/serve`, and `internal/tools` passed. |
 | Full Go suite | Supporting smoke pass only | `go test ./...` passed. |
 | Docusync | Supporting smoke pass only | `docsync: checked 303 files, findings 0`. |
 | Fresh startup | Supporting smoke pass only | Printed `startup_action=seeded_ceo role=ceo evidence=no active jobs, tickets, or dispositions found`. |
@@ -86,9 +86,9 @@ docs/validation/reports/2026-06-16-forward-progress-guard-live-run.md
 The live run command shape was:
 
 ```bash
-mars-harness start --repo <ephemeral-static-web>
-mars-harness start --repo <ephemeral-phaser-game>
-mars-harness start --repo <ephemeral-go-api>
+mars start --repo <ephemeral-static-web>
+mars start --repo <ephemeral-phaser-game>
+mars start --repo <ephemeral-go-api>
 ```
 
 That follow-up partially proved the Go API forward path through Engineer and

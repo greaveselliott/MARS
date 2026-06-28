@@ -39,6 +39,6 @@ func TestProfileModelPreflightError_actionable(t *testing.T) {
 	t.Parallel()
 	err := ProfileModelPreflightError(PerformanceBalanced, []string{"missing.gguf"})
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "mars-harness setup")
+	require.Contains(t, err.Error(), "mars setup")
 	require.Contains(t, err.Error(), "missing.gguf")
 }

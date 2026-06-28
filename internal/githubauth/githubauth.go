@@ -18,11 +18,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/config"
+	"github.com/greaveselliott/mars/internal/config"
 )
 
 const (
-	DefaultRepoFullName = "greaveselliott/mars-harness"
+	DefaultRepoFullName = "greaveselliott/MARS"
 
 	StatusOK   = "ok"
 	StatusWarn = "warn"
@@ -125,7 +125,7 @@ func ResolveToken(ctx context.Context, opts Options) ResolveResult {
 	return ResolveResult{Token: Token{Source: SourceNone}, GHCLIError: ghErr, ConfigErr: cfgErr}
 }
 
-// Check verifies that a resolved token can read private Mars Harness release
+// Check verifies that a resolved token can read private MARS release
 // metadata. It intentionally never includes the token in output.
 func Check(ctx context.Context, opts Options) Report {
 	resolved := ResolveToken(ctx, opts)
@@ -180,7 +180,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 			RepoAccess:    "unknown",
 			ReleaseAccess: "unknown",
 			Message:       "private release auth is not configured",
-			NextAction:    "Run `gh auth login`, then `mars-harness auth github setup`; for headless installs set GH_TOKEN or GITHUB_TOKEN with repository contents read access.",
+			NextAction:    "Run `gh auth login`, then `mars auth github setup`; for headless installs set GH_TOKEN or GITHUB_TOKEN with repository contents read access.",
 		}
 	}
 
@@ -204,11 +204,11 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 			RepoAccess:    "unknown",
 			ReleaseAccess: "unknown",
 			Message:       "could not build private release auth request",
-			NextAction:    "Check the configured release endpoint and rerun `mars-harness auth github check`.",
+			NextAction:    "Check the configured release endpoint and rerun `mars auth github check`.",
 		}
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "mars-harness-github-auth-check")
+	req.Header.Set("User-Agent", "mars-github-auth-check")
 	req.Header.Set("Authorization", "Bearer "+token.Value)
 
 	resp, err := client.Do(req)
@@ -219,7 +219,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 			RepoAccess:    "unknown",
 			ReleaseAccess: "unknown",
 			Message:       fmt.Sprintf("private release auth check could not reach GitHub: %v", err),
-			NextAction:    "Check network connectivity, then rerun `mars-harness auth github check`.",
+			NextAction:    "Check network connectivity, then rerun `mars auth github check`.",
 		}
 	}
 	defer resp.Body.Close()
@@ -231,7 +231,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 			AuthSource:    token.Source,
 			RepoAccess:    "ok",
 			ReleaseAccess: "ok",
-			Message:       "private release auth can read Mars Harness release metadata",
+			Message:       "private release auth can read MARS release metadata",
 		}
 	case http.StatusUnauthorized:
 		return Report{
@@ -240,12 +240,12 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 			RepoAccess:    "denied",
 			ReleaseAccess: "denied",
 			Message:       "GitHub rejected the private release token",
-			NextAction:    "Run `gh auth login`, then `mars-harness auth github setup`; headless installs should refresh GH_TOKEN or GITHUB_TOKEN.",
+			NextAction:    "Run `gh auth login`, then `mars auth github setup`; headless installs should refresh GH_TOKEN or GITHUB_TOKEN.",
 		}
 	case http.StatusForbidden:
-		next := "Use a token with repository contents read access for " + repoName(opts.RepoFullName) + ", then rerun `mars-harness auth github setup`."
+		next := "Use a token with repository contents read access for " + repoName(opts.RepoFullName) + ", then rerun `mars auth github setup`."
 		if strings.TrimSpace(resp.Header.Get("X-GitHub-SSO")) != "" {
-			next = "Authorize SSO for this token in GitHub, then rerun `mars-harness auth github setup`."
+			next = "Authorize SSO for this token in GitHub, then rerun `mars auth github setup`."
 		}
 		return Report{
 			Status:        StatusFail,
@@ -261,7 +261,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 			AuthSource:    token.Source,
 			RepoAccess:    "not_found",
 			ReleaseAccess: "not_found",
-			Message:       "the resolved token cannot see Mars Harness private releases",
+			Message:       "the resolved token cannot see MARS private releases",
 			NextAction:    "Authenticate GitHub CLI as an account with access to " + repoName(opts.RepoFullName) + ", or set GH_TOKEN/GITHUB_TOKEN for that account.",
 		}
 	default:
@@ -271,7 +271,7 @@ func checkToken(ctx context.Context, opts Options, token Token) Report {
 			RepoAccess:    "unknown",
 			ReleaseAccess: "unknown",
 			Message:       fmt.Sprintf("private release auth check returned %s", resp.Status),
-			NextAction:    "Rerun `mars-harness auth github check`; if it persists, verify GitHub API access and release publication.",
+			NextAction:    "Rerun `mars auth github check`; if it persists, verify GitHub API access and release publication.",
 		}
 	}
 }

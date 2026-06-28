@@ -10,7 +10,7 @@ package agent
 import (
 	"fmt"
 
-	"github.com/greaveselliott/mars-harness/internal/scoring"
+	"github.com/greaveselliott/mars/internal/scoring"
 )
 
 // SuccessfulEnd reports whether a loop terminal reason represents completed work.

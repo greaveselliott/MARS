@@ -22,17 +22,17 @@ frontend leg of this checkpoint is demo-12 Run 4 in
 
 ## Run 1: operator-preempted (PAUSED — evidence-only, not checkpoint evidence) — 2026-06-12
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-15-api-ad287-final-checkpoint-v0.50.24.log`
-- **Source ref / binary:** `mars-harness 0.50.24` built from `ffa2629`
+  ~/.mars/traces/logs/demo-15-api-ad287-final-checkpoint-v0.50.24.log`
+- **Source ref / binary:** `mars 0.50.24` built from `ffa2629`
   (extraction commit `5cd4eb3`, tag `v0.50.24`), installed via `make install`
 - **Model identity (AD-285):** reasoning + coding =
   `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` (ctx 131072 reasoning :18081,
   ctx 32768 coding :18080); fast = `google_gemma-4-E4B-it-Q5_K_M.gguf`;
   resolved from `performance_profile: balanced`
-- **Database / logs:** `~/.mars-harness/db/demo-15/mars.db`;
-  `~/.mars-harness/traces/logs/demo-15-api-ad287-final-checkpoint-v0.50.24.log`
+- **Database / logs:** `~/.mars/db/demo-15/mars.db`;
+  `~/.mars/traces/logs/demo-15-api-ad287-final-checkpoint-v0.50.24.log`
 - **Job sequence (4 jobs, 09:52:15–~10:04 UTC; preempted at ~12 min):**
   ceo `ab2b16fc` completed → coo `1983b1ee` failed (max_turns; churned
   five feature-contract rewrite commits) → coo `ed5a5b7b` (AD-289
@@ -56,7 +56,7 @@ frontend leg of this checkpoint is demo-12 Run 4 in
   drift. On resume the run must be discarded and replayed from a clean
   reset: reset demo-15 to `62861dc` (`git reset --hard 62861dc && git
   clean -fdx`), force-push `demo-15-origin.git` back to the seed, delete
-  `~/.mars-harness/db/demo-15`, and rerun the exact command above to
+  `~/.mars/db/demo-15`, and rerun the exact command above to
   natural queue drain (demo-14 took ~126 min).
 
 ## Checkpoint status
@@ -69,18 +69,18 @@ zero `context_overflow`, zero policy panics. T-043 closed 2026-06-12.
 
 ## Run 2: clean-seed replay to natural drain — 2026-06-12
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-15-api-ad287-final-checkpoint-v0.50.24.log`
+  ~/.mars/traces/logs/demo-15-api-ad287-final-checkpoint-v0.50.24.log`
 - **Pre-run reset:** `git reset --hard 62861dc && git clean -fdx`; force-push
-  `demo-15-origin.git`; deleted `~/.mars-harness/db/demo-15`
-- **Source ref / binary:** `mars-harness 0.50.24` (extraction commit `5cd4eb3`,
+  `demo-15-origin.git`; deleted `~/.mars/db/demo-15`
+- **Source ref / binary:** `mars 0.50.24` (extraction commit `5cd4eb3`,
   tag `v0.50.24`)
 - **Model identity (AD-285):** balanced profile — reasoning/coding =
   `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf`; fast =
   `google_gemma-4-E4B-it-Q5_K_M.gguf`
-- **Database / logs:** `~/.mars-harness/db/demo-15/mars.db`;
-  `~/.mars-harness/traces/logs/demo-15-api-ad287-final-checkpoint-v0.50.24.log`
+- **Database / logs:** `~/.mars/db/demo-15/mars.db`;
+  `~/.mars/traces/logs/demo-15-api-ad287-final-checkpoint-v0.50.24.log`
 - **Wall clock:** 2026-06-12 10:55 UTC → 18:39 UTC (~7h 44m job span; orchestrator
   uptime ~8h 58m including idle tail)
 - **Job totals:** 80 jobs — 67 completed, 12 failed, 1 cancelled; **0
@@ -100,7 +100,7 @@ zero `context_overflow`, zero policy panics. T-043 closed 2026-06-12.
 - **Operator interventions:** deployed-owned compile/router wedge on first T-001
   cycle required external repair before QA dispatch; subsequent cycles completed
   within harness dispatch (AD-289 automatic retries on several roles)
-- **Telemetry:** `mars-harness scores export --repo demo-15` →
+- **Telemetry:** `mars scores export --repo demo-15` →
   `docs/QUALITY_SCORE.md` (overall grade D — convergence-heavy, expected for
   first API archetype run)
 - **Stop reason:** natural queue drain (orchestrator idle, `active_jobs: 0`)

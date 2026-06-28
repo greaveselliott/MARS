@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/hardware"
+	"github.com/greaveselliott/mars/internal/hardware"
 	"github.com/stretchr/testify/require"
 )
 
@@ -176,7 +176,7 @@ func TestPortReservationDetectsLiveAndStaleLocks(t *testing.T) {
 	require.Equal(t, os.Getpid(), conflict.PID)
 	require.Contains(t, conflict.Error(), "inference_port_conflict")
 
-	stalePath := filepath.Join(os.TempDir(), "mars-harness-inference-ports", "25302.lock")
+	stalePath := filepath.Join(os.TempDir(), "mars-inference-ports", "25302.lock")
 	require.NoError(t, os.MkdirAll(filepath.Dir(stalePath), 0o755))
 	require.NoError(t, os.WriteFile(stalePath, []byte("-1\n"), 0o644))
 	staleReservation, err := acquirePortReservation(25302)
@@ -184,7 +184,7 @@ func TestPortReservationDetectsLiveAndStaleLocks(t *testing.T) {
 	t.Cleanup(staleReservation.Release)
 	info := readPortLockInfo(stalePath)
 	require.Equal(t, os.Getpid(), info.PID)
-	require.Equal(t, "mars-harness", info.Owner)
+	require.Equal(t, "mars", info.Owner)
 }
 
 func TestRouterResolveServerPortAllocatesNextPortWhenLockIsUnhealthy(t *testing.T) {
@@ -205,7 +205,7 @@ func TestRouterResolveServerPortAllocatesNextPortWhenLockIsUnhealthy(t *testing.
 
 func TestRouterResolveServerPortTreatsFreshInvalidLockAsActive(t *testing.T) {
 	port := 25410
-	lockPath := filepath.Join(os.TempDir(), "mars-harness-inference-ports", fmt.Sprintf("%d.lock", port))
+	lockPath := filepath.Join(os.TempDir(), "mars-inference-ports", fmt.Sprintf("%d.lock", port))
 	require.NoError(t, os.MkdirAll(filepath.Dir(lockPath), 0o755))
 	require.NoError(t, os.WriteFile(lockPath, nil, 0o644))
 	t.Cleanup(func() { _ = os.Remove(lockPath) })
@@ -406,7 +406,7 @@ func TestRouter_serverForRoleErrorsWithoutModelOrFallback(t *testing.T) {
 
 	_, err := r.ServerForRole(context.Background(), "unknown-role")
 	require.Error(t, err)
-	require.ErrorContains(t, err, "run `mars-harness setup`")
+	require.ErrorContains(t, err, "run `mars setup`")
 }
 
 func TestRouter_serverForRoleModelUsesManifestTierInError(t *testing.T) {

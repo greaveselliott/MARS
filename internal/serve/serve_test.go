@@ -27,13 +27,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	jiraintegration "github.com/greaveselliott/mars-harness/internal/jira"
-	"github.com/greaveselliott/mars-harness/internal/queue"
-	"github.com/greaveselliott/mars-harness/internal/scanner"
-	"github.com/greaveselliott/mars-harness/internal/scheduler"
-	"github.com/greaveselliott/mars-harness/internal/scoring"
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
+	"github.com/greaveselliott/mars/internal/bundle"
+	jiraintegration "github.com/greaveselliott/mars/internal/jira"
+	"github.com/greaveselliott/mars/internal/queue"
+	"github.com/greaveselliott/mars/internal/scanner"
+	"github.com/greaveselliott/mars/internal/scheduler"
+	"github.com/greaveselliott/mars/internal/scoring"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 	"github.com/stretchr/testify/require"
 )
 

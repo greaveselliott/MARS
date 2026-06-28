@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/safety"
+	"github.com/greaveselliott/mars/internal/safety"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,7 +62,19 @@ func TestShellExecArgvAllowsNodeEvalCodeArgument(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestShellExecPolicyBlocksMarsHarnessBinaryArgv(t *testing.T) {
+func TestShellExecPolicyBlocksMarsBinaryArgv(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	root, err := NewRoot(dir)
+	require.NoError(t, err)
+
+	err = preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"argv":["mars","release","notes","--repo",".","--bump","auto","--dry-run"]}`))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "mars_cli")
+	require.Contains(t, err.Error(), `["release","notes","--repo",".","--bump","auto","--dry-run"]`)
+}
+
+func TestShellExecPolicyBlocksLegacyMarsHarnessBinaryArgv(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	root, err := NewRoot(dir)
@@ -70,19 +82,19 @@ func TestShellExecPolicyBlocksMarsHarnessBinaryArgv(t *testing.T) {
 
 	err = preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"argv":["mars-harness","release","notes","--repo",".","--bump","auto","--dry-run"]}`))
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "mars_harness_cli")
+	require.Contains(t, err.Error(), "mars_cli")
 	require.Contains(t, err.Error(), `["release","notes","--repo",".","--bump","auto","--dry-run"]`)
 }
 
-func TestShellExecPolicyBlocksMarsHarnessBinaryShellCommand(t *testing.T) {
+func TestShellExecPolicyBlocksMarsBinaryShellCommand(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	root, err := NewRoot(dir)
 	require.NoError(t, err)
 
-	err = preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"shell_command":"MARS_HARNESS_CLI_BIN=/tmp/current mars-harness release backfill-notes --repo . --check"}`))
+	err = preToolPolicy(context.Background(), root, "shell_exec", []byte(`{"shell_command":"MARS_CLI_BIN=/tmp/current mars release backfill-notes --repo . --check"}`))
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "mars_harness_cli")
+	require.Contains(t, err.Error(), "mars_cli")
 	require.Contains(t, err.Error(), `["release","backfill-notes","--repo",".","--check"]`)
 }
 

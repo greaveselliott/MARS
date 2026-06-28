@@ -9,7 +9,7 @@ bdd_scenarios: ["F-002-S001", "F-002-S002", "F-002-S003", "F-002-S004", "F-002-S
 end_to_end_evidence: required
 evidence_links: ["go test ./internal/shellpath", "go test ./internal/setup", "go test ./internal/selfupdate", "go test ./...", "make install"]
 verified_by: "Codex using go test and make install"
-source: user feedback: Fish reported Unknown command mars-harness after install
+source: user feedback: Fish reported Unknown command mars after install
 created: 2026-05-02
 depends_on: []
 ---
@@ -18,7 +18,7 @@ depends_on: []
 
 ## Context
 
-After installing the binary, Fish could not resolve `mars-harness` until the Go
+After installing the binary, Fish could not resolve `mars` until the Go
 bin directory was added manually. That violates plug-and-play: the harness
 should configure supported user shells automatically wherever the command is
 installed or updated.
@@ -28,15 +28,15 @@ installed or updated.
 - Add a reusable shell PATH configurator.
 - Support Fish, Zsh, Bash, POSIX sh/Ksh, Csh, and Tcsh.
 - Make updates idempotent and user-owned.
-- Wire the configurator into `make install`, `mars-harness setup`, and
-  `mars-harness update tool`.
+- Wire the configurator into `make install`, `mars setup`, and
+  `mars update tool`.
 - Add an explicit repair command for direct use.
 - Document the behavior in product and quickstart docs.
 
 ## Affected Files
 
 - `Makefile`
-- `cmd/mars-harness/main.go`
+- `cmd/mars/main.go`
 - `internal/shellpath/`
 - `internal/setup/`
 - `internal/selfupdate/`
@@ -62,9 +62,9 @@ installed or updated.
 ### Functional
 
 - [x] `make install` invokes shell PATH setup after `go install`.
-- [x] `mars-harness setup` includes shell PATH configuration.
-- [x] `mars-harness update tool` configures shell PATH after reinstalling the binary.
-- [x] `mars-harness path setup` exists for direct repair.
+- [x] `mars setup` includes shell PATH configuration.
+- [x] `mars update tool` configures shell PATH after reinstalling the binary.
+- [x] `mars path setup` exists for direct repair.
 - [x] Fish, Zsh, Bash, POSIX sh/Ksh, Csh, and Tcsh profile snippets are supported.
 
 ### Edge cases and negative paths

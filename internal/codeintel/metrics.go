@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/trace"
+	"github.com/greaveselliott/mars/internal/trace"
 )
 
 const (
@@ -122,7 +122,7 @@ func Metrics(ctx context.Context, opts MetricsOptions) (MetricsReport, error) {
 	repoPath := strings.TrimSpace(opts.RepoPath)
 	dbPath := strings.TrimSpace(opts.DBPath)
 	if dbPath == "" {
-		dbPath = DefaultDBPath(repoPath)
+		dbPath = ResolveDBPath(repoPath)
 	}
 	if opts.WindowDays <= 0 {
 		opts.WindowDays = 30

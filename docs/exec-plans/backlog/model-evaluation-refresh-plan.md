@@ -15,7 +15,7 @@
 **Walking Skeleton Slice:** Run one candidate through the smallest benchmark suite that exercises tool-call JSON, strict JSON output, and one repo-backed edit/test loop.
 **Learning Or MVP Outcome:** Learn whether a candidate model should become an explicit user override, a pinned default, or rejected evidence.
 **Updated:** 2026-05-02
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Sources:** [May 2026 model landscape](../../references/model-landscape-may-2026.md), [local inference design](../../design-docs/local-inference.md)
 
 ## Goal
@@ -31,7 +31,7 @@ promotion slice into `../active/current-operating-plan.md`.
 ## Current Slice
 
 - [x] Capture May 2026 model shortlist.
-- [x] Add `mars-harness models evaluate` planning output.
+- [x] Add `mars models evaluate` planning output.
 - [x] Add initial mechanical benchmark cases for tool-call JSON and strict JSON output.
 - [x] Document benchmark-backed promotion as an architecture decision.
 - [x] Add Ollama provider/catalog support for local model listing and evaluation.
@@ -57,7 +57,7 @@ promotion slice into `../active/current-operating-plan.md`.
   - [ ] model file size
   - [ ] effective context length
 - [ ] Add a promotion report that compares candidates against the current registry defaults.
-- [ ] Add `mars-harness models promote --candidate <name>` only after pinned revision/SHA256 metadata exists.
+- [ ] Add `mars models promote --candidate <name>` only after pinned revision/SHA256 metadata exists.
 - [ ] Update default registry entries only after benchmark evidence supports the change.
 
 ## Candidate Run Order

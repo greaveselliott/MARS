@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/integrations"
+	"github.com/greaveselliott/mars/internal/integrations"
 )
 
 func TestMirrorIssueDisabledWithoutBoardDrivenConfig(t *testing.T) {
@@ -292,13 +292,13 @@ depends_on: []
 
 ## JIRA Source
 
-<!-- mars-harness:jira-owned:start -->
+<!-- mars:jira-owned:start -->
 old requirements
-<!-- mars-harness:jira-owned:end -->
+<!-- mars:jira-owned:end -->
 
 ## Harness Scope
 
-<!-- mars-harness:scoped-marker -->
+<!-- mars:scoped-marker -->
 SCOPED BLOCK MUST STAY BYTE IDENTICAL
 
 ## Agent Notes

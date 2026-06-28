@@ -15,8 +15,8 @@ package serve
 import (
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/telemetry"
-	"github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/greaveselliott/mars/internal/telemetry"
+	"github.com/greaveselliott/mars/internal/tools"
 	"github.com/stretchr/testify/require"
 )
 

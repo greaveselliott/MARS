@@ -31,7 +31,7 @@ OPENAI_VALIDATION_MODEL=gpt-4.1-mini OPENAI_PROXY_PORT=18654 fish -lc 'exec pyth
 HOME=<validation-root>/home \
 TMPDIR=<validation-root>/tmp \
 GOCACHE=<validation-root>/go-cache \
-<source-root>/build/mars-harness start \
+<source-root>/build/mars start \
   --repo <validation-root>/target \
   --db <validation-root>/mars.db \
   --log-file <validation-root>/logs/start.log \
@@ -117,7 +117,7 @@ dashboard address, using the same local OpenAI-compatible proxy and
 HOME=<validation-root>/home \
 TMPDIR=<validation-root>/tmp \
 GOCACHE=<validation-root>/go-cache \
-<source-root>/build/mars-harness start \
+<source-root>/build/mars start \
   --repo <validation-root>/target \
   --db <validation-root>/mars.db \
   --log-file <validation-root>/logs/start.log \

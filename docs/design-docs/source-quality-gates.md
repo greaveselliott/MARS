@@ -86,7 +86,7 @@ tool calls.
   unreachable vulnerability remains in a required module).
 - **2026-06-11 — Seeding floors from one run is boundary-fragile:** two
   coverage runs on the same tree differed by up to 3 points for
-  `cmd/mars-harness` (test additions between runs) and packages landing on
+  `cmd/mars` (test additions between runs) and packages landing on
   exact whole points (65.0, 62.0) would fail on any negative jitter; the seed
   rule therefore backs off one point at exact boundaries and the ratchet
   procedure handles the rest.

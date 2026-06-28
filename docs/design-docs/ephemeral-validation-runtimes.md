@@ -2,12 +2,12 @@
 
 **Status:** Accepted
 **Date:** 2026-06-13
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Related:** AD-001, AD-011, AD-021, AD-088, AD-139, AD-279, AD-284, AD-285
 
 ## Context
 
-Mars Harness is distributed and operated as a single Go binary. That rule keeps
+MARS is distributed and operated as a single Go binary. That rule keeps
 the product plug-and-play: setup, serve, start, run, queue, scoring, trust,
 release/update, local inference management, and the default dashboard cannot
 require Node, npm, pnpm, Postgres, Redis, Grafana, or another always-on external
@@ -23,14 +23,14 @@ start dev servers as managed background processes.
 
 The architectural line must be clear enough for agents:
 
-- persistent infrastructure as a Mars Harness prerequisite violates the single
+- persistent infrastructure as a MARS prerequisite violates the single
   binary constraint;
 - job-scoped validation tooling can be allowed when it is optional, bounded,
   observable, and cleaned up.
 
 ## Decision
 
-Mars Harness allows **ephemeral external runtimes** for optional validation
+MARS allows **ephemeral external runtimes** for optional validation
 lanes.
 
 An ephemeral external runtime is a non-core runtime, toolchain, service, or
@@ -41,11 +41,11 @@ manager used to prepare target-owned dependencies.
 
 This exception does **not** weaken the single-binary tenet:
 
-- the installed Mars Harness control plane remains one Go binary;
+- the installed MARS control plane remains one Go binary;
 - external runtimes are never required for setup, serve/start/run, queue,
   scoring, trust, release/update, local inference management, or the default
   embedded dashboard;
-- Mars Harness does not silently install or bundle external runtimes;
+- MARS does not silently install or bundle external runtimes;
 - missing optional runtime prerequisites produce actionable skip/blocker output
   rather than degrading core operation.
 

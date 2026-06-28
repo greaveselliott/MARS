@@ -8,9 +8,9 @@ release docs unless they explicitly define their own binary publication flow.
 ## Workflow
 
 1. Confirm the semantic commit is coherent and verified.
-2. When running as a harness agent, use `mars_harness_cli` with args
+2. When running as a harness agent, use `mars_cli` with args
    `["release","notes","--repo",".","--bump","auto"]`; when operating from a
-   trusted terminal, run the equivalent `mars-harness release notes --repo .
+   trusted terminal, run the equivalent `mars release notes --repo .
    --bump auto`.
 3. Review `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go`.
 4. Run `go test ./internal/docsconsistency ./internal/docsync`, plus any
@@ -20,20 +20,20 @@ release docs unless they explicitly define their own binary publication flow.
 7. Create or update tag `vX.Y.Z` at the release-note commit and push it. Do
    not tag while `VERSION` or `CHANGELOG.md` are dirty, and do not target a
    pre-release-note commit.
-8. As a harness agent, use `mars_harness_cli` with args
+8. As a harness agent, use `mars_cli` with args
    `["release","publish-assets","--repo",".","--version","vX.Y.Z","--upload","auto"]`;
-   from a trusted terminal, run the equivalent `mars-harness release
+   from a trusted terminal, run the equivalent `mars release
    publish-assets --repo . --version vX.Y.Z --upload auto`.
-9. Verify local assets with `mars_harness_cli` args
+9. Verify local assets with `mars_cli` args
    `["release","verify-assets","--dist","dist/releases","--version","vX.Y.Z"]`
-   or `mars-harness release verify-assets --dist dist/releases --version
+   or `mars release verify-assets --dist dist/releases --version
    vX.Y.Z`.
 10. If GitHub mirroring was enabled, verify `gh release view vX.Y.Z --repo
-    greaveselliott/mars-harness` and then run `mars-harness release
+    greaveselliott/MARS` and then run `mars release
     verify-assets --version vX.Y.Z`.
 11. Audit the mirror for drift across recent versions, not just the one you
-    published: `mars_harness_cli` args `["release","audit","--repo","."]` or
-    `mars-harness release audit --repo .`. Each finding names a notes-only or
+    published: `mars_cli` args `["release","audit","--repo","."]` or
+    `mars release audit --repo .`. Each finding names a notes-only or
     missing release with the exact `publish-assets` backfill command; run the
     backfill or record the blocker.
 12. If local assets, the optional mirror, or the audit findings are
@@ -42,12 +42,12 @@ release docs unless they explicitly define their own binary publication flow.
 
 ## Token Safety
 
-- Use `mars-harness auth github check` or `gh auth status` when optional
+- Use `mars auth github check` or `gh auth status` when optional
   GitHub mirroring needs credentials.
 - Never paste token values into chat, docs, commits, traces, tickets, logs, or
   tool output.
 - Prefer GitHub CLI auth, `GH_TOKEN`, or `GITHUB_TOKEN`; local stored tokens
-  stay under `~/.mars-harness/`.
+  stay under `~/.mars/`.
 
 ## Stop Conditions
 

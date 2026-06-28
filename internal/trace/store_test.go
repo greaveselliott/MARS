@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/pkg/testutil"
+	"github.com/greaveselliott/mars/pkg/testutil"
 	"github.com/stretchr/testify/require"
 )
 

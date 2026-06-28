@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/integrations"
+	"github.com/greaveselliott/mars/internal/integrations"
 )
 
 func TestPollAtlassianMCPMirrorsScopedIssueAndClosesSession(t *testing.T) {

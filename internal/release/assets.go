@@ -21,10 +21,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/selfupdate"
+	"github.com/greaveselliott/mars/internal/selfupdate"
 )
 
-// AssetTarget is one platform binary produced for a Mars Harness release.
+// AssetTarget is one platform binary produced for a MARS release.
 type AssetTarget struct {
 	GOOS   string
 	GOARCH string
@@ -119,13 +119,13 @@ func PublishAssets(ctx context.Context, cfg PublishAssetsConfig) (PublishAssetsR
 
 	var assets []string
 	for _, target := range AssetTargets {
-		name := fmt.Sprintf("mars-harness-%s-%s", target.GOOS, target.GOARCH)
+		name := fmt.Sprintf("mars-%s-%s", target.GOOS, target.GOARCH)
 		outPath := filepath.Join(dist, name)
 		if !cfg.SkipBuild {
 			cmd := runner(ctx, "go", "build",
 				"-ldflags", fmt.Sprintf("-X main.version=%s -X main.commit=%s -X main.date=%s", tag, commit, date),
 				"-o", outPath,
-				"./cmd/mars-harness",
+				"./cmd/mars",
 			)
 			cmd.Dir = repoRoot
 			cmd.Env = append(os.Environ(),
@@ -140,6 +140,12 @@ func PublishAssets(ctx context.Context, cfg PublishAssetsConfig) (PublishAssetsR
 			}
 		}
 		assets = append(assets, outPath)
+		legacyName := fmt.Sprintf("mars-harness-%s-%s", target.GOOS, target.GOARCH)
+		legacyPath := filepath.Join(dist, legacyName)
+		if err := copyFile(outPath, legacyPath); err != nil {
+			return PublishAssetsResult{}, fmt.Errorf("release publish-assets: create legacy asset alias %s: %w", legacyName, err)
+		}
+		assets = append(assets, legacyPath)
 	}
 	checksumsPath := filepath.Join(dist, "checksums.txt")
 	if err := writeChecksums(checksumsPath, assets); err != nil {
@@ -177,6 +183,18 @@ func PublishAssets(ctx context.Context, cfg PublishAssetsConfig) (PublishAssetsR
 		result.Uploaded = true
 	}
 	return result, nil
+}
+
+func copyFile(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	info, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, info.Mode().Perm())
 }
 
 // VerifyLocalAssets checks local release assets and their checksums.
@@ -353,7 +371,7 @@ func changelogEntryFile(repoRoot, version string) (string, error) {
 			break
 		}
 	}
-	tmp, err := os.CreateTemp("", "mars-harness-release-body-*.md")
+	tmp, err := os.CreateTemp("", "mars-release-body-*.md")
 	if err != nil {
 		return "", err
 	}

@@ -36,9 +36,9 @@ AD-287 extraction sequence step 3: the shell-safety domain (argv/shell-command v
 
 ## Functions moved (33)
 
-Entry checks: checkShellPolicy, checkShellMarsHarnessCLIPolicy, validateShellExecPolicyArgs, checkShellBuildOutputPolicy, checkForegroundLongRunningShellPolicy, checkEngineerRepeatedNoopPolicy, checkShellTicketPathPolicy, shellExecGeneratedArtifactCleanup.
+Entry checks: checkShellPolicy, checkShellMarsCLIPolicy, validateShellExecPolicyArgs, checkShellBuildOutputPolicy, checkForegroundLongRunningShellPolicy, checkEngineerRepeatedNoopPolicy, checkShellTicketPathPolicy, shellExecGeneratedArtifactCleanup.
 
-Helpers with shell-only callers: shellExecMarsHarnessArgs, shellEnvAssignment, goBuildValidationCorrection, goBuildCommandFields, validationBinaryOutputSuggestion, cleanShellDisplayToken, dependencyShellOperation, nextTokenIs, broadGeneratedTraversal, hasGeneratedExcludeToken, likelyForegroundLongRunningCommand, serverScriptName, goRunLikelyStartsServer, goRunTargets, goRunCandidateFiles, sourceContainsServerMarker.
+Helpers with shell-only callers: shellExecMarsArgs, shellEnvAssignment, goBuildValidationCorrection, goBuildCommandFields, validationBinaryOutputSuggestion, cleanShellDisplayToken, dependencyShellOperation, nextTokenIs, broadGeneratedTraversal, hasGeneratedExcludeToken, likelyForegroundLongRunningCommand, serverScriptName, goRunLikelyStartsServer, goRunTargets, goRunCandidateFiles, sourceContainsServerMarker.
 
 Destructive-operation/git-safety family: forbiddenShellOperation, hasGitSubcommand, hasToken, hasGitForcePushFlag, hasGitCleanForceDelete, hasGitBranchDelete, hasRootRemoval, hasShellRemoval, hasFindDelete.
 

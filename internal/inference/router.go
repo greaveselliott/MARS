@@ -18,8 +18,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/greaveselliott/mars-harness/internal/hardware"
-	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars/internal/hardware"
+	"github.com/greaveselliott/mars/internal/llm"
 )
 
 // Router maps role names to running inference servers.
@@ -246,9 +246,9 @@ func (r *Router) serverForTier(ctx context.Context, role string, tier hardware.T
 				if detail != "" {
 					detail = " " + detail
 				}
-				return "", fmt.Errorf("inference: local model for tier %q is missing at %s and no remote fallback configured.%s Run `mars-harness setup` to download the %s model, set `performance_profile: quality` in ~/.mars-harness/config.yaml to keep using an installed larger local model, or configure a remote fallback", tier, expectedPath, detail, tier)
+				return "", fmt.Errorf("inference: local model for tier %q is missing at %s and no remote fallback configured.%s Run `mars setup` to download the %s model, set `performance_profile: quality` in ~/.mars/config.yaml to keep using an installed larger local model, or configure a remote fallback", tier, expectedPath, detail, tier)
 			}
-			return "", fmt.Errorf("inference: no local model configured for tier %q and no remote fallback configured — run `mars-harness setup` or configure a remote fallback", tier)
+			return "", fmt.Errorf("inference: no local model configured for tier %q and no remote fallback configured — run `mars setup` or configure a remote fallback", tier)
 		}
 		return base, nil
 	}
@@ -352,7 +352,7 @@ func compatiblePortLock(conflict *PortConflictError, meta portReservationMetadat
 	if conflict == nil {
 		return false
 	}
-	if strings.TrimSpace(conflict.Owner) != "mars-harness" {
+	if strings.TrimSpace(conflict.Owner) != "mars" {
 		return false
 	}
 	if conflict.LockedTier != meta.Tier {

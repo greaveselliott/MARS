@@ -17,7 +17,7 @@ source: Mars parity workstream A
 created: 2026-05-03
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "role-model"
   category: "operating_model_gap"
   severity: "high"

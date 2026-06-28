@@ -119,7 +119,7 @@ func TestArchitectureAudit_detectsCurrentTerms(t *testing.T) {
 	root := newWorkflowToolRoot(t)
 	res, err := handleArchitectureAudit(context.Background(), root, json.RawMessage(`{}`))
 	require.NoError(t, err)
-	require.Contains(t, res.Output, "PASS: ARCHITECTURE.md contains mars_harness_cli")
+	require.Contains(t, res.Output, "PASS: ARCHITECTURE.md contains mars_cli")
 	require.Contains(t, res.Output, "PASS: ARCHITECTURE.md omits stale bundle.lock.json")
 }
 
@@ -128,8 +128,8 @@ func newWorkflowToolRoot(t *testing.T) Root {
 	dir := t.TempDir()
 	writeWorkflowFile(t, dir, "VERSION", "1.2.3\n")
 	writeWorkflowFile(t, dir, "ARCHITECTURE.md", `
-mars-harness update tool
-mars_harness_cli
+mars update tool
+mars_cli
 .harness/metadata.yaml
 docs/QUALITY_SCORE.md
 BDD-led
@@ -155,7 +155,7 @@ it does not clone a fresh working directory per job
 `+"`file_search`"+`
 `+"`grep`"+`
 `+"`shell_exec`"+`
-`+"`mars_harness_cli`"+`
+`+"`mars_cli`"+`
 `+"`record_decision`"+`
 `+"`ticket_create`"+`
 `+"`tool_create`"+`
@@ -168,7 +168,7 @@ it does not clone a fresh working directory per job
 	writeWorkflowFile(t, dir, "docs/design-docs/harness-glossary.md", "Symbiotic operating-model change\nFormalized tool creation trigger\n")
 	writeWorkflowFile(t, dir, "docs/design-docs/delivery-operating-model.md", "formalized tools\nrepeated process\ndocsync_audit\ndocumentation-sync-architecture.md\ncli-tool-skill-sync.md\n")
 	writeWorkflowFile(t, dir, "docs/design-docs/documentation-sync-architecture.md", "AD-102\nUniversal Operating Model\ndocsync_audit\n")
-	writeWorkflowFile(t, dir, "docs/design-docs/cli-tool-skill-sync.md", "AD-103\nmars_harness_cli\nrepo shortcut map\nskills\n")
+	writeWorkflowFile(t, dir, "docs/design-docs/cli-tool-skill-sync.md", "AD-103\nmars_cli\nrepo shortcut map\nskills\n")
 	writeWorkflowFile(t, dir, "internal/scanner/init.go", "release_orchestrate\ndocsync_audit\ndocumentation-sync-architecture.md\ncli-tool-skill-sync.md\nFormalized tool creation trigger\n")
 	root, err := NewRoot(dir)
 	require.NoError(t, err)

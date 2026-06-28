@@ -11,7 +11,7 @@ pace rows below remain the v0.50.2 measurement record; engineer/qa pace on
 v0.50.14 was same-or-better (engineer 235.9s vs 244.7s avg wall, qa 49.0s
 vs 63.3s).
 **Author:** foundation-maintainer
-**Source:** Live demo-11 Inventory/API canary replay on `mars-harness 0.50.2`
+**Source:** Live demo-11 Inventory/API canary replay on `mars 0.50.2`
 **Run report:** [../reports/2026-06-12-demo-11-pace-baseline.md](../reports/2026-06-12-demo-11-pace-baseline.md)
 **Ticket:** T-011 (acceptance: dated baseline before optimization work starts)
 
@@ -25,7 +25,7 @@ Pace deltas against this baseline are valid only on this model set.
 | coding | Qwen3-Coder-30B-A3B-Instruct | Q4_K_M (18.6 GB) | 32768 | llama-server :18080 |
 | fast | google_gemma-4-E4B-it | Q5_K_M (5.8 GB) | registry default | on demand |
 
-Resolution: `performance_profile: balanced` in `~/.mars-harness/config.yaml`.
+Resolution: `performance_profile: balanced` in `~/.mars/config.yaml`.
 The prior 2026-06-11 attempt on the quality-profile Q8_0 weights (32.5 GB,
 unified-memory saturation) is evidence-only; see
 [../reports/2026-06-11-demo-11-pace-baseline.md](../reports/2026-06-11-demo-11-pace-baseline.md).

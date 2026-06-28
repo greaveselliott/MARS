@@ -84,7 +84,7 @@ evidence_links:
   - docs/validation/baselines/2026-06-12-factory-pace-baseline.md
   - docs/validation/reports/2026-06-12-demo-11-pace-baseline.md#run-1-inventoryapi-canary-on-v0502--2026-06-12
   - docs/validation/reports/2026-06-11-demo-11-pace-baseline.md#run-1-inventoryapi-canary-on-v0501--2026-06-11
-verified_by: "make check; go test ./internal/queue ./internal/tools ./cmd/mars-harness; docs/validation/reports/2026-06-12-t011-max-turn-calibration-wsd-slice3.md; demo-11 T-030 canary; demo-14 convergence replay"
+verified_by: "make check; go test ./internal/queue ./internal/tools ./cmd/mars; docs/validation/reports/2026-06-12-t011-max-turn-calibration-wsd-slice3.md; demo-11 T-030 canary; demo-14 convergence replay"
 owner: "Codex"
 last_attempt: >-
   2026-05-21: first slice adds Factory Pace rows to QUALITY_SCORE.md by joining
@@ -141,7 +141,7 @@ metadata:
   confidence: "high"
   evidence: "User reported on 2026-05-19 that agents take many turns before solid outcomes, the upper turn limit is too low, and factory pace is not measured."
   origin: "user request 2026-05-19"
-  repo: "mars-harness"
+  repo: "mars"
   role: "all factory agents"
   severity: "high"
   target: "foundation and deployed harnesses"
@@ -226,7 +226,7 @@ The factory needs a durable pace metric that shows how quickly roles reach usefu
 ### Functional (happy path)
 - [x] Current factory pace is measured from durable evidence, with a dated baseline documented before optimization work starts. (docs/validation/baselines/2026-06-12-factory-pace-baseline.md, from the live balanced-model demo-11 replay on v0.50.2 with model identity recorded per AD-285; the 2026-06-11 heavy-model replay remains evidence-only. Second-monitor-shift caveat: the baseline's pace rows are valid, but the run ended by operator preemption with one undrained job and an internally inconsistent final state — it is a pace baseline, not a converged-lifecycle exemplar.)
 - [x] Pace is represented as a first-class metric with role/repo/job attribution rather than as ad hoc notes in chat. (Factory Pace and Convergence And Guardrails sections rendered from the live demo-11 DB on 2026-06-11.)
-- [x] The implementation surfaces pace where operators already inspect factory health, such as scores export, trace summaries, dashboard, or CLI output. (`mars-harness scores export` live-validated against `~/.mars-harness/db/demo-11/mars.db`.)
+- [x] The implementation surfaces pace where operators already inspect factory health, such as scores export, trace summaries, dashboard, or CLI output. (`mars scores export` live-validated against `~/.mars/db/demo-11/mars.db`.)
 - [x] At least one evidence-backed resolution reduces avoidable turns or improves successful completion before max-turn failure. (T-030 ticket_create dedupe, T-031 convergence retry, AD-288 overflow fix; demo-11 T-030 canary and demo-14 lifecycle replay.)
 - [x] Max-turn and budget behavior is calibrated by role or work type so higher limits are available for productive work without allowing silent loops. (Generated manifest defaults: engineer 100, qa 40, security 30 from 2026-06-12 baseline; report docs/validation/reports/2026-06-12-t011-max-turn-calibration-wsd-slice3.md.)
 
@@ -254,7 +254,7 @@ Treat optimum as an evidence-backed operating target, not a fixed magic number. 
 ## 2026-05-20 Progress
 
 The first implementation slice makes pace visible without changing runtime
-limits. `mars-harness scores export` now joins terminal scoring outcomes to
+limits. `mars scores export` now joins terminal scoring outcomes to
 trace summaries by `job_id` and renders `docs/QUALITY_SCORE.md` Factory Pace
 rows grouped by repo and role. The rows include job count, average turns,
 average tool invocations, average LLM calls, average wall time, limit-stop
@@ -511,8 +511,8 @@ Remaining work:
   usable. It exposed a deterministic missing-input correction loop: once the
   exact `expected_exit_code` repro still panicked, policy kept blocking
   `file_write` and sent Engineer back to the same failing command. It also
-  showed target/foundation naming drift through `cmd/mars-harness` and
-  `module mars-harness` inside a Note Stats CLI target. AD-187 now allows
+  showed target/foundation naming drift through `cmd/mars` and
+  `module mars` inside a Note Stats CLI target. AD-187 now allows
   implementation edits after a failed missing-input correction attempt while
   completion remains blocked, and generated CTO/Engineer guidance requires
   target-derived command, module, and binary names.
@@ -710,14 +710,14 @@ Remaining work:
   product-first target lifecycle: product planning, ordinary ticketing,
   Engineer implementation, QA approval, Security approval, Dogfood approval,
   local `release: notes 0.2.0`, and tag `v0.2.0`. The next bottleneck was
-  Release Manager using `shell_exec mars-harness release notes`, which resolved
+  Release Manager using `shell_exec mars release notes`, which resolved
   a stale installed binary and triggered a liveness retry before a second
-  release pass recovered. AD-213 now blocks direct `mars-harness` shell
+  release pass recovered. AD-213 now blocks direct `mars` shell
   invocations in agent jobs and routes those workflows through
-  `mars_harness_cli`.
+  `mars_cli`.
 - `demo-temp-run60` broadened the canary matrix with a Word Count JSON CLI and
   validated AD-213 in the live release path: Release Manager used
-  `mars_harness_cli`, committed `release: notes 0.2.0`, tagged `v0.2.0`, and
+  `mars_cli`, committed `release: notes 0.2.0`, tagged `v0.2.0`, and
   stopped only on the real missing-remote publication blocker. The new
   bottleneck is retry persistence: a bind-failed start wrote repo/CEO bootstrap
   state into SQLite WAL files, then automatic cleanup deleted the sidecars
@@ -783,7 +783,7 @@ Remaining work:
   duplicate generated test cleanup, let QA run docsync before terminal
   disposition, require QA test evidence before terminal convergence when test
   files exist, keep review no-op recovery aligned with the same evidence gates,
-  keep Release Manager on `mars_harness_cli` instead of stale shell binaries,
+  keep Release Manager on `mars_cli` instead of stale shell binaries,
   preserve SQLite WAL sidecars across retry-after-bind-failure startup,
   repeat failing test/build output inside unresolved repair guidance,
   then continue through Security, Dogfood, release, and the multi-archetype

@@ -1,13 +1,13 @@
 ---
 id: MH-023
-title: mars-harness init scaffolding and repo scanner for starter backlog
+title: mars init scaffolding and repo scanner for starter backlog
 priority: medium
 complexity: medium
 source: delivery-schedule M8
 created: 2026-04-11
 ---
 
-# MH-023: `mars-harness init` — .harness/, tickets, exec-plans, AGENTS.md + repo scanner
+# MH-023: `mars init` — .harness/, tickets, exec-plans, AGENTS.md + repo scanner
 
 ## Context
 

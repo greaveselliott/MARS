@@ -15,7 +15,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars/internal/llm"
 )
 
 // Handler executes a tool with parsed JSON arguments under root.

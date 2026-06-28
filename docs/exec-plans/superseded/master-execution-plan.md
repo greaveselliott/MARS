@@ -1,4 +1,4 @@
-# Mars Harness — Master Execution Plan
+# MARS — Master Execution Plan
 
 **Status:** Superseded pending reconciliation
 **Created:** 2026-04-11
@@ -13,7 +13,7 @@
 
 ## How to read this document
 
-This is the **agent-operable source of truth** for the Mars Harness build. It cross-references:
+This is the **agent-operable source of truth** for the MARS build. It cross-references:
 
 - **Delivery schedule milestones** (M0–M10) with task-level checkboxes.
 - **Ticket acceptance criteria** (MH-001–MH-028) with per-ticket status.
@@ -40,26 +40,26 @@ This is the **agent-operable source of truth** for the Mars Harness build. It cr
 | MH-006 | Hardware + registry | M2.1, M2.2 | `internal/hardware` | Not started |
 | MH-007 | Model download | M2.3 | `internal/models` | Not started |
 | MH-008 | llama-server + router | M2.4, M2.5 | `internal/inference` | Not started |
-| MH-009 | CLI + bundle + demo | M3 | `cmd/mars-harness`, `internal/bundle`, `internal/ui` | Not started |
+| MH-009 | CLI + bundle + demo | M3 | `cmd/mars`, `internal/bundle`, `internal/ui` | Not started |
 | MH-010 | Optional GitHub API client | M4.1 | `internal/github` | Not started |
 | MH-011 | Optional GitHub setup | M4.2 | `internal/github` | Not started |
 | MH-012 | Webhook receiver | M4.3 | `internal/github` | Not started |
 | MH-013 | Job queue | M5a.1, M5a.2 | `internal/queue` | Not started |
 | MH-014 | Scheduler | M5a.3 | `internal/scheduler` | Not started |
 | MH-015 | Sandbox + safety | M5b.1–M5b.3 | `internal/sandbox`, `internal/safety` | Not started |
-| MH-016 | `serve` command | M5b.4 | `cmd/mars-harness` | Not started |
+| MH-016 | `serve` command | M5b.4 | `cmd/mars` | Not started |
 | MH-017 | Accuracy scoring | M6.1, M6.2 | `internal/scoring` | Not started |
 | MH-018 | Progressive autonomy | M6.3, M6.4 | `internal/trust` | Not started |
 | MH-019 | Intervention detector | M7.1 | `internal/evolution` | Not started |
 | MH-020 | Reviewer meta-role | M7.2, M7.3 | `internal/evolution` | Not started |
 | MH-021 | Guardrails engine | M7.4 | `internal/guardrails` | Not started |
-| MH-022 | Setup wizard | M8.1 | `cmd/mars-harness` | Not started |
+| MH-022 | Setup wizard | M8.1 | `cmd/mars` | Not started |
 | MH-023 | Init + scanner | M8.2, M8.3 | `internal/scanner` | Not started |
 | MH-024 | Dashboard | M9 | `internal/dashboard` | Not started |
 | MH-025 | Mars prompt port | M10.1–M10.4 | `examples/`, `bundles/` | Not started |
 | MH-026 | Dogfood | M10.5 | `.github/workflows/` | Not started |
 | MH-027 | Distribution | M10.6 | `.github/workflows/`, `scripts/` | Not started |
-| MH-028 | Doctor command | M8.4 | `cmd/mars-harness` | Not started |
+| MH-028 | Doctor command | M8.4 | `cmd/mars` | Not started |
 
 ---
 
@@ -144,7 +144,7 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 
 ### Quality gate
 
-- [x] `go build ./cmd/mars-harness` produces a binary
+- [x] `go build ./cmd/mars` produces a binary
 - [x] `go test ./...` passes
 - [ ] `golangci-lint run` reports zero issues (not verified recently)
 - [x] CI workflow runs on push to `main`
@@ -241,7 +241,7 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 - [ ] 2.3.1 HTTP download with resume (Range headers)
 - [ ] 2.3.2 Progress reporting via callback
 - [ ] 2.3.3 SHA256 verification
-- [ ] 2.3.4 Store in ~/.mars-harness/models/
+- [ ] 2.3.4 Store in ~/.mars/models/
 - [ ] 2.3.5 Skip if exists and checksum matches
 
 ### M2.4 llama.cpp server (MH-008)
@@ -283,7 +283,7 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 
 ### Quality gate
 
-- [ ] `mars-harness run pipeline-fixer --repo testdata/...` executes with colour output
+- [ ] `mars run pipeline-fixer --repo testdata/...` executes with colour output
 - [ ] Trace streams in real-time
 - [ ] Missing bundle gives actionable error with available bundles list
 - [ ] --dry-run shows plan without calling LLM
@@ -338,14 +338,14 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 
 ## Milestone 5b: Safety Layer — MH-015, MH-016
 
-**Objective:** Sandbox, blast radius, emergency stop, `mars-harness serve`.
+**Objective:** Sandbox, blast radius, emergency stop, `mars serve`.
 
 ### Tasks
 
 - [ ] 5b.1 Process sandbox (Linux namespaces, macOS cwd+ulimit fallback)
 - [ ] 5b.2 Blast radius controls (max files, max lines per file, max total lines, commit rate limit, no-delete, secret scanner)
 - [ ] 5b.3 Emergency stop (stop command, queue/tool halt, audit)
-- [ ] 5b.4 `mars-harness serve` (wire webhook + queue + worker + scheduler + safety, /healthz)
+- [ ] 5b.4 `mars serve` (wire webhook + queue + worker + scheduler + safety, /healthz)
 
 ### Quality gate
 
@@ -413,10 +413,10 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 
 ### Tasks
 
-- [ ] 8.1 `mars-harness setup` (orchestrated flow, idempotent, --test-mode alias)
-- [ ] 8.2 `mars-harness init` (scaffold .harness/, roles.yaml, starter tickets, exec plans, AGENTS.md stub, schedules.yaml)
+- [ ] 8.1 `mars setup` (orchestrated flow, idempotent, --test-mode alias)
+- [ ] 8.2 `mars init` (scaffold .harness/, roles.yaml, starter tickets, exec plans, AGENTS.md stub, schedules.yaml)
 - [ ] 8.3 Repo scanner (detect language/framework/CI, find gaps, ticket generation)
-- [ ] 8.4 `mars-harness doctor` (system/model/GitHub/pipeline/accuracy health, coloured output, --json)
+- [ ] 8.4 `mars doctor` (system/model/GitHub/pipeline/accuracy health, coloured output, --json)
 
 ### Quality gate
 
@@ -465,7 +465,7 @@ M0 ──► M1 ──┬──► M2 ──► M3 ──┐
 
 - [ ] 10.1–10.3 Port all 11 Mars prompts (3 batches)
 - [ ] 10.4 Validate each ported role against Mars monorepo
-- [ ] 10.5 Dogfood (Pipeline Fixer, QA, Code Reviewer on mars-harness itself)
+- [ ] 10.5 Dogfood (Pipeline Fixer, QA, Code Reviewer on mars itself)
 - [ ] 10.6 Distribution (cross-compile, curl installer, Homebrew, GitHub Releases, <30MB binary)
 - [ ] 10.7 Documentation (quickstart, tenets reference, bundle reference, guardrails guide, model guide, architecture)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Live progress + rolling ETA for a mars-harness per-repo replay.
- * Reads ~/.mars-harness/db/<repo>/mars.db and optional dashboard /api/status.
+ * Live progress + rolling ETA for a mars per-repo replay.
+ * Reads ~/.mars/db/<repo>/mars.db and optional dashboard /api/status.
  *
  * Usage:
  *   node scripts/replay-progress.mjs --repo demo-15
@@ -25,7 +25,7 @@ const watch = has("--watch");
 const intervalSec = Number(flag("--interval") ?? "15");
 const jsonOut = has("--json");
 
-const dbPath = path.join(os.homedir(), ".mars-harness/db", repoSlug, "mars.db");
+const dbPath = path.join(os.homedir(), ".mars/db", repoSlug, "mars.db");
 const dashboardURL = flag("--dashboard") ?? "http://localhost:9090";
 
 /** demo-14 Inventory/API baseline (126.5 min, 48 jobs) — seconds per phase archetype */
@@ -263,7 +263,7 @@ function buildSnapshot() {
 function renderText(s) {
   const lines = [];
   lines.push("");
-  lines.push(`mars-harness replay · ${s.repoSlug} · ${new Date(s.now * 1000).toLocaleTimeString()}`);
+  lines.push(`mars replay · ${s.repoSlug} · ${new Date(s.now * 1000).toLocaleTimeString()}`);
   lines.push(`Elapsed ${s.elapsedLabel}  ·  Rolling ETA ${s.rollingEtaLabel}  ·  Jobs ${s.jobs.completed}/${s.jobs.total} done (${s.jobs.failed} failed)`);
   if (s.blocked) lines.push(`⚠ BLOCKED: ${s.blockReason}`);
   else if (s.runningJob) lines.push(`▶ Running: ${s.runningJob.role} (since ${s.runningJob.started})`);

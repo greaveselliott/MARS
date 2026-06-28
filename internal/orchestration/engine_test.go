@@ -12,8 +12,8 @@ package orchestration
 import (
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/orgstate"
 	"github.com/stretchr/testify/require"
 )
 

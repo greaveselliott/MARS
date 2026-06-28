@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/roleregistry"
-	"github.com/greaveselliott/mars-harness/internal/scanner"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/roleregistry"
+	"github.com/greaveselliott/mars/internal/scanner"
 )
 
 func TestSourceRoleRegistryCoversGeneratedManifestRoles(t *testing.T) {

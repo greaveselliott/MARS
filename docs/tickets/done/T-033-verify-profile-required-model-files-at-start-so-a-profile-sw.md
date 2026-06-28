@@ -26,7 +26,7 @@ depends_on: []
 Closed 2026-06-12. `serve`/`start` now preflight required GGUF files for the
 effective performance profile before dispatch; `doctor` adds
 `profile-required-models` check. Actionable error directs to
-`mars-harness setup`.
+`mars setup`.
 
 ## Acceptance criteria
 

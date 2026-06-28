@@ -27,7 +27,7 @@ docs:
     foundation: {
       title: "Foundation harness",
       body:
-        "The Mars Harness source repository owns the operating doctrine, generated target defaults, release discipline, product specifications, role registry, and foundation validation evidence.",
+        "The MARS source repository owns the operating doctrine, generated target defaults, release discipline, product specifications, role registry, and foundation validation evidence.",
       bullets: [
         "Owns source operating model and generated target doctrine.",
         "Classifies findings as foundation-owned, deployed-owned, mixed, or evidence-only.",
@@ -68,7 +68,7 @@ docs:
 
   const glossary = [
     {
-      term: "Mars Harness",
+      term: "MARS",
       category: "architecture",
       text:
         "The software factory: source repo, CLI, runtime, local inference, orchestration, tools, telemetry, scoring, dashboard, release tooling, and generated target defaults."
@@ -77,13 +77,13 @@ docs:
       term: "Foundation harness",
       category: "architecture",
       text:
-        "The harness consumed by agents maintaining Mars Harness itself. It owns source doctrine, generated defaults, release rules, and foundation validation evidence."
+        "The harness consumed by agents maintaining MARS itself. It owns source doctrine, generated defaults, release rules, and foundation validation evidence."
     },
     {
       term: "Runtime substrate",
       category: "architecture",
       text:
-        "The compiled mars-harness binary and internal packages that execute jobs, tools, queues, telemetry, dashboard, scanner, release, and local inference behavior."
+        "The compiled mars binary and internal packages that execute jobs, tools, queues, telemetry, dashboard, scanner, release, and local inference behavior."
     },
     {
       term: "Deployed harness",
@@ -95,7 +95,7 @@ docs:
       term: "Target project",
       category: "architecture",
       text:
-        "The product repository Mars Harness is building, testing, documenting, and releasing. It owns product behavior and target-specific policy."
+        "The product repository MARS is building, testing, documenting, and releasing. It owns product behavior and target-specific policy."
     },
     {
       term: "Operating model",
@@ -137,7 +137,7 @@ docs:
       term: "Universal tool surface",
       category: "governance",
       text:
-        "The shared registered tool set exposed through role runs, mars-harness tools run, and MCP so local agents and external clients use the same governed operations."
+        "The shared registered tool set exposed through role runs, mars tools run, and MCP so local agents and external clients use the same governed operations."
     },
     {
       term: "Skills",
@@ -187,7 +187,7 @@ docs:
     operating: {
       title: "BDD operating model",
       summary:
-        "Agent work is valuable only when it proves an intended product behavior. Mars Harness turns goals into BDD contracts, plans, tickets, validation evidence, and release notes.",
+        "Agent work is valuable only when it proves an intended product behavior. MARS turns goals into BDD contracts, plans, tickets, validation evidence, and release notes.",
       problem:
         "Agents can complete tasks that look busy but do not ship the user-visible capability leadership asked for.",
       value:
@@ -217,7 +217,7 @@ docs:
     safety: {
       title: "Safety and trust",
       summary:
-        "Mars Harness treats autonomy as an earned capability, not a switch. Tool execution is constrained by role, trust, guardrails, and blast radius.",
+        "MARS treats autonomy as an earned capability, not a switch. Tool execution is constrained by role, trust, guardrails, and blast radius.",
       problem:
         "A useful agent can still run the wrong command, write outside scope, leak secrets, delete files, or claim completion with broken evidence.",
       value:
@@ -232,7 +232,7 @@ docs:
     telemetry: {
       title: "Telemetry and scoring",
       summary:
-        "Telemetry is useful only when it changes future behavior. Mars Harness routes failures into improvement targets instead of leaving them as dashboard trivia.",
+        "Telemetry is useful only when it changes future behavior. MARS routes failures into improvement targets instead of leaving them as dashboard trivia.",
       problem:
         "Teams see failures, reverts, no-ops, slow runs, and manual fixes but rarely convert them into reusable process improvements.",
       value:
@@ -262,13 +262,13 @@ docs:
     tools: {
       title: "Tools, skills, and MCP",
       summary:
-        "Mars Harness separates authority from guidance: tools perform governed actions, skills teach workflows, and MCP exposes the same tool surface to external clients.",
+        "MARS separates authority from guidance: tools perform governed actions, skills teach workflows, and MCP exposes the same tool surface to external clients.",
       problem:
         "Without a shared tool surface, every AI client invents its own shell conventions, increasing risk and making outcomes hard to compare.",
       value:
         "Codex, Cursor, local harness agents, and other MCP-compatible clients can use the same repo-root resolution, trust policy, and JSON argument path.",
       mechanism:
-        "Built-in tools are registered, allowlisted per role, trust-gated, and available through active agent runs, `mars-harness tools run`, and `mars-harness mcp serve`.",
+        "Built-in tools are registered, allowlisted per role, trust-gated, and available through active agent runs, `mars tools run`, and `mars mcp serve`.",
       proof:
         "Pick one recurring process such as DocSync audit or ticket creation and verify that both a harness role and an external client use the same tool path.",
       watch:

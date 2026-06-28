@@ -23,12 +23,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/codeintel"
-	"github.com/greaveselliott/mars-harness/internal/inference"
-	"github.com/greaveselliott/mars-harness/internal/llm"
-	"github.com/greaveselliott/mars-harness/internal/queue"
-	"github.com/greaveselliott/mars-harness/internal/scanner"
-	"github.com/greaveselliott/mars-harness/internal/trust"
+	"github.com/greaveselliott/mars/internal/codeintel"
+	"github.com/greaveselliott/mars/internal/inference"
+	"github.com/greaveselliott/mars/internal/llm"
+	"github.com/greaveselliott/mars/internal/queue"
+	"github.com/greaveselliott/mars/internal/scanner"
+	"github.com/greaveselliott/mars/internal/trust"
 	"github.com/stretchr/testify/require"
 )
 
@@ -186,20 +186,20 @@ func TestFoundationAcceptanceBroaderDogfoodLoopCoversTicketCommitPushAndQualityE
 	require.NoError(t, os.WriteFile(filepath.Join(repo, "README.md"), []byte("# Foundation acceptance target\n"), 0o644))
 	commitFoundationTarget(t, repo, "add target readme")
 	runFoundationGit(t, repo, "branch", "-M", "main")
-	bin, cliLog := writeFoundationFakeMarsHarnessBinary(t)
-	t.Setenv("MARS_HARNESS_CLI_BIN", bin)
+	bin, cliLog := writeFoundationFakeMarsBinary(t)
+	t.Setenv("MARS_CLI_BIN", bin)
 
 	reportPath := "docs/reports/dogfood/foundation-broader-loop.md"
 	fake := newFakeChatServer(t,
 		fakeToolResponseArgs(t, "write-report", "file_write", map[string]any{
 			"path":    reportPath,
-			"content": "# Foundation Broader Dogfood Loop\n\n- test: `test -f README.md`\n- push: attempted with `git_push`\n- quality: `mars-harness scores export --repo .`\n",
+			"content": "# Foundation Broader Dogfood Loop\n\n- test: `test -f README.md`\n- push: attempted with `git_push`\n- quality: `mars scores export --repo .`\n",
 		}),
 		fakeToolResponseArgs(t, "run-test", "shell_exec", map[string]any{
 			"argv":            []string{"test", "-f", "README.md"},
 			"timeout_seconds": 5,
 		}),
-		fakeToolResponseArgs(t, "export-quality", "mars_harness_cli", map[string]any{
+		fakeToolResponseArgs(t, "export-quality", "mars_cli", map[string]any{
 			"mode":            "run",
 			"args":            []string{"scores", "export"},
 			"repo":            ".",
@@ -244,7 +244,7 @@ func TestFoundationAcceptanceBroaderDogfoodLoopCoversTicketCommitPushAndQualityE
 			"status":         "completed",
 			"next_need":      "no_need",
 			"reason":         "Broader fake dogfood loop covered test execution, quality export, ticket creation, commit, and push attempt.",
-			"evidence_links": []string{reportPath, "mars-harness scores export --repo ."},
+			"evidence_links": []string{reportPath, "mars scores export --repo ."},
 		}),
 	)
 
@@ -465,26 +465,26 @@ func countOutcomes(t *testing.T, srv *Server, role, outcome string) int {
 	return count
 }
 
-func writeFoundationFakeMarsHarnessBinary(t *testing.T) (string, string) {
+func writeFoundationFakeMarsBinary(t *testing.T) (string, string) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
-		t.Skip("fake mars-harness shell script is POSIX-only")
+		t.Skip("fake mars shell script is POSIX-only")
 	}
 	dir := t.TempDir()
-	bin := filepath.Join(dir, "mars-harness")
+	bin := filepath.Join(dir, "mars")
 	logPath := filepath.Join(dir, "cli.log")
-	t.Setenv("MARS_HARNESS_FAKE_CLI_LOG", logPath)
+	t.Setenv("MARS_FAKE_CLI_LOG", logPath)
 	script := `#!/bin/sh
-printf 'args:' >> "$MARS_HARNESS_FAKE_CLI_LOG"
+printf 'args:' >> "$MARS_FAKE_CLI_LOG"
 for arg in "$@"; do
-  printf ' %s' "$arg" >> "$MARS_HARNESS_FAKE_CLI_LOG"
+  printf ' %s' "$arg" >> "$MARS_FAKE_CLI_LOG"
 done
-printf '\n' >> "$MARS_HARNESS_FAKE_CLI_LOG"
+printf '\n' >> "$MARS_FAKE_CLI_LOG"
 if [ "$1" = "scores" ] && [ "$2" = "export" ]; then
   echo "quality score exported"
   exit 0
 fi
-echo "fake mars-harness"
+echo "fake mars"
 `
 	require.NoError(t, os.WriteFile(bin, []byte(script), 0o755))
 	return bin, logPath

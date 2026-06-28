@@ -8,20 +8,20 @@ Recorded per the AD-285 evidence contract including model identity.
 
 ## Run 1: Vite/React habit tracker on v0.50.2 — 2026-06-12
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-12-balanced-frontend-start.log`
+  ~/.mars/traces/logs/demo-12-balanced-frontend-start.log`
 - **Target:** `/path/to/local-redacted` (fresh git
   repo seeded with a Vite/React habit-tracker brief; local bare origin
   `demo-12-origin.git`; per-repo DB cleared before the run)
-- **Source ref / binary:** `mars-harness 0.50.2` built from `c0ebceb` on
+- **Source ref / binary:** `mars 0.50.2` built from `c0ebceb` on
   `codex/main-lifecycle-stabilization-rebased`
 - **Model identity (AD-285):** reasoning + coding =
   `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` (ctx 131072 reasoning :18081,
   ctx 32768 coding :18080); fast = `google_gemma-4-E4B-it-Q5_K_M.gguf`;
   resolved from `performance_profile: balanced`
-- **Database / logs:** `~/.mars-harness/db/demo-12/mars.db`;
-  `~/.mars-harness/traces/logs/demo-12-balanced-frontend-start.log`
+- **Database / logs:** `~/.mars/db/demo-12/mars.db`;
+  `~/.mars/traces/logs/demo-12-balanced-frontend-start.log`
 - **Job sequence (10 jobs, ~62 min):** ceo 65s → coo 144s → cto-weekly 344s
   → orchestrator 96s → cto-weekly 166s → engineer failed (max_turns, 308s)
   → engineer failed (ticket gate, 256s) → engineer failed
@@ -140,14 +140,14 @@ recorded the wedge. Source-change class: tool-policy-adjacent runtime
 (agent loop, LLM client, inference routing) — package-managed frontend is
 one of the two archetypes the matrix gate requires for this fix.
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-12-balanced-frontend-replay-v0.50.11.log`
+  ~/.mars/traces/logs/demo-12-balanced-frontend-replay-v0.50.11.log`
 - **Target:** `/path/to/local-redacted` reset to the
   seed commit `b6aa7a3` (`.git` + `spec.md` only, `git clean -fdx`), local
   bare origin `demo-12-origin.git` force-pushed back to the seed; per-repo
-  DB `~/.mars-harness/db/demo-12` removed before the run
-- **Source ref / binary:** `mars-harness 0.50.11` built from `12af153` on
+  DB `~/.mars/db/demo-12` removed before the run
+- **Source ref / binary:** `mars 0.50.11` built from `12af153` on
   `codex/main-lifecycle-stabilization-rebased` (fix commit `bee4f5b`,
   tag `v0.50.11`)
 - **Model identity (AD-285):** unchanged from Run 1 — reasoning + coding =
@@ -155,8 +155,8 @@ one of the two archetypes the matrix gate requires for this fix.
   ctx 32768 coding :18080); fast = `google_gemma-4-E4B-it-Q5_K_M.gguf`;
   resolved from `performance_profile: balanced` — pace comparison with
   Run 1 is therefore valid
-- **Database / logs:** `~/.mars-harness/db/demo-12/mars.db`;
-  `~/.mars-harness/traces/logs/demo-12-balanced-frontend-replay-v0.50.11.log`
+- **Database / logs:** `~/.mars/db/demo-12/mars.db`;
+  `~/.mars/traces/logs/demo-12-balanced-frontend-replay-v0.50.11.log`
 - **Job sequence (9 jobs, 02:18:17–02:53 UTC; ~47 min):**
   ceo `62defe5f` 34s → coo `8c64c5a2` 126s → cto-weekly `01aa5f83` 49s →
   cto-weekly `b8cafbfa` 104s → engineer `c3a6da4a` failed (max_turns,
@@ -245,14 +245,14 @@ retry routing (v0.50.12–15), which the Run 2 baseline binary predates —
 failure-routing deltas are attributable to those landed changes, not to
 the extraction.
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-12-balanced-frontend-replay-v0.50.16.log`
+  ~/.mars/traces/logs/demo-12-balanced-frontend-replay-v0.50.16.log`
 - **Target:** `/path/to/local-redacted` reset to
   seed commit `b6aa7a3` (`.git` + `spec.md` only, `git clean -fdx`), local
   bare origin force-pushed back to the seed; per-repo DB
-  `~/.mars-harness/db/demo-12` removed before the run
-- **Source ref / binary:** `mars-harness 0.50.16` built from `7df6520`
+  `~/.mars/db/demo-12` removed before the run
+- **Source ref / binary:** `mars 0.50.16` built from `7df6520`
   (extraction commit `f5a1d6a`, tag `v0.50.16`), installed via
   `make install`
 - **Model identity (AD-285):** unchanged from Run 2 — reasoning + coding =
@@ -260,8 +260,8 @@ the extraction.
   ctx 32768 coding :18080); fast = `google_gemma-4-E4B-it-Q5_K_M.gguf`;
   resolved from `performance_profile: balanced` — pace comparison with
   Run 2 is valid
-- **Database / logs:** `~/.mars-harness/db/demo-12/mars.db`;
-  `~/.mars-harness/traces/logs/demo-12-balanced-frontend-replay-v0.50.16.log`
+- **Database / logs:** `~/.mars/db/demo-12/mars.db`;
+  `~/.mars/traces/logs/demo-12-balanced-frontend-replay-v0.50.16.log`
 - **Job sequence (15 jobs, 08:05–08:47 BST; ~42 min):** ceo 55s → coo 142s
   → cto-weekly 143s → engineer `16989255` failed (max_turns, 431s) →
   engineer `c96e6337` failed (circle_detected, 116s; AD-289 bounded
@@ -358,14 +358,14 @@ vs Runs 2/3. Source-change class per AD-284: tool policy (frontend canary
 of the two-archetype minimum; the API archetype runs as demo-15 in
 `2026-06-12-demo-15-api-ad287-final-checkpoint.md`).
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-12-balanced-frontend-replay-v0.50.24.log`
+  ~/.mars/traces/logs/demo-12-balanced-frontend-replay-v0.50.24.log`
 - **Target:** `/path/to/local-redacted` reset to
   seed commit `b6aa7a3` (`.git` + `spec.md` only, `git clean -fdx`), local
   bare origin force-pushed back to the seed; per-repo DB
-  `~/.mars-harness/db/demo-12` removed before the run
-- **Source ref / binary:** `mars-harness 0.50.24` built from `ffa2629`
+  `~/.mars/db/demo-12` removed before the run
+- **Source ref / binary:** `mars 0.50.24` built from `ffa2629`
   (extraction commit `5cd4eb3`, tag `v0.50.24` = `origin/main`), installed
   via `make install`
 - **Model identity (AD-285):** unchanged from Runs 2/3 — reasoning +
@@ -373,8 +373,8 @@ of the two-archetype minimum; the API archetype runs as demo-15 in
   reasoning :18081, ctx 32768 coding :18080); fast =
   `google_gemma-4-E4B-it-Q5_K_M.gguf`; resolved from
   `performance_profile: balanced` — comparison with Runs 2/3 is valid
-- **Database / logs:** `~/.mars-harness/db/demo-12/mars.db`;
-  `~/.mars-harness/traces/logs/demo-12-balanced-frontend-replay-v0.50.24.log`
+- **Database / logs:** `~/.mars/db/demo-12/mars.db`;
+  `~/.mars/traces/logs/demo-12-balanced-frontend-replay-v0.50.24.log`
 - **Job sequence (24 jobs, 09:21:04–09:50:51 UTC; ~30 min):**
   ceo `58af4c99` 58s → coo `0420502f` 75s → cto-weekly `ad3ad112` 108s →
   engineer `c22a0910` completed (129s; **T-001 claimed, implemented,

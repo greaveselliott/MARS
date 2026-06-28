@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 )
 
 func checkTicketCreatePolicy(ctx context.Context, root Root, session Session, hasSession bool, raw json.RawMessage) error {
@@ -690,7 +690,7 @@ func engineerCompletedTicketID(session Session) string {
 
 func engineerToolRequiresClaim(toolName string, raw json.RawMessage) bool {
 	switch toolName {
-	case "file_write", "dependency_sync", "mars_harness_cli", "git_commit":
+	case "file_write", "dependency_sync", "mars_cli", "git_commit":
 		return true
 	case "shell_exec":
 		return !shellExecReadOnly(raw)

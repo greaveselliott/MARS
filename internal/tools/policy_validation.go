@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 )
 
 func checkEngineerPostValidationCompletionShellPolicy(ctx context.Context, root Root, session Session, hasSession bool, raw json.RawMessage) error {
@@ -134,7 +134,7 @@ func checkEngineerMissingArgumentCorrectionOnly(session Session, hasSession bool
 		return nil
 	}
 	switch name {
-	case "file_write", "git_commit", "git_push", "record_decision", "dependency_sync", "mars_harness_cli", "tool_create", "persona_create":
+	case "file_write", "git_commit", "git_push", "record_decision", "dependency_sync", "mars_cli", "tool_create", "persona_create":
 		return fmt.Errorf("policy: engineer has an unresolved no-argument or missing-required-input runtime probe. Do not continue edits, commits, decisions, pushes, or other work yet. Run the exact correction next: %s. If that correction still fails, inspect and edit the implementation before rerunning validation", runtimeValidationExactCorrection(session))
 	default:
 		return nil

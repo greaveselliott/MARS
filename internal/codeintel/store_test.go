@@ -198,6 +198,25 @@ func TestBuildContextUsesConfiguredDBPath(t *testing.T) {
 	}
 }
 
+func TestResolveDBPathUsesLegacyWhenNewMissing(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	repo := filepath.Join(t.TempDir(), "example-repo")
+	if err := os.MkdirAll(repo, 0o755); err != nil {
+		t.Fatalf("mkdir repo: %v", err)
+	}
+	legacy := DefaultLegacyDBPath(repo)
+	if err := os.MkdirAll(filepath.Dir(legacy), 0o755); err != nil {
+		t.Fatalf("mkdir legacy db dir: %v", err)
+	}
+	if err := os.WriteFile(legacy, []byte("legacy"), 0o600); err != nil {
+		t.Fatalf("write legacy db: %v", err)
+	}
+	if got := ResolveDBPath(repo); got != legacy {
+		t.Fatalf("ResolveDBPath = %q, want %q", got, legacy)
+	}
+}
+
 func TestBuildContextDoesNotAutoRefreshLargeStaleSet(t *testing.T) {
 	repo := t.TempDir()
 	staleDB := filepath.Join(t.TempDir(), "mars.db")

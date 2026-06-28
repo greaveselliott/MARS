@@ -47,14 +47,14 @@ Then the ticket must include non-empty `bdd_scenarios`, `end_to_end_evidence: re
 
 ### F-001-S003: Generated Target Mirror
 
-Given `mars-harness init` runs on a target repo
+Given `mars init` runs on a target repo
 When the scaffold is inspected
 Then goals, feature contracts, AD-074, role prompts, ticket metadata, exec-plan metadata, quality guidance, and knowledge routes mirror the source doctrine
 
 ### F-001-S004: Non-Destructive Target Drift
 
 Given an existing target has old operating-model docs
-When `mars-harness update check` or `doctor --repo` runs
+When `mars update check` or `doctor --repo` runs
 Then stale or missing operating-model artifacts are reported without overwriting user-owned files
 
 ### F-001-S005: Enabler Classification
@@ -84,7 +84,7 @@ Then the changed code carries near-top `MarsDocSync` metadata listing associated
 ### F-001-S009: Source-Wide Docsync Audit
 
 Given a foundation or deployed harness source tree is audited
-When `mars-harness docsync audit --repo .` or the mirrored `docsync_audit` tool runs
+When `mars docsync audit --repo .` or the mirrored `docsync_audit` tool runs
 Then every source file under the audited foundation and deployed app roots declares near-top `MarsDocSync` metadata, every referenced doc exists, foundation files include the documentation required by the canonical code map, and deployed app-root files point to their local owning feature or design docs
 
 ### F-001-S010: Universal Documentation Sync Operating Model
@@ -95,9 +95,9 @@ Then it follows the documented documentation-sync operating model: read changed-
 
 ### F-001-S011: CLI Tool And Skill Synchronization
 
-Given a `mars-harness` CLI command, flag, output contract, repo behavior, mutability expectation, or recurring workflow changes
+Given a `mars` CLI command, flag, output contract, repo behavior, mutability expectation, or recurring workflow changes
 When the change is prepared for completion
-Then the `mars_harness_cli` reference, repo shortcut map, generated target doctrine, and any skills that name the affected workflow are updated or explicitly checked as current, and CLI sync evidence is recorded
+Then the `mars_cli` reference, repo shortcut map, generated target doctrine, and any skills that name the affected workflow are updated or explicitly checked as current, and CLI sync evidence is recorded
 
 ### F-001-S012: Remote Trunk Freshness And Immediate Publishing
 
@@ -107,14 +107,14 @@ Then it fetches `origin main`, works only from local `main` at or fast-forwarded
 
 ### F-001-S013: Source Live-Experience Verification
 
-Given a Mars Harness source change claims to improve first-run lifecycle, orchestration, intervention-debt routing, generated target scaffolding, model or provider behavior, dashboard/control-plane behavior, scoring, update/release, or safety/guardrail behavior
+Given a MARS source change claims to improve first-run lifecycle, orchestration, intervention-debt routing, generated target scaffolding, model or provider behavior, dashboard/control-plane behavior, scoring, update/release, or safety/guardrail behavior
 When the agent prepares completion evidence
 Then the evidence includes a representative live target run from the validation matrix, with exact command, target repo, branch/ref or binary, runtime artifact paths, observed lifecycle events, product progress, and remaining blockers; if the run cannot be performed, the blocker records the intended replay steps and why the live check is unavailable
 
 ### F-001-S014: Continuous Live Demo Improvement Loop
 
 Given a representative live target run exposes a lifecycle, orchestration, intervention-debt, runtime, generated-target, model/provider, scoring, safety, dashboard, or update/release issue
-When the agent stabilizes Mars Harness source behavior
+When the agent stabilizes MARS source behavior
 Then the agent records the run evidence, reviews the findings, selects one or two bounded source actions tied to that evidence, implements and tests those actions, reruns a clean representative target, merges or fast-forwards the confirmed fix to trunk, pushes it to the remote, and claims improvement only when the rerun shows better product progress or a clearly smaller remaining blocker
 
 ### F-001-S015: Foundation And Deployed Doctrine Boundaries
@@ -143,9 +143,9 @@ None.
 - F-001-S006: `go test ./internal/telemetry -run TestRecordGoalFromProposal`
 - F-001-S007: `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields`
 - F-001-S008: `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata`
-- F-001-S009: `go test ./internal/docsync ./internal/docsconsistency -run 'TestDocSync|TestOperatingModelCodeFilesDeclareDocSyncMetadata'` and `mars-harness docsync audit --repo .`
+- F-001-S009: `go test ./internal/docsync ./internal/docsconsistency -run 'TestDocSync|TestOperatingModelCodeFilesDeclareDocSyncMetadata'` and `mars docsync audit --repo .`
 - F-001-S010: `go test ./internal/docsconsistency -run TestAD074OperatingModelArtifactsExist` verifies the architecture and universal operating model are documented.
-- F-001-S011: `go test ./cmd/mars-harness -run TestMarsHarnessCLI` verifies the live Cobra command tree, `mars_harness_cli` reference, and repo shortcut map stay synchronized.
+- F-001-S011: `go test ./cmd/mars -run TestMarsCLI` verifies the live Cobra command tree, `mars_cli` reference, and repo shortcut map stay synchronized.
 - F-001-S012: `go test ./internal/docsconsistency -run TestRemoteTrunkOperatingModelIsDocumented` verifies source and generated target doctrine include the remote-trunk workflow.
 - F-001-S013: source-harness lifecycle changes include a representative live-experience transcript, or an explicit blocker with replay steps.
 - F-001-S014: `go test ./internal/docsconsistency -run TestLiveDemoImprovementLoopIsDocumented` verifies the run, review, act, rerun, merge, and push loop is documented in source and generated target doctrine.

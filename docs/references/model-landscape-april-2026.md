@@ -1,6 +1,6 @@
 # Open Model Landscape — April 2026
 
-Research findings informing Mars Harness's model selection, hardware profiles, and quality expectations.
+Research findings informing MARS's model selection, hardware profiles, and quality expectations.
 
 **Date:** 2026-04-11
 **Sources:** SWE-bench Verified leaderboard, vLLM GitHub issues, llama.cpp PRs, independent tool-calling benchmarks, Google DeepMind Gemma 4 announcement, Qwen3-Coder-Next technical reports.
@@ -116,7 +116,7 @@ Cloud GPU instances (Lambda, RunPod) narrow or eliminate the cost advantage. Onl
 
 ## Serving Infrastructure Recommendation
 
-**Primary:** llama.cpp managed as subprocess by the harness binary. Downloaded during `mars-harness setup`. User never interacts with it directly.
+**Primary:** llama.cpp managed as subprocess by the harness binary. Downloaded during `mars setup`. User never interacts with it directly.
 
 **Alternative:** If user already has vLLM running, the manifest can point to it. But vLLM is not a requirement.
 

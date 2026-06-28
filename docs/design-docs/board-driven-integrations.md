@@ -2,13 +2,13 @@
 
 **Status:** Draft
 **Date:** 2026-06-23
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Feature Contract:** [F-013-board-driven-integrations.md](../features/F-013-board-driven-integrations.md)
 **Operator Runbook:** [atlassian-mcp-jira-intake.md](../runbooks/atlassian-mcp-jira-intake.md)
 
 ## Context
 
-Mars Harness currently defaults to a CEO-led, GitHub-compatible, strict-trunk
+MARS currently defaults to a CEO-led, GitHub-compatible, strict-trunk
 operating flow. Some teams run delivery from a board such as JIRA and need a
 workflow that mirrors board tickets, scopes them through planning roles,
 delivers through Engineer and QA, and can open human-merged pull requests.
@@ -23,7 +23,7 @@ want the board-driven profile.
 
 ### AD-302: Board-Driven Integrations Are Optional Profile Gates
 
-Mars Harness uses a small integrations config loaded from
+MARS uses a small integrations config loaded from
 `.harness/integrations.yaml`. Missing config, empty `flow_profile`, or unknown
 profile names normalize to `ceo-led`. The `board-driven` profile is never
 inferred from partial JIRA, Figma, delivery, or model settings.

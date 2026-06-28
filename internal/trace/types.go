@@ -10,7 +10,7 @@ package trace
 import (
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars/internal/llm"
 )
 
 // Header is the first JSON line in a trace file (MH-005).

@@ -5,11 +5,11 @@
 **Published:** January 2026
 **Type:** Structured agent skill
 **Carry-over source:** `../mars/docs/references/vercel-composition-patterns.md`
-**Mars Harness relevance:** Reference for generated React target projects and future skill format.
+**MARS relevance:** Reference for generated React target projects and future skill format.
 
 ## Summary
 
-The Vercel Composition Patterns skill captures React component composition rules for agents. Mars used it to improve generated UI maintainability. Mars Harness should keep it as a reference for generated target repositories, especially where future bundles include React, Next.js, or component-library scaffolds.
+The Vercel Composition Patterns skill captures React component composition rules for agents. Mars used it to improve generated UI maintainability. MARS should keep it as a reference for generated target repositories, especially where future bundles include React, Next.js, or component-library scaffolds.
 
 ## Concepts Worth Carrying Forward
 
@@ -21,7 +21,7 @@ The Vercel Composition Patterns skill captures React component composition rules
 
 ## Harness Translation
 
-Mars Harness should not make these React-specific rules part of the core agent runtime. Instead, they should inform:
+MARS should not make these React-specific rules part of the core agent runtime. Instead, they should inform:
 
 - generated target `AGENTS.md` files for React projects,
 - optional frontend guardrail bundles,

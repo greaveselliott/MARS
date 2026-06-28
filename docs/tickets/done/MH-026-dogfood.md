@@ -1,6 +1,6 @@
 ---
 id: MH-026
-title: Dogfood harness on mars-harness repo with Pipeline Fixer and QA roles
+title: Dogfood harness on mars repo with Pipeline Fixer and QA roles
 priority: medium
 complexity: medium
 source: delivery-schedule M10
@@ -15,8 +15,8 @@ Shipping confidence requires the tool to run its own CI hygiene and QA loops aga
 
 ## Requirements
 
-- Commit `.harness/` for `mars-harness` including roles for Pipeline Fixer and QA aligned with MH-025 tranche 1
-- Wire GitHub Actions or self-hosted check to invoke `mars-harness run` / `serve` paths as appropriate (documented non-secret env)
+- Commit `.harness/` for `mars` including roles for Pipeline Fixer and QA aligned with MH-025 tranche 1
+- Wire GitHub Actions or self-hosted check to invoke `mars run` / `serve` paths as appropriate (documented non-secret env)
 - Define allowed blast radius (MH-015) suitable for public OSS: branch prefix, max lines, no-delete default on
 - Run book: how maintainers triage harness-opened PRs vs human PRs
 

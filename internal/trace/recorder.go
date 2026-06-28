@@ -17,7 +17,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars/internal/llm"
 )
 
 const defaultMaxBodyBytes = 100 * 1024

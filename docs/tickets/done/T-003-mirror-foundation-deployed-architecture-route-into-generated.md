@@ -18,7 +18,7 @@ dedupe_key: "public-example"
 metadata:
   category: "doctrine_mirroring"
   confidence: "high"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   role: "planner"
   severity: "high"
   target: "generated-targets"

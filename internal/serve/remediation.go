@@ -15,10 +15,10 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/queue"
-	"github.com/greaveselliott/mars-harness/internal/remediation"
-	"github.com/greaveselliott/mars-harness/internal/scanner"
-	"github.com/greaveselliott/mars-harness/internal/telemetry"
+	"github.com/greaveselliott/mars/internal/queue"
+	"github.com/greaveselliott/mars/internal/remediation"
+	"github.com/greaveselliott/mars/internal/scanner"
+	"github.com/greaveselliott/mars/internal/telemetry"
 )
 
 type remediationAttemptEvidence struct {

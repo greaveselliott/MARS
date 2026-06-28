@@ -20,17 +20,17 @@ stayed clean.
 | Command | Result | Notes |
 | --- | --- | --- |
 | `git -C /path/to/local-redacted status --short --branch` | Passed | Target was clean before and after the observer trial. |
-| `go run ./cmd/mars-harness doctor --repo /path/to/local-redacted --json` | Warned | Core host checks passed; target-specific warnings showed missing `.harness`, missing per-repo DB directory, operating-model drift, role registry unavailable, deterministic remediation recommending `init`, and active-plan hygiene issues in Mars. |
-| `go run ./cmd/mars-harness update check --repo /path/to/local-redacted --skip-remote --json` | Warned | Tool remote check was skipped; harness version was current at `0.41.19`; the recommended action was `mars-harness init --repo /path/to/local-redacted`. |
-| `go run ./cmd/mars-harness tools run git_status --repo /path/to/local-redacted --trust observer --json` | Passed | Observer-trust read-only tool returned exit code 0 with empty output. |
-| `go run ./cmd/mars-harness tools run file_write --repo /path/to/local-redacted --trust observer ...` | Blocked | Policy rejected `file_write` with `trust level observer cannot run mutating tool "file_write"` before writing. `observer-proof.txt` was not created. |
-| `go run ./cmd/mars-harness run engineer --repo <validation-root> --dry-run --trace` | Passed on temp clone only | The real target was not used because `run --dry-run` auto-initializes missing `.harness/`. The temp clone proved context assembly, but also confirmed the command is not observer-safe for uninitialized real targets. |
-| `go run ./cmd/mars-harness run engineer --repo /path/to/local-redacted --dry-run --trace --no-init` | Passed | The command reported the missing `.harness/manifest.yaml` boundary, stated that no files were written, and exited without scaffolding the real Mars checkout. |
+| `go run ./cmd/mars doctor --repo /path/to/local-redacted --json` | Warned | Core host checks passed; target-specific warnings showed missing `.harness`, missing per-repo DB directory, operating-model drift, role registry unavailable, deterministic remediation recommending `init`, and active-plan hygiene issues in Mars. |
+| `go run ./cmd/mars update check --repo /path/to/local-redacted --skip-remote --json` | Warned | Tool remote check was skipped; harness version was current at `0.41.19`; the recommended action was `mars init --repo /path/to/local-redacted`. |
+| `go run ./cmd/mars tools run git_status --repo /path/to/local-redacted --trust observer --json` | Passed | Observer-trust read-only tool returned exit code 0 with empty output. |
+| `go run ./cmd/mars tools run file_write --repo /path/to/local-redacted --trust observer ...` | Blocked | Policy rejected `file_write` with `trust level observer cannot run mutating tool "file_write"` before writing. `observer-proof.txt` was not created. |
+| `go run ./cmd/mars run engineer --repo <validation-root> --dry-run --trace` | Passed on temp clone only | The real target was not used because `run --dry-run` auto-initializes missing `.harness/`. The temp clone proved context assembly, but also confirmed the command is not observer-safe for uninitialized real targets. |
+| `go run ./cmd/mars run engineer --repo /path/to/local-redacted --dry-run --trace --no-init` | Passed | The command reported the missing `.harness/manifest.yaml` boundary, stated that no files were written, and exited without scaffolding the real Mars checkout. |
 | `git -C /path/to/local-redacted status --short --branch` after `--no-init` | Passed | Target remained `main...origin/main` with no changed files after the observer-safe dry-run. |
 
 ## Findings
 
-- Mars Harness can inspect Mars in observer mode without modifying the real
+- MARS can inspect Mars in observer mode without modifying the real
   checkout for doctor, update-check, and read-only tool execution.
 - Observer trust blocks mutating built-in tools before they touch Mars.
 - Mars is not ready for contributor-mode dogfood. It lacks `.harness/`, has

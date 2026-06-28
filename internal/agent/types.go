@@ -10,7 +10,7 @@ package agent
 import (
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars/internal/llm"
 )
 
 // EndReason is a stable machine-readable loop termination code.

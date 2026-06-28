@@ -133,7 +133,7 @@ func OpenStore(dbPath string) (*Store, error) {
 	if err := s.initSchema(); err != nil {
 		_ = db.Close()
 		if isSQLiteOpenUnavailable(err) {
-			return nil, fmt.Errorf("trust: database at %s is unavailable — run `mars-harness setup`, run `mars-harness register --repo <path>`, or pass --db with a writable SQLite path", dbPath)
+			return nil, fmt.Errorf("trust: database at %s is unavailable — run `mars setup`, run `mars register --repo <path>`, or pass --db with a writable SQLite path", dbPath)
 		}
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func OpenStore(dbPath string) (*Store, error) {
 func validateDBPath(dbPath string) error {
 	dbPath = strings.TrimSpace(dbPath)
 	if dbPath == "" {
-		return fmt.Errorf("trust: database path is empty — pass --db <path> or run `mars-harness register --repo <path>`")
+		return fmt.Errorf("trust: database path is empty — pass --db <path> or run `mars register --repo <path>`")
 	}
 	if dbPath == ":memory:" || strings.HasPrefix(dbPath, "file:") {
 		return nil
@@ -155,7 +155,7 @@ func validateDBPath(dbPath string) error {
 	info, err := os.Stat(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("trust: database directory %s does not exist for %s — run `mars-harness setup`, run `mars-harness register --repo <path>`, or create the directory before retrying", dir, dbPath)
+			return fmt.Errorf("trust: database directory %s does not exist for %s — run `mars setup`, run `mars register --repo <path>`, or create the directory before retrying", dir, dbPath)
 		}
 		return fmt.Errorf("trust: check database directory %s: %w", dir, err)
 	}

@@ -18,7 +18,7 @@ audit. T-028 (provisional T-040 in the foundation improvement plan) makes the
 mapping from source-change class to minimum archetype replays mechanical
 doctrine, and fixes the evidence-recording contract.
 
-This is foundation validation doctrine. It governs how `mars-harness` source
+This is foundation validation doctrine. It governs how `mars` source
 changes are validated before lifecycle claims; it is **source-only** and is
 not mirrored into generated target guidance (AGENTS.md rule 13 classification:
 no generated-doctrine change required, recorded in T-028).
@@ -38,7 +38,7 @@ archetypes are AD-138's portfolio.
 | Role guidance | Generated role prompts, personas, bootstrap guidance in `internal/scanner` and `internal/personas` | The archetype whose guidance changed; cross-role or generic guidance changes need two archetypes |
 | Orchestration | `internal/orchestration`, `internal/serve`, `internal/queue`, `internal/scheduler` dispatch, routing, convergence, survey behavior | Two archetypes: static browser app plus API/service or CLI/tooling (routing must not overfit one shape) |
 | Release flow | `internal/release`, `internal/selfupdate`, release guards, release-note generation, publish/verify/audit | One CLI/tooling archetype replayed through its local release stage, plus the source repo's own release-note flow as live evidence |
-| Scanner/generated doctrine | `mars-harness init`/`upgrade` defaults, mirrored docs, tools glossary, skills, target `AGENTS.md` | One fresh `init` replay of an affected archetype; upgrade-path changes add the existing-repo maintenance archetype |
+| Scanner/generated doctrine | `mars init`/`upgrade` defaults, mirrored docs, tools glossary, skills, target `AGENTS.md` | One fresh `init` replay of an affected archetype; upgrade-path changes add the existing-repo maintenance archetype |
 | Model/provider behavior | `internal/llm` routing, model registry defaults, inference management | One archetype end-to-end on the affected model path, or the recorded blocker when hardware is unavailable |
 | Quality export and telemetry rendering | `internal/qualityscore`, `internal/scoring` export/render surfaces with no runtime recording change | None beyond package tests; the next scheduled baseline replay doubles as live validation and the ticket must say so |
 | Docs/doctrine only | Design docs, ADs, tickets, plans, glossary entries with no behavior change | None; documentation gates (`docsync`, docsconsistency) suffice |
@@ -105,7 +105,7 @@ Replay evidence is durable, discoverable, and uniform:
 
 ### AD-294: Agent Smoke Is A Complementary Fast Lane
 
-`mars-harness validation agent-smoke` is a source-only validation lane for
+`mars validation agent-smoke` is a source-only validation lane for
 role-local smoke coverage. It generates ephemeral targets through foundation
 tools, executes selected roles through the server job path, cycles cases across
 API, web, game, CLI, library, docs-site, and maintenance project shapes, and

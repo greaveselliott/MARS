@@ -10,7 +10,7 @@ kind: intervention-debt
 dedupe_key: "public-example"
 metadata:
   role: "release"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "update"
   category: "version_drift"
   severity: "high"
@@ -20,24 +20,24 @@ metadata:
 
 ## Context
 
-Mars Harness now has semantic versioning for the source tool and initialized target repos. Operators should not have to remember whether the binary, source checkout, or deployed target harness is behind. The CLI should use one vocabulary and check version drift automatically.
+MARS now has semantic versioning for the source tool and initialized target repos. Operators should not have to remember whether the binary, source checkout, or deployed target harness is behind. The CLI should use one vocabulary and check version drift automatically.
 
 ## Requirements
 
-- Add a version-check path under the unified `mars-harness update` command.
+- Add a version-check path under the unified `mars update` command.
 - Compare the installed CLI version with the latest configured source:
   - GitHub latest release by default
   - another GitHub-compatible latest-release endpoint when explicitly supplied
 - Compare a target repo's deployed harness metadata/version with the installed CLI's generated-harness version.
 - Recommend or run the right command:
-  - `mars-harness update tool`
-  - `mars-harness update harness --repo <path>`
+  - `mars update tool`
+  - `mars update harness --repo <path>`
   - both, in the right order, when both are stale
-- Keep `mars-harness upgrade --repo` as compatibility language, but prefer `update harness` in docs and prompts.
+- Keep `mars upgrade --repo` as compatibility language, but prefer `update harness` in docs and prompts.
 
 ## Affected Files
 
-- `cmd/mars-harness/main.go`
+- `cmd/mars/main.go`
 - `internal/selfupdate/`
 - `internal/scanner/`
 - `internal/doctor/`
@@ -49,7 +49,7 @@ Mars Harness now has semantic versioning for the source tool and initialized tar
 
 ### Functional (happy path)
 
-- [x] `mars-harness update check --repo <path> --json` emits parseable status for tool and target harness.
+- [x] `mars update check --repo <path> --json` emits parseable status for tool and target harness.
 - [x] Behind CLI version reports latest available version and update command.
 - [x] Behind target harness reports installed generator version and update command.
 - [x] Up-to-date tool and target report no action needed.
@@ -57,7 +57,7 @@ Mars Harness now has semantic versioning for the source tool and initialized tar
 ### Edge cases and negative paths
 
 - [x] Missing network or GitHub API failure reports unknown remote status without failing local target checks.
-- [x] Target repos without harness metadata receive an actionable `mars-harness init` or `update harness` recommendation.
+- [x] Target repos without harness metadata receive an actionable `mars init` or `update harness` recommendation.
 - [x] Source-development installs can check a configured latest-release endpoint without requiring `cd`.
 
 ### Non-goals

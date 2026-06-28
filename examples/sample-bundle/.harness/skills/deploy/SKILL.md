@@ -6,7 +6,7 @@ scope: all
 
 # Deploy
 
-This is a sample skill that teaches mars-harness agents how to deploy this project.
+This is a sample skill that teaches mars agents how to deploy this project.
 
 ## Steps
 

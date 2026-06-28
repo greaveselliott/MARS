@@ -21,8 +21,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/docsync"
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
+	"github.com/greaveselliott/mars/internal/docsync"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 )
 
 func featureContractSuperseded(content string) bool {

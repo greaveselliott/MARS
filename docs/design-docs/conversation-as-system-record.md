@@ -2,11 +2,11 @@
 
 **Status:** Accepted
 **Date:** 2026-05-03
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ## Context
 
-Mars Harness already treats the repository as the system of record. The gap is
+MARS already treats the repository as the system of record. The gap is
 precision: significant agent conversations can still leave durable decisions,
 investigations, quality findings, or completion claims only in chat. Future
 agents cannot safely use that context unless it is converted into repo-owned
@@ -59,7 +59,7 @@ claimed complete.
 ## Enforcement Evidence
 
 The active-plan hygiene checker delivered by `MH-034` is the enforcement point
-for plan and ticket-state drift. It is exposed through `mars-harness doctor
+for plan and ticket-state drift. It is exposed through `mars doctor
 --repo .` and the docs-consistency tests, and it reports multiple active plans,
 stale or misleading ticket-location claims, unresolved `TBD` placeholders,
 relative status language without dates, and stale verification notes.

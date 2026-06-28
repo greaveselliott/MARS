@@ -32,19 +32,19 @@ import (
 	"time"
 )
 
-const marsHarnessCLISchema = `{
+const marsCLISchema = `{
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "mode": {
       "type": "string",
       "enum": ["reference", "run"],
-      "description": "Use reference for exhaustive CLI guidance, or run to execute mars-harness with structured argv"
+      "description": "Use reference for exhaustive CLI guidance, or run to execute mars with structured argv"
     },
     "args": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "mars-harness arguments excluding the binary name, e.g. [\"doctor\", \"--repo\", \".\", \"--json\"]"
+      "description": "mars arguments excluding the binary name, e.g. [\"doctor\", \"--repo\", \".\", \"--json\"]"
     },
     "repo": {
       "type": "string",
@@ -56,12 +56,12 @@ const marsHarnessCLISchema = `{
     },
     "background": {
       "type": "boolean",
-      "description": "Start mars-harness in the background. Use for long-running serve/start runs."
+      "description": "Start mars in the background. Use for long-running serve/start runs."
     }
   }
 }`
 
-type marsHarnessCLIArgs struct {
+type marsCLIArgs struct {
 	Mode           string   `json:"mode"`
 	Args           []string `json:"args"`
 	Repo           string   `json:"repo"`
@@ -69,7 +69,7 @@ type marsHarnessCLIArgs struct {
 	Background     bool     `json:"background"`
 }
 
-type rawMarsHarnessCLIArgs struct {
+type rawMarsCLIArgs struct {
 	Mode           string          `json:"mode"`
 	Args           json.RawMessage `json:"args"`
 	Repo           string          `json:"repo"`
@@ -77,19 +77,27 @@ type rawMarsHarnessCLIArgs struct {
 	Background     bool            `json:"background"`
 }
 
-func registerMarsHarnessCLI(r *Registry) error {
+func registerMarsCLI(r *Registry) error {
+	if err := r.Register(
+		"mars_cli",
+		"Read exhaustive mars CLI reference or execute mars commands with structured argv. This is the mirrored tool for controlling the foundation or deployed harness through the CLI.",
+		json.RawMessage(marsCLISchema),
+		handleMarsCLI,
+	); err != nil {
+		return err
+	}
 	return r.Register(
 		"mars_harness_cli",
-		"Read exhaustive mars-harness CLI reference or execute mars-harness commands with structured argv. This is the mirrored tool for controlling the foundation or deployed harness through the CLI.",
-		json.RawMessage(marsHarnessCLISchema),
-		handleMarsHarnessCLI,
+		"Deprecated compatibility alias for mars_cli. Use mars_cli for new prompts and generated harnesses.",
+		json.RawMessage(marsCLISchema),
+		handleMarsCLI,
 	)
 }
 
-func handleMarsHarnessCLI(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
-	args, err := decodeMarsHarnessCLIArgs(raw)
+func handleMarsCLI(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
+	args, err := decodeMarsCLIArgs(raw)
 	if err != nil {
-		return ToolResult{}, fmt.Errorf("mars_harness_cli: parse arguments: %w", err)
+		return ToolResult{}, fmt.Errorf("mars_cli: parse arguments: %w", err)
 	}
 	mode := strings.TrimSpace(args.Mode)
 	if mode == "" {
@@ -101,20 +109,20 @@ func handleMarsHarnessCLI(ctx context.Context, root Root, raw json.RawMessage) (
 	}
 	switch mode {
 	case "reference":
-		return ToolResult{Output: marsHarnessCLIReference()}, nil
+		return ToolResult{Output: marsCLIReference()}, nil
 	case "run":
-		return runMarsHarnessCLI(ctx, root, args)
+		return runMarsCLI(ctx, root, args)
 	default:
-		return ToolResult{}, fmt.Errorf("mars_harness_cli: unsupported mode %q", args.Mode)
+		return ToolResult{}, fmt.Errorf("mars_cli: unsupported mode %q", args.Mode)
 	}
 }
 
-func decodeMarsHarnessCLIArgs(raw json.RawMessage) (marsHarnessCLIArgs, error) {
-	var rawArgs rawMarsHarnessCLIArgs
+func decodeMarsCLIArgs(raw json.RawMessage) (marsCLIArgs, error) {
+	var rawArgs rawMarsCLIArgs
 	if err := json.Unmarshal(raw, &rawArgs); err != nil {
-		return marsHarnessCLIArgs{}, err
+		return marsCLIArgs{}, err
 	}
-	args := marsHarnessCLIArgs{
+	args := marsCLIArgs{
 		Mode:           rawArgs.Mode,
 		Repo:           rawArgs.Repo,
 		TimeoutSeconds: rawArgs.TimeoutSeconds,
@@ -123,20 +131,20 @@ func decodeMarsHarnessCLIArgs(raw json.RawMessage) (marsHarnessCLIArgs, error) {
 	if len(rawArgs.Args) == 0 || bytes.Equal(bytes.TrimSpace(rawArgs.Args), []byte("null")) {
 		return args, nil
 	}
-	cliArgs, err := decodeStringSliceArg(rawArgs.Args, "mars_harness_cli.args")
+	cliArgs, err := decodeStringSliceArg(rawArgs.Args, "mars_cli.args")
 	if err != nil {
-		return marsHarnessCLIArgs{}, err
+		return marsCLIArgs{}, err
 	}
 	args.Args = normalizeShellExecArgv(cliArgs)
 	return args, nil
 }
 
-func runMarsHarnessCLI(ctx context.Context, root Root, args marsHarnessCLIArgs) (ToolResult, error) {
-	cliArgs, err := normalizeMarsHarnessArgs(root, args)
+func runMarsCLI(ctx context.Context, root Root, args marsCLIArgs) (ToolResult, error) {
+	cliArgs, err := normalizeMarsArgs(root, args)
 	if err != nil {
 		return ToolResult{}, err
 	}
-	argv, err := marsHarnessCommandArgv(root, cliArgs)
+	argv, err := marsCommandArgv(root, cliArgs)
 	if err != nil {
 		return ToolResult{}, err
 	}
@@ -173,18 +181,18 @@ func runMarsHarnessCLI(ctx context.Context, root Root, args marsHarnessCLIArgs) 
 				Output:   stdout.String(),
 				Stderr:   stderr.String(),
 				ExitCode: -1,
-			}, fmt.Errorf("mars_harness_cli: command timed out after %ds; use background:true for serve/start", timeoutSeconds)
+			}, fmt.Errorf("mars_cli: command timed out after %ds; use background:true for serve/start", timeoutSeconds)
 		}
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
 			exitCode = ee.ExitCode()
 		} else {
-			return ToolResult{Output: stdout.String(), Stderr: stderr.String()}, fmt.Errorf("mars_harness_cli: %w", err)
+			return ToolResult{Output: stdout.String(), Stderr: stderr.String()}, fmt.Errorf("mars_cli: %w", err)
 		}
 	}
 
 	rawStdout := stdout.String()
-	rawStderr := decorateMarsHarnessCLIStderr(stderr.String(), argv, cliArgs, exitCode)
+	rawStderr := decorateMarsCLIStderr(stderr.String(), argv, cliArgs, exitCode)
 	out, truncOut := capString(rawStdout, DefaultMaxToolOutputBytes/2)
 	errOut, truncErr := capString(rawStderr, DefaultMaxToolOutputBytes/2)
 	return ToolResult{
@@ -195,14 +203,14 @@ func runMarsHarnessCLI(ctx context.Context, root Root, args marsHarnessCLIArgs) 
 	}, nil
 }
 
-func normalizeMarsHarnessArgs(root Root, args marsHarnessCLIArgs) ([]string, error) {
+func normalizeMarsArgs(root Root, args marsCLIArgs) ([]string, error) {
 	if len(args.Args) == 0 {
-		return nil, fmt.Errorf("mars_harness_cli: args are required in run mode")
+		return nil, fmt.Errorf("mars_cli: args are required in run mode")
 	}
 	cliArgs := make([]string, len(args.Args))
 	for i, arg := range args.Args {
 		if arg == "" {
-			return nil, fmt.Errorf("mars_harness_cli: args[%d] must be non-empty", i)
+			return nil, fmt.Errorf("mars_cli: args[%d] must be non-empty", i)
 		}
 		cliArgs[i] = arg
 	}
@@ -213,12 +221,12 @@ func normalizeMarsHarnessArgs(root Root, args marsHarnessCLIArgs) ([]string, err
 	if hasFlag(cliArgs, "--repo") {
 		return cliArgs, nil
 	}
-	if !marsHarnessCommandSupportsRepo(cliArgs) {
-		return nil, fmt.Errorf("mars_harness_cli: repo was provided but command %q does not support --repo", strings.Join(cliArgs, " "))
+	if !marsCommandSupportsRepo(cliArgs) {
+		return nil, fmt.Errorf("mars_cli: repo was provided but command %q does not support --repo", strings.Join(cliArgs, " "))
 	}
 	resolved, err := root.ResolvePath(repo)
 	if err != nil {
-		return nil, fmt.Errorf("mars_harness_cli: resolve repo: %w", err)
+		return nil, fmt.Errorf("mars_cli: resolve repo: %w", err)
 	}
 	return appendRepoFlag(cliArgs, resolved), nil
 }
@@ -236,36 +244,42 @@ func appendRepoFlag(args []string, repo string) []string {
 	return append(args, "--repo", repo)
 }
 
-func marsHarnessCommandArgv(root Root, args []string) ([]string, error) {
+func marsCommandArgv(root Root, args []string) ([]string, error) {
 	currentExe, currentErr := os.Executable()
-	return marsHarnessCommandArgvWithExecutable(root, args, currentExe, currentErr)
+	return marsCommandArgvWithExecutable(root, args, currentExe, currentErr)
 }
 
-func marsHarnessCommandArgvWithExecutable(root Root, args []string, currentExe string, currentErr error) ([]string, error) {
+func marsCommandArgvWithExecutable(root Root, args []string, currentExe string, currentErr error) ([]string, error) {
+	if bin := strings.TrimSpace(os.Getenv("MARS_CLI_BIN")); bin != "" {
+		return append([]string{bin}, args...), nil
+	}
 	if bin := strings.TrimSpace(os.Getenv("MARS_HARNESS_CLI_BIN")); bin != "" {
 		return append([]string{bin}, args...), nil
 	}
-	if currentErr == nil && isLikelyMarsHarnessExecutable(currentExe) {
+	if currentErr == nil && isLikelyMarsExecutable(currentExe) {
 		return append([]string{currentExe}, args...), nil
+	}
+	if looksLikeMarsSource(root) {
+		return append([]string{"go", "run", "./cmd/mars"}, args...), nil
+	}
+	if bin, err := exec.LookPath("mars"); err == nil {
+		return append([]string{bin}, args...), nil
 	}
 	if bin, err := exec.LookPath("mars-harness"); err == nil {
 		return append([]string{bin}, args...), nil
 	}
-	if looksLikeMarsHarnessSource(root) {
-		return append([]string{"go", "run", "./cmd/mars-harness"}, args...), nil
-	}
-	return nil, fmt.Errorf("mars_harness_cli: mars-harness binary not found in PATH; install it or set MARS_HARNESS_CLI_BIN")
+	return nil, fmt.Errorf("mars_cli: mars binary not found in PATH; install it or set MARS_CLI_BIN")
 }
 
-func isLikelyMarsHarnessExecutable(path string) bool {
+func isLikelyMarsExecutable(path string) bool {
 	base := strings.ToLower(filepath.Base(strings.TrimSpace(path)))
 	if base == "" || strings.HasSuffix(base, ".test") {
 		return false
 	}
-	return strings.Contains(base, "mars-harness")
+	return strings.Contains(base, "mars")
 }
 
-func decorateMarsHarnessCLIStderr(stderr string, argv []string, cliArgs []string, exitCode int) string {
+func decorateMarsCLIStderr(stderr string, argv []string, cliArgs []string, exitCode int) string {
 	if exitCode == 0 || len(argv) == 0 || len(cliArgs) == 0 {
 		return stderr
 	}
@@ -276,7 +290,7 @@ func decorateMarsHarnessCLIStderr(stderr string, argv []string, cliArgs []string
 	if len(cliArgs) > 1 && !strings.HasPrefix(cliArgs[1], "-") {
 		command += " " + cliArgs[1]
 	}
-	guidance := fmt.Sprintf("mars_harness_cli: resolved binary %q does not support command %q; set MARS_HARNESS_CLI_BIN to the active harness binary or run `mars-harness update tool` before retrying.", argv[0], command)
+	guidance := fmt.Sprintf("mars_cli: resolved binary %q does not support command %q; set MARS_CLI_BIN to the active harness binary or run `mars update tool` before retrying.", argv[0], command)
 	if strings.TrimSpace(stderr) == "" {
 		return guidance + "\n"
 	}
@@ -286,9 +300,9 @@ func decorateMarsHarnessCLIStderr(stderr string, argv []string, cliArgs []string
 	return stderr + "\n" + guidance + "\n"
 }
 
-func looksLikeMarsHarnessSource(root Root) bool {
+func looksLikeMarsSource(root Root) bool {
 	for _, rel := range []string{
-		filepath.Join("cmd", "mars-harness", "main.go"),
+		filepath.Join("cmd", "mars", "main.go"),
 		"go.mod",
 	} {
 		abs, err := root.ResolvePath(rel)
@@ -311,7 +325,7 @@ func hasFlag(args []string, flag string) bool {
 	return false
 }
 
-func marsHarnessCommandSupportsRepo(args []string) bool {
+func marsCommandSupportsRepo(args []string) bool {
 	if len(args) == 0 {
 		return false
 	}
@@ -350,25 +364,25 @@ func marsHarnessCommandSupportsRepo(args []string) bool {
 	}
 }
 
-func marsHarnessCLIReference() string {
-	return MarsHarnessCLIReference()
+func marsCLIReference() string {
+	return MarsCLIReference()
 }
 
-// MarsHarnessCLIReference returns the reference text exposed by the mars_harness_cli tool.
-func MarsHarnessCLIReference() string {
-	return strings.TrimSpace(`mars_harness_cli reference
+// MarsCLIReference returns the reference text exposed by the mars_cli tool.
+func MarsCLIReference() string {
+	return strings.TrimSpace(`mars_cli reference
 
 Purpose:
   Use this mirrored tool to let agents in both the foundation harness and deployed
-  harness discover and execute the mars-harness CLI without falling back to a
-  generic shell. Pass argv exactly as it would appear after the mars-harness
+  harness discover and execute the mars CLI without falling back to a
+  generic shell. Pass argv exactly as it would appear after the mars
   binary name.
 
 Modes:
   reference
     Return this exhaustive command reference. No subprocess is executed.
   run
-    Execute mars-harness with structured argv.
+    Execute mars with structured argv.
     Use ["tools", "run", <name>, "--args-json", "{...}"] when an LLM or
     operator needs a universal registered tool from outside an active agent run.
 
@@ -431,7 +445,7 @@ Global command surface:
   run <role>
     Manually execute one role against a target repository.
     Flags: --repo <path>, --model-endpoint <url>, --debug, --log-file <path>, --trace, --dry-run, --no-init, --code-intel <true|false>, --budget <tokens>, --max-turns <n>
-    Default TTY output is a full-screen dashboard; --debug streams verbose trace/log output inline. --trace is kept as a run-only compatibility alias for debug-style trace detail. Use --dry-run --no-init for observer-safe inspection of uninitialized targets without scaffolding .harness/. Source work may run foundation-maintainer from the mars-harness source repo to preview the source-only foundation operating context without creating a source manifest.
+    Default TTY output is a full-screen dashboard; --debug streams verbose trace/log output inline. --trace is kept as a run-only compatibility alias for debug-style trace detail. Use --dry-run --no-init for observer-safe inspection of uninitialized targets without scaffolding .harness/. Source work may run foundation-maintainer from the mars source repo to preview the source-only foundation operating context without creating a source manifest.
     Example: ["run", "engineer", "--repo", ".", "--dry-run"]
 
   scan
@@ -462,7 +476,7 @@ Global command surface:
     Example: ["doctor", "--repo", ".", "--json"]
 
   auth github check
-    Check whether private Mars Harness GitHub Release auth is ready without
+    Check whether private MARS GitHub Release auth is ready without
     printing token values.
     Flags: --config <path>, --json
     Example: ["auth", "github", "check", "--json"]
@@ -470,7 +484,7 @@ Global command surface:
   auth github setup
     Prepare private release auth for update tool. Prefer gh auth login, then
     run this command; setup saves a verified GitHub CLI fallback under
-    ~/.mars-harness. Headless installs may pass --token.
+    ~/.mars. Headless installs may pass --token.
     Flags: --config <path>, --token <token>, --json
     Example: ["auth", "github", "setup"]
 
@@ -487,10 +501,10 @@ Global command surface:
     Example: ["tools", "run", "tool_create", "--repo", ".", "--args-json", "{\"name\":\"cli_reference\",\"description\":\"Read CLI docs.\",\"fields\":[]}"]
 
   mcp serve
-    Expose all registered Mars Harness tools as a stdio MCP server for any
+    Expose all registered MARS tools as a stdio MCP server for any
     MCP-compatible client or local harness agent.
     Flags: --repo <path>, --allowlist <csv>, --role <name>, --trust <observer|contributor|autonomous>, --max-output-bytes <n>
-    Example client command: mars-harness mcp serve --repo /path/to/repo --trust contributor
+    Example client command: mars mcp serve --repo /path/to/repo --trust contributor
 
   update check
     Check installed CLI and deployed harness version drift.
@@ -498,7 +512,7 @@ Global command surface:
     Example: ["update", "check", "--repo", ".", "--json"]
 
   update tool
-    Reinstall or upgrade the installed mars-harness binary. Private release
+    Reinstall or upgrade the installed mars binary. Private release
     auth is checked with GH_TOKEN, GITHUB_TOKEN, GitHub CLI auth, then local
     config; run auth github setup when access is missing.
     Flags: --version <latest|tag|branch>, --install-dir <dir>, --source, --dry-run, --json
@@ -510,7 +524,7 @@ Global command surface:
     Example: ["update", "harness", "--repo", "."]
 
   path setup
-    Configure shell PATH for the installed mars-harness directory.
+    Configure shell PATH for the installed mars directory.
     Flags: --install-dir <dir>, --shell <name>, --dry-run, --json
     Example: ["path", "setup", "--dry-run", "--json"]
 
@@ -601,12 +615,12 @@ Global command surface:
   telemetry collect
     Run a local foundation telemetry collector.
     Flags: --addr <addr>, --storage sqlite, --db <path>
-    Example: ["telemetry", "collect", "--addr", ":9092", "--storage", "sqlite", "--db", "~/.mars-harness/db/foundation-telemetry/intake.db"]
+    Example: ["telemetry", "collect", "--addr", ":9092", "--storage", "sqlite", "--db", "~/.mars/db/foundation-telemetry/intake.db"]
 
   telemetry triage-foundation
-    Create Mars Harness source tickets from repeated anonymous collector patterns.
+    Create MARS source tickets from repeated anonymous collector patterns.
     Flags: --db <path>, --repo <path>, --window-days <n>
-    Example: ["telemetry", "triage-foundation", "--db", "~/.mars-harness/db/foundation-telemetry/intake.db", "--repo", "."]
+    Example: ["telemetry", "triage-foundation", "--db", "~/.mars/db/foundation-telemetry/intake.db", "--repo", "."]
 
   trust
     Show progressive autonomy trust levels.
@@ -638,16 +652,16 @@ Operational guidance:
   Use repo:"." as shorthand for commands that operate on the current workspace.
   Use --dry-run before mutating setup/update/release operations when planning.
   Use background:true only for serve/start or deliberate long-running processes.
-  Binary resolution prefers MARS_HARNESS_CLI_BIN, then the active running
+  Binary resolution prefers MARS_CLI_BIN, then the active running
   harness executable, then PATH, then source-checkout go run fallback.
   If a resolved binary rejects a known command, update the installed tool or set
-  MARS_HARNESS_CLI_BIN to the active binary before retrying.
-  This tool is mutating because many mars-harness commands can write files,
+  MARS_CLI_BIN to the active binary before retrying.
+  This tool is mutating because many mars commands can write files,
   update trust, start workers, or change release state; observer trust blocks it.`)
 }
 
-// MarsHarnessCommandSupportsRepo reports whether the mars_harness_cli repo shortcut
-// can append a workspace --repo path for the provided mars-harness argv.
-func MarsHarnessCommandSupportsRepo(args []string) bool {
-	return marsHarnessCommandSupportsRepo(args)
+// MarsCommandSupportsRepo reports whether the mars_cli repo shortcut
+// can append a workspace --repo path for the provided mars argv.
+func MarsCommandSupportsRepo(args []string) bool {
+	return marsCommandSupportsRepo(args)
 }

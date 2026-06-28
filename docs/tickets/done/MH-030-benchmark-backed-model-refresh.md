@@ -19,7 +19,7 @@ created: 2026-05-02
 
 ## Context
 
-The April 2026 model snapshot is stale. Ollama now lists new candidates such as Qwen3.6, Laguna XS.2, GLM-5.1, Kimi K2.6, DeepSeek V4, and Mistral Medium 3.5. Mars Harness must not change autonomous-agent defaults from newest-model claims alone. Defaults need benchmark evidence, hardware fit, and pinned artifacts.
+The April 2026 model snapshot is stale. Ollama now lists new candidates such as Qwen3.6, Laguna XS.2, GLM-5.1, Kimi K2.6, DeepSeek V4, and Mistral Medium 3.5. MARS must not change autonomous-agent defaults from newest-model claims alone. Defaults need benchmark evidence, hardware fit, and pinned artifacts.
 
 Reference: [model evaluation refresh plan](../../exec-plans/backlog/model-evaluation-refresh-plan.md), [May 2026 model landscape](../../references/model-landscape-may-2026.md), [local inference AD-063](../../design-docs/local-inference.md).
 
@@ -27,7 +27,7 @@ Reference: [model evaluation refresh plan](../../exec-plans/backlog/model-evalua
 
 - Treat Ollama as a first-class model catalog/provider so operators can evaluate or explicitly select any installed/published Ollama model without waiting for a hardcoded shortlist.
 - Add simple model swapping at tier/role scope, e.g. choose a provider/model for `fast`, `reasoning`, or `coding` without editing multiple files by hand.
-- Extend `mars-harness models evaluate` beyond mechanical probes into repo-backed benchmark cases.
+- Extend `mars models evaluate` beyond mechanical probes into repo-backed benchmark cases.
 - Persist evaluation reports with model, endpoint, hardware profile, benchmark results, timing, token counts, and failures.
 - Compare candidates against the current pinned defaults per tier.
 - Add candidate metadata for Qwen3.6, Laguna XS.2, and optional cloud/remote candidates.
@@ -36,7 +36,7 @@ Reference: [model evaluation refresh plan](../../exec-plans/backlog/model-evalua
 
 ## Affected Files
 
-- `cmd/mars-harness/main.go`
+- `cmd/mars/main.go`
 - `internal/models/`
 - `internal/hardware/registry.go`
 - `docs/references/model-landscape-may-2026.md`
@@ -48,7 +48,7 @@ Reference: [model evaluation refresh plan](../../exec-plans/backlog/model-evalua
 
 ### Functional (happy path)
 
-- [x] `mars-harness models evaluate --endpoint <url> --model <name> --json` writes a parseable report.
+- [x] `mars models evaluate --endpoint <url> --model <name> --json` writes a parseable report.
 - [x] Operators can list or reference Ollama models as explicit evaluation/swap candidates without registry code changes.
 - [x] Tier/role model swaps are represented in config or manifest with one clear command or documented edit path.
 - [x] The benchmark pack includes at least one repo-backed ticket completion task.

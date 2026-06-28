@@ -2,11 +2,11 @@
 
 **Status:** Accepted
 **Date:** 2026-05-03
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ## Context
 
-Mars Harness should not claim autonomous-delivery readiness from design intent,
+MARS should not claim autonomous-delivery readiness from design intent,
 dry-run prompts, or unit tests alone. The product promise spans setup,
 generated harnesses, orchestration, local inference, tools, safety, scoring,
 quality export, and release discipline. Those surfaces need one repo-visible
@@ -15,7 +15,7 @@ and which failures must become intervention debt.
 
 ## Decision
 
-Mars Harness uses this matrix as the source dogfood benchmark. A dogfood run is
+MARS uses this matrix as the source dogfood benchmark. A dogfood run is
 complete only when each required surface has a reproducible evidence command,
 expected artifact, and failure route.
 
@@ -36,18 +36,18 @@ Evidence is stored in three places:
 
 | Surface | Evidence command | Expected artifact | Failure route |
 | --- | --- | --- | --- |
-| setup/path | `mars-harness setup --test-mode`, `mars-harness path setup --install-dir <tmp-bin>`, and source-update script tests for `make update-tool` | Config and shell-path result without duplicate profile snippets; source checkout update refuses unsafe git state before install | Intervention-debt ticket for setup or shellpath |
-| init/upgrade | `mars-harness init --repo <temp repo>` then `mars-harness update harness --repo <temp repo>` | `.harness/`, goals, BDD docs, role registry, quality score, release docs | Target-harness drift ticket |
-| register/start | `mars-harness start --repo <temp repo> --db <temp db outside repo>` with deterministic shutdown | Per-repo DB, registered repo, one idempotent CEO bootstrap job | Queue/orchestrator telemetry |
-| serve/control plane | `mars-harness serve --db <temp db> --addr :0` plus API control calls | Health, pause/resume/restart/scan/run-role endpoints respond | Control-plane ticket |
-| run/dry-run | `mars-harness run engineer --repo <temp repo> --dry-run --trace`; for uninitialized observer targets use `--dry-run --no-init` | Assembled prompt includes role, tools, guardrails, tickets, routes, or the command explicitly reports the no-init missing-harness boundary without writing | Context or bundle ticket |
-| scan/tickets | `mars-harness scan --repo <temp repo> --tickets` | Deduped backlog tickets | Scanner ticket |
-| doctor/update | `mars-harness doctor --repo <temp repo> --json` and `mars-harness update check --repo <temp repo> --skip-remote --json` | Actionable OK/warn/fail output | Doctor/update ticket |
-| scores/trust/quality | `mars-harness scores --repo <temp repo>`, `mars-harness trust --repo <temp repo>`, `mars-harness scores export --repo <temp repo>` | Empty or live evidence is actionable; quality score refreshes | Scoring/trust ticket |
+| setup/path | `mars setup --test-mode`, `mars path setup --install-dir <tmp-bin>`, and source-update script tests for `make update-tool` | Config and shell-path result without duplicate profile snippets; source checkout update refuses unsafe git state before install | Intervention-debt ticket for setup or shellpath |
+| init/upgrade | `mars init --repo <temp repo>` then `mars update harness --repo <temp repo>` | `.harness/`, goals, BDD docs, role registry, quality score, release docs | Target-harness drift ticket |
+| register/start | `mars start --repo <temp repo> --db <temp db outside repo>` with deterministic shutdown | Per-repo DB, registered repo, one idempotent CEO bootstrap job | Queue/orchestrator telemetry |
+| serve/control plane | `mars serve --db <temp db> --addr :0` plus API control calls | Health, pause/resume/restart/scan/run-role endpoints respond | Control-plane ticket |
+| run/dry-run | `mars run engineer --repo <temp repo> --dry-run --trace`; for uninitialized observer targets use `--dry-run --no-init` | Assembled prompt includes role, tools, guardrails, tickets, routes, or the command explicitly reports the no-init missing-harness boundary without writing | Context or bundle ticket |
+| scan/tickets | `mars scan --repo <temp repo> --tickets` | Deduped backlog tickets | Scanner ticket |
+| doctor/update | `mars doctor --repo <temp repo> --json` and `mars update check --repo <temp repo> --skip-remote --json` | Actionable OK/warn/fail output | Doctor/update ticket |
+| scores/trust/quality | `mars scores --repo <temp repo>`, `mars trust --repo <temp repo>`, `mars scores export --repo <temp repo>` | Empty or live evidence is actionable; quality score refreshes | Scoring/trust ticket |
 | dashboard | HTTP handler tests for quality, repos, roles, status, controls | Server-rendered pages and JSON APIs do not crash on empty modules | Dashboard ticket |
-| local inference | `mars-harness models list` and router missing-model tests | Pinned models and actionable missing-model remediation | Inference ticket |
-| optional GitHub | `mars-harness release verify-assets --version vX.Y.Z` when credentials exist | Release assets verified or explicit blocker recorded | Release blocker ticket |
-| upgrade safety | `mars-harness update harness --repo <target with edits>` | Missing defaults written, user-owned files preserved | Migration ticket |
+| local inference | `mars models list` and router missing-model tests | Pinned models and actionable missing-model remediation | Inference ticket |
+| optional GitHub | `mars release verify-assets --version vX.Y.Z` when credentials exist | Release assets verified or explicit blocker recorded | Release blocker ticket |
+| upgrade safety | `mars update harness --repo <target with edits>` | Missing defaults written, user-owned files preserved | Migration ticket |
 
 Optional GitHub paths are skipped honestly when credentials, remote visibility,
 or release assets are unavailable. A skipped optional path is not a pass; it is
@@ -83,7 +83,7 @@ must prove:
   `ticket_create`, run a bounded test command, commit evidence on `main`,
   attempt `git_push` without failing when no remote exists, record a scoring
   outcome, and invoke the `scores export` quality hook through
-  `mars_harness_cli`
+  `mars_cli`
 
 Broader scheduled dogfood remains useful for product coverage, but it is not a
 substitute for this fast foundation containment gate.

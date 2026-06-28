@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/pkg/testutil"
+	"github.com/greaveselliott/mars/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +32,7 @@ func TestOpenStore_missingParentIsActionable(t *testing.T) {
 	_, err := OpenStore(filepath.Join(t.TempDir(), "missing", "scoring.db"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "database directory")
-	assert.Contains(t, err.Error(), "mars-harness register --repo")
+	assert.Contains(t, err.Error(), "mars register --repo")
 }
 
 func TestOpenStoreLegacyFixture(t *testing.T) {

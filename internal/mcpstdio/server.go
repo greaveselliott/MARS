@@ -15,13 +15,13 @@ import (
 	"io"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/buildinfo"
-	"github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/greaveselliott/mars/internal/buildinfo"
+	"github.com/greaveselliott/mars/internal/tools"
 )
 
 const protocolVersion = "2024-11-05"
 
-// Server exposes the Mars Harness built-in registry as an MCP-style JSON-RPC
+// Server exposes the MARS built-in registry as an MCP-style JSON-RPC
 // stdio tool server for any MCP-compatible host or local harness agent.
 type Server struct {
 	Registry *tools.Registry
@@ -113,7 +113,7 @@ func (s Server) dispatch(ctx context.Context, req rpcRequest) (any, error) {
 				"tools": map[string]any{},
 			},
 			"serverInfo": map[string]any{
-				"name":    "mars-harness",
+				"name":    "mars",
 				"version": buildinfo.DefaultVersion,
 			},
 		}, nil

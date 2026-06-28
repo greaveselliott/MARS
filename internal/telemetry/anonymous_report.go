@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/foundationtelemetry"
+	"github.com/greaveselliott/mars/internal/foundationtelemetry"
 )
 
 // RoleMetadata is the non-identifying role shape allowed in anonymous reports.

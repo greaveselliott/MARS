@@ -23,7 +23,7 @@ metadata:
   category: "convergence"
   confidence: "high"
   origin: "demo-11 pace-baseline replay 2026-06-11"
-  repo: "mars-harness"
+  repo: "mars"
   role: "cto-weekly"
   severity: "high"
   target: "foundation harness"

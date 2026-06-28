@@ -9,16 +9,16 @@ end_to_end_evidence: not_applicable
 evidence_links:
   - "go test ./internal/planhygiene ./internal/docsconsistency ./internal/doctor"
   - "go test ./internal/scanner"
-  - "go test ./internal/models ./internal/setup ./cmd/mars-harness"
+  - "go test ./internal/models ./internal/setup ./cmd/mars"
   - "go test ./..."
-  - "go run ./cmd/mars-harness doctor --repo . --skip-remote"
+  - "go run ./cmd/mars doctor --repo . --skip-remote"
 verified_by: command
 dedupe_key: "public-example"
 source: MH-033
 created: 2026-05-02
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "exec-plans"
   category: "plan_hygiene"
   severity: "high"
@@ -31,7 +31,7 @@ metadata:
 
 ## Context
 
-Mars Harness relies on repo-owned plans as the system of record, but stale active
+MARS relies on repo-owned plans as the system of record, but stale active
 plans can quietly misdirect future agents. The harness needs a mechanical check
 that detects plan drift before it becomes operational confusion.
 
@@ -59,7 +59,7 @@ that detects plan drift before it becomes operational confusion.
 - [x] `go test ./internal/docsconsistency/...` fails on a fixture with stale active-plan status.
 - [x] Docs consistency fails when more than one active exec plan exists.
 - [x] Backlog exec plans without priority fail the check.
-- [x] `mars-harness doctor --repo .` reports active-plan hygiene warnings or ok status.
+- [x] `mars doctor --repo .` reports active-plan hygiene warnings or ok status.
 - [x] Superseded plans with a current-plan pointer do not fail the check.
 
 ### Edge cases and negative paths

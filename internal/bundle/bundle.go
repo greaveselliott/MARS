@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/guardrails"
-	"github.com/greaveselliott/mars-harness/internal/trust"
+	"github.com/greaveselliott/mars/internal/guardrails"
+	"github.com/greaveselliott/mars/internal/trust"
 	"gopkg.in/yaml.v3"
 )
 
@@ -60,19 +60,19 @@ func Load(repoRoot string) (*Manifest, error) {
 	dir := filepath.Join(repoRoot, harnessDir)
 	info, err := os.Stat(dir)
 	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("bundle: missing %s/ directory in %s — run `mars-harness init` to create one", harnessDir, repoRoot)
+		return nil, fmt.Errorf("bundle: missing %s/ directory in %s — run `mars init` to create one", harnessDir, repoRoot)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("bundle: stat %s: %w", dir, err)
 	}
 	if !info.IsDir() {
-		return nil, fmt.Errorf("bundle: %s exists but is not a directory — remove it and run `mars-harness init`", dir)
+		return nil, fmt.Errorf("bundle: %s exists but is not a directory — remove it and run `mars init`", dir)
 	}
 
 	path := filepath.Join(dir, manifestFile)
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("bundle: missing %s in %s — run `mars-harness init` to scaffold the bundle", manifestFile, dir)
+		return nil, fmt.Errorf("bundle: missing %s in %s — run `mars init` to scaffold the bundle", manifestFile, dir)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("bundle: read %s: %w", path, err)

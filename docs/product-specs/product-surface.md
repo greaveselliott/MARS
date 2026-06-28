@@ -2,17 +2,17 @@
 
 **Status:** Accepted
 **Updated:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Sources:** [AGENTS.md](../../AGENTS.md), [quickstart](../quickstart.md), [design docs](../design-docs/index.md), [vision](vision.md)
 
 ## Current Product Shape
 
-Mars Harness is a local autonomous delivery runtime with four visible layers:
+MARS is a local autonomous delivery runtime with four visible layers:
 
 | Layer | User-facing surface | Product promise |
 | --- | --- | --- |
-| Install and setup | installed `mars-harness` command, `mars-harness auth github setup`, `mars-harness setup`, `mars-harness path setup`, config, model and binary cache | Run the harness from any directory, configure private-release auth, configure the user's shell PATH automatically, detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
-| Target harness | `mars-harness init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
+| Install and setup | installed `mars` command, `mars auth github setup`, `mars setup`, `mars path setup`, config, model and binary cache | Run the harness from any directory, configure private-release auth, configure the user's shell PATH automatically, detect hardware, install local inference, choose a sensible performance profile, and explain missing prerequisites. |
+| Target harness | `mars init`, `upgrade`, generated `AGENTS.md`, `.harness/`, docs, tickets, references | Give every target repo a mirrored agent operating system from day one. |
 | Execution | `run`, `start`, `serve`, queue, scheduler, tools, traces, dashboard | Execute roles against target repos with bounded tool access, strict trunk commits, visible run state, default dispatch orchestration, and narrow self-healing for stale recovery jobs. |
 | Delivery model | `docs/goals/`, one active exec plan, `docs/features/`, BDD scenario evidence, ticket completion gates, org liveness state | Keep planning order explicit: active exec plan first, feature contracts second, tickets third, delivery fourth, with all business logic documented step by step under `docs/features/`, Orchestrator routing the next best role, work starting from `origin/main`, ready commits pushed to `origin main`, and shipped scenarios backed by real E2E/integration evidence. |
 | Learning loop | `scores`, `trust`, `docs/QUALITY_SCORE.md`, telemetry triage, skills, guardrails, decisions, evolution reviews | Turn real outcomes into trust changes, intervention work, reusable workflow skills, prompt or process improvements, repo-visible grades, and safety controls. |
@@ -41,37 +41,37 @@ the repo and deployed without a frontend build step.
 
 | Command | Status | Product behavior |
 | --- | --- | --- |
-| `mars-harness version`, `mars-harness --version`, `mars-harness -v` | Implemented | Prints the installed binary version, OS/architecture, commit, and build date through either the explicit command or root-level version flags. |
-| `mars-harness auth github check` / `setup` | Implemented | Checks or prepares private GitHub Release auth for `update tool` without printing token values. The resolver tries `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth, then the optional local config token; setup stores a verified GitHub CLI token as an owner-only local fallback so future updates do not depend on keychain access. |
-| `mars-harness setup` | Implemented, still hardening | Creates `~/.mars-harness/`, checks private-release auth unless `--skip-github` or `--test-mode` is used, configures supported shell profiles for the installed command, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
-| `mars-harness update check --repo <path>` | Implemented | Reports whether the installed CLI, deployed target `.harness/` metadata, or mirrored operating-model artifacts are behind, with JSON output for automation and unknown-but-nonfatal remote status when release lookup fails. |
-| `mars-harness update tool` | Implemented | Downloads the latest private GitHub Release platform asset, resolves auth through the getting-started auth model, verifies `checksums.txt`, atomically replaces the installed command, and configures shell PATH. Source-development updates remain available with `--source` or `--version main`. |
-| `mars-harness path setup --install-dir <path>` | Implemented | Detects Fish, Zsh, Bash, POSIX sh/Ksh, Csh, or Tcsh and writes an idempotent user-profile snippet so new terminals can resolve `mars-harness`. |
-| `mars-harness update harness --repo <path>` | Implemented | Uses the same update verb to refresh the deployed target `.harness/` bundle without overwriting user-owned agent configuration. |
+| `mars version`, `mars --version`, `mars -v` | Implemented | Prints the installed binary version, OS/architecture, commit, and build date through either the explicit command or root-level version flags. |
+| `mars auth github check` / `setup` | Implemented | Checks or prepares private GitHub Release auth for `update tool` without printing token values. The resolver tries `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth, then the optional local config token; setup stores a verified GitHub CLI token as an owner-only local fallback so future updates do not depend on keychain access. |
+| `mars setup` | Implemented, still hardening | Creates `~/.mars/`, checks private-release auth unless `--skip-github` or `--test-mode` is used, configures supported shell profiles for the installed command, writes config, detects hardware, installs llama.cpp server artifacts, downloads pinned models, and keeps optional integration setup explicit. |
+| `mars update check --repo <path>` | Implemented | Reports whether the installed CLI, deployed target `.harness/` metadata, or mirrored operating-model artifacts are behind, with JSON output for automation and unknown-but-nonfatal remote status when release lookup fails. |
+| `mars update tool` | Implemented | Downloads the latest private GitHub Release platform asset, resolves auth through the getting-started auth model, verifies `checksums.txt`, atomically replaces the installed command, and configures shell PATH. Source-development updates remain available with `--source` or `--version main`. |
+| `mars path setup --install-dir <path>` | Implemented | Detects Fish, Zsh, Bash, POSIX sh/Ksh, Csh, or Tcsh and writes an idempotent user-profile snippet so new terminals can resolve `mars`. |
+| `mars update harness --repo <path>` | Implemented | Uses the same update verb to refresh the deployed target `.harness/` bundle without overwriting user-owned agent configuration. |
 | `make install` from source checkout | Implemented for source development | Installs the dev binary into the Go bin directory and runs the installed binary's PATH setup so operators do not run stale source-root binaries or hand-edit shell config. |
 | `make update-tool` from source checkout | Implemented for source development | Safely fast-forwards a clean source checkout from `origin/main`, installs the updated command with `go install`, runs shell PATH setup, and prints the installed version. Dirty, missing-origin, and diverged checkouts fail with local remediation. |
-| `mars-harness init --repo <path>` | Implemented | Scaffolds the target harness: manifest, roles, guardrails, knowledge routes, compact `AGENTS.md`, goals, BDD feature contracts, tickets, exec-plan docs, design-doc index, context glossary, quality score, and references. |
-| `mars-harness upgrade --repo <path>` | Implemented, still hardening | Fills missing target harness defaults while preserving user-owned manifest, role prompts, knowledge routes, guardrails, tickets, design docs, exec plans, references, and target `AGENTS.md`. |
-| `mars-harness eject --repo <path>` | Implemented | Provides the repo-level kill switch. Dry-run is the default; `--apply --confirm <repo-name>` removes `.harness/`, generated harness docs, tickets, feature contracts, `AGENTS.md`, `VERSION`, `CHANGELOG.md`, and the associated per-repo SQLite database without rewriting git history. Aliases: `kill-switch`, `uninstall`. |
-| `mars-harness scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |
-| `mars-harness run <role> --repo <path>` | Implemented | Loads manifest, guardrails, knowledge routes, context, tools, local model endpoint, and runs one role with terminal-result truth. Interactive TTYs show a full-screen terminal dashboard by default; `--debug` or legacy `--trace` restores verbose inline trace output, `--log-file` controls the durable command log path, `--dry-run --no-init` provides observer-safe inspection when a target has no `.harness/` yet, and `foundation-maintainer` provides source-only foundation context in the Mars Harness source repo without creating a source manifest. |
-| `mars-harness start --repo <path>` | Implemented | Initializes if needed, registers the repo, reconciles existing lifecycle state before seeding CEO, and runs the per-repo autonomous pipeline with isolated database state and recovery-queue self-healing. `--new-lifecycle` is required for intentional CEO reseeding over resumable work. Interactive TTYs use the same full-screen terminal dashboard and keep verbose logs in `~/.mars-harness/traces/logs/` unless `--debug` is set. |
-| `mars-harness serve` | Implemented | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, workers, recovery-queue self-heal watchdog, native survey loop for unattended ticket/check/telemetry/score/dogfood/no-op/stuck-work signals, and dispatch-mode organization layer against the configured database. Interactive TTYs use the terminal dashboard while the web dashboard and SSE APIs remain separate live surfaces. |
-| `mars-harness register --repo <path>` | Implemented | Registers a repo and creates the per-repo database path when one is not supplied. |
-| `mars-harness doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, private-release auth readiness, guardrail/workflow health, mirrored operating-model health, active-plan hygiene, and optional integration configuration. |
-| `mars-harness scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
-| `mars-harness scores export --repo <path>` | Implemented | Refreshes `docs/QUALITY_SCORE.md` from live score, telemetry, ticket, dogfood, guardrail, check, no-op, and human follow-up evidence while preserving manual notes. Low scores become improvement targets by default; deduped intervention-debt tickets are created only with `--create-intervention-debt` or clearly target-owned evidence. |
-| `mars-harness telemetry status\|preview\|export\|send` | Implemented | Keeps raw telemetry local, previews the exact anonymous aggregate payload, writes sanitized reports to the local outbox, and sends only when anonymous reporting is explicitly enabled. |
-| `mars-harness telemetry collect --storage sqlite` | Implemented | Runs a local anonymous foundation telemetry collector backed by SQLite; the collector API is designed so hosted Postgres-compatible storage can be added later without changing deployed harnesses. |
-| `mars-harness telemetry triage-foundation` | Implemented | Reads collector aggregates and creates Mars Harness source intervention-debt work only for repeated anonymous foundation-owned patterns. |
-| `mars-harness trust [--repo <path>]` | Implemented | Shows role trust levels. |
-| `mars-harness trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
-| `mars-harness models list [--provider registry\|ollama]` | Implemented | Lists pinned medium-profile registry defaults or locally installed Ollama models. Ollama listing is a catalog/evaluation surface, not default promotion. |
-| `mars-harness models evaluate [--endpoint <url> --model <name>]` | Implemented | Prints the model-refresh plan or runs benchmark probes with tool-call JSON, strict triage JSON, and repo-backed ticket-completion JSON. Live reports include provider, model, endpoint, hardware profile, timing, token counts, failures, promotion status, and are persisted under `docs/generated/model-evaluations/` by default. `--provider ollama --model <name>` targets local Ollama's OpenAI-compatible endpoint. |
-| `mars-harness models override --repo <path> (--tier <tier>\|--role <role>) --provider <provider> --model <name>` | Implemented | Writes `.harness/model-overrides.yaml` so a repo can explicitly route one tier or role to an Ollama or OpenAI-compatible model without changing default registry entries. |
-| `mars-harness release notes --repo <path> --bump auto` | Implemented | Generates semantic-versioned patch notes from commits, updates `VERSION`, prepends `CHANGELOG.md`, and explains impact, why, and what changed before semantic commit buckets. |
-| `mars-harness release publish-assets --repo <path> --version <tag> --upload none\|github\|auto` | Implemented | Builds local source-release binaries for linux/darwin x amd64/arm64, writes `checksums.txt`, verifies the dist, and optionally mirrors the same assets to GitHub Releases. |
-| `mars-harness release verify-assets [--dist <path>] [--version <tag>]` | Implemented | Fails a release check unless all four platform binaries and `checksums.txt` exist in the local dist or, without `--dist`, on the GitHub Release mirror. |
+| `mars init --repo <path>` | Implemented | Scaffolds the target harness: manifest, roles, guardrails, knowledge routes, compact `AGENTS.md`, goals, BDD feature contracts, tickets, exec-plan docs, design-doc index, context glossary, quality score, and references. |
+| `mars upgrade --repo <path>` | Implemented, still hardening | Fills missing target harness defaults while preserving user-owned manifest, role prompts, knowledge routes, guardrails, tickets, design docs, exec plans, references, and target `AGENTS.md`. |
+| `mars eject --repo <path>` | Implemented | Provides the repo-level kill switch. Dry-run is the default; `--apply --confirm <repo-name>` removes `.harness/`, generated harness docs, tickets, feature contracts, `AGENTS.md`, `VERSION`, `CHANGELOG.md`, and the associated per-repo SQLite database without rewriting git history. Aliases: `kill-switch`, `uninstall`. |
+| `mars scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |
+| `mars run <role> --repo <path>` | Implemented | Loads manifest, guardrails, knowledge routes, context, tools, local model endpoint, and runs one role with terminal-result truth. Interactive TTYs show a full-screen terminal dashboard by default; `--debug` or legacy `--trace` restores verbose inline trace output, `--log-file` controls the durable command log path, `--dry-run --no-init` provides observer-safe inspection when a target has no `.harness/` yet, and `foundation-maintainer` provides source-only foundation context in the MARS source repo without creating a source manifest. |
+| `mars start --repo <path>` | Implemented | Initializes if needed, registers the repo, reconciles existing lifecycle state before seeding CEO, and runs the per-repo autonomous pipeline with isolated database state and recovery-queue self-healing. `--new-lifecycle` is required for intentional CEO reseeding over resumable work. Interactive TTYs use the same full-screen terminal dashboard and keep verbose logs in `~/.mars/traces/logs/` unless `--debug` is set. |
+| `mars serve` | Implemented | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, workers, recovery-queue self-heal watchdog, native survey loop for unattended ticket/check/telemetry/score/dogfood/no-op/stuck-work signals, and dispatch-mode organization layer against the configured database. Interactive TTYs use the terminal dashboard while the web dashboard and SSE APIs remain separate live surfaces. |
+| `mars register --repo <path>` | Implemented | Registers a repo and creates the per-repo database path when one is not supplied. |
+| `mars doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, private-release auth readiness, guardrail/workflow health, mirrored operating-model health, active-plan hygiene, and optional integration configuration. |
+| `mars scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
+| `mars scores export --repo <path>` | Implemented | Refreshes `docs/QUALITY_SCORE.md` from live score, telemetry, ticket, dogfood, guardrail, check, no-op, and human follow-up evidence while preserving manual notes. Low scores become improvement targets by default; deduped intervention-debt tickets are created only with `--create-intervention-debt` or clearly target-owned evidence. |
+| `mars telemetry status\|preview\|export\|send` | Implemented | Keeps raw telemetry local, previews the exact anonymous aggregate payload, writes sanitized reports to the local outbox, and sends only when anonymous reporting is explicitly enabled. |
+| `mars telemetry collect --storage sqlite` | Implemented | Runs a local anonymous foundation telemetry collector backed by SQLite; the collector API is designed so hosted Postgres-compatible storage can be added later without changing deployed harnesses. |
+| `mars telemetry triage-foundation` | Implemented | Reads collector aggregates and creates MARS source intervention-debt work only for repeated anonymous foundation-owned patterns. |
+| `mars trust [--repo <path>]` | Implemented | Shows role trust levels. |
+| `mars trust set <role> <repo> <level> --reason <text>` | Implemented | Overrides trust with an audit reason. |
+| `mars models list [--provider registry\|ollama]` | Implemented | Lists pinned medium-profile registry defaults or locally installed Ollama models. Ollama listing is a catalog/evaluation surface, not default promotion. |
+| `mars models evaluate [--endpoint <url> --model <name>]` | Implemented | Prints the model-refresh plan or runs benchmark probes with tool-call JSON, strict triage JSON, and repo-backed ticket-completion JSON. Live reports include provider, model, endpoint, hardware profile, timing, token counts, failures, promotion status, and are persisted under `docs/generated/model-evaluations/` by default. `--provider ollama --model <name>` targets local Ollama's OpenAI-compatible endpoint. |
+| `mars models override --repo <path> (--tier <tier>\|--role <role>) --provider <provider> --model <name>` | Implemented | Writes `.harness/model-overrides.yaml` so a repo can explicitly route one tier or role to an Ollama or OpenAI-compatible model without changing default registry entries. |
+| `mars release notes --repo <path> --bump auto` | Implemented | Generates semantic-versioned patch notes from commits, updates `VERSION`, prepends `CHANGELOG.md`, and explains impact, why, and what changed before semantic commit buckets. |
+| `mars release publish-assets --repo <path> --version <tag> --upload none\|github\|auto` | Implemented | Builds local source-release binaries for linux/darwin x amd64/arm64, writes `checksums.txt`, verifies the dist, and optionally mirrors the same assets to GitHub Releases. |
+| `mars release verify-assets [--dist <path>] [--version <tag>]` | Implemented | Fails a release check unless all four platform binaries and `checksums.txt` exist in the local dist or, without `--dist`, on the GitHub Release mirror. |
 
 ## Optional Board Integrations
 
@@ -90,7 +90,7 @@ environment variable names so they do not need to be committed to the repo.
 
 ## Generated Target Harness
 
-`mars-harness init` must produce a target repo that is immediately usable by Codex, Cursor, Mars Harness roles, and humans.
+`mars init` must produce a target repo that is immediately usable by Codex, Cursor, MARS roles, and humans.
 
 Required generated surfaces:
 
@@ -114,15 +114,15 @@ Required generated surfaces:
 Generated target docs must mirror source-harness doctrine while staying project-agnostic. Existing target harness files and user-owned docs are preserved by upgrades.
 
 Generated target harnesses must also be removable. The supported removal path
-is `mars-harness eject --repo <path>`, which previews the repo-local harness
+is `mars eject --repo <path>`, which previews the repo-local harness
 surface and associated per-repo database before deleting anything. The command
 removes working-tree traces only; users who want git history rewritten must do
-that deliberately outside Mars Harness.
+that deliberately outside MARS.
 
 Operating rules added to the source harness apply to initialized target harnesses unless explicitly marked source-only. Any change to remote-trunk freshness, commit discipline, push timing, versioning, ticket flow, documentation rules, skill creation, guardrail policy, trust/scoring behavior, release behavior, or context-routing discipline must update generated target guidance and tests in the same task.
 
-Any `mars-harness` CLI command or flag change must also update the mirrored
-`mars_harness_cli` tool reference, repo-shortcut behavior, generated target
+Any `mars` CLI command or flag change must also update the mirrored
+`mars_cli` tool reference, repo-shortcut behavior, generated target
 guidance, and any affected skills per
 [../design-docs/cli-tool-skill-sync.md](../design-docs/cli-tool-skill-sync.md).
 
@@ -152,17 +152,17 @@ separate enabler work from shipped feature scenarios.
 
 ## Versioning And Patch Notes
 
-Mars Harness and initialized target repos use the same release contract:
+MARS and initialized target repos use the same release contract:
 
 - `VERSION` contains `MAJOR.MINOR.PATCH`
 - `CHANGELOG.md` contains generated patch notes
 - generated release-note entries explain `Impact`, `Why`, and `What Changed`
   before listing semantic commit buckets
-- `mars-harness release notes --repo . --bump auto` infers the next version from semantic commits
+- `mars release notes --repo . --bump auto` infers the next version from semantic commits
 - release-note commits themselves are ignored in the next generated entry
 - generated entries include a marker so tags are useful but not required for the next diff
 - in the source harness repo and initialized target repos, every non-release semantic commit is immediately followed by the generated version/patch-note commit before the task is done
-- for source releases, the generated version is tagged as `vX.Y.Z`; `mars-harness release publish-assets` builds checksum-verified local assets and may optionally mirror them to GitHub Releases when authenticated GitHub release capability is configured
+- for source releases, the generated version is tagged as `vX.Y.Z`; `mars release publish-assets` builds checksum-verified local assets and may optionally mirror them to GitHub Releases when authenticated GitHub release capability is configured
 
 ## Generated Source References
 
@@ -170,7 +170,7 @@ Mars Harness and initialized target repos use the same release contract:
 
 Expected future artifacts include role registry, tool inventory, package map, model inventory, and bundle schema reference. Generated docs must name their generator, source inputs, and freshness signal so agents can trust them as context routes.
 
-Model evaluation reports are generated evidence artifacts, not hand-written reference docs. `mars-harness models evaluate` writes JSON under `docs/generated/model-evaluations/` for benchmark and promotion review; operators may commit selected reports when they support a default-model decision.
+Model evaluation reports are generated evidence artifacts, not hand-written reference docs. `mars models evaluate` writes JSON under `docs/generated/model-evaluations/` for benchmark and promotion review; operators may commit selected reports when they support a default-model decision.
 
 ## Role And Work Semantics
 
@@ -208,7 +208,7 @@ Trust levels are:
 
 Scores are based on real outcomes: completed work, commits, checks, guardrail blocks, timeouts, noops, human follow-up, and reverts. Scores must drive behavior, not merely appear in a dashboard.
 
-`docs/QUALITY_SCORE.md` is refreshed with `mars-harness scores export --repo <path>`. The generated artifact is the quality source of truth for agents; dashboard quality views link to the same file and database-derived signals instead of becoming a separate grading surface. Missing SQLite evidence is explicitly graded as insufficient evidence.
+`docs/QUALITY_SCORE.md` is refreshed with `mars scores export --repo <path>`. The generated artifact is the quality source of truth for agents; dashboard quality views link to the same file and database-derived signals instead of becoming a separate grading surface. Missing SQLite evidence is explicitly graded as insufficient evidence.
 
 When scores or telemetry show repeated workflow confusion, the harness records improvement targets first, then chooses the bounded improvement surface. Prefer a scoped skill over bloating a role prompt. Use guardrails for non-negotiable enforcement and tools for deterministic actions. Intervention-debt tickets require target ownership or explicit operator opt-in.
 
@@ -238,14 +238,14 @@ Current defaults favor:
 - pinned model revisions and SHA256 verification
 - pinned llama.cpp artifacts with checksums
 - doctor checks for missing or stale model state
-- model default changes backed by `mars-harness models evaluate` evidence rather than newest-model claims alone
+- model default changes backed by `mars models evaluate` evidence rather than newest-model claims alone
 - broad Ollama model access for evaluation and explicit operator-owned swaps, without treating every available model as a safe zero-config default
 
 Manual tuning remains available, but the normal path should require none.
 
 ## Optional Integrations
 
-Mars Harness is complete without a remote-code-host integration. Optional integration exists for telemetry and coordination: webhooks, statuses, comments, and check-run style reporting.
+MARS is complete without a remote-code-host integration. Optional integration exists for telemetry and coordination: webhooks, statuses, comments, and check-run style reporting.
 
 The product must never describe optional integration as complete unless credentials, webhook delivery, and status/comment behavior have actually been validated.
 

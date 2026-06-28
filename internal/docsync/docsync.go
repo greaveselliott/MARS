@@ -105,12 +105,12 @@ func isFoundationHarnessRoot(root string) bool {
 	data, err := os.ReadFile(filepath.Join(root, "go.mod"))
 	if err == nil {
 		for _, line := range strings.Split(string(data), "\n") {
-			if strings.TrimSpace(line) == "module github.com/greaveselliott/mars-harness" {
+			if strings.TrimSpace(line) == "module github.com/greaveselliott/mars" {
 				return true
 			}
 		}
 	}
-	if _, err := os.Stat(filepath.Join(root, "cmd", "mars-harness", "main.go")); err != nil {
+	if _, err := os.Stat(filepath.Join(root, "cmd", "mars", "main.go")); err != nil {
 		return false
 	}
 	if _, err := os.Stat(filepath.Join(root, "internal", "scanner", "init.go")); err != nil {
@@ -315,7 +315,7 @@ func isDeployedSourcePath(rel string) bool {
 func Rules() []Rule {
 	return []Rule{
 		{Prefix: "Makefile", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/design-docs/dogfood-matrix.md", "docs/features/F-009-release-update-lifecycle.md"}},
-		{Prefix: "cmd/mars-harness/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/cli-tool-skill-sync.md", "docs/design-docs/delivery-operating-model.md", "docs/design-docs/documentation-sync-architecture.md", "docs/design-docs/release-versioning.md", "docs/design-docs/self-reflective-telemetry.md", "docs/product-specs/product-surface.md", "docs/features/F-001-delivery-operating-model.md", "docs/features/F-002-zero-config-shell-path.md", "docs/features/F-004-target-harness-lifecycle.md", "docs/features/F-009-release-update-lifecycle.md", "docs/features/F-012-self-improvement-loop.md"}},
+		{Prefix: "cmd/mars/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/cli-tool-skill-sync.md", "docs/design-docs/delivery-operating-model.md", "docs/design-docs/documentation-sync-architecture.md", "docs/design-docs/release-versioning.md", "docs/design-docs/self-reflective-telemetry.md", "docs/product-specs/product-surface.md", "docs/features/F-001-delivery-operating-model.md", "docs/features/F-002-zero-config-shell-path.md", "docs/features/F-004-target-harness-lifecycle.md", "docs/features/F-009-release-update-lifecycle.md", "docs/features/F-012-self-improvement-loop.md"}},
 		{Prefix: "examples/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/role-customization.md", "docs/features/F-004-target-harness-lifecycle.md"}},
 		{Prefix: "internal/agent/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/agent-runtime.md", "docs/features/F-005-agent-execution-runtime.md"}},
 		{Prefix: "internal/buildinfo/", Docs: []string{"docs/design-docs/code-documentation-map.md", "docs/design-docs/release-versioning.md", "docs/features/F-009-release-update-lifecycle.md"}},

@@ -29,7 +29,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 12. F-009-S012 - Approved product validation enters release review automatically in generated target lifecycles.
 13. F-009-S013 - GitHub Release mirrors are optional and never replace local asset verification.
 14. F-009-S014 - Version tags can only be created at the release-note commit.
-15. F-009-S015 - Release Manager uses the structured Mars Harness CLI tool instead of stale PATH binaries.
+15. F-009-S015 - Release Manager uses the structured MARS CLI tool instead of stale PATH binaries.
 16. F-009-S016 - Source checkout onboarding and update are the primary path for repo cloners.
 17. F-009-S017 - `release audit` detects notes-only and missing GitHub releases across recent tags.
 
@@ -38,7 +38,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 ### F-009-S001: Generated Version And Changelog
 
 Given semantic commits exist after the current release marker
-When `mars-harness release notes --repo <path> --bump auto` runs
+When `mars release notes --repo <path> --bump auto` runs
 Then `VERSION` is bumped and `CHANGELOG.md` receives a generated entry
 
 ### F-009-S002: Release Commit Exemption
@@ -56,27 +56,27 @@ Then shipped feature scenarios are named separately from enabler work
 ### F-009-S004: Checksum-Verified Tool Update
 
 Given a release asset and `checksums.txt` are available
-When `mars-harness update tool` installs the tool
+When `mars update tool` installs the tool
 Then checksum mismatch prevents replacement and valid assets atomically replace the installed binary
 And private releases are authenticated through the Getting Started auth resolver in this order: `GH_TOKEN`, `GITHUB_TOKEN`, GitHub CLI auth, then optional local config token
-And `mars-harness auth github setup` saves a verified GitHub CLI token as the owner-only local fallback without printing the token
+And `mars auth github setup` saves a verified GitHub CLI token as the owner-only local fallback without printing the token
 And private release assets are downloaded through GitHub asset API URLs when release metadata provides them
-And missing or invalid auth points to `mars-harness auth github setup`
+And missing or invalid auth points to `mars auth github setup`
 
 ### F-009-S005: Unified Harness Update
 
 Given a target repo has generated harness metadata
-When `mars-harness update harness --repo <path>` runs
+When `mars update harness --repo <path>` runs
 Then the update path refreshes missing target harness defaults without overwriting user-owned configuration
 
 ### F-009-S006: Release Asset Verification
 
 Given local release assets exist for version `vX.Y.Z`
-When `mars-harness release verify-assets --dist <path> --version vX.Y.Z` runs
+When `mars release verify-assets --dist <path> --version vX.Y.Z` runs
 Then it fails unless all required platform binaries and `checksums.txt` are present and valid
 
 Given a GitHub Release mirror exists for version `vX.Y.Z`
-When `mars-harness release verify-assets --version vX.Y.Z` runs
+When `mars release verify-assets --version vX.Y.Z` runs
 Then it fails unless all required platform binaries and `checksums.txt` are attached to the mirror
 
 ### F-009-S007: Mirrored Release Discipline
@@ -95,25 +95,25 @@ And structural delivery changes such as operating-model, structured dispatch, pe
 ### F-009-S009: Historical Release Narrative Backfill
 
 Given `CHANGELOG.md` contains older marker-backed release entries
-When `mars-harness release backfill-notes --repo <path>` runs
+When `mars release backfill-notes --repo <path>` runs
 Then each selected entry derives its non-release commits from adjacent release markers or, for non-linear old history, from existing semantic-bucket commit references, replaces legacy narrative sections with `Impact`, `Why`, and `What Changed`, preserves semantic commit buckets and delivery evidence, and reports missing markers or empty release ranges instead of inventing history
 And entries that already contain complete current `Impact`, `Why`, and `What Changed` sections are preserved rather than flattened into generic regenerated prose
 
 ### F-009-S010: Version Shortcut Parity
 
-Given a user wants to confirm the installed Mars Harness binary version
-When `mars-harness version`, `mars-harness --version`, or `mars-harness -v` runs
+Given a user wants to confirm the installed MARS binary version
+When `mars version`, `mars --version`, or `mars -v` runs
 Then each entrypoint prints the same version, OS/architecture, commit, and build date line
 
 ### F-009-S011: Optional Private Release Auth
 
-Given Mars Harness release assets live in a private GitHub Release repository
+Given MARS release assets live in a private GitHub Release repository
 When a user follows optional binary release setup
-Then the documented sequence includes `mars-harness auth github setup`, `mars-harness setup`, `mars-harness doctor`, and `mars-harness update tool`
-And `mars-harness auth github check` reports `status`, `auth_source`, `repo_access`, `release_access`, `message`, and `next_action` without printing token values
-And `mars-harness auth github setup` verifies access and stores a local fallback only when auth comes from GitHub CLI or an explicit `--token`
-And `mars-harness setup` checks private-release auth unless `--skip-github` or `--test-mode` is used
-And `mars-harness doctor` reports private-release auth readiness with a concrete fix
+Then the documented sequence includes `mars auth github setup`, `mars setup`, `mars doctor`, and `mars update tool`
+And `mars auth github check` reports `status`, `auth_source`, `repo_access`, `release_access`, `message`, and `next_action` without printing token values
+And `mars auth github setup` verifies access and stores a local fallback only when auth comes from GitHub CLI or an explicit `--token`
+And `mars setup` checks private-release auth unless `--skip-github` or `--test-mode` is used
+And `mars doctor` reports private-release auth readiness with a concrete fix
 And agents can use the read-only `github_auth_check` tool before update, release verification, install repair, or version-drift remediation
 
 ### F-009-S012: Dispatch-To-Release Review
@@ -121,32 +121,32 @@ And agents can use the read-only `github_auth_check` tool before update, release
 Given a generated target lifecycle has completed product planning, implementation, QA, security, and dogfood validation
 When Dogfood records an approved or completed disposition after product or ticket commits
 Then dispatch routes to Release Manager before stopping so generated target `VERSION` and `CHANGELOG.md` are updated from unreleased semantic commits
-And Release Manager runs `mars-harness release backfill-notes --repo . --check` so legacy release entries are found deliberately instead of being missed during routine versioning
+And Release Manager runs `mars release backfill-notes --repo . --check` so legacy release entries are found deliberately instead of being missed during routine versioning
 And a Release Manager `release_blocked` publication disposition stops dispatch as operator-visible release evidence instead of routing back to Dogfood or another already-completed product validation role
 
 ### F-009-S015: Release Review Uses Structured CLI Resolution
 
-Given a deployed target has an older `mars-harness` binary earlier on `PATH`
+Given a deployed target has an older `mars` binary earlier on `PATH`
 When Release Manager needs release notes, backfill, or asset verification
-Then the role uses `mars_harness_cli` with structured args instead of `shell_exec mars-harness ...`
-And `shell_exec` blocks direct `mars-harness` binary invocations with a correction that names the equivalent `mars_harness_cli` args
+Then the role uses `mars_cli` with structured args instead of `shell_exec mars ...`
+And `shell_exec` blocks direct `mars` binary invocations with a correction that names the equivalent `mars_cli` args
 
 ### F-009-S016: Source Checkout Onboarding
 
-Given a user clones the Mars Harness source repo
+Given a user clones the MARS source repo
 When they follow the README quick start
-Then the primary path installs with `make install`, runs `mars-harness setup --skip-github`, verifies with `mars-harness doctor`, initializes a target repo, and previews an agent run with `--dry-run`
+Then the primary path installs with `make install`, runs `mars setup --skip-github`, verifies with `mars doctor`, initializes a target repo, and previews an agent run with `--dry-run`
 And the README describes system requirements, GPU expectations, model downloads, and disk/network prerequisites before optional binary release auth
 And source checkout updates use `make update-tool` as the recommended command for safely fast-forwarding and reinstalling from the clone
 And release review cannot fail solely because a stale installed binary lacks a newer command surface
 
 ### F-009-S013: Optional GitHub Release Mirror
 
-Given local assets for `vX.Y.Z` have passed `mars-harness release verify-assets --dist`
+Given local assets for `vX.Y.Z` have passed `mars release verify-assets --dist`
 When GitHub release credentials are configured
-Then `mars-harness release publish-assets --upload github` or `--upload auto` may create or update a GitHub Release mirror using the generated changelog entry
+Then `mars release publish-assets --upload github` or `--upload auto` may create or update a GitHub Release mirror using the generated changelog entry
 And the operating record distinguishes local asset success from optional GitHub mirror blockers
-And GitHub installer or self-update claims remain blocked until `mars-harness release verify-assets --version vX.Y.Z` passes
+And GitHub installer or self-update claims remain blocked until `mars release verify-assets --version vX.Y.Z` passes
 
 ### F-009-S014: Release Tag Commit Invariant
 
@@ -159,7 +159,7 @@ And `git_release_guard` fails when `vX.Y.Z` already exists but points at a pre-r
 ### F-009-S017: Release Mirror Audit
 
 Given local `vX.Y.Z` tags exist for published versions
-When `mars-harness release audit --repo .` runs
+When `mars release audit --repo .` runs
 Then the newest tags (default 10, `--limit` configurable) are checked against the GitHub releases list
 And a tag without a release object is reported as `missing_release`
 And a release object missing required platform binaries or `checksums.txt` is reported as `notes_only` with the missing asset names
@@ -184,13 +184,13 @@ None.
 - F-009-S003: `go test ./internal/release -run TestPrepareClassifiesDeliveryEvidenceFromDoneTickets`
 - F-009-S004: `go test ./internal/selfupdate -run TestRunReleaseAssets`
 - F-009-S005: `go test ./internal/scanner -run TestUpgrade_preservesUserConfiguredManifestAndPrompts`
-- F-009-S006: `go test ./cmd/mars-harness -run TestReleaseVerifyAssetsCommandChecksLocalDist` and `go test ./internal/selfupdate -run TestVerifyReleaseAssetsReportsMissingAssets`
+- F-009-S006: `go test ./cmd/mars -run TestReleaseVerifyAssetsCommandChecksLocalDist` and `go test ./internal/selfupdate -run TestVerifyReleaseAssetsReportsMissingAssets`
 - F-009-S007: `go test ./internal/scanner -run TestInit_success` and docs-consistency checks for release guidance
 - F-009-S008: `go test ./internal/release -run 'TestRenderReleaseNarrative(UsesImpactWhyAndWhat|ProfilesStructuredDispatch)'`
-- F-009-S009: `go test ./internal/release -run TestBackfillNotes` and `go test ./cmd/mars-harness -run TestReleaseBackfillNotesCommandChecksAndWrites`
-- F-009-S010: `go test ./cmd/mars-harness -run TestVersionEntrypointsPrintSameVersionLine`
+- F-009-S009: `go test ./internal/release -run TestBackfillNotes` and `go test ./cmd/mars -run TestReleaseBackfillNotesCommandChecksAndWrites`
+- F-009-S010: `go test ./cmd/mars -run TestVersionEntrypointsPrintSameVersionLine`
 - F-009-S012: `go test ./internal/orchestration -run 'TestDecide_(dogfoodApprovalRoutesDirectlyToReleaseManager|releaseManagerReleaseBlockedStopsDispatch|orchestratorCannotRouteReleaseBlockedBackToDogfood)'`, `go test ./internal/serve -run TestHandleJobComplete_releaseBlockedStopsWithoutDogfoodLoop`, and `go test ./internal/scanner -run TestInit_success`
-- F-009-S013: `go test ./cmd/mars-harness -run TestReleasePublishAssetsCommandBuildsLocalDist`, `go test ./internal/docsconsistency -run TestReleasePublicationIsLocalFirst`, and `go test ./internal/scanner -run TestInit_success`
+- F-009-S013: `go test ./cmd/mars -run TestReleasePublishAssetsCommandBuildsLocalDist`, `go test ./internal/docsconsistency -run TestReleasePublicationIsLocalFirst`, and `go test ./internal/scanner -run TestInit_success`
 - F-009-S014: `go test ./internal/tools -run 'TestShellExecPolicyBlocksReleaseTag|TestGitReleaseGuardReportsStaleReleaseTag'`
-- F-009-S015: `go test ./internal/tools -run TestShellExecPolicyBlocksMarsHarnessBinary` and `go test ./internal/scanner -run TestInit_success`
+- F-009-S015: `go test ./internal/tools -run TestShellExecPolicyBlocksMarsBinary` and `go test ./internal/scanner -run TestInit_success`
 - F-009-S017: `go test ./internal/release -run TestAudit`

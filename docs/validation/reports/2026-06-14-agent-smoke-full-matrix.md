@@ -9,7 +9,7 @@
 
 **Status:** validated single-server parallel setup and live execution path; matrix failing.
 
-The full `agent-smoke` matrix was run against a real local Mars Harness model
+The full `agent-smoke` matrix was run against a real local MARS model
 with no `--model-endpoint` override and no fake/stub endpoint. The lane
 generated ephemeral targets, executed selected roles through the server job
 path, wrote a Markdown report, discarded successful run directories, and
@@ -34,7 +34,7 @@ The matrix did **not** pass: `22 passed`, `52 failed`, `74 selected`.
 - Binary version: `0.60.2`
 - Source ref at start: `7e79d8d` plus the working-tree single-server/context changes captured by this report update
 - Evidence source: `local-model`
-- Model source: local Mars Harness inference router; single local server tier `coding`
+- Model source: local MARS inference router; single local server tier `coding`
 - Inference topology: one local server on port `18080`, `--parallel 2`, server `--ctx-size 65536`, preserving a 32768-token per-slot coding-tier window
 - Hardware profile outside sandbox: `high`
 - Cleanup: 22 successful runs discarded; 52 failed runs retained under `<validation-root>`
@@ -138,7 +138,7 @@ single-server parallel run.
 agent-smoke full: 22 passed, 52 failed, 74 selected
 
 - Evidence source: `local-model`
-- Model source: local Mars Harness inference router; single local server tier coding
+- Model source: local MARS inference router; single local server tier coding
 - Inference topology: single local server tier `coding` with server parallel `2`
 
 | Role | Case | Project | Mode | Disposition | Status | Failure | Run |

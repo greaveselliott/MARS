@@ -1,4 +1,4 @@
-# Mars Harness — Delivery Schedule
+# MARS — Delivery Schedule
 
 **Status:** Superseded pending reconciliation
 **Date:** 2026-04-11
@@ -13,7 +13,7 @@
 
 ## Overview
 
-Exhaustive delivery schedule for the mars-harness project: a standalone Go binary that runs AI agent roles locally against GitHub repositories. Each milestone includes numbered tasks, a quality gate, and architecture decisions made in that phase.
+Exhaustive delivery schedule for the mars project: a standalone Go binary that runs AI agent roles locally against GitHub repositories. Each milestone includes numbered tasks, a quality gate, and architecture decisions made in that phase.
 
 Total estimated duration: **41–53 working days** across 11 milestones (M0–M10).
 
@@ -23,9 +23,9 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 
 ### Tasks
 
-- **0.1** Go module init (`github.com/greaveselliott/mars-harness`), set Go version floor (1.22+), configure `CGO_ENABLED=0`
+- **0.1** Go module init (`github.com/greaveselliott/MARS`), set Go version floor (1.22+), configure `CGO_ENABLED=0`
 - **0.2** Directory structure
-  - **0.2.1** `cmd/mars-harness/` — entrypoint
+  - **0.2.1** `cmd/mars/` — entrypoint
   - **0.2.2** `internal/` — domain-grouped packages (`agent/`, `llm/`, `tools/`, `github/`, `pipeline/`, `safety/`, `scoring/`, `dashboard/`, `config/`, `scanner/`)
   - **0.2.3** `pkg/` — public library code (types, errors, testutil)
   - **0.2.4** `docs/` — design docs, exec plans, tenets
@@ -40,7 +40,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 - **0.6** CI setup
   - **0.6.1** GitHub Actions workflow: `golangci-lint` (vet, staticcheck, errcheck, gosimple)
   - **0.6.2** `go test ./...` with race detector
-  - **0.6.3** `go build -o /dev/null ./cmd/mars-harness` (compile check)
+  - **0.6.3** `go build -o /dev/null ./cmd/mars` (compile check)
   - **0.6.4** Coverage report upload
 - **0.7** Test infrastructure
   - **0.7.1** Table-driven test conventions documented in `AGENTS.md`
@@ -53,11 +53,11 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 - **0.10** Package layout decision — domain-grouped under `internal/` with explicit public surface in `pkg/`
 - **0.11** Error handling convention — always return errors, never `panic` in library code, wrap with `fmt.Errorf("context: %w", err)`
 - **0.12** Logging decision — `log/slog` from stdlib, structured JSON in production, text in development
-- **0.13** Configuration decision — YAML config file (`~/.mars-harness/config.yaml`) merged with environment variable overrides (`MARS_HARNESS_` prefix)
+- **0.13** Configuration decision — YAML config file (`~/.mars/config.yaml`) merged with environment variable overrides (`MARS_` prefix)
 
 ### Quality Gate
 
-- [ ] `go build ./cmd/mars-harness` produces a binary without errors
+- [ ] `go build ./cmd/mars` produces a binary without errors
 - [ ] `go test ./...` passes (at least one test exists in `pkg/testutil/`)
 - [ ] `golangci-lint run` reports zero issues
 - [ ] CI workflow runs green on push to `main`
@@ -108,7 +108,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
   - **1.4.4** Token budget partitioning — reserve tokens for system, conversation history, and tool results
 - **1.5** Execution trace recorder
   - **1.5.1** Structured trace format (JSON Lines): timestamps, role, content, tool calls, tool results, token counts, latency
-  - **1.5.2** Write traces to `~/.mars-harness/traces/{job_id}.jsonl`
+  - **1.5.2** Write traces to `~/.mars/traces/{job_id}.jsonl`
   - **1.5.3** Trace metadata header (job ID, role, repo, model, start time, config snapshot)
   - **1.5.4** Trace tail/follow support for real-time streaming
 
@@ -149,7 +149,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
   - **2.3.1** HTTP download with resume support (Range headers)
   - **2.3.2** Progress reporting (bytes downloaded, speed, ETA) via callback interface
   - **2.3.3** SHA256 checksum verification after download
-  - **2.3.4** Store weights in `~/.mars-harness/models/`
+  - **2.3.4** Store weights in `~/.mars/models/`
   - **2.3.5** Skip download if file exists and checksum matches
 - **2.4** llama.cpp server management
   - **2.4.1** Download llama-server binary (platform-specific: darwin-arm64, linux-x86_64) with checksum
@@ -177,7 +177,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 | ID | Decision |
 |----|----------|
 | AD-007 | llama.cpp as subprocess (not CGO binding) — isolates crashes, simplifies builds |
-| AD-008 | Model weights stored in `~/.mars-harness/models/`, binaries in `~/.mars-harness/bin/` |
+| AD-008 | Model weights stored in `~/.mars/models/`, binaries in `~/.mars/bin/` |
 
 ---
 
@@ -188,7 +188,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 - **3.1** CLI framework
   - **3.1.1** Adopt `cobra` for command structure, `pflag` for flags
   - **3.1.2** Root command with `--config`, `--verbose`, `--trace-dir` global flags
-  - **3.1.3** `run` subcommand: `mars-harness run <role> --repo <path> [--model <name>] [--budget <tokens>] [--dry-run]`
+  - **3.1.3** `run` subcommand: `mars run <role> --repo <path> [--model <name>] [--budget <tokens>] [--dry-run]`
   - **3.1.4** Version command sourced from build-time ldflags
 - **3.2** Bundle reader
   - **3.2.1** Bundle manifest format (`manifest.yaml`): role name, model tier, system prompt path, guardrails refs, knowledge routes, tool permissions
@@ -210,7 +210,7 @@ Total estimated duration: **41–53 working days** across 11 milestones (M0–M1
 
 ### Quality Gate
 
-- [ ] `mars-harness run pipeline-fixer --repo testdata/repos/broken-ts-project/` executes with visible colour-coded output
+- [ ] `mars run pipeline-fixer --repo testdata/repos/broken-ts-project/` executes with visible colour-coded output
 - [ ] Trace streams in real-time (tokens visible as they arrive)
 - [ ] Missing bundle gives actionable error: "bundle 'foo' not found; available bundles: pipeline-fixer. See docs/bundles/ for how to create one."
 - [ ] `--dry-run` shows what would execute without calling LLM
@@ -236,9 +236,9 @@ None new — builds on AD-004, AD-005, AD-006 from M1.
   - **4.1.6** Rate limiting: respect `X-RateLimit-Remaining`, sleep on 403 rate limit, secondary rate limit handling
   - **4.1.7** Pagination: auto-paginate all list endpoints
 - **4.2** Optional GitHub App manifest flow
-  - **4.2.1** `mars-harness github setup` command — opens browser to GitHub App creation URL with pre-filled manifest when the user opts in
+  - **4.2.1** `mars github setup` command — opens browser to GitHub App creation URL with pre-filled manifest when the user opts in
   - **4.2.2** Local HTTP callback server to receive App credentials after creation
-  - **4.2.3** Store App ID, private key, webhook secret in `~/.mars-harness/github/` (file permissions 0600)
+  - **4.2.3** Store App ID, private key, webhook secret in `~/.mars/github/` (file permissions 0600)
   - **4.2.4** Installation ID discovery — list installations, prompt user to select org/repo
 - **4.3** Webhook receiver
   - **4.3.1** HTTP server on configurable port (default `:9091`)
@@ -253,7 +253,7 @@ None new — builds on AD-004, AD-005, AD-006 from M1.
 - **4.5** Wire optional GitHub tools into agent
   - **4.5.1** `github_comment`, `github_create_check_run`, `github_get_file`, `github_status`
   - **4.5.2** Tools use authenticated client from M4.1
-  - **4.5.3** Integration tests against real test repo (`mars-harness-test`)
+  - **4.5.3** Integration tests against real test repo (`mars-test`)
 
 ### Quality Gate
 
@@ -261,7 +261,7 @@ None new — builds on AD-004, AD-005, AD-006 from M1.
 - [ ] Webhook signature validation rejects tampered payloads
 - [ ] Events normalized correctly for all supported types (table-driven tests with real GitHub webhook payloads)
 - [ ] Deduplication rejects replayed delivery IDs
-- [ ] Agent posts a real status/check/comment on `mars-harness-test` repo via GitHub tools
+- [ ] Agent posts a real status/check/comment on `mars-test` repo via GitHub tools
 - [ ] PAT fallback works when no App is configured
 - [ ] Rate limiting sleeps appropriately on 403 (integration test with rate limit simulation)
 
@@ -326,11 +326,11 @@ None new — GitHub client design follows AD-004 (sync per-job) and AD-014 (doma
   - **5b.2.5** No-delete policy: agent cannot delete files unless explicitly allowed in role config
   - **5b.2.6** Secret scanner: regex patterns for AWS keys, GitHub tokens, private keys, database URLs — block commits containing matches
 - **5b.3** Emergency stop
-  - **5b.3.1** `mars-harness stop` command — immediately halts all running jobs
+  - **5b.3.1** `mars stop` command — immediately halts all running jobs
   - **5b.3.2** State cleanup: stop new mutating tool calls, release claimed jobs safely, cancel in-progress check runs where integration credentials allow it
   - **5b.3.3** Record stop event in job history with reason
   - **5b.3.4** Dashboard emergency stop button (wired in M9)
-- **5b.4** `mars-harness serve` command
+- **5b.4** `mars serve` command
   - **5b.4.1** Wire together: webhook receiver (M4.3) + job queue (M5a.1) + worker dispatcher (M5a.2) + scheduler (M5a.3) + safety layer (M5b)
   - **5b.4.2** Health endpoint at `/healthz` returning JSON status
   - **5b.4.3** Structured startup log showing all active components and their configuration
@@ -341,7 +341,7 @@ None new — GitHub client design follows AD-004 (sync per-job) and AD-014 (doma
 - [ ] Blast radius blocks a diff exceeding max files/lines limits
 - [ ] Secret scanner catches AWS key pattern, GitHub token pattern, and PEM private key
 - [ ] Emergency stop halts running jobs, blocks new mutations, and cancels check runs where integration credentials allow it
-- [ ] `mars-harness serve` starts, accepts webhooks, dispatches jobs through the full pipeline
+- [ ] `mars serve` starts, accepts webhooks, dispatches jobs through the full pipeline
 - [ ] `/healthz` returns accurate component status
 
 ### Architecture Decisions
@@ -371,11 +371,11 @@ None new — safety is an enforcement layer atop existing AD-004 and AD-010 deci
   - **6.3.2** Promotion rules: observer → contributor after N trial runs (configurable, default 5); contributor → autonomous after score ≥ threshold over 20+ outcomes
   - **6.3.3** Demotion rules: autonomous → contributor if score drops below threshold for 5 consecutive jobs; contributor → observer if score drops below contributor threshold for 5 consecutive jobs
   - **6.3.4** Enforcement: trust level checked before mutating tools; observer cannot write files, commit, or push
-  - **6.3.5** Override: `--trust-level` flag on `mars-harness run` for manual override (logged)
+  - **6.3.5** Override: `--trust-level` flag on `mars run` for manual override (logged)
 - **6.4** CLI commands
-  - **6.4.1** `mars-harness scores` — table of per-role, per-repo scores with sample size and trend arrow
-  - **6.4.2** `mars-harness trust` — current trust level per role per repo, promotion/demotion history
-  - **6.4.3** `mars-harness trust set <role> <repo> <level>` — manual override with recorded reason
+  - **6.4.1** `mars scores` — table of per-role, per-repo scores with sample size and trend arrow
+  - **6.4.2** `mars trust` — current trust level per role per repo, promotion/demotion history
+  - **6.4.3** `mars trust set <role> <repo> <level>` — manual override with recorded reason
 
 ### Quality Gate
 
@@ -385,8 +385,8 @@ None new — safety is an enforcement layer atop existing AD-004 and AD-010 deci
 - [ ] Role demotes when score drops below threshold
 - [ ] Observer trust level cannot mutate the repo (enforcement test)
 - [ ] Trial mode permits only human-triggered or ticket-bound trunk commits
-- [ ] `mars-harness scores` displays correct data formatted as table
-- [ ] `mars-harness trust` shows current levels and history
+- [ ] `mars scores` displays correct data formatted as table
+- [ ] `mars trust` shows current levels and history
 
 ### Architecture Decisions
 
@@ -422,8 +422,8 @@ None new — scoring uses AD-009 (SQLite) and AD-010 (repo_id scoping).
   - **7.4.5** Staleness detection: flag guardrails not triggered in 90 days for review
   - **7.4.6** Guardrail inheritance: global guardrails + per-role guardrails + per-repo guardrails (most specific wins on conflict)
 - **7.5** CLI commands
-  - **7.5.1** `mars-harness interventions` — list recent interventions with classification and status
-  - **7.5.2** `mars-harness interventions show <id>` — detailed view with diff and Reviewer analysis
+  - **7.5.1** `mars interventions` — list recent interventions with classification and status
+  - **7.5.2** `mars interventions show <id>` — detailed view with diff and Reviewer analysis
 
 ### Quality Gate
 
@@ -437,7 +437,7 @@ None new — scoring uses AD-009 (SQLite) and AD-010 (repo_id scoping).
 - [ ] Advisory guardrails appear in system prompt
 - [ ] Hard guardrails block violations (test: diff exceeding max size blocked before commit/push)
 - [ ] Guardrail override logged with reason
-- [ ] Stale guardrails (not triggered in 90 days) flagged in `mars-harness doctor`
+- [ ] Stale guardrails (not triggered in 90 days) flagged in `mars doctor`
 
 ### Architecture Decisions
 
@@ -451,12 +451,12 @@ None new — scoring uses AD-009 (SQLite) and AD-010 (repo_id scoping).
 
 ### Tasks
 
-- **8.1** `mars-harness setup`
+- **8.1** `mars setup`
   - **8.1.1** Orchestrated setup flow: hardware detect → display recommendation → pinned model download (with user confirmation) → optional GitHub validation if requested → start serve
   - **8.1.2** Idempotent: re-running skips completed steps (check for existing models, optional GitHub credentials, etc.)
   - **8.1.3** `--test-mode` flag: skip model download (use mock), skip optional GitHub checks, reduce timeouts
   - **8.1.4** Progress display: step N/M with status indicators
-- **8.2** `mars-harness init`
+- **8.2** `mars init`
   - **8.2.1** Scaffold `.harness/` directory in target repo
   - **8.2.2** Generate `roles.yaml` from detected repo characteristics (language, framework, CI system)
   - **8.2.3** Generate starter tickets from repo scanner output (M8.3)
@@ -469,7 +469,7 @@ None new — scoring uses AD-009 (SQLite) and AD-010 (repo_id scoping).
   - **8.3.3** Smart skipping: ignore `node_modules/`, `vendor/`, generated files, lock files
   - **8.3.4** Output: structured JSON for programmatic use, markdown summary for human reading
   - **8.3.5** Ticket generation: convert findings into `.harness/tickets/` markdown files with priority, category, and suggested approach
-- **8.4** `mars-harness doctor`
+- **8.4** `mars doctor`
   - **8.4.1** System health: Go version, disk space, available RAM, GPU detection
   - **8.4.2** Model health: models present and valid (checksum), llama-server binary present
   - **8.4.3** GitHub health: App credentials valid, webhook endpoint reachable, API rate limit status
@@ -479,12 +479,12 @@ None new — scoring uses AD-009 (SQLite) and AD-010 (repo_id scoping).
 
 ### Quality Gate
 
-- [ ] `mars-harness setup` completes end-to-end in test mode (mock model, PAT auth)
+- [ ] `mars setup` completes end-to-end in test mode (mock model, PAT auth)
 - [ ] Re-running setup skips already-completed steps
-- [ ] `mars-harness init` scaffolds `.harness/` with correct structure for a detected Node.js project
+- [ ] `mars init` scaffolds `.harness/` with correct structure for a detected Node.js project
 - [ ] Repo scanner produces plausible findings for a known test repo (finds missing tests, TODOs)
 - [ ] Scanner skips `node_modules/` and generated files
-- [ ] `mars-harness doctor` reports accurate health across all subsystems
+- [ ] `mars doctor` reports accurate health across all subsystems
 - [ ] Doctor provides actionable fix instructions for each failure mode
 
 ### Architecture Decisions
@@ -498,7 +498,7 @@ None new — setup orchestrates components from prior milestones.
 ### Tasks
 
 - **9.1** Dashboard infrastructure
-  - **9.1.1** HTTP server on configurable port (default `:9090`), integrated into `mars-harness serve`
+  - **9.1.1** HTTP server on configurable port (default `:9090`), integrated into `mars serve`
   - **9.1.2** Go `html/template` for server-side rendering
   - **9.1.3** htmx for dynamic updates (partial page swaps, polling, form submission)
   - **9.1.4** Chart.js for time-series and bar charts
@@ -534,7 +534,7 @@ None new — setup orchestrates components from prior milestones.
 - **9.7** Emergency stop button
   - **9.7.1** Prominent red button in navigation header
   - **9.7.2** Confirmation dialog before executing
-  - **9.7.3** Triggers `mars-harness stop` logic (M5b.3), shows cleanup progress
+  - **9.7.3** Triggers `mars stop` logic (M5b.3), shows cleanup progress
 
 ### Quality Gate
 
@@ -579,14 +579,14 @@ None new — setup orchestrates components from prior milestones.
   - **10.4.3** Document quality delta for each role: equivalent, minor regression, significant regression
   - **10.4.4** Iterate on prompts for roles with significant regression (budget: 0.5 day per role)
 - **10.5** Dogfood
-  - **10.5.1** Run Pipeline Fixer on the mars-harness repo itself (introduce deliberate CI failure, verify fix)
-  - **10.5.2** Run QA on the mars-harness repo (verify it generates meaningful test suggestions)
-  - **10.5.3** Run Code Reviewer on recent mars-harness trunk commits (verify review quality)
+  - **10.5.1** Run Pipeline Fixer on the mars repo itself (introduce deliberate CI failure, verify fix)
+  - **10.5.2** Run QA on the mars repo (verify it generates meaningful test suggestions)
+  - **10.5.3** Run Code Reviewer on recent mars trunk commits (verify review quality)
   - **10.5.4** Document dogfood results and any prompt adjustments made
 - **10.6** Distribution
   - **10.6.1** Cross-compile: `darwin/arm64`, `darwin/amd64`, `linux/amd64`, `linux/arm64`
   - **10.6.2** `curl` installer script: detect OS/arch, download binary, verify checksum, place in `$PATH`
-  - **10.6.3** Homebrew formula: `mars-harness` tap with bottle support
+  - **10.6.3** Homebrew formula: `mars` tap with bottle support
   - **10.6.4** GitHub Releases: automated release workflow (tag → build → upload binaries → generate release notes)
   - **10.6.5** Binary size target: < 30MB (strip debug, compress if needed)
 - **10.7** Documentation
@@ -602,10 +602,10 @@ None new — setup orchestrates components from prior milestones.
 - [ ] All 11 roles ported with working bundles
 - [ ] At least 7 roles produce output equivalent to Cursor automation (documented comparison)
 - [ ] Remaining roles have documented quality delta with specific improvement plan
-- [ ] Mars-harness runs Pipeline Fixer on its own repo and fixes a deliberate CI failure
-- [ ] Mars-harness runs QA on its own repo and produces meaningful test suggestions
-- [ ] `curl -fsSL https://get.mars-harness.dev | sh` works on clean Linux (Ubuntu 22.04) and macOS (14+)
-- [ ] Homebrew `brew install mars-stack/tap/mars-harness` installs and runs
+- [ ] MARS runs Pipeline Fixer on its own repo and fixes a deliberate CI failure
+- [ ] MARS runs QA on its own repo and produces meaningful test suggestions
+- [ ] `curl -fsSL https://get.mars.dev | sh` works on clean Linux (Ubuntu 22.04) and macOS (14+)
+- [ ] Homebrew `brew install mars-stack/tap/mars` installs and runs
 - [ ] Quick start guide enables a new user to go from zero to first successful run
 
 ### Architecture Decisions
@@ -639,7 +639,7 @@ None new — distribution is a packaging concern, not an architectural one.
 | AD-005 | Sequential tool execution within a turn | M1 | Avoids race conditions in file operations; parallel tool calls deferred to v2 |
 | AD-006 | Additive context (never drop, only compact) | M1 | Prevents silent loss of earlier reasoning; compaction preserves intent via summary |
 | AD-007 | llama.cpp as subprocess (not CGO) | M2 | Crash isolation, independent version management, preserves `CGO_ENABLED=0` |
-| AD-008 | Weights in `~/.mars-harness/models/`, binaries in `~/.mars-harness/bin/` | M2 | User-local storage, no root required, easy cleanup, respects XDG conventions |
+| AD-008 | Weights in `~/.mars/models/`, binaries in `~/.mars/bin/` | M2 | User-local storage, no root required, easy cleanup, respects XDG conventions |
 | AD-009 | SQLite for job queue and persistent state | M5a | No external database dependency, WAL mode for concurrent reads, embedded in binary |
 | AD-010 | `repo_id` as first-class dimension from day one | M5a | All queries, serialization, scoring, and trust are repo-scoped by design |
 | AD-011 | htmx + Chart.js embedded via `embed.FS` | M9 | Zero external CDN, no SPA framework, no Node.js build step, single binary serves dashboard |

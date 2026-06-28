@@ -2,15 +2,15 @@
 
 **Status:** Draft
 **Date:** 2026-04-12
-**Author:** Mars Harness contributors
+**Author:** MARS contributors
 
 How agent roles are activated: optional webhook events, cron schedules, and completion chains. Defines the manifest configuration format and the strict-trunk role registry derived from the [Mars](https://github.com/elliottgreaves/mars) pipeline. Role routing uses the canonical domain and mode vocabulary from [harness-operating-model.md](harness-operating-model.md).
 
 ## Context
 
-The Mars monorepo proved the autonomous role model through Cursor-specific automation. Mars Harness keeps the roles, but changes the delivery contract: work lands as bounded semantic commits on `main`, with optional GitHub events used for checks, status, comments, and webhooks rather than as the core delivery model.
+The Mars monorepo proved the autonomous role model through Cursor-specific automation. MARS keeps the roles, but changes the delivery contract: work lands as bounded semantic commits on `main`, with optional GitHub events used for checks, status, comments, and webhooks rather than as the core delivery model.
 
-Mars Harness must express the same pipeline in a single `.harness/manifest.yaml` without depending on Cursor or GitHub Actions as the orchestrator. The harness itself is the orchestrator.
+MARS must express the same pipeline in a single `.harness/manifest.yaml` without depending on Cursor or GitHub Actions as the orchestrator. The harness itself is the orchestrator.
 
 ## Key Design Decisions
 
@@ -152,7 +152,7 @@ The full `.harness/manifest.yaml` expressing the default strict-trunk roles:
 
 ```yaml
 name: mars
-description: Full Mars Harness pipeline — strict trunk, 11 roles
+description: Full MARS pipeline — strict trunk, 11 roles
 
 roles:
   ceo:

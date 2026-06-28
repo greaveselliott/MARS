@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/pkg/testutil"
+	"github.com/greaveselliott/mars/pkg/testutil"
 
 	"github.com/stretchr/testify/require"
 )

@@ -11,11 +11,11 @@
 
 OpenAI's Harness team describes building an internal beta product where Codex wrote the product code, tests, CI, docs, observability, and internal tooling. A small human team steered the work by shaping the environment, documenting intent, enforcing constraints, and building feedback loops.
 
-The article is foundational for Mars Harness because it describes the same product shape this repository is trying to make self-hosted and reusable: an agent-first delivery system where humans set direction, the repository is the source of truth, and failures become better tools, rules, and context.
+The article is foundational for MARS because it describes the same product shape this repository is trying to make self-hosted and reusable: an agent-first delivery system where humans set direction, the repository is the source of truth, and failures become better tools, rules, and context.
 
-The article's PR-based workflow is not a Mars Harness default. Mars Harness translates those lessons into strict trunk-based development: semantic commits directly to `main`, push after each completed step, and optional GitHub status/check/comment integration.
+The article's PR-based workflow is not a MARS default. MARS translates those lessons into strict trunk-based development: semantic commits directly to `main`, push after each completed step, and optional GitHub status/check/comment integration.
 
-## Key Concepts For Mars Harness
+## Key Concepts For MARS
 
 ### Humans steer, agents execute
 
@@ -47,7 +47,7 @@ Harness implication:
 
 ### Progressive disclosure compounds
 
-Agents need a stable map and then narrow, relevant detail on demand. The OpenAI article's docs layout directly influenced Mars and should continue into Mars Harness.
+Agents need a stable map and then narrow, relevant detail on demand. The OpenAI article's docs layout directly influenced Mars and should continue into MARS.
 
 Harness implication:
 
@@ -78,7 +78,7 @@ Harness implication:
 
 ### Failures feed back into the harness
 
-When Codex struggles, the response should be to improve the environment. Mars adopted this as intervention debt; Mars Harness should make it mechanical.
+When Codex struggles, the response should be to improve the environment. Mars adopted this as intervention debt; MARS should make it mechanical.
 
 Harness implication:
 
@@ -88,7 +88,7 @@ Harness implication:
 
 ### Throughput changes integration philosophy
 
-OpenAI's article describes short-lived PRs and cheap follow-up correction. Mars Harness keeps the same small-change philosophy while replacing PRs with strict trunk.
+OpenAI's article describes short-lived PRs and cheap follow-up correction. MARS keeps the same small-change philosophy while replacing PRs with strict trunk.
 
 Harness implication:
 
@@ -97,7 +97,7 @@ Harness implication:
 - Review and checks remain important, but they should be trunk-native signals rather than branch/PR gates.
 - Reverts, follow-up commits touching the same files, and failed checks become score signals.
 
-## Direct Mars Harness Requirements Derived From This Article
+## Direct MARS Requirements Derived From This Article
 
 1. `AGENTS.md` remains a concise routing map.
 2. Docs, tickets, traces, scores, and decisions are treated as system memory.
@@ -106,10 +106,10 @@ Harness implication:
 5. Hard rules graduate from prose into mechanical checks.
 6. Failures produce intervention debt, deterministic fixes, or updated guardrails.
 7. Dogfood evidence must be reproducible by the role that fixes it.
-8. Strict trunk is the canonical integration model for Mars Harness.
+8. Strict trunk is the canonical integration model for MARS.
 
 ## Notes For Future Work
 
-- The OpenAI article assumes Codex and PR-oriented development. Mars Harness must preserve the agent-first operating model while staying local-first, model-flexible, and strict-trunk by default.
+- The OpenAI article assumes Codex and PR-oriented development. MARS must preserve the agent-first operating model while staying local-first, model-flexible, and strict-trunk by default.
 - The article's observability and UI-legibility sections should inform future dashboard, trace, and browser-testing work.
-- The article is the strongest external support for carrying references from Mars into Mars Harness rather than treating them as historical baggage.
+- The article is the strongest external support for carrying references from Mars into MARS rather than treating them as historical baggage.

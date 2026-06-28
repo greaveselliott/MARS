@@ -18,7 +18,7 @@ dedupe_key: "public-example"
 metadata:
   category: "drift_review"
   confidence: "high"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   role: "reviewer"
   severity: "high"
   target: "doctrine"

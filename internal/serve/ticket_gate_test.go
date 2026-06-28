@@ -14,10 +14,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
-	"github.com/greaveselliott/mars-harness/internal/scanner"
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/orgstate"
+	"github.com/greaveselliott/mars/internal/scanner"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 )
 
 func TestEnforceEngineerTicketPrerequisite_ctoHandoffWithoutOpenTicketRoutesToQAWhenDone(t *testing.T) {

@@ -18,9 +18,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/llm"
-	"github.com/greaveselliott/mars-harness/internal/tools"
-	"github.com/greaveselliott/mars-harness/internal/trace"
+	"github.com/greaveselliott/mars/internal/llm"
+	"github.com/greaveselliott/mars/internal/tools"
+	"github.com/greaveselliott/mars/internal/trace"
 )
 
 const (
@@ -199,7 +199,7 @@ func (p Params) modelName() string {
 	if strings.TrimSpace(p.Config.Model) != "" {
 		return strings.TrimSpace(p.Config.Model)
 	}
-	return "mars-harness"
+	return "mars"
 }
 
 func (p Params) jobID() string {
@@ -274,7 +274,7 @@ func maybeRefreshCodeGraphAfterMutation(ctx context.Context, p Params, messages 
 
 func codeGraphMutationTool(name, argsJSON string) bool {
 	switch strings.TrimSpace(name) {
-	case "file_write", "dependency_sync", "mars_harness_cli", "record_decision", "ticket_create", "tool_create", "persona_create":
+	case "file_write", "dependency_sync", "mars_cli", "mars_harness_cli", "record_decision", "ticket_create", "tool_create", "persona_create":
 		return true
 	case "shell_exec":
 		return shellExecMayMutateRepo(argsJSON)
@@ -338,8 +338,8 @@ func argvMayMutateRepo(argv []string) bool {
 		default:
 			return false
 		}
-	case "mars-harness":
-		return marsHarnessArgsMayMutate(argv[1:])
+	case "mars":
+		return marsArgsMayMutate(argv[1:])
 	default:
 		return false
 	}
@@ -409,7 +409,7 @@ func packageManagerArgsMayMutate(args []string) bool {
 	}
 }
 
-func marsHarnessArgsMayMutate(args []string) bool {
+func marsArgsMayMutate(args []string) bool {
 	if len(args) == 0 {
 		return false
 	}

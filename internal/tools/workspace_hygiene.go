@@ -525,11 +525,11 @@ func appendGeneratedGitignoreEntries(root Root, dirs []string) error {
 	if content != "" && !strings.HasSuffix(content, "\n") {
 		b.WriteString("\n")
 	}
-	if !strings.Contains(content, "Mars Harness workspace hygiene") {
+	if !strings.Contains(content, "MARS workspace hygiene") {
 		if b.Len() > 0 && !strings.HasSuffix(b.String(), "\n\n") {
 			b.WriteString("\n")
 		}
-		b.WriteString("# Mars Harness workspace hygiene\n")
+		b.WriteString("# MARS workspace hygiene\n")
 	}
 	ignored := loadGitignoreCoverage(root)
 	for _, dir := range dirs {

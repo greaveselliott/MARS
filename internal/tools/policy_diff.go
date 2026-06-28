@@ -17,7 +17,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/safety"
+	"github.com/greaveselliott/mars/internal/safety"
 )
 
 func validateRepoDiff(ctx context.Context, root Root, session Session) error {

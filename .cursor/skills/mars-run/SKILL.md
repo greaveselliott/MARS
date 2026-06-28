@@ -1,32 +1,32 @@
 ---
-name: mars-harness-run
+name: mars-run
 description: >-
   Manually execute a single agent role against a repository. Use when the
   user wants to run a specific role, execute an agent, test a role, or
-  mentions mars-harness run.
+  mentions mars run.
 ---
 
 # Run an Agent Role
 
 ## Prerequisites
 
-1. Setup complete: `mars-harness doctor`
+1. Setup complete: `mars doctor`
 2. Git repo at `--repo`. If `.harness/manifest.yaml` is missing, `run` scaffolds it automatically (same as `init`).
-3. Source-only foundation work may use `foundation-maintainer` in the Mars Harness source repo with `--dry-run --no-init`.
+3. Source-only foundation work may use `foundation-maintainer` in the MARS source repo with `--dry-run --no-init`.
 
 ## Run
 
 ```bash
-mars-harness run <role> --repo /path/to/repo
+mars run <role> --repo /path/to/repo
 ```
 
 Example:
 
 ```bash
-mars-harness run engineer --repo /path/to/project
-mars-harness run pipeline-fixer --repo .
-mars-harness run reviewer --repo /path/to/project
-mars-harness run foundation-maintainer --repo . --dry-run --no-init
+mars run engineer --repo /path/to/project
+mars run pipeline-fixer --repo .
+mars run reviewer --repo /path/to/project
+mars run foundation-maintainer --repo . --dry-run --no-init
 ```
 
 ## Flags
@@ -46,8 +46,8 @@ mars-harness run foundation-maintainer --repo . --dry-run --no-init
 Preview what the agent will see without calling the LLM:
 
 ```bash
-mars-harness run engineer --repo /path --dry-run
-mars-harness run foundation-maintainer --repo . --dry-run --no-init
+mars run engineer --repo /path --dry-run
+mars run foundation-maintainer --repo . --dry-run --no-init
 ```
 
 ## What Happens
@@ -61,5 +61,5 @@ mars-harness run foundation-maintainer --repo . --dry-run --no-init
 ## Troubleshooting
 
 - **Role not found**: Check `.harness/manifest.yaml` for available roles
-- **Inference failed**: Run `mars-harness setup` to install models + llama-server
+- **Inference failed**: Run `mars setup` to install models + llama-server
 - **Timeout**: Increase `--max-turns` or check model performance

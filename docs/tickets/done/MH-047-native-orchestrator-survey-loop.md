@@ -20,7 +20,7 @@ source: Mars parity workstream G
 created: 2026-05-03
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "orchestrator"
   category: "unattended_failure_detection"
   severity: "high"

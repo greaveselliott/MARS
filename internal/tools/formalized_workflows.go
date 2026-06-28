@@ -22,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/docsync"
+	"github.com/greaveselliott/mars/internal/docsync"
 )
 
 const simpleWorkflowSchema = `{
@@ -42,7 +42,7 @@ type simpleWorkflowArgs struct {
 func registerReleaseOrchestrate(r *Registry) error {
 	return r.Register(
 		"release_orchestrate",
-		"Plan and preflight the complete Mars Harness release ritual from semantic commit through pushed tag and verified assets.",
+		"Plan and preflight the complete MARS release ritual from semantic commit through pushed tag and verified assets.",
 		json.RawMessage(simpleWorkflowSchema),
 		handleReleaseOrchestrate,
 	)
@@ -121,7 +121,7 @@ func handleReleaseOrchestrate(ctx context.Context, root Root, raw json.RawMessag
 	head := gitOutput(ctx, root, "log", "-3", "--oneline")
 	out := strings.TrimSpace(fmt.Sprintf(`# release_orchestrate
 
-Purpose: formalize the end-to-end Mars Harness release ritual. Use this tool before mutating release state, then use `+"`mars_harness_cli`"+` and git tools for the actual steps unless this tool has been explicitly extended to execute them.
+Purpose: formalize the end-to-end MARS release ritual. Use this tool before mutating release state, then use `+"`mars_cli`"+` and git tools for the actual steps unless this tool has been explicitly extended to execute them.
 
 Current VERSION: %s
 Git status:
@@ -133,13 +133,13 @@ Recent commits:
 Sequence:
 1. Ensure git status is clean except the intended semantic change.
 2. Commit the semantic change with a conventional message.
-3. Run `+"`mars_harness_cli`"+` with args ["release", "notes", "--repo", ".", "--bump", "auto"].
+3. Run `+"`mars_cli`"+` with args ["release", "notes", "--repo", ".", "--bump", "auto"].
 4. Review VERSION, CHANGELOG.md, and buildinfo changes.
 5. Commit generated files as `+"`release: notes X.Y.Z`"+`.
 6. Push main.
 7. Tag the release-note commit as `+"`vX.Y.Z`"+` and push the tag. Do not tag while VERSION/CHANGELOG.md are dirty, and do not target any commit other than the release-note HEAD.
-8. Run `+"`mars_harness_cli`"+` with args ["release", "publish-assets", "--repo", ".", "--version", "vX.Y.Z", "--upload", "auto"].
-9. Run `+"`mars_harness_cli`"+` with args ["release", "verify-assets", "--dist", "dist/releases", "--version", "vX.Y.Z"].
+8. Run `+"`mars_cli`"+` with args ["release", "publish-assets", "--repo", ".", "--version", "vX.Y.Z", "--upload", "auto"].
+9. Run `+"`mars_cli`"+` with args ["release", "verify-assets", "--dist", "dist/releases", "--version", "vX.Y.Z"].
 10. If local verification or optional GitHub mirroring fails, record the blocker before treating release work as complete.
 `, strings.TrimSpace(version), nonEmpty(status, "(clean)"), nonEmpty(head, "(no commits)")))
 	if strings.TrimSpace(args.Notes) != "" {
@@ -166,7 +166,7 @@ Remote inspection commands for optional GitHub mirrors:
 - `+"`gh run list --repo <owner/name> --limit 10`"+`
 - `+"`gh run view <run-id> --repo <owner/name> --json status,conclusion,url`"+`
 - `+"`gh release view vX.Y.Z --repo <owner/name> --json tagName,name,assets,url,isDraft,isPrerelease,publishedAt`"+`
-- `+"`mars-harness release verify-assets --version vX.Y.Z`"+`
+- `+"`mars release verify-assets --version vX.Y.Z`"+`
 
 Interpretation:
 - Tag exists but release is 404: local assets may still be complete; run publish-assets with --upload github or record a mirror blocker.
@@ -182,8 +182,8 @@ func handleArchitectureAudit(_ context.Context, root Root, raw json.RawMessage) 
 	}
 	arch := readOptional(root, "ARCHITECTURE.md")
 	findings := checkContains("ARCHITECTURE.md", arch, []string{
-		"mars-harness update tool",
-		"mars_harness_cli",
+		"mars update tool",
+		"mars_cli",
 		".harness/metadata.yaml",
 		"docs/QUALITY_SCORE.md",
 		"BDD-led",
@@ -213,7 +213,7 @@ func handleHarnessDoctrineSync(_ context.Context, root Root, raw json.RawMessage
 		{"docs/design-docs/tools-glossary.md", []string{"release_orchestrate", "docsync_audit", "tool_creation_guard", "tool_inventory_audit", "task_trace_summarize"}},
 		{"docs/design-docs/delivery-operating-model.md", []string{"formalized tools", "repeated process", "docsync_audit", "documentation-sync-architecture.md", "cli-tool-skill-sync.md"}},
 		{"docs/design-docs/documentation-sync-architecture.md", []string{"AD-102", "Universal Operating Model", "docsync_audit"}},
-		{"docs/design-docs/cli-tool-skill-sync.md", []string{"AD-103", "mars_harness_cli", "repo shortcut map", "skills"}},
+		{"docs/design-docs/cli-tool-skill-sync.md", []string{"AD-103", "mars_cli", "repo shortcut map", "skills"}},
 		{"internal/scanner/init.go", []string{"release_orchestrate", "docsync_audit", "documentation-sync-architecture.md", "cli-tool-skill-sync.md", "Formalized tool creation trigger"}},
 	} {
 		checks = append(checks, checkContains(item.path, readOptional(root, item.path), item.terms)...)
@@ -284,7 +284,7 @@ func handleToolInventoryAudit(_ context.Context, root Root, raw json.RawMessage)
 	var checks []string
 	for _, name := range names {
 		checks = append(checks, passFail(strings.Contains(glossary, "`"+name+"`"), "glossary includes "+name, "glossary missing "+name))
-		if isMirroredWorkflowTool(name) || name == "mars_harness_cli" || name == "tool_create" {
+		if isMirroredWorkflowTool(name) || name == "mars_cli" || name == "tool_create" {
 			checks = append(checks, passFail(strings.Contains(generated, name), "generated harness includes "+name, "generated harness missing "+name))
 		}
 	}

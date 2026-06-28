@@ -70,7 +70,7 @@ func TestPackageWriteBlocksReservedHarnessPortForStaticWeb(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected reserved port script to be blocked")
 	}
-	if !strings.Contains(err.Error(), "reserved Mars Harness port 18080") {
+	if !strings.Contains(err.Error(), "reserved MARS port 18080") {
 		t.Fatalf("expected reserved-port guidance, got %v", err)
 	}
 }
@@ -1509,7 +1509,7 @@ func TestEngineerFileWriteBlocksPhaserPackageReservedRuntimePort(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected reserved runtime port to be blocked")
 	}
-	if !strings.Contains(err.Error(), "reserved Mars Harness port 18081") || !strings.Contains(err.Error(), "5173") {
+	if !strings.Contains(err.Error(), "reserved MARS port 18081") || !strings.Contains(err.Error(), "5173") {
 		t.Fatalf("expected reserved-port guidance, got %v", err)
 	}
 }

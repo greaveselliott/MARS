@@ -27,7 +27,7 @@ depends_on: []
 
 The Example Target Project Ways Of Working program needed a default-off configuration substrate
 before JIRA, prioritisation, gateway routing, Figma, or PR delivery could ship.
-Current Mars Harness behavior is CEO-led, schedule-driven, GitHub-ingress, and
+Current MARS behavior is CEO-led, schedule-driven, GitHub-ingress, and
 strict-trunk by default; this ticket preserves that behavior when
 `.harness/integrations.yaml` is absent.
 
@@ -56,13 +56,13 @@ strict-trunk by default; this ticket preserves that behavior when
 ## Evidence
 
 - PASS: `git diff --check`
-- PASS: `go test -count=1 ./cmd/mars-harness -run 'TestStartCommand'`
+- PASS: `go test -count=1 ./cmd/mars -run 'TestStartCommand'`
 - PASS: `go test -count=1 ./internal/serve`
 - PASS: `go test -count=1 ./internal/codeintel ./internal/scoring ./internal/personas`
 - PASS: `go test -count=1 ./internal/integrations ./internal/scheduler ./internal/docsync ./internal/docsconsistency`
 - PASS: `GOCACHE=<validation-root> go test ./...`
 - PASS: `GOCACHE=<validation-root> make check`
-- PASS: `GOCACHE=<validation-root> go run ./cmd/mars-harness release backfill-notes --repo . --check`
+- PASS: `GOCACHE=<validation-root> go run ./cmd/mars release backfill-notes --repo . --check`
 - PASS: `/path/to/local-redacted auth github check`
 - PASS: `make install`
 - PASS: installed-binary `validation agent-smoke` for `static-web-ticket` and `go-api-ticket` through `http://127.0.0.1:18654/v1`.

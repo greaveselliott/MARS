@@ -2,7 +2,7 @@
 
 **Status:** Draft  
 **Date:** 2026-04-11  
-**Author:** Mars Harness contributors
+**Author:** MARS contributors
 
 How the harness measures **accuracy** and **value** of autonomous work so thresholds, alerts, and self-improvement have a consistent, auditable signal.
 

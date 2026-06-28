@@ -42,7 +42,7 @@ This is a product and architecture change because existing dashboard doctrine ex
 - `internal/dashboard/`
 - `internal/serve/`
 - `internal/ui/`
-- `cmd/mars-harness/`
+- `cmd/mars/`
 - `docs/features/F-010-dashboard-control-plane.md`
 - `docs/design-docs/dashboard.md`
 - `docs/product-specs/product-surface.md`

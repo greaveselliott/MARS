@@ -32,7 +32,7 @@ const (
 
 var (
 	ErrNoChanges = errors.New("release: no commits found since the last release marker")
-	markerRE     = regexp.MustCompile(`<!-- mars-harness-release: version=([^ ]+) commit=([0-9a-fA-F]+) -->`)
+	markerRE     = regexp.MustCompile(`<!-- mars(?:-harness)?-release: version=([^ ]+) commit=([0-9a-fA-F]+) -->`)
 	subjectRE    = regexp.MustCompile(`^([a-zA-Z0-9_-]+)(\([^)]+\))?(!)?:\s+(.+)$`)
 	narrativeRE  = regexp.MustCompile(`(?i)^\s*(impact|why|what|what changed)\s*:\s*(.*)$`)
 )
@@ -214,7 +214,7 @@ func inferBump(commits []Commit) Bump {
 func renderEntry(repoRoot string, version SemVer, now time.Time, head string, commits []Commit) string {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, "## [%s] - %s\n", version.String(), now.Format("2006-01-02"))
-	fmt.Fprintf(&buf, "<!-- mars-harness-release: version=%s commit=%s -->\n\n", version.String(), strings.TrimSpace(head))
+	fmt.Fprintf(&buf, "<!-- mars-release: version=%s commit=%s -->\n\n", version.String(), strings.TrimSpace(head))
 
 	if summary := renderReleaseNarrative(commits); summary != "" {
 		buf.WriteString(summary)
@@ -417,7 +417,7 @@ func isDocumentationSyncChange(scope, text string) bool {
 }
 
 func isCLIToolSkillSyncChange(scope, text string) bool {
-	return (scope == "cli" || strings.Contains(text, "mars_harness_cli")) &&
+	return (scope == "cli" || strings.Contains(text, "mars_cli")) &&
 		((strings.Contains(text, "tool") && strings.Contains(text, "skill") && strings.Contains(text, "sync")) ||
 			strings.Contains(text, "repo-shortcut"))
 }
@@ -726,7 +726,7 @@ func insertChangelogEntry(existing, entry string) string {
 }
 
 func changelogHeader() string {
-	return "# Changelog\n\nPatch notes are generated with `mars-harness release notes` from semantic commits on `main`."
+	return "# Changelog\n\nPatch notes are generated with `mars release notes` from semantic commits on `main`."
 }
 
 func gitOK(ctx context.Context, repoRoot string, args ...string) bool {

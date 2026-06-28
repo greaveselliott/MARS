@@ -1,7 +1,7 @@
 # Validation
 
 This directory holds durable validation artifacts: target profiles, evidence
-contracts, and run reports that prove Mars Harness behavior outside unit tests.
+contracts, and run reports that prove MARS behavior outside unit tests.
 
 Use `dogfood` for the runtime role and mode. Use `docs/validation/` for the
 repo-visible artifacts that describe what was validated, against which target,
@@ -59,7 +59,7 @@ on a **clean project** before treating runtime fixes as done is
 
 ## Compartmentalised agent smoke
 
-Use `mars-harness validation agent-smoke` when a source change should be
+Use `mars validation agent-smoke` when a source change should be
 checked against many role-stage target states faster than a full lifecycle
 sweep. The runner creates fresh one-use targets under
 `../demo/validation-runs/agent-smoke/` by default, seeds them through foundation
@@ -77,10 +77,10 @@ foundation matrix from inside the ephemeral repo.
 Smoke examples:
 
 ```bash
-mars-harness validation agent-smoke --suite fast --json
-mars-harness validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs
-mars-harness validation agent-smoke --suite held-out --parallel 2 --single-server --single-server-tier coding --timeout 10m
-mars-harness validation agent-smoke --cleanup-only
+mars validation agent-smoke --suite fast --json
+mars validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs
+mars validation agent-smoke --suite held-out --parallel 2 --single-server --single-server-tier coding --timeout 10m
+mars validation agent-smoke --cleanup-only
 ```
 
 Agent smoke complements full clean-project sweeps. It does not prove

@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/planhygiene"
+	"github.com/greaveselliott/mars/internal/planhygiene"
 )
 
 func TestActivePlanHygiene(t *testing.T) {

@@ -11,8 +11,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/greaveselliott/mars-harness/internal/guardrails"
-	"github.com/greaveselliott/mars-harness/internal/safety"
+	"github.com/greaveselliott/mars/internal/guardrails"
+	"github.com/greaveselliott/mars/internal/safety"
 )
 
 type sessionKey struct{}

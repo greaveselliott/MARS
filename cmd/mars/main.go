@@ -48,38 +48,38 @@ import (
 	"github.com/spf13/cobra"
 	_ "modernc.org/sqlite"
 
-	"github.com/greaveselliott/mars-harness/internal/agent"
-	"github.com/greaveselliott/mars-harness/internal/buildinfo"
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/codeintel"
-	"github.com/greaveselliott/mars-harness/internal/config"
-	ctx "github.com/greaveselliott/mars-harness/internal/context"
-	"github.com/greaveselliott/mars-harness/internal/docsync"
-	"github.com/greaveselliott/mars-harness/internal/doctor"
-	"github.com/greaveselliott/mars-harness/internal/foundationtelemetry"
-	"github.com/greaveselliott/mars-harness/internal/githubauth"
-	"github.com/greaveselliott/mars-harness/internal/guardrails"
-	"github.com/greaveselliott/mars-harness/internal/hardware"
-	"github.com/greaveselliott/mars-harness/internal/inference"
-	"github.com/greaveselliott/mars-harness/internal/llm"
-	"github.com/greaveselliott/mars-harness/internal/mcpstdio"
-	"github.com/greaveselliott/mars-harness/internal/models"
-	"github.com/greaveselliott/mars-harness/internal/qualityscore"
-	"github.com/greaveselliott/mars-harness/internal/release"
-	"github.com/greaveselliott/mars-harness/internal/safety"
-	"github.com/greaveselliott/mars-harness/internal/scanner"
-	"github.com/greaveselliott/mars-harness/internal/scoring"
-	"github.com/greaveselliott/mars-harness/internal/selfupdate"
-	"github.com/greaveselliott/mars-harness/internal/serve"
-	"github.com/greaveselliott/mars-harness/internal/setup"
-	"github.com/greaveselliott/mars-harness/internal/shellpath"
-	"github.com/greaveselliott/mars-harness/internal/telemetry"
-	"github.com/greaveselliott/mars-harness/internal/tools"
-	"github.com/greaveselliott/mars-harness/internal/trace"
-	"github.com/greaveselliott/mars-harness/internal/trust"
-	"github.com/greaveselliott/mars-harness/internal/ui"
-	"github.com/greaveselliott/mars-harness/internal/updatecheck"
-	foundationvalidation "github.com/greaveselliott/mars-harness/internal/validation"
+	"github.com/greaveselliott/mars/internal/agent"
+	"github.com/greaveselliott/mars/internal/buildinfo"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/codeintel"
+	"github.com/greaveselliott/mars/internal/config"
+	ctx "github.com/greaveselliott/mars/internal/context"
+	"github.com/greaveselliott/mars/internal/docsync"
+	"github.com/greaveselliott/mars/internal/doctor"
+	"github.com/greaveselliott/mars/internal/foundationtelemetry"
+	"github.com/greaveselliott/mars/internal/githubauth"
+	"github.com/greaveselliott/mars/internal/guardrails"
+	"github.com/greaveselliott/mars/internal/hardware"
+	"github.com/greaveselliott/mars/internal/inference"
+	"github.com/greaveselliott/mars/internal/llm"
+	"github.com/greaveselliott/mars/internal/mcpstdio"
+	"github.com/greaveselliott/mars/internal/models"
+	"github.com/greaveselliott/mars/internal/qualityscore"
+	"github.com/greaveselliott/mars/internal/release"
+	"github.com/greaveselliott/mars/internal/safety"
+	"github.com/greaveselliott/mars/internal/scanner"
+	"github.com/greaveselliott/mars/internal/scoring"
+	"github.com/greaveselliott/mars/internal/selfupdate"
+	"github.com/greaveselliott/mars/internal/serve"
+	"github.com/greaveselliott/mars/internal/setup"
+	"github.com/greaveselliott/mars/internal/shellpath"
+	"github.com/greaveselliott/mars/internal/telemetry"
+	"github.com/greaveselliott/mars/internal/tools"
+	"github.com/greaveselliott/mars/internal/trace"
+	"github.com/greaveselliott/mars/internal/trust"
+	"github.com/greaveselliott/mars/internal/ui"
+	"github.com/greaveselliott/mars/internal/updatecheck"
+	foundationvalidation "github.com/greaveselliott/mars/internal/validation"
 )
 
 var version = buildinfo.DefaultVersion
@@ -100,9 +100,9 @@ func main() {
 func newRootCommand() *cobra.Command {
 	var showVersion bool
 	root := &cobra.Command{
-		Use:           "mars-harness",
+		Use:           "mars",
 		Short:         "Autonomous AI delivery system",
-		Long:          "Mars Harness — self-hosted autonomous AI delivery. Run setup to get started.",
+		Long:          "MARS — self-hosted autonomous AI delivery. Run setup to get started.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -148,7 +148,7 @@ func validationCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validation",
 		Short: "Run and check foundation validation evidence",
-		Long: `Run Mars Harness foundation validation helpers.
+		Long: `Run MARS foundation validation helpers.
 
 These commands are source-maintainer gates for repo-owned validation evidence.
 They complement, but do not replace, full clean-project lifecycle sweeps.`,
@@ -163,7 +163,7 @@ func validationAgentSmokeCmd() *cobra.Command {
 		Use:   "agent-smoke",
 		Short: "Run compartmentalised role smoke tests against ephemeral targets",
 		Long: `Generate fresh ephemeral target repositories through foundation tools and
-run compartmentalised smoke validation cases for Mars Harness roles through
+run compartmentalised smoke validation cases for MARS roles through
 the server job execution path.
 
 Successful runs are discarded by default. Failed runs are retained for
@@ -283,8 +283,8 @@ func docsyncAuditCmd() *cobra.Command {
 func mcpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mcp",
-		Short: "Expose Mars Harness tools through Model Context Protocol",
-		Long: `Expose the registered Mars Harness tool registry through standard MCP
+		Short: "Expose MARS tools through Model Context Protocol",
+		Long: `Expose the registered MARS tool registry through standard MCP
 transports so any MCP-compatible client or local harness agent can attach to the
 foundation or deployed harness without depending on a model provider.`,
 	}
@@ -373,8 +373,8 @@ func commitGeneratedHarnessBaseline(repoRoot string, preInitChanges map[string]b
 		return false, nil
 	}
 	if err := runStartGit(repoRoot,
-		"-c", "user.name=Mars Harness",
-		"-c", "user.email=mars-harness@example.invalid",
+		"-c", "user.name=MARS",
+		"-c", "user.email=mars@example.invalid",
 		"commit", "--no-gpg-sign", "-m", "chore(harness): initialize mars harness",
 	); err != nil {
 		return false, err
@@ -402,9 +402,9 @@ func mcpServeCmd() *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "serve",
-		Short: "Run a stdio MCP server for registered Mars Harness tools",
+		Short: "Run a stdio MCP server for registered MARS tools",
 		Long: `Run a newline-delimited JSON-RPC stdio MCP server. The server exposes
-registered Mars Harness tools via tools/list and tools/call, using the same
+registered MARS tools via tools/list and tools/call, using the same
 executor, trust policy, repository root, and JSON arguments as agent runs.
 
 Configure MCP clients to launch this command as a local stdio server.`,
@@ -450,8 +450,8 @@ Configure MCP clients to launch this command as a local stdio server.`,
 func toolsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tools",
-		Short: "Inspect and execute registered Mars Harness tools",
-		Long: `Inspect and execute registered Mars Harness tools through the same registry,
+		Short: "Inspect and execute registered MARS tools",
+		Long: `Inspect and execute registered MARS tools through the same registry,
 allowlist, trust policy, repository root, and JSON argument path used by agent
 runs. This gives operators and external LLM shells a first-class bridge to
 mirrored tools such as tool_create without reaching into Go package internals.`,
@@ -822,7 +822,7 @@ func printModelEvaluationPlan(plan models.Plan) {
 	for _, rule := range plan.PromotionRules {
 		fmt.Printf("  - %s\n", rule)
 	}
-	fmt.Println("\nRun live evaluation with: mars-harness models evaluate --endpoint <url> --model <name>")
+	fmt.Println("\nRun live evaluation with: mars models evaluate --endpoint <url> --model <name>")
 }
 
 func printModelEvaluationReport(report models.Report) {
@@ -878,17 +878,17 @@ func printVersion(out io.Writer) {
 }
 
 func versionLine() string {
-	return fmt.Sprintf("mars-harness %s %s/%s commit=%s built=%s", version, runtime.GOOS, runtime.GOARCH, commit, date)
+	return fmt.Sprintf("mars %s %s/%s commit=%s built=%s", version, runtime.GOOS, runtime.GOARCH, commit, date)
 }
 
 func updateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update the CLI binary or a deployed target harness",
-		Long: `Update Mars Harness surfaces with one verb.
+		Long: `Update MARS surfaces with one verb.
 
-Use "mars-harness update tool" to reinstall or upgrade the installed CLI.
-Use "mars-harness update harness --repo <path>" to update the .harness/
+Use "mars update tool" to reinstall or upgrade the installed CLI.
+Use "mars update harness --repo <path>" to update the .harness/
 bundle deployed into a target repository.`,
 	}
 	cmd.AddCommand(updateCheckCmd())
@@ -907,7 +907,7 @@ func updateCheckCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "check",
 		Short: "Check whether the CLI or deployed target harness is behind",
-		Long: `Check version drift for the installed mars-harness tool and a target repo's
+		Long: `Check version drift for the installed mars tool and a target repo's
 deployed .harness/ metadata. Remote release failures are reported as unknown so
 local target checks still complete.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -952,12 +952,12 @@ func updateToolCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "tool",
 		Aliases: []string{"binary", "cli"},
-		Short:   "Reinstall or upgrade the mars-harness command",
-		Long: `Reinstall the mars-harness command without changing directories.
+		Short:   "Reinstall or upgrade the mars command",
+		Long: `Reinstall the mars command without changing directories.
 
 By default this downloads the platform release asset, verifies checksums.txt,
 and atomically replaces the binary in the directory that contains the currently
-running mars-harness binary. Use --source for source-development updates through
+running mars binary. Use --source for source-development updates through
 go install, or pass --version main which selects the source path automatically.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			method := selfupdate.UpdateMethod("")
@@ -977,7 +977,7 @@ go install, or pass --version main which selects the source path automatically.`
 			if jsonOut {
 				return writeJSON(os.Stdout, plan)
 			}
-			fmt.Printf("mars-harness update tool\n")
+			fmt.Printf("mars update tool\n")
 			fmt.Printf("Method: %s\n", plan.Method)
 			fmt.Printf("Version: %s\n", plan.Version)
 			fmt.Printf("Install dir: %s\n", plan.InstallDir)
@@ -1007,12 +1007,12 @@ go install, or pass --version main which selects the source path automatically.`
 				return nil
 			}
 			fmt.Printf("Installed: %s\n", plan.BinaryPath)
-			fmt.Printf("Run: mars-harness version\n")
+			fmt.Printf("Run: mars version\n")
 			return nil
 		},
 	}
 	cmd.Flags().StringVar(&updateVersion, "version", selfupdate.DefaultVersion, "Release or source version to install, e.g. latest, v0.5.3, or main")
-	cmd.Flags().StringVar(&installDir, "install-dir", "", "Install directory; default is the current mars-harness binary directory")
+	cmd.Flags().StringVar(&installDir, "install-dir", "", "Install directory; default is the current mars binary directory")
 	cmd.Flags().BoolVar(&sourceUpdate, "source", false, "Use go install instead of checksum-verified release assets")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print the update plan without downloading or replacing the binary")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
@@ -1031,7 +1031,7 @@ func pathCmd() *cobra.Command {
 func authCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
-		Short: "Configure and check external authentication used by Mars Harness",
+		Short: "Configure and check external authentication used by MARS",
 	}
 	cmd.AddCommand(authGitHubCmd())
 	return cmd
@@ -1040,7 +1040,7 @@ func authCmd() *cobra.Command {
 func authGitHubCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "github",
-		Short: "Configure and check GitHub auth for private Mars Harness releases",
+		Short: "Configure and check GitHub auth for private MARS releases",
 	}
 	cmd.AddCommand(authGitHubCheckCmd())
 	cmd.AddCommand(authGitHubSetupCmd())
@@ -1054,7 +1054,7 @@ func authGitHubCheckCmd() *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "check",
-		Short: "Check GitHub auth for private Mars Harness release assets",
+		Short: "Check GitHub auth for private MARS release assets",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			report := githubauth.Check(cmd.Context(), githubauth.Options{ConfigPath: configPath})
 			if jsonOut {
@@ -1070,7 +1070,7 @@ func authGitHubCheckCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars-harness/config.yaml)")
+	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars/config.yaml)")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
@@ -1083,8 +1083,8 @@ func authGitHubSetupCmd() *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "setup",
-		Short: "Prepare GitHub auth for private Mars Harness release assets",
-		Long: `Prepare GitHub auth for private Mars Harness release assets.
+		Short: "Prepare GitHub auth for private MARS release assets",
+		Long: `Prepare GitHub auth for private MARS release assets.
 
 The recommended path is to authenticate GitHub CLI once with "gh auth login",
 then run this command. Setup saves a verified GitHub CLI token as an owner-only
@@ -1136,8 +1136,8 @@ GH_TOKEN or GITHUB_TOKEN instead. Token values are never printed.`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars-harness/config.yaml)")
-	cmd.Flags().StringVar(&token, "token", "", "Persist a GitHub token in ~/.mars-harness/config.yaml for headless installs; prefer GitHub CLI auth when possible")
+	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars/config.yaml)")
+	cmd.Flags().StringVar(&token, "token", "", "Persist a GitHub token in ~/.mars/config.yaml for headless installs; prefer GitHub CLI auth when possible")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
 }
@@ -1163,8 +1163,8 @@ func pathSetupCmd() *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "setup",
-		Short: "Add the mars-harness install directory to the current user's shell PATH",
-		Long:  "Detect Fish, Zsh, Bash, POSIX sh, or Csh/Tcsh and write an idempotent shell profile snippet so mars-harness works in new terminals.",
+		Short: "Add the mars install directory to the current user's shell PATH",
+		Long:  "Detect Fish, Zsh, Bash, POSIX sh, or Csh/Tcsh and write an idempotent shell profile snippet so mars works in new terminals.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			result, err := shellpath.Ensure(shellpath.Config{
 				InstallDir: installDir,
@@ -1177,7 +1177,7 @@ func pathSetupCmd() *cobra.Command {
 			if jsonOut {
 				return writeJSON(os.Stdout, result)
 			}
-			fmt.Printf("mars-harness path setup\n")
+			fmt.Printf("mars path setup\n")
 			fmt.Printf("Install dir: %s\n", result.InstallDir)
 			fmt.Printf("Shell: %s\n", result.Shell)
 			fmt.Printf("Status: %s\n", result.Message)
@@ -1190,7 +1190,7 @@ func pathSetupCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&installDir, "install-dir", "", "Directory containing mars-harness; default resolves from current executable or Go bin")
+	cmd.Flags().StringVar(&installDir, "install-dir", "", "Directory containing mars; default resolves from current executable or Go bin")
 	cmd.Flags().StringVar(&shellName, "shell", "", "Shell path/name to configure; default is $SHELL")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print what would be configured without writing profile files")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
@@ -1213,7 +1213,7 @@ func updateHarnessCmd() *cobra.Command {
 }
 
 func printUpdateCheck(report updatecheck.Report) {
-	fmt.Println("Mars Harness Update Check")
+	fmt.Println("MARS Update Check")
 	for _, component := range []updatecheck.Component{report.Tool, report.Harness} {
 		fmt.Printf("  %s: %s", component.Name, component.Status)
 		if component.CurrentVersion != "" {
@@ -1333,7 +1333,7 @@ func releaseBackfillNotesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "backfill-notes",
 		Short: "Backfill historical release narrative sections",
-		Long: `Backfill existing CHANGELOG.md entries that have mars-harness release
+		Long: `Backfill existing CHANGELOG.md entries that have mars release
 markers so historical releases use the current Impact, Why, and What Changed
 narrative format. Marker commits define each release range. Use --dry-run to
 preview without writing and --check to fail when CHANGELOG.md is stale.`,
@@ -1659,7 +1659,7 @@ func checksRunCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository whose check is being recorded")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/{repo}/mars.db)")
 	cmd.Flags().StringVar(&name, "name", "", "Stable local check name")
 	cmd.Flags().StringVar(&role, "role", "engineer", "Role to attribute check outcome to")
 	_ = cmd.MarkFlagRequired("repo")
@@ -1686,11 +1686,11 @@ func runCmd() *cobra.Command {
 		Short: "Run an agent role against a repository",
 		Long: `Load the .harness/ bundle from --repo and execute the named role.
 
-If .harness/manifest.yaml is missing, the same scaffold as 'mars-harness init'
+If .harness/manifest.yaml is missing, the same scaffold as 'mars init'
 is applied automatically (requires a git repository). Use --no-init with
 --dry-run when inspecting an uninitialized target without writing harness
 scaffolding. The source-only foundation-maintainer role may run from the
-mars-harness source repo with --dry-run --no-init without creating a source
+mars source repo with --dry-run --no-init without creating a source
 manifest.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1715,7 +1715,7 @@ manifest.`,
 	cmd.Flags().StringVar(&modelEndpoint, "model-endpoint", "", "Override LLM endpoint (e.g. http://127.0.0.1:8080)")
 	cmd.Flags().BoolVar(&traceFlag, "trace", false, "Enable verbose execution trace output (compatibility alias for --debug on run)")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
-	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-run.log)")
+	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars/traces/logs/<timestamp>-run.log)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print assembled system prompt and exit without calling the LLM")
 	cmd.Flags().BoolVar(&noInit, "no-init", false, "Do not auto-initialize missing .harness/ before running; useful with --dry-run for observer-safe previews")
 	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
@@ -1820,7 +1820,7 @@ func (d *runtimeDisplay) Event(kind, msg string) {
 		d.dashboard.AddEvent(kind, msg)
 		return
 	}
-	fmt.Fprintf(d.out, "mars-harness: %s\n", msg)
+	fmt.Fprintf(d.out, "mars: %s\n", msg)
 }
 
 func (d *runtimeDisplay) Error(msg string) {
@@ -1831,7 +1831,7 @@ func (d *runtimeDisplay) Error(msg string) {
 		d.dashboard.AddWarning(msg)
 		return
 	}
-	fmt.Fprintf(d.out, "mars-harness: error: %s\n", msg)
+	fmt.Fprintf(d.out, "mars: error: %s\n", msg)
 }
 
 func loadRunProfile(repoRoot, roleName string, sourceFoundationRole bool) (*bundle.Manifest, bundle.RoleConfig, string, []guardrails.Rule, []bundle.KnowledgeRoute, []bundle.SkillDef, error) {
@@ -1869,8 +1869,8 @@ func loadRunProfile(repoRoot, roleName string, sourceFoundationRole bool) (*bund
 func loadSourceFoundationRunProfile(repoRoot string) (*bundle.Manifest, bundle.RoleConfig, string, []guardrails.Rule, []bundle.KnowledgeRoute, []bundle.SkillDef, error) {
 	role := sourceFoundationRoleConfig()
 	manifest := &bundle.Manifest{
-		Name:              "mars-harness-foundation",
-		Description:       "Source-only foundation operating model for mars-harness maintainers",
+		Name:              "mars-foundation",
+		Description:       "Source-only foundation operating model for mars maintainers",
 		OrchestrationMode: "dispatch",
 		Roles: map[string]bundle.RoleConfig{
 			foundationMaintainerRoleName: role,
@@ -1902,7 +1902,7 @@ func sourceFoundationRoleConfig() bundle.RoleConfig {
 		Model:      "reasoning",
 		TrustLevel: string(trust.LevelContributor),
 		Tools: []string{
-			"file_read", "file_write", "shell_exec", "dependency_sync", "mars_harness_cli",
+			"file_read", "file_write", "shell_exec", "dependency_sync", "mars_cli",
 			"grep", "code_index", "code_search", "code_snippet", "code_trace",
 			"code_impact", "workspace_hygiene", "github_auth_check", "record_decision",
 			"ticket_create", "tool_create", "persona_create", "task_trace_summarize",
@@ -1955,13 +1955,13 @@ func sourceFoundationKnowledgeRoutes() []bundle.KnowledgeRoute {
 	}
 }
 
-func isMarsHarnessSourceRepo(repoRoot string) bool {
+func isMarsSourceRepo(repoRoot string) bool {
 	goMod, err := os.ReadFile(filepath.Join(repoRoot, "go.mod"))
-	if err != nil || !strings.Contains(string(goMod), "module github.com/greaveselliott/mars-harness") {
+	if err != nil || !goModDeclaresModule(string(goMod), "github.com/greaveselliott/mars") {
 		return false
 	}
 	for _, rel := range []string{
-		filepath.Join("cmd", "mars-harness", "main.go"),
+		filepath.Join("cmd", "mars", "main.go"),
 		filepath.Join("internal", "scanner", "init.go"),
 		"AGENTS.md",
 	} {
@@ -1972,6 +1972,16 @@ func isMarsHarnessSourceRepo(repoRoot string) bool {
 	return true
 }
 
+func goModDeclaresModule(text, modulePath string) bool {
+	for _, line := range strings.Split(text, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 2 && fields[0] == "module" && fields[1] == modulePath {
+			return true
+		}
+	}
+	return false
+}
+
 func resolveCodeIntelRuntime(flagValue string, cfg config.Config) (codeintel.Runtime, error) {
 	if raw := strings.TrimSpace(flagValue); raw != "" {
 		enabled, err := parseCodeIntelBool(raw)
@@ -1980,7 +1990,7 @@ func resolveCodeIntelRuntime(flagValue string, cfg config.Config) (codeintel.Run
 		}
 		return codeintel.NewRuntime(enabled, "flag"), nil
 	}
-	if raw := strings.TrimSpace(os.Getenv("MARS_HARNESS_CODE_INTEL_ENABLED")); raw != "" {
+	if raw := strings.TrimSpace(config.Env("MARS_CODE_INTEL_ENABLED")); raw != "" {
 		enabled, err := parseCodeIntelBool(raw)
 		if err != nil {
 			return codeintel.Runtime{}, err
@@ -2052,13 +2062,13 @@ func executeRun(opts runOpts) error {
 		tw.WriteError(err.Error())
 		return fmt.Errorf("run: resolve repo path: %w", err)
 	}
-	if err := validateRuntimeArtifactPathOutsideRepo("run", "--log-file", opts.logFile, absRepo, "default ~/.mars-harness/traces/logs/<timestamp>-run.log"); err != nil {
+	if err := validateRuntimeArtifactPathOutsideRepo("run", "--log-file", opts.logFile, absRepo, "default ~/.mars/traces/logs/<timestamp>-run.log"); err != nil {
 		return err
 	}
 
 	sourceFoundationRole := opts.roleName == foundationMaintainerRoleName
-	if sourceFoundationRole && !isMarsHarnessSourceRepo(absRepo) {
-		return fmt.Errorf("run: role %q is source-only for the mars-harness foundation repo; %s is not a mars-harness source checkout. Use a generated target role for deployed harness work, or rerun from the mars-harness source repository", foundationMaintainerRoleName, absRepo)
+	if sourceFoundationRole && !isMarsSourceRepo(absRepo) {
+		return fmt.Errorf("run: role %q is source-only for the mars foundation repo; %s is not a mars source checkout. Use a generated target role for deployed harness work, or rerun from the mars source repository", foundationMaintainerRoleName, absRepo)
 	}
 
 	manifestPath := filepath.Join(absRepo, ".harness", "manifest.yaml")
@@ -2067,7 +2077,7 @@ func executeRun(opts runOpts) error {
 			if !os.IsNotExist(err) {
 				return fmt.Errorf("run: inspect harness manifest at %s: %w", manifestPath, err)
 			}
-			msg := fmt.Sprintf("run: .harness/manifest.yaml is missing in %s and --no-init was set; no files were written. Run `mars-harness init --repo %s` to scaffold the target, or rerun without --no-init when initialization is intended.", absRepo, absRepo)
+			msg := fmt.Sprintf("run: .harness/manifest.yaml is missing in %s and --no-init was set; no files were written. Run `mars init --repo %s` to scaffold the target, or rerun without --no-init when initialization is intended.", absRepo, absRepo)
 			if opts.dryRun {
 				fmt.Println("── dry-run: observer-safe no-init ──")
 				fmt.Println(msg)
@@ -2081,7 +2091,7 @@ func executeRun(opts runOpts) error {
 
 	debug := opts.debug || opts.trace
 	display, err := newRuntimeDisplay("run", opts.logFile, debug, os.Stdout, os.Stderr, nil, ui.DashboardOptions{
-		Title:    "Mars Harness",
+		Title:    "MARS",
 		RepoPath: absRepo,
 		Controls: "Ctrl+C cancel",
 	})
@@ -2347,7 +2357,7 @@ func autoStartInference(ctx context.Context, roleName, modelHint string) (*infer
 	if err != nil {
 		return nil, "", fmt.Errorf("cannot determine home directory: %w", err)
 	}
-	baseDir := filepath.Join(home, ".mars-harness")
+	baseDir := filepath.Join(home, ".mars")
 
 	cfg, err := config.Load(config.DefaultPath())
 	if err != nil {
@@ -2365,7 +2375,7 @@ func autoStartInference(ctx context.Context, roleName, modelHint string) (*infer
 
 	binaryPath := filepath.Join(binDir, "llama-server")
 	if _, err := os.Stat(binaryPath); err != nil {
-		return nil, "", fmt.Errorf("llama-server not found at %s — run 'mars-harness setup' first", binaryPath)
+		return nil, "", fmt.Errorf("llama-server not found at %s — run 'mars setup' first", binaryPath)
 	}
 
 	hw := hardware.Detect()
@@ -2413,7 +2423,7 @@ func setupCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup",
 		Short: "First-time setup wizard",
-		Long:  "Create ~/.mars-harness/, detect hardware, install local inference, and download pinned models. GitHub integration is optional.",
+		Long:  "Create ~/.mars/, detect hardware, install local inference, and download pinned models. GitHub integration is optional.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			result, err := setup.Run(setup.Config{
 				SkipDownload: skipDownload,
@@ -2436,7 +2446,7 @@ func setupCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&enableGitHub, "github", false, "Configure optional GitHub status/check integration")
 	cmd.Flags().BoolVar(&testMode, "test-mode", false, "Skip downloads and external services")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print steps without executing")
-	cmd.Flags().StringVar(&installDir, "install-dir", "", "Directory containing mars-harness for shell PATH setup; default resolves automatically")
+	cmd.Flags().StringVar(&installDir, "install-dir", "", "Directory containing mars for shell PATH setup; default resolves automatically")
 
 	return cmd
 }
@@ -2511,8 +2521,8 @@ func ejectCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "eject",
 		Aliases: []string{"kill-switch", "uninstall"},
-		Short:   "Remove Mars Harness from a target repo",
-		Long: `Remove the deployed Mars Harness surface from a target repository and
+		Short:   "Remove MARS from a target repo",
+		Long: `Remove the deployed MARS surface from a target repository and
 delete its associated per-repo SQLite database. The command is a dry run by
 default; destructive removal requires --apply and --confirm <repo-name>.
 
@@ -2554,11 +2564,11 @@ not rewrite git history.`,
 	}
 
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to associated SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to associated SQLite database (default ~/.mars/db/{repo}/mars.db)")
 	cmd.Flags().BoolVar(&apply, "apply", false, "Actually remove files and database artifacts; default is dry-run")
 	cmd.Flags().StringVar(&confirm, "confirm", "", "Required with --apply; must equal the target repo directory name")
 	cmd.Flags().BoolVar(&keepDB, "keep-db", false, "Remove repo files but leave the associated database untouched")
-	cmd.Flags().BoolVar(&deleteSharedDB, "delete-shared-db", false, "Allow deleting the legacy shared ~/.mars-harness/db/mars.db database")
+	cmd.Flags().BoolVar(&deleteSharedDB, "delete-shared-db", false, "Allow deleting the legacy shared ~/.mars/db/mars.db database")
 	return cmd
 }
 
@@ -2664,7 +2674,7 @@ func printEjectResult(w io.Writer, result scanner.EjectResult, dbResult ejectDBR
 		mode = "applied"
 		action = "Removed"
 	}
-	fmt.Fprintf(w, "Mars Harness eject %s for %s\n", mode, result.RepoRoot)
+	fmt.Fprintf(w, "MARS eject %s for %s\n", mode, result.RepoRoot)
 	fmt.Fprintf(w, "\nRepo artifacts\n")
 	printPathList(w, action, result.Removed)
 	if len(result.Pruned) > 0 {
@@ -2762,7 +2772,7 @@ func scanCmd() *cobra.Command {
 		Short: "Scan a repository for gaps and generate starter tickets",
 		Long: `Walk the file tree to find missing tests, TODOs, missing CI, and large functions. Optionally generate docs/tickets/backlog entries.
 
-If .harness/manifest.yaml is missing, mars-harness scaffolds it first (same as init; requires git).`,
+If .harness/manifest.yaml is missing, mars scaffolds it first (same as init; requires git).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if repoPath == "" {
 				var err error
@@ -2897,7 +2907,7 @@ func doctorCmd() *cobra.Command {
 				}
 				fmt.Println(out)
 			} else {
-				fmt.Println("Mars Harness Doctor")
+				fmt.Println("MARS Doctor")
 				fmt.Println("───────────────────")
 				fmt.Print(doctor.FormatText(results))
 			}
@@ -2909,8 +2919,8 @@ func doctorCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars-harness/config.yaml)")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to database file (default: ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&configPath, "config", "", "Path to config.yaml (default: ~/.mars/config.yaml)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to database file (default: ~/.mars/db/{repo}/mars.db)")
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Target repository — used to locate the per-repo database")
 	cmd.Flags().BoolVar(&skipRemote, "skip-remote", false, "Skip remote connectivity checks")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON")
@@ -2997,7 +3007,7 @@ func scoresExportCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/{repo}/mars.db)")
 	cmd.Flags().IntVar(&windowDays, "window-days", 30, "Scoring and telemetry evidence window in days")
 	cmd.Flags().BoolVar(&createInterventionDebt, "create-intervention-debt", false, "Create or update deduped intervention-debt tickets from score and outcome evidence")
 	cmd.Flags().BoolVar(&noTicket, "no-ticket", false, "Deprecated: ticket creation is disabled by default unless --create-intervention-debt is set")
@@ -3075,7 +3085,7 @@ func codeIntelMetricsCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/{repo}/mars.db)")
 	cmd.Flags().IntVar(&windowDays, "window-days", 30, "Number of days of persisted traces to aggregate")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd
@@ -3171,7 +3181,7 @@ func codeIntelBenchmarkCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/{repo}/mars.db)")
 	cmd.Flags().StringVar(&caseName, "case", "current", "Benchmark case name")
 	cmd.Flags().IntVar(&trials, "trials", 2, "Number of control/treatment trials")
 	cmd.Flags().StringVar(&changedPaths, "changed-paths", "", "Comma-separated changed paths to evaluate instead of the current git diff")
@@ -3239,7 +3249,7 @@ func telemetryStatusCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/{repo}/mars.db)")
 	return cmd
 }
 
@@ -3261,7 +3271,7 @@ func telemetryPreviewCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/{repo}/mars.db)")
 	return cmd
 }
 
@@ -3292,7 +3302,7 @@ func telemetryExportCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/{repo}/mars.db)")
 	cmd.Flags().BoolVar(&anonymous, "anonymous", false, "Export sanitized anonymous aggregate telemetry")
 	return cmd
 }
@@ -3346,7 +3356,7 @@ func telemetrySendCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", ".", "Target repository path")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/{repo}/mars.db)")
 	return cmd
 }
 
@@ -3368,7 +3378,7 @@ func telemetryCollectCmd() *cobra.Command {
 			}
 			if dbPath == "" {
 				home, _ := os.UserHomeDir()
-				dbPath = filepath.Join(home, ".mars-harness", "db", "foundation-telemetry", "intake.db")
+				dbPath = filepath.Join(home, ".mars", "db", "foundation-telemetry", "intake.db")
 			}
 			store, err := foundationtelemetry.OpenSQLiteStore(dbPath)
 			if err != nil {
@@ -3403,7 +3413,7 @@ func telemetryTriageFoundationCmd() *cobra.Command {
 	var windowDays int
 	cmd := &cobra.Command{
 		Use:   "triage-foundation",
-		Short: "Create Mars Harness source tickets from repeated anonymous telemetry patterns",
+		Short: "Create MARS source tickets from repeated anonymous telemetry patterns",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if dbPath == "" {
 				return fmt.Errorf("telemetry triage-foundation: --db is required")
@@ -3462,7 +3472,7 @@ func telemetryTriageFoundationCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&dbPath, "db", "", "Foundation collector SQLite database path")
-	cmd.Flags().StringVar(&repoPath, "repo", ".", "Mars Harness source repository path")
+	cmd.Flags().StringVar(&repoPath, "repo", ".", "MARS source repository path")
 	cmd.Flags().IntVar(&windowDays, "window-days", 30, "Foundation telemetry lookback window")
 	return cmd
 }
@@ -3599,7 +3609,7 @@ Anonymous deployed-harness telemetry reported a repeated foundation-owned failur
 
 ## Acceptance Criteria
 
-- [ ] Root cause is classified against the Mars Harness foundation surface.
+- [ ] Root cause is classified against the MARS foundation surface.
 - [ ] The fix lands in source harness code, generated target doctrine, prompt/skill/tool policy, or docs as appropriate.
 - [ ] New evidence proves target repos no longer need to create local intervention-debt tickets for this failure pattern.
 `,
@@ -3739,11 +3749,11 @@ func serveCmd() *cobra.Command {
 				return err
 			}
 
-			webhookSecret := os.Getenv("MARS_HARNESS_WEBHOOK_SECRET")
+			webhookSecret := config.Env("MARS_WEBHOOK_SECRET")
 			dashboardAddr := fmt.Sprintf(":%d", cfg.DashboardPort)
 
 			display, err := newRuntimeDisplay("serve", logFile, debug, cmd.ErrOrStderr(), cmd.ErrOrStderr(), nil, ui.DashboardOptions{
-				Title:        "Mars Harness",
+				Title:        "MARS",
 				DashboardURL: "http://localhost" + dashboardAddr,
 				Controls:     "[p] pause  [r] restart  [s] scan  [q] quit  [h] help",
 			})
@@ -3805,9 +3815,9 @@ func serveCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&webhookAddr, "addr", "", "Address to listen on (default from config webhook_port)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 2, "Number of concurrent agent workers")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/mars.db)")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
-	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-serve.log)")
+	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars/traces/logs/<timestamp>-serve.log)")
 	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
 
 	return cmd
@@ -3826,8 +3836,8 @@ func registerCmd() *cobra.Command {
 		Short: "Register a repository for autonomous management",
 		Long: `Register a local repository so the orchestrator can manage it.
 
-If .harness/manifest.yaml is missing, mars-harness runs the same scaffold as
-'mars-harness init' automatically (requires a git repository).`,
+If .harness/manifest.yaml is missing, mars runs the same scaffold as
+'mars init' automatically (requires a git repository).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if repoPath == "" {
 				var err error
@@ -3911,7 +3921,7 @@ If .harness/manifest.yaml is missing, mars-harness runs the same scaffold as
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
 	cmd.Flags().StringVar(&remote, "remote", "", "GitHub owner/repo (e.g. myorg/myrepo)")
 	cmd.Flags().StringVar(&branch, "branch", "main", "Default branch name")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/{repo}/mars.db)")
 
 	return cmd
 }
@@ -3948,15 +3958,15 @@ func databaseEvidenceRemediation(dbPath string, err error) string {
 	if isMissingDatabaseDirError(err) {
 		reason = "database directory does not exist"
 	}
-	return fmt.Sprintf("%s for %s — run `mars-harness setup`, run `mars-harness register --repo <path>`, or pass --db with a writable SQLite path", reason, dbPath)
+	return fmt.Sprintf("%s for %s — run `mars setup`, run `mars register --repo <path>`, or pass --db with a writable SQLite path", reason, dbPath)
 }
 
-// defaultDBPath returns the per-repo database path: ~/.mars-harness/db/{repo-slug}/mars.db.
+// defaultDBPath returns the per-repo database path: ~/.mars/db/{repo-slug}/mars.db.
 // Each repo gets its own SQLite file so queue, telemetry, and scheduling are isolated.
 func defaultDBPath(repoAbsPath string) string {
 	home, _ := os.UserHomeDir()
 	repoSlug := filepath.Base(repoAbsPath)
-	return filepath.Join(home, ".mars-harness", "db", repoSlug, "mars.db")
+	return filepath.Join(home, ".mars", "db", repoSlug, "mars.db")
 }
 
 func validateRuntimeArtifactPathOutsideRepo(command, flag, path, repoAbsPath, suggested string) error {
@@ -4055,7 +4065,7 @@ func resolveQualityExportPaths(repoArg, dbPath string) (string, string, string, 
 	return abs, dbPath, repoID, nil
 }
 
-// legacyDBPath returns the old shared database path: ~/.mars-harness/db/mars.db.
+// legacyDBPath returns the pre-rename shared database path: ~/.mars-harness/db/mars.db.
 func legacyDBPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".mars-harness", "db", "mars.db")
@@ -4097,7 +4107,7 @@ ambiguous handoffs.`,
 			if err != nil {
 				return fmt.Errorf("start: resolve path: %w", err)
 			}
-			if err := validateRuntimeArtifactPathOutsideRepo("start", "--log-file", logFile, absPath, "default ~/.mars-harness/traces/logs/<timestamp>-start.log"); err != nil {
+			if err := validateRuntimeArtifactPathOutsideRepo("start", "--log-file", logFile, absPath, "default ~/.mars/traces/logs/<timestamp>-start.log"); err != nil {
 				return err
 			}
 			usingDefaultDBPath := strings.TrimSpace(dbPath) == ""
@@ -4118,7 +4128,7 @@ ambiguous handoffs.`,
 			}
 
 			display, err := newRuntimeDisplay("start", logFile, debug, cmd.OutOrStdout(), cmd.ErrOrStderr(), nil, ui.DashboardOptions{
-				Title:    "Mars Harness",
+				Title:    "MARS",
 				RepoPath: absPath,
 				Controls: "[p] pause  [r] restart  [s] scan  [q] quit  [h] help",
 			})
@@ -4173,7 +4183,7 @@ ambiguous handoffs.`,
 			}
 			allowHTTPFallback := strings.TrimSpace(webhookAddrFlag) == "" && strings.TrimSpace(dashboardAddrFlag) == ""
 
-			if os.Getenv("MARS_HARNESS_SKIP_START_CLEANUP") != "1" {
+			if config.Env("MARS_SKIP_START_CLEANUP") != "1" {
 				serve.CleanupScopedLifecycle(dbPath)
 			}
 
@@ -4230,7 +4240,7 @@ ambiguous handoffs.`,
 				return fmt.Errorf("start: %s; inspect the repo/DB or rerun with --new-lifecycle to intentionally seed CEO", startup.Summary())
 			}
 			if startup.ShouldSeed {
-				triggerJSON := fmt.Sprintf(`{"type":"bootstrap","source":"mars-harness start","startup_action":%q}`, startup.Action)
+				triggerJSON := fmt.Sprintf(`{"type":"bootstrap","source":"mars start","startup_action":%q}`, startup.Action)
 				var jobID string
 				if newLifecycle {
 					jobID, err = srv.SeedJob(sigCtx, repoID, "ceo", triggerJSON)
@@ -4270,11 +4280,11 @@ ambiguous handoffs.`,
 
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the target repository (default: current directory)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 1, "Number of concurrent agent workers (1 = sequential pipeline)")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars-harness/db/{repo}/mars.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/{repo}/mars.db)")
 	cmd.Flags().BoolVar(&force, "force", false, "Force re-init .harness/ even if it exists")
 	cmd.Flags().BoolVar(&newLifecycle, "new-lifecycle", false, "Intentionally seed a fresh CEO lifecycle even when resumable state exists")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
-	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars-harness/traces/logs/<timestamp>-start.log)")
+	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars/traces/logs/<timestamp>-start.log)")
 	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
 	cmd.Flags().StringVar(&modelEndpoint, "model-endpoint", "", "Optional real OpenAI-compatible model endpoint override; skips local llama-server startup. Fake or scripted endpoints are not live validation evidence")
 	cmd.Flags().StringVar(&webhookAddrFlag, "addr", "", "Webhook/control listen address (default from config; scoped start falls back to an ephemeral local port on conflict)")

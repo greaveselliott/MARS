@@ -20,7 +20,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 3. F-005-S003 - Tools are allowlisted, validated, and executed through repo-root containment.
 4. F-005-S004 - Execution traces persist enough turn and tool detail to make outcomes auditable.
 5. F-005-S005 - Budgets, max turns, max tool calls, context pruning, and wall time stop runaway jobs.
-6. F-005-S006 - `mars-harness run <role> --repo <path>` executes one role with terminal-result truth.
+6. F-005-S006 - `mars run <role> --repo <path>` executes one role with terminal-result truth.
 7. F-005-S007 - Tool creation and CLI-operation tools are first-class mirrored harness capabilities.
 8. F-005-S008 - Persona creation tools scaffold role manuals and prompt manuals with explicit ownership and feedback sections.
 9. F-005-S009 - `ticket_create` prevents independent feature-ticket fan-out for the same BDD scenario.
@@ -42,7 +42,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 25. F-005-S035 - Review terminal convergence waits for docsync evidence before forcing `job_disposition_record`.
 26. F-005-S036 - Review terminal convergence waits for tests when test files exist.
 27. F-005-S037 - Review no-op recovery uses the same evidence gates as approval.
-28. F-005-S038 - Direct `mars-harness` shell commands route to `mars_harness_cli`.
+28. F-005-S038 - Direct `mars` shell commands route to `mars_cli`.
 29. F-005-S039 - Background server startup is validation setup, not review proof.
 30. F-005-S040 - Test/build repair guidance includes failing output.
 31. F-005-S042 - Browser-framework completion requires real build and product-state evidence.
@@ -184,7 +184,7 @@ Given a dispatch-mode job requires a terminal tool such as `job_disposition_reco
 When the role reaches its configured model turn budget before recording that terminal tool
 Then the agent loop adds exactly one final prompt requiring the terminal tool, forbids further inspection or validation, and allows that one extra response to record a structured disposition before ending as `max_turns`
 
-Given a local model emits malformed `mars_harness_cli` args
+Given a local model emits malformed `mars_cli` args
 When `args` is a JSON-encoded array string, a Python-style quoted list string, or a simple single command string
 Then the tool normalizes the command before binary resolution so release, score, trust, and update flows do not fall back to stale PATH binaries because of harmless formatting drift
 
@@ -254,7 +254,7 @@ Then the executor stops waiting, returns an actionable timeout error to the mode
 
 ### F-005-S006: Manual Role Run
 
-Given a user runs `mars-harness run <role> --repo <path>`
+Given a user runs `mars run <role> --repo <path>`
 When manifest, context, tools, and inference endpoint are available
 Then exactly one role run executes against the target repo and reports the terminal result
 
@@ -589,12 +589,12 @@ Given the same review job then runs the authoritative test command successfully
 When the required docsync and read evidence are also present
 Then the runtime may force the normal terminal `job_disposition_record` boundary
 
-### F-005-S038: Mars Harness CLI Invocations Use The Structured Tool
+### F-005-S038: MARS CLI Invocations Use The Structured Tool
 
-Given any role attempts to run `mars-harness` through `shell_exec`
+Given any role attempts to run `mars` through `shell_exec`
 When the command is provided as argv or as the first executable in a shell command
 Then the runtime blocks the shell command before execution
-And the error names the equivalent `mars_harness_cli` args so the active harness executable is used instead of a stale installed binary
+And the error names the equivalent `mars_cli` args so the active harness executable is used instead of a stale installed binary
 
 ### F-005-S039: Background Server Startup Is Not Review Proof
 
@@ -629,7 +629,7 @@ Then `file_write` blocks the edit before the invalid target shape becomes commit
 And the error directs Engineer to use a local npm dependency plus a real build/runtime validation path
 
 Given an Engineer writes `package.json` for a Phaser brief
-When a runtime script uses a Mars Harness reserved port such as `18081` or starts a static source server such as `python3 -m http.server`
+When a runtime script uses a MARS reserved port such as `18081` or starts a static source server such as `python3 -m http.server`
 Then `file_write` blocks the edit before the target app collides with local harness runtime ports or bypasses Vite module bundling
 And the error directs Engineer to use Vite dev or preview on an application port such as `5173`
 
@@ -914,7 +914,7 @@ And concrete capabilities such as visible grid, line clearing, score tracking, g
 
 ### F-005-S063: Source-Only Foundation Maintainer Role
 
-Given an operator runs `mars-harness run foundation-maintainer --repo . --dry-run --no-init` from the Mars Harness source repository
+Given an operator runs `mars run foundation-maintainer --repo . --dry-run --no-init` from the MARS source repository
 When the source repo has no `.harness/manifest.yaml`
 Then the runtime assembles the source-only foundation role context from canonical repo docs
 And it does not scaffold a source `.harness/manifest.yaml`
@@ -928,7 +928,7 @@ And `node --check` or another syntax command has passed
 When Engineer tries to populate ticket evidence or move toward done without a same-job served-page smoke
 Then the runtime blocks completion until the job starts the static server on an application port such as `5173` or `5174`, runs a separate HTTP probe such as `curl -fsS http://127.0.0.1:<port>/`, and records those exact commands
 And a successful HTTP probe only counts as static product smoke when the response body is the served product page rather than a directory listing or generic host page
-And package scripts using reserved Mars Harness ports `18080`-`18089` or canned smoke scripts such as `node -e "console.log(...)"`, `echo`, or `true` are blocked before they become product evidence
+And package scripts using reserved MARS ports `18080`-`18089` or canned smoke scripts such as `node -e "console.log(...)"`, `echo`, or `true` are blocked before they become product evidence
 
 Given QA or Security reviews a static browser ticket
 When the only successful validation is a syntax check or a canned console-output command
@@ -962,8 +962,8 @@ None.
 - F-005-S003: `go test ./internal/tools -run 'TestExecutor|TestShellExec|TestFileWritePolicyBlocksScenarioIDsThatDoNotMatchFeatureContract|TestCOOFileWritePolicyBlocksSecondActiveExecPlanWithSpecificGuidance'` and `go test ./internal/serve -run TestFoundationAcceptance`
 - F-005-S004: `go test ./internal/agent -run TestRun_persistsTraceToSQLite`
 - F-005-S005: `go test ./internal/agent -run 'TestRun_(max|token|wall|circle|empty)'`
-- F-005-S006: `go test ./cmd/mars-harness -run 'TestRunStartServeExposeDebugAndLogFileFlags'` and planned broader E2E dogfood evidence
-- F-005-S007: `go test ./internal/tools -run 'TestToolCreate|TestMarsHarnessCLI'`
+- F-005-S006: `go test ./cmd/mars -run 'TestRunStartServeExposeDebugAndLogFileFlags'` and planned broader E2E dogfood evidence
+- F-005-S007: `go test ./internal/tools -run 'TestToolCreate|TestMarsCLI'`
 - F-005-S008: `go test ./internal/tools -run TestPersonaCreate` and `go test ./internal/personas`
 - F-005-S009: `go test ./internal/tools -run 'TestTicketCreate_dedupes(IndependentFeatureTicketsForSameBDDScenario|ActiveFeatureTicketsForOverlappingBDDScenario)'`
 - F-005-S010: `go test ./internal/tools -run 'TestJobDispositionPolicy|TestEngineerDispositionPolicyRequiresTicketDoneBeforeSuccess|TestEngineerClaimPolicyRequiresInProgressBeforeProductMutation|TestReviewApprovalRequiresPassingValidationWhenTestsExist|TestShellExecPolicyAllowsEvidencedEnablerTicketDoneMove|TestShellExecPolicyBlocksEnablerTicketDoneMoveWithoutEvidence|TestTicketDoneMoveSourcesPreserveShellCommandPathCase|TestRecordSessionToolOutcomeRepairsUnexpectedRuntimeFailureWithExactSuccess|TestRecordSessionToolOutcomeCorrectsUnexpectedRuntimeFailure|TestRecordSessionToolOutcomeEngineerExpectedExitDoesNotRepairUnexpectedRuntimeFailure'` and `go test ./internal/scanner -run TestInit_success`
@@ -986,7 +986,7 @@ None.
 - F-005-S027: `go test ./internal/agent -run TestRun_reviewEvidenceReminder`
 - F-005-S036: `go test ./internal/agent -run TestRun_reviewEvidenceDoesNotForceTerminalBeforeTestCommandWhenTestsExist` and `go test ./internal/tools -run TestReviewTerminalEvidenceWaitsForTestsWhenTestFilesExist`
 - F-005-S037: `go test ./internal/agent -run TestRun_reviewNoopAfterBuildAllowsMissingTestCorrection` and `go test ./internal/tools -run TestReviewShellExecPolicyRoutesPostBuildNoopToTestsWhenTestsExist`
-- F-005-S038: `go test ./internal/tools -run TestShellExecPolicyBlocksMarsHarnessBinary`
+- F-005-S038: `go test ./internal/tools -run TestShellExecPolicyBlocksMarsBinary`
 - F-005-S039: `go test ./internal/tools -run 'TestRecordSessionToolOutcomeDoesNotCountBackgroundServerAsValidation|TestReviewTerminalEvidenceIgnoresBackgroundServerStart'`
 - F-005-S040: `go test ./internal/tools -run TestRecordSessionToolOutcomeEngineerTracksTestBuildRepairLane`
 - F-005-S028: `go test ./internal/tools -run TestRecordSessionToolOutcomeReviewer`
@@ -1013,6 +1013,6 @@ None.
 - F-005-S060: `go test ./internal/tools -run TestEngineerPostBuildBrowserFrameworkBlocksSmokeSubstitutesWhileDirty`
 - F-005-S061: `go test ./internal/tools -run TestCOOCompletionAllowsOutOfScopeIntroAndAdvancedScoringSystems`
 - F-005-S062: `go test ./internal/tools -run TestCapabilityMatchingIgnoresIncludingAndDetectionGlue`
-- F-005-S063: `go test ./cmd/mars-harness -run TestRunCommandFoundationMaintainer` and `go test ./internal/scanner -run TestInit_success`
+- F-005-S063: `go test ./cmd/mars -run TestRunCommandFoundationMaintainer` and `go test ./internal/scanner -run TestInit_success`
 - F-005-S064: `go test ./internal/tools -run 'TestCOOCompletionTreatsFeatureDocReferenceAsCitation|TestCOOCompletionMissingFeatureDocCapabilityNamesCapabilityNotCitation|TestCOORepeatedFeatureSpecificityBlockReturnsRepairGuidance|TestRecordSessionToolPolicyFailureSeparatesRepeatedPolicyKeys|TestPolicyFailureRepairFeedbackGuidesUnresolvedShellValidationLane'`
 - F-005-S065: `go test ./internal/tools -run 'TestRecordSessionToolOutcomeTracksStaticProductSmoke|TestRecordSessionToolOutcomeDoesNotTreatReservedPortHTTPAsStaticProductSmoke|TestRecordSessionToolOutcomeDoesNotCountCannedNodeEvalValidation|TestRecordSessionToolOutcomeTracksRuntimeToolErrorAsOutstandingFailure|TestPackageWriteBlocksReservedHarnessPortForStaticWeb|TestPackageWriteBlocksCannedSmokeScriptForStaticWeb|TestEngineerPostValidationAllowsMissingStaticSmokeAfterCommit|TestEngineerStaticBrowserTicketEvidenceRequiresStaticSmoke|TestEngineerStaticBrowserTicketEvidenceAllowedAfterStaticSmoke|TestReviewApprovalBlocksStaticBrowserWithoutStaticSmoke'`

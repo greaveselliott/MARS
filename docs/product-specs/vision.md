@@ -1,13 +1,13 @@
-# Mars Harness Product Vision
+# MARS Product Vision
 
 **Status:** Accepted
 **Updated:** 2026-05-02
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Sources:** [tenets](../design-docs/tenets.md), [Mars relationship](mars-relationship.md), [product surface](product-surface.md)
 
 ## Product Promise
 
-Mars Harness is a self-hosted autonomous AI delivery system. A user points it at a git checkout, runs one setup path, and gets an agent-operated delivery loop: planning, ticket creation, implementation, verification, documentation, scoring, trust management, guardrail enforcement, and visible operational telemetry.
+MARS is a self-hosted autonomous AI delivery system. A user points it at a git checkout, runs one setup path, and gets an agent-operated delivery loop: planning, ticket creation, implementation, verification, documentation, scoring, trust management, guardrail enforcement, and visible operational telemetry.
 
 The product must feel zero-config. It detects local hardware, chooses a sensible local inference profile, scaffolds a target harness when needed, drains existing in-progress work before new backlog work, and records decisions in the repo so future agents inherit the context.
 
@@ -29,14 +29,14 @@ Every role, generated target harness, trust capability, scoring rule, and produc
 
 Plans, decisions, tickets, design docs, traces, generated guidance, and harness evolution must be recoverable from the repo and the harness database. Chat-only decisions are not product state.
 
-Product specs describe what Mars Harness promises. Design docs describe why key implementation decisions exist. Exec plans describe active delivery work. Tickets describe discrete work items.
+Product specs describe what MARS promises. Design docs describe why key implementation decisions exist. Exec plans describe active delivery work. Tickets describe discrete work items.
 
 ### Mirrored source and target harnesses
 
-Mars Harness has two surfaces:
+MARS has two surfaces:
 
 - the source harness in this repository
-- the target harness emitted by `mars-harness init` and refreshed by `mars-harness upgrade`
+- the target harness emitted by `mars init` and refreshed by `mars upgrade`
 
 Those surfaces must share the same doctrine: compact agent entrypoints, strict trunk workflow, ticket discipline, design decisions, references, and context routing. Target repos should not receive a thin manifest while this repo keeps the real operating model hidden in source-only docs.
 
@@ -54,7 +54,7 @@ The product must proactively triage those signals into improvement targets: prom
 
 ## Who It Serves
 
-Mars Harness is for developers and small teams who want autonomous delivery without sending their source code to a hosted model service. The primary user has a local machine with Apple Silicon, NVIDIA, or AMD ROCm hardware and wants agents to operate normal repository workflows with minimal ceremony.
+MARS is for developers and small teams who want autonomous delivery without sending their source code to a hosted model service. The primary user has a local machine with Apple Silicon, NVIDIA, or AMD ROCm hardware and wants agents to operate normal repository workflows with minimal ceremony.
 
 Secondary users include teams that want optional remote-code-host telemetry, local dashboards, score history, trust controls, and durable documentation for autonomous work.
 
@@ -64,7 +64,7 @@ Secondary users include teams that want optional remote-code-host telemetry, loc
 - Not a hosted service.
 - Not a generic chat wrapper over a repository.
 - Not a replacement for tests, checks, or human product direction.
-- Not Mars-specific. Mars is the prototype and first demanding customer; Mars Harness is the reusable product.
+- Not Mars-specific. Mars is the prototype and first demanding customer; MARS is the reusable product.
 
 ## Product Success Measures
 
@@ -78,4 +78,4 @@ Secondary users include teams that want optional remote-code-host telemetry, loc
 
 ## North Star
 
-Mars Harness supersedes the original Mars meta-harness by turning Mars's proven operating habits into a local-first product: one repo-owned workflow, one autonomous queue, one visible scoring and trust system, one mirrored target harness, and a feedback loop that keeps improving the process instead of only completing individual tickets.
+MARS supersedes the original Mars meta-harness by turning Mars's proven operating habits into a local-first product: one repo-owned workflow, one autonomous queue, one visible scoring and trust system, one mirrored target harness, and a feedback loop that keeps improving the process instead of only completing individual tickets.

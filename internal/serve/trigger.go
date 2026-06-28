@@ -14,8 +14,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	gh "github.com/greaveselliott/mars-harness/internal/github"
+	"github.com/greaveselliott/mars/internal/bundle"
+	gh "github.com/greaveselliott/mars/internal/github"
 )
 
 // TriggerMatch represents a matched (repo, role) pair.

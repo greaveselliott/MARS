@@ -8,13 +8,13 @@ work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
 evidence_links: ["docs/validation/reports/2026-05-19-demo-123-live-lifecycle.md", "docs/validation/reports/2026-05-19-mars-observer-validation.md"]
-verified_by: "go test ./...; go run ./cmd/mars-harness doctor --repo /path/to/local-redacted --json; go run ./cmd/mars-harness update check --repo /path/to/local-redacted --skip-remote --json; go run ./cmd/mars-harness tools run git_status --repo /path/to/local-redacted --trust observer --json; observer-trust file_write block; run --dry-run on <validation-root>"
+verified_by: "go test ./...; go run ./cmd/mars doctor --repo /path/to/local-redacted --json; go run ./cmd/mars update check --repo /path/to/local-redacted --skip-remote --json; go run ./cmd/mars tools run git_status --repo /path/to/local-redacted --trust observer --json; observer-trust file_write block; run --dry-run on <validation-root>"
 dedupe_key: "public-example"
 source: Mars parity workstream I
 created: 2026-05-03
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "dogfood"
   category: "supersession_evidence_gap"
   severity: "high"

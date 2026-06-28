@@ -16,9 +16,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/personas"
-	"github.com/greaveselliott/mars-harness/internal/roleregistry"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/personas"
+	"github.com/greaveselliott/mars/internal/roleregistry"
 	"gopkg.in/yaml.v3"
 )
 

@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/docsync"
+	"github.com/greaveselliott/mars/internal/docsync"
 )
 
 func TestAD074OperatingModelArtifactsExist(t *testing.T) {
@@ -36,7 +36,7 @@ func TestAD074OperatingModelArtifactsExist(t *testing.T) {
 		"docs/goals/observations.md":                          {"weak/noisy evidence"},
 		"docs/goals/superseded.md":                            {"Superseded Goals"},
 		"docs/design-docs/code-documentation-map.md":          {"Code Documentation Map", "MarsDocSync", "docsync audit", "Package Map", "documentation-sync-architecture.md", "cli-tool-skill-sync.md"},
-		"docs/design-docs/cli-tool-skill-sync.md":             {"AD-103", "CLI Tool And Skill Synchronization", "Universal Operating Model", "mars_harness_cli", "repo shortcut map"},
+		"docs/design-docs/cli-tool-skill-sync.md":             {"AD-103", "CLI Tool And Skill Synchronization", "Universal Operating Model", "mars_cli", "repo shortcut map"},
 		"docs/design-docs/documentation-sync-architecture.md": {"AD-102", "Documentation Sync", "Universal Operating Model", "Architecture", "docsync_audit", "Generated Target Layer"},
 		"docs/features/README.md":                             {"BDD Feature Contracts", "Business Logic Is First-Class BDD", "No Stale Documentation", "cli-tool-skill-sync.md", "Given/When/Then", "Scenario Schedule"},
 		"docs/features/F-001-delivery-operating-model.md":     {"Feature ID: F-001", "Scenario Schedule", "F-001-S008", "F-001-S009", "F-001-S010", "F-001-S011", "F-001-S012", "F-001-S014", "Remote Trunk Freshness And Immediate Publishing", "No Stale Documentation", "Given", "When", "Then"},

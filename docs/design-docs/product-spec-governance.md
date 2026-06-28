@@ -7,7 +7,7 @@
 
 `docs/product-specs/` had fallen behind the product. It described the original pitch and Mars relationship, but not the current strict trunk workflow, generated target harness, zero-config inference expectations, trust and scoring commands, self-reflective telemetry, or spec maintenance rules.
 
-Mars Harness treats the repo as the system of record. Product promises cannot live only in chat or old plans. Agents need a current product map just as much as they need design docs and tickets.
+MARS treats the repo as the system of record. Product promises cannot live only in chat or old plans. Agents need a current product map just as much as they need design docs and tickets.
 
 ## Decisions
 
@@ -35,6 +35,6 @@ Product specs should summarize product contracts and link to design docs, exec p
 ## Consequences
 
 - Product-facing changes now carry a documentation obligation.
-- Future agents can answer "what does Mars Harness promise?" from a single indexed directory.
+- Future agents can answer "what does MARS promise?" from a single indexed directory.
 - Product specs stay smaller by routing to source docs instead of duplicating all rationale.
 - The product contract can evolve without becoming invisible to the next run.

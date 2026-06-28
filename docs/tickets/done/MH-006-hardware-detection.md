@@ -26,7 +26,7 @@ Reference: [docs/design-docs/local-inference.md](../../design-docs/local-inferen
 ### Model registry (`internal/models/registry.go`)
 - Catalog of supported models: name, size, quantization variants, VRAM required, HuggingFace URL, SHA256
 - Profile-to-model mapping: each hardware profile maps to specific model(s)
-- Model storage path: `~/.mars-harness/models/`
+- Model storage path: `~/.mars/models/`
 
 ## Acceptance Criteria
 

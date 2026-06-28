@@ -32,7 +32,7 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 		}
 		text := string(data)
 		for _, needle := range []string{
-			"mars-harness release notes --repo . --bump auto",
+			"mars release notes --repo . --bump auto",
 			"non-release semantic commit",
 			"release: notes X.Y.Z",
 			"GitHub Release",
@@ -76,11 +76,11 @@ func TestReleasePublicationIsLocalFirst(t *testing.T) {
 	}
 	text := string(data)
 	for _, needle := range []string{
-		"mars-harness release publish-assets",
+		"mars release publish-assets",
 		"--upload none|github|auto",
 		"local release assets",
 		"Optional GitHub mirror",
-		"mars-harness release verify-assets --dist",
+		"mars release verify-assets --dist",
 	} {
 		if !strings.Contains(text, needle) {
 			t.Fatalf("release docs must describe local-first asset publication; missing %q", needle)

@@ -18,7 +18,7 @@ dedupe_key: "public-example"
 metadata:
   category: "skill_tool_decision"
   confidence: "medium"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   role: "planner"
   severity: "medium"
   target: "skill-evolution"

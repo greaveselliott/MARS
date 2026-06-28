@@ -17,9 +17,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
-	"github.com/greaveselliott/mars-harness/internal/queue"
-	"github.com/greaveselliott/mars-harness/internal/telemetry"
+	"github.com/greaveselliott/mars/internal/orgstate"
+	"github.com/greaveselliott/mars/internal/queue"
+	"github.com/greaveselliott/mars/internal/telemetry"
 )
 
 func setupChainingFixture(t *testing.T) (string, string) {
@@ -1702,7 +1702,7 @@ func TestHandleJobFailed_convergenceRetryFailureEscalatesWithDisposition(t *test
 	if disposition.NextNeed != "operator_retry" {
 		t.Fatalf("expected operator_retry next_need, got %q", disposition.NextNeed)
 	}
-	if !strings.Contains(disposition.Reason, "POST /api/run-role") || !strings.Contains(disposition.Reason, "mars-harness run qa") {
+	if !strings.Contains(disposition.Reason, "POST /api/run-role") || !strings.Contains(disposition.Reason, "mars run qa") {
 		t.Fatalf("expected escalation reason to name the operator retry command, got %q", disposition.Reason)
 	}
 }

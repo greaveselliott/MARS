@@ -1,7 +1,7 @@
 # Goals
 
 Goals define outcomes and competing priorities. They are the strategy layer for
-Mars Harness, but they do not directly create work. The CEO owns active goal
+MARS, but they do not directly create work. The CEO owns active goal
 decisions; the COO aligns the single active exec plan, BDD feature contracts,
 and scenario evidence to those goals.
 

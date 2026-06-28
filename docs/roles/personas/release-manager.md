@@ -44,7 +44,7 @@ Turn approved, verified changes into versioned release notes, tags, assets, and 
 - Provide the version target and approved evidence.
 - Separate release blockers from downstream quality failures.
 - State whether the desired output is notes, tag, local assets, optional GitHub mirror, binary verification, or blocker record.
-- Use `mars_harness_cli` for Mars Harness release commands; generic `shell_exec mars-harness ...` can resolve a stale installed binary instead of the active harness executable.
+- Use `mars_cli` for MARS release commands; generic `shell_exec mars ...` can resolve a stale installed binary instead of the active harness executable.
 
 ## Feedback I Give
 

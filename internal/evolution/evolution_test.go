@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/pkg/testutil"
+	"github.com/greaveselliott/mars/pkg/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,10 +33,10 @@ func openTestStore(t *testing.T) *Store {
 func TestDetect_humanCommitIsIntervention(t *testing.T) {
 	t.Parallel()
 	commits := []CommitInfo{
-		{SHA: "aaa", Author: "mars-harness[bot]", FilesChanged: []string{"main.go"}, HasDiff: true},
+		{SHA: "aaa", Author: "mars[bot]", FilesChanged: []string{"main.go"}, HasDiff: true},
 		{SHA: "bbb", Author: "human-dev", FilesChanged: []string{"fix.go"}, HasDiff: true},
 	}
-	typ, ev := Detect("mars-harness[bot]", commits)
+	typ, ev := Detect("mars[bot]", commits)
 	require.Equal(t, TypeClear, typ)
 
 	var parsed evidence
@@ -49,10 +49,10 @@ func TestDetect_humanCommitIsIntervention(t *testing.T) {
 func TestDetect_commentOnlyIsNonIntervention(t *testing.T) {
 	t.Parallel()
 	commits := []CommitInfo{
-		{SHA: "aaa", Author: "mars-harness[bot]", FilesChanged: []string{"main.go"}, HasDiff: true},
+		{SHA: "aaa", Author: "mars[bot]", FilesChanged: []string{"main.go"}, HasDiff: true},
 		{SHA: "bbb", Author: "human-dev", FilesChanged: nil, HasDiff: false},
 	}
-	typ, _ := Detect("mars-harness[bot]", commits)
+	typ, _ := Detect("mars[bot]", commits)
 	require.Equal(t, TypeNonIntervention, typ)
 }
 
@@ -61,7 +61,7 @@ func TestDetect_squashMergeDetected(t *testing.T) {
 	commits := []CommitInfo{
 		{SHA: "squash-abc", Author: "human-dev", FilesChanged: []string{"a.go", "b.go", "c.go"}, HasDiff: true},
 	}
-	typ, ev := Detect("mars-harness[bot]", commits)
+	typ, ev := Detect("mars[bot]", commits)
 	require.Equal(t, TypeClear, typ)
 
 	var parsed evidence

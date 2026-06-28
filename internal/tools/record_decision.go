@@ -14,7 +14,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/learnings"
+	"github.com/greaveselliott/mars/internal/learnings"
 )
 
 const recordDecisionSchema = `{

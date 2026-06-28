@@ -77,7 +77,7 @@ func (c *Client) Initialize(ctx context.Context) error {
 		"protocolVersion": c.protocolVersion(),
 		"capabilities":    map[string]any{},
 		"clientInfo": map[string]any{
-			"name":    "mars-harness",
+			"name":    "mars",
 			"version": "integration-client",
 		},
 	})

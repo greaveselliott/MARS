@@ -2,9 +2,9 @@
 
 **Status:** Reference
 **Created:** 2026-05-02
-**Owner:** Mars Harness
+**Owner:** MARS
 **Source repo:** `../mars`
-**Purpose:** Identify which Mars rules, docs, prompts, and operating decisions are relevant to Mars Harness as it works to supersede Mars.
+**Purpose:** Identify which Mars rules, docs, prompts, and operating decisions are relevant to MARS as it works to supersede Mars.
 
 ## Coverage Note
 
@@ -16,14 +16,14 @@ The full historical ticket set and completed-plan archive were inventoried and p
 
 | Level | Meaning |
 | --- | --- |
-| Direct | Bring the concept into Mars Harness with only strict-trunk wording changes. |
+| Direct | Bring the concept into MARS with only strict-trunk wording changes. |
 | Translate | Keep the operating idea, but rebuild it in Harness-native primitives. |
 | Reference | Useful background or pattern evidence; do not make it a default Harness feature yet. |
 | Exclude | Mars-specific or incompatible with strict trunk. Do not port except as optional compatibility notes. |
 
 ## Executive Cut
 
-The most relevant Mars material for Mars Harness is the meta-harness layer:
+The most relevant Mars material for MARS is the meta-harness layer:
 
 1. Six domain-shaped roles with payload modes.
 2. Repo-visible automation registry.
@@ -45,7 +45,7 @@ The least relevant Mars material is the PR and Cursor-specific delivery model:
 - npm/changeset-specific publishing mechanics
 - Mars SaaS generator rules as generic Harness defaults
 
-Those may inform optional compatibility integrations, but they should not become Mars Harness defaults.
+Those may inform optional compatibility integrations, but they should not become MARS defaults.
 
 ## Rules
 
@@ -63,7 +63,7 @@ Those may inform optional compatibility integrations, but they should not become
 | Mars file | Relevance | Harness use |
 | --- | --- | --- |
 | `../mars/AGENTS.md` | Translate | Good shape for a root agent guide: compact map, constraints, run/test commands, pointers, known setup issues. Do not port Mars SaaS constraints or PR workflow. |
-| `../mars/template/AGENTS.md` | Direct | High-value pattern for Harness-generated target repos. `mars-harness init` should emit a richer generated `AGENTS.md` with architecture, run/test, local setup, ticket lifecycle, decisions, dogfood, and pointers. |
+| `../mars/template/AGENTS.md` | Direct | High-value pattern for Harness-generated target repos. `mars init` should emit a richer generated `AGENTS.md` with architecture, run/test, local setup, ticket lifecycle, decisions, dogfood, and pointers. |
 | `../mars/ARCHITECTURE.md`, `README.md`, `CONTRIBUTING.md`, `SECURITY.md` | Reference | Useful as examples of project orientation, but not central to Harness parity. |
 
 ## Automation Docs
@@ -116,7 +116,7 @@ Those may inform optional compatibility integrations, but they should not become
 | `completed/needs-human-as-evolution-signal.md` | Direct | Best evidence for intervention-debt mechanics. Port the four-part fix: close stale cycles, use head-commit age not PR updated time, retry blocked work deliberately, and file intervention-debt tickets. |
 | `completed/pipeline-self-correction-deep-analysis.md` | Direct | Provides root-cause taxonomy and layered solution model. Port the layered model: prevention, main/trunk hygiene, fixer reliability, merge/completion automation, observability, and careful expansion of fixable recipes. |
 | `completed/dogfood-guard-rails-generated-apps-p0.md` | Translate | Use as the pattern for turning a one-time dogfood plan into a standing design policy. Harness should do this for target repo dogfood and `.harness` bundle confidence. |
-| `completed/scaffold-template-sync-upgrade.md` | Translate | Strong model for `mars-harness upgrade`: manifest, path categories, dry-run, backups, excluded/generated/user-owned distinctions, and tests. |
+| `completed/scaffold-template-sync-upgrade.md` | Translate | Strong model for `mars upgrade`: manifest, path categories, dry-run, backups, excluded/generated/user-owned distinctions, and tests. |
 | `completed/pipeline-failure-learning.md`, `pipeline-hygiene-changeset-and-dependabot.md`, `pipeline-learnings-foundation.md`, `pipeline-learnings-consumer-wiring.md` | Direct | Reinforce structured learnings and deterministic remediation before LLM repair. |
 | Other completed feature tickets/plans | Reference | Mostly Mars app/product work. Use only when a similar Harness failure class appears. |
 
@@ -137,7 +137,7 @@ Do not import ticket IDs into Harness defaults. Import the failure classes and c
 | `docs/references/harness-engineering-agent-first.md` | Direct | This is foundational for Harness and has been carried into `docs/references/`: AGENTS as map, docs as system of record, plans as artifacts, rule-to-code promotion, entropy management, and agent-first development. |
 | `docs/references/ui-design-brain.md`, `vercel-composition-patterns.md`, `vercel-react-best-practices.md` | Reference | These have been carried into `docs/references/` as target-project and future skill/bundle references. They are useful for generated frontend repos, but not core Harness operating-model parity. |
 
-## What To Port Into Mars Harness First
+## What To Port Into MARS First
 
 1. **Harness operating model doc** based on `automation-team.md` and `agent-context-model.md`.
 2. **Role registry** based on `BOTS.md`, but native to Harness manifests, trust, tools, guardrails, and scoring.

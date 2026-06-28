@@ -13,10 +13,10 @@
 **Scenario Schedule:** F-010-S010, F-010-S011, F-010-S012, F-010-S013, F-010-S014, F-010-S015, F-010-S016, F-010-S017, F-010-S018, F-010-S019, F-010-S020, F-010-S021, F-010-S022
 **Current Failing Scenario:** Waiting for active-plan promotion; no TanStack dashboard implementation scenario is current while this plan remains backlog.
 **Walking Skeleton Slice:** Ship docs registration first, then prerequisite checks, local-admin gateway auth, concurrent read APIs, a minimal authenticated Overview, and one adaptive unavailable state before adding richer views.
-**Learning Or MVP Outcome:** Establish the dashboard as a true Mars Harness frontend and control plane without weakening strict local operation, source-of-truth docs, trust policy, or orchestrator responsiveness.
+**Learning Or MVP Outcome:** Establish the dashboard as a true MARS frontend and control plane without weakening strict local operation, source-of-truth docs, trust policy, or orchestrator responsiveness.
 **Created:** 2026-05-20
 **Updated:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Source:** User dashboard control-plane expansion request on 2026-05-20.
 
 ## Purpose
@@ -27,7 +27,7 @@ planning only until promoted. It does not claim runtime implementation has
 started.
 
 The plan expands the earlier `T-010` shadcn-ui restyle into a control-plane
-epic for Mars Harness itself: TanStack Start frontend, external Node
+epic for MARS itself: TanStack Start frontend, external Node
 prerequisite, local-admin auth, concurrent APIs, Overview, Active Work, Preview,
 Feedback, Agent Roster, Models, GitHub-derived DORA, and migration from the
 legacy embedded dashboard.

@@ -37,6 +37,12 @@ func TestLatestRelease_readsGitHubStyleTag(t *testing.T) {
 	require.Equal(t, "0.7.0", version)
 }
 
+func TestDefaultRepoFullNameUsesCanonicalMARSRepo(t *testing.T) {
+	t.Parallel()
+	require.Equal(t, "greaveselliott/MARS", DefaultRepoFullName)
+	require.Contains(t, DefaultLatestReleaseURL, "/repos/greaveselliott/MARS/")
+}
+
 func TestLatestReleaseInfoReportsPrivateReleaseAuthHint(t *testing.T) {
 	t.Parallel()
 	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
@@ -54,16 +60,20 @@ func TestVerifyReleaseAssetsReportsMissingAssets(t *testing.T) {
 		TagName: "v1.2.3",
 		HTMLURL: "https://example.test/release",
 		Assets: []ReleaseAsset{
-			{Name: "mars-harness-linux-amd64"},
+			{Name: "mars-linux-amd64"},
 			{Name: "checksums.txt"},
 		},
 	})
 
 	require.False(t, report.OK)
 	require.Equal(t, "1.2.3", report.Version)
-	require.Contains(t, report.Found, "mars-harness-linux-amd64")
+	require.Contains(t, report.Found, "mars-linux-amd64")
 	require.Contains(t, report.Found, "checksums.txt")
 	require.ElementsMatch(t, []string{
+		"mars-linux-arm64",
+		"mars-darwin-amd64",
+		"mars-darwin-arm64",
+		"mars-harness-linux-amd64",
 		"mars-harness-linux-arm64",
 		"mars-harness-darwin-amd64",
 		"mars-harness-darwin-arm64",

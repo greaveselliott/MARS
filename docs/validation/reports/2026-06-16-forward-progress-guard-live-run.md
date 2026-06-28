@@ -3,8 +3,8 @@
 Date: 2026-06-16, updated 2026-06-17
 Source ref: initial run `52eed0b`; latest sequential proof used the current
 source checkout after the source fixes listed below and `make install`.
-Binary: `build/mars-harness` built from this checkout, reporting
-`mars-harness 0.62.1 darwin/arm64`
+Binary: `build/mars` built from this checkout, reporting
+`mars 0.62.1 darwin/arm64`
 Run roots: `<validation-root>`,
 `<validation-root>`,
 `<validation-root>`,
@@ -13,7 +13,7 @@ Owner: foundation
 
 ## Primary Outcome Contract
 
-**Primary Outcome:** Greenfield `mars-harness start` reaches Engineer and records
+**Primary Outcome:** Greenfield `mars start` reaches Engineer and records
 first successful build/smoke evidence across the static web, Phaser/browser-game,
 and Go API validation targets.
 
@@ -55,7 +55,7 @@ Forward Progress Guard across three clean ephemeral targets:
 - Phaser browser game
 - Go reading-list API
 
-The run intentionally used the real `mars-harness start` lifecycle path, real
+The run intentionally used the real `mars start` lifecycle path, real
 target repositories, per-target SQLite databases, real local inference, and
 parallel start processes. A subagent captured independent observations and
 actions at:
@@ -73,8 +73,8 @@ The installed command at `/path/to/local-redacted` reported
 stale binary, the run used a fresh source build:
 
 ```bash
-env GOCACHE=<validation-root> GOMODCACHE=<validation-root> go build -o build/mars-harness ./cmd/mars-harness
-build/mars-harness version
+env GOCACHE=<validation-root> GOMODCACHE=<validation-root> go build -o build/mars ./cmd/mars
+build/mars version
 ```
 
 Each target was initialized as a clean git repo with a committed README product
@@ -86,11 +86,11 @@ reseeding them.
 Representative run command shape:
 
 ```bash
-env MARS_HARNESS_WEBHOOK_PORT=19101 \
-  MARS_HARNESS_DASHBOARD_PORT=19201 \
-  MARS_HARNESS_SKIP_START_CLEANUP=1 \
-  MARS_HARNESS_LOG_FILE=<validation-root> \
-  build/mars-harness start \
+env MARS_WEBHOOK_PORT=19101 \
+  MARS_DASHBOARD_PORT=19201 \
+  MARS_SKIP_START_CLEANUP=1 \
+  MARS_LOG_FILE=<validation-root> \
+  build/mars start \
     --repo <validation-root> \
     --db <validation-root> \
     --concurrency 1 \
@@ -139,7 +139,7 @@ fc43545 tickets: create implementation tickets for current scenario
 
 ### Primary Outcome Contract
 
-**Primary Outcome:** Greenfield `mars-harness start` reaches Engineer and
+**Primary Outcome:** Greenfield `mars start` reaches Engineer and
 records first successful build/smoke evidence for static web,
 Phaser/browser-game, and Go API targets.
 
@@ -179,10 +179,10 @@ Validation passed before live rerun:
 
 ```bash
 go test ./internal/tools ./internal/scanner ./internal/docsconsistency/...
-go test ./cmd/mars-harness ./internal/serve ./internal/agent
-build/mars-harness tools run docsync_audit --repo . --args-json '{}'
+go test ./cmd/mars ./internal/serve ./internal/agent
+build/mars tools run docsync_audit --repo . --args-json '{}'
 git diff --check
-go build -o build/mars-harness ./cmd/mars-harness
+go build -o build/mars ./cmd/mars
 ```
 
 ### Live Rerun Setup
@@ -196,9 +196,9 @@ Run root:
 Commands:
 
 ```bash
-build/mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
-build/mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
-build/mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+build/mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+build/mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+build/mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
 ```
 
 No fake endpoint or scripted model fallback was used.
@@ -235,7 +235,7 @@ build/smoke evidence on all three target types.
 
 ### Primary Outcome Contract
 
-**Primary Outcome:** Greenfield `mars-harness start` reaches Engineer and
+**Primary Outcome:** Greenfield `mars start` reaches Engineer and
 records first successful build/smoke evidence for static web,
 Phaser/browser-game, and Go API targets.
 
@@ -267,9 +267,9 @@ Validation passed for the source changes exercised by these runs:
 go test ./internal/tools
 go test ./internal/personas
 go test ./internal/scanner ./internal/docsconsistency/...
-go test ./cmd/mars-harness ./internal/serve ./internal/agent
-go build -o build/mars-harness ./cmd/mars-harness
-build/mars-harness tools run docsync_audit --repo . --args-json '{}'
+go test ./cmd/mars ./internal/serve ./internal/agent
+go build -o build/mars ./cmd/mars
+build/mars tools run docsync_audit --repo . --args-json '{}'
 make install
 ```
 
@@ -376,7 +376,7 @@ full lifecycle completion, QA/Security quality, or parallel farm execution.
 - Earlier parallel full lifecycle runs shared local inference ports. Reasoning roles
   contended for `127.0.0.1:18081`, producing repeated bind failures, restart
   churn, and `inference server exceeded restart limit` log lines.
-- `mars-harness start` has no public `--model-endpoint` or per-run inference
+- `mars start` has no public `--model-endpoint` or per-run inference
   port override, so operators cannot cleanly isolate parallel lifecycle runs
   without code/config support.
 - Earlier static web, Phaser, and Go API reruns exposed source policy blockers

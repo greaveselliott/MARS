@@ -2,13 +2,13 @@
 
 **Status:** Planned
 **Updated:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Sources:** [product surface](product-surface.md), [F-010 dashboard feature contract](../features/F-010-dashboard-control-plane.md), [dashboard design doc](../design-docs/dashboard.md), [Node.js release schedule](https://nodejs.org/en/about/previous-releases), [pnpm releases](https://github.com/pnpm/pnpm/releases)
 
 ## Product Promise
 
-The next Mars Harness dashboard is a local authenticated control plane for
-operators running `mars-harness start` or `mars-harness serve`. It must show
+The next MARS dashboard is a local authenticated control plane for
+operators running `mars start` or `mars serve`. It must show
 what the autonomous organization is doing, which agents and models are involved,
 what work is active, how much execution budget is being consumed, what quality
 and delivery signals exist, and what action an operator can safely take.
@@ -157,7 +157,7 @@ role source files.
 ### Available Models
 
 The Models view lists offline and cloud-hosted models currently available to
-Mars Harness.
+MARS.
 
 Model sources:
 
@@ -251,7 +251,7 @@ Unavailable states are product behavior, not incidental errors.
 ## Out Of Scope
 
 - Hosted SaaS dashboard operation.
-- Bundling Node inside Mars Harness.
+- Bundling Node inside MARS.
 - Auto-installing Node or pnpm.
 - Replacing the repo-visible quality score with a dashboard-only score.
 - Treating every reachable model as safe for automatic default promotion.

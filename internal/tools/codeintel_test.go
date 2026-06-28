@@ -51,7 +51,7 @@ func TestCodeIntelToolsRunThroughExecutor(t *testing.T) {
 	if _, err := os.Stat(customDB); err != nil {
 		t.Fatalf("expected custom DB to be used: %v", err)
 	}
-	defaultDB := filepath.Join(home, ".mars-harness", "db", filepath.Base(repo), "mars.db")
+	defaultDB := filepath.Join(home, ".mars", "db", filepath.Base(repo), "mars.db")
 	if _, err := os.Stat(defaultDB); !os.IsNotExist(err) {
 		t.Fatalf("expected default DB not to be used, stat err=%v", err)
 	}

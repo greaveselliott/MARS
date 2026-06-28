@@ -2,7 +2,7 @@
 
 **Status:** Draft  
 **Date:** 2026-04-11  
-**Author:** Mars Harness contributors
+**Author:** MARS contributors
 
 Infrastructure for durable jobs: queueing, workers, scheduling, sandboxing, and operational controls (blast radius, emergency stop). Aligns with execution truth and progressive autonomy in [tenets.md](tenets.md).
 
@@ -61,7 +61,7 @@ the CEO-led schedule set unchanged.
   opts into board-driven scheduling could keep stale CEO-led planning cron
   entries alive until process restart.
 - 2026-06-16: The factory forward-progress guard needs repo-scoped startup
-  queue evidence before the worker pool starts. `mars-harness start` now resets
+  queue evidence before the worker pool starts. `mars start` now resets
   stale claimed/running jobs for the selected repo, inspects active pending
   work through a repo-scoped queue query, and only seeds CEO when AD-297's
   lifecycle classifier finds no resumable state. This keeps restart recovery

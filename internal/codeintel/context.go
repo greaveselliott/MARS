@@ -179,7 +179,7 @@ func renderContext(status Status, index IndexResult, impact ImpactResult, refres
 	if refreshed {
 		fmt.Fprintf(&b, "index_refresh: files_seen=%d indexed=%d removed=%d duration_ms=%d\n", index.FilesSeen, index.FilesIndexed, index.FilesRemoved, index.DurationMS)
 	} else if status.Status == FreshnessStale {
-		fmt.Fprintf(&b, "repair: run `mars-harness tools run code_index --repo <repo> --trust observer --args-json '{}'` before relying on stale relationships\n")
+		fmt.Fprintf(&b, "repair: run `mars tools run code_index --repo <repo> --trust observer --args-json '{}'` before relying on stale relationships\n")
 	}
 	appendStringList(&b, "changed_paths", prioritizePaths(impact.ChangedPaths), opts.MaxChangedPaths)
 	if status.Status == FreshnessStale && !refreshed {

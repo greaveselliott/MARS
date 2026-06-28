@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	gh "github.com/greaveselliott/mars-harness/internal/github"
+	gh "github.com/greaveselliott/mars/internal/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

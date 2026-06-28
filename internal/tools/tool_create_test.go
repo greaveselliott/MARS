@@ -20,7 +20,7 @@ func TestToolCreate_scaffoldsToolFiles(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "internal", "tools"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module github.com/greaveselliott/mars-harness\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module github.com/greaveselliott/mars\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "internal", "tools", "registry.go"), []byte("package tools\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "internal", "tools", "register_default.go"), []byte("package tools\n"), 0o644))
 
@@ -79,7 +79,7 @@ func TestToolCreate_refusesOverwrite(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "internal", "tools"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module github.com/greaveselliott/mars-harness\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module github.com/greaveselliott/mars\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "internal", "tools", "registry.go"), []byte("package tools\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "internal", "tools", "register_default.go"), []byte("package tools\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "internal", "tools", "cli_reference.go"), []byte("package tools\n"), 0o644))

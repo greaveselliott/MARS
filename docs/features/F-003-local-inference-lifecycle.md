@@ -60,7 +60,7 @@ Then the error names the missing tier or artifact and points the operator to set
 
 ### F-003-S006: Benchmark-Backed Model Evaluation
 
-Given a candidate model is being considered for Mars Harness defaults
+Given a candidate model is being considered for MARS defaults
 When evaluation runs against an endpoint and model name
 Then the command exercises mechanical harness-relevant probes and reports promotion criteria rather than accepting freshness claims alone
 
@@ -72,7 +72,7 @@ Then the harness keeps that state separate from default registry promotion, whic
 
 ### F-003-S008: Start Endpoint Override And Port Isolation
 
-Given an operator runs `mars-harness start --model-endpoint <url>`
+Given an operator runs `mars start --model-endpoint <url>`
 When the lifecycle server starts
 Then the server uses that real OpenAI-compatible endpoint and skips local llama-server startup and local model-file preflight
 And fake, stub, mock, canned, or scripted endpoints remain test-only evidence and cannot support live validation claims
@@ -111,4 +111,4 @@ None.
 - F-003-S005: `go test ./internal/inference -run TestRouter_serverForRole`
 - F-003-S006: `go test ./internal/models -run TestEvaluate`
 - F-003-S007: planned evidence for the remaining Ollama catalog and swap workflow tracked by `MH-030`
-- F-003-S008: `go test ./internal/inference`, `go test ./internal/serve -run 'TestServerNewModelEndpointSkipsLocalModelPreflight|TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy'`, and `go test ./cmd/mars-harness -run 'TestStartCommandExposesRealModelEndpointOverride|TestStartCommandExposesParallelAddressControls'`
+- F-003-S008: `go test ./internal/inference`, `go test ./internal/serve -run 'TestServerNewModelEndpointSkipsLocalModelPreflight|TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy'`, and `go test ./cmd/mars -run 'TestStartCommandExposesRealModelEndpointOverride|TestStartCommandExposesParallelAddressControls'`

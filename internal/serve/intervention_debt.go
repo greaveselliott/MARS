@@ -17,8 +17,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/telemetry"
-	"github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/greaveselliott/mars/internal/telemetry"
+	"github.com/greaveselliott/mars/internal/tools"
 )
 
 type interventionDebtOrigin struct {

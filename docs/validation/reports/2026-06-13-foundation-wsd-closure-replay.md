@@ -21,10 +21,10 @@ repos with all tickets in `done/` (see invalid
 
 ## Run 1: demo-11-closure-replay (static browser / Inventory API) — IN PROGRESS
 
-- **Exact command:** `mars-harness start --repo /path/to/local-redacted --debug --log-file ~/.mars-harness/traces/logs/demo-11-wsd-closure-20260613.log`
-- **Target git:** worktree at `143c6b4` (`chore(harness): initialize mars harness`) — empty product ticket tree, matches fresh bootstrap
-- **Binary:** `mars-harness 0.55.0` (`make install` from `main` @ `5ae8a92`)
-- **Database:** `~/.mars-harness/db/demo-11-closure-replay/mars.db` (fresh)
+- **Exact command:** `mars start --repo /path/to/local-redacted --debug --log-file ~/.mars/traces/logs/demo-11-wsd-closure-20260613.log`
+- **Target git:** worktree at `143c6b4` (`chore(harness): initialize MARS`) — empty product ticket tree, matches fresh bootstrap
+- **Binary:** `mars 0.55.0` (`make install` from `main` @ `5ae8a92`)
+- **Database:** `~/.mars/db/demo-11-closure-replay/mars.db` (fresh)
 - **Model identity:** TBD from trace (balanced profile expected)
 - **Pass criteria:** Lifecycle reaches Engineer + QA without CTO-only loop; AD-290
   does not wedge; product progress beyond planning-only churn

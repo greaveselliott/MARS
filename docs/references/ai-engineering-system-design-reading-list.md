@@ -8,17 +8,17 @@
 ## Summary
 
 This reading list captures the AI engineering resources surfaced by Neo Kim's
-LinkedIn post and preserves them as durable Mars Harness reference material.
+LinkedIn post and preserves them as durable MARS reference material.
 The list is useful because it clusters agent memory, context engineering,
 tooling, evals, RAG, MCP, and multi-agent architecture into one operator-facing
 learning path.
 
-Mars Harness should treat these links as external reference material, not as
+MARS should treat these links as external reference material, not as
 binding operating doctrine. Durable Mars rules still live in this repository's
 design docs, feature contracts, role packets, skills, tools, and generated
 target guidance.
 
-## Mars Harness Relevance
+## MARS Relevance
 
 - **Agent state and memory:** informs checkpointing, state versioning, durable
   run memory, and consistency precedence across chat, docs, tests, tools, git,
@@ -56,7 +56,7 @@ target guidance.
 
 ## Adoption Guidance
 
-Use this list when updating or reviewing Mars Harness design docs related to
+Use this list when updating or reviewing MARS design docs related to
 agent runtime, context assembly, tool registry/MCP, scoring/evals, memory,
 state checkpoints, and multi-agent orchestration. When a reference materially
 changes Mars behavior, cite the specific article in the owning design doc and

@@ -15,7 +15,7 @@ import (
 )
 
 func TestRun_linuxNamespaceDisableEnvUsesUlimitFallback(t *testing.T) {
-	t.Setenv("MARS_HARNESS_DISABLE_LINUX_NAMESPACES", "true")
+	t.Setenv("MARS_DISABLE_LINUX_NAMESPACES", "true")
 
 	cmd, err := Run(context.Background(), Config{WorkDir: "/tmp"}, "true")
 	if err != nil {
@@ -31,13 +31,13 @@ func TestRun_linuxNamespaceDisableEnvUsesUlimitFallback(t *testing.T) {
 
 func TestLinuxNamespacesDisabledByEnv(t *testing.T) {
 	for _, value := range []string{"1", "true", "TRUE", "yes", "on"} {
-		t.Setenv("MARS_HARNESS_DISABLE_LINUX_NAMESPACES", value)
+		t.Setenv("MARS_DISABLE_LINUX_NAMESPACES", value)
 		if !linuxNamespacesDisabledByEnv() {
 			t.Fatalf("expected %q to disable Linux namespaces", value)
 		}
 	}
 
-	t.Setenv("MARS_HARNESS_DISABLE_LINUX_NAMESPACES", "0")
+	t.Setenv("MARS_DISABLE_LINUX_NAMESPACES", "0")
 	if linuxNamespacesDisabledByEnv() {
 		t.Fatal("expected 0 to leave Linux namespaces enabled")
 	}

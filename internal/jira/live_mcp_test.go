@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/integrations"
+	"github.com/greaveselliott/mars/internal/integrations"
 )
 
 func TestLiveAtlassianMCPJiraIntake(t *testing.T) {

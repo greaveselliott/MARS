@@ -22,7 +22,7 @@ type Store struct {
 	db *sql.DB
 }
 
-// OpenStore opens or creates a SQLite database at path (e.g. ~/.mars-harness/state.db).
+// OpenStore opens or creates a SQLite database at path (e.g. ~/.mars/state.db).
 func OpenStore(path string) (*Store, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {

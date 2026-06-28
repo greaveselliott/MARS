@@ -26,7 +26,7 @@ depends_on: []
 # T-016: Define representative live validation project matrix
 
 ## Context
-The live improvement loop has used demo-123 as the canonical first-run canary, which is useful but risks overfitting foundation behavior to one static Space Invaders project. Mars Harness must generically build many software application shapes, so source lifecycle claims should be checked against a small representative project portfolio rather than only one demo.
+The live improvement loop has used demo-123 as the canonical first-run canary, which is useful but risks overfitting foundation behavior to one static Space Invaders project. MARS must generically build many software application shapes, so source lifecycle claims should be checked against a small representative project portfolio rather than only one demo.
 
 ## Requirements
 - Define a foundation live validation matrix with at least static browser app, package-managed frontend, API/service, CLI/tooling, and existing-repo maintenance archetypes.

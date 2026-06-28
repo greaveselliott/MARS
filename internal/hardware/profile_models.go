@@ -56,7 +56,7 @@ func ProfileModelPreflightError(performanceProfile string, missing []string) err
 	}
 	effective := EffectivePerformanceProfile(Detect(), performanceProfile)
 	return fmt.Errorf(
-		"missing model file(s) for performance_profile %q: %s — run 'mars-harness setup' to download the required weights for this profile",
+		"missing model file(s) for performance_profile %q: %s — run 'mars setup' to download the required weights for this profile",
 		effective,
 		strings.Join(missing, ", "),
 	)

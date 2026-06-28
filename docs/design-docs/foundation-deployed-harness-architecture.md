@@ -2,20 +2,20 @@
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Related:** [harness-glossary.md](harness-glossary.md), [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md), [delivery-operating-model.md](delivery-operating-model.md), [tools-glossary.md](tools-glossary.md), [skill-evolution.md](skill-evolution.md), [release-versioning.md](release-versioning.md)
 
 ## Context
 
-Mars Harness has grown two closely related operating contexts:
+MARS has grown two closely related operating contexts:
 
-- The **foundation harness** in this repository, which evolves `mars-harness`
+- The **foundation harness** in this repository, which evolves `mars`
   itself.
 - The **deployed harness** generated into a **target project**, which helps
   agents build that target application.
 
 The same executable binary participates in both contexts, but the binary is not
-the whole harness. The `mars-harness` binary is the runtime substrate: it loads
+the whole harness. The `mars` binary is the runtime substrate: it loads
 manifests, manages the queue, runs roles, calls tools, records telemetry,
 serves the dashboard, handles release/update workflows, and scaffolds deployed
 harness defaults. The foundation harness is the repo-owned doctrine and product
@@ -35,13 +35,13 @@ target ticket.
 
 ## Decision
 
-Mars Harness treats the system as four coordinated surfaces:
+MARS treats the system as four coordinated surfaces:
 
 | Surface | Definition | Primary artifacts | Owns | Does not own |
 | --- | --- | --- | --- | --- |
-| Foundation harness | The harness consumed by agents operating in this source repo. | `AGENTS.md`, `docs/design-docs/`, `docs/features/`, `docs/exec-plans/`, `docs/tickets/`, `.harness/`, role registry, release docs. | Product direction for `mars-harness`, source operating model, source release discipline, generated default doctrine, tool/skill evolution policy, source dogfood evidence. | Direct product code in target projects during a target run. |
-| Runtime substrate | The compiled `mars-harness` binary and its internal packages. | `cmd/mars-harness`, `internal/*`, SQLite databases, dashboard, CLI, tools, MCP server, scanner, release/update code. | Deterministic execution, orchestration, persistence, guardrails, tool execution, generated scaffolds, telemetry capture, operator interfaces. | Deciding doctrine by itself; self-modifying source code during an active target run. |
-| Deployed harness | The harness consumed by agents inside a target project generated or upgraded by `mars-harness`. | Target `AGENTS.md`, target `.harness/`, target `docs/design-docs/`, target `docs/features/`, target `docs/tickets/`, target release docs. | Target operating model, target product planning, target feature contracts, target tickets, target quality evidence, target-specific skills. | Source binary release assets, foundation repo release tags, or foundation implementation internals. |
+| Foundation harness | The harness consumed by agents operating in this source repo. | `AGENTS.md`, `docs/design-docs/`, `docs/features/`, `docs/exec-plans/`, `docs/tickets/`, `.harness/`, role registry, release docs. | Product direction for `mars`, source operating model, source release discipline, generated default doctrine, tool/skill evolution policy, source dogfood evidence. | Direct product code in target projects during a target run. |
+| Runtime substrate | The compiled `mars` binary and its internal packages. | `cmd/mars`, `internal/*`, SQLite databases, dashboard, CLI, tools, MCP server, scanner, release/update code. | Deterministic execution, orchestration, persistence, guardrails, tool execution, generated scaffolds, telemetry capture, operator interfaces. | Deciding doctrine by itself; self-modifying source code during an active target run. |
+| Deployed harness | The harness consumed by agents inside a target project generated or upgraded by `mars`. | Target `AGENTS.md`, target `.harness/`, target `docs/design-docs/`, target `docs/features/`, target `docs/tickets/`, target release docs. | Target operating model, target product planning, target feature contracts, target tickets, target quality evidence, target-specific skills. | Source binary release assets, foundation repo release tags, or foundation implementation internals. |
 | Target project | The application repository being built. | Product source, tests, package files, target docs, target git history. | Product behavior, product-specific architecture, product release value, target-owned feedback and bugs. | Foundation runtime defects or source doctrine decisions except through mirrored rules. |
 
 The shared center is the **mirrored operating-model core**: the reusable rules
@@ -61,8 +61,8 @@ foundation implementation detail.
 ```mermaid
 flowchart TB
     Operator["Operator or agent intent"]
-    Foundation["Foundation harness\nmars-harness repo doctrine"]
-    Runtime["Runtime substrate\nmars-harness binary"]
+    Foundation["Foundation harness\nmars repo doctrine"]
+    Runtime["Runtime substrate\nmars binary"]
     Deployed["Deployed harness\ntarget repo doctrine"]
     Target["Target project\nproduct code and product docs"]
     Telemetry["Telemetry, traces, quality scores,\ndogfood evidence, release evidence"]
@@ -97,7 +97,7 @@ The harness is never the target of its own agents during active target runs.
 
 | Behavior | Foundation-only | Mirrored core | Deployed-only |
 | --- | --- | --- | --- |
-| Publishing `mars-harness` binary assets | Yes. Source local release publication tags `vX.Y.Z`, builds local binary assets, writes checksums, and may optionally mirror to GitHub Releases. | No. | No, unless a target separately chooses an equivalent binary release model. |
+| Publishing `mars` binary assets | Yes. Source local release publication tags `vX.Y.Z`, builds local binary assets, writes checksums, and may optionally mirror to GitHub Releases. | No. | No, unless a target separately chooses an equivalent binary release model. |
 | Versioned target release notes | No. | Yes. Targets inherit release notes and changelog discipline appropriate to their repo. | Target-specific versioning policy can extend or override locally. |
 | Live `demo-123` replay | Yes as the canonical source first-run lifecycle replay. | The run-review-act-rerun evidence loop mirrors generically. | A target can define its own representative demo or E2E replay. |
 | BDD feature contracts | No. | Yes. Feature contracts define product behavior before or alongside implementation. | Target contracts describe target product behavior. |
@@ -117,7 +117,7 @@ The receiving layer is determined by root cause.
 | Source dogfood run | `demo-123` lifecycle replay, first-run product progress, intervention-debt count, runtime artifact paths. | Dogfood evidence note, active plan evidence, design doc discovery, or source ticket. | Foundation harness unless the finding is clearly target product behavior. |
 | Runtime telemetry | Tool timeout, context overflow, guardrail block, dispatch protocol failure, model/provider error, queue loop. | SQLite telemetry, trace, quality score, source ticket when actionable. | Foundation harness and runtime substrate. |
 | Target product evidence | Broken game behavior, missing UI state, failed product acceptance scenario. | Target feature evidence, target ticket, target design doc. | Deployed harness and target project. |
-| Release evidence | Changelog generation, tag push, GitHub Release object, missing binary assets. | Foundation release docs, active plan blocker, release ticket. | Foundation-only for `mars-harness` binary publication. |
+| Release evidence | Changelog generation, tag push, GitHub Release object, missing binary assets. | Foundation release docs, active plan blocker, release ticket. | Foundation-only for `mars` binary publication. |
 | Human review | Operator says a loop, term, or workflow is confusing or repeated. | Owning design doc, glossary route, feature contract, or ticket. | Foundation if it changes harness doctrine; deployed if it is target-local. |
 | Quality score | Low score, recurring failure bucket, stale evidence. | `docs/QUALITY_SCORE.md`, score export, source or target ticket only when ownership is clear. | Quarantined to the owning repo; target backlog materialization is explicit or target-owned. |
 
@@ -140,7 +140,7 @@ ticket. These are deliberately different authority levels:
 
 | Surface | Grants authority? | Best for | Example |
 | --- | --- | --- | --- |
-| Runtime tool | Yes, within trust and guardrail policy. | Deterministic actions that need validation or consistent state mutation. | `ticket_create`, `docsync_audit`, `mars_harness_cli`, release/status/audit tools. |
+| Runtime tool | Yes, within trust and guardrail policy. | Deterministic actions that need validation or consistent state mutation. | `ticket_create`, `docsync_audit`, `mars_cli`, release/status/audit tools. |
 | Skill | No. It guides behavior but does not grant tool access. | Reusable judgment, sequencing, review checklists, and stop conditions. | A release-publication workflow skill, if later accepted by T-005. |
 | Design doctrine | No direct execution. | Durable rationale and system boundaries. | This document, AD-138, AD-139. |
 | Generated target default | Indirectly, through target context. | Reusable operating rules that target agents should inherit. | BDD, ticket lifecycle, documentation discipline, generic live evidence loop. |
@@ -169,7 +169,7 @@ classification is an operating-model step, not a retrospective label:
 
 | Class | Root cause | Fix level | Backlog route |
 | --- | --- | --- | --- |
-| Foundation-owned | Runtime substrate, generated defaults, role guidance, tool policy, orchestration, model/provider behavior, telemetry, release/update, source-only release mechanics, or mirrored doctrine. | Patch `mars-harness` source, generated target defaults, foundation docs, role prompts, tools, skills, or tests so all applicable users benefit. | Source ticket, source plan, design-doc discovery, or foundation telemetry; not target product backlog by default. |
+| Foundation-owned | Runtime substrate, generated defaults, role guidance, tool policy, orchestration, model/provider behavior, telemetry, release/update, source-only release mechanics, or mirrored doctrine. | Patch `mars` source, generated target defaults, foundation docs, role prompts, tools, skills, or tests so all applicable users benefit. | Source ticket, source plan, design-doc discovery, or foundation telemetry; not target product backlog by default. |
 | Deployed-owned | Target product behavior, target architecture, local package/build/test setup, target docs, target-specific skills, or project policy. | Patch the target repo or deployed harness artifact and preserve target evidence. | Target product/enabler/intervention ticket owned by that target repo. |
 | Mixed or unclear | A target symptom exposes a possible foundation gap, or a foundation limitation blocks a target product path. | Apply the smallest local unblock only when needed to finish target evidence, then create a foundation follow-up for the reusable defect. | Both routes may exist, but each ticket states which layer it owns and what evidence proves it. |
 
@@ -191,7 +191,7 @@ surface in the same slice:
 | --- | --- | --- |
 | Source runtime behavior | Design doc, BDD feature contract, code `MarsDocSync` docs, tests. | Update docs before or alongside code; run docsync/docsconsistency. |
 | Operating rule | Design doc, `AGENTS.md` when first-class, generated target defaults unless source-only. | State whether the rule is foundation-only, mirrored, or deployed-only. |
-| CLI workflow | CLI reference, `mars_harness_cli`, repo shortcut map, generated target guidance, affected skills. | Run CLI sync checks named by the CLI tool/skill sync doc. |
+| CLI workflow | CLI reference, `mars_cli`, repo shortcut map, generated target guidance, affected skills. | Run CLI sync checks named by the CLI tool/skill sync doc. |
 | Tool policy | Tools glossary, role registry, trust policy, generated tool guidance where mirrored. | Use `tool_create` for new built-in tools unless a recorded exception exists. |
 | Skill workflow | Skill file, skill-evolution doc if doctrine changes, generated target skill guidance when universal. | Keep skills compact and evidence-oriented. |
 | Feedback routing | Self-reflective telemetry, delivery operating model, active plan, tickets. | Keep runtime failures out of target backlog unless target-owned or operator-invoked. |
@@ -243,11 +243,11 @@ AD-139 and the generated route landed.
 | Source harness glossary | Consistent. It now routes foundation/deployed boundary changes to this document instead of bloating first-class glossary text. | `docs/design-docs/harness-glossary.md` contextual route. |
 | Source mirrored-harness doctrine | Consistent. It includes an AD-139 summary separating foundation ownership, runtime substrate, deployed ownership, target product evidence, mirrored core doctrine, and source-only mechanics. | `docs/design-docs/mirrored-harness-and-context-glossary.md`. |
 | Tools glossary | Consistent. It keeps the universal tool surface model-provider-agnostic and describes tools as mirrored capabilities without claiming that skills grant tool authority. | `docs/design-docs/tools-glossary.md`. |
-| Release doctrine | Consistent with one explicit boundary. Source `release-versioning.md` contains `mars-harness` binary asset and `checksums.txt` details for local source release publication; generated target release guidance keeps GitHub Release mirrors optional for repositories that publish their own assets. | `docs/design-docs/release-versioning.md`, `internal/scanner/init.go`. |
+| Release doctrine | Consistent with one explicit boundary. Source `release-versioning.md` contains `mars` binary asset and `checksums.txt` details for local source release publication; generated target release guidance keeps GitHub Release mirrors optional for repositories that publish their own assets. | `docs/design-docs/release-versioning.md`, `internal/scanner/init.go`. |
 | Generated target knowledge route | Consistent. New targets receive a route for foundation/deployed architecture, mirrored operating doctrine, recursive improvement boundaries, doctrine drift, source-only rules, deployed-only rules, runtime feedback routing, and tool/skill authority. | `internal/scanner/init.go`; `go test ./internal/scanner -run TestInit_success`. |
 | Generated target harness glossary | Consistent. New targets receive a contextual route to the mirrored harness doc rather than a full copy of the source architecture doc. | `internal/scanner/init.go`; scanner assertions. |
-| Generated mirrored-harness doc | Consistent. New targets receive the reusable AD-139 core and explicitly keep `demo-123` and `mars-harness` binary release asset publication foundation-only unless a target adopts an equivalent local policy. | `internal/scanner/init.go`; scanner assertions. |
-| Generated target tests | Consistent. Scanner coverage checks the new route, AD-139 mirror, design-index entry, and absence of source binary asset names such as `mars-harness-linux-amd64`. | `internal/scanner/scanner_test.go`. |
+| Generated mirrored-harness doc | Consistent. New targets receive the reusable AD-139 core and explicitly keep `demo-123` and `mars` binary release asset publication foundation-only unless a target adopts an equivalent local policy. | `internal/scanner/init.go`; scanner assertions. |
+| Generated target tests | Consistent. Scanner coverage checks the new route, AD-139 mirror, design-index entry, and absence of source binary asset names such as `mars-linux-amd64`. | `internal/scanner/scanner_test.go`. |
 
 No unowned doctrine mismatch was found in this review. The remaining open item
 is T-005: decide whether the recursive improvement loop should become a

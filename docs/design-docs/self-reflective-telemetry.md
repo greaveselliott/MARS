@@ -6,7 +6,7 @@
 
 ## Context
 
-Mars proved that the harness must grade both itself and the feature work it is building. A score that only appears in a dashboard is passive telemetry. Mars Harness needs a self-reflective loop: consume traces, terminal outcomes, score trends, guardrail blocks, dogfood results, ticket state, and human follow-up, then proactively decide what part of the harness should improve.
+Mars proved that the harness must grade both itself and the feature work it is building. A score that only appears in a dashboard is passive telemetry. MARS needs a self-reflective loop: consume traces, terminal outcomes, score trends, guardrail blocks, dogfood results, ticket state, and human follow-up, then proactively decide what part of the harness should improve.
 
 The improvement target may be the process, role prompt, skill, guardrail, knowledge route, tool policy, manifest, model/inference configuration, scanner, ticket flow, or generated target harness. The loop must not jump straight from "bad outcome" to arbitrary self-editing. It should triage evidence first, create or update durable work, and only apply direct evolution inside strict trust and safety bounds.
 
@@ -54,7 +54,7 @@ The harness should proactively consume its own telemetry after jobs and on orche
 
 ### AD-065: Telemetry Triage Quarantines Foundation Failures By Default
 
-Self-reflection must create durable evidence, not only dashboard signals or evolution rows. When recurring telemetry patterns, non-success terminal agent results, guardrail or tool-policy blocks, repeated policy-block loops, repeated tool loops, manual stops, timeouts, low score snapshots, human follow-up, reverted agent commits, or stale in-progress tickets identify actionable improvement targets, Mars Harness records them in telemetry, quality evidence, or bounded evolution review first.
+Self-reflection must create durable evidence, not only dashboard signals or evolution rows. When recurring telemetry patterns, non-success terminal agent results, guardrail or tool-policy blocks, repeated policy-block loops, repeated tool loops, manual stops, timeouts, low score snapshots, human follow-up, reverted agent commits, or stale in-progress tickets identify actionable improvement targets, MARS records them in telemetry, quality evidence, or bounded evolution review first.
 
 The dedupe key is repo, role, target, category, and evidence window. This keeps repeated failures from creating ticket storms while still letting a new evidence window reopen durable work when the issue returns. Tickets carry role, repo, target, category, severity, confidence, source event, trace ID, score snapshot, commit, outcome, evidence, recommendation, candidate files, and acceptance criteria when those fields are available locally.
 
@@ -64,13 +64,13 @@ Direct evolution remains bounded. Harness/runtime, unknown, or unsafe changes de
 
 ### AD-072: Quality Scores Are Generated Repo Artifacts
 
-Mars Harness inherits Mars's A-F quality score pattern as a repo-owned artifact.
+MARS inherits Mars's A-F quality score pattern as a repo-owned artifact.
 The source harness now carries `docs/QUALITY_SCORE.md`, and initialized target
 repos receive the same seed file. This makes current quality, readiness, and
 top improvement targets visible to any agent before it opens SQLite or the
 dashboard.
 
-`mars-harness scores export --repo <path>` is now the deterministic refresh
+`mars scores export --repo <path>` is now the deterministic refresh
 path. It reads role scores, terminal outcomes, execution trace summaries,
 ticket state, dogfood results, guardrail blocks, check outcomes, no-op runs,
 human follow-up, and telemetry triage from the repo-specific SQLite database
@@ -89,7 +89,7 @@ truth.
 
 `docs/QUALITY_SCORE.md` regeneration has a defined cadence instead of being
 refreshed only when an agent remembers. The triggers, all served by the
-existing `mars-harness scores export --repo <path>` surface (AD-072, F-008):
+existing `mars scores export --repo <path>` surface (AD-072, F-008):
 
 1. **After every live validation run batch.** When a validation report lands
    under `docs/validation/reports/`, the same change set regenerates the
@@ -147,10 +147,10 @@ deployed-harness protocol.
 
 The write path is:
 
-1. raw local telemetry: `~/.mars-harness/db/{repo-name}/mars.db`
+1. raw local telemetry: `~/.mars/db/{repo-name}/mars.db`
 2. local anonymous outbox: `telemetry_report_outbox` in the same repo DB
 3. collector intake: local SQLite for dogfood, hosted Postgres-compatible storage later
-4. foundation triage: repeated anonymous patterns across distinct anonymous report keys or harness versions become Mars Harness source work, not target repo intervention debt
+4. foundation triage: repeated anonymous patterns across distinct anonymous report keys or harness versions become MARS source work, not target repo intervention debt
 
 Remote reporting defaults to off, disabled reporting is healthy, and send
 failures never block local harness operation.
@@ -185,11 +185,11 @@ The first implementation is deliberately small:
 - `doctor --repo` includes a deterministic-remediation check that surfaces
   known recipe IDs and fixes for missing target harness scaffolds, manifests,
   and generated metadata before a run has to fail and rediscover the same issue.
-- `mars-harness scores export` reads remediation attempt and execution evidence
+- `mars scores export` reads remediation attempt and execution evidence
   from scoring outcome details and renders deterministic-remediation summaries
   in `docs/QUALITY_SCORE.md`, including skipped-without-executor and failed
   execution improvement targets.
-- `mars-harness scores export` also joins terminal outcomes to trace summaries
+- `mars scores export` also joins terminal outcomes to trace summaries
   by `job_id` and renders Factory Pace rows by repo and role. The rows show
   average turns, tool invocations, LLM calls, wall time, and limit stops so pace
   optimization starts from durable evidence.
@@ -212,8 +212,8 @@ The first implementation is deliberately small:
 - manual stops point at role stop conditions, timeout policy, recovery, or escalation behavior
 - low scores point at process triage across prompt, skill, guardrail, tool, model, and intervention debt
 - harness-owned telemetry patterns stay out of target backlogs and can be
-  exported as opt-in anonymous aggregate reports through `mars-harness telemetry`
-- `mars-harness scores export --repo <path>` refreshes `docs/QUALITY_SCORE.md`
+  exported as opt-in anonymous aggregate reports through `mars telemetry`
+- `mars scores export --repo <path>` refreshes `docs/QUALITY_SCORE.md`
   from live evidence, reports low-score/outcome/ticket-state improvement
   targets, reports pace bottlenecks from traces, and preserves manual notes.
   Ticket materialization requires `--create-intervention-debt`.

@@ -7,14 +7,14 @@ kind: intervention-debt
 work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
-evidence_links: ["go test ./internal/qualityscore ./internal/scoring ./internal/scanner ./internal/serve ./internal/dashboard", "go run ./cmd/mars-harness scores export --repo . --no-ticket", "go test ./..."]
+evidence_links: ["go test ./internal/qualityscore ./internal/scoring ./internal/scanner ./internal/serve ./internal/dashboard", "go run ./cmd/mars scores export --repo . --no-ticket", "go test ./..."]
 verified_by: command
 dedupe_key: "public-example"
 source: Mars parity workstream F
 created: 2026-05-02
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "quality-score"
   category: "repo_visible_scoring"
   severity: "high"
@@ -31,7 +31,7 @@ grades once scoring, telemetry, dogfood, and ticket-state data are available.
 
 ## Requirements
 
-- Add `mars-harness scores export --repo <path>` or an equivalent subcommand.
+- Add `mars scores export --repo <path>` or an equivalent subcommand.
 - Refresh `docs/QUALITY_SCORE.md` from role scores, recent outcomes, stuck tickets, failed dogfood, guardrail blocks, intervention debt, check results, no-op runs, human follow-up, and top telemetry triage targets.
 - Preserve a small manual notes area if maintainers need to add context around generated grades.
 - Detect quality regressions and create or update intervention-debt tickets.
@@ -40,7 +40,7 @@ grades once scoring, telemetry, dogfood, and ticket-state data are available.
 
 ## Affected Files
 
-- `cmd/mars-harness`
+- `cmd/mars`
 - `internal/scoring`
 - `internal/telemetry`
 - `internal/serve`
@@ -73,7 +73,7 @@ grades once scoring, telemetry, dogfood, and ticket-state data are available.
 
 ## Completion Notes
 
-- Added `mars-harness scores export --repo <path>` with manual-note preservation,
+- Added `mars scores export --repo <path>` with manual-note preservation,
   missing-database honesty, evidence signal rendering, and low-score
   intervention-debt ticket creation.
 - Added generated target quality-score guidance and dashboard linking through

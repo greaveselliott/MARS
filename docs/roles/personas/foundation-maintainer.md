@@ -3,7 +3,7 @@
 ## Role Contract
 
 `foundation-maintainer` is a source-only foundation harness role. It maintains
-the Mars Harness software factory itself: source code, generated target
+the MARS software factory itself: source code, generated target
 defaults, mirrored doctrine, local release publication, docsync discipline, role
 registry health, live validation evidence, and reusable operating-model
 feedback.
@@ -45,7 +45,7 @@ as `Supporting Evidence`, not as completion of the primary outcome.
 
 Classify every finding before action:
 
-- `foundation-owned`: the fix belongs in Mars Harness source, runtime, tools,
+- `foundation-owned`: the fix belongs in MARS source, runtime, tools,
   generated defaults, release/update flow, role guidance, or mirrored doctrine.
 - `deployed-owned`: the fix belongs in the target project or deployed harness.
 - `mirrored doctrine`: the rule belongs in both foundation and deployed

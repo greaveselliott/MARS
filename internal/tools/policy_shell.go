@@ -17,7 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 )
 
 func checkEngineerRepeatedNoopPolicy(ctx context.Context, root Root, session Session, hasSession bool, args shellExecArgs) error {
@@ -211,7 +211,7 @@ func checkShellPolicy(raw json.RawMessage) error {
 	if err != nil {
 		return nil
 	}
-	if err := checkShellMarsHarnessCLIPolicy(args); err != nil {
+	if err := checkShellMarsCLIPolicy(args); err != nil {
 		return err
 	}
 	cmd := strings.Join(args.Argv, " ")
@@ -233,17 +233,17 @@ func checkShellPolicy(raw json.RawMessage) error {
 	return nil
 }
 
-func checkShellMarsHarnessCLIPolicy(args shellExecArgs) error {
-	if cliArgs, ok := shellExecMarsHarnessArgs(args); ok {
+func checkShellMarsCLIPolicy(args shellExecArgs) error {
+	if cliArgs, ok := shellExecMarsArgs(args); ok {
 		encoded, _ := json.Marshal(cliArgs)
-		return fmt.Errorf("policy: run mars-harness commands with mars_harness_cli, not shell_exec, so agents use the active harness executable instead of a stale PATH binary. Retry with mars_harness_cli args %s", encoded)
+		return fmt.Errorf("policy: run mars commands with mars_cli, not shell_exec, so agents use the active harness executable instead of a stale PATH binary. Retry with mars_cli args %s", encoded)
 	}
 	return nil
 }
 
-func shellExecMarsHarnessArgs(args shellExecArgs) ([]string, bool) {
+func shellExecMarsArgs(args shellExecArgs) ([]string, bool) {
 	if len(args.Argv) > 0 {
-		if filepath.Base(strings.TrimSpace(args.Argv[0])) == "mars-harness" {
+		if isMarsBinaryName(filepath.Base(strings.TrimSpace(args.Argv[0]))) {
 			return append([]string(nil), args.Argv[1:]...), true
 		}
 		return nil, false
@@ -252,10 +252,19 @@ func shellExecMarsHarnessArgs(args shellExecArgs) ([]string, bool) {
 	for len(fields) > 0 && shellEnvAssignment(fields[0]) {
 		fields = fields[1:]
 	}
-	if len(fields) == 0 || filepath.Base(strings.TrimSpace(fields[0])) != "mars-harness" {
+	if len(fields) == 0 || !isMarsBinaryName(filepath.Base(strings.TrimSpace(fields[0]))) {
 		return nil, false
 	}
 	return append([]string(nil), fields[1:]...), true
+}
+
+func isMarsBinaryName(name string) bool {
+	switch strings.TrimSpace(name) {
+	case "mars", "mars-harness":
+		return true
+	default:
+		return false
+	}
 }
 
 func shellEnvAssignment(field string) bool {

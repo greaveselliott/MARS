@@ -2,7 +2,7 @@
 
 **Status:** Draft  
 **Date:** 2026-04-11  
-**Author:** Mars Harness contributors
+**Author:** MARS contributors
 
 Execution model for harness roles: how a job runs the model, assembles context, parses tool calls, and advances the conversation until completion or failure.
 
@@ -56,5 +56,5 @@ Section order is stable and versioned so replay and tests can diff context relia
   existing turn callback now lets the terminal dashboard mark that phase as
   `waiting for model response` with elapsed phase age, without changing
   sequential execution or trace semantics.
-- **2026-05-21 — Structured CLI recovery:** A `demo-temp-run59` release replay showed Release Manager reading the `mars_harness_cli` reference but repeating a stale `shell_exec mars-harness release notes` command until loop containment fired. Shell policy now blocks direct `mars-harness` binary invocations and gives the equivalent structured `mars_harness_cli` args before a stale PATH binary can create a liveness loop.
+- **2026-05-21 — Structured CLI recovery:** A `demo-temp-run59` release replay showed Release Manager reading the `mars_cli` reference but repeating a stale `shell_exec mars release notes` command until loop containment fired. Shell policy now blocks direct `mars` binary invocations and gives the equivalent structured `mars_cli` args before a stale PATH binary can create a liveness loop.
 - **2026-06-26 - OpenAI-compatible tool-call adjacency:** A fresh OpenAI-backed lifecycle replay showed that a model-provided multi-tool assistant message must be followed by tool responses for every original `tool_call_id` before the runtime appends synthetic code-index refreshes or terminal-evidence prompts. The loop now finishes the model tool-call batch first, records skipped tool responses when a terminal tool stops the job mid-batch, and only then appends runtime-injected follow-up messages.

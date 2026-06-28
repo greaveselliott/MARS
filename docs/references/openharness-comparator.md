@@ -3,15 +3,15 @@
 **Status:** Reference
 **Date:** 2026-05-03
 **Source:** [HKUDS/OpenHarness](https://github.com/HKUDS/OpenHarness)
-**Mars Harness relevance:** Runtime ergonomics comparator for role readiness,
+**MARS relevance:** Runtime ergonomics comparator for role readiness,
 context compaction, skill metadata, plugin boundaries, and permission design.
 
 ## Verdict
 
 OpenHarness is a useful comparator, not a dependency or replacement. It is
-better than Mars Harness at interactive Claude Code-style runtime ergonomics:
+better than MARS at interactive Claude Code-style runtime ergonomics:
 dry-run preflight, context compaction, skills/plugins, and provider flexibility.
-Mars Harness remains better aligned with the source product promise: local-first
+MARS remains better aligned with the source product promise: local-first
 autonomous delivery, strict trunk, repo/database system of record, trust,
 scoring, guardrails, generated target harnesses, and a single Go binary.
 
@@ -26,7 +26,7 @@ The adoption rule is:
 
 | OpenHarness idea | Mars-shaped adoption |
 | --- | --- |
-| Dry-run readiness report | Extend `mars-harness run --dry-run` and/or `doctor` with `ready`, `warning`, or `blocked`, role resolution, tool allowlist validity, trust checks, model readiness, guardrail load status, context estimate, and concrete next actions. |
+| Dry-run readiness report | Extend `mars run --dry-run` and/or `doctor` with `ready`, `warning`, or `blocked`, role resolution, tool allowlist validity, trust checks, model readiness, guardrail load status, context estimate, and concrete next actions. |
 | Sophisticated context compaction | Replace blunt old tool-result pruning with trace-aware compaction that preserves task focus, recent work, tool-call/tool-result integrity, and auditable compact checkpoints. |
 | Rich skill metadata | Extend `.harness/skills/*/SKILL.md` beyond `name` and `scope` with optional description, when-to-use, evidence, and freshness metadata. Use this for readiness output and skill routing. |
 | Plugin discovery ergonomics | Borrow the catalog/discovery shape only. Mars skills should remain repo-visible procedural guidance unless promoted into formal built-in tools. |
@@ -35,7 +35,7 @@ The adoption rule is:
 ## Explicit Non-Adoptions
 
 - Do not import OpenHarness code directly. It is a Python application, while
-  Mars Harness is constrained to Go, single-binary distribution, and no external
+  MARS is constrained to Go, single-binary distribution, and no external
   runtime dependencies.
 - Do not load arbitrary project plugin code by default. That conflicts with
   blast-radius containment and the formalized tool creation path.

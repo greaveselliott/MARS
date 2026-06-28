@@ -17,9 +17,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/orgstate"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 )
 
 type ticketSnapshot struct {

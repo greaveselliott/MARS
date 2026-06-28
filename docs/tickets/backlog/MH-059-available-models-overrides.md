@@ -26,7 +26,7 @@ depends_on: ["MH-053", "MH-054", "MH-055"]
 ## Context
 
 The dashboard needs to list offline and cloud-hosted models currently available
-to Mars Harness and provide a safe path to add models or propose overrides.
+to MARS and provide a safe path to add models or propose overrides.
 Visibility is not the same as default promotion; benchmark and validation
 evidence still matters.
 
@@ -42,7 +42,7 @@ evidence still matters.
 - `internal/inference/`
 - `internal/llm/`
 - `internal/serve/`
-- `cmd/mars-harness/`
+- `cmd/mars/`
 - `.harness/model-overrides.yaml` handling
 - `docs/features/F-010-dashboard-control-plane.md`
 - `docs/product-specs/dashboard-control-plane.md`

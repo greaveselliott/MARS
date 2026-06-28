@@ -14,10 +14,10 @@ These are the product's constitution. Every feature, architecture decision, and 
 
 This covers the full lifecycle, not just first boot:
 
-- **First setup:** `mars-harness setup` auto-detects GPU, downloads pinned models, scaffolds the bundle, verifies the local loop, and starts serving. GitHub integration is optional and only marked healthy after credentials and webhooks are validated.
-- **Adding a repo:** `mars-harness init` in a new repo scaffolds everything. Register it and start running on `main`.
-- **Upgrading models:** `mars-harness models upgrade` detects newer weights, downloads them, swaps seamlessly.
-- **Upgrading the harness:** `mars-harness upgrade` pulls the latest binary and migrates config.
+- **First setup:** `mars setup` auto-detects GPU, downloads pinned models, scaffolds the bundle, verifies the local loop, and starts serving. GitHub integration is optional and only marked healthy after credentials and webhooks are validated.
+- **Adding a repo:** `mars init` in a new repo scaffolds everything. Register it and start running on `main`.
+- **Upgrading models:** `mars models upgrade` detects newer weights, downloads them, swaps seamlessly.
+- **Upgrading the harness:** `mars upgrade` pulls the latest binary and migrates config.
 - **Permission fallback:** GitHub is optional telemetry and integration infrastructure. Local-only operation remains complete for ticket, commit, push, scoring, and dashboard workflows.
 
 If a user has to debug anything during normal operation, we failed.
@@ -115,7 +115,7 @@ Two input signals, one evolution system:
 
 **"When the harness initialises a repo, it deploys a work management system so the autonomous pipeline has input from day one. The structure is configurable, not imposed."**
 
-**What `mars-harness init` scaffolds** (default layout, configurable in manifest):
+**What `mars init` scaffolds** (default layout, configurable in manifest):
 
 - `docs/tickets/` with `backlog/`, `in-progress/`, `done/` and a README
 - `docs/exec-plans/backlog/`, `active/`, `completed/`, and `superseded/`
@@ -149,7 +149,7 @@ Two input signals, one evolution system:
 
 **Revert capability:** Every harness commit is trace-linked and can be reverted with a generated command or proposed revert commit.
 
-**Emergency stop:** `mars-harness stop --now` immediately halts all jobs, cancels the queue, and stops new mutating tool calls. Dashboard has a red stop button.
+**Emergency stop:** `mars stop --now` immediately halts all jobs, cancels the queue, and stops new mutating tool calls. Dashboard has a red stop button.
 
 **Scope:** Containment is the harness's job before commit and push. After a commit lands, safety remains traceable through scoring, checks, revert detection, and emergency stop.
 
@@ -171,7 +171,7 @@ Two input signals, one evolution system:
 
 **Trace storage:** Full traces retained 30 days, summaries retained indefinitely. Configurable in manifest.
 
-**Trace access:** Every harness commit is linked to a reasoning summary. The dashboard shows full traces. `mars-harness run` streams traces live in the terminal.
+**Trace access:** Every harness commit is linked to a reasoning summary. The dashboard shows full traces. `mars run` streams traces live in the terminal.
 
 ---
 
@@ -193,7 +193,7 @@ Two input signals, one evolution system:
 
 **Automatic demotion:** Score drops below threshold for 5 consecutive jobs → demoted one level.
 
-**Manual override:** `mars-harness trust <role> --level <level>` overrides the score-based level. Expected path for low-frequency roles during bootstrap.
+**Manual override:** `mars trust <role> --level <level>` overrides the score-based level. Expected path for low-frequency roles during bootstrap.
 
 ---
 

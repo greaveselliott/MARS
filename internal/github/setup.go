@@ -24,7 +24,7 @@ const (
 	defaultListenAddr    = ":9999"
 	defaultSetupTimeout  = 5 * time.Minute
 	credentialsFileName  = "github-app.json"
-	credentialsDirName   = ".mars-harness"
+	credentialsDirName   = ".mars"
 	manifestCallbackPath = "/callback"
 	manifestSetupPath    = "/setup"
 )
@@ -53,8 +53,8 @@ func (c SetupConfig) withDefaults() SetupConfig {
 // appManifest returns the JSON manifest for the GitHub App.
 func appManifest(callbackURL string) map[string]any {
 	return map[string]any{
-		"name":            "mars-harness",
-		"url":             "https://github.com/greaveselliott/mars-harness",
+		"name":            "mars",
+		"url":             "https://github.com/greaveselliott/MARS",
 		"hook_attributes": map[string]any{"url": callbackURL, "active": true},
 		"redirect_url":    callbackURL,
 		"callback_urls":   []string{callbackURL},
@@ -110,7 +110,7 @@ func RunSetup(ctx context.Context, cfg SetupConfig) (*AppCredentials, error) {
 <form method="post" action="%s/settings/apps/new">
 <input type="hidden" name="manifest" value='%s'>
 <button type="submit" style="font-size:1.2em;padding:12px 24px;cursor:pointer">
-Register Mars Harness GitHub App
+Register MARS GitHub App
 </button>
 </form>
 </body></html>`, cfg.GitHubURL, strings.ReplaceAll(string(manifestJSON), "'", "&#39;"))
@@ -132,7 +132,7 @@ Register Mars Harness GitHub App
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, `<!DOCTYPE html><html><body><h2>Mars Harness GitHub App registered successfully!</h2><p>You can close this window.</p></body></html>`)
+		fmt.Fprint(w, `<!DOCTYPE html><html><body><h2>MARS GitHub App registered successfully!</h2><p>You can close this window.</p></body></html>`)
 		resultCh <- creds
 	})
 

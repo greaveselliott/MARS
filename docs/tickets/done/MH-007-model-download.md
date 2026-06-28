@@ -28,7 +28,7 @@ Implement `internal/models/download.go`:
 ## Acceptance Criteria
 
 ### Functional
-- [x] Downloads a file from HuggingFace and saves to `~/.mars-harness/models/`
+- [x] Downloads a file from HuggingFace and saves to `~/.mars/models/`
 - [x] Progress bar shows during download
 - [x] Checksum verified after download
 - [x] Cached file skipped on subsequent runs

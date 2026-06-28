@@ -18,7 +18,7 @@ dedupe_key: "public-example"
 metadata:
   category: "architecture_doctrine"
   confidence: "high"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   role: "planner"
   severity: "high"
   target: "operating-model"
@@ -30,7 +30,7 @@ depends_on: []
 # T-002: Document foundation and deployed harness architecture
 
 ## Context
-Mars Harness now has two related harness contexts: the foundation harness used to evolve mars-harness itself and deployed harnesses generated into target projects. Recent recursive improvement and release-publication work showed that agents need a clear architecture for what belongs to the foundation harness, what belongs to deployed harnesses, what mirrors, and what stays source-only.
+MARS now has two related harness contexts: the foundation harness used to evolve mars itself and deployed harnesses generated into target projects. Recent recursive improvement and release-publication work showed that agents need a clear architecture for what belongs to the foundation harness, what belongs to deployed harnesses, what mirrors, and what stays source-only.
 
 ## Requirements
 - Add docs/design-docs/foundation-deployed-harness-architecture.md.

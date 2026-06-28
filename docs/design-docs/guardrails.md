@@ -2,7 +2,7 @@
 
 **Status:** Draft  
 **Date:** 2026-04-11  
-**Author:** Mars Harness contributors
+**Author:** MARS contributors
 
 Mechanical checks on harness outputs and repo mutations: what is enforced, how overrides work, and how the engine stays maintainable as rules grow.
 
@@ -270,11 +270,11 @@ Rule evaluation should stay sub-second for typical repos on laptop hardware; pat
   creating a parallel root `main.go` and `main_test.go`. Guardrails now record
   the failed Go package target when it is narrow and block source/test writes
   outside that scope until the same test/build lane is repaired.
-- **2026-05-21 — Structured Mars Harness CLI routing:** A clean release replay
-  showed Release Manager resolving an older installed `mars-harness` through
+- **2026-05-21 — Structured MARS CLI routing:** A clean release replay
+  showed Release Manager resolving an older installed `mars` through
   `shell_exec`, even though the active running harness binary had the needed
-  `release` command. `shell_exec` now blocks direct `mars-harness` binary
-  invocations and points the role at equivalent `mars_harness_cli` args.
+  `release` command. `shell_exec` now blocks direct `mars` binary
+  invocations and points the role at equivalent `mars_cli` args.
 - **2026-05-21 — Failing test output in repair guidance:** A Slugify CLI replay
   showed Engineer stuck after adding failing tests for a real implementation
   mismatch. Guardrails now repeat the latest failing assertion output in

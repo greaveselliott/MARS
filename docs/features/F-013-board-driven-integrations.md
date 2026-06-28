@@ -7,7 +7,7 @@
 
 ## Business Logic
 
-Mars Harness supports two operating profiles:
+MARS supports two operating profiles:
 
 - `ceo-led`: the default existing flow. GitHub webhooks, cron schedules, strict-trunk delivery, generated role tool lists, and local-first behavior remain unchanged when `.harness/integrations.yaml` is absent or names this profile.
 - `board-driven`: an optional flow for teams that use a JIRA board as work-order truth. JIRA mirrors tickets into the repo, board state selects the next ready item, `cto-weekly` scopes the ticket, Engineer and QA deliver it, and PR mode can open a human-merged pull request when explicitly enabled.
@@ -66,7 +66,7 @@ And those roles remain available for dispatch or manual invocation
 And delivery, review, security, dogfood, release, janitor, and orchestrator schedules keep their existing behavior
 And startup/restart logs and status APIs expose the active profile
 
-Given an operator runs `mars-harness init` or `mars-harness upgrade`
+Given an operator runs `mars init` or `mars upgrade`
 When generated harness defaults are written
 Then `.harness/integrations.example.yaml` is present when missing
 And `.harness/integrations.yaml` is never written by default

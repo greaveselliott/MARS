@@ -14,11 +14,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/orchestration"
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
-	"github.com/greaveselliott/mars-harness/internal/queue"
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/orchestration"
+	"github.com/greaveselliott/mars/internal/orgstate"
+	"github.com/greaveselliott/mars/internal/queue"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 )
 
 type StartupAction string
@@ -58,7 +58,7 @@ func (r StartupReconciliation) Summary() string {
 	return strings.Join(parts, " ")
 }
 
-// ReconcileStartup decides whether `mars-harness start --repo` should seed a
+// ReconcileStartup decides whether `mars start --repo` should seed a
 // new CEO job or resume existing lifecycle state. It runs before Server.Start
 // so bootstrap seeding cannot get ahead of stale-job and ticket recovery.
 func (s *Server) ReconcileStartup(ctx context.Context, repoID, repoPath string, forceNewLifecycle bool) (StartupReconciliation, error) {
@@ -342,7 +342,7 @@ func (s *Server) reconcileRecentDisposition(ctx context.Context, repoID, repoPat
 
 func (s *Server) enqueueStartupRole(ctx context.Context, repoID, role, signal, ticketID string, payload map[string]string) (string, error) {
 	payload["type"] = "startup_reconciliation"
-	payload["source"] = "mars-harness start"
+	payload["source"] = "mars start"
 	payload["target_role"] = role
 	trigger, err := json.Marshal(payload)
 	if err != nil {

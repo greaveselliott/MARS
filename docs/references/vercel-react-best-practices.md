@@ -5,17 +5,17 @@
 **Published:** January 2026
 **Type:** Structured agent skill
 **Carry-over source:** `../mars/docs/references/vercel-react-best-practices.md`
-**Mars Harness relevance:** Reference for generated React/Next.js target projects and rule packaging.
+**MARS relevance:** Reference for generated React/Next.js target projects and rule packaging.
 
 ## Summary
 
-The Vercel React Best Practices skill is a structured ruleset for React and Next.js performance work. Mars adopted its rule format, impact levels, examples, and generated-output model. Mars Harness should carry it as a reference for target-project bundle design and agent-legible rule authoring.
+The Vercel React Best Practices skill is a structured ruleset for React and Next.js performance work. Mars adopted its rule format, impact levels, examples, and generated-output model. MARS should carry it as a reference for target-project bundle design and agent-legible rule authoring.
 
 ## Concepts Worth Carrying Forward
 
 ### Rules as source
 
-Individual rule files can be compiled into agent-facing outputs. This is relevant to Mars Harness because generated `.harness` bundles, role prompts, and target-project instructions need drift-resistant source material.
+Individual rule files can be compiled into agent-facing outputs. This is relevant to MARS because generated `.harness` bundles, role prompts, and target-project instructions need drift-resistant source material.
 
 ### Impact levels
 
@@ -31,9 +31,9 @@ Harness implication: policy and doctor errors should be written as instructions 
 
 ### Testable skills
 
-The reference extracts test cases from rules. Mars Harness should follow the same spirit: prompts, generated bundles, and guardrails should be validated by golden tests or matrix tests where practical.
+The reference extracts test cases from rules. MARS should follow the same spirit: prompts, generated bundles, and guardrails should be validated by golden tests or matrix tests where practical.
 
-## Status For Mars Harness
+## Status For MARS
 
 This is not a default Harness runtime dependency. It is a reference for:
 

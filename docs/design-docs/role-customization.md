@@ -5,9 +5,9 @@
 
 ## Context
 
-Mars Harness ships starter roles so a new target repo has an agent team on day one. Those roles are useful defaults, but they are not perfect universal agents. A project may need different roles, fewer roles, stricter tool access, different schedules, domain-specific prompts, or custom knowledge routes.
+MARS ships starter roles so a new target repo has an agent team on day one. Those roles are useful defaults, but they are not perfect universal agents. A project may need different roles, fewer roles, stricter tool access, different schedules, domain-specific prompts, or custom knowledge routes.
 
-The product must therefore treat generated role prompts and manifests as user-owned configuration after initialization. Otherwise `mars-harness upgrade` can erase the exact tuning users need to make the harness effective.
+The product must therefore treat generated role prompts and manifests as user-owned configuration after initialization. Otherwise `mars upgrade` can erase the exact tuning users need to make the harness effective.
 
 ## Decisions
 
@@ -21,7 +21,7 @@ Once generated into a target repo, role prompts, manifest configuration, knowled
 
 ### AD-048: Upgrade Fills Missing Defaults, It Does Not Retune Agents Silently
 
-`mars-harness upgrade` writes missing starter files but does not overwrite existing manifest, role prompts, knowledge routes, guardrails, or target docs. Adopting newer default prompt wording is an explicit user choice through comparison and deliberate edits.
+`mars upgrade` writes missing starter files but does not overwrite existing manifest, role prompts, knowledge routes, guardrails, or target docs. Adopting newer default prompt wording is an explicit user choice through comparison and deliberate edits.
 
 ## Implementation Requirements
 

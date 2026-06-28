@@ -15,12 +15,12 @@
 **Walking Skeleton Slice:** Expand the live validation matrix across distinct target archetypes, record pace and guardrail-tax deltas for each, and only promote fixes that repeat across targets or protect a clear foundation invariant.
 **Learning Or MVP Outcome:** Future agents inherit the foundation/deployed architecture decision, generated target mirror, drift review, skill/tool decision, and a refreshed path back to runtime remediation work.
 **Created:** 2026-05-02
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Source:** Exec-plan review and repository state audit on 2026-05-02
 
 ## Purpose
 
-This is the current execution map for Mars Harness. It exists because the
+This is the current execution map for MARS. It exists because the
 original master plan and delivery schedule are historical baseline
 documents: useful for lineage, but stale as a status source.
 
@@ -219,23 +219,23 @@ not unit tests alone.
 | --- | --- | --- |
 | F-001-S001 | Passing | `docs/goals/active.md`, `docs/features/F-001-delivery-operating-model.md`, and this active plan are linked. |
 | F-001-S002 | Passing | Engineer ticket gate validates feature ticket evidence before done. |
-| F-001-S003 | Passing | `mars-harness init` emits goals, feature contracts, AD-074, role guidance, ticket metadata, exec-plan metadata, quality guidance, and knowledge routes. |
+| F-001-S003 | Passing | `mars init` emits goals, feature contracts, AD-074, role guidance, ticket metadata, exec-plan metadata, quality guidance, and knowledge routes. |
 | F-001-S004 | Passing | `update check` and `doctor --repo` report operating-model drift without overwriting user-owned docs. |
 | F-001-S005 | Passing | Ticket docs, quality score, and release-note generation distinguish shipped feature scenarios from enabler work when commits reference tickets. |
 | F-001-S006 | Passing | Telemetry proposals can create or update active goals/observations with dedupe evidence. |
 | F-001-S007 | Passing | `go test ./internal/docsconsistency -run TestFeatureContractsDeclareRequiredFields` checks feature contracts include first-class business-logic sections. |
 | F-001-S008 | Passing | `go test ./internal/docsconsistency -run TestOperatingModelCodeFilesDeclareDocSyncMetadata` checks operating-model code files carry associated documentation metadata. |
-| F-001-S009 | Passing | `go test ./internal/docsync ./internal/docsconsistency`, `go test ./...`, and the 2026-05-20 focused run-12 replay `go run ./cmd/mars-harness tools run docsync_audit --repo <validation-root> --args-json '{}'` verify source-wide docsync audits deployed `src/` app roots and parses compact inline static metadata. |
+| F-001-S009 | Passing | `go test ./internal/docsync ./internal/docsconsistency`, `go test ./...`, and the 2026-05-20 focused run-12 replay `go run ./cmd/mars tools run docsync_audit --repo <validation-root> --args-json '{}'` verify source-wide docsync audits deployed `src/` app roots and parses compact inline static metadata. |
 | F-012-S010 | Passing | `go test ./internal/remediation`, `go test ./internal/serve -run 'TestHandleJobFailed(RecordsDeterministicRemediation|ExecutesGeneratedDocs)|TestHandleRemediation(ExecutableReadyRecipe|AutoSafeWithoutExecutor|OperatorRecipe)'`, `go test ./internal/doctor -run TestCheckDeterministicRemediationHealth`, `go test ./internal/qualityscore -run TestExportRendersTelemetryAndOutcomeSignals`, `go test ./internal/docsconsistency ./internal/docsync`, `go test ./...`, and the 2026-05-19 clean `<validation-root>` replay cover the completed `MH-048` edge slice. |
 | F-001-S015 | Passing | [foundation-deployed-harness-architecture.md](../../design-docs/foundation-deployed-harness-architecture.md) records the foundation/deployed doctrine boundary, feedback routing, tool/skill/runtime split, generated-target implications, doctrine-maintenance duties, and 2026-05-19 drift review. |
 | F-004-S007 | Passing | `go test ./internal/scanner -run TestInit_success` verifies generated targets receive the foundation/deployed route and AD-139 core doctrine without source binary asset names. |
 | F-012-S006 | Passing | [skill-evolution.md](../../design-docs/skill-evolution.md) AD-140 keeps the recursive improvement loop as operating doctrine and creates `T-006` for a foundation Release Manager skill. |
 | F-012-S007 | Passing | Generated target knowledge routes and mirrored harness docs carry the reusable feedback and improvement-loop doctrine after the AD-139 source doc. |
-| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.29 --repo greaveselliott/mars-harness` cover the release-object gate and notes-only fallback. `mars-harness release verify-assets --version v0.41.29` records the separate missing-asset blocker. |
+| F-009-S013 | Passing | `go test ./internal/docsconsistency ./internal/docsync` and `gh release view v0.41.29 --repo greaveselliott/mars` cover the release-object gate and notes-only fallback. `mars release verify-assets --version v0.41.29` records the separate missing-asset blocker. |
 | F-010-S003 | Passing | `go test ./internal/serve -run 'TestServer_(dashboardStopEndpointStopsStart|startStop)'`, `go test ./internal/dashboard -run 'TestDashboard_(stopEndpoint|controlEndpoints_methodNotAllowed|controlEndpoints_nilCallbacks)'`, and the 2026-05-19 clean `demo-123-stop-check2` replay verify dashboard stop returns success and exits `start` without manual kill. |
-| F-005-S006 | Passing | `go test ./cmd/mars-harness -run 'TestRunCommand(NoInit|AutoInit|RejectsRepoLocalLogFile)|TestMarsHarnessCLI'` and `go run ./cmd/mars-harness run engineer --repo /path/to/local-redacted --dry-run --trace --no-init` verify observer-safe dry-run exits without scaffolding an uninitialized target. |
+| F-005-S006 | Passing | `go test ./cmd/mars -run 'TestRunCommand(NoInit|AutoInit|RejectsRepoLocalLogFile)|TestMarsCLI'` and `go run ./cmd/mars run engineer --repo /path/to/local-redacted --dry-run --trace --no-init` verify observer-safe dry-run exits without scaffolding an uninitialized target. |
 | F-006-S001 | Passing | `go test ./pkg/testutil ./internal/queue ./internal/telemetry ./internal/foundationtelemetry ./internal/trace ./internal/scoring ./internal/trust ./internal/evolution ./internal/orgstate ./internal/serve`, `go test ./internal/docsconsistency ./internal/docsync`, and `go test ./...` verify legacy SQLite fixture coverage across persistent stores. |
-| F-008-S005 | Passing | `go test ./internal/qualityscore -run 'TestExport(CreatesOutcomeSignalTickets|RendersTelemetryAndOutcomeSignals)'`, `go run ./cmd/mars-harness scores export --repo .`, and refreshed `docs/QUALITY_SCORE.md` verify guardrail outcome signals stay quality evidence by default and require `--create-intervention-debt` for ticket materialization. |
+| F-008-S005 | Passing | `go test ./internal/qualityscore -run 'TestExport(CreatesOutcomeSignalTickets|RendersTelemetryAndOutcomeSignals)'`, `go run ./cmd/mars scores export --repo .`, and refreshed `docs/QUALITY_SCORE.md` verify guardrail outcome signals stay quality evidence by default and require `--create-intervention-debt` for ticket materialization. |
 | F-008-S008 | In progress | `go test ./internal/qualityscore -run TestExportRendersFactoryPaceFromTraceSummaries` verifies quality export renders trace-derived Factory Pace rows. The 2026-05-20 run-12 export recorded Engineer at 92 turns / 45 tool invocations and Dogfood at 66 turns / 32 tool invocations; the `demo-api-run1` export recorded Engineer at 102 trace turns / 50 tool invocations with a max-turn stop. |
 | F-006-S015 | In progress | `go test ./internal/scheduler -run TestScheduler_skipsWhenRepoRoleAlreadyActive` and `go test ./internal/queue -run TestQueue_activeJobForRepoRole` cover the scheduled duplicate-work prevention added after `demo-api-run1`. The `demo-api-run2` rerun preserved product progress but did not coincide with a default cron boundary, so a cron-boundary live proof remains open. |
 | F-007-S010 | In progress | `go test ./internal/tools -run 'TestShellExec(AllowsUntrackedRootBuildArtifactCleanup|AllowsUntrackedGoModuleBuildArtifactCleanup|StillBlocksRemovalOfOrdinaryFiles|StillBlocksGoModuleNamedTextFileRemoval)'` covers bounded repo/module-local build artifact cleanup; `demo-api-run5` showed the remaining gap is cleanup discoverability, so the 2026-05-20 fix makes blast-radius errors name the exact safe `rm <artifact>` remediation. |
@@ -273,7 +273,7 @@ Checks recorded during the 2026-05-02 review:
 - Every non-release semantic commit still requires generated release notes, a
   matching release commit, a pushed `vX.Y.Z` tag, `gh release view vX.Y.Z`, a
   notes-only GitHub Release from `CHANGELOG.md` if the tag workflow did not
-  create one, and `mars-harness release verify-assets --version vX.Y.Z` before
+  create one, and `mars release verify-assets --version vX.Y.Z` before
   release work can be claimed complete. Missing binary assets are recorded as a
   blocker instead of allowing the GitHub Releases page to stay stale.
 
@@ -289,7 +289,7 @@ Checks recorded during the 2026-05-02 review:
   blocking, a live `demo-123` lifecycle report that reached product
   implementation, QA, Security, Dogfood, and Release Manager, and the first
   Mars observer validation report. This ticket is done.
-- `T-007`: deployed `mars_harness_cli` binary resolution is done as of
+- `T-007`: deployed `mars_cli` binary resolution is done as of
   2026-05-19. The tool prefers the active harness executable before stale PATH
   binaries and adds actionable stale-binary guidance.
 - `T-008`: dashboard stop is done as of 2026-05-19. Stop requests now route
@@ -487,8 +487,8 @@ Checks recorded during the 2026-05-02 review:
   reached a committed product ticket with Go tests and exact build-output
   correction, then exposed the next generic fault: after a missing-input
   expected-exit repro still panicked, policy trapped Engineer before repair.
-  It also exposed deployed/foundation naming drift through `cmd/mars-harness`
-  and `module mars-harness` in a Note Stats target. As of 2026-05-21, failed
+  It also exposed deployed/foundation naming drift through `cmd/mars`
+  and `module mars` in a Note Stats target. As of 2026-05-21, failed
   missing-input correction attempts unlock implementation edits while
   completion stays blocked, and generated CTO/Engineer guidance requires
   target-derived command, module, and binary names.
@@ -692,13 +692,13 @@ Checks recorded during the 2026-05-02 review:
   and reached local release artifacts: product planning, ticket creation,
   Engineer implementation, QA, Security, Dogfood, `release: notes 0.2.0`, and
   tag `v0.2.0`. The remaining rough edge was Release Manager using
-  `shell_exec mars-harness release notes`, which resolved a stale installed
+  `shell_exec mars release notes`, which resolved a stale installed
   binary before recovering through a second release pass. As of 2026-05-21,
-  AD-213 blocks direct `mars-harness` shell invocations in agent jobs and
-  routes Mars Harness CLI workflows through `mars_harness_cli`.
+  AD-213 blocks direct `mars` shell invocations in agent jobs and
+  routes MARS CLI workflows through `mars_cli`.
   The clean `demo-temp-run60` replay on 2026-05-21 broadened the canary matrix
   with a Word Count JSON CLI. It validated AD-213 in the live release path:
-  Release Manager used `mars_harness_cli`, committed `release: notes 0.2.0`,
+  Release Manager used `mars_cli`, committed `release: notes 0.2.0`,
   created tag `v0.2.0`, and stopped only on the real missing-remote blocker.
   The new finding was startup retry persistence: a bind-failed sandboxed start
   registered and queued bootstrap state, then automatic cleanup deleted SQLite

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Auto-unstick mars-harness replays stuck on operator_retry dispositions.
+ * Auto-unstick mars replays stuck on operator_retry dispositions.
  * Polls per-repo DB and POSTs /api/run-role for suggested_role when blocked.
  *
  * Usage:
@@ -27,7 +27,7 @@ const intervalSec = Number(flag("--interval") ?? "30");
 const dashboardURL = flag("--dashboard") ?? "http://localhost:9090";
 const forceRole = flag("--role");
 
-const dbPath = path.join(os.homedir(), ".mars-harness/db", repoSlug, "mars.db");
+const dbPath = path.join(os.homedir(), ".mars/db", repoSlug, "mars.db");
 
 function sqlite(query) {
   if (!fs.existsSync(dbPath)) return [];

@@ -11,9 +11,9 @@ identity.
 
 ## Run 1: Parts Stockroom API on v0.50.14 — 2026-06-12
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-14-convergence-routing-replay-v0.50.14.log`
+  ~/.mars/traces/logs/demo-14-convergence-routing-replay-v0.50.14.log`
 - **Target:** `/path/to/local-redacted` — fresh git
   repo seeded with a newly written Parts Stockroom API brief (Go
   standard-library JSON API: register parts, list, fetch by SKU, stock
@@ -21,7 +21,7 @@ identity.
   endpoint) — a fresh equivalent of the demo-11 Inventory/API brief, not a
   copy; local bare origin `demo-14-origin.git`; no per-repo DB existed
   before the run
-- **Source ref / binary:** `mars-harness 0.50.14` built with `make install`
+- **Source ref / binary:** `mars 0.50.14` built with `make install`
   from `5e338dc` (`release: notes 0.50.14`) on
   `codex/main-lifecycle-stabilization-rebased` (= `origin/main` at run
   time; fix commit `222392c`, tags `v0.50.13`/`v0.50.14`)
@@ -31,13 +31,13 @@ identity.
   `google_gemma-4-E4B-it-Q5_K_M.gguf`; resolved from
   `performance_profile: balanced` — pace comparison with the demo-11
   baseline is valid
-- **Database / logs:** `~/.mars-harness/db/demo-14/mars.db`;
-  `~/.mars-harness/traces/logs/demo-14-convergence-routing-replay-v0.50.14.log`
+- **Database / logs:** `~/.mars/db/demo-14/mars.db`;
+  `~/.mars/traces/logs/demo-14-convergence-routing-replay-v0.50.14.log`
 - **Run window:** 48 jobs, 2026-06-12 04:12:45–06:19:15 UTC (126.5 min);
   38 completed / 10 failed; queue fully drained with no pending or running
   jobs before the operator graceful stop (`POST /api/stop` at ~06:47 UTC
   after 25+ minutes of stable terminal state)
-- **Pre-run isolation check:** no `mars-harness serve/start` processes
+- **Pre-run isolation check:** no `mars serve/start` processes
   running; demo-12/demo-13 DB timestamps reflected only the read-only
   monitor cross-check.
 

@@ -91,7 +91,7 @@ func Benchmark(ctx context.Context, opts BenchmarkOptions) (BenchmarkReport, err
 		},
 	}
 	if report.DBPath == "" {
-		report.DBPath = DefaultDBPath(report.RepoPath)
+		report.DBPath = ResolveDBPath(report.RepoPath)
 	}
 
 	for i := 0; i < opts.Trials; i++ {

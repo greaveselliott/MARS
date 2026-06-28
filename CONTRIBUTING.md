@@ -1,11 +1,11 @@
-# Contributing to Mars Harness
+# Contributing to MARS
 
 ## Getting Started
 
 ```bash
-git clone https://github.com/greaveselliott/mars-harness.git
-cd mars-harness
-go build ./cmd/mars-harness
+git clone https://github.com/greaveselliott/MARS.git
+cd mars
+go build ./cmd/mars
 go test ./...
 ```
 
@@ -15,9 +15,9 @@ go test ./...
 2. Make one coherent change with tests
 3. Run `go test ./...` and `golangci-lint run`
 4. Commit with a semantic message referencing the milestone if applicable
-5. Run `mars-harness release notes --repo . --bump auto`
+5. Run `mars release notes --repo . --bump auto`
 6. Verify the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes
-7. Run `mars-harness release backfill-notes --repo . --check`; if it reports legacy entries, run `mars-harness release backfill-notes --repo .` and include those changelog corrections
+7. Run `mars release backfill-notes --repo . --check`; if it reports legacy entries, run `mars release backfill-notes --repo .` and include those changelog corrections
 8. Commit them as `release: notes X.Y.Z`
 9. Push `main`
 10. Publish or update GitHub Release `vX.Y.Z` with the generated changelog entry when GitHub release credentials are configured

@@ -15,7 +15,7 @@ import (
 )
 
 // FuzzDecodeStringSliceArg hardens the T-015 list-string normalizer used by
-// mars_harness_cli.args, shell_exec.argv, workspace_hygiene.paths, and git
+// mars_cli.args, shell_exec.argv, workspace_hygiene.paths, and git
 // path filters: arbitrary raw JSON payloads must never panic, and successful
 // decodes must produce a well-formed slice (T-025).
 func FuzzDecodeStringSliceArg(f *testing.F) {

@@ -320,19 +320,19 @@ func TestCreateCheckRun_happyPath(t *testing.T) {
 		b, _ := io.ReadAll(r.Body)
 		var body map[string]string
 		require.NoError(t, json.Unmarshal(b, &body))
-		require.Equal(t, "mars-harness", body["name"])
+		require.Equal(t, "mars", body["name"])
 		require.Equal(t, "abc1234", body["head_sha"])
 		require.Equal(t, "in_progress", body["status"])
 
 		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(CheckRun{ID: 100, Name: "mars-harness", Status: "in_progress"})
+		_ = json.NewEncoder(w).Encode(CheckRun{ID: 100, Name: "mars", Status: "in_progress"})
 	}))
 	t.Cleanup(srv.Close)
 
 	c, err := NewClient(ClientConfig{Mode: AuthPAT, Token: "t", BaseURL: srv.URL, HTTPClient: srv.Client()})
 	require.NoError(t, err)
 
-	cr, err := c.CreateCheckRun(context.Background(), "o", "r", "mars-harness", "abc1234", CheckInProgress)
+	cr, err := c.CreateCheckRun(context.Background(), "o", "r", "mars", "abc1234", CheckInProgress)
 	require.NoError(t, err)
 	require.Equal(t, int64(100), cr.ID)
 }

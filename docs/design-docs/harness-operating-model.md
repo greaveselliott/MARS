@@ -2,14 +2,14 @@
 
 **Status:** Accepted
 **Date:** 2026-05-03
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ## Context
 
-Mars Harness already ships explicit starter roles and a strict-trunk delivery
+MARS already ships explicit starter roles and a strict-trunk delivery
 loop. The remaining role-model gap is vocabulary: Mars proved that autonomous
 work stays easier to route when role memory is grouped by stable domains and
-specific run modes, while Mars Harness manifests currently expose only role
+specific run modes, while MARS manifests currently expose only role
 keys such as `engineer`, `qa`, and `pipeline-fixer`.
 
 The product should not break existing bundles or collapse useful starter roles
@@ -19,7 +19,7 @@ preserving explicit manifest role entries.
 
 ## Decision
 
-Mars Harness defines six canonical operating domains:
+MARS defines six canonical operating domains:
 
 | Domain | Responsibility | Boundary |
 | --- | --- | --- |
@@ -64,7 +64,7 @@ integrations; normal roles make semantic commits to `main` and push directly.
 | `dogfood` | End-to-End Tester | `dogfood-validation` | Exercises real target setup, build, run, and user/agent paths. |
 | `janitor` | Orchestrator | `ticket-hygiene` | Drains stale state, misleading in-progress work, and backlog entropy. |
 
-For Mars Harness source stabilization, the End-to-End Tester domain also owns
+For MARS source stabilization, the End-to-End Tester domain also owns
 the live demo improvement loop against representative target repos. The
 canonical foundation rules live in
 [foundation-operating-model.md](foundation-operating-model.md) (AD-291, AD-292);
@@ -80,7 +80,7 @@ tests as sufficient.
 
 The source repo may define foundation-only roles that help external AI clients
 consume the foundation operating model. These roles are not generated into
-target harnesses and do not make `mars-harness` a normal target of its own
+target harnesses and do not make `mars` a normal target of its own
 agent runs.
 
 | Source role | Domain | Mode | Notes |
@@ -118,7 +118,7 @@ role contracts.
 
 **Status:** Accepted
 **Date:** 2026-05-04
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 Foundation-agent personas are canonical Go structs in `internal/personas`.
 Generated docs under `docs/roles/personas/` and generated prompt Personal Guide
@@ -178,7 +178,7 @@ possible, but ordinary forward handoffs cannot hide uncommitted work.
 
 **Status:** Accepted
 **Date:** 2026-05-04
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 Dispatch-mode routing treats `handoff` and `feedback` as runtime data, not
 decorative transcript text. When a non-Orchestrator role completes, the server
@@ -254,9 +254,9 @@ and a seed version of this design decision. Existing targets are not rewritten;
 
 **Status:** Accepted
 **Date:** 2026-05-03
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
-Mars Harness keeps `docs/roles/ROLES.md` as the checked role inventory for the
+MARS keeps `docs/roles/ROLES.md` as the checked role inventory for the
 foundation harness and generated target harnesses. The registry records each
 manifest role's origin, canonical domain, mode, trigger sources, schedule,
 tools, trust level, guardrails, model routing, scoring signals, and escalation
@@ -267,7 +267,7 @@ instead of duplicating long architecture sections. Runtime truth remains in
 `.harness/manifest.yaml`; the registry is the human and agent inventory that
 must stay consistent with that runtime surface.
 
-`mars-harness init` emits the target registry. `mars-harness doctor --repo`
+`mars init` emits the target registry. `mars doctor --repo`
 checks the registry against the target manifest and reports actionable drift,
 including custom target roles that need `Origin` set to `custom`. Optional
 GitHub webhook triggers must be marked optional so compatibility repair inputs
@@ -282,10 +282,10 @@ Follow-up work remains:
 
 **Status:** Accepted
 **Date:** 2026-05-23
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 The foundation operating model must be consumable by all major AI coding
-clients, not only one vendor runtime. Mars Harness therefore defines
+clients, not only one vendor runtime. MARS therefore defines
 `foundation-maintainer` as a source-only role profile for maintaining the
 software factory and keeps vendor-specific instruction files as thin adapters.
 
@@ -295,7 +295,7 @@ canonical foundation instruction surfaces. `CLAUDE.md`, `GEMINI.md`,
 surfaces instead of carrying independent doctrine. Clients that natively read
 `AGENTS.md` use it directly.
 
-The runtime supports `mars-harness run foundation-maintainer --repo . --dry-run
+The runtime supports `mars run foundation-maintainer --repo . --dry-run
 --no-init` against the source repository without scaffolding a source
 `.harness/manifest.yaml`. The role is rejected for non-source repositories and
 is not generated into deployed target manifests.

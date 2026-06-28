@@ -36,21 +36,21 @@ memory.
 
 ### Setup
 
-- **Exact command:** `mars-harness start --repo /path/to/local-redacted --debug --log-file ~/.mars-harness/traces/logs/demo-11-baseline-start.log`
+- **Exact command:** `mars start --repo /path/to/local-redacted --debug --log-file ~/.mars/traces/logs/demo-11-baseline-start.log`
 - **Target:** `/path/to/local-redacted` — fresh git
   repo seeded with `spec.md` (small standard-library Go HTTP JSON API for
   inventory items with quantities and reorder thresholds, matching the
   run-65 Inventory/API archetype brief), local bare remote
   `/path/to/local-redacted`
-- **Source ref / binary:** `mars-harness 0.50.1`, built with `make install`
+- **Source ref / binary:** `mars 0.50.1`, built with `make install`
   from `71cb744` on `codex/main-lifecycle-stabilization-rebased` (same tip as
   `origin/main`)
 - **Model identity:** `Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf` for reasoning
   (ctx 131072) and coding (ctx 32768) tiers; quality-profile resolution
   (heavy model — see the reclassification banner above)
-- **Database:** `~/.mars-harness/db/demo-11/mars.db`
-- **Log:** `~/.mars-harness/traces/logs/demo-11-baseline-start.log`
-- **Environment note:** before launch, a stale `mars-harness start` process
+- **Database:** `~/.mars/db/demo-11/mars.db`
+- **Log:** `~/.mars/traces/logs/demo-11-baseline-start.log`
+- **Environment note:** before launch, a stale `mars start` process
   from the earlier demo-10 session (all jobs terminal) was holding the
   orchestrator ports and two llama-server instances; it was stopped with
   SIGINT per the bounded environmental-fix exception.
@@ -190,7 +190,7 @@ Its observations corroborate and sharpen the build-side record above:
   Inventory/API brief.
 - **T-027 (convergence/guardrail telemetry): confirmed live.** This run is
   the live validation flagged in T-027's ticket: `scores export` against
-  `~/.mars-harness/db/demo-11/mars.db` rendered the Convergence And
+  `~/.mars/db/demo-11/mars.db` rendered the Convergence And
   Guardrails section, the per-role max-turns count, the convergence-failure
   signal, and the Evidence Signals roll-up from real run data, with missing
   evidence still rendered as missing elsewhere in the export.

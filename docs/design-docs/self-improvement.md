@@ -2,7 +2,7 @@
 
 **Status:** Draft  
 **Date:** 2026-04-11  
-**Author:** Mars Harness contributors
+**Author:** MARS contributors
 
 Closed-loop evolution: detect when humans or the platform had to compensate, classify root cause, propose or commit safe bounded changes, and measure before/after impact.
 

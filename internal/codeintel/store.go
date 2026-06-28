@@ -162,7 +162,7 @@ func Open(repoRoot, dbPath string) (*Store, error) {
 	}
 	dbPath = strings.TrimSpace(dbPath)
 	if dbPath == "" {
-		dbPath = DefaultDBPath(abs)
+		dbPath = ResolveDBPath(abs)
 	}
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 		return nil, fmt.Errorf("codeintel: create db dir: %w", err)
@@ -181,6 +181,26 @@ func Open(repoRoot, dbPath string) (*Store, error) {
 }
 
 func DefaultDBPath(repoAbs string) string {
+	return dbPathUnderRoot(repoAbs, ".mars")
+}
+
+func DefaultLegacyDBPath(repoAbs string) string {
+	return dbPathUnderRoot(repoAbs, ".mars-harness")
+}
+
+func ResolveDBPath(repoAbs string) string {
+	path := DefaultDBPath(repoAbs)
+	if _, err := os.Stat(path); err == nil {
+		return path
+	}
+	legacy := DefaultLegacyDBPath(repoAbs)
+	if _, err := os.Stat(legacy); err == nil {
+		return legacy
+	}
+	return path
+}
+
+func dbPathUnderRoot(repoAbs, rootDir string) string {
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" {
 		home = "."
@@ -199,7 +219,7 @@ func DefaultDBPath(repoAbs string) string {
 	if strings.Trim(slug, "-_.") == "" {
 		slug = "repo"
 	}
-	return filepath.Join(home, ".mars-harness", "db", slug, "mars.db")
+	return filepath.Join(home, rootDir, "db", slug, "mars.db")
 }
 
 func (s *Store) Close() error {
@@ -656,7 +676,7 @@ func discoverFiles(root string, max int) ([]fileInfo, error) {
 
 func skipDir(name string) bool {
 	switch name {
-	case ".git", "node_modules", "vendor", "dist", "build", ".next", ".cache", "coverage", ".mars-harness":
+	case ".git", "node_modules", "vendor", "dist", "build", ".next", ".cache", "coverage", ".mars":
 		return true
 	default:
 		return false

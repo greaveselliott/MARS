@@ -1,10 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-REPO="greaveselliott/mars-harness"
+REPO="greaveselliott/mars"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 VERSION="${VERSION:-latest}"
-BINARY_NAME="mars-harness"
+BINARY_NAME="mars"
 
 log()  { printf '  %s\n' "$*"; }
 info() { printf '\033[0;34m==> %s\033[0m\n' "$*"; }
@@ -16,7 +16,7 @@ detect_os() {
     case "${os}" in
         linux)  echo "linux" ;;
         darwin) echo "darwin" ;;
-        *)      err "Unsupported operating system: ${os}. Mars Harness supports linux and darwin." ;;
+        *)      err "Unsupported operating system: ${os}. MARS supports linux and darwin." ;;
     esac
 }
 
@@ -26,7 +26,7 @@ detect_arch() {
     case "${arch}" in
         x86_64|amd64)   echo "amd64" ;;
         aarch64|arm64)  echo "arm64" ;;
-        *)              err "Unsupported architecture: ${arch}. Mars Harness supports amd64 and arm64." ;;
+        *)              err "Unsupported architecture: ${arch}. MARS supports amd64 and arm64." ;;
     esac
 }
 
@@ -102,7 +102,7 @@ configure_path() {
 }
 
 main() {
-    info "Mars Harness Installer"
+    info "MARS Installer"
     echo ""
 
     local os arch
@@ -116,10 +116,10 @@ main() {
 
     echo ""
     info "Installation complete!"
-    log "Run 'mars-harness version' to verify."
-    log "Run 'mars-harness setup' to get started."
+    log "Run 'mars version' to verify."
+    log "Run 'mars setup' to get started."
 
-    if ! command -v mars-harness &>/dev/null; then
+    if ! command -v mars &>/dev/null; then
         echo ""
         log "Note: ${INSTALL_DIR} may not be in your PATH."
         log "Add it with: export PATH=\"${INSTALL_DIR}:\$PATH\""

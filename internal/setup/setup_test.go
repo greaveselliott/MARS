@@ -26,7 +26,7 @@ func TestRun_testMode(t *testing.T) {
 	assert.Greater(t, result.StepsRun, 0)
 
 	home, _ := os.UserHomeDir()
-	baseDir := filepath.Join(home, ".mars-harness")
+	baseDir := filepath.Join(home, ".mars")
 	assert.DirExists(t, baseDir)
 	assert.FileExists(t, filepath.Join(baseDir, "config.yaml"))
 	assert.FileExists(t, filepath.Join(baseDir, "hardware.yaml"))
@@ -57,7 +57,7 @@ func TestRun_dryRun(t *testing.T) {
 	assert.Greater(t, result.StepsSkipped, 0)
 
 	home, _ := os.UserHomeDir()
-	baseDir := filepath.Join(home, ".mars-harness")
+	baseDir := filepath.Join(home, ".mars")
 	_, statErr := os.Stat(baseDir)
 	assert.True(t, os.IsNotExist(statErr), "dry-run should not create directories")
 }
@@ -70,7 +70,7 @@ func TestRun_createsSubdirectories(t *testing.T) {
 	require.NoError(t, err)
 
 	home, _ := os.UserHomeDir()
-	baseDir := filepath.Join(home, ".mars-harness")
+	baseDir := filepath.Join(home, ".mars")
 	for _, sub := range []string{"models", "bin", "traces", "db"} {
 		assert.DirExists(t, filepath.Join(baseDir, sub))
 	}
@@ -134,7 +134,7 @@ func TestBuildSteps_githubOptIn(t *testing.T) {
 func TestCreateDirectoriesStep_execute(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	baseDir := filepath.Join(dir, ".mars-harness")
+	baseDir := filepath.Join(dir, ".mars")
 
 	step := createDirectoriesStep(baseDir)
 
@@ -152,7 +152,7 @@ func TestCreateDirectoriesStep_execute(t *testing.T) {
 func TestWriteDefaultConfigStep_execute(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	baseDir := filepath.Join(dir, ".mars-harness")
+	baseDir := filepath.Join(dir, ".mars")
 	require.NoError(t, os.MkdirAll(baseDir, 0o755))
 
 	step := writeDefaultConfigStep(baseDir)
@@ -178,7 +178,7 @@ func TestWriteDefaultConfigStep_execute(t *testing.T) {
 func TestDetectHardwareStep_execute(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	baseDir := filepath.Join(dir, ".mars-harness")
+	baseDir := filepath.Join(dir, ".mars")
 	require.NoError(t, os.MkdirAll(baseDir, 0o755))
 
 	step := detectHardwareStep(baseDir)
@@ -199,7 +199,7 @@ func TestDetectHardwareStep_execute(t *testing.T) {
 func TestGithubPlaceholderStep_execute(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	baseDir := filepath.Join(dir, ".mars-harness")
+	baseDir := filepath.Join(dir, ".mars")
 	require.NoError(t, os.MkdirAll(baseDir, 0o755))
 
 	step := githubPlaceholderStep(baseDir)

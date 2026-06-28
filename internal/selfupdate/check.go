@@ -17,11 +17,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/githubauth"
+	"github.com/greaveselliott/mars/internal/githubauth"
 )
 
 const (
-	DefaultRepoFullName     = "greaveselliott/mars-harness"
+	DefaultRepoFullName     = "greaveselliott/MARS"
 	DefaultLatestReleaseURL = "https://api.github.com/repos/" + DefaultRepoFullName + "/releases/latest"
 )
 
@@ -94,7 +94,7 @@ func LatestReleaseInfo(ctx context.Context, client *http.Client, url string) (Re
 	if err != nil {
 		return ReleaseInfo{}, fmt.Errorf("latest release: build request: %w", err)
 	}
-	setGitHubHeaders(req, "mars-harness-update-check")
+	setGitHubHeaders(req, "mars-update-check")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -144,7 +144,7 @@ func setGitHubAuth(req *http.Request) {
 func githubAuthHint(statusCode int) string {
 	switch statusCode {
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return "\nprivate releases require auth. Run `mars-harness auth github setup`, or set GH_TOKEN/GITHUB_TOKEN with repository contents read access for headless installs."
+		return "\nprivate releases require auth. Run `mars auth github setup`, or set GH_TOKEN/GITHUB_TOKEN with repository contents read access for headless installs."
 	default:
 		return ""
 	}
@@ -165,9 +165,13 @@ func ReleaseAPIURL(repoFullName, version string) string {
 }
 
 // ExpectedReleaseAssetNames returns the complete release asset contract for a
-// Mars Harness GitHub release.
+// MARS GitHub release.
 func ExpectedReleaseAssetNames() []string {
 	return []string{
+		"mars-linux-amd64",
+		"mars-linux-arm64",
+		"mars-darwin-amd64",
+		"mars-darwin-arm64",
 		"mars-harness-linux-amd64",
 		"mars-harness-linux-arm64",
 		"mars-harness-darwin-amd64",

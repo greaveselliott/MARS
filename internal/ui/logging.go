@@ -77,7 +77,7 @@ func DefaultLogPath(command string, now time.Time) (string, error) {
 		name = "command"
 	}
 	name = strings.NewReplacer("/", "-", string(filepath.Separator), "-").Replace(name)
-	return filepath.Join(home, ".mars-harness", "traces", "logs", now.Format("20060102-150405")+"-"+name+".log"), nil
+	return filepath.Join(home, ".mars", "traces", "logs", now.Format("20060102-150405")+"-"+name+".log"), nil
 }
 
 // InstallCommandLogger installs a global slog handler for one CLI command.

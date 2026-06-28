@@ -94,7 +94,7 @@ And stale cron entries from the previous schedule set cannot fire after restart
 
 ### F-006-S005: Single-Repo Start
 
-Given a user runs `mars-harness start --repo <path>`
+Given a user runs `mars start --repo <path>`
 When the target needs scaffolding or registration
 Then the harness initializes if needed through the same committed generated-scaffold baseline used by `init`, `run`, `register`, and `scan`, registers the repo, classifies lifecycle state, and runs with repo-scoped state
 
@@ -103,12 +103,12 @@ When one run already owns the configured webhook or dashboard address
 Then later default `start` processes bind an ephemeral local control-plane address instead of failing before work can begin
 And scoped start cleanup does not kill another live lifecycle run's control-plane listener or llama-server process
 
-Given a user runs `mars-harness start --repo <path>`
+Given a user runs `mars start --repo <path>`
 When pending/running jobs, in-progress tickets, review rework, recent deterministic dispositions, dirty unowned work, or stale recoverable jobs already exist
 Then startup prints one of `seeded_ceo`, `resumed_lifecycle`, `recovered_stale_job`, `routed_existing_ticket`, or `refused_ambiguous_state` with evidence, routes the deterministic next role, and does not seed CEO over active lifecycle state
 
 Given an operator intentionally wants a fresh lifecycle over existing state
-When they run `mars-harness start --repo <path> --new-lifecycle`
+When they run `mars start --repo <path> --new-lifecycle`
 Then startup records `seeded_ceo` evidence for the override and creates a fresh CEO seed job instead of reusing the bootstrap idempotency key
 
 Given CEO, Head of Strategy, COO, CTO, or CTO-weekly are running
@@ -117,7 +117,7 @@ Then tool policy blocks the mutation or commit and directs implementation work t
 
 ### F-006-S006: Serve Orchestrator
 
-Given a user runs `mars-harness serve`
+Given a user runs `mars serve`
 When the server starts
 Then health, dashboard, webhook, scheduler, worker, recovery, and API control surfaces are available
 
@@ -859,7 +859,7 @@ None.
 - F-006-S002: `go test ./internal/queue -run TestQueue`
 - F-006-S003: `go test ./internal/queue -run TestWorkerPool`
 - F-006-S004: `go test ./internal/serve -run 'TestTriggerRouter|TestResolveSchedule|TestHandleJobComplete'`
-- F-006-S005: `go test ./cmd/mars-harness -run 'Test(Start|Init|Run|Register|Scan).*GeneratedHarnessBaseline|TestStartCommandExposesParallelAddressControls'` and `go test ./internal/serve -run TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy`
+- F-006-S005: `go test ./cmd/mars -run 'Test(Start|Init|Run|Register|Scan).*GeneratedHarnessBaseline|TestStartCommandExposesParallelAddressControls'` and `go test ./internal/serve -run TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy`
 - F-006-S006: `go test ./internal/serve -run TestServer`
 - F-006-S007: `go test ./internal/serve -run 'TestHandleJobFailed|TestSelfHealRecoveryQueue'` and `go test ./internal/queue -run TestQueue_repairActiveRecoveryJobs`
 - F-006-S008: `go test ./internal/serve -run 'TestValidateEngineerTicketGate|TestBuildTicketIndex|TestFirstBacklogInterventionDebt'`

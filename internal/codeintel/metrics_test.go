@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/trace"
+	"github.com/greaveselliott/mars/internal/trace"
 )
 
 func TestMetricsAggregatesTraceSummaries(t *testing.T) {

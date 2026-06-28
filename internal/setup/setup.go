@@ -19,11 +19,11 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/config"
-	"github.com/greaveselliott/mars-harness/internal/githubauth"
-	"github.com/greaveselliott/mars-harness/internal/hardware"
-	"github.com/greaveselliott/mars-harness/internal/models"
-	"github.com/greaveselliott/mars-harness/internal/shellpath"
+	"github.com/greaveselliott/mars/internal/config"
+	"github.com/greaveselliott/mars/internal/githubauth"
+	"github.com/greaveselliott/mars/internal/hardware"
+	"github.com/greaveselliott/mars/internal/models"
+	"github.com/greaveselliott/mars/internal/shellpath"
 	"gopkg.in/yaml.v3"
 )
 
@@ -63,7 +63,7 @@ func Run(cfg Config) (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("setup: cannot determine home directory: %w — set $HOME and retry", err)
 	}
-	baseDir := filepath.Join(home, ".mars-harness")
+	baseDir := filepath.Join(home, ".mars")
 
 	steps := buildSteps(baseDir, cfg)
 	result := &Result{}
@@ -379,7 +379,7 @@ func githubPlaceholderStep(baseDir string) Step {
 			return err == nil, nil
 		},
 		Execute: func() error {
-			slog.Info("GitHub App setup: configure via 'mars-harness setup --github' or set MARS_HARNESS_GITHUB_TOKEN")
+			slog.Info("GitHub App setup: configure via 'mars setup --github' or set MARS_GITHUB_TOKEN")
 			return os.WriteFile(markerPath, []byte("pending\n"), 0o644)
 		},
 	}

@@ -4,7 +4,7 @@
 
 **Primary Outcome:** Prove the Plan 2 provider revision: board-driven JIRA
 polling can use Atlassian's official MCP server through a job-scoped read
-interaction while Mars Harness remains default-off, read-only, and responsible
+interaction while MARS remains default-off, read-only, and responsible
 for project/workspace/board/label containment.
 
 **Primary Pass Gate:** Focused MCP/JIRA/config tests pass. The MCP path

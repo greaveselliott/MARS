@@ -26,7 +26,8 @@ import (
 
 const (
 	defaultWebhookMaxBodySize = 2 << 20
-	jiraSignatureHeader       = "X-Mars-Harness-Jira-Signature"
+	jiraSignatureHeader       = "X-Mars-Jira-Signature"
+	legacyJiraSignatureHeader = "X-Mars-Harness-Jira-Signature"
 	jiraSignaturePrefix       = "sha256="
 )
 
@@ -87,7 +88,7 @@ func WebhookHandler(cfg WebhookConfig) http.Handler {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
-		if !verifyAnySignature(secrets, body, r.Header.Get(jiraSignatureHeader)) {
+		if !verifyAnySignature(secrets, body, r.Header.Get(jiraSignatureHeader), r.Header.Get(legacyJiraSignatureHeader)) {
 			cfg.Logger.Warn("jira webhook: invalid signature")
 			http.Error(w, "invalid jira webhook signature", http.StatusBadRequest)
 			return
@@ -165,19 +166,21 @@ func webhookSecrets(repos []Repository, lookup func(string) (string, bool)) ([]s
 	return out, nil
 }
 
-func verifyAnySignature(secrets []string, body []byte, signature string) bool {
-	if !strings.HasPrefix(signature, jiraSignaturePrefix) {
-		return false
-	}
-	got, err := hex.DecodeString(strings.TrimPrefix(signature, jiraSignaturePrefix))
-	if err != nil {
-		return false
-	}
-	for _, secret := range secrets {
-		mac := hmac.New(sha256.New, []byte(secret))
-		mac.Write(body)
-		if hmac.Equal(got, mac.Sum(nil)) {
-			return true
+func verifyAnySignature(secrets []string, body []byte, signatures ...string) bool {
+	for _, signature := range signatures {
+		if !strings.HasPrefix(signature, jiraSignaturePrefix) {
+			continue
+		}
+		got, err := hex.DecodeString(strings.TrimPrefix(signature, jiraSignaturePrefix))
+		if err != nil {
+			continue
+		}
+		for _, secret := range secrets {
+			mac := hmac.New(sha256.New, []byte(secret))
+			mac.Write(body)
+			if hmac.Equal(got, mac.Sum(nil)) {
+				return true
+			}
 		}
 	}
 	return false

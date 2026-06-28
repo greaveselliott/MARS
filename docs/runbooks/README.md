@@ -4,7 +4,7 @@
 **Updated:** 2026-06-24
 **Owner:** foundation-maintainer
 
-Operational procedures for configuring, validating, or repairing Mars Harness
+Operational procedures for configuring, validating, or repairing MARS
 features. Runbooks are procedural companions to design docs and feature
 contracts; they must avoid committing secrets, internal object IDs, raw service
 dumps, or private credential material.

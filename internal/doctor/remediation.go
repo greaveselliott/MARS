@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/remediation"
+	"github.com/greaveselliott/mars/internal/remediation"
 )
 
 func checkDeterministicRemediationHealth(cfg Config) CheckResult {
@@ -42,7 +42,7 @@ func checkDeterministicRemediationHealth(cfg Config) CheckResult {
 				Status:   statusWarn,
 				Message:  fmt.Sprintf("recipe %s applies: target harness scaffold is missing", recipe.ID),
 				Duration: nonZeroDurationSince(start),
-				Fix:      fmt.Sprintf("run 'mars-harness init --repo %s' before starting autonomous work", cfg.RepoPath),
+				Fix:      fmt.Sprintf("run 'mars init --repo %s' before starting autonomous work", cfg.RepoPath),
 			}
 		}
 		return CheckResult{
@@ -61,7 +61,7 @@ func checkDeterministicRemediationHealth(cfg Config) CheckResult {
 				Status:   statusWarn,
 				Message:  fmt.Sprintf("recipe %s applies: .harness/manifest.yaml is missing", recipe.ID),
 				Duration: nonZeroDurationSince(start),
-				Fix:      fmt.Sprintf("run 'mars-harness init --repo %s' or 'mars-harness upgrade --repo %s'", cfg.RepoPath, cfg.RepoPath),
+				Fix:      fmt.Sprintf("run 'mars init --repo %s' or 'mars upgrade --repo %s'", cfg.RepoPath, cfg.RepoPath),
 			}
 		}
 		return CheckResult{
@@ -80,7 +80,7 @@ func checkDeterministicRemediationHealth(cfg Config) CheckResult {
 				Status:   statusWarn,
 				Message:  fmt.Sprintf("recipe %s applies: generated harness metadata is missing", recipe.ID),
 				Duration: nonZeroDurationSince(start),
-				Fix:      fmt.Sprintf("run 'mars-harness update harness --repo %s'", cfg.RepoPath),
+				Fix:      fmt.Sprintf("run 'mars update harness --repo %s'", cfg.RepoPath),
 			}
 		}
 		return CheckResult{

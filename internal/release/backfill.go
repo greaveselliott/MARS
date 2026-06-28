@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	changelogReleaseRE = regexp.MustCompile(`(?m)^## \[([0-9]+\.[0-9]+\.[0-9]+)\] - [^\n]+\n<!-- mars-harness-release: version=([^ ]+) commit=([0-9a-fA-F]+) -->`)
+	changelogReleaseRE = regexp.MustCompile(`(?m)^## \[([0-9]+\.[0-9]+\.[0-9]+)\] - [^\n]+\n<!-- mars(?:-harness)?-release: version=([^ ]+) commit=([0-9a-fA-F]+) -->`)
 	changelogCommitRE  = regexp.MustCompile(`\(([0-9a-fA-F]{7,40})\)`)
 	sectionHeadingRE   = regexp.MustCompile(`(?m)^### `)
 )
@@ -83,7 +83,7 @@ func BackfillNotes(ctx context.Context, cfg BackfillConfig) (BackfillResult, err
 		return BackfillResult{}, err
 	}
 	if len(entries) == 0 {
-		return BackfillResult{}, fmt.Errorf("release backfill-notes: CHANGELOG.md has no mars-harness release markers")
+		return BackfillResult{}, fmt.Errorf("release backfill-notes: CHANGELOG.md has no mars release markers")
 	}
 
 	var result BackfillResult

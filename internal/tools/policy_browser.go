@@ -328,7 +328,7 @@ func checkEngineerBrowserFrameworkPackageWritePolicy(root Root, session Session,
 				continue
 			}
 			if port := reservedHarnessPortInScript(script); port != "" {
-				return fmt.Errorf("policy: package.json script %q uses reserved Mars Harness port %s. Use an application dev port such as 5173 so target servers do not collide with local inference/runtime ports", name, port)
+				return fmt.Errorf("policy: package.json script %q uses reserved MARS port %s. Use an application dev port such as 5173 so target servers do not collide with local inference/runtime ports", name, port)
 			}
 			if phaserRuntimeScriptUsesStaticSourceServer(script) {
 				return fmt.Errorf("policy: package.json script %q starts a static source server for a Phaser app. Use Vite dev/preview, for example `vite --host 127.0.0.1 --port 5173` or `npm run build && vite preview --host 127.0.0.1 --port 5173`, so local npm modules are bundled correctly", name)
@@ -372,7 +372,7 @@ func checkPackageScriptRuntimePolicy(rel, content string) error {
 	}
 	for name, script := range pkg.Scripts {
 		if port := reservedHarnessPortInScript(script); port != "" {
-			return fmt.Errorf("policy: package.json script %q uses reserved Mars Harness port %s. Use an application dev port such as 5173 or 5174 so target servers do not collide with local inference/runtime ports", name, port)
+			return fmt.Errorf("policy: package.json script %q uses reserved MARS port %s. Use an application dev port such as 5173 or 5174 so target servers do not collide with local inference/runtime ports", name, port)
 		}
 		if smokeScriptName(name) && packageSmokeScriptNoop(script) {
 			return fmt.Errorf("policy: package.json script %q is not real smoke evidence. Replace canned console output, echo, true, or server-start-only scripts with a command that can fail, such as a curl probe against a served page, Playwright/Puppeteer, or a source/runtime assertion that reads product files and throws on mismatch", name)
@@ -751,7 +751,7 @@ func packageRuntimeScriptFindings(root Root) []string {
 	var findings []string
 	for name, script := range pkg.Scripts {
 		if port := reservedHarnessPortInScript(script); port != "" {
-			findings = append(findings, fmt.Sprintf("package.json script %q uses reserved Mars Harness port %s", name, port))
+			findings = append(findings, fmt.Sprintf("package.json script %q uses reserved MARS port %s", name, port))
 		}
 		if smokeScriptName(name) && packageSmokeScriptNoop(script) {
 			findings = append(findings, fmt.Sprintf("package.json script %q is canned/no-op smoke evidence", name))

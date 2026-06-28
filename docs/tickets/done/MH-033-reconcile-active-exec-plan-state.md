@@ -10,7 +10,7 @@ created: 2026-05-02
 completed: 2026-05-02
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "exec-plans"
   category: "stale_plan_state"
   severity: "high"

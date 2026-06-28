@@ -70,7 +70,7 @@ func TestCheckRepo_reportsStaleOperatingModelArtifact(t *testing.T) {
 func TestCheckRepo_foundationRepoSkipsGeneratedHarnessContextGlossary(t *testing.T) {
 	t.Parallel()
 	repo := t.TempDir()
-	writeTestFile(t, repo, "go.mod", "module github.com/greaveselliott/mars-harness\n")
+	writeTestFile(t, repo, "go.mod", "module github.com/greaveselliott/mars\n")
 	writeTestFile(t, repo, "internal/scanner/init.go", "package scanner\n")
 	for _, artifact := range requiredArtifacts {
 		if artifact.path == ".harness/knowledge/context-glossary.yaml" {

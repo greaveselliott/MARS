@@ -12,8 +12,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
-	"github.com/greaveselliott/mars-harness/internal/queue"
+	"github.com/greaveselliott/mars/internal/orgstate"
+	"github.com/greaveselliott/mars/internal/queue"
 )
 
 type dispatchTriggerPayload struct {

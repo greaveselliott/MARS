@@ -19,7 +19,7 @@ import (
 func TestGithubAuthCheck_reportsMissingAuthWithoutSecrets(t *testing.T) {
 	t.Setenv("GH_TOKEN", "")
 	t.Setenv("GITHUB_TOKEN", "")
-	t.Setenv("MARS_HARNESS_GITHUB_TOKEN", "")
+	t.Setenv("MARS_GITHUB_TOKEN", "")
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("PATH", t.TempDir())
 
@@ -30,7 +30,7 @@ func TestGithubAuthCheck_reportsMissingAuthWithoutSecrets(t *testing.T) {
 	require.Contains(t, err.Error(), "private release auth is not configured")
 	require.Contains(t, res.Output, `"status": "fail"`)
 	require.Contains(t, res.Output, `"auth_source": "none"`)
-	require.Contains(t, res.Output, "mars-harness auth github setup")
+	require.Contains(t, res.Output, "mars auth github setup")
 	require.NotContains(t, res.Output, "Bearer")
 	require.NotContains(t, res.Output, "ghs_")
 }

@@ -62,19 +62,19 @@ package-manager or Go source-repair loops.
 | Command | Result | Notes |
 | --- | --- | --- |
 | `git diff --check` | PASS | No whitespace errors. |
-| `go test -count=1 ./cmd/mars-harness -run 'TestStartCommand'` | PASS | Start command tests inject a hosted endpoint and no longer trip unrelated local model preflight. |
+| `go test -count=1 ./cmd/mars -run 'TestStartCommand'` | PASS | Start command tests inject a hosted endpoint and no longer trip unrelated local model preflight. |
 | `go test -count=1 ./internal/serve` | PASS | Includes focused missing-local-model preflight coverage. |
 | `go test -count=1 ./internal/codeintel ./internal/scoring ./internal/personas` | PASS | Deterministic DB, pinned scoring clock, and canonical persona doc newline drift repaired. |
 | `go test -count=1 ./internal/integrations ./internal/scheduler ./internal/docsync ./internal/docsconsistency` | PASS | Plan 1 focused packages remain green. |
 | `GOCACHE=<validation-root> go test ./...` | PASS | Broad source gate passes on this laptop without local GGUF model validation. |
 | `GOCACHE=<validation-root> make check` | PASS | Race/coverage, coverage ratchet, fuzz smoke, and lint/vet path pass; `govulncheck` is not installed and was skipped by the Makefile. |
-| `GOCACHE=<validation-root> go run ./cmd/mars-harness release backfill-notes --repo . --check` | PASS | Checked 244 entries, changed 0 after marker repair. |
+| `GOCACHE=<validation-root> go run ./cmd/mars release backfill-notes --repo . --check` | PASS | Checked 244 entries, changed 0 after marker repair. |
 | `make install` | PASS | Installed current binary to `/path/to/local-redacted`; fish PATH already configured. |
 | `/path/to/local-redacted auth github check` | PASS | Private release auth resolves via `env-github-token`; no token value logged. |
-| `mars-harness validation agent-smoke --case static-web-ticket --model-endpoint http://127.0.0.1:18654/v1` | PASS | Installed-binary live Engineer case completed with `next_need=qa_review` and suggested `qa`; retained report at `<validation-root>`. |
-| `mars-harness validation agent-smoke --suite default --case go-api-ticket --model-endpoint http://127.0.0.1:18654/v1` | PASS | Installed-binary live Engineer case completed with `next_need=qa_review` and suggested `qa`; retained report at `<validation-root>`. |
-| `mars-harness start --repo <validation-root> ... --model-endpoint http://127.0.0.1:18654/v1` | PASS | Generated defaults, wrote `.harness/integrations.example.yaml`, did not write `.harness/integrations.yaml`, loaded `flow_profile="ceo-led"`, replaced 8 schedules, completed CEO -> COO -> CTO -> Engineer, and Engineer delivered plain `index.html`, `style.css`, and `app.js` with `node --check`, Python static server, curl smoke, and no package manager. |
-| `mars-harness start --repo <validation-root> ... --model-endpoint http://127.0.0.1:18654/v1` | PASS | Generated defaults, wrote `.harness/integrations.example.yaml`, did not write `.harness/integrations.yaml`, loaded `flow_profile="ceo-led"`, replaced 8 schedules, completed CEO -> COO -> CTO -> Engineer, and Engineer delivered Go API source/tests with `go test`, `go build`, `go run`, and HTTP CRUD curl smoke. |
+| `mars validation agent-smoke --case static-web-ticket --model-endpoint http://127.0.0.1:18654/v1` | PASS | Installed-binary live Engineer case completed with `next_need=qa_review` and suggested `qa`; retained report at `<validation-root>`. |
+| `mars validation agent-smoke --suite default --case go-api-ticket --model-endpoint http://127.0.0.1:18654/v1` | PASS | Installed-binary live Engineer case completed with `next_need=qa_review` and suggested `qa`; retained report at `<validation-root>`. |
+| `mars start --repo <validation-root> ... --model-endpoint http://127.0.0.1:18654/v1` | PASS | Generated defaults, wrote `.harness/integrations.example.yaml`, did not write `.harness/integrations.yaml`, loaded `flow_profile="ceo-led"`, replaced 8 schedules, completed CEO -> COO -> CTO -> Engineer, and Engineer delivered plain `index.html`, `style.css`, and `app.js` with `node --check`, Python static server, curl smoke, and no package manager. |
+| `mars start --repo <validation-root> ... --model-endpoint http://127.0.0.1:18654/v1` | PASS | Generated defaults, wrote `.harness/integrations.example.yaml`, did not write `.harness/integrations.yaml`, loaded `flow_profile="ceo-led"`, replaced 8 schedules, completed CEO -> COO -> CTO -> Engineer, and Engineer delivered Go API source/tests with `go test`, `go build`, `go run`, and HTTP CRUD curl smoke. |
 
 ## Findings Closed
 
@@ -109,12 +109,12 @@ package-manager or Go source-repair loops.
 ## Replay Commands
 
 ```bash
-mars-harness auth github check
+mars auth github check
 launchctl setenv OPENAI_API_KEY <set outside Codex; do not print the value>
 OPENAI_API_KEY="$(launchctl getenv OPENAI_API_KEY)" OPENAI_PROXY_PORT=18654 OPENAI_VALIDATION_MODEL=gpt-4.1-mini python3 <validation-root>
 GOCACHE=<validation-root> go test ./...
 GOCACHE=<validation-root> make check
-GOCACHE=<validation-root> go run ./cmd/mars-harness release backfill-notes --repo . --check
+GOCACHE=<validation-root> go run ./cmd/mars release backfill-notes --repo . --check
 make install
 /path/to/local-redacted validation agent-smoke --case static-web-ticket --root <validation-root> --model-endpoint http://127.0.0.1:18654/v1 --max-turns 16 --timeout 10m --keep-runs --report <validation-root> --json
 /path/to/local-redacted validation agent-smoke --suite default --case go-api-ticket --root <validation-root> --model-endpoint http://127.0.0.1:18654/v1 --max-turns 20 --timeout 10m --keep-runs --report <validation-root> --json

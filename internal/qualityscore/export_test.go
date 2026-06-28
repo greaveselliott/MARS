@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/scoring"
-	"github.com/greaveselliott/mars-harness/internal/telemetry"
-	"github.com/greaveselliott/mars-harness/internal/trace"
+	"github.com/greaveselliott/mars/internal/scoring"
+	"github.com/greaveselliott/mars/internal/telemetry"
+	"github.com/greaveselliott/mars/internal/trace"
 	"github.com/stretchr/testify/require"
 )
 

@@ -12,7 +12,7 @@ created: 2026-04-11
 > Correction 2026-05-19: the original record over-claimed Homebrew and
 > GoReleaser completion. Current supported install paths are the GitHub Release
 > installer script and source `make install`; no Homebrew tap or formula is
-> published for Mars Harness yet.
+> published for MARS yet.
 
 ## Context
 
@@ -30,8 +30,8 @@ Adoption hinges on fast installs matching developer laptops and CI images. M10 d
 
 ### Functional (happy path)
 - [x] Tagged release produces all four artifacts plus checksums verified locally
-- [x] Installer script installs to prefix and prints `mars-harness version` matching tag
-- [ ] `brew install .../mars-harness` succeeds on Apple Silicon and amd64 macOS smoke VMs (not implemented; stale completion claim corrected on 2026-05-19)
+- [x] Installer script installs to prefix and prints `mars version` matching tag
+- [ ] `brew install .../mars` succeeds on Apple Silicon and amd64 macOS smoke VMs (not implemented; stale completion claim corrected on 2026-05-19)
 
 ### Edge cases and negative paths
 - [x] Checksum mismatch aborts install with non-zero exit and no partial binary

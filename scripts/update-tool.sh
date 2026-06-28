@@ -6,7 +6,7 @@
 # - docs/features/F-009-release-update-lifecycle.md
 set -euo pipefail
 
-BINARY_NAME="${BINARY_NAME:-mars-harness}"
+BINARY_NAME="${BINARY_NAME:-mars}"
 REMOTE_NAME="${REMOTE_NAME:-origin}"
 REMOTE_BRANCH="${REMOTE_BRANCH:-main}"
 GO_CMD="${GO:-go}"
@@ -25,7 +25,7 @@ require_command git
 require_command "$GO_CMD"
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" \
-    || err "make update-tool must run inside a mars-harness git checkout. Run make install for a local-only build."
+    || err "make update-tool must run inside a mars git checkout. Run make install for a local-only build."
 cd "$repo_root"
 
 if ! git remote get-url "$REMOTE_NAME" >/dev/null 2>&1; then
@@ -66,7 +66,7 @@ if [ -z "$install_bin" ]; then
 fi
 
 log "Installing $BINARY_NAME to $install_bin/$BINARY_NAME..."
-CGO_ENABLED=0 "$GO_CMD" install ./cmd/mars-harness
+CGO_ENABLED=0 "$GO_CMD" install ./cmd/mars
 
 "$install_bin/$BINARY_NAME" path setup --install-dir "$install_bin"
 log "Installed $BINARY_NAME to $install_bin/$BINARY_NAME"

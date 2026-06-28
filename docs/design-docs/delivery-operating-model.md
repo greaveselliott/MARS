@@ -2,11 +2,11 @@
 
 **Status:** Accepted
 **Date:** 2026-05-02
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ## Context
 
-Mars Harness had the right instincts: tickets, strict trunk, dogfood, telemetry,
+MARS had the right instincts: tickets, strict trunk, dogfood, telemetry,
 quality score, role scoring, and self-improvement. The gap was delivery truth.
 Agents could move tickets, add docs, or create enabler code while still leaving
 the intended feature half-built. The user-visible complaint was concrete:
@@ -21,7 +21,7 @@ provides the contract; walking skeleton provides the implementation strategy.
 
 ## Decision
 
-Mars Harness uses **BDD-Led Goal-Driven Walking-Skeleton Delivery** as the
+MARS uses **BDD-Led Goal-Driven Walking-Skeleton Delivery** as the
 canonical operating model for the source harness and generated target
 harnesses.
 
@@ -91,7 +91,7 @@ the tag remote immediately before unrelated work begins. Work should not sit in
 local-only commits when the remote can accept it.
 
 Source-harness live-experience verification is a foundation operating-model
-gate. When a Mars Harness source change claims to improve first-run lifecycle,
+gate. When a MARS source change claims to improve first-run lifecycle,
 orchestration, intervention-debt routing, generated target scaffolding, model
 or provider behavior, dashboard/control-plane behavior, scoring, update/release,
 or safety/guardrail behavior, completion evidence must include a representative
@@ -114,7 +114,7 @@ code change, agents classify it as foundation-owned, deployed-owned, or
 mixed/unclear. Foundation-owned failures include runtime, orchestration,
 generated-default, role-guidance, tool-policy, model/provider, release/update,
 telemetry, or mirrored-doctrine defects. Their fixes belong in the
-`mars-harness` source harness, runtime substrate, generated target defaults, or
+`mars` source harness, runtime substrate, generated target defaults, or
 foundation docs and should improve the affected class of users, not just the
 current demo. Deployed-owned failures include target product behavior, target
 architecture, local package/build/test setup, target docs, target skills, or
@@ -277,7 +277,7 @@ release asset blockers before the lifecycle stops.
 
 ## Mirrored Application
 
-This operating model applies to Mars Harness source and generated target
+This operating model applies to MARS source and generated target
 harnesses unless a rule is explicitly marked source-only. Source changes update
 `AGENTS.md`, design docs, product specs, goals, features, exec plans, ticket
 docs, quality score, scanner defaults, role prompts, knowledge routes, and
@@ -285,7 +285,7 @@ docs-consistency tests in the same task.
 
 The live-experience verification gate is source-only. Generated target repos
 still need real build, run, dogfood, and user-path evidence for their product
-features, but the named `demo-123` replay rule applies to Mars Harness source
+features, but the named `demo-123` replay rule applies to MARS source
 changes because the product being validated is the harness lifecycle itself.
 Generated target repos inherit the generic evidence loop: observe a real
 product path, review findings, make bounded target-owned changes, rerun the
@@ -314,7 +314,7 @@ half-shipped features, and clearer evidence for self-improvement.
 
 **Status:** Accepted
 **Date:** 2026-05-04
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -350,7 +350,7 @@ of truth.
 
 **Status:** Accepted
 **Date:** 2026-05-04
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -370,7 +370,7 @@ lives in [code-documentation-map.md](code-documentation-map.md), the architectur
 and universal operating model live in
 [documentation-sync-architecture.md](documentation-sync-architecture.md), and the
 gate is implemented by `internal/docsync` and checked by
-`mars-harness docsync audit --repo .` or the mirrored `docsync_audit` tool.
+`mars docsync audit --repo .` or the mirrored `docsync_audit` tool.
 
 The canonical shape is:
 
@@ -406,7 +406,7 @@ near the top of the file before implementation declarations.
 
 **Status:** Accepted
 **Date:** 2026-05-04
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -418,9 +418,9 @@ steps even though the source command tree changed.
 
 ### Decision
 
-Whenever `cmd/mars-harness` changes a command, flag, output contract, repo
+Whenever `cmd/mars` changes a command, flag, output contract, repo
 behavior, mutability expectation, or recurring workflow, the same change updates
-the `mars_harness_cli` reference, the `mars_harness_cli` repo shortcut map,
+the `mars_cli` reference, the `mars_cli` repo shortcut map,
 tool-selection guidance, generated target doctrine, and any skills that name the
 affected CLI workflow. The full architecture and evidence model live in
 [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
@@ -440,7 +440,7 @@ affected CLI workflow. The full architecture and evidence model live in
 
 **Status:** Accepted
 **Date:** 2026-05-05
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -481,11 +481,11 @@ outside normal operating policy.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
-The `demo-123` lifecycle run showed that Mars Harness can pass focused tests
+The `demo-123` lifecycle run showed that MARS can pass focused tests
 while the live operator experience still stalls: duplicate bootstrap work,
 Orchestrator loops, repo-local runtime artifacts, intervention-debt starvation,
 or generic generated target doctrine may only become visible when the installed
@@ -493,7 +493,7 @@ tool drives a fresh target from a real brief.
 
 ### Decision
 
-For Mars Harness source changes that claim to improve lifecycle behavior,
+For MARS source changes that claim to improve lifecycle behavior,
 orchestration, target generation, intervention-debt routing, scoring, safety,
 model/provider operation, dashboard/control-plane flows, or update/release
 operation, completion evidence must include a representative live-experience
@@ -522,7 +522,7 @@ this class of source change.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -567,7 +567,7 @@ scenario set as a duplicate unless the new ticket explicitly carries
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -607,7 +607,7 @@ handoffs:
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -638,7 +638,7 @@ instead of inventing a role.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -686,7 +686,7 @@ Orchestrator run:
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -730,7 +730,7 @@ Engineer or CTO.
 
 **Status:** Accepted
 **Date:** 2026-06-13
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -769,7 +769,7 @@ so direct CTO completions participate in this guard.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -807,7 +807,7 @@ Orchestrator.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -840,7 +840,7 @@ default and requires exactly one disposition before finishing.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -868,7 +868,7 @@ ticket still exists in `docs/tickets/in-progress/` and is not blocked.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -900,7 +900,7 @@ stops with a review-chain-complete reason.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -948,7 +948,7 @@ small `chore(learnings)` commit so the target is handed off cleanly.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -988,7 +988,7 @@ and generated COO guidance names the no-implementation boundary explicitly.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1023,7 +1023,7 @@ ticket-shaping, or planning handoffs, including Orchestrator-selected
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1063,7 +1063,7 @@ appropriate.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1103,7 +1103,7 @@ recovery or target backlog debt.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1153,7 +1153,7 @@ disposition.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1192,12 +1192,12 @@ normalizer and before generic JSON extraction.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
 The next clean `demo-123` replay validated inline tool-call parsing in the live
-lifecycle. Mars Harness created T-001, Engineer committed a Space Invaders
+lifecycle. MARS created T-001, Engineer committed a Space Invaders
 walking skeleton, moved the ticket to done, QA approved the work, and Security
 completed with no critical or high severity findings. No target
 intervention-debt tickets were created.
@@ -1233,7 +1233,7 @@ after Security for a completed product ticket.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1269,7 +1269,7 @@ visible to the responsible role and normal guardrails.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1325,7 +1325,7 @@ target agents.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1368,7 +1368,7 @@ goals already define a visible first product slice.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1413,7 +1413,7 @@ overrides the current reviewer outcome.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1459,7 +1459,7 @@ the work.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1504,7 +1504,7 @@ route review normally.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1550,7 +1550,7 @@ leading ticket-title headings from model-provided bodies.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1604,7 +1604,7 @@ longer burns turns on push retries.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1622,7 +1622,7 @@ lifecycle did not describe that progress.
 Engineer product mutation is now mechanically claim-backed. When ordinary
 product backlog tickets exist and no ticket is in `docs/tickets/in-progress/`,
 Engineer cannot use product-mutating `file_write`, mutating `shell_exec`,
-`dependency_sync`, `mars_harness_cli`, or `git_commit`. Ticket-only edits and
+`dependency_sync`, `mars_cli`, or `git_commit`. Ticket-only edits and
 the `git mv docs/tickets/backlog/T-NNN-*.md docs/tickets/in-progress/` claim
 move remain allowed so the model can recover in the same run. Generated
 Engineer guidance names the same rule.
@@ -1645,7 +1645,7 @@ ticket ID.
 
 **Status:** Accepted
 **Date:** 2026-05-19
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1756,7 +1756,7 @@ service archetype before being treated as generally improved.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1806,7 +1806,7 @@ so planners avoid the guardrail instead of repeatedly discovering it.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1862,7 +1862,7 @@ Long-running validation is owned by the `shell_exec` tool boundary:
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1915,7 +1915,7 @@ blocker.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -1960,7 +1960,7 @@ tokens into loops.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2015,7 +2015,7 @@ rule.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2063,7 +2063,7 @@ servers with `background:true`, probe with separate commands, and avoid shell
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2113,7 +2113,7 @@ target harness teaches roles the exit path before the tool has to recover.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2158,7 +2158,7 @@ a guardrail block rather than retryable `tool_timeout`.
 - DocSync failures become hard lifecycle gates instead of optional reviewer
   judgement calls.
 - Target Go apps under `cmd/` can satisfy DocSync with their own feature
-  contracts rather than Mars Harness source documentation.
+  contracts rather than MARS source documentation.
 - Policy-blocked validation wrappers no longer enqueue duplicate Dogfood work
   through retry remediation.
 - The next API canary should stop at Engineer rework if malformed DocSync
@@ -2169,7 +2169,7 @@ a guardrail block rather than retryable `tool_timeout`.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2219,7 +2219,7 @@ apps receive the same documentation-sync coverage as `src/` and `cmd/` apps.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2259,7 +2259,7 @@ would repair are therefore also understood by ownership and guardrail policy.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2310,7 +2310,7 @@ strings, and single path strings before validation.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2358,7 +2358,7 @@ tracked PID after validation.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2408,7 +2408,7 @@ that has already passed Engineer and QA:
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2472,7 +2472,7 @@ validation belongs in tests or scoped validation code under an owned directory.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2527,7 +2527,7 @@ belong in follow-up tickets or Dogfood evidence, not in the same rework job.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2577,7 +2577,7 @@ edge probes.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2633,7 +2633,7 @@ The same source-only validation guard applies when agents write or run
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2680,7 +2680,7 @@ terminal disposition before continuing.
 
 **Status:** Accepted
 **Date:** 2026-05-20
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2753,7 +2753,7 @@ with evidence links and verifier metadata without pretending to be a feature.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2799,7 +2799,7 @@ scenario IDs.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2859,7 +2859,7 @@ over provider limits even when tool result bodies were already replaced.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2945,7 +2945,7 @@ product/source edits when rework is required.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -2993,7 +2993,7 @@ retry empty `argv` or single `:` calls after validation or dirty work.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3055,7 +3055,7 @@ Engineer post-validation convergence gate.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3110,7 +3110,7 @@ shell waits.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3169,7 +3169,7 @@ and requested Engineer action.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3226,7 +3226,7 @@ model sees the non-shell recovery path before it encounters the policy error.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3290,7 +3290,7 @@ and should not be treated as product rework.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3358,7 +3358,7 @@ shell validation.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3413,7 +3413,7 @@ expected code before any other shell validation.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3480,7 +3480,7 @@ ends as `max_turns` without executing that extra side-effecting cleanup.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3519,7 +3519,7 @@ successful run of that exact command.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3572,7 +3572,7 @@ evidence and lifecycle completion to continue.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3615,7 +3615,7 @@ implementation rework and a later successful exact command.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3657,7 +3657,7 @@ zero and no error-shaped stderr repairs the blocker.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3696,7 +3696,7 @@ evidence update, lifecycle move, and QA handoff.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3730,7 +3730,7 @@ the exact command pass without `expected_exit_code`.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3773,7 +3773,7 @@ error names the field and shows the correct JSON array shape.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3827,7 +3827,7 @@ command pass cleanly, not by retroactively adding `expected_exit_code`.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3872,7 +3872,7 @@ without a rebuild step.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3919,7 +3919,7 @@ can otherwise outrun implementation proof.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -3969,7 +3969,7 @@ exact `shell_exec argv` correction from the tool error before rerunning a
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4029,7 +4029,7 @@ non-test `.go` source files exist but no `_test.go` files are present.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4043,8 +4043,8 @@ continued to block `file_write` and told Engineer to rerun the same failing
 probe again. The result was a runtime-policy loop instead of product repair.
 
 The same run exposed a deployed/foundation naming leak: CTO wrote the target
-ticket with `cmd/mars-harness/main.go` and Engineer initialized `module
-mars-harness` inside a Note Stats CLI target. That was product progress, but
+ticket with `cmd/mars/main.go` and Engineer initialized `module
+mars` inside a Note Stats CLI target. That was product progress, but
 the target implementation shape was still borrowing foundation source names.
 
 ### Decision
@@ -4063,8 +4063,8 @@ Generated CTO and Engineer guidance now also keeps foundation names out of
 deployed targets. CTO tickets must derive affected paths, module names,
 command names, and binary names from the target README, repo basename, remote,
 or existing local conventions. Engineer must not initialize a fresh target as
-`module mars-harness` or create `cmd/mars-harness` unless the target product is
-explicitly Mars Harness itself; small fresh Go targets should prefer standard
+`module mars` or create `cmd/mars` unless the target product is
+explicitly MARS itself; small fresh Go targets should prefer standard
 library tests unless the repo already uses or requires another dependency.
 
 ### Consequences
@@ -4085,13 +4085,13 @@ library tests unless the repo already uses or requires another dependency.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
 The `demo-cli-run33` replay confirmed the AD-187 target-naming fix: CTO created
 `T-001` with `cmd/note-stats/main.go`, and Engineer initialized `module
-note-stats` instead of leaking foundation `mars-harness` names. It also
+note-stats` instead of leaking foundation `mars` names. It also
 confirmed the missing-input repair path: after the `--text ""` positive
 acceptance path failed, Engineer was allowed to edit and rebuild.
 
@@ -4129,7 +4129,7 @@ zero.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4190,7 +4190,7 @@ sample `T-001` prose from the README.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4245,7 +4245,7 @@ commands.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4294,7 +4294,7 @@ before committing product work or progressing ticket lifecycle.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4339,7 +4339,7 @@ enough to route Engineer back to validation or evidence repair.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4348,8 +4348,8 @@ CLI archetype from product-specific CEO planning through CTO ticketing and
 Engineer implementation. It also exposed two coordination leaks.
 
 First, COO did not own ticket creation but still tried several alternate paths:
-direct `file_write` under `docs/tickets/`, `mars_harness_cli ticket_create`,
-and `mars_harness_cli tools run ticket_create`. Policy blocked each attempt,
+direct `file_write` under `docs/tickets/`, `mars_cli ticket_create`,
+and `mars_cli tools run ticket_create`. Policy blocked each attempt,
 but the role only escaped by recording a blocked disposition and spending an
 extra Orchestrator turn before CTO could create the implementation ticket.
 
@@ -4365,7 +4365,7 @@ structured `changes_requested` disposition.
 
 Planning handoff is explicit: COO and other non-ticket-owning planning roles
 must not create tickets through `ticket_create`, direct ticket `file_write`,
-`mars_harness_cli`, or shell commands. They commit planning artifacts and hand
+`mars_cli`, or shell commands. They commit planning artifacts and hand
 off `next_need: ticket_breakdown` with `suggested_role: cto-weekly`. If such a
 planning role already hit a ticket-creation policy block for work it does not
 own, the successful `ticket_breakdown` disposition remains available so the
@@ -4396,7 +4396,7 @@ approve from runtime smoke evidence alone.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4444,7 +4444,7 @@ and lifecycle writes are blocked until the failed test/build command is clean.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4484,7 +4484,7 @@ boundary explicitly.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4535,7 +4535,7 @@ validation, scratch, or verify language, so ad hoc scripts such as
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4577,7 +4577,7 @@ unresolved.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4632,7 +4632,7 @@ full default inference timeout.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4685,7 +4685,7 @@ structured `changes_requested` path.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4742,7 +4742,7 @@ and policy used by AD-197. General shell syntax in argv mode remains rejected.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4807,7 +4807,7 @@ the exact command is repaired.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4850,7 +4850,7 @@ Engineer repair lane.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4900,7 +4900,7 @@ runtime repair lane.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -4952,7 +4952,7 @@ blocked.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5002,7 +5002,7 @@ the job ends with `circle_detected`.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5048,7 +5048,7 @@ is cleared when the test/build failure is repaired.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5099,7 +5099,7 @@ project tests.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5158,7 +5158,7 @@ docsync policy as a final guard.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5205,7 +5205,7 @@ inspection.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5250,11 +5250,11 @@ The no-op policy now gives concrete missing-evidence guidance:
 - The next clean canary should confirm QA can recover from a no-op after build
   evidence by running tests, then recording a structured disposition.
 
-## AD-213: Mars Harness CLI Workflows Use Structured Tool Resolution
+## AD-213: MARS CLI Workflows Use Structured Tool Resolution
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5266,10 +5266,10 @@ docsync evidence, and the target received a local `release: notes 0.2.0` commit
 and `v0.2.0` tag.
 
 The remaining release rough edge was command resolution. The first
-Release Manager pass ran `mars-harness release notes --repo . --bump auto
+Release Manager pass ran `mars release notes --repo . --bump auto
 --dry-run` through `shell_exec`, which resolved an older installed
-`mars-harness` binary whose command surface did not include `release`. The
-role then read the `mars_harness_cli` reference but repeated the same stale
+`mars` binary whose command surface did not include `release`. The
+role then read the `mars_cli` reference but repeated the same stale
 shell command until loop containment forced a failed liveness disposition.
 Orchestrator recovered by dispatching Release Manager again; the second pass
 completed local release artifacts and stopped cleanly on the expected missing
@@ -5277,38 +5277,38 @@ remote publication blocker.
 
 ### Decision
 
-Mars Harness CLI workflows inside agent jobs now use the structured
-`mars_harness_cli` tool rather than direct `shell_exec mars-harness ...`
+MARS CLI workflows inside agent jobs now use the structured
+`mars_cli` tool rather than direct `shell_exec mars ...`
 commands. The tool resolves the active harness executable before PATH, which is
 the same binary that started the job, and therefore avoids stale installed
 binaries in deployed target repos.
 
-The `shell_exec` policy rejects direct `mars-harness` binary invocations in
+The `shell_exec` policy rejects direct `mars` binary invocations in
 argv mode or as the first executable in a shell command. The error names the
-equivalent `mars_harness_cli` args so the model can recover without guessing a
+equivalent `mars_cli` args so the model can recover without guessing a
 binary path.
 
 Generated Release Manager guidance now states this explicitly for release
-notes, backfill, and related Mars Harness CLI workflows.
+notes, backfill, and related MARS CLI workflows.
 
 ### Consequences
 
 - Release review should no longer fail solely because the target machine has
-  an older `mars-harness` earlier on PATH.
+  an older `mars` earlier on PATH.
 - The structured CLI tool remains the single mirrored authority for setup,
   update, release, score, trust, model, and harness commands.
 - Direct shell remains available for product validation commands such as
   `go test`, built binaries, curl probes, and Git commands that are already
   covered by dedicated release/tag guardrails.
 - The next clean canary should confirm Release Manager reaches local release
-  notes directly through `mars_harness_cli` and stops only on real publication
+  notes directly through `mars_cli` and stops only on real publication
   blockers such as a missing remote.
 
 ## AD-215: Engineer Test/Build Rework Guidance Carries Failure Output
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5348,7 +5348,7 @@ than deleting or weakening the test.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5394,7 +5394,7 @@ and unrelated shell commands stay blocked until same-lane validation passes.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5438,7 +5438,7 @@ by removing the evidence.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5483,13 +5483,13 @@ background:true`, and `curl` sequence that proved the repair.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
 After GitHub Actions billing capacity was restored, the previously opaque
 workflow failures became actionable CI evidence. The `v0.42.19` release
-workflow rerun passed and `mars-harness release verify-assets --version
+workflow rerun passed and `mars release verify-assets --version
 v0.42.19` found all required binaries and `checksums.txt`, but the current-main
 CI run exposed a race in `internal/tools` under `go test ./... -race -count=1
 -coverprofile=coverage.out -covermode=atomic`.
@@ -5521,7 +5521,7 @@ capture writers.
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5555,7 +5555,7 @@ case-insensitive, but ticket source paths keep their original case before
 
 **Status:** Accepted
 **Date:** 2026-05-21
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5590,7 +5590,7 @@ product work remains.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5636,7 +5636,7 @@ obvious Phaser lifecycle defects.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5670,7 +5670,7 @@ JavaScript correctness.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5703,7 +5703,7 @@ for ticket shaping before version publication.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5749,7 +5749,7 @@ tickets are created.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5790,7 +5790,7 @@ Phaser wrapper patterns that bind scene callbacks to the wrong context.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5842,7 +5842,7 @@ before QA or Dogfood are asked to approve it.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5893,7 +5893,7 @@ noise.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5929,7 +5929,7 @@ scenario schedule covers explicit README/goal capabilities before CTO ticketing.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -5968,7 +5968,7 @@ agent prompt.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6004,7 +6004,7 @@ validation probes remain blocked by the separate scratch-file policy.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6048,7 +6048,7 @@ that same module.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6101,7 +6101,7 @@ deliberately descoped; it cannot silently disappear before ticketing.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6147,7 +6147,7 @@ equivalent external entry. Phaser must stay in the production browser bundle so
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6160,7 +6160,7 @@ created `T-001` for `F-001-S002`, skipping the earliest uncovered scenario.
 
 Engineer made real product files, but the implementation still did not finish:
 `package.json` used `python3 -m http.server 18081` as its app server, colliding
-with Mars Harness inference/runtime ports; `src/index.html` loaded Phaser from
+with MARS inference/runtime ports; `src/index.html` loaded Phaser from
 a CDN script under a nested HTML path; and `src/main.js` referenced global
 `Phaser` without importing it and constructed `new Phaser.Game` inside a scene
 callback. The job exhausted 48 turns and ended with context overflow rather
@@ -6175,7 +6175,7 @@ earliest scenario. This prevents a stale or over-eager active-plan cursor from
 skipping the first unproven product slice.
 
 Phaser package and source policies now block several live-demo failure modes at
-write time: package runtime scripts cannot use Mars Harness reserved ports
+write time: package runtime scripts cannot use MARS reserved ports
 `18080`-`18089`, Phaser package scripts cannot use static source servers such
 as `python3 -m http.server` in place of Vite dev/preview, nested HTML entry
 points cannot load Phaser from CDN script tags, Phaser source that references
@@ -6198,7 +6198,7 @@ scene callbacks.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6249,7 +6249,7 @@ is absent.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6293,7 +6293,7 @@ brief names rotation.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6327,7 +6327,7 @@ extension, not the basic behavior already covered by the scenario schedule.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6367,7 +6367,7 @@ record `job_disposition_record`.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6414,7 +6414,7 @@ approval-with-corrected-evidence path, not target Engineer rework.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6461,7 +6461,7 @@ evidence, or record a foundation/dogfood validation finding.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6491,7 +6491,7 @@ need a scenario.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6538,7 +6538,7 @@ lifecycle move, pushes when a remote exists, and records
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6578,7 +6578,7 @@ for existing helpers and intentional durable helpers under `scripts/` or
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6615,7 +6615,7 @@ standalone product scenario when the actual behaviors are already represented.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6647,7 +6647,7 @@ or three scheduled scenarios so generic projects still get a small backlog.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6682,7 +6682,7 @@ argument drift during the same job.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6716,7 +6716,7 @@ mutation belongs to ticket-backed Engineer or dependency tools.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6754,7 +6754,7 @@ full lines or another round.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6798,7 +6798,7 @@ schedule entries or scenario headings.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6833,7 +6833,7 @@ still requires a Descoped Scenarios rationale.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6853,7 +6853,7 @@ before action:
 
 - **Foundation-owned:** runtime, orchestration, generated defaults, role
   guidance, tool policy, model/provider behavior, telemetry, release/update, or
-  mirrored doctrine. Fix in `mars-harness` source, tests, docs, role prompts,
+  mirrored doctrine. Fix in `mars` source, tests, docs, role prompts,
   generated target defaults, tools, or skills. The improvement must benefit all
   applicable users or a clearly named project class.
 - **Deployed-owned:** target product behavior, target architecture, local
@@ -6885,7 +6885,7 @@ doctrine. A genuine product bug stays deployed-owned.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6926,7 +6926,7 @@ arbitrary older done or in-review product ticket.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6964,7 +6964,7 @@ still apply; this only removes the ordering assumption that a successful
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -6994,7 +6994,7 @@ scenario contract to use domain-specific nouns.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7029,7 +7029,7 @@ path.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7069,7 +7069,7 @@ callback remains blocked.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7103,7 +7103,7 @@ remains the fallback contract.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7141,7 +7141,7 @@ browser-only framework startup under plain Node.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7177,7 +7177,7 @@ probes, or browser automation.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7212,7 +7212,7 @@ repair action.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7251,7 +7251,7 @@ cleanup and untracked process kills remain blocked.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7285,7 +7285,7 @@ similar product actions remain required when the brief or goals name them.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7317,7 +7317,7 @@ blocking a feature contract that already covers keyboard movement.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7353,7 +7353,7 @@ push when configured, and `job_disposition_record`.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7395,7 +7395,7 @@ flat `docs/tickets/T-NNN...` paths.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7435,7 +7435,7 @@ role chooses the product-smoke lane directly.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7475,7 +7475,7 @@ not imply that basic in-scope capabilities are excluded.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7512,7 +7512,7 @@ planners to break out the actual behaviors they introduce.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7549,7 +7549,7 @@ hand off.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7582,7 +7582,7 @@ COO prompt and persona stop conditions now name the same rule directly.
 
 **Status:** Accepted
 **Date:** 2026-05-22
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7619,7 +7619,7 @@ Descoped Scenarios rationale before COO handoff or CTO ticket creation.
 
 **Status:** Accepted
 **Date:** 2026-05-23
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7657,7 +7657,7 @@ product that exposed the issue.
 
 **Status:** Accepted
 **Date:** 2026-05-23
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7694,7 +7694,7 @@ blocking the current planned product slice.
 
 **Status:** Accepted
 **Date:** 2026-06-12
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
@@ -7747,7 +7747,7 @@ from environment failures:
   **escalates** instead: the job's disposition is rewritten to `blocked`
   with `next_need: operator_retry` and a reason naming the exhausted budget,
   the fingerprint, and the exact operator retry command
-  (`POST /api/run-role` / `mars-harness run <role> --repo`). A successful
+  (`POST /api/run-role` / `mars run <role> --repo`). A successful
   retry leaves no failed-retry row, so a later distinct failure of the same
   role earns one fresh automatic retry.
 
@@ -7774,12 +7774,12 @@ from environment failures:
 
 **Status:** Accepted
 **Date:** 2026-06-16
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
 The Phaser/Tetris observation showed two generic factory failures that are not
-specific to a game target: `mars-harness start` could spend a long time in
+specific to a game target: `mars start` could spend a long time in
 planner/review oscillation before the first executable build, and restarting a
 dirty or partially completed lifecycle could seed CEO again instead of routing
 the existing work. The same run also exposed weak rework pinning: a
@@ -7793,7 +7793,7 @@ Tetris or Phaser.
 
 ### Decision
 
-`mars-harness start` now classifies repo-scoped lifecycle state before seeding
+`mars start` now classifies repo-scoped lifecycle state before seeding
 CEO. The startup action is one of `seeded_ceo`, `resumed_lifecycle`,
 `recovered_stale_job`, `routed_existing_ticket`, or
 `refused_ambiguous_state`, and CLI/log output names the evidence. Normal start
@@ -7835,14 +7835,14 @@ not reopened.
 
 **Status:** Accepted
 **Date:** 2026-06-16
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 
 The sequential static-web replay for the forward-progress guard proved the
 CTO first-slice handoff reached Engineer quickly, but it also exposed a
 validation-truth failure. Engineer wrote `package.json` with a static server on
-reserved Mars Harness inference port `18080`; the server startup failed with
+reserved MARS inference port `18080`; the server startup failed with
 address-in-use, then the ticket was still moved to done after `node --check`
 and a canned `node -e "console.log(...)"` command. QA approved the ticket from
 that weak evidence, and Security repeated the canned console probe.
@@ -7866,7 +7866,7 @@ page, not a Python/HTTP server directory listing, repository index, or other
 generic host page.
 
 `package.json` script writes are guarded for all target shapes, not only Phaser
-or framework projects. Scripts may not use Mars Harness reserved ports
+or framework projects. Scripts may not use MARS reserved ports
 `18080`-`18089`, and `smoke` scripts may not be canned output such as `echo`,
 `true`, or pure `node -e "console.log(...)"`. `node -e` remains valid when it
 performs a real source/runtime assertion that reads product files, checks
@@ -7901,7 +7901,7 @@ failures so Engineer can recover by running the canonical served-page smoke.
 
 **Status:** Accepted
 **Date:** 2026-06-26
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 
 ### Context
 

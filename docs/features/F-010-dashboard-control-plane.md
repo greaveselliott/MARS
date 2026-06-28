@@ -135,7 +135,7 @@ And no document claims the TanStack dashboard is implemented before code and evi
 
 Given the TanStack dashboard sidecar is requested
 When Node.js is absent, is not `24.x`, pnpm is absent, or pnpm is not `11.1.1`
-Then Mars Harness reports the installed versions when known
+Then MARS reports the installed versions when known
 And reports the required versions
 And gives a concrete remediation command or install path
 And does not bundle Node, download Node, install Node, or run a package-manager installer for the user
@@ -155,7 +155,7 @@ And the command or proposal records the authenticated local admin as the actor
 ### F-010-S013: TanStack Sidecar Behind Go Gateway
 
 Given Node `24.x`, `pnpm@11.1.1`, and local-admin auth are available
-When `mars-harness serve` starts the planned dashboard generation
+When `mars serve` starts the planned dashboard generation
 Then the Go gateway remains the public dashboard listener
 And the TanStack Start sidecar listens only behind that gateway
 And the gateway enforces auth before proxying dashboard routes or serving dashboard APIs
@@ -220,7 +220,7 @@ Then every role shows prompt source, domain, mode, tools, guardrails, triggers, 
 
 Given an operator requests a prompt, roster, tool, guardrail, trigger, or model-routing change
 When the change is submitted
-Then Mars Harness creates a draft code-host proposal or local patch preview with files, rationale, validation, and rollback notes
+Then MARS creates a draft code-host proposal or local patch preview with files, rationale, validation, and rollback notes
 And it does not silently mutate role source files from the dashboard
 
 ### F-010-S020: Available Models
@@ -231,7 +231,7 @@ Then each model shows provider, name, local/cloud kind, endpoint, health, contex
 
 Given an operator adds a model or changes model routing
 When the change is submitted
-Then Mars Harness creates an explicit override or registry-change proposal with validation requirements
+Then MARS creates an explicit override or registry-change proposal with validation requirements
 And a model is not promoted as a default solely because it is reachable
 
 ### F-010-S021: GitHub-Derived DORA
@@ -278,7 +278,7 @@ None.
 - F-010-S006: `go test ./internal/dashboard -run TestDashboard_missingModuleEmptyState`
 - F-010-S007: `go test ./internal/ui` and planned E2E evidence comparing CLI key listener and HTTP controls
 - F-010-S008: `go test ./internal/dashboard -run TestDashboard_missingModuleEmptyState`; API decision-history evidence remains planned
-- F-010-S009: `go test ./internal/ui` and `go test ./cmd/mars-harness -run 'TestRunStartServeExposeDebugAndLogFileFlags|TestStartCommandInitializesRegistersSeedsAndStops'`
+- F-010-S009: `go test ./internal/ui` and `go test ./cmd/mars -run 'TestRunStartServeExposeDebugAndLogFileFlags|TestStartCommandInitializesRegistersSeedsAndStops'`
 - F-010-S010: `go test ./internal/docsconsistency` verifies the product spec is indexed and docs do not claim implementation early
 - F-010-S011: planned prerequisite tests for Node `24.x` and `pnpm@11.1.1` detection and remediation
 - F-010-S012: planned auth, session, CSRF, and protected-route tests

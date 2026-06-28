@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars/internal/llm"
 )
 
 // ToolCallsFromAssistantMessage returns tool calls from structured fields or from

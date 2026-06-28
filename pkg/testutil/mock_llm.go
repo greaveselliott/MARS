@@ -11,7 +11,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars/internal/llm"
 )
 
 // MockLLM replays scripted ChatCompletionResponses in order.

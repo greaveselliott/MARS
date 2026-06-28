@@ -67,7 +67,7 @@ body { margin: 0; }
 
 func TestAuditReportsMissingMetadataAndMissingExpectedDocs(t *testing.T) {
 	dir := t.TempDir()
-	writeDocSyncTestFile(t, dir, "go.mod", "module github.com/greaveselliott/mars-harness\n")
+	writeDocSyncTestFile(t, dir, "go.mod", "module github.com/greaveselliott/mars\n")
 	writeDocSyncTestFile(t, dir, "docs/design-docs/code-documentation-map.md", "map")
 	writeDocSyncTestFile(t, dir, "docs/design-docs/release-versioning.md", "release")
 	writeDocSyncTestFile(t, dir, "docs/features/F-009-release-update-lifecycle.md", "feature")

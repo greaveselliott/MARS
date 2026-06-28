@@ -3,8 +3,8 @@
 # - docs/design-docs/code-documentation-map.md
 # - docs/design-docs/role-customization.md
 # - docs/features/F-004-target-harness-lifecycle.md
-name: mars-harness-roles
-description: All 11 ported Mars automation roles for use with mars-harness
+name: mars-roles
+description: All 11 ported Mars automation roles for use with mars
 
 roles:
   engineer:

@@ -30,10 +30,10 @@ func TestUpdateToolScriptFastForwardsAndInstalls(t *testing.T) {
 
 	require.NoError(t, err, out)
 	require.Contains(t, out, "Fast-forwarding to origin/main")
-	require.Contains(t, out, "mars-harness test-version")
+	require.Contains(t, out, "mars test-version")
 	require.Equal(t, gitOutput(t, local, "rev-parse", "HEAD"), gitOutput(t, local, "rev-parse", "origin/main"))
 	log := readUpdateToolLog(t, fake)
-	require.Contains(t, log, "go install install ./cmd/mars-harness")
+	require.Contains(t, log, "go install install ./cmd/mars")
 	require.Contains(t, log, "path setup path setup --install-dir "+fake.installBin)
 }
 
@@ -115,12 +115,12 @@ if [ "$1" = "install" ]; then
 		printf '%s\n' 'set -eu'
 		printf '%s\n' 'case "$1" in'
 		printf '%s\n' '  path) echo "path setup $*" >> "$FAKE_LOG"; exit 0 ;;'
-		printf '%s\n' '  version) echo "mars-harness test-version"; exit 0 ;;'
+		printf '%s\n' '  version) echo "mars test-version"; exit 0 ;;'
 		printf '%s\n' 'esac'
-		printf '%s\n' 'echo "unexpected mars-harness $*" >> "$FAKE_LOG"'
+		printf '%s\n' 'echo "unexpected mars $*" >> "$FAKE_LOG"'
 		printf '%s\n' 'exit 1'
-	} > "$FAKE_GOBIN/mars-harness"
-	chmod +x "$FAKE_GOBIN/mars-harness"
+	} > "$FAKE_GOBIN/mars"
+	chmod +x "$FAKE_GOBIN/mars"
 	echo "go install $*" >> "$FAKE_LOG"
 	exit 0
 fi

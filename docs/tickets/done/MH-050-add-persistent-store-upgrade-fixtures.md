@@ -23,7 +23,7 @@ created: 2026-05-03
 # MH-050: Add persistent store upgrade fixtures
 
 ## Context
-`mars-harness start --repo /path/to/target-repo` failed on 2026-05-03 while opening an existing per-repo queue database:
+`mars start --repo /path/to/target-repo` failed on 2026-05-03 while opening an existing per-repo queue database:
 
 ```text
 queue: init schema: SQL logic error: no such column: concurrency_group (1)

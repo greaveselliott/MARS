@@ -525,7 +525,7 @@ WHERE status IN ('claimed','running')`, now.Unix(), now.Unix())
 }
 
 // ResetOrphansForRepo marks claimed/running jobs for one repo as failed. A
-// fresh `mars-harness start --repo` process has no live worker ownership for
+// fresh `mars start --repo` process has no live worker ownership for
 // previous claimed/running rows in that scoped repo, so startup reconciliation
 // can make them explicit recoverable evidence before deciding the next role.
 func (q *Queue) ResetOrphansForRepo(ctx context.Context, repoID, reason string) (int, error) {

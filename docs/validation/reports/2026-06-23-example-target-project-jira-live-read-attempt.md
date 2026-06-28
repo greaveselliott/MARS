@@ -2,7 +2,7 @@
 
 ## Primary Outcome Contract
 
-**Primary Outcome:** Verify Mars Harness can read scoped Example Target Project JIRA issues and
+**Primary Outcome:** Verify MARS can read scoped Example Target Project JIRA issues and
 generate local Markdown tickets from live JIRA without using Codex connectors.
 
 **Primary Pass Gate:** A harness-owned JIRA poll, configured with env-var auth,

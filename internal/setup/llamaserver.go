@@ -66,7 +66,7 @@ func installLlamaServerStep(baseDir string) Step {
 			}
 			expectedSHA := llamaServerSHA256[platform]
 			if expectedSHA == "" {
-				return fmt.Errorf("no pinned llama.cpp checksum for platform %s — install llama-server manually into ~/.mars-harness/bin/llama-server or update the checksum table", platform)
+				return fmt.Errorf("no pinned llama.cpp checksum for platform %s — install llama-server manually into ~/.mars/bin/llama-server or update the checksum table", platform)
 			}
 
 			url := fmt.Sprintf(llamaCppReleaseFmt, llamaCppPinnedTag, llamaCppPinnedTag, platform)
@@ -107,7 +107,7 @@ func llamaPlatformKey() (string, error) {
 	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
 		return "ubuntu-arm64", nil
 	default:
-		return "", fmt.Errorf("unsupported platform %s/%s — build llama.cpp from source and place llama-server in ~/.mars-harness/bin/", runtime.GOOS, runtime.GOARCH)
+		return "", fmt.Errorf("unsupported platform %s/%s — build llama.cpp from source and place llama-server in ~/.mars/bin/", runtime.GOOS, runtime.GOARCH)
 	}
 }
 

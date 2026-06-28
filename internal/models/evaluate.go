@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/hardware"
-	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars/internal/hardware"
+	"github.com/greaveselliott/mars/internal/llm"
 )
 
 const (
@@ -457,7 +457,7 @@ func runRepoTicketCase(ctx context.Context, client *llm.Client, model, repoRoot 
 			},
 			{
 				Role: "user",
-				Content: fmt.Sprintf(`This is a Mars Harness repo ticket from %s:
+				Content: fmt.Sprintf(`This is a MARS repo ticket from %s:
 
 %s
 

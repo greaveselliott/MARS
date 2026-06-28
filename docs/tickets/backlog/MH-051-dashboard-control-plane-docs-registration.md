@@ -26,7 +26,7 @@ depends_on: []
 ## Context
 
 The dashboard work expanded from a shadcn-ui restyle into a new frontend and
-control plane for Mars Harness. Before implementation starts, the repo needs a
+control plane for MARS. Before implementation starts, the repo needs a
 durable product contract, expanded BDD scenarios, architecture decision update,
 backlog plan, active-plan registration, and focused implementation tickets.
 

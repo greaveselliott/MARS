@@ -26,8 +26,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/llm"
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
+	"github.com/greaveselliott/mars/internal/llm"
+	"github.com/greaveselliott/mars/internal/orgstate"
 )
 
 func repoRootForTest(t *testing.T) string {
@@ -307,7 +307,7 @@ func TestAgentSmokeReportSummaryAndMarkdown(t *testing.T) {
 		Root:           "/tmp/smoke",
 		Suite:          AgentSmokeSuiteFast,
 		Evidence:       "local-model",
-		ModelSource:    "local Mars Harness inference router; single local server tier coding",
+		ModelSource:    "local MARS inference router; single local server tier coding",
 		SingleServer:   true,
 		SingleTier:     "coding",
 		ServerParallel: 2,

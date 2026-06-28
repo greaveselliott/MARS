@@ -25,7 +25,7 @@ depends_on: ["MH-051"]
 
 ## Context
 
-The TanStack dashboard must not bundle or install Node. Mars Harness needs a
+The TanStack dashboard must not bundle or install Node. MARS needs a
 clear prerequisite check that detects whether the operator already has the right
 external runtime and package manager before sidecar startup is treated as
 supported.
@@ -36,7 +36,7 @@ supported.
 
 ## Affected Docs/Code Areas
 
-- `cmd/mars-harness/`
+- `cmd/mars/`
 - `internal/dashboard/`
 - `internal/doctor/`
 - `internal/serve/`
@@ -46,10 +46,10 @@ supported.
 
 ## Acceptance Criteria
 
-- [ ] Mars Harness detects missing Node and reports that Node.js `24.x` is required.
-- [ ] Mars Harness detects a non-`24.x` Node version and reports installed and required versions.
-- [ ] Mars Harness detects missing pnpm and reports that `pnpm@11.1.1` is required.
-- [ ] Mars Harness detects a wrong pnpm version and reports installed and required versions.
+- [ ] MARS detects missing Node and reports that Node.js `24.x` is required.
+- [ ] MARS detects a non-`24.x` Node version and reports installed and required versions.
+- [ ] MARS detects missing pnpm and reports that `pnpm@11.1.1` is required.
+- [ ] MARS detects a wrong pnpm version and reports installed and required versions.
 - [ ] Remediation output is concrete and does not run an installer for the user.
 - [ ] Core `serve` and `start` orchestration remain usable when TanStack dashboard prerequisites are missing.
 - [ ] The future dashboard package pins `pnpm@11.1.1` through `packageManager`.

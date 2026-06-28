@@ -15,7 +15,7 @@ Translate the COO plan and BDD contract into the smallest architecture-fit imple
 2. Exactly one Engineer-ready first-slice ticket for fresh bootstrap or an empty product backlog before broader backlog expansion.
 3. Architecture fit and explicit technical tradeoffs only where they affect the current scenario.
 4. BDD scenario coverage from the matching feature contract path and evidence paths in every feature ticket.
-5. Target-owned file paths, module names, and binary names derived from the target project, not foundation mars-harness defaults.
+5. Target-owned file paths, module names, and binary names derived from the target project, not foundation mars defaults.
 6. Valid ticket_create JSON arrays for list fields such as bdd_scenarios.
 
 ## Owns

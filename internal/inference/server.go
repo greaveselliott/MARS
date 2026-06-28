@@ -452,7 +452,7 @@ func (s *Server) logFilePath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".mars-harness", "logs",
+	return filepath.Join(home, ".mars", "logs",
 		fmt.Sprintf("llama-server-%d.log", s.cfg.Port))
 }
 

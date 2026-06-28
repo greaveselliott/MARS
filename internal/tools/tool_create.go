@@ -207,7 +207,7 @@ func ensureHarnessToolRoot(root Root) error {
 		}
 		if _, err := os.Stat(abs); err != nil {
 			if os.IsNotExist(err) {
-				return fmt.Errorf("tool_create: %s is missing; this tool only scaffolds mars-harness built-in tools", rel)
+				return fmt.Errorf("tool_create: %s is missing; this tool only scaffolds mars built-in tools", rel)
 			}
 			return fmt.Errorf("tool_create: stat %s: %w", rel, err)
 		}

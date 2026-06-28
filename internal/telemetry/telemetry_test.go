@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/pkg/testutil"
+	"github.com/greaveselliott/mars/pkg/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -459,7 +459,7 @@ func TestTriagePattern_modelUnavailableTargetsInference(t *testing.T) {
 	require.Equal(t, TargetInference, proposal.Target)
 	require.Equal(t, "Install or route model tier", proposal.Title)
 	require.Contains(t, proposal.Suggestion, "setup")
-	require.Contains(t, proposal.CandidateFiles, "~/.mars-harness/config.yaml")
+	require.Contains(t, proposal.CandidateFiles, "~/.mars/config.yaml")
 }
 
 func TestTriagePattern_inferencePortConflictTargetsInference(t *testing.T) {

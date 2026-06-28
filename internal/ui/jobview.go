@@ -151,11 +151,11 @@ func (v *plainJobView) WriteHeader(role, model string, tools []string, handoff [
 	if model == "" {
 		model = v.meta.Model
 	}
-	v.printf("mars-harness: %s starting (model=%s, tools=%d)\n", role, model, len(tools))
+	v.printf("mars: %s starting (model=%s, tools=%d)\n", role, model, len(tools))
 }
 
 func (v *plainJobView) WriteReady() {
-	v.printf("mars-harness: %s inference ready\n", v.meta.Role)
+	v.printf("mars: %s inference ready\n", v.meta.Role)
 }
 
 func (v *plainJobView) WriteToolCall(name, args string) {}
@@ -165,21 +165,21 @@ func (v *plainJobView) WriteToolResult(name, output string) {}
 func (v *plainJobView) WriteAssistant(content string) {
 	content = truncate(content, 160)
 	if content != "" {
-		v.printf("mars-harness: %s replied: %s\n", v.meta.Role, content)
+		v.printf("mars: %s replied: %s\n", v.meta.Role, content)
 	}
 }
 
 func (v *plainJobView) WriteTurn(turn, maxTurns int) {}
 
 func (v *plainJobView) WriteError(msg string) {
-	v.printf("mars-harness: %s error: %s\n", v.meta.Role, msg)
+	v.printf("mars: %s error: %s\n", v.meta.Role, msg)
 }
 
 func (v *plainJobView) WriteSummary(role, reason string, llmCalls, toolCalls int, duration time.Duration, tokens int) {
 	if role == "" {
 		role = v.meta.Role
 	}
-	v.printf("mars-harness: %s finished reason=%s turns=%d tools=%d time=%s\n",
+	v.printf("mars: %s finished reason=%s turns=%d tools=%d time=%s\n",
 		role, reason, llmCalls, toolCalls, duration.Round(time.Millisecond))
 }
 
@@ -187,7 +187,7 @@ func (v *plainJobView) WriteHandoff(from string, targets []string) {
 	if len(targets) == 0 {
 		return
 	}
-	v.printf("mars-harness: %s handoff to %s\n", from, joinTargets(targets))
+	v.printf("mars: %s handoff to %s\n", from, joinTargets(targets))
 }
 
 func joinTargets(targets []string) string {

@@ -4,7 +4,7 @@
 
 **Status:** validated all-pass full matrix.
 
-The full `agent-smoke` matrix was run against the real local Mars Harness
+The full `agent-smoke` matrix was run against the real local MARS
 model path with no fake, stub, mock, canned, or scripted endpoint. The runner
 generated ephemeral targets, executed every deployable target role through the
 live server job path, ran two cases concurrently through one shared local
@@ -23,13 +23,13 @@ analysis and fixes that led to this all-pass run.
 ## Command
 
 ```bash
-mars-harness validation agent-smoke --suite full --parallel 2 --timeout 45m --report <validation-root>
+mars validation agent-smoke --suite full --parallel 2 --timeout 45m --report <validation-root>
 ```
 
 - Date: 2026-06-15
 - Installed command: `/path/to/local-redacted`
 - Evidence source: `local-model`
-- Model source: local Mars Harness inference router; single local server tier `coding`
+- Model source: local MARS inference router; single local server tier `coding`
 - Inference topology: one local llama-server tier with server parallel `2`
 - Execution modes: `70` live server-job runs, `4` source-only foundation-maintainer checks
 - Server port: `18080`
@@ -42,9 +42,9 @@ Before the final all-pass matrix, the last retained failures were fixed and
 validated with focused live runs:
 
 ```bash
-mars-harness validation agent-smoke --role janitor --case stale-game-rework --suite full --parallel 1 --timeout 20m --report <validation-root>
-mars-harness validation agent-smoke --role pipeline-fixer --case dependency-ci-heldout --suite full --parallel 1 --timeout 20m --report <validation-root>
-mars-harness validation agent-smoke --role dogfood --case dogfood-go-api-ready --suite full --parallel 1 --timeout 20m --report <validation-root>
+mars validation agent-smoke --role janitor --case stale-game-rework --suite full --parallel 1 --timeout 20m --report <validation-root>
+mars validation agent-smoke --role pipeline-fixer --case dependency-ci-heldout --suite full --parallel 1 --timeout 20m --report <validation-root>
+mars validation agent-smoke --role dogfood --case dogfood-go-api-ready --suite full --parallel 1 --timeout 20m --report <validation-root>
 ```
 
 All three focused reruns passed live before the full matrix was restarted.
@@ -99,7 +99,7 @@ All three focused reruns passed live before the full matrix was restarted.
 agent-smoke full: 74 passed, 0 failed, 74 selected
 
 - Evidence source: `local-model`
-- Model source: local Mars Harness inference router; single local server tier coding
+- Model source: local MARS inference router; single local server tier coding
 - Inference topology: single local server tier `coding` with server parallel `2`
 
 | Role | Case | Project | Mode | Disposition | Status | Failure | Run |

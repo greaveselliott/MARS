@@ -21,7 +21,7 @@ Roles should gain capability only when evidence supports it. Trust levels gate P
   - **`contributor` → `autonomous`:** after MH-017 accuracy **score ≥ configured threshold** sustained over **20+ terminal outcomes** in the scoring window
 - Automatic promotion/demotion evaluated after each completed job; persisted in SQLite
 - Enforcement: `observer` cannot open or update PRs (read-only tools + comments allowed); violations blocked in tool layer with clear error
-- CLI override: `mars-harness trust set <role> <level> --reason` audited
+- CLI override: `mars trust set <role> <level> --reason` audited
 
 ## Acceptance Criteria
 

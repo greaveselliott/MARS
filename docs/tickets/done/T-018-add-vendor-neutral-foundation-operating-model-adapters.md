@@ -12,7 +12,7 @@ evidence_links:
   - GEMINI.md
   - .github/copilot-instructions.md
   - internal/docsconsistency/foundation_adapters_test.go
-verified_by: "go test ./internal/docsconsistency ./internal/docsync ./internal/roleregistry; go test ./cmd/mars-harness ./internal/context ./internal/scanner ./internal/personas ./internal/tools"
+verified_by: "go test ./internal/docsconsistency ./internal/docsync ./internal/roleregistry; go test ./cmd/mars ./internal/context ./internal/scanner ./internal/personas ./internal/tools"
 owner: "foundation-maintainer"
 last_attempt: "2026-05-23"
 blocker: "none"

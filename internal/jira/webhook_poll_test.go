@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/integrations"
+	"github.com/greaveselliott/mars/internal/integrations"
 )
 
 func TestWebhookDisabledWithoutEnabledConfigReturnsNotFound(t *testing.T) {
@@ -115,6 +115,38 @@ func TestWebhookRequiresSignatureAndMirrorsMappedIssue(t *testing.T) {
 	}
 	if got := countMarkdownTickets(t, repoRoot); got != 1 {
 		t.Fatalf("duplicate webhook created tickets, got %d", got)
+	}
+}
+
+func TestWebhookAcceptsLegacySignatureHeader(t *testing.T) {
+	repoRoot := t.TempDir()
+	cfg := boardDrivenConfig(filepath.Base(repoRoot))
+	body := webhookPayload(t, map[string]any{
+		"key": "DEMO-legacy",
+		"fields": map[string]any{
+			"project": map[string]any{"key": "DEMO"},
+			"summary": "Mirror legacy signature header",
+		},
+	})
+	handler := WebhookHandler(WebhookConfig{
+		Repositories: func(context.Context) ([]Repository, error) {
+			return []Repository{{ID: "repo-1", Path: repoRoot, Config: cfg}}, nil
+		},
+		EnvLookup: func(name string) (string, bool) {
+			if name == "JIRA_WEBHOOK_SECRET" {
+				return "webhook-secret", true
+			}
+			return "", false
+		},
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/webhooks/jira", bytes.NewReader(body))
+	req.Header.Set("X-Atlassian-Webhook-Identifier", "delivery-legacy-header")
+	req.Header.Set(legacyJiraSignatureHeader, SignWebhookPayloadForTest("webhook-secret", body))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected legacy signature header to succeed, got %d body=%s", rec.Code, rec.Body.String())
 	}
 }
 

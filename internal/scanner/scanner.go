@@ -20,8 +20,8 @@ import (
 	"sync"
 	"time"
 
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
-	"github.com/greaveselliott/mars-harness/internal/tools"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
+	"github.com/greaveselliott/mars/internal/tools"
 )
 
 // Finding represents a detected gap in the repo.
@@ -137,7 +137,7 @@ func Scan(ctx context.Context, cfg Config) (*ScanResult, error) {
 	if !result.HasCI {
 		result.Findings = append(result.Findings, Finding{
 			Type:        "no_ci",
-			Description: "No CI or local delivery gate found — add Makefile check, mars-harness checks, .github/workflows/, or equivalent",
+			Description: "No CI or local delivery gate found — add Makefile check, mars checks, .github/workflows/, or equivalent",
 			Severity:    "high",
 		})
 	}
@@ -904,7 +904,7 @@ func ticketInputFromFinding(f Finding) tools.TicketInput {
 func formatTicketBody(f Finding) string {
 	var b strings.Builder
 	b.WriteString("## Context\n\n")
-	b.WriteString("Detected by `mars-harness scan` static analysis.\n\n")
+	b.WriteString("Detected by `mars scan` static analysis.\n\n")
 	if f.Path != "" {
 		b.WriteString(fmt.Sprintf("Path: `%s`\n\n", f.Path))
 	}

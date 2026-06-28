@@ -1,13 +1,13 @@
 ---
 id: MH-016
-title: Wire subsystems into mars-harness serve with health and graceful shutdown
+title: Wire subsystems into mars serve with health and graceful shutdown
 priority: high
 complexity: medium
 source: delivery-schedule M5b
 created: 2026-04-11
 ---
 
-# MH-016: `mars-harness serve` — startup sequence, graceful shutdown, `/healthz`
+# MH-016: `mars serve` — startup sequence, graceful shutdown, `/healthz`
 
 ## Context
 

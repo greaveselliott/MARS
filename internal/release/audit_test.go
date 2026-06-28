@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/greaveselliott/mars-harness/internal/selfupdate"
+	"github.com/greaveselliott/mars/internal/selfupdate"
 )
 
 func completeRelease(tag string) selfupdate.ReleaseInfo {

@@ -3,7 +3,7 @@
 **Status:** Reference
 **Date:** 2026-05-19
 **Source:** [coleam00/Archon](https://github.com/coleam00/Archon)
-**Mars Harness relevance:** Comparator for deterministic AI coding workflows,
+**MARS relevance:** Comparator for deterministic AI coding workflows,
 workflow DAG ergonomics, worktree isolation, web control-plane UX, provider
 adapter boundaries, and the risks of cloud-agent-first defaults.
 
@@ -14,7 +14,7 @@ as a workflow engine for AI coding agents: YAML-defined plans, DAG execution,
 loop nodes, bash nodes, provider-specific AI nodes, worktree isolation, web
 chat, workflow monitoring, and workflow-builder UX.
 
-Mars Harness remains aimed at a different product center: a local-first,
+MARS remains aimed at a different product center: a local-first,
 self-hosted autonomous delivery system with governed roles, trust and scoring,
 BDD evidence, repo-owned operating doctrine, universal tools, release
 discipline, and local inference by default.
@@ -36,7 +36,7 @@ The adoption rule is:
 | Workflow routing can still be LLM-selected from descriptions. | Mars should prefer deterministic trigger/routing rules where safety or release state is involved. |
 | Worktree isolation is a first-class execution concept. | Mars strict-trunk remains the default, but optional worktree execution could reduce blast radius for risky, concurrent, or review-before-merge work. |
 | The Web UI exposes chat, workflow history, tool-call visualization, and workflow-builder concepts. | Mars dashboard can borrow run-graph visibility without changing the source-of-truth model. |
-| Archon is Claude/Codex/Pi-provider oriented and Claude-heavy by default. | This conflicts with Mars Harness' local-open-model default and no data exfiltration promise. |
+| Archon is Claude/Codex/Pi-provider oriented and Claude-heavy by default. | This conflicts with MARS' local-open-model default and no data exfiltration promise. |
 | Archon has useful validation ergonomics for workflows, commands, scripts, provider/model compatibility, and referenced resources. | Mars should make harness/workflow readiness errors actionable before model execution. |
 | Archon docs show small drift: architecture prose referenced 7 database tables while database docs listed 8. | Reinforces Mars' no-stale-docs and docsync audit direction. |
 
@@ -56,7 +56,7 @@ The adoption rule is:
 ## Explicit Non-Adoptions
 
 - Do not make Claude Code, Codex cloud, Pi, or any external coding assistant the
-  default runtime. Mars Harness should keep local OpenAI-compatible inference as
+  default runtime. MARS should keep local OpenAI-compatible inference as
   the default path.
 - Do not switch the generated delivery model to branch/PR-first operation.
   Strict trunk remains the generated Mars default.

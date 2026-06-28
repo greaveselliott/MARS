@@ -1,9 +1,9 @@
 ---
-name: mars-harness-status
+name: mars-status
 description: >-
-  Check mars-harness health and status. Use when the user wants to check
+  Check mars health and status. Use when the user wants to check
   status, see running jobs, verify health, diagnose issues, or mentions
-  mars-harness doctor or mars-harness status.
+  mars doctor or mars status.
 ---
 
 # Check Status
@@ -13,7 +13,7 @@ description: >-
 Run the doctor to verify all subsystems:
 
 ```bash
-mars-harness doctor
+mars doctor
 ```
 
 This checks: Go version, config, models, database, llama-server, disk space.
@@ -45,6 +45,6 @@ Expected: `{"status":"healthy"}`
 
 ## Troubleshooting
 
-- If doctor fails on models: run `mars-harness setup`
-- If doctor fails on llama-server: run `mars-harness setup`
-- If doctor fails on config: check `~/.mars-harness/config.yaml`
+- If doctor fails on models: run `mars setup`
+- If doctor fails on llama-server: run `mars setup`
+- If doctor fails on config: check `~/.mars/config.yaml`

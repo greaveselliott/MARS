@@ -23,7 +23,7 @@ Implement `internal/trace/recorder.go`:
 - JSON Lines format (one JSON object per turn) for streaming and incremental writes
 - Summary generation: extract outcome, total duration, total tokens, tools called, number of turns
 - SQLite storage: write trace to a `traces` table (trace_id, job_id, turns JSONL, summary JSON, created_at)
-- File export: optionally write trace to a file for debugging (`mars-harness run --trace-file`)
+- File export: optionally write trace to a file for debugging (`mars run --trace-file`)
 
 ## Affected Files
 

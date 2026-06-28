@@ -7,7 +7,7 @@
 
 `docs/generated/` existed as a placeholder, but no generator wrote to it and the README did not explain its product role. That made the directory look stale and ambiguous.
 
-Mars Harness still needs a place for generated reference snapshots. OpenAI's harness guidance and the Mars parity plan both point toward compact, agent-readable maps: role registry, tool inventory, package map, model inventory, score export, and bundle schema reference. Those maps should help context routing without becoming hand-written docs that silently drift.
+MARS still needs a place for generated reference snapshots. OpenAI's harness guidance and the Mars parity plan both point toward compact, agent-readable maps: role registry, tool inventory, package map, model inventory, score export, and bundle schema reference. Those maps should help context routing without becoming hand-written docs that silently drift.
 
 ## Decisions
 

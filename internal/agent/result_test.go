@@ -10,7 +10,7 @@ package agent
 import (
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/scoring"
+	"github.com/greaveselliott/mars/internal/scoring"
 	"github.com/stretchr/testify/require"
 )
 

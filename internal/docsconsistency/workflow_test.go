@@ -94,7 +94,7 @@ func TestDogfoodMatrixNamesRequiredEvidence(t *testing.T) {
 	}
 	text := string(data)
 	for _, needle := range []string{
-		"mars-harness start --repo <temp repo>",
+		"mars start --repo <temp repo>",
 		"fake-LLM dogfood path",
 		"`../mars` is the supersession target",
 		"Optional GitHub paths are skipped honestly",

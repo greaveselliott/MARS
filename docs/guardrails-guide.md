@@ -1,6 +1,6 @@
 # Guardrails Guide
 
-Guardrails are safety rules that constrain what Mars Harness agents can do. They prevent agents from making dangerous changes, leaking secrets, or violating project conventions.
+Guardrails are safety rules that constrain what MARS agents can do. They prevent agents from making dangerous changes, leaking secrets, or violating project conventions.
 
 ## Severity Levels
 
@@ -128,7 +128,7 @@ Overrides are logged and auditable. Use them sparingly.
 
 ## Stale Rules
 
-Rules auto-expire after `stale_days` (default: 90 days). The `mars-harness doctor` command flags stale rules. Review and either refresh or remove them.
+Rules auto-expire after `stale_days` (default: 90 days). The `mars doctor` command flags stale rules. Review and either refresh or remove them.
 
 Set `stale_days: -1` for permanent rules that should never expire.
 

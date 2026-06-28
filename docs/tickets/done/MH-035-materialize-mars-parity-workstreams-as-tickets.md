@@ -10,14 +10,14 @@ end_to_end_evidence: not_applicable
 evidence_links:
   - "go test ./internal/docsconsistency ./internal/operatingmodel"
   - "go test ./..."
-  - "go run ./cmd/mars-harness doctor --repo . --skip-remote"
+  - "go run ./cmd/mars doctor --repo . --skip-remote"
 verified_by: command
 dedupe_key: "public-example"
 source: mars-parity-supersession-plan.md
 created: 2026-05-02
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "mars-parity"
   category: "plan_to_ticket_gap"
   severity: "high"

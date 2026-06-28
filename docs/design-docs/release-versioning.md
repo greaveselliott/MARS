@@ -5,7 +5,7 @@
 
 ## Context
 
-Mars Harness had a build-time `version` command and release-manager prompt, but no repo-owned semantic version, no committed patch notes, and no deterministic way for the harness or a target repo to produce them. That made release state live in ad hoc human memory.
+MARS had a build-time `version` command and release-manager prompt, but no repo-owned semantic version, no committed patch notes, and no deterministic way for the harness or a target repo to produce them. That made release state live in ad hoc human memory.
 
 The behavior also needs to mirror into initialized target repositories. If the source harness expects semantic versioning and generated patch notes, target harnesses should receive the same version files, release guidance, and release-manager workflow.
 
@@ -13,11 +13,11 @@ The behavior also needs to mirror into initialized target repositories. If the s
 
 ### AD-049: VERSION Is The Semantic Version Source
 
-Mars Harness and initialized target repos use a root `VERSION` file containing `MAJOR.MINOR.PATCH`. Release builds may still inject build metadata with linker flags, but the repo-owned version is what agents and release tooling update.
+MARS and initialized target repos use a root `VERSION` file containing `MAJOR.MINOR.PATCH`. Release builds may still inject build metadata with linker flags, but the repo-owned version is what agents and release tooling update.
 
 ### AD-050: CHANGELOG.md Is Generated Patch Notes
 
-Patch notes live in root `CHANGELOG.md`. Entries are generated from semantic commits using `mars-harness release notes`. Each generated entry includes a release marker with the version and source commit so the next run can find only new commits even when no git tag exists yet.
+Patch notes live in root `CHANGELOG.md`. Entries are generated from semantic commits using `mars release notes`. Each generated entry includes a release marker with the version and source commit so the next run can find only new commits even when no git tag exists yet.
 
 Generated entries start with plain-English narrative before the commit buckets.
 The narrative must include `Impact`, `Why`, and `What Changed` sections so the
@@ -47,9 +47,9 @@ explain the workflow shift instead of repeating a thin commit subject.
 ### AD-100: Historical Release Notes Are Backfilled Through The Release Tool
 
 Release-note standards apply to the whole changelog, not only the newest entry.
-When the narrative standard changes, maintainers use `mars-harness release
+When the narrative standard changes, maintainers use `mars release
 backfill-notes` to rewrite existing marker-backed entries from their historical
-commit ranges. The command treats each `mars-harness-release` marker as the
+commit ranges. The command treats each `mars-release` marker as the
 authoritative release boundary, ignores `release:` commits, preserves existing
 semantic buckets and delivery evidence, and replaces legacy narrative sections
 with generated `Impact`, `Why`, and `What Changed` prose. If old git topology is
@@ -69,39 +69,39 @@ history.
 
 ### AD-051: Source And Target Release Behavior Mirrors
 
-`mars-harness init` creates `VERSION`, `CHANGELOG.md`, release-versioning design guidance, and release knowledge routes in target repos. The default release-manager prompt uses the same `release notes --repo . --bump auto` command that Mars Harness itself uses, but executes Mars Harness commands through the structured `mars_harness_cli` tool rather than `shell_exec mars-harness ...` so deployed agents resolve the active harness executable before any stale installed PATH binary.
+`mars init` creates `VERSION`, `CHANGELOG.md`, release-versioning design guidance, and release knowledge routes in target repos. The default release-manager prompt uses the same `release notes --repo . --bump auto` command that MARS itself uses, but executes MARS commands through the structured `mars_cli` tool rather than `shell_exec mars ...` so deployed agents resolve the active harness executable before any stale installed PATH binary.
 
 ### AD-056: Source Changes Are Automatically Versioned On Commit
 
 Every non-release semantic commit to this source repository must be followed by an automatic release-note generation step before the task is considered done:
 
 1. commit the coherent source/doc/test change
-2. run `mars_harness_cli` with args `["release","notes","--repo",".","--bump","auto"]`
+2. run `mars_cli` with args `["release","notes","--repo",".","--bump","auto"]`
 3. verify the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes
-4. run `mars_harness_cli` with args `["release","backfill-notes","--repo",".","--check"]`; if it reports
-   legacy entries, run `mars_harness_cli` with args `["release","backfill-notes","--repo","."]` and
+4. run `mars_cli` with args `["release","backfill-notes","--repo",".","--check"]`; if it reports
+   legacy entries, run `mars_cli` with args `["release","backfill-notes","--repo","."]` and
    include that changelog correction in the same release-note commit
 5. commit them as `release: notes X.Y.Z`
 6. push `main`
 
 For operator terminal work, the equivalent command is
-`mars-harness release notes --repo . --bump auto`; in agent jobs the
-structured `mars_harness_cli` form is required to avoid stale PATH binaries.
+`mars release notes --repo . --bump auto`; in agent jobs the
+structured `mars_cli` form is required to avoid stale PATH binaries.
 
 The `release: notes X.Y.Z` commit itself is exempt. The release generator ignores release-note commits so the workflow does not create an infinite version loop.
 
 ### AD-057: Target Harnesses Inherit Automatic Versioning
 
-Initialized target repositories use the same operating rule. `mars-harness init` writes target `AGENTS.md`, `docs/design-docs/release-versioning.md`, and the release-manager prompt so every non-release semantic commit in the target repo is followed by:
+Initialized target repositories use the same operating rule. `mars init` writes target `AGENTS.md`, `docs/design-docs/release-versioning.md`, and the release-manager prompt so every non-release semantic commit in the target repo is followed by:
 
-1. `mars_harness_cli` with args `["release","notes","--repo",".","--bump","auto"]`
+1. `mars_cli` with args `["release","notes","--repo",".","--bump","auto"]`
 2. verification of generated `VERSION` and `CHANGELOG.md`
-3. `mars_harness_cli` with args `["release","backfill-notes","--repo",".","--check"]`, with any required
+3. `mars_cli` with args `["release","backfill-notes","--repo",".","--check"]`, with any required
    historical backfill included before commit
 4. a `release: notes X.Y.Z` commit
 5. push to `main`
 
-Target repos do not have `internal/buildinfo/version.go` unless their own project defines one. The mirrored rule is the workflow contract, not a requirement for target repos to copy Mars Harness internals.
+Target repos do not have `internal/buildinfo/version.go` unless their own project defines one. The mirrored rule is the workflow contract, not a requirement for target repos to copy MARS internals.
 
 Dispatch-mode target lifecycles do not leave this rule to the weekly release
 schedule alone. When Dogfood approves or completes validation after product
@@ -118,22 +118,22 @@ authenticated GitHub release capability.
 After a `release: notes X.Y.Z` commit is pushed to `main`, release work must:
 
 1. create or update tag `vX.Y.Z` at the release-note commit
-2. run `mars-harness release publish-assets --repo . --version vX.Y.Z
+2. run `mars release publish-assets --repo . --version vX.Y.Z
    --upload none|github|auto`
-3. verify local release assets with `mars-harness release verify-assets --dist
+3. verify local release assets with `mars release verify-assets --dist
    dist/releases --version vX.Y.Z`
 4. when GitHub mirroring is configured, verify the release object exists with
    `gh release view vX.Y.Z`
-5. verify mirrored GitHub assets with `mars-harness release verify-assets
+5. verify mirrored GitHub assets with `mars release verify-assets
    --version vX.Y.Z` before claiming installer or self-update availability from
    the mirror
 
 Release publication has two independent gates:
 
-- **Local asset gate:** `mars-harness release verify-assets --dist
+- **Local asset gate:** `mars release verify-assets --dist
   dist/releases --version vX.Y.Z` must pass before a source release is complete.
 - **Optional GitHub mirror gate:** `gh release view vX.Y.Z` and
-  `mars-harness release verify-assets --version vX.Y.Z` must pass before the
+  `mars release verify-assets --version vX.Y.Z` must pass before the
   GitHub mirror is advertised as installable.
 
 GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the mirror blocker without treating local asset publication as failed.
@@ -168,21 +168,21 @@ tag the release, publish local assets, optionally mirror to GitHub Releases,
 verify binary assets, and record missing-asset blockers without pretending a
 notes-only release is complete.
 
-The deterministic commands remain `mars-harness release notes`, git,
-`mars-harness release publish-assets`, optional GitHub CLI mirroring, and
-`mars-harness release verify-assets`. The reusable procedure lives in
+The deterministic commands remain `mars release notes`, git,
+`mars release publish-assets`, optional GitHub CLI mirroring, and
+`mars release verify-assets`. The reusable procedure lives in
 `.harness/skills/release-publication/SKILL.md` so Release Manager and Codex
 share the same ordered checklist and stop conditions.
 
 This skill is foundation-only for now. Generated targets keep the mirrored
 release docs and Release Manager prompt, but they do not receive the source
-skill because their publication surface may be different from Mars Harness
+skill because their publication surface may be different from MARS
 binary releases. A generic target release skill can be added later when target
 publication modes have a stable contract.
 
 ### AD-068: The Installed Command Can Update Itself
 
-Operators should not need to `cd` into the source repository to upgrade the built binary. The installed `mars-harness` command owns its own update surface through `mars-harness update tool`.
+Operators should not need to `cd` into the source repository to upgrade the built binary. The installed `mars` command owns its own update surface through `mars update tool`.
 
 The primary path for anyone cloning this repo is source checkout installation:
 `make install` installs the current checkout, while `make update-tool` safely
@@ -190,16 +190,16 @@ fast-forwards a clean clone from `origin/main`, reinstalls with `go install`,
 refreshes shell PATH setup, and prints the installed version.
 
 The packaged-user path remains available for binary release assets. It downloads
-the matching `mars-harness-{os}-{arch}` asset, verifies `checksums.txt`, and
+the matching `mars-{os}-{arch}` asset, verifies `checksums.txt`, and
 atomically replaces the binary in the directory containing the currently running
 command. This avoids requiring Go or a source checkout for packaged users.
 
 Private release repositories use the same checksum-verified path through the
 optional binary-release auth operating model. Operators run
-`mars-harness auth github setup` once. When setup verifies access through
+`mars auth github setup` once. When setup verifies access through
 GitHub CLI auth, it stores that token as an owner-only local fallback under
-`~/.mars-harness/` so future update runs do not depend on keychain access.
-Then `mars-harness update tool` resolves auth in this order: `GH_TOKEN`,
+`~/.mars/` so future update runs do not depend on keychain access.
+Then `mars update tool` resolves auth in this order: `GH_TOKEN`,
 `GITHUB_TOKEN`, GitHub CLI auth from `gh auth token`, then the local fallback.
 Token values are never printed, written to target repos, or included in traces,
 telemetry, doctor output, JSON, errors, tickets, or docs.
@@ -207,45 +207,45 @@ telemetry, doctor output, JSON, errors, tickets, or docs.
 When release metadata exposes GitHub asset API URLs, the updater downloads from
 those authenticated API URLs instead of browser download URLs so private assets
 do not fail behind a misleading 404. Missing or invalid auth points to
-`mars-harness auth github setup`; headless installs may use `GH_TOKEN`,
-`GITHUB_TOKEN`, or `mars-harness auth github setup --token <token>`.
+`mars auth github setup`; headless installs may use `GH_TOKEN`,
+`GITHUB_TOKEN`, or `mars auth github setup --token <token>`.
 
-Source checkout onboarding runs `mars-harness setup --skip-github`, so private
+Source checkout onboarding runs `mars setup --skip-github`, so private
 release auth is not required to install local inference assets. Plain
-`mars-harness setup` still includes a private-release auth check for packaged
+`mars setup` still includes a private-release auth check for packaged
 binary users; `--skip-github` and `--test-mode` skip that external auth check.
-`mars-harness doctor` reports private-release auth readiness with a concrete
+`mars doctor` reports private-release auth readiness with a concrete
 fix, and agents can use the read-only `github_auth_check` tool before binary
 update, release verification, install repair, or version-drift remediation.
 
-Source-development updates remain available through `mars-harness update tool
---source` or `mars-harness update tool --version main`. That path uses `go
-install github.com/greaveselliott/mars-harness/cmd/mars-harness@<version>` with
+Source-development updates remain available through `mars update tool
+--source` or `mars update tool --version main`. That path uses `go
+install github.com/greaveselliott/mars/cmd/mars@<version>` with
 `GOBIN` set to the install directory.
 
 ### AD-069: Update Is The Unified Verb For Tool And Deployed Harness Changes
 
 The CLI should use the same language when the goal is the same. "Update" means bring an installed or deployed harness surface up to the current expected version:
 
-- `mars-harness update tool` updates the installed CLI binary.
-- `mars-harness update harness --repo <path>` updates the `.harness/` bundle deployed into a target repo.
-- `mars-harness upgrade --repo <path>` remains as a compatibility alias for target harness updates while docs migrate to `update harness`.
+- `mars update tool` updates the installed CLI binary.
+- `mars update harness --repo <path>` updates the `.harness/` bundle deployed into a target repo.
+- `mars upgrade --repo <path>` remains as a compatibility alias for target harness updates while docs migrate to `update harness`.
 
 ### AD-070: Update Check Detects Tool And Target Harness Drift
 
-`mars-harness update check --repo <path>` compares both update surfaces before mutating anything:
+`mars update check --repo <path>` compares both update surfaces before mutating anything:
 
 - the installed CLI version against the latest GitHub release, or another GitHub-compatible latest-release endpoint supplied by the operator
 - the target repo's generated `.harness/metadata.yaml` generator version against the installed CLI version
 
-The command emits machine-readable JSON with `--json` and recommends `update tool`, `update harness`, or both. Remote lookup failures are reported as `unknown` for the tool and do not prevent local target-harness checks. `mars-harness doctor --repo <path>` includes the same drift signal as a warning so operators see stale binary or target harness state during health checks.
+The command emits machine-readable JSON with `--json` and recommends `update tool`, `update harness`, or both. Remote lookup failures are reported as `unknown` for the tool and do not prevent local target-harness checks. `mars doctor --repo <path>` includes the same drift signal as a warning so operators see stale binary or target harness state during health checks.
 
-`mars-harness init` and `mars-harness update harness` write `.harness/metadata.yaml`. This file is generated state owned by the harness updater, unlike role prompts, manifests, guardrails, knowledge routes, tickets, and docs, which remain user-owned after init.
+`mars init` and `mars update harness` write `.harness/metadata.yaml`. This file is generated state owned by the harness updater, unlike role prompts, manifests, guardrails, knowledge routes, tickets, and docs, which remain user-owned after init.
 
 ### AD-075: Install And Update Configure User Shell PATH
 
 Operators should not need shell-specific setup knowledge to run the installed
-command. Source `make install`, `mars-harness setup`, and `mars-harness update
+command. Source `make install`, `mars setup`, and `mars update
 tool` converge on the same shell-path configurator. It detects Fish, Zsh, Bash,
 POSIX sh/Ksh, Csh, and Tcsh; writes an idempotent user-profile snippet; and
 reports unsupported shells with the install directory to add manually.
@@ -253,7 +253,7 @@ reports unsupported shells with the install directory to add manually.
 The explicit command is:
 
 ```bash
-mars-harness path setup --install-dir <dir>
+mars path setup --install-dir <dir>
 ```
 
 `make install` runs that command through the freshly installed binary using its
@@ -271,15 +271,15 @@ work without manual profile editing.
 
 ### AD-078: Release Assets Are Built From Tags And Verified
 
-For the source harness, `mars-harness release publish-assets --repo . --version
+For the source harness, `mars release publish-assets --repo . --version
 vX.Y.Z --upload none|github|auto` is the authoritative asset-publication path
 after the release-note commit is on `main` and tag `vX.Y.Z` points at that
 commit. The command cross-compiles `linux/darwin` x `amd64/arm64`, writes
 `checksums.txt`, verifies local release assets, and can optionally create or
 update a GitHub Release mirror from the matching `CHANGELOG.md` entry. Release
-managers must run `mars-harness release verify-assets --dist dist/releases
+managers must run `mars release verify-assets --dist dist/releases
 --version vX.Y.Z` before claiming the local installer or self-update path is
-shipped. When GitHub mirroring is used, they also run `mars-harness release
+shipped. When GitHub mirroring is used, they also run `mars release
 verify-assets --version vX.Y.Z` before advertising the mirror.
 
 ### AD-207: Release Tags Must Point At The Release-Note Commit
@@ -310,7 +310,7 @@ attention moves to the next version. The recorded GitHub Actions billing
 blocker makes this drift class likely: tags keep flowing while asset uploads
 silently stop.
 
-`mars-harness release audit --repo . [--github-repo owner/name] [--limit n]
+`mars release audit --repo . [--github-repo owner/name] [--limit n]
 [--json]` audits the newest local `vX.Y.Z` tags (default 10) against the
 GitHub releases list and classifies each as complete, `notes_only` (release
 object exists, required binaries or `checksums.txt` missing), or
@@ -329,13 +329,13 @@ retired GitHub Actions workflows would have hosted.
 
 ## Implementation Requirements
 
-- Add `mars-harness release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
-- Add `mars-harness release backfill-notes --repo <path> [--min-version X.Y.Z] [--max-version X.Y.Z] [--dry-run] [--check]`.
-- Add `mars-harness update tool [--version <version>] [--install-dir <path>] [--dry-run]`.
-- Add `mars-harness release verify-assets [--version <tag>]`.
-- Add `mars-harness update harness --repo <path>`.
-- Add `mars-harness update check --repo <path> [--json] [--skip-remote]`.
-- Add `mars-harness path setup [--install-dir <path>]`.
+- Add `mars release notes --repo <path> --bump auto|major|minor|patch [--dry-run]`.
+- Add `mars release backfill-notes --repo <path> [--min-version X.Y.Z] [--max-version X.Y.Z] [--dry-run] [--check]`.
+- Add `mars update tool [--version <version>] [--install-dir <path>] [--dry-run]`.
+- Add `mars release verify-assets [--version <tag>]`.
+- Add `mars update harness --repo <path>`.
+- Add `mars update check --repo <path> [--json] [--skip-remote]`.
+- Add `mars path setup [--install-dir <path>]`.
 - Infer `auto` bumps from semantic commits:
   - breaking changes -> major
   - `feat:` -> minor
@@ -347,11 +347,11 @@ retired GitHub Actions workflows would have hosted.
 - Update the source harness fallback version from a repo-owned constant.
 - Generate the same VERSION/CHANGELOG/release guidance in target repos.
 - Treat source-repo versioning as part of done for every non-release semantic commit.
-- Treat target-repo versioning as part of done for every non-release semantic commit after `mars-harness init`.
-- Publish local release assets with `mars-harness release publish-assets`.
+- Treat target-repo versioning as part of done for every non-release semantic commit after `mars init`.
+- Publish local release assets with `mars release publish-assets`.
 - Mirror matching GitHub Releases when authenticated GitHub release capability is configured.
 - Verify `gh release view vX.Y.Z` after GitHub mirroring.
-- Audit recent tags for notes-only or missing GitHub releases with `mars-harness release audit` after each publication.
+- Audit recent tags for notes-only or missing GitHub releases with `mars release audit` after each publication.
 - Block release tag creation unless the tag matches `VERSION`, the worktree is
   clean, `HEAD` is the release-note commit, and the tag target is that `HEAD`.
 - Let the installed binary reinstall itself without requiring a source checkout.
@@ -386,7 +386,7 @@ retired GitHub Actions workflows would have hosted.
   published `vX.Y.Z` tag) is ahead of the local base version, instead of
   silently reusing published numbers.
 - **2026-06-11 — First live `release audit` run found a real notes-only-class
-  defect:** the inaugural `mars-harness release audit --repo . --limit 5` run
+  defect:** the inaugural `mars release audit --repo . --limit 5` run
   (T-026, AD-282) reported `missing_release` for `v0.45.1` — the tag exists on
   the remote but no GitHub Release object was ever created. Single-version
   `verify-assets` discipline had not caught this because attention had moved

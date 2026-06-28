@@ -27,7 +27,7 @@ func TestResolvePlan_defaultsToReleaseAssetInCurrentExecutableDir(t *testing.T) 
 	require.Equal(t, MethodReleaseAssets, plan.Method)
 	require.Equal(t, DefaultVersion, plan.Version)
 	require.Empty(t, plan.Command)
-	require.Equal(t, "mars-harness-"+runtime.GOOS+"-"+runtime.GOARCH, plan.AssetName)
+	require.Equal(t, "mars-"+runtime.GOOS+"-"+runtime.GOARCH, plan.AssetName)
 	require.Contains(t, plan.DownloadURL, "/latest/"+plan.AssetName)
 	require.Contains(t, plan.ChecksumsURL, "/latest/checksums.txt")
 	require.True(t, filepath.IsAbs(plan.InstallDir))
@@ -40,7 +40,7 @@ func TestResolvePlan_acceptsSourceMethodVersionAndInstallDir(t *testing.T) {
 	plan, err := ResolvePlan(Config{
 		Version:    "@main",
 		InstallDir: installDir,
-		BinaryName: "mars-harness-dev",
+		BinaryName: "mars-dev",
 		Method:     MethodSource,
 	})
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestResolvePlan_acceptsSourceMethodVersionAndInstallDir(t *testing.T) {
 	require.Equal(t, "main", plan.Version)
 	require.Equal(t, []string{"go", "install", DefaultPackage + "@main"}, plan.Command)
 	require.Equal(t, installDir, plan.InstallDir)
-	require.Equal(t, filepath.Join(installDir, "mars-harness-dev"), plan.BinaryPath)
+	require.Equal(t, filepath.Join(installDir, "mars-dev"), plan.BinaryPath)
 }
 
 func TestResolvePlan_selectsSourceForMain(t *testing.T) {
@@ -63,7 +63,7 @@ func TestResolvePlan_selectsSourceForMain(t *testing.T) {
 func TestRunReleaseAssetsVerifiesChecksumAndInstalls(t *testing.T) {
 	t.Parallel()
 	installDir := t.TempDir()
-	asset := "mars-harness-" + runtime.GOOS + "-" + runtime.GOARCH
+	asset := "mars-" + runtime.GOOS + "-" + runtime.GOARCH
 	payload := []byte("#!/bin/sh\necho updated\n")
 	sum := sha256.Sum256(payload)
 
@@ -101,7 +101,7 @@ func TestRunReleaseAssetsVerifiesChecksumAndInstalls(t *testing.T) {
 func TestRunLatestReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
 	t.Setenv("GH_TOKEN", "ghs_testtoken")
 	installDir := t.TempDir()
-	asset := "mars-harness-" + runtime.GOOS + "-" + runtime.GOARCH
+	asset := "mars-" + runtime.GOOS + "-" + runtime.GOARCH
 	payload := []byte("#!/bin/sh\necho private-release\n")
 	sum := sha256.Sum256(payload)
 
@@ -114,6 +114,10 @@ func TestRunLatestReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
 				"assets":[
 					{"name":%q,"url":"https://api.example.test/assets/bin","browser_download_url":"https://github.example.test/download/bin"},
 					{"name":"checksums.txt","url":"https://api.example.test/assets/checksums","browser_download_url":"https://github.example.test/download/checksums.txt"},
+					{"name":"mars-linux-amd64"},
+					{"name":"mars-linux-arm64"},
+					{"name":"mars-darwin-amd64"},
+					{"name":"mars-darwin-arm64"},
 					{"name":"mars-harness-linux-amd64"},
 					{"name":"mars-harness-linux-arm64"},
 					{"name":"mars-harness-darwin-amd64"},
@@ -151,19 +155,23 @@ func TestRunLatestReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
 func TestRunTaggedReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
 	t.Setenv("GH_TOKEN", "ghs_testtoken")
 	installDir := t.TempDir()
-	asset := "mars-harness-" + runtime.GOOS + "-" + runtime.GOARCH
+	asset := "mars-" + runtime.GOOS + "-" + runtime.GOARCH
 	payload := []byte("#!/bin/sh\necho tagged-private-release\n")
 	sum := sha256.Sum256(payload)
 
 	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
 		require.Equal(t, "Bearer ghs_testtoken", r.Header.Get("Authorization"))
 		switch r.URL.Path {
-		case "/repos/greaveselliott/mars-harness/releases/tags/v1.2.5":
+		case "/repos/greaveselliott/MARS/releases/tags/v1.2.5":
 			return textResponse(http.StatusOK, fmt.Sprintf(`{
 				"tag_name":"v1.2.5",
 				"assets":[
 					{"name":%q,"url":"https://api.example.test/assets/bin","browser_download_url":"https://github.example.test/download/bin"},
 					{"name":"checksums.txt","url":"https://api.example.test/assets/checksums","browser_download_url":"https://github.example.test/download/checksums.txt"},
+					{"name":"mars-linux-amd64"},
+					{"name":"mars-linux-arm64"},
+					{"name":"mars-darwin-amd64"},
+					{"name":"mars-darwin-arm64"},
 					{"name":"mars-harness-linux-amd64"},
 					{"name":"mars-harness-linux-arm64"},
 					{"name":"mars-harness-darwin-amd64"},
@@ -200,7 +208,7 @@ func TestRunTaggedReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
 func TestRunReleaseAssetsRejectsChecksumMismatchWithoutReplacingBinary(t *testing.T) {
 	t.Parallel()
 	installDir := t.TempDir()
-	asset := "mars-harness-" + runtime.GOOS + "-" + runtime.GOARCH
+	asset := "mars-" + runtime.GOOS + "-" + runtime.GOARCH
 	existing := []byte("existing")
 	require.NoError(t, os.WriteFile(filepath.Join(installDir, DefaultBinary), existing, 0o755))
 

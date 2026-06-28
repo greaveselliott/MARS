@@ -1,4 +1,4 @@
-module github.com/greaveselliott/mars-harness
+module github.com/greaveselliott/mars
 
 go 1.22.4
 

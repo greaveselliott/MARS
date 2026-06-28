@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/integrations"
+	"github.com/greaveselliott/mars/internal/integrations"
 )
 
 func resolveEnvBackedConfig(cfg integrations.Config, lookup func(string) (string, bool)) (integrations.Config, error) {

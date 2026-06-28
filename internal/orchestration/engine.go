@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/orgstate"
 )
 
 // Input contains the state needed to choose the next role after a job disposition.

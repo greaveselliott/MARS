@@ -70,7 +70,7 @@ Active and backlog plans require:
 
 ## Plan Hygiene
 
-Run `go test ./internal/docsconsistency/...` or `mars-harness doctor --repo .`
+Run `go test ./internal/docsconsistency/...` or `mars doctor --repo .`
 after changing plan state. The active-plan hygiene check reports actionable
 warnings when plan lifecycle state drifts from the ticket tree.
 
@@ -98,7 +98,7 @@ decisions, `docs/validation/` reports, and deterministic remediation recipes.
 ## Where to look next
 
 - **Current operating plan:** [active/current-operating-plan.md](active/current-operating-plan.md) — first read for current execution state, priority order, and plan hygiene
-- **Mars parity supersession plan:** [backlog/mars-parity-supersession-plan.md](backlog/mars-parity-supersession-plan.md) — P1 backlog plan for making Mars Harness supersede the Mars meta-harness
+- **Mars parity supersession plan:** [backlog/mars-parity-supersession-plan.md](backlog/mars-parity-supersession-plan.md) — P1 backlog plan for making MARS supersede the Mars meta-harness
 - **Model evaluation refresh plan:** [backlog/model-evaluation-refresh-plan.md](backlog/model-evaluation-refresh-plan.md) — P4 backlog plan for keeping local/remote model defaults current
 - **Master execution plan:** [superseded/master-execution-plan.md](superseded/master-execution-plan.md) — superseded baseline checklist covering M0–M10 + MH-001–MH-028; do not use checkbox status as current truth
 - **Delivery schedule:** [superseded/delivery-schedule.md](superseded/delivery-schedule.md) — superseded milestone schedule; kept for lineage and reconciliation only

@@ -22,7 +22,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/hardware"
+	"github.com/greaveselliott/mars/internal/hardware"
 )
 
 const (
@@ -60,7 +60,7 @@ func (e *PortConflictError) Error() string {
 	if e != nil {
 		port = e.Port
 	}
-	return fmt.Sprintf("inference_port_conflict: port=%d owning_pid=%s tier=%s role=%s remediation=stop the process using this port, wait for the previous mars-harness run to exit, or rerun with --model-endpoint <url>", port, pid, tier, role)
+	return fmt.Sprintf("inference_port_conflict: port=%d owning_pid=%s tier=%s role=%s remediation=stop the process using this port, wait for the previous mars run to exit, or rerun with --model-endpoint <url>", port, pid, tier, role)
 }
 
 type portReservation struct {
@@ -104,7 +104,7 @@ func acquirePortReservation(port int, metas ...portReservationMetadata) (*portRe
 	if len(metas) > 0 {
 		meta = metas[0]
 	}
-	dir := filepath.Join(os.TempDir(), "mars-harness-inference-ports")
+	dir := filepath.Join(os.TempDir(), "mars-inference-ports")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, fmt.Errorf("inference: create port lock dir: %w", err)
 	}
@@ -113,7 +113,7 @@ func acquirePortReservation(port int, metas ...portReservationMetadata) (*portRe
 		f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
 		if err == nil {
 			_ = json.NewEncoder(f).Encode(portLockInfo{
-				Owner:      "mars-harness",
+				Owner:      "mars",
 				PID:        os.Getpid(),
 				Port:       port,
 				Tier:       string(meta.Tier),
@@ -133,7 +133,7 @@ func acquirePortReservation(port int, metas ...portReservationMetadata) (*portRe
 		if info.PID == 0 && freshLock(path) {
 			return nil, &PortConflictError{
 				Port:  port,
-				Owner: "mars-harness",
+				Owner: "mars",
 			}
 		}
 		if info.PID <= 0 || !pidAlive(info.PID) {

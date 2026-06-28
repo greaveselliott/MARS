@@ -7,7 +7,7 @@ work_type: intervention-debt
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
 evidence_links: ["docs/validation/reports/2026-06-12-demo-12-frontend-baseline.md#run-2-v05011-context-fix", "docs/validation/reports/2026-06-12-demo-13-maintenance-baseline.md#run-2-v05011-context-fix", "docs/validation/baselines/2026-06-12-factory-pace-baseline.md", "docs/design-docs/context-efficiency.md"]
-verified_by: "Live demo-12 and demo-13 lifecycle replays on mars-harness 0.50.11 (fix commit bee4f5b, tag v0.50.11), same balanced model identity as the wedged baselines; zero context_overflow events across 9 + 8 jobs with 2 + 12 budget-pruner engagements at the exact former wedge states; lifecycle reach exceeded both wedged baselines"
+verified_by: "Live demo-12 and demo-13 lifecycle replays on mars 0.50.11 (fix commit bee4f5b, tag v0.50.11), same balanced model identity as the wedged baselines; zero context_overflow events across 9 + 8 jobs with 2 + 12 budget-pruner engagements at the exact former wedge states; lifecycle reach exceeded both wedged baselines"
 owner: "foundation-maintainer"
 last_attempt: >-
   2026-06-12: fixed as AD-288 (one slice, two bounded changes). Root cause:

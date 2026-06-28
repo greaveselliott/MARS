@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/scanner"
+	"github.com/greaveselliott/mars/internal/scanner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -164,7 +164,7 @@ func TestCheckDeterministicRemediationHealthReportsMissingHarness(t *testing.T) 
 	assert.Equal(t, "deterministic-remediation", result.Name)
 	assert.Equal(t, statusWarn, result.Status)
 	assert.Contains(t, result.Message, "manifest:validate-or-init")
-	assert.Contains(t, result.Fix, "mars-harness init")
+	assert.Contains(t, result.Fix, "mars init")
 }
 
 func TestCheckDeterministicRemediationHealthReportsMissingMetadata(t *testing.T) {
@@ -267,7 +267,7 @@ blocked_by: []
 	assert.Equal(t, statusWarn, result.Status)
 	assert.Contains(t, result.Message, "stale eligible in-progress")
 	assert.Contains(t, result.Fix, "blocked_by")
-	assert.Contains(t, result.Fix, "mars-harness run janitor")
+	assert.Contains(t, result.Fix, "mars run janitor")
 }
 
 func TestCheckTicketDrainHealthSkipsBlockedInProgress(t *testing.T) {

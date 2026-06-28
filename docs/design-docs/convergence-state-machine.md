@@ -288,7 +288,7 @@ decomposition AD routes them to their own domain files
 (capability/brief parsing, browser static analysis, argv normalization):
 
 - **Argv / tool-call normalization:** AD-200 (cd-argv normalization), AD-213
-  (`mars_harness_cli` structured resolution).
+  (`mars_cli` structured resolution).
 - **Capability / brief interpretation:** AD-236, AD-237, AD-238, AD-242,
   AD-245, AD-249, AD-250, AD-251, AD-255, AD-258, AD-263, AD-264, AD-268,
   AD-269, AD-270, AD-272.

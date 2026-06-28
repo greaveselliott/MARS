@@ -2,12 +2,12 @@
 
 **Status:** Accepted
 **Date:** 2026-05-03
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Related:** [delivery operating model](delivery-operating-model.md), [tools glossary](tools-glossary.md), [dashboard](dashboard.md), [conversation-as-system-record](conversation-as-system-record.md)
 
 ## Purpose
 
-Mars Harness originally executed the delivery model as a mostly linear chain:
+MARS originally executed the delivery model as a mostly linear chain:
 
 `CEO -> CTO -> COO -> Engineer -> QA -> Security -> Dependency Manager`
 

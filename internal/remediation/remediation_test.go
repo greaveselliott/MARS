@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/telemetry"
+	"github.com/greaveselliott/mars/internal/telemetry"
 )
 
 func TestDefaultRegistryListsKnownRecipes(t *testing.T) {
@@ -169,7 +169,7 @@ func TestPlanTreatsMissingOptionalToolsAsGuidance(t *testing.T) {
 	if attempt.Safety != SafetyOperatorRequired {
 		t.Fatalf("expected operator safety, got %s", attempt.Safety)
 	}
-	assertContains(t, attempt.Commands, "mars-harness doctor --repo <repo>")
+	assertContains(t, attempt.Commands, "mars doctor --repo <repo>")
 	assertContainsText(t, attempt.NextAction, "record a skip/blocker")
 	assertContainsText(t, attempt.NextAction, "do not mark remediation successful")
 }

@@ -1,6 +1,6 @@
 # Compartmentalised Agent Smoke Testing
 
-`mars-harness validation agent-smoke` runs role-local smoke cases against
+`mars validation agent-smoke` runs role-local smoke cases against
 fresh, one-use target repositories. The checked-in files in this directory are
 generator recipes and matrix metadata only; generated target projects are
 ephemeral and live under `../demo/validation-runs/agent-smoke/` by default.
@@ -36,7 +36,7 @@ starting separate tier servers.
   when claiming single-server parallel coverage.
 - Long-lived snapshot repos and checked-in generated target projects are not
   allowed.
-- Full clean-project `mars-harness start` sweeps still own end-to-end lifecycle
+- Full clean-project `mars start` sweeps still own end-to-end lifecycle
   confidence; agent smoke is the fast compartmentalized lane.
 - `--model-endpoint` is only for a real OpenAI-compatible model endpoint.
   Fake, stub, mock, canned, or scripted endpoints are test plumbing only and
@@ -52,10 +52,10 @@ starting separate tier servers.
 ## Example
 
 ```bash
-mars-harness validation agent-smoke --suite fast --json
-mars-harness validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs
-mars-harness validation agent-smoke --suite held-out --parallel 2 --single-server --single-server-tier coding --timeout 10m
-mars-harness validation agent-smoke --cleanup-only
+mars validation agent-smoke --suite fast --json
+mars validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs
+mars validation agent-smoke --suite held-out --parallel 2 --single-server --single-server-tier coding --timeout 10m
+mars validation agent-smoke --cleanup-only
 ```
 
 Use `--fixture-only` only to debug generator recipes and fixture linting; it is

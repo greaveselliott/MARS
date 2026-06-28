@@ -1,9 +1,9 @@
 ---
-name: mars-harness-serve
+name: mars-serve
 description: >-
-  Start the mars-harness autonomous orchestrator. Use when the user wants to
+  Start the mars autonomous orchestrator. Use when the user wants to
   start the pipeline, begin autonomous operation, launch the orchestrator,
-  run the server, or mentions mars-harness serve.
+  run the server, or mentions mars serve.
 ---
 
 # Start the Orchestrator
@@ -13,13 +13,13 @@ description: >-
 Verify setup is complete:
 
 ```bash
-mars-harness doctor
+mars doctor
 ```
 
 ## Start
 
 ```bash
-mars-harness serve
+mars serve
 ```
 
 This starts the long-running orchestrator that:
@@ -34,7 +34,7 @@ This starts the long-running orchestrator that:
 |---|---|---|
 | `--addr` | From config (`:9091`) | Webhook listen address |
 | `--concurrency` | `2` | Parallel agent workers |
-| `--db` | `~/.mars-harness/db/mars.db` | SQLite database path |
+| `--db` | `~/.mars/db/mars.db` | SQLite database path |
 
 ## Verify
 
@@ -52,7 +52,7 @@ Send SIGINT (Ctrl+C). The orchestrator drains running jobs and shuts down gracef
 
 ## Troubleshooting
 
-- **Port in use**: Change `webhook_port` in `~/.mars-harness/config.yaml` or use `--addr`
-- **Models missing**: Run `mars-harness setup`
-- **llama-server missing**: Run `mars-harness setup`
-- **No repos registered**: Run `mars-harness register --repo /path/to/repo`
+- **Port in use**: Change `webhook_port` in `~/.mars/config.yaml` or use `--addr`
+- **Models missing**: Run `mars setup`
+- **llama-server missing**: Run `mars setup`
+- **No repos registered**: Run `mars register --repo /path/to/repo`

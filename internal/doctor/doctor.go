@@ -27,14 +27,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/githubauth"
-	"github.com/greaveselliott/mars-harness/internal/hardware"
-	"github.com/greaveselliott/mars-harness/internal/operatingmodel"
-	"github.com/greaveselliott/mars-harness/internal/planhygiene"
-	"github.com/greaveselliott/mars-harness/internal/roleregistry"
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
-	"github.com/greaveselliott/mars-harness/internal/tools"
-	"github.com/greaveselliott/mars-harness/internal/updatecheck"
+	"github.com/greaveselliott/mars/internal/githubauth"
+	"github.com/greaveselliott/mars/internal/hardware"
+	"github.com/greaveselliott/mars/internal/operatingmodel"
+	"github.com/greaveselliott/mars/internal/planhygiene"
+	"github.com/greaveselliott/mars/internal/roleregistry"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
+	"github.com/greaveselliott/mars/internal/tools"
+	"github.com/greaveselliott/mars/internal/updatecheck"
 )
 
 // CheckResult represents the outcome of a single health check.
@@ -165,7 +165,7 @@ func checkWorkspaceHygieneHealth(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  err.Error(),
 			Duration: nonZeroDurationSince(start),
-			Fix:      "run 'mars-harness tools run workspace_hygiene --repo <path> --trust contributor' for a detailed recipe",
+			Fix:      "run 'mars tools run workspace_hygiene --repo <path> --trust contributor' for a detailed recipe",
 		}
 	}
 	if len(report.Findings) == 0 {
@@ -187,7 +187,7 @@ func checkWorkspaceHygieneHealth(cfg Config) CheckResult {
 			Status:   status,
 			Message:  report.Message + " (auto-repairable .gitignore policy)",
 			Duration: nonZeroDurationSince(start),
-			Fix:      "mars-harness start will commit a .gitignore-only hygiene repair before loading the model; or add the missing generated ignore entries manually",
+			Fix:      "mars start will commit a .gitignore-only hygiene repair before loading the model; or add the missing generated ignore entries manually",
 		}
 	}
 	return CheckResult{
@@ -217,7 +217,7 @@ func checkTicketDrainHealth(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  err.Error(),
 			Duration: nonZeroDurationSince(start),
-			Fix:      "restore docs/tickets/{backlog,in-progress,done}/ or run 'mars-harness init --repo <path>' for a new target repo",
+			Fix:      "restore docs/tickets/{backlog,in-progress,done}/ or run 'mars init --repo <path>' for a new target repo",
 		}
 	}
 	if len(stale) == 0 {
@@ -233,7 +233,7 @@ func checkTicketDrainHealth(cfg Config) CheckResult {
 		Status:   statusWarn,
 		Message:  fmt.Sprintf("%d stale eligible in-progress ticket(s): %s", len(stale), staleTicketSummary(stale)),
 		Duration: nonZeroDurationSince(start),
-		Fix:      "complete the ticket, move it back to docs/tickets/backlog with blocker metadata, or add blocked_by linking to a dependency ticket; then run 'mars-harness scan --repo <path> --tickets' or 'mars-harness run janitor --repo <path>'",
+		Fix:      "complete the ticket, move it back to docs/tickets/backlog with blocker metadata, or add blocked_by linking to a dependency ticket; then run 'mars scan --repo <path> --tickets' or 'mars run janitor --repo <path>'",
 	}
 }
 
@@ -263,7 +263,7 @@ func checkActivePlanHygiene(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  err.Error(),
 			Duration: nonZeroDurationSince(start),
-			Fix:      "run 'mars-harness doctor --repo <path>' with a valid git checkout containing docs/exec-plans/",
+			Fix:      "run 'mars doctor --repo <path>' with a valid git checkout containing docs/exec-plans/",
 		}
 	}
 	if !report.OK() {
@@ -301,7 +301,7 @@ func checkRoleRegistryHealth(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  err.Error(),
 			Duration: nonZeroDurationSince(start),
-			Fix:      "run 'mars-harness init --repo <path>' for new repos, or restore .harness/manifest.yaml before checking role registry",
+			Fix:      "run 'mars init --repo <path>' for new repos, or restore .harness/manifest.yaml before checking role registry",
 		}
 	}
 	if !report.OK() {
@@ -347,7 +347,7 @@ func checkOperatingModelHealth(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  err.Error(),
 			Duration: time.Since(start),
-			Fix:      "run 'mars-harness update check --repo <path> --skip-remote'",
+			Fix:      "run 'mars update check --repo <path> --skip-remote'",
 		}
 	}
 	if !report.OK() {
@@ -356,7 +356,7 @@ func checkOperatingModelHealth(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  report.Summary(),
 			Duration: time.Since(start),
-			Fix:      "run 'mars-harness update harness --repo <path>'; create migration tickets for stale user-owned docs",
+			Fix:      "run 'mars update harness --repo <path>'; create migration tickets for stale user-owned docs",
 		}
 	}
 	return CheckResult{
@@ -408,7 +408,7 @@ func checkVersionDrift(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  report.Tool.Message,
 			Duration: time.Since(start),
-			Fix:      "run 'mars-harness update check --skip-remote' to check local target harness state only",
+			Fix:      "run 'mars update check --skip-remote' to check local target harness state only",
 		}
 	}
 	if report.Harness.Status == updatecheck.StatusUnknown && cfg.RepoPath != "" && report.Harness.Command != "" {
@@ -577,7 +577,7 @@ func checkConfigFile(cfg Config) CheckResult {
 	path := cfg.ConfigPath
 	if path == "" {
 		home, _ := os.UserHomeDir()
-		path = filepath.Join(home, ".mars-harness", "config.yaml")
+		path = filepath.Join(home, ".mars", "config.yaml")
 	}
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -586,7 +586,7 @@ func checkConfigFile(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  fmt.Sprintf("%s not found", path),
 			Duration: time.Since(start),
-			Fix:      "run 'mars-harness setup' to create default configuration",
+			Fix:      "run 'mars setup' to create default configuration",
 		}
 	}
 
@@ -603,7 +603,7 @@ func checkModelsDir(cfg Config) CheckResult {
 	name := "models-dir"
 
 	home, _ := os.UserHomeDir()
-	modelsDir := filepath.Join(home, ".mars-harness", "models")
+	modelsDir := filepath.Join(home, ".mars", "models")
 
 	info, err := os.Stat(modelsDir)
 	if os.IsNotExist(err) {
@@ -612,7 +612,7 @@ func checkModelsDir(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  fmt.Sprintf("%s not found", modelsDir),
 			Duration: time.Since(start),
-			Fix:      "run 'mars-harness setup' to create the models directory",
+			Fix:      "run 'mars setup' to create the models directory",
 		}
 	}
 	if !info.IsDir() {
@@ -621,7 +621,7 @@ func checkModelsDir(cfg Config) CheckResult {
 			Status:   statusFail,
 			Message:  fmt.Sprintf("%s exists but is not a directory", modelsDir),
 			Duration: time.Since(start),
-			Fix:      fmt.Sprintf("remove %s and run 'mars-harness setup'", modelsDir),
+			Fix:      fmt.Sprintf("remove %s and run 'mars setup'", modelsDir),
 		}
 	}
 
@@ -639,7 +639,7 @@ func checkModelsDir(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  fmt.Sprintf("%s exists but contains no .gguf files", modelsDir),
 			Duration: time.Since(start),
-			Fix:      "download models with 'mars-harness setup' or place .gguf files in " + modelsDir,
+			Fix:      "download models with 'mars setup' or place .gguf files in " + modelsDir,
 		}
 	}
 
@@ -656,7 +656,7 @@ func checkProfileRequiredModels(cfg Config) CheckResult {
 	name := "profile-required-models"
 
 	home, _ := os.UserHomeDir()
-	modelsDir := filepath.Join(home, ".mars-harness", "models")
+	modelsDir := filepath.Join(home, ".mars", "models")
 	performanceProfile := "auto"
 	if cfgPath := strings.TrimSpace(cfg.ConfigPath); cfgPath != "" {
 		if data, err := os.ReadFile(cfgPath); err == nil {
@@ -677,7 +677,7 @@ func checkProfileRequiredModels(cfg Config) CheckResult {
 			Status:   statusFail,
 			Message:  err.Error(),
 			Duration: time.Since(start),
-			Fix:      "run 'mars-harness setup' to download required model weights",
+			Fix:      "run 'mars setup' to download required model weights",
 		}
 	}
 	if len(missing) > 0 {
@@ -687,7 +687,7 @@ func checkProfileRequiredModels(cfg Config) CheckResult {
 			Status:   statusFail,
 			Message:  fmt.Sprintf("performance_profile %q requires missing file(s): %s", effective, strings.Join(missing, ", ")),
 			Duration: time.Since(start),
-			Fix:      "run 'mars-harness setup' to download the weights for your active profile",
+			Fix:      "run 'mars setup' to download the weights for your active profile",
 		}
 	}
 
@@ -735,7 +735,7 @@ func checkProfileRAMFootprint(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  fmt.Sprintf("performance_profile %q estimated footprint ~%d MiB is %.0f%% of %d MiB RAM — inference may degrade", effective, estimated, ratio*100, physical),
 			Duration: time.Since(start),
-			Fix:      "set performance_profile to balanced or speed in ~/.mars-harness/config.yaml and run 'mars-harness setup'",
+			Fix:      "set performance_profile to balanced or speed in ~/.mars/config.yaml and run 'mars setup'",
 		}
 	}
 	return CheckResult{
@@ -753,7 +753,7 @@ func checkDBAccessible(cfg Config) CheckResult {
 	path := cfg.DBPath
 	if path == "" {
 		home, _ := os.UserHomeDir()
-		path = filepath.Join(home, ".mars-harness", "db", "mars.db")
+		path = filepath.Join(home, ".mars", "db", "mars.db")
 	}
 
 	dir := filepath.Dir(path)
@@ -763,7 +763,7 @@ func checkDBAccessible(cfg Config) CheckResult {
 			Status:   statusWarn,
 			Message:  fmt.Sprintf("database directory %s not found", dir),
 			Duration: time.Since(start),
-			Fix:      "run 'mars-harness setup' to create the database directory",
+			Fix:      "run 'mars setup' to create the database directory",
 		}
 	}
 
@@ -782,7 +782,7 @@ func checkLlamaServer(_ Config) CheckResult {
 	path, err := exec.LookPath("llama-server")
 	if err != nil {
 		home, _ := os.UserHomeDir()
-		binPath := filepath.Join(home, ".mars-harness", "bin", "llama-server")
+		binPath := filepath.Join(home, ".mars", "bin", "llama-server")
 		if _, statErr := os.Stat(binPath); statErr == nil {
 			return CheckResult{
 				Name:     name,
@@ -794,7 +794,7 @@ func checkLlamaServer(_ Config) CheckResult {
 		return CheckResult{
 			Name:     name,
 			Status:   statusWarn,
-			Message:  "llama-server not found in PATH or ~/.mars-harness/bin/",
+			Message:  "llama-server not found in PATH or ~/.mars/bin/",
 			Duration: time.Since(start),
 			Fix:      "install llama.cpp: https://github.com/ggml-org/llama.cpp#build",
 		}
@@ -813,7 +813,7 @@ func checkDiskSpace(_ Config) CheckResult {
 	name := "disk-space"
 
 	home, _ := os.UserHomeDir()
-	target := filepath.Join(home, ".mars-harness")
+	target := filepath.Join(home, ".mars")
 	if _, err := os.Stat(target); os.IsNotExist(err) {
 		target = home
 	}

@@ -6,7 +6,7 @@
 
 ## Context
 
-Mars Harness is a local autonomous delivery system, not a hosted SaaS control
+MARS is a local autonomous delivery system, not a hosted SaaS control
 plane. Its core job is to install cleanly, run on operator machines, supervise
 subprocesses, manage repositories, persist queue and telemetry state, expose a
 small dashboard, and remain inspectable by humans and other agents.
@@ -30,7 +30,7 @@ AD-007, which keeps llama.cpp outside the Go binary as a supervised subprocess.
 
 ### AD-001: Go Is The Implementation Language
 
-Mars Harness is implemented in Go, with the main binary expected to build
+MARS is implemented in Go, with the main binary expected to build
 without CGO for normal distribution.
 
 Go is the best fit because the product is mostly an operations control plane:
@@ -49,14 +49,14 @@ support.
 
 **Single-binary distribution.** A self-hosted tool should be easy to copy,
 install, update, and diagnose. Go's static binary path keeps the default
-operator experience close to `mars-harness setup` followed by normal CLI use.
+operator experience close to `mars setup` followed by normal CLI use.
 
 **Low runtime dependency burden.** Python, Node.js, Postgres, Redis, and
 external dashboard build chains are useful in other products, but they would
 weaken the plug-and-play tenet here. Go lets the queue, server, CLI, scheduler,
 embedded assets, and release tooling ship together.
 
-**Strong fit for local orchestration.** Mars Harness spends most of its time
+**Strong fit for local orchestration.** MARS spends most of its time
 coordinating processes, files, HTTP APIs, SQLite, signals, timers, and logs.
 Those are ordinary Go strengths, and the code stays explicit enough for
 operators and agents to inspect.
@@ -72,7 +72,7 @@ and dashboard streams need concurrency, but not exotic concurrency. Goroutines,
 contexts, channels, and `net/http` cover the default shape while keeping
 failure handling visible.
 
-**Readable agent-editable code.** Mars Harness is meant to improve through
+**Readable agent-editable code.** MARS is meant to improve through
 agent work. Go's formatting, explicit error returns, package conventions, and
 standard testing flow reduce style variance and make mechanical edits easier to
 review.
@@ -115,9 +115,9 @@ single-binary operator experience enough to justify that burden.
 
 ## Discoveries
 
-- **Go fits the product thesis because Mars Harness is mostly control-plane
+- **Go fits the product thesis because MARS is mostly control-plane
   software:** the hardest product constraints are packaging, orchestration,
   state, trust, and evidence, not writing inference kernels.
 - **The inference boundary makes the language choice cleaner:** keeping
-  llama.cpp out of process lets Mars Harness stay portable while still using
+  llama.cpp out of process lets MARS stay portable while still using
   native accelerator-aware tooling.

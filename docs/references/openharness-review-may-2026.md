@@ -4,7 +4,7 @@
 **Date:** 2026-05-19
 **Source:** [HKUDS/OpenHarness](https://github.com/HKUDS/OpenHarness)
 **Related reference:** [openharness-comparator.md](openharness-comparator.md)
-**Mars Harness relevance:** Competitive review and adoption backlog for agent
+**MARS relevance:** Competitive review and adoption backlog for agent
 runtime ergonomics, repo autopilot, extension compatibility, provider profiles,
 and blast-radius policy.
 
@@ -16,7 +16,7 @@ streaming model loop, broad provider support, skills, plugins, MCP client,
 permissions, memory, TUI, background tasks, and chat-channel gateway through
 `ohmo`.
 
-It is not a direct Mars Harness replacement. Mars Harness is still positioned as
+It is not a direct MARS replacement. MARS is still positioned as
 a self-hosted autonomous delivery system: local inference lifecycle, generated
 target harnesses, role registry, queue, scheduler, guardrails, trust, scoring,
 trace evidence, BDD contracts, release notes, and versioned repo state.
@@ -46,7 +46,7 @@ label-gated policy. This is the part to track most closely.
 - **Distribution familiarity:** Python plus Pydantic makes tool and provider
   contribution easy for a broad community.
 
-### Mars Harness advantages
+### MARS advantages
 
 - **Local-first delivery system:** Mars owns setup, hardware detection,
   llama.cpp subprocess management, model catalog, and local default inference.
@@ -70,7 +70,7 @@ label-gated policy. This is the part to track most closely.
 OpenHarness has useful permission checks and sensitive-path deny patterns, but
 its standard file tools accept resolved absolute paths unless Docker sandboxing
 or explicit path rules are active. In `full_auto`, especially under autopilot,
-that is a weaker default than Mars Harness should accept.
+that is a weaker default than MARS should accept.
 
 Mars should keep blast-radius containment as a product-level differentiator:
 repo-root file boundaries, explicit mutating-tool trust gates, auditable policy
@@ -92,7 +92,7 @@ decisions, and conservative defaults.
 ## Non-Adoptions
 
 - Do not reframe Mars as an open Claude Code clone.
-- Do not import Python OpenHarness code into Mars Harness.
+- Do not import Python OpenHarness code into MARS.
 - Do not adopt arbitrary project plugin execution by default.
 - Do not loosen Mars's repo-root file boundary or trust gates to match
   OpenHarness `full_auto` ergonomics.
@@ -104,13 +104,13 @@ decisions, and conservative defaults.
 
 OpenHarness validates demand for an open "harness" category, but it occupies a
 different layer of the stack. It is best understood as an open interactive agent
-runtime plus emerging repo autopilot. Mars Harness should position itself as the
+runtime plus emerging repo autopilot. MARS should position itself as the
 governed autonomous delivery system: local inference, durable operating model,
 role specialization, trust progression, scoring, release discipline, and target
 repo lifecycle.
 
 The best integration posture is interoperability, not convergence. Mars should
-make `mars-harness mcp serve` and the universal tool surface strong enough that
+make `mars mcp serve` and the universal tool surface strong enough that
 OpenHarness, Codex, Claude Code, and other MCP clients can use Mars-governed
 tools without Mars adopting their runtime architecture.
 

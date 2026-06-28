@@ -2,13 +2,13 @@
 
 **Status:** Draft  
 **Date:** 2026-04-11  
-**Author:** Mars Harness contributors
+**Author:** MARS contributors
 
 How the harness serves large language models locally: process boundaries, weight storage, verification, and operational lifecycle (download, health, upgrades).
 
 ## Context
 
-Mars Harness targets **plug-and-play** local inference without requiring users to compile C/C++ or manage fragile native bindings in the main binary. Model artifacts are large and must not bloat the repository; integrity and reproducibility still matter for support and evolution.
+MARS targets **plug-and-play** local inference without requiring users to compile C/C++ or manage fragile native bindings in the main binary. Model artifacts are large and must not bloat the repository; integrity and reproducibility still matter for support and evolution.
 
 The agent runtime ([agent-runtime.md](agent-runtime.md)) assumes a **stable HTTP or stdin/stdout contract** to the inference server; this document owns how that server is provisioned and supervised.
 
@@ -22,7 +22,7 @@ The harness is responsible for **argv, env, working directory**, and capturing s
 
 ### AD-008: Model weights outside the repo
 
-Weights live under **`~/.mars-harness/models/`** (not committed). Expected hashes are recorded in **`bundle.lock.json`** (e.g. SHA256 per artifact) so installs and upgrades can verify downloads and detect drift.
+Weights live under **`~/.mars/models/`** (not committed). Expected hashes are recorded in **`bundle.lock.json`** (e.g. SHA256 per artifact) so installs and upgrades can verify downloads and detect drift.
 
 Corrupt or partial downloads must never be loaded silently; verification runs **before** binding a model to active traffic.
 
@@ -53,16 +53,16 @@ The user config remains an escape hatch, not the normal path:
 
 Default `llama_parallel` is `1` because the strict-trunk default pipeline is one active agent per repo. llama.cpp's auto parallelism can reserve multiple slots and extra KV/cache memory for throughput the default workflow does not use. Operators can set `llama_parallel: 0` to restore llama.cpp auto behavior. When the harness deliberately starts a server with multiple parallel slots, it scales the server `--ctx-size` by the slot count so each request keeps the tier's documented served context window instead of silently receiving a divided window.
 
-Changing the effective `performance_profile` may require additional model files. `mars-harness setup` now verifies the model files required by the active profile before accepting the download marker as complete.
+Changing the effective `performance_profile` may require additional model files. `mars setup` now verifies the model files required by the active profile before accepting the download marker as complete.
 
 ### AD-063: Model Defaults Change Only After Harness-Specific Evaluation
 
 The open-model landscape moves too quickly for hardcoded defaults to remain "best" by assumption. New releases such as Qwen3.6, Laguna XS.2, GLM-5.1, and Mistral Medium 3.5 are candidates, not automatic replacements.
 
-Mars Harness must treat model selection as an evidence loop:
+MARS must treat model selection as an evidence loop:
 
 - maintain a current model landscape reference
-- expose a `mars-harness models evaluate` command for mechanical benchmark runs
+- expose a `mars models evaluate` command for mechanical benchmark runs
 - compare candidates against the current pinned defaults on harness-relevant tasks
 - measure tool-call JSON reliability, structured-output reliability, latency, token throughput, memory fit, and ticket-completion behavior
 - promote only immutable model artifacts with pinned revisions and SHA256 checksums
@@ -88,11 +88,11 @@ per-case repo, DB, trace, and log isolation. Forced-tier routing is an explicit
 validation topology override; ordinary autonomous execution keeps manifest-tier
 routing as the source of truth.
 
-Missing local-model errors also name the expected model file path and suggest `mars-harness setup` or remote fallback configuration. Telemetry classifies these as `model_unavailable` instead of `unknown`, routing repeated failures to inference/setup work. The reason is operator recovery: inference failures should tell the user which tier/file is missing and how to repair it.
+Missing local-model errors also name the expected model file path and suggest `mars setup` or remote fallback configuration. Telemetry classifies these as `model_unavailable` instead of `unknown`, routing repeated failures to inference/setup work. The reason is operator recovery: inference failures should tell the user which tier/file is missing and how to repair it.
 
 ### AD-299: Lifecycle Start Uses Real Endpoint Overrides, Safe Scoped Cleanup, And Port Reservations
 
-Full lifecycle validation often runs multiple `mars-harness start` processes in
+Full lifecycle validation often runs multiple `mars start` processes in
 parallel. Those processes must not fight over the same control-plane port,
 dashboard port, or llama-server tier port, and a scoped lifecycle start must not
 kill live processes owned by another run. `start --model-endpoint <url>` is the
@@ -102,7 +102,7 @@ local llama-server processes. Fake, stub, mock, canned, or scripted endpoints
 are still deterministic test fixtures only and do not raise confidence for live
 behavior claims.
 
-Scoped `mars-harness start` performs SQLite sidecar recovery only. It does not
+Scoped `mars start` performs SQLite sidecar recovery only. It does not
 kill processes on the configured webhook/dashboard ports and does not globally
 kill `llama-server`. When the default scoped control-plane or dashboard address
 is already occupied, the server falls back to an ephemeral local address and logs
@@ -124,7 +124,7 @@ processes on the same port.
 
 ### AD-066: Ollama Is A Catalog And Swap Provider, Not Automatic Default Promotion
 
-Mars Harness should make it easy to evaluate and explicitly run any model available through Ollama. The model registry should not be the only way to try a model. Operators should be able to list local Ollama models, reference published Ollama model names as evaluation candidates, and swap a tier or role to an Ollama model without editing several files by hand.
+MARS should make it easy to evaluate and explicitly run any model available through Ollama. The model registry should not be the only way to try a model. Operators should be able to list local Ollama models, reference published Ollama model names as evaluation candidates, and swap a tier or role to an Ollama model without editing several files by hand.
 
 This is a provider/candidate path, not a shortcut around default safety. There are three distinct states:
 
@@ -145,10 +145,10 @@ The intended operator experience is:
 Implemented command shape:
 
 ```bash
-mars-harness models list --provider ollama
-mars-harness models evaluate --provider ollama --model qwen3.6:27b
-mars-harness models override --repo /path/to/repo --tier coding --provider ollama --model qwen3.6:27b
-mars-harness models override --repo /path/to/repo --role engineer --provider openai-compatible --endpoint http://127.0.0.1:8088/v1 --model repo-coder
+mars models list --provider ollama
+mars models evaluate --provider ollama --model qwen3.6:27b
+mars models override --repo /path/to/repo --tier coding --provider ollama --model qwen3.6:27b
+mars models override --repo /path/to/repo --role engineer --provider openai-compatible --endpoint http://127.0.0.1:8088/v1 --model repo-coder
 ```
 
 Overrides are stored in `.harness/model-overrides.yaml`. The runtime checks a

@@ -42,13 +42,13 @@ Then capabilities change according to the trust contract and audit reason
 ### F-008-S003: Operator Score And Trust Visibility
 
 Given stored outcomes or trust levels exist
-When the user runs `mars-harness scores` or `mars-harness trust`
+When the user runs `mars scores` or `mars trust`
 Then the command reports current role state for the requested repo
 
 ### F-008-S004: Repo-Visible Quality Score
 
 Given a repo has score, telemetry, ticket, dogfood, guardrail, check, no-op, or human follow-up evidence
-When `mars-harness scores export --repo <path>` runs
+When `mars scores export --repo <path>` runs
 Then `docs/QUALITY_SCORE.md` is refreshed as the repo-visible quality artifact while manual notes are preserved
 And deterministic remediation attempts recorded in outcome details are summarized as evidence signals, with failed or skipped-without-executor remediation surfaced as improvement targets
 
@@ -73,7 +73,7 @@ Then the output says evidence is insufficient instead of implying the system is 
 ### F-008-S008: Factory Pace Evidence
 
 Given scoring outcomes have matching execution trace summaries
-When `mars-harness scores export --repo <path> --db <path>` runs
+When `mars scores export --repo <path> --db <path>` runs
 Then `docs/QUALITY_SCORE.md` includes a Factory Pace section with repo, role, job count, average turns, average tool invocations, average LLM calls, average wall time, limit-stop count, and a pace signal derived from trace and terminal outcome evidence
 
 Given scoring outcomes have no matching trace summaries
@@ -83,7 +83,7 @@ Then the Factory Pace section reports insufficient trace pace evidence instead o
 ### F-008-S009: Convergence And Guardrail Evidence
 
 Given the evidence window contains trace summaries and terminal outcome counts
-When `mars-harness scores export --repo <path> --db <path>` runs
+When `mars scores export --repo <path> --db <path>` runs
 Then `docs/QUALITY_SCORE.md` includes a Convergence And Guardrails section with per repo/role counts of circle-detected stops, max-turn/max-tool stops, other limit stops, no-op terminal outcomes, guardrail blocks, and the guardrail block rate over terminal outcomes
 And the Evidence Signals table includes a Convergence failures roll-up across all repo/role rows
 And the data comes from existing trace summary and scoring outcome tables without new runtime recording

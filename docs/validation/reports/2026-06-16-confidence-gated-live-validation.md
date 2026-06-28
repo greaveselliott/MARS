@@ -1,12 +1,12 @@
 # Confidence-Gated Live Validation Report
 
 **Date:** 2026-06-16  
-**Source build:** local `build/mars-harness` from the working tree  
+**Source build:** local `build/mars` from the working tree  
 **Scope:** forward-progress guard follow-up, parallel scoped `start`, local inference port isolation, and planner handoff observations
 
 ## Primary Outcome Contract
 
-**Primary Outcome:** Greenfield `mars-harness start` reaches Engineer and records
+**Primary Outcome:** Greenfield `mars start` reaches Engineer and records
 first successful build/smoke evidence for static web, Phaser/browser-game, and
 Go API targets.
 
@@ -33,7 +33,7 @@ Primary validation failed: this run did not prove greenfield lifecycle progress
 through Engineer build/smoke for the selected static web, Phaser/browser-game,
 and Go API targets. It records supporting live validation performed while
 implementing the confidence-gated follow-up fixes. The run used real
-`mars-harness start` processes against ephemeral static-web, Phaser/browser-game,
+`mars start` processes against ephemeral static-web, Phaser/browser-game,
 and Go API targets under `/tmp`. No fake model endpoint or scripted
 endpoint was used.
 
@@ -69,17 +69,17 @@ The validation did not prove end-to-end product build/smoke completion. It did p
 Unit and docs checks:
 
 ```bash
-go test ./internal/inference ./internal/serve ./internal/telemetry ./internal/tools ./cmd/mars-harness
+go test ./internal/inference ./internal/serve ./internal/telemetry ./internal/tools ./cmd/mars
 go test ./internal/docsconsistency/...
-build/mars-harness tools run docsync_audit --repo . --args-json '{}'
+build/mars tools run docsync_audit --repo . --args-json '{}'
 ```
 
 Live setup probes:
 
 ```bash
-build/mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
-build/mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
-build/mars-harness start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+build/mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+build/mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
+build/mars start --repo <validation-root> --db <validation-root> --log-file <validation-root> --debug
 ```
 
 ## Supporting Claims

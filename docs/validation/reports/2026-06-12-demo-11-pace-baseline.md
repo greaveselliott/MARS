@@ -16,13 +16,13 @@ contract, including the model-identity requirement added in v0.50.3.
 
 ## Run 1: Inventory/API canary on v0.50.2 — 2026-06-12
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-11-balanced-baseline-start.log`
+  ~/.mars/traces/logs/demo-11-balanced-baseline-start.log`
 - **Target:** `/path/to/local-redacted` (fresh git
   repo re-created from the same Inventory API brief; local bare origin
   `demo-11-origin.git`; per-repo DB cleared before the run)
-- **Source ref / binary:** `mars-harness 0.50.2`, built with `make install`
+- **Source ref / binary:** `mars 0.50.2`, built with `make install`
   from `c0ebceb` (`release: notes 0.50.2`) on
   `codex/main-lifecycle-stabilization-rebased` (= `origin/main` at run time)
 - **Model identity (AD-285):** reasoning + coding =
@@ -30,8 +30,8 @@ contract, including the model-identity requirement added in v0.50.3.
   on :18081, ctx 32768 coding on :18080); fast =
   `google_gemma-4-E4B-it-Q5_K_M.gguf` (5.8 GB); resolved from
   `performance_profile: balanced`
-- **Database / logs:** `~/.mars-harness/db/demo-11/mars.db`;
-  `~/.mars-harness/traces/logs/demo-11-balanced-baseline-start.log`
+- **Database / logs:** `~/.mars/db/demo-11/mars.db`;
+  `~/.mars/traces/logs/demo-11-balanced-baseline-start.log`
 - **Job sequence (22 jobs, 2026-06-11 23:21:44 UTC → 2026-06-12 00:13:21 UTC,
   51.6 min):** ceo 78s → coo 78s → cto-weekly 205s → engineer failed
   (max_turns, 276s) → engineer 150s (T-001 implemented) → qa 56s (rework
@@ -61,7 +61,7 @@ contract, including the model-identity requirement added in v0.50.3.
   security, and three rework loops all executed against real code.
 - **Target intervention-debt count:** 0 open / 0 total (foundation-owned
   signals were kept out of the target backlog by the serve-side filter).
-- **Runtime artifacts:** traces under `~/.mars-harness/traces/` for all 22
+- **Runtime artifacts:** traces under `~/.mars/traces/` for all 22
   jobs; per-repo DB retained.
 - **Stop reason (corrected):** originally recorded as "natural end — queue
   drained and the final orchestrator survey was stopped by the loop guard."

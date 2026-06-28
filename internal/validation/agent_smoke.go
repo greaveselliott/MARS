@@ -27,18 +27,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/codeintel"
-	"github.com/greaveselliott/mars-harness/internal/config"
-	"github.com/greaveselliott/mars-harness/internal/hardware"
-	"github.com/greaveselliott/mars-harness/internal/inference"
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
-	"github.com/greaveselliott/mars-harness/internal/queue"
-	"github.com/greaveselliott/mars-harness/internal/scanner"
-	"github.com/greaveselliott/mars-harness/internal/serve"
-	"github.com/greaveselliott/mars-harness/internal/tools"
-	"github.com/greaveselliott/mars-harness/internal/trace"
-	"github.com/greaveselliott/mars-harness/internal/trust"
-	"github.com/greaveselliott/mars-harness/internal/ui"
+	"github.com/greaveselliott/mars/internal/codeintel"
+	"github.com/greaveselliott/mars/internal/config"
+	"github.com/greaveselliott/mars/internal/hardware"
+	"github.com/greaveselliott/mars/internal/inference"
+	"github.com/greaveselliott/mars/internal/orgstate"
+	"github.com/greaveselliott/mars/internal/queue"
+	"github.com/greaveselliott/mars/internal/scanner"
+	"github.com/greaveselliott/mars/internal/serve"
+	"github.com/greaveselliott/mars/internal/tools"
+	"github.com/greaveselliott/mars/internal/trace"
+	"github.com/greaveselliott/mars/internal/trust"
+	"github.com/greaveselliott/mars/internal/ui"
 	"gopkg.in/yaml.v3"
 )
 
@@ -278,9 +278,9 @@ func agentSmokeModelSource(opts AgentSmokeOptions) string {
 		return "operator-supplied OpenAI-compatible endpoint; AD-296 requires this to be a real model endpoint for validation claims"
 	default:
 		if opts.SingleServer {
-			return fmt.Sprintf("local Mars Harness inference router; single local server tier %s", opts.SingleTier)
+			return fmt.Sprintf("local MARS inference router; single local server tier %s", opts.SingleTier)
 		}
-		return "local Mars Harness inference router"
+		return "local MARS inference router"
 	}
 }
 
@@ -1596,7 +1596,7 @@ func isCompletedTicketStage(stage string) bool {
 }
 
 func specForCase(c AgentSmokeCase) string {
-	return fmt.Sprintf("# %s\n\nProject type: %s\nRole under smoke: %s\nStage: %s\n\nBuild a small representative target for compartmentalised Mars Harness role smoke validation.\n\nThe target-local smoke contract lives at `%s`; agents should read that file rather than looking for the foundation matrix inside this generated repo.\n", c.ID, c.ProjectType, c.Role, c.Stage, agentSmokeCaseContractPath)
+	return fmt.Sprintf("# %s\n\nProject type: %s\nRole under smoke: %s\nStage: %s\n\nBuild a small representative target for compartmentalised MARS role smoke validation.\n\nThe target-local smoke contract lives at `%s`; agents should read that file rather than looking for the foundation matrix inside this generated repo.\n", c.ID, c.ProjectType, c.Role, c.Stage, agentSmokeCaseContractPath)
 }
 
 func readmeForCase(c AgentSmokeCase) string {
@@ -1856,7 +1856,7 @@ func roleSmokeCaseInstructions(c AgentSmokeCase) string {
 
 1. Inspect QA, security, dogfood, ticket, and changelog evidence.
 2. This is an ephemeral local-release smoke target. A missing GitHub remote or GitHub Release is not a blocker for a ` + "`ready`" + ` case; local VERSION, CHANGELOG, tag, and release evidence are enough.
-3. Use the ` + "`mars_harness_cli`" + ` tool when invoking harness release workflows; do not run a shell executable named ` + "`mars_harness_cli`" + `.
+3. Use the ` + "`mars_cli`" + ` tool when invoking harness release workflows; do not run a shell executable named ` + "`mars_cli`" + `.
 4. Write ` + "`docs/reports/release/" + c.ID + ".md`" + ` before committing release notes.
 5. Advance VERSION beyond the seeded ` + "`0.0.0`" + ` value and expand CHANGELOG beyond the seeded placeholder, then commit VERSION, CHANGELOG, the release report, and any ` + "`.harness/learnings.yaml`" + ` update together with message ` + "`release: notes <VERSION>`" + `.
 6. Create the local tag ` + "`v<VERSION>`" + ` at that release-note HEAD if it is missing.

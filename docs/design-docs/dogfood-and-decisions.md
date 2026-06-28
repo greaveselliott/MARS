@@ -1,6 +1,6 @@
 **Status:** Accepted
 **Date:** 2026-04-12
-**Author:** mars-harness
+**Author:** mars
 
 # Dogfood Validation and Decision Recording
 
@@ -67,7 +67,7 @@ The scanner's static analysis previously detected structural gaps (missing CI, R
 
 Three changes close this gap:
 
-1. **Scanner bootability checks** (`checkBootability` in `scanner.go`): framework-specific validation that runs during `mars-harness scan` and generates tickets for structural issues. Checks for:
+1. **Scanner bootability checks** (`checkBootability` in `scanner.go`): framework-specific validation that runs during `mars scan` and generates tickets for structural issues. Checks for:
    - Missing `dev`/`start`/`build` scripts in `package.json`
    - Missing root `layout.tsx` for Next.js App Router projects
    - Conflicting `app/` and `pages/` directories at different levels
@@ -135,7 +135,7 @@ After running the dogfood agent against `recruiter-workflow-portal`, the reposit
 
 ### Context
 
-When running `mars-harness start --repo A` then `mars-harness start --repo B`, both shared the same SQLite database at `~/.mars-harness/db/mars.db`. This caused three contamination vectors:
+When running `mars start --repo A` then `mars start --repo B`, both shared the same SQLite database at `~/.mars/db/mars.db`. This caused three contamination vectors:
 
 1. **Stale job pickup** — `Claim()` in `internal/queue/queue.go` grabs the oldest pending job across all repos, not scoped to the current repo. Pending/orphaned jobs from repo A could be claimed by a process started for repo B.
 2. **Cron schedules for wrong repos** — `Start()` in `internal/serve/server.go` calls `s.repos.List(ctx)` which loads every repo ever registered, then `registerCronSchedules(repos)` creates scheduled jobs for all of them.
@@ -145,9 +145,9 @@ The agent loop, LLM client, and learnings store were all correctly isolated per-
 
 ### Changes
 
-1. **Per-repo database path** — Default DB path changed from `~/.mars-harness/db/mars.db` to `~/.mars-harness/db/{repo-slug}/mars.db`, where `repo-slug` is `filepath.Base(absPath)`. Applied to `startCmd`, `registerCmd`, and `doctorCmd`. The `serveCmd` keeps the legacy shared path (for multi-repo orchestration) with an informational log.
+1. **Per-repo database path** — Default DB path changed from `~/.mars/db/mars.db` to `~/.mars/db/{repo-slug}/mars.db`, where `repo-slug` is `filepath.Base(absPath)`. Applied to `startCmd`, `registerCmd`, and `doctorCmd`. The `serveCmd` keeps the legacy shared path (for multi-repo orchestration) with an informational log.
 
-2. **`defaultDBPath()` / `legacyDBPath()` helpers** — Centralised in `cmd/mars-harness/main.go` to keep derivation DRY and consistent across commands.
+2. **`defaultDBPath()` / `legacyDBPath()` helpers** — Centralised in `cmd/mars/main.go` to keep derivation DRY and consistent across commands.
 
 3. **`--repo` flag on `doctorCmd`** — Doctor can now target a specific repo's database via `--repo /path/to/repo`, which derives the per-repo DB path automatically. The `--db` flag still works as an explicit override.
 
@@ -157,14 +157,14 @@ The agent loop, LLM client, and learnings store were all correctly isolated per-
 
 ### What this does NOT change
 
-- `mars-harness run` — already fully isolated (no DB, no queue)
+- `mars run` — already fully isolated (no DB, no queue)
 - `record_decision` — already per-repo (writes to `{repo}/.harness/learnings.yaml`)
 - Agent loop / LLM client — already fresh per job
 - Learnings / context assembly — already per-repo
 
 ### Edge case: multi-repo orchestration
 
-Users managing multiple repos from a single orchestrator use `mars-harness serve` with explicit `--db` and multiple `mars-harness register` calls. The per-repo default only applies to the `start` convenience command.
+Users managing multiple repos from a single orchestrator use `mars serve` with explicit `--db` and multiple `mars register` calls. The per-repo default only applies to the `start` convenience command.
 
 ### Discoveries
 
@@ -308,21 +308,21 @@ This repair is deliberately narrow. It only targets active recovery jobs identif
 During dogfood, the operator was running:
 
 ```bash
-cd /path/to/target-repo && go build ./cmd/mars-harness;
-./mars-harness start --repo /path/to/target-repo
+cd /path/to/target-repo && go build ./cmd/mars;
+./mars start --repo /path/to/target-repo
 ```
 
-That workflow violates the product shape in two ways. First, the semicolon runs the second command even when the build fails, so the operator can accidentally run a stale source-root binary. Second, requiring the operator to sit inside the harness source repo blurs the harness/target boundary. Mars Harness should be an installed command that operates on target repos through `--repo`.
+That workflow violates the product shape in two ways. First, the semicolon runs the second command even when the build fails, so the operator can accidentally run a stale source-root binary. Second, requiring the operator to sit inside the harness source repo blurs the harness/target boundary. MARS should be an installed command that operates on target repos through `--repo`.
 
 ### Decision
 
-Source development now has an explicit `make install` path. It installs `mars-harness` into the Go bin directory using `go install`, after which the operator runs:
+Source development now has an explicit `make install` path. It installs `mars` into the Go bin directory using `go install`, after which the operator runs:
 
 ```bash
-mars-harness start --repo /path/to/target-repo
+mars start --repo /path/to/target-repo
 ```
 
-One-off builds should write to `build/mars-harness`, not the repo root. The root-level `./mars-harness` binary path is treated as a stale-binary trap, not the normal operating interface.
+One-off builds should write to `build/mars`, not the repo root. The root-level `./mars` binary path is treated as a stale-binary trap, not the normal operating interface.
 
 ### Consequences
 
@@ -340,7 +340,7 @@ One-off builds should write to `build/mars-harness`, not the repo root. The root
 
 ### Context
 
-Mars Harness tools are first-class model capabilities. Adding one requires a
+MARS tools are first-class model capabilities. Adding one requires a
 consistent Go file, JSON Schema, argument type, handler, tests, default-registry
 registration, trust-policy classification, and role allowlist exposure. Agents
 can do that work manually, but repeated manual scaffolding wastes model turns
@@ -391,7 +391,7 @@ change can be considered complete.
 
 ---
 
-### AD-079: Mars Harness CLI Interaction Is A Mirrored Tool
+### AD-079: MARS CLI Interaction Is A Mirrored Tool
 
 **Status:** Accepted
 **Date:** 2026-05-03
@@ -399,7 +399,7 @@ change can be considered complete.
 
 ### Context
 
-The `mars-harness` CLI is the operational control plane for setup, init,
+The `mars` CLI is the operational control plane for setup, init,
 upgrade, start/serve, scans, doctor checks, release notes, score exports, trust
 updates, model evaluation, and self-update flows. Agents could call these
 commands through `shell_exec`, but that hides the command surface behind an
@@ -411,24 +411,24 @@ harness and keep it synchronized.
 
 ### Decision
 
-Add `mars_harness_cli` as a mirrored built-in tool. It provides:
+Add `mars_cli` as a mirrored built-in tool. It provides:
 
 - a `reference` mode with an exhaustive LLM-facing CLI reference
-- a `run` mode that executes `mars-harness` with structured argv
+- a `run` mode that executes `mars` with structured argv
 - a `repo` shortcut that safely appends `--repo <workspace path>` for commands
   that support it
 - timeout and background support for long-running `serve` and `start`
 
-The tool accepts `MARS_HARNESS_CLI_BIN` for explicit operator/test
-configuration, then prefers the current running `mars-harness` executable when
+The tool accepts `MARS_CLI_BIN` for explicit operator/test
+configuration, then prefers the current running `mars` executable when
 the active process is itself a harness binary, then resolves an installed
-`mars-harness` binary from `PATH`, and finally falls back to
-`go run ./cmd/mars-harness` only when operating inside the foundation source
+`mars` binary from `PATH`, and finally falls back to
+`go run ./cmd/mars` only when operating inside the foundation source
 checkout. If a resolved binary is stale enough to reject a known command, the
-tool output names the binary and tells the operator to set `MARS_HARNESS_CLI_BIN`
+tool output names the binary and tells the operator to set `MARS_CLI_BIN`
 or update the installed tool.
 
-`mars_harness_cli` is classified as mutating because many CLI commands can
+`mars_cli` is classified as mutating because many CLI commands can
 write files, change trust, start workers, or change release state. Observer
 trust therefore blocks it.
 
@@ -453,14 +453,14 @@ trust therefore blocks it.
 
 Mirrored tools are not useful enough if external agents or local harness agents
 can only reach them through an ad hoc shell convention. MCP-compatible clients
-already have a standard tool mechanism: MCP stdio servers. Mars Harness needs
+already have a standard tool mechanism: MCP stdio servers. MARS needs
 the same built-in registry to be available through that native path for both the
 foundation harness and deployed target harnesses, without assuming any specific
 model provider. Deployed harnesses use local models by default.
 
 ### Decision
 
-Expose the Mars Harness built-in registry through `mars-harness mcp serve`.
+Expose the MARS built-in registry through `mars mcp serve`.
 The server implements newline-delimited JSON-RPC stdio, supports `initialize`,
 `ping`, `tools/list`, and `tools/call`, and delegates execution to the same
 tool executor, repo root, trust policy, allowlist, and JSON argument path used
@@ -472,7 +472,7 @@ blocked until an operator deliberately starts the server with
 
 ### Consequences
 
-- MCP-compatible hosts and local harness agents can attach to Mars Harness tools
+- MCP-compatible hosts and local harness agents can attach to MARS tools
   as native tools.
 - The CLI remains useful for operator smoke tests through `tools list` and
   `tools run`, but MCP is the preferred integration surface for external LLM
@@ -480,7 +480,7 @@ blocked until an operator deliberately starts the server with
 - The universal tool surface remains model-provider agnostic: tool transport and
   policy must not depend on frontier cloud model access.
 - Tool additions must keep the registry, role allowlists, MCP exposure,
-  `mars_harness_cli` reference, tools glossary, generated target defaults, and
+  `mars_cli` reference, tools glossary, generated target defaults, and
   tests aligned.
 
 ---
@@ -721,14 +721,14 @@ state that root-level ticket markdown is invalid.
 
 Live target experimentation exposed an escape-hatch gap: once a target repo had
 been initialized, operators could stop processes and manually delete Git or
-database files, but Mars Harness had no first-class way to remove itself from a
+database files, but MARS had no first-class way to remove itself from a
 target directory. That made reset workflows error-prone and encouraged ad hoc
-deletion of `.harness/`, generated docs, tickets, and `~/.mars-harness/db/*`
+deletion of `.harness/`, generated docs, tickets, and `~/.mars/db/*`
 files without a preview of the blast radius.
 
 ### Decision
 
-`mars-harness eject` is the target-harness kill switch. It is dry-run by
+`mars eject` is the target-harness kill switch. It is dry-run by
 default and requires `--apply --confirm <repo-name>` before deleting anything.
 The command removes the deployed harness working-tree surface:
 
@@ -792,7 +792,7 @@ stays visible in quality and status evidence, but Engineer context does not put
 high-priority intervention debt ahead of product tickets unless an active
 product ticket explicitly names that intervention debt in `blocked_by`.
 
-`mars-harness scores export` is non-mutating with respect to tickets by
+`mars scores export` is non-mutating with respect to tickets by
 default. It refreshes `docs/QUALITY_SCORE.md` and reports improvement targets;
 operators must pass `--create-intervention-debt` to materialize score/outcome
 signals as tickets.
@@ -833,8 +833,8 @@ target with a Space Invaders README brief using a patched binary, external
 SQLite DB, and external log file:
 
 ```bash
-go build -o <validation-root> ./cmd/mars-harness
-MARS_HARNESS_WEBHOOK_PORT=19091 MARS_HARNESS_DASHBOARD_PORT=19090 \
+go build -o <validation-root> ./cmd/mars
+MARS_WEBHOOK_PORT=19091 MARS_DASHBOARD_PORT=19090 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -883,7 +883,7 @@ After queue priority and terminal-disposition fixes, a second live replay used a
 clean `<validation-root>` target and external runtime state:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=19191 MARS_HARNESS_DASHBOARD_PORT=19190 \
+MARS_WEBHOOK_PORT=19191 MARS_DASHBOARD_PORT=19190 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -932,7 +932,7 @@ After narrowing CTO and adding BDD-scenario ticket dedupe, a third clean
 `demo-123` replay used an external runtime directory:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=19291 MARS_HARNESS_DASHBOARD_PORT=19290 \
+MARS_WEBHOOK_PORT=19291 MARS_DASHBOARD_PORT=19290 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -979,7 +979,7 @@ After adding successful-disposition commit gates, a fourth clean `demo-123`
 replay used another external runtime directory:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=19391 MARS_HARNESS_DASHBOARD_PORT=19390 \
+MARS_WEBHOOK_PORT=19391 MARS_DASHBOARD_PORT=19390 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1023,7 +1023,7 @@ After feature-contract canonicalization and role alias routing, a fifth clean
 `demo-123` replay used another external runtime directory:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=19491 MARS_HARNESS_DASHBOARD_PORT=19490 \
+MARS_WEBHOOK_PORT=19491 MARS_DASHBOARD_PORT=19490 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1063,7 +1063,7 @@ decision and creates no recursive Orchestrator job.
 After non-recursive Orchestrator recovery, the next clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=19591 MARS_HARNESS_DASHBOARD_PORT=19590 \
+MARS_WEBHOOK_PORT=19591 MARS_DASHBOARD_PORT=19590 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1100,7 +1100,7 @@ diff. Arbitrary deletions and unpaired ticket deletions remain blocked.
 After the ticket lifecycle move patch, another clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=19691 MARS_HARNESS_DASHBOARD_PORT=19690 \
+MARS_WEBHOOK_PORT=19691 MARS_DASHBOARD_PORT=19690 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1133,7 +1133,7 @@ for ticket shaping. Intervention-debt tickets do not satisfy this prerequisite.
 The next clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=19791 MARS_HARNESS_DASHBOARD_PORT=19790 \
+MARS_WEBHOOK_PORT=19791 MARS_DASHBOARD_PORT=19790 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1166,7 +1166,7 @@ ticket shaping.
 The next clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=19891 MARS_HARNESS_DASHBOARD_PORT=19890 \
+MARS_WEBHOOK_PORT=19891 MARS_DASHBOARD_PORT=19890 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1199,7 +1199,7 @@ without recursive Orchestrator dispatch or another repair job.
 The next clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=19991 MARS_HARNESS_DASHBOARD_PORT=19990 \
+MARS_WEBHOOK_PORT=19991 MARS_DASHBOARD_PORT=19990 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1265,7 +1265,7 @@ manifest or stops if none remains.
 The next clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=20191 MARS_HARNESS_DASHBOARD_PORT=20190 \
+MARS_WEBHOOK_PORT=20191 MARS_DASHBOARD_PORT=20190 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1299,7 +1299,7 @@ successful disposition.
 After the runtime-learning handoff patch, another clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=20291 MARS_HARNESS_DASHBOARD_PORT=20290 \
+MARS_WEBHOOK_PORT=20291 MARS_DASHBOARD_PORT=20290 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1333,7 +1333,7 @@ and generated COO manifests no longer expose `shell_exec` by default.
 After the COO planning-only boundary, another clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=20391 MARS_HARNESS_DASHBOARD_PORT=20390 \
+MARS_WEBHOOK_PORT=20391 MARS_DASHBOARD_PORT=20390 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1367,7 +1367,7 @@ before further planning or implementation.
 After the QA-before-planning boundary, another clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=20491 MARS_HARNESS_DASHBOARD_PORT=20490 \
+MARS_WEBHOOK_PORT=20491 MARS_DASHBOARD_PORT=20490 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1404,7 +1404,7 @@ routes to CTO ticket shaping.
 After the review-rework routing patch, another clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=20591 MARS_HARNESS_DASHBOARD_PORT=20590 \
+MARS_WEBHOOK_PORT=20591 MARS_DASHBOARD_PORT=20590 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1440,7 +1440,7 @@ unpaired ticket deletions remain blocked.
 After ticket lifecycle move handling was widened, another clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=20691 MARS_HARNESS_DASHBOARD_PORT=20690 \
+MARS_WEBHOOK_PORT=20691 MARS_DASHBOARD_PORT=20690 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1479,7 +1479,7 @@ debt.
 After terminal-tool recovery was added, another clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=20791 MARS_HARNESS_DASHBOARD_PORT=20790 \
+MARS_WEBHOOK_PORT=20791 MARS_DASHBOARD_PORT=20790 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1517,7 +1517,7 @@ become planning churn.
 After QA repo-inspection hardening, another clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=20891 MARS_HARNESS_DASHBOARD_PORT=20890 \
+MARS_WEBHOOK_PORT=20891 MARS_DASHBOARD_PORT=20890 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1555,7 +1555,7 @@ protocol failures.
 After inline tool-call parsing, the next clean replay used:
 
 ```bash
-MARS_HARNESS_WEBHOOK_PORT=20991 MARS_HARNESS_DASHBOARD_PORT=20990 \
+MARS_WEBHOOK_PORT=20991 MARS_DASHBOARD_PORT=20990 \
   <validation-root> start \
   --repo <validation-root> \
   --db <validation-root> \
@@ -1994,7 +1994,7 @@ recipe approval, dirty-worktree blockers, and missing optional-tool guidance, a
 clean replay used:
 
 ```bash
-go run ./cmd/mars-harness start \
+go run ./cmd/mars start \
   --repo <validation-root> \
   --db <validation-root> \
   --log-file <validation-root> \
@@ -2198,7 +2198,7 @@ Positive evidence:
   pushed locally with a clean no-remote skip.
 - `go build -o task-notes-api src/main.go` was blocked before process execution;
   no `task-notes-api` binary was created in the target repo.
-- `mars-harness scores export` wrote quality evidence showing zero target
+- `mars scores export` wrote quality evidence showing zero target
   intervention-debt tickets, and the target was committed cleanly after the run.
 
 Residual finding:
@@ -2618,7 +2618,7 @@ Positive evidence:
   `docs/reports/dogfood/dogfood-validation-2026-05-20.md`, committed it, and
   recorded terminal disposition.
 - Release Manager generated target release notes with
-  `mars-harness release notes --repo . --bump auto`, committed
+  `mars release notes --repo . --bump auto`, committed
   `release: notes 0.2.0`, created tag `v0.2.0`, and stopped with a release
   publication blocker because the disposable target had no `origin` remote.
 - `scores export` reported overall grade `A`, one done product ticket, zero
@@ -3224,8 +3224,8 @@ found the next containment loop: after a missing-input runtime probe panicked,
 the harness required the exact `expected_exit_code` repro, but when that repro
 still failed it continued blocking `file_write` and sent Engineer back to the
 same command. The run also showed target/foundation naming drift: the ticket
-named `cmd/mars-harness/main.go`, and Engineer initialized `module
-mars-harness` inside a Note Stats target. Decision: missing-input correction
+named `cmd/mars/main.go`, and Engineer initialized `module
+mars` inside a Note Stats target. Decision: missing-input correction
 attempts now unlock implementation edits while still blocking completion until
 the exact runtime failure is repaired, and generated CTO/Engineer guidance
 requires target-derived module, command, and binary names rather than
@@ -3561,21 +3561,21 @@ ordinary ticket creation, Engineer implementation, QA approval, Security
 approval, Dogfood approval, and local release-note/tag creation without
 intervention-debt starvation. QA ran build, runtime probes, `go test`, and
 `docsync_audit` before approval. The remaining release finding was command
-resolution: Release Manager first invoked `mars-harness release notes` through
+resolution: Release Manager first invoked `mars release notes` through
 `shell_exec`, which hit a stale installed binary with no `release` command,
-then repeated that failing command after reading the `mars_harness_cli`
+then repeated that failing command after reading the `mars_cli`
 reference. Orchestrator recovered by dispatching Release Manager again, and the
 second pass produced `release: notes 0.2.0`, tag `v0.2.0`, and a clean
 missing-remote publication blocker. Decision: agent jobs now block direct
-`shell_exec mars-harness ...` invocations and route Mars Harness CLI workflows
-through `mars_harness_cli`, whose resolver prefers the active harness binary.
+`shell_exec mars ...` invocations and route MARS CLI workflows
+through `mars_cli`, whose resolver prefers the active harness binary.
 
 The `demo-temp-run60` replay switched to a Word Count JSON CLI target to avoid
 overfitting the loop to game or temperature-conversion examples. The lifecycle
 again reached product-specific planning, one ordinary ticket, Engineer
 implementation, QA-requested test rework, Orchestrator-to-Engineer routing,
 QA approval, Security approval, Dogfood approval, and local release review.
-Release Manager used `mars_harness_cli` for release notes on the first pass,
+Release Manager used `mars_cli` for release notes on the first pass,
 committed `release: notes 0.2.0`, created tag `v0.2.0`, and stopped only on
 the real missing-remote publication blocker. The new finding came from the
 retry setup: a sandboxed start registered the repo and enqueued CEO before bind

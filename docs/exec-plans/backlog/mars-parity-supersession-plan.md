@@ -7,7 +7,7 @@
 **Related Tickets:** MH-029, MH-034, MH-035, MH-037, MH-042, MH-043, MH-044, MH-045, MH-046, MH-047, MH-048, MH-049
 **Goals:** G-001, G-002
 **BDD Feature:** F-001
-**Hypothesis:** Mars Harness can supersede Mars only if Mars's operating discipline is rebuilt as strict-trunk, goal-driven, BDD-evidenced harness primitives rather than copied as Cursor/PR automation.
+**Hypothesis:** MARS can supersede Mars only if Mars's operating discipline is rebuilt as strict-trunk, goal-driven, BDD-evidenced harness primitives rather than copied as Cursor/PR automation.
 **Success Evidence:** Mars parity workstreams are materialized into tickets whose shipped features map to BDD scenarios, evidence, quality score movement, and generated target parity.
 **Falsification Evidence:** Parity work becomes a broad checklist without scenario evidence, target scaffolds diverge from source rules, or agents keep creating in-progress work without completion.
 **Scenario Schedule:** F-001-S001 through F-001-S006, then future Mars parity feature contracts as workstreams are promoted.
@@ -16,14 +16,14 @@
 **Learning Or MVP Outcome:** Prove Mars-derived operating patterns can be delivered as productized harness behavior without returning to branch/PR defaults.
 **Created:** 2026-05-02
 **Updated:** 2026-05-03
-**Owner:** Mars Harness
-**Source:** User request to compare `../mars` with this repository and plan the work required for Mars Harness to supersede Mars.
+**Owner:** MARS
+**Source:** User request to compare `../mars` with this repository and plan the work required for MARS to supersede Mars.
 **Supporting audit:** [mars-meta-harness-relevance-audit.md](../../references/mars-meta-harness-relevance-audit.md)
 **Supporting references:** [Harness Engineering](../../references/harness-engineering-agent-first.md), [Symphony](../../references/open-source-codex-orchestration-symphony.md)
 
 ## Purpose
 
-Mars Harness should supersede the Mars repository's Cursor-based meta-harness. That does not mean copying Mars exactly. It means preserving the useful operating system Mars evolved through real autonomous delivery, then rebuilding those patterns as first-class, local, strict-trunk Mars Harness capabilities.
+MARS should supersede the Mars repository's Cursor-based meta-harness. That does not mean copying Mars exactly. It means preserving the useful operating system Mars evolved through real autonomous delivery, then rebuilding those patterns as first-class, local, strict-trunk MARS capabilities.
 
 This plan is a prioritized backlog plan with explicit dependencies. It is not
 the active execution plan. Promote only the next coherent unblocked slice into
@@ -32,10 +32,10 @@ one active plan.
 
 The target end state is:
 
-- Mars Harness can manage Mars-class repositories without Cursor automations.
-- Mars Harness retains strict trunk-based delivery as the canonical workflow.
-- Mars Harness exposes the same or better planning, quality, intervention, dogfood, and orchestration loops that Mars currently encodes in docs, Cursor rules, GitHub Actions, scripts, and automation prompts.
-- Mars Harness remains the product and system of record for future autonomous delivery.
+- MARS can manage Mars-class repositories without Cursor automations.
+- MARS retains strict trunk-based delivery as the canonical workflow.
+- MARS exposes the same or better planning, quality, intervention, dogfood, and orchestration loops that Mars currently encodes in docs, Cursor rules, GitHub Actions, scripts, and automation prompts.
+- MARS remains the product and system of record for future autonomous delivery.
 
 ## Sources Reviewed
 
@@ -71,7 +71,7 @@ This plan is based on a direct repository comparison between:
 
 ## Executive Assessment
 
-Mars Harness is philosophically close to Mars but not yet operationally equivalent.
+MARS is philosophically close to Mars but not yet operationally equivalent.
 
 | Area | Current parity | Assessment |
 | --- | ---: | --- |
@@ -90,7 +90,7 @@ Mars Harness is philosophically close to Mars but not yet operationally equivale
 | Safety, guardrails, trust | Medium-high | Harness is ahead architecturally, but all enforcement paths must stay mechanically wired. |
 | Release/distribution | Medium | Harness has binary release direction; Mars has more mature product release hygiene. |
 
-Bottom line: Mars Harness has the better foundation for a standalone product, but Mars currently has the better proven autonomous operating model. Supersession requires importing Mars's operating discipline into Harness-native primitives.
+Bottom line: MARS has the better foundation for a standalone product, but Mars currently has the better proven autonomous operating model. Supersession requires importing Mars's operating discipline into Harness-native primitives.
 
 ## Important Differences
 
@@ -106,7 +106,7 @@ Mars's current meta-harness is distributed across:
 - shell and Node scripts
 - repo docs and `.cursor/rules`
 
-Mars Harness must not inherit the branch/PR delivery model. It should translate the concepts into strict trunk:
+MARS must not inherit the branch/PR delivery model. It should translate the concepts into strict trunk:
 
 - PR comments become run comments, ticket comments, trace notes, status checks, or GitHub check-run output.
 - PR review loops become reviewer jobs against `main` commits or pending ticket work.
@@ -114,7 +114,7 @@ Mars Harness must not inherit the branch/PR delivery model. It should translate 
 - branch hygiene becomes clean-main hygiene.
 - stuck PR detection becomes stuck job, stuck ticket, stuck in-progress, and failed-check detection.
 
-### Mars Harness Is Product-Native
+### MARS Is Product-Native
 
 Harness already has primitives Mars lacks as a product:
 
@@ -141,7 +141,7 @@ The parity work should therefore avoid recreating Mars's Cursor setup and should
 4. **Every intervention creates debt.** Any human rescue, failed job, guardrail block, regression, or handoff without completion should create or update a ticket.
 5. **Finish active work before starting new work.** In-progress tickets are not a holding pen. They are priority work unless explicitly blocked.
 6. **Modes beat role sprawl.** Keep role memory coherent by using domain-shaped roles with payload modes where practical.
-7. **Generated targets are first-class.** `mars-harness init` should produce target repo instructions and docs at least as good as Mars's template guidance.
+7. **Generated targets are first-class.** `mars init` should produce target repo instructions and docs at least as good as Mars's template guidance.
 8. **Optional GitHub is telemetry, not delivery.** Webhooks, checks, comments, and statuses are acceptable; PR delivery is not the default.
 9. **Mars-specific product rules stay in Mars.** Harness should import the meta-harness pattern, not hard-code Mars's SaaS generator constraints globally.
 
@@ -156,7 +156,7 @@ Mars has two strong entrypoint documents:
 
 The template file is especially important. It gives generated projects a clear local architecture, constraints, auth/database/email rules, testing discipline, template-sync guidance, and dogfood QA expectations.
 
-Mars Harness has a strong root `AGENTS.md`, but its generated target guidance is thinner. `internal/scanner/init.go` creates useful docs and tickets, yet it does not match the specificity or operating value of the Mars template.
+MARS has a strong root `AGENTS.md`, but its generated target guidance is thinner. `internal/scanner/init.go` creates useful docs and tickets, yet it does not match the specificity or operating value of the Mars template.
 
 Gap:
 
@@ -390,9 +390,9 @@ Tasks:
 
 - [ ] Add `docs/roles/ROLES.md` or `docs/automations/ROLES.md` as the repo-visible registry.
 - [ ] Include role, modes, trigger sources, schedules, tools, trust level, guardrails, model routing, score signals, and escalation behavior.
-- [ ] Generate a target repo registry during `mars-harness init`.
+- [ ] Generate a target repo registry during `mars init`.
 - [ ] Add a consistency check that generated manifests and the registry agree.
-- [ ] Surface registry health in `mars-harness doctor`.
+- [ ] Surface registry health in `mars doctor`.
 
 Acceptance:
 
@@ -411,7 +411,7 @@ Tasks:
 - [ ] Update root and generated `AGENTS.md` guidance to require persistent artifacts for plans, decisions, investigations, quality findings, and completed work.
 - [ ] Update `.cursor/rules/documentation-discipline.mdc` with active-plan hygiene thresholds.
 - [x] Add an active-plan hygiene checker in Go or shell with no new runtime dependency. (MH-034)
-- [x] Wire the checker into CI and `mars-harness doctor`. (MH-034)
+- [x] Wire the checker into CI and `mars doctor`. (MH-034)
 
 Acceptance:
 
@@ -478,7 +478,7 @@ Completed ticket: [MH-037](../../tickets/done/MH-037-automate-quality-score-expo
 Tasks:
 
 - [x] Seed source `docs/QUALITY_SCORE.md` and generated target `docs/QUALITY_SCORE.md`.
-- [x] Add `mars-harness scores export --repo <path>` or equivalent.
+- [x] Add `mars scores export --repo <path>` or equivalent.
 - [x] Generate `docs/QUALITY_SCORE.md` from live score and telemetry data.
 - [x] Include role score, recent outcomes, stuck tickets, failed dogfood, guardrail blocks, intervention debt, check results, no-op runs, and human follow-up rate.
 - [x] Add typed telemetry triage for recurring failure patterns and low scores.
@@ -559,12 +559,12 @@ Tasks:
 
 Acceptance:
 
-- Mars Harness can operate on the Mars repo without depending on Cursor automations.
+- MARS can operate on the Mars repo without depending on Cursor automations.
 - Supersession is supported by repeatable tests and recorded dogfood evidence.
 
 ### J. Generated Target Parity
 
-Make `mars-harness init` create target repo guidance as useful as Mars's template.
+Make `mars init` create target repo guidance as useful as Mars's template.
 
 Tasks:
 
@@ -577,11 +577,11 @@ Tasks:
 - [ ] Generate target `docs/tickets/README.md` with direct `main` completion workflow and in-progress drain rules.
 - [ ] Generate target knowledge routes from repo scan.
 - [ ] Add golden tests for generated bundle contents.
-- [ ] Update `mars-harness upgrade` to safely refresh generated harness plumbing with dry-run and backup behavior.
+- [ ] Update `mars upgrade` to safely refresh generated harness plumbing with dry-run and backup behavior.
 
 Acceptance:
 
-- A newly initialized target repo is immediately understandable to Codex, Cursor, Mars Harness agents, and humans.
+- A newly initialized target repo is immediately understandable to Codex, Cursor, MARS agents, and humans.
 - The generated guidance is strict-trunk native and does not mention PR delivery as the default.
 
 ### K. Optional GitHub Integration
@@ -685,9 +685,9 @@ Acceptance:
 
 ## Acceptance Criteria For Supersession
 
-Mars Harness can be considered ready to supersede Mars's meta-harness when all of the following are true:
+MARS can be considered ready to supersede Mars's meta-harness when all of the following are true:
 
-- `mars-harness init` emits target repo guidance at least as useful as Mars's `template/AGENTS.md`.
+- `mars init` emits target repo guidance at least as useful as Mars's `template/AGENTS.md`.
 - A role registry equivalent to Mars's `docs/automations/BOTS.md` exists, is generated where appropriate, and is mechanically checked.
 - The six Mars automation domains are supported directly or through explicit role-mode mapping.
 - In-progress tickets are drained before new backlog work by default.
@@ -719,4 +719,4 @@ Mars Harness can be considered ready to supersede Mars's meta-harness when all o
 
 ## Notes
 
-Mars Harness should treat Mars as the successful prototype, not the final architecture. The strongest path is to preserve Mars's feedback loops while replacing Cursor and PR-shaped delivery with local inference, strict trunk, native queue orchestration, guardrails, trust, scoring, and repo-visible state.
+MARS should treat Mars as the successful prototype, not the final architecture. The strongest path is to preserve Mars's feedback loops while replacing Cursor and PR-shaped delivery with local inference, strict trunk, native queue orchestration, guardrails, trust, scoring, and repo-visible state.

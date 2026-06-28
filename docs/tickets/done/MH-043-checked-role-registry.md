@@ -15,7 +15,7 @@ source: Mars parity workstream B
 created: 2026-05-03
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "role-registry"
   category: "automation_inventory_gap"
   severity: "high"
@@ -38,9 +38,9 @@ guardrails, trust levels, triggers, and score signals apply.
 - Include role, canonical domain, modes, trigger sources, schedules, tools,
   trust level, guardrails, model routing, scoring signals, and escalation
   behavior.
-- Generate an equivalent target registry during `mars-harness init`.
+- Generate an equivalent target registry during `mars init`.
 - Add a consistency check that compares generated manifests with the registry.
-- Surface registry health in `mars-harness doctor`.
+- Surface registry health in `mars doctor`.
 
 ## Affected Files
 
@@ -57,10 +57,10 @@ guardrails, trust levels, triggers, and score signals apply.
 
 - [x] A human or agent can find all default roles and their modes in one
       checked-in registry.
-- [x] `mars-harness init` emits the target registry.
+- [x] `mars init` emits the target registry.
 - [x] Docs-consistency or an equivalent check fails when a default manifest role
       is missing from the registry.
-- [x] `mars-harness doctor --repo <repo>` reports role-registry health.
+- [x] `mars doctor --repo <repo>` reports role-registry health.
 
 ### Edge cases and negative paths
 

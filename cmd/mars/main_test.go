@@ -36,14 +36,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/foundationtelemetry"
-	"github.com/greaveselliott/mars-harness/internal/queue"
-	"github.com/greaveselliott/mars-harness/internal/release"
-	"github.com/greaveselliott/mars-harness/internal/scanner"
-	"github.com/greaveselliott/mars-harness/internal/scoring"
-	"github.com/greaveselliott/mars-harness/internal/selfupdate"
-	"github.com/greaveselliott/mars-harness/internal/serve"
-	harnesstools "github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/greaveselliott/mars/internal/foundationtelemetry"
+	"github.com/greaveselliott/mars/internal/queue"
+	"github.com/greaveselliott/mars/internal/release"
+	"github.com/greaveselliott/mars/internal/scanner"
+	"github.com/greaveselliott/mars/internal/scoring"
+	"github.com/greaveselliott/mars/internal/selfupdate"
+	"github.com/greaveselliott/mars/internal/serve"
+	harnesstools "github.com/greaveselliott/mars/internal/tools"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
@@ -57,7 +57,7 @@ func TestToolsListCommandIncludesUniversalTools(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 
 	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
-	require.Contains(t, lines, "mars_harness_cli")
+	require.Contains(t, lines, "mars_cli")
 	require.Contains(t, lines, "github_auth_check")
 	require.Contains(t, lines, "tool_create")
 	require.Contains(t, lines, "tool_creation_guard")
@@ -134,7 +134,7 @@ func TestToolsRunCommandDogfoodsToolCreate(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	require.NoError(t, exec.Command("git", "init", dir).Run())
-	writeToolRunRepoFile(t, dir, "go.mod", "module github.com/greaveselliott/mars-harness\n\ngo 1.24\n")
+	writeToolRunRepoFile(t, dir, "go.mod", "module github.com/greaveselliott/mars\n\ngo 1.24\n")
 	writeToolRunRepoFile(t, dir, "internal/tools/registry.go", "package tools\n")
 	writeToolRunRepoFile(t, dir, "internal/tools/register_default.go", "package tools\n")
 
@@ -196,7 +196,7 @@ func TestVersionEntrypointsPrintSameVersionLine(t *testing.T) {
 func TestAuthGitHubCheckCommandReportsMissingAuthWithoutSecrets(t *testing.T) {
 	t.Setenv("GH_TOKEN", "")
 	t.Setenv("GITHUB_TOKEN", "")
-	t.Setenv("MARS_HARNESS_GITHUB_TOKEN", "")
+	t.Setenv("MARS_GITHUB_TOKEN", "")
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("PATH", t.TempDir())
 
@@ -208,28 +208,28 @@ func TestAuthGitHubCheckCommandReportsMissingAuthWithoutSecrets(t *testing.T) {
 	err := cmd.Execute()
 	require.Error(t, err)
 	require.Contains(t, out.String(), `"auth_source": "none"`)
-	require.Contains(t, out.String(), "mars-harness auth github setup")
+	require.Contains(t, out.String(), "mars auth github setup")
 	require.NotContains(t, out.String(), "Bearer")
 	require.NotContains(t, out.String(), "ghs_")
 }
 
-func TestMarsHarnessCLIToolReferenceTracksCommandTree(t *testing.T) {
+func TestMarsCLIToolReferenceTracksCommandTree(t *testing.T) {
 	t.Parallel()
-	reference := harnesstools.MarsHarnessCLIReference()
+	reference := harnesstools.MarsCLIReference()
 	for _, path := range runnableCommandPaths(newRootCommand()) {
-		require.Truef(t, commandReferenceContainsPath(reference, path), "mars_harness_cli reference must document CLI command %q", path)
+		require.Truef(t, commandReferenceContainsPath(reference, path), "mars_cli reference must document CLI command %q", path)
 	}
 }
 
-func TestMarsHarnessCLIRepoShortcutTracksRepoPathFlags(t *testing.T) {
+func TestMarsCLIRepoShortcutTracksRepoPathFlags(t *testing.T) {
 	t.Parallel()
 	for _, cmd := range runnableCommands(newRootCommand()) {
 		path := commandPathWithoutRoot(cmd)
 		if hasWorkspaceRepoFlag(cmd) {
-			require.Truef(t, harnesstools.MarsHarnessCommandSupportsRepo(strings.Fields(path)), "mars_harness_cli repo shortcut must support %q because it has a workspace --repo flag", path)
+			require.Truef(t, harnesstools.MarsCommandSupportsRepo(strings.Fields(path)), "mars_cli repo shortcut must support %q because it has a workspace --repo flag", path)
 			continue
 		}
-		require.Falsef(t, harnesstools.MarsHarnessCommandSupportsRepo(strings.Fields(path)), "mars_harness_cli repo shortcut should not append a workspace --repo path to %q", path)
+		require.Falsef(t, harnesstools.MarsCommandSupportsRepo(strings.Fields(path)), "mars_cli repo shortcut should not append a workspace --repo path to %q", path)
 	}
 }
 
@@ -376,7 +376,7 @@ func TestPrintReleaseAuditResultReportsFindingsAndSkips(t *testing.T) {
 			TagName:     "v0.2.0",
 			Class:       release.AuditNotesOnly,
 			Missing:     []string{"checksums.txt"},
-			Remediation: "mars-harness release publish-assets --repo . --version v0.2.0 --upload github",
+			Remediation: "mars release publish-assets --repo . --version v0.2.0 --upload github",
 		}},
 	}, false)
 	require.Error(t, err)
@@ -438,7 +438,7 @@ func TestScoresCommandMissingDBDirectoryIsActionable(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), "No scores recorded yet.")
 	require.Contains(t, out.String(), "database directory")
-	require.Contains(t, out.String(), "mars-harness register --repo")
+	require.Contains(t, out.String(), "mars register --repo")
 }
 
 func TestScoresCommandUnavailableDBIsActionable(t *testing.T) {
@@ -453,7 +453,7 @@ func TestScoresCommandUnavailableDBIsActionable(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), "No scores recorded yet.")
 	require.Contains(t, out.String(), "database is unavailable")
-	require.Contains(t, out.String(), "mars-harness register --repo")
+	require.Contains(t, out.String(), "mars register --repo")
 	require.NotContains(t, out.String(), "unable to open database file")
 	require.NotContains(t, out.String(), "(14)")
 }
@@ -552,7 +552,7 @@ func TestTrustCommandMissingDBDirectoryIsActionable(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), "No trust entries recorded yet.")
 	require.Contains(t, out.String(), "database directory")
-	require.Contains(t, out.String(), "mars-harness register --repo")
+	require.Contains(t, out.String(), "mars register --repo")
 }
 
 func TestTrustCommandUnavailableDBIsActionable(t *testing.T) {
@@ -567,7 +567,7 @@ func TestTrustCommandUnavailableDBIsActionable(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), "No trust entries recorded yet.")
 	require.Contains(t, out.String(), "database is unavailable")
-	require.Contains(t, out.String(), "mars-harness register --repo")
+	require.Contains(t, out.String(), "mars register --repo")
 	require.NotContains(t, out.String(), "unable to open database file")
 	require.NotContains(t, out.String(), "(14)")
 }
@@ -606,9 +606,9 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	repoDir := t.TempDir()
 	dbPath := filepath.Join(t.TempDir(), "mars.db")
 	logPath := filepath.Join(t.TempDir(), "start.log")
-	t.Setenv("MARS_HARNESS_WEBHOOK_PORT", "0")
-	t.Setenv("MARS_HARNESS_DASHBOARD_PORT", "0")
-	t.Setenv("MARS_HARNESS_SKIP_START_CLEANUP", "1")
+	t.Setenv("MARS_WEBHOOK_PORT", "0")
+	t.Setenv("MARS_DASHBOARD_PORT", "0")
+	t.Setenv("MARS_SKIP_START_CLEANUP", "1")
 
 	cmd := startCmd()
 	var out bytes.Buffer
@@ -677,9 +677,9 @@ func TestStartCommandRoutesExistingInProgressTicketInsteadOfSeedingCEO(t *testin
 	repoDir := t.TempDir()
 	dbPath := filepath.Join(t.TempDir(), "mars.db")
 	logPath := filepath.Join(t.TempDir(), "start.log")
-	t.Setenv("MARS_HARNESS_WEBHOOK_PORT", "0")
-	t.Setenv("MARS_HARNESS_DASHBOARD_PORT", "0")
-	t.Setenv("MARS_HARNESS_SKIP_START_CLEANUP", "1")
+	t.Setenv("MARS_WEBHOOK_PORT", "0")
+	t.Setenv("MARS_DASHBOARD_PORT", "0")
+	t.Setenv("MARS_SKIP_START_CLEANUP", "1")
 
 	preInitChanges, err := gitChangedPaths(repoDir)
 	require.NoError(t, err)
@@ -737,9 +737,9 @@ func TestStartCommandRefusesDirtyWorkspaceWithoutDeterministicRoute(t *testing.T
 	repoDir := t.TempDir()
 	dbPath := filepath.Join(t.TempDir(), "mars.db")
 	logPath := filepath.Join(t.TempDir(), "start.log")
-	t.Setenv("MARS_HARNESS_WEBHOOK_PORT", "0")
-	t.Setenv("MARS_HARNESS_DASHBOARD_PORT", "0")
-	t.Setenv("MARS_HARNESS_SKIP_START_CLEANUP", "1")
+	t.Setenv("MARS_WEBHOOK_PORT", "0")
+	t.Setenv("MARS_DASHBOARD_PORT", "0")
+	t.Setenv("MARS_SKIP_START_CLEANUP", "1")
 
 	preInitChanges, err := gitChangedPaths(repoDir)
 	require.NoError(t, err)
@@ -775,9 +775,9 @@ func TestStartCommandRejectsRepoLocalDBPath(t *testing.T) {
 	}
 	repoDir := t.TempDir()
 	dbPath := filepath.Join(repoDir, "mars.db")
-	t.Setenv("MARS_HARNESS_WEBHOOK_PORT", "0")
-	t.Setenv("MARS_HARNESS_DASHBOARD_PORT", "0")
-	t.Setenv("MARS_HARNESS_SKIP_START_CLEANUP", "1")
+	t.Setenv("MARS_WEBHOOK_PORT", "0")
+	t.Setenv("MARS_DASHBOARD_PORT", "0")
+	t.Setenv("MARS_SKIP_START_CLEANUP", "1")
 
 	cmd := startCmd()
 	cmd.SetArgs([]string{"--repo", repoDir, "--db", dbPath, "--exit-after-seed"})
@@ -949,7 +949,7 @@ func TestRunCommandFoundationMaintainerRejectsNonSourceRepo(t *testing.T) {
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "source-only")
-	require.Contains(t, err.Error(), "not a mars-harness source checkout")
+	require.Contains(t, err.Error(), "not a mars source checkout")
 	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
 	require.NoFileExists(t, logPath)
 }
@@ -1002,7 +1002,7 @@ func TestEjectCommandDryRunLeavesRepoAndDBUntouched(t *testing.T) {
 	cmd.SetArgs([]string{"--repo", repoDir, "--db", dbPath})
 
 	require.NoError(t, cmd.Execute())
-	require.Contains(t, out.String(), "Mars Harness eject dry-run")
+	require.Contains(t, out.String(), "MARS eject dry-run")
 	require.Contains(t, out.String(), "Run with --apply --confirm")
 	require.FileExists(t, filepath.Join(repoDir, ".harness", "manifest.yaml"))
 	require.FileExists(t, dbPath)
@@ -1046,7 +1046,7 @@ func TestEjectCommandApplyRemovesRepoAndDBArtifacts(t *testing.T) {
 	})
 
 	require.NoError(t, cmd.Execute())
-	require.Contains(t, out.String(), "Mars Harness eject applied")
+	require.Contains(t, out.String(), "MARS eject applied")
 	require.NoDirExists(t, filepath.Join(repoDir, ".harness"))
 	require.NoFileExists(t, filepath.Join(repoDir, "AGENTS.md"))
 	require.NoDirExists(t, filepath.Join(repoDir, "docs", "tickets"))
@@ -1134,7 +1134,7 @@ func initReleaseBackfillCommandRepo(t *testing.T) string {
 	changelog := `# Changelog
 
 ## [0.1.0] - 2026-05-01
-<!-- mars-harness-release: version=0.1.0 commit=` + head + ` -->
+<!-- mars-release: version=0.1.0 commit=` + head + ` -->
 
 ### Why This Release Matters
 Old narrative.
@@ -1153,7 +1153,7 @@ func initReleaseAssetRepo(t *testing.T) string {
 	runMainTestGit(t, dir, "config", "user.email", "test@example.com")
 	runMainTestGit(t, dir, "config", "user.name", "Test User")
 	writeToolRunRepoFile(t, dir, "go.mod", "module example.com/release-asset-test\n\ngo 1.22\n")
-	writeToolRunRepoFile(t, dir, "cmd/mars-harness/main.go", `package main
+	writeToolRunRepoFile(t, dir, "cmd/mars/main.go", `package main
 
 import "fmt"
 
@@ -1169,7 +1169,7 @@ func main() {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte(`# Changelog
 
 ## [1.2.3] - 2026-05-23
-<!-- mars-harness-release: version=1.2.3 commit=test -->
+<!-- mars-release: version=1.2.3 commit=test -->
 
 ### Impact
 Local release assets can be verified.
@@ -1253,7 +1253,7 @@ func runnableCommandPaths(root *cobra.Command) []string {
 }
 
 func commandPathWithoutRoot(cmd *cobra.Command) string {
-	return strings.TrimPrefix(cmd.CommandPath(), "mars-harness ")
+	return strings.TrimPrefix(cmd.CommandPath(), "mars ")
 }
 
 func commandReferenceContainsPath(reference, path string) bool {

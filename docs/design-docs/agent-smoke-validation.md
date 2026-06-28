@@ -7,7 +7,7 @@
 
 ## Context
 
-Full clean-project `mars-harness start` sweeps are still the broadest evidence
+Full clean-project `mars start` sweeps are still the broadest evidence
 for lifecycle claims, but they are slow and sequential. They also naturally
 optimize early roles because CEO, strategy, COO, and CTO behavior is observed
 more often than later roles. Foundation maintainers need a faster lane that
@@ -23,7 +23,7 @@ through the same server job path used by autonomous jobs.
 
 ### AD-295: Agent Smoke Executes Selected Roles Live And In Parallel
 
-`mars-harness validation agent-smoke` is a source-only role-local validation
+`mars validation agent-smoke` is a source-only role-local validation
 lane. Each selected matrix case creates a fresh ephemeral target repo, isolated
 SQLite database, logs, trace directory, result file, and manifest under
 `../demo/validation-runs/agent-smoke/` by default. Successful run directories
@@ -82,7 +82,7 @@ not valid evidence that any agent role executed.
 
 ### Source-Only Foundation Maintainer Exception
 
-`foundation-maintainer` is a source-only role for this `mars-harness` repo and
+`foundation-maintainer` is a source-only role for this `mars` repo and
 must not be mirrored into deployed target manifests. Agent-smoke therefore
 reports foundation-maintainer cases with `execution_mode: source-only` rather
 than mutating generated target manifests to include the role. This preserves
@@ -286,7 +286,7 @@ counts as a pass.
   remains outside QA ownership.
 - **2026-06-15 — Full parallel matrix passed after contract fixes:** The
   validated completion run used
-  `mars-harness validation agent-smoke --suite full --parallel 2 --timeout 45m`
+  `mars validation agent-smoke --suite full --parallel 2 --timeout 45m`
   with the local model router and no endpoint override. It selected all `74`
   cases and reported `74 passed`, `0 failed`, `74 selected`: `70` deployable
   role cases executed live through the server job path, while the `4`

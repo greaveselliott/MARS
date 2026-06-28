@@ -7,7 +7,7 @@ work_type: enabler
 bdd_scenarios: []
 end_to_end_evidence: not_applicable
 evidence_links: ["docs/validation/reports/2026-06-12-demo-12-frontend-baseline.md", "docs/validation/reports/2026-06-12-demo-13-maintenance-baseline.md", "docs/validation/baselines/2026-06-12-factory-pace-baseline.md"]
-verified_by: "Live demo-12 (Vite/React habit tracker, fresh) and demo-13 (existing Phaser/Tetris repo with history and a known bug) replays on mars-harness 0.50.2, balanced model set (Qwen3-Coder Q4_K_M reasoning/coding, Gemma-4-E4B Q5_K_M fast), scores exports committed to both targets"
+verified_by: "Live demo-12 (Vite/React habit tracker, fresh) and demo-13 (existing Phaser/Tetris repo with history and a known bug) replays on mars 0.50.2, balanced model set (Qwen3-Coder Q4_K_M reasoning/coding, Gemma-4-E4B Q5_K_M fast), scores exports committed to both targets"
 owner: "foundation-maintainer"
 last_attempt: >-
   2026-06-12: both archetype replays recorded per AD-285 with model identity.

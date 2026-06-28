@@ -15,21 +15,21 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 
 ## Scenario Schedule
 
-1. F-004-S001 - `mars-harness init` creates a complete target harness in a git checkout.
+1. F-004-S001 - `mars init` creates a complete target harness in a git checkout.
 2. F-004-S002 - Init writes mirrored operating-model docs, roles, guardrails, knowledge routes, tickets, and release defaults.
-3. F-004-S003 - `mars-harness upgrade` fills missing defaults without overwriting user-owned configuration.
-4. F-004-S004 - `mars-harness update check` reports tool, metadata, and operating-model drift without mutating state.
+3. F-004-S003 - `mars upgrade` fills missing defaults without overwriting user-owned configuration.
+4. F-004-S004 - `mars update check` reports tool, metadata, and operating-model drift without mutating state.
 5. F-004-S005 - `doctor --repo` reports target harness health and active-plan hygiene.
 6. F-004-S006 - Auto-harness scaffolding runs before register, scan, run, or start when the manifest is missing.
 7. F-004-S007 - Generated target doctrine stays mirrored when source operating rules change.
-8. F-004-S008 - `mars-harness eject` removes generated harness artifacts and the associated per-repo database only after explicit confirmation.
+8. F-004-S008 - `mars eject` removes generated harness artifacts and the associated per-repo database only after explicit confirmation.
 
 ## Scenarios
 
 ### F-004-S001: Init Creates Harness
 
-Given a user points Mars Harness at a git checkout without `.harness/manifest.yaml`
-When `mars-harness init --repo <path>` runs
+Given a user points MARS at a git checkout without `.harness/manifest.yaml`
+When `mars init --repo <path>` runs
 Then the repo receives a usable target harness with manifest, metadata, role prompts, guardrails, knowledge routes, docs, ticket directories, quality score, dogfood evidence report directory, version, changelog, optional integrations example config, and root ignore policy for host OS metadata such as `.DS_Store`
 And `.harness/integrations.yaml` is not written by default
 
@@ -42,20 +42,20 @@ Then they include compact AGENTS guidance, goals, feature contracts, ticket meta
 ### F-004-S003: Upgrade Is Non-Destructive
 
 Given a target repo already has user-edited manifest, roles, guardrails, tickets, docs, or AGENTS guidance
-When `mars-harness upgrade --repo <path>` runs
+When `mars upgrade --repo <path>` runs
 Then missing default files and safe host OS metadata ignore entries are added while existing user-owned files are preserved
 And `.harness/integrations.example.yaml` is restored when missing without creating or overwriting `.harness/integrations.yaml`
 
 ### F-004-S004: Update Check Reports Drift
 
 Given the installed tool or generated target metadata is stale
-When `mars-harness update check --repo <path>` runs
+When `mars update check --repo <path>` runs
 Then the command reports current, latest, and recommended action in text or JSON without changing target files
 
 ### F-004-S005: Doctor Reports Target Health
 
 Given a target repo has missing metadata, operating-model drift, or active-plan hygiene issues
-When `mars-harness doctor --repo <path>` runs
+When `mars doctor --repo <path>` runs
 Then the diagnosis names the failing area and gives actionable remediation
 
 ### F-004-S006: Auto-Scaffold Before Operations
@@ -76,12 +76,12 @@ Then Engineer guidance distinguishes scenario IDs from feature-contract paths, s
 
 ### F-004-S008: Target Harness Eject Kill Switch
 
-Given a target repo has generated Mars Harness artifacts and a repo-scoped SQLite database
-When `mars-harness eject --repo <path>` runs without `--apply`
+Given a target repo has generated MARS artifacts and a repo-scoped SQLite database
+When `mars eject --repo <path>` runs without `--apply`
 Then the command reports the files and database it would remove without mutating the target
 
 Given the same target repo
-When `mars-harness eject --repo <path> --apply --confirm repo` runs
+When `mars eject --repo <path> --apply --confirm repo` runs
 Then `.harness/`, generated harness docs, generated ticket/feature/release/report defaults including dogfood reports, root generated guidance/version files, and the associated per-repo database are removed without rewriting git history
 
 ## Out of Scope

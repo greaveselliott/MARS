@@ -7,7 +7,7 @@
 
 ## Context
 
-Mars Harness aims to remove the human from the loop by converting repeated human interventions and agent failures into durable system improvements. Not every improvement belongs in a role prompt. If a fix is reusable procedural knowledge, it should usually become a skill.
+MARS aims to remove the human from the loop by converting repeated human interventions and agent failures into durable system improvements. Not every improvement belongs in a role prompt. If a fix is reusable procedural knowledge, it should usually become a skill.
 
 Skills sit between compact role prompts and executable tools:
 
@@ -100,12 +100,12 @@ Decision:
   or no GitHub Release at all. Mirroring waits until a generic target release
   publication contract exists.
 - Keep deterministic publication in the source release tool surface through
-  `mars-harness release publish-assets`; the skill owns sequencing,
+  `mars release publish-assets`; the skill owns sequencing,
   optional-mirror judgment, and blocker truth.
 
 ### CLI Workflow Skills Stay Synchronized
 
-When a `mars-harness` CLI change affects a reusable workflow, the skill that
+When a `mars` CLI change affects a reusable workflow, the skill that
 teaches that workflow changes in the same commit as the CLI and tool mapping.
 The source operating model for this is
 [cli-tool-skill-sync.md](cli-tool-skill-sync.md). Skills remain compact, but they

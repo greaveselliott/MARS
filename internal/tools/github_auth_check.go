@@ -14,7 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/greaveselliott/mars-harness/internal/githubauth"
+	"github.com/greaveselliott/mars/internal/githubauth"
 )
 
 const githubAuthCheckSchema = `{

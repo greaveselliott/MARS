@@ -32,7 +32,7 @@ func TestEnsureFishWritesConfDFile(t *testing.T) {
 	if !result.Changed {
 		t.Fatalf("expected profile change, got %+v", result)
 	}
-	path := filepath.Join(home, ".config", "fish", "conf.d", "mars-harness.fish")
+	path := filepath.Join(home, ".config", "fish", "conf.d", "mars.fish")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read fish profile: %v", err)
@@ -74,6 +74,65 @@ func TestEnsureZshIsIdempotent(t *testing.T) {
 	}
 	if strings.Count(string(data), startMarker) != 1 {
 		t.Fatalf("expected one managed block, got:\n%s", string(data))
+	}
+}
+
+func TestEnsureReplacesLegacyManagedBlock(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	installDir := filepath.Join(home, "bin")
+	profile := filepath.Join(home, ".zshrc")
+	legacy := legacyStartMarker + "\nexport PATH=/old:$PATH\n" + legacyEndMarker + "\n"
+	if err := os.WriteFile(profile, []byte(legacy), 0o644); err != nil {
+		t.Fatalf("write legacy profile: %v", err)
+	}
+
+	result, err := Ensure(Config{
+		InstallDir: installDir,
+		ShellPath:  "/bin/zsh",
+		HomeDir:    home,
+	})
+	if err != nil {
+		t.Fatalf("Ensure: %v", err)
+	}
+	if !result.Changed {
+		t.Fatalf("legacy marker should be replaced with the canonical block: %+v", result)
+	}
+
+	data, err := os.ReadFile(profile)
+	if err != nil {
+		t.Fatalf("read profile: %v", err)
+	}
+	if strings.Contains(string(data), legacyStartMarker) {
+		t.Fatalf("legacy marker should not remain after migration: %s", string(data))
+	}
+	if strings.Count(string(data), startMarker) != 1 {
+		t.Fatalf("expected one canonical marker after migration: %s", string(data))
+	}
+}
+
+func TestEnsureFishRemovesLegacyConfDFile(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	confDir := filepath.Join(home, ".config", "fish", "conf.d")
+	if err := os.MkdirAll(confDir, 0o755); err != nil {
+		t.Fatalf("mkdir conf dir: %v", err)
+	}
+	legacyPath := filepath.Join(confDir, "mars-harness.fish")
+	if err := os.WriteFile(legacyPath, []byte("# legacy\n"), 0o644); err != nil {
+		t.Fatalf("write legacy fish file: %v", err)
+	}
+
+	_, err := Ensure(Config{
+		InstallDir: filepath.Join(home, "go", "bin"),
+		ShellPath:  "/opt/homebrew/bin/fish",
+		HomeDir:    home,
+	})
+	if err != nil {
+		t.Fatalf("Ensure: %v", err)
+	}
+	if _, err := os.Stat(legacyPath); !os.IsNotExist(err) {
+		t.Fatalf("legacy fish file should be removed, stat err=%v", err)
 	}
 }
 

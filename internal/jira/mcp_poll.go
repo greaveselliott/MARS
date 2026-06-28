@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/integrations"
-	"github.com/greaveselliott/mars-harness/internal/mcpclient"
+	"github.com/greaveselliott/mars/internal/integrations"
+	"github.com/greaveselliott/mars/internal/mcpclient"
 )
 
 const (

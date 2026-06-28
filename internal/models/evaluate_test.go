@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/llm"
+	"github.com/greaveselliott/mars/internal/llm"
 	"github.com/stretchr/testify/require"
 )
 

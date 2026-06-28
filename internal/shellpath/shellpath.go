@@ -17,8 +17,10 @@ import (
 )
 
 const (
-	startMarker = "# >>> mars-harness PATH >>>"
-	endMarker   = "# <<< mars-harness PATH <<<"
+	startMarker       = "# >>> mars PATH >>>"
+	endMarker         = "# <<< mars PATH <<<"
+	legacyStartMarker = "# >>> mars-harness PATH >>>"
+	legacyEndMarker   = "# <<< mars-harness PATH <<<"
 )
 
 // Config controls shell PATH setup.
@@ -44,7 +46,7 @@ type Result struct {
 	ReloadHint               string `json:"reload_hint,omitempty"`
 }
 
-// ResolveInstallDir finds the directory that should contain mars-harness.
+// ResolveInstallDir finds the directory that should contain mars.
 func ResolveInstallDir(explicit string) (string, error) {
 	if strings.TrimSpace(explicit) != "" {
 		return filepath.Abs(explicit)
@@ -89,7 +91,11 @@ func Ensure(cfg Config) (Result, error) {
 	if err := os.MkdirAll(filepath.Dir(result.ProfilePath), 0o755); err != nil {
 		return Result{}, fmt.Errorf("shell path: create profile directory %s: %w", filepath.Dir(result.ProfilePath), err)
 	}
-	if result.Shell == "fish" && filepath.Base(result.ProfilePath) == "mars-harness.fish" {
+	if result.Shell == "fish" && filepath.Base(result.ProfilePath) == "mars.fish" {
+		legacyFish := filepath.Join(filepath.Dir(result.ProfilePath), "mars-harness.fish")
+		if _, err := os.Stat(legacyFish); err == nil {
+			_ = os.Remove(legacyFish)
+		}
 		if err := os.WriteFile(result.ProfilePath, []byte(content), 0o644); err != nil {
 			return Result{}, fmt.Errorf("shell path: write %s: %w", result.ProfilePath, err)
 		}
@@ -166,7 +172,7 @@ func profileForShell(shellName, homeDir string) (path, reloadHint string, ok boo
 	}
 	switch shellName {
 	case "fish":
-		path = filepath.Join(home, ".config", "fish", "conf.d", "mars-harness.fish")
+		path = filepath.Join(home, ".config", "fish", "conf.d", "mars.fish")
 		return path, "open a new terminal or run `exec fish`", true, nil
 	case "zsh":
 		path = filepath.Join(home, ".zshrc")
@@ -209,18 +215,18 @@ func profileHasPath(profilePath, installDir string) (bool, error) {
 func profileContent(shellName, installDir string) string {
 	switch shellName {
 	case "fish":
-		return "# Managed by mars-harness; safe to remove this file.\n" +
+		return "# Managed by mars; safe to remove this file.\n" +
 			fmt.Sprintf("if not contains -- %s $PATH\n", fishQuote(installDir)) +
 			fmt.Sprintf("    set -gx PATH %s $PATH\n", fishQuote(installDir)) +
 			"end\n"
 	case "tcsh", "csh":
 		return startMarker + "\n" +
-			"# Managed by mars-harness; safe to remove this block.\n" +
+			"# Managed by mars; safe to remove this block.\n" +
 			fmt.Sprintf("if ( \"$PATH\" !~ *%s* ) setenv PATH %s:$PATH\n", cshQuote(installDir), cshQuote(installDir)) +
 			endMarker + "\n"
 	default:
 		return startMarker + "\n" +
-			"# Managed by mars-harness; safe to remove this block.\n" +
+			"# Managed by mars; safe to remove this block.\n" +
 			"case \":$PATH:\" in\n" +
 			fmt.Sprintf("  *:%s:*) ;;\n", installDir) +
 			fmt.Sprintf("  *) export PATH=%s:\"$PATH\" ;;\n", posixQuote(installDir)) +
@@ -235,6 +241,7 @@ func upsertManagedBlock(profilePath, block string) error {
 		return fmt.Errorf("shell path: read %s: %w", profilePath, err)
 	}
 	text := string(data)
+	text = replaceLegacyManagedBlock(text)
 	if start := strings.Index(text, startMarker); start >= 0 {
 		if end := strings.Index(text[start:], endMarker); end >= 0 {
 			end += start + len(endMarker)
@@ -251,6 +258,19 @@ func upsertManagedBlock(profilePath, block string) error {
 		return fmt.Errorf("shell path: write %s: %w", profilePath, err)
 	}
 	return nil
+}
+
+func replaceLegacyManagedBlock(text string) string {
+	start := strings.Index(text, legacyStartMarker)
+	if start < 0 {
+		return text
+	}
+	end := strings.Index(text[start:], legacyEndMarker)
+	if end < 0 {
+		return text
+	}
+	end += start + len(legacyEndMarker)
+	return strings.TrimRight(text[:start], "\n") + "\n\n" + strings.TrimLeft(text[end:], "\n")
 }
 
 func inPath(dir, pathValue string) bool {

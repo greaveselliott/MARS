@@ -168,20 +168,20 @@ func TestCLIToolSkillSyncIsDocumented(t *testing.T) {
 	required := map[string][]string{
 		"AGENTS.md": {
 			"CLI tool/skill sync",
-			"mars_harness_cli",
+			"mars_cli",
 			"repo-shortcut map",
 		},
 		"docs/design-docs/cli-tool-skill-sync.md": {
 			"AD-103",
-			"mars_harness_cli",
+			"mars_cli",
 			"repo shortcut map",
 			"generated target doctrine",
 			"skills",
-			"go test ./cmd/mars-harness -run TestMarsHarnessCLI",
+			"go test ./cmd/mars -run TestMarsCLI",
 		},
 		"docs/design-docs/tools-glossary.md": {
 			"cli-tool-skill-sync.md",
-			"mars_harness_cli",
+			"mars_cli",
 			"repo-shortcut map",
 		},
 		"docs/design-docs/skill-evolution.md": {
@@ -191,7 +191,7 @@ func TestCLIToolSkillSyncIsDocumented(t *testing.T) {
 		"internal/scanner/init.go": {
 			"cli-tool-skill-sync.md",
 			"CLI tool/skill sync",
-			"mars_harness_cli",
+			"mars_cli",
 		},
 	}
 

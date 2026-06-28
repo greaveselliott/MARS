@@ -18,7 +18,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/greaveselliott/mars-harness/internal/tools"
+	"github.com/greaveselliott/mars/internal/tools"
 )
 
 func TestServerInitializeAndListTools(t *testing.T) {

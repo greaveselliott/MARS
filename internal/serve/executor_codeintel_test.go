@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/greaveselliott/mars-harness/internal/codeintel"
+	"github.com/greaveselliott/mars/internal/codeintel"
 )
 
 func TestRecordCodeGraphContextCounters(t *testing.T) {

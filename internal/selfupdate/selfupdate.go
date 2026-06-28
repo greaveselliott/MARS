@@ -21,14 +21,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/githubauth"
-	"github.com/greaveselliott/mars-harness/internal/shellpath"
+	"github.com/greaveselliott/mars/internal/githubauth"
+	"github.com/greaveselliott/mars/internal/shellpath"
 )
 
 const (
-	DefaultPackage            = "github.com/greaveselliott/mars-harness/cmd/mars-harness"
+	DefaultPackage            = "github.com/greaveselliott/mars/cmd/mars"
 	DefaultVersion            = "latest"
-	DefaultBinary             = "mars-harness"
+	DefaultBinary             = "mars"
 	DefaultReleaseDownloadURL = "https://github.com/" + DefaultRepoFullName + "/releases/download"
 )
 
@@ -132,7 +132,7 @@ func ResolvePlan(cfg Config) (Plan, error) {
 	return plan, nil
 }
 
-// Run updates mars-harness into the resolved install directory.
+// Run updates mars into the resolved install directory.
 func Run(ctx context.Context, cfg Config) (Plan, error) {
 	plan, err := ResolvePlan(cfg)
 	if err != nil {
@@ -198,7 +198,7 @@ func runReleaseAssets(ctx context.Context, cfg Config, plan Plan) (Plan, error) 
 	if err := os.MkdirAll(plan.InstallDir, 0o755); err != nil {
 		return Plan{}, fmt.Errorf("update tool: create install dir %s: %w", plan.InstallDir, err)
 	}
-	tmpDir, err := os.MkdirTemp(plan.InstallDir, ".mars-harness-update-*")
+	tmpDir, err := os.MkdirTemp(plan.InstallDir, ".mars-update-*")
 	if err != nil {
 		return Plan{}, fmt.Errorf("update tool: create temporary update directory in %s: %w\nRerun with --install-dir set to a directory you own, or use --source from a Go-enabled source checkout.",
 			plan.InstallDir, err)
@@ -207,7 +207,7 @@ func runReleaseAssets(ctx context.Context, cfg Config, plan Plan) (Plan, error) 
 
 	tmpBinary := filepath.Join(tmpDir, plan.AssetName)
 	if err := downloadFile(ctx, client, plan.DownloadURL, tmpBinary); err != nil {
-		return Plan{}, fmt.Errorf("update tool: download %s: %w\nRelease %s must contain %s and checksums.txt. Run `mars-harness release verify-assets --version %s` before retrying.",
+		return Plan{}, fmt.Errorf("update tool: download %s: %w\nRelease %s must contain %s and checksums.txt. Run `mars release verify-assets --version %s` before retrying.",
 			plan.DownloadURL, err, plan.ReleaseTag, plan.AssetName, plan.ReleaseTag)
 	}
 	checksumsPath := filepath.Join(tmpDir, "checksums.txt")
@@ -264,7 +264,7 @@ func resolveReleaseAssetPlan(ctx context.Context, client *http.Client, cfg Confi
 	}
 	report := VerifyReleaseAssetInfo(release)
 	if !report.OK {
-		return Plan{}, fmt.Errorf("update tool: latest release %s is missing required assets: %s\nPush tag %s from the release-note commit, run `mars-harness release publish-assets --repo . --version %s --upload github`, then `mars-harness release verify-assets --version %s` before retrying.",
+		return Plan{}, fmt.Errorf("update tool: latest release %s is missing required assets: %s\nPush tag %s from the release-note commit, run `mars release publish-assets --repo . --version %s --upload github`, then `mars release verify-assets --version %s` before retrying.",
 			releaseIdentity(release), strings.Join(report.Missing, ", "), releaseIdentity(release), releaseIdentity(release), releaseIdentity(release))
 	}
 	plan.Version = report.Version
@@ -373,7 +373,7 @@ func downloadFile(ctx context.Context, client *http.Client, url, path string) er
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
-	setGitHubDownloadHeaders(req, "mars-harness-self-update")
+	setGitHubDownloadHeaders(req, "mars-self-update")
 	resp, err := client.Do(req)
 	if err != nil {
 		return err

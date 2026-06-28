@@ -1,13 +1,13 @@
 ---
 id: MH-022
-title: mars-harness setup orchestrating detect, models, GitHub App, bundle, verify, serve
+title: mars setup orchestrating detect, models, GitHub App, bundle, verify, serve
 priority: high
 complexity: medium
 source: delivery-schedule M8
 created: 2026-04-11
 ---
 
-# MH-022: `mars-harness setup` — idempotent end-to-end bootstrap wizard
+# MH-022: `mars setup` — idempotent end-to-end bootstrap wizard
 
 ## Context
 

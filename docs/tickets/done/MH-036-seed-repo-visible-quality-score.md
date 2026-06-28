@@ -10,7 +10,7 @@ created: 2026-05-02
 completed: 2026-05-02
 metadata:
   role: "planner"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   target: "quality-score"
   category: "mars_parity_gap"
   severity: "high"
@@ -21,7 +21,7 @@ metadata:
 ## Context
 
 Mars has `docs/QUALITY_SCORE.md`, which grades harness functionality from A to
-F and makes quality visible in the repo. Mars Harness referenced this pattern in
+F and makes quality visible in the repo. MARS referenced this pattern in
 the parity plan, but did not yet have the source artifact or generated target
 seed.
 

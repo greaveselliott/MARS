@@ -83,7 +83,7 @@ func NewTerminalDashboard(w io.Writer, provider StatusProvider, opts DashboardOp
 		opts.RefreshInterval = time.Second
 	}
 	if opts.Title == "" {
-		opts.Title = "Mars Harness"
+		opts.Title = "MARS"
 	}
 	return &TerminalDashboard{
 		w:         w,

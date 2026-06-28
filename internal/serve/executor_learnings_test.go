@@ -56,7 +56,7 @@ func initRuntimeLearningsGitRepo(t *testing.T) string {
 	dir := t.TempDir()
 	testGit(t, dir, "init")
 	testGit(t, dir, "config", "user.email", "test@example.com")
-	testGit(t, dir, "config", "user.name", "Mars Harness Test")
+	testGit(t, dir, "config", "user.name", "MARS Test")
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("# test\n"), 0o644))
 	testGit(t, dir, "add", "README.md")
 	testGit(t, dir, "commit", "-m", "chore: seed")

@@ -30,7 +30,7 @@ replacement for the F-013 feature contract.
 
 ## Prerequisites
 
-- A Mars Harness build that includes T-047.
+- A MARS build that includes T-047.
 - Node.js and `npx` available on the machine that runs the harness.
 - Browser/SSO access for the Atlassian user that will authorize MCP.
 - Operator-approved values for:

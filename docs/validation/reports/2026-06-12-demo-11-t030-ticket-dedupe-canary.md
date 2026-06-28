@@ -15,17 +15,17 @@ max_turns failures (pre-existing T-011 class, not ticket_create wedge).
 
 ## Run: Inventory/API canary on patched binary — 2026-06-12
 
-- **Exact command:** `mars-harness start --repo
+- **Exact command:** `mars start --repo
   /path/to/local-redacted --debug --log-file
-  ~/.mars-harness/traces/logs/demo-11-t030-ticket-dedupe-canary-v3.log`
+  ~/.mars/traces/logs/demo-11-t030-ticket-dedupe-canary-v3.log`
 - **Target:** `/path/to/local-redacted` (repo at harness
   init `143c6b4` atop seed `f704dab`; fresh per-repo DB)
-- **Source ref / binary:** patched `mars-harness` from `foundation-restart`
+- **Source ref / binary:** patched `mars` from `foundation-restart`
   branch (`make install` after T-030 `isSubsetMatch` fix)
 - **Model identity (AD-285):** balanced profile — Qwen3-Coder Q4_K_M reasoning
   + coding; Gemma-4-E4B Q5_K_M fast
-- **Database / logs:** `~/.mars-harness/db/demo-11/mars.db`;
-  `~/.mars-harness/traces/logs/demo-11-t030-ticket-dedupe-canary-v3.log`
+- **Database / logs:** `~/.mars/db/demo-11/mars.db`;
+  `~/.mars/traces/logs/demo-11-t030-ticket-dedupe-canary-v3.log`
 - **Wall clock:** 2026-06-12 21:32:09 UTC → 22:24:40 UTC (~52.5 min)
 - **Job totals:** 20 jobs — 17 completed, 2 failed, 1 cancelled; 0 pending at
   drain

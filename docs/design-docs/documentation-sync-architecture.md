@@ -2,13 +2,13 @@
 
 **Status:** Accepted
 **Date:** 2026-05-04
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Related:** AD-098, AD-101, F-001
 **Mirrors:** Generated target `docs/design-docs/documentation-sync-architecture.md`
 
 ## Context
 
-Mars Harness treats the repository as the system of record. That only works if
+MARS treats the repository as the system of record. That only works if
 source changes and durable documentation move together. Before the docsync
 model, agents could update a package, role prompt, CLI command, or generated
 target default and then leave future agents to infer which feature contracts,
@@ -29,7 +29,7 @@ weaker documentation discipline.
 
 ## Decision
 
-Mars Harness uses **Documentation Sync** as a universal operating model for
+MARS uses **Documentation Sync** as a universal operating model for
 source and generated target harnesses.
 
 Every audited source file declares near-top `MarsDocSync` metadata with a
@@ -43,8 +43,8 @@ The canonical source prefix map lives in
 audit lives in `internal/docsync` and is exposed through:
 
 ```bash
-mars-harness docsync audit --repo .
-mars-harness tools run docsync_audit --repo . --args-json '{}'
+mars docsync audit --repo .
+mars tools run docsync_audit --repo . --args-json '{}'
 ```
 
 The universal rule is:
@@ -73,7 +73,7 @@ BDD, role behavior, generated target doctrine, release notes, and review.
   It proves the metadata exists, references real docs, and includes required
   docs for the file's source prefix.
 - The audit does not parse every programming language. It covers the source
-  formats Mars Harness currently owns: Go, HTML, CSS, JavaScript, YAML, and
+  formats MARS currently owns: Go, HTML, CSS, JavaScript, YAML, and
   GitHub workflow YAML.
 - The audit does not replace human or agent judgment. It narrows the checklist
   so judgment is pointed at the right docs.
@@ -90,7 +90,7 @@ flowchart TD
     C["docs/design-docs/code-documentation-map.md"] --> D["Expected docs rules"]
     D --> E["docsync audit report"]
     B --> E
-    E --> F["CLI: mars-harness docsync audit"]
+    E --> F["CLI: mars docsync audit"]
     E --> G["Tool: docsync_audit"]
     E --> H["docs-consistency tests"]
     F --> I["Commit, ticket, and release evidence"]
@@ -161,7 +161,7 @@ actually own the target product behavior.
 - parses top-of-file `MarsDocSync` metadata;
 - verifies each metadata doc path points to a durable documentation artifact;
 - computes expected docs from the canonical prefix rules when the audited repo
-  is the foundation `mars-harness` source checkout;
+  is the foundation `mars` source checkout;
 - treats deployed harness repos as product-owned source trees: their `cmd/`,
   `internal/`, `src/`, `app/`, `web/`, and similar source files still need
   valid `MarsDocSync` metadata, but they are not required to reference
@@ -182,14 +182,14 @@ read private telemetry, mutate files, or infer content from git history.
 The CLI command is for humans, scripts, CI, and local development:
 
 ```bash
-mars-harness docsync audit --repo .
-mars-harness docsync audit --repo . --json
+mars docsync audit --repo .
+mars docsync audit --repo . --json
 ```
 
 The mirrored tool is for harness agents:
 
 ```bash
-mars-harness tools run docsync_audit --repo . --args-json '{}'
+mars tools run docsync_audit --repo . --args-json '{}'
 ```
 
 `docsync_audit` is non-mutating. It is exposed to roles that create, review, or
@@ -203,7 +203,7 @@ Docs-consistency tests make the operating model release-blocking:
 
 - `internal/docsync` tests metadata parsing, expected-doc computation, missing
   metadata, and missing docs.
-- `cmd/mars-harness` tests CLI flags and output.
+- `cmd/mars` tests CLI flags and output.
 - `internal/tools` tests the mirrored tool registration and report output.
 - `file_write` tool policy rejects source/test writes that omit valid
   top-of-file `MarsDocSync` metadata or point at a missing doc, so local-model
@@ -309,13 +309,13 @@ cross-boundary docs the file directly implements.
 Before commit, run:
 
 ```bash
-mars-harness docsync audit --repo .
+mars docsync audit --repo .
 ```
 
 For agent runs, use:
 
 ```bash
-mars-harness tools run docsync_audit --repo . --args-json '{}'
+mars tools run docsync_audit --repo . --args-json '{}'
 ```
 
 For source changes in this repo, run the docs-consistency test or full suite as
@@ -360,7 +360,7 @@ when they affect agents or operators, not as invisible internal churn.
 2. Add a prefix rule to `internal/docsync.Rules`.
 3. Add the prefix to [code-documentation-map.md](code-documentation-map.md).
 4. Update feature/design docs for the new behavior.
-5. Run `mars-harness docsync audit --repo .`.
+5. Run `mars docsync audit --repo .`.
 6. Run relevant package tests and docs-consistency tests.
 
 ### Moving Or Renaming Source Files
@@ -407,7 +407,7 @@ operating model changes:
 - Every foundation audited file includes the docs required by the canonical
   prefix map; deployed app-root files include their local owning docs.
 - Cross-boundary ownership is explicit in file metadata.
-- `mars-harness docsync audit --repo .` passes before code is claimed complete.
+- `mars docsync audit --repo .` passes before code is claimed complete.
 - Business behavior changes update BDD feature contracts before completion.
 - Architecture or operating-model changes update design docs and generated
   target doctrine when universal.

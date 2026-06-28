@@ -1,21 +1,21 @@
 ---
-name: mars-harness-register
+name: mars-register
 description: >-
-  Register a repository for autonomous management by mars-harness. Use when
+  Register a repository for autonomous management by mars. Use when
   the user wants to add a repo, register a project, connect a repository,
-  or mentions mars-harness register.
+  or mentions mars register.
 ---
 
 # Register a Repository
 
 ## Prerequisites
 
-The repo must be a git repository. If `.harness/manifest.yaml` is missing, `register` runs the same scaffold as `mars-harness init` automatically. To overwrite an existing bundle, run `init --force` first.
+The repo must be a git repository. If `.harness/manifest.yaml` is missing, `register` runs the same scaffold as `mars init` automatically. To overwrite an existing bundle, run `init --force` first.
 
 ## Register
 
 ```bash
-mars-harness register --repo /path/to/repo --remote owner/repo-name
+mars register --repo /path/to/repo --remote owner/repo-name
 ```
 
 ## Flags
@@ -25,7 +25,7 @@ mars-harness register --repo /path/to/repo --remote owner/repo-name
 | `--repo` | Current directory | Local path to the repository |
 | `--remote` | (empty) | GitHub `owner/repo` for webhook matching |
 | `--branch` | `main` | Default branch name |
-| `--db` | `~/.mars-harness/db/mars.db` | SQLite database path |
+| `--db` | `~/.mars/db/mars.db` | SQLite database path |
 
 ## What Happens
 
@@ -39,5 +39,5 @@ Check the repo is registered (the register command prints the ID on success).
 
 ## Troubleshooting
 
-- **Missing manifest**: Run `mars-harness init --repo /path` first
+- **Missing manifest**: Run `mars init --repo /path` first
 - **Already registered**: Re-registering the same path updates the remote/branch (upsert)

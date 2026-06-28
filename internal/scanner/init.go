@@ -31,10 +31,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/buildinfo"
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/personas"
-	"github.com/greaveselliott/mars-harness/internal/roleregistry"
+	"github.com/greaveselliott/mars/internal/buildinfo"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/personas"
+	"github.com/greaveselliott/mars/internal/roleregistry"
 	"gopkg.in/yaml.v3"
 )
 
@@ -42,7 +42,7 @@ const harnessDir = ".harness"
 
 const harnessMetadataFile = "metadata.yaml"
 
-// HarnessMetadata records which mars-harness generator last refreshed the
+// HarnessMetadata records which mars generator last refreshed the
 // deployed target harness scaffold.
 type HarnessMetadata struct {
 	SchemaVersion    int    `json:"schema_version" yaml:"schema_version"`
@@ -183,13 +183,13 @@ func Init(repoRoot string, force bool) error {
 // files in an existing .harness/. Existing target harness files are user-owned:
 // role prompts, manifest.yaml, knowledge routes, guardrails, tickets, docs, and
 // target AGENTS.md are preserved. This keeps starter agents configurable by the
-// end user while still allowing newer mars-harness versions to add missing
+// end user while still allowing newer mars versions to add missing
 // scaffold files.
 func Upgrade(repoRoot string) (updated []string, err error) {
 	repoRoot = filepath.Clean(repoRoot)
 	harnessPath := filepath.Join(repoRoot, harnessDir)
 	if _, err := os.Stat(harnessPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("upgrade: %s does not exist — run 'mars-harness init' first", harnessPath)
+		return nil, fmt.Errorf("upgrade: %s does not exist — run 'mars init' first", harnessPath)
 	}
 
 	projectName := filepath.Base(repoRoot)
@@ -295,7 +295,7 @@ type projectBrief struct {
 func readProjectBrief(repoRoot, projectName string) projectBrief {
 	name := humanizeProjectName(projectName)
 	summary := "the product described by README and active goals"
-	source := "mars-harness init"
+	source := "mars init"
 	for _, candidate := range []string{"README.md", "README.markdown", "README"} {
 		data, err := os.ReadFile(filepath.Join(repoRoot, candidate))
 		if err != nil {
@@ -485,6 +485,9 @@ func ReadHarnessMetadata(repoRoot string) (HarnessMetadata, error) {
 	if err := yaml.Unmarshal(data, &metadata); err != nil {
 		return HarnessMetadata{}, fmt.Errorf("harness metadata: parse %s: %w", path, err)
 	}
+	if metadata.Generator == "mars-harness" {
+		metadata.Generator = "mars"
+	}
 	if metadata.Generator == "" || metadata.GeneratorVersion == "" {
 		return HarnessMetadata{}, fmt.Errorf("harness metadata: %s is missing generator or generator_version", path)
 	}
@@ -495,7 +498,7 @@ func writeHarnessMetadata(repoRoot, generatorVersion string) (bool, error) {
 	path := filepath.Join(filepath.Clean(repoRoot), harnessDir, harnessMetadataFile)
 	metadata := HarnessMetadata{
 		SchemaVersion:    1,
-		Generator:        "mars-harness",
+		Generator:        "mars",
 		GeneratorVersion: generatorVersion,
 	}
 	data, err := yaml.Marshal(metadata)
@@ -550,7 +553,7 @@ func ensureWorkspaceNoiseGitignore(repoRoot string) (bool, error) {
 	if content != "" && !strings.HasSuffix(b.String(), "\n\n") {
 		b.WriteString("\n")
 	}
-	b.WriteString("# Mars Harness workspace hygiene\n")
+	b.WriteString("# MARS workspace hygiene\n")
 	for _, entry := range missing {
 		b.WriteString(entry)
 		b.WriteString("\n")
@@ -631,7 +634,7 @@ roles:
     schedule: "0 20 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, harness_doctrine_sync, task_trace_summarize, git_status, git_commit, git_push]
 
   head-of-strategy:
     prompt: roles/head-of-strategy.md
@@ -649,7 +652,7 @@ roles:
     model: reasoning
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, file_search, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
+    tools: [file_read, file_write, file_search, mars_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, task_trace_summarize, git_status, git_commit, git_push]
 
   # ── Architecture ─────────────────────────────────────────
   cto-weekly:
@@ -672,7 +675,7 @@ roles:
     schedule: "0 0,6,12,18 * * 1-5"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── Review ───────────────────────────────────────────────
   qa:
@@ -694,7 +697,7 @@ roles:
     schedule: "0 22 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
 
   dependency-manager:
     prompt: roles/dependency-manager.md
@@ -705,7 +708,7 @@ roles:
     schedule: "0 23 * * 0"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_commit, git_push]
 
   # ── Release ──────────────────────────────────────────────
   release-manager:
@@ -716,7 +719,7 @@ roles:
     schedule: "0 8 * * 1"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, docsync_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, release_orchestrate, github_release_status, git_release_guard, docsync_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Testing ──────────────────────────────────────────────
   dogfood:
@@ -728,7 +731,7 @@ roles:
     max_turns: 40
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, ticket_create, tool_create, persona_create, task_trace_summarize, docsync_audit, git_status, git_diff, git_commit, git_push, job_disposition_record]
 
   # ── Delivery-gate repair ─────────────────────────────────
   pipeline-fixer:
@@ -740,7 +743,7 @@ roles:
       - workflow_run.conclusion == "failure"
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, dependency_sync, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, dependency_sync, mars_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, architecture_audit, harness_doctrine_sync, docsync_audit, tool_creation_guard, tool_inventory_audit, git_status, git_diff, git_commit, git_push]
 
   # ── Dispatch coordination ───────────────────────────────
   orchestrator:
@@ -765,14 +768,14 @@ roles:
     max_turns: 30
     knowledge: [knowledge/context-glossary.yaml]
     trust_level: contributor
-    tools: [file_read, file_write, shell_exec, mars_harness_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_diff, git_commit, git_push]
+    tools: [file_read, file_write, shell_exec, mars_cli, grep, code_index, code_search, code_snippet, code_trace, code_impact, workspace_hygiene, github_auth_check, record_decision, job_disposition_record, docsync_audit, git_status, git_diff, git_commit, git_push]
 `, projectName, projectName)
 }
 
 var defaultHarnessFiles = map[string]string{
-	"integrations.example.yaml": `# Optional Mars Harness integrations.
+	"integrations.example.yaml": `# Optional MARS integrations.
 # Copy this file to .harness/integrations.yaml to opt in.
-# If this file is absent, or flow_profile is ceo-led, Mars Harness keeps the
+# If this file is absent, or flow_profile is ceo-led, MARS keeps the
 # default CEO-led / GitHub-only / strict-trunk behavior.
 version: 1
 flow_profile: ceo-led # ceo-led | board-driven
@@ -873,7 +876,7 @@ delivery:
     paths: docs/design-docs/skill-evolution.md, .harness/skills/self-improvement/SKILL.md
   - when: creating or revising agent personas, role manuals, role ownership, feedback contracts, or handoff expectations
     paths: docs/roles/personas, docs/roles/ROLES.md, docs/design-docs/harness-operating-model.md, .harness/skills/persona-design/SKILL.md
-  - when: CLI workflow, mars-harness command, command flag, mars_harness_cli, repo shortcut, generated tool guidance, or CLI-related skill sync
+  - when: CLI workflow, mars command, command flag, mars_cli, repo shortcut, generated tool guidance, or CLI-related skill sync
     paths: docs/design-docs/cli-tool-skill-sync.md, docs/design-docs/tools-glossary.md, .harness/skills/cli-tool-sync/SKILL.md
   - when: agent-first workflow, repository memory, or why this harness exists
     paths: docs/references/harness-engineering-agent-first.md
@@ -914,16 +917,16 @@ scope: all
 # GitHub Private Release Auth Skill
 
 Use this before update, release verification, install repair, version-drift
-remediation, or any workflow that needs private Mars Harness GitHub Release
+remediation, or any workflow that needs private MARS GitHub Release
 assets.
 
 ## Workflow
 
-1. Run ` + "`mars-harness auth github check`" + ` or the ` + "`github_auth_check`" + ` tool.
+1. Run ` + "`mars auth github check`" + ` or the ` + "`github_auth_check`" + ` tool.
 2. If auth is missing, ask the operator to run ` + "`gh auth login`" + `, then
-   ` + "`mars-harness auth github setup`" + `.
+   ` + "`mars auth github setup`" + `.
 3. For headless installs, use ` + "`GH_TOKEN`" + `, ` + "`GITHUB_TOKEN`" + `, or
-   ` + "`mars-harness auth github setup --token <token>`" + ` with repository contents
+   ` + "`mars auth github setup --token <token>`" + ` with repository contents
    read access.
 4. Retry the blocked update or release command only after the auth check is
    ` + "`ok`" + `.
@@ -933,7 +936,7 @@ assets.
 - Never paste token values into chat, docs, commits, traces, tickets, logs, or
   tool output.
 - Prefer GitHub CLI auth over storing a local token.
-- If local token storage is required, it belongs under ` + "`~/.mars-harness/`" + `, never
+- If local token storage is required, it belongs under ` + "`~/.mars/`" + `, never
   in a target repository.
 
 ## Stop Conditions
@@ -975,14 +978,14 @@ scope: all
 
 # CLI Tool Sync Skill
 
-Use this when a task changes a ` + "`mars-harness`" + ` command, flag, output
+Use this when a task changes a ` + "`mars`" + ` command, flag, output
 contract, repo behavior, or recurring CLI workflow.
 
 ## Workflow
 
 1. Inspect the changed command path, aliases, shortcuts, and flags.
 2. Read ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `.
-3. Update the ` + "`mars_harness_cli`" + ` reference and repo shortcut behavior when the
+3. Update the ` + "`mars_cli`" + ` reference and repo shortcut behavior when the
    command surface changes.
 4. Update generated target guidance, knowledge routes, tools glossary, product
    docs, feature contracts, and release docs when the CLI behavior is
@@ -995,7 +998,7 @@ contract, repo behavior, or recurring CLI workflow.
 - Name the command or flag changed.
 - Name the tool reference, repo shortcut, generated doctrine, and skills
   updated or checked as current.
-- Include ` + "`go test ./cmd/mars-harness -run TestMarsHarnessCLI`" + ` or the
+- Include ` + "`go test ./cmd/mars -run TestMarsCLI`" + ` or the
   equivalent target-specific evidence.
 `,
 }
@@ -1012,7 +1015,7 @@ var defaultDocs = map[string]string{
 
 	"CHANGELOG.md": `# Changelog
 
-Patch notes are generated with ` + "`mars-harness release notes`" + ` from semantic commits on ` + "`main`" + `.
+Patch notes are generated with ` + "`mars release notes`" + ` from semantic commits on ` + "`main`" + `.
 `,
 
 	roleregistry.RegistryPath: roleregistry.DefaultMarkdown(),
@@ -1022,18 +1025,18 @@ Patch notes are generated with ` + "`mars-harness release notes`" + ` from seman
 **Status:** Seed
 **Updated:** 2026-05-02
 **Owner:** Project maintainers
-**Generated by:** mars-harness init
+**Generated by:** mars init
 
 ## Purpose
 
 This file grades the project and its harness operation in the repo itself. It is
-the visible counterpart to Mars Harness scores, traces, tickets, checks, and
+the visible counterpart to MARS scores, traces, tickets, checks, and
 telemetry. Keep it honest so future agents can see whether the project is
 healthy without treating a dashboard or database as the source of truth.
 
 The initial grades below are placeholders from the generated harness. Replace
 them with project-specific evidence after the first audit, then refresh live
-evidence with ` + "`mars-harness scores export --repo .`" + `.
+evidence with ` + "`mars scores export --repo .`" + `.
 
 ## Grading Scale
 
@@ -1054,7 +1057,7 @@ evidence with ` + "`mars-harness scores export --repo .`" + `.
 | Build and test truth | C | Commands may be unknown until the first scan or human update. | Fill ` + "`docs/design-docs/context-glossary.md`" + ` with build, test, lint, and run commands. |
 | Ticket workflow | B | Canonical backlog, in-progress, in-review, done, and blocker metadata paths are generated. | Keep eligible in-progress tickets drained before claiming new backlog work. |
 | Architecture documentation | C | Design-doc index exists as a seed. | Record non-obvious architecture and product decisions with rationale. |
-| Release/versioning | B | VERSION, CHANGELOG.md, and release guidance are generated. | Run ` + "`mars-harness release notes --repo . --bump auto`" + ` after non-release semantic commits. |
+| Release/versioning | B | VERSION, CHANGELOG.md, and release guidance are generated. | Run ` + "`mars release notes --repo . --bump auto`" + ` after non-release semantic commits. |
 | Harness readiness | B | AGENTS.md, manifest, roles, guardrails, knowledge routes, and skills are generated. | Tune roles and guardrails to this project after early runs. |
 
 ## Manual Notes
@@ -1069,7 +1072,7 @@ _No manual notes recorded. Keep human context here; ` + "`scores export`" + ` pr
 - Prefer evidence from tests, traces, tickets, dogfood results, guardrail blocks, and human follow-up.
 - Do not raise a grade for a feature that is only described but not working.
 - Separate shipped feature scenarios from enabler work. Enabler work can improve the grade for process or readiness, but must not be described as a shipped user feature unless the mapped BDD scenarios pass.
-- Refresh live evidence with ` + "`mars-harness scores export --repo .`" + `; the command preserves the manual notes block and records low-score regressions as improvement targets. Use ` + "`--create-intervention-debt`" + ` only when ticket materialization is deliberate.
+- Refresh live evidence with ` + "`mars scores export --repo .`" + `; the command preserves the manual notes block and records low-score regressions as improvement targets. Use ` + "`--create-intervention-debt`" + ` only when ticket materialization is deliberate.
 `,
 
 	"AGENTS.md": `# Agent Guide
@@ -1078,7 +1081,7 @@ _No manual notes recorded. Keep human context here; ` + "`scores export`" + ` pr
 
 ## What This Repo Is
 
-This repository is managed by Mars Harness. Agents work directly on ` + "`main`" + `,
+This repository is managed by MARS. Agents work directly on ` + "`main`" + `,
 fetch ` + "`origin/main`" + ` before non-trivial work when that remote exists, make
 small semantic commits, and push after each completed step. The repo is the
 system of record for plans, decisions, tickets, traces, and completed work.
@@ -1086,14 +1089,14 @@ system of record for plans, decisions, tickets, traces, and completed work.
 ## Harness Glossary
 
 These definitions are first-class harness context. They apply to this deployed
-harness and mirror the foundation harness in the ` + "`mars-harness`" + ` source repo.
+harness and mirror the foundation harness in the ` + "`mars`" + ` source repo.
 Expand the glossary when repeated language, distinctions, or routing rules
 would otherwise live only in chat.
 
-- **mars-harness** — the source repo and software factory containing an AI harness, agent orchestration platform, CLI, local inference management, queue, telemetry, scoring, trust, dashboard, scanner, release tooling, and generated target harness defaults.
+- **mars** — the source repo and software factory containing an AI harness, agent orchestration platform, CLI, local inference management, queue, telemetry, scoring, trust, dashboard, scanner, release tooling, and generated target harness defaults.
 - **Harness** — extensive organized documentation for how an LLM should operate within the scope of a given directory.
 - **Harness definitions** — individual pieces of documentation contained within the harness.
-- **Foundation harness** — the harness consumed by ` + "`mars-harness`" + ` in the source repo.
+- **Foundation harness** — the harness consumed by ` + "`mars`" + ` in the source repo.
 - **Deployed harness** — the harness consumed by this target application.
 - **Mirrored harness definitions** — harness definitions included in both the foundation harness and deployed harnesses.
 - **Operating model** — the documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops.
@@ -1103,27 +1106,27 @@ would otherwise live only in chat.
 - **MarsDocSync block** — a top-of-file code comment block beginning with ` + "`MarsDocSync:`" + ` and containing a ` + "`docs:`" + ` list of repo-relative documentation paths, usually feature contracts, design docs, product specs, ticket guidance, or README surfaces touched by that code.
 - **Canonical operating domain** — one of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator.
 - **Role mode** — a lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `.
-- **Foundation operating model** — the operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
+- **Foundation operating model** — the operating model for ` + "`mars`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses.
 - **Deployed operating model** — the operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it.
 - **Symbiotic operating-model change** — a change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows.
 - **Live evidence improvement loop** — the product stabilization loop inherited from the foundation operating model: observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, and claim improvement only after rerun evidence is confirmed, merged or fast-forwarded to trunk, and pushed to the remote.
 - **Matrix run report** — a durable validation artifact under ` + "`docs/validation/reports/`" + ` that records a matrix validation run or blocked attempt: selected matrix, cases or archetypes, command, source ref or binary, model identity, target/run paths, per-case result, failure classes, cleanup status, and the exact remaining blocker or rerun command.
-- **Failure ownership classification** — the universal operating-model step that classifies every observed failure as foundation-owned, deployed-owned, or mixed/unclear before creating tickets or fixes; foundation-owned fixes belong in ` + "`mars-harness`" + ` source/runtime/generated doctrine and should benefit all applicable users, while deployed-owned fixes belong in the target repo and should improve this deployed harness or product.
-- **Foundation-owned failure** — a failure caused by Mars Harness runtime, orchestration, role guidance, tool policy, generated defaults, model/provider behavior, telemetry, release/update, or mirrored doctrine; record it as foundation evidence or a source follow-up instead of converting it into target product backlog.
+- **Failure ownership classification** — the universal operating-model step that classifies every observed failure as foundation-owned, deployed-owned, or mixed/unclear before creating tickets or fixes; foundation-owned fixes belong in ` + "`mars`" + ` source/runtime/generated doctrine and should benefit all applicable users, while deployed-owned fixes belong in the target repo and should improve this deployed harness or product.
+- **Foundation-owned failure** — a failure caused by MARS runtime, orchestration, role guidance, tool policy, generated defaults, model/provider behavior, telemetry, release/update, or mirrored doctrine; record it as foundation evidence or a source follow-up instead of converting it into target product backlog.
 - **Deployed-owned failure** — a failure caused by target product behavior, target architecture, local build/test setup, target docs, target skills, or project-specific policy; fix it inside this deployed harness or target project and mirror only reusable doctrine back to the foundation.
 - **Conversation system record** — significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact.
 - **Tools** — capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks.
-- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, code-intel tools, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
+- **Mirrored tools** — tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_cli`" + `, ` + "`grep`" + `, code-intel tools, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools.
 - **Code graph context** — the compact ` + "`## CODE GRAPH CONTEXT`" + ` block assembled from the per-repo Mars SQLite code graph before deployed orchestrator jobs start the LLM loop. Foundation operators can consume the same graph through CLI/MCP from Codex, Cursor, Claude, or any other tool.
-- **Universal tool surface** — the mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + ` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
+- **Universal tool surface** — the mirrored MARS tool registry exposed through role allowlists, ` + "`mars tools run`" + `, and ` + "`mars mcp serve`" + ` so any MCP-compatible client or local harness agent can use the same tools without depending on a model provider.
 - **Formalized tool creation trigger** — repeated, risky, validation-heavy, or likely-to-recur processes should become first-class tools instead of staying as chat memory or ad hoc shell steps.
 - **Tool creation path** — new built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale.
 - **Meta tool** — a tool that creates, updates, inventories, or validates other tools or tool definitions.
 - **Skills** — compact reusable workflow instructions stored in ` + "`.harness/skills/<name>/SKILL.md`" + ` that teach agents how to perform recurring procedures; skills guide behavior but do not grant tool authority.
-- **Universal skills** — skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable Mars Harness operating doctrine.
-- **Foundation skills** — skills used by agents operating on ` + "`mars-harness`" + ` itself to evolve, validate, release, or maintain the software factory.
+- **Universal skills** — skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable MARS operating doctrine.
+- **Foundation skills** — skills used by agents operating on ` + "`mars`" + ` itself to evolve, validate, release, or maintain the software factory.
 - **Deployed skills** — skills stored in this target application's ` + "`.harness/skills/`" + ` directory and used by this deployed harness to capture project-specific reusable procedures.
-- **CLI tool/skill sync** — foundational operating rule that any ` + "`mars-harness`" + ` CLI change must update the mirrored ` + "`mars_harness_cli`" + ` tool reference, repo-shortcut map, generated target guidance, and any skills that name the affected CLI workflow.
+- **CLI tool/skill sync** — foundational operating rule that any ` + "`mars`" + ` CLI change must update the mirrored ` + "`mars_cli`" + ` tool reference, repo-shortcut map, generated target guidance, and any skills that name the affected CLI workflow.
 - **Tenets** — foundational rules both the foundation and deployed harness should follow at all times.
 - **First-class harness definition** — context that should always be included in the top-level ` + "`AGENTS.md`" + `.
 - **Contextual harness definition** — situational context routed through the harness glossary with the form: ` + "`When doing X include this: <path to document.md>`" + `.
@@ -1151,7 +1154,7 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 12. Read ` + "`docs/QUALITY_SCORE.md`" + ` before claiming quality, readiness, or completion.
 13. Read ` + "`docs/design-docs/release-versioning.md`" + ` before changing ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + `.
 14. Read ` + "`docs/design-docs/skill-evolution.md`" + ` before creating or changing ` + "`.harness/skills/`" + `.
-15. Read ` + "`docs/design-docs/cli-tool-skill-sync.md`" + ` before changing ` + "`mars-harness`" + ` CLI behavior or skills/tools that invoke it.
+15. Read ` + "`docs/design-docs/cli-tool-skill-sync.md`" + ` before changing ` + "`mars`" + ` CLI behavior or skills/tools that invoke it.
 
 ## Workflow
 
@@ -1167,10 +1170,10 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - BDD feature contracts define feature completeness; walking skeleton is the implementation strategy: make the next failing scenario pass through the thinnest real end-to-end path.
 - Business logic is first-class BDD: every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, or user-visible outcome must be documented step by step in ` + "`docs/features/`" + ` before or alongside implementation.
 - No stale documentation: when writing or materially changing code, add or update the top-of-file ` + "`MarsDocSync`" + ` comment block with a ` + "`docs:`" + ` list of associated docs, run or satisfy the docsync audit where applicable, then update those docs in the same commit or record why no doc change was needed.
-- CLI tool/skill sync: when ` + "`mars-harness`" + ` CLI commands, flags, output contracts, repo behavior, or workflows change, update ` + "`mars_harness_cli`" + ` reference and repo-shortcut behavior, generated target doctrine, and affected skills in the same change.
+- CLI tool/skill sync: when ` + "`mars`" + ` CLI commands, flags, output contracts, repo behavior, or workflows change, update ` + "`mars_cli`" + ` reference and repo-shortcut behavior, generated target doctrine, and affected skills in the same change.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
 - Product lifecycle improvements use a live evidence loop: observe a real product path, review findings, classify every failure as foundation-owned, deployed-owned, or mixed/unclear, make one or two bounded changes at the owning layer, rerun the same path, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence.
-- Do not turn Mars Harness runtime, orchestration, generated-default, tool-policy, model/provider, telemetry, or mirrored-doctrine failures into this target's backlog by default. Record foundation-owned findings as evidence or source follow-up; fix target product behavior, target architecture, local build/test setup, target docs, target skills, and project policy in this repo.
+- Do not turn MARS runtime, orchestration, generated-default, tool-policy, model/provider, telemetry, or mirrored-doctrine failures into this target's backlog by default. Record foundation-owned findings as evidence or source follow-up; fix target product behavior, target architecture, local build/test setup, target docs, target skills, and project policy in this repo.
 - Prefer eligible in-progress tickets before backlog work; a ticket is eligible when it has no meaningful ` + "`blocker`" + ` or ` + "`blocked_by`" + ` metadata.
 - Complete one coherent step at a time.
 - If blocked, record ` + "`blocker`" + `, ` + "`blocked_by`" + `, ` + "`trace_id`" + `, and ` + "`next_action`" + `, create or update the dependency/intervention-debt ticket, and return the ticket to a non-misleading state.
@@ -1179,12 +1182,12 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - Significant conversations must update the owning repo artifact in the same direct commit to ` + "`main`" + `: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
 - Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
 - Keep exactly one active exec plan in ` + "`docs/exec-plans/active/`" + `. Waiting plans live in ` + "`docs/exec-plans/backlog/`" + ` with priority, and reports belong under ` + "`docs/reports/`" + `.
-- After every non-release semantic commit, run ` + "`mars-harness release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, ensure the generated entry explains ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` before commit buckets, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
-- For source-style binary releases, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, run ` + "`mars-harness release publish-assets --repo . --version vX.Y.Z --upload auto`" + `, and verify the local dist with ` + "`mars-harness release verify-assets --dist dist/releases --version vX.Y.Z`" + `. Never tag while ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + ` are dirty, and never target a pre-release-note commit. When GitHub release credentials are configured, treat GitHub Releases as an optional mirror: confirm ` + "`gh release view vX.Y.Z`" + ` succeeds and ` + "`mars-harness release verify-assets --version vX.Y.Z`" + ` passes before advertising the mirror. If publishing or verification is blocked, record the blocker explicitly.
-- Private Mars Harness release access is part of getting started and version-drift repair. Run ` + "`mars-harness auth github check`" + ` or the read-only ` + "`github_auth_check`" + ` tool before ` + "`mars-harness update tool`" + `, release asset verification, install repair, or update troubleshooting. Configure access with ` + "`mars-harness auth github setup`" + `; never paste tokens into chat, docs, commits, tickets, traces, logs, or target repo files.
-- Operating rules inherited from Mars Harness apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
-- Check drift with ` + "`mars-harness update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars-harness update harness --repo .`" + `.
-- To remove Mars Harness from this repo, run ` + "`mars-harness eject --repo .`" + ` for a dry-run; applying the kill switch requires ` + "`--apply --confirm <repo-name>`" + ` and removes working-tree harness artifacts plus the per-repo database without rewriting git history.
+- After every non-release semantic commit, run ` + "`mars release notes --repo . --bump auto`" + `, verify ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `, ensure the generated entry explains ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` before commit buckets, commit ` + "`release: notes X.Y.Z`" + `, and push ` + "`main`" + `. Do not generate another version for the release-note commit itself.
+- For source-style binary releases, create or update tag ` + "`vX.Y.Z`" + ` at the release-note commit, push it, run ` + "`mars release publish-assets --repo . --version vX.Y.Z --upload auto`" + `, and verify the local dist with ` + "`mars release verify-assets --dist dist/releases --version vX.Y.Z`" + `. Never tag while ` + "`VERSION`" + ` or ` + "`CHANGELOG.md`" + ` are dirty, and never target a pre-release-note commit. When GitHub release credentials are configured, treat GitHub Releases as an optional mirror: confirm ` + "`gh release view vX.Y.Z`" + ` succeeds and ` + "`mars release verify-assets --version vX.Y.Z`" + ` passes before advertising the mirror. If publishing or verification is blocked, record the blocker explicitly.
+- Private MARS release access is part of getting started and version-drift repair. Run ` + "`mars auth github check`" + ` or the read-only ` + "`github_auth_check`" + ` tool before ` + "`mars update tool`" + `, release asset verification, install repair, or update troubleshooting. Configure access with ` + "`mars auth github setup`" + `; never paste tokens into chat, docs, commits, tickets, traces, logs, or target repo files.
+- Operating rules inherited from MARS apply here unless explicitly marked source-only. When this target harness is upgraded, adopt new operating rules unless they conflict with deliberate project policy.
+- Check drift with ` + "`mars update check --repo .`" + ` and keep generated or harness-owned guidance in sync with ` + "`mars update harness --repo .`" + `.
+- To remove MARS from this repo, run ` + "`mars eject --repo .`" + ` for a dry-run; applying the kill switch requires ` + "`--apply --confirm <repo-name>`" + ` and removes working-tree harness artifacts plus the per-repo database without rewriting git history.
 - Convert repeated human recovery steps into compact scoped skills rather than growing role prompts.
 
 ## Context Discipline
@@ -1476,7 +1479,7 @@ Each plan has:
 ## Plan Hygiene
 
 Run ` + "`go test ./internal/docsconsistency/...`" + ` or
-` + "`mars-harness doctor --repo .`" + ` after changing plan state. Supersede a
+` + "`mars doctor --repo .`" + ` after changing plan state. Supersede a
 plan by moving it to ` + "`superseded/`" + `, setting ` + "`**Status:** Superseded`" + `,
 and adding a pointer to
 ` + "`docs/exec-plans/active/current-operating-plan.md`" + `. Complete a plan by
@@ -1505,7 +1508,7 @@ with absolute dates, concrete blockers, or durable source-of-truth pointers.
 **Learning Or MVP Outcome:** Learn the target project's build/test/run path while shipping the smallest verified product loop.
 **Created:** 2026-05-02
 **Owner:** Project maintainers
-**Source:** mars-harness init
+**Source:** mars init
 
 ## Purpose
 
@@ -1552,8 +1555,8 @@ Architectural decisions and design documents for this project.
 | [tools-glossary.md](tools-glossary.md) | Accepted | First-class mirrored tool availability, selection, and use-case context. |
 | [code-documentation-map.md](code-documentation-map.md) | Accepted | Source metadata map for keeping code, architecture docs, and BDD feature contracts in sync. |
 | [documentation-sync-architecture.md](documentation-sync-architecture.md) | Accepted | Architecture and universal operating model for ` + "`MarsDocSync`" + `, docsync audit, generated target mirroring, and stale-doc prevention. |
-| [cli-tool-skill-sync.md](cli-tool-skill-sync.md) | Accepted | Foundational operating model for keeping ` + "`mars_harness_cli`" + `, repo shortcuts, generated target doctrine, and skills synchronized with CLI changes. |
-| [tenets.md](tenets.md) | Accepted | Foundational rules the deployed harness inherits from Mars Harness. |
+| [cli-tool-skill-sync.md](cli-tool-skill-sync.md) | Accepted | Foundational operating model for keeping ` + "`mars_cli`" + `, repo shortcuts, generated target doctrine, and skills synchronized with CLI changes. |
+| [tenets.md](tenets.md) | Accepted | Foundational rules the deployed harness inherits from MARS. |
 | [mirrored-harness-and-context-glossary.md](mirrored-harness-and-context-glossary.md) | Accepted | Source and deployed harness doctrine mirroring rules. |
 | [release-versioning.md](release-versioning.md) | Seed | Semantic versioning and generated patch-note policy for this repo. |
 | [skill-evolution.md](skill-evolution.md) | Seed | When repeated failures or interventions should become compact reusable skills. |
@@ -1569,14 +1572,14 @@ Architectural decisions and design documents for this project.
 | AD-084 | Six canonical operating domains are the role-model vocabulary while explicit manifest roles remain executable units with optional domain and mode metadata. | 2026-05-03 | Accepted |
 | AD-085 | Checked role registries inventory explicit manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. | 2026-05-03 | Accepted |
 | AD-086 | Significant conversations must become durable repo artifacts when they change plans, decisions, investigations, quality evidence, or completed-work state. | 2026-05-03 | Accepted |
-| AD-087 | Universal mirrored tools are exposed through ` + "`mars-harness mcp serve`" + ` for MCP-compatible clients and local harness agents without depending on a model provider. | 2026-05-03 | Accepted |
+| AD-087 | Universal mirrored tools are exposed through ` + "`mars mcp serve`" + ` for MCP-compatible clients and local harness agents without depending on a model provider. | 2026-05-03 | Accepted |
 | AD-097 | Business logic is first-class BDD and belongs step by step under ` + "`docs/features/`" + `. | 2026-05-04 | Accepted |
 | AD-098 | No stale documentation: code changes carry top-of-file ` + "`MarsDocSync`" + ` metadata with a ` + "`docs:`" + ` array listing associated docs, and those docs are updated or explicitly checked as current. | 2026-05-04 | Accepted |
 | AD-099 | Generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets, with topic-aware fallback prose for structural delivery changes. | 2026-05-04 | Accepted |
-| AD-100 | Historical release entries are backfilled through ` + "`mars-harness release backfill-notes`" + ` from marker-backed commit ranges. | 2026-05-04 | Accepted |
+| AD-100 | Historical release entries are backfilled through ` + "`mars release backfill-notes`" + ` from marker-backed commit ranges. | 2026-05-04 | Accepted |
 | AD-101 | Source metadata maps code files to associated architecture docs and BDD feature contracts, then ` + "`docsync audit`" + ` checks coverage. | 2026-05-04 | Accepted |
 | AD-102 | Documentation Sync is a universal operating model: agents read changed-file ` + "`MarsDocSync`" + ` docs, classify documentation impact, update or verify associated docs, run docsync evidence, and mirror the model into generated targets. | 2026-05-04 | Accepted |
-| AD-103 | CLI tool/skill sync is a foundational operating model: every CLI command or flag change updates ` + "`mars_harness_cli`" + `, repo-shortcut routing, generated target doctrine, and any affected skills before completion. | 2026-05-04 | Accepted |
+| AD-103 | CLI tool/skill sync is a foundational operating model: every CLI command or flag change updates ` + "`mars_cli`" + `, repo-shortcut routing, generated target doctrine, and any affected skills before completion. | 2026-05-04 | Accepted |
 | AD-105 | Foundation agents use canonical persona manuals for ownership, feedback, and handoff; Go structs in ` + "`internal/personas`" + ` render checked docs and prompt Personal Guides. | 2026-05-04 | Accepted |
 | AD-106 | Structured disposition packets travel through Orchestrator so handoff and feedback are visible, validated, and forwarded at runtime. | 2026-05-04 | Accepted |
 | AD-108 | Agents fetch and fast-forward from ` + "`origin/main`" + ` before non-trivial work, then push validated commits and release tags to remote trunk as soon as they are ready. | 2026-05-05 | Accepted |
@@ -1634,7 +1637,7 @@ evidence, release evidence, traces, or tests.
 
 ## Enforcement Evidence
 
-Use the active-plan hygiene checks exposed by mars-harness doctor --repo . and
+Use the active-plan hygiene checks exposed by mars doctor --repo . and
 docs-consistency tests for plan and ticket-state drift. Those checks report
 multiple active plans, misleading ticket-location claims, unresolved TBD
 placeholders, relative status language without dates, and stale verification
@@ -1716,7 +1719,7 @@ role contracts.
 
 ## AD-105: Foundation Agent Persona Manuals
 
-Foundation-agent personas are canonical in Mars Harness source and generated
+Foundation-agent personas are canonical in MARS source and generated
 into this target under ` + "`docs/roles/personas/`" + ` and each role prompt's Personal Guide.
 The default delivery ownership spine is:
 
@@ -1832,7 +1835,7 @@ code files must carry a top-of-file ` + "`MarsDocSync`" + ` metadata comment blo
 with a ` + "`docs:`" + ` list of repo-relative docs that describe, constrain, or
 explain that code. The code map lives in
 ` + "`docs/design-docs/code-documentation-map.md`" + ` and can be checked with
-` + "`mars-harness docsync audit --repo .`" + ` or the mirrored ` + "`docsync_audit`" + ` tool.
+` + "`mars docsync audit --repo .`" + ` or the mirrored ` + "`docsync_audit`" + ` tool.
 The same change updates those docs, or records in ticket, plan, review, or
 commit evidence why the listed docs were checked and did not need content
 changes.
@@ -1876,7 +1879,7 @@ source-only shorthand; target repos choose their own representative product
 path.
 
 Failure ownership classification is universal doctrine. Foundation-owned
-failures include Mars Harness runtime, orchestration, generated defaults, role
+failures include MARS runtime, orchestration, generated defaults, role
 guidance, tool policy, model/provider behavior, telemetry, release/update, or
 mirrored doctrine. They become foundation evidence or source follow-up, not
 target backlog by default. Deployed-owned failures include product behavior,
@@ -1968,9 +1971,9 @@ and remain current.
 
 ## AD-103: CLI Tool And Skill Synchronization
 
-Whenever ` + "`mars-harness`" + ` CLI commands, flags, output contracts, repo
+Whenever ` + "`mars`" + ` CLI commands, flags, output contracts, repo
 behavior, mutability expectations, or recurring workflows change, update the
-` + "`mars_harness_cli`" + ` reference, repo shortcut behavior, generated target
+` + "`mars_cli`" + ` reference, repo shortcut behavior, generated target
 doctrine, and any skill that names the affected workflow in the same change.
 The full model lives in [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 
@@ -2008,8 +2011,8 @@ CLI workflow changes also follow
 Check the map with:
 
 ` + "```" + `bash
-mars-harness docsync audit --repo .
-mars-harness tools run docsync_audit --repo . --args-json '{}'
+mars docsync audit --repo .
+mars tools run docsync_audit --repo . --args-json '{}'
 ` + "```" + `
 
 ## Metadata Shape
@@ -2036,7 +2039,7 @@ short:
 /* MarsDocSync: ["docs/features/F-001-product-walking-skeleton.md"] */
 ` + "```" + `
 
-` + "`mars-harness docsync audit`" + ` audits common app roots such as ` + "`src/`" + `,
+` + "`mars docsync audit`" + ` audits common app roots such as ` + "`src/`" + `,
 ` + "`app/`" + `, ` + "`pages/`" + `, ` + "`public/`" + `, ` + "`web/`" + `, and ` + "`static/`" + `.
 Those app-root files must point to the local feature contracts or design docs
 that own the product behavior.
@@ -2071,7 +2074,7 @@ and docsync audit checks that the checklist exists and points to real docs.
 
 ## Decision
 
-Documentation Sync is a universal operating model inherited from Mars Harness.
+Documentation Sync is a universal operating model inherited from MARS.
 Before a code change is complete, agents read the changed file's ` + "`MarsDocSync`" + `
 docs, classify the documentation impact, update or verify associated docs, run
 docsync evidence, and record which docs changed or remained current.
@@ -2084,7 +2087,7 @@ The model has six layers:
    list, or compact inline static metadata for CSS/JavaScript assets.
 2. Map layer: ` + "`docs/design-docs/code-documentation-map.md`" + ` records expected
    docs for source prefixes.
-3. Audit layer: ` + "`mars-harness docsync audit --repo .`" + ` checks foundation
+3. Audit layer: ` + "`mars docsync audit --repo .`" + ` checks foundation
    roots and deployed app roots for metadata, missing docs, and map coverage.
 4. Tool layer: ` + "`docsync_audit`" + ` exposes the same check to harness agents.
 5. Evidence layer: tickets, reviews, releases, and traces record docsync output.
@@ -2103,7 +2106,7 @@ The model has six layers:
 4. Update the listed docs in the same change, or record why they remain current.
 5. Add or repair metadata when files are created, moved, split, or gain new doc
    ownership.
-6. Run ` + "`mars-harness docsync audit --repo .`" + ` or ` + "`docsync_audit`" + `.
+6. Run ` + "`mars docsync audit --repo .`" + ` or ` + "`docsync_audit`" + `.
 7. Record evidence in the ticket, review, release notes, or commit summary.
 
 ## Role Responsibilities
@@ -2133,8 +2136,8 @@ The model has six layers:
 Use these commands as the local gate:
 
 ` + "```" + `bash
-mars-harness docsync audit --repo .
-mars-harness tools run docsync_audit --repo . --args-json '{}'
+mars docsync audit --repo .
+mars tools run docsync_audit --repo . --args-json '{}'
 ` + "```" + `
 
 The audit proves metadata coverage and real doc paths. It does not replace
@@ -2150,8 +2153,8 @@ human or agent judgment over whether the prose itself is complete.
 
 ## Context
 
-The ` + "`mars-harness`" + ` CLI is the control plane for this deployed harness, and
-agents normally discover it through the mirrored ` + "`mars_harness_cli`" + ` tool,
+The ` + "`mars`" + ` CLI is the control plane for this deployed harness, and
+agents normally discover it through the mirrored ` + "`mars_cli`" + ` tool,
 generated role allowlists, knowledge routes, tools glossary, and compact skills.
 If a CLI workflow changes but those mirrors do not, agents can keep following
 stale commands or flags.
@@ -2159,11 +2162,11 @@ stale commands or flags.
 ## Decision
 
 CLI tool/skill sync is a foundational operating model. Whenever a
-` + "`mars-harness`" + ` command, flag, output contract, repo behavior, mutability
+` + "`mars`" + ` command, flag, output contract, repo behavior, mutability
 expectation, or recurring workflow changes, the same change updates or checks:
 
-- the ` + "`mars_harness_cli`" + ` reference;
-- the ` + "`mars_harness_cli`" + ` repo shortcut behavior;
+- the ` + "`mars_cli`" + ` reference;
+- the ` + "`mars_cli`" + ` repo shortcut behavior;
 - generated target guidance and knowledge routes;
 - tools glossary and tool-selection rules;
 - any skill that names the affected CLI workflow;
@@ -2180,7 +2183,7 @@ agents without falling back to stale shell conventions.
 1. Classify whether the change affects a CLI command, flag, output, repo
    behavior, safety expectation, or recurring workflow.
 2. Read this document and the changed file's ` + "`MarsDocSync`" + ` docs.
-3. Update ` + "`mars_harness_cli`" + ` reference text and repo shortcut behavior if the
+3. Update ` + "`mars_cli`" + ` reference text and repo shortcut behavior if the
    command surface changed.
 4. Update generated doctrine, tools glossary, and knowledge routes when target
    agents inherit the workflow.
@@ -2193,10 +2196,10 @@ agents without falling back to stale shell conventions.
 Use source-equivalent or target-specific evidence:
 
 ` + "```" + `bash
-go test ./cmd/mars-harness -run TestMarsHarnessCLI
-go test ./internal/tools -run TestMarsHarnessCLI
+go test ./cmd/mars -run TestMarsCLI
+go test ./internal/tools -run TestMarsCLI
 go test ./internal/scanner -run TestInit_success
-mars-harness docsync audit --repo .
+mars docsync audit --repo .
 ` + "```" + `
 
 For generated doctrine or skill changes, also run ` + "`harness_doctrine_sync`" + `
@@ -2317,15 +2320,15 @@ plan, review, or commit evidence must state why they remain current.
 The source-wide gate is:
 
 ` + "```" + `bash
-mars-harness docsync audit --repo .
-mars-harness tools run docsync_audit --repo . --args-json '{}'
+mars docsync audit --repo .
+mars tools run docsync_audit --repo . --args-json '{}'
 ` + "```" + `
 
 The architecture and universal operating model for this process live in
 [../design-docs/documentation-sync-architecture.md](../design-docs/documentation-sync-architecture.md).
 
 CLI changes have an additional foundational operating model: keep the
-` + "`mars_harness_cli`" + ` reference, repo-shortcut map, generated doctrine, and
+` + "`mars_cli`" + ` reference, repo-shortcut map, generated doctrine, and
 affected skills synchronized using
 [../design-docs/cli-tool-skill-sync.md](../design-docs/cli-tool-skill-sync.md).
 
@@ -2443,7 +2446,7 @@ loading every document.
 | Term | Meaning | Read next |
 | --- | --- | --- |
 | Repo | This target repository. | ` + "`README.md`" + ` |
-| Harness | The Mars Harness automation layer in ` + "`.harness/`" + `. | ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/metadata.yaml`" + ` |
+| Harness | The MARS automation layer in ` + "`.harness/`" + `. | ` + "`.harness/manifest.yaml`" + `, ` + "`.harness/metadata.yaml`" + ` |
 | Ticket | A markdown work item. | ` + "`docs/tickets/README.md`" + ` |
 | In progress | Active work that should be completed, explicitly blocked, or returned with blocker metadata before new backlog work. | ` + "`docs/tickets/in-progress/`" + ` |
 | Goal | Outcome and priority signal used by the CEO to align the active plan. | ` + "`docs/goals/README.md`" + `, ` + "`docs/goals/active.md`" + ` |
@@ -2484,7 +2487,7 @@ Record the commands future agents should use here:
 
 This glossary is first-class harness context. It defines the shared language
 agents should use when operating this deployed harness and the foundation
-harness in the ` + "`mars-harness`" + ` source repo.
+harness in the ` + "`mars`" + ` source repo.
 
 Expand this file autonomously when repeated terminology, distinctions, or
 context-routing rules appear during the life of the harness. Do not leave
@@ -2497,10 +2500,10 @@ harness and deployed harnesses.
 
 | Term | Definition |
 | --- | --- |
-| mars-harness | The source repo and software factory containing an AI harness, agent orchestration platform, CLI, local inference management, queue, telemetry, scoring, trust, dashboard, scanner, release tooling, and generated target harness defaults. |
+| mars | The source repo and software factory containing an AI harness, agent orchestration platform, CLI, local inference management, queue, telemetry, scoring, trust, dashboard, scanner, release tooling, and generated target harness defaults. |
 | Harness | Extensive organized documentation for how an LLM should operate within the scope of a given directory. |
 | Harness definitions | Individual pieces of documentation contained within the harness. |
-| Foundation harness | The harness consumed by ` + "`mars-harness`" + ` in the source repo. |
+| Foundation harness | The harness consumed by ` + "`mars`" + ` in the source repo. |
 | Deployed harness | The harness consumed by this target application. |
 | Mirrored harness definitions | Harness definitions included in both the foundation harness and deployed harnesses. |
 | Operating model | The documented way a harness turns intent into shipped, verifiable work: goals, BDD contracts, active plans, ticket flow, quality evidence, release discipline, context routing, trust/autonomy behavior, and self-improvement loops. |
@@ -2511,27 +2514,27 @@ harness and deployed harnesses.
 | Canonical operating domain | One of the six stable role-memory groups: Planner, Engineer, Reviewer, Maintainer, End-to-End Tester, or Orchestrator. |
 | Role mode | A lower-kebab-case purpose inside a domain that explains why an explicit manifest role is running, such as ` + "`ticket-delivery`" + `, ` + "`quality-review`" + `, or ` + "`pipeline-repair`" + `. |
 | Role registry | A checked inventory of manifest roles, domains, modes, triggers, tools, trust, guardrails, model routing, scoring signals, and escalation behavior. |
-| Foundation operating model | The operating model for ` + "`mars-harness`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
+| Foundation operating model | The operating model for ` + "`mars`" + ` itself, governing how the software factory evolves, validates changes, versions releases, and mirrors doctrine into deployed harnesses. |
 | Deployed operating model | The operating model inside this target application harness, governing how agents build this target while inheriting mirrored foundation doctrine unless local project policy deliberately overrides it. |
 | Symbiotic operating-model change | A change to operating doctrine that fits the existing closed loop without handoff gaps, duplicate sources of truth, or inconsistencies with adjacent workflows. |
 | Live evidence improvement loop | The product stabilization loop inherited from the foundation operating model: observe a real product path, review findings, implement one or two bounded target-owned actions, rerun, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence. |
 | Matrix run report | A durable validation artifact under ` + "`docs/validation/reports/`" + ` that records a matrix validation run or blocked attempt: selected matrix, cases or archetypes, command, source ref or binary, model identity, target/run paths, per-case result, failure classes, cleanup status, and the exact remaining blocker or rerun command. |
-| Failure ownership classification | The universal operating-model step that classifies every observed failure as foundation-owned, deployed-owned, or mixed/unclear before creating tickets or fixes; foundation-owned fixes belong in ` + "`mars-harness`" + ` source/runtime/generated doctrine and should benefit all applicable users, while deployed-owned fixes belong in this target repo and should improve this deployed harness or product. |
-| Foundation-owned failure | A failure caused by Mars Harness runtime, orchestration, role guidance, tool policy, generated defaults, model/provider behavior, telemetry, release/update, or mirrored doctrine; record it as foundation evidence or a source follow-up instead of converting it into target product backlog. |
+| Failure ownership classification | The universal operating-model step that classifies every observed failure as foundation-owned, deployed-owned, or mixed/unclear before creating tickets or fixes; foundation-owned fixes belong in ` + "`mars`" + ` source/runtime/generated doctrine and should benefit all applicable users, while deployed-owned fixes belong in this target repo and should improve this deployed harness or product. |
+| Foundation-owned failure | A failure caused by MARS runtime, orchestration, role guidance, tool policy, generated defaults, model/provider behavior, telemetry, release/update, or mirrored doctrine; record it as foundation evidence or a source follow-up instead of converting it into target product backlog. |
 | Deployed-owned failure | A failure caused by target product behavior, target architecture, local build/test setup, target docs, target skills, or project-specific policy; fix it inside this deployed harness or target project and mirror only reusable doctrine back to the foundation. |
 | Conversation system record | Significant agent conversations are inputs that must become durable repo artifacts when they change plans, decisions, investigations, quality findings, or completed-work state; chat summaries cannot replace the owning artifact. |
 | Tools | Capabilities of AI models to connect with external software, APIs, and systems to perform actions, retrieve current data, and execute complex, multi-step tasks. |
-| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_harness_cli`" + `, ` + "`grep`" + `, code-intel tools, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
+| Mirrored tools | Tools found in both the foundation harness and deployed harness. The mirrored built-in set includes ` + "`file_read`" + `, ` + "`file_write`" + `, ` + "`file_search`" + `, ` + "`shell_exec`" + `, ` + "`mars_cli`" + `, ` + "`grep`" + `, code-intel tools, ` + "`workspace_hygiene`" + `, ` + "`github_auth_check`" + `, ` + "`dependency_sync`" + `, ` + "`record_decision`" + `, ` + "`ticket_create`" + `, ` + "`job_disposition_record`" + `, ` + "`tool_create`" + `, ` + "`persona_create`" + `, ` + "`docsync_audit`" + `, release/status/audit workflow tools, and git tools. |
 | Code graph context | The compact ` + "`## CODE GRAPH CONTEXT`" + ` block assembled from the per-repo Mars SQLite code graph before deployed orchestrator jobs start the LLM loop. It is successful only when it reduces broad repo exploration and output volume while preserving freshness disclosure. |
-| Universal tool surface | The mirrored Mars Harness tool registry exposed through role allowlists, ` + "`mars-harness tools run`" + `, and ` + "`mars-harness mcp serve`" + `, so any MCP-compatible client or local harness agent can use the same tools through a model-provider-agnostic tool mechanism. |
+| Universal tool surface | The mirrored MARS tool registry exposed through role allowlists, ` + "`mars tools run`" + `, and ` + "`mars mcp serve`" + `, so any MCP-compatible client or local harness agent can use the same tools through a model-provider-agnostic tool mechanism. |
 | Meta tool | A tool that creates, updates, inventories, or validates other tools or tool definitions. |
 | Formalized tool creation trigger | An operating-model signal that a repeated, risky, validation-heavy, or likely-to-recur process should become a first-class tool instead of remaining chat memory or ad hoc shell steps. |
 | Tool creation path | New built-in tools must originate through ` + "`tool_create`" + `; bypassing it requires a prior ` + "`record_decision`" + ` entry and design-doc rationale. |
 | Skills | Compact reusable workflow instructions stored in ` + "`.harness/skills/<name>/SKILL.md`" + ` that teach agents how to perform recurring procedures; skills guide behavior but do not grant tool authority. |
-| Universal skills | Skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable Mars Harness operating doctrine. |
-| Foundation skills | Skills used by agents operating on ` + "`mars-harness`" + ` itself to evolve, validate, release, or maintain the software factory. |
+| Universal skills | Skills intentionally mirrored between the foundation harness and deployed harnesses because they encode reusable MARS operating doctrine. |
+| Foundation skills | Skills used by agents operating on ` + "`mars`" + ` itself to evolve, validate, release, or maintain the software factory. |
 | Deployed skills | Skills stored in this target application's ` + "`.harness/skills/`" + ` directory and used by this deployed harness to capture project-specific reusable procedures. |
-| CLI tool/skill sync | Foundational operating rule that any ` + "`mars-harness`" + ` CLI change must update the mirrored ` + "`mars_harness_cli`" + ` tool reference, repo-shortcut map, generated target guidance, and any skills that name the affected CLI workflow. |
+| CLI tool/skill sync | Foundational operating rule that any ` + "`mars`" + ` CLI change must update the mirrored ` + "`mars_cli`" + ` tool reference, repo-shortcut map, generated target guidance, and any skills that name the affected CLI workflow. |
 | Tenets | Foundational rules both the foundation and deployed harness should follow at all times. |
 | First-class harness definition | Context that should always be included in the top-level ` + "`AGENTS.md`" + `. |
 | Contextual harness definition | Situational context routed through the harness glossary with the form: ` + "`When doing X include this: <path to document.md>`" + `. |
@@ -2594,7 +2597,7 @@ refactors. If an agent bypasses ` + "`tool_create`" + `, it must first use
 ` + "`record_decision`" + ` to record why, then add design-doc rationale. Every newly
 created tool must extend ` + "`docs/design-docs/tools-glossary.md`" + ` in the same
 change that implements or exposes it. When a CLI change affects the
-` + "`mars_harness_cli`" + ` tool or a skill that invokes the CLI, also include
+` + "`mars_cli`" + ` tool or a skill that invokes the CLI, also include
 ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `.
 
 ### When changing context routes include this: ` + "`.harness/knowledge/context-glossary.yaml`" + `
@@ -2638,7 +2641,7 @@ tools are added, removed, renamed, or materially change behavior.
 - Mutating tools are blocked at observer trust.
 - Prefer purpose-built tools over ` + "`shell_exec`" + ` when a deterministic tool exists.
 - Prefer structured argv over shell strings unless shell features are required.
-- Universal tools are also exposed through ` + "`mars-harness mcp serve --repo <path>`" + ` for MCP-compatible clients and local harness agents.
+- Universal tools are also exposed through ` + "`mars mcp serve --repo <path>`" + ` for MCP-compatible clients and local harness agents.
 - The universal tool surface is model-provider agnostic. Deployed harnesses use
   local models by default, and MCP/tool transport must not assume frontier cloud
   model access.
@@ -2651,22 +2654,22 @@ tools are added, removed, renamed, or materially change behavior.
 | ` + "`file_write`" + ` | Create or replace a file under the repository root. | Mutating. Guardrails and secret scanning apply. New ticket markdown is blocked; use ` + "`ticket_create`" + `. Engineer cannot populate in-progress ticket ` + "`evidence_links`" + ` or ` + "`verified_by`" + ` before the same job records successful validation; browser-framework packages also require a build script, successful same-job build evidence, and no obvious static lifecycle defects. New ` + "`docs/features/F-NNN*.md`" + ` writes are blocked when another contract with the same ` + "`F-NNN`" + ` ID already exists. New repo-root validation scripts such as ` + "`validate.sh`" + ` are blocked; use existing tests, direct build/run/curl evidence, or intentional durable tests. COO may only write planning artifacts. CTO may only write bounded technical planning artifacts; implementation, package/module, README usage, source, test, build, config, and root product-file edits belong to ticket-backed Engineer delivery. |
 | ` + "`file_search`" + ` | Find files by glob-style path patterns. | Non-mutating. Use for inventory before broad reads. |
 | ` + "`grep`" + ` | Search file contents with a regex. | Non-mutating. Use to locate symbols, text, or repeated patterns. |
-| ` + "`code_index`" + ` | Refresh the Mars code-intel mirror for the current repo before structural search, trace, snippet, or impact work. | Non-mutating to the target repo. Writes only the per-repo Mars SQLite DB under ` + "`~/.mars-harness/db/<repo>/mars.db`" + `. Use incremental refresh by default; use ` + "`full:true`" + ` only for schema/parser changes, corruption repair, or explicit operator request. |
+| ` + "`code_index`" + ` | Refresh the Mars code-intel mirror for the current repo before structural search, trace, snippet, or impact work. | Non-mutating to the target repo. Writes only the per-repo Mars SQLite DB under ` + "`~/.mars/db/<repo>/mars.db`" + `. Use incremental refresh by default; use ` + "`full:true`" + ` only for schema/parser changes, corruption repair, or explicit operator request. |
 | ` + "`code_search`" + ` | Search indexed files and symbols with language, kind, and path filters. | Non-mutating. Prefer before broad ` + "`grep`" + `, ` + "`file_search`" + `, or bulk ` + "`file_read`" + ` when locating implementation, tests, docs, or config. Results disclose ` + "`fresh`" + `, ` + "`stale`" + `, ` + "`partial`" + `, or ` + "`missing`" + ` state. |
 | ` + "`code_snippet`" + ` | Read an exact bounded source span for an indexed symbol or file slice. | Non-mutating. Use after ` + "`code_search`" + ` to avoid oversized reads. Snippets are path-contained inside the repo root and include freshness state. |
 | ` + "`code_trace`" + ` | Inspect inbound/outbound import and call relationships where Mars extractors know them. | Non-mutating. Treat the graph as structural evidence, not full LSP proof. Stale or partial traces require ` + "`code_index`" + ` or corroborating source reads before decisions. |
 | ` + "`code_impact`" + ` | Map changed paths or a git diff to related symbols, likely tests, docs, feature contracts, tickets, and validation targets. | Non-mutating. Use before Engineer edits, QA review plans, Dogfood validation, and Release risk summaries. MarsDocSync remains documentation authority; code-intel consumes its metadata and cross-links it into impact output. |
 | ` + "`shell_exec`" + ` | Run a subprocess when no purpose-built tool fits. | Mutating. Prefer argv; use ` + "`shell_command`" + ` only for shell syntax. Simple malformed argv shapes are normalized before policy checks and execution, and literal newlines inside one argv argument are allowed because argv does not invoke shell parsing. Planner roles such as CEO, Head of Strategy, COO, CTO, and CTO-weekly may use read-only shell inspection when otherwise policy-safe, but mutating shell commands are blocked so strategy, planning, ticketing, dependency, and implementation ownership cannot be bypassed. Engineer runs with an ordinary backlog product ticket and no in-progress ticket must use ` + "`shell_exec`" + ` to claim that ticket with ` + "`git mv ... docs/tickets/in-progress/`" + ` before any other shell command. Engineer review rework with only done or in-review product tickets must reopen the dispatch-named source-disposition ticket before validation shell commands or product mutation. Use ` + "`expected_exit_code`" + ` only for intentional non-zero error-path validation probes; unexpected validation failures block review approval. Engineer cannot move, write, or commit product tickets to ` + "`docs/tickets/done/`" + ` while the same job has an unrepaired unexpected runtime validation failure; after Engineer observes an unexpected runtime failure, runtime probes are blocked until an implementation ` + "`file_write`" + ` occurs, and only a later successful run of that exact failed command repairs the blocker. Engineer may correct an obvious no-argument/missing-argument runtime probe by rerunning that exact command once with matching ` + "`expected_exit_code`" + `, but cannot retroactively add ` + "`expected_exit_code`" + ` to clear a failed positive acceptance path. During Engineer unresolved test/build repair, ` + "`go mod init <module>`" + ` is allowed only when the latest failure says Go cannot find a main module and no ` + "`go.mod`" + ` exists. QA/Security shell execution is validation-only: read-only inspection, tests, builds, fresh external validation binaries, runtime probes, and HTTP probes are allowed, while package/module initialization such as ` + "`go mod init`" + `, product mutation, broad discovery, cleanup, and placeholder no-ops are blocked. QA/Security retain the one-time exact-command ` + "`expected_exit_code`" + ` correction for review-procedure mistakes. HTTP probes that fail because no server is listening are validation-procedure failures, so reviewers may start the appropriate server with ` + "`background:true`" + ` and rerun a separate probe before approval. QA/Security must stop shell validation after any failing build, test, or unexpected runtime probe and record ` + "`changes_requested`" + ` with the failing command/output, except they may immediately rerun the exact same runtime probe once with matching ` + "`expected_exit_code`" + ` when the first run was an expected-negative case. Do not put ` + "`&`" + ` inside ` + "`shell_command`" + `; use ` + "`background:true`" + ` for long-running dev servers. Likely server/watch commands such as ` + "`go run`" + ` HTTP entrypoints, ` + "`npm start`" + `, ` + "`npm run dev`" + `, ` + "`python -m http.server`" + `, ` + "`uvicorn`" + `, ` + "`vite`" + `, and ` + "`next`" + ` are blocked in foreground mode; rerun them with ` + "`background:true`" + `, probe readiness separately, and stop the tracked PID. Do not run bare port tokens such as ` + "`:8080`" + `; start the app with a real command and probe with curl. Do not call ` + "`shell_exec`" + ` with empty ` + "`argv`" + ` or a single ` + "`:`" + ` as a wait or placeholder command; no-op calls fail with guidance to stop tracked PIDs, commit, push, and record ` + "`job_disposition_record`" + `. Do not use external ` + "`timeout`" + `/` + "`gtimeout`" + ` commands; use tool ` + "`timeout_seconds`" + ` or ` + "`background:true`" + `. Startup exits are reported as errors. Background cleanup terminates wrapper processes and known descendants so ` + "`go run`" + ` child servers do not occupy ports after a job ends, and ` + "`kill <tracked-background-pid>`" + ` applies the same cleanup during a job. ` + "`go build`" + ` without ` + "`-o`" + `, ` + "`go build -o <path>`" + ` inside the target repo, and untracked temp outputs without a ` + "`-validation`" + ` suffix are blocked before execution; use ` + "`go test ./...`" + ` for compile validation or ` + "`go build -o /tmp/<project>-validation <entrypoint>`" + ` for runnable validation. |
 | ` + "`workspace_hygiene`" + ` | Audit generated dependency/build churn, ignore policy, tracked generated paths, and deletion risk before agent work or dependency sync. | Non-mutating. Returns ` + "`status`" + `, ` + "`blocking`" + `, ` + "`auto_repairable`" + `, ` + "`findings`" + `, ` + "`recipe_id`" + `, ` + "`message`" + `, and ` + "`next_action`" + `; ` + "`serve`" + ` can auto-commit safe ` + "`.gitignore`" + `-only repairs before model loading. |
-| ` + "`github_auth_check`" + ` | Check private Mars Harness GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
+| ` + "`github_auth_check`" + ` | Check private MARS GitHub Release auth readiness. | Non-mutating. Returns ` + "`status`" + `, ` + "`auth_source`" + `, ` + "`repo_access`" + `, ` + "`release_access`" + `, ` + "`message`" + `, and ` + "`next_action`" + ` without revealing token values. |
 | ` + "`dependency_sync`" + ` | Run package-manager install or fetch through deterministic workspace hygiene preflight and postflight. | Mutating. Performs the same safe ` + "`.gitignore`" + `-only repair when needed. Use instead of raw ` + "`npm install`" + `, ` + "`npm ci`" + `, ` + "`pnpm install`" + `, ` + "`yarn install`" + `, ` + "`bun install`" + `, ` + "`go get`" + `, ` + "`go mod download`" + `, ` + "`cargo fetch`" + `, ` + "`pip install`" + `, ` + "`bundle install`" + `, or ` + "`composer install`" + `. |
-| ` + "`mars_harness_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars-harness`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. The resolver prefers ` + "`MARS_HARNESS_CLI_BIN`" + `, then the active harness executable, then ` + "`PATH`" + `, and stale binaries produce actionable update guidance. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
+| ` + "`mars_cli`" + ` | Read exhaustive CLI reference or run ` + "`mars`" + ` commands with structured argv. | Mutating. Use for setup, init, upgrade, doctor, scan, run, start/serve, release, scores, trust, models, and update workflows. The resolver prefers ` + "`MARS_CLI_BIN`" + `, then the active harness executable, then ` + "`PATH`" + `, and stale binaries produce actionable update guidance. When CLI commands or flags change, sync the reference, repo-shortcut map, skills, and generated doctrine per [cli-tool-skill-sync.md](cli-tool-skill-sync.md). |
 | ` + "`record_decision`" + ` | Persist durable decisions, trade-offs, and reusable learnings. | Mutating. Use when the reasoning should survive the chat. |
 | ` + "`ticket_create`" + ` | Create or update deduped markdown tickets. | Mutating. Use instead of hand-writing ticket files. Browser JavaScript tickets for Phaser briefs cannot prescribe Go CLI/module shape or CDN-only Phaser runtime acceptance; require local package dependencies, deterministic build evidence, and browser-product smoke evidence. |
 | ` + "`job_disposition_record`" + ` | Record the terminal outcome of a dispatch-mode agent job. | Mutating. Required before dispatch-mode jobs complete. Non-Orchestrator roles must commit repo changes before terminal dispositions that approve, complete, request changes, block, fail, or otherwise hand off work. Dispatch jobs get one final terminal-tool reminder at the turn-budget boundary so review failures can become structured dispositions instead of raw ` + "`max_turns`" + `; after that reminder, only the terminal tool may execute. Engineer successful dispositions require the named ticket in ` + "`docs/tickets/done/`" + ` and no unrepaired unexpected runtime validation failure; browser-framework packages additionally require successful same-job build evidence and no obvious static lifecycle defects. QA and Security approval for named tickets requires successful in-job validation evidence, test files require a successful test command, and browser-framework package manifests require successful build evidence. |
 | ` + "`tool_create`" + ` | Scaffold a new built-in Go tool and starter test. | Mutating. Follow with implementation, registration, trust policy, tests, and allowlist updates. |
 | ` + "`persona_create`" + ` | Scaffold a repo-local persona manual, role prompt, registry row, and optional manifest role. | Mutating. Use for universal, foundation, or deployed persona proposals; foundation defaults still require adding the canonical Go entry in ` + "`internal/personas`" + `. |
-| ` + "`release_orchestrate`" + ` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with ` + "`mars_harness_cli`" + ` and git tools. |
+| ` + "`release_orchestrate`" + ` | Plan and preflight the full semantic commit, release notes, push, tag, workflow, and asset verification ritual. | Mutating workflow. Use before driving release state with ` + "`mars_cli`" + ` and git tools. |
 | ` + "`github_release_status`" + ` | Inspect the release-status workflow and decide whether to wait, rerun, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
 | ` + "`architecture_audit`" + ` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
 | ` + "`harness_doctrine_sync`" + ` | Check mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency. | Non-mutating. Use when changing operating doctrine or mirrored definitions. |
@@ -2739,21 +2742,21 @@ validation; concrete proof belongs after the behavior has been exercised.
 
 ## Selection Guide
 
-- Need Mars Harness behavior, versioning, setup, release, score, trust, or target
-  harness lifecycle operations: use ` + "`mars_harness_cli`" + `.
-- Need to verify private Mars Harness release access before update, release
+- Need MARS behavior, versioning, setup, release, score, trust, or target
+  harness lifecycle operations: use ` + "`mars_cli`" + `.
+- Need to verify private MARS release access before update, release
   verification, install repair, or version-drift remediation: use
-  ` + "`github_auth_check`" + ` or ` + "`mars-harness auth github check`" + `.
-- Need to add, remove, rename, or change a ` + "`mars-harness`" + ` CLI command or flag:
-  update ` + "`mars_harness_cli`" + `, generated skills, generated doctrine, and product
+  ` + "`github_auth_check`" + ` or ` + "`mars auth github check`" + `.
+- Need to add, remove, rename, or change a ` + "`mars`" + ` CLI command or flag:
+  update ` + "`mars_cli`" + `, generated skills, generated doctrine, and product
   docs using [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 - Need to discover or invoke the universal tool surface from an operator shell:
-  use ` + "`mars-harness tools list`" + ` and
-  ` + "`mars-harness tools run <name> --args-json '{...}'`" + `. Add
+  use ` + "`mars tools list`" + ` and
+  ` + "`mars tools run <name> --args-json '{...}'`" + `. Add
   ` + "`--trust contributor`" + ` only for deliberate mutating tool calls.
-- Need an MCP-compatible client or local harness agent to see Mars Harness tools
+- Need an MCP-compatible client or local harness agent to see MARS tools
   as native tools: configure it to launch
-  ` + "`mars-harness mcp serve --repo <path> --trust observer|contributor`" + `.
+  ` + "`mars mcp serve --repo <path> --trust observer|contributor`" + `.
 - Need to run or prepare the whole release ritual: use ` + "`release_orchestrate`" + `,
   ` + "`git_release_guard`" + `, and ` + "`github_release_status`" + ` before mutating state.
 - Need a durable repo-owned note: use ` + "`record_decision`" + `.
@@ -2783,7 +2786,7 @@ validation; concrete proof belongs after the behavior has been exercised.
   package-manager commands through ` + "`shell_exec`" + `.
 - Need to know which docs must be checked after touching a code file: read the
   file's ` + "`MarsDocSync`" + ` block and run ` + "`docsync_audit`" + ` or
-  ` + "`mars-harness docsync audit --repo .`" + `.
+  ` + "`mars docsync audit --repo .`" + `.
 - Need ordinary repository inspection: use ` + "`code_search`" + `, ` + "`code_snippet`" + `,
   ` + "`code_trace`" + `, or ` + "`code_impact`" + ` first when structural context or change
   blast radius matters; fall back to ` + "`file_search`" + `, ` + "`grep`" + `, ` + "`file_read`" + `,
@@ -2819,7 +2822,7 @@ validation; concrete proof belongs after the behavior has been exercised.
 
 ## Context
 
-This deployed harness is generated by ` + "`mars-harness`" + ` and inherits operating
+This deployed harness is generated by ` + "`mars`" + ` and inherits operating
 doctrine from the foundation harness unless a rule is explicitly source-only or
 conflicts with deliberate project policy.
 
@@ -2878,12 +2881,12 @@ scaffolding, not a reason to skip the governed path.
 
 Foundation and deployed harnesses share reusable operating doctrine, but they
 do not share every implementation duty. The foundation harness owns the
-` + "`mars-harness`" + ` source repo, generated defaults, software-factory release
+` + "`mars`" + ` source repo, generated defaults, software-factory release
 discipline, and runtime improvement loop. This deployed harness owns target
 planning, target feature contracts, target tickets, target-specific skills, and
 target product evidence.
 
-The runtime substrate is the compiled ` + "`mars-harness`" + ` binary and its internal
+The runtime substrate is the compiled ` + "`mars`" + ` binary and its internal
 packages. It executes orchestration for both contexts, but it does not decide
 doctrine by itself and it must not turn the foundation harness into the target
 of its own agents during a target run.
@@ -2891,7 +2894,7 @@ of its own agents during a target run.
 This deployed harness mirrors the reusable core: evidence-driven planning, BDD
 contracts, ticket truth, feedback routing, tool/skill selection, and the generic
 run-review-act-rerun improvement loop. Source-only mechanics, including the
-named source replay identifiers and ` + "`mars-harness`" + ` binary release asset
+named source replay identifiers and ` + "`mars`" + ` binary release asset
 publication, stay foundation-only unless this target deliberately adopts an
 equivalent local policy.
 
@@ -2911,7 +2914,7 @@ equivalent local policy.
 **Mirrors:** Foundation harness ` + "`docs/design-docs/tenets.md`" + `
 
 These are the foundational rules this deployed harness inherits from
-` + "`mars-harness`" + `. Use them when deciding how agents should operate, how
+` + "`mars`" + `. Use them when deciding how agents should operate, how
 guardrails should behave, and whether a workflow change belongs in the harness.
 
 1. **Plug and Play** - zero to running in one command; extends to full lifecycle.
@@ -2946,21 +2949,21 @@ This repository uses semantic versioning and generated patch notes:
 
 ## Command
 
-Agents should run these Mars Harness workflows through ` + "`mars_harness_cli`" + `
+Agents should run these MARS workflows through ` + "`mars_cli`" + `
 with structured args so the active harness executable is used instead of a
-stale installed ` + "`mars-harness`" + ` on ` + "`PATH`" + `. Operators may run the equivalent
+stale installed ` + "`mars`" + ` on ` + "`PATH`" + `. Operators may run the equivalent
 terminal commands shown below.
 
 Preview:
 
 ` + "```bash" + `
-mars-harness release notes --repo . --bump auto --dry-run
+mars release notes --repo . --bump auto --dry-run
 ` + "```" + `
 
 Write ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `:
 
 ` + "```bash" + `
-mars-harness release notes --repo . --bump auto
+mars release notes --repo . --bump auto
 ` + "```" + `
 
 Then verify, commit, and push the release-note update on ` + "`main`" + `.
@@ -2968,9 +2971,9 @@ Then verify, commit, and push the release-note update on ` + "`main`" + `.
 Backfill historical entries after release-note standards change:
 
 ` + "```bash" + `
-mars-harness release backfill-notes --repo . --dry-run
-mars-harness release backfill-notes --repo .
-mars-harness release backfill-notes --repo . --check
+mars release backfill-notes --repo . --dry-run
+mars release backfill-notes --repo .
+mars release backfill-notes --repo . --check
 ` + "```" + `
 
 ## Release Note Narrative
@@ -2989,7 +2992,7 @@ structured dispatch, persona, documentation-sync, and CLI/tool-sync releases
 explain the workflow shift instead of repeating a thin commit subject.
 
 Historical marker-backed entries must stay on the same standard. Use
-` + "`mars-harness release backfill-notes`" + ` to derive each old entry from adjacent
+` + "`mars release backfill-notes`" + ` to derive each old entry from adjacent
 release markers, replace legacy narrative sections, preserve semantic buckets
 and delivery evidence, fall back to commit hashes already present in semantic
 buckets for non-linear old history, and fail rather than invent history when a
@@ -3001,9 +3004,9 @@ downgrade entries that already contain complete current ` + "`Impact`" + `, ` + 
 
 Every non-release semantic commit in this repository must be followed by:
 
-1. ` + "`mars_harness_cli`" + ` args ` + "`[\"release\",\"notes\",\"--repo\",\".\",\"--bump\",\"auto\"]`" + `
+1. ` + "`mars_cli`" + ` args ` + "`[\"release\",\"notes\",\"--repo\",\".\",\"--bump\",\"auto\"]`" + `
 2. verification of generated ` + "`VERSION`" + ` and ` + "`CHANGELOG.md`" + `
-3. ` + "`mars_harness_cli`" + ` args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\",\"--check\"]`" + `, with any required
+3. ` + "`mars_cli`" + ` args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\",\"--check\"]`" + `, with any required
    historical backfill included before commit
 4. a ` + "`release: notes X.Y.Z`" + ` commit
 5. push to ` + "`main`" + `
@@ -3019,15 +3022,15 @@ delivery chain.
 ## GitHub Release Rule
 
 For source-style binary releases, every pushed release-note commit must create
-or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, run ` + "`mars-harness release publish-assets --repo . --version vX.Y.Z --upload auto`" + `,
-and verify the local dist with ` + "`mars-harness release verify-assets --dist dist/releases --version vX.Y.Z`" + ` before installer or self-update availability is claimed.
+or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, run ` + "`mars release publish-assets --repo . --version vX.Y.Z --upload auto`" + `,
+and verify the local dist with ` + "`mars release verify-assets --dist dist/releases --version vX.Y.Z`" + ` before installer or self-update availability is claimed.
 These local release assets are the source of truth for completion. GitHub
 Releases remain an optional mirror for repositories that publish through GitHub.
 
 When this repository has authenticated GitHub release capability, the same
 publication command may mirror the local assets to GitHub Release ` + "`vX.Y.Z`" + `
 using the matching generated ` + "`CHANGELOG.md`" + ` entry. ` + "`gh release view vX.Y.Z`" + `
-and ` + "`mars-harness release verify-assets --version vX.Y.Z`" + ` are mirror checks,
+and ` + "`mars release verify-assets --version vX.Y.Z`" + ` are mirror checks,
 not the source of truth for local asset completeness.
 
 If the repo has no GitHub remote, no release credentials, or the GitHub mirror
@@ -3036,26 +3039,26 @@ claiming the mirror is complete.
 
 ## Private Release Auth
 
-Mars Harness tool updates use private GitHub Release assets. Private release
+MARS tool updates use private GitHub Release assets. Private release
 auth is a first-class getting-started step, not an ad hoc export:
 
 ` + "```bash" + `
-mars-harness auth github setup
-mars-harness auth github check
-mars-harness update tool
+mars auth github setup
+mars auth github check
+mars update tool
 ` + "```" + `
 
 The auth resolver tries ` + "`GH_TOKEN`" + `, then ` + "`GITHUB_TOKEN`" + `, then
 GitHub CLI auth from ` + "`gh auth token`" + `, then the local token stored under
-` + "`~/.mars-harness/`" + `. ` + "`mars-harness auth github setup`" + ` verifies GitHub CLI auth
+` + "`~/.mars/`" + `. ` + "`mars auth github setup`" + ` verifies GitHub CLI auth
 and stores that owner-only local fallback so future update runs do not depend on
 keychain access. Headless installs may set ` + "`GH_TOKEN`" + ` or use
-` + "`mars-harness auth github setup --token <token>`" + ` with repository contents read access.
+` + "`mars auth github setup --token <token>`" + ` with repository contents read access.
 
 Never write tokens to this repo or any target repo. Never print token values in
 logs, traces, telemetry, doctor output, JSON, errors, tickets, or docs. Agents
 should use the read-only ` + "`github_auth_check`" + ` tool or
-` + "`mars-harness auth github check`" + ` before update, release verification, install
+` + "`mars auth github check`" + ` before update, release verification, install
 repair, and version-drift remediation.
 
 ## Agent Rules
@@ -3064,10 +3067,10 @@ repair, and version-drift remediation.
 - Use ` + "`--bump major`" + `, ` + "`--bump minor`" + `, or ` + "`--bump patch`" + ` only when auto classification is wrong.
 - Do not fabricate commit references.
 - Keep release notes complete, user-facing, and explicit about impact, why, and what changed.
-- Use ` + "`mars-harness release backfill-notes --repo . --check`" + ` when auditing historical changelog compliance.
-- Use ` + "`github_auth_check`" + ` or ` + "`mars-harness auth github check`" + ` before any workflow that depends on private Mars Harness release assets.
-- Use ` + "`mars-harness update check --repo .`" + ` to detect stale installed CLI or target harness metadata.
-- Use ` + "`mars-harness update harness --repo .`" + ` when generated harness-owned files need to catch up.
+- Use ` + "`mars release backfill-notes --repo . --check`" + ` when auditing historical changelog compliance.
+- Use ` + "`github_auth_check`" + ` or ` + "`mars auth github check`" + ` before any workflow that depends on private MARS release assets.
+- Use ` + "`mars update check --repo .`" + ` to detect stale installed CLI or target harness metadata.
+- Use ` + "`mars update harness --repo .`" + ` when generated harness-owned files need to catch up.
 `,
 
 	"docs/design-docs/skill-evolution.md": `# Skill Evolution
@@ -3093,7 +3096,7 @@ a guardrail for non-negotiable enforcement, a tool for deterministic actions,
 a prompt change for role identity or stop conditions, and a knowledge route for
 where-to-look context.
 
-When a ` + "`mars-harness`" + ` CLI workflow changes, update any skill that names the
+When a ` + "`mars`" + ` CLI workflow changes, update any skill that names the
 affected command or flags in the same change as the CLI/tool mapping. See
 [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 
@@ -3135,7 +3138,7 @@ For this repository:
 - Important rules should become checks, guardrails, or tests instead of staying only in prose.
 - Human intervention should become a ticket, decision, guardrail, test, or harness improvement.
 
-Mars Harness translates the article's integration examples into strict trunk:
+MARS translates the article's integration examples into strict trunk:
 small semantic commits directly to ` + "`main`" + `, then push after each completed step.
 `,
 }
@@ -3161,7 +3164,7 @@ REPO LEARNINGS context block.
 ## Trigger
 
 - **Schedule:** Sunday 8pm UTC
-- **Bootstrap:** First run on a new project (via mars-harness start)
+- **Bootstrap:** First run on a new project (via mars start)
 - **Dispatch:** Orchestrator routes goal, goals, goal_decision, vision, or
   scope_decision to you
 
@@ -3437,7 +3440,7 @@ TASK 3 — Handoff to CTO.
 Do not use ticket_create. Instead, pass a handoff to CTO with:
 
 Do not create tickets by another path. Do not use file_write under
-docs/tickets/, do not call mars_harness_cli tools run ticket_create, and do
+docs/tickets/, do not call mars_cli tools run ticket_create, and do
 not create ticket files through shell commands. Ticket creation belongs to CTO;
 COO should commit the plan and feature contract, then record
 job_disposition_record with next_need ticket_breakdown and suggested_role
@@ -3610,9 +3613,9 @@ not prescribe CDN-only browser-framework runtime loading or CDN acceptance
 criteria for Phaser tickets; require local package dependencies, deterministic
 build evidence, and browser-product smoke evidence instead. For
 a fresh Go CLI target, prefer a command path such as ` + "`cmd/<target-or-product-name>`" + `
-and a go.mod module matching the target repo or configured remote. Never put ` + "`cmd/mars-harness`" + `,
-` + "`module mars-harness`" + `, or foundation source binary names in a deployed target ticket
-unless the target product is explicitly Mars Harness itself.
+and a go.mod module matching the target repo or configured remote. Never put ` + "`cmd/mars`" + `,
+` + "`module mars`" + `, or foundation source binary names in a deployed target ticket
+unless the target product is explicitly MARS itself.
 
 The ticket_create tool assigns ticket numbers and dedupes mechanically. If a
 matching ticket already exists, update your disposition rather than creating a
@@ -3756,7 +3759,7 @@ STANDARD:
   array listing associated docs.
   Review and update those docs in the same change, or record why they remain
   current before committing. Run ` + "`docsync_audit`" + ` or
-  ` + "`mars-harness docsync audit --repo .`" + ` before claiming code/docs are in sync.
+  ` + "`mars docsync audit --repo .`" + ` before claiming code/docs are in sync.
 - Follow the project's existing code style and conventions
 - Handle errors explicitly, no magic numbers, use named constants
 - COMMIT AFTER EVERY SEMANTIC CHANGE — this is non-negotiable. Use the
@@ -3821,10 +3824,10 @@ itself, push, and record disposition before any packaging, install, distribution
 or extra build-output exploration. Extra edge cases discovered during implementation
 should become follow-up ticket evidence, not additional same-run validation
 unless the selected ticket explicitly requires them.
-Treat the target project as its own product, not as Mars Harness source. When
+Treat the target project as its own product, not as MARS source. When
 creating a new Go module or command, derive module and binary names from the
 target repo, configured remote, README title, or product name. Do not initialize
-fresh target repos with ` + "`module mars-harness`" + ` or create ` + "`cmd/mars-harness`" + `
+fresh target repos with ` + "`module mars`" + ` or create ` + "`cmd/mars`" + `
 unless the selected ticket explicitly says the product being built is Mars
 Harness. For small fresh Go targets, prefer standard-library tests and avoid
 adding assertion libraries or other dependencies unless the repo already uses
@@ -3902,7 +3905,7 @@ IMPLEMENTATION:
      If the project brief names Phaser, write ` + "`package.json`" + ` with a local
      ` + "`phaser`" + ` npm dependency, ` + "`vite`" + ` dev dependency, and ` + "`vite build`" + ` script in the first
      package edit, use Vite dev/preview scripts on application ports such as
-     ` + "`5173`" + `/` + "`5174`" + ` rather than Mars Harness reserved ports
+     ` + "`5173`" + `/` + "`5174`" + ` rather than MARS reserved ports
      ` + "`18080`" + `-` + "`18089`" + `, avoid static source-server scripts such as
      ` + "`python3 -m http.server`" + ` for npm-module Phaser apps, avoid CDN-only
      Phaser script tags, create ` + "`new Phaser.Game`" + ` exactly once at the
@@ -4313,7 +4316,7 @@ REVIEW CHECKLIST:
      metadata with a ` + "`docs:`" + ` array listing associated docs?
    - Were the docs listed by ` + "`MarsDocSync`" + ` updated, or did the review evidence
      state why they remain current?
-   - Does ` + "`docsync_audit`" + ` or ` + "`mars-harness docsync audit --repo .`" + ` pass for
+   - Does ` + "`docsync_audit`" + ` or ` + "`mars docsync audit --repo .`" + ` pass for
      the changed source tree?
      Any ` + "`FAIL:`" + ` line is a review blocker. Do not approve a ticket while
      docsync_audit reports missing metadata, missing docs, or invalid references;
@@ -4570,8 +4573,8 @@ REPO LEARNINGS context block.
 
 You are the release manager.
 
-Run Mars Harness CLI workflows through the ` + "`mars_harness_cli`" + ` tool, not
-generic ` + "`shell_exec mars-harness ...`" + `. The structured tool resolves the
+Run MARS CLI workflows through the ` + "`mars_cli`" + ` tool, not
+generic ` + "`shell_exec mars ...`" + `. The structured tool resolves the
 active harness executable before PATH, which prevents stale installed binaries
 from breaking deployed release review.
 
@@ -4593,13 +4596,13 @@ TASKS:
 
 For direct commits to main:
 1. Treat every non-release semantic commit as warranting generated versioning
-2. Run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"notes\",\"--repo\",\".\",\"--bump\",\"auto\",\"--dry-run\"]`" + ` to preview the semantic version and patch notes
-3. If the preview is correct, run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"notes\",\"--repo\",\".\",\"--bump\",\"auto\"]`" + `
+2. Run ` + "`mars_cli`" + ` with args ` + "`[\"release\",\"notes\",\"--repo\",\".\",\"--bump\",\"auto\",\"--dry-run\"]`" + ` to preview the semantic version and patch notes
+3. If the preview is correct, run ` + "`mars_cli`" + ` with args ` + "`[\"release\",\"notes\",\"--repo\",\".\",\"--bump\",\"auto\"]`" + `
 4. Do not generate another version for a ` + "`release: notes X.Y.Z`" + ` commit
 5. Verify generated release notes include complete ` + "`Impact`" + `, ` + "`Why`" + `, and ` + "`What Changed`" + ` narrative before semantic commit buckets. If a commit subject is too thin, add richer commit-body context with ` + "`Impact:`" + `, ` + "`Why:`" + `, or ` + "`What:`" + ` before claiming the release text is good.
 6. Separate shipped feature scenarios from enabler work in release notes; do not claim a feature unless mapped scenarios pass.
-7. Run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\",\"--check\"]`" + ` after release notes are generated. If the check reports legacy entries, run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\"]`" + ` and include the backfill in the same release-note commit.
-8. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, run ` + "`mars_harness_cli`" + ` with args ` + "`[\"release\",\"publish-assets\",\"--repo\",\".\",\"--version\",\"vX.Y.Z\",\"--upload\",\"auto\"]`" + `, and verify local assets with ` + "`[\"release\",\"verify-assets\",\"--dist\",\"dist/releases\",\"--version\",\"vX.Y.Z\"]`" + `. Never tag while VERSION or CHANGELOG.md are dirty, and never target a pre-release-note commit. When GitHub release credentials are configured, confirm ` + "`gh release view vX.Y.Z`" + ` succeeds and run ` + "`mars-harness release verify-assets --version vX.Y.Z`" + ` before advertising the optional mirror.
+7. Run ` + "`mars_cli`" + ` with args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\",\"--check\"]`" + ` after release notes are generated. If the check reports legacy entries, run ` + "`mars_cli`" + ` with args ` + "`[\"release\",\"backfill-notes\",\"--repo\",\".\"]`" + ` and include the backfill in the same release-note commit.
+8. After the release-note commit is pushed, create or update tag ` + "`vX.Y.Z`" + ` at that commit, push the tag, run ` + "`mars_cli`" + ` with args ` + "`[\"release\",\"publish-assets\",\"--repo\",\".\",\"--version\",\"vX.Y.Z\",\"--upload\",\"auto\"]`" + `, and verify local assets with ` + "`[\"release\",\"verify-assets\",\"--dist\",\"dist/releases\",\"--version\",\"vX.Y.Z\"]`" + `. Never tag while VERSION or CHANGELOG.md are dirty, and never target a pre-release-note commit. When GitHub release credentials are configured, confirm ` + "`gh release view vX.Y.Z`" + ` succeeds and run ` + "`mars release verify-assets --version vX.Y.Z`" + ` before advertising the optional mirror.
 
 During weekly releases:
 1. Check if a release is warranted (are there unreleased changes worth shipping?)
@@ -4619,7 +4622,7 @@ Local release publication:
   If the repo has no remote, stop after the local release-note commit/tag and
   record a blocked disposition. Do not add a placeholder origin and do not guess
   an owner/name remote.
-  Push the tag, run mars-harness release publish-assets, and verify local release assets from the dist directory before claiming the release is complete.
+  Push the tag, run mars release publish-assets, and verify local release assets from the dist directory before claiming the release is complete.
   If GitHub mirroring is configured, create or update GitHub Release vX.Y.Z with the matching CHANGELOG.md entry, confirm gh release view vX.Y.Z succeeds, and verify mirrored assets before advertising the optional mirror.
   If GitHub auth, API access, local build, mirror, or asset verification is unavailable, record the blocker and create or update follow-up work.
 `,

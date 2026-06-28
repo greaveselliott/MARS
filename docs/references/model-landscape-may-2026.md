@@ -6,7 +6,7 @@
 
 ## Why This Exists
 
-The April model snapshot is already stale. Mars Harness currently pins safe defaults, but "best model" is a moving target. The harness should not swap defaults because a model is new or popular; it should evaluate candidates against harness-specific agent work, then promote immutable GGUF revisions with checksums.
+The April model snapshot is already stale. MARS currently pins safe defaults, but "best model" is a moving target. The harness should not swap defaults because a model is new or popular; it should evaluate candidates against harness-specific agent work, then promote immutable GGUF revisions with checksums.
 
 This refresh creates the May shortlist and the promotion gate. It does not change default model registry entries.
 
@@ -50,7 +50,7 @@ A candidate can only replace a default when it passes all of these:
 
 ## Ollama Access Policy
 
-Mars Harness should not require a hardcoded shortlist before an operator can try a model. Ollama is the broad catalog and local-provider path: any installed or published Ollama model can be evaluated or selected as an explicit override when the operator accepts that responsibility.
+MARS should not require a hardcoded shortlist before an operator can try a model. Ollama is the broad catalog and local-provider path: any installed or published Ollama model can be evaluated or selected as an explicit override when the operator accepts that responsibility.
 
 That broad access does not imply default promotion. A model may be:
 
@@ -63,10 +63,10 @@ That broad access does not imply default promotion. A model may be:
 Initial mechanical benchmark cases now live behind:
 
 ```bash
-mars-harness models evaluate
-mars-harness models evaluate --endpoint <openai-compatible-url> --model <name>
-mars-harness models evaluate --endpoint <openai-compatible-url> --model <name> --json
-mars-harness models evaluate --provider ollama --model qwen3.6:27b --json
+mars models evaluate
+mars models evaluate --endpoint <openai-compatible-url> --model <name>
+mars models evaluate --endpoint <openai-compatible-url> --model <name> --json
+mars models evaluate --provider ollama --model qwen3.6:27b --json
 ```
 
 The current version checks:

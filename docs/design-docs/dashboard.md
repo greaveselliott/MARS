@@ -7,7 +7,7 @@
 
 ## Context
 
-The harness needs an operations centre accessible at `localhost:9090` during `mars-harness serve`. It must be self-contained (no external dependencies like Grafana or Prometheus) and provide real-time visibility into the autonomous pipeline.
+The harness needs an operations centre accessible at `localhost:9090` during `mars serve`. It must be self-contained (no external dependencies like Grafana or Prometheus) and provide real-time visibility into the autonomous pipeline.
 
 The embedded htmx and Chart.js dashboard is the legacy/current implementation.
 The next dashboard generation is planned as the TanStack control plane governed
@@ -37,7 +37,7 @@ validation, CSRF checks, API authorization, event streams, command enqueueing,
 and access to queue, telemetry, scoring, trust, model, and trace state.
 
 Node.js `24.x` and `pnpm@11.1.1` are explicit external prerequisites for the
-sidecar. Mars Harness must not bundle Node, install Node, download Node, or run
+sidecar. MARS must not bundle Node, install Node, download Node, or run
 package-manager installers. Missing or wrong versions produce actionable
 remediation output and leave the core orchestrator usable.
 
@@ -140,9 +140,9 @@ The web dashboard uses a neutral operations theme with semantic CSS tokens for b
 
 Operators need to pause, restart, scan, stop, and force-run individual roles without killing the process. Two control surfaces share identical backend methods on `Server`:
 
-**CLI (terminal):** Interactive TTYs use a full-screen ANSI dashboard (`internal/ui/dashboard_tty.go`) plus the raw terminal key listener (`internal/ui/keylistener.go`). The dashboard redraws current state, repo, web dashboard URL, durable command log path, active jobs, current role/model, active phase with phase age, turn and tool counts, recent events, blocker summaries, and control hints. Non-streaming model calls appear as `waiting for model response` so a slow local first response is distinguishable from a stuck tool or completed idle state. Keys: `p` (pause/resume), `r` (warm restart), `s` (re-scan), `q` (graceful stop), `h` (help). Activated automatically during `mars-harness serve` and `mars-harness start`; `mars-harness run` uses the same dashboard without key bindings beyond Ctrl+C cancellation.
+**CLI (terminal):** Interactive TTYs use a full-screen ANSI dashboard (`internal/ui/dashboard_tty.go`) plus the raw terminal key listener (`internal/ui/keylistener.go`). The dashboard redraws current state, repo, web dashboard URL, durable command log path, active jobs, current role/model, active phase with phase age, turn and tool counts, recent events, blocker summaries, and control hints. Non-streaming model calls appear as `waiting for model response` so a slow local first response is distinguishable from a stuck tool or completed idle state. Keys: `p` (pause/resume), `r` (warm restart), `s` (re-scan), `q` (graceful stop), `h` (help). Activated automatically during `mars serve` and `mars start`; `mars run` uses the same dashboard without key bindings beyond Ctrl+C cancellation.
 
-**CLI debug mode:** `run`, `start`, and `serve` accept `--debug` to restore verbose inline trace/log streaming. `run --trace` remains as a compatibility alias for debug-style trace detail. All three commands write slog output to `~/.mars-harness/traces/logs/YYYYMMDD-HHMMSS-<command>.log` unless `--log-file` is supplied. Non-TTY output falls back to concise plain progress and never enters alternate-screen mode.
+**CLI debug mode:** `run`, `start`, and `serve` accept `--debug` to restore verbose inline trace/log streaming. `run --trace` remains as a compatibility alias for debug-style trace detail. All three commands write slog output to `~/.mars/traces/logs/YYYYMMDD-HHMMSS-<command>.log` unless `--log-file` is supplied. Non-TTY output falls back to concise plain progress and never enters alternate-screen mode.
 
 **Dashboard (localhost:9090):** Control bar in the sidebar with buttons for pause/resume, restart, stop, scan, and run-role. Repo and role selectors populated from `/api/repos` and `/api/repo-roles`. State updates flow via SSE `status_change` events.
 

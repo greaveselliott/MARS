@@ -32,25 +32,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/agent"
-	"github.com/greaveselliott/mars-harness/internal/bundle"
-	"github.com/greaveselliott/mars-harness/internal/codeintel"
-	harctx "github.com/greaveselliott/mars-harness/internal/context"
-	"github.com/greaveselliott/mars-harness/internal/dashboard"
-	"github.com/greaveselliott/mars-harness/internal/guardrails"
-	"github.com/greaveselliott/mars-harness/internal/inference"
-	"github.com/greaveselliott/mars-harness/internal/integrations"
-	"github.com/greaveselliott/mars-harness/internal/learnings"
-	"github.com/greaveselliott/mars-harness/internal/llm"
-	"github.com/greaveselliott/mars-harness/internal/orgstate"
-	"github.com/greaveselliott/mars-harness/internal/queue"
-	"github.com/greaveselliott/mars-harness/internal/safety"
-	"github.com/greaveselliott/mars-harness/internal/telemetry"
-	ticketstate "github.com/greaveselliott/mars-harness/internal/tickets"
-	"github.com/greaveselliott/mars-harness/internal/tools"
-	"github.com/greaveselliott/mars-harness/internal/trace"
-	"github.com/greaveselliott/mars-harness/internal/trust"
-	"github.com/greaveselliott/mars-harness/internal/ui"
+	"github.com/greaveselliott/mars/internal/agent"
+	"github.com/greaveselliott/mars/internal/bundle"
+	"github.com/greaveselliott/mars/internal/codeintel"
+	harctx "github.com/greaveselliott/mars/internal/context"
+	"github.com/greaveselliott/mars/internal/dashboard"
+	"github.com/greaveselliott/mars/internal/guardrails"
+	"github.com/greaveselliott/mars/internal/inference"
+	"github.com/greaveselliott/mars/internal/integrations"
+	"github.com/greaveselliott/mars/internal/learnings"
+	"github.com/greaveselliott/mars/internal/llm"
+	"github.com/greaveselliott/mars/internal/orgstate"
+	"github.com/greaveselliott/mars/internal/queue"
+	"github.com/greaveselliott/mars/internal/safety"
+	"github.com/greaveselliott/mars/internal/telemetry"
+	ticketstate "github.com/greaveselliott/mars/internal/tickets"
+	"github.com/greaveselliott/mars/internal/tools"
+	"github.com/greaveselliott/mars/internal/trace"
+	"github.com/greaveselliott/mars/internal/trust"
+	"github.com/greaveselliott/mars/internal/ui"
 )
 
 const defaultUserMessage = "A trigger event has fired. Inspect the repository and execute your role. Trigger context is in the system prompt."
@@ -245,7 +245,7 @@ func (e *Executor) Execute(ctx context.Context, job *queue.Job) error {
 	repoPath, err := e.lookupRepo(ctx, job.RepoID)
 	if err != nil {
 		tw.WriteError(fmt.Sprintf("resolve repo %q: %v", job.RepoID, err))
-		return fmt.Errorf("executor: resolve repo %q: %w — ensure the repo is registered via `mars-harness register`", job.RepoID, err)
+		return fmt.Errorf("executor: resolve repo %q: %w — ensure the repo is registered via `mars register`", job.RepoID, err)
 	}
 	root, err := tools.NewRoot(repoPath)
 	if err != nil {

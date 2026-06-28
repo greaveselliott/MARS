@@ -61,7 +61,7 @@ func NewRepoRegistry(db *sql.DB) (*RepoRegistry, error) {
 func (r *RepoRegistry) Register(ctx context.Context, path, remote, branch string) (string, error) {
 	manifestPath := filepath.Join(path, ".harness", "manifest.yaml")
 	if _, err := os.Stat(manifestPath); err != nil {
-		return "", fmt.Errorf("serve: cannot register repo at %s — missing .harness/manifest.yaml; run `mars-harness init` in the repo first", path)
+		return "", fmt.Errorf("serve: cannot register repo at %s — missing .harness/manifest.yaml; run `mars init` in the repo first", path)
 	}
 
 	id, err := newUUID()

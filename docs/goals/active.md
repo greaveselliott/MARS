@@ -27,8 +27,8 @@
 - Confidence: high
 - Source: user_chat
 - Dedupe Key: operating-model:source-target-mirror
-- Hypothesis: Applying operating rules to both Mars Harness and initialized targets prevents generated harnesses from falling behind the source doctrine.
-- Success Evidence: `mars-harness init` scaffolds goals, feature contracts, AD-074, updated role prompts, knowledge routes, exec-plan metadata, ticket metadata, and quality guidance.
+- Hypothesis: Applying operating rules to both MARS and initialized targets prevents generated harnesses from falling behind the source doctrine.
+- Success Evidence: `mars init` scaffolds goals, feature contracts, AD-074, updated role prompts, knowledge routes, exec-plan metadata, ticket metadata, and quality guidance.
 - Falsification Evidence: A generated target lacks AD-074 artifacts, update check misses drift, or source-only behavior appears without an explicit source-only label.
 - Competes With: preserving every existing target doc verbatim
 - Supports: G-001
@@ -64,8 +64,8 @@
 - Source: user_chat
 - Dedupe Key: setup:shell-path-zero-config
 - Hypothesis: Automatically configuring the installed binary directory in the user's shell profile removes a first-run failure mode and keeps plug-and-play true for Fish, Zsh, Bash, and POSIX shell users.
-- Success Evidence: `make install`, `mars-harness setup`, and `mars-harness update tool` all converge on the same idempotent PATH setup, and tests prove supported shells are configured without duplicate profile entries.
-- Falsification Evidence: A supported-shell user installs the binary and still gets `Unknown command: mars-harness` in a new terminal.
+- Success Evidence: `make install`, `mars setup`, and `mars update tool` all converge on the same idempotent PATH setup, and tests prove supported shells are configured without duplicate profile entries.
+- Falsification Evidence: A supported-shell user installs the binary and still gets `Unknown command: mars` in a new terminal.
 - Competes With: leaving PATH setup to Go tooling or manual docs
 - Supports: G-002
 - Last Reviewed: 2026-05-02

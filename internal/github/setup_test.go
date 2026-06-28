@@ -42,7 +42,7 @@ func TestAppManifest_structure(t *testing.T) {
 	t.Parallel()
 	m := appManifest("http://localhost:9999/callback")
 
-	require.Equal(t, "mars-harness", m["name"])
+	require.Equal(t, "mars", m["name"])
 	require.Equal(t, false, m["public"])
 
 	perms, ok := m["default_permissions"].(map[string]string)

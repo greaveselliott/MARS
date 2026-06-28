@@ -8,7 +8,7 @@ bdd_scenarios: []
 end_to_end_evidence: not_applicable
 evidence_links:
   - "AD-277 in docs/design-docs/self-improvement.md, indexed in docs/design-docs/index.md"
-  - "mars-harness run --help / setup --help / version output compared against docs/quickstart.md on 2026-06-11"
+  - "mars run --help / setup --help / version output compared against docs/quickstart.md on 2026-06-11"
   - "go test ./internal/docsconsistency/... ./internal/docsync/..."
 verified_by: "foundation-maintainer"
 owner: "foundation-maintainer"
@@ -26,7 +26,7 @@ depends_on: []
 
 ## Context
 
-The 2026-06-11 foundation review found docs/prompt-port-status.md is an MH-025-era snapshot: every checklist box is checked and the prompt port completed in 2026-04. The role inventory now lives in examples/roles/ and docs/roles/ROLES.md, so the snapshot is orphaned. docs/quickstart.md must also be reconciled against the actual current CLI command surface in cmd/mars-harness.
+The 2026-06-11 foundation review found docs/prompt-port-status.md is an MH-025-era snapshot: every checklist box is checked and the prompt port completed in 2026-04. The role inventory now lives in examples/roles/ and docs/roles/ROLES.md, so the snapshot is orphaned. docs/quickstart.md must also be reconciled against the actual current CLI command surface in cmd/mars.
 
 Ownership classification: foundation-owned documentation hygiene.
 

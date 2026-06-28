@@ -6,14 +6,14 @@
 
 ## Context
 
-Mars Harness has two harness surfaces:
+MARS has two harness surfaces:
 
-1. The source harness in this repository, used to build and evolve Mars Harness.
-2. The initialized harness emitted into a target repository by `mars-harness init` or `mars-harness upgrade`.
+1. The source harness in this repository, used to build and evolve MARS.
+2. The initialized harness emitted into a target repository by `mars init` or `mars upgrade`.
 
 Those surfaces must feel like the same operating system. A target repo should not receive only roles and a manifest while the source repo keeps the real doctrine in `AGENTS.md`, design docs, references, and context-routing rules. That mismatch causes agents to behave well in the harness repo and poorly in target repos.
 
-OpenAI's Harness Engineering article also reinforces a context design rule: give the agent a compact map and route it to the right file, rather than loading a large manual into every prompt. Mars Harness already has knowledge routes; the initialized target harness now needs a seed glossary that makes those routes useful from day one.
+OpenAI's Harness Engineering article also reinforces a context design rule: give the agent a compact map and route it to the right file, rather than loading a large manual into every prompt. MARS already has knowledge routes; the initialized target harness now needs a seed glossary that makes those routes useful from day one.
 
 The Symphony article adds the orchestration pattern: task state is the control plane, every eligible task should have an agent/workspace, stalled sessions are restarted or reconciled, and the workflow contract is repo-owned.
 
@@ -21,7 +21,7 @@ The Symphony article adds the orchestration pattern: task state is the control p
 
 ### AD-034: Source And Initialized Harnesses Must Mirror Doctrine
 
-`mars-harness init` must create target repo guidance that mirrors the source harness doctrine:
+`mars init` must create target repo guidance that mirrors the source harness doctrine:
 
 - compact `AGENTS.md` as the first agent entrypoint
 - strict trunk workflow
@@ -31,7 +31,7 @@ The Symphony article adds the orchestration pattern: task state is the control p
 - references for agent-first workflow
 - context routing via `.harness/knowledge/`
 
-This does not mean every target repo receives all Mars Harness internals. It means every target repo receives the same operating principles and enough structure for agents to work without chat-only context.
+This does not mean every target repo receives all MARS internals. It means every target repo receives the same operating principles and enough structure for agents to work without chat-only context.
 
 ### AD-035: Context Glossary Is A Routing Layer
 
@@ -44,7 +44,7 @@ The knowledge route file injects hints such as "when terminology is unclear, rea
 ### AD-076: Harness Glossary Is Mirrored First-Class Context
 
 The foundation harness and deployed harnesses share a first-class harness
-glossary. Core terms such as `mars-harness`, foundation harness, deployed
+glossary. Core terms such as `mars`, foundation harness, deployed
 harness, harness definitions, mirrored harness definitions, tools, mirrored
 tools, operating model, foundation operating model, deployed operating model,
 tenets, first-class harness definitions, and contextual harness definitions
@@ -85,12 +85,12 @@ scaffolding, not a reason to skip the governed path.
 
 Foundation and deployed harnesses share reusable operating doctrine, but they
 do not share every implementation duty. The foundation harness owns the
-`mars-harness` source repo, generated defaults, software-factory release
+`mars` source repo, generated defaults, software-factory release
 discipline, and runtime improvement loop. The deployed harness owns target
 planning, target feature contracts, target tickets, target-specific skills, and
 target product evidence.
 
-The runtime substrate is the compiled `mars-harness` binary and its internal
+The runtime substrate is the compiled `mars` binary and its internal
 packages. It executes orchestration for both contexts, but it does not decide
 doctrine by itself and it must not turn the source harness into the target of
 its own agents during a target run.
@@ -98,13 +98,13 @@ its own agents during a target run.
 Generated target guidance should mirror the reusable core: evidence-driven
 planning, BDD contracts, ticket truth, feedback routing, tool/skill selection,
 and the generic run-review-act-rerun improvement loop. Source-only mechanics,
-including `demo-123` as the named source replay and `mars-harness` binary
+including `demo-123` as the named source replay and `mars` binary
 release asset publication, stay foundation-only unless a target deliberately
 adopts an equivalent local policy.
 
 ### AD-036: Workflow Contracts Belong In The Repo
 
-Symphony's `WORKFLOW.md` idea maps to Mars Harness as repo-owned workflow artifacts:
+Symphony's `WORKFLOW.md` idea maps to MARS as repo-owned workflow artifacts:
 
 - `AGENTS.md` for entrypoint discipline
 - `docs/tickets/README.md` for ticket states and completion rules
@@ -132,7 +132,7 @@ Source-only exceptions must be explicit in the rule text. Ambiguity defaults to 
 
 Architectural changes and product features must be documented in repo-owned artifacts with the reason why, not just the description of what changed.
 
-For Mars Harness source changes, the owning artifact is usually a design doc in `docs/design-docs/` plus an index entry in `docs/design-docs/index.md`; user-visible product behavior also updates the relevant `docs/product-specs/` file. For initialized target repos, the same rule applies through generated `AGENTS.md`: architecture decisions belong in `docs/design-docs/`, and product-facing behavior must be captured in a product spec or the owning design doc.
+For MARS source changes, the owning artifact is usually a design doc in `docs/design-docs/` plus an index entry in `docs/design-docs/index.md`; user-visible product behavior also updates the relevant `docs/product-specs/` file. For initialized target repos, the same rule applies through generated `AGENTS.md`: architecture decisions belong in `docs/design-docs/`, and product-facing behavior must be captured in a product spec or the owning design doc.
 
 This rule is mirrored because target agents need the same durable rationale trail as source agents. A future agent can only safely evolve the system if it can recover why a feature, guardrail, workflow, or trade-off exists without relying on chat history.
 
@@ -154,7 +154,7 @@ This rule is mirrored because target agents need the same durable rationale trai
 - New target repos receive useful agent guidance immediately, not just a manifest.
 - Prompts stay smaller because glossary context is a pointer layer.
 - Agents have a standard place to add terminology discovered during work.
-- The source harness and initialized harness can evolve together through `mars-harness upgrade`.
+- The source harness and initialized harness can evolve together through `mars upgrade`.
 - Future rules do not silently improve source-agent behavior while leaving target agents behind.
 - Future agents inherit the why behind architectural and product changes, not only the latest file state.
 

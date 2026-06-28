@@ -69,8 +69,8 @@ func TestResolveTokenPrefersEnvThenGHCLIThenConfig(t *testing.T) {
 func TestResolveTokenLoadsConfiguredLocalToken(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
-	t.Setenv("MARS_HARNESS_GITHUB_TOKEN", "")
-	cfgPath := filepath.Join(dir, ".mars-harness", "config.yaml")
+	t.Setenv("MARS_GITHUB_TOKEN", "")
+	cfgPath := filepath.Join(dir, ".mars", "config.yaml")
 	require.NoError(t, os.MkdirAll(filepath.Dir(cfgPath), 0o755))
 	require.NoError(t, os.WriteFile(cfgPath, []byte("github_token: local-token\n"), 0o600))
 
@@ -131,7 +131,7 @@ func TestCheckDistinguishesAuthFailures(t *testing.T) {
 
 func TestCheckWithoutTokenReturnsSetupGuidance(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	t.Setenv("MARS_HARNESS_GITHUB_TOKEN", "")
+	t.Setenv("MARS_GITHUB_TOKEN", "")
 	report := Check(context.Background(), Options{
 		Env:          func(string) string { return "" },
 		DisableGHCLI: true,
@@ -139,13 +139,13 @@ func TestCheckWithoutTokenReturnsSetupGuidance(t *testing.T) {
 
 	require.Equal(t, StatusFail, report.Status)
 	require.Equal(t, SourceNone, report.AuthSource)
-	require.Contains(t, report.NextAction, "mars-harness auth github setup")
+	require.Contains(t, report.NextAction, "mars auth github setup")
 	require.NotContains(t, report.Message, "GH_TOKEN=")
 }
 
 func TestSetupPersistsGHCLIFallbackAfterSuccessfulCheck(t *testing.T) {
 	dir := t.TempDir()
-	cfgPath := filepath.Join(dir, ".mars-harness", "config.yaml")
+	cfgPath := filepath.Join(dir, ".mars", "config.yaml")
 	client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		require.Equal(t, "Bearer gh-cli-token", req.Header.Get("Authorization"))
 		return &http.Response{
@@ -178,7 +178,7 @@ func TestSetupPersistsGHCLIFallbackAfterSuccessfulCheck(t *testing.T) {
 
 func TestSetupDoesNotPersistEnvTokenImplicitly(t *testing.T) {
 	dir := t.TempDir()
-	cfgPath := filepath.Join(dir, ".mars-harness", "config.yaml")
+	cfgPath := filepath.Join(dir, ".mars", "config.yaml")
 	client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		require.Equal(t, "Bearer env-token", req.Header.Get("Authorization"))
 		return &http.Response{

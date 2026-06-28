@@ -18,7 +18,7 @@ dedupe_key: "public-example"
 metadata:
   category: "skill_evolution"
   confidence: "high"
-  repo_id: "mars-harness"
+  repo_id: "mars"
   role: "release-manager"
   severity: "medium"
   target: "foundation-skill"

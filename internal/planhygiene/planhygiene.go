@@ -89,7 +89,7 @@ func Check(cfg Config) (Report, error) {
 			return Report{Issues: []Issue{{
 				Path:    "docs/exec-plans",
 				Message: "exec-plan directory is missing",
-				Fix:     "run 'mars-harness init --repo <path>' or restore docs/exec-plans from source control",
+				Fix:     "run 'mars init --repo <path>' or restore docs/exec-plans from source control",
 			}}}, nil
 		}
 		return Report{}, fmt.Errorf("active-plan hygiene: stat docs/exec-plans: %w", err)

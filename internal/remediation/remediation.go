@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/telemetry"
+	"github.com/greaveselliott/mars/internal/telemetry"
 )
 
 // SafetyClass describes whether a recipe can be used automatically or should
@@ -112,7 +112,7 @@ func DefaultRegistry() Registry {
 			Target:          "doctor",
 			Categories:      []telemetry.FailureCategory{telemetry.CategoryUnknown},
 			MessageContains: []string{"doctor", "known remediation", "health check failed"},
-			Commands:        []string{"mars-harness doctor --repo <repo>"},
+			Commands:        []string{"mars doctor --repo <repo>"},
 			CandidateFiles:  []string{"internal/doctor", "docs/product-specs/product-surface.md"},
 			Safety:          SafetyOperatorRequired,
 			NextAction:      "Run doctor, apply the named non-destructive remediation command, and record any missing optional dependency honestly.",
@@ -124,7 +124,7 @@ func DefaultRegistry() Registry {
 			Target:          "generated-target",
 			Categories:      []telemetry.FailureCategory{telemetry.CategoryManifestError, telemetry.CategoryUnknown},
 			MessageContains: []string{"missing generated docs", "operating-model drift", "missing harness defaults"},
-			Commands:        []string{"mars-harness update harness --repo <repo>"},
+			Commands:        []string{"mars update harness --repo <repo>"},
 			CandidateFiles:  []string{"internal/scanner/init.go", "internal/updatecheck"},
 			Safety:          SafetyAutoSafe,
 			NextAction:      "Run update harness to write missing defaults only; stale user-owned files remain reported rather than overwritten.",
@@ -136,7 +136,7 @@ func DefaultRegistry() Registry {
 			Target:          "manifest",
 			Categories:      []telemetry.FailureCategory{telemetry.CategoryManifestError},
 			MessageContains: []string{"manifest", ".harness/manifest.yaml", "bundle"},
-			Commands:        []string{"mars-harness init --repo <repo>", "mars-harness upgrade --repo <repo>"},
+			Commands:        []string{"mars init --repo <repo>", "mars upgrade --repo <repo>"},
 			CandidateFiles:  []string{"internal/bundle", "internal/scanner/init.go"},
 			Safety:          SafetyOperatorRequired,
 			NextAction:      "Initialize missing harness scaffolding or repair the invalid manifest without overwriting user-owned role configuration.",
@@ -148,7 +148,7 @@ func DefaultRegistry() Registry {
 			Target:          "models",
 			Categories:      []telemetry.FailureCategory{telemetry.CategoryModelUnavailable, telemetry.CategoryInferenceCrash},
 			MessageContains: []string{"checksum mismatch", "sha256 mismatch", "corrupt model", "corrupt artifact"},
-			Commands:        []string{"mars-harness setup", "mars-harness update tool"},
+			Commands:        []string{"mars setup", "mars update tool"},
 			CandidateFiles:  []string{"internal/models", "internal/selfupdate"},
 			Safety:          SafetyApprovalRequired,
 			Destructive:     true,
@@ -161,7 +161,7 @@ func DefaultRegistry() Registry {
 			Target:          "tooling",
 			Categories:      []telemetry.FailureCategory{telemetry.CategoryToolTimeout, telemetry.CategoryUnknown},
 			MessageContains: []string{"missing optional tool", "optional tool", "optional dependency", "tool not found", "not found in path", "llama-server not found", "podman not found", "gh not found", "github cli not found"},
-			Commands:        []string{"mars-harness doctor --repo <repo>"},
+			Commands:        []string{"mars doctor --repo <repo>"},
 			CandidateFiles:  []string{"internal/doctor", "internal/setup", "docs/design-docs/self-reflective-telemetry.md"},
 			Safety:          SafetyOperatorRequired,
 			NextAction:      "Install the named optional tool only when the workflow needs it, or record a skip/blocker; do not mark remediation successful merely because the tool is optional.",
@@ -173,7 +173,7 @@ func DefaultRegistry() Registry {
 			Target:          "scanner",
 			Categories:      []telemetry.FailureCategory{telemetry.CategoryUnknown},
 			MessageContains: []string{"duplicate ticket", "scanner duplicate", "repeated scanner"},
-			Commands:        []string{"mars-harness scan --repo <repo>"},
+			Commands:        []string{"mars scan --repo <repo>"},
 			CandidateFiles:  []string{"internal/scanner", "internal/tools/ticket_create.go"},
 			Safety:          SafetyOperatorRequired,
 			NextAction:      "Inspect existing ticket dedupe keys and update the matching ticket instead of adding another scanner ticket.",
@@ -185,7 +185,7 @@ func DefaultRegistry() Registry {
 			Target:          "tickets",
 			Categories:      []telemetry.FailureCategory{telemetry.CategoryStaleTicket},
 			MessageContains: []string{"stale in-progress ticket", "stale ticket", "stale_in_progress_ticket"},
-			Commands:        []string{"mars-harness scan --repo <repo>"},
+			Commands:        []string{"mars scan --repo <repo>"},
 			CandidateFiles:  []string{"internal/scanner", "docs/tickets/in-progress/"},
 			Safety:          SafetyOperatorRequired,
 			NextAction:      "Complete, block, or return the stale ticket with blocker metadata before claiming ordinary backlog work.",
@@ -197,7 +197,7 @@ func DefaultRegistry() Registry {
 			Target:          "dependencies",
 			Categories:      []telemetry.FailureCategory{telemetry.CategoryWorkspaceHygiene, telemetry.CategoryToolTimeout},
 			MessageContains: []string{"missing dependency setup", "dependency setup", "node_modules", "package manager"},
-			Commands:        []string{"mars-harness tools run dependency_sync --repo <repo> --trust contributor"},
+			Commands:        []string{"mars tools run dependency_sync --repo <repo> --trust contributor"},
 			CandidateFiles:  []string{"internal/tools/dependency_sync.go", "internal/tools/workspace_hygiene.go"},
 			Safety:          SafetyOperatorRequired,
 			NextAction:      "Run dependency_sync only when package-manager mutation is allowed and generated artifacts are ignored or tracked deliberately.",

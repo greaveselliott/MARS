@@ -21,13 +21,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/integrations"
+	"github.com/greaveselliott/mars/internal/integrations"
 )
 
 const (
-	jiraOwnedStartMarker = "<!-- mars-harness:jira-owned:start -->"
-	jiraOwnedEndMarker   = "<!-- mars-harness:jira-owned:end -->"
-	scopedMarker         = "<!-- mars-harness:scoped-marker -->"
+	jiraOwnedStartMarker = "<!-- mars:jira-owned:start -->"
+	jiraOwnedEndMarker   = "<!-- mars:jira-owned:end -->"
+	scopedMarker         = "<!-- mars:scoped-marker -->"
 )
 
 var ticketIDPattern = regexp.MustCompile(`\bT-(\d+)\b`)

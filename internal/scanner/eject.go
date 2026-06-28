@@ -14,7 +14,7 @@ import (
 	"sort"
 )
 
-// EjectOptions controls removal of a deployed Mars Harness from a target repo.
+// EjectOptions controls removal of a deployed MARS from a target repo.
 type EjectOptions struct {
 	Apply bool
 }

@@ -7,18 +7,18 @@
 ## Summary
 
 Midscene is an open source, vision-driven UI automation framework. Its core
-value for Mars Harness is screenshot-first browser validation: it can interact
+value for MARS is screenshot-first browser validation: it can interact
 with and assert rendered UI state without depending only on DOM selectors,
 accessibility trees, or HTTP reachability. That maps directly to a recurring
 Dogfood gap for browser games, canvas surfaces, custom controls, cross-origin
 iframes, and visually meaningful UI states where `curl`, build output, and
 source/runtime assertions are necessary but not sufficient.
 
-Midscene should not become a required Mars Harness runtime dependency. It is a
+Midscene should not become a required MARS runtime dependency. It is a
 candidate optional validation lane for Dogfood and QA when a target is a visual
 browser app and a suitable vision model/toolchain is configured.
 
-## Fit For Mars Harness
+## Fit For MARS
 
 Midscene is useful when Dogfood needs to answer "can a user see and operate the
 product?" rather than only "does a route return 200?" Strong candidate cases:
@@ -46,7 +46,7 @@ Midscene is a poor fit for baseline validation when:
 The canonical design decision is
 [ephemeral-validation-runtimes.md](../design-docs/ephemeral-validation-runtimes.md)
 AD-293. The single-binary tenet forbids making Node, npm, browser automation
-servers, or other external runtimes part of the installed Mars Harness control
+servers, or other external runtimes part of the installed MARS control
 plane. It does not forbid temporary validation runtimes when they are explicitly
 bounded.
 

@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greaveselliott/mars-harness/internal/foundationtelemetry"
+	"github.com/greaveselliott/mars/internal/foundationtelemetry"
 	_ "modernc.org/sqlite"
 )
 

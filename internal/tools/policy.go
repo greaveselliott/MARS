@@ -24,14 +24,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/docsync"
-	"github.com/greaveselliott/mars-harness/internal/safety"
+	"github.com/greaveselliott/mars/internal/docsync"
+	"github.com/greaveselliott/mars/internal/safety"
 )
 
 var mutatingTools = map[string]bool{
 	"file_write":          true,
 	"dependency_sync":     true,
 	"shell_exec":          true,
+	"mars_cli":            true,
 	"mars_harness_cli":    true,
 	"git_commit":          true,
 	"git_push":            true,
@@ -117,7 +118,7 @@ func preToolPolicy(ctx context.Context, root Root, name string, raw json.RawMess
 		return checkTicketCreatePolicy(ctx, root, session, hasSession, raw)
 	case "job_disposition_record":
 		return checkJobDispositionRecordPolicy(ctx, root, session, hasSession, raw)
-	case "dependency_sync", "mars_harness_cli":
+	case "dependency_sync", "mars_cli", "mars_harness_cli":
 		return checkEngineerClaimBeforeProductMutation(ctx, root, session, hasSession, name, raw)
 	case "git_commit":
 		if err := checkEngineerClaimBeforeProductMutation(ctx, root, session, hasSession, name, raw); err != nil {

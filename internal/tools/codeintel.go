@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/greaveselliott/mars-harness/internal/codeintel"
+	"github.com/greaveselliott/mars/internal/codeintel"
 )
 
 const codeIndexSchema = `{

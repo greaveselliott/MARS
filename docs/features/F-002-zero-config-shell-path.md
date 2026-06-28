@@ -16,8 +16,8 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 ## Scenario Schedule
 
 1. F-002-S001 - Source `make install` configures shell PATH after installing the binary.
-2. F-002-S002 - `mars-harness setup` configures shell PATH during first-run setup.
-3. F-002-S003 - `mars-harness update tool` configures shell PATH after reinstalling/upgrading the binary.
+2. F-002-S002 - `mars setup` configures shell PATH during first-run setup.
+3. F-002-S003 - `mars update tool` configures shell PATH after reinstalling/upgrading the binary.
 4. F-002-S004 - PATH setup is idempotent and does not duplicate profile snippets.
 5. F-002-S005 - Unsupported shells get clear manual remediation instead of a misleading success claim.
 6. F-002-S006 - Source `make update-tool` refreshes a clean clone and configures shell PATH after installing the updated binary.
@@ -27,24 +27,24 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 ### F-002-S001: Source Install Configures PATH
 
 Given a developer runs `make install`
-When Go installs `mars-harness` into the resolved Go binary directory
-Then the installed binary runs `mars-harness path setup --install-dir <dir>` so future shells can resolve `mars-harness`
+When Go installs `mars` into the resolved Go binary directory
+Then the installed binary runs `mars path setup --install-dir <dir>` so future shells can resolve `mars`
 
 ### F-002-S002: Setup Configures PATH
 
-Given a user can invoke `mars-harness setup`
+Given a user can invoke `mars setup`
 When setup runs
 Then it detects the install directory and writes an idempotent profile snippet for the user's shell
 
 ### F-002-S003: Update Tool Configures PATH
 
-Given a user runs `mars-harness update tool`
+Given a user runs `mars update tool`
 When the binary is reinstalled or upgraded
 Then the target install directory is also configured in the user's shell profile
 
 ### F-002-S004: Idempotent Profile Updates
 
-Given the shell profile already contains the Mars Harness managed PATH entry
+Given the shell profile already contains the MARS managed PATH entry
 When setup, update, or path setup runs again
 Then no duplicate PATH block is written
 
@@ -56,12 +56,12 @@ Then the command reports the unsupported shell and the install directory the use
 
 ### F-002-S006: Source Clone Update Configures PATH
 
-Given a developer has a clean Mars Harness source checkout with an `origin/main` remote
+Given a developer has a clean MARS source checkout with an `origin/main` remote
 When the developer runs `make update-tool`
 Then the checkout fast-forwards only when it can do so safely
-And Go installs `mars-harness` into the resolved Go binary directory
-And the installed binary runs `mars-harness path setup --install-dir <dir>`
-And the command prints the installed `mars-harness version`
+And Go installs `mars` into the resolved Go binary directory
+And the installed binary runs `mars path setup --install-dir <dir>`
+And the command prints the installed `mars version`
 
 Given the source checkout has uncommitted changes, no `origin` remote, or divergent history
 When the developer runs `make update-tool`

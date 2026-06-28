@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-05-04
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Decision:** AD-101
 **Architecture:** [documentation-sync-architecture.md](documentation-sync-architecture.md)
 
@@ -18,8 +18,8 @@ architecture and universal operating model live in
 The map is maintained by `internal/docsync` and checked with:
 
 ```bash
-mars-harness docsync audit --repo .
-mars-harness tools run docsync_audit --repo . --args-json '{}'
+mars docsync audit --repo .
+mars tools run docsync_audit --repo . --args-json '{}'
 ```
 
 ## Metadata Shape
@@ -61,7 +61,7 @@ source file exists in the worktree.
 
 | Source Prefix | Architecture / Product Docs | Feature Contracts |
 | --- | --- | --- |
-| `cmd/mars-harness/` | `docs/product-specs/product-surface.md`, `docs/design-docs/cli-tool-skill-sync.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, `docs/design-docs/release-versioning.md`, `docs/design-docs/self-reflective-telemetry.md`, `docs/design-docs/dashboard.md` | F-001, F-002, F-004, F-005, F-009, F-010, F-012 |
+| `cmd/mars/` | `docs/product-specs/product-surface.md`, `docs/design-docs/cli-tool-skill-sync.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, `docs/design-docs/release-versioning.md`, `docs/design-docs/self-reflective-telemetry.md`, `docs/design-docs/dashboard.md` | F-001, F-002, F-004, F-005, F-009, F-010, F-012 |
 | `examples/` | `docs/design-docs/role-customization.md` | F-004 |
 | `internal/agent/` | `docs/design-docs/agent-runtime.md`, `docs/design-docs/context-efficiency.md` | F-005 |
 | `internal/buildinfo/` | `docs/design-docs/release-versioning.md` | F-009 |
@@ -138,11 +138,11 @@ Notable cross-boundary files:
   and pull-only reconciliation.
 - `internal/mcpclient/` owns short-lived outbound MCP-over-HTTP and MCP-over-stdio
   sessions for optional integration providers such as Atlassian MCP. It is
-  client-side integration plumbing, separate from the Mars Harness MCP stdio
+  client-side integration plumbing, separate from the MARS MCP stdio
   server exposed by `internal/mcpstdio/`.
 - `internal/tools/formalized_workflows.go` and its tests own `docsync_audit`,
   so their metadata also points to the delivery operating model and F-001.
-- `internal/tools/mars_harness_cli.go` and its tests mirror the CLI command
+- `internal/tools/mars_cli.go` and its tests mirror the CLI command
   tree into tool reference and repo-shortcut behavior, so their metadata points
   to [cli-tool-skill-sync.md](cli-tool-skill-sync.md).
 - `internal/scanner/init.go` also mirrors CLI/tool/skill sync doctrine into

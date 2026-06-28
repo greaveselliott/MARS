@@ -40,7 +40,7 @@ foundation-level issue:
 | QA | Passed | Read implementation and done ticket, approved `T-001`, routed to Security. |
 | Security | Passed | Created `docs/reports/security/security-audit-2026-05-19.md`, committed `2f7691b`, routed to Dogfood. |
 | Dogfood | Passed | Served the app with `python3 -m http.server 8080`, verified HTTP 200 and source assets, wrote `docs/reports/dogfood/2026-05-19-e2e-validation.md`, committed `36495d3`, routed to Release Manager. |
-| Release Manager | Blocked | `mars_harness_cli` resolved `/path/to/local-redacted` at `0.0.1-dev`; `release` and `tools` commands were unavailable. |
+| Release Manager | Blocked | `mars_cli` resolved `/path/to/local-redacted` at `0.0.1-dev`; `release` and `tools` commands were unavailable. |
 
 Observed dispatch decisions:
 
@@ -77,7 +77,7 @@ release-manager: failed after operator stop while investigating stale CLI
 
 ## Follow-Up Tickets
 
-- `T-007`: fix deployed `mars_harness_cli` binary resolution during release
+- `T-007`: fix deployed `mars_cli` binary resolution during release
   review so target Release Manager uses a current harness binary or emits
   actionable stale-binary guidance.
 - `T-008`: make dashboard stop exit the `start` process cleanly; `POST
@@ -521,7 +521,7 @@ Confirmed improvement:
 
 Remaining live-loop findings:
 
-- `mars_harness_cli` rejected list-shaped arguments emitted as a string, e.g.
+- `mars_cli` rejected list-shaped arguments emitted as a string, e.g.
   `{"args":"['release', 'notes', '--repo', '.', '--bump', 'auto']"}`.
 - `shell_exec` rejected Python/single-quoted list strings for `argv`, causing a
   shell-command fallback.
@@ -572,7 +572,7 @@ New evidence:
 
 - The string-list payload issue is generic. Orchestrator emitted
   `workspace_hygiene` with `paths` as a JSON string, which failed for the same
-  reason `mars_harness_cli.args` failed in run 11.
+  reason `mars_cli.args` failed in run 11.
 - Prompt-only static guidance is insufficient. Engineer and Dogfood still
   started a repo-root static server and recovered to `src/` after seeing a
   directory listing.
@@ -586,7 +586,7 @@ New evidence:
 Follow-up verification for T-015:
 
 ```text
-go run ./cmd/mars-harness tools run docsync_audit --repo <validation-root> --args-json '{}'
+go run ./cmd/mars tools run docsync_audit --repo <validation-root> --args-json '{}'
 
 # docsync_audit
 docsync: checked 3 files, findings 1
@@ -600,7 +600,7 @@ needs metadata, while the inline CSS/JavaScript metadata is detected.
 Factory pace baseline for T-011:
 
 ```text
-go run ./cmd/mars-harness scores export --repo <validation-root> --db <validation-root>
+go run ./cmd/mars scores export --repo <validation-root> --db <validation-root>
 
 Exported quality score to <validation-root>
 Overall grade: A
@@ -1845,7 +1845,7 @@ Positive evidence:
 
 Residual findings:
 
-- COO still spent turns trying `mars_harness_cli ticket_create` and direct
+- COO still spent turns trying `mars_cli ticket_create` and direct
   ticket `file_write` before recovering to a clean planning handoff. This is
   pace drag, not product starvation.
 - Engineer still spent discovery turns on broad `find`, extra `ls`, and an
@@ -2014,7 +2014,7 @@ d36e740 chore(tickets): claim T-001
 72678b6 tickets: create implementation ticket for Note Stats CLI walking skeleton [2026-05-19]
 798e37e plan: update active scenario schedule and feature contract for Note Stats CLI
 a910cbd chore(learnings): update runtime learnings for ceo
-7883006 chore(harness): initialize mars harness
+7883006 chore(harness): initialize MARS
 99b37be chore: seed cli brief
 ```
 
@@ -2102,7 +2102,7 @@ e28d70f chore(tickets): claim T-001
 3f7b9cf chore(learnings): update runtime learnings for coo
 de5266b plan: update active scenario schedule and feature contract for note-stats CLI
 e3927b6 chore(learnings): update runtime learnings for ceo
-35788dc chore(harness): initialize mars harness
+35788dc chore(harness): initialize MARS
 a8ed8a1 chore: seed cli brief
 ```
 
@@ -2175,7 +2175,7 @@ bf53fc8 chore(tickets): claim T-001
 3c68047 tickets: create implementation ticket T-001 for note-stats CLI tool implementation
 dfa1cfa plan: update active scenario schedule and feature contract for note-stats CLI
 75b2c32 chore(learnings): update runtime learnings for ceo
-ed38528 chore(harness): initialize mars harness
+ed38528 chore(harness): initialize MARS
 a335959 chore: seed cli brief
 ```
 
@@ -2251,7 +2251,7 @@ Target commits:
 8a237e5 plan: update active scenario schedule and feature contract for note-stats CLI tool
 bf00c80 chore(learnings): update runtime learnings for ceo
 eb57d96 CEO: Updated active goals for Demo CLI Run 4 project
-f66f4bb chore(harness): initialize mars harness
+f66f4bb chore(harness): initialize MARS
 223335c chore: seed cli brief
 ```
 
@@ -3749,7 +3749,7 @@ attempts before resolving the procedural validation gap.
 
 Two non-blocking follow-up findings were also recorded for the next loop:
 target naming still drifts toward source-harness names such as
-`cmd/mars-harness`/`module mars-harness`, and runtime validation still checks
+`cmd/mars`/`module mars`, and runtime validation still checks
 process success more strongly than semantic JSON values such as empty-text line
 count.
 
@@ -4007,12 +4007,12 @@ Command:
   and preserved the package target:
 
 ```json
-["go","build","-o","<validation-root>","./cmd/mars-harness"]
+["go","build","-o","<validation-root>","./cmd/mars"]
 ```
 
 - Runtime validation then exposed two generic gaps. First, the target ticket
-  and implementation used foundation names (`cmd/mars-harness` and `module
-  mars-harness`) even though the product was Note Stats CLI. Second, after the
+  and implementation used foundation names (`cmd/mars` and `module
+  mars`) even though the product was Note Stats CLI. Second, after the
   missing-input runtime probe panicked, the harness required an exact
   `expected_exit_code` repro but continued blocking `file_write` when that repro
   still failed. Engineer was sent back to rerun the same failing command rather
@@ -4028,7 +4028,7 @@ fails. Completion, commits, ticket done-moves, and unrelated runtime probes
 remain blocked until the exact runtime path is repaired. Generated CTO and
 Engineer guidance now also says target tickets and fresh Go modules must derive
 command, module, and binary names from the target project, not from foundation
-`mars-harness` defaults.
+`mars` defaults.
 
 ### Next Check
 
@@ -4052,7 +4052,7 @@ Run 33 used a clean Note Stats CLI target at
   intervention-debt ticket creation.
 - CTO created `T-001` with target-derived affected files:
   `cmd/note-stats/main.go`, `go.mod`, and optional target docs. The previous
-  `cmd/mars-harness` naming leak did not repeat.
+  `cmd/mars` naming leak did not repeat.
 - Engineer initialized `module note-stats`, confirming generated target
   guidance no longer steers fresh targets toward foundation module names.
 - The missing-input/runtime repair path allowed Engineer to edit after the
@@ -4276,8 +4276,8 @@ Run 38 used a clean Temperature JSON CLI target at
 - CEO remained product-specific and selected the Temperature JSON CLI walking
   skeleton from the target README.
 - COO wrote product-specific planning artifacts, but then tried to create a
-  ticket by direct `file_write`, `mars_harness_cli ticket_create`, and
-  `mars_harness_cli tools run ticket_create` despite not owning ticket
+  ticket by direct `file_write`, `mars_cli ticket_create`, and
+  `mars_cli tools run ticket_create` despite not owning ticket
   creation. Policy blocked those attempts; COO recovered only by recording a
   blocked ticket-breakdown disposition that Orchestrator routed to CTO.
 - CTO used `ticket_create`, committed the product ticket, and handed off to
@@ -4973,9 +4973,9 @@ Run 53 used a clean Temperature JSON CLI target at
   a narrower Security evidence-quality finding.
 - Dogfood completed product validation and committed
   `docs/reports/dogfood/temperature-json-cli-validation-2026-05-21.md`.
-- Release Manager first tried the installed `mars-harness release notes`
+- Release Manager first tried the installed `mars release notes`
   binary, hit `unknown command "release"`, then correctly used
-  `mars_harness_cli` to generate target release notes.
+  `mars_cli` to generate target release notes.
 - Release Manager generated `VERSION=0.2.0` and `CHANGELOG.md`, but then
   created local tag `v0.2.0` at the previous Dogfood commit while those release
   files were still dirty. The disposition guard blocked completion, forcing the
@@ -5252,10 +5252,10 @@ Run 59 used a clean Temperature JSON CLI target at
   premature approval before tests.
 - Security and Dogfood both approved with independent validation evidence.
 - The first Release Manager pass failed as liveness because it ran
-  `mars-harness release notes --repo . --bump auto --dry-run` through
+  `mars release notes --repo . --bump auto --dry-run` through
   `shell_exec`. That resolved a stale installed binary which reported
-  `unknown command "release" for "mars-harness"`. The role read the
-  `mars_harness_cli` reference but repeated the stale shell command until loop
+  `unknown command "release" for "mars"`. The role read the
+  `mars_cli` reference but repeated the stale shell command until loop
   containment forced a terminal disposition.
 - Orchestrator recovered by dispatching Release Manager again. The second pass
   generated `VERSION` and `CHANGELOG.md`, committed `release: notes 0.2.0`,
@@ -5265,8 +5265,8 @@ Run 59 used a clean Temperature JSON CLI target at
 
 ### Decision From Run 59
 
-AD-213 now blocks direct `shell_exec mars-harness ...` invocations inside
-agent jobs and routes Mars Harness CLI workflows through `mars_harness_cli`,
+AD-213 now blocks direct `shell_exec mars ...` invocations inside
+agent jobs and routes MARS CLI workflows through `mars_cli`,
 whose resolver prefers the active harness executable before PATH. Generated
 Release Manager guidance names the structured args for release notes and
 backfill so deployed release review should not fail solely because of a stale
@@ -5275,7 +5275,7 @@ installed binary.
 ### Next Check
 
 Run another clean canary with the patched harness and confirm Release Manager
-uses `mars_harness_cli` for release notes on the first release pass, reaches
+uses `mars_cli` for release notes on the first release pass, reaches
 local release artifacts without a liveness retry, and stops only on real
 publication blockers such as a missing remote.
 
@@ -5308,7 +5308,7 @@ count, with clear non-zero errors for missing or surplus arguments.
   blocker.
 - QA, Security, and Dogfood approved with `go test`, runtime probes, and
   `docsync_audit` evidence.
-- Release Manager called `mars_harness_cli` for release notes at 17:28:19,
+- Release Manager called `mars_cli` for release notes at 17:28:19,
   committed `release: notes 0.2.0`, created tag `v0.2.0`, and stopped with a
   real `release_blocked` disposition because the temporary target had no
   configured remote. This validates AD-213 in the live release path.
@@ -5422,7 +5422,7 @@ clear non-zero errors for missing or surplus arguments.
 - QA, Security, and Dogfood independently approved using runtime probes,
   `go test`, and `docsync_audit` evidence. The target finished with a clean
   worktree and `go test ./...` passing.
-- Release Manager used `mars_harness_cli` for release notes, committed
+- Release Manager used `mars_cli` for release notes, committed
   `release: notes 0.2.0`, created tag `v0.2.0`, checked release status, and
   stopped on the expected missing-remote publication blocker. This was a real
   environment blocker for the temp target, not a lifecycle loop.
@@ -5553,7 +5553,7 @@ cleanup to duplicate/generated-test shaped failures. Assertion failures must
 preserve the test and be repaired through implementation/test edits plus
 same-lane validation. Patched binary
 `<validation-root>` confirmed the raw
-`go get` block through `mars-harness tools run shell_exec`, returning:
+`go get` block through `mars tools run shell_exec`, returning:
 `policy: shell_exec command "go get" mutates dependency state; use
 dependency_sync so workspace hygiene preflight and postflight run`.
 

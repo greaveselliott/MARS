@@ -1,5 +1,5 @@
 GO ?= go
-BINARY := mars-harness
+BINARY := mars
 BUILD_DIR := build
 GOBIN := $(shell $(GO) env GOBIN)
 GOPATH := $(shell $(GO) env GOPATH)
@@ -11,10 +11,10 @@ GOPATH_BIN := $(shell $(GO) env GOPATH)/bin
 .PHONY: build install update-tool test vet lint check coverage-check vuln fuzz-smoke dogfood clean
 
 build:
-	CGO_ENABLED=0 $(GO) build -o $(BUILD_DIR)/$(BINARY) ./cmd/mars-harness
+	CGO_ENABLED=0 $(GO) build -o $(BUILD_DIR)/$(BINARY) ./cmd/mars
 
 install:
-	CGO_ENABLED=0 $(GO) install ./cmd/mars-harness
+	CGO_ENABLED=0 $(GO) install ./cmd/mars
 	$(INSTALL_BIN)/$(BINARY) path setup --install-dir $(INSTALL_BIN)
 	@echo "Installed $(BINARY) to $(INSTALL_BIN)/$(BINARY)"
 	@echo "Run now: $(INSTALL_BIN)/$(BINARY) version"
@@ -38,7 +38,7 @@ lint:
 	fi
 
 check:
-	CGO_ENABLED=0 $(GO) build ./cmd/mars-harness
+	CGO_ENABLED=0 $(GO) build ./cmd/mars
 	$(GO) test ./... -race -count=1 -parallel=4 -coverprofile=coverage.out -covermode=atomic -cover | tee coverage-report.txt
 	$(GO) tool cover -func=coverage.out | tail -n 5
 	scripts/check-coverage.sh --input coverage-report.txt

@@ -8,7 +8,7 @@ bdd_scenarios: []
 end_to_end_evidence: not_applicable
 evidence_links:
   - "AD-278 in docs/design-docs/self-reflective-telemetry.md, indexed in docs/design-docs/index.md"
-  - "mars-harness scores export --repo . regeneration on 2026-06-11 (docs/QUALITY_SCORE.md Updated: 2026-06-11)"
+  - "mars scores export --repo . regeneration on 2026-06-11 (docs/QUALITY_SCORE.md Updated: 2026-06-11)"
   - "TD-006 in docs/exec-plans/tech-debt.md records the hook/schedule automation follow-up"
   - "go test ./internal/docsconsistency/... ./internal/docsync/..."
 verified_by: "foundation-maintainer"
@@ -27,7 +27,7 @@ depends_on: []
 
 ## Context
 
-The 2026-06-11 foundation review found docs/QUALITY_SCORE.md was last generated 2026-05-19 with no defined regeneration cadence. The export surface already exists (mars-harness scores export, F-008 behavior); what is missing is a documented trigger and what gates on grade regressions.
+The 2026-06-11 foundation review found docs/QUALITY_SCORE.md was last generated 2026-05-19 with no defined regeneration cadence. The export surface already exists (mars scores export, F-008 behavior); what is missing is a documented trigger and what gates on grade regressions.
 
 Scope is bounded per the foundation improvement plan: if full automation (post-run hook or scheduled survey wiring) is too large for this slice, land the documented cadence plus a fresh regeneration and record the automation follow-up explicitly.
 
@@ -36,7 +36,7 @@ Ownership classification: foundation-owned enabler; extends existing F-008 behav
 ## Requirements
 
 - Document when docs/QUALITY_SCORE.md must be regenerated and what gates on grade regressions, as an AD in docs/design-docs/self-reflective-telemetry.md indexed in docs/design-docs/index.md.
-- Run mars-harness scores export --repo . to refresh the artifact.
+- Run mars scores export --repo . to refresh the artifact.
 - Record the automation follow-up in docs/exec-plans/tech-debt.md if hook/schedule wiring is deferred.
 
 ## Affected Files

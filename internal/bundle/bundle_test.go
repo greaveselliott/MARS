@@ -118,7 +118,7 @@ func TestLoad_MissingHarnessDir(t *testing.T) {
 	_, err := Load(root)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing .harness/ directory")
-	assert.Contains(t, err.Error(), "mars-harness init")
+	assert.Contains(t, err.Error(), "mars init")
 }
 
 func TestLoad_MissingManifestFile(t *testing.T) {

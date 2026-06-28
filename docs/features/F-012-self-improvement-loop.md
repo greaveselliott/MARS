@@ -23,7 +23,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 6. F-012-S006 - Repeated useful procedure becomes a compact skill or formalized tool instead of chat memory.
 7. F-012-S007 - Source and generated target harnesses receive the same self-improvement doctrine when applicable.
 8. F-012-S008 - Deployed harnesses keep raw telemetry local and export only opt-in anonymous aggregate reports.
-9. F-012-S009 - Foundation telemetry collector intake triages repeated anonymous patterns into Mars Harness source work.
+9. F-012-S009 - Foundation telemetry collector intake triages repeated anonymous patterns into MARS source work.
 10. F-012-S010 - Deterministic remediation recipes are registered with applicability, safety, and operator actions before LLM repair.
 11. F-012-S011 - Compartmentalised agent smoke tests generate ephemeral role-stage targets through foundation tools.
 
@@ -102,7 +102,7 @@ Then local dogfood uses a SQLite intake database and future hosted operation can
 
 Given repeated anonymous signatures appear across distinct anonymous report keys or harness versions
 When foundation triage runs
-Then it creates Mars Harness source work rather than intervention-debt tickets in the deployed target repository
+Then it creates MARS source work rather than intervention-debt tickets in the deployed target repository
 
 ### F-012-S010: Deterministic Remediation Registry
 
@@ -117,7 +117,7 @@ And score export renders deterministic remediation attempt and execution summari
 
 ### F-012-S011: Compartmentalised Agent Smoke Testing
 
-Given an operator runs `mars-harness validation agent-smoke`
+Given an operator runs `mars validation agent-smoke`
 When the runner selects role cases from `docs/validation/agent-smoke/matrix.yaml`
 Then each selected case creates a fresh ephemeral target repo, isolated database, logs, trace directory, result file, and manifest
 And target seed artifacts are generated through foundation scaffold/tool surfaces rather than long-lived snapshot repos
@@ -151,4 +151,4 @@ None.
 - F-012-S008: `go test ./internal/telemetry -run TestBuildAnonymousReport` and `go test ./internal/config -run TestLoad_envTelemetryOverrides`
 - F-012-S009: `go test ./internal/foundationtelemetry`
 - F-012-S010: `go test ./internal/remediation`, `go test ./internal/serve -run 'TestHandleJobFailed(RecordsDeterministicRemediation|ExecutesGeneratedDocs)|TestHandleRemediation(ExecutableReadyRecipe|AutoSafeWithoutExecutor|OperatorRecipe)'`, `go test ./internal/doctor -run TestCheckDeterministicRemediationHealth`, and `go test ./internal/qualityscore -run TestExportRendersTelemetryAndOutcomeSignals`
-- F-012-S011: `go test ./internal/validation`, smoke commands `mars-harness validation agent-smoke --suite fast --json`, `mars-harness validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs`, `mars-harness validation agent-smoke --suite held-out --parallel 2 --timeout 10m`, `mars-harness validation agent-smoke --cleanup-only`, and the live full-matrix report [2026-06-15-agent-smoke-full-matrix.md](../validation/reports/2026-06-15-agent-smoke-full-matrix.md) for `mars-harness validation agent-smoke --suite full --parallel 2 --timeout 45m`
+- F-012-S011: `go test ./internal/validation`, smoke commands `mars validation agent-smoke --suite fast --json`, `mars validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs`, `mars validation agent-smoke --suite held-out --parallel 2 --timeout 10m`, `mars validation agent-smoke --cleanup-only`, and the live full-matrix report [2026-06-15-agent-smoke-full-matrix.md](../validation/reports/2026-06-15-agent-smoke-full-matrix.md) for `mars validation agent-smoke --suite full --parallel 2 --timeout 45m`

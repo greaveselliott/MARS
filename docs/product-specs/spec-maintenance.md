@@ -2,12 +2,12 @@
 
 **Status:** Accepted
 **Updated:** 2026-05-02
-**Owner:** Mars Harness maintainers
+**Owner:** MARS maintainers
 **Sources:** [product spec governance](../design-docs/product-spec-governance.md), [docs consistency tests](../../internal/docsconsistency)
 
 ## Why This Exists
 
-Product specs had drifted into historical pitch material. Mars Harness needs them to be operational memory: concise enough for agents to read, comprehensive enough to guide product decisions, and checked enough that they evolve with the code.
+Product specs had drifted into historical pitch material. MARS needs them to be operational memory: concise enough for agents to read, comprehensive enough to guide product decisions, and checked enough that they evolve with the code.
 
 ## Definition Of Stale
 

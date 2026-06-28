@@ -41,7 +41,7 @@ surface. The Go gateway must remain the only trusted boundary.
 - `internal/serve/`
 - `internal/config/`
 - `internal/trace/`
-- `cmd/mars-harness/`
+- `cmd/mars/`
 - future `web/dashboard/`
 - `docs/product-specs/dashboard-control-plane.md`
 - `docs/design-docs/dashboard.md`
