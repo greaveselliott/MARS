@@ -27,15 +27,17 @@ changes the dashboard prerequisite model by requiring an external Node.js
 `24.x` and `pnpm@11.1.1` sidecar while preserving Go as the authoritative
 gateway, auth boundary, and runtime state owner.
 
-Explainer status: the repo includes a static adoption explainer under
-`docs/harness-ecosystem/`. The repository GitHub Pages site is
-published from `/docs`, and `docs/index.html` redirects the site root to the
-explainer. The explainer is
-documentation, not runtime infrastructure: it presents the value case,
-foundation/deployed boundary, operating model, DocSync, telemetry, safety, and
-pilot adoption path for mixed leadership and engineering audiences. The source
-page remains self-contained with local assets only, so it can be reviewed from
-the repo and deployed without a frontend build step.
+Documentation site status: the repository GitHub Pages site is published from
+`/docs`, and `docs/index.html` is the user-facing developer documentation front
+door. It documents installation, setup, CLI workflows, target harness
+lifecycle, operations, models, safety, telemetry, release management,
+extension, troubleshooting, and links into durable source docs. The repo also
+includes a static adoption explainer under `docs/harness-ecosystem/`; the
+explainer remains a linked page for the value case, foundation/deployed
+boundary, operating model, DocSync, telemetry, safety, and pilot adoption path
+for mixed leadership and engineering audiences. Both pages remain
+self-contained with local assets only, so they can be reviewed from the repo
+and deployed without a frontend build step.
 
 ## CLI Contract
 

@@ -9,7 +9,7 @@
 
 **Primary Outcome:** Earn a real 10/10 confidence claim for hardware-gated setup/init, local eligibility, cloud routing, secret safety, CLI polish, and mirrored Fact-Validated Planning.
 **Primary Pass Gate:** Confidence is 10/10 only after every proof gate passes or records a `primary_blocked` report with exact rerun commands for unavailable hardware, weights, or credentials.
-**Primary Status:** `passed`
+**Primary Status:** `primary_passed`
 **Current Primary Blocker:** None. The remaining blocker was resolved by a fish universal `OPENAI_API_KEY`, an OpenAI-routed clean target, ignored local env-file write, `mars models evaluate` token-usage proof, and a one-turn installed-binary `mars run orchestrator` proof with `llm_calls=1`.
 **Next Primary Action:** Keep this report and release evidence as the durable proof record; rotate the external OpenAI credential if operator policy requires it.
 **Supporting Evidence:** Focused package tests, full `go test ./...`, docs/tool sync, secret scan, `make check`, `make install`, clean local/cloud init replays, installed-binary local setup/download, installed-binary local JSON runtime pass, installed-binary cloud JSON credential block, custom OpenAI-compatible endpoint init proof, installed-binary OpenAI route/seed pass, provider validation evidence, raw-key rejection, provider request-capture tests, and generated target doctrine checks passed.

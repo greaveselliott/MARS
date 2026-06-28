@@ -26,18 +26,19 @@ For the full product contract, start with the
 [product vision](docs/product-specs/vision.md) and
 [product surface](docs/product-specs/product-surface.md).
 
-## Harness Explainer
+## Documentation Site
 
-For a high-level adoption walkthrough, use the interactive
-[MARS explainer](https://greaveselliott.github.io/software-factory/).
-It explains the software-factory problem, the value case, the foundation vs.
-deployed harness boundary, operating model, DocSync, telemetry, safety, and a
-pilot adoption path for mixed leadership and engineering audiences.
+The repository GitHub Pages site publishes from `/docs` and starts at the
+[MARS developer documentation](https://greaveselliott.github.io/MARS/).
+It is the user-facing front door for installation, setup, CLI workflows,
+target harness lifecycle, operations, models, safety, telemetry, release
+management, extension, and troubleshooting.
 
-The source lives in
-[docs/harness-ecosystem/](docs/harness-ecosystem/). The
-repository GitHub Pages site publishes from `/docs`, with
-[docs/index.html](docs/index.html) redirecting the site root to the explainer.
+For a high-level adoption walkthrough, the documentation site links to the
+interactive [MARS explainer](docs/harness-ecosystem/). It explains the
+software-factory problem, the value case, the foundation vs. deployed harness
+boundary, operating model, DocSync, telemetry, safety, and a pilot adoption
+path for mixed leadership and engineering audiences.
 
 ## Current Status
 
@@ -76,8 +77,8 @@ operation is designed for a GPU-backed local model.
 
 ```bash
 # Install the command from this source checkout.
-git clone https://github.com/greaveselliott/software-factory.git
-cd software-factory
+git clone https://github.com/greaveselliott/MARS.git
+cd MARS
 make install
 
 # Download local inference assets and verify the machine.
@@ -250,9 +251,11 @@ safety, or orchestration changes do. See
 
 ## Documentation Map
 
+- [docs/index.html](docs/index.html): GitHub Pages developer documentation
+  front door.
 - [docs/quickstart.md](docs/quickstart.md): detailed install and first run.
 - [docs/harness-ecosystem/](docs/harness-ecosystem/):
-  interactive adoption explainer published to GitHub Pages.
+  interactive adoption explainer linked from the docs site.
 - [ARCHITECTURE.md](ARCHITECTURE.md): system architecture.
 - [docs/product-specs/index.md](docs/product-specs/index.md): product contract.
 - [docs/features/README.md](docs/features/README.md): BDD feature contracts.
