@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.10] - 2026-06-28
+<!-- mars-release: version=0.68.10 commit=b4df7030b593 -->
+
+### Impact
+- **site:** Users now have dedicated guidance for the parts of MARS that govern autonomy and shipped evidence: safety, trust, scoring, telemetry, release/update, optional integrations, and validation.
+
+### Why
+- **site:** The developer documentation site had strong install, command, harness, operations, model, and tool coverage, but users still had to jump into design docs to understand policy, release, integration, and evidence workflows.
+
+### What Changed
+- **site:** Added static Safety/Trust/Quality, Release/Update, and Integrations/Validation guide pages; linked them from the docs homepage, README documentation map, shared site metadata, and product-surface contract (b4df703).
+
+### Documentation
+- **site:** Add governance release and integration guides (b4df703)
+
 ## [0.68.9] - 2026-06-28
 <!-- mars-release: version=0.68.9 commit=a37db775019c -->
 
