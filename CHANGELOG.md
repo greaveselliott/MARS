@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.19] - 2026-06-29
+<!-- mars-release: version=0.68.19 commit=6fbca5ef62a3 -->
+
+### Impact
+- **site:** Users now have a dedicated target lifecycle reference for moving a repo from plain git checkout to initialized harness, registration, scoped start, single-role runs, scans, health checks, drift checks, upgrades, and dry-run-first eject.
+
+### Why
+- **site:** The docs site covered first-run onboarding, CLI flags, harness structure, bundle schema, files, and operations, but users still had to assemble the command-by-command target state model from several pages and the F-004 feature contract.
+
+### What Changed
+- **site:** Added a static Target Lifecycle Reference, linked it from the homepage, README, quickstart, CLI reference, harness guide, files/state reference, and product contract, and documented auto-init, per-repo database isolation, safe dry-run inspection, upgrade preservation, and eject recovery behavior (6fbca5e).
+
+### Documentation
+- **site:** Add target lifecycle reference (6fbca5e)
+
 ## [0.68.18] - 2026-06-29
 <!-- mars-release: version=0.68.18 commit=499af8cd9886 -->
 
