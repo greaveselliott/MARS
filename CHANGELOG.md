@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.67.1] - 2026-06-28
+<!-- mars-release: version=0.67.1 commit=9124ff2ff5ca -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because update confidence proof status.
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed update confidence proof status (9124ff2).
+
+### Documentation
+- **validation:** Update confidence proof status (9124ff2)
+
 ## [0.67.0] - 2026-06-28
 <!-- mars-release: version=0.67.0 commit=c1eba03dee7d -->
 
