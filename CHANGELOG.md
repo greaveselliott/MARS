@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.17] - 2026-06-29
+<!-- mars-release: version=0.68.17 commit=8f9381940a33 -->
+
+### Impact
+- **site:** Users now have a first-class guardrails reference that explains how to constrain agent work with YAML policy, secret scanning, optional hooks, stale-rule review, and recovery guidance.
+
+### Why
+- **site:** Guardrail behavior was split between the broader safety guide and a compact Markdown file, leaving important details like matching semantics, basename globbing, hard-rule requirements, and stale-day defaults harder to discover.
+
+### What Changed
+- **site:** Added a static Guardrails Reference, linked it from the homepage, CLI reference, configuration reference, safety guide, README, and product contract, and corrected the Markdown companion so `stale_days: 0` is documented as the default review window rather than never stale (8f93819).
+
+### Documentation
+- **site:** Add guardrails reference (8f93819)
+
 ## [0.68.16] - 2026-06-28
 <!-- mars-release: version=0.68.16 commit=50268bc1114b -->
 
