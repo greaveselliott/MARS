@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.5] - 2026-06-28
+<!-- mars-release: version=0.68.5 commit=10afe3d8093d -->
+
+### Impact
+- **inference:** Operators and future agents can see which optional cloud providers are supported, which have live generation proof, and which are blocked only by provider account state.
+
+### Why
+- **inference:** Provider support claims now live in the repo-owned design, BDD, README, and validation evidence instead of only in chat transcripts.
+
+### What Changed
+- **inference:** Documented OpenAI, Anthropic, Gemini, Mistral, DeepSeek, and xAI support status, including the DeepSeek balance and xAI credits/licensing blockers (10afe3d).
+
+### Documentation
+- **inference:** Document supported cloud providers (10afe3d)
+
 ## [0.68.4] - 2026-06-28
 <!-- mars-release: version=0.68.4 commit=173d6d26eea9 -->
 
