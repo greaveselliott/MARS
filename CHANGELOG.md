@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.7] - 2026-06-28
+<!-- mars-release: version=0.68.7 commit=b94a25c2fa7d -->
+
+### Impact
+- **site:** Developers now have a real GitHub Pages documentation front door for installing, configuring, operating, extending, and troubleshooting MARS instead of landing on the explainer-only redirect.
+
+### Why
+- **site:** MARS has grown into a broad local runtime with CLI, dashboard, model, tool, trust, telemetry, release, and target-harness surfaces; users need one navigable, implementation-aligned entrypoint before they dive into deeper design docs.
+
+### What Changed
+- **site:** Replaced the `/docs` redirect with a static developer documentation site, added searchable command/workflow/troubleshooting coverage, linked the existing adoption explainer as a supporting page, corrected README site and clone guidance, and aligned the product-surface contract (b94a25c).
+
+### Documentation
+- **site:** Add developer documentation front door (b94a25c)
+
 ## [0.68.6] - 2026-06-28
 <!-- mars-release: version=0.68.6 commit=3612017c0b4a -->
 
