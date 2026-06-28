@@ -41,7 +41,10 @@ runtime operations (`docs/operations-guide.html`), models and inference
 (`docs/tools-mcp-guide.html`), plus governance and release guides for safety,
 trust, quality, telemetry (`docs/safety-quality-guide.html`), release/update
 operations (`docs/release-update-guide.html`), and optional integration plus
-validation workflows (`docs/integrations-validation-guide.html`). The repo also
+validation workflows (`docs/integrations-validation-guide.html`). The site now
+also documents roles and agents (`docs/roles-guide.html`), target and local
+configuration (`docs/configuration-reference.html`), and the no-stale-docs
+documentation sync operating model (`docs/documentation-sync-guide.html`). The repo also
 includes a static adoption explainer
 under `docs/harness-ecosystem/`; the explainer remains a linked page for the
 value case, foundation/deployed boundary, operating model, DocSync, telemetry,

@@ -1,0 +1,317 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/context-efficiency.md
+- docs/design-docs/cli-tool-skill-sync.md
+- docs/features/README.md
+- docs/harness-guide.html
+- docs/safety-quality-guide.html
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Documentation Sync Guide</title>
+    <meta
+      name="description"
+      content="User guide to MARS no-stale-documentation workflow, MarsDocSync metadata, BDD feature contracts, context routes, and docsync audit evidence."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to documentation sync guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>DocSync guide</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="roles-guide.html">Roles</a>
+        <a href="configuration-reference.html">Configuration</a>
+        <a href="safety-quality-guide.html">Safety</a>
+        <a href="release-update-guide.html">Release</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Documentation sync sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search DocSync</label>
+          <input id="docSearch" type="search" placeholder="metadata, BDD, audit">
+          <p class="search-hint">Filters metadata rules, workflows, and troubleshooting.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#system-record">System Record</a>
+          <a href="#metadata">MarsDocSync Metadata</a>
+          <a href="#bdd">BDD Contracts</a>
+          <a href="#context">Context Routes</a>
+          <a href="#workflow">User Workflow</a>
+          <a href="#audit">Audit Evidence</a>
+          <a href="#generated">Generated Docs</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">No stale documentation</p>
+            <h1>Keep code, behavior, operating doctrine, and user docs in lockstep.</h1>
+            <p class="lede">
+              MARS treats documentation as part of the product. Source files
+              declare which durable docs own their behavior, roles are expected
+              to read and update those docs, and <code>mars docsync audit</code>
+              makes missing documentation metadata mechanically visible.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="system-record">
+          <h2>The Repo Is The System Record</h2>
+          <p>
+            MARS agents can discuss work in chat, but completed work is not true
+            until the owning repo artifact says so. Durable state lives in
+            committed files: goals, active plans, feature contracts, tickets,
+            design docs, validation reports, release notes, scores, and source.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Artifact</th><th>User meaning</th><th>When it changes</th></tr></thead>
+              <tbody>
+                <tr><td><code>docs/goals/</code></td><td>What the system is trying to achieve.</td><td>When priority, observations, or supersession changes.</td></tr>
+                <tr><td><code>docs/exec-plans/</code></td><td>The active delivery strategy and scenario order.</td><td>When the plan, assumptions, blockers, or current failing scenario changes.</td></tr>
+                <tr><td><code>docs/features/</code></td><td>BDD feature contracts and business logic.</td><td>Before or alongside implementation of user-visible behavior.</td></tr>
+                <tr><td><code>docs/tickets/</code></td><td>Work item lifecycle and completion evidence.</td><td>As tickets move from backlog to in-progress, review, done, or blocked.</td></tr>
+                <tr><td><code>docs/design-docs/</code></td><td>Architecture, operating doctrine, and decision rationale.</td><td>When a rule, workflow, subsystem, or architectural choice changes.</td></tr>
+                <tr><td><code>docs/QUALITY_SCORE.md</code></td><td>Repo-visible quality and role-health evidence.</td><td>After score export, quality review, telemetry triage, or improvement work.</td></tr>
+                <tr><td><code>CHANGELOG.md</code></td><td>Versioned user impact and patch notes.</td><td>After each non-release semantic change in MARS and initialized target repos.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="metadata">
+          <h2>MarsDocSync Metadata</h2>
+          <p>
+            A source file's top-of-file <code>MarsDocSync</code> block lists the
+            minimum docs a user or agent must inspect when that file changes.
+            The block is a review contract, not decoration.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Go, CSS, and JavaScript</h3>
+              <pre><code>/*
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/documentation-sync-architecture.md
+- docs/features/F-001-delivery-operating-model.md
+*/</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>HTML</h3>
+              <pre><code>&lt;!doctype html&gt;
+&lt;!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/product-specs/product-surface.md
+--&gt;</code></pre>
+              <p>Keep <code>&lt;!doctype html&gt;</code> first, then place the metadata comment immediately after it.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>YAML and workflows</h3>
+              <pre><code># MarsDocSync:
+# docs:
+# - docs/design-docs/cli-tool-skill-sync.md
+# - docs/features/F-004-target-harness-lifecycle.md</code></pre>
+            </article>
+          </div>
+          <h3>What Belongs In The List</h3>
+          <ul class="check-list">
+            <li>Feature contracts that define the user-visible behavior.</li>
+            <li>Design docs that explain architecture or operating doctrine.</li>
+            <li>Product specs or README surfaces users rely on.</li>
+            <li>Generated target guidance when source changes alter deployed harness behavior.</li>
+            <li>Release, tool, or CLI sync docs when a command or tool surface changes.</li>
+          </ul>
+        </section>
+
+        <section class="doc-section" id="bdd">
+          <h2>BDD Feature Contracts</h2>
+          <p>
+            Business logic belongs in <code>docs/features/</code>. A feature
+            contract explains step-by-step product behavior, scenarios, rules,
+            validations, permissions, routing, scoring, trust behavior, release
+            classification, and user-visible outcomes.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Before implementation</h3>
+              <p>Write or update the scenario and business rules that define done.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>During implementation</h3>
+              <p>Build the next walking-skeleton slice that makes one real scenario pass.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>During review</h3>
+              <p>Check code, docs, tests, and evidence against the exact scenario.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>At release</h3>
+              <p>Separate shipped user behavior from enabler work in the changelog.</p>
+            </article>
+          </div>
+          <div class="callout">
+            <strong>User rule:</strong>
+            if a behavior matters to a user, role, or reviewer, do not leave it
+            only in chat, ticket notes, or source comments. Put it in the owning
+            feature contract or design doc.
+          </div>
+        </section>
+
+        <section class="doc-section" id="context">
+          <h2>Context Routes</h2>
+          <p>
+            Documentation sync and context efficiency work together. MARS keeps
+            prompts small by injecting compact route hints and letting roles
+            retrieve deeper docs when they need them.
+          </p>
+          <pre><code>routes:
+  - when: role routing, domains, modes, schedules, chains, trigger routing, handoff, feedback, persona manuals, or manifest role behavior
+    paths: .harness/manifest.yaml, docs/roles/ROLES.md, docs/roles/personas, docs/design-docs/harness-operating-model.md, docs/design-docs/context-glossary.md
+  - when: implementation, architecture, tests, local commands, CLI commands, command flags, source documentation metadata, no-stale-documentation checks, or CLI tool/skill sync
+    paths: AGENTS.md, README.md, docs/design-docs/context-glossary.md, docs/design-docs/code-documentation-map.md, docs/design-docs/documentation-sync-architecture.md, docs/design-docs/cli-tool-skill-sync.md, docs/features/README.md</code></pre>
+          <p>
+            Users should add routes when agents repeatedly miss the same
+            durable context. Prefer pointing at existing docs over copying long
+            instructions into role prompts.
+          </p>
+        </section>
+
+        <section class="doc-section" id="workflow">
+          <h2>User Workflow</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>1. Identify the behavior owner</h3>
+              <p>Find the feature contract, design doc, product spec, README, or generated target guidance that explains the behavior you are changing.</p>
+              <pre><code>rg -n "release notes|model override|ticket delivery" docs README.md AGENTS.md</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>2. Read the file metadata</h3>
+              <p>Open the changed source file's <code>MarsDocSync</code> docs and decide whether each is still accurate after the change.</p>
+              <pre><code>sed -n '1,40p' internal/models/overrides.go</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>3. Update docs alongside behavior</h3>
+              <p>Change durable docs in the same patch as code or record explicitly why no doc text changed.</p>
+              <pre><code>edit docs/features/F-003-local-inference-lifecycle.md
+edit docs/design-docs/local-inference.md</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>4. Run audit evidence</h3>
+              <p>Use the CLI or mirrored tool before review, release, or successful job disposition.</p>
+              <pre><code>mars docsync audit --repo .
+mars tools run docsync_audit --repo . --args-json '{}'</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="audit">
+          <h2>Audit Evidence</h2>
+          <p>
+            <code>mars docsync audit</code> is local and deterministic. It walks
+            audited source roots, parses metadata, checks referenced docs exist,
+            and applies foundation prefix rules when running inside the MARS
+            source repo.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Finding</th><th>What it means</th><th>User fix</th></tr></thead>
+              <tbody>
+                <tr><td>Missing metadata</td><td>An audited source file has no top-of-file <code>MarsDocSync</code> block.</td><td>Add metadata that points to the owning docs.</td></tr>
+                <tr><td>Missing docs</td><td>A listed path does not exist or is not a durable documentation artifact.</td><td>Correct the path or create the owning doc.</td></tr>
+                <tr><td>Missing required docs</td><td>A foundation source file omitted baseline docs from the code-documentation map.</td><td>Add the required baseline path and read it before completing the change.</td></tr>
+                <tr><td>Parse error</td><td>The metadata block shape is invalid for that file type.</td><td>Use the documented block comment, HTML comment, or YAML comment format.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Validation Commands</h3>
+          <pre><code>mars docsync audit --repo .
+go test ./internal/docsconsistency ./internal/docsync
+git diff --check</code></pre>
+          <p>
+            For docs-only static-site work, this audit plus static link and
+            syntax checks is usually enough. Runtime, generated-target,
+            release, orchestration, inference, scoring, or safety changes need
+            the broader validation gates documented elsewhere.
+          </p>
+        </section>
+
+        <section class="doc-section" id="generated">
+          <h2>Generated And Deployed Docs</h2>
+          <p>
+            Target repos inherit the no-stale-documentation model. Generated
+            harnesses receive <code>AGENTS.md</code>, a context glossary,
+            feature-contract scaffolding, release docs, ticket lifecycle docs,
+            a role registry, and knowledge routes. After init, those files
+            belong to the target repo.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Surface</th><th>Generated purpose</th><th>User ownership</th></tr></thead>
+              <tbody>
+                <tr><td><code>AGENTS.md</code></td><td>First-read map and working discipline.</td><td>Target-owned after init.</td></tr>
+                <tr><td><code>docs/design-docs/context-glossary.md</code></td><td>Project vocabulary and routing hints.</td><td>Target-owned; expand as terminology grows.</td></tr>
+                <tr><td><code>.harness/knowledge/context-glossary.yaml</code></td><td>Compact context routes into durable docs.</td><td>Target-owned; tune for project concepts.</td></tr>
+                <tr><td><code>docs/features/README.md</code></td><td>BDD contract rules and feature index.</td><td>Target-owned behavior truth.</td></tr>
+                <tr><td><code>docs/roles/ROLES.md</code></td><td>Role inventory matching the manifest.</td><td>Target-owned registry; custom roles use <code>Origin: custom</code>.</td></tr>
+                <tr><td><code>docs/design-docs/release-versioning.md</code></td><td>Version, changelog, and release note contract.</td><td>Target-owned release doctrine.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td>Audit passes but prose is stale</td><td>Audit proves metadata shape and paths, not semantic completeness.</td><td>Read the listed docs and update the owning behavior description manually.</td></tr>
+                <tr><td>Agent keeps missing project terminology</td><td>Context route is absent or too vague.</td><td>Add a route in <code>.harness/knowledge/context-glossary.yaml</code> to the right glossary or design doc.</td></tr>
+                <tr><td>Docs changed without code</td><td>Pure documentation correction or user-facing site improvement.</td><td>Still run link, syntax, and DocSync checks for changed static assets.</td></tr>
+                <tr><td>Code changed without docs</td><td>No-stale-docs gap.</td><td>Open the file metadata, update listed docs, or record why they remain current.</td></tr>
+                <tr><td>New command documented in one place only</td><td>CLI tool/skill sync rule was missed.</td><td>Update CLI reference, mirrored <code>mars_cli</code> guidance, generated target docs, and affected skills.</td></tr>
+                <tr><td>Generated target guidance diverges</td><td>Foundation doctrine changed without mirroring or source-only classification.</td><td>Classify the rule, update generator defaults and tests, or record why it is source-only.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>Documentation sync keeps future users and future agents from rediscovering the same truth the hard way.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

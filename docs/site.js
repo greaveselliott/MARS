@@ -8,6 +8,9 @@ docs:
 - docs/operations-guide.html
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
+- docs/roles-guide.html
+- docs/documentation-sync-guide.html
+- docs/configuration-reference.html
 - docs/safety-quality-guide.html
 - docs/release-update-guide.html
 - docs/integrations-validation-guide.html

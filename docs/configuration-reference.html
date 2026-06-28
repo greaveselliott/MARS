@@ -1,0 +1,415 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/product-specs/product-surface.md
+- docs/bundle-reference.md
+- docs/guardrails-guide.md
+- docs/design-docs/local-inference.md
+- docs/design-docs/board-driven-integrations.md
+- docs/features/F-004-target-harness-lifecycle.md
+- docs/features/F-013-board-driven-integrations.md
+- docs/harness-guide.html
+- docs/models-guide.html
+- docs/integrations-validation-guide.html
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Configuration Reference</title>
+    <meta
+      name="description"
+      content="User reference for MARS local configuration, target harness manifest, model overrides, integrations, guardrails, knowledge routes, databases, logs, and secrets."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to configuration reference</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Configuration</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="roles-guide.html">Roles</a>
+        <a href="documentation-sync-guide.html">DocSync</a>
+        <a href="models-guide.html">Models</a>
+        <a href="integrations-validation-guide.html">Integrations</a>
+        <a href="operations-guide.html">Operations</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Configuration sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search config</label>
+          <input id="docSearch" type="search" placeholder="manifest, model, db">
+          <p class="search-hint">Filters schemas, examples, and operator notes.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#locations">Locations</a>
+          <a href="#local-config">Local Config</a>
+          <a href="#manifest">Manifest</a>
+          <a href="#model-overrides">Model Overrides</a>
+          <a href="#integrations">Integrations</a>
+          <a href="#guardrails">Guardrails</a>
+          <a href="#knowledge">Knowledge Routes</a>
+          <a href="#secrets">Secrets</a>
+          <a href="#validation">Validation</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Configuration reference</p>
+            <h1>Know which settings are local, committed, generated, and user-owned.</h1>
+            <p class="lede">
+              MARS has two configuration layers: machine-local runtime state
+              under <code>~/.mars/</code> and target-repo harness configuration
+              under <code>.harness/</code>. This reference shows what each file
+              controls, how it is validated, and what should never be committed.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="locations">
+          <h2>Configuration Locations</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Scope</th><th>Purpose</th><th>Commit?</th></tr></thead>
+              <tbody>
+                <tr><td><code>~/.mars/config.yaml</code></td><td>Machine</td><td>Local runtime preferences, setup state, installed paths, and private release auth fallback.</td><td>No</td></tr>
+                <tr><td><code>~/.mars/models/</code></td><td>Machine</td><td>Downloaded GGUF model files and local inference assets.</td><td>No</td></tr>
+                <tr><td><code>~/.mars/db/{repo-name}/mars.db</code></td><td>Machine per target</td><td>Default repo-scoped queue, telemetry, scoring, registry, and job state.</td><td>No</td></tr>
+                <tr><td><code>~/.mars/db/mars.db</code></td><td>Machine shared</td><td>Legacy shared default used by <code>mars serve</code> unless <code>--db</code> is set.</td><td>No</td></tr>
+                <tr><td><code>~/.mars/traces/logs/</code></td><td>Machine</td><td>Verbose command logs for <code>run</code>, <code>start</code>, and <code>serve</code>.</td><td>No</td></tr>
+                <tr><td><code>.harness/manifest.yaml</code></td><td>Target repo</td><td>Executable roles, domains, modes, tools, triggers, models, trust, guardrails, and routes.</td><td>Yes</td></tr>
+                <tr><td><code>.harness/model-overrides.yaml</code></td><td>Target repo</td><td>Repo-owned model routing metadata. Stores env var names, not raw secrets.</td><td>Usually yes</td></tr>
+                <tr><td><code>.harness/integrations.example.yaml</code></td><td>Target repo</td><td>Generated example for optional integrations.</td><td>Yes</td></tr>
+                <tr><td><code>.harness/integrations.yaml</code></td><td>Target repo</td><td>Opt-in integration profile and provider settings.</td><td>Depends on tenant values; local/untracked is often best.</td></tr>
+                <tr><td><code>.harness/.env.local</code></td><td>Target repo local</td><td>Ignored local provider credentials written with owner-only permissions.</td><td>No</td></tr>
+                <tr><td><code>.harness/.env.example</code></td><td>Target repo</td><td>Credential variable names only.</td><td>Yes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="local-config">
+          <h2>Machine-Local Config</h2>
+          <p>
+            <code>mars setup</code> prepares local state outside repositories.
+            This lets the same installed binary run across many target repos
+            without committing model weights, database files, tokens, or logs.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Initialize or repair local setup</h3>
+              <pre><code>mars setup --skip-github
+mars setup --download
+mars doctor --json
+mars path setup</code></pre>
+              <p><code>setup</code> detects hardware, writes config, installs llama-server assets, downloads eligible models, and can configure shell PATH.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Release auth</h3>
+              <pre><code>mars auth github check
+mars auth github setup</code></pre>
+              <p>Resolver order is <code>GH_TOKEN</code>, <code>GITHUB_TOKEN</code>, GitHub CLI auth, then optional local config. Token values must never appear in docs, chat, commits, logs, traces, or command output.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Explicit database path</h3>
+              <pre><code>mars start --repo /path/to/repo --db /private/tmp/mars-demo.db
+mars serve --db /private/tmp/mars-shared.db</code></pre>
+              <p>Use <code>--db</code> for isolated validation runs, demos, or deliberate multi-repo service state.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="manifest">
+          <h2>.harness/manifest.yaml</h2>
+          <p>
+            The manifest is required for target harness execution. It must have
+            a <code>name</code> and at least one role. New generated manifests
+            use <code>orchestration_mode: dispatch</code>.
+          </p>
+          <pre><code>name: my-project
+description: Starter autonomous AI pipeline for my-project
+orchestration_mode: dispatch
+
+roles:
+  engineer:
+    prompt: roles/engineer.md
+    domain: engineer
+    mode: ticket-delivery
+    model: coding
+    trust_level: contributor
+    max_turns: 100
+    schedule: "0 0,6,12,18 * * 1-5"
+    knowledge: [knowledge/context-glossary.yaml]
+    guardrails: [guardrails/safety.yaml]
+    tools: [file_read, file_write, shell_exec, mars_cli, grep, docsync_audit, git_status, git_diff, git_commit]
+    triggers:
+      - ticket.assigned</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Field</th><th>Allowed or expected values</th><th>User guidance</th></tr></thead>
+              <tbody>
+                <tr><td><code>name</code></td><td>Non-empty string.</td><td>Stable bundle name used in logs and jobs.</td></tr>
+                <tr><td><code>description</code></td><td>String.</td><td>Human-readable target harness summary.</td></tr>
+                <tr><td><code>orchestration_mode</code></td><td>Empty, <code>legacy</code>, or <code>dispatch</code>.</td><td>Use <code>dispatch</code> for new targets unless preserving a legacy chain deliberately.</td></tr>
+                <tr><td><code>roles</code></td><td>Map of role key to role config.</td><td>Every executable role lives here.</td></tr>
+                <tr><td><code>prompt</code></td><td>Path relative to <code>.harness/</code>.</td><td>Required for every role.</td></tr>
+                <tr><td><code>domain</code></td><td><code>planner</code>, <code>engineer</code>, <code>reviewer</code>, <code>maintainer</code>, <code>end-to-end-tester</code>, <code>orchestrator</code>.</td><td>Optional for compatibility, recommended for all active roles.</td></tr>
+                <tr><td><code>mode</code></td><td>Lower-kebab-case purpose.</td><td>Use names like <code>ticket-delivery</code> or <code>quality-review</code>.</td></tr>
+                <tr><td><code>model</code></td><td><code>fast</code>, <code>reasoning</code>, <code>coding</code>, or model hint.</td><td>Prefer tier names so routing can adapt to hardware and overrides.</td></tr>
+                <tr><td><code>trust_level</code></td><td><code>observer</code>, <code>contributor</code>, or <code>autonomous</code>.</td><td>Start narrow; raise trust from evidence.</td></tr>
+                <tr><td><code>tools</code></td><td>Tool names from the MARS tool registry.</td><td>Explicit allowlist. Roles with no tools cannot mutate or inspect through tools.</td></tr>
+                <tr><td><code>guardrails</code></td><td>Files under <code>.harness/</code>.</td><td>Attach global and role-specific policy.</td></tr>
+                <tr><td><code>knowledge</code></td><td>Route files under <code>.harness/knowledge/</code>.</td><td>Keep context routed, not stuffed.</td></tr>
+                <tr><td><code>triggers</code></td><td>Event expressions or shorthand trigger names.</td><td>Optional compatibility input for events like failed workflows or stale tickets.</td></tr>
+                <tr><td><code>schedule</code></td><td>Named preset or 5-field cron.</td><td>Use explicit cron for recurring autonomous roles.</td></tr>
+                <tr><td><code>then</code>, <code>idle_then</code></td><td>Existing role keys.</td><td>Legacy mode only. Dispatch mode routes through Orchestrator.</td></tr>
+                <tr><td><code>max_turns</code></td><td>Integer.</td><td>Caps role conversation turns.</td></tr>
+                <tr><td><code>context_size</code></td><td>Integer token window override.</td><td>Use sparingly; served model windows and pruning should usually own this.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="model-overrides">
+          <h2>.harness/model-overrides.yaml</h2>
+          <p>
+            Model overrides let a repo route all roles, a model tier, or one
+            role to a specific local bundle, Ollama model, cloud provider, or
+            OpenAI-compatible endpoint. Role overrides win over tier overrides,
+            which win over the default route.
+          </p>
+          <pre><code>version: 2
+default:
+  routing: local
+  local_bundle: auto
+  reason: Use the best eligible local bundle for this machine.
+tiers:
+  coding:
+    provider: ollama
+    model: qwen3.6:27b
+    endpoint: http://127.0.0.1:11434/v1
+    reason: Local coding experiment.
+roles:
+  engineer:
+    provider: openai-compatible
+    model: repo-coder
+    endpoint: http://127.0.0.1:8088/v1
+    api_key_env: REPO_CODER_API_KEY
+    reason: Target-specific coding gateway.</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Field</th><th>Meaning</th><th>Safety rule</th></tr></thead>
+              <tbody>
+                <tr><td><code>routing</code></td><td>Default route family, such as local or cloud.</td><td>Use commands where possible so validation runs.</td></tr>
+                <tr><td><code>local_bundle</code></td><td>Local bundle name or <code>auto</code>.</td><td><code>auto</code> chooses the highest-ranked eligible bundle.</td></tr>
+                <tr><td><code>provider</code></td><td>Provider name such as <code>ollama</code>, <code>openai</code>, <code>anthropic</code>, or <code>openai-compatible</code>.</td><td>Provider support must be backed by adapter tests and docs.</td></tr>
+                <tr><td><code>model</code></td><td>Provider model identifier.</td><td>Ad-hoc candidates do not become defaults without benchmark evidence.</td></tr>
+                <tr><td><code>endpoint</code></td><td>OpenAI-compatible base URL.</td><td>Use local URLs or trusted gateways; avoid committing tenant-secret endpoints when inappropriate.</td></tr>
+                <tr><td><code>api_key_env</code></td><td>Name of the environment variable containing the credential.</td><td>Commit env var names only, never raw values.</td></tr>
+                <tr><td><code>reason</code></td><td>Human-readable rationale.</td><td>Explain why the override exists and when to remove it.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars models override --repo /path/to/repo --tier coding --provider ollama --model qwen3.6:27b
+mars models override --repo /path/to/repo --role engineer --provider openai-compatible --endpoint http://127.0.0.1:8088/v1 --model repo-coder
+mars models credentials write-local-env --repo /path/to/repo --provider openai --api-key-env OPENAI_API_KEY</code></pre>
+        </section>
+
+        <section class="doc-section" id="integrations">
+          <h2>.harness/integrations.yaml</h2>
+          <p>
+            Integrations are optional and default off. Generated targets receive
+            <code>.harness/integrations.example.yaml</code>, but MARS never
+            writes <code>.harness/integrations.yaml</code> by default. Missing
+            config, empty profile, or unknown profile normalizes to
+            <code>ceo-led</code>.
+          </p>
+          <pre><code>version: 1
+flow_profile: board-driven
+
+ingestion:
+  jira:
+    enabled: true
+    provider: atlassian_mcp
+    base_url_env: JIRA_SITE_URL
+    auth:
+      email_env: JIRA_EMAIL
+      api_token_env: JIRA_API_TOKEN
+      bearer_token_env: JIRA_BEARER_TOKEN
+    webhook_secret_env: JIRA_WEBHOOK_SECRET
+    poll_interval: 60s
+    jql: project = DEMO AND labels = example-required-label
+    project_repo_map:
+      - { project: DEMO, repo: greaveselliott/example-target }
+    scope:
+      allowed_workspaces_env: JIRA_ALLOWED_WORKSPACES
+      required_labels: [example-required-label]
+      board_id_env: JIRA_BOARD_ID
+    prioritisation:
+      scope: active_sprint
+      ready_statuses: ["To Do", "Ready for Dev", "Selected for Development"]
+      order: [priority, rank, age]
+      respect_blocked_by: true
+
+design_sources:
+  figma:
+    enabled: false
+    token_env: FIGMA_TOKEN
+
+delivery:
+  enabled: false
+  mode: trunk
+  branch_pattern: "mars/{ticket}-{slug}"
+  min_trust: contributor</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Section</th><th>Purpose</th><th>Containment rule</th></tr></thead>
+              <tbody>
+                <tr><td><code>flow_profile</code></td><td><code>ceo-led</code> or <code>board-driven</code>.</td><td>Board-driven behavior is never inferred from partial config.</td></tr>
+                <tr><td><code>ingestion.jira</code></td><td>JIRA webhook and polling mirror config.</td><td>Requires explicit enablement, repo mapping, and scope gates before ticket writes.</td></tr>
+                <tr><td><code>auth</code></td><td>Names credential environment variables.</td><td>Never store token values.</td></tr>
+                <tr><td><code>mcp</code></td><td>Optional Atlassian MCP endpoint and proxy settings.</td><td>MCP sessions are job-scoped and cleaned up after sync.</td></tr>
+                <tr><td><code>scope</code></td><td>Allowed workspaces, board ID, labels, and field indirection.</td><td>Drops unmapped or out-of-scope issues instead of widening intake.</td></tr>
+                <tr><td><code>design_sources.figma</code></td><td>Future bounded design context.</td><td>Token env var name only.</td></tr>
+                <tr><td><code>delivery</code></td><td>Trunk or future pull-request delivery settings.</td><td>Pull-request behavior must be explicitly gated and trust-bounded.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="guardrails">
+          <h2>Guardrails</h2>
+          <p>
+            Guardrails are YAML policies referenced from manifest roles. Hard
+            rules block operations; advisory rules appear in role context.
+          </p>
+          <pre><code>rules:
+  - id: no-hardcoded-secrets
+    name: No hardcoded secrets
+    severity: hard
+    scope: global
+    pattern: '(?i)(password|secret|api_key|token)\s*[:=]\s*["''][^"'']{8,}'
+    message: Do not hardcode secrets. Use environment variables or a secrets manager.
+    stale_days: -1</code></pre>
+          <p>
+            Keep guardrail messages actionable. A blocked role should know what
+            went wrong and what safe remediation command or file change to use.
+          </p>
+        </section>
+
+        <section class="doc-section" id="knowledge">
+          <h2>Knowledge Routes And Skills</h2>
+          <p>
+            Knowledge routes point roles at durable docs. Skills teach recurring
+            procedures. Neither grants authority; tools, trust, and guardrails
+            still come from the manifest and runtime policy.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Knowledge route</h3>
+              <pre><code>routes:
+  - when: release planning, semantic versioning, changelog, patch notes, or tags
+    paths: VERSION, CHANGELOG.md, docs/design-docs/release-versioning.md</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Skill file</h3>
+              <pre><code>---
+name: self-improvement
+scope: all
+---
+
+# Self-Improvement Skill
+
+Use this when a repeated failure suggests the harness should improve itself.</code></pre>
+            </article>
+          </div>
+          <p>
+            Add routes when context is missing. Add skills when a repeatable
+            workflow should be taught compactly. Add tools only when a repeated
+            deterministic action needs code, validation, and policy.
+          </p>
+        </section>
+
+        <section class="doc-section" id="secrets">
+          <h2>Secrets And Local Values</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Need</th><th>Use</th><th>Do not use</th></tr></thead>
+              <tbody>
+                <tr><td>GitHub release auth</td><td><code>GH_TOKEN</code>, <code>GITHUB_TOKEN</code>, GitHub CLI auth, or owner-only local config.</td><td>Committed tokens, ticket text, chat, logs, or traces.</td></tr>
+                <tr><td>Cloud model key</td><td><code>api_key_env</code> plus process environment or ignored <code>.harness/.env.local</code>.</td><td>Raw API keys in <code>model-overrides.yaml</code>.</td></tr>
+                <tr><td>JIRA auth</td><td>Env var names such as <code>JIRA_EMAIL</code>, <code>JIRA_API_TOKEN</code>, and <code>JIRA_BEARER_TOKEN</code>.</td><td>Committed auth values or broad unscoped JQL.</td></tr>
+                <tr><td>Tenant-specific IDs</td><td>Env var indirection for cloud ID, board ID, field IDs, and workspace URLs.</td><td>Hardcoded instance-specific constants in Go or generated defaults.</td></tr>
+                <tr><td>Local experiment endpoint</td><td>Local ignored config or explicit CLI flags.</td><td>Committed private endpoints if they identify an internal tenant.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="validation">
+          <h2>Validation Commands</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Change</th><th>Minimum user validation</th></tr></thead>
+              <tbody>
+                <tr><td>Manifest role, tool, trigger, or registry change</td><td><code>mars doctor --repo .</code>, relevant <code>mars run role --dry-run</code>, and role-registry review.</td></tr>
+                <tr><td>Model override</td><td><code>mars models evaluate</code> for candidates where possible, <code>mars doctor --repo .</code>, and a dry run against the affected role.</td></tr>
+                <tr><td>Integration config</td><td>Config parse through the command using it, no-config smoke, and scoped provider validation when enabled.</td></tr>
+                <tr><td>Guardrail rule</td><td><code>mars guardrails secret-scan --repo .</code> and a representative role dry run or blocked-write check.</td></tr>
+                <tr><td>Knowledge route</td><td>Role dry run to inspect assembled route hints.</td></tr>
+                <tr><td>Docs or source DocSync metadata</td><td><code>mars docsync audit --repo .</code> and docs-consistency tests where available.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars doctor --repo .
+mars run engineer --repo . --dry-run
+mars docsync audit --repo .
+go test ./internal/docsconsistency ./internal/docsync</code></pre>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td><code>missing .harness/manifest.yaml</code></td><td>Repo is not initialized or harness files were removed.</td><td>Run <code>mars init --repo /path/to/repo</code>, or use <code>--dry-run --no-init</code> for observer-safe inspection.</td></tr>
+                <tr><td>Invalid <code>orchestration_mode</code></td><td>Manifest value is not empty, <code>legacy</code>, or <code>dispatch</code>.</td><td>Set <code>orchestration_mode: dispatch</code> unless preserving legacy chains.</td></tr>
+                <tr><td>Role chain points to missing role</td><td><code>then</code> or <code>idle_then</code> references an unknown key.</td><td>Correct the role key or move to dispatch mode.</td></tr>
+                <tr><td>Cloud model auth fails</td><td><code>api_key_env</code> is missing from the process environment.</td><td>Export the named variable or write ignored local credentials with <code>mars models credentials write-local-env</code>.</td></tr>
+                <tr><td>Board-driven config appears ignored</td><td>Profile is missing, invalid, or left at <code>ceo-led</code>.</td><td>Set <code>flow_profile: board-driven</code> and enable the relevant integration section.</td></tr>
+                <tr><td>JIRA tickets are not mirrored</td><td>Project mapping, workspace, board, label, or JQL containment rejected the issue.</td><td>Check sanitized logs and tighten config deliberately; do not widen scope by accident.</td></tr>
+                <tr><td>Secret scan blocks a file</td><td>Hard guardrail matched committed content.</td><td>Move the secret to environment or ignored local config and rerun the scan.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>Configuration should make autonomy explicit: what can run, what it may touch, what model it uses, and where evidence is stored.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

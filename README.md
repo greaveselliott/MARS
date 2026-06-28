@@ -38,6 +38,9 @@ management, extension, and troubleshooting. Deeper site pages now cover the
 [operations guide](docs/operations-guide.html),
 [models and inference guide](docs/models-guide.html), and
 [tools and MCP guide](docs/tools-mcp-guide.html). The next layer covers
+[roles and agents](docs/roles-guide.html),
+[configuration](docs/configuration-reference.html),
+[documentation sync](docs/documentation-sync-guide.html),
 [safety, trust, and quality](docs/safety-quality-guide.html),
 [release and update](docs/release-update-guide.html), and
 [integrations and validation](docs/integrations-validation-guide.html).
@@ -272,6 +275,14 @@ safety, or orchestration changes do. See
   bundles, routing, providers, credentials, overrides, and evaluation.
 - [docs/tools-mcp-guide.html](docs/tools-mcp-guide.html): universal tools,
   MCP setup, trust, allowlists, tool categories, and formal tool creation.
+- [docs/roles-guide.html](docs/roles-guide.html): role domains, generated role
+  roster, dispatch routing, trust, scoring, handoffs, and customization.
+- [docs/configuration-reference.html](docs/configuration-reference.html):
+  local config, manifest fields, model overrides, integrations, guardrails,
+  knowledge routes, databases, logs, and secret handling.
+- [docs/documentation-sync-guide.html](docs/documentation-sync-guide.html):
+  no-stale-docs workflow, MarsDocSync metadata, BDD contracts, context routes,
+  repo-owned system records, and docsync audit evidence.
 - [docs/safety-quality-guide.html](docs/safety-quality-guide.html):
   guardrails, secret scanning, blast radius, trust, scores, quality export,
   and telemetry.

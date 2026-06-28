@@ -21,6 +21,9 @@ docs:
 - docs/safety-quality-guide.html
 - docs/release-update-guide.html
 - docs/integrations-validation-guide.html
+- docs/roles-guide.html
+- docs/documentation-sync-guide.html
+- docs/configuration-reference.html
 -->
 <html lang="en">
   <head>
@@ -52,6 +55,9 @@ docs:
         <a href="operations-guide.html">Operations</a>
         <a href="models-guide.html">Models</a>
         <a href="tools-mcp-guide.html">Tools/MCP</a>
+        <a href="roles-guide.html">Roles</a>
+        <a href="configuration-reference.html">Config</a>
+        <a href="documentation-sync-guide.html">DocSync</a>
         <a href="safety-quality-guide.html">Safety</a>
         <a href="release-update-guide.html">Release</a>
         <a href="integrations-validation-guide.html">Integrations</a>
@@ -76,6 +82,7 @@ docs:
           <a href="#run-agents">Run Agents</a>
           <a href="#operate">Operate MARS</a>
           <a href="#models">Models and Inference</a>
+          <a href="#roles-config-docsync">Roles, Config, DocSync</a>
           <a href="#safety">Safety and Trust</a>
           <a href="#telemetry">Telemetry and Quality</a>
           <a href="#release">Release and Updates</a>
@@ -162,6 +169,9 @@ docs:
             <a href="operations-guide.html">Operations Guide</a>
             <a href="models-guide.html">Models And Inference Guide</a>
             <a href="tools-mcp-guide.html">Tools And MCP Guide</a>
+            <a href="roles-guide.html">Roles And Agents Guide</a>
+            <a href="configuration-reference.html">Configuration Reference</a>
+            <a href="documentation-sync-guide.html">Documentation Sync Guide</a>
             <a href="safety-quality-guide.html">Safety, Trust, And Quality Guide</a>
             <a href="release-update-guide.html">Release And Update Guide</a>
             <a href="integrations-validation-guide.html">Integrations And Validation Guide</a>
@@ -555,6 +565,45 @@ mars models override --repo ~/my-project --role engineer --provider openai-compa
           </p>
         </section>
 
+        <section class="doc-section" id="roles-config-docsync">
+          <h2>Roles, Configuration, And Documentation Sync</h2>
+          <p>
+            These guides explain the user-controlled parts of the harness: who
+            the agents are, what they can do, which files configure them, and
+            how durable documentation stays aligned with behavior.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Roles and agents</h3>
+              <p>
+                Learn the six operating domains, generated role roster,
+                dispatch routing, trust, scoring, handoffs, and safe role
+                customization.
+              </p>
+              <p><a href="roles-guide.html">Open the roles guide</a></p>
+            </article>
+            <article data-doc-filter>
+              <h3>Configuration reference</h3>
+              <p>
+                Read the schemas and ownership rules for local config,
+                <code>.harness/manifest.yaml</code>, model overrides,
+                integrations, guardrails, knowledge routes, databases, and
+                secrets.
+              </p>
+              <p><a href="configuration-reference.html">Open the configuration reference</a></p>
+            </article>
+            <article data-doc-filter>
+              <h3>Documentation sync</h3>
+              <p>
+                Understand <code>MarsDocSync</code> metadata, BDD feature
+                contracts, context routes, repo-owned system records, and the
+                audit commands that prevent stale docs.
+              </p>
+              <p><a href="documentation-sync-guide.html">Open the DocSync guide</a></p>
+            </article>
+          </div>
+        </section>
+
         <section class="doc-section" id="safety">
           <h2>Safety, Guardrails, Trust, And Tools</h2>
           <p>
@@ -791,6 +840,9 @@ roles:
             <a href="operations-guide.html">Operations guide</a>
             <a href="models-guide.html">Models and inference guide</a>
             <a href="tools-mcp-guide.html">Tools and MCP guide</a>
+            <a href="roles-guide.html">Roles and agents guide</a>
+            <a href="configuration-reference.html">Configuration reference</a>
+            <a href="documentation-sync-guide.html">Documentation sync guide</a>
             <a href="safety-quality-guide.html">Safety, trust, and quality guide</a>
             <a href="release-update-guide.html">Release and update guide</a>
             <a href="integrations-validation-guide.html">Integrations and validation guide</a>

@@ -1,0 +1,433 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/product-specs/product-surface.md
+- docs/roles/ROLES.md
+- docs/design-docs/harness-operating-model.md
+- docs/design-docs/foundation-operating-model.md
+- docs/design-docs/tools-glossary.md
+- docs/harness-guide.html
+- docs/tools-mcp-guide.html
+- docs/safety-quality-guide.html
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Roles And Agents Guide</title>
+    <meta
+      name="description"
+      content="User guide to MARS roles, domains, modes, role registry, dispatch routing, trust, tools, scoring, and safe role customization."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to roles guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Roles guide</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="configuration-reference.html">Configuration</a>
+        <a href="documentation-sync-guide.html">DocSync</a>
+        <a href="tools-mcp-guide.html">Tools/MCP</a>
+        <a href="safety-quality-guide.html">Safety</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Roles guide sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search roles</label>
+          <input id="docSearch" type="search" placeholder="engineer, dispatch, trust">
+          <p class="search-hint">Filters role descriptions, handoffs, and customization notes.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#mental-model">Mental Model</a>
+          <a href="#domains">Domains</a>
+          <a href="#default-roles">Default Roles</a>
+          <a href="#routing">Routing And Dispatch</a>
+          <a href="#authority">Authority</a>
+          <a href="#registry">Role Registry</a>
+          <a href="#customize">Customize Roles</a>
+          <a href="#operate">Operate Roles</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Roles and agents</p>
+            <h1>Understand the people in the machine before you let them work.</h1>
+            <p class="lede">
+              MARS roles are explicit repo-owned agents. Each role has a prompt,
+              operating domain, run mode, model tier, tool allowlist,
+              guardrails, trust level, schedule or trigger, score, and handoff
+              contract. This guide explains how users should read, run, and
+              safely change them.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="mental-model">
+          <h2>Mental Model</h2>
+          <p>
+            A role is the executable unit you run with <code>mars run</code> or
+            schedule through <code>start</code> and <code>serve</code>. A domain
+            is the stable vocabulary for what kind of work the role does. A
+            mode is the specific reason the role is running right now.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Role key</h3>
+              <p>
+                The manifest key, such as <code>engineer</code>,
+                <code>qa</code>, or <code>release-manager</code>. It is the
+                name you pass to <code>mars run</code> and the name recorded in
+                jobs, traces, scores, and trust.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>Domain</h3>
+              <p>
+                One of the six canonical operating groups:
+                <code>planner</code>, <code>engineer</code>,
+                <code>reviewer</code>, <code>maintainer</code>,
+                <code>end-to-end-tester</code>, or <code>orchestrator</code>.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>Mode</h3>
+              <p>
+                Lower-kebab-case purpose inside a domain, such as
+                <code>ticket-delivery</code>, <code>quality-review</code>,
+                <code>release-management</code>, or
+                <code>dispatch-routing</code>.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>Authority</h3>
+              <p>
+                Tools, trust, guardrails, and workflow gates decide what a role
+                may actually do. A domain label never grants authority by
+                itself.
+              </p>
+            </article>
+          </div>
+          <div class="callout">
+            <strong>User rule:</strong>
+            change the manifest when you want executable behavior to change;
+            change <code>docs/roles/ROLES.md</code> when you want the human and
+            agent inventory to stay truthful.
+          </div>
+        </section>
+
+        <section class="doc-section" id="domains">
+          <h2>Canonical Domains</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead>
+                <tr>
+                  <th>Domain</th>
+                  <th>Responsibility</th>
+                  <th>Boundary</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>planner</code></td>
+                  <td>Goals, strategy, scenario order, architecture direction, and ticket shape.</td>
+                  <td>Does not implement product code or claim delivery complete.</td>
+                </tr>
+                <tr>
+                  <td><code>engineer</code></td>
+                  <td>Bounded source, test, documentation, and deterministic repair changes.</td>
+                  <td>Must respect ticket, BDD, guardrail, test, DocSync, release, and git gates.</td>
+                </tr>
+                <tr>
+                  <td><code>reviewer</code></td>
+                  <td>Behavior, evidence, security posture, tool exposure, and completion truth.</td>
+                  <td>Does not hide defects by redefining acceptance criteria.</td>
+                </tr>
+                <tr>
+                  <td><code>maintainer</code></td>
+                  <td>Dependencies, release state, documentation hygiene, scores, and routine upkeep.</td>
+                  <td>Does not change product direction without planner input.</td>
+                </tr>
+                <tr>
+                  <td><code>end-to-end-tester</code></td>
+                  <td>Real build, run, user, dogfood, and agent-path validation evidence.</td>
+                  <td>Does not turn failed validation into success by changing the claim.</td>
+                </tr>
+                <tr>
+                  <td><code>orchestrator</code></td>
+                  <td>Queue health, dispatch routing, stuck-work recovery, and ticket hygiene.</td>
+                  <td>Does not hide blocked work or start random backlog over active truth.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="default-roles">
+          <h2>Default Roles</h2>
+          <p>
+            Generated target harnesses start with explicit roles. They are
+            starter defaults, not untouchable built-ins. Users can edit prompts,
+            schedules, tools, model tiers, guardrails, and knowledge routes to
+            fit the target repo.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Domain / mode</th>
+                  <th>User-facing job</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>ceo</code></td><td><code>planner</code> / <code>strategy</code></td><td>Owns vision, active goals, scope choices, and strategy tradeoffs.</td></tr>
+                <tr><td><code>head-of-strategy</code></td><td><code>planner</code> / <code>strategy-advisory</code></td><td>Advises on strategy memos, executive narrative, tradeoffs, and goal conflict.</td></tr>
+                <tr><td><code>coo</code></td><td><code>planner</code> / <code>execution-planning</code></td><td>Owns active plans, BDD feature contracts, scenario schedules, and current failing scenarios.</td></tr>
+                <tr><td><code>cto-weekly</code></td><td><code>planner</code> / <code>technical-planning</code></td><td>Turns scenario intent into architecture-aware implementation tickets.</td></tr>
+                <tr><td><code>engineer</code></td><td><code>engineer</code> / <code>ticket-delivery</code></td><td>Completes one bounded ticket with tests, docs, evidence, and commits.</td></tr>
+                <tr><td><code>qa</code></td><td><code>reviewer</code> / <code>quality-review</code></td><td>Checks implementation evidence against tickets, BDD contracts, and regression risk.</td></tr>
+                <tr><td><code>security</code></td><td><code>reviewer</code> / <code>security-review</code></td><td>Reviews security posture, secrets, sensitive tool use, and remediation quality.</td></tr>
+                <tr><td><code>dependency-manager</code></td><td><code>maintainer</code> / <code>dependency-maintenance</code></td><td>Keeps package and dependency work small, tested, and reversible.</td></tr>
+                <tr><td><code>release-manager</code></td><td><code>maintainer</code> / <code>release-management</code></td><td>Maintains versions, changelog, tags, release assets, and release blockers.</td></tr>
+                <tr><td><code>dogfood</code></td><td><code>end-to-end-tester</code> / <code>dogfood-validation</code></td><td>Runs real setup, build, execution, and user-path validation.</td></tr>
+                <tr><td><code>pipeline-fixer</code></td><td><code>engineer</code> / <code>pipeline-repair</code></td><td>Repairs failed build, test, or workflow paths through bounded changes.</td></tr>
+                <tr><td><code>orchestrator</code></td><td><code>orchestrator</code> / <code>dispatch-routing</code></td><td>Chooses the next valid role after terminal dispositions and stops unclear loops.</td></tr>
+                <tr><td><code>janitor</code></td><td><code>orchestrator</code> / <code>ticket-hygiene</code></td><td>Finds stale, blocked, misleading, or idle ticket state and routes cleanup.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Source-Only Foundation Role</h3>
+          <p>
+            The MARS source repo also has <code>foundation-maintainer</code>, a
+            source-only manual role for maintaining the software factory. It is
+            not generated into target harnesses and is rejected for ordinary
+            target repos.
+          </p>
+        </section>
+
+        <section class="doc-section" id="routing">
+          <h2>Routing And Dispatch</h2>
+          <p>
+            New generated target manifests use
+            <code>orchestration_mode: dispatch</code>. In dispatch mode, a role
+            completes by recording a disposition. The runtime sends that
+            structured packet to <code>orchestrator</code>, which picks one
+            valid next manifest role or stops with a reason.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Normal product delivery spine</h3>
+              <pre><code>ceo
+coo
+cto-weekly
+engineer
+qa
+security
+dependency-manager
+release-manager</code></pre>
+              <p>The Orchestrator sits between terminal jobs and uses dispositions, role manuals, active plans, tickets, and loop guards before scheduling follow-up.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Support and recovery roles</h3>
+              <pre><code>head-of-strategy
+dogfood
+pipeline-fixer
+janitor</code></pre>
+              <p>These roles advise, validate, repair, or clean state. They do not replace the delivery owners for strategy, planning, implementation, review, and release.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Legacy compatibility</h3>
+              <pre><code>orchestration_mode: legacy
+roles:
+  engineer:
+    then: [qa]
+    idle_then: [janitor]</code></pre>
+              <p>Legacy chains remain supported for repos that deliberately keep them, but dispatch mode is the generated default.</p>
+            </article>
+          </div>
+          <h3>Disposition Handoff Fields</h3>
+          <p>
+            Roles can provide <code>handoff</code> and <code>feedback</code>
+            objects when they call <code>job_disposition_record</code>. Those
+            fields tell Orchestrator who should act next, what evidence exists,
+            which blocker remains, and what correction is being requested.
+          </p>
+        </section>
+
+        <section class="doc-section" id="authority">
+          <h2>Authority: Tools, Trust, Models, And Guardrails</h2>
+          <p>
+            A role's prompt explains how it should think. The manifest and
+            runtime policy decide what it can actually do.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Control</th><th>Where users configure or inspect it</th><th>Effect</th></tr></thead>
+              <tbody>
+                <tr><td>Tool allowlist</td><td><code>.harness/manifest.yaml</code>, <code>mars tools list</code></td><td>Determines which deterministic capabilities the role can call.</td></tr>
+                <tr><td>Trust level</td><td><code>.harness/manifest.yaml</code>, <code>mars trust</code>, <code>mars trust set</code></td><td>Controls observer, contributor, or autonomous authority.</td></tr>
+                <tr><td>Model tier</td><td><code>.harness/manifest.yaml</code>, <code>.harness/model-overrides.yaml</code></td><td>Routes the role to fast, reasoning, coding, local, cloud, or explicit provider choices.</td></tr>
+                <tr><td>Guardrails</td><td><code>.harness/guardrails/*.yaml</code>, role <code>guardrails</code> lists</td><td>Blocks or advises on risky writes and tool behavior.</td></tr>
+                <tr><td>Knowledge routes</td><td><code>.harness/knowledge/*.yaml</code></td><td>Points the role at durable docs only when a task needs them.</td></tr>
+                <tr><td>Scores</td><td><code>mars scores</code>, <code>docs/QUALITY_SCORE.md</code></td><td>Tracks outcome quality and informs future trust and intervention work.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Safe default:</strong>
+            start custom roles at <code>observer</code> or
+            <code>contributor</code> with narrow tools, then expand authority
+            only after repeated successful evidence.
+          </div>
+        </section>
+
+        <section class="doc-section" id="registry">
+          <h2>Role Registry</h2>
+          <p>
+            <code>docs/roles/ROLES.md</code> is the checked inventory that users
+            and agents can review without parsing the whole harness. It should
+            mirror the executable manifest and record custom target roles
+            explicitly.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Registry column</th><th>Why it matters</th></tr></thead>
+              <tbody>
+                <tr><td><code>Origin</code></td><td>Distinguishes generated defaults, custom target roles, and source-only foundation roles.</td></tr>
+                <tr><td><code>Domain</code> and <code>Mode</code></td><td>Show the role's operating memory and purpose.</td></tr>
+                <tr><td><code>Trigger sources</code> and <code>Schedule</code></td><td>Explain how work enters the queue.</td></tr>
+                <tr><td><code>Tools</code></td><td>Make tool exposure reviewable before the role runs.</td></tr>
+                <tr><td><code>Trust level</code></td><td>Shows autonomy level and mutation authority.</td></tr>
+                <tr><td><code>Guardrails</code></td><td>Names the policy envelope around the role.</td></tr>
+                <tr><td><code>Model routing</code></td><td>Explains whether the role favors fast, reasoning, or coding behavior.</td></tr>
+                <tr><td><code>Scoring signals</code></td><td>Defines the outcome signals used to judge role health.</td></tr>
+                <tr><td><code>Escalation behavior</code></td><td>Tells users how blocked or risky work should be surfaced.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars doctor --repo /path/to/repo</code></pre>
+          <p>
+            <code>doctor</code> reports role-registry drift so users can repair
+            stale rows, missing manifest roles, invalid domains, or outdated
+            routing metadata.
+          </p>
+        </section>
+
+        <section class="doc-section" id="customize">
+          <h2>Customize Roles Safely</h2>
+          <p>
+            Role customization is expected. The key is to keep runtime truth,
+            documentation, and safety policy aligned in the same change.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Add a role</h3>
+              <pre><code>mkdir -p .harness/roles
+edit .harness/roles/docs-writer.md
+edit .harness/manifest.yaml
+edit docs/roles/ROLES.md
+mars doctor --repo .</code></pre>
+              <p>Add the manifest entry, choose domain and mode, grant narrow tools, set trust, and add a registry row with <code>Origin</code> set to <code>custom</code>.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Tune a role</h3>
+              <pre><code>edit .harness/roles/engineer.md
+edit .harness/manifest.yaml
+mars run engineer --repo . --dry-run
+mars doctor --repo .</code></pre>
+              <p>Use dry run to inspect assembled context before allowing the role to call a model or mutate files.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Reduce blast radius</h3>
+              <pre><code>mars trust set engineer . observer --reason "Investigating unsafe behavior"
+mars guardrails secret-scan --repo .
+mars run engineer --repo . --dry-run --no-init</code></pre>
+              <p>Trust can be lowered while you investigate prompt, tool, guardrail, or ticket problems.</p>
+            </article>
+          </div>
+          <h3>Manifest Example</h3>
+          <pre><code>roles:
+  docs-writer:
+    prompt: roles/docs-writer.md
+    domain: maintainer
+    mode: documentation-maintenance
+    model: reasoning
+    trust_level: contributor
+    max_turns: 30
+    knowledge:
+      - knowledge/context-glossary.yaml
+    tools:
+      - file_read
+      - file_write
+      - grep
+      - docsync_audit
+      - git_status
+      - git_diff
+      - git_commit</code></pre>
+        </section>
+
+        <section class="doc-section" id="operate">
+          <h2>Operate Roles</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>User task</th><th>Command</th><th>Expected use</th></tr></thead>
+              <tbody>
+                <tr><td>Preview a role prompt</td><td><code>mars run engineer --repo /path/to/repo --dry-run</code></td><td>Inspect assembled context without model calls.</td></tr>
+                <tr><td>Inspect a repo without scaffolding</td><td><code>mars run engineer --repo /path/to/repo --dry-run --no-init</code></td><td>Check missing-harness behavior safely.</td></tr>
+                <tr><td>Run one role</td><td><code>mars run qa --repo /path/to/repo</code></td><td>Targeted manual execution.</td></tr>
+                <tr><td>Run the scoped lifecycle</td><td><code>mars start --repo /path/to/repo</code></td><td>Initialize, register, reconcile, seed, and dispatch work for one repo.</td></tr>
+                <tr><td>Run multi-repo service</td><td><code>mars serve --addr :9091</code></td><td>Persistent scheduler, dashboard, worker pool, webhooks, and surveys.</td></tr>
+                <tr><td>Check role health</td><td><code>mars scores --repo /path/to/repo</code></td><td>View outcome scores per role.</td></tr>
+                <tr><td>Change autonomy</td><td><code>mars trust set engineer /path/to/repo contributor --reason "Ticket-bound edits approved"</code></td><td>Record an explicit trust decision.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead>
+              <tbody>
+                <tr><td>Role is unavailable</td><td>The key is missing from <code>.harness/manifest.yaml</code>.</td><td>Run <code>mars doctor --repo .</code> and add or correct the manifest role.</td></tr>
+                <tr><td>Role has no tools</td><td>Strict tool allowlists require explicit tool configuration.</td><td>Add the smallest necessary <code>tools</code> list to the role.</td></tr>
+                <tr><td>Reviewer changed product code unexpectedly</td><td>Prompt, trust, and tools allow mutation.</td><td>Lower trust, remove write tools, and narrow guardrails for that role.</td></tr>
+                <tr><td>Orchestrator loops</td><td>Disposition, handoff, or feedback data is ambiguous.</td><td>Inspect recent traces and ask the prior role for a precise <code>next_need</code>, blocker, and evidence list.</td></tr>
+                <tr><td>Custom role is missing from docs</td><td>Registry drift after manifest edit.</td><td>Add a <code>custom</code> row to <code>docs/roles/ROLES.md</code> and rerun <code>mars doctor</code>.</td></tr>
+                <tr><td>Role context is huge or noisy</td><td>Prompt contains long doctrine instead of route hints.</td><td>Move durable content to docs and route it through <code>.harness/knowledge/*.yaml</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>Roles are configurable, but the evidence chain stays repo-owned: manifest, registry, tickets, traces, tests, docs, and commits.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>
