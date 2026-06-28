@@ -1,0 +1,473 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/quickstart.html
+- docs/cli-reference.html
+- docs/harness-guide.html
+- docs/files-state-reference.html
+- docs/bundle-reference.html
+- docs/operations-guide.html
+- docs/troubleshooting-guide.html
+- docs/product-specs/product-surface.md
+- docs/features/F-004-target-harness-lifecycle.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Target Lifecycle Reference</title>
+    <meta
+      name="description"
+      content="Detailed user reference for the target repository lifecycle in MARS: init, register, start, run, scan, upgrade, update check, doctor, eject, generated files, databases, safe inspection, and recovery."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to target lifecycle reference</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Target lifecycle</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="quickstart.html">Quickstart</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="bundle-reference.html">Bundle</a>
+        <a href="files-state-reference.html">Files</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="troubleshooting-guide.html">Troubleshoot</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Target lifecycle sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search lifecycle reference</label>
+          <input id="docSearch" type="search" placeholder="init, start, eject">
+          <p class="search-hint">Filters lifecycle steps, commands, state changes, and recovery rows.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#decision-map">Decision Map</a>
+          <a href="#before">Before You Touch A Repo</a>
+          <a href="#init">Initialize</a>
+          <a href="#auto-init">Automatic Scaffolding</a>
+          <a href="#register">Register</a>
+          <a href="#start">Start</a>
+          <a href="#run">Run One Role</a>
+          <a href="#scan">Scan</a>
+          <a href="#health">Health And Drift</a>
+          <a href="#upgrade">Upgrade</a>
+          <a href="#eject">Eject</a>
+          <a href="#state">State Map</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Target repository lifecycle</p>
+            <h1>Move a repo from plain git checkout to governed autonomous work.</h1>
+            <p class="lede">
+              A MARS target lifecycle starts with a normal git repository,
+              adds a repo-owned harness, registers local runtime state, runs
+              roles through a dashboard-backed queue, checks drift and health,
+              upgrades missing defaults, and can be removed with an explicit
+              dry-run-first kill switch.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="decision-map">
+          <h2>Decision Map</h2>
+          <p>
+            Use this table to choose the right command before touching a target
+            repo. For exact flags, use the <a href="cli-reference.html">CLI
+            Reference</a> or <code>mars &lt;command&gt; --help</code>.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>User intent</th><th>Command</th><th>Writes target files?</th><th>Primary output</th></tr></thead>
+              <tbody>
+                <tr><td>Create the harness deliberately.</td><td><code>mars init --repo /path/to/repo</code></td><td>Yes.</td><td><code>.harness/</code>, operating docs, release files, tickets, goals, quality score.</td></tr>
+                <tr><td>Register a repo for orchestration.</td><td><code>mars register --repo /path/to/repo</code></td><td>Maybe; auto-inits if missing.</td><td>Repo record in the per-repo SQLite database.</td></tr>
+                <tr><td>Run the full scoped autonomous loop.</td><td><code>mars start --repo /path/to/repo</code></td><td>Maybe; auto-inits if missing and agents may later mutate.</td><td>Dashboard, workers, queue, lifecycle reconciliation, role execution.</td></tr>
+                <tr><td>Preview or execute one role.</td><td><code>mars run engineer --repo /path/to/repo</code></td><td>Maybe; auto-inits unless <code>--dry-run --no-init</code> is used.</td><td>One assembled role context or one role execution.</td></tr>
+                <tr><td>Find repo gaps and starter work.</td><td><code>mars scan --repo /path/to/repo --tickets</code></td><td>Maybe; auto-inits if missing and can write tickets.</td><td>Findings and optional backlog tickets.</td></tr>
+                <tr><td>Check health without broad mutation.</td><td><code>mars doctor --repo /path/to/repo --json</code></td><td>No expected target writes.</td><td>Machine, model, database, harness, plan, and config diagnostics.</td></tr>
+                <tr><td>Check tool and harness drift.</td><td><code>mars update check --repo /path/to/repo --json</code></td><td>No.</td><td>Installed tool, target metadata, and operating-model drift report.</td></tr>
+                <tr><td>Fill missing defaults after an upgrade.</td><td><code>mars upgrade --repo /path/to/repo</code></td><td>Yes, missing defaults only.</td><td>Restored default files without overwriting user-owned harness state.</td></tr>
+                <tr><td>Remove MARS from a target.</td><td><code>mars eject --repo /path/to/repo</code></td><td>Dry-run by default.</td><td>Removal plan; apply requires <code>--apply --confirm &lt;repo-name&gt;</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="before">
+          <h2>Before You Touch A Repo</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Confirm it is the target project</h3>
+              <p>
+                The target project is the application, service, library, or
+                docs repo MARS should manage. Do not point ordinary target
+                agents at the MARS source repo.
+              </p>
+            </li>
+            <li>
+              <h3>Confirm git state</h3>
+              <pre><code>git -C /path/to/repo status --short --branch</code></pre>
+              <p>
+                The repo is the system of record. Generated harness files,
+                tickets, docs, release state, and later agent commits are meant
+                to be reviewed through git.
+              </p>
+            </li>
+            <li>
+              <h3>Pick the inspection level</h3>
+              <p>
+                Use <code>mars init</code> when you want generated files. Use
+                <code>mars run &lt;role&gt; --dry-run --no-init</code> when you
+                need an observer-safe preview against an uninitialized repo.
+              </p>
+            </li>
+            <li>
+              <h3>Keep runtime artifacts out of the target repo</h3>
+              <p>
+                Per-repo databases default to
+                <code>~/.mars/db/{repo}/mars.db</code>. Command logs and traces
+                default under <code>~/.mars/traces/</code>. Do not put runtime
+                SQLite databases or trace logs inside the target worktree.
+              </p>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="init">
+          <h2>Initialize</h2>
+          <p>
+            <code>mars init</code> is the deliberate way to scaffold the
+            deployed harness before running agents. It requires a git checkout
+            and writes repo-owned files users should inspect and commit.
+          </p>
+          <pre data-doc-filter><code>mars init --repo /path/to/repo
+git -C /path/to/repo status --short
+git -C /path/to/repo diff --stat</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Init output</th><th>User meaning</th><th>Where to read more</th></tr></thead>
+              <tbody>
+                <tr><td><code>.harness/manifest.yaml</code></td><td>Executable role, tool, routing, trust, schedule, guardrail, and knowledge contract.</td><td><a href="bundle-reference.html">Bundle reference</a></td></tr>
+                <tr><td><code>.harness/roles/</code></td><td>Editable role prompts generated as starter defaults.</td><td><a href="roles-guide.html">Roles guide</a></td></tr>
+                <tr><td><code>.harness/guardrails/</code></td><td>Safety policy attached to roles.</td><td><a href="guardrails-reference.html">Guardrails reference</a></td></tr>
+                <tr><td><code>.harness/knowledge/</code></td><td>Context routes from recurring situations to durable docs.</td><td><a href="documentation-sync-guide.html">DocSync guide</a></td></tr>
+                <tr><td><code>.harness/skills/</code></td><td>Reusable workflow instructions. Skills guide behavior but do not grant tools.</td><td><a href="tools-mcp-guide.html">Tools and MCP guide</a></td></tr>
+                <tr><td><code>AGENTS.md</code></td><td>First file agents and humans read in the target.</td><td><a href="harness-guide.html">Harness guide</a></td></tr>
+                <tr><td><code>docs/goals/</code>, <code>docs/features/</code>, <code>docs/tickets/</code>, <code>docs/exec-plans/</code></td><td>Operating-model artifacts that turn intent into planned, verifiable work.</td><td><a href="planning-delivery-guide.html">Planning guide</a></td></tr>
+                <tr><td><code>VERSION</code>, <code>CHANGELOG.md</code></td><td>Target semantic version and generated patch notes.</td><td><a href="release-update-guide.html">Release guide</a></td></tr>
+                <tr><td><code>.gitignore</code></td><td>Host metadata and local secret files such as <code>.harness/.env.local</code> stay out of git.</td><td><a href="files-state-reference.html">Files reference</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Model routing during init:</strong>
+            use <code>--model-routing local</code>, <code>cloud</code>, or
+            <code>defer</code>. Non-interactive runs should add
+            <code>--yes --json</code> so missing required inputs fail with
+            machine-readable remediation.
+          </div>
+        </section>
+
+        <section class="doc-section" id="auto-init">
+          <h2>Automatic Scaffolding</h2>
+          <p>
+            <code>register</code>, <code>scan</code>, <code>run</code>, and
+            <code>start</code> all use the same scaffold path as
+            <code>mars init</code> when <code>.harness/manifest.yaml</code> is
+            missing. That makes first use plug-and-play, but it also means
+            those commands can create target files.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Auto-init writes files</h3>
+              <p>A missing manifest causes the command to create the deployed harness before continuing.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Git checkout required</h3>
+              <p>MARS needs git because generated files, later changes, tickets, and release state are reviewed through the repository.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Baseline commit when possible</h3>
+              <p>Auto-initializing commands commit the generated harness baseline when the surrounding git state allows it.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Observer-safe preview</h3>
+              <p>Use <code>mars run engineer --repo /path/to/repo --dry-run --no-init</code> to inspect without scaffolding.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="register">
+          <h2>Register</h2>
+          <p>
+            <code>mars register</code> records a local repo so the orchestrator
+            can manage it. The default database is isolated per target at
+            <code>~/.mars/db/{repo}/mars.db</code>.
+          </p>
+          <pre data-doc-filter><code>mars register --repo /path/to/repo --remote owner/repo --branch main
+mars register --repo /path/to/repo --db /private/tmp/mars-demo.db</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Flag</th><th>User behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>--repo</code></td><td>Target repository path. Defaults to the current directory.</td></tr>
+                <tr><td><code>--remote</code></td><td>Optional GitHub <code>owner/repo</code> label used by orchestration and integrations.</td></tr>
+                <tr><td><code>--branch</code></td><td>Default branch name. Defaults to <code>main</code>.</td></tr>
+                <tr><td><code>--db</code></td><td>SQLite database path. Must be outside the target repo so runtime state does not dirty the worktree.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="start">
+          <h2>Start</h2>
+          <p>
+            <code>mars start</code> is the scoped one-repo autonomous loop. It
+            initializes when needed, registers the repo, reconciles resumable
+            lifecycle state, starts the dashboard and workers, and executes the
+            delivery operating model.
+          </p>
+          <pre data-doc-filter><code>mars start --repo /path/to/repo
+mars start --repo /path/to/repo --concurrency 1
+mars start --repo /path/to/repo --debug --log-file /private/tmp/mars-start.log</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Concept</th><th>User behavior</th></tr></thead>
+              <tbody>
+                <tr><td>Bootstrap order</td><td>Exec plan first, feature contracts second, tickets third, delivery fourth.</td></tr>
+                <tr><td>Lifecycle reconciliation</td><td>Existing resumable state is preferred. Use <code>--new-lifecycle</code> only when intentionally reseeding CEO work.</td></tr>
+                <tr><td>Concurrency</td><td><code>--concurrency 1</code> runs sequentially. Higher values allow multiple workers.</td></tr>
+                <tr><td>Dashboard ports</td><td><code>--addr</code> controls webhook/control listen address. <code>--dashboard-addr</code> controls the dashboard listen address.</td></tr>
+                <tr><td>Logs</td><td>Verbose command logs default to <code>~/.mars/traces/logs/</code>. <code>--debug</code> streams inline output.</td></tr>
+                <tr><td>Model endpoint</td><td><code>--model-endpoint</code> can point at a live OpenAI-compatible endpoint and skip local llama-server startup.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Open the <a href="operations-guide.html">Operations Guide</a> for
+            dashboard controls, pause/resume, restart, scan, stop, queue, and
+            database recovery behavior.
+          </p>
+        </section>
+
+        <section class="doc-section" id="run">
+          <h2>Run One Role</h2>
+          <p>
+            <code>mars run</code> loads the target bundle and executes one role.
+            Use it for deliberate single-role work, dry-run inspection, and
+            debugging role context.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Preview role context</h3>
+              <pre><code>mars run engineer --repo /path/to/repo --dry-run</code></pre>
+              <p>Prints the assembled system prompt and exits before calling the model.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Inspect an uninitialized repo without writes</h3>
+              <pre><code>mars run engineer --repo /path/to/repo --dry-run --no-init</code></pre>
+              <p>Useful for observer-safe review before deciding whether to scaffold MARS into the target.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Bound one execution</h3>
+              <pre><code>mars run engineer --repo /path/to/repo --max-turns 20 --budget 120000</code></pre>
+              <p>Use turn and token budgets to constrain local experiments or risky roles.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="scan">
+          <h2>Scan</h2>
+          <p>
+            <code>mars scan</code> walks the repo for starter gaps such as TODOs,
+            missing tests, missing CI, and large functions. With
+            <code>--tickets</code>, it writes deduplicated backlog tickets under
+            <code>docs/tickets/backlog/</code>.
+          </p>
+          <pre data-doc-filter><code>mars scan --repo /path/to/repo
+mars scan --repo /path/to/repo --tickets</code></pre>
+          <div class="callout">
+            <strong>Scan is target-owned evidence:</strong>
+            findings should become tickets only when they represent work the
+            target repo actually owns. Foundation-owned runtime failures belong
+            in MARS source evidence, not the target backlog.
+          </div>
+        </section>
+
+        <section class="doc-section" id="health">
+          <h2>Health And Drift</h2>
+          <p>
+            Use health and drift commands before asking an agent to fix
+            something mysterious. They separate machine setup, local runtime,
+            target harness, update, active-plan, and integration problems.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Machine and target health</h3>
+              <pre><code>mars doctor --repo /path/to/repo
+mars doctor --repo /path/to/repo --json</code></pre>
+              <p>Checks config, models, database, private-release auth readiness, harness health, active-plan hygiene, and optional integration config.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Tool and harness drift</h3>
+              <pre><code>mars update check --repo /path/to/repo --json
+mars update check --repo /path/to/repo --skip-remote</code></pre>
+              <p>Reports installed tool status, deployed harness metadata status, and operating-model drift without mutating target files.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Runtime evidence</h3>
+              <pre><code>mars scores --repo /path/to/repo
+mars scores export --repo /path/to/repo</code></pre>
+              <p>Reads stored outcomes and can refresh the repo-visible quality score from local evidence.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="upgrade">
+          <h2>Upgrade</h2>
+          <p>
+            <code>mars upgrade</code> fills missing target harness defaults after
+            the installed tool changes. It preserves user-owned files such as
+            manifest, role prompts, knowledge routes, guardrails, tickets,
+            exec plans, design docs, references, and target <code>AGENTS.md</code>.
+          </p>
+          <pre data-doc-filter><code>mars upgrade --repo /path/to/repo
+mars update harness --repo /path/to/repo</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Need</th><th>Command</th><th>Preservation rule</th></tr></thead>
+              <tbody>
+                <tr><td>Fill missing generated defaults.</td><td><code>mars upgrade --repo /path/to/repo</code></td><td>Existing user-owned files are preserved.</td></tr>
+                <tr><td>Use update verb for target harness drift.</td><td><code>mars update harness --repo /path/to/repo</code></td><td>Refreshes the deployed bundle without overwriting user agents.</td></tr>
+                <tr><td>Adopt changed starter wording.</td><td>Initialize a temporary repo with the new binary and compare.</td><td>Copy only the prompt or doc changes you deliberately want.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="eject">
+          <h2>Eject</h2>
+          <p>
+            <code>mars eject</code> is the repo-level kill switch. It is a dry
+            run by default. Destructive removal requires both
+            <code>--apply</code> and <code>--confirm &lt;repo-name&gt;</code>.
+          </p>
+          <pre data-doc-filter><code>mars eject --repo /path/to/repo
+mars eject --repo /path/to/repo --apply --confirm repo
+mars eject --repo /path/to/repo --apply --confirm repo --keep-db</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Eject behavior</th><th>User meaning</th></tr></thead>
+              <tbody>
+                <tr><td>Dry run by default.</td><td>Review the exact file and database plan before deletion.</td></tr>
+                <tr><td>Removes repo harness artifacts.</td><td>Includes <code>.harness/</code>, generated planning docs, tickets, feature contracts, <code>AGENTS.md</code>, <code>VERSION</code>, and <code>CHANGELOG.md</code>.</td></tr>
+                <tr><td>Deletes associated per-repo database unless kept.</td><td>Use <code>--keep-db</code> when preserving queue, telemetry, score, and trace-related runtime history matters.</td></tr>
+                <tr><td>Does not rewrite git history.</td><td>Removal is visible as normal working-tree changes that users can review, commit, or discard.</td></tr>
+                <tr><td>Legacy shared DB deletion is guarded.</td><td><code>--delete-shared-db</code> is required before the legacy shared database can be deleted.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="state">
+          <h2>State Map</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>State</th><th>Default location</th><th>Lifecycle owner</th></tr></thead>
+              <tbody>
+                <tr><td>Target harness files</td><td><code>/path/to/repo/.harness/</code></td><td>Target repo owner after init.</td></tr>
+                <tr><td>Target operating docs</td><td><code>/path/to/repo/AGENTS.md</code>, <code>docs/</code>, <code>VERSION</code>, <code>CHANGELOG.md</code></td><td>Target repo owner and agents.</td></tr>
+                <tr><td>Per-repo database</td><td><code>~/.mars/db/{repo}/mars.db</code></td><td>Local runtime; created by register/start paths.</td></tr>
+                <tr><td>Shared serve database</td><td><code>~/.mars/db/mars.db</code></td><td>Multi-repo orchestrator runtime.</td></tr>
+                <tr><td>Logs and traces</td><td><code>~/.mars/traces/</code></td><td>Local operator evidence; copy into repo docs only deliberately.</td></tr>
+                <tr><td>Secret values</td><td>Environment variables or ignored <code>.harness/.env.local</code></td><td>Operator; never commit.</td></tr>
+                <tr><td>Model routing policy</td><td><code>.harness/model-overrides.yaml</code></td><td>Commit when policy should travel with the repo.</td></tr>
+                <tr><td>Integration profile</td><td><code>.harness/integrations.yaml</code></td><td>Optional; commit only when it contains no tenant-secret values.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Create, review, and commit a new target harness</h3>
+              <pre><code>mars init --repo /path/to/repo
+git -C /path/to/repo status --short
+git -C /path/to/repo diff -- .harness AGENTS.md docs VERSION CHANGELOG.md
+git -C /path/to/repo add .harness AGENTS.md docs VERSION CHANGELOG.md .gitignore
+git -C /path/to/repo commit -m "chore: initialize mars harness"</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Preview context before first mutation</h3>
+              <pre><code>mars run engineer --repo /path/to/repo --dry-run
+mars run engineer --repo /path/to/uninitialized-repo --dry-run --no-init</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Run a scoped loop with explicit local state</h3>
+              <pre><code>mars start --repo /path/to/repo --db ~/.mars/db/my-repo/mars.db --concurrency 1</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Recover from suspected drift</h3>
+              <pre><code>mars doctor --repo /path/to/repo --json
+mars update check --repo /path/to/repo --json
+mars upgrade --repo /path/to/repo</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Remove MARS after review</h3>
+              <pre><code>mars eject --repo /path/to/repo
+mars eject --repo /path/to/repo --apply --confirm repo</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Next action</th></tr></thead>
+              <tbody>
+                <tr><td><code>missing .harness/ directory</code></td><td>The target has not been initialized.</td><td>Run <code>mars init --repo /path/to/repo</code>, or use <code>mars run ... --dry-run --no-init</code> for no-write inspection.</td></tr>
+                <tr><td><code>missing manifest.yaml</code></td><td>The harness is incomplete or was partially removed.</td><td>Run <code>mars upgrade --repo /path/to/repo</code> or re-run <code>mars init</code> after reviewing git state.</td></tr>
+                <tr><td>Register writes unexpected files.</td><td>Auto-init scaffolded a missing harness before registration.</td><td>Review generated files with git and commit or remove them deliberately.</td></tr>
+                <tr><td><code>--db path ... is inside target repo</code></td><td>Runtime state would dirty the project worktree.</td><td>Use the default <code>~/.mars/db/{repo}/mars.db</code> path or another writable path outside the repo.</td></tr>
+                <tr><td>Start reseeds work you expected to resume.</td><td><code>--new-lifecycle</code> was used or resumable state was unavailable.</td><td>Check command logs, database path, and active plan before starting again.</td></tr>
+                <tr><td>Upgrade did not change a role prompt.</td><td>Existing prompts are user-owned and preserved.</td><td>Compare against a fresh temporary init and copy desired wording manually.</td></tr>
+                <tr><td>Eject refused to delete.</td><td>Apply confirmation was missing or mismatched.</td><td>Re-run the dry run, then pass <code>--apply --confirm &lt;repo-directory-name&gt;</code> only when the plan is correct.</td></tr>
+                <tr><td>Tool or harness version looks stale.</td><td>Installed binary or target metadata is behind.</td><td>Run <code>mars update check --repo /path/to/repo --json</code> and follow the recommended update path.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>MARS keeps autonomy local, auditable, and repo-owned. Documentation changes should stay aligned with implementation truth.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

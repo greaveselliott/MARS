@@ -278,6 +278,10 @@ safety, or orchestration changes do. See
 - [docs/cli-reference.html](docs/cli-reference.html): detailed CLI command
   reference.
 - [docs/workflows.html](docs/workflows.html): task-oriented user workflows.
+- [docs/target-lifecycle-reference.html](docs/target-lifecycle-reference.html):
+  target repo lifecycle for `init`, `register`, `start`, `run`, `scan`,
+  `doctor`, `update check`, `upgrade`, `eject`, generated files, databases,
+  safe inspection, and recovery.
 - [docs/harness-guide.html](docs/harness-guide.html): target harness structure
   and customization guide.
 - [docs/bundle-reference.html](docs/bundle-reference.html): `.harness/`

@@ -4,6 +4,7 @@ MarsDocSync:
 docs:
 - README.md
 - docs/index.html
+- docs/target-lifecycle-reference.html
 - docs/bundle-reference.html
 - docs/bundle-reference.md
 - docs/guardrails-guide.md
@@ -44,6 +45,7 @@ docs:
         <a href="index.html">Docs Home</a>
         <a href="cli-reference.html">CLI Reference</a>
         <a href="workflows.html">Workflows</a>
+        <a href="target-lifecycle-reference.html">Lifecycle</a>
         <a href="bundle-reference.html">Bundle</a>
         <a href="operations-guide.html">Operations</a>
         <a href="models-guide.html">Models</a>
@@ -355,7 +357,7 @@ roles:
             <article data-doc-filter>
               <h3>Upgrade preserves user-owned files</h3>
               <pre><code>mars update harness --repo ~/my-project</code></pre>
-              <p>Missing defaults are filled, but local prompts, manifests, guardrails, knowledge routes, tickets, plans, references, and target docs are preserved.</p>
+              <p>Missing defaults are filled, but local prompts, manifests, guardrails, knowledge routes, tickets, plans, references, and target docs are preserved. For init, register, start, run, scan, upgrade, and eject behavior, open the <a href="target-lifecycle-reference.html">Target Lifecycle Reference</a>.</p>
             </article>
             <article data-doc-filter>
               <h3>Compare new defaults deliberately</h3>

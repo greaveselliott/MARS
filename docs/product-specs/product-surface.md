@@ -37,9 +37,11 @@ requirements, source install, local inference setup, target initialization,
 safe inspection, dashboard checks, update paths, file ownership, and
 troubleshooting. The site also includes dedicated pages for the detailed CLI reference
 (`docs/cli-reference.html`), task-oriented user workflows
-(`docs/workflows.html`), target harness structure/customization
-(`docs/harness-guide.html`), and the exact bundle/manifest contract
-(`docs/bundle-reference.html`). The site now also includes deep user guides for
+(`docs/workflows.html`), command-by-command target repository lifecycle
+(`docs/target-lifecycle-reference.html`), target harness
+structure/customization (`docs/harness-guide.html`), and the exact
+bundle/manifest contract (`docs/bundle-reference.html`). The site now also
+includes deep user guides for
 runtime operations (`docs/operations-guide.html`), models and inference
 (`docs/models-guide.html`), and the universal tools/MCP bridge
 (`docs/tools-mcp-guide.html`). Dashboard API reference coverage lives in
