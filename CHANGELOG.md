@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.2] - 2026-06-28
+<!-- mars-release: version=0.68.2 commit=20fdfd1cde08 -->
+
+### Impact
+- **validation:** Operators and future agents now have durable proof that the confidence-10 onboarding gate passed with a real OpenAI credential path.
+
+### Why
+- **validation:** This matters because the previous release correctly blocked the 10/10 claim until clean cloud runtime evidence existed.
+
+### What Changed
+- **validation:** Recorded the clean OpenAI cloud target replay, ignored `0600` local env-file write, JSON-only start success, and final confidence classification.
+
+### Documentation
+- **validation:** Record openai cloud proof (20fdfd1)
+
 ## [0.68.1] - 2026-06-28
 <!-- mars-release: version=0.68.1 commit=c34bb5b2ada5 -->
 
