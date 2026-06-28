@@ -1,7 +1,7 @@
 # Hardware-Gated Model Onboarding Proof
 
 **Date:** 2026-06-28
-**Source Ref:** `0c0636a` plus local runtime continuation evidence gathered with installed `/Users/elliottgreaves/go/bin/mars` reporting `0.67.0`
+**Source Ref:** `0fcbfb6` with installed `/Users/elliottgreaves/go/bin/mars` reporting `0.68.0`
 **Validation Type:** Focused unit/golden gates, clean target init replays, installed-binary local setup/download, installed-binary runtime preflight
 **Model:** Local route passed after downloading the eligible `local-balanced-q4` bundle. Cloud route remains blocked before provider use because no supported provider credential environment variable is set.
 
@@ -10,9 +10,9 @@
 **Primary Outcome:** Earn a real 10/10 confidence claim for hardware-gated setup/init, local eligibility, cloud routing, secret safety, CLI polish, and mirrored Fact-Validated Planning.
 **Primary Pass Gate:** Confidence is 10/10 only after every proof gate passes or records a `primary_blocked` report with exact rerun commands for unavailable hardware, weights, or credentials.
 **Primary Status:** `primary_blocked`
-**Current Primary Blocker:** Local runtime proof now passes. Cloud runtime proof cannot reach a live provider because `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`, `XAI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, and `COHERE_API_KEY` are all absent from the process environment.
-**Next Primary Action:** Export a supported cloud provider credential, write it into the target's ignored local env file, then rerun the cloud start proof in "Continuation Commands".
-**Supporting Evidence:** Focused package tests, full `go test ./...`, docs/tool sync, secret scan, `make check`, `make install`, clean local/cloud init replays, installed-binary local setup/download, installed-binary local JSON runtime pass, installed-binary cloud JSON credential block, raw-key rejection, provider request-capture tests, and generated target doctrine checks passed.
+**Current Primary Blocker:** Local runtime proof now passes. Cloud runtime proof cannot reach a live provider because `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`, `XAI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, and `COHERE_API_KEY` are all absent from the process environment. GitHub auth exists, but using it for GitHub Models requires explicit approval to send the locally sourced token to the model endpoint, and the observed `gh auth status` scopes did not show `models:read`.
+**Next Primary Action:** Export a supported cloud provider credential, or explicitly approve a GitHub Models proof after refreshing/confirming a token with the required model scope, then write the env name into the target's ignored local env file and rerun the cloud start proof in "Continuation Commands".
+**Supporting Evidence:** Focused package tests, full `go test ./...`, docs/tool sync, secret scan, `make check`, `make install`, clean local/cloud init replays, installed-binary local setup/download, installed-binary local JSON runtime pass, installed-binary cloud JSON credential block, custom OpenAI-compatible endpoint init proof, raw-key rejection, provider request-capture tests, and generated target doctrine checks passed.
 
 ## Proof Commands
 
@@ -27,6 +27,7 @@ make check
 make install
 /Users/elliottgreaves/go/bin/mars version
 /Users/elliottgreaves/go/bin/mars setup --inference local --local-bundle auto --download --yes --json
+/Users/elliottgreaves/go/bin/mars init --repo /private/tmp/mars-custom-endpoint-proof-oMVrjM --model-routing cloud --cloud-provider openai-compatible --cloud-model openai/gpt-4.1-mini --cloud-endpoint https://models.example.test/inference/v1 --api-key-env GITHUB_TOKEN --yes --json
 ```
 
 ## Gate Results
@@ -39,8 +40,9 @@ make install
 - Full `go test ./...`: passed.
 - `make check`: passed after rerunning with normal Go cache access outside the sandbox; coverage ratchet passed with `internal/serve` at 66.2%, vulnerability scan found no called vulnerabilities, and fuzz smoke passed.
 - `make install`: passed and installed `/Users/elliottgreaves/go/bin/mars`.
-- Installed binary version: passed with `mars 0.67.0 darwin/arm64`.
+- Installed binary version: passed with `mars 0.68.0 darwin/arm64`.
 - Local setup/download: passed with `{"status":"ok","steps_run":5,"steps_skipped":2}` after downloading `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` and `google_gemma-4-E4B-it-Q5_K_M.gguf`.
+- Custom OpenAI-compatible init endpoint: passed with JSON-only output and generated `.harness/model-overrides.yaml` storing provider, model, endpoint, and `api_key_env: GITHUB_TOKEN` only.
 
 ## Clean Local Target Replay
 
@@ -129,6 +131,33 @@ GROQ_API_KEY=missing
 COHERE_API_KEY=missing
 ```
 
+## Custom Endpoint Cloud Route Proof
+
+**Target repo:** `/private/tmp/mars-custom-endpoint-proof-oMVrjM`
+
+```bash
+/Users/elliottgreaves/go/bin/mars init \
+  --repo /private/tmp/mars-custom-endpoint-proof-oMVrjM \
+  --model-routing cloud \
+  --cloud-provider openai-compatible \
+  --cloud-model openai/gpt-4.1-mini \
+  --cloud-endpoint https://models.example.test/inference/v1 \
+  --api-key-env GITHUB_TOKEN \
+  --yes \
+  --json
+```
+
+**Result:** Passed. The generated route committed a custom endpoint and the credential environment variable name only:
+
+```yaml
+provider: openai-compatible
+model: openai/gpt-4.1-mini
+endpoint: https://models.example.test/inference/v1
+api_key_env: GITHUB_TOKEN
+```
+
+This is supporting evidence for custom cloud/frontier routing, not a completed live provider proof. The attempted GitHub Models live probe was not run because sending the locally sourced GitHub token to the model endpoint requires explicit approval, and the observed token scopes did not show `models:read`.
+
 ## Secret And JSON Proof
 
 - Raw `--api-key` is rejected with JSON-only output and remediation to use `--api-key-env <ENV_NAME>`.
@@ -169,9 +198,18 @@ mars models credentials write-local-env --repo /private/tmp/mars-confidence10-cl
 mars start --repo /private/tmp/mars-confidence10-cloud-iGtSnZ --exit-after-seed --yes --json --db /private/tmp/mars-confidence10-cloud-iGtSnZ.mars.db --log-file /private/tmp/mars-confidence10-cloud-iGtSnZ.start.log
 ```
 
+Custom OpenAI-compatible cloud proof after an approved token is available:
+
+```bash
+export GITHUB_TOKEN=<token-with-model-scope>
+mars models credentials write-local-env --repo /private/tmp/mars-custom-endpoint-proof-oMVrjM --api-key-env GITHUB_TOKEN --yes --json
+mars start --repo /private/tmp/mars-custom-endpoint-proof-oMVrjM --exit-after-seed --yes --json --db /private/tmp/mars-custom-endpoint-proof-oMVrjM.mars.db --log-file /private/tmp/mars-custom-endpoint-proof-oMVrjM.start.log
+```
+
 ## Classification
 
 - Hardware gating, local bundle selection, setup/init routing, runtime preflight, provider routing, JSON output, generated doctrine, and secret handling: foundation-owned, implemented and covered by supporting evidence.
 - Missing local weights: resolved by installed-binary `mars setup --inference local --local-bundle auto --download --yes --json`.
 - Missing cloud provider credential: environment blocker, recorded as `primary_blocked`.
+- GitHub Models token use: requires explicit approval and a token with the required model scope before it can be used as the custom OpenAI-compatible cloud proof.
 - Final 10/10 confidence claim: not made in this report; the remaining missing evidence is one live cloud runtime proof using a real provider credential.
