@@ -5,6 +5,7 @@ docs:
 - README.md
 - docs/index.html
 - docs/product-specs/product-surface.md
+- docs/bundle-reference.html
 - docs/bundle-reference.md
 - docs/guardrails-reference.html
 - docs/guardrails-guide.md
@@ -42,6 +43,7 @@ docs:
         <a href="index.html">Docs Home</a>
         <a href="cli-reference.html">CLI Reference</a>
         <a href="harness-guide.html">Harness</a>
+        <a href="bundle-reference.html">Bundle</a>
         <a href="roles-guide.html">Roles</a>
         <a href="documentation-sync-guide.html">DocSync</a>
         <a href="guardrails-reference.html">Guardrails</a>
@@ -145,7 +147,9 @@ mars serve --db /private/tmp/mars-shared.db</code></pre>
           <p>
             The manifest is required for target harness execution. It must have
             a <code>name</code> and at least one role. New generated manifests
-            use <code>orchestration_mode: dispatch</code>.
+            use <code>orchestration_mode: dispatch</code>. For exact schema,
+            routing behavior, generated defaults, and manifest errors, open the
+            <a href="bundle-reference.html">Bundle And Manifest Reference</a>.
           </p>
           <pre><code>name: my-project
 description: Starter autonomous AI pipeline for my-project

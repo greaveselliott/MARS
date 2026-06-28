@@ -1,0 +1,437 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/bundle-reference.md
+- docs/harness-guide.html
+- docs/configuration-reference.html
+- docs/roles-guide.html
+- docs/tools-mcp-guide.html
+- docs/guardrails-reference.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/harness-operating-model.md
+- docs/features/F-004-target-harness-lifecycle.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Bundle And Manifest Reference</title>
+    <meta
+      name="description"
+      content="Detailed user reference for the MARS .harness bundle, manifest.yaml schema, role fields, prompt files, tools, guardrails, knowledge routes, skills, dispatch routing, schedules, generated defaults, and troubleshooting."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to bundle reference</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Bundle reference</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="configuration-reference.html">Configuration</a>
+        <a href="roles-guide.html">Roles</a>
+        <a href="tools-mcp-guide.html">Tools/MCP</a>
+        <a href="guardrails-reference.html">Guardrails</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Bundle reference sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search bundle reference</label>
+          <input id="docSearch" type="search" placeholder="manifest, tools, schedule">
+          <p class="search-hint">Filters schema rows, examples, recipes, and troubleshooting rows.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#layout">Directory Layout</a>
+          <a href="#manifest">Manifest Contract</a>
+          <a href="#role-fields">Role Fields</a>
+          <a href="#routing">Routing Modes</a>
+          <a href="#prompts">Role Prompts</a>
+          <a href="#tools">Tool Allowlists</a>
+          <a href="#guardrails">Guardrails</a>
+          <a href="#knowledge">Knowledge Routes</a>
+          <a href="#skills">Skills</a>
+          <a href="#generated">Generated Defaults</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Harness bundle contract</p>
+            <h1>Understand the files that make a target repo executable by MARS.</h1>
+            <p class="lede">
+              A MARS bundle is the <code>.harness/</code> directory in a target
+              repository. It names the role team, prompt files, tool
+              allowlists, trust levels, schedules, guardrails, knowledge
+              routes, and reusable skills that tell MARS how to operate on that
+              project.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="layout">
+          <h2>Directory Layout</h2>
+          <p>
+            <code>mars init</code> creates <code>.harness/</code> and the
+            surrounding repo-owned operating docs. The bundle itself is the
+            executable agent configuration; release files and operating docs
+            live beside it because they belong to the target project, not only
+            to the agent runtime.
+          </p>
+          <pre data-doc-filter><code>.harness/
+|-- manifest.yaml
+|-- metadata.yaml
+|-- roles/
+|   |-- engineer.md
+|   |-- qa.md
+|   `-- orchestrator.md
+|-- guardrails/
+|   `-- safety.yaml
+|-- knowledge/
+|   `-- context-glossary.yaml
+|-- skills/
+|   `-- self-improvement/
+|       `-- SKILL.md
+|-- integrations.example.yaml
+|-- integrations.yaml
+|-- model-overrides.yaml
+|-- .env.example
+`-- .env.local</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Commit?</th></tr></thead>
+              <tbody>
+                <tr><td><code>manifest.yaml</code></td><td>Required role and orchestration entrypoint.</td><td>Yes.</td></tr>
+                <tr><td><code>metadata.yaml</code></td><td>Generated harness version and drift metadata.</td><td>Yes.</td></tr>
+                <tr><td><code>roles/*.md</code></td><td>Role prompt manuals.</td><td>Yes, user-owned after init.</td></tr>
+                <tr><td><code>guardrails/*.yaml</code></td><td>Role-attached policy rules.</td><td>Yes.</td></tr>
+                <tr><td><code>knowledge/*.yaml</code></td><td>Context routing from situations to repo docs.</td><td>Yes.</td></tr>
+                <tr><td><code>skills/*/SKILL.md</code></td><td>Reusable procedures for recurring work.</td><td>Yes.</td></tr>
+                <tr><td><code>integrations.example.yaml</code></td><td>Documented opt-in integration template.</td><td>Yes.</td></tr>
+                <tr><td><code>integrations.yaml</code></td><td>Real target integration config when opted in.</td><td>Only when it contains no secrets.</td></tr>
+                <tr><td><code>model-overrides.yaml</code></td><td>Repo, tier, or role model routing overrides.</td><td>Yes when policy should travel with the repo.</td></tr>
+                <tr><td><code>.env.example</code></td><td>Credential variable names without values.</td><td>Yes.</td></tr>
+                <tr><td><code>.env.local</code></td><td>Local secret values.</td><td>Never.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="manifest">
+          <h2>Manifest Contract</h2>
+          <p>
+            <code>.harness/manifest.yaml</code> is required. MARS refuses to
+            load a bundle with no <code>name</code>, no roles, missing role
+            prompts, invalid trust levels, invalid schedules, or role chains
+            that point at undefined roles.
+          </p>
+          <pre data-doc-filter><code>name: my-project
+description: Starter autonomous AI pipeline for my-project
+orchestration_mode: dispatch
+
+roles:
+  engineer:
+    prompt: roles/engineer.md
+    domain: engineer
+    mode: ticket-delivery
+    model: coding
+    trust_level: contributor
+    max_turns: 100
+    schedule: "0 0,6,12,18 * * 1-5"
+    knowledge: [knowledge/context-glossary.yaml]
+    guardrails: [guardrails/safety.yaml]
+    tools: [file_read, file_write, shell_exec, mars_cli, grep, docsync_audit, git_status, git_diff, git_commit]
+    triggers:
+      - ticket.assigned</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Top-level field</th><th>Required?</th><th>User behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>name</code></td><td>Yes</td><td>Stable bundle identifier used in logs, jobs, and generated context.</td></tr>
+                <tr><td><code>description</code></td><td>No</td><td>Human-readable description of the target harness.</td></tr>
+                <tr><td><code>orchestration_mode</code></td><td>No</td><td>Use <code>dispatch</code> for new targets. Empty and <code>legacy</code> are accepted for compatibility.</td></tr>
+                <tr><td><code>roles</code></td><td>Yes</td><td>Map of executable role keys. At least one role is required.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="role-fields">
+          <h2>Role Fields</h2>
+          <p>
+            Role keys are the names users pass to <code>mars run &lt;role&gt;</code>.
+            Keep keys stable once jobs, scores, trust, and telemetry refer to
+            them.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Role field</th><th>Required?</th><th>Accepted values or behavior</th></tr></thead>
+              <tbody>
+                <tr><td><code>prompt</code></td><td>Yes</td><td>Path relative to <code>.harness/</code>. File must exist and be non-empty.</td></tr>
+                <tr><td><code>domain</code></td><td>No</td><td>Canonical domain such as <code>planner</code>, <code>engineer</code>, <code>reviewer</code>, <code>maintainer</code>, <code>end-to-end-tester</code>, or <code>orchestrator</code>.</td></tr>
+                <tr><td><code>mode</code></td><td>No</td><td>Lower-kebab-case reason for the role, such as <code>ticket-delivery</code> or <code>quality-review</code>.</td></tr>
+                <tr><td><code>model</code></td><td>No</td><td>Model tier or hint. Prefer <code>fast</code>, <code>reasoning</code>, or <code>coding</code> so routing can adapt.</td></tr>
+                <tr><td><code>trust_level</code></td><td>No</td><td><code>observer</code>, <code>contributor</code>, or <code>autonomous</code>. Invalid values fail bundle load.</td></tr>
+                <tr><td><code>tools</code></td><td>No</td><td>Tool allowlist. Empty means the role cannot use tools.</td></tr>
+                <tr><td><code>guardrails</code></td><td>No</td><td>Files under <code>.harness/</code> loaded for that role.</td></tr>
+                <tr><td><code>knowledge</code></td><td>No</td><td>Knowledge route files under <code>.harness/knowledge/</code> or other harness-relative paths.</td></tr>
+                <tr><td><code>triggers</code></td><td>No</td><td>Event expressions or shorthand trigger names such as <code>ticket.assigned</code>.</td></tr>
+                <tr><td><code>then</code></td><td>No</td><td>Legacy chain targets. Every named role must exist.</td></tr>
+                <tr><td><code>idle_then</code></td><td>No</td><td>Legacy chain targets used when a role has no useful next action. Every named role must exist.</td></tr>
+                <tr><td><code>schedule</code></td><td>No</td><td><code>hourly</code>, <code>daily</code>, <code>weekly</code>, <code>monthly</code>, or a standard 5-field cron expression.</td></tr>
+                <tr><td><code>max_turns</code></td><td>No</td><td>Maximum LLM round trips for that role. Use to bound recurring jobs.</td></tr>
+                <tr><td><code>context_size</code></td><td>No</td><td>Token window override. Use sparingly; model routing usually owns context size.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="routing">
+          <h2>Routing Modes</h2>
+          <p>
+            New generated manifests use <code>orchestration_mode: dispatch</code>.
+            Dispatch mode routes terminal dispositions through the Orchestrator
+            instead of exposing legacy <code>then</code> chains as the next hop.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Dispatch mode</h3>
+              <p>Use for new targets. Roles finish with evidence and disposition; Orchestrator selects the next appropriate role.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Legacy mode</h3>
+              <p>Accepted for older manifests. <code>then</code> and <code>idle_then</code> chains are shown directly as handoffs.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Manual runs</h3>
+              <p><code>mars run engineer --repo /path/to/repo</code> executes one named role regardless of schedule.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Schedules</h3>
+              <p>Use named presets for simple cadence or 5-field cron for exact recurring runs. Second-resolution cron is not accepted.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="prompts">
+          <h2>Role Prompts</h2>
+          <p>
+            Prompt files are Markdown manuals for roles. MARS reads the file
+            named by the role's <code>prompt</code> field and rejects empty or
+            missing prompt files.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Prompt shape</h3>
+              <pre><code># Engineer
+
+## Role Contract
+Describe the role's purpose, ownership, and stop conditions.
+
+## Workflow
+List the steps the role follows during a job.
+
+## Evidence
+Name what the role must verify before claiming completion.</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>User rule</h3>
+              <p>Keep prompts focused. Route long product context through knowledge files and durable docs instead of pasting everything into a role prompt.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Upgrade behavior</h3>
+              <p><code>mars upgrade</code> preserves existing role prompts and fills only missing starter prompts.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="tools">
+          <h2>Tool Allowlists</h2>
+          <p>
+            Tools are capabilities a role may use. The manifest does not grant
+            unlimited power by default; each role names the tools it needs.
+            Trust level and built-in policy still constrain tool behavior.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Tool family</th><th>Examples</th><th>User guidance</th></tr></thead>
+              <tbody>
+                <tr><td>Read/search</td><td><code>file_read</code>, <code>grep</code>, <code>code_search</code>, <code>code_snippet</code></td><td>Safe starting point for observer or reviewer roles.</td></tr>
+                <tr><td>Mutation</td><td><code>file_write</code>, <code>dependency_sync</code>, <code>git_commit</code>, <code>git_push</code></td><td>Grant only to roles allowed to change the target repo.</td></tr>
+                <tr><td>MARS operations</td><td><code>mars_cli</code>, <code>docsync_audit</code>, <code>workspace_hygiene</code></td><td>Useful for roles that must verify harness and repo state.</td></tr>
+                <tr><td>Meta tooling</td><td><code>tool_create</code>, <code>persona_create</code>, <code>record_decision</code></td><td>Use when the role may evolve harness capability or durable doctrine.</td></tr>
+                <tr><td>Release</td><td><code>release_orchestrate</code>, <code>github_release_status</code>, <code>git_release_guard</code></td><td>Reserve for release-manager or foundation-maintainer style roles.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Run <code>mars tools list --json</code> for the current installed
+            tool registry, and open the <a href="tools-mcp-guide.html">Tools
+            And MCP Guide</a> for trust and external-client behavior.
+          </p>
+        </section>
+
+        <section class="doc-section" id="guardrails">
+          <h2>Guardrails</h2>
+          <p>
+            Role <code>guardrails</code> entries load YAML files from the
+            harness. Hard rules block matching writes; advisory rules appear in
+            role context. Use the dedicated reference for exact matching
+            semantics.
+          </p>
+          <pre data-doc-filter><code>roles:
+  engineer:
+    guardrails:
+      - guardrails/safety.yaml
+
+rules:
+  - id: no-hardcoded-secrets
+    name: No hardcoded secrets
+    severity: hard
+    scope: global
+    pattern: '(?i)(password|secret|api_key|token)'</code></pre>
+          <p><a href="guardrails-reference.html">Open the Guardrails Reference</a></p>
+        </section>
+
+        <section class="doc-section" id="knowledge">
+          <h2>Knowledge Routes</h2>
+          <p>
+            Knowledge routes map situations to durable docs. They are loaded
+            from files named in the role's <code>knowledge</code> list.
+          </p>
+          <pre data-doc-filter><code>routes:
+  - when: release planning, semantic versioning, changelog, patch notes, or tags
+    paths: VERSION, CHANGELOG.md, docs/design-docs/release-versioning.md
+  - when: project terminology, domain concepts, architecture vocabulary, naming, or unclear intent
+    paths: AGENTS.md, docs/design-docs/context-glossary.md</code></pre>
+          <div class="callout">
+            <strong>Good route files point outward:</strong>
+            keep the route compact and point to repo docs. Do not turn
+            knowledge YAML into a second giant prompt.
+          </div>
+        </section>
+
+        <section class="doc-section" id="skills">
+          <h2>Skills</h2>
+          <p>
+            Skills live under <code>.harness/skills/&lt;name&gt;/SKILL.md</code>.
+            They teach recurring procedures, but they do not grant tool
+            authority. Tool access still comes from the manifest and runtime
+            trust policy.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Use a skill for</h3>
+              <p>Recurring procedures such as release publication, private release auth, validation replay, dependency checks, or persona design.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Use a guardrail for</h3>
+              <p>Rules that must block or warn regardless of role memory.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Use a tool for</h3>
+              <p>Repeated deterministic actions that need structured inputs, outputs, validation, and policy.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Use a doc for</h3>
+              <p>Durable product, architecture, or operating context a role should read when relevant.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="generated">
+          <h2>Generated Defaults And Upgrade Behavior</h2>
+          <p>
+            Generated roles are starter defaults, not a permanent claim about
+            the best team for every project. After init, target owners can edit
+            prompts, add roles, remove roles, change schedules, restrict tools,
+            attach guardrails, and adjust knowledge routes.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Command</th><th>Bundle behavior</th><th>Preservation rule</th></tr></thead>
+              <tbody>
+                <tr><td><code>mars init --repo /path/to/repo</code></td><td>Creates the initial bundle and operating docs.</td><td>Use in a git checkout and review generated files before committing.</td></tr>
+                <tr><td><code>mars start</code>, <code>run</code>, <code>register</code>, <code>scan</code></td><td>Auto-initialize a missing target harness unless an observer-safe flag prevents it.</td><td>Use <code>--dry-run --no-init</code> when inspecting an uninitialized repo.</td></tr>
+                <tr><td><code>mars upgrade --repo /path/to/repo</code></td><td>Fills missing defaults after a MARS upgrade.</td><td>Preserves existing manifest, prompts, knowledge routes, guardrails, docs, tickets, and plans.</td></tr>
+                <tr><td><code>mars eject --repo /path/to/repo</code></td><td>Previews removal of the deployed harness and associated per-repo DB.</td><td>Requires explicit apply and confirm flags for deletion.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Preview role context after manifest edits</h3>
+              <pre><code>mars run engineer --repo /path/to/target-repo --dry-run</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Validate machine and bundle health</h3>
+              <pre><code>mars doctor --repo /path/to/target-repo --json
+mars tools list --json</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Inspect generated changes before committing</h3>
+              <pre><code>git -C /path/to/target-repo status --short
+git -C /path/to/target-repo diff -- .harness AGENTS.md docs</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Adopt newer starter prompt wording deliberately</h3>
+              <pre><code>tmp=$(mktemp -d)
+git init "$tmp"
+mars init --repo "$tmp"
+diff -u "$tmp/.harness/roles/engineer.md" /path/to/target-repo/.harness/roles/engineer.md</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Next action</th></tr></thead>
+              <tbody>
+                <tr><td><code>missing .harness/ directory</code></td><td>The target was not initialized.</td><td>Run <code>mars init --repo /path/to/repo</code>.</td></tr>
+                <tr><td><code>manifest ... is missing required field 'name'</code></td><td>Top-level <code>name</code> is absent or empty.</td><td>Add a stable bundle name.</td></tr>
+                <tr><td><code>defines no roles</code></td><td>The <code>roles</code> map is empty.</td><td>Add at least one role with a prompt.</td></tr>
+                <tr><td><code>invalid orchestration_mode</code></td><td>Unsupported mode string.</td><td>Use <code>dispatch</code>, <code>legacy</code>, or omit the field.</td></tr>
+                <tr><td><code>invalid trust_level</code></td><td>Role trust is not one of the supported values.</td><td>Use <code>observer</code>, <code>contributor</code>, or <code>autonomous</code>.</td></tr>
+                <tr><td><code>has no prompt path</code></td><td>Role lacks required <code>prompt</code>.</td><td>Point to a role Markdown file relative to <code>.harness/</code>.</td></tr>
+                <tr><td><code>prompt file ... not found</code></td><td>The prompt path is wrong or file is missing.</td><td>Create the file or fix the path.</td></tr>
+                <tr><td><code>prompt file ... is empty</code></td><td>The role has no instructions.</td><td>Add a role contract, workflow, constraints, and evidence expectations.</td></tr>
+                <tr><td><code>chains to ... but ... is not defined</code></td><td><code>then</code> or <code>idle_then</code> names a missing role.</td><td>Add the role or remove the chain target.</td></tr>
+                <tr><td><code>invalid schedule</code></td><td>Schedule is neither a preset nor a 5-field cron expression.</td><td>Use <code>hourly</code>, <code>daily</code>, <code>weekly</code>, <code>monthly</code>, or a 5-field cron.</td></tr>
+                <tr><td><code>guardrail file ... not found</code></td><td>Role references a missing guardrail file.</td><td>Create the file or remove the reference.</td></tr>
+                <tr><td><code>knowledge file ... not found</code></td><td>Role references a missing knowledge route file.</td><td>Create the route file or remove the reference.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>MARS keeps autonomy local, auditable, and repo-owned. Documentation changes should stay aligned with implementation truth.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

@@ -4,6 +4,7 @@ MarsDocSync:
 docs:
 - README.md
 - docs/index.html
+- docs/bundle-reference.html
 - docs/bundle-reference.md
 - docs/guardrails-guide.md
 - docs/features/README.md
@@ -43,6 +44,7 @@ docs:
         <a href="index.html">Docs Home</a>
         <a href="cli-reference.html">CLI Reference</a>
         <a href="workflows.html">Workflows</a>
+        <a href="bundle-reference.html">Bundle</a>
         <a href="operations-guide.html">Operations</a>
         <a href="models-guide.html">Models</a>
         <a href="tools-mcp-guide.html">Tools/MCP</a>
@@ -138,7 +140,9 @@ docs:
             <code>.harness/manifest.yaml</code> is the entrypoint for executable
             agent behavior. It names roles, prompts, canonical domains, modes,
             model tiers, tool allowlists, guardrails, knowledge routes, and
-            triggers.
+            triggers. For exact field validation, routing modes, schedules,
+            generated defaults, and manifest troubleshooting, open the
+            <a href="bundle-reference.html">Bundle And Manifest Reference</a>.
           </p>
           <pre><code>name: my-project
 description: MARS bundle for my-project

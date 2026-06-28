@@ -2,6 +2,10 @@
 
 A bundle is the `.harness/` directory in your repository. It contains everything MARS needs to operate on your codebase.
 
+The primary user-facing site reference is
+[bundle-reference.html](bundle-reference.html). This Markdown file remains a
+compact repo-readable companion.
+
 `mars init` also creates repo-level release files (`VERSION` and
 `CHANGELOG.md`) plus `docs/design-docs/release-versioning.md`. Those files live
 outside `.harness/` because semantic versioning and patch notes belong to the
@@ -11,15 +15,17 @@ target project, not just the harness bundle.
 
 ```
 .harness/
-├── manifest.yaml       # Required: role definitions and metadata
-├── roles/              # Role prompt files (markdown)
-│   ├── engineer.md
-│   └── pipeline-fixer.md
-├── guardrails/         # Guardrail rule files (YAML)
-│   └── safety.yaml
-└── knowledge/          # Lightweight context route files
-    ├── context-glossary.yaml
-    └── api-conventions.yaml
+|-- manifest.yaml       # Required: role definitions and metadata
+|-- metadata.yaml       # Generated harness version and drift metadata
+|-- roles/              # Role prompt files (Markdown)
+|   |-- engineer.md
+|   `-- pipeline-fixer.md
+|-- guardrails/         # Guardrail rule files (YAML)
+|   `-- safety.yaml
+|-- knowledge/          # Lightweight context route files
+|   |-- context-glossary.yaml
+|   `-- api-conventions.yaml
+`-- skills/             # Reusable workflow instructions
 ```
 
 ## manifest.yaml
@@ -33,6 +39,7 @@ at different knowledge routes.
 ```yaml
 name: my-project
 description: MARS bundle for my-project
+orchestration_mode: dispatch
 
 roles:
   pipeline-fixer:
@@ -40,6 +47,8 @@ roles:
     domain: engineer
     mode: pipeline-repair
     model: ""
+    trust_level: contributor
+    max_turns: 40
     tools:
       - file_read
       - file_write
@@ -59,7 +68,8 @@ roles:
 |-------|----------|-------------|
 | `name` | Yes | Bundle identifier. Used in job IDs and logs. |
 | `description` | No | Human-readable description. |
-| `roles` | Yes | Map of role name → role config. At least one required. |
+| `orchestration_mode` | No | Empty, `legacy`, or `dispatch`. New generated manifests use `dispatch`. |
+| `roles` | Yes | Map of role name to role config. At least one required. |
 
 ### Role configuration
 
@@ -69,10 +79,16 @@ roles:
 | `domain` | No | Canonical operating domain: `planner`, `engineer`, `reviewer`, `maintainer`, `end-to-end-tester`, or `orchestrator`. Existing manifests without this field remain valid. |
 | `mode` | No | Lower-kebab-case purpose inside the domain, such as `ticket-delivery`, `quality-review`, or `pipeline-repair`. |
 | `model` | No | Model hint (e.g. `gemma-4-27b`). Empty string uses the default. |
+| `trust_level` | No | `observer`, `contributor`, or `autonomous`. Invalid values fail bundle load. |
 | `tools` | No | List of tools the role is allowed to use. |
 | `guardrails` | No | List of guardrail files to load for this role. |
 | `knowledge` | No | List of knowledge files to inject into the context. |
 | `triggers` | No | Events that activate this role. |
+| `then` | No | Legacy chain targets. Every named role must exist. |
+| `idle_then` | No | Legacy idle chain targets. Every named role must exist. |
+| `schedule` | No | `hourly`, `daily`, `weekly`, `monthly`, or a 5-field cron expression. |
+| `max_turns` | No | Maximum LLM round trips for this role. |
+| `context_size` | No | Optional token-window override. Use sparingly. |
 
 ### Available tools
 
@@ -118,10 +134,10 @@ completed step.
 
 Role prompts are markdown files containing the system instructions for the agent. They should include:
 
-1. **Identity** — who the agent is and what it does
-2. **Workflow** — step-by-step instructions
-3. **Constraints** — what the agent must not do
-4. **Output format** — expected response structure
+1. **Identity** - who the agent is and what it does
+2. **Workflow** - step-by-step instructions
+3. **Constraints** - what the agent must not do
+4. **Output format** - expected response structure
 
 The shipped prompts are examples and defaults. They are intentionally
 user-owned once copied into a target repo, because the best agent shape depends

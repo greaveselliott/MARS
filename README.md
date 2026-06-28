@@ -280,6 +280,10 @@ safety, or orchestration changes do. See
 - [docs/workflows.html](docs/workflows.html): task-oriented user workflows.
 - [docs/harness-guide.html](docs/harness-guide.html): target harness structure
   and customization guide.
+- [docs/bundle-reference.html](docs/bundle-reference.html): `.harness/`
+  bundle layout, `manifest.yaml` schema, role fields, routing modes, prompts,
+  tools, guardrails, knowledge routes, skills, generated defaults, and common
+  manifest errors.
 - [docs/operations-guide.html](docs/operations-guide.html): runtime operations,
   dashboard APIs, databases, logs, queue recovery, and troubleshooting.
 - [docs/files-state-reference.html](docs/files-state-reference.html): target
@@ -327,7 +331,8 @@ safety, or orchestration changes do. See
 - [ARCHITECTURE.md](ARCHITECTURE.md): system architecture.
 - [docs/product-specs/index.md](docs/product-specs/index.md): product contract.
 - [docs/features/README.md](docs/features/README.md): BDD feature contracts.
-- [docs/bundle-reference.md](docs/bundle-reference.md): target harness format.
+- [docs/bundle-reference.md](docs/bundle-reference.md): compact Markdown
+  companion for the target harness bundle format.
 - [docs/guardrails-guide.md](docs/guardrails-guide.md): compact Markdown
   companion for safety rule authoring.
 - [docs/design-docs/index.md](docs/design-docs/index.md): decisions and design
