@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.15] - 2026-06-28
+<!-- mars-release: version=0.68.15 commit=17e5bea8c26e -->
+
+### Impact
+- **site:** Users and agents now have one reference for what MARS writes, preserves, reads, ignores, verifies, and removes across target repos, local runtime state, model artifacts, secrets, logs, databases, release assets, and eject cleanup.
+
+### Why
+- **site:** File and state ownership was spread across the harness, operations, models, release, troubleshooting, and README surfaces, which made it harder for users to understand blast radius, cleanup behavior, and what belongs in git.
+
+### What Changed
+- **site:** Added a static Files and State Reference and linked it from the docs homepage, harness guide, operations guide, models guide, release/update guide, troubleshooting guide, README documentation map, shared site metadata, and product-surface contract (17e5bea).
+
+### Documentation
+- **site:** Add files and state reference (17e5bea)
+
 ## [0.68.14] - 2026-06-28
 <!-- mars-release: version=0.68.14 commit=71933c8d8884 -->
 
