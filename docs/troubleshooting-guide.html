@@ -1,0 +1,298 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/product-specs/product-surface.md
+- docs/quickstart.md
+- docs/design-docs/dashboard.md
+- docs/design-docs/local-inference.md
+- docs/design-docs/release-versioning.md
+- docs/design-docs/documentation-sync-architecture.md
+- docs/operations-guide.html
+- docs/configuration-reference.html
+- docs/observability-guide.html
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Troubleshooting Guide</title>
+    <meta
+      name="description"
+      content="User troubleshooting guide for MARS install, setup, models, target harnesses, agents, dashboard, databases, release auth, integrations, DocSync, and recovery evidence."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to troubleshooting guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Troubleshooting</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="observability-guide.html">Observability</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="configuration-reference.html">Configuration</a>
+        <a href="release-update-guide.html">Release</a>
+        <a href="cli-reference.html">CLI Reference</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Troubleshooting sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search fixes</label>
+          <input id="docSearch" type="search" placeholder="auth, model, port">
+          <p class="search-hint">Filters symptoms, checks, and recovery commands.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#triage">Triage Loop</a>
+          <a href="#install">Install And PATH</a>
+          <a href="#setup-models">Setup And Models</a>
+          <a href="#harness">Harness And Config</a>
+          <a href="#agents">Agent Runs</a>
+          <a href="#dashboard">Dashboard And Ports</a>
+          <a href="#git-worktree">Git And Worktree</a>
+          <a href="#release-auth">Release And Auth</a>
+          <a href="#integrations">Integrations</a>
+          <a href="#docsync">DocSync</a>
+          <a href="#evidence">Evidence Bundle</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Diagnostics and recovery</p>
+            <h1>Turn symptoms into checks, fixes, and durable evidence.</h1>
+            <p class="lede">
+              Good troubleshooting in MARS starts by preserving the repo,
+              reading the actionable error, checking the owning surface, and
+              recording evidence before retrying. This guide collects the
+              common user-facing failure paths and the safest recovery commands.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="triage">
+          <h2>Triage Loop</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Stop making the state worse</h3>
+              <p>Pause the worker pool before broad inspection if autonomous work is still running.</p>
+              <pre><code>curl -X POST http://localhost:9090/api/pause</code></pre>
+            </li>
+            <li>
+              <h3>Capture the current state</h3>
+              <p>Save the exact command, repo path, database path, log path, role, trace ID, and visible error.</p>
+              <pre><code>git status --short --branch
+mars doctor --repo /path/to/repo --json</code></pre>
+            </li>
+            <li>
+              <h3>Use the smallest relevant check</h3>
+              <p>Prefer <code>doctor</code>, dry run, targeted tests, or dashboard status before rerunning the full autonomous loop.</p>
+            </li>
+            <li>
+              <h3>Classify ownership</h3>
+              <p>Decide whether the failure belongs to MARS foundation behavior, the deployed target repo, mixed configuration, or missing evidence.</p>
+            </li>
+            <li>
+              <h3>Retry only after the fix is real</h3>
+              <p>Do not repeat the same failed queue job unchanged unless the blocker was external and has changed.</p>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="install">
+          <h2>Install And PATH</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Check</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td><code>mars</code> command not found</td><td><code>command -v mars</code></td><td>Run <code>mars path setup</code> from a known installed binary, or rerun <code>make install</code> from the source checkout and open a new shell.</td></tr>
+                <tr><td>Old behavior after rebuild</td><td><code>mars version</code> and <code>which mars</code></td><td>Use <code>make install</code>; avoid <code>go build ./cmd/mars; ./mars ...</code> because a failed build can run an old source-root binary.</td></tr>
+                <tr><td>Shell profile not updated</td><td><code>mars path setup --dry-run --json</code></td><td>Run <code>mars path setup --shell zsh</code> or the detected shell option, then restart the terminal.</td></tr>
+                <tr><td>Source checkout cannot update</td><td><code>git status --short --branch</code></td><td>Commit, stash, or deliberately handle local changes before <code>make update-tool</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="setup-models">
+          <h2>Setup And Models</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td>Setup fails during model download</td><td>Network, disk, checksum, or ineligible hardware profile.</td><td>Run <code>mars doctor --json</code>, then retry <code>mars setup --download --local-bundle auto</code>.</td></tr>
+                <tr><td>No eligible local bundle</td><td>Hardware detection cannot prove enough RAM, VRAM, disk, OS, or backend support.</td><td>Use cloud/deferred routing or choose a smaller eligible bundle after <code>mars models eligible --json</code>.</td></tr>
+                <tr><td>Local generation is very slow</td><td>Large quantization, memory pressure, or CPU fallback.</td><td>Choose a smaller local bundle, use a balanced profile, or point to a real OpenAI-compatible endpoint with <code>--model-endpoint</code>.</td></tr>
+                <tr><td>Cloud provider auth fails</td><td>The configured <code>api_key_env</code> is not present in the process environment.</td><td>Export the named variable or write ignored local env with <code>mars models credentials write-local-env</code>.</td></tr>
+                <tr><td>Ollama override fails</td><td>Ollama model is not installed or endpoint is not reachable.</td><td>Run <code>mars models list --provider ollama</code> and evaluate the candidate before using it.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars models eligible --json
+mars models list --provider ollama
+mars models evaluate --provider ollama --model qwen3.6:27b
+mars models override --repo /path/to/repo --tier coding --provider ollama --model qwen3.6:27b</code></pre>
+        </section>
+
+        <section class="doc-section" id="harness">
+          <h2>Harness And Config</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Check</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td>Missing <code>.harness/manifest.yaml</code></td><td><code>ls .harness</code></td><td>Run <code>mars init --repo /path/to/repo</code>. For inspection only, use <code>mars run engineer --repo /path/to/repo --dry-run --no-init</code>.</td></tr>
+                <tr><td>Invalid manifest YAML</td><td><code>mars doctor --repo /path/to/repo</code></td><td>Fix YAML syntax, required <code>name</code>, required role <code>prompt</code>, and valid <code>orchestration_mode</code>.</td></tr>
+                <tr><td>Role registry drift</td><td><code>docs/roles/ROLES.md</code> versus manifest.</td><td>Update registry rows for custom roles and rerun <code>mars doctor --repo /path/to/repo</code>.</td></tr>
+                <tr><td>Upgrade does not change an existing prompt</td><td>Expected preservation behavior.</td><td>Initialize a temporary repo with the new binary and manually copy wanted default prompt changes.</td></tr>
+                <tr><td>Need to remove MARS</td><td>Preview first.</td><td><code>mars eject --repo /path/to/repo</code>, then <code>mars eject --repo /path/to/repo --apply --confirm repo-name</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="agents">
+          <h2>Agent Runs</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>First check</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td>Role cannot run</td><td>Manifest role key, prompt file, tool list, trust, and model route.</td><td><code>mars run engineer --repo /path/to/repo --dry-run</code>, then fix the manifest or prompt path.</td></tr>
+                <tr><td>Role has no tools</td><td>Strict tool allowlist is empty or missing.</td><td>Add only the required tools in <code>.harness/manifest.yaml</code>.</td></tr>
+                <tr><td>Role loops or hits max turns</td><td>Trace summary, terminal phase, and ticket state.</td><td>Inspect trace evidence and add a skill, clearer stop condition, smaller ticket, or better context route before retrying.</td></tr>
+                <tr><td>Role completes without useful work</td><td>No-op outcome or stale ticket state.</td><td>Route to Janitor or update the ticket/plan so the next role has a concrete action.</td></tr>
+                <tr><td>Tool is blocked</td><td>Trust level, guardrail message, and allowlist.</td><td>Prefer changing the implementation or policy narrowly over bypassing the guardrail.</td></tr>
+                <tr><td>Worktree dirty after a run</td><td><code>git status --short</code></td><td>Review changes, validate, and commit or deliberately revert target-owned throwaway output.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars run engineer --repo /path/to/repo --dry-run
+mars run engineer --repo /path/to/repo --debug
+mars trust --repo /path/to/repo
+mars tools list --json</code></pre>
+        </section>
+
+        <section class="doc-section" id="dashboard">
+          <h2>Dashboard And Ports</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Check</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td>Dashboard does not open</td><td>Printed dashboard URL and port binding.</td><td>Pass <code>--dashboard-addr :9090</code> or another free port.</td></tr>
+                <tr><td><code>/healthz</code> works on one port but dashboard does not</td><td>Control/webhook address versus dashboard address.</td><td>Use the dashboard URL printed by <code>start</code> or <code>serve</code>.</td></tr>
+                <tr><td>Pause button appears ineffective</td><td>Running jobs continue after pause.</td><td>Pause stops new claims only. Wait for current jobs or use graceful stop if needed.</td></tr>
+                <tr><td>SSE stream disconnects</td><td>Browser/network interruption or process restart.</td><td>Refresh the dashboard or reconnect <code>curl -N http://localhost:9090/api/events</code>.</td></tr>
+                <tr><td>Dashboard stop times out</td><td>Older or interrupted shutdown path.</td><td>Use terminal <kbd>q</kbd> or Ctrl+C, then inspect the command log.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars start --repo /path/to/repo --dashboard-addr :9090 --addr :9091
+curl http://localhost:9091/healthz
+curl http://localhost:9090/api/status</code></pre>
+        </section>
+
+        <section class="doc-section" id="git-worktree">
+          <h2>Git And Worktree</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Meaning</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td>Dirty worktree blocks success</td><td>Roles cannot hide uncommitted plans, tickets, code, docs, or evidence.</td><td>Review, validate, commit, or deliberately clean the target-owned changes.</td></tr>
+                <tr><td>Push rejected</td><td>Remote moved or auth failed.</td><td>Fetch, rebase or resolve intentionally, rerun relevant checks, then push.</td></tr>
+                <tr><td>Generated files tracked accidentally</td><td>Workspace hygiene issue.</td><td>Update <code>.gitignore</code>, remove generated output from the index, and rerun checks.</td></tr>
+                <tr><td>Need to inspect without mutation</td><td>Observer-safe dry run.</td><td>Use <code>mars run engineer --repo /path/to/repo --dry-run --no-init</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="release-auth">
+          <h2>Release And Auth</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Check</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td>Private release auth fails</td><td><code>mars auth github check</code></td><td>Authenticate with GitHub CLI, set <code>GH_TOKEN</code> or <code>GITHUB_TOKEN</code>, or run <code>mars auth github setup</code>.</td></tr>
+                <tr><td>Update check cannot reach latest release</td><td>Network or remote release lookup.</td><td>Use <code>--skip-remote</code> for local drift checks, then retry remote lookup later.</td></tr>
+                <tr><td>Release notes missing narrative sections</td><td><code>mars release backfill-notes --repo . --check</code></td><td>Run <code>mars release backfill-notes --repo .</code> and commit compliant changelog updates.</td></tr>
+                <tr><td>Release assets missing</td><td><code>mars release verify-assets --dist dist/releases --version vX.Y.Z</code></td><td>Re-run <code>mars release publish-assets --repo . --version vX.Y.Z --upload auto</code>.</td></tr>
+                <tr><td>GitHub mirror missing assets</td><td><code>mars release verify-assets --version vX.Y.Z</code></td><td>Check auth, rerun publish with upload enabled, and verify <code>gh release view</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="integrations">
+          <h2>Integrations</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td>JIRA webhook returns not found</td><td>No board-driven config or route is disabled.</td><td>Copy <code>.harness/integrations.example.yaml</code> to local <code>.harness/integrations.yaml</code> and set <code>flow_profile: board-driven</code> only when opting in.</td></tr>
+                <tr><td>JIRA issue is ignored</td><td>Project repo map, workspace, board, label, or JQL scope rejected it.</td><td>Read sanitized logs and narrow config deliberately. Do not remove containment broadly.</td></tr>
+                <tr><td>Atlassian MCP exposes no JIRA tools</td><td>Credential scopes or provider capabilities are insufficient.</td><td>Probe with the configured provider, then fix token/admin scopes or use the documented stdio proxy path.</td></tr>
+                <tr><td>Integration secret appears in config</td><td>Raw value was committed instead of env var name.</td><td>Rotate the secret, remove it from history if needed, and store only <code>*_env</code> names in config.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="docsync">
+          <h2>DocSync</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Meaning</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr><td><code>docsync</code> missing metadata</td><td>An audited source file has no top-of-file <code>MarsDocSync</code> block.</td><td>Add the block and list the owning durable docs.</td></tr>
+                <tr><td>Listed doc is missing</td><td>Metadata points at a nonexistent artifact.</td><td>Fix the path or create the owning doc.</td></tr>
+                <tr><td>Audit passes but docs are semantically stale</td><td>The audit checks metadata shape and paths, not prose truth.</td><td>Read the listed docs and update behavior text manually.</td></tr>
+                <tr><td>CLI docs stale after command change</td><td>CLI tool/skill sync rule was missed.</td><td>Update CLI reference, mirrored tool guidance, generated target docs, and affected skills.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars docsync audit --repo .
+go test ./internal/docsconsistency ./internal/docsync</code></pre>
+        </section>
+
+        <section class="doc-section" id="evidence">
+          <h2>Evidence Bundle For Help Or Handoff</h2>
+          <p>
+            When handing a problem to another operator or agent, include enough
+            evidence to reproduce the state without exposing secrets.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Include</th><th>How to collect</th><th>Do not include</th></tr></thead>
+              <tbody>
+                <tr><td>Exact command and repo path shape</td><td>Copy the command with sensitive paths redacted if needed.</td><td>Tokens, private user names, or credential values.</td></tr>
+                <tr><td>Version and commit</td><td><code>mars version</code>, <code>git log --oneline -3</code>.</td><td>Unrelated private branch history.</td></tr>
+                <tr><td>Worktree state</td><td><code>git status --short --branch</code>.</td><td>Raw secret diffs.</td></tr>
+                <tr><td>Doctor output</td><td><code>mars doctor --repo /path/to/repo --json</code>.</td><td>Unredacted environment variables.</td></tr>
+                <tr><td>Log and trace identifiers</td><td>Command log path, trace ID, job ID, role, and database path.</td><td>Full raw prompts or source content unless the recipient is allowed to see them.</td></tr>
+                <tr><td>Quality and ticket evidence</td><td><code>docs/QUALITY_SCORE.md</code>, relevant ticket, validation report, or changelog entry.</td><td>Chat-only summaries as the only evidence.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>Recovery is part of the operating model: preserve evidence, classify ownership, fix the smallest true cause, and retry deliberately.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

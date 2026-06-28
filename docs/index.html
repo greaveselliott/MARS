@@ -24,6 +24,8 @@ docs:
 - docs/roles-guide.html
 - docs/documentation-sync-guide.html
 - docs/configuration-reference.html
+- docs/observability-guide.html
+- docs/troubleshooting-guide.html
 -->
 <html lang="en">
   <head>
@@ -58,9 +60,11 @@ docs:
         <a href="roles-guide.html">Roles</a>
         <a href="configuration-reference.html">Config</a>
         <a href="documentation-sync-guide.html">DocSync</a>
+        <a href="observability-guide.html">Observe</a>
         <a href="safety-quality-guide.html">Safety</a>
         <a href="release-update-guide.html">Release</a>
         <a href="integrations-validation-guide.html">Integrations</a>
+        <a href="troubleshooting-guide.html">Troubleshoot</a>
         <a href="harness-ecosystem/">Explainer</a>
       </nav>
     </header>
@@ -83,6 +87,7 @@ docs:
           <a href="#operate">Operate MARS</a>
           <a href="#models">Models and Inference</a>
           <a href="#roles-config-docsync">Roles, Config, DocSync</a>
+          <a href="#observe-diagnose">Observe And Diagnose</a>
           <a href="#safety">Safety and Trust</a>
           <a href="#telemetry">Telemetry and Quality</a>
           <a href="#release">Release and Updates</a>
@@ -172,6 +177,8 @@ docs:
             <a href="roles-guide.html">Roles And Agents Guide</a>
             <a href="configuration-reference.html">Configuration Reference</a>
             <a href="documentation-sync-guide.html">Documentation Sync Guide</a>
+            <a href="observability-guide.html">Observability And Evidence Guide</a>
+            <a href="troubleshooting-guide.html">Troubleshooting Guide</a>
             <a href="safety-quality-guide.html">Safety, Trust, And Quality Guide</a>
             <a href="release-update-guide.html">Release And Update Guide</a>
             <a href="integrations-validation-guide.html">Integrations And Validation Guide</a>
@@ -604,6 +611,36 @@ mars models override --repo ~/my-project --role engineer --provider openai-compa
           </div>
         </section>
 
+        <section class="doc-section" id="observe-diagnose">
+          <h2>Observe And Diagnose</h2>
+          <p>
+            These guides help users answer operational questions without
+            guessing: what is running, why it stopped, which evidence proves
+            quality, and what recovery path is safest.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Observability and evidence</h3>
+              <p>
+                Use the dashboard, terminal status, logs, traces, quality
+                score, telemetry preview, code-intelligence metrics, and
+                privacy boundaries to understand current and historical agent
+                behavior.
+              </p>
+              <p><a href="observability-guide.html">Open the observability guide</a></p>
+            </article>
+            <article data-doc-filter>
+              <h3>Troubleshooting</h3>
+              <p>
+                Start from a symptom and follow focused recovery paths for
+                install, setup, models, harness config, agent runs, dashboard
+                ports, git state, release auth, integrations, and DocSync.
+              </p>
+              <p><a href="troubleshooting-guide.html">Open the troubleshooting guide</a></p>
+            </article>
+          </div>
+        </section>
+
         <section class="doc-section" id="safety">
           <h2>Safety, Guardrails, Trust, And Tools</h2>
           <p>
@@ -843,6 +880,8 @@ roles:
             <a href="roles-guide.html">Roles and agents guide</a>
             <a href="configuration-reference.html">Configuration reference</a>
             <a href="documentation-sync-guide.html">Documentation sync guide</a>
+            <a href="observability-guide.html">Observability and evidence guide</a>
+            <a href="troubleshooting-guide.html">Troubleshooting guide</a>
             <a href="safety-quality-guide.html">Safety, trust, and quality guide</a>
             <a href="release-update-guide.html">Release and update guide</a>
             <a href="integrations-validation-guide.html">Integrations and validation guide</a>

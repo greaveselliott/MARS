@@ -41,6 +41,8 @@ management, extension, and troubleshooting. Deeper site pages now cover the
 [roles and agents](docs/roles-guide.html),
 [configuration](docs/configuration-reference.html),
 [documentation sync](docs/documentation-sync-guide.html),
+[observability and evidence](docs/observability-guide.html),
+[troubleshooting](docs/troubleshooting-guide.html),
 [safety, trust, and quality](docs/safety-quality-guide.html),
 [release and update](docs/release-update-guide.html), and
 [integrations and validation](docs/integrations-validation-guide.html).
@@ -283,6 +285,12 @@ safety, or orchestration changes do. See
 - [docs/documentation-sync-guide.html](docs/documentation-sync-guide.html):
   no-stale-docs workflow, MarsDocSync metadata, BDD contracts, context routes,
   repo-owned system records, and docsync audit evidence.
+- [docs/observability-guide.html](docs/observability-guide.html): dashboard,
+  terminal status, logs, traces, quality score, telemetry, code-intelligence
+  metrics, evidence workflows, and privacy boundaries.
+- [docs/troubleshooting-guide.html](docs/troubleshooting-guide.html): symptom
+  driven recovery for install, setup, models, harness config, agent runs,
+  dashboard ports, git state, release auth, integrations, and DocSync.
 - [docs/safety-quality-guide.html](docs/safety-quality-guide.html):
   guardrails, secret scanning, blast radius, trust, scores, quality export,
   and telemetry.

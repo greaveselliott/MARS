@@ -11,6 +11,8 @@ docs:
 - docs/roles-guide.html
 - docs/documentation-sync-guide.html
 - docs/configuration-reference.html
+- docs/observability-guide.html
+- docs/troubleshooting-guide.html
 - docs/safety-quality-guide.html
 - docs/release-update-guide.html
 - docs/integrations-validation-guide.html
