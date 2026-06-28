@@ -1,0 +1,404 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/quickstart.md
+- docs/workflows.html
+- docs/harness-guide.html
+- docs/operations-guide.html
+- docs/models-guide.html
+- docs/files-state-reference.html
+- docs/troubleshooting-guide.html
+- docs/product-specs/product-surface.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Quickstart Guide</title>
+    <meta
+      name="description"
+      content="First-run MARS quickstart for installing from source, preparing local inference, bootstrapping a target repo, inspecting agents safely, starting the loop, and fixing common setup issues."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to quickstart guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Quickstart</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="harness-guide.html">Harness</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="models-guide.html">Models</a>
+        <a href="troubleshooting-guide.html">Troubleshoot</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Quickstart sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search quickstart</label>
+          <input id="docSearch" type="search" placeholder="install, setup, start">
+          <p class="search-hint">Filters steps, tables, recipes, and troubleshooting rows.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#requirements">Requirements</a>
+          <a href="#install">Install</a>
+          <a href="#setup">Setup</a>
+          <a href="#first-target">First Target</a>
+          <a href="#inspect">Safe Inspection</a>
+          <a href="#run">Run Agents</a>
+          <a href="#dashboard">Dashboard</a>
+          <a href="#files">What Changed</a>
+          <a href="#updates">Updates</a>
+          <a href="#next">Next Steps</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">First successful run</p>
+            <h1>Install MARS, prepare local inference, and run one target repo.</h1>
+            <p class="lede">
+              This quickstart takes you from a clean source checkout to a
+              running target harness. It shows the shortest safe path, where
+              MARS writes state, how to inspect before agents mutate files, and
+              which guide to open when you are ready to customize the system.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="requirements">
+          <h2>Before You Start</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Requirement</th><th>Why it matters</th><th>How to check</th></tr></thead>
+              <tbody>
+                <tr><td>macOS or Linux</td><td>MARS ships local binaries and shell setup for Unix-like developer machines.</td><td><code>uname -s</code></td></tr>
+                <tr><td>Git checkout</td><td>The repo is the system of record. Target projects must be git repositories.</td><td><code>git status --short --branch</code></td></tr>
+                <tr><td>Go 1.22 or newer</td><td>The source install builds the <code>mars</code> command from this checkout.</td><td><code>go version</code></td></tr>
+                <tr><td>Network for first setup</td><td>Setup may download llama.cpp and multi-GB model artifacts.</td><td><code>mars setup --dry-run</code> after install.</td></tr>
+                <tr><td>Disk for models</td><td>GGUF models live under <code>~/.mars/models/</code>.</td><td><code>df -h ~</code></td></tr>
+                <tr><td>GPU recommended</td><td>Autonomous operation is designed for local model throughput. CPU fallback is best for dry runs and light tests.</td><td><code>mars doctor</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Target repo rule:</strong>
+            use a separate application checkout for the first run. MARS source
+            maintenance has extra foundation rules; ordinary agents should
+            operate on target projects.
+          </div>
+        </section>
+
+        <section class="doc-section" id="install">
+          <h2>Install The Command</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Clone MARS</h3>
+              <pre><code>git clone https://github.com/greaveselliott/MARS.git
+cd MARS</code></pre>
+              <p>This repository is the software factory source. The installed command can manage other target repositories from any working directory.</p>
+            </li>
+            <li>
+              <h3>Install from the checkout</h3>
+              <pre><code>make install
+mars version</code></pre>
+              <p><code>make install</code> installs the command into the Go bin directory and refreshes supported shell PATH setup.</p>
+            </li>
+            <li>
+              <h3>Open a fresh terminal if needed</h3>
+              <pre><code>hash -r
+mars path setup</code></pre>
+              <p>Use <code>hash -r</code> when your current shell cached an older binary. Use <code>mars path setup</code> to repair profile snippets directly.</p>
+            </li>
+          </ol>
+          <div class="callout">
+            <strong>Avoid stale local binaries:</strong>
+            do not use <code>go build ./cmd/mars; ./mars ...</code>. If the
+            build fails, the shell can still run an old source-root binary.
+            Use <code>make install</code> for daily work or
+            <code>go build -o build/mars ./cmd/mars</code> for a one-off binary.
+          </div>
+        </section>
+
+        <section class="doc-section" id="setup">
+          <h2>Prepare Local Inference</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Source checkout path</h3>
+              <pre><code>mars setup --skip-github
+mars doctor</code></pre>
+              <p>Use this when you are installing from source and do not need private release update auth yet.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Binary update path</h3>
+              <pre><code>gh auth login
+mars auth github setup
+mars setup
+mars auth github check</code></pre>
+              <p>Use this when you want <code>mars update tool</code> to read private GitHub Release assets.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Dry setup path</h3>
+              <pre><code>mars setup --dry-run
+mars setup --skip-download</code></pre>
+              <p>Use dry run to preview setup. Use <code>--skip-download</code> only when compatible model files already exist.</p>
+            </article>
+          </div>
+          <h3>What setup creates</h3>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Commit?</th></tr></thead>
+              <tbody>
+                <tr><td><code>~/.mars/config.yaml</code></td><td>Machine-local defaults such as performance profile and llama settings.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/bin/</code></td><td>Managed helper binaries such as <code>llama-server</code>.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/models/</code></td><td>Downloaded GGUF model files.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/db/</code></td><td>Per-repo and shared SQLite runtime state.</td><td>No.</td></tr>
+                <tr><td><code>~/.mars/traces/</code></td><td>Local execution traces and logs.</td><td>No, unless copied into a validation report deliberately.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            For a deeper model and hardware explanation, open the
+            <a href="models-guide.html">Models And Inference Guide</a>. For
+            complete ownership rules, open the
+            <a href="files-state-reference.html">Files And State Reference</a>.
+          </p>
+        </section>
+
+        <section class="doc-section" id="first-target">
+          <h2>Bootstrap A Target Repository</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Choose your application repo</h3>
+              <pre><code>cd /path/to/target-repo
+git status --short --branch</code></pre>
+              <p>The target repo is the product MARS will help build, test, document, and release.</p>
+            </li>
+            <li>
+              <h3>Initialize the deployed harness</h3>
+              <pre><code>mars init --repo /path/to/target-repo</code></pre>
+              <p><code>init</code> writes the repo-owned harness, operating docs, release files, and starter guidance.</p>
+            </li>
+            <li>
+              <h3>Review generated files</h3>
+              <pre><code>git -C /path/to/target-repo status --short
+git -C /path/to/target-repo diff --stat</code></pre>
+              <p>Generated prompts, manifest, guardrails, tickets, goals, and docs are user-owned after init.</p>
+            </li>
+          </ol>
+          <div class="callout">
+            <strong>Automatic init:</strong>
+            <code>mars start</code>, <code>mars run</code>,
+            <code>mars register</code>, and <code>mars scan</code> scaffold a
+            missing target harness unless you use an observer-safe dry-run path
+            such as <code>--dry-run --no-init</code>.
+          </div>
+        </section>
+
+        <section class="doc-section" id="inspect">
+          <h2>Inspect Before Agents Mutate</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Preview an initialized role</h3>
+              <pre><code>mars run engineer --repo /path/to/target-repo --dry-run</code></pre>
+              <p>Dry-run prints assembled context and exits before calling the model.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Inspect a legacy repo safely</h3>
+              <pre><code>mars run engineer --repo /path/to/legacy-repo --dry-run --no-init</code></pre>
+              <p><code>--no-init</code> prevents MARS from scaffolding <code>.harness/</code> during inspection.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Check role and tool surfaces</h3>
+              <pre><code>mars tools list --json
+mars mcp serve --repo /path/to/target-repo --trust observer</code></pre>
+              <p>Observer trust exposes non-mutating tool use for external MCP-compatible clients.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="run">
+          <h2>Run Agents</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Run one role</h3>
+              <pre><code>mars run engineer --repo /path/to/target-repo
+mars run qa --repo /path/to/target-repo --debug</code></pre>
+              <p>Use <code>run</code> when you want one bounded job with a named role.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Start the single-repo loop</h3>
+              <pre><code>mars start --repo /path/to/target-repo</code></pre>
+              <p><code>start</code> initializes when needed, registers the repo, reconciles state, serves the dashboard, and runs the autonomous loop.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Run a persistent daemon</h3>
+              <pre><code>mars register --repo /path/to/target-repo --remote owner/repo
+mars serve --addr :9091 --concurrency 2</code></pre>
+              <p>Use <code>serve</code> when you want a long-running orchestrator for registered repos.</p>
+            </article>
+          </div>
+          <h3>Useful first-run flags</h3>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Flag</th><th>Where</th><th>Use it when</th></tr></thead>
+              <tbody>
+                <tr><td><code>--repo</code></td><td>Most repo-scoped commands</td><td>You want to operate on a target repo from any current directory.</td></tr>
+                <tr><td><code>--dry-run</code></td><td><code>run</code>, setup/update/release commands</td><td>You want preview output without the mutating path.</td></tr>
+                <tr><td><code>--no-init</code></td><td><code>run</code></td><td>You want to inspect a missing harness without creating one.</td></tr>
+                <tr><td><code>--debug</code></td><td><code>run</code>, <code>start</code></td><td>You want verbose trace and logs inline.</td></tr>
+                <tr><td><code>--model-endpoint</code></td><td><code>run</code>, <code>start</code></td><td>You need to point at a specific OpenAI-compatible endpoint.</td></tr>
+                <tr><td><code>--max-turns</code></td><td><code>run</code></td><td>You want to bound LLM round trips for a manual job.</td></tr>
+                <tr><td><code>--budget</code></td><td><code>run</code></td><td>You want a token budget for a manual role run.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="dashboard">
+          <h2>Open The Dashboard</h2>
+          <p>
+            <code>mars start</code> and <code>mars serve</code> expose local
+            dashboard and control surfaces. The dashboard shows repositories,
+            queue state, active jobs, traces, controls, and health information.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Default local UI</h3>
+              <pre><code>open http://localhost:9090</code></pre>
+              <p>The exact address can vary when you pass <code>--addr</code> or when a port is already occupied.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Health check</h3>
+              <pre><code>curl http://localhost:9091/healthz</code></pre>
+              <p>Use this for scripts or lightweight daemon checks.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Pause or resume</h3>
+              <pre><code>curl -X POST http://localhost:9091/api/pause
+curl -X POST http://localhost:9091/api/resume</code></pre>
+              <p>The <a href="dashboard-api-reference.html">Dashboard API Reference</a> lists all control endpoints.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="files">
+          <h2>What Changed In The Target Repo</h2>
+          <p>
+            The first init/start creates a deployed harness and durable
+            operating record inside the target repo. Review these files before
+            allowing broad autonomous work.
+          </p>
+          <pre><code>.
+|-- AGENTS.md
+|-- VERSION
+|-- CHANGELOG.md
+|-- .harness/
+|   |-- manifest.yaml
+|   |-- roles/
+|   |-- guardrails/
+|   |-- knowledge/
+|   +-- skills/
++-- docs/
+    |-- goals/
+    |-- exec-plans/
+    |-- features/
+    |-- tickets/
+    |-- design-docs/
+    |-- references/
+    +-- QUALITY_SCORE.md</code></pre>
+          <p>
+            <code>mars upgrade --repo /path/to/target-repo</code> fills missing
+            defaults after a MARS upgrade while preserving user-owned prompts,
+            manifests, tickets, plans, and docs. <code>mars eject</code>
+            previews removal before deleting the deployed harness and per-repo
+            database. See the <a href="files-state-reference.html">Files And
+            State Reference</a> for the full preservation and cleanup contract.
+          </p>
+        </section>
+
+        <section class="doc-section" id="updates">
+          <h2>Update Later</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Update from source checkout</h3>
+              <pre><code>cd /path/to/MARS
+make update-tool
+mars version</code></pre>
+              <p><code>make update-tool</code> fast-forwards a clean checkout from <code>origin/main</code>, installs, refreshes PATH setup, and prints the installed version.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Check installed and target drift</h3>
+              <pre><code>mars update check --repo /path/to/target-repo --json</code></pre>
+              <p>Use JSON output when another agent or script needs to choose between tool and harness updates.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Update deployed harness defaults</h3>
+              <pre><code>mars update harness --repo /path/to/target-repo</code></pre>
+              <p>Harness update fills missing defaults. It does not overwrite tuned role prompts or local product doctrine.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="next">
+          <h2>Next Steps</h2>
+          <div class="reference-grid">
+            <a href="workflows.html">Run common workflows</a>
+            <a href="cli-reference.html">Read the full CLI reference</a>
+            <a href="harness-guide.html">Customize the target harness</a>
+            <a href="configuration-reference.html">Configure local and repo settings</a>
+            <a href="models-guide.html">Tune models and inference</a>
+            <a href="operations-guide.html">Operate start and serve</a>
+            <a href="dashboard-api-reference.html">Automate dashboard controls</a>
+            <a href="troubleshooting-guide.html">Fix first-run failures</a>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>First-Run Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Next command</th></tr></thead>
+              <tbody>
+                <tr><td><code>mars</code> is not found</td><td>Current shell has not loaded the Go bin PATH.</td><td><code>mars path setup</code>, then open a new terminal.</td></tr>
+                <tr><td><code>mars version</code> shows an old binary</td><td>The shell command cache points at an older path.</td><td><code>hash -r</code>, then <code>which mars</code>.</td></tr>
+                <tr><td>Setup cannot download models</td><td>Network, disk, or release auth problem.</td><td><code>mars setup --dry-run</code> and <code>mars doctor</code>.</td></tr>
+                <tr><td>Model preflight fails</td><td>The active profile requires a missing local model file.</td><td><code>mars setup --skip-github</code> or set a real <code>--model-endpoint</code>.</td></tr>
+                <tr><td>A target repo changed unexpectedly</td><td>A command auto-initialized a missing harness.</td><td>Use <code>git status</code>; use <code>--dry-run --no-init</code> for future inspection.</td></tr>
+                <tr><td>Dashboard port is unavailable</td><td>Another process owns the default port.</td><td>Run with <code>--addr :9091</code> or stop the other process.</td></tr>
+                <tr><td>Release updater cannot authenticate</td><td>No GitHub token source is configured.</td><td><code>gh auth login</code>, then <code>mars auth github check</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            For the full symptom matrix, open the
+            <a href="troubleshooting-guide.html">Troubleshooting Guide</a>.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>MARS keeps autonomy local, auditable, and repo-owned. Documentation changes should stay aligned with implementation truth.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

@@ -117,8 +117,9 @@ mars init --repo /path/to/target-repo
 mars run engineer --repo /path/to/target-repo --dry-run
 ```
 
-See [docs/quickstart.md](docs/quickstart.md) for the detailed walkthrough,
-common flags, PATH repair, binary updater notes, and release examples.
+See [docs/quickstart.html](docs/quickstart.html) for the detailed walkthrough,
+including prerequisites, safe inspection, dashboard checks, PATH repair,
+binary updater notes, and first-run troubleshooting.
 
 ## What It Creates
 
@@ -271,6 +272,9 @@ safety, or orchestration changes do. See
 
 - [docs/index.html](docs/index.html): GitHub Pages developer documentation
   front door.
+- [docs/quickstart.html](docs/quickstart.html): first-run guide for source
+  install, local setup, target initialization, safe inspection, dashboard
+  checks, update paths, and troubleshooting.
 - [docs/cli-reference.html](docs/cli-reference.html): detailed CLI command
   reference.
 - [docs/workflows.html](docs/workflows.html): task-oriented user workflows.
@@ -313,7 +317,8 @@ safety, or orchestration changes do. See
 - [docs/planning-delivery-guide.html](docs/planning-delivery-guide.html):
   goals, active plans, BDD feature contracts, ticket lifecycle, role handoffs,
   evidence gates, and release review.
-- [docs/quickstart.md](docs/quickstart.md): detailed install and first run.
+- [docs/quickstart.md](docs/quickstart.md): compact Markdown quickstart
+  companion for repo readers.
 - [docs/harness-ecosystem/](docs/harness-ecosystem/):
   interactive adoption explainer linked from the docs site.
 - [ARCHITECTURE.md](ARCHITECTURE.md): system architecture.

@@ -1,7 +1,11 @@
 # Quickstart
 
-Install from a source checkout, download local inference assets, and run Mars
-Harness against a target repository.
+Install from a source checkout, download local inference assets, and run MARS
+against a target repository.
+
+The primary user-facing walkthrough now lives in
+[quickstart.html](quickstart.html). This Markdown file remains as a compact
+repo-readable companion.
 
 ## System Requirements
 
@@ -18,8 +22,8 @@ operation is designed for a GPU-backed local model.
 ## Install From Source
 
 ```bash
-git clone https://github.com/greaveselliott/software-factory.git
-cd software-factory
+git clone https://github.com/greaveselliott/MARS.git
+cd MARS
 make install
 ```
 
@@ -33,7 +37,7 @@ For one-off source builds, prefer `go build -o build/mars ./cmd/mars`. Avoid `go
 
 ```bash
 mars version
-# mars 0.45.1 darwin/arm64 commit=abc123 built=2026-06-11T00:00:00Z
+# mars 0.68.15 darwin/arm64 commit=abc123 built=2026-06-28T00:00:00Z
 ```
 
 The printed version matches the repo `VERSION` file (no `v` prefix); release
@@ -131,7 +135,7 @@ Use JSON when another agent or automation needs to decide which update action to
 mars update check --repo ~/my-project --json
 ```
 
-## Initialise a Repository
+## Initialize a Repository
 
 Navigate to your project and scaffold the `.harness/` bundle:
 
@@ -144,13 +148,13 @@ This creates:
 
 ```
 .
-├── AGENTS.md         # Compact agent entrypoint and workflow map
-├── docs/             # Tickets, exec plans, design docs, references
-└── .harness/
-    ├── manifest.yaml # Role definitions and triggers
-    ├── roles/        # Role prompt files
-    ├── guardrails/   # Safety rules
-    └── knowledge/    # Lightweight context routes, including the glossary route
+|-- AGENTS.md         # Compact agent entrypoint and workflow map
+|-- docs/             # Tickets, exec plans, design docs, references
+`-- .harness/
+    |-- manifest.yaml # Role definitions and triggers
+    |-- roles/        # Role prompt files
+    |-- guardrails/   # Safety rules
+    `-- knowledge/    # Lightweight context routes, including the glossary route
 ```
 
 Edit `.harness/manifest.yaml` and `.harness/roles/*.md` to configure the agent team for your repo. The generated roles are starter defaults, not a claim that the shipped agents are perfect for every project. See [bundle-reference.md](bundle-reference.md) for the full format.
@@ -231,6 +235,8 @@ not hidden CI state.
 
 ## Next Steps
 
-- [bundle-reference.md](bundle-reference.md) — manifest.yaml format and role configuration
-- [guardrails-guide.md](guardrails-guide.md) — writing safety rules
-- `examples/roles/` — starter role prompts ready to adapt for your project
+- [quickstart.html](quickstart.html) - full first-run guide for the documentation site
+- [workflows.html](workflows.html) - task-oriented user workflows
+- [bundle-reference.md](bundle-reference.md) - manifest.yaml format and role configuration
+- [guardrails-guide.md](guardrails-guide.md) - writing safety rules
+- [harness-guide.html](harness-guide.html) - target harness structure and customization

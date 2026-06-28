@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Updated:** 2026-06-28
 **Owner:** MARS maintainers
-**Sources:** [AGENTS.md](../../AGENTS.md), [quickstart](../quickstart.md), [design docs](../design-docs/index.md), [vision](vision.md)
+**Sources:** [AGENTS.md](../../AGENTS.md), [quickstart](../quickstart.html), [design docs](../design-docs/index.md), [vision](vision.md)
 
 ## Current Product Shape
 
@@ -31,8 +31,11 @@ Documentation site status: the repository GitHub Pages site is published from
 `/docs`, and `docs/index.html` is the user-facing developer documentation front
 door. It documents installation, setup, CLI workflows, target harness
 lifecycle, operations, models, safety, telemetry, release management,
-extension, troubleshooting, and links into durable source docs. The site also
-includes dedicated pages for the detailed CLI reference
+extension, troubleshooting, and links into durable source docs. First-run
+onboarding has a dedicated static guide at `docs/quickstart.html`, covering
+requirements, source install, local inference setup, target initialization,
+safe inspection, dashboard checks, update paths, file ownership, and
+troubleshooting. The site also includes dedicated pages for the detailed CLI reference
 (`docs/cli-reference.html`), task-oriented user workflows
 (`docs/workflows.html`), and target harness structure/customization
 (`docs/harness-guide.html`). The site now also includes deep user guides for
