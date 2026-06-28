@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.16] - 2026-06-28
+<!-- mars-release: version=0.68.16 commit=50268bc1114b -->
+
+### Impact
+- **site:** New users now have a first-class documentation-site walkthrough for getting from a clean source checkout to a running target harness, with safe inspection, dashboard checks, update paths, file ownership, and first-run recovery guidance in one place.
+
+### Why
+- **site:** The homepage had a compact quickstart and the repository had a Markdown companion, but detailed onboarding still lived outside the polished GitHub Pages flow and carried stale rename-era wording.
+
+### What Changed
+- **site:** Added a static Quickstart Guide, linked it from the docs homepage and README, refreshed the Markdown quickstart as a compact companion, documented the new onboarding surface in the product contract, and corrected a stale repository link in the adoption explainer (50268bc).
+
+### Documentation
+- **site:** Add quickstart guide (50268bc)
+
 ## [0.68.15] - 2026-06-28
 <!-- mars-release: version=0.68.15 commit=17e5bea8c26e -->
 
