@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.40] - 2026-06-29
+<!-- mars-release: version=0.68.40 commit=f5d81b093bb4 -->
+
+### Impact
+- **foundation:** Operators and external AI clients get a clear source-only planning model for foundation harness work.
+
+### Why
+- **foundation:** The MARS Orchestrator must remain the system of record for planning, building, validating, and releasing `mars`, even when the work is carried out through Codex, Claude, Cursor, Copilot, Windsurf, or another client.
+
+### What Changed
+- **foundation:** Added AD-308, F-016, G-FOUNDATION-PLANNING-001, and T-054 to require goal -> active plan -> BDD feature -> ticket -> evidence flow for non-trivial foundation feature work (f5d81b0).
+
+### Documentation
+- **foundation:** Add orchestrator planning doctrine (f5d81b0)
+
 ## [0.68.39] - 2026-06-29
 <!-- mars-release: version=0.68.39 commit=3087cd08f156 -->
 
