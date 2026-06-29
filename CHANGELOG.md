@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.36] - 2026-06-29
+<!-- mars-release: version=0.68.36 commit=dc575687a2f1 -->
+
+### Impact
+- **site:** The homepage now positions MARS as a complete AI product engineering team instead of a simple install-and-run tool.
+
+### Why
+- **site:** New users should immediately understand that MARS takes ideas through strategy, planning, implementation, review, release, guardrails, and performance feedback.
+
+### What Changed
+- **site:** Replaced the weak homepage headline and lede with concept-to-production product-team positioning, and updated the page meta description (dc57568).
+
+### Documentation
+- **site:** Updated the docs homepage hero copy and search/share description (dc57568).
+
 ## [0.68.35] - 2026-06-29
 <!-- mars-release: version=0.68.35 commit=3ad93e1a0d60 -->
 
