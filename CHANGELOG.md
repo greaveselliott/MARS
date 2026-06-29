@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.29] - 2026-06-29
+<!-- mars-release: version=0.68.29 commit=01601874fa49 -->
+
+### Impact
+- **validation:** Source maintainers now have a complete user-facing reference for `mars validation agent-smoke`, including valid replay examples, option defaults, retained-run files, failure classes, and the line between fixture checks and live role evidence.
+
+### Why
+- **validation:** The command was implemented, but public docs only showed recipes and one stale example that selected no cases. Users needed enough detail to run the right suite, retain evidence, clean safely, and interpret JSON or Markdown output.
+
+### What Changed
+- **validation:** Expanded the integrations and validation guide with an agent-smoke command reference, corrected stale `go-api` fast-suite examples, documented `--root`, cleanup, report output, execution modes, failure classes, SQLite-backed trace evidence, and linked the reference from the homepage, CLI guide, and code-intel guide (0160187).
+
+### Documentation
+- **validation:** Document agent smoke command (0160187)
+
 ## [0.68.28] - 2026-06-29
 <!-- mars-release: version=0.68.28 commit=008722a7dd1f -->
 
