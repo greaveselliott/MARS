@@ -2,6 +2,23 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.39] - 2026-06-29
+<!-- mars-release: version=0.68.39 commit=3087cd08f156 -->
+
+### Impact
+- **site:** Readers are no longer pushed into narrow organization-type paths on the homepage or adoption guide. The docs route by what someone needs to prove: safe trial, control boundaries, evidence, recovery, rollout, and canonical records.
+
+### Why
+- **site:** Explicit audience lanes were too narrow and could imply a tailored compliance or rollout path that the docs should not promise. The site should feel useful across evaluation contexts without naming them as separate tracks.
+
+### What Changed
+- **site:** Replaced homepage reader lanes with proof-based checks for data boundaries, control, evidence, ownership, safe trial, and source-of-truth records (3087cd0).
+- **site:** Reworked the adoption guide around first questions, safe trial, control review, operating model, pilot, proof checklist, and rollout decision sections (3087cd0).
+- **site:** Updated the documentation map, product spec, F-015, active goal, active plan, README, and completed tickets so future docs work follows evidence routes instead of audience lanes (3087cd0).
+
+### Documentation
+- **site:** Aligned public docs and planning records with the revised evidence-based information architecture (3087cd0).
+
 ## [0.68.38] - 2026-06-29
 <!-- mars-release: version=0.68.38 commit=269bf3806844 -->
 
