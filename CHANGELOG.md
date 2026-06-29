@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.25] - 2026-06-29
+<!-- mars-release: version=0.68.25 commit=4542ffc82698 -->
+
+### Impact
+- **site:** Users now have a single credential map for private release auth, model provider keys, integration env-var indirection, local secret files, and secret scanning instead of piecing those rules together from setup, models, release, safety, and integration pages.
+
+### Why
+- **site:** Auth failures and secret-handling mistakes are high-friction onboarding problems, and the public docs needed one user-facing reference that separates `mars auth github` from model `api_key_env` credentials and optional integration secrets.
+
+### What Changed
+- **site:** Added a static Authentication And Credentials Reference, linked it from the homepage, README, quickstart, CLI, setup, models, files/state, configuration, release/update, integrations, safety, troubleshooting, workflows, and product surface, and corrected a stale `models credentials write-local-env --provider` example in the configuration reference (4542ffc).
+
+### Documentation
+- **site:** Add auth credentials reference (4542ffc)
+
 ## [0.68.24] - 2026-06-29
 <!-- mars-release: version=0.68.24 commit=8093c72540d7 -->
 
