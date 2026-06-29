@@ -2,6 +2,23 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.37] - 2026-06-29
+<!-- mars-release: version=0.68.37 commit=744751d7085d -->
+
+### Impact
+- **site:** Evaluators, operators, and regulated readers can understand MARS as a governed local AI product engineering team, choose a safe first action, and find the canonical docs behind each public summary.
+
+### Why
+- **site:** The previous homepage mixed product positioning, guide navigation, catalog behavior, and source-record links in one place, which made trust, ownership, guardrails, and evidence harder to find than command references.
+
+### What Changed
+- **site:** Added the G-DOCS-IA-001 goal, F-015 feature contract, documentation-site product spec, and completed T-048 through T-053 ticket evidence for the docs IA rebuild (744751d).
+- **site:** Rebuilt the homepage as a concise trust-building front door, moved exhaustive catalog behavior to `docs/documentation-map.html`, and added security/governance plus adoption guides (744751d).
+- **site:** Crosslinked existing public guides to canonical docs, added source-of-truth callouts, recorded the MDN technical writing reference, and tightened responsive layout support for mobile docs pages (744751d).
+
+### Documentation
+- **site:** Updated the public docs IA, docs product contract, F-015 BDD contract, active planning state, completed ticket records, README routes, and DocSync metadata (744751d).
+
 ## [0.68.36] - 2026-06-29
 <!-- mars-release: version=0.68.36 commit=dc575687a2f1 -->
 
