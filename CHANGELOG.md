@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.35] - 2026-06-29
+<!-- mars-release: version=0.68.35 commit=3ad93e1a0d60 -->
+
+### Impact
+- **site:** The documentation site is easier to use on phones and tablets, with a stable header, calmer headings, and plainer first-screen copy.
+
+### Why
+- **site:** New users need to find the next action quickly without decoding changing header links, crowded mobile navigation, or internal MARS language.
+
+### What Changed
+- **site:** Simplified the primary docs header, moved the mobile menu breakpoint to the tablet layout, contained long section navigation, reduced heading scale, improved menu closing behavior, and rewrote key introductory copy (3ad93e1).
+
+### Documentation
+- **site:** Updated the docs home, quickstart, setup, target lifecycle, harness, planning, tools, and adoption explainer surfaces (3ad93e1).
+
 ## [0.68.34] - 2026-06-29
 <!-- mars-release: version=0.68.34 commit=2f22b2c8f740 -->
 
