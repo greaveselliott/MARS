@@ -6,6 +6,7 @@ docs:
 - docs/index.html
 - docs/install-setup-reference.html
 - docs/cli-reference.html
+- docs/auth-credentials-reference.html
 - docs/workflows.html
 - docs/product-specs/product-surface.md
 - docs/design-docs/local-inference.md
@@ -39,6 +40,7 @@ docs:
       <nav class="top-nav" aria-label="Primary documentation">
         <a href="index.html">Docs Home</a>
         <a href="install-setup-reference.html">Setup</a>
+        <a href="auth-credentials-reference.html">Auth</a>
         <a href="cli-reference.html">CLI Reference</a>
         <a href="workflows.html">Workflows</a>
         <a href="operations-guide.html">Operations</a>
@@ -298,7 +300,9 @@ mars run engineer --repo ~/my-project --dry-run</code></pre>
           <p>
             Credentials are machine-local. A target repo can document which env
             names it expects, but secret values stay in the user environment or
-            an ignored local file.
+            an ignored local file. The
+            <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>
+            maps provider keys, private release auth, and integration secrets.
           </p>
           <div class="workflow-list">
             <article data-doc-filter>

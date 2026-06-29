@@ -7,6 +7,7 @@ docs:
 - docs/product-specs/product-surface.md
 - docs/quickstart.md
 - docs/shell-integration-reference.html
+- docs/auth-credentials-reference.html
 - docs/design-docs/dashboard.md
 - docs/design-docs/local-inference.md
 - docs/design-docs/release-versioning.md
@@ -44,6 +45,7 @@ docs:
         <a href="operations-guide.html">Operations</a>
         <a href="configuration-reference.html">Configuration</a>
         <a href="shell-integration-reference.html">Shell</a>
+        <a href="auth-credentials-reference.html">Auth</a>
         <a href="release-update-guide.html">Release</a>
         <a href="cli-reference.html">CLI Reference</a>
       </nav>
@@ -141,7 +143,7 @@ mars doctor --repo /path/to/repo --json</code></pre>
                 <tr><td>Setup fails during model download</td><td>Network, disk, checksum, or ineligible hardware profile.</td><td>Run <code>mars doctor --json</code>, then retry <code>mars setup --download --local-bundle auto</code>.</td></tr>
                 <tr><td>No eligible local bundle</td><td>Hardware detection cannot prove enough RAM, VRAM, disk, OS, or backend support.</td><td>Use cloud/deferred routing or choose a smaller eligible bundle after <code>mars models eligible --json</code>.</td></tr>
                 <tr><td>Local generation is very slow</td><td>Large quantization, memory pressure, or CPU fallback.</td><td>Choose a smaller local bundle, use a balanced profile, or point to a real OpenAI-compatible endpoint with <code>--model-endpoint</code>.</td></tr>
-                <tr><td>Cloud provider auth fails</td><td>The configured <code>api_key_env</code> is not present in the process environment.</td><td>Export the named variable or write ignored local env with <code>mars models credentials write-local-env</code>.</td></tr>
+                <tr><td>Cloud provider auth fails</td><td>The configured <code>api_key_env</code> is not present in the process environment.</td><td>Export the named variable or write ignored local env with <code>mars models credentials write-local-env</code>. See the <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>.</td></tr>
                 <tr><td>Ollama override fails</td><td>Ollama model is not installed or endpoint is not reachable.</td><td>Run <code>mars models list --provider ollama</code> and evaluate the candidate before using it.</td></tr>
               </tbody>
             </table>
@@ -229,7 +231,7 @@ curl http://localhost:9090/api/status</code></pre>
             <table>
               <thead><tr><th>Symptom</th><th>Check</th><th>Recovery</th></tr></thead>
               <tbody>
-                <tr><td>Private release auth fails</td><td><code>mars auth github check</code></td><td>Authenticate with GitHub CLI, set <code>GH_TOKEN</code> or <code>GITHUB_TOKEN</code>, or run <code>mars auth github setup</code>.</td></tr>
+                <tr><td>Private release auth fails</td><td><code>mars auth github check</code></td><td>Authenticate with GitHub CLI, set <code>GH_TOKEN</code> or <code>GITHUB_TOKEN</code>, or run <code>mars auth github setup</code>. See the <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>.</td></tr>
                 <tr><td>Update check cannot reach latest release</td><td>Network or remote release lookup.</td><td>Use <code>--skip-remote</code> for local drift checks, then retry remote lookup later.</td></tr>
                 <tr><td>Release notes missing narrative sections</td><td><code>mars release backfill-notes --repo . --check</code></td><td>Run <code>mars release backfill-notes --repo .</code> and commit compliant changelog updates.</td></tr>
                 <tr><td>Release assets missing</td><td><code>mars release verify-assets --dist dist/releases --version vX.Y.Z</code></td><td>Re-run <code>mars release publish-assets --repo . --version vX.Y.Z --upload auto</code>.</td></tr>

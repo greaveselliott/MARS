@@ -8,6 +8,7 @@ docs:
 - docs/product-specs/product-surface.md
 - docs/install-setup-reference.html
 - docs/shell-integration-reference.html
+- docs/auth-credentials-reference.html
 - docs/target-lifecycle-reference.html
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/release-versioning.md
@@ -47,6 +48,7 @@ docs:
         <a href="index.html">Docs Home</a>
         <a href="install-setup-reference.html">Setup</a>
         <a href="shell-integration-reference.html">Shell</a>
+        <a href="auth-credentials-reference.html">Auth</a>
         <a href="workflows.html">Workflows</a>
         <a href="target-lifecycle-reference.html">Lifecycle</a>
         <a href="harness-guide.html">Harness Guide</a>
@@ -95,6 +97,9 @@ docs:
               For install, PATH, private release auth, setup flags, and doctor
               interpretation, open the
               <a href="install-setup-reference.html">Install And Setup Reference</a>.
+              For private release auth, model provider keys, and integration
+              credential boundaries, open the
+              <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>.
               For shell profile targets, command-cache repair, and completions,
               open the <a href="shell-integration-reference.html">Shell Integration Reference</a>.
               For command-by-command target repo state transitions, open the
@@ -174,7 +179,9 @@ mars path setup --install-dir /usr/local/bin --dry-run</code></pre></dd>
                 Verifies or stores private GitHub Release auth used by binary
                 update and optional release mirror checks. Token resolution
                 checks <code>GH_TOKEN</code>, <code>GITHUB_TOKEN</code>, GitHub
-                CLI auth, then owner-only local config.
+                CLI auth, then owner-only local config. See the
+                <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>
+                for how this differs from model provider credentials.
               </p>
               <dl>
                 <dt>Flags</dt>
@@ -417,6 +424,7 @@ mars models override --repo ~/my-project --role engineer --provider openai-compa
                 Copies a provider key from the current process environment into
                 ignored <code>.harness/.env.local</code> with restricted file
                 permissions. Committed config stores only <code>api_key_env</code>.
+                See the <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>.
               </p>
               <pre><code>export OPENAI_API_KEY=...
 mars models credentials write-local-env --repo ~/my-project --api-key-env OPENAI_API_KEY --yes --json</code></pre>

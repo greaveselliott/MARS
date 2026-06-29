@@ -6,6 +6,7 @@ docs:
 - docs/index.html
 - docs/product-specs/product-surface.md
 - docs/shell-integration-reference.html
+- docs/auth-credentials-reference.html
 - docs/bundle-reference.html
 - docs/bundle-reference.md
 - docs/guardrails-reference.html
@@ -44,6 +45,7 @@ docs:
       <nav class="top-nav" aria-label="Primary documentation">
         <a href="index.html">Docs Home</a>
         <a href="cli-reference.html">CLI Reference</a>
+        <a href="auth-credentials-reference.html">Auth</a>
         <a href="harness-guide.html">Harness</a>
         <a href="bundle-reference.html">Bundle</a>
         <a href="roles-guide.html">Roles</a>
@@ -258,7 +260,11 @@ roles:
           </div>
           <pre><code>mars models override --repo /path/to/repo --tier coding --provider ollama --model qwen3.6:27b
 mars models override --repo /path/to/repo --role engineer --provider openai-compatible --endpoint http://127.0.0.1:8088/v1 --model repo-coder
-mars models credentials write-local-env --repo /path/to/repo --provider openai --api-key-env OPENAI_API_KEY</code></pre>
+mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENAI_API_KEY</code></pre>
+          <p>
+            Use the <a href="auth-credentials-reference.html">Authentication And Credentials Reference</a>
+            for provider key storage, env-var naming, and secret-scanning rules.
+          </p>
         </section>
 
         <section class="doc-section" id="integrations">
