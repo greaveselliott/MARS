@@ -30,13 +30,19 @@ gateway, auth boundary, and runtime state owner.
 Documentation site status: the repository GitHub Pages site is published from
 `/docs`, and `docs/index.html` is the user-facing developer documentation front
 door with a dark default theme, stable compact header navigation, and a
-searchable catalog. It documents installation, setup, CLI workflows, target harness
-lifecycle, operations, models, safety, telemetry, release management,
-extension, troubleshooting, and links into repo-owned source docs. First-run
-onboarding has a dedicated static guide at `docs/quickstart.html`, covering
+searchable catalog. On mobile viewports, the site uses stable disclosure
+navigation, keeps page content ahead of the long section index, and renders
+wide reference tables as labelled cards instead of forcing sideways reading. It
+now includes a beginner-safe command chooser that separates inspection commands
+from file-writing commands. It documents
+installation, setup, CLI workflows, target harness lifecycle, operations,
+models, safety, telemetry, release management, extension, troubleshooting, and
+links into repo-owned source docs. First-run onboarding has a dedicated static
+guide at `docs/quickstart.html`, covering
 requirements, source install, local inference setup, target initialization,
 safe inspection, dashboard checks, update paths, file ownership, and
-troubleshooting. Install and setup now has a dedicated reference at
+troubleshooting, including the distinction between the dashboard URL and the
+webhook/control health URL. Install and setup now has a dedicated reference at
 `docs/install-setup-reference.html`, covering source install, shell PATH setup,
 `mars setup`, private-release auth, inference mode, local bundles, machine
 state, automation, `doctor`, and first-run recovery. The site also includes
@@ -62,6 +68,9 @@ artifacts, secrets, release assets, upgrade preservation, and eject cleanup.
 The site now also documents roles and agents (`docs/roles-guide.html`), target
 and local configuration (`docs/configuration-reference.html`), and the no-stale-docs
 documentation sync operating model (`docs/documentation-sync-guide.html`).
+Configuration coverage includes anonymous telemetry YAML keys, environment
+overrides, collector URL semantics, token handling, and the preview-before-send
+privacy boundary.
 Observability and recovery coverage lives in
 `docs/observability-guide.html` and `docs/troubleshooting-guide.html`, covering
 dashboard state, terminal status, logs, traces, quality score, telemetry,

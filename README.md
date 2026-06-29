@@ -33,9 +33,11 @@ The repository GitHub Pages site publishes from `/docs` and starts at the
 It is the user-facing front door for installation, setup, CLI workflows,
 target harness lifecycle, operations, models, safety, telemetry, release
 management, extension, and troubleshooting. The homepage now includes a
-searchable [documentation catalog](docs/index.html#catalog) and conservative
-[readiness matrix](docs/index.html#readiness) so users can find both task
-guides and the repo docs that back them up. Deeper site pages cover the
+[first-action chooser](docs/index.html#choose-first-action), searchable
+[documentation catalog](docs/index.html#catalog), and conservative
+[readiness matrix](docs/index.html#readiness) so users can pick a safe command
+and find both task guides and the repo docs that back them up. Deeper site
+pages cover the
 [CLI reference](docs/cli-reference.html),
 [shell integration](docs/shell-integration-reference.html),
 [authentication and credentials](docs/auth-credentials-reference.html),

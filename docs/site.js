@@ -2,12 +2,20 @@
 MarsDocSync:
 docs:
 - docs/index.html
+- docs/quickstart.html
+- docs/install-setup-reference.html
+- docs/shell-integration-reference.html
+- docs/auth-credentials-reference.html
 - docs/cli-reference.html
 - docs/workflows.html
 - docs/harness-guide.html
+- docs/target-lifecycle-reference.html
+- docs/bundle-reference.html
+- docs/guardrails-reference.html
 - docs/operations-guide.html
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
+- docs/code-intel-reference.html
 - docs/roles-guide.html
 - docs/documentation-sync-guide.html
 - docs/configuration-reference.html
@@ -19,6 +27,7 @@ docs:
 - docs/planning-delivery-guide.html
 - docs/dashboard-api-reference.html
 - docs/files-state-reference.html
+- docs/checks-evidence-guide.html
 - README.md
 - docs/product-specs/product-surface.md
 */
@@ -48,6 +57,48 @@ docs:
   if (search) {
     search.addEventListener("input", applyFilter);
   }
+
+  var header = document.querySelector(".site-header");
+  var topNav = document.querySelector(".top-nav");
+
+  if (header && topNav) {
+    if (!topNav.id) {
+      topNav.id = "primary-doc-nav";
+    }
+
+    var navToggle = document.createElement("button");
+    navToggle.type = "button";
+    navToggle.className = "nav-toggle";
+    navToggle.setAttribute("aria-controls", topNav.id);
+    navToggle.setAttribute("aria-expanded", "false");
+    navToggle.textContent = "Menu";
+    header.insertBefore(navToggle, topNav);
+    header.classList.add("has-nav-toggle");
+
+    navToggle.addEventListener("click", function () {
+      var isOpen = header.classList.toggle("is-nav-open");
+      navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+  }
+
+  document.querySelectorAll(".wide-table table").forEach(function (table) {
+    var headers = Array.prototype.slice.call(table.querySelectorAll("thead th"))
+      .map(function (header) {
+        return (header.textContent || "").replace(/\s+/g, " ").trim();
+      });
+
+    if (!headers.some(Boolean)) {
+      return;
+    }
+
+    table.querySelectorAll("tbody tr").forEach(function (row) {
+      Array.prototype.slice.call(row.children).forEach(function (cell, index) {
+        if (headers[index]) {
+          cell.setAttribute("data-label", headers[index]);
+        }
+      });
+    });
+  });
 
   document.querySelectorAll("[data-copy-target]").forEach(function (button) {
     button.addEventListener("click", function () {

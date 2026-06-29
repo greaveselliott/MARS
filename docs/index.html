@@ -99,6 +99,7 @@ docs:
         </div>
         <nav class="side-nav">
           <a href="#overview">Overview</a>
+          <a href="#choose-first-action">Choose First Action</a>
           <a href="#deep-guides">User Guides</a>
           <a href="#catalog">Catalog</a>
           <a href="#readiness">Readiness</a>
@@ -133,7 +134,8 @@ docs:
               evidence, and update or remove it when needed.
             </p>
             <div class="hero-actions" aria-label="Start points">
-              <a class="button primary" href="#quickstart">Start with the quickstart</a>
+              <a class="button primary" href="#choose-first-action">Choose first action</a>
+              <a class="button secondary" href="#quickstart">Start with the quickstart</a>
               <a class="button secondary" href="#cli">Open command reference</a>
             </div>
           </div>
@@ -180,6 +182,29 @@ docs:
                 are the source of truth. Chat is not the system of record.
               </p>
             </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="choose-first-action">
+          <h2>Choose Your First Safe Action</h2>
+          <p>
+            Pick the command by what you want to learn or change. If you are
+            unsure, choose a row that does not write target files first.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>You want to...</th><th>Run this</th><th>Writes target files?</th><th>Success looks like</th><th>Next page</th></tr></thead>
+              <tbody>
+                <tr><td>Check whether your machine and repo look ready.</td><td><code>mars doctor --repo /path/to/repo --json</code></td><td>No expected target writes.</td><td>A health report with clear remediation for any failed check.</td><td><a href="install-setup-reference.html">Install and setup</a></td></tr>
+                <tr><td>See what an agent would read before it runs.</td><td><code>mars run engineer --repo /path/to/repo --dry-run --no-init</code></td><td>No.</td><td>Printed role context, with no harness scaffold created.</td><td><a href="target-lifecycle-reference.html#before">Safe inspection</a></td></tr>
+                <tr><td>Create the harness deliberately.</td><td><code>mars init --repo /path/to/repo</code></td><td>Yes.</td><td><code>.harness/</code>, <code>AGENTS.md</code>, tickets, plans, and release files appear for review.</td><td><a href="target-lifecycle-reference.html#init">Initialize</a></td></tr>
+                <tr><td>Run one repo through the full local loop.</td><td><code>mars start --repo /path/to/repo</code></td><td>Maybe; it auto-inits if needed, then agents may later write.</td><td>A dashboard URL, registered repo, queue, workers, and lifecycle state.</td><td><a href="operations-guide.html#modes">Start vs serve</a></td></tr>
+                <tr><td>Find missing project hygiene and create starter work.</td><td><code>mars scan --repo /path/to/repo --tickets</code></td><td>Maybe; it can write backlog tickets.</td><td>Findings and deduplicated tickets for gaps MARS can act on.</td><td><a href="target-lifecycle-reference.html#scan">Scan</a></td></tr>
+                <tr><td>Record a test, build, lint, smoke, or release result.</td><td><code>mars checks run --repo /path/to/repo --name go-test -- go test ./...</code></td><td>No target file by itself.</td><td>A pass or fail row in the MARS scoring database.</td><td><a href="checks-evidence-guide.html">Local checks</a></td></tr>
+                <tr><td>Update an existing harness after installing a new MARS.</td><td><code>mars update harness --repo /path/to/repo</code></td><td>Yes, missing defaults only.</td><td>New default files are added without overwriting user-owned role prompts or tickets.</td><td><a href="release-update-guide.html#harness-update">Harness update</a></td></tr>
+                <tr><td>Remove MARS from a target repo.</td><td><code>mars eject --repo /path/to/repo</code></td><td>Dry-run by default.</td><td>A removal plan. Applying requires <code>--apply --confirm &lt;repo-name&gt;</code>. Aliases: <code>mars uninstall</code>, <code>mars kill-switch</code>.</td><td><a href="target-lifecycle-reference.html#eject">Eject</a></td></tr>
+              </tbody>
+            </table>
           </div>
         </section>
 

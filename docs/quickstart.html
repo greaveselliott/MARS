@@ -12,6 +12,7 @@ docs:
 - docs/workflows.html
 - docs/harness-guide.html
 - docs/operations-guide.html
+- docs/dashboard-api-reference.html
 - docs/models-guide.html
 - docs/files-state-reference.html
 - docs/troubleshooting-guide.html
@@ -295,6 +296,13 @@ mars serve --addr :9091 --concurrency 2</code></pre>
             dashboard and control surfaces. The dashboard shows repositories,
             queue state, active jobs, traces, controls, and health information.
           </p>
+          <div class="callout">
+            <strong>Two local URLs:</strong>
+            use the dashboard URL, usually <code>http://localhost:9090</code>,
+            for pages and <code>/api/*</code> controls. Use the webhook/control
+            URL, usually <code>http://localhost:9091</code>, for
+            <code>/healthz</code> and external webhook traffic.
+          </div>
           <div class="workflow-list">
             <article data-doc-filter>
               <h3>Default local UI</h3>
@@ -308,8 +316,8 @@ mars serve --addr :9091 --concurrency 2</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Pause or resume</h3>
-              <pre><code>curl -X POST http://localhost:9091/api/pause
-curl -X POST http://localhost:9091/api/resume</code></pre>
+              <pre><code>curl -X POST http://localhost:9090/api/pause
+curl -X POST http://localhost:9090/api/resume</code></pre>
               <p>The <a href="dashboard-api-reference.html">Dashboard API Reference</a> lists all control endpoints.</p>
             </article>
           </div>

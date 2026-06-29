@@ -258,8 +258,19 @@ mars scores export --repo /path/to/repo --create-intervention-debt</code></pre>
           <p>
             Raw telemetry is local by default. Anonymous reporting is opt-in
             and sends allowlisted aggregates only after users can preview the
-            payload.
+            payload. <code>mars telemetry send</code> makes no network call
+            unless <code>telemetry.reporting</code> is set to
+            <code>anonymous</code> and a collector endpoint is configured.
           </p>
+          <div class="callout">
+            Configure telemetry in <code>~/.mars/config.yaml</code> or with
+            <code>MARS_TELEMETRY_REPORTING</code>,
+            <code>MARS_TELEMETRY_ENDPOINT</code>,
+            <code>MARS_TELEMETRY_TOKEN</code>, and
+            <code>MARS_TELEMETRY_INTERVAL</code>. MARS appends
+            <code>/v1/anonymous-telemetry/reports</code> to the configured
+            endpoint when sending.
+          </div>
           <div class="workflow-list">
             <article data-doc-filter>
               <h3>Inspect local telemetry status</h3>
@@ -274,16 +285,23 @@ mars telemetry preview --repo /path/to/repo</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Send when explicitly enabled</h3>
-              <pre><code>mars telemetry send --repo /path/to/repo</code></pre>
-              <p>Send failures never block local harness operation.</p>
+              <pre><code>MARS_TELEMETRY_REPORTING=anonymous \
+MARS_TELEMETRY_ENDPOINT=http://127.0.0.1:9092 \
+mars telemetry send --repo /path/to/repo</code></pre>
+              <p>Send failures are reported as warnings and do not block local harness operation.</p>
             </article>
             <article data-doc-filter>
               <h3>Run a local foundation collector</h3>
               <pre><code>mars telemetry collect --storage sqlite --addr :9092
-mars telemetry triage-foundation --repo /path/to/MARS --window-days 30</code></pre>
-              <p>Foundation maintainers use this path to turn repeated anonymous foundation-owned patterns into MARS source work.</p>
+MARS_TELEMETRY_REPORTING=anonymous MARS_TELEMETRY_ENDPOINT=http://127.0.0.1:9092 mars telemetry send --repo /path/to/repo
+mars telemetry triage-foundation --repo /path/to/MARS --db ~/.mars/db/foundation-telemetry/intake.db --window-days 30</code></pre>
+              <p>Foundation maintainers use this path to collect sanitized reports and turn repeated foundation-owned patterns into MARS source work.</p>
             </article>
           </div>
+          <p>
+            For the exact YAML keys and environment overrides, open the
+            <a href="configuration-reference.html#telemetry-config">Telemetry configuration reference</a>.
+          </p>
         </section>
 
         <section class="doc-section" id="code-intel">

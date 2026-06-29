@@ -205,6 +205,8 @@ mars auth github check --json</code></pre></dd>
                 <dd><code>--repo</code>, <code>--latest-release-url</code>, <code>--skip-remote</code>, <code>--json</code>.</dd>
                 <dt>Tool flags</dt>
                 <dd><code>--version latest|vX.Y.Z|main</code>, <code>--install-dir</code>, <code>--source</code>, <code>--dry-run</code>, <code>--json</code>.</dd>
+                <dt>Tool aliases</dt>
+                <dd><code>mars update binary</code> and <code>mars update cli</code> run the same command as <code>mars update tool</code>.</dd>
                 <dt>Example</dt>
                 <dd><pre><code>mars update check --repo ~/my-project --json
 mars update tool --dry-run
@@ -244,6 +246,7 @@ mars init --repo ~/my-project --model-routing cloud --cloud-provider openai --cl
               </p>
               <pre><code>mars update harness --repo ~/my-project
 mars upgrade --repo ~/my-project</code></pre>
+              <p>Aliases: <code>mars update target</code> and <code>mars update bundle</code>.</p>
             </article>
             <article data-doc-filter>
               <h3><code>mars scan</code></h3>
@@ -271,6 +274,8 @@ mars upgrade --repo ~/my-project</code></pre>
               <dl>
                 <dt>Flags</dt>
                 <dd><code>--repo</code>, <code>--db</code>, <code>--apply</code>, <code>--confirm</code>, <code>--keep-db</code>, <code>--delete-shared-db</code>.</dd>
+                <dt>Aliases</dt>
+                <dd><code>mars uninstall</code> and <code>mars kill-switch</code>.</dd>
                 <dt>Example</dt>
                 <dd><pre><code>mars eject --repo ~/my-project
 mars eject --repo ~/my-project --apply --confirm my-project</code></pre></dd>

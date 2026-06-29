@@ -18,6 +18,8 @@ docs:
 - docs/harness-guide.html
 - docs/models-guide.html
 - docs/code-intel-reference.html
+- docs/observability-guide.html
+- docs/safety-quality-guide.html
 - docs/integrations-validation-guide.html
 -->
 <html lang="en">
@@ -66,6 +68,7 @@ docs:
           <a href="#locations">Locations</a>
           <a href="#local-config">Local Config</a>
           <a href="#code-intel-config">Code Intelligence</a>
+          <a href="#telemetry-config">Telemetry</a>
           <a href="#manifest">Manifest</a>
           <a href="#model-overrides">Model Overrides</a>
           <a href="#integrations">Integrations</a>
@@ -159,6 +162,54 @@ mars serve --db /private/tmp/mars-shared.db</code></pre>
   enabled: true</code></pre>
           <pre><code>mars run engineer --repo /path/to/repo --code-intel false
 MARS_CODE_INTEL_ENABLED=true mars start --repo /path/to/repo</code></pre>
+        </section>
+
+        <section class="doc-section" id="telemetry-config">
+          <h2>Anonymous Telemetry Config</h2>
+          <p>
+            Telemetry is off by default. Users can always inspect local status
+            and preview the exact anonymous aggregate payload before anything
+            leaves the machine. Sending requires
+            <code>telemetry.reporting: anonymous</code> and a collector
+            endpoint.
+          </p>
+          <pre><code>telemetry:
+  reporting: off
+  endpoint: ""
+  token: ""
+  report_interval: 24h</code></pre>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>YAML key</th><th>Environment override</th><th>User meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>telemetry.reporting</code></td><td><code>MARS_TELEMETRY_REPORTING</code></td><td><code>off</code> makes <code>mars telemetry send</code> print that no network call was made. <code>anonymous</code> enables sending queued anonymous reports.</td></tr>
+                <tr><td><code>telemetry.endpoint</code></td><td><code>MARS_TELEMETRY_ENDPOINT</code></td><td>Base collector URL. MARS appends <code>/v1/anonymous-telemetry/reports</code> when sending.</td></tr>
+                <tr><td><code>telemetry.token</code></td><td><code>MARS_TELEMETRY_TOKEN</code></td><td>Optional bearer token for the collector request. Treat it like a secret.</td></tr>
+                <tr><td><code>telemetry.report_interval</code></td><td><code>MARS_TELEMETRY_INTERVAL</code></td><td>Local reporting interval setting. Default is <code>24h</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Preview before export or send</h3>
+              <pre><code>mars telemetry status --repo ~/my-project
+mars telemetry preview --repo ~/my-project</code></pre>
+              <p>Preview prints the aggregate payload. Do not send until you understand it.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Use environment overrides for a one-off send</h3>
+              <pre><code>MARS_TELEMETRY_REPORTING=anonymous \
+MARS_TELEMETRY_ENDPOINT=http://127.0.0.1:9092 \
+mars telemetry send --repo ~/my-project</code></pre>
+              <p>The request goes to <code>http://127.0.0.1:9092/v1/anonymous-telemetry/reports</code>.</p>
+            </article>
+          </div>
+          <p>
+            Raw traces, prompts, file contents, repo paths, remotes, and raw
+            errors are not sent in the anonymous aggregate report. For command
+            recipes and privacy boundaries, open the
+            <a href="observability-guide.html#telemetry">Observability Guide</a>.
+          </p>
         </section>
 
         <section class="doc-section" id="manifest">

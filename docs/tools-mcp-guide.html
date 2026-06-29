@@ -243,9 +243,9 @@ docs:
             </article>
             <article data-doc-filter>
               <h3>Set trust explicitly</h3>
-              <pre><code>mars trust set engineer REPO_ID contributor \
+              <pre><code>mars trust set engineer ~/my-project contributor \
   --reason "Human approved bounded write access"</code></pre>
-              <p>Use the repo ID from MARS state, not only the filesystem path.</p>
+              <p>Use the target repo path for the common path. Advanced repo-ID-oriented edits should pass the matching <code>--db</code> and line up with registered state.</p>
             </article>
           </div>
         </section>
