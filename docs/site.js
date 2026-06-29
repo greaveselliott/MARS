@@ -96,7 +96,7 @@ docs:
     sectionToggle.className = "section-nav-toggle";
     sectionToggle.setAttribute("aria-controls", sideNav.id);
     sectionToggle.setAttribute("aria-expanded", "false");
-    sectionToggle.textContent = "On this page";
+    sectionToggle.textContent = "Search and sections";
     sidebar.insertBefore(sectionToggle, sidebar.firstChild);
     sidebar.classList.add("has-section-toggle");
 

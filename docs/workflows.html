@@ -30,7 +30,7 @@ docs:
     <title>MARS User Workflows</title>
     <meta
       name="description"
-      content="Task-oriented MARS documentation for installing, bootstrapping, running agents, operating the dashboard, managing models, updating, releasing, and troubleshooting."
+      content="Task-oriented MARS documentation for installing, bootstrapping, running agents, reviewing agent output, operating the dashboard, managing models, updating, releasing, and troubleshooting."
     >
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="site.css">
@@ -70,6 +70,7 @@ docs:
           <a href="#first-target">First Target</a>
           <a href="#safe-inspection">Safe Inspection</a>
           <a href="#run-loop">Run The Loop</a>
+          <a href="#review-work">Review Work</a>
           <a href="#checks">Recorded Checks</a>
           <a href="#dashboard">Dashboard</a>
           <a href="#models">Model Routing</a>
@@ -88,9 +89,9 @@ docs:
             <p class="lede">
               These workflows describe what users actually do: install the
               command, prepare local inference, bootstrap a target repo, inspect
-              agent context safely, run roles, operate the dashboard, choose
-              models, update surfaces, release changes, and recover from common
-              failures.
+              agent context safely, run roles, review the work they leave
+              behind, operate the dashboard, choose models, update surfaces,
+              release changes, and recover from common failures.
             </p>
           </div>
         </section>
@@ -200,6 +201,72 @@ mars serve --addr :9091 --concurrency 2</code></pre>
                 <tr><td><kbd>h</kbd></td><td>Help</td><td>Shows terminal control help.</td></tr>
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="review-work">
+          <h2>Review And Accept Agent Work</h2>
+          <p>
+            After <code>mars run</code>, <code>mars start</code>, or
+            <code>mars serve</code> has touched a target repo, treat the result
+            like a developer handoff. MARS can prepare changes and evidence,
+            but you decide what is accepted into the target history.
+          </p>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Stop new work while you review</h3>
+              <pre><code># In the running MARS terminal
+p
+
+# Or through the local dashboard API
+curl -X POST http://localhost:9090/api/pause</code></pre>
+              <p>Paused workers finish any running job, then claim no new jobs. Use this before reviewing a busy repo.</p>
+            </li>
+            <li>
+              <h3>Check MARS health and the target state</h3>
+              <pre><code>mars doctor --repo ~/my-project --json
+git -C ~/my-project status --short --branch
+git -C ~/my-project diff --stat</code></pre>
+              <p>Start with the health report and the git diff. If either looks surprising, investigate before running more agents.</p>
+            </li>
+            <li>
+              <h3>Read the evidence, not just the summary</h3>
+              <pre><code>git -C ~/my-project diff
+find ~/my-project/docs/tickets -maxdepth 2 -type f | sort
+find ~/my-project/docs/features -maxdepth 1 -type f | sort</code></pre>
+              <p>Check the code, tickets, feature contracts, plans, docs, traces, and dashboard state that support the claim.</p>
+            </li>
+            <li>
+              <h3>Run the target checks</h3>
+              <pre><code>mars checks run --repo ~/my-project --name test -- go test ./...
+mars scores export --repo ~/my-project --window-days 30</code></pre>
+              <p>Use the target's real build, test, lint, or smoke command. Refresh the quality score only when the recorded evidence supports it.</p>
+            </li>
+            <li>
+              <h3>Choose the outcome</h3>
+              <div class="wide-table">
+                <table>
+                  <thead><tr><th>Outcome</th><th>What to do</th><th>When to use it</th></tr></thead>
+                  <tbody>
+                    <tr><td>Accept</td><td>Commit the target-owned code, docs, and evidence together.</td><td>The diff matches the request and checks pass.</td></tr>
+                    <tr><td>Repair</td><td>Create or update a bounded ticket with the failing evidence, then run the right role again.</td><td>The direction is useful but incomplete or failing.</td></tr>
+                    <tr><td>Reject</td><td>Discard only the output you have reviewed and chosen not to keep.</td><td>The work is off-goal, unsafe, or not worth repairing.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </li>
+            <li>
+              <h3>Version accepted target changes</h3>
+              <pre><code>mars release notes --repo ~/my-project --bump auto
+mars release backfill-notes --repo ~/my-project --check
+git -C ~/my-project status --short</code></pre>
+              <p>Generate release notes after accepted semantic changes, not after a rejected experiment.</p>
+            </li>
+          </ol>
+          <div class="callout">
+            Keep chat summaries out of the critical path. The repo should show
+            what changed, why it changed, what passed, and what still needs
+            attention.
           </div>
         </section>
 
