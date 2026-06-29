@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.28] - 2026-06-29
+<!-- mars-release: version=0.68.28 commit=008722a7dd1f -->
+
+### Impact
+- **site:** Users get a calmer documentation site on phones: the header no longer crowds the viewport, wide reference tables become labelled cards, long flags wrap instead of forcing sideways scrolling, and first actions are easier to choose safely.
+
+### Why
+- **site:** The GitHub Pages docs had improved coverage, but mobile readers still hit overflow, hard-to-scan navigation, and dense command guidance. The site also needed clearer user-facing setup for anonymous telemetry and dashboard URLs.
+
+### What Changed
+- **site:** Added stable mobile disclosure navigation, mobile table labels, stronger wrapping and touch targets, a homepage safe-action chooser, telemetry configuration guidance, corrected dashboard API examples, CLI alias coverage, and clearer Tools/MCP trust examples (008722a).
+
+### Documentation
+- **site:** Improve mobile docs navigation (008722a)
+
 ## [0.68.27] - 2026-06-29
 <!-- mars-release: version=0.68.27 commit=ca05217f01ee -->
 
