@@ -89,3 +89,21 @@
 - Last Reviewed: 2026-06-29
 - Review Trigger: Public docs IA changes, DocSync audit findings, governance feedback, homepage conversion feedback, or changes to canonical harness documentation.
 - Owner: COO with Product/Docs Maintainer
+
+## G-FOUNDATION-PLANNING-001: Make Foundation Planning Provider-Neutral
+
+- ID: G-FOUNDATION-PLANNING-001
+- Status: active
+- Category: operational
+- Priority: P0
+- Confidence: high
+- Source: user_chat
+- Dedupe Key: operating-model:provider-neutral-feature-planning
+- Hypothesis: If every AI coding provider consumes the same MARS Orchestrator planning model when building the foundation harness, foundation feature delivery will remain auditable, resumable, and consistent across Claude, Codex, Copilot, Cursor, Windsurf, and other clients.
+- Success Evidence: `AGENTS.md`, the foundation maintainer role packet, `docs/design-docs/foundation-operating-model.md`, `docs/features/F-016-foundation-provider-planning-doctrine.md`, the active exec plan, and T-054 all require goal -> exec plan -> BDD feature -> tickets -> implementation evidence for non-trivial foundation feature work.
+- Falsification Evidence: A provider can plan or build a non-trivial foundation feature from chat-only or provider-native task state; foundation feature tickets exist without an active goal, active exec plan, and BDD feature contract; vendor adapters carry independent doctrine; or deployed target harnesses are told to consume this source-only rule without a separate mirroring decision.
+- Competes With: direct chat-to-code delivery, provider-specific planning checklists, branch-only planning, issue-only planning
+- Supports: G-001, G-002, G-003
+- Last Reviewed: 2026-06-29
+- Review Trigger: AI client adapter changes, foundation feature-planning failures, ticket creation without feature contracts, or user feedback that providers are bypassing MARS foundation doctrine.
+- Owner: foundation-maintainer with COO and CTO-weekly

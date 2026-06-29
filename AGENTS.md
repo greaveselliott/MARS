@@ -98,6 +98,14 @@ foundation-owned, deployed-owned, mirrored doctrine, or evidence-only before
 creating tickets or patches. Client-specific files must not carry independent
 operating doctrine.
 
+Before planning or building any non-trivial feature in the foundation harness,
+every client consumes the same MARS Orchestrator planning model: update or
+confirm the active goal, update the active exec plan, create or update the BDD
+feature contract, create tickets through `ticket_create`, then implement only
+the current ticket. Claude, Codex, Copilot, Cursor, Windsurf, Gemini, OpenCode,
+Kiro, and other providers may use their native planning UI as scratch space,
+but `mars` repo artifacts are the foundation harness system of record.
+
 ## The Nine Tenets
 
 Every decision in this project is filtered through these tenets (priority order):
@@ -398,13 +406,14 @@ golangci-lint run
 6. **Document every decision and feature.** Architecture changes and product features go in `docs/design-docs/` or `docs/product-specs/` with the reason why. Discoveries go in the relevant design doc's Discoveries section.
 7. **No stale documentation.** All docs are live system artifacts. When writing or materially changing code, add or update the top-of-file `MarsDocSync` comment block with a `docs:` list of associated docs, run or satisfy the docsync audit where applicable, then update those docs in the same commit or record why no doc change was needed.
 8. **BDD defines done.** Goals align the active plan, BDD feature contracts define feature completeness, and walking skeleton slices implement the next failing scenario through real E2E/integration evidence.
-9. **Business logic is first-class BDD.** Every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, release classification, or user-visible outcome must be documented step by step in `docs/features/` before or alongside implementation.
-10. **Source improvements use the live demo loop.** Read [foundation-operating-model.md](docs/design-docs/foundation-operating-model.md) first. When changing MARS lifecycle, orchestration, generated target scaffolding, intervention-debt routing, model/provider behavior, dashboard/control-plane behavior, scoring, safety/guardrails, or update/release behavior, run the installed binary against a **clean validation project** from the AD-284 matrix: run a clean representative target from the validation matrix, run a representative clean target from the validation matrix when matching existing evidence language, review findings, implement one or two bounded actions, rerun on a clean seed, and claim improvement only after the rerun evidence confirms the fix and the work is merged or fast-forwarded to trunk and pushed to the remote. If the loop cannot run, record the exact blocker and replay command. Stop known-wedge replays immediately; do not monitor until timeout.
-11. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
-12. **Feed conversations back.** Significant conversations must update the owning repo artifact in the same direct commit to `main`: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
-13. **Avoid docs churn for trivial replies.** Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
-14. **Use the ticket lifecycle directories.** New tickets are created with `ticket_create` in `docs/tickets/backlog/`. Do not hand-write ticket markdown directly under `docs/tickets/`; ticket files belong only in `backlog/`, `in-progress/`, `in-review/`, or `done/`.
-15. **Keep CLI tools and skills synchronized.** Whenever `cmd/mars` changes a command, flag, output contract, repo behavior, or workflow, update the `mars_cli` reference and repo-shortcut map, generated target doctrine, and any affected skills in the same change. Run the CLI sync tests named in `docs/design-docs/cli-tool-skill-sync.md`.
+9. **Foundation feature planning follows the MARS chain.** Before any non-trivial feature build in this foundation harness, update or confirm the goal, active exec plan, BDD feature contract, and tickets in that order. Do not substitute chat plans, provider task lists, issue text, branch descriptions, or review checklists for those repo artifacts.
+10. **Business logic is first-class BDD.** Every product rule, workflow branch, state transition, validation, permission, scoring/trust rule, routing rule, release classification, or user-visible outcome must be documented step by step in `docs/features/` before or alongside implementation.
+11. **Source improvements use the live demo loop.** Read [foundation-operating-model.md](docs/design-docs/foundation-operating-model.md) first. When changing MARS lifecycle, orchestration, generated target scaffolding, intervention-debt routing, model/provider behavior, dashboard/control-plane behavior, scoring, safety/guardrails, or update/release behavior, run the installed binary against a **clean validation project** from the AD-284 matrix: run a clean representative target from the validation matrix, run a representative clean target from the validation matrix when matching existing evidence language, review findings, implement one or two bounded actions, rerun on a clean seed, and claim improvement only after the rerun evidence confirms the fix and the work is merged or fast-forwarded to trunk and pushed to the remote. If the loop cannot run, record the exact blocker and replay command. Stop known-wedge replays immediately; do not monitor until timeout.
+12. **Quality is not a phase.** Tests are written alongside code. Every milestone has a quality gate.
+13. **Feed conversations back.** Significant conversations must update the owning repo artifact in the same direct commit to `main`: plans, tickets, design docs, product specs, investigation notes, quality evidence, or release evidence as applicable. Chat summaries cannot replace those artifacts.
+14. **Avoid docs churn for trivial replies.** Simple command answers, restatements of existing docs, and explicitly throwaway experiments do not need new artifacts unless they later justify a decision, investigation, quality claim, or completion claim.
+15. **Use the ticket lifecycle directories.** New tickets are created with `ticket_create` in `docs/tickets/backlog/`. Do not hand-write ticket markdown directly under `docs/tickets/`; ticket files belong only in `backlog/`, `in-progress/`, `in-review/`, or `done/`.
+16. **Keep CLI tools and skills synchronized.** Whenever `cmd/mars` changes a command, flag, output contract, repo behavior, or workflow, update the `mars_cli` reference and repo-shortcut map, generated target doctrine, and any affected skills in the same change. Run the CLI sync tests named in `docs/design-docs/cli-tool-skill-sync.md`.
 
 ## Pointers
 

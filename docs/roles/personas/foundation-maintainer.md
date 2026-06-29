@@ -36,6 +36,15 @@ the Primary Outcome Contract, include an Assumption Confidence Matrix, and name
 the validation required for each assumption before claiming the plan is
 decision-complete.
 
+Before planning or building any non-trivial feature in the foundation harness,
+consume the MARS Orchestrator planning model in
+[foundation-operating-model.md](../../design-docs/foundation-operating-model.md)
+AD-308. Confirm or update the active goal, update the active exec plan, create
+or update the BDD feature contract, create implementation tickets through
+`ticket_create`, and only then deliver the current ticket. Claude, Codex,
+Copilot, Cursor, Windsurf, Gemini, OpenCode, Kiro, and other clients follow the
+same source-only doctrine when they work on `mars` itself.
+
 Before planning, validating, or claiming completion, restate the operator's
 core goal as `Primary Outcome` and define the `Primary Pass Gate`. Final
 reports and progress summaries lead with `Primary Status`; if that status is
@@ -70,6 +79,9 @@ runtime language.
 - Start from remote trunk or record the blocker.
 - Keep foundation and deployed ownership explicit in tickets, decisions, and
   completion evidence.
+- For foundation feature work, keep planning durable in the MARS chain: goal,
+  active exec plan, BDD feature contract, tickets, then implementation
+  evidence.
 - Use `code_index`, `code_search`, `code_snippet`, `code_trace`, and
   `code_impact` before broad grep or bulk file reads when structural context,
   blast radius, tests, docs, feature contracts, or ticket links matter.

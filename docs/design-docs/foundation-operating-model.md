@@ -33,6 +33,7 @@ count as done.
 | Validation report recording contract | [validation-matrix-gating.md](validation-matrix-gating.md) AD-285 |
 | Foundation maintainer role contract | [docs/roles/personas/foundation-maintainer.md](../roles/personas/foundation-maintainer.md) |
 | AI-client role-subagent work model | This document AD-304 |
+| Foundation Orchestrator planning model for external clients | This document AD-308 and [F-016](../features/F-016-foundation-provider-planning-doctrine.md) |
 | Validation artifacts directory | [docs/validation/README.md](../validation/README.md) |
 
 ## Key Design Decisions
@@ -281,6 +282,58 @@ role-labelled sections in the main thread or as separate role-specific notes in
 the owning artifact. The requirement is collective role coverage and durable
 evidence, not a vendor-specific concurrency feature.
 
+### AD-308: External Clients Consume The Foundation Orchestrator Planning Model
+
+**Status:** Accepted
+**Date:** 2026-06-29
+**Owner:** foundation-maintainer
+
+The MARS Orchestrator owns the foundation operating model for planning,
+building, validating, deploying, and releasing source work. Claude, Codex,
+Copilot, Cursor, Windsurf, Gemini, OpenCode, Kiro, and any other capable AI
+coding client consume that same model when they work on the `mars` foundation
+harness. They do not define a provider-specific operating model.
+
+Provider-native plans, chat summaries, issue checklists, branch descriptions,
+and review templates can support foundation work, but they are not the system
+of record. The system of record is the MARS planning state in this repository.
+
+A foundation feature planning/building request is non-trivial when it creates
+durable behavior, changes product or operating doctrine, changes generated
+target defaults, requires cross-file coordination, creates user-visible
+workflows, or requires ticketed validation. Tiny typo fixes, simple command
+answers, and explicitly throwaway experiments may skip new planning artifacts
+unless they become evidence for a decision, investigation, quality claim, or
+completion claim.
+
+The required planning chain is:
+
+1. **Goal** - update or confirm the relevant entry in
+   `docs/goals/active.md`, including hypothesis, success evidence,
+   falsification evidence, priority, confidence, owner, and review trigger.
+2. **Exec plan** - update
+   `docs/exec-plans/active/current-operating-plan.md` with the Primary Outcome
+   Contract, hypothesis, success and falsification evidence, scenario schedule,
+   current failing scenario, walking skeleton slice, and validation gates.
+3. **BDD feature contract** - create or update the matching
+   `docs/features/F-NNN-*.md` contract with Business Logic, Step-By-Step
+   Behavior, Given/When/Then scenarios, out-of-scope lines, and evidence.
+4. **Tickets** - create implementation tickets through `ticket_create`, mapping
+   each ticket to the current failing scenario or bounded scenario group.
+5. **Implementation and evidence** - build only the current ticket, update
+   docs and `MarsDocSync` metadata where behavior changes, run the relevant
+   gates, and record evidence back into the ticket and plan.
+
+Existing artifacts are updated rather than duplicated when the work extends an
+active goal or feature. When remote trunk, dirty state, missing evidence, or
+unclear foundation/deployed ownership blocks the chain, the client stops and
+records the blocker instead of inventing a parallel plan.
+
+This decision is source-only. It governs agents and external AI tools while
+they are building the MARS foundation harness. Deployed target harnesses should
+not consume this foundation-specific rule unless a separate mirroring decision
+promotes the reusable part into generated target doctrine.
+
 ## Validation Matrix (Summary)
 
 Use the full table in [validation-matrix-gating.md](validation-matrix-gating.md).
@@ -315,6 +368,7 @@ foundation-only files.
 | Using fake, stub, mock, canned, or scripted model endpoints as live validation evidence | Proves runner plumbing at most and creates false positives for role behavior |
 | Expecting target agents to inspect the foundation agent-smoke matrix | Generated targets only contain target-local contracts; agents must read `docs/validation/agent-smoke/current-case.md` |
 | Treating assumptions as prose | Plans hide uncertainty, so implementers cannot tell which claims need validation |
+| Letting a provider-native task list replace MARS planning artifacts | Other clients and harness agents cannot inspect or continue the work from repo state |
 | Branch-only green replay | Trunk push is part of done per AD-138 |
 
 ## Discoveries
@@ -324,6 +378,11 @@ foundation-only files.
   used demo-14 at a convergence checkpoint with a wiped DB. See
   [2026-06-13-demo-14-wsd-slice4-canary-invalid.md](../validation/reports/2026-06-13-demo-14-wsd-slice4-canary-invalid.md).
   AD-290 (CTO ticket-gate loop break) landed from that evidence.
+- **2026-06-29 — foundation Orchestrator planning clarification:** operator
+  feedback showed that external tools such as Cursor, Codex, Claude, Copilot,
+  and Windsurf need to consume the same foundation Orchestrator model when
+  building `mars`. AD-308 makes goal to exec plan to feature contract to tickets
+  the required foundation feature-work chain.
 
 ## Consequences
 
@@ -334,3 +393,5 @@ foundation-only files.
   rather than silent waiver.
 - Deployed target operating model stays separate; targets inherit the generic
   product evidence loop, not foundation matrix shortcuts or demo names.
+- Any provider can plan in its own UI, but durable foundation feature planning
+  must be inspectable and resumable from MARS repo artifacts.
