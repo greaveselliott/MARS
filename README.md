@@ -33,7 +33,7 @@ The repository GitHub Pages site publishes from `/docs` and starts at the
 It is the user-facing front door for installation, setup, CLI workflows,
 target harness lifecycle, operations, models, safety, telemetry, release
 management, extension, and troubleshooting. Deeper site pages now cover the
-[CLI reference](docs/cli-reference.html), [user workflows](docs/workflows.html),
+[CLI reference](docs/cli-reference.html), [shell integration](docs/shell-integration-reference.html), [user workflows](docs/workflows.html),
 [target harness guide](docs/harness-guide.html),
 [operations guide](docs/operations-guide.html),
 [files and state reference](docs/files-state-reference.html),
@@ -279,6 +279,10 @@ safety, or orchestration changes do. See
   source install, shell PATH setup, `mars setup`, GitHub private-release auth,
   inference modes, local bundles, machine state, automation, `doctor`, and
   first-run troubleshooting.
+- [docs/shell-integration-reference.html](docs/shell-integration-reference.html):
+  shell PATH setup, profile targets, command-cache repair, Bash/Zsh/Fish/
+  PowerShell completions, automation recipes, and shell-specific
+  troubleshooting.
 - [docs/cli-reference.html](docs/cli-reference.html): detailed CLI command
   reference.
 - [docs/workflows.html](docs/workflows.html): task-oriented user workflows.

@@ -6,6 +6,7 @@ docs:
 - docs/index.html
 - docs/product-specs/product-surface.md
 - docs/quickstart.md
+- docs/shell-integration-reference.html
 - docs/design-docs/dashboard.md
 - docs/design-docs/local-inference.md
 - docs/design-docs/release-versioning.md
@@ -42,6 +43,7 @@ docs:
         <a href="observability-guide.html">Observability</a>
         <a href="operations-guide.html">Operations</a>
         <a href="configuration-reference.html">Configuration</a>
+        <a href="shell-integration-reference.html">Shell</a>
         <a href="release-update-guide.html">Release</a>
         <a href="cli-reference.html">CLI Reference</a>
       </nav>
@@ -121,9 +123,9 @@ mars doctor --repo /path/to/repo --json</code></pre>
             <table>
               <thead><tr><th>Symptom</th><th>Check</th><th>Recovery</th></tr></thead>
               <tbody>
-                <tr><td><code>mars</code> command not found</td><td><code>command -v mars</code></td><td>Run <code>mars path setup</code> from a known installed binary, or rerun <code>make install</code> from the source checkout and open a new shell.</td></tr>
+                <tr><td><code>mars</code> command not found</td><td><code>command -v mars</code></td><td>Run <code>mars path setup</code> from a known installed binary, or rerun <code>make install</code> from the source checkout and open a new shell. See the <a href="shell-integration-reference.html">Shell Integration Reference</a>.</td></tr>
                 <tr><td>Old behavior after rebuild</td><td><code>mars version</code> and <code>which mars</code></td><td>Use <code>make install</code>; avoid <code>go build ./cmd/mars; ./mars ...</code> because a failed build can run an old source-root binary.</td></tr>
-                <tr><td>Shell profile not updated</td><td><code>mars path setup --dry-run --json</code></td><td>Run <code>mars path setup --shell zsh</code> or the detected shell option, then restart the terminal.</td></tr>
+                <tr><td>Shell profile not updated</td><td><code>mars path setup --dry-run --json</code></td><td>Run <code>mars path setup --shell zsh</code> or the detected shell option, then restart the terminal. Use <a href="shell-integration-reference.html">Shell Integration</a> for shell-specific profile and completion fixes.</td></tr>
                 <tr><td>Source checkout cannot update</td><td><code>git status --short --branch</code></td><td>Commit, stash, or deliberately handle local changes before <code>make update-tool</code>.</td></tr>
               </tbody>
             </table>

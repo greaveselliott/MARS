@@ -6,6 +6,7 @@ docs:
 - docs/index.html
 - docs/quickstart.md
 - docs/install-setup-reference.html
+- docs/shell-integration-reference.html
 - docs/target-lifecycle-reference.html
 - docs/workflows.html
 - docs/harness-guide.html
@@ -40,6 +41,7 @@ docs:
       <nav class="top-nav" aria-label="Primary documentation">
         <a href="index.html">Docs Home</a>
         <a href="install-setup-reference.html">Setup</a>
+        <a href="shell-integration-reference.html">Shell</a>
         <a href="workflows.html">Workflows</a>
         <a href="cli-reference.html">CLI Reference</a>
         <a href="target-lifecycle-reference.html">Lifecycle</a>
@@ -85,6 +87,8 @@ docs:
               which guide to open when you are ready to customize the system.
               For setup flags, PATH repair, and private release auth, use the
               <a href="install-setup-reference.html">Install And Setup Reference</a>.
+              For shell profile targets, command-cache repair, and completions,
+              use the <a href="shell-integration-reference.html">Shell Integration Reference</a>.
               For every target lifecycle command and state transition, use the
               <a href="target-lifecycle-reference.html">Target Lifecycle Reference</a>.
             </p>
@@ -133,7 +137,7 @@ mars version</code></pre>
               <h3>Open a fresh terminal if needed</h3>
               <pre><code>hash -r
 mars path setup</code></pre>
-              <p>Use <code>hash -r</code> when your current shell cached an older binary. Use <code>mars path setup</code> to repair profile snippets directly.</p>
+              <p>Use <code>hash -r</code> when your current shell cached an older binary. Use <code>mars path setup</code> to repair profile snippets directly. For shell-specific reload and completion recipes, open the <a href="shell-integration-reference.html">Shell Integration Reference</a>.</p>
             </li>
           </ol>
           <div class="callout">
@@ -372,6 +376,7 @@ mars version</code></pre>
           <div class="reference-grid">
             <a href="workflows.html">Run common workflows</a>
             <a href="cli-reference.html">Read the full CLI reference</a>
+            <a href="shell-integration-reference.html">Configure shell PATH and completions</a>
             <a href="harness-guide.html">Customize the target harness</a>
             <a href="configuration-reference.html">Configure local and repo settings</a>
             <a href="models-guide.html">Tune models and inference</a>
@@ -387,7 +392,7 @@ mars version</code></pre>
             <table>
               <thead><tr><th>Symptom</th><th>Likely cause</th><th>Next command</th></tr></thead>
               <tbody>
-                <tr><td><code>mars</code> is not found</td><td>Current shell has not loaded the Go bin PATH.</td><td><code>mars path setup</code>, then open a new terminal.</td></tr>
+                <tr><td><code>mars</code> is not found</td><td>Current shell has not loaded the Go bin PATH.</td><td>Rerun <code>make install</code> or run <code>mars path setup</code> from a shell that can find the binary, then open a new terminal. See the <a href="shell-integration-reference.html">Shell Integration Reference</a>.</td></tr>
                 <tr><td><code>mars version</code> shows an old binary</td><td>The shell command cache points at an older path.</td><td><code>hash -r</code>, then <code>which mars</code>.</td></tr>
                 <tr><td>Setup cannot download models</td><td>Network, disk, or release auth problem.</td><td><code>mars setup --dry-run</code> and <code>mars doctor</code>.</td></tr>
                 <tr><td>Model preflight fails</td><td>The active profile requires a missing local model file.</td><td><code>mars setup --skip-github</code> or set a real <code>--model-endpoint</code>.</td></tr>

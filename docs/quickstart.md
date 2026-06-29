@@ -5,7 +5,8 @@ against a target repository.
 
 The primary user-facing walkthrough now lives in
 [quickstart.html](quickstart.html). This Markdown file remains as a compact
-repo-readable companion.
+repo-readable companion. Shell profile, command-cache, and completion recipes
+live in the [Shell Integration Reference](shell-integration-reference.html).
 
 ## System Requirements
 
@@ -122,6 +123,10 @@ You can rerun shell PATH setup directly:
 ```bash
 mars path setup
 ```
+
+Use the [Shell Integration Reference](shell-integration-reference.html) for
+supported profile targets, reload hints, stale binary diagnosis, and completion
+installation.
 
 Update the harness files deployed into a target repo with the same verb:
 

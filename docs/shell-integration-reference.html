@@ -1,0 +1,455 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/quickstart.html
+- docs/quickstart.md
+- docs/cli-reference.html
+- docs/install-setup-reference.html
+- docs/workflows.html
+- docs/configuration-reference.html
+- docs/troubleshooting-guide.html
+- docs/release-update-guide.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/cli-tool-skill-sync.md
+- docs/design-docs/release-versioning.md
+- docs/features/F-002-zero-config-shell-path.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Shell Integration Reference</title>
+    <meta
+      name="description"
+      content="User reference for making the mars command available in developer shells, repairing PATH setup, installing shell completions, diagnosing old binaries, and automating shell integration safely."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to shell integration reference</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Shell integration</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="quickstart.html">Quickstart</a>
+        <a href="install-setup-reference.html">Setup</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="release-update-guide.html">Release</a>
+        <a href="troubleshooting-guide.html">Troubleshoot</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Shell integration sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search shell setup</label>
+          <input id="docSearch" type="search" placeholder="path, zsh, completion">
+          <p class="search-hint">Filters shell recipes, flags, profile files, and fixes.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#mental-model">Mental Model</a>
+          <a href="#install-paths">Install Paths</a>
+          <a href="#path-setup">PATH Setup</a>
+          <a href="#profile-files">Profile Files</a>
+          <a href="#completions">Completions</a>
+          <a href="#automation">Automation</a>
+          <a href="#verification">Verification</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Developer shell contract</p>
+            <h1>Make <code>mars</code> available, current, and tab-completable.</h1>
+            <p class="lede">
+              Shell integration has two separate jobs. PATH setup makes a new
+              terminal able to find the installed <code>mars</code> command.
+              Completion scripts teach Bash, Zsh, Fish, and PowerShell the
+              current command tree, flags, and subcommands. Treat them
+              separately when installing, updating, or troubleshooting.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="mental-model">
+          <h2>Mental Model</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Surface</th><th>Command</th><th>What it changes</th><th>What it does not do</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>PATH setup</td>
+                  <td><code>mars path setup</code></td>
+                  <td>Writes an idempotent shell profile snippet so future terminals can resolve the installed command directory.</td>
+                  <td>It does not install tab completion scripts and it does not reload every already-open shell automatically.</td>
+                </tr>
+                <tr>
+                  <td>Shell completions</td>
+                  <td><code>mars completion &lt;shell&gt;</code></td>
+                  <td>Prints a generated completion script for Bash, Zsh, Fish, or PowerShell.</td>
+                  <td>It does not decide where to persist the script. Users install it using the shell-specific recipe.</td>
+                </tr>
+                <tr>
+                  <td>Command cache</td>
+                  <td><code>hash -r</code> or a fresh terminal</td>
+                  <td>Clears stale command lookup state in many POSIX shells after reinstalling or moving binaries.</td>
+                  <td>It does not change profile files or choose which installed binary should win on PATH.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Fast diagnosis:</strong>
+            if <code>mars</code> is missing, think PATH. If <code>mars version</code>
+            is old, think command cache or multiple binaries. If tab completion
+            is missing, think completion script installation.
+          </div>
+        </section>
+
+        <section class="doc-section" id="install-paths">
+          <h2>Install Paths</h2>
+          <p>
+            Source installs and packaged updates both end by making the
+            installed command directory available to new shells. The directory
+            can be resolved from the running executable, an explicit
+            <code>--install-dir</code>, <code>go env GOBIN</code>, or the first
+            <code>GOPATH/bin</code> entry.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Command</th><th>Shell integration result</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>Source install</td>
+                  <td><code>make install</code></td>
+                  <td>Installs the development binary into the Go bin directory and runs PATH setup through the installed binary.</td>
+                </tr>
+                <tr>
+                  <td>Source update</td>
+                  <td><code>make update-tool</code></td>
+                  <td>Fast-forwards a clean checkout, reinstalls, runs PATH setup, and prints the installed version.</td>
+                </tr>
+                <tr>
+                  <td>Packaged update</td>
+                  <td><code>mars update tool</code></td>
+                  <td>Replaces the installed binary and checks PATH setup for the chosen install directory.</td>
+                </tr>
+                <tr>
+                  <td>One-off binary</td>
+                  <td><code>go build -o build/mars ./cmd/mars</code></td>
+                  <td>Creates a local binary. PATH setup is separate unless you intentionally point shells at that directory.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Avoid stale source-root binaries:</strong>
+            use <code>go build -o build/mars ./cmd/mars</code> for one-off
+            builds. Avoid <code>go build ./cmd/mars; ./mars ...</code>, because
+            a failed build can still leave an older <code>./mars</code> binary
+            ready to run.
+          </div>
+        </section>
+
+        <section class="doc-section" id="path-setup">
+          <h2>PATH Setup</h2>
+          <p>
+            <code>mars path setup</code> writes a managed block or shell-specific
+            file for the current user. It is safe to run repeatedly: when the
+            target POSIX-style or Csh/Tcsh profile already contains the managed
+            MARS PATH entry, the command reports that no profile change is
+            needed. Fish may rewrite the same stable <code>mars.fish</code>
+            content, but the resulting PATH setup remains duplicate-safe.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Repair the current install</h3>
+              <pre><code>mars path setup
+hash -r
+mars version</code></pre>
+              <p>
+                Use <code>hash -r</code> when the current shell cached an older
+                command path. Open a new terminal when the reload hint asks for it.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>Preview without writing</h3>
+              <pre><code>mars path setup --dry-run
+mars path setup --dry-run --json</code></pre>
+              <p>
+                Use dry-run mode on managed machines or before changing a
+                profile file you do not normally edit.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>Configure a known shell or directory</h3>
+              <pre><code>mars path setup --shell zsh
+mars path setup --install-dir "$HOME/go/bin"
+mars path setup --shell fish --install-dir "$HOME/go/bin"</code></pre>
+              <p>
+                <code>--shell</code> accepts a shell path or shell name. Use it
+                when <code>$SHELL</code> does not match the terminal users open.
+              </p>
+            </article>
+          </div>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Flag</th><th>Use</th></tr></thead>
+              <tbody>
+                <tr><td><code>--install-dir &lt;dir&gt;</code></td><td>Choose the directory containing the intended <code>mars</code> binary.</td></tr>
+                <tr><td><code>--shell &lt;name-or-path&gt;</code></td><td>Override shell detection. Defaults to <code>$SHELL</code>.</td></tr>
+                <tr><td><code>--dry-run</code></td><td>Report the planned setup without writing profile files.</td></tr>
+                <tr><td><code>--json</code></td><td>Emit structured fields such as install directory, shell, profile path, changed state, and reload hint.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="profile-files">
+          <h2>Profile Files</h2>
+          <p>
+            PATH setup chooses one user profile destination based on shell
+            detection. If a shell is unsupported, the command reports the
+            install directory and asks you to add it to PATH manually.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Detected shell</th><th>Profile target</th><th>Reload hint</th></tr></thead>
+              <tbody>
+                <tr><td><code>fish</code></td><td><code>~/.config/fish/conf.d/mars.fish</code></td><td>Open a new terminal or run <code>exec fish</code>.</td></tr>
+                <tr><td><code>zsh</code></td><td><code>~/.zshrc</code></td><td>Open a new terminal or run <code>source ~/.zshrc</code>.</td></tr>
+                <tr><td><code>bash</code> on macOS</td><td><code>~/.bash_profile</code> when it already exists, otherwise <code>~/.bashrc</code>.</td><td>Open a new terminal or source the chosen file.</td></tr>
+                <tr><td><code>bash</code> on Linux</td><td><code>~/.bashrc</code></td><td>Open a new terminal or run <code>source ~/.bashrc</code>.</td></tr>
+                <tr><td><code>sh</code>, <code>dash</code>, <code>ksh</code>, <code>mksh</code></td><td><code>~/.profile</code></td><td>Open a new terminal or run <code>. ~/.profile</code>.</td></tr>
+                <tr><td><code>csh</code>, <code>tcsh</code></td><td><code>~/.cshrc</code></td><td>Open a new terminal or run <code>source ~/.cshrc</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            POSIX-style profiles use a managed block marked
+            <code># &gt;&gt;&gt; mars PATH &gt;&gt;&gt;</code> and
+            <code># &lt;&lt;&lt; mars PATH &lt;&lt;&lt;</code>. Fish receives a
+            managed <code>mars.fish</code> file. Legacy
+            <code>mars-harness</code> managed entries are ignored or replaced
+            instead of being treated as current MARS setup; Fish rewrites the
+            current <code>mars.fish</code> file and removes the legacy Fish file
+            when present.
+          </p>
+        </section>
+
+        <section class="doc-section" id="completions">
+          <h2>Shell Completions</h2>
+          <p>
+            <code>mars completion</code> is generated from the live Cobra
+            command tree. Regenerate completions after updating MARS when you
+            want newly added commands or flags to appear in tab completion.
+            Every completion subcommand supports <code>--no-descriptions</code>.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Shell</th><th>Current session</th><th>Persistent install</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>Bash</td>
+                  <td><code>source &lt;(mars completion bash)</code></td>
+                  <td><code>mars completion bash &gt; /etc/bash_completion.d/mars</code> on Linux, or <code>mars completion bash &gt; $(brew --prefix)/etc/bash_completion.d/mars</code> on macOS with Homebrew bash-completion.</td>
+                </tr>
+                <tr>
+                  <td>Zsh</td>
+                  <td><code>source &lt;(mars completion zsh)</code></td>
+                  <td><code>mars completion zsh &gt; "${fpath[1]}/_mars"</code> on Linux, or <code>mars completion zsh &gt; $(brew --prefix)/share/zsh/site-functions/_mars</code> on macOS.</td>
+                </tr>
+                <tr>
+                  <td>Fish</td>
+                  <td><code>mars completion fish | source</code></td>
+                  <td><code>mars completion fish &gt; ~/.config/fish/completions/mars.fish</code>.</td>
+                </tr>
+                <tr>
+                  <td>PowerShell</td>
+                  <td><code>mars completion powershell | Out-String | Invoke-Expression</code></td>
+                  <td>Add the output of <code>mars completion powershell</code> to your PowerShell profile.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Zsh prerequisite:</strong>
+            if completion is not enabled, add <code>autoload -U compinit; compinit</code>
+            to <code>~/.zshrc</code>, then start a new shell.
+          </div>
+          <div class="callout">
+            <strong>Bash prerequisite:</strong>
+            Bash completion depends on the <code>bash-completion</code> package.
+            Install it with your operating system package manager before using
+            the persistent recipe.
+          </div>
+        </section>
+
+        <section class="doc-section" id="automation">
+          <h2>Automation</h2>
+          <p>
+            Agents and scripts should prefer explicit shell, explicit install
+            directory, dry-run previews, and JSON output. That keeps shell
+            integration deterministic even when the process environment has a
+            different <code>$SHELL</code> than the human terminal.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Preview a managed workstation change</h3>
+              <pre><code>mars path setup --shell zsh --install-dir "$HOME/go/bin" --dry-run --json</code></pre>
+              <p>Read <code>profile_path</code>, <code>changed</code>, and <code>reload_hint</code> before applying.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Apply after a source install</h3>
+              <pre><code>make install
+mars path setup --shell zsh --json
+mars version</code></pre>
+              <p><code>make install</code> already runs PATH setup, but an explicit command is useful in automated diagnostics.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Regenerate completions after update</h3>
+              <pre><code>mars update tool
+mars completion zsh &gt; "$(brew --prefix)/share/zsh/site-functions/_mars"</code></pre>
+              <p>Run the shell-specific command that matches your completion installation path.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="verification">
+          <h2>Verification</h2>
+          <p>
+            Verify command discovery, binary freshness, shell profile state, and
+            completion generation separately. This avoids chasing the wrong
+            subsystem when one part works and another part does not.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Question</th><th>Command</th><th>Expected signal</th></tr></thead>
+              <tbody>
+                <tr><td>Can this shell find MARS?</td><td><code>command -v mars</code></td><td>An absolute path to the intended installed binary.</td></tr>
+                <tr><td>Which binary is running?</td><td><code>mars version</code></td><td>The expected version, OS, architecture, commit, and build date.</td></tr>
+                <tr><td>Is PATH setup needed?</td><td><code>mars path setup --dry-run --json</code></td><td><code>profile_already_configured</code>, <code>already_in_path</code>, and <code>message</code>. For Fish, expect stable output even if setup rewrites the generated file.</td></tr>
+                <tr><td>Did the current shell cache an old location?</td><td><code>hash -r</code>, then <code>command -v mars</code></td><td>The path changes to the intended binary, or remains correct.</td></tr>
+                <tr><td>Can completions be generated?</td><td><code>mars completion zsh --help</code></td><td>Shell-specific installation help and the <code>--no-descriptions</code> flag.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>New source checkout</h3>
+              <pre><code>git clone https://github.com/greaveselliott/MARS.git
+cd MARS
+make install
+mars setup --skip-github
+mars doctor</code></pre>
+              <p>Use this path when you are working from source and do not need private release update auth yet.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Fix command not found after install</h3>
+              <pre><code>cd /path/to/MARS
+make install
+mars path setup
+exec "$SHELL" -l
+mars version</code></pre>
+              <p>Opening a fresh login shell is often cleaner than trying to source every possible profile manually.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Find duplicate binaries</h3>
+              <pre><code>command -v mars
+which -a mars
+mars version</code></pre>
+              <p>If multiple paths appear, remove or demote the older path before retrying the update.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Install Fish completion locally</h3>
+              <pre><code>mkdir -p ~/.config/fish/completions
+mars completion fish &gt; ~/.config/fish/completions/mars.fish
+exec fish</code></pre>
+              <p>Fish PATH setup and Fish completion use different files: <code>conf.d/mars.fish</code> for PATH and <code>completions/mars.fish</code> for completion.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Recovery</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><code>mars</code> is not found</td>
+                  <td>The install directory is not in this shell's PATH, or the profile change has not been loaded.</td>
+                  <td>Run <code>mars path setup</code> from a known binary, rerun <code>make install</code>, then open a new terminal.</td>
+                </tr>
+                <tr>
+                  <td><code>mars version</code> shows an older build</td>
+                  <td>A shell command cache or earlier PATH entry points at an older binary.</td>
+                  <td>Run <code>hash -r</code>, inspect <code>which -a mars</code>, and remove or reorder the older path.</td>
+                </tr>
+                <tr>
+                  <td><code>mars path setup</code> reports unsupported shell</td>
+                  <td>The detected <code>$SHELL</code> is not Fish, Zsh, Bash, POSIX sh family, Csh, or Tcsh.</td>
+                  <td>Pass <code>--shell zsh</code> or add the reported install directory to PATH manually.</td>
+                </tr>
+                <tr>
+                  <td>Dry run says current PATH is already correct</td>
+                  <td>The running shell can find the directory, but future shells may still need a profile snippet.</td>
+                  <td>Apply <code>mars path setup</code> when you want future shells configured. For Fish, repeated setup can rewrite the generated file without adding duplicate PATH entries.</td>
+                </tr>
+                <tr>
+                  <td>Bash completion does not load</td>
+                  <td>The <code>bash-completion</code> package is missing or the system completion directory is not sourced.</td>
+                  <td>Install <code>bash-completion</code>, then follow <code>mars completion bash --help</code>.</td>
+                </tr>
+                <tr>
+                  <td>Zsh completion does not load</td>
+                  <td><code>compinit</code> is not enabled or the generated <code>_mars</code> file is outside <code>fpath</code>.</td>
+                  <td>Enable <code>autoload -U compinit; compinit</code>, install into an <code>fpath</code> directory, and start a new shell.</td>
+                </tr>
+                <tr>
+                  <td>Permission denied writing completion script</td>
+                  <td>The persistent completion directory is system-owned.</td>
+                  <td>Choose a user-owned completion directory, or use the package manager's recommended privileged install path intentionally.</td>
+                </tr>
+                <tr>
+                  <td>PowerShell completion only works once</td>
+                  <td>The current-session command was run, but profile persistence was not configured.</td>
+                  <td>Add the output of <code>mars completion powershell</code> to the PowerShell profile.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            For broader first-run, model, dashboard, target harness, release,
+            and DocSync failures, open the
+            <a href="troubleshooting-guide.html">Troubleshooting Guide</a>.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>MARS keeps autonomy local, auditable, and repo-owned. Documentation changes should stay aligned with implementation truth.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

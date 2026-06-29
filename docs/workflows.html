@@ -6,6 +6,7 @@ docs:
 - docs/index.html
 - docs/quickstart.md
 - docs/product-specs/product-surface.md
+- docs/shell-integration-reference.html
 - docs/design-docs/dashboard.md
 - docs/design-docs/local-inference.md
 - docs/design-docs/release-versioning.md
@@ -314,7 +315,7 @@ mars release audit --repo .</code></pre>
             <table>
               <thead><tr><th>Problem</th><th>First check</th><th>Likely fix</th></tr></thead>
               <tbody>
-                <tr><td>Command not found</td><td><code>command -v mars</code></td><td>Open a new shell, run <code>mars path setup</code>, or refresh shell cache with <code>hash -r</code>.</td></tr>
+                <tr><td>Command not found</td><td><code>command -v mars</code></td><td>Open a new shell, rerun <code>make install</code>, run <code>mars path setup</code> from a shell that can find the binary, or refresh shell cache with <code>hash -r</code>. See the <a href="shell-integration-reference.html">Shell Integration Reference</a>.</td></tr>
                 <tr><td>Auth failure during update</td><td><code>mars auth github check</code></td><td>Run <code>gh auth login</code>, set <code>GH_TOKEN</code>/<code>GITHUB_TOKEN</code>, or run <code>mars auth github setup</code>.</td></tr>
                 <tr><td>Missing local model</td><td><code>mars doctor --json</code></td><td>Run <code>mars setup --download --local-bundle auto</code> or configure cloud/deferred routing.</td></tr>
                 <tr><td>Slow local generation</td><td><code>mars models eligible</code></td><td>Use a smaller local bundle, balanced profile, or a real OpenAI-compatible endpoint.</td></tr>

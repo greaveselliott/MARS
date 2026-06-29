@@ -8,6 +8,7 @@ docs:
 - docs/product-specs/product-surface.md
 - docs/product-specs/vision.md
 - docs/install-setup-reference.html
+- docs/shell-integration-reference.html
 - docs/target-lifecycle-reference.html
 - docs/bundle-reference.html
 - docs/bundle-reference.md
@@ -61,6 +62,7 @@ docs:
       <nav class="top-nav" aria-label="Primary documentation">
         <a href="quickstart.html">Quickstart</a>
         <a href="install-setup-reference.html">Setup</a>
+        <a href="shell-integration-reference.html">Shell</a>
         <a href="cli-reference.html">CLI Reference</a>
         <a href="workflows.html">Workflows</a>
         <a href="planning-delivery-guide.html">Delivery</a>
@@ -189,6 +191,7 @@ docs:
           <div class="reference-grid">
             <a href="quickstart.html">Quickstart Guide</a>
             <a href="install-setup-reference.html">Install And Setup Reference</a>
+            <a href="shell-integration-reference.html">Shell Integration Reference</a>
             <a href="cli-reference.html">CLI Reference</a>
             <a href="workflows.html">User Workflows</a>
             <a href="planning-delivery-guide.html">Planning And Delivery Guide</a>
@@ -289,7 +292,7 @@ mars run engineer --repo /path/to/target-repo --dry-run</code></pre>
                 <tr>
                   <td>Repair shell PATH</td>
                   <td><code>mars path setup</code></td>
-                  <td>Supports Fish, Zsh, Bash, POSIX sh/Ksh, Csh, and Tcsh with idempotent profile snippets.</td>
+                  <td>Supports Fish, Zsh, Bash, POSIX sh/Ksh, Csh, and Tcsh with idempotent profile snippets. See the <a href="shell-integration-reference.html">Shell Integration Reference</a> for profile targets, command-cache repair, and completions.</td>
                 </tr>
                 <tr>
                   <td>Check release auth</td>
@@ -474,7 +477,7 @@ mars eject --repo /path/to/repo --apply --confirm repo</code></pre>
                 <tr><td><code>mars version</code>, <code>mars -v</code></td><td>Print installed version, OS, architecture, commit, and build date.</td><td>Root <code>--version</code> works too.</td></tr>
                 <tr><td><code>mars auth github</code></td><td>Configure or verify GitHub auth for private release assets.</td><td><code>check</code>, <code>setup</code>, <code>--config</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars setup</code></td><td>Prepare first-run local config, shell PATH, hardware profile, llama-server, and models.</td><td><code>--skip-download</code>, <code>--download</code>, <code>--skip-github</code>, <code>--github</code>, <code>--test-mode</code>, <code>--dry-run</code>, <code>--inference</code>, <code>--local-bundle</code>, <code>--yes</code>, <code>--json</code>, <code>--plain</code>.</td></tr>
-                <tr><td><code>mars path setup</code></td><td>Add the installed command directory to supported shell profile files.</td><td><code>--install-dir</code>, <code>--shell</code>, <code>--dry-run</code>, <code>--json</code>.</td></tr>
+                <tr><td><code>mars path setup</code></td><td>Add the installed command directory to supported shell profile files. See the <a href="shell-integration-reference.html">Shell Integration Reference</a>.</td><td><code>--install-dir</code>, <code>--shell</code>, <code>--dry-run</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars init</code></td><td>Scaffold a target harness into a repository.</td><td><code>--repo</code>, <code>--force</code>, <code>--model-routing</code>, <code>--local-bundle</code>, cloud provider/model/endpoint flags, <code>--api-key-env</code>, <code>--yes</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars update check</code></td><td>Check whether the CLI or target harness is behind.</td><td><code>--repo</code>, <code>--latest-release-url</code>, <code>--skip-remote</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars update tool</code></td><td>Reinstall or upgrade the installed <code>mars</code> command.</td><td><code>--version</code>, <code>--install-dir</code>, <code>--source</code>, <code>--dry-run</code>, <code>--json</code>.</td></tr>
@@ -930,7 +933,7 @@ roles:
                 <tr>
                   <td><code>mars</code> is not found after install</td>
                   <td>Open a new shell, run <code>command -v mars</code>, and inspect the install output.</td>
-                  <td>Run <code>mars path setup</code> with the installed binary or refresh shell command cache with <code>hash -r</code>.</td>
+                  <td>Run <code>mars path setup</code> with the installed binary or refresh shell command cache with <code>hash -r</code>. See the <a href="shell-integration-reference.html">Shell Integration Reference</a>.</td>
                 </tr>
                 <tr>
                   <td>Setup skips or fails model download</td>
@@ -991,6 +994,7 @@ roles:
           <div class="reference-grid">
             <a href="quickstart.html">Quickstart guide</a>
             <a href="install-setup-reference.html">Install and setup reference</a>
+            <a href="shell-integration-reference.html">Shell integration reference</a>
             <a href="cli-reference.html">CLI reference</a>
             <a href="workflows.html">User workflows</a>
             <a href="harness-guide.html">Target harness guide</a>

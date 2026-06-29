@@ -7,6 +7,7 @@ docs:
 - docs/cli-reference.html
 - docs/workflows.html
 - docs/product-specs/product-surface.md
+- docs/shell-integration-reference.html
 - docs/design-docs/release-versioning.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/validation/README.md
@@ -39,6 +40,7 @@ docs:
       <nav class="top-nav" aria-label="Primary documentation">
         <a href="index.html">Docs Home</a>
         <a href="cli-reference.html">CLI Reference</a>
+        <a href="shell-integration-reference.html">Shell</a>
         <a href="workflows.html">Workflows</a>
         <a href="operations-guide.html">Operations</a>
         <a href="safety-quality-guide.html">Safety</a>
@@ -147,7 +149,7 @@ mars update check --repo ~/my-project --json</code></pre>
             <table>
               <thead><tr><th>Path</th><th>Command</th><th>Use when</th></tr></thead>
               <tbody>
-                <tr><td>Dry run</td><td><code>mars update tool --dry-run</code></td><td>Preview asset, install directory, shell PATH impact, and replacement plan.</td></tr>
+                <tr><td>Dry run</td><td><code>mars update tool --dry-run</code></td><td>Preview asset, install directory, shell PATH impact, and replacement plan. See the <a href="shell-integration-reference.html">Shell Integration Reference</a> for PATH and completion repair.</td></tr>
                 <tr><td>Latest release</td><td><code>mars update tool</code></td><td>Packaged users upgrading from release assets.</td></tr>
                 <tr><td>Specific release</td><td><code>mars update tool --version v0.68.9</code></td><td>Pin a known version for reproduction or rollback.</td></tr>
                 <tr><td>Source install</td><td><code>mars update tool --source</code></td><td>Use Go source installation instead of release assets.</td></tr>
@@ -160,7 +162,8 @@ mars update check --repo ~/my-project --json</code></pre>
             <code>make install</code> installs the current checkout. Use
             <code>make update-tool</code> from a clean clone when you want the
             source-maintained update helper to fast-forward, reinstall, and run
-            path setup.
+            path setup. Regenerate completions separately when you want updated
+            shell tab completion scripts.
           </div>
         </section>
 
