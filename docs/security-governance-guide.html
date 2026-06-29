@@ -1,0 +1,306 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/product-specs/documentation-site.md
+- docs/features/F-015-documentation-site-information-architecture.md
+- docs/index.html
+- docs/safety-quality-guide.html
+- docs/auth-credentials-reference.html
+- docs/files-state-reference.html
+- docs/guardrails-reference.html
+- docs/observability-guide.html
+- docs/documentation-sync-guide.html
+- docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/harness-operating-model.md
+- docs/design-docs/tenets.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Security And Governance Guide</title>
+    <meta
+      name="description"
+      content="Security, ownership, guardrails, evidence, trust, and recovery guide for MARS evaluators, enterprises, banks, healthcare, and regulated teams."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to security guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Developer docs</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="quickstart.html">Start</a>
+        <a href="workflows.html">Guides</a>
+        <a href="cli-reference.html">Reference</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Security and governance sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search governance</label>
+          <input id="docSearch" type="search" placeholder="secrets, trust, eject">
+          <p class="search-hint">Filters controls, boundaries, evidence, and recovery rows.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#local">What Stays Local</a>
+          <a href="#credentials">Credentials</a>
+          <a href="#guardrails">Guardrails</a>
+          <a href="#trust">Trust Levels</a>
+          <a href="#ownership">Ownership</a>
+          <a href="#evidence">Evidence Chain</a>
+          <a href="#recovery">Recovery</a>
+          <a href="#docsync">DocSync</a>
+          <a href="#proof-path">Proof Path</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Security and governance</p>
+            <h1>Govern MARS before trusting autonomy.</h1>
+            <p class="lede">
+              MARS is local-first by default, repo-owned by design, and built
+              around evidence. This guide shows where data lives, what agents
+              can change, how guardrails and trust levels constrain work, and
+              which canonical docs own the details.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <div class="source-callout">
+            <strong>Source of truth:</strong>
+            this page summarizes existing MARS security and governance docs.
+            Use <a href="safety-quality-guide.html">Safety, trust, and quality</a>,
+            <a href="guardrails-reference.html">Guardrails reference</a>,
+            <a href="auth-credentials-reference.html">Authentication and credentials</a>,
+            <a href="files-state-reference.html">Files and state</a>, and
+            <a href="observability-guide.html">Observability</a> for the
+            canonical public references. Use
+            <a href="documentation-map.html#canonical-records">the documentation map</a>
+            for harness-consumed records.
+          </div>
+        </section>
+
+        <section class="doc-section" id="local">
+          <h2>What Stays Local</h2>
+          <p>
+            The default MARS path runs the delivery system on your machine.
+            Local-first is not the same as "nothing can ever leave the
+            machine": optional telemetry, GitHub, cloud model routes, and
+            integrations are explicit configured surfaces.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Surface</th><th>Default boundary</th><th>Where to verify</th></tr></thead>
+              <tbody>
+                <tr><td>Target repo docs and harness files</td><td>Written to the target git checkout so owners can review, commit, revert, or eject.</td><td><a href="files-state-reference.html#target">Files and state</a></td></tr>
+                <tr><td>Runtime databases</td><td>Per-repo SQLite databases live under local MARS state paths unless `--db` overrides them.</td><td><a href="files-state-reference.html#databases">Databases</a></td></tr>
+                <tr><td>Models and binaries</td><td>Downloaded and cached locally for the default local inference path.</td><td><a href="files-state-reference.html#local-state">Local state</a></td></tr>
+                <tr><td>Logs and traces</td><td>Stored locally for audit and troubleshooting.</td><td><a href="observability-guide.html#logs-traces">Observability</a></td></tr>
+                <tr><td>Telemetry</td><td>Local by default; anonymous aggregate reporting is opt-in and previewable.</td><td><a href="observability-guide.html#telemetry">Telemetry</a></td></tr>
+                <tr><td>Hosted providers and integrations</td><td>Disabled unless configured with explicit credentials or endpoints.</td><td><a href="configuration-reference.html#integrations">Configuration</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="credentials">
+          <h2>Credential And Secret Boundaries</h2>
+          <p>
+            Repo config should name environment variables, providers, endpoints,
+            or policy. Raw secret values belong in environment variables,
+            owner-only local config, or ignored local files.
+          </p>
+          <div class="concept-grid" data-doc-filter>
+            <article>
+              <span class="doc-badge">Source of truth</span>
+              <h3>Credential docs</h3>
+              <p>Read the authentication reference for token resolution order, private release auth, and what not to commit.</p>
+              <p><a href="auth-credentials-reference.html">Open authentication reference</a></p>
+            </article>
+            <article>
+              <span class="doc-badge">Guardrail</span>
+              <h3>Secret scanning</h3>
+              <p>MARS has a secret scan command and optional pre-commit hook. Treat a real finding as blocking until the secret is removed and rotated.</p>
+              <p><a href="guardrails-reference.html#secret-scan">Open secret scanning</a></p>
+            </article>
+            <article>
+              <span class="doc-badge">Boundary</span>
+              <h3>No token values in docs</h3>
+              <p>Docs, tickets, traces, release notes, and chat summaries should name env vars or config keys, not token values.</p>
+              <p><a href="documentation-sync-guide.html#system-record">Open system record rules</a></p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="guardrails">
+          <h2>Guardrails And Role Allowlists</h2>
+          <p>
+            Guardrails are repo-owned policy plus built-in runtime checks. YAML
+            hard rules are syntactic checks: file paths, regex matches, or
+            existence checks. They are useful controls, not a replacement for
+            semantic security review.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Control</th><th>What it does</th><th>Limit to remember</th><th>Source</th></tr></thead>
+              <tbody>
+                <tr><td>Role tool allowlists</td><td>Restrict which roles can use which tool categories.</td><td>A role prompt still needs review for correct intent.</td><td><a href="roles-guide.html">Roles guide</a></td></tr>
+                <tr><td>Hard guardrails</td><td>Block matching unsafe content or operations.</td><td>Current YAML rules are syntactic.</td><td><a href="guardrails-reference.html#schema">Guardrails reference</a></td></tr>
+                <tr><td>Advisory guardrails</td><td>Shape agent behavior and review expectations.</td><td>Advisory rules inform, not block.</td><td><a href="guardrails-reference.html#schema">Guardrail schema</a></td></tr>
+                <tr><td>Blast-radius checks</td><td>Reduce irreversible or broad unsafe changes.</td><td>No control makes damage impossible.</td><td><a href="safety-quality-guide.html#blast-radius">Safety guide</a></td></tr>
+                <tr><td>Secret scan</td><td>Finds likely secrets and redacts output.</td><td>Rotate confirmed secrets outside MARS.</td><td><a href="guardrails-reference.html#secret-scan">Secret scanning</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="trust">
+          <h2>Trust Levels And Autonomy Progression</h2>
+          <p>
+            MARS uses progressive autonomy. A role should earn more freedom
+            through evidence, not because a prompt sounds confident.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Trust level</th><th>Typical use</th><th>Evidence to review</th><th>Source</th></tr></thead>
+              <tbody>
+                <tr><td>Observer</td><td>Inspect, read, and report without mutating trusted surfaces.</td><td>Dry-run output, context assembly, findings.</td><td><a href="safety-quality-guide.html#trust">Trust levels</a></td></tr>
+                <tr><td>Contributor</td><td>Make bounded changes that still need checks, evidence, and review.</td><td>Diffs, tests, tickets, DocSync, traces.</td><td><a href="safety-quality-guide.html#trust">Trust levels</a></td></tr>
+                <tr><td>Autonomous</td><td>Operate within approved policies after enough evidence has accumulated.</td><td>Role scores, quality score, release evidence, human overrides.</td><td><a href="safety-quality-guide.html#trust">Trust levels</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="ownership">
+          <h2>Ownership Of Generated Work</h2>
+          <p>
+            A deployed harness belongs to the target repository. MARS writes
+            files that can be reviewed, committed, changed, or removed by the
+            repo owner.
+          </p>
+          <div class="concept-grid" data-doc-filter>
+            <article>
+              <h3>Target-owned files</h3>
+              <p><code>.harness/</code>, target <code>AGENTS.md</code>, docs, tickets, feature contracts, quality score, release files, and generated guidance belong to the target checkout.</p>
+              <p><a href="files-state-reference.html#target">Open target files</a></p>
+            </article>
+            <article>
+              <h3>Local machine state</h3>
+              <p>Models, binaries, databases, logs, traces, and auth setup live under local MARS paths unless configured otherwise.</p>
+              <p><a href="files-state-reference.html#local-state">Open local state</a></p>
+            </article>
+            <article>
+              <h3>Foundation-owned doctrine</h3>
+              <p>Rules in this source repo can mirror into generated targets. Source-only exceptions must be labelled.</p>
+              <p><a href="documentation-map.html#canonical-records">Open canonical records</a></p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="evidence">
+          <h2>Evidence Chain From Idea To Release</h2>
+          <p>
+            MARS promises auditability, not deterministic LLM output. Inspect
+            the chain of evidence before accepting important work.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Evidence</th><th>What it proves</th><th>Where to inspect</th></tr></thead>
+              <tbody>
+                <tr><td>Goal and active plan</td><td>Why the work exists and what scenario is next.</td><td><a href="planning-delivery-guide.html#goals">Planning guide</a></td></tr>
+                <tr><td>BDD feature contract</td><td>What done means and which behavior is in scope.</td><td><a href="features/README.md">Feature contracts</a></td></tr>
+                <tr><td>Ticket</td><td>Bounded slice, affected files, acceptance criteria, and evidence links.</td><td><a href="tickets/README.md">Ticket lifecycle</a></td></tr>
+                <tr><td>Checks and tests</td><td>What commands passed or failed.</td><td><a href="checks-evidence-guide.html">Checks evidence</a></td></tr>
+                <tr><td>Trace, logs, dashboard state</td><td>What an agent did, when, and with what outcome.</td><td><a href="observability-guide.html">Observability</a></td></tr>
+                <tr><td>Release notes and quality score</td><td>What shipped and how the repo health changed.</td><td><a href="release-update-guide.html">Release guide</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recovery">
+          <h2>Pause, Stop, Eject, Roll Back</h2>
+          <p>
+            Recovery controls are part of the product, not a last resort.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Need</th><th>Use</th><th>Boundary</th><th>Source</th></tr></thead>
+              <tbody>
+                <tr><td>Pause claiming new work</td><td>Interactive <code>p</code> or dashboard pause.</td><td>Running jobs finish; new claims stop.</td><td><a href="operations-guide.html#controls">Operations controls</a></td></tr>
+                <tr><td>Stop the runtime</td><td>Interactive <code>q</code>, Ctrl+C, or dashboard stop.</td><td>Graceful stop of the local process.</td><td><a href="operations-guide.html#controls">Operations controls</a></td></tr>
+                <tr><td>Remove MARS from a target</td><td><code>mars eject --repo /path/to/repo</code></td><td>Dry-run by default; apply needs explicit confirmation.</td><td><a href="target-lifecycle-reference.html#eject">Eject</a></td></tr>
+                <tr><td>Recover from a bad change</td><td>Use git review, revert, or normal target repo recovery.</td><td>MARS does not rewrite git history for you.</td><td><a href="safety-quality-guide.html#troubleshooting">Recovery</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="docsync">
+          <h2>DocSync And Source Of Truth</h2>
+          <p>
+            MarsDocSync metadata links changed files to durable docs that must
+            be reviewed. The audit checks metadata shape and doc paths. It does
+            not prove that prose is semantically complete.
+          </p>
+          <div class="source-callout">
+            <strong>Used by agents:</strong>
+            read <a href="documentation-sync-guide.html">Documentation sync</a>
+            and the <a href="design-docs/documentation-sync-architecture.md">DocSync architecture</a>
+            when changing public docs, source files, generated doctrine, or
+            operating rules.
+          </div>
+        </section>
+
+        <section class="doc-section" id="proof-path">
+          <h2>Suggested Proof Path For Regulated Readers</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Read boundaries first</h3>
+              <p>Open <a href="files-state-reference.html">files and state</a>, <a href="auth-credentials-reference.html">authentication</a>, and <a href="configuration-reference.html">configuration</a>.</p>
+            </li>
+            <li>
+              <h3>Check guardrails and trust</h3>
+              <p>Open <a href="guardrails-reference.html">guardrails</a>, <a href="safety-quality-guide.html">safety and quality</a>, and <a href="roles-guide.html">roles</a>.</p>
+            </li>
+            <li>
+              <h3>Run read-only inspection</h3>
+              <p>Use <code>mars doctor --repo /path/to/repo --json</code> and <code>mars run engineer --repo /path/to/repo --dry-run --no-init</code>.</p>
+            </li>
+            <li>
+              <h3>Inspect generated files before autonomy</h3>
+              <p>Run <code>mars init --repo /path/to/repo</code> on a disposable or low-risk target, then review the diff.</p>
+            </li>
+            <li>
+              <h3>Agree acceptance evidence</h3>
+              <p>Use <a href="planning-delivery-guide.html">planning and delivery</a>, <a href="checks-evidence-guide.html">checks evidence</a>, and <a href="release-update-guide.html">release guidance</a> before running autonomous workflows on important repos.</p>
+            </li>
+          </ol>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>Security claims stay useful only when they stay precise. Canonical docs own the details.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

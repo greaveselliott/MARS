@@ -30,14 +30,14 @@ For the full product contract, start with the
 
 The repository GitHub Pages site publishes from `/docs` and starts at the
 [MARS developer documentation](https://greaveselliott.github.io/MARS/).
-It is the user-facing front door for installation, setup, CLI workflows,
-target harness lifecycle, operations, models, safety, telemetry, release
-management, extension, and troubleshooting. The homepage now includes a
-[first-action chooser](docs/index.html#choose-first-action), searchable
-[documentation catalog](docs/index.html#catalog), and conservative
-[readiness matrix](docs/index.html#readiness) so users can pick a safe command
-and find both task guides and the repo docs that back them up. Deeper site
-pages cover the
+It is the user-facing front door for understanding MARS as a local AI product
+engineering team that can be inspected, governed, and improved. The homepage
+routes readers to safe first actions, reader lanes,
+[security and governance](docs/security-governance-guide.html), and the
+[documentation map](docs/documentation-map.html) instead of acting as the full
+catalog. Use the [adoption guide](docs/adoption-guide.html) for individual,
+SME, enterprise, bank, healthcare, platform, and maintainer evaluation paths.
+Deeper site pages cover the
 [CLI reference](docs/cli-reference.html),
 [shell integration](docs/shell-integration-reference.html),
 [authentication and credentials](docs/auth-credentials-reference.html),
@@ -66,6 +66,8 @@ interactive [MARS explainer](docs/harness-ecosystem/). It explains the
 software-factory problem, the value case, the foundation vs. deployed harness
 boundary, operating model, DocSync, telemetry, safety, and a pilot adoption
 path for mixed leadership and engineering audiences.
+Use [docs/adoption-guide.html](docs/adoption-guide.html) for the practical
+reader-by-reader adoption route.
 
 ## Current Status
 
@@ -280,7 +282,16 @@ safety, or orchestration changes do. See
 ## Documentation Map
 
 - [docs/index.html](docs/index.html): GitHub Pages developer documentation
-  front door, searchable catalog, repo documentation map, and readiness matrix.
+  front door and trust-building route into MARS.
+- [docs/documentation-map.html](docs/documentation-map.html): map of public
+  guides, canonical harness docs, product specs, BDD contracts, validation
+  evidence, generated references, and runbooks.
+- [docs/security-governance-guide.html](docs/security-governance-guide.html):
+  security, ownership, guardrails, trust, evidence, and recovery route for
+  regulated and enterprise readers.
+- [docs/adoption-guide.html](docs/adoption-guide.html): adoption lanes for
+  individuals, SME teams, enterprises, banks, healthcare teams, platform owners,
+  and maintainers/agents.
 - [docs/quickstart.html](docs/quickstart.html): first-run guide for source
   install, local setup, target initialization, safe inspection, dashboard
   checks, update paths, and troubleshooting.

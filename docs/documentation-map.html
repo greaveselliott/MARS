@@ -1,0 +1,237 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/product-specs/documentation-site.md
+- docs/product-specs/product-surface.md
+- docs/features/F-015-documentation-site-information-architecture.md
+- docs/index.html
+- docs/documentation-sync-guide.html
+- docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/harness-operating-model.md
+- docs/features/README.md
+- docs/goals/active.md
+- docs/exec-plans/active/current-operating-plan.md
+- docs/tickets/README.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Documentation Map</title>
+    <meta
+      name="description"
+      content="Map of MARS public guides, canonical harness docs, product specs, BDD contracts, validation evidence, generated references, and runbooks."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to documentation map</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Developer docs</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="quickstart.html">Start</a>
+        <a href="workflows.html">Guides</a>
+        <a href="cli-reference.html">Reference</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Documentation map sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search map</label>
+          <input id="docSearch" type="search" placeholder="BDD, guardrails, runbook">
+          <p class="search-hint">Filters rows by path, purpose, audience, type, and canonical status.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#start-safe">Start And Safe Trial</a>
+          <a href="#daily-operation">Daily Operation</a>
+          <a href="#security-governance">Security And Governance</a>
+          <a href="#agent-team">Agent Team And Delivery</a>
+          <a href="#extension-integration">Extension And Integration</a>
+          <a href="#canonical-records">Canonical Records</a>
+          <a href="#validation-evidence">Validation And Evidence</a>
+          <a href="#generated-reference">Generated And Reference</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Documentation map</p>
+            <h1>Find the canonical MARS document.</h1>
+            <p class="lede">
+              Public guides explain how to use MARS. Canonical harness docs
+              define product promises, operating rules, feature completeness,
+              delivery state, evidence, and decisions. Use this map when you
+              need the owner of a rule, not just a helpful summary.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="start-safe">
+          <h2>Start And Safe Trial</h2>
+          <p>Use these when evaluating MARS for the first time or checking what can write files.</p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Headline</th><th>Audience</th><th>Doc type</th><th>Canonical status</th><th>Used by agents?</th></tr></thead>
+              <tbody>
+                <tr><td><a href="index.html"><code>docs/index.html</code></a></td><td>Front door and routing.</td><td>Inspect, govern, and improve MARS.</td><td>All readers</td><td>Public guide</td><td>Summary</td><td>No</td></tr>
+                <tr><td><a href="quickstart.html"><code>docs/quickstart.html</code></a></td><td>First successful run.</td><td>Install MARS and run one target.</td><td>New operators</td><td>Public guide</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="install-setup-reference.html"><code>docs/install-setup-reference.html</code></a></td><td>Install, setup, local inference, and recovery.</td><td>Prepare the local runtime.</td><td>Operators</td><td>Public reference</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="shell-integration-reference.html"><code>docs/shell-integration-reference.html</code></a></td><td>PATH setup and shell repair.</td><td>Make the command available.</td><td>Operators</td><td>Public reference</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="auth-credentials-reference.html"><code>docs/auth-credentials-reference.html</code></a></td><td>Credential boundaries and token indirection.</td><td>Keep secrets out of repo docs.</td><td>Security reviewers, operators</td><td>Public reference</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="adoption-guide.html"><code>docs/adoption-guide.html</code></a></td><td>Evaluation lanes by reader type.</td><td>Adopt MARS without losing control.</td><td>Individuals, teams, enterprises, regulated readers</td><td>Public guide</td><td>Summary</td><td>No</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="daily-operation">
+          <h2>Daily Operation</h2>
+          <p>Use these after MARS is installed and a target repo is ready.</p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Headline</th><th>Audience</th><th>Doc type</th><th>Canonical status</th><th>Used by agents?</th></tr></thead>
+              <tbody>
+                <tr><td><a href="workflows.html"><code>docs/workflows.html</code></a></td><td>Task-oriented flows.</td><td>Run MARS from install to daily operations.</td><td>Operators</td><td>Public guide</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="target-lifecycle-reference.html"><code>docs/target-lifecycle-reference.html</code></a></td><td>Init, upgrade, scan, start, serve, eject.</td><td>Manage target harness lifecycle.</td><td>Operators, maintainers</td><td>Public reference</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="operations-guide.html"><code>docs/operations-guide.html</code></a></td><td>Run modes and controls.</td><td>Operate the local MARS runtime.</td><td>Operators</td><td>Public guide</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="dashboard-api-reference.html"><code>docs/dashboard-api-reference.html</code></a></td><td>Dashboard pages, controls, and APIs.</td><td>Use local dashboard controls.</td><td>Operators, integrators</td><td>Public reference</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="observability-guide.html"><code>docs/observability-guide.html</code></a></td><td>Logs, traces, metrics, evidence, and recovery.</td><td>Understand what happened.</td><td>Operators, reviewers</td><td>Public guide</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="troubleshooting-guide.html"><code>docs/troubleshooting-guide.html</code></a></td><td>Symptom-driven recovery.</td><td>Fix the common failure modes.</td><td>Operators</td><td>Public guide</td><td>Reference</td><td>No</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="security-governance">
+          <h2>Security, Governance, And Ownership</h2>
+          <p>Use these when deciding whether MARS fits a team, enterprise, bank, healthcare, or regulated environment.</p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Headline</th><th>Audience</th><th>Doc type</th><th>Canonical status</th><th>Used by agents?</th></tr></thead>
+              <tbody>
+                <tr><td><a href="security-governance-guide.html"><code>docs/security-governance-guide.html</code></a></td><td>Security, ownership, guardrails, and evidence route.</td><td>Govern MARS before trusting autonomy.</td><td>Security, enterprise, regulated reviewers</td><td>Public guide</td><td>Summary</td><td>No</td></tr>
+                <tr><td><a href="safety-quality-guide.html"><code>docs/safety-quality-guide.html</code></a></td><td>Trust levels, guardrails, quality, and recovery.</td><td>Bound autonomy and inspect quality.</td><td>Operators, reviewers</td><td>Public guide</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="guardrails-reference.html"><code>docs/guardrails-reference.html</code></a></td><td>Guardrail schema, severity, matching, hooks, recovery.</td><td>Define repo-owned policy.</td><td>Security reviewers, maintainers</td><td>Public reference</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="files-state-reference.html"><code>docs/files-state-reference.html</code></a></td><td>What files and local state MARS writes and removes.</td><td>Know what MARS owns.</td><td>Operators, security reviewers</td><td>Public reference</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="configuration-reference.html"><code>docs/configuration-reference.html</code></a></td><td>Local and target configuration.</td><td>Configure without leaking secrets.</td><td>Operators, platform owners</td><td>Public reference</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="documentation-sync-guide.html"><code>docs/documentation-sync-guide.html</code></a></td><td>No-stale-docs workflow.</td><td>Keep public and harness docs aligned.</td><td>Maintainers, agents</td><td>Public guide</td><td>Reference</td><td>Yes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="agent-team">
+          <h2>Agent Team And Delivery Model</h2>
+          <p>Use these to understand how ideas become governed work.</p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Headline</th><th>Audience</th><th>Doc type</th><th>Canonical status</th><th>Used by agents?</th></tr></thead>
+              <tbody>
+                <tr><td><a href="planning-delivery-guide.html"><code>docs/planning-delivery-guide.html</code></a></td><td>Goal, plan, BDD, ticket, evidence, release chain.</td><td>From idea to shipped change.</td><td>Operators, maintainers</td><td>Public guide</td><td>Reference</td><td>Yes</td></tr>
+                <tr><td><a href="roles-guide.html"><code>docs/roles-guide.html</code></a></td><td>Roles, domains, modes, and handoffs.</td><td>Understand the AI product team.</td><td>Operators, maintainers</td><td>Public guide</td><td>Reference</td><td>Yes</td></tr>
+                <tr><td><a href="harness-guide.html"><code>docs/harness-guide.html</code></a></td><td>Target harness structure and customization.</td><td>Work with the deployed harness.</td><td>Operators, maintainers</td><td>Public guide</td><td>Reference</td><td>Yes</td></tr>
+                <tr><td><a href="checks-evidence-guide.html"><code>docs/checks-evidence-guide.html</code></a></td><td>Local check recording and evidence.</td><td>Record proof, not vibes.</td><td>Operators, reviewers</td><td>Public guide</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="release-update-guide.html"><code>docs/release-update-guide.html</code></a></td><td>Semantic release notes, assets, updates.</td><td>Ship and update deliberately.</td><td>Release managers, operators</td><td>Public guide</td><td>Reference</td><td>Yes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="extension-integration">
+          <h2>Extension And Integration</h2>
+          <p>Use these when connecting MARS to tools, models, code intelligence, and optional board flows.</p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Headline</th><th>Audience</th><th>Doc type</th><th>Canonical status</th><th>Used by agents?</th></tr></thead>
+              <tbody>
+                <tr><td><a href="cli-reference.html"><code>docs/cli-reference.html</code></a></td><td>Full command surface.</td><td>Know the exact command.</td><td>Operators, maintainers</td><td>Public reference</td><td>Reference</td><td>No</td></tr>
+                <tr><td><a href="tools-mcp-guide.html"><code>docs/tools-mcp-guide.html</code></a></td><td>Universal tool surface and MCP bridge.</td><td>Expose tools with trust levels.</td><td>Integrators, agents</td><td>Public guide</td><td>Reference</td><td>Yes</td></tr>
+                <tr><td><a href="models-guide.html"><code>docs/models-guide.html</code></a></td><td>Local inference, optional providers, evaluation, overrides.</td><td>Choose models deliberately.</td><td>Operators, platform owners</td><td>Public guide</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="code-intel-reference.html"><code>docs/code-intel-reference.html</code></a></td><td>Code graph context, tools, metrics, validation boundaries.</td><td>Use local code intelligence as evidence.</td><td>Maintainers, agents</td><td>Public reference</td><td>Reference</td><td>Yes</td></tr>
+                <tr><td><a href="integrations-validation-guide.html"><code>docs/integrations-validation-guide.html</code></a></td><td>Optional integrations and validation matrices.</td><td>Validate the connected surfaces.</td><td>Platform owners, maintainers</td><td>Public guide</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="harness-ecosystem/"><code>docs/harness-ecosystem/</code></a></td><td>Interactive adoption explainer.</td><td>Understand the ecosystem story.</td><td>Leadership and engineering</td><td>Public guide</td><td>Summary</td><td>No</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="canonical-records">
+          <h2>Canonical System Records</h2>
+          <p>These documents are source-of-truth records for the foundation harness and generated target doctrine.</p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Headline</th><th>Audience</th><th>Doc type</th><th>Canonical status</th><th>Used by agents?</th></tr></thead>
+              <tbody>
+                <tr><td><a href="../AGENTS.md"><code>AGENTS.md</code></a></td><td>First-read agent guide and operating rules.</td><td>How agents work in MARS.</td><td>Agents, maintainers</td><td>Canonical harness doc</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="../README.md"><code>README.md</code></a></td><td>Repository overview and user entry points.</td><td>What MARS is.</td><td>All readers</td><td>Repository guide</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="../ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a></td><td>System architecture overview.</td><td>How the runtime is shaped.</td><td>Maintainers</td><td>Architecture reference</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="product-specs/index.md"><code>docs/product-specs/</code></a></td><td>Product promises and surfaces.</td><td>What MARS promises.</td><td>Maintainers, product owners</td><td>Product spec</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="goals/active.md"><code>docs/goals/active.md</code></a></td><td>Active product and operating goals.</td><td>What the system is trying to achieve.</td><td>Agents, maintainers</td><td>Canonical system record</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="exec-plans/active/current-operating-plan.md"><code>docs/exec-plans/active/current-operating-plan.md</code></a></td><td>Current scheduled plan.</td><td>What is being worked now.</td><td>Agents, maintainers</td><td>Canonical system record</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="features/README.md"><code>docs/features/</code></a></td><td>BDD feature contracts and business behavior.</td><td>What done means.</td><td>Agents, maintainers, reviewers</td><td>BDD contract</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="tickets/README.md"><code>docs/tickets/</code></a></td><td>Ticket lifecycle and work state.</td><td>What work exists and what evidence it needs.</td><td>Agents, maintainers</td><td>Canonical system record</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="design-docs/index.md"><code>docs/design-docs/</code></a></td><td>Architecture and operating decisions.</td><td>Why the system works this way.</td><td>Maintainers, agents</td><td>Design decision</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="roles/ROLES.md"><code>docs/roles/ROLES.md</code></a></td><td>Role registry.</td><td>Who the agent team is.</td><td>Maintainers, agents</td><td>Canonical harness doc</td><td>Source of truth</td><td>Yes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="validation-evidence">
+          <h2>Validation And Evidence</h2>
+          <p>Use these when proving a claim or replaying a validation path.</p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Headline</th><th>Audience</th><th>Doc type</th><th>Canonical status</th><th>Used by agents?</th></tr></thead>
+              <tbody>
+                <tr><td><a href="validation/README.md"><code>docs/validation/README.md</code></a></td><td>Validation matrix and report rules.</td><td>How evidence is recorded.</td><td>QA, maintainers</td><td>Validation evidence</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="validation/release-blockers.md"><code>docs/validation/release-blockers.md</code></a></td><td>Release blocker ledger.</td><td>What blocks release confidence.</td><td>Release managers, maintainers</td><td>Validation evidence</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="QUALITY_SCORE.md"><code>docs/QUALITY_SCORE.md</code></a></td><td>Repo-visible quality and role-health score.</td><td>How healthy the system looks.</td><td>Operators, maintainers</td><td>Quality evidence</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="../CHANGELOG.md"><code>CHANGELOG.md</code></a></td><td>Versioned user impact and release notes.</td><td>What shipped and why.</td><td>Users, release managers</td><td>Release evidence</td><td>Source of truth</td><td>Yes</td></tr>
+                <tr><td><a href="../VERSION"><code>VERSION</code></a></td><td>Current semantic version.</td><td>What version this checkout is.</td><td>Users, release managers</td><td>Release evidence</td><td>Source of truth</td><td>Sometimes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="generated-reference">
+          <h2>Generated And Reference Material</h2>
+          <p>Use these for generated maps, runbooks, research, bundle contracts, and lower-level references.</p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Path</th><th>Purpose</th><th>Headline</th><th>Audience</th><th>Doc type</th><th>Canonical status</th><th>Used by agents?</th></tr></thead>
+              <tbody>
+                <tr><td><a href="generated/README.md"><code>docs/generated/README.md</code></a></td><td>Generated reference catalog.</td><td>What generated docs exist.</td><td>Maintainers, agents</td><td>Generated reference</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="runbooks/README.md"><code>docs/runbooks/README.md</code></a></td><td>Operational procedures.</td><td>How to run repeatable operations.</td><td>Operators, maintainers</td><td>Runbook</td><td>Source of truth</td><td>Yes when routed</td></tr>
+                <tr><td><a href="references/README.md"><code>docs/references/README.md</code></a></td><td>Research and external references.</td><td>What informed decisions.</td><td>Maintainers</td><td>Reference</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="references/mdn-technical-writing.md"><code>docs/references/mdn-technical-writing.md</code></a></td><td>Technical writing principles.</td><td>Write public docs people can use.</td><td>Docs maintainers, agents</td><td>Reference</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="bundle-reference.html"><code>docs/bundle-reference.html</code></a></td><td>Bundle and manifest contract.</td><td>Know the harness bundle shape.</td><td>Maintainers, integrators</td><td>Public reference</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="bundle-reference.md"><code>docs/bundle-reference.md</code></a></td><td>Markdown companion for bundle contract.</td><td>Manifest detail for maintainers.</td><td>Maintainers, agents</td><td>Reference</td><td>Reference</td><td>Sometimes</td></tr>
+                <tr><td><a href="guardrails-guide.md"><code>docs/guardrails-guide.md</code></a></td><td>Markdown companion for guardrails.</td><td>Guardrail usage context.</td><td>Maintainers, agents</td><td>Reference</td><td>Reference</td><td>Sometimes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>Public docs route readers. Canonical docs own the rule.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

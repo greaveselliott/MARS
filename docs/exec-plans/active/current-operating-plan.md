@@ -1,97 +1,171 @@
-# Active P0 Exec Plan: MARS Rename
+# Active P1 Exec Plan: Documentation Site IA Rebuild
 
 **Status:** Active
-**Priority:** P0
+**Priority:** P1
 **Depends On:** None
-**Blocks:** Nothing; MARS rename completion evidence is recorded below.
-**Related Tickets:** MH-060
-**Goals:** G-001; rename the source repo, product surfaces, CLI, module path, generated target doctrine, release/update pipeline, and docs from old Mars Harness naming to MARS.
-**BDD Feature:** F-014
-**Related Feature Contracts:** F-001, F-002, F-004, F-005, F-009, F-014
-**Hypothesis:** MARS can adopt the new product identity and lowercase `mars` CLI without leaving stale old-name references, while preserving deliberate compatibility shims for existing installs, config, metadata, and release markers.
-**Success Evidence:** `rg` finds no unclassified `mars-harness`, `Mars Harness`, `mars_harness`, `MARS_HARNESS`, `.mars-harness`, or old module references; targeted rename tests pass; `go test ./...`, docsync/docs consistency, generated target checks, build/smoke, release notes/backfill, and release asset verification either pass or record exact blockers.
-**Falsification Evidence:** Any unclassified old-name reference remains; canonical docs or generated target guidance still instruct users to run `mars-harness`; new writes default to `~/.mars-harness`; release/update assets still target `mars-harness`; compatibility aliases are untested; module imports still use `github.com/greaveselliott/mars-harness`.
-**Scenario Schedule:** F-014-S001, F-014-S002, F-014-S003, F-014-S004, F-014-S005, F-014-S006, F-014-S007, F-014-S008
-**Current Failing Scenario:** None for F-014; F-014-S001 through F-014-S008 completed on 2026-06-28 under MH-060.
-**Walking Skeleton Slice:** Rename module, command path, root CLI identity, tool surface, runtime state defaults, release/update paths, generated target defaults, and docs in one coordinated compatibility-aware change.
-**Learning Or MVP Outcome:** The repo becomes consistently named MARS, and legacy old-name behavior is explicitly retained only where needed for migration.
-**Created:** 2026-06-28
-**Owner:** foundation-maintainer
-**Source:** Operator request to implement the 9-agent rename plan.
+**Blocks:** public docs quality, evaluator trust, regulated-reader adoption
+**Related Tickets:** T-048, T-049, T-050, T-051, T-052, T-053
+**Goals:** G-DOCS-IA-001, G-001
+**BDD Feature:** F-015-documentation-site-information-architecture.md
+**Related Feature Contracts:** F-001, F-004, F-007, F-008, F-009, F-015
+**Hypothesis:** A curated reader-first docs layer, backed by MarsDocSync and canonical harness docs, will make MARS easier to evaluate and safer to operate without weakening the repo's system-of-record model.
+**Success Evidence:** Homepage first viewport explains MARS as a local AI product engineering team that can be inspected, governed, and improved; reader journeys exist for individuals, SME teams, enterprises, banks, healthcare, and regulated teams; public pages identify safe actions, file-writing actions, ownership boundaries, evidence paths, and canonical source-of-truth docs; long catalog content is moved out of the homepage into a dedicated documentation map; DocSync, link sweep, docs consistency, and Go checks pass.
+**Falsification Evidence:** Homepage still acts as a link wall; security, guardrails, and ownership evidence is not visible before command references; public docs and harness-consumed docs describe different truths; new docs duplicate canonical docs without source-of-truth labels.
+**Scenario Schedule:** F-015-S001, F-015-S002, F-015-S003, F-015-S004, F-015-S005, F-015-S006, F-015-S007
+**Current Failing Scenario:** None; F-015-S001 through F-015-S007 passed on 2026-06-29.
+**Walking Skeleton Slice:** Create the docs product brief and update active goal, plan, feature, and ticket state before rewriting pages.
+**Learning Or MVP Outcome:** Establish the documentation system contract before changing the public site.
+**Created:** 2026-06-29
+**Owner:** foundation-maintainer as Orchestrator with COO, Product/Docs Maintainer, Security/Governance Reviewer, QA, and Release Manager role packets
+**Source:** Operator request to rebuild docs IA using the MARS planning operating model.
 
 ## Primary Outcome
 
-Update all references from old `mars-harness` / `Mars Harness` naming to the new MARS identity, with lowercase `mars` for the CLI, and do so exhaustively.
+Reframe the public documentation site as a trust-building product
+documentation layer for individuals, SME tech teams, enterprises, banks,
+healthcare, regulated/security reviewers, operators, and maintainers/agents.
+The public site must explain what MARS is, who owns what, what stays local,
+what agents can change, how guardrails work, how evidence is reviewed, and
+where canonical source-of-truth docs live.
 
 ## Primary Pass Gate
 
-The primary outcome passes only when every remaining old-name string is either absent or recorded in the compatibility allowlist below with a test, parser, or migration reason.
+The pass gate is green only when planning state, public pages, canonical links,
+and checks agree:
 
-## Subagent Operating Model
+- `docs/goals/active.md` includes G-DOCS-IA-001.
+- This active exec plan schedules F-015 and T-048 through T-053.
+- `docs/features/F-015-documentation-site-information-architecture.md`
+  defines the reader-first behavior.
+- Tickets T-048 through T-053 exist and map to the scenario schedule.
+- `docs/product-specs/documentation-site.md` defines audiences, actions,
+  content model, DocSync relationship, risks, and before/after file changes.
+- Public pages make security, ownership, guardrails, evidence, safe actions,
+  and canonical docs visible before command catalogs.
+- Verification covers link integrity, nav consistency, DocSync, docs
+  consistency tests, and full Go tests.
 
-Codex main acts as `foundation-maintainer` and Orchestrator/integrator. Nine role-assuming agents cover the work:
+## Agent Orchestrator Pattern
 
-- Task Agent 0: plan/tracker validation.
-- Task Agent 1: filesystem, module, imports, build paths.
-- Task Agent 2: CLI, tool, and environment compatibility.
-- Task Agent 3: runtime state, setup, doctor, shell path, DB defaults.
-- Task Agent 4: release, update, installer, assets, markers.
-- Task Agent 5: generated target defaults and role doctrine.
-- Task Agent 6: docs, skills, changelog, historical tracked artifacts.
-- Task Agent 7: compatibility fixture coverage.
-- Orchestrator Agent: sequencing, evidence gaps, unsupported assumptions, release-risk acceptance.
+Codex main acts as `foundation-maintainer` and Orchestrator/integrator.
+Role-assuming agents or role-labelled work packets own bounded lenses:
 
-Subagents audit or validate bounded slices. Main Codex integrates edits and owns final completion evidence.
+- COO/Product IA: goal, product brief, audience, reader action, and adoption
+  path coherence.
+- Product/Docs Maintainer: public site IA, page templates, stable URLs,
+  crosslinks, tone, and mobile readability.
+- Security/Governance Reviewer: data locality, credential boundaries,
+  guardrails, trust levels, ownership, evidence, recovery, and regulated-reader
+  claims.
+- QA: HTML links, anchors, primary nav consistency, DocSync, docs consistency,
+  and Go tests.
+- Release Manager: semantic commit, release notes, tag, release asset
+  publication, verification, and push evidence.
 
-## Compatibility Allowlist
+Subagents audit or validate bounded slices. The Orchestrator integrates edits,
+resolves conflicts, and owns final completion evidence.
 
-Old-name strings may remain only in these categories:
+## Scenario Schedule
 
-- `legacy CLI alias`: accepting or detecting `mars-harness` so older installs and PATH entries fail gracefully or route to `mars`.
-- `legacy tool alias`: registering `mars_harness_cli` as an alias of canonical `mars_cli` for older role prompts or traces.
-- `legacy env fallback`: reading `MARS_HARNESS_*` when canonical `MARS_*` is absent.
-- `legacy state fallback`: reading existing `~/.mars-harness` config, DB, model, trace, and binary paths during migration while new writes default to `~/.mars`.
-- `legacy release marker`: parsing old `mars-harness-release` changelog markers while writing new `mars-release` markers.
-- `legacy generated metadata`: reading old `generator: mars-harness` target metadata while writing `generator: mars`.
-- `legacy integration marker`: parsing old machine markers such as JIRA mirror markers where existing target docs may contain them, while writing new markers.
-- `historical Mars monorepo`: references to the separate precursor Mars monorepo when the URL or context proves it is not the old product name.
+| Scenario | Ticket | Outcome | Status |
+| --- | --- | --- | --- |
+| F-015-S001 | T-048 | Docs product brief defines audiences, goals, reader actions, risks, and content model. | Passed |
+| F-015-S002 | T-049 | Homepage is rebuilt as a trust-building front door. | Passed |
+| F-015-S003 | T-050 | Documentation map separates public guides from canonical harness/system-record docs. | Passed |
+| F-015-S004 | T-051 | Security, ownership, guardrails, and evidence guide serves regulated readers. | Passed |
+| F-015-S005 | T-052 | Adoption guide supports individual, SME, enterprise, bank, and healthcare evaluation. | Passed |
+| F-015-S006 | T-053 | Existing guides are crosslinked to canonical docs and labelled by reader action. | Passed |
+| F-015-S007 | T-053 | IA passes mobile, link, DocSync, and docs-consistency gates. | Passed |
+
+## Before Filesystem Shape
+
+| Current File/Area | Current Purpose |
+| --- | --- |
+| `docs/index.html` | Homepage, command chooser, guide list, full catalog, and source-record map in one page. |
+| `docs/quickstart.html` | First run guide. |
+| `docs/workflows.html` | Task-oriented user workflows. |
+| `docs/*-guide.html`, `docs/*-reference.html` | Deep public guides and references. |
+| `docs/harness-ecosystem/` | Separate adoption explainer with a different page model. |
+| `docs/design-docs/` | Canonical architecture and operating decisions consumed by maintainers/agents. |
+| `docs/features/` | Canonical BDD feature contracts. |
+| `docs/goals/`, `docs/exec-plans/`, `docs/tickets/` | MARS planning and delivery system records. |
+| `docs/validation/`, `docs/generated/`, `docs/runbooks/`, `docs/references/` | Evidence, generated-reference catalog, operational procedures, and research. |
+
+## After Filesystem Shape
+
+| File | Action | Purpose / Headline |
+| --- | --- | --- |
+| `docs/goals/active.md` | Update | Active goal: make the docs site explain, prove, and route MARS correctly. |
+| `docs/exec-plans/active/current-operating-plan.md` | Update | Current plan: documentation site IA rebuild. |
+| `docs/features/F-015-documentation-site-information-architecture.md` | New | The docs site helps readers trust, try, govern, and maintain MARS. |
+| `docs/tickets/done/T-048-documentation-site-product-brief.md` | New, delivered | Define what the docs site is for. |
+| `docs/tickets/done/T-049-rebuild-docs-homepage-ia.md` | New, delivered | Make the homepage a trust-building front door. |
+| `docs/tickets/done/T-050-create-documentation-map.md` | New, delivered | Help readers find canonical MARS docs. |
+| `docs/tickets/done/T-051-create-security-governance-guide.md` | New, delivered | Explain security, guardrails, ownership, and evidence. |
+| `docs/tickets/done/T-052-create-adoption-guide.md` | New, delivered | Help individuals, SMEs, enterprises, banks, and healthcare teams evaluate MARS. |
+| `docs/tickets/done/T-053-crosslink-existing-guides-to-canonical-docs.md` | New, delivered | Connect public guides to source-of-truth docs. |
+| `docs/product-specs/documentation-site.md` | New | What the MARS docs site is for. |
+| `docs/product-specs/product-surface.md` | Update | Current product surface includes the new docs IA. |
+| `docs/index.html` | Rewrite | MARS is a local AI product engineering team you can inspect, govern, and improve. |
+| `docs/documentation-map.html` | New | Find the canonical MARS document. |
+| `docs/security-governance-guide.html` | New | Security, ownership, guardrails, and evidence. |
+| `docs/adoption-guide.html` | New | Adopt MARS without losing control. |
+| `docs/documentation-sync-guide.html` | Update | How human docs and harness docs stay in sync. |
+| `docs/quickstart.html` | Light update | Run one safe MARS lifecycle. |
+| `docs/workflows.html` | Light update | Common jobs MARS helps you complete. |
+| `docs/planning-delivery-guide.html` | Light update | From idea to shipped change. |
+| `docs/safety-quality-guide.html` | Light update | Trust, guardrails, quality, and recovery. |
+| `docs/files-state-reference.html` | Light update | What MARS writes, owns, stores, and removes. |
+| `docs/site.css` | Update | Layout support for audience cards, trust pillars, doc-type badges, and before/after tables. |
+| `docs/site.js` | Optional update | Stable page classification for the new IA pages. |
+| `README.md` | Update | Point readers to the new homepage paths and documentation map. |
 
 ## Validation Gates
 
-- Old-name grep: `rg -n "mars-harness|Mars Harness|mars_harness|MARS_HARNESS|\\.mars-harness|github.com/greaveselliott/mars-harness" --glob '!dist/**'`
-- Old-path grep: `git ls-files | rg "mars-harness|mars_harness|MARS_HARNESS"`
-- Targeted tests: `go test ./cmd/mars ./internal/tools ./internal/config ./internal/shellpath ./internal/selfupdate ./internal/release ./internal/scanner ./internal/operatingmodel ./internal/codeintel ./internal/githubauth ./internal/setup ./internal/doctor`
-- Broad tests: `go test ./...`
-- Build smoke: `go build ./cmd/mars`
-- CLI smoke: `go run ./cmd/mars version`
-- Generated target smoke: `go run ./cmd/mars init --repo <clean-temp-target>`
-- Docs gates: docsync/docs-consistency tests and `mars docsync audit --repo .` when available.
-- Release gates: `mars release notes --repo . --bump auto`, `mars release backfill-notes --repo . --check`, tag, publish assets, and verify assets, or explicit blocker.
+- `git diff --check`
+- `node --check docs/site.js`
+- recursive HTML link/anchor sweep for `docs/**/*.html`
+- primary nav consistency assertion
+- `mars docsync audit --repo .`
+- `go test ./internal/docsconsistency ./internal/docsync`
+- `go test ./...`
+- release notes, tag, local release asset publication, and local release asset verification
 
 ## Current Evidence
 
-- Remote trunk was fetched on 2026-06-28 and local `main` matched `origin/main` before edits.
-- Baseline targeted tests passed before rename for CLI/tool/config/release/scanner/update surfaces.
-- After the first mechanical rename slice, `go test ./cmd/mars ./internal/tools ./internal/config ./internal/shellpath` passed.
-- Compatibility-focused gates passed:
-  - `GOCACHE=/private/tmp/mars-go-cache go test ./internal/tools -run 'TestMarsCLI|TestDefaultRegistry_includesMarsCLI|TestShellExecPolicyBlocksMarsBinary'`
-  - `GOCACHE=/private/tmp/mars-go-cache go test ./internal/jira -run 'TestWebhookRequiresSignatureAndMirrorsMappedIssue|TestWebhookAcceptsLegacySignatureHeader|TestWebhookUsesMappedRepoSecret'`
-  - `GOCACHE=/private/tmp/mars-go-cache go test ./internal/scanner -run 'TestReadHarnessMetadataAcceptsLegacyGenerator|TestInit_success'`
-  - `GOCACHE=/private/tmp/mars-go-cache go test ./internal/config ./internal/shellpath ./internal/release ./internal/selfupdate ./internal/codeintel ./internal/operatingmodel ./internal/sandbox`
-- Broad gate passed with local-listener/process-cleanup access: `GOCACHE=/private/tmp/mars-go-cache go test ./...`.
-- Build smoke passed: `GOCACHE=/private/tmp/mars-go-cache go build -o /private/tmp/mars-rename-smoke ./cmd/mars`.
-- CLI smoke passed: `/private/tmp/mars-rename-smoke version` printed `mars 0.65.9 darwin/arm64 commit=unknown built=unknown`.
-- Generated target smoke passed: `/private/tmp/mars-rename-smoke init --repo /private/tmp/mars-rename-target`, followed by an old-name grep with zero hits.
-- Docs sync passed: `/private/tmp/mars-rename-smoke docsync audit --repo .`.
-- Full source gate passed with local-listener/process-cleanup access: `GOCACHE=/private/tmp/mars-go-cache make check`; coverage ratchets passed at total 73.6%, `internal/release` 67.0%, and `internal/serve` 66.3%.
-- Old-name grep is classified to this plan/feature/ticket plus compatibility code/tests for old envs, state paths, tool alias, binary alias, release assets/markers, shell markers, JIRA signature header, and generated metadata.
-- Semantic rename commit `419a5a3 feat(rename): adopt MARS identity` was pushed to `origin/main` on 2026-06-28.
-- Release commit `f200f68 release: notes 0.66.0` was pushed to `origin/main` on 2026-06-28.
-- Tag `v0.66.0` was pushed on 2026-06-28.
-- Release asset publication passed on 2026-06-28: `GOCACHE=/private/tmp/mars-go-cache go run ./cmd/mars release publish-assets --repo . --version v0.66.0 --upload auto`.
-- Local release asset verification passed on 2026-06-28: `GOCACHE=/private/tmp/mars-go-cache go run ./cmd/mars release verify-assets --dist dist/releases --version v0.66.0`.
-- GitHub release verification passed on 2026-06-28: `gh release view v0.66.0 --repo greaveselliott/MARS`, showing canonical `mars-*`, legacy `mars-harness-*`, and `checksums.txt` assets.
+- Remote trunk was fetched on 2026-06-29 and the temporary clean worktree was
+  confirmed up to date with `origin/main` before edits.
+- The preceding MARS rename active plan completed before this plan was
+  scheduled. Its semantic commit, release-note commit, tag, and release-asset
+  evidence remain in git history and release notes.
+- Product/IA, Docs Maintainer, and Security/Governance role packets completed
+  read-only briefs for planning conventions, public site IA, and governance
+  claim boundaries.
+- On 2026-06-29, `docs/product-specs/documentation-site.md` was updated to define
+  the docs site purpose, audiences, reader actions, content model, claim
+  boundaries, DocSync relationship, and before/after filesystem shape.
+- On 2026-06-29, `docs/index.html` was updated as a concise trust-building
+  front door.
+- `docs/documentation-map.html`, `docs/security-governance-guide.html`, and
+  `docs/adoption-guide.html` were added on 2026-06-29 to provide the catalog,
+  governance, and audience lanes.
+- Existing public guides were crosslinked on 2026-06-29 to the documentation
+  map, governance guide, adoption guide, and canonical docs where they summarize
+  source-of-truth rules.
+- Writing-style reference added:
+  `docs/references/mdn-technical-writing.md`.
+- PASS: `git diff --check`.
+- PASS: `node --check docs/site.js`.
+- PASS: recursive HTML link/anchor sweep checked 31 HTML files.
+- PASS: primary nav consistency assertion checked 30 template HTML files.
+- PASS: `GOCACHE=/private/tmp/mars-go-cache go run ./cmd/mars docsync audit --repo .`.
+- PASS: `GOCACHE=/private/tmp/mars-go-cache go test ./internal/docsconsistency ./internal/docsync`.
+- PASS: `GOCACHE=/private/tmp/mars-go-cache go test ./...`.
 
 ## Residual Risks
 
-- Full lifecycle clean-project validation beyond generated-target smoke is not run in this slice; the exact supporting smoke evidence above is recorded, and any broader lifecycle claim remains unconfirmed until a matrix replay is scheduled.
+- This plan changes public documentation only. It does not implement generated
+  docs generator behavior or any CLI/runtime behavior.
+- The public site summarizes canonical docs. Where a public page and a
+  canonical harness doc disagree, the canonical doc wins and this plan must fix
+  the public summary.

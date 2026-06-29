@@ -2,6 +2,9 @@
 MarsDocSync:
 docs:
 - docs/index.html
+- docs/documentation-map.html
+- docs/security-governance-guide.html
+- docs/adoption-guide.html
 - docs/quickstart.html
 - docs/install-setup-reference.html
 - docs/shell-integration-reference.html
@@ -30,6 +33,8 @@ docs:
 - docs/checks-evidence-guide.html
 - README.md
 - docs/product-specs/product-surface.md
+- docs/product-specs/documentation-site.md
+- docs/features/F-015-documentation-site-information-architecture.md
 */
 (function () {
   document.documentElement.classList.add("js");
@@ -111,7 +116,12 @@ docs:
     });
 
     var currentFile = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
-    var guidePages = { "workflows.html": true, "planning-delivery-guide.html": true };
+    var guidePages = {
+      "adoption-guide.html": true,
+      "security-governance-guide.html": true,
+      "workflows.html": true,
+      "planning-delivery-guide.html": true
+    };
     var startPages = { "index.html": true, "quickstart.html": true, "install-setup-reference.html": true };
     var referencePages = {
       "auth-credentials-reference.html": true,
@@ -121,6 +131,7 @@ docs:
       "code-intel-reference.html": true,
       "configuration-reference.html": true,
       "dashboard-api-reference.html": true,
+      "documentation-map.html": true,
       "documentation-sync-guide.html": true,
       "files-state-reference.html": true,
       "guardrails-reference.html": true,

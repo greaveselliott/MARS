@@ -9,6 +9,7 @@ External documents, source research, and inherited Mars references that influenc
 | [harness-engineering-agent-first.md](harness-engineering-agent-first.md) | Article | OpenAI Harness Engineering article. Foundational reference for agent-first development, repo-as-system-record, progressive disclosure, mechanical guardrails, and failure feedback loops. |
 | [mars-meta-harness-relevance-audit.md](mars-meta-harness-relevance-audit.md) | Audit | Audit of Mars rules and documentation, identifying which pieces should inform MARS parity work. |
 | [midscene-dogfood-agent-evaluation.md](midscene-dogfood-agent-evaluation.md) | Tool evaluation | Evaluation of Midscene as an optional Dogfood visual-validation lane, including the ephemeral external runtime principle and cleanup requirements. |
+| [mdn-technical-writing.md](mdn-technical-writing.md) | Writing reference | MDN technical-writing principles for clarity, conciseness, consistency, logical structure, examples, accessible link text, and proofreading. |
 | [model-landscape-april-2026.md](model-landscape-april-2026.md) | Research | Local model and hardware research for default inference choices. |
 | [model-landscape-may-2026.md](model-landscape-may-2026.md) | Research | May 2026 model refresh shortlist and benchmark promotion gate for future defaults. |
 | [openharness-comparator.md](openharness-comparator.md) | Comparator | Audit of OpenHarness ideas worth adopting into MARS and the runtime/plugin patterns to reject. |

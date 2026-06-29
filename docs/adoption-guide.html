@@ -1,0 +1,331 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/product-specs/documentation-site.md
+- docs/features/F-015-documentation-site-information-architecture.md
+- docs/index.html
+- docs/security-governance-guide.html
+- docs/documentation-map.html
+- docs/harness-ecosystem/index.html
+- docs/quickstart.html
+- docs/workflows.html
+- docs/files-state-reference.html
+- docs/safety-quality-guide.html
+- docs/planning-delivery-guide.html
+- docs/references/mdn-technical-writing.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Adoption Guide</title>
+    <meta
+      name="description"
+      content="Adoption guide for individuals, SME teams, enterprises, banks, healthcare teams, platform owners, and MARS maintainers."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to adoption guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Developer docs</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="quickstart.html">Start</a>
+        <a href="workflows.html">Guides</a>
+        <a href="cli-reference.html">Reference</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Adoption sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search adoption</label>
+          <input id="docSearch" type="search" placeholder="enterprise, bank, proof">
+          <p class="search-hint">Filters adoption lanes, safe actions, and proof paths.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#individual">Individual</a>
+          <a href="#sme">SME Team</a>
+          <a href="#enterprise">Enterprise</a>
+          <a href="#regulated">Bank Or Healthcare</a>
+          <a href="#platform">Platform / DevEx</a>
+          <a href="#maintainer">Maintainer / Agent</a>
+          <a href="#pilot">Pilot Path</a>
+          <a href="#evidence">Proof Checklist</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Adoption</p>
+            <h1>Adopt MARS without losing control.</h1>
+            <p class="lede">
+              MARS can act like a product engineering team, but adoption should
+              start small: inspect first, write to a low-risk repo, review the
+              generated harness, agree evidence, then increase autonomy only
+              when the work earns trust.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <div class="source-callout">
+            <strong>Summary page:</strong>
+            this guide helps choose a path. For canonical operating rules, use
+            the <a href="documentation-map.html">documentation map</a>. For
+            security and regulated evaluation, start with
+            <a href="security-governance-guide.html">security and governance</a>.
+          </div>
+        </section>
+
+        <section class="doc-section" id="individual">
+          <h2>Individual Developer</h2>
+          <p>
+            You want to see whether MARS helps without letting it loose on an
+            important repo.
+          </p>
+          <div class="lane-grid" data-doc-filter>
+            <article>
+              <h3>Concerns</h3>
+              <ul class="check-list">
+                <li>What will it install locally?</li>
+                <li>What files can appear in my repo?</li>
+                <li>Can I inspect before agents run?</li>
+                <li>How do I remove it?</li>
+              </ul>
+            </article>
+            <article>
+              <h3>Safe first actions</h3>
+              <ol class="check-list">
+                <li>Run <code>mars doctor --repo /path/to/repo --json</code>.</li>
+                <li>Run <code>mars run engineer --repo /path/to/repo --dry-run --no-init</code>.</li>
+                <li>Use a disposable target for <code>mars init</code>.</li>
+              </ol>
+            </article>
+            <article>
+              <h3>Proof path</h3>
+              <p>Review the diff after init, then read <a href="files-state-reference.html">files and state</a>, <a href="quickstart.html">quickstart</a>, and <a href="target-lifecycle-reference.html#eject">eject</a>.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="sme">
+          <h2>SME Tech Team</h2>
+          <p>
+            You want faster delivery without losing review, ownership, or
+            release discipline.
+          </p>
+          <div class="lane-grid" data-doc-filter>
+            <article>
+              <h3>Concerns</h3>
+              <ul class="check-list">
+                <li>Who approves agent work?</li>
+                <li>How do tickets and plans stay readable?</li>
+                <li>Which checks count as evidence?</li>
+                <li>Can we pause the loop?</li>
+              </ul>
+            </article>
+            <article>
+              <h3>Safe first actions</h3>
+              <ol class="check-list">
+                <li>Choose one non-critical repo with real tests.</li>
+                <li>Run <code>mars init</code> and review the harness diff as a team.</li>
+                <li>Run one small role or lifecycle with a clear acceptance check.</li>
+              </ol>
+            </article>
+            <article>
+              <h3>Proof path</h3>
+              <p>Inspect <a href="planning-delivery-guide.html">planning and delivery</a>, <a href="checks-evidence-guide.html">checks evidence</a>, <a href="observability-guide.html">observability</a>, and <a href="release-update-guide.html">release updates</a>.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="enterprise">
+          <h2>Enterprise Evaluator</h2>
+          <p>
+            You need governance, supportability, integration boundaries, and a
+            practical rollout model.
+          </p>
+          <div class="lane-grid" data-doc-filter>
+            <article>
+              <h3>Concerns</h3>
+              <ul class="check-list">
+                <li>Where does data live?</li>
+                <li>What is optional versus default?</li>
+                <li>How do upgrades work?</li>
+                <li>How do we audit decisions?</li>
+              </ul>
+            </article>
+            <article>
+              <h3>Safe first actions</h3>
+              <ol class="check-list">
+                <li>Review the <a href="security-governance-guide.html">governance guide</a>.</li>
+                <li>Run an offline or local-only proof on a representative repo.</li>
+                <li>Define approval gates before granting contributor or autonomous trust.</li>
+              </ol>
+            </article>
+            <article>
+              <h3>Proof path</h3>
+              <p>Read <a href="configuration-reference.html">configuration</a>, <a href="integrations-validation-guide.html">integrations and validation</a>, <a href="safety-quality-guide.html">safety and quality</a>, and <a href="documentation-sync-guide.html">DocSync</a>.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="regulated">
+          <h2>Bank, Healthcare, Or Regulated Team</h2>
+          <p>
+            Start with control evidence. Do not start with a command catalog.
+          </p>
+          <div class="lane-grid" data-doc-filter>
+            <article>
+              <h3>Concerns</h3>
+              <ul class="check-list">
+                <li>Data locality and opt-in external surfaces.</li>
+                <li>Credential storage and redaction.</li>
+                <li>Human approval gates.</li>
+                <li>Rollback, eject, and incident review.</li>
+              </ul>
+            </article>
+            <article>
+              <h3>Safe first actions</h3>
+              <ol class="check-list">
+                <li>Confirm local-first assumptions and optional provider routes.</li>
+                <li>Inspect generated target harness files in a sandbox repo.</li>
+                <li>Agree allowed tools, roles, model routes, and acceptance evidence.</li>
+              </ol>
+            </article>
+            <article>
+              <h3>Proof path</h3>
+              <p>Use <a href="security-governance-guide.html#proof-path">the regulated proof path</a>, <a href="auth-credentials-reference.html">credential docs</a>, <a href="guardrails-reference.html">guardrails</a>, and <a href="validation/README.md">validation evidence</a>.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="platform">
+          <h2>Platform Or DevEx Owner</h2>
+          <p>
+            You are thinking about rollout, support, monitoring, upgrade
+            cadence, and how MARS fits existing developer workflows.
+          </p>
+          <div class="lane-grid" data-doc-filter>
+            <article>
+              <h3>Concerns</h3>
+              <ul class="check-list">
+                <li>How many repos should be piloted first?</li>
+                <li>Who owns model, binary, and update policy?</li>
+                <li>How are failures surfaced?</li>
+                <li>How do teams standardize guardrails?</li>
+              </ul>
+            </article>
+            <article>
+              <h3>Safe first actions</h3>
+              <ol class="check-list">
+                <li>Create one pilot lane with explicit success and stop criteria.</li>
+                <li>Run local checks, dashboard observation, and release/update smoke.</li>
+                <li>Document org-specific guardrails and approval expectations.</li>
+              </ol>
+            </article>
+            <article>
+              <h3>Proof path</h3>
+              <p>Read <a href="operations-guide.html">operations</a>, <a href="dashboard-api-reference.html">dashboard API</a>, <a href="models-guide.html">models</a>, <a href="release-update-guide.html">release/update</a>, and <a href="tools-mcp-guide.html">tools/MCP</a>.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="maintainer">
+          <h2>Maintainer Or Agent</h2>
+          <p>
+            You need the system records, not a simplified onboarding story.
+          </p>
+          <div class="lane-grid" data-doc-filter>
+            <article>
+              <h3>Concerns</h3>
+              <ul class="check-list">
+                <li>What is the active goal?</li>
+                <li>Which feature contract owns the behavior?</li>
+                <li>What ticket is the next slice?</li>
+                <li>Which docs must stay synced?</li>
+              </ul>
+            </article>
+            <article>
+              <h3>Safe first actions</h3>
+              <ol class="check-list">
+                <li>Read <a href="../AGENTS.md">AGENTS.md</a> and the foundation role packet.</li>
+                <li>Open the active plan before creating tickets.</li>
+                <li>Run DocSync and docs consistency checks after changes.</li>
+              </ol>
+            </article>
+            <article>
+              <h3>Proof path</h3>
+              <p>Use <a href="documentation-map.html#canonical-records">canonical records</a>, <a href="features/README.md">feature contracts</a>, <a href="tickets/README.md">ticket lifecycle</a>, and <a href="documentation-sync-guide.html">DocSync</a>.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="pilot">
+          <h2>A Sensible Pilot Path</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Define the reason</h3>
+              <p>Pick one outcome: faster ticket delivery, better docs discipline, release support, local agent evaluation, or evidence capture.</p>
+            </li>
+            <li>
+              <h3>Pick a low-risk target</h3>
+              <p>Choose a repo with tests, clear owners, and work that matters but can be reverted.</p>
+            </li>
+            <li>
+              <h3>Inspect before writes</h3>
+              <p>Run doctor and dry-run role context before init or start.</p>
+            </li>
+            <li>
+              <h3>Review generated harness files</h3>
+              <p>Confirm roles, guardrails, tickets, BDD docs, release files, and ownership model are acceptable.</p>
+            </li>
+            <li>
+              <h3>Run one bounded slice</h3>
+              <p>Use one goal, one plan, one feature scenario, one ticket, and a small evidence gate.</p>
+            </li>
+            <li>
+              <h3>Decide trust level</h3>
+              <p>Increase autonomy only after the evidence is good enough for the team that owns the repo.</p>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="evidence">
+          <h2>Proof Checklist</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Question</th><th>What to inspect</th><th>Where</th></tr></thead>
+              <tbody>
+                <tr><td>What can MARS write?</td><td>Target files, local state, databases, logs, traces, eject cleanup.</td><td><a href="files-state-reference.html">Files and state</a></td></tr>
+                <tr><td>How are secrets handled?</td><td>Env var indirection, token resolution, redaction, secret scanning.</td><td><a href="auth-credentials-reference.html">Auth and credentials</a></td></tr>
+                <tr><td>How is autonomy bounded?</td><td>Trust levels, role allowlists, hard/advisory guardrails, emergency controls.</td><td><a href="security-governance-guide.html">Governance guide</a></td></tr>
+                <tr><td>How do we know work is done?</td><td>BDD contracts, tickets, checks, validation, release notes.</td><td><a href="planning-delivery-guide.html">Planning and delivery</a></td></tr>
+                <tr><td>How do docs stay aligned?</td><td>MarsDocSync metadata, audit, product specs, canonical map.</td><td><a href="documentation-sync-guide.html">Documentation sync</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>Adoption should earn trust one bounded proof at a time.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

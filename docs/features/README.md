@@ -110,6 +110,7 @@ affected skills synchronized using
 | F-012 | [Self-Improvement Loop](F-012-self-improvement-loop.md) | partially-passing | Telemetry, intervention detection, skills, tool creation, bounded evolution |
 | F-013 | [Board-Driven Integrations](F-013-board-driven-integrations.md) | active | Optional JIRA board intake, board prioritisation, Figma context, human-reviewed delivery, and traceability |
 | F-014 | [MARS Rename](F-014-mars-rename.md) | active | Product identity, CLI, module path, compatibility aliases, release/update names, generated doctrine, and docs rewrite |
+| F-015 | [Documentation Site Information Architecture](F-015-documentation-site-information-architecture.md) | active | Reader-first public docs, trust-building homepage, documentation map, governance guide, adoption lanes, canonical source labels |
 
 ## Historical Feature Audit
 

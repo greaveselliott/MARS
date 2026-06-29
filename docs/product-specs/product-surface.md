@@ -30,11 +30,21 @@ gateway, auth boundary, and runtime state owner.
 Documentation site status: the repository GitHub Pages site is published from
 `/docs`, and `docs/index.html` is the user-facing developer documentation front
 door with a dark default theme, stable compact header navigation, and a
-searchable catalog. On mobile viewports, the site uses stable disclosure
-navigation, keeps page content ahead of the long section index, and renders
-wide reference tables as labelled cards instead of forcing sideways reading. It
-now includes a beginner-safe command chooser that separates inspection commands
-from file-writing commands. It documents
+reader-first IA governed by
+[documentation-site.md](documentation-site.md). The homepage is a trust-building
+front door for MARS as a local AI product engineering team that can be
+inspected, governed, and improved. It routes readers to safe first actions,
+audience lanes, security and governance material, and canonical system records
+instead of carrying the full documentation catalog. The full map now lives at
+`docs/documentation-map.html`; regulated-reader evidence is routed through
+`docs/security-governance-guide.html`; and adoption paths for individuals, SME
+teams, enterprises, banks, healthcare teams, platform owners, and
+maintainers/agents live at `docs/adoption-guide.html`. On mobile viewports, the
+site uses stable disclosure navigation, keeps page content ahead of the long
+section index, and renders wide reference tables as labelled cards instead of
+forcing sideways reading. It includes a beginner-safe command chooser that
+separates read-only inspection, local machine writes, target-file writes, and
+autonomous/agent-mediated actions. It documents
 installation, setup, CLI workflows, target harness lifecycle, operations,
 models, safety, telemetry, release management, extension, troubleshooting, and
 links into repo-owned source docs. First-run onboarding has a dedicated static

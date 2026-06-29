@@ -4,6 +4,10 @@ MarsDocSync:
 docs:
 - README.md
 - docs/index.html
+- docs/documentation-map.html
+- docs/security-governance-guide.html
+- docs/adoption-guide.html
+- docs/product-specs/documentation-site.md
 - docs/guardrails-guide.md
 - docs/safety-quality-guide.html
 - docs/configuration-reference.html
@@ -77,6 +81,16 @@ docs:
               stop commits, and how operators review or retire policy over
               time.
             </p>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <div class="source-callout">
+            <strong>Source of truth:</strong>
+            this reference owns guardrail schema and matching behavior. Use
+            <a href="security-governance-guide.html#guardrails">security and governance</a>
+            for the regulated-reader explanation and remember that YAML hard
+            rules are syntactic checks, not full semantic security review.
           </div>
         </section>
 

@@ -4,6 +4,10 @@ MarsDocSync:
 docs:
 - README.md
 - docs/index.html
+- docs/documentation-map.html
+- docs/security-governance-guide.html
+- docs/adoption-guide.html
+- docs/product-specs/documentation-site.md
 - docs/quickstart.html
 - docs/cli-reference.html
 - docs/harness-guide.html
@@ -81,6 +85,17 @@ docs:
               health, fills missing defaults after upgrades, and removes its
               files with a dry-run-first uninstall path.
             </p>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <div class="source-callout">
+            <strong>Action boundary:</strong>
+            lifecycle commands can move from read-only inspection to target-file
+            writes and autonomous work. Use
+            <a href="security-governance-guide.html">security and governance</a>
+            for ownership boundaries and <a href="adoption-guide.html">adoption guide</a>
+            before piloting important repos.
           </div>
         </section>
 

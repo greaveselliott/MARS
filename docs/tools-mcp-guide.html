@@ -4,6 +4,10 @@ MarsDocSync:
 docs:
 - README.md
 - docs/index.html
+- docs/documentation-map.html
+- docs/security-governance-guide.html
+- docs/adoption-guide.html
+- docs/product-specs/documentation-site.md
 - docs/cli-reference.html
 - docs/code-intel-reference.html
 - docs/harness-guide.html
@@ -76,6 +80,15 @@ docs:
               more. The same actions are available to MARS agents, to
               <code>mars tools run</code>, and to local AI clients through MCP.
             </p>
+          </div>
+        </section>
+
+        <section class="doc-section">
+          <div class="source-callout">
+            <strong>Govern before extending:</strong>
+            MCP exposes MARS tools to local clients. Start with observer trust,
+            then use <a href="security-governance-guide.html#guardrails">guardrails and role allowlists</a>
+            before granting mutating tools.
           </div>
         </section>
 
