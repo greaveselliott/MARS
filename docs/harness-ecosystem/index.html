@@ -61,7 +61,7 @@ docs:
         <span class="pulse-dot" aria-hidden="true"></span>
         Repo-hosted briefing artifact
       </div>
-      <div class="mobile-nav" id="mobileNav">
+      <nav class="mobile-nav" id="mobileNav" aria-label="Mobile page sections">
         <a href="#why">Why</a>
         <a href="#value">Value</a>
         <a href="#system">System</a>
@@ -69,7 +69,7 @@ docs:
         <a href="#drilldown">Details</a>
         <a href="#adoption">Adoption</a>
         <a href="#glossary">Glossary</a>
-      </div>
+      </nav>
       <div class="progress-bar" aria-hidden="true">
         <span id="pageProgress"></span>
       </div>
@@ -235,22 +235,22 @@ docs:
         </div>
 
         <div class="system-map" aria-label="Foundation to target system map">
-          <button class="surface-card is-active" type="button" data-surface="foundation">
+          <button class="surface-card is-active" type="button" data-surface="foundation" aria-pressed="true" aria-controls="surfaceDetail">
             <span>01</span>
             <strong>Foundation harness</strong>
             <small>Source doctrine and product system</small>
           </button>
-          <button class="surface-card" type="button" data-surface="runtime">
+          <button class="surface-card" type="button" data-surface="runtime" aria-pressed="false" aria-controls="surfaceDetail">
             <span>02</span>
             <strong>Runtime substrate</strong>
             <small>Single Go binary and SQLite execution layer</small>
           </button>
-          <button class="surface-card" type="button" data-surface="deployed">
+          <button class="surface-card" type="button" data-surface="deployed" aria-pressed="false" aria-controls="surfaceDetail">
             <span>03</span>
             <strong>Deployed harness</strong>
             <small>Generated agent operating system inside a target repo</small>
           </button>
-          <button class="surface-card" type="button" data-surface="target">
+          <button class="surface-card" type="button" data-surface="target" aria-pressed="false" aria-controls="surfaceDetail">
             <span>04</span>
             <strong>Target project</strong>
             <small>The product code, tests, and release value</small>
@@ -435,8 +435,9 @@ docs:
                 workflows but do not grant authority.
               </p>
               <p class="detail">
-                The same universal tool surface is exposed through role runs, `mars tools run`,
-                and MCP so external AI clients can use governed operations without shell folklore.
+                The same universal tool surface is exposed through role runs,
+                <code>mars tools run</code>, and MCP so external AI clients can
+                use governed operations without shell folklore.
               </p>
             </div>
           </article>
@@ -487,7 +488,7 @@ docs:
               </p>
               <p class="detail">
                 Target repos inherit release-note discipline, while MARS source has extra binary
-                publication rules for `mars` assets.
+                publication rules for <code>mars</code> assets.
               </p>
             </div>
           </article>
@@ -497,7 +498,7 @@ docs:
       <section class="section section-observed" id="drilldown" aria-labelledby="drilldown-title">
         <div class="section-heading">
           <p class="eyebrow">Drill-down workbench</p>
-          <h2 id="drilldown-title">Details without jargon.</h2>
+          <h2 id="drilldown-title">Translate the core terms.</h2>
           <p>
             Each drill-down translates a MARS concept into the problem it solves, the mechanism
             behind it, and the evidence a pilot should produce.
@@ -506,29 +507,29 @@ docs:
 
         <div class="drilldown-shell">
           <div class="drilldown-menu" aria-label="Detail topics">
-            <button class="drilldown-tab is-active" type="button" data-drill="operating">
+            <button class="drilldown-tab is-active" type="button" data-drill="operating" aria-pressed="true" aria-controls="drilldownPanel">
               <span>01</span>
-              BDD operating model
+              Behavior contracts (BDD)
             </button>
-            <button class="drilldown-tab" type="button" data-drill="docsync">
+            <button class="drilldown-tab" type="button" data-drill="docsync" aria-pressed="false" aria-controls="drilldownPanel">
               <span>02</span>
-              DocSync
+              Docs stay synced
             </button>
-            <button class="drilldown-tab" type="button" data-drill="safety">
+            <button class="drilldown-tab" type="button" data-drill="safety" aria-pressed="false" aria-controls="drilldownPanel">
               <span>03</span>
-              Safety and trust
+              Trust and safety
             </button>
-            <button class="drilldown-tab" type="button" data-drill="telemetry">
+            <button class="drilldown-tab" type="button" data-drill="telemetry" aria-pressed="false" aria-controls="drilldownPanel">
               <span>04</span>
-              Telemetry and scoring
+              Scores and telemetry
             </button>
-            <button class="drilldown-tab" type="button" data-drill="local">
+            <button class="drilldown-tab" type="button" data-drill="local" aria-pressed="false" aria-controls="drilldownPanel">
               <span>05</span>
-              Local inference
+              Local models
             </button>
-            <button class="drilldown-tab" type="button" data-drill="tools">
+            <button class="drilldown-tab" type="button" data-drill="tools" aria-pressed="false" aria-controls="drilldownPanel">
               <span>06</span>
-              Tools, skills, MCP
+              Governed tools (MCP)
             </button>
           </div>
 
@@ -581,7 +582,7 @@ docs:
               <li>Raw telemetry remains local by default in per-repo SQLite.</li>
               <li>Anonymous foundation telemetry is opt-in and aggregate-only.</li>
               <li>Target-owned failures become target work; foundation-owned failures stay foundation evidence.</li>
-              <li>Quality scores export to `docs/QUALITY_SCORE.md` so agents can see current readiness.</li>
+              <li>Quality scores export to <code>docs/QUALITY_SCORE.md</code> so agents can see current readiness.</li>
             </ul>
           </div>
           <div class="signal-panel">
@@ -600,7 +601,7 @@ docs:
           <p class="eyebrow">What a target repo receives</p>
           <h2 id="target-title">What the target receives.</h2>
           <p>
-            `mars init` creates a repo-owned operating surface so agents, humans, and external
+            <code>mars init</code> creates a repo-owned operating surface so agents, humans, and external
             AI clients all know how to plan, execute, review, validate, release, and improve the product.
           </p>
         </div>
@@ -622,8 +623,10 @@ docs:
           <div class="repo-note">
             <h3>Important ownership rule</h3>
             <p>
-              Existing target files remain user-owned. `upgrade` fills missing defaults without overwriting
-              deliberate local policy. Source-only MARS release mechanics stay in the foundation harness.
+              Existing target files remain user-owned. <code>mars upgrade</code>
+              fills missing defaults without overwriting deliberate local
+              policy. Source-only MARS release mechanics stay in the foundation
+              harness.
             </p>
           </div>
         </div>

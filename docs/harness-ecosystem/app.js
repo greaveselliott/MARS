@@ -270,7 +270,7 @@ docs:
       value:
         "Codex, Cursor, local harness agents, and other MCP-compatible clients can use the same repo-root resolution, trust policy, and JSON argument path.",
       mechanism:
-        "Built-in tools are registered, allowlisted per role, trust-gated, and available through active agent runs, `mars tools run`, and `mars mcp serve`.",
+        "Built-in tools are registered, allowlisted per role, trust-gated, and available through active agent runs, <code>mars tools run</code>, and <code>mars mcp serve</code>.",
       proof:
         "Pick one recurring process such as DocSync audit or ticket creation and verify that both a harness role and an external client use the same tool path.",
       watch:
@@ -281,14 +281,32 @@ docs:
   const navToggle = document.querySelector(".nav-toggle");
   const mobileNav = document.querySelector("#mobileNav");
   if (navToggle && mobileNav) {
+    const closeMobileNav = () => {
+      mobileNav.classList.remove("is-open");
+      navToggle.setAttribute("aria-expanded", "false");
+    };
+
     navToggle.addEventListener("click", () => {
       const isOpen = mobileNav.classList.toggle("is-open");
       navToggle.setAttribute("aria-expanded", String(isOpen));
     });
+
     mobileNav.addEventListener("click", (event) => {
       if (event.target.matches("a")) {
-        mobileNav.classList.remove("is-open");
-        navToggle.setAttribute("aria-expanded", "false");
+        closeMobileNav();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!mobileNav.classList.contains("is-open")) return;
+      if (mobileNav.contains(event.target) || navToggle.contains(event.target)) return;
+      closeMobileNav();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && mobileNav.classList.contains("is-open")) {
+        closeMobileNav();
+        navToggle.focus();
       }
     });
   }
@@ -305,8 +323,34 @@ docs:
   window.addEventListener("scroll", setProgress, { passive: true });
   setProgress();
 
-  const observedSections = document.querySelectorAll(".section-observed[id]");
-  const navLinks = [...document.querySelectorAll(".nav-links a")];
+  const navLinks = [...document.querySelectorAll(".nav-links a, .mobile-nav a")];
+  const navTargets = new Set(navLinks.map((link) => link.getAttribute("href")).filter(Boolean));
+  const observedSections = [...document.querySelectorAll(".section-observed[id]")]
+    .filter((section) => navTargets.has(`#${section.id}`));
+
+  const setActiveNav = (sectionId) => {
+    const targetHref = sectionId ? `#${sectionId}` : "";
+    navLinks.forEach((link) => {
+      const isActive = link.getAttribute("href") === targetHref;
+      link.classList.toggle("is-active", isActive);
+      if (isActive) {
+        link.setAttribute("aria-current", "location");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+  };
+
+  if (navTargets.has(window.location.hash)) {
+    setActiveNav(window.location.hash.slice(1));
+  }
+
+  window.addEventListener("hashchange", () => {
+    if (navTargets.has(window.location.hash)) {
+      setActiveNav(window.location.hash.slice(1));
+    }
+  });
+
   if ("IntersectionObserver" in window) {
     const sectionObserver = new IntersectionObserver(
       (entries) => {
@@ -314,10 +358,7 @@ docs:
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
         if (!visible) return;
-        navLinks.forEach((link) => {
-          const isActive = link.getAttribute("href") === `#${visible.target.id}`;
-          link.classList.toggle("is-active", isActive);
-        });
+        setActiveNav(visible.target.id);
       },
       { threshold: [0.2, 0.45, 0.7], rootMargin: "-80px 0px -55% 0px" }
     );
@@ -331,7 +372,11 @@ docs:
       const key = button.dataset.surface;
       const data = surfaces[key];
       if (!data || !surfaceDetail) return;
-      surfaceButtons.forEach((item) => item.classList.toggle("is-active", item === button));
+      surfaceButtons.forEach((item) => {
+        const isActive = item === button;
+        item.classList.toggle("is-active", isActive);
+        item.setAttribute("aria-pressed", String(isActive));
+      });
       surfaceDetail.innerHTML = `
         <p class="eyebrow">Selected surface</p>
         <h3>${data.title}</h3>
@@ -355,7 +400,11 @@ docs:
     button.addEventListener("click", () => {
       const data = drilldowns[button.dataset.drill];
       if (!data || !drilldownPanel) return;
-      drilldownTabs.forEach((item) => item.classList.toggle("is-active", item === button));
+      drilldownTabs.forEach((item) => {
+        const isActive = item === button;
+        item.classList.toggle("is-active", isActive);
+        item.setAttribute("aria-pressed", String(isActive));
+      });
       drilldownPanel.innerHTML = `
         <div class="drilldown-panel-header">
           <p class="eyebrow">Selected drill-down</p>

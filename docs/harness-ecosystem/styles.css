@@ -81,10 +81,12 @@ button {
   top: 12px;
   z-index: 1000;
   transform: translateY(-120%);
-  background: var(--ink);
-  color: var(--white);
+  border: 1px solid var(--copper);
+  background: var(--paper-strong);
+  color: var(--ink);
   padding: 10px 14px;
   border-radius: 6px;
+  box-shadow: var(--shadow);
 }
 
 .skip-link:focus {
@@ -157,7 +159,8 @@ button {
 
 .nav-links a:hover,
 .nav-links a.is-active,
-.mobile-nav a:hover {
+.mobile-nav a:hover,
+.mobile-nav a.is-active {
   background: var(--paper-muted);
   color: var(--ink);
 }
@@ -265,6 +268,17 @@ h2,
 h3,
 p {
   margin-top: 0;
+}
+
+p code,
+li code {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper-strong);
+  color: var(--ink);
+  padding: 0.08em 0.32em;
+  font-family: var(--font-mono);
+  font-size: 0.92em;
 }
 
 h1 {
@@ -1164,6 +1178,9 @@ h3 {
     background: var(--paper-strong);
     padding: 10px;
     box-shadow: var(--shadow);
+    max-height: calc(100dvh - 84px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .js .mobile-nav {
