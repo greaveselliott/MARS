@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.23] - 2026-06-29
+<!-- mars-release: version=0.68.23 commit=48859bfb00b3 -->
+
+### Impact
+- **site:** The code intelligence documentation now matches runtime behavior more precisely, reducing user confusion around graph refresh, freshness states, code-intel tool output, and `mars start` flag discovery.
+
+### Why
+- **site:** A subagent accuracy audit found that the new reference overstated automatic graph refresh and freshness values, while the mirrored tool glossary described symbol snippets and impact output more broadly than the implementation supports.
+
+### What Changed
+- **site:** Clarified bounded auto-refresh behavior, narrowed freshness-state wording, documented code-intel database path rejection only for code-intel commands, corrected `code_snippet` and `code_impact` descriptions in both foundation and generated target tool guidance, and added missing `mars start` flags to the homepage command table (48859bf).
+
+### Documentation
+- **site:** Correct code intelligence reference (48859bf)
+
 ## [0.68.22] - 2026-06-29
 <!-- mars-release: version=0.68.22 commit=672b1e3a03fb -->
 
