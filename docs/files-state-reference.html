@@ -324,7 +324,7 @@ mars run engineer --repo /path/to/repo</code></pre>
               </tbody>
             </table>
           </div>
-          <pre><code>mars models override --repo /path/to/repo --role engineer --provider openai --model gpt-4.1
+          <pre><code>mars models override --repo /path/to/repo --role engineer --provider openai --model gpt-4.1 --api-key-env OPENAI_API_KEY
 export OPENAI_API_KEY=...
 mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENAI_API_KEY --yes</code></pre>
         </section>

@@ -1055,8 +1055,8 @@ mars telemetry send --repo ~/my-project</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Foundation collector</h3>
-              <pre><code>mars telemetry collect --storage sqlite --addr :9092
-mars telemetry triage-foundation --repo /path/to/MARS</code></pre>
+              <pre><code>mars telemetry collect --storage sqlite --addr :9092 --db ~/.mars/db/foundation-telemetry/intake.db
+mars telemetry triage-foundation --repo /path/to/MARS --db ~/.mars/db/foundation-telemetry/intake.db</code></pre>
               <p>Used by foundation maintainers to create source tickets from repeated anonymous foundation-owned patterns.</p>
             </article>
           </div>

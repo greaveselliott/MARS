@@ -423,7 +423,7 @@ mars models evaluate --json</code></pre>
             <table>
               <thead><tr><th>Symptom</th><th>Meaning</th><th>User action</th></tr></thead>
               <tbody>
-                <tr><td>Missing local model for a tier.</td><td>The active role requires a model file not present under <code>~/.mars/models/</code>.</td><td>Run <code>mars setup</code>, lower the local bundle/profile, or use a real <code>--model-endpoint</code>.</td></tr>
+                <tr><td>Missing local model for a tier.</td><td>The active role requires a model file not present under <code>~/.mars/models/</code>.</td><td>Run <code>mars setup</code>, lower the local bundle/profile, or bypass local inference with <code>mars start --repo /path/to/repo --model-endpoint http://127.0.0.1:8080/v1</code> or <code>mars run engineer --repo /path/to/repo --model-endpoint http://127.0.0.1:8080/v1</code>.</td></tr>
                 <tr><td>Prompt exceeds context.</td><td>The request cannot fit the served context window.</td><td>Reduce routed context, choose a tier with a larger context, or fix the source of context bloat.</td></tr>
                 <tr><td>Ollama override fails.</td><td>The named Ollama model is not installed or Ollama is unreachable.</td><td>Install/pull the model in Ollama, start Ollama, or remove the override.</td></tr>
                 <tr><td>Cloud route fails auth.</td><td>The configured <code>api_key_env</code> is missing in the process environment or local env file.</td><td>Export the env var or run <code>mars models credentials write-local-env</code>.</td></tr>

@@ -332,9 +332,10 @@ mars models list --provider registry --json</code></pre>
           <p>
             <code>mars doctor</code> is the first command to run after setup and
             whenever a target behaves strangely. It checks Go, config, models,
-            database paths, llama-server, disk, remote connectivity where
-            enabled, and target-specific health when <code>--repo</code> is
-            supplied.
+            database paths, llama-server, disk, private release auth, update
+            drift, and target-specific health when <code>--repo</code> is
+            supplied. Every finding is meant to leave you with the next safe
+            command or file to inspect.
           </p>
           <div class="reference-stack">
             <article data-doc-filter>
@@ -351,6 +352,77 @@ mars doctor --repo /path/to/repo --db ~/.mars/db/my-repo/mars.db --json</code></
               <h3>Offline-friendly check</h3>
               <pre><code>mars doctor --skip-remote
 mars update check --repo /path/to/repo --skip-remote</code></pre>
+            </article>
+          </div>
+          <h3>How to read the result</h3>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Status</th><th>Meaning</th><th>What to do</th></tr></thead>
+              <tbody>
+                <tr><td><code>ok</code></td><td>The check has enough evidence for the current command.</td><td>Move on. Some repo-only checks report <code>ok</code> with “skipped” when <code>--repo</code> was not supplied.</td></tr>
+                <tr><td><code>warn</code></td><td>MARS found something that may stop setup, agent runs, updates, or evidence quality later.</td><td>Read the <code>fix</code> field or the indented <code>fix:</code> line. Warnings do not make <code>doctor</code> exit non-zero.</td></tr>
+                <tr><td><code>fail</code></td><td>A required local precondition is broken, such as missing Go, missing required model weights, or too little disk.</td><td>Run the remediation, then rerun <code>mars doctor</code>. Any failed check makes the command exit non-zero.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            JSON output is an array of check results. Each item includes
+            <code>name</code>, <code>status</code>, <code>message</code>,
+            <code>duration</code> in nanoseconds, and <code>fix</code> when
+            MARS has a concrete remediation.
+          </p>
+          <h3>Checks and fixes</h3>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Check</th><th>What it proves</th><th>Common next action</th></tr></thead>
+              <tbody>
+                <tr><td><code>go-version</code></td><td>The Go toolchain is installed and new enough for source builds.</td><td>Install or upgrade Go, then rerun <code>mars doctor</code>.</td></tr>
+                <tr><td><code>config-file</code></td><td><code>~/.mars/config.yaml</code> or the path passed with <code>--config</code> exists.</td><td>Run <code>mars setup</code> if the config file is missing.</td></tr>
+                <tr><td><code>model-registry</code></td><td>Default model entries are pinned by immutable revision and SHA256.</td><td>Source maintainers must pin registry entries before release; ordinary users should update MARS if this fails.</td></tr>
+                <tr><td><code>models-dir</code></td><td>The local model directory exists and contains GGUF model files.</td><td>Run <code>mars setup</code> or place required <code>.gguf</code> files in <code>~/.mars/models/</code>.</td></tr>
+                <tr><td><code>profile-required-models</code></td><td>The active performance profile has the model files it needs.</td><td>Run <code>mars setup</code> after changing <code>performance_profile</code>.</td></tr>
+                <tr><td><code>profile-ram-footprint</code></td><td>The active model profile appears to fit available RAM with headroom.</td><td>If warned, choose a smaller profile in <code>~/.mars/config.yaml</code> and rerun setup.</td></tr>
+                <tr><td><code>database</code></td><td>The selected SQLite database directory exists. With <code>--repo</code>, the default is <code>~/.mars/db/{repo}/mars.db</code>.</td><td>Run <code>mars setup</code>, <code>mars register --repo ...</code>, or pass a writable <code>--db</code> outside the target repo.</td></tr>
+                <tr><td><code>llama-server</code></td><td>MARS can find <code>llama-server</code> in <code>PATH</code> or <code>~/.mars/bin/</code>.</td><td>Run <code>mars setup</code> for the managed binary, or install llama.cpp yourself.</td></tr>
+                <tr><td><code>disk-space</code></td><td>The machine has at least 5 GiB free where MARS stores local state.</td><td>Free disk before downloading models or running release builds.</td></tr>
+                <tr><td><code>private-release-auth</code></td><td>Private release asset auth works, unless <code>--skip-remote</code> was passed.</td><td>Run <code>mars auth github check</code> and then <code>mars auth github setup</code> if updates cannot read release assets.</td></tr>
+                <tr><td><code>version-drift</code></td><td>The installed CLI and, when <code>--repo</code> is supplied, the deployed harness are not behind known releases.</td><td>Run the command in the <code>fix</code> field, usually <code>mars update tool</code> or <code>mars update harness --repo ...</code>.</td></tr>
+                <tr><td><code>operating-model</code></td><td>A target repo has the generated operating-model docs MARS expects.</td><td>Run <code>mars update harness --repo ...</code>; create migration tickets for stale user-owned docs.</td></tr>
+                <tr><td><code>deterministic-remediation</code></td><td>MARS has a matching repair recipe for common target setup failures, and the target harness scaffold has required files.</td><td>Run the named init, upgrade, or update command from the <code>fix</code> field.</td></tr>
+                <tr><td><code>role-registry</code></td><td>The target role registry and <code>.harness/manifest.yaml</code> agree.</td><td>Run <code>mars init --repo ...</code> for new repos, restore the manifest, or update registry rows for deliberate custom roles.</td></tr>
+                <tr><td><code>active-plan-hygiene</code></td><td>The target has one active plan and its evidence/ticket state is not stale.</td><td>Update <code>docs/exec-plans/active/current-operating-plan.md</code> or rerun the named evidence checks.</td></tr>
+                <tr><td><code>ticket-drain</code></td><td>No eligible in-progress ticket has gone stale without a blocker or dependency.</td><td>Complete the ticket, move it back to backlog with blocker metadata, or add <code>blocked_by</code>.</td></tr>
+                <tr><td><code>workspace-hygiene</code></td><td>The target worktree does not contain generated-file churn, unsafe deletes, or hygiene issues that would confuse agents.</td><td>Run <code>mars tools run workspace_hygiene --repo ... --trust contributor</code> for the detailed recipe, or apply the <code>fix</code> text.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Common reads</h3>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>"Skipped" with no repo</h3>
+              <p>
+                A machine-only run skips repo-only checks such as role registry,
+                active-plan hygiene, ticket drain, workspace hygiene, and target
+                operating-model health. Add <code>--repo /path/to/repo</code>
+                when you want target diagnostics.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>Database warning on a new repo</h3>
+              <p>
+                A missing per-repo database usually means the repo has not been
+                registered or started yet. Run <code>mars register --repo ...</code>
+                or <code>mars start --repo ...</code>; use <code>--db</code>
+                only when you deliberately keep runtime state elsewhere.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>Remote checks during travel or CI</h3>
+              <p>
+                Use <code>--skip-remote</code> when you only want local state:
+                config, models, database, target files, and local drift. Run
+                the full check later before update or release work.
+              </p>
             </article>
           </div>
         </section>
