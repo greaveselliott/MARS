@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.32] - 2026-06-29
+<!-- mars-release: version=0.68.32 commit=ade2c96c256a -->
+
+### Impact
+- **workflows:** Operators and future agents get clearer guidance because document agent work acceptance.
+
+### Why
+- **workflows:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **workflows:** Changed document agent work acceptance (ade2c96).
+
+### Documentation
+- **workflows:** Document agent work acceptance (ade2c96)
+
 ## [0.68.31] - 2026-06-29
 <!-- mars-release: version=0.68.31 commit=b497e2afd264 -->
 
