@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.27] - 2026-06-29
+<!-- mars-release: version=0.68.27 commit=ca05217f01ee -->
+
+### Impact
+- **site:** Users get a darker, steadier documentation site with a stable top navigation, tighter type scale, mobile-safe layouts, and a plain-language guide for recording local check results.
+
+### Why
+- **site:** The public docs were becoming harder to use on small screens because the header changed between pages, the navigation could overflow, and the guide copy assumed too much prior MARS knowledge.
+
+### What Changed
+- **site:** Switched the docs shell to a dark Mars-themed palette, normalized the compact header across top-level docs pages, fixed mobile overflow in card and code layouts, added `docs/checks-evidence-guide.html`, and linked local-check evidence from the homepage, README, CLI, workflow, observability, safety, operations, and code-intelligence docs (ca05217).
+
+### Documentation
+- **site:** Improve docs navigation and checks guide (ca05217)
+
 ## [0.68.26] - 2026-06-29
 <!-- mars-release: version=0.68.26 commit=f1a4350dd731 -->
 
