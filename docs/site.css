@@ -894,7 +894,15 @@ td:first-child {
 
   .doc-section,
   .hero {
+    width: 100%;
+    max-width: calc(100vw - 1.7rem);
     padding: 1rem;
+  }
+
+  .sidebar-panel,
+  .side-nav,
+  .section-nav-toggle {
+    max-width: calc(100vw - 1.7rem);
   }
 
   .hero-actions {
