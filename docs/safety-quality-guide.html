@@ -345,6 +345,14 @@ mars scores export --repo ~/my-project --window-days 30</code></pre>
             <code>MARS_TELEMETRY_TOKEN</code>, and
             <code>MARS_TELEMETRY_INTERVAL</code>.
           </div>
+          <div class="callout">
+            A local foundation collector writes SQLite data to
+            <code>~/.mars/db/foundation-telemetry/intake.db</code> unless you
+            pass <code>--db</code>. Use the same explicit path for
+            <code>mars telemetry collect</code> and
+            <code>mars telemetry triage-foundation</code> when turning repeated
+            anonymous patterns into source work.
+          </div>
         </section>
 
         <section class="doc-section" id="recipes">

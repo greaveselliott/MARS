@@ -331,6 +331,23 @@ git -C ~/my-project push origin main</code></pre>
               </tbody>
             </table>
           </div>
+          <h3>Advanced Mirror Targets</h3>
+          <p>
+            Most users can use the default MARS GitHub release mirror. Use the
+            flags below when publishing or auditing assets for a fork,
+            private mirror, or GitHub-compatible release endpoint.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Need</th><th>Command shape</th><th>Important distinction</th></tr></thead>
+              <tbody>
+                <tr><td>Upload assets to a different GitHub repo.</td><td><code>mars release publish-assets --repo . --version vX.Y.Z --upload github --github-repo owner/name</code></td><td><code>--repo .</code> is the local source checkout; <code>--github-repo</code> is the remote mirror.</td></tr>
+                <tr><td>Audit a different GitHub mirror.</td><td><code>mars release audit --repo . --github-repo owner/name</code></td><td>The audit reads local tags from the source checkout and compares them with the named GitHub repository.</td></tr>
+                <tr><td>Verify a GitHub mirror.</td><td><code>mars release verify-assets --repo owner/name --version vX.Y.Z</code></td><td>For <code>verify-assets</code>, <code>--repo</code> means GitHub <code>owner/name</code>, not a local path.</td></tr>
+                <tr><td>Verify a compatible release metadata URL.</td><td><code>mars release verify-assets --release-url https://api.github.com/repos/owner/name/releases/tags/vX.Y.Z --version vX.Y.Z</code></td><td>Use this only when the release metadata API is GitHub-compatible and the default URL is not correct.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section class="doc-section" id="recipes">

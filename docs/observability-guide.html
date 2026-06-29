@@ -292,10 +292,10 @@ mars telemetry send --repo /path/to/repo</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Run a local foundation collector</h3>
-              <pre><code>mars telemetry collect --storage sqlite --addr :9092
+              <pre><code>mars telemetry collect --storage sqlite --addr :9092 --db ~/.mars/db/foundation-telemetry/intake.db
 MARS_TELEMETRY_REPORTING=anonymous MARS_TELEMETRY_ENDPOINT=http://127.0.0.1:9092 mars telemetry send --repo /path/to/repo
 mars telemetry triage-foundation --repo /path/to/MARS --db ~/.mars/db/foundation-telemetry/intake.db --window-days 30</code></pre>
-              <p>Foundation maintainers use this path to collect sanitized reports and turn repeated foundation-owned patterns into MARS source work.</p>
+              <p>The collector uses <code>~/.mars/db/foundation-telemetry/intake.db</code> when <code>--db</code> is omitted. Pass it explicitly when the same database will feed <code>triage-foundation</code>.</p>
             </article>
           </div>
           <p>

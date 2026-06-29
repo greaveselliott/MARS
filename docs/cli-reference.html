@@ -541,6 +541,17 @@ mars release backfill-notes --repo . --min-version 0.60.0 --max-version 0.68.0 -
               <pre><code>mars release publish-assets --repo . --version vX.Y.Z --upload auto
 mars release verify-assets --dist dist/releases --version vX.Y.Z
 mars release verify-assets --version vX.Y.Z</code></pre>
+              <div class="wide-table">
+                <table>
+                  <thead><tr><th>Advanced mirror flag</th><th>Use it for</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>publish-assets --github-repo owner/name</code></td><td>Upload the release assets to a GitHub repository other than the default MARS mirror.</td></tr>
+                    <tr><td><code>verify-assets --repo owner/name</code></td><td>Verify a GitHub Release mirror. On this command, <code>--repo</code> means GitHub <code>owner/name</code>, not a local checkout path.</td></tr>
+                    <tr><td><code>verify-assets --release-url URL</code></td><td>Verify against a GitHub-compatible release metadata endpoint when the default GitHub API URL is not the right source.</td></tr>
+                    <tr><td><code>audit --github-repo owner/name</code></td><td>Audit recent local tags against a non-default GitHub release mirror.</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </article>
             <article data-doc-filter>
               <h3><code>mars release audit</code></h3>
