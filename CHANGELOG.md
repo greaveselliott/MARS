@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.38] - 2026-06-29
+<!-- mars-release: version=0.68.38 commit=269bf3806844 -->
+
+### Impact
+- **site:** Mobile readers get a contained docs layout after the IA rebuild, with homepage sections constrained to the viewport instead of relying on grid min-content sizing.
+
+### Why
+- **site:** The docs rebuild needed a final mobile containment guard because headless screenshot smoke showed the first viewport could still feel too tight at a 390px width.
+
+### What Changed
+- **site:** Added mobile viewport max-width guards for hero, document sections, sidebar panels, side navigation, and section toggles, while keeping the block-flow mobile layout and overflow protection (269bf38).
+
+### Fixes
+- **site:** Contained mobile docs layout after the documentation IA rebuild (269bf38).
+
 ## [0.68.37] - 2026-06-29
 <!-- mars-release: version=0.68.37 commit=744751d7085d -->
 
