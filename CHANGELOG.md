@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.33] - 2026-06-29
+<!-- mars-release: version=0.68.33 commit=7052ca4139df -->
+
+### Impact
+- **release:** Operators and future agents get clearer guidance because clarify mirror and telemetry paths.
+
+### Why
+- **release:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **release:** Changed clarify mirror and telemetry paths (7052ca4).
+
+### Documentation
+- **release:** Clarify mirror and telemetry paths (7052ca4)
+
 ## [0.68.32] - 2026-06-29
 <!-- mars-release: version=0.68.32 commit=ade2c96c256a -->
 
