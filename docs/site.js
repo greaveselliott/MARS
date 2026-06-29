@@ -32,6 +32,8 @@ docs:
 - docs/product-specs/product-surface.md
 */
 (function () {
+  document.documentElement.classList.add("js");
+
   var search = document.getElementById("docSearch");
   var filterTargets = Array.prototype.slice.call(document.querySelectorAll("[data-doc-filter]"));
   var navLinks = Array.prototype.slice.call(document.querySelectorAll(".side-nav a"));
@@ -78,6 +80,36 @@ docs:
     navToggle.addEventListener("click", function () {
       var isOpen = header.classList.toggle("is-nav-open");
       navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+  }
+
+  var sidebar = document.querySelector(".sidebar");
+  var sideNav = sidebar ? sidebar.querySelector(".side-nav") : null;
+
+  if (sidebar && sideNav) {
+    if (!sideNav.id) {
+      sideNav.id = "page-section-nav";
+    }
+
+    var sectionToggle = document.createElement("button");
+    sectionToggle.type = "button";
+    sectionToggle.className = "section-nav-toggle";
+    sectionToggle.setAttribute("aria-controls", sideNav.id);
+    sectionToggle.setAttribute("aria-expanded", "false");
+    sectionToggle.textContent = "On this page";
+    sidebar.insertBefore(sectionToggle, sidebar.firstChild);
+    sidebar.classList.add("has-section-toggle");
+
+    sectionToggle.addEventListener("click", function () {
+      var isOpen = sidebar.classList.toggle("is-section-nav-open");
+      sectionToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+
+    sideNav.addEventListener("click", function (event) {
+      if (event.target.matches("a")) {
+        sidebar.classList.remove("is-section-nav-open");
+        sectionToggle.setAttribute("aria-expanded", "false");
+      }
     });
   }
 

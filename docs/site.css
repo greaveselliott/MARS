@@ -239,6 +239,39 @@ kbd {
   padding: 0.42rem 0.72rem;
 }
 
+.section-nav-toggle {
+  display: none;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-strong);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 850;
+  padding: 0.55rem 0.72rem;
+  text-align: left;
+}
+
+.section-nav-toggle::after {
+  content: "+";
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--teal-dark);
+  font-weight: 900;
+}
+
+.sidebar.is-section-nav-open .section-nav-toggle::after {
+  content: "-";
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
@@ -702,11 +735,34 @@ td:first-child {
   }
 
   main {
-    order: 1;
+    order: 2;
   }
 
   .sidebar {
-    order: 2;
+    order: 1;
+  }
+
+  .sidebar.has-section-toggle {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .section-nav-toggle {
+    display: flex;
+  }
+
+  .sidebar.has-section-toggle:not(.is-section-nav-open) .sidebar-panel,
+  .sidebar.has-section-toggle:not(.is-section-nav-open) .side-nav {
+    display: none;
+  }
+
+  .sidebar.has-section-toggle.is-section-nav-open .sidebar-panel {
+    display: block;
+  }
+
+  .sidebar.has-section-toggle.is-section-nav-open .side-nav {
+    display: grid;
+    margin-top: 0;
   }
 
   .doc-section,
@@ -767,25 +823,25 @@ td:first-child {
     font-size: 0.98rem;
   }
 
-  .wide-table {
+  .js .wide-table {
     border: 0;
     overflow: visible;
   }
 
-  .wide-table table,
-  .wide-table thead,
-  .wide-table tbody,
-  .wide-table tr,
-  .wide-table th,
-  .wide-table td {
+  .js .wide-table table,
+  .js .wide-table thead,
+  .js .wide-table tbody,
+  .js .wide-table tr,
+  .js .wide-table th,
+  .js .wide-table td {
     display: block;
   }
 
-  .wide-table table {
+  .js .wide-table table {
     min-width: 0;
   }
 
-  .wide-table thead {
+  .js .wide-table thead {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -797,7 +853,7 @@ td:first-child {
     border: 0;
   }
 
-  .wide-table tr {
+  .js .wide-table tr {
     margin: 0 0 0.75rem;
     padding: 0.75rem;
     border: 1px solid var(--line);
@@ -805,18 +861,18 @@ td:first-child {
     background: var(--paper-strong);
   }
 
-  .wide-table td {
+  .js .wide-table td {
     padding: 0.48rem 0;
     border-bottom: 0;
     background: transparent !important;
     overflow-wrap: anywhere;
   }
 
-  .wide-table td + td {
+  .js .wide-table td + td {
     border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .wide-table td[data-label]::before {
+  .js .wide-table td[data-label]::before {
     display: block;
     margin-bottom: 0.14rem;
     color: var(--muted);

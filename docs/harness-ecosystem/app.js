@@ -23,6 +23,8 @@ docs:
 - docs/design-docs/release-versioning.md
 */
 (function () {
+  document.documentElement.classList.add("js");
+
   const surfaces = {
     foundation: {
       title: "Foundation harness",

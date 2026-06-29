@@ -23,23 +23,24 @@ docs:
 - docs/design-docs/release-versioning.md
 */
 :root {
-  --ink: #171916;
-  --ink-soft: #42483f;
-  --paper: #f5f3ea;
-  --paper-strong: #fffdf5;
-  --paper-muted: #e8e4d5;
-  --graphite: #20231f;
-  --graphite-2: #2a2e29;
-  --line: #d7d0bc;
-  --line-dark: #3d443d;
-  --copper: #c85f24;
-  --teal: #0f8c82;
-  --green: #2f7d44;
-  --violet: #705ca8;
+  color-scheme: dark;
+  --ink: #f4ede5;
+  --ink-soft: #b9aaa0;
+  --paper: #090807;
+  --paper-strong: #161311;
+  --paper-muted: #211a16;
+  --graphite: #120f0d;
+  --graphite-2: #211a16;
+  --line: #3b302b;
+  --line-dark: #654234;
+  --copper: #d46b38;
+  --teal: #4fb7aa;
+  --green: #76b87c;
+  --violet: #b7a0d9;
   --rose: #a33d57;
-  --amber: #9a6b13;
+  --amber: #f2b84b;
   --white: #ffffff;
-  --shadow: 0 22px 70px rgba(23, 25, 22, 0.14);
+  --shadow: 0 18px 54px rgba(0, 0, 0, 0.42);
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
@@ -100,8 +101,8 @@ button {
   gap: 18px;
   min-height: 72px;
   padding: 0 28px;
-  background: rgba(245, 243, 234, 0.92);
-  border-bottom: 1px solid rgba(215, 208, 188, 0.92);
+  background: rgba(9, 8, 7, 0.92);
+  border-bottom: 1px solid var(--line);
   backdrop-filter: blur(18px);
 }
 
@@ -118,7 +119,7 @@ button {
   height: 42px;
   place-items: center;
   background: var(--graphite);
-  color: var(--paper-strong);
+  color: var(--ink);
   border: 1px solid var(--line-dark);
   border-radius: 8px;
   font-family: var(--font-mono);
@@ -218,7 +219,7 @@ button {
   align-items: end;
   overflow: hidden;
   background: var(--graphite);
-  color: var(--paper-strong);
+  color: var(--ink);
 }
 
 .hero-bg,
@@ -229,16 +230,16 @@ button {
 
 .hero-bg {
   background:
-    linear-gradient(90deg, rgba(18, 20, 18, 0.88), rgba(18, 20, 18, 0.42), rgba(18, 20, 18, 0.76)),
+    linear-gradient(90deg, rgba(9, 8, 7, 0.9), rgba(9, 8, 7, 0.56), rgba(9, 8, 7, 0.82)),
     url("assets/harness-network.png") center / cover no-repeat;
   transform: scale(1.01);
 }
 
 .hero-overlay {
   background:
-    linear-gradient(180deg, rgba(18, 20, 18, 0.15), rgba(18, 20, 18, 0.82)),
-    radial-gradient(circle at 18% 92%, rgba(200, 95, 36, 0.28), transparent 36%),
-    radial-gradient(circle at 78% 12%, rgba(15, 140, 130, 0.24), transparent 34%);
+    linear-gradient(180deg, rgba(9, 8, 7, 0.16), rgba(9, 8, 7, 0.86)),
+    radial-gradient(circle at 18% 92%, rgba(212, 107, 56, 0.24), transparent 36%),
+    radial-gradient(circle at 78% 12%, rgba(79, 183, 170, 0.2), transparent 34%);
 }
 
 .hero-content {
@@ -269,14 +270,14 @@ p {
 h1 {
   max-width: 780px;
   margin-bottom: 22px;
-  font-size: 62px;
-  line-height: 0.98;
+  font-size: 46px;
+  line-height: 1.05;
 }
 
 h2 {
   margin-bottom: 18px;
-  font-size: 42px;
-  line-height: 1.08;
+  font-size: 32px;
+  line-height: 1.12;
 }
 
 h3 {
@@ -286,8 +287,8 @@ h3 {
 
 .hero-copy {
   max-width: 760px;
-  color: rgba(255, 253, 245, 0.86);
-  font-size: 20px;
+  color: rgba(244, 237, 229, 0.86);
+  font-size: 18px;
 }
 
 .hero-actions {
@@ -308,13 +309,13 @@ h3 {
 }
 
 .button.primary {
-  background: var(--paper-strong);
-  color: var(--ink);
+  background: var(--copper);
+  color: #fff7ef;
 }
 
 .button.secondary {
-  border: 1px solid rgba(255, 253, 245, 0.46);
-  color: var(--paper-strong);
+  border: 1px solid rgba(244, 237, 229, 0.42);
+  color: var(--ink);
 }
 
 .hero-ribbon {
@@ -322,15 +323,15 @@ h3 {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   width: 100%;
-  border-top: 1px solid rgba(255, 253, 245, 0.22);
-  background: rgba(23, 25, 22, 0.82);
+  border-top: 1px solid rgba(244, 237, 229, 0.18);
+  background: rgba(9, 8, 7, 0.84);
 }
 
 .hero-ribbon span {
   min-height: 72px;
   padding: 22px 24px;
-  border-right: 1px solid rgba(255, 253, 245, 0.16);
-  color: rgba(255, 253, 245, 0.86);
+  border-right: 1px solid rgba(244, 237, 229, 0.14);
+  color: rgba(244, 237, 229, 0.86);
   font-weight: 700;
 }
 
@@ -377,12 +378,12 @@ h3 {
 
 .band {
   background: var(--graphite);
-  color: var(--paper-strong);
+  color: var(--ink);
 }
 
 .band .section-heading p:not(.eyebrow),
 .band p {
-  color: rgba(255, 253, 245, 0.76);
+  color: rgba(244, 237, 229, 0.76);
 }
 
 .problem-grid {
@@ -458,17 +459,17 @@ h3 {
   display: grid;
   gap: 6px;
   padding: 18px;
-  background: rgba(255, 253, 245, 0.06);
-  border-color: rgba(255, 253, 245, 0.16);
+  background: rgba(244, 237, 229, 0.06);
+  border-color: rgba(244, 237, 229, 0.16);
   box-shadow: none;
 }
 
 .value-stack strong {
-  color: var(--paper-strong);
+  color: var(--ink);
 }
 
 .value-stack span {
-  color: rgba(255, 253, 245, 0.76);
+  color: rgba(244, 237, 229, 0.76);
 }
 
 .value-outcome-grid {
@@ -527,7 +528,7 @@ h3 {
   min-height: 132px;
   align-content: start;
   background: var(--graphite);
-  color: var(--paper-strong);
+  color: var(--ink);
   padding: 20px;
 }
 
@@ -536,7 +537,7 @@ h3 {
 }
 
 .metric-strip span {
-  color: rgba(255, 253, 245, 0.72);
+  color: rgba(244, 237, 229, 0.72);
 }
 
 .system-map {
@@ -658,8 +659,8 @@ h3 {
 
 .concept-card {
   overflow: hidden;
-  background: rgba(255, 253, 245, 0.08);
-  border-color: rgba(255, 253, 245, 0.16);
+  background: rgba(244, 237, 229, 0.08);
+  border-color: rgba(244, 237, 229, 0.16);
   box-shadow: none;
 }
 
@@ -671,7 +672,7 @@ h3 {
   align-content: start;
   border: 0;
   background: transparent;
-  color: var(--paper-strong);
+  color: var(--ink);
   padding: 20px;
   text-align: left;
 }
@@ -696,9 +697,9 @@ h3 {
   width: 30px;
   height: 30px;
   place-items: center;
-  border: 1px solid rgba(255, 253, 245, 0.24);
+  border: 1px solid rgba(244, 237, 229, 0.24);
   border-radius: 6px;
-  color: var(--paper-strong);
+  color: var(--ink);
 }
 
 .concept-card.is-open .concept-toggle::after {
@@ -707,7 +708,7 @@ h3 {
 
 .concept-body {
   display: none;
-  border-top: 1px solid rgba(255, 253, 245, 0.14);
+  border-top: 1px solid rgba(244, 237, 229, 0.14);
   padding: 0 20px 20px;
 }
 
@@ -716,11 +717,11 @@ h3 {
 }
 
 .concept-body p {
-  color: rgba(255, 253, 245, 0.76);
+  color: rgba(244, 237, 229, 0.76);
 }
 
 .concept-body .detail {
-  color: rgba(255, 253, 245, 0.58);
+  color: rgba(244, 237, 229, 0.58);
 }
 
 .drilldown-shell {
@@ -767,7 +768,7 @@ h3 {
 .drilldown-tab:hover,
 .drilldown-tab.is-active {
   border-color: var(--copper);
-  background: #fff9ec;
+  background: var(--paper-muted);
   box-shadow: 0 14px 32px rgba(200, 95, 36, 0.13);
 }
 
@@ -817,7 +818,7 @@ h3 {
   gap: 8px;
   align-items: baseline;
   padding: 20px 28px;
-  background: #f1ead8;
+  background: var(--paper-muted);
 }
 
 .check-list {
@@ -943,8 +944,8 @@ h3 {
 .timeline article {
   min-height: 270px;
   padding: 24px;
-  background: rgba(255, 253, 245, 0.08);
-  border-color: rgba(255, 253, 245, 0.16);
+  background: rgba(244, 237, 229, 0.08);
+  border-color: rgba(244, 237, 229, 0.16);
   box-shadow: none;
 }
 
@@ -959,11 +960,11 @@ h3 {
 }
 
 .timeline h3 {
-  color: var(--paper-strong);
+  color: var(--ink);
 }
 
 .timeline p {
-  color: rgba(255, 253, 245, 0.74);
+  color: rgba(244, 237, 229, 0.74);
 }
 
 .pilot-scorecard {
@@ -972,14 +973,14 @@ h3 {
   gap: 1px;
   margin-top: 18px;
   overflow: hidden;
-  border: 1px solid rgba(255, 253, 245, 0.16);
+  border: 1px solid rgba(244, 237, 229, 0.16);
   border-radius: 8px;
-  background: rgba(255, 253, 245, 0.16);
+  background: rgba(244, 237, 229, 0.16);
 }
 
 .pilot-scorecard div {
   min-height: 150px;
-  background: rgba(255, 253, 245, 0.08);
+  background: rgba(244, 237, 229, 0.08);
   padding: 22px;
 }
 
@@ -991,7 +992,7 @@ h3 {
 
 .pilot-scorecard p {
   margin: 0;
-  color: rgba(255, 253, 245, 0.74);
+  color: rgba(244, 237, 229, 0.74);
 }
 
 .glossary-tools {
@@ -1028,9 +1029,9 @@ h3 {
 }
 
 .filter-chip.is-active {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--paper-strong);
+  border-color: var(--copper);
+  background: var(--copper);
+  color: #fff7ef;
 }
 
 .glossary-list {
@@ -1069,17 +1070,17 @@ h3 {
 }
 
 .source-notes {
-  background: #ebe6d8;
+  background: var(--paper-muted);
 }
 
 .repo-link {
   display: inline-flex;
   align-items: center;
   min-height: 42px;
-  border: 1px solid var(--graphite);
+  border: 1px solid var(--copper);
   border-radius: 8px;
-  background: var(--graphite);
-  color: var(--paper);
+  background: var(--copper);
+  color: #fff7ef;
   padding: 0 14px;
   font-weight: 900;
   text-decoration: none;
@@ -1114,7 +1115,7 @@ h3 {
   gap: 18px;
   border-top: 1px solid var(--line);
   background: var(--graphite);
-  color: rgba(255, 253, 245, 0.78);
+  color: rgba(244, 237, 229, 0.78);
   padding: 26px 28px;
 }
 
@@ -1123,7 +1124,7 @@ h3 {
 }
 
 .footer a {
-  color: var(--paper-strong);
+  color: var(--ink);
   font-weight: 800;
   text-decoration: none;
 }
@@ -1142,7 +1143,7 @@ h3 {
     display: none;
   }
 
-  .nav-toggle {
+  .js .nav-toggle {
     display: inline-flex;
     justify-self: end;
   }
@@ -1151,7 +1152,7 @@ h3 {
     display: none;
   }
 
-  .mobile-nav.is-open {
+  .mobile-nav {
     position: absolute;
     top: 72px;
     right: 18px;
@@ -1165,12 +1166,21 @@ h3 {
     box-shadow: var(--shadow);
   }
 
+  .js .mobile-nav {
+    display: none;
+  }
+
+  .js .mobile-nav.is-open {
+    display: grid;
+  }
+
   h1 {
-    font-size: 52px;
+    font-size: 40px;
+    line-height: 1.08;
   }
 
   h2 {
-    font-size: 36px;
+    font-size: 30px;
   }
 
   .problem-grid,
@@ -1223,7 +1233,7 @@ h3 {
   }
 
   .hero {
-    min-height: 780px;
+    min-height: 680px;
   }
 
   .hero-content {
@@ -1232,15 +1242,17 @@ h3 {
   }
 
   h1 {
-    font-size: 42px;
+    font-size: 34px;
+    line-height: 1.1;
   }
 
   h2 {
-    font-size: 31px;
+    font-size: 26px;
+    line-height: 1.14;
   }
 
   .hero-copy {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .hero-ribbon {
@@ -1292,6 +1304,72 @@ h3 {
 
   .footer {
     display: grid;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    min-height: 64px;
+    padding: 0 14px;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .mobile-nav {
+    top: 64px;
+    right: 12px;
+    left: 12px;
+  }
+
+  .hero {
+    min-height: 600px;
+  }
+
+  .hero-content {
+    width: calc(100% - 28px);
+    margin-bottom: 34px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  h2 {
+    font-size: 23px;
+  }
+
+  h3 {
+    font-size: 18px;
+  }
+
+  .section,
+  .band {
+    padding: 52px 14px;
+  }
+
+  .hero-actions {
+    display: grid;
+  }
+
+  .button {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .drilldown-panel-header,
+  .drilldown-columns div,
+  .drilldown-proof,
+  .surface-detail,
+  .repo-note,
+  .callout,
+  .problem-grid article,
+  .value-outcome-grid article,
+  .timeline article,
+  .glossary-item {
+    padding: 18px;
   }
 }
 
