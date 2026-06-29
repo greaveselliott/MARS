@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.22] - 2026-06-29
+<!-- mars-release: version=0.68.22 commit=672b1e3a03fb -->
+
+### Impact
+- **architecture:** Operators and future agents get an audit-backed map from AWS agentic AI patterns to MARS's local cognition-orchestration architecture, making the proposed workflow evolution easier to inspect and plan.
+
+### Why
+- **architecture:** The AWS guidance points at a significant natural evolution for MARS, but the repo needed a durable record that separates reusable local architecture ideas from AWS managed-service assumptions before any implementation work begins.
+
+### What Changed
+- **architecture:** Added a cognition orchestration design doc with the complete AWS coverage ledger, page-by-page MARS relevance matrix, local service-equivalence table, AD-307, architecture implications, implementation slices, confidence matrix, and source/deployed classification summary (672b1e3).
+
+### Documentation
+- **architecture:** Map cognition orchestration patterns (672b1e3)
+
 ## [0.68.21] - 2026-06-29
 <!-- mars-release: version=0.68.21 commit=8efe506ffef7 -->
 
