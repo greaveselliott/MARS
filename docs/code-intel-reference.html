@@ -148,17 +148,19 @@ docs:
           <h2>Runtime Context</h2>
           <p>
             When code intelligence is enabled and a role is allowed to use
-            code-intel tools, MARS refreshes the local graph and assembles a
-            compact <code>## CODE GRAPH CONTEXT</code> block before the model
-            loop starts. The context can include freshness state, changed-path
-            impact hints, related tests, and documentation candidates. If the
-            graph cannot be refreshed, traces record unavailable evidence
-            rather than pretending the graph was useful.
+            code-intel tools, MARS attempts a bounded auto-refresh of the local
+            graph and assembles a compact <code>## CODE GRAPH CONTEXT</code>
+            block before the model loop starts. The context can include
+            freshness state, changed-path impact hints, related tests, and
+            documentation candidates. Large stale sets are intentionally left
+            stale so users can refresh deliberately with <code>code_index</code>.
+            If the graph cannot be refreshed, traces record unavailable
+            evidence rather than pretending the graph was useful.
           </p>
           <div class="concept-grid">
             <article data-doc-filter>
               <h3>Freshness is visible</h3>
-              <p>Search, snippet, trace, and impact output disclose whether indexed evidence is fresh, stale, partial, missing, or unavailable.</p>
+              <p>Search, snippet, trace, and impact output disclose fresh, stale, or missing state. <code>code_index</code> can report partial indexing, and metrics or traces can report unavailable graph context.</p>
             </article>
             <article data-doc-filter>
               <h3>Graph evidence is bounded</h3>
@@ -316,9 +318,9 @@ mars validation agent-smoke --cleanup-only</code></pre>
           <h2>State And Reports</h2>
           <p>
             Code intelligence stores index and trace evidence in the MARS
-            SQLite database, not in target source files. Runtime commands reject
-            database paths inside the target repo so local state does not become
-            product content by accident.
+            SQLite database, not in target source files. Code-intel commands
+            reject database and benchmark report paths inside the target repo
+            so local state does not become product content by accident.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
@@ -379,8 +381,8 @@ mars validation agent-smoke --cleanup-only</code></pre>
                 <tr><td>No <code>## CODE GRAPH CONTEXT</code> appears in dry-run output.</td><td>Code intelligence is disabled, the role lacks code-intel tools, or graph refresh failed.</td><td>Check <code>--code-intel</code>, <code>MARS_CODE_INTEL_ENABLED</code>, local config, and the role manifest tool allowlist.</td></tr>
                 <tr><td>Metrics show disabled jobs.</td><td>A flag, env var, or config disabled code intelligence.</td><td>Run with <code>--code-intel true</code> or clear the env override.</td></tr>
                 <tr><td>Metrics show unavailable jobs.</td><td>The graph could not refresh or persisted evidence is incomplete.</td><td>Run <code>mars tools run code_index --repo /path/to/repo --args-json '{"full":false}' --json</code> and inspect the error.</td></tr>
-                <tr><td>Search finds stale or partial results.</td><td>The repo changed after the last index run or parser support is partial.</td><td>Refresh the index and confirm important decisions with source reads.</td></tr>
-                <tr><td><code>--db</code> is rejected.</td><td>The path is inside the target repo or otherwise unsafe as runtime state.</td><td>Use the default per-repo database or another path outside the checkout.</td></tr>
+                <tr><td>Search finds stale results, or indexing reports partial results.</td><td>The repo changed after the last index run, the auto-refresh was intentionally bounded, or parser support is partial.</td><td>Refresh the index and confirm important decisions with source reads.</td></tr>
+                <tr><td><code>--db</code> is rejected by a code-intel command.</td><td>The path is inside the target repo or otherwise unsafe as runtime state.</td><td>Use the default per-repo database or another path outside the checkout.</td></tr>
                 <tr><td><code>--report</code> is rejected.</td><td>Benchmark reports must be outside the target repo.</td><td>Write the raw JSON outside the checkout and summarize durable evidence in a repo doc if needed.</td></tr>
                 <tr><td>Agent-smoke output is being used as product acceptance.</td><td>Agent smoke validates role/runtime behavior, not target product behavior.</td><td>Pair it with product-specific build, test, smoke, or E2E evidence.</td></tr>
               </tbody>
