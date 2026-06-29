@@ -17,6 +17,11 @@ docs:
 - docs/dashboard-api-reference.html
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
+- docs/cli-reference.html
+- docs/observability-guide.html
+- docs/safety-quality-guide.html
+- docs/code-intel-reference.html
+- docs/checks-evidence-guide.html
 -->
 <html lang="en">
   <head>
@@ -41,13 +46,14 @@ docs:
         </span>
       </a>
       <nav class="top-nav" aria-label="Primary documentation">
-        <a href="index.html">Docs Home</a>
-        <a href="cli-reference.html">CLI Reference</a>
-        <a href="harness-guide.html">Harness Guide</a>
+        <a href="index.html">Home</a>
+        <a href="index.html#catalog">Catalog</a>
+        <a href="quickstart.html">Quickstart</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="cli-reference.html">CLI</a>
         <a href="operations-guide.html">Operations</a>
-        <a href="models-guide.html">Models</a>
-        <a href="tools-mcp-guide.html">Tools/MCP</a>
-        <a href="harness-ecosystem/">Explainer</a>
+        <a href="release-update-guide.html">Release</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
       </nav>
     </header>
 
@@ -64,6 +70,7 @@ docs:
           <a href="#first-target">First Target</a>
           <a href="#safe-inspection">Safe Inspection</a>
           <a href="#run-loop">Run The Loop</a>
+          <a href="#checks">Recorded Checks</a>
           <a href="#dashboard">Dashboard</a>
           <a href="#models">Model Routing</a>
           <a href="#updates">Updates</a>
@@ -194,6 +201,57 @@ mars serve --addr :9091 --concurrency 2</code></pre>
               </tbody>
             </table>
           </div>
+        </section>
+
+        <section class="doc-section" id="checks">
+          <h2>Record Local Check Evidence</h2>
+          <p>
+            Use <code>mars checks run</code> when a build, test, lint, smoke,
+            or release gate should become MARS evidence instead of terminal
+            scrollback. The command runs inside the target repo, streams the
+            check output to your terminal, and records a scoring outcome in the
+            repo database so MARS can use it in quality reports and repair
+            routing.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Record a passing check</h3>
+              <pre><code>mars checks run --repo ~/my-project --name go-test -- go test ./...
+mars scores export --repo ~/my-project --window-days 30</code></pre>
+              <p>Refresh <code>docs/QUALITY_SCORE.md</code> when a quality or readiness claim depends on the new check evidence.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Attribute evidence to a role</h3>
+              <pre><code>mars checks run \
+  --repo ~/my-project \
+  --role qa \
+  --name browser-smoke \
+  -- npm test</code></pre>
+              <p><code>--role</code> defaults to <code>engineer</code>. Use a stable role when the result should influence that role's quality trail.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Preserve failed evidence</h3>
+              <pre><code>mars checks run --repo ~/my-project --name go-test -- go test ./...</code></pre>
+              <p>If the command fails, MARS still records <code>checks_failed</code>, then exits non-zero with the check exit code in the error message.</p>
+            </article>
+          </div>
+          <div class="callout">
+            <strong>What is stored:</strong>
+            <code>mars checks run</code> records one scoring outcome row with
+            the check name, command argv, exit code, duration, role, repo ID,
+            and timestamp. It does not store stdout or stderr, and it does not
+            write <code>.mars/checks/latest.json</code>.
+          </div>
+          <p>
+            For full semantics, DB behavior, failure routing, and inspection
+            options, open the <a href="checks-evidence-guide.html">Local Checks
+            Evidence Guide</a>. For command flags, see
+            <a href="cli-reference.html#operations">CLI operations</a>. For
+            quality interpretation, see
+            <a href="observability-guide.html#evidence-workflow">evidence workflow</a>,
+            <a href="safety-quality-guide.html#quality-score">quality score export</a>,
+            and <a href="code-intel-reference.html#checks-validation">checks and validation boundaries</a>.
+          </p>
         </section>
 
         <section class="doc-section" id="dashboard">

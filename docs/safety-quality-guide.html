@@ -7,6 +7,11 @@ docs:
 - docs/guardrails-reference.html
 - docs/guardrails-guide.md
 - docs/auth-credentials-reference.html
+- docs/checks-evidence-guide.html
+- docs/cli-reference.html
+- docs/workflows.html
+- docs/observability-guide.html
+- docs/code-intel-reference.html
 - docs/product-specs/product-surface.md
 - docs/design-docs/guardrails.md
 - docs/design-docs/scoring-system.md
@@ -38,13 +43,14 @@ docs:
         </span>
       </a>
       <nav class="top-nav" aria-label="Primary documentation">
-        <a href="index.html">Docs Home</a>
-        <a href="harness-guide.html">Harness</a>
+        <a href="index.html">Home</a>
+        <a href="index.html#catalog">Catalog</a>
+        <a href="quickstart.html">Quickstart</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="cli-reference.html">CLI</a>
         <a href="operations-guide.html">Operations</a>
-        <a href="guardrails-reference.html">Guardrails</a>
-        <a href="auth-credentials-reference.html">Auth</a>
-        <a href="tools-mcp-guide.html">Tools/MCP</a>
         <a href="release-update-guide.html">Release</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
       </nav>
     </header>
 
@@ -298,6 +304,13 @@ mars scores export --repo ~/my-project --window-days 30</code></pre>
               <pre><code>mars scores export \
   --repo ~/my-project \
   --db ~/.mars/db/my-project/mars.db</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Record a check first</h3>
+              <pre><code>mars checks run --repo ~/my-project --name go-test -- go test ./...
+mars scores export --repo ~/my-project --window-days 30</code></pre>
+              <p>Use this when a test, build, lint, smoke, or release command should count in the quality record.</p>
+              <p><a href="checks-evidence-guide.html">Open the local checks guide</a></p>
             </article>
           </div>
         </section>

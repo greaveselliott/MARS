@@ -7,6 +7,9 @@ docs:
 - docs/workflows.html
 - docs/cli-reference.html
 - docs/code-intel-reference.html
+- docs/checks-evidence-guide.html
+- docs/observability-guide.html
+- docs/safety-quality-guide.html
 - docs/product-specs/product-surface.md
 - docs/design-docs/dashboard.md
 - docs/design-docs/pipeline-engine.md
@@ -40,13 +43,14 @@ docs:
         </span>
       </a>
       <nav class="top-nav" aria-label="Primary documentation">
-        <a href="index.html">Docs Home</a>
-        <a href="cli-reference.html">CLI Reference</a>
+        <a href="index.html">Home</a>
+        <a href="index.html#catalog">Catalog</a>
+        <a href="quickstart.html">Quickstart</a>
         <a href="workflows.html">Workflows</a>
-        <a href="harness-guide.html">Harness</a>
-        <a href="models-guide.html">Models</a>
-        <a href="tools-mcp-guide.html">Tools/MCP</a>
-        <a href="code-intel-reference.html">Code Intel</a>
+        <a href="cli-reference.html">CLI</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="release-update-guide.html">Release</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
       </nav>
     </header>
 
@@ -379,6 +383,12 @@ mars serve --log-file ~/.mars/traces/logs/orchestrator.log</code></pre>
               <h3>Run one role with a trace</h3>
               <pre><code>mars run engineer --repo ~/my-project --trace --debug</code></pre>
               <p>Use this to inspect one role's prompt, tools, model tier, and turn evidence without the full queue loop.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Record a local check</h3>
+              <pre><code>mars checks run --repo ~/my-project --name go-test -- go test ./...</code></pre>
+              <p>MARS stores whether the command passed or failed in the repo database. It does not write a check file into the target repo.</p>
+              <p><a href="checks-evidence-guide.html">Open the local checks guide</a></p>
             </article>
             <article data-doc-filter>
               <h3>Check runtime health</h3>

@@ -1,0 +1,264 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/workflows.html
+- docs/cli-reference.html
+- docs/observability-guide.html
+- docs/safety-quality-guide.html
+- docs/code-intel-reference.html
+- docs/operations-guide.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/scoring-system.md
+- docs/features/F-008-scoring-trust-quality.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Local Checks Evidence Guide</title>
+    <meta
+      name="description"
+      content="Plain guide to using mars checks run to record local test, build, lint, smoke, and release check results as MARS evidence."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to local checks guide</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Local checks</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Home</a>
+        <a href="index.html#catalog">Catalog</a>
+        <a href="quickstart.html">Quickstart</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="cli-reference.html">CLI</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="release-update-guide.html">Release</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Local checks sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search local checks</label>
+          <input id="docSearch" type="search" placeholder="test, failed, score">
+          <p class="search-hint">Filters commands, storage notes, and recovery rows.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#when">When To Use It</a>
+          <a href="#quick-path">Quick Path</a>
+          <a href="#what-happens">What Happens</a>
+          <a href="#failures">Failed Checks</a>
+          <a href="#stored">What Gets Stored</a>
+          <a href="#inspect">Inspect Evidence</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Evidence</p>
+            <h1>Record local checks so MARS can use the result.</h1>
+            <p class="lede">
+              A local check is a command you already trust, such as a test,
+              build, lint, smoke test, or release gate. <code>mars checks run</code>
+              runs that command and records whether it passed or failed.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="when">
+          <h2>When To Use It</h2>
+          <p>
+            Use <code>mars checks run</code> when the result should count as
+            evidence for MARS. Do not use it for one-off exploration.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Use it for</th><th>Do not use it for</th></tr></thead>
+              <tbody>
+                <tr><td>A test command that proves a ticket or fix.</td><td>Listing files or checking what folder you are in.</td></tr>
+                <tr><td>A build, lint, smoke, or release check.</td><td>Commands that print secrets or private logs.</td></tr>
+                <tr><td>A repeatable command you would mention in a review.</td><td>Broad discovery commands that do not prove behavior.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="quick-path">
+          <h2>Quick Path</h2>
+          <ol class="step-list" data-doc-filter>
+            <li>
+              <h3>Run the check through MARS</h3>
+              <pre><code>mars checks run --repo ~/my-project --name go-test -- go test ./...</code></pre>
+              <p>The command after <code>--</code> runs inside <code>~/my-project</code>.</p>
+            </li>
+            <li>
+              <h3>Refresh the quality file if the result matters</h3>
+              <pre><code>mars scores export --repo ~/my-project --window-days 30</code></pre>
+              <p>This updates <code>docs/QUALITY_SCORE.md</code> from the latest score and check evidence.</p>
+            </li>
+            <li>
+              <h3>Commit the quality file when it supports your claim</h3>
+              <p>
+                Commit <code>docs/QUALITY_SCORE.md</code> only when the change
+                is useful review evidence. The check itself is stored in the
+                local MARS database.
+              </p>
+            </li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="what-happens">
+          <h2>What Happens</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>The check runs in the target repo</h3>
+              <p>
+                MARS changes into the repo from <code>--repo</code>, then runs
+                the command after <code>--</code>. It does not use a shell
+                unless you ask for one, for example <code>-- sh -c "..."</code>.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>The output still goes to your terminal</h3>
+              <p>
+                You see stdout and stderr while the command runs. MARS records
+                the result, not the full output.
+              </p>
+            </article>
+            <article data-doc-filter>
+              <h3>The result becomes scoring evidence</h3>
+              <p>
+                A passing command records <code>checks_passed</code>. A failing
+                command records <code>checks_failed</code>.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="failures">
+          <h2>Failed Checks</h2>
+          <p>
+            A failed check is still useful evidence. MARS records it first,
+            then exits non-zero.
+          </p>
+          <pre data-doc-filter><code>mars checks run --repo ~/my-project --name unit -- go test ./...</code></pre>
+          <p>
+            If <code>go test ./...</code> exits with code <code>1</code>, MARS
+            records <code>checks_failed</code> and then returns an error like:
+          </p>
+          <pre><code>checks run: command failed with exit code 1</code></pre>
+          <div class="callout">
+            Do not hide failing checks. They help MARS route repair work and
+            stop people claiming a repo is healthy when it is not.
+          </div>
+        </section>
+
+        <section class="doc-section" id="stored">
+          <h2>What Gets Stored</h2>
+          <p>
+            MARS stores one row in the scoring database. It does not write a
+            file into the target repo.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Stored</th><th>Not stored</th></tr></thead>
+              <tbody>
+                <tr><td>Check name from <code>--name</code>.</td><td>Full stdout.</td></tr>
+                <tr><td>Command arguments.</td><td>Full stderr.</td></tr>
+                <tr><td>Exit code and duration.</td><td><code>.mars/checks/latest.json</code>.</td></tr>
+                <tr><td>Repo ID, role, and timestamp.</td><td>Secret values outside the command arguments.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            The default database is <code>~/.mars/db/{repo-name}/mars.db</code>.
+            Use <code>--db</code> only when you intentionally use another MARS
+            database outside the target repo.
+          </p>
+        </section>
+
+        <section class="doc-section" id="inspect">
+          <h2>Inspect Evidence</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Refresh the repo quality file</h3>
+              <pre><code>mars scores export --repo ~/my-project --window-days 30</code></pre>
+              <p>Use this when you want the check result reflected in <code>docs/QUALITY_SCORE.md</code>.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Look for failed-check repair work</h3>
+              <pre><code>mars serve --addr :9091</code></pre>
+              <p>When the repo is registered and the role exists, the survey loop can route recent failed checks to <code>pipeline-fixer</code>.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Keep terminal output separately if needed</h3>
+              <pre><code>mars checks run --repo ~/my-project --name go-test-log -- bash -lc 'set -o pipefail; go test ./... 2&gt;&amp;1 | tee /tmp/go-test.log'</code></pre>
+              <p>MARS stores the result, not the full output. If a reviewer needs the full log, save it separately and keep secrets out of it.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Go tests</h3>
+              <pre><code>mars checks run --repo ~/my-project --name go-test -- go test ./...</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Node tests</h3>
+              <pre><code>mars checks run --repo ~/my-project --role qa --name npm-test -- npm test</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Build check</h3>
+              <pre><code>mars checks run --repo ~/my-project --name build -- npm run build</code></pre>
+            </article>
+            <article data-doc-filter>
+              <h3>Shell command</h3>
+              <pre><code>mars checks run --repo ~/my-project --name combined -- sh -c "go test ./... && go vet ./..."</code></pre>
+              <p>Use a shell only when you need shell behavior such as <code>&amp;&amp;</code>.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Problem</th><th>What it means</th><th>What to do</th></tr></thead>
+              <tbody>
+                <tr><td><code>--repo is required</code></td><td>MARS needs to know which repo owns the evidence.</td><td>Pass <code>--repo /path/to/repo</code>.</td></tr>
+                <tr><td><code>--name is required</code></td><td>Every check needs a stable name.</td><td>Use names such as <code>go-test</code>, <code>build</code>, or <code>browser-smoke</code>.</td></tr>
+                <tr><td>The command after <code>--</code> is not found.</td><td>The command is run directly in the target repo.</td><td>Use the real executable, or use <code>sh -c</code> when you need shell syntax.</td></tr>
+                <tr><td><code>mars scores</code> does not show the new result.</td><td>The check was recorded as an outcome; cached role scores are separate.</td><td>Run <code>mars scores export --repo ...</code> to refresh <code>docs/QUALITY_SCORE.md</code>.</td></tr>
+                <tr><td>You need full failure logs later.</td><td>MARS does not store stdout or stderr for the check.</td><td>Save output with your own log command and keep secrets out of logs.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>Good evidence is repeatable, named, and easy for the next person to inspect.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

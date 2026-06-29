@@ -43,6 +43,7 @@ docs:
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
 - docs/code-intel-reference.html
+- docs/checks-evidence-guide.html
 - docs/safety-quality-guide.html
 - docs/release-update-guide.html
 - docs/integrations-validation-guide.html
@@ -78,33 +79,14 @@ docs:
         </span>
       </a>
       <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Home</a>
+        <a href="index.html#catalog">Catalog</a>
         <a href="quickstart.html">Quickstart</a>
-        <a href="install-setup-reference.html">Setup</a>
-        <a href="shell-integration-reference.html">Shell</a>
-        <a href="auth-credentials-reference.html">Auth</a>
-        <a href="#catalog">Catalog</a>
-        <a href="cli-reference.html">CLI Reference</a>
         <a href="workflows.html">Workflows</a>
-        <a href="planning-delivery-guide.html">Delivery</a>
-        <a href="target-lifecycle-reference.html">Lifecycle</a>
-        <a href="harness-guide.html">Harness Guide</a>
-        <a href="bundle-reference.html">Bundle</a>
+        <a href="cli-reference.html">CLI</a>
         <a href="operations-guide.html">Operations</a>
-        <a href="files-state-reference.html">Files</a>
-        <a href="dashboard-api-reference.html">API</a>
-        <a href="models-guide.html">Models</a>
-        <a href="tools-mcp-guide.html">Tools/MCP</a>
-        <a href="roles-guide.html">Roles</a>
-        <a href="configuration-reference.html">Config</a>
-        <a href="documentation-sync-guide.html">DocSync</a>
-        <a href="code-intel-reference.html">Code Intel</a>
-        <a href="observability-guide.html">Observe</a>
-        <a href="safety-quality-guide.html">Safety</a>
-        <a href="guardrails-reference.html">Guardrails</a>
         <a href="release-update-guide.html">Release</a>
-        <a href="integrations-validation-guide.html">Integrations</a>
-        <a href="troubleshooting-guide.html">Troubleshoot</a>
-        <a href="harness-ecosystem/">Explainer</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
       </nav>
     </header>
 
@@ -143,14 +125,12 @@ docs:
       <main id="main" tabindex="-1">
         <section class="hero" id="overview">
           <div class="hero-copy">
-            <p class="eyebrow">Self-hosted autonomous delivery</p>
-            <h1>Build, run, govern, and improve local AI engineering agents.</h1>
+            <p class="eyebrow">MARS docs</p>
+            <h1>Install MARS. Point it at a repo. See what it does.</h1>
             <p class="lede">
-              MARS installs a local-first agent operating system for a target
-              repository: roles, guardrails, tools, tickets, BDD feature
-              contracts, traces, scoring, trust, release discipline, and
-              documentation sync. This site is the user-facing map for the
-              system.
+              MARS runs local AI engineering agents for a target repository.
+              These docs explain how to install it, run it safely, inspect the
+              evidence, and update or remove it when needed.
             </p>
             <div class="hero-actions" aria-label="Start points">
               <a class="button primary" href="#quickstart">Start with the quickstart</a>
@@ -206,11 +186,9 @@ docs:
         <section class="doc-section" id="deep-guides">
           <h2>User Guides</h2>
           <p>
-            Use these pages when you need more than the front-door overview.
-            They expand the documentation site into task and reference material
-            for day-to-day users. The catalog below adds the durable repo
-            artifacts that define plans, tickets, quality evidence, validation,
-            runbooks, references, and product contracts.
+            Start here when you know the job you want to do. The catalog below
+            links the deeper repo documents for plans, tickets, quality,
+            validation, runbooks, references, and product specs.
           </p>
           <div class="reference-grid">
             <a href="quickstart.html">Quickstart Guide</a>
@@ -229,6 +207,7 @@ docs:
             <a href="models-guide.html">Models And Inference Guide</a>
             <a href="tools-mcp-guide.html">Tools And MCP Guide</a>
             <a href="code-intel-reference.html">Code Intelligence And Evidence Reference</a>
+            <a href="checks-evidence-guide.html">Local Checks Evidence Guide</a>
             <a href="roles-guide.html">Roles And Agents Guide</a>
             <a href="configuration-reference.html">Configuration Reference</a>
             <a href="documentation-sync-guide.html">Documentation Sync Guide</a>
@@ -245,9 +224,8 @@ docs:
         <section class="doc-section" id="catalog">
           <h2>Documentation Catalog</h2>
           <p>
-            Use this catalog when you need the right document for a job, not
-            just the next page in a tour. The search box filters these entries
-            by command, artifact, workflow, and operating-model term.
+            Use this when you need the right page fast. The search box filters
+            these entries by command, file, workflow, and topic.
           </p>
           <div class="reference-stack">
             <article data-doc-filter>
@@ -289,6 +267,8 @@ docs:
                 <dd>Universal tools, MCP serving, trust levels, allowlists, tool categories, and the formal tool creation path.</dd>
                 <dt><a href="code-intel-reference.html">Code Intelligence And Evidence Reference</a></dt>
                 <dd>Repo graph context, code-intel tools, metrics, benchmark boundaries, checks, and validation recipes.</dd>
+                <dt><a href="checks-evidence-guide.html">Local Checks Evidence Guide</a></dt>
+                <dd>How to record local test, build, lint, smoke, and release checks so MARS can use the result.</dd>
                 <dt><a href="observability-guide.html">Observability And Evidence Guide</a></dt>
                 <dd>Dashboard, terminal status, logs, traces, quality score, telemetry, privacy, and evidence workflows.</dd>
                 <dt><a href="safety-quality-guide.html">Safety, Trust, And Quality Guide</a> and <a href="guardrails-reference.html">Guardrails Reference</a></dt>
@@ -311,7 +291,7 @@ docs:
                 <dt><a href="tickets/README.md">Ticket lifecycle guide</a></dt>
                 <dd>Backlog, in-progress, in-review, done, evidence fields, intervention debt, and direct-main completion rules.</dd>
                 <dt><a href="QUALITY_SCORE.md">Quality score</a></dt>
-                <dd>Repo-visible quality evidence generated from scores, telemetry, tickets, checks, dogfood, and human follow-up.</dd>
+                <dd>A repo-visible quality record generated from scores, telemetry, tickets, checks, dogfood, and human follow-up.</dd>
                 <dt><a href="planning-delivery-guide.html">Planning And Delivery Guide</a></dt>
                 <dd>User-facing explanation of goals, plans, tickets, BDD, role handoffs, evidence gates, and release review.</dd>
               </dl>
@@ -402,7 +382,7 @@ docs:
                   <td>Tools, MCP, code intelligence, and checks</td>
                   <td>Implemented</td>
                   <td>Tool registry, MCP serving, trust-aware allowlists, code graph context, metrics, benchmarks, and recorded checks.</td>
-                  <td>Grant contributor trust only when a client should mutate files or run mutating tools. See <a href="tools-mcp-guide.html">tools/MCP</a> and <a href="code-intel-reference.html">code intelligence</a>.</td>
+                  <td>Grant contributor trust only when a client should mutate files or run mutating tools. See <a href="tools-mcp-guide.html">tools/MCP</a>, <a href="code-intel-reference.html">code intelligence</a>, and <a href="checks-evidence-guide.html">local checks</a>.</td>
                 </tr>
                 <tr>
                   <td>Safety, trust, scores, and telemetry</td>
@@ -709,11 +689,11 @@ mars eject --repo /path/to/repo --apply --confirm repo</code></pre>
                 <tr><td><code>mars mcp serve</code></td><td>Expose registered tools to MCP-compatible clients.</td><td><code>--repo</code>, <code>--allowlist</code>, <code>--role</code>, <code>--trust</code>, <code>--max-output-bytes</code>.</td></tr>
                 <tr><td><code>mars models</code></td><td>Inspect eligible model bundles, evaluate candidates, set overrides, and manage local provider credentials.</td><td><code>eligible</code>, <code>list</code>, <code>evaluate</code>, <code>override</code>, <code>credentials write-local-env</code>.</td></tr>
                 <tr><td><code>mars guardrails</code></td><td>Scan for secrets or install optional git hooks.</td><td><code>secret-scan</code>, <code>install-hooks</code>, <code>--repo</code>, <code>--staged</code>, <code>--json</code>.</td></tr>
-                <tr><td><code>mars scores</code></td><td>View role scores and export repo-visible quality evidence.</td><td><code>export --repo . --window-days 30 --create-intervention-debt</code>.</td></tr>
+                <tr><td><code>mars scores</code></td><td>View role scores and export a repo-visible quality record.</td><td><code>export --repo . --window-days 30 --create-intervention-debt</code>.</td></tr>
                 <tr><td><code>mars trust</code></td><td>View or override progressive autonomy levels.</td><td><code>set &lt;role&gt; &lt;repo&gt; observer|contributor|autonomous --reason ...</code>.</td></tr>
                 <tr><td><code>mars telemetry</code></td><td>Inspect, preview, export, send, collect, or triage anonymous foundation telemetry.</td><td><code>status</code>, <code>preview</code>, <code>export</code>, <code>send</code>, <code>collect</code>, <code>triage-foundation</code>.</td></tr>
                 <tr><td><code>mars release</code></td><td>Generate notes, backfill narrative, audit tags, build assets, and verify release artifacts.</td><td><code>notes</code>, <code>backfill-notes</code>, <code>audit</code>, <code>publish-assets</code>, <code>verify-assets</code>.</td></tr>
-                <tr><td><code>mars checks run</code></td><td>Run a local check command and record the outcome for orchestration.</td><td><code>--repo</code>, <code>--db</code>, <code>--name</code>, <code>--role</code>, then <code>-- &lt;command&gt;</code>.</td></tr>
+                <tr><td><code>mars checks run</code></td><td>Run a local check command and record whether it passed or failed.</td><td><code>--repo</code>, <code>--db</code>, <code>--name</code>, <code>--role</code>, then <code>-- &lt;command&gt;</code>.</td></tr>
                 <tr><td><code>mars docsync audit</code></td><td>Audit source files for top-of-file MarsDocSync metadata and associated docs.</td><td><code>--repo</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars code-intel</code></td><td>Measure code graph context efficiency and run local control/treatment benchmarks.</td><td><code>metrics</code>, <code>benchmark</code>. See the <a href="code-intel-reference.html">Code Intelligence Reference</a>.</td></tr>
                 <tr><td><code>mars validation agent-smoke</code></td><td>Run compartmentalized role smoke tests against ephemeral validation targets.</td><td><code>--suite</code>, <code>--role</code>, <code>--case</code>, <code>--project-type</code>, <code>--fixture-only</code>, <code>--report</code>.</td></tr>
@@ -1205,8 +1185,8 @@ roles:
           <h2>Reference Map</h2>
           <p>
             This site is the user front door. User guides explain how to use
-            MARS day to day; durable source documents carry deeper contracts
-            for maintainers and advanced operators.
+            MARS day to day; linked repo docs carry the deeper contracts for
+            maintainers and advanced operators.
           </p>
           <div class="reference-grid">
             <a href="quickstart.html">Quickstart guide</a>
@@ -1224,6 +1204,7 @@ roles:
             <a href="models-guide.html">Models and inference guide</a>
             <a href="tools-mcp-guide.html">Tools and MCP guide</a>
             <a href="code-intel-reference.html">Code intelligence and evidence reference</a>
+            <a href="checks-evidence-guide.html">Local checks evidence guide</a>
             <a href="roles-guide.html">Roles and agents guide</a>
             <a href="configuration-reference.html">Configuration reference</a>
             <a href="documentation-sync-guide.html">Documentation sync guide</a>

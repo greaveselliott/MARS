@@ -29,9 +29,10 @@ gateway, auth boundary, and runtime state owner.
 
 Documentation site status: the repository GitHub Pages site is published from
 `/docs`, and `docs/index.html` is the user-facing developer documentation front
-door. It documents installation, setup, CLI workflows, target harness
+door with a dark default theme, stable compact header navigation, and a
+searchable catalog. It documents installation, setup, CLI workflows, target harness
 lifecycle, operations, models, safety, telemetry, release management,
-extension, troubleshooting, and links into durable source docs. First-run
+extension, troubleshooting, and links into repo-owned source docs. First-run
 onboarding has a dedicated static guide at `docs/quickstart.html`, covering
 requirements, source install, local inference setup, target initialization,
 safe inspection, dashboard checks, update paths, file ownership, and
@@ -67,7 +68,10 @@ dashboard state, terminal status, logs, traces, quality score, telemetry,
 code-intelligence metrics, diagnostics, and symptom-driven recovery. The
 dedicated code-intelligence reference at `docs/code-intel-reference.html`
 documents graph context enablement, code-intel tools, metrics, benchmarks,
-check recording, validation boundaries, local state, and evidence recipes. The
+check recording, validation boundaries, local state, and evidence recipes. A
+plain local-checks guide at `docs/checks-evidence-guide.html` documents when
+to run `mars checks run`, what gets stored, how failures behave, and how check
+results flow into the quality record. The
 delivery operating path lives in `docs/planning-delivery-guide.html`, covering
 the user-facing goal, active plan, BDD contract, ticket, role handoff, evidence,
 review, and release chain. Guardrail behavior now has a dedicated site

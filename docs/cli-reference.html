@@ -20,6 +20,10 @@ docs:
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
 - docs/code-intel-reference.html
+- docs/checks-evidence-guide.html
+- docs/workflows.html
+- docs/observability-guide.html
+- docs/safety-quality-guide.html
 - docs/guardrails-reference.html
 -->
 <html lang="en">
@@ -45,19 +49,14 @@ docs:
         </span>
       </a>
       <nav class="top-nav" aria-label="Primary documentation">
-        <a href="index.html">Docs Home</a>
-        <a href="install-setup-reference.html">Setup</a>
-        <a href="shell-integration-reference.html">Shell</a>
-        <a href="auth-credentials-reference.html">Auth</a>
+        <a href="index.html">Home</a>
+        <a href="index.html#catalog">Catalog</a>
+        <a href="quickstart.html">Quickstart</a>
         <a href="workflows.html">Workflows</a>
-        <a href="target-lifecycle-reference.html">Lifecycle</a>
-        <a href="harness-guide.html">Harness Guide</a>
+        <a href="cli-reference.html">CLI</a>
         <a href="operations-guide.html">Operations</a>
-        <a href="models-guide.html">Models</a>
-        <a href="tools-mcp-guide.html">Tools/MCP</a>
-        <a href="code-intel-reference.html">Code Intel</a>
-        <a href="guardrails-reference.html">Guardrails</a>
-        <a href="harness-ecosystem/">Explainer</a>
+        <a href="release-update-guide.html">Release</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
       </nav>
     </header>
 
@@ -347,12 +346,32 @@ mars serve --addr :9091 --concurrency 2</code></pre></dd>
               <thead><tr><th>Command</th><th>User purpose</th><th>Important options</th></tr></thead>
               <tbody>
                 <tr><td><code>mars doctor</code></td><td>Checks Go, config, model registry, models directory, database, llama-server, disk space, private release auth, guardrails, workflow health, mirrored operating-model health, and update drift.</td><td><code>--repo</code>, <code>--db</code>, <code>--config</code>, <code>--skip-remote</code>, <code>--json</code>.</td></tr>
-                <tr><td><code>mars checks run</code></td><td>Runs a local check command and records the result for orchestration evidence.</td><td><code>--repo</code>, <code>--db</code>, <code>--name</code>, <code>--role</code>, then <code>-- &lt;command&gt;</code>.</td></tr>
+                <tr><td><code>mars checks run</code></td><td>Runs a local check and records whether it passed or failed.</td><td><code>--repo</code>, <code>--db</code>, <code>--name</code>, <code>--role</code>, then <code>-- &lt;command&gt;</code>.</td></tr>
                 <tr><td><code>mars guardrails secret-scan</code></td><td>Scans repository files for common secret patterns. See the <a href="guardrails-reference.html">Guardrails Reference</a>.</td><td><code>--repo</code>, <code>--staged</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars guardrails install-hooks</code></td><td>Installs optional git hooks for local guardrail checks. See the <a href="guardrails-reference.html">Guardrails Reference</a>.</td><td><code>--repo</code>, <code>--json</code>.</td></tr>
                 <tr><td><code>mars completion</code></td><td>Generates Bash, Zsh, Fish, and PowerShell completion scripts through Cobra. See the <a href="shell-integration-reference.html">Shell Integration Reference</a>.</td><td><code>bash</code>, <code>zsh</code>, <code>fish</code>, <code>powershell</code>, <code>--no-descriptions</code>.</td></tr>
               </tbody>
             </table>
+          </div>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3><code>mars checks run</code></h3>
+              <p>
+                Runs the command after <code>--</code> inside the target repo
+                and records whether it passed or failed.
+              </p>
+              <pre><code>mars checks run --repo ~/my-project --name go-test -- go test ./...
+mars checks run --repo ~/my-project --role qa --name npm-test -- npm test</code></pre>
+              <dl>
+                <dt>Required</dt>
+                <dd><code>--repo</code> and <code>--name</code>.</dd>
+                <dt>Default role</dt>
+                <dd><code>engineer</code>, unless <code>--role</code> is set.</dd>
+                <dt>Failure behavior</dt>
+                <dd>A failed command is recorded as <code>checks_failed</code>, then the CLI exits non-zero.</dd>
+              </dl>
+              <p><a href="checks-evidence-guide.html">Open the Local Checks Evidence Guide</a></p>
+            </article>
           </div>
           <h3>Dashboard API Summary</h3>
           <p>
@@ -538,7 +557,7 @@ mars release audit --repo . --limit 20</code></pre>
               <tbody>
                 <tr><td><code>mars docsync audit</code></td><td>Checks top-of-file MarsDocSync metadata and associated documentation paths.</td><td>Source maintainers and agents changing code or docs.</td></tr>
                 <tr><td><code>mars validation agent-smoke</code></td><td>Runs compartmentalized role smoke tests against ephemeral validation targets.</td><td>Foundation maintainers validating role/runtime changes.</td></tr>
-                <tr><td><code>mars checks run</code></td><td>Records local check outcomes for orchestration evidence.</td><td>Target repos that want check evidence visible to MARS.</td></tr>
+                <tr><td><code>mars checks run</code></td><td>Records local check results.</td><td>Target repos that want MARS to use test, build, lint, smoke, or release check results.</td></tr>
               </tbody>
             </table>
           </div>

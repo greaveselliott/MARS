@@ -9,6 +9,7 @@ docs:
 - docs/tools-mcp-guide.html
 - docs/configuration-reference.html
 - docs/operations-guide.html
+- docs/checks-evidence-guide.html
 - docs/files-state-reference.html
 - docs/integrations-validation-guide.html
 - docs/product-specs/product-surface.md
@@ -40,13 +41,14 @@ docs:
         </span>
       </a>
       <nav class="top-nav" aria-label="Primary documentation">
-        <a href="index.html">Docs Home</a>
-        <a href="cli-reference.html">CLI Reference</a>
-        <a href="tools-mcp-guide.html">Tools/MCP</a>
-        <a href="observability-guide.html">Observe</a>
-        <a href="configuration-reference.html">Config</a>
+        <a href="index.html">Home</a>
+        <a href="index.html#catalog">Catalog</a>
+        <a href="quickstart.html">Quickstart</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="cli-reference.html">CLI</a>
         <a href="operations-guide.html">Operations</a>
-        <a href="integrations-validation-guide.html">Validation</a>
+        <a href="release-update-guide.html">Release</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
       </nav>
     </header>
 
@@ -107,7 +109,7 @@ docs:
                 <tr><td>Estimate affected tests, docs, and feature contracts.</td><td><code>code_impact</code>.</td><td>Maps changed paths or a diff to related repo artifacts.</td></tr>
                 <tr><td>Measure whether graph assistance helped recent runs.</td><td><code>mars code-intel metrics</code>.</td><td>Aggregates persisted trace counters from the per-repo database.</td></tr>
                 <tr><td>Compare graph context against a local control path.</td><td><code>mars code-intel benchmark</code>.</td><td>Runs a no-model control/treatment benchmark for a named case.</td></tr>
-                <tr><td>Record a real build, test, lint, or smoke outcome.</td><td><code>mars checks run</code>.</td><td>Executes the check and records the result as orchestration evidence.</td></tr>
+                <tr><td>Record a real build, test, lint, or smoke outcome.</td><td><code>mars checks run</code>.</td><td>Runs the check and records whether it passed or failed.</td></tr>
                 <tr><td>Validate foundation role/runtime behavior.</td><td><code>mars validation agent-smoke</code>.</td><td>Creates ephemeral targets and exercises roles through the server job path.</td></tr>
               </tbody>
             </table>
@@ -291,7 +293,8 @@ mars code-intel metrics --repo /path/to/repo --json</code></pre>
               <h3>Record a local check outcome</h3>
               <pre><code>mars checks run --repo /path/to/repo --name go-test -- go test ./...
 mars checks run --repo /path/to/repo --role qa --name playwright -- npm test</code></pre>
-              <p>The command after <code>--</code> is the real check. MARS records its outcome for orchestration evidence.</p>
+              <p>The command after <code>--</code> is the real check. MARS records whether it passed or failed.</p>
+              <p><a href="checks-evidence-guide.html">Open the Local Checks Evidence Guide</a></p>
             </article>
             <article data-doc-filter>
               <h3>Run source-maintainer agent smoke validation</h3>

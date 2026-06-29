@@ -35,7 +35,7 @@ target harness lifecycle, operations, models, safety, telemetry, release
 management, extension, and troubleshooting. The homepage now includes a
 searchable [documentation catalog](docs/index.html#catalog) and conservative
 [readiness matrix](docs/index.html#readiness) so users can find both task
-guides and durable source-of-truth artifacts. Deeper site pages cover the
+guides and the repo docs that back them up. Deeper site pages cover the
 [CLI reference](docs/cli-reference.html),
 [shell integration](docs/shell-integration-reference.html),
 [authentication and credentials](docs/auth-credentials-reference.html),
@@ -50,6 +50,7 @@ guides and durable source-of-truth artifacts. Deeper site pages cover the
 [configuration](docs/configuration-reference.html),
 [documentation sync](docs/documentation-sync-guide.html),
 [observability and evidence](docs/observability-guide.html),
+[local checks evidence](docs/checks-evidence-guide.html),
 [troubleshooting](docs/troubleshooting-guide.html),
 [safety, trust, and quality](docs/safety-quality-guide.html),
 [release and update](docs/release-update-guide.html), and
@@ -277,7 +278,7 @@ safety, or orchestration changes do. See
 ## Documentation Map
 
 - [docs/index.html](docs/index.html): GitHub Pages developer documentation
-  front door, searchable catalog, source-of-truth map, and readiness matrix.
+  front door, searchable catalog, repo documentation map, and readiness matrix.
 - [docs/quickstart.html](docs/quickstart.html): first-run guide for source
   install, local setup, target initialization, safe inspection, dashboard
   checks, update paths, and troubleshooting.
@@ -320,6 +321,9 @@ safety, or orchestration changes do. See
 - [docs/code-intel-reference.html](docs/code-intel-reference.html): code graph
   context, code-intel tools, metrics, benchmarks, check recording, validation
   boundaries, and evidence recipes.
+- [docs/checks-evidence-guide.html](docs/checks-evidence-guide.html): plain
+  guide to recording local test, build, lint, smoke, and release check results
+  with `mars checks run`.
 - [docs/roles-guide.html](docs/roles-guide.html): role domains, generated role
   roster, dispatch routing, trust, scoring, handoffs, and customization.
 - [docs/configuration-reference.html](docs/configuration-reference.html):
@@ -379,7 +383,7 @@ safety, or orchestration changes do. See
   comparator audits, and external references that influence MARS design.
 - [docs/generated/README.md](docs/generated/README.md): generated reference
   docs governance and catalog.
-- [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md): repo-visible quality evidence.
+- [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md): repo-visible quality record.
 
 ## Lineage
 

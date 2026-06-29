@@ -13,6 +13,9 @@ docs:
 - docs/safety-quality-guide.html
 - docs/tools-mcp-guide.html
 - docs/code-intel-reference.html
+- docs/checks-evidence-guide.html
+- docs/cli-reference.html
+- docs/workflows.html
 - docs/dashboard-api-reference.html
 -->
 <html lang="en">
@@ -22,7 +25,7 @@ docs:
     <title>MARS Observability And Evidence Guide</title>
     <meta
       name="description"
-      content="User guide to MARS dashboard, terminal status, logs, traces, scores, telemetry, code intelligence, quality evidence, and privacy boundaries."
+      content="User guide to MARS dashboard, terminal status, logs, traces, scores, telemetry, code intelligence, quality records, and privacy boundaries."
     >
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="site.css">
@@ -38,13 +41,14 @@ docs:
         </span>
       </a>
       <nav class="top-nav" aria-label="Primary documentation">
-        <a href="index.html">Docs Home</a>
+        <a href="index.html">Home</a>
+        <a href="index.html#catalog">Catalog</a>
+        <a href="quickstart.html">Quickstart</a>
+        <a href="workflows.html">Workflows</a>
+        <a href="cli-reference.html">CLI</a>
         <a href="operations-guide.html">Operations</a>
-        <a href="safety-quality-guide.html">Safety</a>
-        <a href="roles-guide.html">Roles</a>
-        <a href="troubleshooting-guide.html">Troubleshooting</a>
-        <a href="code-intel-reference.html">Code Intel</a>
-        <a href="cli-reference.html">CLI Reference</a>
+        <a href="release-update-guide.html">Release</a>
+        <a href="https://github.com/greaveselliott/MARS">GitHub</a>
       </nav>
     </header>
 
@@ -109,7 +113,7 @@ docs:
           <p>
             The shipped dashboard is embedded in the Go binary and works without
             Node, npm, a frontend build step, or an external service. It is the
-            live operator view; repo files remain the durable source of truth.
+            live operator view; repo files keep the reviewable record.
             For request bodies, response shapes, and control endpoint recipes,
             use the <a href="dashboard-api-reference.html">Dashboard API Reference</a>.
           </p>
@@ -242,6 +246,11 @@ mars scores export --repo /path/to/repo --create-intervention-debt</code></pre>
             evidence. Foundation-owned failures should stay foundation telemetry
             or MARS source work.
           </p>
+          <div class="callout">
+            Use <a href="checks-evidence-guide.html">local checks</a> when a
+            test, build, lint, smoke, or release command should count as MARS
+            evidence before you refresh <code>docs/QUALITY_SCORE.md</code>.
+          </div>
         </section>
 
         <section class="doc-section" id="telemetry">
@@ -320,7 +329,7 @@ mars telemetry triage-foundation --repo /path/to/MARS --window-days 30</code></p
             </li>
             <li>
               <h3>Regenerate evidence after changes</h3>
-              <p>Run the relevant checks and refresh <code>docs/QUALITY_SCORE.md</code> when a quality or readiness claim depends on current data.</p>
+              <p>Record important checks with <code>mars checks run</code>, then refresh <code>docs/QUALITY_SCORE.md</code> when a quality or readiness claim depends on current data.</p>
             </li>
           </ol>
         </section>
