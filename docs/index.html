@@ -23,6 +23,7 @@ docs:
 - docs/operations-guide.html
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
+- docs/code-intel-reference.html
 - docs/safety-quality-guide.html
 - docs/release-update-guide.html
 - docs/integrations-validation-guide.html
@@ -74,6 +75,7 @@ docs:
         <a href="roles-guide.html">Roles</a>
         <a href="configuration-reference.html">Config</a>
         <a href="documentation-sync-guide.html">DocSync</a>
+        <a href="code-intel-reference.html">Code Intel</a>
         <a href="observability-guide.html">Observe</a>
         <a href="safety-quality-guide.html">Safety</a>
         <a href="guardrails-reference.html">Guardrails</a>
@@ -103,6 +105,7 @@ docs:
           <a href="#operate">Operate MARS</a>
           <a href="#models">Models and Inference</a>
           <a href="#roles-config-docsync">Roles, Config, DocSync</a>
+          <a href="#code-intel">Code Intelligence</a>
           <a href="#observe-diagnose">Observe And Diagnose</a>
           <a href="#safety">Safety and Trust</a>
           <a href="#telemetry">Telemetry and Quality</a>
@@ -197,6 +200,7 @@ docs:
             <a href="dashboard-api-reference.html">Dashboard API Reference</a>
             <a href="models-guide.html">Models And Inference Guide</a>
             <a href="tools-mcp-guide.html">Tools And MCP Guide</a>
+            <a href="code-intel-reference.html">Code Intelligence And Evidence Reference</a>
             <a href="roles-guide.html">Roles And Agents Guide</a>
             <a href="configuration-reference.html">Configuration Reference</a>
             <a href="documentation-sync-guide.html">Documentation Sync Guide</a>
@@ -492,7 +496,7 @@ mars eject --repo /path/to/repo --apply --confirm repo</code></pre>
                 <tr><td><code>mars release</code></td><td>Generate notes, backfill narrative, audit tags, build assets, and verify release artifacts.</td><td><code>notes</code>, <code>backfill-notes</code>, <code>audit</code>, <code>publish-assets</code>, <code>verify-assets</code>.</td></tr>
                 <tr><td><code>mars checks run</code></td><td>Run a local check command and record the outcome for orchestration.</td><td><code>--repo</code>, <code>--db</code>, <code>--name</code>, <code>--role</code>, then <code>-- &lt;command&gt;</code>.</td></tr>
                 <tr><td><code>mars docsync audit</code></td><td>Audit source files for top-of-file MarsDocSync metadata and associated docs.</td><td><code>--repo</code>, <code>--json</code>.</td></tr>
-                <tr><td><code>mars code-intel</code></td><td>Measure code graph context efficiency and run local control/treatment benchmarks.</td><td><code>metrics</code>, <code>benchmark</code>.</td></tr>
+                <tr><td><code>mars code-intel</code></td><td>Measure code graph context efficiency and run local control/treatment benchmarks.</td><td><code>metrics</code>, <code>benchmark</code>. See the <a href="code-intel-reference.html">Code Intelligence Reference</a>.</td></tr>
                 <tr><td><code>mars validation agent-smoke</code></td><td>Run compartmentalized role smoke tests against ephemeral validation targets.</td><td><code>--suite</code>, <code>--role</code>, <code>--case</code>, <code>--project-type</code>, <code>--fixture-only</code>, <code>--report</code>.</td></tr>
               </tbody>
             </table>
@@ -678,6 +682,48 @@ mars models override --repo ~/my-project --role engineer --provider openai-compa
                 audit commands that prevent stale docs.
               </p>
               <p><a href="documentation-sync-guide.html">Open the DocSync guide</a></p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="code-intel">
+          <h2>Code Intelligence</h2>
+          <p>
+            Code intelligence is the repo-local graph MARS uses to reduce blind
+            exploration. It can inject compact context into eligible role runs,
+            expose code search, snippet, trace, and impact tools, and measure
+            whether agents are using graph evidence instead of broad reads.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Control runtime graph context</h3>
+              <p>
+                Use <code>--code-intel true|false</code>,
+                <code>MARS_CODE_INTEL_ENABLED</code>, or local
+                <code>code_intel.enabled</code> config to control automatic
+                graph context for <code>run</code>, <code>start</code>, and
+                <code>serve</code>.
+              </p>
+              <p><a href="code-intel-reference.html#enable">Open enablement details</a></p>
+            </article>
+            <article data-doc-filter>
+              <h3>Measure graph usefulness</h3>
+              <p>
+                <code>mars code-intel metrics</code> aggregates persisted trace
+                counters, while <code>mars code-intel benchmark</code> runs a
+                local no-model control/treatment check for expected files,
+                tests, and docs.
+              </p>
+              <p><a href="code-intel-reference.html#metrics">Open metrics and benchmarks</a></p>
+            </article>
+            <article data-doc-filter>
+              <h3>Pair with real checks</h3>
+              <p>
+                Use graph output to pick likely tests and docs, then use
+                <code>mars checks run</code> or the appropriate validation lane
+                to record real evidence.
+              </p>
+              <p><a href="code-intel-reference.html#checks-validation">Open evidence boundaries</a></p>
             </article>
           </div>
         </section>
@@ -955,6 +1001,7 @@ roles:
             <a href="dashboard-api-reference.html">Dashboard API reference</a>
             <a href="models-guide.html">Models and inference guide</a>
             <a href="tools-mcp-guide.html">Tools and MCP guide</a>
+            <a href="code-intel-reference.html">Code intelligence and evidence reference</a>
             <a href="roles-guide.html">Roles and agents guide</a>
             <a href="configuration-reference.html">Configuration reference</a>
             <a href="documentation-sync-guide.html">Documentation sync guide</a>

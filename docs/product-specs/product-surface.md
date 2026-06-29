@@ -65,6 +65,9 @@ Observability and recovery coverage lives in
 `docs/observability-guide.html` and `docs/troubleshooting-guide.html`, covering
 dashboard state, terminal status, logs, traces, quality score, telemetry,
 code-intelligence metrics, diagnostics, and symptom-driven recovery. The
+dedicated code-intelligence reference at `docs/code-intel-reference.html`
+documents graph context enablement, code-intel tools, metrics, benchmarks,
+check recording, validation boundaries, local state, and evidence recipes. The
 delivery operating path lives in `docs/planning-delivery-guide.html`, covering
 the user-facing goal, active plan, BDD contract, ticket, role handoff, evidence,
 review, and release chain. Guardrail behavior now has a dedicated site

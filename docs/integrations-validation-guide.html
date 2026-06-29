@@ -9,6 +9,7 @@ docs:
 - docs/features/F-011-optional-github-integration.md
 - docs/features/F-013-board-driven-integrations.md
 - docs/runbooks/atlassian-mcp-jira-intake.md
+- docs/code-intel-reference.html
 - docs/validation/README.md
 - docs/design-docs/validation-matrix-gating.md
 - docs/design-docs/foundation-operating-model.md
@@ -39,6 +40,7 @@ docs:
         <a href="index.html">Docs Home</a>
         <a href="operations-guide.html">Operations</a>
         <a href="tools-mcp-guide.html">Tools/MCP</a>
+        <a href="code-intel-reference.html">Code Intel</a>
         <a href="models-guide.html">Models</a>
         <a href="release-update-guide.html">Release</a>
       </nav>
@@ -254,7 +256,10 @@ delivery:
             Validation evidence is durable repo documentation. Matrix run
             reports, clean-project lifecycle reports, release blockers, and
             target dogfood reports should be inspectable without relying on
-            terminal scrollback.
+            terminal scrollback. Code-intel metrics and benchmarks can help
+            choose likely files, tests, and docs, but they are not replacement
+            validation evidence; see the
+            <a href="code-intel-reference.html">Code Intelligence Reference</a>.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>

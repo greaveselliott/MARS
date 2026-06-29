@@ -15,6 +15,7 @@ docs:
 - docs/features/F-013-board-driven-integrations.md
 - docs/harness-guide.html
 - docs/models-guide.html
+- docs/code-intel-reference.html
 - docs/integrations-validation-guide.html
 -->
 <html lang="en">
@@ -46,6 +47,7 @@ docs:
         <a href="bundle-reference.html">Bundle</a>
         <a href="roles-guide.html">Roles</a>
         <a href="documentation-sync-guide.html">DocSync</a>
+        <a href="code-intel-reference.html">Code Intel</a>
         <a href="guardrails-reference.html">Guardrails</a>
         <a href="models-guide.html">Models</a>
         <a href="integrations-validation-guide.html">Integrations</a>
@@ -64,6 +66,7 @@ docs:
           <a href="#overview">Overview</a>
           <a href="#locations">Locations</a>
           <a href="#local-config">Local Config</a>
+          <a href="#code-intel-config">Code Intelligence</a>
           <a href="#manifest">Manifest</a>
           <a href="#model-overrides">Model Overrides</a>
           <a href="#integrations">Integrations</a>
@@ -140,6 +143,23 @@ mars serve --db /private/tmp/mars-shared.db</code></pre>
               <p>Use <code>--db</code> for isolated validation runs, demos, or deliberate multi-repo service state.</p>
             </article>
           </div>
+        </section>
+
+        <section class="doc-section" id="code-intel-config">
+          <h2>Code Intelligence Config</h2>
+          <p>
+            Code intelligence defaults on through local config and can be
+            overridden per command. MARS resolves <code>--code-intel</code>
+            first, then <code>MARS_CODE_INTEL_ENABLED</code>, then
+            <code>code_intel.enabled</code>. Role runs still need code-intel
+            tools in the manifest before automatic graph context is injected.
+            For full behavior, metrics, and benchmark guidance, open the
+            <a href="code-intel-reference.html">Code Intelligence Reference</a>.
+          </p>
+          <pre><code>code_intel:
+  enabled: true</code></pre>
+          <pre><code>mars run engineer --repo /path/to/repo --code-intel false
+MARS_CODE_INTEL_ENABLED=true mars start --repo /path/to/repo</code></pre>
         </section>
 
         <section class="doc-section" id="manifest">

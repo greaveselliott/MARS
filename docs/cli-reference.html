@@ -17,6 +17,7 @@ docs:
 - docs/dashboard-api-reference.html
 - docs/models-guide.html
 - docs/tools-mcp-guide.html
+- docs/code-intel-reference.html
 - docs/guardrails-reference.html
 -->
 <html lang="en">
@@ -50,6 +51,7 @@ docs:
         <a href="operations-guide.html">Operations</a>
         <a href="models-guide.html">Models</a>
         <a href="tools-mcp-guide.html">Tools/MCP</a>
+        <a href="code-intel-reference.html">Code Intel</a>
         <a href="guardrails-reference.html">Guardrails</a>
         <a href="harness-ecosystem/">Explainer</a>
       </nav>
@@ -93,6 +95,8 @@ docs:
               <a href="install-setup-reference.html">Install And Setup Reference</a>.
               For command-by-command target repo state transitions, open the
               <a href="target-lifecycle-reference.html">Target Lifecycle Reference</a>.
+              For code graph context, graph tools, metrics, and benchmarks,
+              open the <a href="code-intel-reference.html">Code Intelligence Reference</a>.
             </p>
           </div>
         </section>
@@ -437,6 +441,12 @@ mars models credentials write-local-env --repo ~/my-project --api-key-env OPENAI
 
         <section class="doc-section" id="quality">
           <h2>Scores, Trust, Telemetry, And Code Intelligence</h2>
+          <p>
+            The rows below list the command surface. For user guidance on
+            enabling graph context, interpreting trace counters, running local
+            no-model benchmarks, and pairing graph output with real checks,
+            open the <a href="code-intel-reference.html">Code Intelligence Reference</a>.
+          </p>
           <div class="wide-table" data-doc-filter>
             <table>
               <thead><tr><th>Command</th><th>User purpose</th><th>Important options</th></tr></thead>

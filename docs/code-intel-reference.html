@@ -1,0 +1,399 @@
+<!doctype html>
+<!--
+MarsDocSync:
+docs:
+- README.md
+- docs/index.html
+- docs/cli-reference.html
+- docs/observability-guide.html
+- docs/tools-mcp-guide.html
+- docs/configuration-reference.html
+- docs/operations-guide.html
+- docs/files-state-reference.html
+- docs/integrations-validation-guide.html
+- docs/product-specs/product-surface.md
+- docs/design-docs/tools-glossary.md
+- docs/design-docs/context-efficiency.md
+- docs/design-docs/agent-smoke-validation.md
+- docs/validation/README.md
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MARS Code Intelligence And Evidence Reference</title>
+    <meta
+      name="description"
+      content="User reference for MARS code intelligence: code graph context, code-intel tools, metrics, benchmarks, check evidence, validation boundaries, configuration, and troubleshooting."
+    >
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to code intelligence reference</a>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="MARS documentation home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>MARS</strong>
+          <small>Code intelligence</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Primary documentation">
+        <a href="index.html">Docs Home</a>
+        <a href="cli-reference.html">CLI Reference</a>
+        <a href="tools-mcp-guide.html">Tools/MCP</a>
+        <a href="observability-guide.html">Observe</a>
+        <a href="configuration-reference.html">Config</a>
+        <a href="operations-guide.html">Operations</a>
+        <a href="integrations-validation-guide.html">Validation</a>
+      </nav>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Code intelligence sections">
+        <div class="sidebar-panel">
+          <label class="search-label" for="docSearch">Search code intelligence</label>
+          <input id="docSearch" type="search" placeholder="metrics, benchmark, context">
+          <p class="search-hint">Filters commands, tools, evidence notes, and troubleshooting rows.</p>
+        </div>
+        <nav class="side-nav">
+          <a href="#overview">Overview</a>
+          <a href="#decision-map">Decision Map</a>
+          <a href="#enable">Enable Or Disable</a>
+          <a href="#runtime-context">Runtime Context</a>
+          <a href="#tools">Agent Tools</a>
+          <a href="#metrics">Metrics</a>
+          <a href="#benchmark">Benchmark</a>
+          <a href="#checks-validation">Checks And Validation</a>
+          <a href="#state">State And Reports</a>
+          <a href="#recipes">Recipes</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <section class="hero compact-hero" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Code graph evidence</p>
+            <h1>Use repo-local code intelligence to reduce blind exploration.</h1>
+            <p class="lede">
+              MARS builds a local SQLite-backed code graph so roles and users
+              can search symbols, inspect bounded snippets, trace known
+              relationships, map changed files to likely tests and docs, and
+              measure whether graph context reduced broad repository probing.
+              Code intelligence is local by default, writes no target files,
+              and is evidence, not a replacement for source review or tests.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc-section" id="decision-map">
+          <h2>Decision Map</h2>
+          <p>
+            Use code intelligence when the user question is structural:
+            where a symbol lives, which tests or docs are likely affected,
+            whether graph context was injected, or whether agents are doing too
+            much broad search. Use ordinary commands and validation when the
+            question is behavioral: does the product build, run, or satisfy a
+            user workflow?
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Need</th><th>Use</th><th>Why</th></tr></thead>
+              <tbody>
+                <tr><td>Let a role start with compact repo context.</td><td><code>mars run</code>, <code>mars start</code>, or <code>mars serve</code> with code intelligence enabled.</td><td>The runtime can inject <code>## CODE GRAPH CONTEXT</code> before the LLM loop.</td></tr>
+                <tr><td>Search implementation without bulk reads.</td><td><code>code_search</code> then <code>code_snippet</code>.</td><td>Find candidate symbols first, then read exact bounded source.</td></tr>
+                <tr><td>Estimate affected tests, docs, and feature contracts.</td><td><code>code_impact</code>.</td><td>Maps changed paths or a diff to related repo artifacts.</td></tr>
+                <tr><td>Measure whether graph assistance helped recent runs.</td><td><code>mars code-intel metrics</code>.</td><td>Aggregates persisted trace counters from the per-repo database.</td></tr>
+                <tr><td>Compare graph context against a local control path.</td><td><code>mars code-intel benchmark</code>.</td><td>Runs a no-model control/treatment benchmark for a named case.</td></tr>
+                <tr><td>Record a real build, test, lint, or smoke outcome.</td><td><code>mars checks run</code>.</td><td>Executes the check and records the result as orchestration evidence.</td></tr>
+                <tr><td>Validate foundation role/runtime behavior.</td><td><code>mars validation agent-smoke</code>.</td><td>Creates ephemeral targets and exercises roles through the server job path.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="enable">
+          <h2>Enable Or Disable</h2>
+          <p>
+            Code intelligence is enabled by default from local configuration.
+            The runtime resolves the setting in this order: command flag,
+            <code>MARS_CODE_INTEL_ENABLED</code>, then
+            <code>code_intel.enabled</code> in local config. Prefer explicit
+            <code>true</code> or <code>false</code> values in commands and
+            automation.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Surface</th><th>Example</th><th>Effect</th></tr></thead>
+              <tbody>
+                <tr><td>One role run</td><td><code>mars run engineer --repo /path/to/repo --code-intel false</code></td><td>Disables automatic graph context for that command.</td></tr>
+                <tr><td>Scoped lifecycle</td><td><code>mars start --repo /path/to/repo --code-intel true</code></td><td>Enables graph context and loop maintenance for that run.</td></tr>
+                <tr><td>Multi-repo serve</td><td><code>mars serve --code-intel false</code></td><td>Disables automatic graph context for served jobs.</td></tr>
+                <tr><td>Environment</td><td><code>MARS_CODE_INTEL_ENABLED=false mars start --repo /path/to/repo</code></td><td>Overrides local config when no flag is passed.</td></tr>
+                <tr><td>Local config</td><td><code>code_intel.enabled: true</code></td><td>Default behavior when no flag or env var is set.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>code_intel:
+  enabled: true</code></pre>
+          <div class="callout">
+            Enabled does not mean every role receives graph context. The role
+            must also have code-intel tools in its manifest allowlist.
+          </div>
+        </section>
+
+        <section class="doc-section" id="runtime-context">
+          <h2>Runtime Context</h2>
+          <p>
+            When code intelligence is enabled and a role is allowed to use
+            code-intel tools, MARS refreshes the local graph and assembles a
+            compact <code>## CODE GRAPH CONTEXT</code> block before the model
+            loop starts. The context can include freshness state, changed-path
+            impact hints, related tests, and documentation candidates. If the
+            graph cannot be refreshed, traces record unavailable evidence
+            rather than pretending the graph was useful.
+          </p>
+          <div class="concept-grid">
+            <article data-doc-filter>
+              <h3>Freshness is visible</h3>
+              <p>Search, snippet, trace, and impact output disclose whether indexed evidence is fresh, stale, partial, missing, or unavailable.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Graph evidence is bounded</h3>
+              <p>Code intelligence narrows what to inspect. It does not prove behavior and should be corroborated with tests, source reads, or runtime checks.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Traces carry counters</h3>
+              <p>Runs record <code>codeintel:*</code> and <code>repo_exploration:*</code> counters so users can compare graph use with broad search and bulk reads.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="tools">
+          <h2>Agent Tools</h2>
+          <p>
+            The code-intel tools are part of the same governed tool registry
+            described in the <a href="tools-mcp-guide.html">Tools And MCP Guide</a>.
+            They are non-mutating to target repo files. Index refreshes write
+            only MARS SQLite state under the configured per-repo database.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Tool</th><th>User purpose</th><th>Typical order</th></tr></thead>
+              <tbody>
+                <tr><td><code>code_index</code></td><td>Refresh the local code graph for the current repo.</td><td>Run first when output reports missing, stale, or partial state.</td></tr>
+                <tr><td><code>code_search</code></td><td>Search indexed files and symbols with filters.</td><td>Use before broad grep or bulk file reads.</td></tr>
+                <tr><td><code>code_snippet</code></td><td>Read an exact bounded source span for an indexed symbol.</td><td>Use after <code>code_search</code> identifies a likely symbol.</td></tr>
+                <tr><td><code>code_trace</code></td><td>Inspect known import and call relationships.</td><td>Use when relationships matter, then confirm in source.</td></tr>
+                <tr><td><code>code_impact</code></td><td>Map changed paths to likely symbols, tests, docs, feature scenarios, and tickets.</td><td>Use before implementation, review planning, or release risk summaries.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Refresh the index from the CLI tool surface</h3>
+              <pre><code>mars tools run code_index --repo /path/to/repo --args-json '{"full":false}' --json</code></pre>
+              <p>Use <code>"full":true</code> only for corruption repair, parser/schema changes, or an explicit operator request.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Inspect likely impact</h3>
+              <pre><code>mars tools run code_impact --repo /path/to/repo \
+  --args-json '{"paths":["internal/app/app.go"]}' --json</code></pre>
+              <p>Impact output is guidance for inspection and validation selection, not proof of correctness.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="metrics">
+          <h2><code>mars code-intel metrics</code></h2>
+          <p>
+            Metrics summarize persisted local trace evidence for a target repo.
+            They answer whether recent jobs had graph context enabled,
+            disabled, unavailable, or unused, how many code-intel tool calls
+            happened, how much graph context was injected, and how much broad
+            exploration still occurred.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Flag</th><th>Meaning</th><th>Default</th></tr></thead>
+              <tbody>
+                <tr><td><code>--repo</code></td><td>Target repository whose persisted trace evidence should be summarized.</td><td>Current directory.</td></tr>
+                <tr><td><code>--db</code></td><td>SQLite database to read. Must be outside the target repo.</td><td><code>~/.mars/db/{repo}/mars.db</code>.</td></tr>
+                <tr><td><code>--window-days</code></td><td>How many days of trace evidence to aggregate.</td><td><code>30</code>.</td></tr>
+                <tr><td><code>--json</code></td><td>Emit structured output for scripts or reports.</td><td>Human-readable text.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars code-intel metrics --repo /path/to/repo --window-days 30
+mars code-intel metrics --repo /path/to/repo --json</code></pre>
+          <div class="callout">
+            A low graph count is not automatically bad. It may mean the role did
+            not have code-intel tools, the repo had little persisted evidence,
+            or the job was not code-oriented. Compare metrics with the role
+            manifest and the trace you are investigating.
+          </div>
+        </section>
+
+        <section class="doc-section" id="benchmark">
+          <h2><code>mars code-intel benchmark</code></h2>
+          <p>
+            The benchmark is a local, no-model control/treatment check for code
+            graph impact. It is useful when maintainers want to know whether
+            code-intel context finds expected files, tests, or docs for a
+            defined case before relying on it in role guidance or validation
+            claims.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Flag</th><th>Meaning</th><th>Use</th></tr></thead>
+              <tbody>
+                <tr><td><code>--repo</code></td><td>Target repo under test.</td><td>Point at the repo whose graph should be measured.</td></tr>
+                <tr><td><code>--db</code></td><td>SQLite database. Must be outside the target repo.</td><td>Use an isolated DB for reproducible local comparisons.</td></tr>
+                <tr><td><code>--case</code></td><td>Stable case name in the benchmark output.</td><td>Use a meaningful slice name, such as <code>docs-code-intel</code>.</td></tr>
+                <tr><td><code>--trials</code></td><td>Number of control/treatment trials.</td><td>Raise for less noisy local timing comparisons.</td></tr>
+                <tr><td><code>--changed-paths</code></td><td>Comma-separated paths to evaluate instead of the current git diff.</td><td>Use for targeted scenarios or clean working trees.</td></tr>
+                <tr><td><code>--expected-files</code></td><td>Comma-separated implementation paths expected in impact output.</td><td>Produces expected file hit-rate evidence.</td></tr>
+                <tr><td><code>--expected-tests</code></td><td>Comma-separated test paths expected in impact output.</td><td>Produces expected test hit-rate evidence.</td></tr>
+                <tr><td><code>--expected-docs</code></td><td>Comma-separated documentation paths expected in impact output.</td><td>Produces expected doc hit-rate evidence.</td></tr>
+                <tr><td><code>--report</code></td><td>Optional JSON report path.</td><td>Must be outside the target repo.</td></tr>
+                <tr><td><code>--json</code></td><td>Print structured benchmark output.</td><td>Use for scripts or durable summaries.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>mars code-intel benchmark \
+  --repo /path/to/repo \
+  --case docs-code-intel \
+  --trials 3 \
+  --changed-paths docs/code-intel-reference.html \
+  --expected-docs docs/code-intel-reference.html \
+  --json</code></pre>
+          <div class="callout">
+            <code>--report</code> is intentionally guarded outside the target
+            repo. If a benchmark supports a source-change claim, summarize the
+            outcome in the owning validation or release artifact rather than
+            dropping raw local benchmark JSON into the target.
+          </div>
+        </section>
+
+        <section class="doc-section" id="checks-validation">
+          <h2>Checks And Validation</h2>
+          <p>
+            Code intelligence explains likely relevance. It does not record
+            that a real check passed and it does not replace validation
+            matrices. Use the adjacent evidence commands for those jobs.
+          </p>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Record a local check outcome</h3>
+              <pre><code>mars checks run --repo /path/to/repo --name go-test -- go test ./...
+mars checks run --repo /path/to/repo --role qa --name playwright -- npm test</code></pre>
+              <p>The command after <code>--</code> is the real check. MARS records its outcome for orchestration evidence.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Run source-maintainer agent smoke validation</h3>
+              <pre><code>mars validation agent-smoke --suite fast --json
+mars validation agent-smoke --role engineer --project-type go-api --suite fast</code></pre>
+              <p>Agent smoke creates ephemeral target repos and exercises roles through the server job execution path.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Keep validation boundaries honest</h3>
+              <pre><code>mars validation agent-smoke --fixture-only
+mars validation agent-smoke --cleanup-only</code></pre>
+              <p><code>--fixture-only</code> is a diagnostic fixture check, not live role evidence. Fake or scripted model endpoints are not validation evidence for source-change claims.</p>
+            </article>
+          </div>
+          <p>
+            For full agent-smoke report contracts, clean-project validation
+            gates, and integration boundaries, use the
+            <a href="integrations-validation-guide.html">Integrations And Validation Guide</a>
+            and <a href="validation/README.md">Validation guide</a>.
+          </p>
+        </section>
+
+        <section class="doc-section" id="state">
+          <h2>State And Reports</h2>
+          <p>
+            Code intelligence stores index and trace evidence in the MARS
+            SQLite database, not in target source files. Runtime commands reject
+            database paths inside the target repo so local state does not become
+            product content by accident.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Artifact</th><th>Default location</th><th>User rule</th></tr></thead>
+              <tbody>
+                <tr><td>Per-repo database</td><td><code>~/.mars/db/{repo}/mars.db</code></td><td>Contains code-intel tables plus queue, trace, scoring, and trust state.</td></tr>
+                <tr><td>Trace summaries</td><td>Per-repo database and local traces.</td><td>Used by <code>mars code-intel metrics</code>.</td></tr>
+                <tr><td>Command logs</td><td><code>~/.mars/traces/logs/</code></td><td>Use <code>--log-file</code> for durable local logs outside the repo.</td></tr>
+                <tr><td>Benchmark report</td><td>User-supplied <code>--report</code> path outside the target repo.</td><td>Summarize into durable repo docs only when it supports a maintained claim.</td></tr>
+                <tr><td>Validation report</td><td><code>docs/validation/reports/</code> for source-maintainer matrix evidence.</td><td>Use when running or attempting required validation matrices.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            The <a href="files-state-reference.html">Files And State Reference</a>
+            covers database isolation, logs, traces, generated evidence,
+            upgrade preservation, and eject cleanup in more detail.
+          </p>
+        </section>
+
+        <section class="doc-section" id="recipes">
+          <h2>Recipes</h2>
+          <div class="workflow-list">
+            <article data-doc-filter>
+              <h3>Preview role context with code intelligence off</h3>
+              <pre><code>mars run engineer --repo /path/to/repo --dry-run --no-init --code-intel false</code></pre>
+              <p>Useful when comparing prompt shape or isolating a graph refresh issue.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Inspect recent graph value</h3>
+              <pre><code>mars code-intel metrics --repo /path/to/repo --window-days 7</code></pre>
+              <p>Look at graph-enabled jobs, unavailable jobs, code-intel calls, broad search calls, and bulk reads.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Benchmark a known change set</h3>
+              <pre><code>mars code-intel benchmark \
+  --repo /path/to/repo \
+  --case release-risk \
+  --changed-paths internal/release/notes.go,docs/release-update-guide.html \
+  --expected-tests internal/release/notes_test.go \
+  --expected-docs docs/release-update-guide.html</code></pre>
+              <p>Use expected path hit rates to decide whether graph guidance is good enough for this slice.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Record check evidence after graph-guided edits</h3>
+              <pre><code>mars checks run --repo /path/to/repo --name targeted-go-test -- go test ./internal/release</code></pre>
+              <p>Graph impact helped choose the command; the check command proves the command result.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="troubleshooting">
+          <h2>Troubleshooting</h2>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Symptom</th><th>Likely cause</th><th>Next action</th></tr></thead>
+              <tbody>
+                <tr><td>No <code>## CODE GRAPH CONTEXT</code> appears in dry-run output.</td><td>Code intelligence is disabled, the role lacks code-intel tools, or graph refresh failed.</td><td>Check <code>--code-intel</code>, <code>MARS_CODE_INTEL_ENABLED</code>, local config, and the role manifest tool allowlist.</td></tr>
+                <tr><td>Metrics show disabled jobs.</td><td>A flag, env var, or config disabled code intelligence.</td><td>Run with <code>--code-intel true</code> or clear the env override.</td></tr>
+                <tr><td>Metrics show unavailable jobs.</td><td>The graph could not refresh or persisted evidence is incomplete.</td><td>Run <code>mars tools run code_index --repo /path/to/repo --args-json '{"full":false}' --json</code> and inspect the error.</td></tr>
+                <tr><td>Search finds stale or partial results.</td><td>The repo changed after the last index run or parser support is partial.</td><td>Refresh the index and confirm important decisions with source reads.</td></tr>
+                <tr><td><code>--db</code> is rejected.</td><td>The path is inside the target repo or otherwise unsafe as runtime state.</td><td>Use the default per-repo database or another path outside the checkout.</td></tr>
+                <tr><td><code>--report</code> is rejected.</td><td>Benchmark reports must be outside the target repo.</td><td>Write the raw JSON outside the checkout and summarize durable evidence in a repo doc if needed.</td></tr>
+                <tr><td>Agent-smoke output is being used as product acceptance.</td><td>Agent smoke validates role/runtime behavior, not target product behavior.</td><td>Pair it with product-specific build, test, smoke, or E2E evidence.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <p>MARS code intelligence is local evidence for better routing. Keep final claims grounded in source review, tests, and durable validation artifacts.</p>
+    </footer>
+
+    <script src="site.js"></script>
+  </body>
+</html>

@@ -304,6 +304,9 @@ safety, or orchestration changes do. See
   bundles, routing, providers, credentials, overrides, and evaluation.
 - [docs/tools-mcp-guide.html](docs/tools-mcp-guide.html): universal tools,
   MCP setup, trust, allowlists, tool categories, and formal tool creation.
+- [docs/code-intel-reference.html](docs/code-intel-reference.html): code graph
+  context, code-intel tools, metrics, benchmarks, check recording, validation
+  boundaries, and evidence recipes.
 - [docs/roles-guide.html](docs/roles-guide.html): role domains, generated role
   roster, dispatch routing, trust, scoring, handoffs, and customization.
 - [docs/configuration-reference.html](docs/configuration-reference.html):
