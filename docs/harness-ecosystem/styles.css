@@ -113,6 +113,8 @@ button {
   align-items: center;
   gap: 12px;
   min-width: 226px;
+  color: var(--ink);
+  text-decoration: none;
 }
 
 .brand-mark {
@@ -151,9 +153,12 @@ button {
 
 .nav-links a,
 .mobile-nav a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
   border-radius: 6px;
   color: var(--ink-soft);
-  padding: 8px 10px;
+  padding: 8px 12px;
   text-decoration: none;
 }
 
@@ -188,6 +193,9 @@ button {
 
 .nav-toggle {
   display: none;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--paper-strong);
@@ -284,18 +292,18 @@ li code {
 h1 {
   max-width: 780px;
   margin-bottom: 22px;
-  font-size: 46px;
-  line-height: 1.05;
+  font-size: 38px;
+  line-height: 1.12;
 }
 
 h2 {
   margin-bottom: 18px;
-  font-size: 32px;
+  font-size: 28px;
   line-height: 1.12;
 }
 
 h3 {
-  font-size: 21px;
+  font-size: 19px;
   line-height: 1.2;
 }
 
@@ -1035,6 +1043,9 @@ h3 {
 }
 
 .filter-chip {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--paper-strong);
@@ -1192,12 +1203,12 @@ h3 {
   }
 
   h1 {
-    font-size: 40px;
-    line-height: 1.08;
+    font-size: 34px;
+    line-height: 1.12;
   }
 
   h2 {
-    font-size: 30px;
+    font-size: 26px;
   }
 
   .problem-grid,
@@ -1259,12 +1270,12 @@ h3 {
   }
 
   h1 {
-    font-size: 34px;
+    font-size: 30px;
     line-height: 1.1;
   }
 
   h2 {
-    font-size: 26px;
+    font-size: 24px;
     line-height: 1.14;
   }
 
@@ -1351,11 +1362,11 @@ h3 {
   }
 
   h1 {
-    font-size: 28px;
+    font-size: 26px;
   }
 
   h2 {
-    font-size: 23px;
+    font-size: 21px;
   }
 
   h3 {

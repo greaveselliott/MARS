@@ -77,9 +77,74 @@ docs:
     header.insertBefore(navToggle, topNav);
     header.classList.add("has-nav-toggle");
 
+    function closePrimaryNav() {
+      header.classList.remove("is-nav-open");
+      navToggle.setAttribute("aria-expanded", "false");
+    }
+
     navToggle.addEventListener("click", function () {
       var isOpen = header.classList.toggle("is-nav-open");
       navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+
+    topNav.addEventListener("click", function (event) {
+      if (event.target.matches("a")) {
+        closePrimaryNav();
+      }
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!header.classList.contains("is-nav-open")) {
+        return;
+      }
+      if (header.contains(event.target)) {
+        return;
+      }
+      closePrimaryNav();
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && header.classList.contains("is-nav-open")) {
+        closePrimaryNav();
+        navToggle.focus();
+      }
+    });
+
+    var currentFile = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
+    var guidePages = { "workflows.html": true, "planning-delivery-guide.html": true };
+    var startPages = { "index.html": true, "quickstart.html": true, "install-setup-reference.html": true };
+    var referencePages = {
+      "auth-credentials-reference.html": true,
+      "bundle-reference.html": true,
+      "checks-evidence-guide.html": true,
+      "cli-reference.html": true,
+      "code-intel-reference.html": true,
+      "configuration-reference.html": true,
+      "dashboard-api-reference.html": true,
+      "documentation-sync-guide.html": true,
+      "files-state-reference.html": true,
+      "guardrails-reference.html": true,
+      "harness-guide.html": true,
+      "integrations-validation-guide.html": true,
+      "models-guide.html": true,
+      "observability-guide.html": true,
+      "operations-guide.html": true,
+      "release-update-guide.html": true,
+      "roles-guide.html": true,
+      "safety-quality-guide.html": true,
+      "shell-integration-reference.html": true,
+      "target-lifecycle-reference.html": true,
+      "tools-mcp-guide.html": true,
+      "troubleshooting-guide.html": true
+    };
+    var activeHref = startPages[currentFile] ? "quickstart.html" :
+      guidePages[currentFile] ? "workflows.html" :
+      referencePages[currentFile] ? "cli-reference.html" : "";
+
+    Array.prototype.slice.call(topNav.querySelectorAll("a")).forEach(function (link) {
+      if (link.getAttribute("href") === activeHref) {
+        link.setAttribute("aria-current", "page");
+      }
     });
   }
 
@@ -105,10 +170,31 @@ docs:
       sectionToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
     });
 
+    function closeSectionNav() {
+      sidebar.classList.remove("is-section-nav-open");
+      sectionToggle.setAttribute("aria-expanded", "false");
+    }
+
     sideNav.addEventListener("click", function (event) {
       if (event.target.matches("a")) {
-        sidebar.classList.remove("is-section-nav-open");
-        sectionToggle.setAttribute("aria-expanded", "false");
+        closeSectionNav();
+      }
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!sidebar.classList.contains("is-section-nav-open")) {
+        return;
+      }
+      if (sidebar.contains(event.target)) {
+        return;
+      }
+      closeSectionNav();
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && sidebar.classList.contains("is-section-nav-open")) {
+        closeSectionNav();
+        sectionToggle.focus();
       }
     });
   }

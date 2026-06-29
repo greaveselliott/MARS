@@ -33,17 +33,13 @@ docs:
         <span class="brand-mark" aria-hidden="true">M</span>
         <span>
           <strong>MARS</strong>
-          <small>Target lifecycle</small>
+          <small>Developer docs</small>
         </span>
       </a>
       <nav class="top-nav" aria-label="Primary documentation">
-        <a href="index.html">Home</a>
-        <a href="index.html#catalog">Catalog</a>
-        <a href="quickstart.html">Quickstart</a>
-        <a href="workflows.html">Workflows</a>
-        <a href="cli-reference.html">CLI</a>
-        <a href="operations-guide.html">Operations</a>
-        <a href="release-update-guide.html">Release</a>
+        <a href="quickstart.html">Start</a>
+        <a href="workflows.html">Guides</a>
+        <a href="cli-reference.html">Reference</a>
         <a href="https://github.com/greaveselliott/MARS">GitHub</a>
       </nav>
     </header>
@@ -78,13 +74,12 @@ docs:
         <section class="hero compact-hero" id="overview">
           <div class="hero-copy">
             <p class="eyebrow">Target repository lifecycle</p>
-            <h1>Move a repo from plain git checkout to governed autonomous work.</h1>
+            <h1>Move a repo from plain git checkout to a MARS target.</h1>
             <p class="lede">
-              A MARS target lifecycle starts with a normal git repository,
-              adds a repo-owned harness, registers local runtime state, runs
-              roles through a dashboard-backed queue, checks drift and health,
-              upgrades missing defaults, and can be removed with an explicit
-              dry-run-first kill switch.
+              Start with a normal git repository. MARS adds its harness files,
+              registers local state, runs roles through the queue, checks
+              health, fills missing defaults after upgrades, and removes its
+              files with a dry-run-first uninstall path.
             </p>
           </div>
         </section>

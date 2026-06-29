@@ -32,17 +32,13 @@ docs:
         <span class="brand-mark" aria-hidden="true">M</span>
         <span>
           <strong>MARS</strong>
-          <small>Tools and MCP</small>
+          <small>Developer docs</small>
         </span>
       </a>
       <nav class="top-nav" aria-label="Primary documentation">
-        <a href="index.html">Home</a>
-        <a href="index.html#catalog">Catalog</a>
-        <a href="quickstart.html">Quickstart</a>
-        <a href="workflows.html">Workflows</a>
-        <a href="cli-reference.html">CLI</a>
-        <a href="operations-guide.html">Operations</a>
-        <a href="release-update-guide.html">Release</a>
+        <a href="quickstart.html">Start</a>
+        <a href="workflows.html">Guides</a>
+        <a href="cli-reference.html">Reference</a>
         <a href="https://github.com/greaveselliott/MARS">GitHub</a>
       </nav>
     </header>
@@ -72,26 +68,22 @@ docs:
       <main id="main" tabindex="-1">
         <section class="hero compact-hero" id="overview">
           <div class="hero-copy">
-            <p class="eyebrow">Universal tool surface</p>
-            <h1>Expose the same governed MARS tools to users, agents, and MCP clients.</h1>
+            <p class="eyebrow">Tools and MCP</p>
+            <h1>Use the same MARS actions from agents, CLI, and MCP.</h1>
             <p class="lede">
-              MARS tools are deterministic capabilities for repository work:
-              file access, shell execution, git, ticket lifecycle, release,
-              documentation sync, validation, trust, scoring, dependency
-              repair, and meta-tool creation. The same registry is available to
-              agent runs, the CLI, and local MCP clients with trust and
-              allowlist gates.
+              Tools are the actions MARS is allowed to take: read files, run
+              checks, update tickets, write release notes, inspect trust, and
+              more. The same actions are available to MARS agents, to
+              <code>mars tools run</code>, and to local AI clients through MCP.
             </p>
           </div>
         </section>
 
         <section class="doc-section" id="surfaces">
-          <h2>User Surfaces</h2>
+          <h2>Ways To Use Tools</h2>
           <p>
-            Tools are not only an internal model feature. They are a user-facing
-            control surface for operators and external AI clients that need the
-            same repo-root resolution, safety policies, JSON arguments, and
-            output limits that MARS agents use.
+            Use tools when you want a repeatable action with the same repo path,
+            trust rules, JSON input, and output limits that agents use.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>

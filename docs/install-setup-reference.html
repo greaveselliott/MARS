@@ -38,17 +38,13 @@ docs:
         <span class="brand-mark" aria-hidden="true">M</span>
         <span>
           <strong>MARS</strong>
-          <small>Install and setup</small>
+          <small>Developer docs</small>
         </span>
       </a>
       <nav class="top-nav" aria-label="Primary documentation">
-        <a href="index.html">Home</a>
-        <a href="index.html#catalog">Catalog</a>
-        <a href="quickstart.html">Quickstart</a>
-        <a href="workflows.html">Workflows</a>
-        <a href="cli-reference.html">CLI</a>
-        <a href="operations-guide.html">Operations</a>
-        <a href="release-update-guide.html">Release</a>
+        <a href="quickstart.html">Start</a>
+        <a href="workflows.html">Guides</a>
+        <a href="cli-reference.html">Reference</a>
         <a href="https://github.com/greaveselliott/MARS">GitHub</a>
       </nav>
     </header>
@@ -80,15 +76,14 @@ docs:
       <main id="main" tabindex="-1">
         <section class="hero compact-hero" id="overview">
           <div class="hero-copy">
-            <p class="eyebrow">Machine setup contract</p>
-            <h1>Install the command, prepare local runtime state, and verify the machine.</h1>
+            <p class="eyebrow">Setup</p>
+            <h1>Set up this machine for MARS.</h1>
             <p class="lede">
-              MARS setup is intentionally local and repeatable. The source
-              install writes the <code>mars</code> command to the Go bin
-              directory, PATH setup makes new shells find it, and
-              <code>mars setup</code> prepares <code>~/.mars/</code>, hardware
-              detection, private-release auth checks, llama.cpp artifacts,
-              model files, and optional integration readiness.
+              Install the <code>mars</code> command, make sure your shell can
+              find it, download the local runtime pieces, and check the machine
+              is ready. This page explains what gets installed, what gets
+              downloaded, what stays on disk, and how to repair setup when a
+              check fails.
             </p>
           </div>
         </section>

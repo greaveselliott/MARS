@@ -84,7 +84,7 @@ a,
 p,
 li,
 dd {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 code,
@@ -99,6 +99,10 @@ code {
   border: 1px solid rgba(79, 183, 170, 0.28);
   border-radius: 4px;
   padding: 0.08rem 0.3rem;
+  overflow-wrap: anywhere;
+}
+
+a[href^="http"] {
   overflow-wrap: anywhere;
 }
 
@@ -221,7 +225,8 @@ kbd {
 }
 
 .top-nav a:hover,
-.top-nav a:focus {
+.top-nav a:focus,
+.top-nav a[aria-current="page"] {
   background: var(--soft-coral);
   color: #fff5ee;
 }
@@ -381,17 +386,17 @@ h2,
 h3 {
   line-height: 1.16;
   margin: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 h1 {
   max-width: 860px;
-  font-size: 2.75rem;
+  font-size: 2.35rem;
   letter-spacing: 0;
 }
 
 h2 {
-  font-size: 1.65rem;
+  font-size: 1.5rem;
   letter-spacing: 0;
 }
 
@@ -659,27 +664,7 @@ td:first-child {
 }
 
 @media (max-width: 980px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    position: static;
-  }
-
-  .side-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hero {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-}
-
-@media (max-width: 720px) {
   .site-header {
-    position: static;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.55rem;
@@ -731,6 +716,25 @@ td:first-child {
   }
 
   .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+
+  .side-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .layout {
     padding: 0.85rem;
   }
 
@@ -763,6 +767,13 @@ td:first-child {
   .sidebar.has-section-toggle.is-section-nav-open .side-nav {
     display: grid;
     margin-top: 0;
+  }
+
+  .sidebar.has-section-toggle.is-section-nav-open .sidebar-panel,
+  .sidebar.has-section-toggle.is-section-nav-open .side-nav {
+    max-height: min(60dvh, 520px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .doc-section,
@@ -812,11 +823,11 @@ td:first-child {
   }
 
   h1 {
-    font-size: 1.8rem;
+    font-size: 1.72rem;
   }
 
   h2 {
-    font-size: 1.28rem;
+    font-size: 1.22rem;
   }
 
   h3 {
@@ -895,14 +906,25 @@ td:first-child {
   }
 
   h1 {
-    font-size: 1.55rem;
+    font-size: 1.48rem;
   }
 
   h2 {
-    font-size: 1.18rem;
+    font-size: 1.12rem;
   }
 
   .top-nav a {
     font-size: 0.82rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
