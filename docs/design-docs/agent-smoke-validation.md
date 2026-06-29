@@ -25,10 +25,12 @@ through the same server job path used by autonomous jobs.
 
 `mars validation agent-smoke` is a source-only role-local validation
 lane. Each selected matrix case creates a fresh ephemeral target repo, isolated
-SQLite database, logs, trace directory, result file, and manifest under
-`../demo/validation-runs/agent-smoke/` by default. Successful run directories
-are discarded after report generation unless `--keep-runs` is set; failed run
-directories are retained unless `--discard-failed` is set.
+SQLite database, logs, a reported trace path, result file, and manifest under
+`../demo/validation-runs/agent-smoke/` by default. Trace records are stored in
+the per-case SQLite database; the run-local `trace/` path exists as a reported
+diagnostic path. Successful run directories are discarded after report
+generation unless `--keep-runs` is set; failed run directories are retained
+unless `--discard-failed` is set.
 
 The primary behavior is **live role execution**:
 
@@ -51,8 +53,8 @@ The primary behavior is **live role execution**:
    not valid evidence for ticket-bearing roles.
 7. Run fixture assertions before execution.
 8. Execute the selected role through `serve.Executor.Execute` with the
-   generated repo as `RepoID`, the per-case DB as the executor DB, isolated
-   trust/org-state/trace stores, the role manifest allowlist, structured
+   generated repo as `RepoID`, the per-case DB as the executor DB and trace
+   store, isolated trust/org-state stores, the role manifest allowlist, structured
    trigger context, and a per-role log file.
 9. Read the terminal `job_disposition_record` from org-state.
 10. Run fixture assertions again after execution so agent-created forbidden
@@ -171,7 +173,7 @@ counts as a pass.
 | --- | --- |
 | Smoke lane silently becomes fixture generation only | Live execution is default; `result.json` and Markdown reports record `execution_mode`; `--fixture-only` is explicitly diagnostic only. |
 | Agent smoke overfits one project type | Matrix spans API, web, game, CLI, library, docs-site, and maintenance cases, with `--cycle` and held-out suites. |
-| Parallel cases contaminate each other | Every case owns a target repo, DB, log file, and trace path; only the inference router is shared. |
+| Parallel cases contaminate each other | Every case owns a target repo, DB-backed trace store, log file, and reported trace path; only the inference router is shared. |
 | Parallel validation silently starts one model server per tier | Local-model agent-smoke defaults to `--single-server`; reports record single-server topology and server parallel slots. |
 | Follow-on dispatch turns smoke into an unbounded lifecycle run | Runner calls `serve.Executor.Execute` directly and skips job-completion routing. |
 | Source-only roles leak into deployed manifests | `foundation-maintainer` is reported as source-only and is never added to target manifests. |

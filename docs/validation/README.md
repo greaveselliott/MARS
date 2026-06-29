@@ -68,6 +68,9 @@ writes JSON or Markdown evidence, and discards successful runs unless
 `--keep-runs` is set. `--parallel` runs independent ephemeral repos and DBs at
 the same time, and the runner suppresses follow-on dispatch after the target
 role while recording the would-be next role and terminal disposition.
+Run it from the MARS source checkout; there is no `--repo` flag because the
+matrix is loaded from the current foundation repo. Use `--root` only to move
+ephemeral run storage.
 Live runs default to a 32-turn role budget so ticket claim, implementation,
 validation evidence, ticket closure, and terminal disposition can complete.
 Each generated target contains `docs/validation/agent-smoke/current-case.md`;
@@ -78,10 +81,16 @@ Smoke examples:
 
 ```bash
 mars validation agent-smoke --suite fast --json
-mars validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs
+mars validation agent-smoke --case static-web-ticket --role engineer --project-type static-web --suite fast --keep-runs
+mars validation agent-smoke --role engineer --project-type go-api --suite default --keep-runs
 mars validation agent-smoke --suite held-out --parallel 2 --single-server --single-server-tier coding --timeout 10m
 mars validation agent-smoke --cleanup-only
 ```
+
+Successful run directories are deleted unless `--keep-runs` is set. Failed
+runs are retained unless `--discard-failed` is set. Cleanup removes every
+`run-*` directory under the selected root and exits before matrix loading or
+Markdown report writing, so use a dedicated root for agent-smoke output.
 
 Agent smoke complements full clean-project sweeps. It does not prove
 cross-agent handoff quality by itself, and it does not remove the AD-284/AD-291

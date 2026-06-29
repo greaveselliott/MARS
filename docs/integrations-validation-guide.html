@@ -12,8 +12,11 @@ docs:
 - docs/runbooks/atlassian-mcp-jira-intake.md
 - docs/code-intel-reference.html
 - docs/validation/README.md
+- docs/validation/agent-smoke/README.md
+- docs/design-docs/agent-smoke-validation.md
 - docs/design-docs/validation-matrix-gating.md
 - docs/design-docs/foundation-operating-model.md
+- docs/features/F-012-self-improvement-loop.md
 -->
 <html lang="en">
   <head>
@@ -66,6 +69,8 @@ docs:
           <a href="#configuration">Configuration</a>
           <a href="#validation">Validation Artifacts</a>
           <a href="#agent-smoke">Agent Smoke</a>
+          <a href="#agent-smoke-options">Agent Smoke Options</a>
+          <a href="#agent-smoke-output">Agent Smoke Output</a>
           <a href="#evidence">Evidence Rules</a>
           <a href="#recipes">Recipes</a>
           <a href="#troubleshooting">Troubleshooting</a>
@@ -286,19 +291,36 @@ delivery:
             repos, seeds them through foundation scaffold/tool surfaces,
             executes selected roles through the server job path, records
             evidence, and discards successful runs unless told otherwise.
+            It is the fast compartmentalized lane for source maintainers who
+            need to check a role, project type, or dispatch contract without
+            running a whole clean-project lifecycle sweep.
           </p>
+          <div class="callout">
+            <strong>Run it from the MARS source checkout.</strong>
+            The command reads <code>docs/validation/agent-smoke/matrix.yaml</code>
+            from the foundation repo. Each generated target gets its own
+            <code>docs/validation/agent-smoke/current-case.md</code>; agents
+            should read that target-local contract, not the foundation matrix.
+          </div>
           <div class="reference-stack">
             <article data-doc-filter>
-              <h3>Fast smoke suite</h3>
-              <pre><code>mars validation agent-smoke --suite fast --json</code></pre>
+              <h3>Rotating fast smoke</h3>
+              <pre><code>mars validation agent-smoke \
+  --suite fast \
+  --cycle 2026-06-29 \
+  --json \
+  --report docs/validation/reports/2026-06-29-agent-smoke-fast.md</code></pre>
+              <p><code>fast</code> is the default suite. It selects one case per role and uses <code>--cycle</code> to rotate which case is chosen.</p>
             </article>
             <article data-doc-filter>
-              <h3>Keep one run for inspection</h3>
+              <h3>Inspect one retained run</h3>
               <pre><code>mars validation agent-smoke \
+  --case static-web-ticket \
   --role engineer \
-  --project-type go-api \
+  --project-type static-web \
   --suite fast \
   --keep-runs</code></pre>
+              <p>Use <code>--case</code> when replaying one failure. <code>--keep-runs</code> keeps successful run folders so you can inspect the generated target, trace, log, DB, <code>result.json</code>, and <code>manifest.json</code>.</p>
             </article>
             <article data-doc-filter>
               <h3>Held-out parallel smoke</h3>
@@ -308,11 +330,103 @@ delivery:
   --single-server \
   --single-server-tier coding \
   --timeout 10m</code></pre>
+              <p>The default local path uses one shared llama-server tier. Pass <code>--single-server=false</code> only when you deliberately want tiered role routing.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Fixture recipe check</h3>
+              <pre><code>mars validation agent-smoke --suite full --fixture-only --json</code></pre>
+              <p>This generates and lints fixtures without running roles. It is useful for debugging the matrix or generator, but it is not live role evidence.</p>
             </article>
             <article data-doc-filter>
               <h3>Clean up retained runs</h3>
               <pre><code>mars validation agent-smoke --cleanup-only</code></pre>
+              <p>Use the same <code>--root</code> when cleaning a custom run location. Cleanup removes every <code>run-*</code> directory under that root and exits before matrix loading or report writing.</p>
             </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="agent-smoke-options">
+          <h2>Agent Smoke Command Reference</h2>
+          <p>
+            The command filters the checked-in matrix, creates one fresh run
+            directory per selected case, and runs each case with isolated target
+            files, SQLite state, logs, and trace output.
+          </p>
+          <div class="callout">
+            <strong>No <code>--repo</code> flag:</strong>
+            run this command from the MARS source checkout, or pass
+            <code>--root</code> only to move run storage. The matrix still comes
+            from the current foundation checkout.
+          </div>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Option</th><th>Default</th><th>User meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>--suite fast|default|full|held-out</code></td><td><code>fast</code></td><td>Selects the matrix lane. <code>fast</code> rotates one case per role. <code>default</code> runs representative cases. <code>held-out</code> checks anti-overfit cases. <code>full</code> runs every case.</td></tr>
+                <tr><td><code>--cycle &lt;key&gt;</code></td><td>empty</td><td>Stable rotation key for <code>fast</code> selection. Use a date, release, or ticket key when you want repeatable rotation.</td></tr>
+                <tr><td><code>--case &lt;id&gt;</code></td><td>empty</td><td>Runs one case by exact matrix ID. Best for replaying a failed or changed contract.</td></tr>
+                <tr><td><code>--role &lt;role&gt;</code></td><td>empty</td><td>Runs only cases for one role, such as <code>engineer</code>, <code>qa</code>, or <code>dogfood</code>.</td></tr>
+                <tr><td><code>--project-type &lt;type&gt;</code></td><td>empty</td><td>Runs only cases for one generated target shape, such as <code>go-api</code>, <code>static-web</code>, <code>react-web</code>, or <code>browser-game-phaser</code>.</td></tr>
+                <tr><td><code>--parallel &lt;n&gt;</code></td><td><code>1</code></td><td>Runs up to this many selected cases at once. With the default single-server mode, MARS raises local server parallelism to match when needed.</td></tr>
+                <tr><td><code>--timeout &lt;duration&gt;</code></td><td><code>10m</code></td><td>Per-case timeout. A timeout is a failed case, not a skipped case.</td></tr>
+                <tr><td><code>--max-turns &lt;n&gt;</code></td><td><code>32</code></td><td>Maximum role turns for live execution. Fixture-only runs do not use the live agent loop.</td></tr>
+                <tr><td><code>--model-endpoint &lt;url&gt;</code></td><td>local router</td><td>Uses an operator-supplied OpenAI-compatible endpoint. It must be a real model endpoint for validation claims; fake, scripted, stub, mock, or canned endpoints prove plumbing only.</td></tr>
+                <tr><td><code>--single-server</code></td><td><code>true</code></td><td>Uses one local inference server for all selected roles. Pass <code>--single-server=false</code> to use tiered local routing.</td></tr>
+                <tr><td><code>--single-server-tier coding|reasoning|fast</code></td><td><code>coding</code></td><td>Selects the local tier used by the shared server.</td></tr>
+                <tr><td><code>--fixture-only</code></td><td><code>false</code></td><td>Generates and checks targets without running the role. Good for generator debugging; not live role evidence.</td></tr>
+                <tr><td><code>--json</code></td><td><code>false</code></td><td>Writes a machine-readable report to stdout.</td></tr>
+                <tr><td><code>--report &lt;path&gt;</code></td><td>empty</td><td>Writes a Markdown report. Use <code>docs/validation/reports/</code> when the run is durable evidence.</td></tr>
+                <tr><td><code>--keep-runs</code></td><td><code>false</code></td><td>Keeps successful run directories for inspection. Without it, successful runs are deleted after their result artifacts are written.</td></tr>
+                <tr><td><code>--discard-failed</code></td><td><code>false</code></td><td>Deletes failed run directories too. Avoid this when diagnosing role behavior.</td></tr>
+                <tr><td><code>--cleanup-only</code></td><td><code>false</code></td><td>Deletes retained <code>run-*</code> folders under the agent-smoke root and exits without loading cases or writing a Markdown report.</td></tr>
+                <tr><td><code>--root &lt;path&gt;</code></td><td><code>../demo/validation-runs/agent-smoke</code></td><td>Parent directory for ephemeral runs, resolved from the MARS source checkout unless you pass an absolute path.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc-section" id="agent-smoke-output">
+          <h2>Agent Smoke Output And Retention</h2>
+          <p>
+            A passing text run prints a summary and one line per case. A JSON
+            run includes the selected count, pass/fail counts, evidence source,
+            model source, inference topology, cleanup count, optional report
+            path, and a result object for each case.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Field or file</th><th>What it tells you</th><th>How to use it</th></tr></thead>
+              <tbody>
+                <tr><td><code>evidence</code></td><td><code>local-model</code>, <code>endpoint-override</code>, <code>fixture-only</code>, or <code>cleanup-only</code>.</td><td>Use it to decide whether the run can support a live validation claim.</td></tr>
+                <tr><td><code>model_source</code></td><td>The local router topology or endpoint-override note.</td><td>Record this in durable validation reports when the model path matters.</td></tr>
+                <tr><td><code>single_server</code>, <code>single_server_tier</code>, <code>server_parallel</code></td><td>Local inference topology used for the run.</td><td>Use these when claiming single-server parallel coverage.</td></tr>
+                <tr><td><code>results[].execution_mode</code></td><td><code>live</code>, <code>fixture-only</code>, or <code>source-only</code>.</td><td>Only <code>live</code> proves role execution against a target. Source-only foundation role cases do not execute a target manifest role.</td></tr>
+                <tr><td><code>results[].terminal_disposition</code>, <code>terminal_next_need</code>, <code>terminal_suggested_role</code></td><td>The recorded job disposition and suppressed follow-on routing.</td><td>Compare with the case contract before using the run as evidence.</td></tr>
+                <tr><td><code>results[].run_path</code></td><td>The retained run directory, or discarded status in the Markdown report.</td><td>Open it when diagnosing a failure or a kept success.</td></tr>
+                <tr><td><code>target/</code></td><td>The generated repo used by the case.</td><td>Inspect generated files, tickets, reports, commits, and target-local case contract.</td></tr>
+                <tr><td><code>db/mars.db</code></td><td>Case-local queue, trace, trust, and org-state data.</td><td>Use for deep diagnosis without mixing cases or target repos.</td></tr>
+                <tr><td><code>logs/&lt;role&gt;.log</code></td><td>Role terminal log for the case.</td><td>Start here when a role failed or timed out.</td></tr>
+                <tr><td><code>trace/</code></td><td>Created and reported as a case trace path. Trace data is currently SQLite-backed in <code>db/mars.db</code>.</td><td>Use the DB with the log and result files to inspect tool and disposition behavior.</td></tr>
+                <tr><td><code>result.json</code></td><td>Full per-case result object.</td><td>Useful for scripts and for copying exact fields into a validation report.</td></tr>
+                <tr><td><code>manifest.json</code></td><td>Run ID, case, role, target path, DB path, execution mode, job ID, status, disposition, and would-dispatch role.</td><td>Use as a quick retained-run index.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead><tr><th>Failure class</th><th>Likely meaning</th><th>First place to look</th></tr></thead>
+              <tbody>
+                <tr><td><code>fixture-invalid</code></td><td>The generated target does not match the case contract.</td><td>Target files and <code>current-case.md</code>.</td></tr>
+                <tr><td><code>foundation-tool-generation</code></td><td>Foundation seeding or artifact writing failed.</td><td>Generation tool provenance and run artifacts.</td></tr>
+                <tr><td><code>environment/model</code></td><td>Model, LLM, or inference setup failed.</td><td>Model source, local config, and role log.</td></tr>
+                <tr><td><code>role-behavior</code></td><td>The role failed the expected behavior, terminal disposition, turn budget, or post-run assertions.</td><td>Role log, trace, target commits, and <code>result.json</code>.</td></tr>
+                <tr><td><code>tool-policy</code></td><td>A tool call was blocked by policy.</td><td>Role log and case contract tool expectations.</td></tr>
+                <tr><td><code>dispatch-context</code></td><td>The disposition, next need, suggested role, or dispatch contract did not match.</td><td>Org-state DB and terminal disposition fields.</td></tr>
+                <tr><td><code>project-type-gap</code></td><td>The matrix names a target shape the generator does not support.</td><td>Matrix case and generator support.</td></tr>
+                <tr><td><code>cleanup-failed</code></td><td>MARS could not delete a run directory after a pass.</td><td>Run root permissions and open files.</td></tr>
+                <tr><td><code>unknown</code></td><td>A failure did not match a known class.</td><td>Use the retained run path and exact error text.</td></tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
@@ -335,6 +449,10 @@ delivery:
             <article data-doc-filter>
               <h3>No fake live evidence</h3>
               <p>Fake, stub, mock, canned, or scripted LLM endpoints prove plumbing only, not live role/model/lifecycle quality.</p>
+            </article>
+            <article data-doc-filter>
+              <h3>Fixture-only is not a pass claim</h3>
+              <p><code>--fixture-only</code> can prove generator recipes still build target fixtures. It does not prove an agent role executed or made a good decision.</p>
             </article>
             <article data-doc-filter>
               <h3>Failure ownership</h3>

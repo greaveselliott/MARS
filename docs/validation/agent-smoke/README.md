@@ -53,10 +53,17 @@ starting separate tier servers.
 
 ```bash
 mars validation agent-smoke --suite fast --json
-mars validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs
+mars validation agent-smoke --case static-web-ticket --role engineer --project-type static-web --suite fast --keep-runs
+mars validation agent-smoke --role engineer --project-type go-api --suite default --keep-runs
 mars validation agent-smoke --suite held-out --parallel 2 --single-server --single-server-tier coding --timeout 10m
 mars validation agent-smoke --cleanup-only
 ```
+
+Run the command from the MARS source checkout. There is no `--repo`; the
+foundation matrix is loaded from the current checkout and generated targets get
+their own target-local case contract. Use `--root` when you want a dedicated
+ephemeral run directory. `--cleanup-only` removes every `run-*` directory under
+that root and exits before writing a Markdown report.
 
 Use `--fixture-only` only to debug generator recipes and fixture linting; it is
 not valid evidence that an agent role executed.

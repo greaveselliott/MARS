@@ -299,8 +299,8 @@ mars checks run --repo /path/to/repo --role qa --name playwright -- npm test</co
             <article data-doc-filter>
               <h3>Run source-maintainer agent smoke validation</h3>
               <pre><code>mars validation agent-smoke --suite fast --json
-mars validation agent-smoke --role engineer --project-type go-api --suite fast</code></pre>
-              <p>Agent smoke creates ephemeral target repos and exercises roles through the server job execution path.</p>
+mars validation agent-smoke --case static-web-ticket --role engineer --project-type static-web --suite fast</code></pre>
+              <p>Agent smoke creates ephemeral target repos and exercises roles through the server job execution path. Use the <a href="integrations-validation-guide.html#agent-smoke-options">agent-smoke command reference</a> for flags, report fields, retention, and evidence boundaries.</p>
             </article>
             <article data-doc-filter>
               <h3>Keep validation boundaries honest</h3>

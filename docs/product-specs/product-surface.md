@@ -61,7 +61,10 @@ endpoints, request bodies, response shapes, SSE events, errors, and operator
 recipes. The site also includes governance and release guides for safety,
 trust, quality, telemetry (`docs/safety-quality-guide.html`), release/update
 operations (`docs/release-update-guide.html`), and optional integration plus
-validation workflows (`docs/integrations-validation-guide.html`). File and
+validation workflows (`docs/integrations-validation-guide.html`). Validation
+coverage includes the `mars validation agent-smoke` command surface, suite
+selection, report fields, retained-run files, cleanup behavior, failure
+classes, and fixture/live evidence boundaries. File and
 state ownership is documented in `docs/files-state-reference.html`, covering
 target harness files, local runtime state, databases, logs, traces, model
 artifacts, secrets, release assets, upgrade preservation, and eject cleanup.

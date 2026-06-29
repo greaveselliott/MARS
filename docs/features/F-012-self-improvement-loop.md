@@ -119,10 +119,10 @@ And score export renders deterministic remediation attempt and execution summari
 
 Given an operator runs `mars validation agent-smoke`
 When the runner selects role cases from `docs/validation/agent-smoke/matrix.yaml`
-Then each selected case creates a fresh ephemeral target repo, isolated database, logs, trace directory, result file, and manifest
+Then each selected case creates a fresh ephemeral target repo, isolated database with trace records, logs, a reported trace path, result file, and manifest
 And target seed artifacts are generated through foundation scaffold/tool surfaces rather than long-lived snapshot repos
-And non-source-only selected roles execute live through the server job path with structured trigger context, isolated trust/org-state/trace persistence, and role tool policy
-And multiple selected cases can execute in parallel without sharing target repos, DBs, logs, or trace state
+And non-source-only selected roles execute live through the server job path with structured trigger context, isolated trust/org-state stores, DB-backed trace persistence, and role tool policy
+And multiple selected cases can execute in parallel without sharing target repos, DBs, logs, or DB-backed trace state
 And local-model smoke runs default to one shared local inference server tier while parallel selected cases execute concurrently through that server
 And follow-on dispatch is suppressed after the target role while the would-be next role and terminal disposition are recorded
 And successful runs are discarded by default while failed runs are retained for diagnosis unless explicitly discarded
@@ -151,4 +151,4 @@ None.
 - F-012-S008: `go test ./internal/telemetry -run TestBuildAnonymousReport` and `go test ./internal/config -run TestLoad_envTelemetryOverrides`
 - F-012-S009: `go test ./internal/foundationtelemetry`
 - F-012-S010: `go test ./internal/remediation`, `go test ./internal/serve -run 'TestHandleJobFailed(RecordsDeterministicRemediation|ExecutesGeneratedDocs)|TestHandleRemediation(ExecutableReadyRecipe|AutoSafeWithoutExecutor|OperatorRecipe)'`, `go test ./internal/doctor -run TestCheckDeterministicRemediationHealth`, and `go test ./internal/qualityscore -run TestExportRendersTelemetryAndOutcomeSignals`
-- F-012-S011: `go test ./internal/validation`, smoke commands `mars validation agent-smoke --suite fast --json`, `mars validation agent-smoke --role engineer --project-type go-api --suite fast --keep-runs`, `mars validation agent-smoke --suite held-out --parallel 2 --timeout 10m`, `mars validation agent-smoke --cleanup-only`, and the live full-matrix report [2026-06-15-agent-smoke-full-matrix.md](../validation/reports/2026-06-15-agent-smoke-full-matrix.md) for `mars validation agent-smoke --suite full --parallel 2 --timeout 45m`
+- F-012-S011: `go test ./internal/validation`, smoke commands `mars validation agent-smoke --suite fast --json`, `mars validation agent-smoke --case static-web-ticket --role engineer --project-type static-web --suite fast --keep-runs`, `mars validation agent-smoke --role engineer --project-type go-api --suite default --keep-runs`, `mars validation agent-smoke --suite held-out --parallel 2 --timeout 10m`, `mars validation agent-smoke --cleanup-only`, and the live full-matrix report [2026-06-15-agent-smoke-full-matrix.md](../validation/reports/2026-06-15-agent-smoke-full-matrix.md) for `mars validation agent-smoke --suite full --parallel 2 --timeout 45m`
