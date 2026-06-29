@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.24] - 2026-06-29
+<!-- mars-release: version=0.68.24 commit=8093c72540d7 -->
+
+### Impact
+- **site:** Users now have a dedicated shell integration reference for making the `mars` command discoverable, understanding profile targets, repairing stale shell caches, and installing Bash, Zsh, Fish, or PowerShell completions.
+
+### Why
+- **site:** The docs site covered source install and PATH repair, but users still had to infer the difference between PATH setup, shell reloads, command-cache repair, and generated completion scripts from scattered command help.
+
+### What Changed
+- **site:** Added a static Shell Integration Reference, linked it from the homepage, README, quickstart, CLI reference, install/setup reference, workflows, configuration, troubleshooting, release/update guide, and product surface, and documented `mars path setup`, profile file targets, JSON/dry-run output, shell-specific completion recipes, verification, automation, and troubleshooting (8093c72).
+
+### Documentation
+- **site:** Add shell integration reference (8093c72)
+
 ## [0.68.23] - 2026-06-29
 <!-- mars-release: version=0.68.23 commit=48859bfb00b3 -->
 
