@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.31] - 2026-06-29
+<!-- mars-release: version=0.68.31 commit=b497e2afd264 -->
+
+### Impact
+- **setup:** Operators and future agents get clearer guidance because expand doctor recovery reference.
+
+### Why
+- **setup:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **setup:** Changed expand doctor recovery reference (b497e2a).
+
+### Documentation
+- **setup:** Expand doctor recovery reference (b497e2a)
+
 ## [0.68.30] - 2026-06-29
 <!-- mars-release: version=0.68.30 commit=852bebc64b16 -->
 
