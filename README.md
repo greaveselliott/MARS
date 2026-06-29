@@ -32,8 +32,14 @@ The repository GitHub Pages site publishes from `/docs` and starts at the
 [MARS developer documentation](https://greaveselliott.github.io/MARS/).
 It is the user-facing front door for installation, setup, CLI workflows,
 target harness lifecycle, operations, models, safety, telemetry, release
-management, extension, and troubleshooting. Deeper site pages now cover the
-[CLI reference](docs/cli-reference.html), [shell integration](docs/shell-integration-reference.html), [authentication and credentials](docs/auth-credentials-reference.html), [user workflows](docs/workflows.html),
+management, extension, and troubleshooting. The homepage now includes a
+searchable [documentation catalog](docs/index.html#catalog) and conservative
+[readiness matrix](docs/index.html#readiness) so users can find both task
+guides and durable source-of-truth artifacts. Deeper site pages cover the
+[CLI reference](docs/cli-reference.html),
+[shell integration](docs/shell-integration-reference.html),
+[authentication and credentials](docs/auth-credentials-reference.html),
+[user workflows](docs/workflows.html),
 [target harness guide](docs/harness-guide.html),
 [operations guide](docs/operations-guide.html),
 [files and state reference](docs/files-state-reference.html),
@@ -271,7 +277,7 @@ safety, or orchestration changes do. See
 ## Documentation Map
 
 - [docs/index.html](docs/index.html): GitHub Pages developer documentation
-  front door.
+  front door, searchable catalog, source-of-truth map, and readiness matrix.
 - [docs/quickstart.html](docs/quickstart.html): first-run guide for source
   install, local setup, target initialization, safe inspection, dashboard
   checks, update paths, and troubleshooting.
@@ -342,6 +348,16 @@ safety, or orchestration changes do. See
 - [docs/planning-delivery-guide.html](docs/planning-delivery-guide.html):
   goals, active plans, BDD feature contracts, ticket lifecycle, role handoffs,
   evidence gates, and release review.
+- [docs/goals/README.md](docs/goals/README.md): goal lifecycle, schema, review
+  triggers, and goal-to-plan rules.
+- [docs/goals/active.md](docs/goals/active.md): active durable outcomes that
+  can influence the current plan.
+- [docs/exec-plans/README.md](docs/exec-plans/README.md): execution-plan
+  lifecycle, metadata, BDD-led planning order, and plan hygiene rules.
+- [docs/exec-plans/active/current-operating-plan.md](docs/exec-plans/active/current-operating-plan.md):
+  the single active plan that chooses current work.
+- [docs/tickets/README.md](docs/tickets/README.md): ticket lifecycle,
+  required evidence, intervention debt, and completion rules.
 - [docs/quickstart.md](docs/quickstart.md): compact Markdown quickstart
   companion for repo readers.
 - [docs/harness-ecosystem/](docs/harness-ecosystem/):
@@ -355,6 +371,14 @@ safety, or orchestration changes do. See
   companion for safety rule authoring.
 - [docs/design-docs/index.md](docs/design-docs/index.md): decisions and design
   rationale.
+- [docs/validation/README.md](docs/validation/README.md): validation matrix,
+  report, smoke-suite, and release-blocker evidence contracts.
+- [docs/runbooks/README.md](docs/runbooks/README.md): operational procedures
+  for configuring, validating, or repairing MARS features.
+- [docs/references/README.md](docs/references/README.md): research,
+  comparator audits, and external references that influence MARS design.
+- [docs/generated/README.md](docs/generated/README.md): generated reference
+  docs governance and catalog.
 - [docs/QUALITY_SCORE.md](docs/QUALITY_SCORE.md): repo-visible quality evidence.
 
 ## Lineage

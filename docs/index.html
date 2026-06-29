@@ -6,10 +6,25 @@ docs:
 - docs/quickstart.html
 - docs/quickstart.md
 - docs/product-specs/product-surface.md
+- docs/product-specs/index.md
 - docs/product-specs/vision.md
+- docs/goals/README.md
+- docs/goals/active.md
+- docs/exec-plans/README.md
+- docs/exec-plans/active/current-operating-plan.md
+- docs/tickets/README.md
+- docs/QUALITY_SCORE.md
+- docs/runbooks/README.md
+- docs/references/README.md
+- docs/validation/README.md
+- docs/generated/README.md
+- docs/design-docs/index.md
 - docs/install-setup-reference.html
 - docs/shell-integration-reference.html
 - docs/auth-credentials-reference.html
+- docs/cli-reference.html
+- docs/workflows.html
+- docs/harness-guide.html
 - docs/target-lifecycle-reference.html
 - docs/bundle-reference.html
 - docs/bundle-reference.md
@@ -17,6 +32,8 @@ docs:
 - docs/guardrails-guide.md
 - docs/features/README.md
 - docs/design-docs/dashboard.md
+- docs/design-docs/delivery-operating-model.md
+- docs/design-docs/foundation-operating-model.md
 - docs/design-docs/local-inference.md
 - docs/design-docs/release-versioning.md
 - docs/design-docs/harness-operating-model.md
@@ -65,6 +82,7 @@ docs:
         <a href="install-setup-reference.html">Setup</a>
         <a href="shell-integration-reference.html">Shell</a>
         <a href="auth-credentials-reference.html">Auth</a>
+        <a href="#catalog">Catalog</a>
         <a href="cli-reference.html">CLI Reference</a>
         <a href="workflows.html">Workflows</a>
         <a href="planning-delivery-guide.html">Delivery</a>
@@ -99,7 +117,9 @@ docs:
         </div>
         <nav class="side-nav">
           <a href="#overview">Overview</a>
-          <a href="#deep-guides">Deep Guides</a>
+          <a href="#deep-guides">User Guides</a>
+          <a href="#catalog">Catalog</a>
+          <a href="#readiness">Readiness</a>
           <a href="#quickstart">Quickstart</a>
           <a href="#install">Install and Setup</a>
           <a href="#planning-delivery">Planning and Delivery</a>
@@ -184,11 +204,13 @@ docs:
         </section>
 
         <section class="doc-section" id="deep-guides">
-          <h2>Deep User Guides</h2>
+          <h2>User Guides</h2>
           <p>
             Use these pages when you need more than the front-door overview.
             They expand the documentation site into task and reference material
-            for day-to-day users.
+            for day-to-day users. The catalog below adds the durable repo
+            artifacts that define plans, tickets, quality evidence, validation,
+            runbooks, references, and product contracts.
           </p>
           <div class="reference-grid">
             <a href="quickstart.html">Quickstart Guide</a>
@@ -217,6 +239,197 @@ docs:
             <a href="release-update-guide.html">Release And Update Guide</a>
             <a href="integrations-validation-guide.html">Integrations And Validation Guide</a>
             <a href="harness-ecosystem/">Adoption Explainer</a>
+          </div>
+        </section>
+
+        <section class="doc-section" id="catalog">
+          <h2>Documentation Catalog</h2>
+          <p>
+            Use this catalog when you need the right document for a job, not
+            just the next page in a tour. The search box filters these entries
+            by command, artifact, workflow, and operating-model term.
+          </p>
+          <div class="reference-stack">
+            <article data-doc-filter>
+              <h3>Start, install, and operate</h3>
+              <dl>
+                <dt><a href="quickstart.html">Quickstart</a></dt>
+                <dd>First source install, setup, target initialization, safe inspection, dashboard checks, and first-run recovery.</dd>
+                <dt><a href="install-setup-reference.html">Install And Setup Reference</a></dt>
+                <dd>Machine requirements, <code>make install</code>, <code>mars setup</code>, local bundles, automation, <code>doctor</code>, and setup troubleshooting.</dd>
+                <dt><a href="shell-integration-reference.html">Shell Integration Reference</a></dt>
+                <dd>PATH setup, profile files, command-cache repair, completions, CI shell notes, and shell-specific recovery.</dd>
+                <dt><a href="auth-credentials-reference.html">Authentication And Credentials Reference</a></dt>
+                <dd>GitHub release auth, provider API-key env vars, local credential storage, secret hygiene, and credential troubleshooting.</dd>
+                <dt><a href="operations-guide.html">Operations Guide</a></dt>
+                <dd>Serve/start runtime behavior, dashboard controls, queues, DBs, logs, workers, and recovery procedures.</dd>
+              </dl>
+            </article>
+            <article data-doc-filter>
+              <h3>Command, workflow, and target lifecycle</h3>
+              <dl>
+                <dt><a href="cli-reference.html">CLI Reference</a></dt>
+                <dd>Command groups, flags, examples, dry-run paths, and evidence-producing commands.</dd>
+                <dt><a href="workflows.html">User Workflows</a></dt>
+                <dd>Task-oriented flows for installing, initializing, running, observing, updating, and recovering MARS.</dd>
+                <dt><a href="target-lifecycle-reference.html">Target Lifecycle Reference</a></dt>
+                <dd><code>init</code>, <code>register</code>, <code>start</code>, <code>run</code>, <code>scan</code>, <code>doctor</code>, <code>upgrade</code>, <code>update check</code>, and <code>eject</code>.</dd>
+                <dt><a href="harness-guide.html">Target Harness Guide</a></dt>
+                <dd>How generated roles, prompts, guardrails, knowledge routes, tickets, plans, and docs fit together inside a target repo.</dd>
+                <dt><a href="files-state-reference.html">Files And State Reference</a></dt>
+                <dd>Repo artifacts, local databases, logs, traces, model files, release assets, secrets, upgrade preservation, and eject cleanup.</dd>
+              </dl>
+            </article>
+            <article data-doc-filter>
+              <h3>Runtime, tools, evidence, and governance</h3>
+              <dl>
+                <dt><a href="models-guide.html">Models And Inference Guide</a></dt>
+                <dd>Local llama.cpp lifecycle, model bundles, provider routing, credentials, overrides, and evaluation.</dd>
+                <dt><a href="tools-mcp-guide.html">Tools And MCP Guide</a></dt>
+                <dd>Universal tools, MCP serving, trust levels, allowlists, tool categories, and the formal tool creation path.</dd>
+                <dt><a href="code-intel-reference.html">Code Intelligence And Evidence Reference</a></dt>
+                <dd>Repo graph context, code-intel tools, metrics, benchmark boundaries, checks, and validation recipes.</dd>
+                <dt><a href="observability-guide.html">Observability And Evidence Guide</a></dt>
+                <dd>Dashboard, terminal status, logs, traces, quality score, telemetry, privacy, and evidence workflows.</dd>
+                <dt><a href="safety-quality-guide.html">Safety, Trust, And Quality Guide</a> and <a href="guardrails-reference.html">Guardrails Reference</a></dt>
+                <dd>Blast-radius containment, trust, scoring, secret scanning, guardrail YAML, overrides, and recovery.</dd>
+              </dl>
+            </article>
+            <article data-doc-filter>
+              <h3>Delivery source of truth</h3>
+              <dl>
+                <dt><a href="goals/README.md">Goals guide</a></dt>
+                <dd>Lifecycle, schema, review triggers, and the rule that goals steer plans rather than creating work directly.</dd>
+                <dt><a href="goals/active.md">Active goals</a></dt>
+                <dd>Current durable outcomes and constraints that guide source and target work.</dd>
+                <dt><a href="exec-plans/README.md">Execution plan guide</a></dt>
+                <dd>Plan lifecycle, required metadata, BDD-led planning order, and hygiene checks for the single active plan.</dd>
+                <dt><a href="exec-plans/active/current-operating-plan.md">Active execution plan</a></dt>
+                <dd>The single current plan that names the allowed feature, scenario schedule, evidence, and next slice.</dd>
+                <dt><a href="features/README.md">BDD feature contracts</a></dt>
+                <dd>User-visible feature completeness, scenarios, business logic, and evidence expectations.</dd>
+                <dt><a href="tickets/README.md">Ticket lifecycle guide</a></dt>
+                <dd>Backlog, in-progress, in-review, done, evidence fields, intervention debt, and direct-main completion rules.</dd>
+                <dt><a href="QUALITY_SCORE.md">Quality score</a></dt>
+                <dd>Repo-visible quality evidence generated from scores, telemetry, tickets, checks, dogfood, and human follow-up.</dd>
+                <dt><a href="planning-delivery-guide.html">Planning And Delivery Guide</a></dt>
+                <dd>User-facing explanation of goals, plans, tickets, BDD, role handoffs, evidence gates, and release review.</dd>
+              </dl>
+            </article>
+            <article data-doc-filter>
+              <h3>Product contract, validation, and releases</h3>
+              <dl>
+                <dt><a href="product-specs/index.md">Product specs</a></dt>
+                <dd>Living product promise, user surface, planned dashboard control plane, Mars relationship, and spec maintenance rules.</dd>
+                <dt><a href="design-docs/index.md">Design decisions</a></dt>
+                <dd>Architecture decisions, accepted operating doctrine, and design rationale indexed for source maintainers and advanced operators.</dd>
+                <dt><a href="design-docs/harness-operating-model.md">Harness operating model</a></dt>
+                <dd>Reusable doctrine for turning intent into shipped work across goals, BDD, tickets, evidence, trust, and self-improvement.</dd>
+                <dt><a href="design-docs/foundation-operating-model.md">Foundation operating model</a></dt>
+                <dd>Source-only maintainer rules for changing MARS itself, including clean-project validation and foundation ownership classification.</dd>
+                <dt><a href="release-update-guide.html">Release And Update Guide</a></dt>
+                <dd>Update checks, tool and harness update paths, generated notes, release assets, mirrors, verification, and audit.</dd>
+                <dt><a href="validation/README.md">Validation guide</a></dt>
+                <dd>Matrix reports, validation profiles, smoke suites, release blockers, and the clean-project evidence contract.</dd>
+                <dt><a href="integrations-validation-guide.html">Integrations And Validation Guide</a></dt>
+                <dd>Optional GitHub, JIRA, Atlassian MCP, board-driven profile, validation evidence, and staged integration boundaries.</dd>
+                <dt><a href="runbooks/README.md">Runbooks</a></dt>
+                <dd>Procedural companions for operational setup, validation, and repair, including the Atlassian MCP JIRA intake runbook.</dd>
+                <dt><a href="references/README.md">References</a></dt>
+                <dd>External research, comparator audits, local model research, agent-first engineering sources, and UI guidance references.</dd>
+                <dt><a href="generated/README.md">Generated docs catalog</a></dt>
+                <dd>Governance for deterministic generated reference docs and the current status of generated artifacts.</dd>
+              </dl>
+            </article>
+          </div>
+        </section>
+
+        <section class="doc-section" id="readiness">
+          <h2>Current Readiness</h2>
+          <p>
+            This matrix is a user-facing status map, not a certification. Use
+            it to choose the safest path and then follow the linked guide for
+            exact setup, validation, and recovery steps.
+          </p>
+          <div class="wide-table" data-doc-filter>
+            <table>
+              <thead>
+                <tr>
+                  <th>Surface</th>
+                  <th>Status</th>
+                  <th>Use it for</th>
+                  <th>User notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Source checkout install and shell PATH</td>
+                  <td>Ready default path</td>
+                  <td><code>make install</code>, <code>mars path setup</code>, and <code>mars doctor</code>.</td>
+                  <td>Start here unless you are deliberately testing release assets. See <a href="install-setup-reference.html">setup</a> and <a href="shell-integration-reference.html">shell integration</a>.</td>
+                </tr>
+                <tr>
+                  <td>Private release auth and binary updater</td>
+                  <td>Supported optional path</td>
+                  <td><code>mars auth github check</code>, <code>mars update check</code>, and <code>mars update tool</code>.</td>
+                  <td>Needed for private GitHub Release assets; source installs can use <code>make update-tool</code>. See <a href="auth-credentials-reference.html">auth</a> and <a href="release-update-guide.html">release/update</a>.</td>
+                </tr>
+                <tr>
+                  <td>Local inference lifecycle</td>
+                  <td>Implemented, still hardening</td>
+                  <td><code>mars setup</code>, model bundles, llama-server management, provider routing, and model evaluation.</td>
+                  <td>GPU-backed local inference is the normal autonomous path; CPU is acceptable for development and dry runs. See <a href="models-guide.html">models</a>.</td>
+                </tr>
+                <tr>
+                  <td>Cloud and OpenAI-compatible providers</td>
+                  <td>Supported optional routing</td>
+                  <td>Explicit provider routes and <code>api_key_env</code> credential indirection.</td>
+                  <td>Use environment-variable credentials; never commit secret values. See <a href="configuration-reference.html">configuration</a> and <a href="auth-credentials-reference.html">credentials</a>.</td>
+                </tr>
+                <tr>
+                  <td>Target harness lifecycle</td>
+                  <td>Implemented, still hardening</td>
+                  <td><code>init</code>, <code>start</code>, <code>register</code>, <code>scan</code>, <code>upgrade</code>, <code>update harness</code>, and <code>eject</code>.</td>
+                  <td>Generated harness files become target-owned after initialization. See <a href="target-lifecycle-reference.html">target lifecycle</a>.</td>
+                </tr>
+                <tr>
+                  <td>Run, start, serve, and dashboard</td>
+                  <td>Implemented, still hardening</td>
+                  <td>Manual role runs, scoped single-repo lifecycle, multi-repo daemon, terminal controls, local dashboard, and control APIs.</td>
+                  <td>Keep first runs scoped to one target repo and use dry-run inspection for legacy projects. See <a href="operations-guide.html">operations</a> and <a href="dashboard-api-reference.html">dashboard API</a>.</td>
+                </tr>
+                <tr>
+                  <td>Tools, MCP, code intelligence, and checks</td>
+                  <td>Implemented</td>
+                  <td>Tool registry, MCP serving, trust-aware allowlists, code graph context, metrics, benchmarks, and recorded checks.</td>
+                  <td>Grant contributor trust only when a client should mutate files or run mutating tools. See <a href="tools-mcp-guide.html">tools/MCP</a> and <a href="code-intel-reference.html">code intelligence</a>.</td>
+                </tr>
+                <tr>
+                  <td>Safety, trust, scores, and telemetry</td>
+                  <td>Implemented, still hardening</td>
+                  <td>Guardrails, secret scanning, progressive autonomy, quality export, trace evidence, and optional anonymous telemetry.</td>
+                  <td>Quality claims depend on current evidence, not the presence of a score file alone. See <a href="safety-quality-guide.html">safety and quality</a>.</td>
+                </tr>
+                <tr>
+                  <td>GitHub, JIRA, and Atlassian MCP integrations</td>
+                  <td>Optional or staged</td>
+                  <td>Release auth, webhook coordination where configured, board-driven JIRA intake, and read-only Atlassian MCP setup.</td>
+                  <td>MARS remains useful without remote integrations. See <a href="integrations-validation-guide.html">integrations</a> and <a href="runbooks/atlassian-mcp-jira-intake.md">the JIRA intake runbook</a>.</td>
+                </tr>
+                <tr>
+                  <td>Validation and source releases</td>
+                  <td>Implemented foundation workflow</td>
+                  <td>Release notes, backfill checks, local release assets, verification, release audit, matrix reports, and release-blocker ledger.</td>
+                  <td>Runtime or generated-target claims need clean-project validation; docs-only changes generally need docs checks and link validation. See <a href="validation/README.md">validation</a>.</td>
+                </tr>
+                <tr>
+                  <td>Future dashboard control plane</td>
+                  <td>Planned product spec</td>
+                  <td>TanStack-based local admin surface for richer fleet and agent controls.</td>
+                  <td>The current dashboard is the embedded Go, htmx, Chart.js, and SSE surface. See <a href="product-specs/dashboard-control-plane.md">the planned control-plane spec</a>.</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
@@ -991,8 +1204,9 @@ roles:
         <section class="doc-section" id="reference-map">
           <h2>Reference Map</h2>
           <p>
-            This site is the user front door. The durable source documents below
-            carry deeper contracts for maintainers and advanced operators.
+            This site is the user front door. User guides explain how to use
+            MARS day to day; durable source documents carry deeper contracts
+            for maintainers and advanced operators.
           </p>
           <div class="reference-grid">
             <a href="quickstart.html">Quickstart guide</a>
@@ -1020,6 +1234,12 @@ roles:
             <a href="release-update-guide.html">Release and update guide</a>
             <a href="integrations-validation-guide.html">Integrations and validation guide</a>
             <a href="planning-delivery-guide.html">Planning and delivery guide</a>
+            <a href="goals/README.md">Goals guide</a>
+            <a href="goals/active.md">Active goals</a>
+            <a href="exec-plans/README.md">Execution plan guide</a>
+            <a href="exec-plans/active/current-operating-plan.md">Active execution plan</a>
+            <a href="tickets/README.md">Ticket lifecycle guide</a>
+            <a href="QUALITY_SCORE.md">Quality score</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/README.md">Repository README</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/AGENTS.md">Agent guide</a>
             <a href="https://github.com/greaveselliott/MARS/blob/main/ARCHITECTURE.md">Architecture</a>
@@ -1027,11 +1247,21 @@ roles:
             <a href="guardrails-guide.md">Guardrails Markdown companion</a>
             <a href="features/README.md">BDD feature contracts</a>
             <a href="roles/ROLES.md">Role registry</a>
+            <a href="product-specs/index.md">Product specs index</a>
             <a href="product-specs/product-surface.md">Product surface</a>
+            <a href="product-specs/vision.md">Product vision</a>
+            <a href="design-docs/index.md">Design decisions index</a>
+            <a href="design-docs/delivery-operating-model.md">Delivery operating model</a>
+            <a href="design-docs/foundation-operating-model.md">Foundation operating model</a>
+            <a href="design-docs/harness-operating-model.md">Harness operating model</a>
             <a href="design-docs/dashboard.md">Dashboard design</a>
             <a href="design-docs/local-inference.md">Local inference</a>
             <a href="design-docs/release-versioning.md">Release versioning</a>
             <a href="validation/README.md">Validation guide</a>
+            <a href="validation/release-blockers.md">Release blocker ledger</a>
+            <a href="runbooks/README.md">Runbooks</a>
+            <a href="references/README.md">References</a>
+            <a href="generated/README.md">Generated docs catalog</a>
             <a href="harness-ecosystem/">Adoption explainer</a>
           </div>
         </section>
