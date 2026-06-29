@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.30] - 2026-06-29
+<!-- mars-release: version=0.68.30 commit=852bebc64b16 -->
+
+### Impact
+- **site:** Operators and future agents get clearer guidance because fix mobile documentation navigation.
+
+### Why
+- **site:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **site:** Changed fix mobile documentation navigation (852bebc).
+
+### Documentation
+- **site:** Fix mobile documentation navigation (852bebc)
+
 ## [0.68.29] - 2026-06-29
 <!-- mars-release: version=0.68.29 commit=01601874fa49 -->
 
