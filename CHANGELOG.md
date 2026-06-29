@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.21] - 2026-06-29
+<!-- mars-release: version=0.68.21 commit=8efe506ffef7 -->
+
+### Impact
+- **site:** Users now have a dedicated code intelligence and evidence reference for understanding graph context injection, code-intel tools, metrics, benchmarks, check recording, validation boundaries, local SQLite state, and troubleshooting.
+
+### Why
+- **site:** Existing pages mentioned `mars code-intel` and code graph evidence, but users still had to assemble enablement precedence, role allowlist behavior, metrics interpretation, benchmark flags, and the difference between graph guidance and real validation evidence from CLI help, tool docs, and validation notes.
+
+### What Changed
+- **site:** Added a static Code Intelligence And Evidence Reference, linked it from the homepage, README, CLI reference, observability guide, Tools/MCP guide, configuration reference, operations guide, files/state reference, integrations/validation guide, and product contract, and documented code graph context, code-intel agent tools, `metrics`, `benchmark`, `checks run`, agent-smoke boundaries, state paths, recipes, and recovery guidance (8efe506).
+
+### Documentation
+- **site:** Add code intelligence reference (8efe506)
+
 ## [0.68.20] - 2026-06-29
 <!-- mars-release: version=0.68.20 commit=c1aaffabe32e -->
 
