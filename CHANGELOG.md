@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.26] - 2026-06-29
+<!-- mars-release: version=0.68.26 commit=f1a4350dd731 -->
+
+### Impact
+- **site:** Users now get a searchable public documentation catalog and a conservative readiness matrix from the homepage, making the task guides, source-of-truth artifacts, validation docs, runbooks, references, and product contracts discoverable without already knowing repo paths.
+
+### Why
+- **site:** The documentation site had many deep pages, but users still needed a stronger front-door map for the durable operating-model artifacts that define goals, plans, tickets, quality evidence, validation, and current readiness.
+
+### What Changed
+- **site:** Added catalog and readiness sections to the GitHub Pages homepage, linked delivery source-of-truth docs and advanced maintainer contracts from the public front door, expanded the reference map, and aligned the README documentation map with the new catalog (f1a4350).
+
+### Documentation
+- **site:** Add documentation catalog (f1a4350)
+
 ## [0.68.25] - 2026-06-29
 <!-- mars-release: version=0.68.25 commit=4542ffc82698 -->
 
