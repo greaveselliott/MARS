@@ -31,15 +31,16 @@ created: 2026-06-29
 
 ## Context
 
-Readers need evaluation paths that match their context. A solo developer and a
-regulated enterprise should not be pushed through the same first page.
+Readers need evaluation paths that match the proof they need. The guide should
+not push people through identity or organization-type lanes.
 
 ## Requirements
 
 - Create `docs/adoption-guide.html`.
-- Cover lanes for individual developer, SME team, enterprise, bank/healthcare,
-  platform or DevEx owner, and maintainer/agent.
-- Include relevant concerns, safe first actions, and proof paths for each lane.
+- Cover safe trial, control review, operating-model, pilot, proof, and rollout
+  decision routes.
+- Include relevant concerns, safe first actions, and proof paths for each
+  route.
 - Link from homepage, harness ecosystem explainer, and README.
 
 ## Affected Files
@@ -59,9 +60,9 @@ regulated enterprise should not be pushed through the same first page.
 
 ### Functional
 
-- [x] Individual, SME, enterprise, bank/healthcare, platform/DevEx, and
-  maintainer/agent lanes exist.
-- [x] Each lane lists concerns, safe first actions, and proof paths.
+- [x] Safe trial, control review, operating-model, pilot, proof, and rollout
+  decision routes exist.
+- [x] Each route lists concerns, safe first actions, and proof paths.
 - [x] The adoption guide reinforces local ownership, guardrails, evidence, and
   canonical docs.
 

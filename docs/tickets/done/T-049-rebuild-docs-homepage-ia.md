@@ -41,8 +41,8 @@ catalog.
   govern, and improve."
 - Show trust pillars: local ownership, guardrails, evidence, human control,
   strategy loop, and performance feedback.
-- Show reader paths for individual, SME team, enterprise, bank or healthcare,
-  operator, and maintainer/agent.
+- Show proof routes for data boundaries, control, evidence, ownership, safe
+  trial, and canonical records.
 - Separate read-only actions, local writes, target writes, and autonomous
   actions.
 - Explain that public docs summarize and canonical harness docs are source of

@@ -34,12 +34,12 @@ reader-first IA governed by
 [documentation-site.md](documentation-site.md). The homepage is a trust-building
 front door for MARS as a local AI product engineering team that can be
 inspected, governed, and improved. It routes readers to safe first actions,
-audience lanes, security and governance material, and canonical system records
+proof questions, security and governance material, and canonical system records
 instead of carrying the full documentation catalog. The full map now lives at
-`docs/documentation-map.html`; regulated-reader evidence is routed through
-`docs/security-governance-guide.html`; and adoption paths for individuals, SME
-teams, enterprises, banks, healthcare teams, platform owners, and
-maintainers/agents live at `docs/adoption-guide.html`. On mobile viewports, the
+`docs/documentation-map.html`; control-boundary evidence is routed through
+`docs/security-governance-guide.html`; and safe trial, control review, pilot,
+proof, and rollout decisions live at `docs/adoption-guide.html`. On mobile
+viewports, the
 site uses stable disclosure navigation, keeps page content ahead of the long
 section index, and renders wide reference tables as labelled cards instead of
 forcing sideways reading. It includes a beginner-safe command chooser that
@@ -102,7 +102,7 @@ advisory severity, scope, matching semantics, secret scanning, optional hooks,
 stale-rule review, overrides, and recovery. The repo also includes a static adoption explainer
 under `docs/harness-ecosystem/`; the explainer remains a linked page for the
 value case, foundation/deployed boundary, operating model, DocSync, telemetry,
-safety, and pilot adoption path for mixed leadership and engineering audiences.
+safety, and pilot adoption path for mixed leadership and engineering review.
 These static pages remain self-contained with local assets only, so they can be
 reviewed from the repo and deployed without a frontend build step.
 

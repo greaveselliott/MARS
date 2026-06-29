@@ -39,8 +39,8 @@ product documentation layer over canonical harness docs.
 - Create `docs/product-specs/documentation-site.md`.
 - Update product-spec and feature indexes.
 - Align `docs/goals/active.md` and the active exec plan with F-015.
-- Define audiences, reader actions, content model, risks, and MarsDocSync
-  relationship.
+- Define evaluation routes, reader actions, content model, risks, and
+  MarsDocSync relationship.
 
 ## Affected Files
 
@@ -62,8 +62,9 @@ product documentation layer over canonical harness docs.
 
 ### Functional
 
-- [x] Audiences include individuals, SME tech teams, enterprises, banks,
-  healthcare, regulated/security reviewers, operators, and maintainers/agents.
+- [x] Evaluation routes cover safe trial, fit evaluation, governed autonomy,
+  operations and recovery, extension and integration, and canonical record
+  inspection.
 - [x] Reader actions are explicit: understand, evaluate, try safely, operate,
   govern, extend, troubleshoot, and inspect canonical records.
 - [x] Content model defines public guide, public reference, canonical harness

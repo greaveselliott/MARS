@@ -14,17 +14,20 @@ inspect the canonical records used by agents and maintainers.
 
 The site does not replace harness-consumed docs. It explains and routes to them.
 
-## Audiences
+## Evaluation Routes
 
-| Audience | What They Need | First Useful Action |
+The site should work for solo users, teams, and security-sensitive
+organizations without forcing them into named organization lanes. It routes by
+the thing the reader needs to prove.
+
+| Route | What The Reader Needs | First Useful Action |
 | --- | --- | --- |
-| Individual developer | A safe local trial without surprise writes. | Run `mars doctor` and a dry-run role preview. |
-| SME tech team | Throughput with review, ownership, and rollback. | Initialise one non-critical repo and inspect tickets, plans, traces, and commits. |
-| Enterprise evaluator | Governance, audit trail, integration boundaries, and support model. | Read security/governance, files/state, guardrails, and release/update docs. |
-| Bank or healthcare reviewer | Data boundaries, credential handling, approval gates, evidence, and recovery. | Confirm local-first defaults, opt-in surfaces, guardrails, DocSync, and eject path. |
-| Platform or DevEx owner | Rollout, upgrades, monitoring, and operating responsibilities. | Follow adoption lanes and operational guides. |
-| Operator | Day-to-day commands, dashboard, checks, troubleshooting, and recovery. | Use quickstart, workflows, operations, observability, and troubleshooting. |
-| Maintainer or agent | Canonical planning, BDD, DocSync, release discipline, and source of truth. | Use the documentation map to open goals, active plan, features, tickets, and design docs. |
+| Try safely | A local trial without surprise writes. | Run `mars doctor` and a dry-run role preview. |
+| Evaluate fit | A clear view of product-team scope, ownership, and limits. | Read the homepage, adoption guide, and quickstart before mutating a repo. |
+| Govern autonomy | Data boundaries, credential handling, guardrails, trust, and recovery. | Read security/governance, files/state, guardrails, and credentials docs. |
+| Operate and recover | Day-to-day commands, dashboard, checks, troubleshooting, and rollback. | Use quickstart, workflows, operations, observability, and troubleshooting. |
+| Extend and integrate | Model routes, tools, MCP, configuration, and validation boundaries. | Read models, tools/MCP, configuration, integrations, and validation docs. |
+| Inspect canonical records | Planning, BDD, DocSync, release discipline, evidence, and source of truth. | Use the documentation map to open goals, active plan, features, tickets, and design docs. |
 
 ## Reader Actions
 
@@ -41,7 +44,7 @@ Every public page should make one or more actions clear:
 
 Public prose follows the writing standard captured in
 [mdn-technical-writing.md](../references/mdn-technical-writing.md): clear
-audience, concise sections, consistent terms, logical progression, realistic
+reader need, concise sections, consistent terms, logical progression, realistic
 examples, descriptive links, and self-review before release.
 
 ## Content Model
@@ -64,7 +67,7 @@ The homepage should be a trust-building front door, not a full catalog. It
 should answer:
 
 - What is MARS?
-- Who is it for?
+- What risk or proof question should the reader answer first?
 - What stays local?
 - What can agents change?
 - How do guardrails and trust levels work?
@@ -74,7 +77,8 @@ should answer:
 
 Long lists move to `docs/documentation-map.html`. Security, ownership,
 guardrails, and evidence move to `docs/security-governance-guide.html`.
-Audience-specific evaluation moves to `docs/adoption-guide.html`.
+Safe trial, governance review, pilot, proof, and rollout decisions move to
+`docs/adoption-guide.html`.
 
 ## Safety And Claim Boundaries
 
@@ -115,15 +119,16 @@ summaries match canonical docs.
 | --- | --- | --- |
 | Homepage | Hero, command chooser, guide list, full catalog, and reference map on one page. | Trust-building front door with concise routing and safe first actions. |
 | Catalog | Mixed into the homepage. | Dedicated documentation map grouped by purpose and canonical status. |
-| Security and governance | Split across safety, auth, files/state, guardrails, and observability pages. | New guide routes regulated readers to those canonical pages without hiding limits. |
-| Adoption | Separate explainer plus scattered page links. | New adoption guide gives reader lanes and proof paths. |
+| Security and governance | Split across safety, auth, files/state, guardrails, and observability pages. | New guide routes control questions to canonical pages without hiding limits. |
+| Adoption | Separate explainer plus scattered page links. | New adoption guide gives evidence routes, safe trial steps, pilot guidance, and proof paths. |
 | Planning state | User chat and existing active plan. | Active goal, exec plan, F-015, tickets T-048 through T-053, and this product spec. |
 
 ## Success Measures
 
 - A first-time reader can explain MARS as a local AI product engineering team.
-- A regulated reader can find local data boundaries, credential handling,
-  guardrails, evidence, DocSync, and recovery before reading CLI reference.
+- A security-sensitive reader can find local data boundaries, credential
+  handling, guardrails, evidence, DocSync, and recovery before reading CLI
+  reference.
 - A beginner can identify read-only commands before file-writing commands.
 - A maintainer or agent can find canonical planning, BDD, design, validation,
   and generated docs from the documentation map.

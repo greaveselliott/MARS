@@ -32,11 +32,11 @@ The repository GitHub Pages site publishes from `/docs` and starts at the
 [MARS developer documentation](https://greaveselliott.github.io/MARS/).
 It is the user-facing front door for understanding MARS as a local AI product
 engineering team that can be inspected, governed, and improved. The homepage
-routes readers to safe first actions, reader lanes,
+routes readers to safe first actions, proof questions,
 [security and governance](docs/security-governance-guide.html), and the
 [documentation map](docs/documentation-map.html) instead of acting as the full
-catalog. Use the [adoption guide](docs/adoption-guide.html) for individual,
-SME, enterprise, bank, healthcare, platform, and maintainer evaluation paths.
+catalog. Use the [adoption guide](docs/adoption-guide.html) for safe trial,
+control review, pilot, proof, and rollout decisions.
 Deeper site pages cover the
 [CLI reference](docs/cli-reference.html),
 [shell integration](docs/shell-integration-reference.html),
@@ -65,9 +65,9 @@ For a high-level adoption walkthrough, the documentation site links to the
 interactive [MARS explainer](docs/harness-ecosystem/). It explains the
 software-factory problem, the value case, the foundation vs. deployed harness
 boundary, operating model, DocSync, telemetry, safety, and a pilot adoption
-path for mixed leadership and engineering audiences.
+path for mixed leadership and engineering review.
 Use [docs/adoption-guide.html](docs/adoption-guide.html) for the practical
-reader-by-reader adoption route.
+evidence-based adoption route.
 
 ## Current Status
 
@@ -287,11 +287,9 @@ safety, or orchestration changes do. See
   guides, canonical harness docs, product specs, BDD contracts, validation
   evidence, generated references, and runbooks.
 - [docs/security-governance-guide.html](docs/security-governance-guide.html):
-  security, ownership, guardrails, trust, evidence, and recovery route for
-  regulated and enterprise readers.
-- [docs/adoption-guide.html](docs/adoption-guide.html): adoption lanes for
-  individuals, SME teams, enterprises, banks, healthcare teams, platform owners,
-  and maintainers/agents.
+  security, ownership, guardrails, trust, evidence, and recovery route.
+- [docs/adoption-guide.html](docs/adoption-guide.html): safe trial, control
+  review, pilot, proof, and rollout decisions.
 - [docs/quickstart.html](docs/quickstart.html): first-run guide for source
   install, local setup, target initialization, safe inspection, dashboard
   checks, update paths, and troubleshooting.

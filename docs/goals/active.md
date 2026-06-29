@@ -82,10 +82,10 @@
 - Source: user_chat
 - Dedupe Key: docs-site-information-architecture-trust-governance
 - Hypothesis: If the docs site is rebuilt around reader intent, security, ownership, guardrails, evidence, and canonical harness docs, evaluators and operators will understand MARS as a governed AI product engineering team rather than a loose agent runner.
-- Success Evidence: Homepage first viewport explains MARS as a local AI product engineering team that can be inspected, governed, and improved; reader journeys exist for individuals, SME teams, enterprises, banks, healthcare, and regulated teams; public pages identify safe actions, file-writing actions, ownership boundaries, evidence paths, and canonical source-of-truth docs; long catalog content is moved out of the homepage into a dedicated documentation map; `mars docsync audit --repo .`, HTML link sweep, docs consistency tests, and `go test ./...` pass.
+- Success Evidence: Homepage first viewport explains MARS as a local AI product engineering team that can be inspected, governed, and improved; public docs route by safe action, proof need, governance evidence, operating recovery, and source-of-truth inspection; public pages identify safe actions, file-writing actions, ownership boundaries, evidence paths, and canonical source-of-truth docs; long catalog content is moved out of the homepage into a dedicated documentation map; `mars docsync audit --repo .`, HTML link sweep, docs consistency tests, and `go test ./...` pass.
 - Falsification Evidence: Homepage still acts as a link wall; security, guardrails, and ownership evidence is not visible before command references; public docs and harness-consumed docs describe different truths; new docs duplicate canonical docs without clear source-of-truth labels.
 - Competes With: catalog-first homepage expansion, duplicating canonical harness doctrine in public pages
 - Supports: G-001, G-002, G-003
 - Last Reviewed: 2026-06-29
-- Review Trigger: Public docs IA changes, DocSync audit findings, regulated-reader feedback, homepage conversion feedback, or changes to canonical harness documentation.
+- Review Trigger: Public docs IA changes, DocSync audit findings, governance feedback, homepage conversion feedback, or changes to canonical harness documentation.
 - Owner: COO with Product/Docs Maintainer

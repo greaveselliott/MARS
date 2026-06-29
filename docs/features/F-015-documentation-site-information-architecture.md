@@ -50,7 +50,8 @@ brief and existing DocSync architecture.
    takes ideas from concept to production.
 3. The reader sees trust pillars: local ownership, guardrails, evidence, human
    control, strategy loop, and performance feedback.
-4. The reader chooses a path by intent and reader type.
+4. The reader chooses the proof or action they need next: safe trial,
+   governance review, operations, recovery, or canonical records.
 5. Safety-conscious readers can reach security, ownership, guardrails, and
    evidence without reading CLI reference first.
 6. Operators can reach quickstart, workflows, lifecycle, operations, and
@@ -87,17 +88,17 @@ generated reference, or runbook.
 
 ### F-015-S004: Governance Guide
 
-Given a security or regulatory reader opens the governance guide
+Given a reader opens the governance guide to check control boundaries
 When they scan the page
 Then they can find data locality, credentials, guardrails, trust levels, audit
 evidence, ownership, rollback or eject, and DocSync.
 
 ### F-015-S005: Adoption Guide
 
-Given an individual, SME, enterprise, bank, or healthcare reader opens the
-adoption guide
-When they choose their context
-Then they see relevant concerns, safe first actions, and proof paths.
+Given a reader opens the adoption guide
+When they choose what they need to prove
+Then they see safe trial steps, control questions, pilot guidance, proof paths,
+and rollout decision criteria.
 
 ### F-015-S006: Canonical Crosslinks
 
@@ -132,9 +133,11 @@ None.
   out of the homepage.
 - PASS: T-051 created `docs/security-governance-guide.html` and crosslinked
   security, ownership, guardrail, evidence, and recovery references.
-- PASS: T-052 created `docs/adoption-guide.html` with individual, SME,
-  enterprise, bank/healthcare, platform, and maintainer lanes.
+- PASS: T-052 created `docs/adoption-guide.html` with safe trial, control
+  review, operating-model, pilot, proof, and rollout decision routes.
 - PASS: T-053 crosslinked existing guides to the new IA and canonical docs.
+- PASS: 2026-06-29 operator feedback removed explicit audience-lane routing
+  from the homepage, adoption guide, documentation map, and planning records.
 - PASS: `git diff --check`.
 - PASS: `node --check docs/site.js`.
 - PASS: recursive HTML link/anchor sweep for 31 HTML files.

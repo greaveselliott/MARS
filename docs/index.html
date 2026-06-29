@@ -59,7 +59,7 @@ docs:
         <nav class="side-nav">
           <a href="#overview">Overview</a>
           <a href="#trust">Trust Pillars</a>
-          <a href="#paths">Reader Paths</a>
+          <a href="#evaluation">What To Check</a>
           <a href="#safe-actions">Safe Actions</a>
           <a href="#canonical-docs">Canonical Docs</a>
           <a href="#start">Start</a>
@@ -134,42 +134,42 @@ docs:
           </div>
         </section>
 
-        <section class="doc-section" id="paths">
-          <h2>Choose Your Path</h2>
+        <section class="doc-section" id="evaluation">
+          <h2>What To Check Before You Run It</h2>
           <p>
-            Different readers need different proof. Start with the lane that
-            sounds most like you; you can always inspect the canonical docs
-            behind each claim.
+            Do not choose a docs path by company type. Start with the thing you
+            need to prove: where data lives, what agents can change, what counts
+            as evidence, and how you stay in control.
           </p>
           <div class="reader-grid" data-doc-filter>
-            <a href="adoption-guide.html#individual">
-              <span>Individual developer</span>
-              <strong>Try MARS without surprise writes.</strong>
-              <small>Start with doctor, dry-run context, and one disposable target repo.</small>
+            <a href="security-governance-guide.html#local">
+              <span>Data boundary</span>
+              <strong>What stays local?</strong>
+              <small>Check runtime state, repo files, telemetry, model routes, and optional integrations.</small>
             </a>
-            <a href="adoption-guide.html#sme">
-              <span>SME tech team</span>
-              <strong>Increase delivery throughput with review.</strong>
-              <small>Inspect tickets, plans, commits, traces, checks, and ownership boundaries.</small>
+            <a href="security-governance-guide.html#guardrails">
+              <span>Control</span>
+              <strong>What can agents read or write?</strong>
+              <small>Review role tool allowlists, guardrails, trust levels, and safe action types.</small>
             </a>
-            <a href="adoption-guide.html#enterprise">
-              <span>Enterprise evaluator</span>
-              <strong>Map governance before rollout.</strong>
-              <small>Check audit trail, integration boundaries, trust, upgrades, and operations.</small>
+            <a href="planning-delivery-guide.html#evidence">
+              <span>Evidence</span>
+              <strong>How do you know work is done?</strong>
+              <small>Follow goals, plans, BDD contracts, tickets, checks, traces, and releases.</small>
             </a>
-            <a href="adoption-guide.html#regulated">
-              <span>Bank or healthcare</span>
-              <strong>Start with data, credentials, and approvals.</strong>
-              <small>Review local-first defaults, opt-in surfaces, guardrails, evidence, and eject.</small>
+            <a href="files-state-reference.html">
+              <span>Ownership</span>
+              <strong>Which files belong to the repo?</strong>
+              <small>See target harness files, local databases, logs, traces, release assets, and eject cleanup.</small>
             </a>
-            <a href="operations-guide.html">
-              <span>Operator</span>
-              <strong>Run and recover the system.</strong>
-              <small>Use start, serve, dashboard controls, checks, logs, traces, and troubleshooting.</small>
+            <a href="adoption-guide.html#safe-trial">
+              <span>Safe trial</span>
+              <strong>How do you try it without surprise writes?</strong>
+              <small>Start read-only, use a disposable target, inspect the diff, then run one bounded slice.</small>
             </a>
             <a href="documentation-map.html#canonical-records">
-              <span>Maintainer or agent</span>
-              <strong>Find the system records.</strong>
+              <span>Source of truth</span>
+              <strong>Where is the canonical rule?</strong>
               <small>Open goals, plans, BDD contracts, tickets, design docs, runbooks, and validation reports.</small>
             </a>
           </div>

@@ -31,8 +31,8 @@ created: 2026-06-29
 
 ## Context
 
-Security, enterprise, bank, healthcare, and regulated readers need one plain
-guide that routes them to canonical evidence without overstating guarantees.
+Security-sensitive readers need one plain guide that routes them to canonical
+evidence without overstating guarantees.
 
 ## Requirements
 
@@ -61,8 +61,8 @@ guide that routes them to canonical evidence without overstating guarantees.
 
 ### Functional
 
-- [x] Regulated readers can find data locality, credentials, guardrails, trust
-  levels, audit evidence, ownership, rollback/eject, and DocSync.
+- [x] Readers can find data locality, credentials, guardrails, trust levels,
+  audit evidence, ownership, rollback/eject, and DocSync.
 - [x] Claims are qualified: local-first by default, opt-in integrations and
   cloud routes, syntactic guardrails where applicable, and auditability rather
   than deterministic LLM behavior.
