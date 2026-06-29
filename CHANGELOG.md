@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.34] - 2026-06-29
+<!-- mars-release: version=0.68.34 commit=2f22b2c8f740 -->
+
+### Impact
+- **site:** Operators and future agents get clearer guidance because polish harness ecosystem accessibility.
+
+### Why
+- **site:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **site:** Changed polish harness ecosystem accessibility (2f22b2c).
+
+### Documentation
+- **site:** Polish harness ecosystem accessibility (2f22b2c)
+
 ## [0.68.33] - 2026-06-29
 <!-- mars-release: version=0.68.33 commit=7052ca4139df -->
 
