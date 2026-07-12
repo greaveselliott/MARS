@@ -141,7 +141,7 @@ None.
 
 ## Evidence
 
-- F-017-S001: Pending legal attestation, all-ref/GitHub-surface audit report, provenance record, and disposition decision.
+- F-017-S001: OSS-00 is the current read-only inventory slice. It may establish surface completeness, access gaps, and an offline restricted-evidence scan contract, but the scenario remains pending pinned scans, manual privacy/IP review, provenance disposition, publication-authority attestation, and name clearance.
 - F-017-S002: T-055 technically completes the vulnerability-baseline enabler: Go 1.26.5, the Go-1.22-compatible `x/sys` v0.30.0 disposition, fail-closed scanner regressions with pinned v1.6.0 install remediation, and a v1.6.0 scan with zero reachable findings passed Engineer, QA, Security, and Dogfood evidence. The scenario remains incomplete pending the later runtime P0 tickets.
 - F-017-S003: Pending deterministic-build, signature, anonymous install/update, negative artifact, bridge, and rollback evidence.
 - F-017-S004: Pending community/CI checks and disposable public hostile-fork rehearsal.
