@@ -6,14 +6,15 @@ complexity: large
 work_type: enabler
 bdd_scenarios: ["F-017-S002", "F-011-S003", "F-011-S006", "F-006-S004", "F-010-S023"]
 end_to_end_evidence: required
-evidence_links: []
-verified_by: "TBD"
+evidence_links:
+  - docs/validation/reports/2026-07-12-open-source-webhook-ingress.md#t-057-dogfood-result
+verified_by: "QA, Security, Dogfood, and foundation-maintainer Orchestrator"
 owner: "engineer"
-last_attempt: "TBD"
+last_attempt: "2026-07-12"
 blocker: "none"
 blocked_by: []
-trace_id: "TBD"
-next_action: "Implement loopback-only listeners and authenticated, numerically authorized, repository/branch/fork-aware, replay-safe GitHub webhook ingress."
+trace_id: "docs/validation/reports/2026-07-12-open-source-webhook-ingress.md"
+next_action: "Publish and verify the private T-057 release, then create the next bounded F-017-S002 runtime P0 ticket through ticket_create."
 dedupe_key: "open-source:loopback-webhook-ingress"
 metadata:
   classification: "foundation-owned,mirrored-doctrine"
@@ -42,7 +43,7 @@ This ticket closes the listener and GitHub ingress P0 boundary only. Dashboard a
 
 ### Disabled and authenticated ingress
 
-- MARS_WEBHOOK_SECRET remains environment-only and is never logged, persisted, traced, returned, or exposed through a CLI flag.
+- MARS_WEBHOOK_SECRET has precedence and is never logged, persisted by runtime, traced, returned, or exposed through a CLI flag. When absent, the GitHub-generated setup secret may be loaded only from the bounded regular owner-only 0600 GitHub App credentials file; setup persists it there but never returns it after success or write failure.
 - Missing secret, trusted actor policy, or registered repository keeps local start/serve healthy but makes POST /webhook return 503 and dispatch nothing.
 - Require a secret of at least 32 bytes and valid HMAC-SHA256 over the exact bounded request body.
 - Missing or invalid HMAC returns 401; missing required headers/malformed required metadata returns 400; oversized input returns 413 with the configured limit; unsupported signed events return 202 with no callback.
@@ -59,7 +60,7 @@ This ticket closes the listener and GitHub ingress P0 boundary only. Dashboard a
 - push requires sender.id and refs/heads/<registered branch>.
 - workflow_run requires completed action, workflow_run.actor.id, exact head_repository, and exact head_branch.
 - pull_request requires trusted action actor, exact base repository/branch, and same-repository non-fork head.
-- check_suite requires trusted principal plus exact head repository/branch.
+- check_suite requires trusted principal plus exact top-level repository and head branch.
 - merge_group requires trusted principal and exact base branch.
 - Malformed/incomplete event-specific metadata fails closed.
 - Fork-derived events never dispatch.
@@ -101,3 +102,100 @@ Do not add secret YAML/CLI fields, login-based authority, fork overrides, issue-
 ## Stop Conditions
 
 Stop if any listener can bind non-loopback, start omits policy, missing configuration dispatches, empty remote is wildcard, authority uses login alone, branch/fork provenance is inferred, issue comments dispatch, replay after completion/restart recreates work, replay memory is unbounded, optional GitHub absence breaks local operation, dashboard/browser/setup/telemetry scope is required, a secret/payload is exposed, or any GitHub/public state would be mutated.
+
+## Engineer Evidence
+
+- Added shared literal-loopback validation; direct server/dashboard defaults use
+  `127.0.0.1`, non-loopback binds fail before listen, and scoped conflict
+  fallback remains `127.0.0.1:0`.
+- Added CLI-over-env-over-YAML trusted numeric actor policy, env-first
+  owner-only GitHub App secret resolution for both `start` and `serve`, exact normalized remote and
+  case-sensitive branch registration/preservation, and synchronized
+  `mars_cli` plus generated target guidance.
+- Added realistic nested fixtures for authorized push, workflow-run,
+  pull-request, check-suite, and merge-group inputs, alongside disabled,
+  signature, actor, repository, branch, fork, issue-comment, method, body-limit,
+  malformed metadata, concurrent replay, cap/TTL, and callback rollback tests.
+- Added transactional SQLite webhook receipts that bind delivery ID and body
+  SHA with derived queue jobs. Integration evidence proves rejected traffic
+  leaves the real queue empty and authorized work remains single-shot after job
+  completion, process restart, and a changed delivery ID carrying the same
+  signed body.
+- Accepted QA/Security corrections now use the top-level repository for
+  check-suite authorization; require complete bounded action/base/head metadata;
+  reject unsafe remote/branch characters and invalid direct actor policies at
+  both handler and server boundaries; subscribe new Apps to merge-group events;
+  and prove durable TTL expiry plus failed-job replay behavior.
+- The accepted setup-secret design gives `MARS_WEBHOOK_SECRET` precedence and
+  otherwise reads only bounded regular owner-only 0600 GitHub App credentials.
+  Setup clears the returned webhook secret after both successful persistence
+  and persistence failure; mode, malformed, oversized, missing, precedence,
+  and non-exposure tests pass.
+- Final review corrections validate every required event action as a bounded
+  token before policy, retain 202 for legitimate non-completed workflow actions,
+  reject Git-invalid leading-dot/dash and dot-component branches, and make
+  setup credential writes atomic and symlink-safe with O_EXCL temp, fstat,
+  fsync/close, rename, and cleanup. The loader proves lstat/open/fstat SameFile
+  identity before any bounded read; destination-symlink, parent-symlink,
+  open-swap, non-regular, and temp-cleanup tests pass.
+- A live no-policy server test proves GET health remains available while POST
+  webhook returns 503 and the real SQLite queue remains empty. The supported
+  webhook body ceiling is documented as 2 MiB.
+- Preserved the separate JIRA route and its existing tests without changing its
+  behavior.
+- PASS: `go test ./internal/network ./internal/github ./internal/queue
+  ./internal/config ./internal/dashboard ./internal/serve ./cmd/mars`.
+- PASS: uncached `go test ./... -count=1`; focused race
+  `go test -race ./internal/github ./internal/queue ./internal/serve -count=1`;
+  `go vet ./...`; `git diff --check`; and source `docsync audit` (337 files,
+  zero findings).
+- PASS: independent QA and Security final review found no blocking issue after
+  the accepted credential-file, action-token, branch, and authentic
+  check-suite fixture corrections.
+- PASS: exact full repository race suite, two-second fuzz smoke, full uncached
+  tests, vet, docs consistency, DocSync, and diff validation. The pinned
+  vulnerability scan could not reach `vuln.go.dev` from the restricted
+  sandbox; T-055's clean pinned v1.6.0 scan remains applicable because this
+  ticket changed no dependency or toolchain input.
+
+## Dogfood Evidence
+
+- PASS: the installed candidate ran on clean static-browser and Go API/service
+  targets with isolated DB/log paths. Actual socket inspection proved both
+  control and dashboard listeners bound only to explicit `127.0.0.1` addresses;
+  wildcard, LAN, hostname, and wildcard-dashboard configuration failed before
+  bind with actionable remediation.
+- PASS: both archetypes kept GET health at 200 while absent webhook policy made
+  POST webhook return 503 with zero jobs and zero replay receipts.
+- PASS: bad HMAC returned 401. Signed untrusted actor, wrong repository, wrong
+  branch, fork-derived pull request, and issue-comment cases returned 202 and
+  left the real SQLite queue and receipt table empty.
+- PASS: one trusted exact workflow event created one job and one receipt.
+  Duplicate delivery plus identical body under a changed delivery ID remained
+  single-shot across process restart. On the API target the webhook-derived job
+  completed through the real local Qwen3-Coder model before restart; the same
+  replays still created no additional webhook job.
+- PASS: no fake model endpoint, GitHub mutation, secret value, or payload body
+  was used as committed evidence. Target intervention debt remained zero and
+  both target worktrees were clean before cleanup.
+- Report: [2026-07-12 open-source webhook ingress installed validation](../../validation/reports/2026-07-12-open-source-webhook-ingress.md#t-057-dogfood-result).
+
+## QA And Security Evidence
+
+- QA PASS: realistic GitHub payload shape, policy ordering, queue-zero negative
+  cases, replay identity, generated guidance, and regression gates match the
+  ticket contract.
+- Security PASS: owner-only atomic credential persistence and bounded loading,
+  direct-constructor policy validation, authenticated event authorization,
+  fork/branch/repository containment, and durable replay behavior fail closed.
+- Accepted review findings were corrected in the same ticket and rerun before
+  both final dispositions.
+
+## Orchestrator Disposition
+
+T-057 is complete for its bounded OSS-02 contract. The implementation,
+independent review, exact full race suite, and installed clean-project matrix
+all pass. F-017-S002 remains incomplete because dashboard/browser, filesystem,
+execution, telemetry, and other runtime P0 slices are still scheduled. The
+primary outcome remains `primary_blocked`; this result does not authorize a
+visibility change or public release.

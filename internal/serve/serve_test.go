@@ -75,7 +75,7 @@ func waitForHTTPStatus(t *testing.T, url string, want int) {
 
 func TestServer_healthHandler_healthy(t *testing.T) {
 	srv, err := New(Config{
-		WebhookAddr:   ":0",
+		WebhookAddr:   "127.0.0.1:0",
 		DashboardAddr: "127.0.0.1:0",
 		DBPath:        testDBPath(t),
 	})
@@ -103,7 +103,7 @@ func TestServer_healthHandler_healthy(t *testing.T) {
 
 func TestServerNewModelEndpointSkipsLocalModelPreflight(t *testing.T) {
 	srv, err := New(Config{
-		WebhookAddr:   ":0",
+		WebhookAddr:   "127.0.0.1:0",
 		DashboardAddr: "127.0.0.1:0",
 		DBPath:        testDBPath(t),
 		ModelsDir:     filepath.Join(t.TempDir(), "missing-models"),
@@ -127,7 +127,7 @@ func TestServerNewModelEndpointSkipsLocalModelPreflight(t *testing.T) {
 
 func TestServerNewRequiresLocalModelPreflightWhenConfigured(t *testing.T) {
 	_, err := New(Config{
-		WebhookAddr:           ":0",
+		WebhookAddr:           "127.0.0.1:0",
 		DashboardAddr:         "127.0.0.1:0",
 		DBPath:                testDBPath(t),
 		ModelsDir:             filepath.Join(t.TempDir(), "missing-models"),
@@ -156,7 +156,7 @@ default:
 	t.Setenv("TEST_PROVIDER_KEY", "secret-value")
 
 	srv, err := New(Config{
-		WebhookAddr:           ":0",
+		WebhookAddr:           "127.0.0.1:0",
 		DashboardAddr:         "127.0.0.1:0",
 		DBPath:                testDBPath(t),
 		RepoScope:             repo,
@@ -184,7 +184,7 @@ default:
 `), 0o644))
 
 	_, err := New(Config{
-		WebhookAddr:           ":0",
+		WebhookAddr:           "127.0.0.1:0",
 		DashboardAddr:         "127.0.0.1:0",
 		DBPath:                testDBPath(t),
 		RepoScope:             repo,
@@ -198,7 +198,7 @@ default:
 
 func TestServer_healthHandler_unhealthy(t *testing.T) {
 	srv, err := New(Config{
-		WebhookAddr:   ":0",
+		WebhookAddr:   "127.0.0.1:0",
 		DashboardAddr: "127.0.0.1:0",
 		DBPath:        testDBPath(t),
 	})
@@ -226,7 +226,7 @@ func TestServer_healthHandler_unhealthy(t *testing.T) {
 
 func TestServerPauseResumeAndStatus(t *testing.T) {
 	srv, err := New(Config{
-		WebhookAddr:   ":0",
+		WebhookAddr:   "127.0.0.1:0",
 		DashboardAddr: "127.0.0.1:0",
 		DBPath:        testDBPath(t),
 		ModelEndpoint: "http://127.0.0.1:9999/v1",
@@ -489,7 +489,7 @@ func TestServer_doubleStart(t *testing.T) {
 }
 
 func TestServer_defaultConcurrency(t *testing.T) {
-	cfg := Config{WebhookAddr: ":0"}
+	cfg := Config{WebhookAddr: "127.0.0.1:0"}
 	if cfg.concurrency() != 2 {
 		t.Errorf("expected default concurrency=2, got %d", cfg.concurrency())
 	}

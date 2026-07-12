@@ -3,9 +3,12 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/release-versioning.md
+- docs/design-docs/github-app-integration.md
 - docs/product-specs/product-surface.md
 - docs/features/F-003-local-inference-lifecycle.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 */
 package config
 
@@ -23,23 +26,24 @@ import (
 // ~/.mars-harness config and MARS_HARNESS_ env vars are read as migration
 // fallbacks only.
 type Config struct {
-	ModelsDir           string          `yaml:"models_dir"`
-	BinDir              string          `yaml:"bin_dir"`
-	TracesDir           string          `yaml:"traces_dir"`
-	LogFormat           string          `yaml:"log_format"`
-	GitHubToken         string          `yaml:"github_token"`
-	WebhookPort         int             `yaml:"webhook_port"`
-	DashboardPort       int             `yaml:"dashboard_port"`
-	PerformanceProfile  string          `yaml:"performance_profile"`
-	LlamaParallel       int             `yaml:"llama_parallel"`
-	LlamaThreads        int             `yaml:"llama_threads"`
-	LlamaThreadsBatch   int             `yaml:"llama_threads_batch"`
-	LlamaBatchSize      int             `yaml:"llama_batch_size"`
-	LlamaUBatchSize     int             `yaml:"llama_ubatch_size"`
-	LlamaFlashAttention string          `yaml:"llama_flash_attention"`
-	LlamaMLock          bool            `yaml:"llama_mlock"`
-	Telemetry           TelemetryConfig `yaml:"telemetry"`
-	CodeIntel           CodeIntelConfig `yaml:"code_intel"`
+	ModelsDir              string          `yaml:"models_dir"`
+	BinDir                 string          `yaml:"bin_dir"`
+	TracesDir              string          `yaml:"traces_dir"`
+	LogFormat              string          `yaml:"log_format"`
+	GitHubToken            string          `yaml:"github_token"`
+	WebhookPort            int             `yaml:"webhook_port"`
+	DashboardPort          int             `yaml:"dashboard_port"`
+	WebhookAllowedActorIDs []int64         `yaml:"webhook_allowed_actor_ids"`
+	PerformanceProfile     string          `yaml:"performance_profile"`
+	LlamaParallel          int             `yaml:"llama_parallel"`
+	LlamaThreads           int             `yaml:"llama_threads"`
+	LlamaThreadsBatch      int             `yaml:"llama_threads_batch"`
+	LlamaBatchSize         int             `yaml:"llama_batch_size"`
+	LlamaUBatchSize        int             `yaml:"llama_ubatch_size"`
+	LlamaFlashAttention    string          `yaml:"llama_flash_attention"`
+	LlamaMLock             bool            `yaml:"llama_mlock"`
+	Telemetry              TelemetryConfig `yaml:"telemetry"`
+	CodeIntel              CodeIntelConfig `yaml:"code_intel"`
 }
 
 // TelemetryConfig controls optional anonymous foundation telemetry reporting.

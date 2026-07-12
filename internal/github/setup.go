@@ -2,13 +2,17 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/github-app-integration.md
 - docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 - docs/product-specs/product-surface.md
 */
 package github
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -71,7 +75,7 @@ func appManifest(callbackURL string) map[string]any {
 			"push",
 			"check_suite",
 			"workflow_run",
-			"issue_comment",
+			"merge_group",
 		},
 	}
 }
@@ -168,12 +172,24 @@ Register MARS GitHub App
 
 	shutdownSrv(srv)
 
-	if err := writeCredentials(creds); err != nil {
+	creds, err = persistSetupCredentials(creds)
+	if err != nil {
 		slog.Warn("github setup: credentials obtained but failed to write to disk", "error", err)
-		return creds, fmt.Errorf("github setup: save credentials: %w (credentials returned in-memory)", err)
+		return creds, err
 	}
-
 	slog.Info("github setup: credentials saved", "path", credentialsPath())
+	return creds, nil
+}
+
+func persistSetupCredentials(creds *AppCredentials) (*AppCredentials, error) {
+	if creds == nil {
+		return nil, fmt.Errorf("github setup: credentials are missing")
+	}
+	if err := writeCredentials(creds); err != nil {
+		creds.WebhookSecret = ""
+		return creds, fmt.Errorf("github setup: save credentials: %w; the webhook secret was not returned", err)
+	}
+	creds.WebhookSecret = ""
 	return creds, nil
 }
 
@@ -223,8 +239,19 @@ func credentialsPath() string {
 
 func writeCredentials(creds *AppCredentials) error {
 	dir := filepath.Dir(credentialsPath())
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("create config directory %s: %w", dir, err)
+	if info, err := os.Lstat(dir); err == nil {
+		if !info.IsDir() {
+			return fmt.Errorf("secure config directory %s: path must be a real directory, not a symlink or other file", dir)
+		}
+	} else if os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			return fmt.Errorf("create config directory %s: %w", dir, err)
+		}
+	} else {
+		return fmt.Errorf("inspect config directory %s: %w", dir, err)
+	}
+	if err := os.Chmod(dir, 0o700); err != nil {
+		return fmt.Errorf("secure config directory %s: %w", dir, err)
 	}
 
 	data, err := json.MarshalIndent(creds, "", "  ")
@@ -232,10 +259,102 @@ func writeCredentials(creds *AppCredentials) error {
 		return fmt.Errorf("marshal credentials: %w", err)
 	}
 
-	if err := os.WriteFile(credentialsPath(), data, 0600); err != nil {
-		return fmt.Errorf("write %s: %w", credentialsPath(), err)
+	var file *os.File
+	var tempPath string
+	for attempt := 0; attempt < 10; attempt++ {
+		var nonce [16]byte
+		if _, err := rand.Read(nonce[:]); err != nil {
+			return fmt.Errorf("create credentials nonce: %w", err)
+		}
+		tempPath = filepath.Join(dir, "."+credentialsFileName+".tmp-"+hex.EncodeToString(nonce[:]))
+		file, err = os.OpenFile(tempPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if err == nil {
+			break
+		}
+		if !os.IsExist(err) {
+			return fmt.Errorf("create owner-only credentials temp file: %w", err)
+		}
+	}
+	if file == nil {
+		return fmt.Errorf("create owner-only credentials temp file: exhausted collision retries")
+	}
+	defer os.Remove(tempPath)
+	if err := file.Chmod(0o600); err != nil {
+		_ = file.Close()
+		return fmt.Errorf("secure credentials temp file: %w", err)
+	}
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+		_ = file.Close()
+		return fmt.Errorf("secure credentials temp file: expected regular 0600 file")
+	}
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
+		return fmt.Errorf("write credentials temp file: %w", err)
+	}
+	if err := file.Sync(); err != nil {
+		_ = file.Close()
+		return fmt.Errorf("sync credentials temp file: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("close credentials temp file: %w", err)
+	}
+	if err := os.Rename(tempPath, credentialsPath()); err != nil {
+		return fmt.Errorf("atomically replace %s: %w", credentialsPath(), err)
 	}
 	return nil
+}
+
+// ResolveWebhookSecret gives the environment value strict precedence and uses
+// the owner-only GitHub App credentials file only when the environment is
+// absent. An absent credentials file keeps optional webhook ingress disabled.
+func ResolveWebhookSecret(environmentValue string) (string, error) {
+	if environmentValue != "" {
+		return environmentValue, nil
+	}
+	return loadPersistedWebhookSecret()
+}
+
+func loadPersistedWebhookSecret() (string, error) {
+	return loadPersistedWebhookSecretFile(credentialsPath(), os.Open)
+}
+
+func loadPersistedWebhookSecretFile(path string, openFile func(string) (*os.File, error)) (string, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", fmt.Errorf("github webhook fallback: inspect %s: %w", path, err)
+	}
+	if !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+		return "", fmt.Errorf("github webhook fallback: %s must be a regular owner-only 0600 file; run chmod 600 %s or rerun GitHub App setup", path, path)
+	}
+	file, err := openFile(path)
+	if err != nil {
+		return "", fmt.Errorf("github webhook fallback: open %s: %w", path, err)
+	}
+	defer file.Close()
+	openedInfo, err := file.Stat()
+	if err != nil {
+		return "", fmt.Errorf("github webhook fallback: inspect opened %s: %w", path, err)
+	}
+	if !openedInfo.Mode().IsRegular() || openedInfo.Mode().Perm() != 0o600 || !os.SameFile(info, openedInfo) {
+		return "", fmt.Errorf("github webhook fallback: %s changed during open or is not the same regular owner-only 0600 file", path)
+	}
+	const maxCredentialsBytes = 1 << 20
+	data, err := io.ReadAll(io.LimitReader(file, maxCredentialsBytes+1))
+	if err != nil {
+		return "", fmt.Errorf("github webhook fallback: read %s: %w", path, err)
+	}
+	if len(data) > maxCredentialsBytes {
+		return "", fmt.Errorf("github webhook fallback: %s exceeds the 1 MiB credentials limit", path)
+	}
+	var creds AppCredentials
+	if err := json.Unmarshal(data, &creds); err != nil {
+		return "", fmt.Errorf("github webhook fallback: parse %s: %w", path, err)
+	}
+	return creds.WebhookSecret, nil
 }
 
 func shutdownSrv(srv *http.Server) {

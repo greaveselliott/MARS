@@ -66,6 +66,11 @@ self-improvement work can speak the same role-model vocabulary.
 ### AD-089: Native Orchestrator Surveys Are A Fourth Internal Signal Source
 
 Webhook, schedule, and chain remain the manifest-facing trigger sources.
+GitHub webhook triggers are optional and pass through AD-309 before this router:
+valid HMAC, trusted numeric actor, exact registered repository and
+case-sensitive branch, event-specific same-repository provenance, and bounded
+delivery/body replay identity are required. Empty registered remotes never
+match. Fork-derived events and issue comments never reach trigger matching.
 Inside `serve`, the Orchestrator also runs a native survey loop on startup and
 on a watchdog interval. This survey reads repo-local queue state, tickets,
 recent scored outcomes, telemetry patterns, low score snapshots, recovery

@@ -3,8 +3,11 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/pipeline-engine.md
+- docs/design-docs/github-app-integration.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 */
 package serve
 
@@ -112,6 +115,63 @@ func TestRepoRegistry_Register_upsert(t *testing.T) {
 	assert.Equal(t, "develop", repos[0].Branch, "branch should be updated by upsert")
 }
 
+func TestRepoRegistryRegisterPreservesRemoteAndBranchOnEmptyUpdate(t *testing.T) {
+	db := openTestDB(t)
+	reg, err := NewRepoRegistry(db)
+	require.NoError(t, err)
+	repoDir := makeHarnessDir(t)
+	ctx := context.Background()
+	id, err := reg.Register(ctx, repoDir, "Owner/Repo", "release/Main")
+	require.NoError(t, err)
+	id2, err := reg.Register(ctx, repoDir, "", "")
+	require.NoError(t, err)
+	require.Equal(t, id, id2)
+	record, err := reg.FindByID(ctx, id)
+	require.NoError(t, err)
+	require.Equal(t, "owner/repo", record.Remote)
+	require.Equal(t, "release/Main", record.Branch)
+	has, err := reg.HasWebhookRepositories(ctx)
+	require.NoError(t, err)
+	require.True(t, has)
+}
+
+func TestRepoRegistryEmptyRemoteNeverEnablesWebhookPolicy(t *testing.T) {
+	db := openTestDB(t)
+	reg, err := NewRepoRegistry(db)
+	require.NoError(t, err)
+	_, err = reg.Register(context.Background(), makeHarnessDir(t), "", "main")
+	require.NoError(t, err)
+	has, err := reg.HasWebhookRepositories(context.Background())
+	require.NoError(t, err)
+	require.False(t, has)
+	found, err := reg.FindByRemote(context.Background(), "")
+	require.NoError(t, err)
+	require.Nil(t, found)
+}
+
+func TestNormalizeRemote(t *testing.T) {
+	t.Parallel()
+	got, err := NormalizeRemote("Owner/Repo")
+	require.NoError(t, err)
+	require.Equal(t, "owner/repo", got)
+	for _, remote := range []string{"owner", " owner/repo", "owner/repo ", "owner/repo/extra", "owner/re po", "owner\\repo", "owner/repo?x", "owner/repo#x", "owner/repo\n"} {
+		_, err := NormalizeRemote(remote)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "owner/repo")
+	}
+}
+
+func TestRepoRegistryRejectsUnsafeBranch(t *testing.T) {
+	t.Parallel()
+	reg, err := NewRepoRegistry(openTestDB(t))
+	require.NoError(t, err)
+	for _, branch := range []string{" main", "main ", "main branch", "main\\other", "main?x", "main#x", "main\nother"} {
+		_, err := reg.Register(context.Background(), makeHarnessDir(t), "owner/repo", branch)
+		require.Error(t, err, branch)
+		require.Contains(t, err.Error(), "branch")
+	}
+}
+
 func TestRepoRegistry_Register_missingManifest(t *testing.T) {
 	t.Parallel()
 	db := openTestDB(t)
@@ -146,7 +206,7 @@ func TestRepoRegistry_FindByRemote_found(t *testing.T) {
 	_, err = reg.Register(ctx, repoDir, "owner/cool-repo", "main")
 	require.NoError(t, err)
 
-	found, err := reg.FindByRemote(ctx, "owner/cool-repo")
+	found, err := reg.FindByRemote(ctx, "OWNER/COOL-REPO")
 	require.NoError(t, err)
 	require.NotNil(t, found)
 	assert.Equal(t, "owner/cool-repo", found.Remote)

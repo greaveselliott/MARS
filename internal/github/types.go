@@ -82,9 +82,14 @@ type AppCredentials struct {
 // Event is a normalized webhook event.
 type Event struct {
 	ID       string          `json:"id"`
+	BodySHA  string          `json:"body_sha"`
 	Type     string          `json:"type"`
 	Action   string          `json:"action"`
+	ActorID  int64           `json:"actor_id"`
+	Actor    string          `json:"actor,omitempty"`
 	Repo     string          `json:"repo"`
+	Branch   string          `json:"branch"`
+	Fork     bool            `json:"fork"`
 	Payload  json.RawMessage `json:"payload"`
 	Received time.Time       `json:"received"`
 }

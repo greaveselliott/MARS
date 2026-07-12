@@ -2,16 +2,21 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/github-app-integration.md
 - docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 - docs/product-specs/product-surface.md
 */
 package github
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -59,7 +64,8 @@ func TestAppManifest_structure(t *testing.T) {
 	require.Contains(t, events, "push")
 	require.Contains(t, events, "check_suite")
 	require.Contains(t, events, "workflow_run")
-	require.Contains(t, events, "issue_comment")
+	require.Contains(t, events, "merge_group")
+	require.NotContains(t, events, "issue_comment")
 	require.NotContains(t, events, "pull_request")
 }
 
@@ -181,4 +187,144 @@ func TestRunSetup_callbackMissingCode(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestPersistSetupCredentialsStoresSecretOwnerOnlyAndDoesNotReturnIt(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	secret := "0123456789abcdef0123456789abcdef"
+	returned, err := persistSetupCredentials(&AppCredentials{AppID: 1, ClientID: "client", WebhookSecret: secret})
+	require.NoError(t, err)
+	require.Empty(t, returned.WebhookSecret)
+	info, err := os.Stat(credentialsPath())
+	require.NoError(t, err)
+	require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	loaded, err := loadPersistedWebhookSecret()
+	require.NoError(t, err)
+	require.Equal(t, secret, loaded)
+}
+
+func TestPersistSetupCredentialsWriteFailureClearsReturnedSecret(t *testing.T) {
+	homeFile := filepath.Join(t.TempDir(), "not-a-directory")
+	require.NoError(t, os.WriteFile(homeFile, []byte("x"), 0o600))
+	t.Setenv("HOME", homeFile)
+	secret := "0123456789abcdef0123456789abcdef"
+	returned, err := persistSetupCredentials(&AppCredentials{WebhookSecret: secret})
+	require.Error(t, err)
+	require.NotNil(t, returned)
+	require.Empty(t, returned.WebhookSecret)
+	require.NotContains(t, err.Error(), secret)
+}
+
+func TestResolveWebhookSecretEnvironmentOverridesFallback(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	require.NoError(t, os.MkdirAll(filepath.Dir(credentialsPath()), 0o700))
+	require.NoError(t, os.WriteFile(credentialsPath(), []byte(`{"webhook_secret":"fallback-secret"}`), 0o644))
+	secret, err := ResolveWebhookSecret("environment-secret")
+	require.NoError(t, err)
+	require.Equal(t, "environment-secret", secret)
+}
+
+func TestLoadPersistedWebhookSecretRejectsUnsafeModeMalformedAndOversizedFiles(t *testing.T) {
+	for name, tc := range map[string]struct {
+		mode os.FileMode
+		body []byte
+	}{
+		"unsafe mode": {0o644, []byte(`{"webhook_secret":"secret"}`)},
+		"malformed":   {0o600, []byte(`{`)},
+		"oversized":   {0o600, bytes.Repeat([]byte("x"), (1<<20)+1)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			require.NoError(t, os.MkdirAll(filepath.Dir(credentialsPath()), 0o700))
+			require.NoError(t, os.WriteFile(credentialsPath(), tc.body, tc.mode))
+			_, err := loadPersistedWebhookSecret()
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestLoadPersistedWebhookSecretMissingIsDisabledNotError(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	secret, err := loadPersistedWebhookSecret()
+	require.NoError(t, err)
+	require.Empty(t, secret)
+}
+
+func TestPersistSetupCredentialsAtomicallyReplacesDestinationSymlinkWithoutFollowingTarget(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	require.NoError(t, os.MkdirAll(filepath.Dir(credentialsPath()), 0o700))
+	target := filepath.Join(t.TempDir(), "symlink-target.json")
+	require.NoError(t, os.WriteFile(target, []byte("sentinel-target"), 0o600))
+	require.NoError(t, os.Symlink(target, credentialsPath()))
+	secret := "new-owner-only-webhook-secret-1234"
+	returned, err := persistSetupCredentials(&AppCredentials{WebhookSecret: secret})
+	require.NoError(t, err)
+	require.Empty(t, returned.WebhookSecret)
+	targetBody, err := os.ReadFile(target)
+	require.NoError(t, err)
+	require.Equal(t, "sentinel-target", string(targetBody), "atomic rename must replace the symlink entry, not follow its target")
+	info, err := os.Lstat(credentialsPath())
+	require.NoError(t, err)
+	require.True(t, info.Mode().IsRegular())
+	require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	loaded, err := loadPersistedWebhookSecret()
+	require.NoError(t, err)
+	require.Equal(t, secret, loaded)
+}
+
+func TestPersistSetupCredentialsRejectsSymlinkParent(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	realDir := filepath.Join(t.TempDir(), "real-mars")
+	require.NoError(t, os.MkdirAll(realDir, 0o700))
+	require.NoError(t, os.Symlink(realDir, filepath.Join(home, credentialsDirName)))
+	returned, err := persistSetupCredentials(&AppCredentials{WebhookSecret: "must-not-be-written"})
+	require.Error(t, err)
+	require.Empty(t, returned.WebhookSecret)
+	require.NoFileExists(t, filepath.Join(realDir, credentialsFileName))
+}
+
+func TestPersistSetupCredentialsCleansTempWhenDestinationIsDirectory(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	require.NoError(t, os.MkdirAll(credentialsPath(), 0o700))
+	returned, err := persistSetupCredentials(&AppCredentials{WebhookSecret: "must-not-be-returned"})
+	require.Error(t, err)
+	require.Empty(t, returned.WebhookSecret)
+	matches, globErr := filepath.Glob(filepath.Join(filepath.Dir(credentialsPath()), "."+credentialsFileName+".tmp-*"))
+	require.NoError(t, globErr)
+	require.Empty(t, matches)
+}
+
+func TestLoadPersistedWebhookSecretRejectsOpenSwapBeforeRead(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	require.NoError(t, os.MkdirAll(filepath.Dir(credentialsPath()), 0o700))
+	require.NoError(t, os.WriteFile(credentialsPath(), []byte(`{"webhook_secret":"original"}`), 0o600))
+	replacement := filepath.Join(t.TempDir(), "replacement.json")
+	require.NoError(t, os.WriteFile(replacement, []byte(`{"webhook_secret":"must-not-leak"}`), 0o600))
+	secret, err := loadPersistedWebhookSecretFile(credentialsPath(), func(path string) (*os.File, error) {
+		require.NoError(t, os.Remove(path))
+		require.NoError(t, os.Symlink(replacement, path))
+		return os.Open(path)
+	})
+	require.Error(t, err)
+	require.Empty(t, secret)
+	require.NotContains(t, err.Error(), "must-not-leak")
+}
+
+func TestLoadPersistedWebhookSecretRejectsNonRegularDestination(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	require.NoError(t, os.MkdirAll(filepath.Dir(credentialsPath()), 0o700))
+	target := filepath.Join(t.TempDir(), "target.json")
+	require.NoError(t, os.WriteFile(target, []byte(`{"webhook_secret":"must-not-load"}`), 0o600))
+	require.NoError(t, os.Symlink(target, credentialsPath()))
+	secret, err := loadPersistedWebhookSecret()
+	require.Error(t, err)
+	require.Empty(t, secret)
 }

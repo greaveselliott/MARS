@@ -125,7 +125,7 @@ reviewed from the repo and deployed without a frontend build step.
 | `mars scan --repo <path> --tickets` | Implemented | Finds repo gaps and writes deduplicated backlog tickets through the canonical ticket path. |
 | `mars run <role> --repo <path>` | Implemented | Loads manifest, guardrails, knowledge routes, context, tools, local model endpoint, and runs one role with terminal-result truth. Interactive TTYs show a full-screen terminal dashboard by default; `--debug` or legacy `--trace` restores verbose inline trace output, `--log-file` controls the durable command log path, `--dry-run --no-init` provides observer-safe inspection when a target has no `.harness/` yet, and `foundation-maintainer` provides source-only foundation context in the MARS source repo without creating a source manifest. |
 | `mars start --repo <path>` | Implemented | Initializes if needed, registers the repo, reconciles existing lifecycle state before seeding CEO, and runs the per-repo autonomous pipeline with isolated database state and recovery-queue self-healing. `--new-lifecycle` is required for intentional CEO reseeding over resumable work. Interactive TTYs use the same full-screen terminal dashboard and keep verbose logs in `~/.mars/traces/logs/` unless `--debug` is set. |
-| `mars serve` | Implemented | Runs the orchestrator, dashboard, webhook receiver, cron scheduler, workers, recovery-queue self-heal watchdog, native survey loop for unattended ticket/check/telemetry/score/dogfood/no-op/stuck-work signals, and dispatch-mode organization layer against the configured database. Interactive TTYs use the terminal dashboard while the web dashboard and SSE APIs remain separate live surfaces. |
+| `mars serve` | Implemented | Runs the orchestrator, dashboard, optional fail-closed GitHub webhook receiver, cron scheduler, workers, recovery-queue self-heal watchdog, native survey loop for unattended ticket/check/telemetry/score/dogfood/no-op/stuck-work signals, and dispatch-mode organization layer against the configured database. Control/dashboard listeners are loopback-only. GitHub dispatch requires an >=32-byte env-first/owner-only-setup-fallback secret, trusted numeric actor IDs, and an exact registered repository/branch; missing policy leaves local health available and returns 503 on `/webhook`. Interactive TTYs use the terminal dashboard while the web dashboard and SSE APIs remain separate live surfaces. |
 | `mars register --repo <path>` | Implemented | Registers a repo and creates the per-repo database path when one is not supplied. |
 | `mars doctor [--repo <path>] [--json]` | Implemented, expanding | Checks Go, config, model registry, models directory, database, llama-server, disk space, private-release auth readiness, guardrail/workflow health, mirrored operating-model health, active-plan hygiene, and optional integration configuration. |
 | `mars scores [--repo <path>]` | Implemented | Shows trunk-native role scores from stored outcomes. |
@@ -315,6 +315,16 @@ Manual tuning remains available, but the normal path should require none.
 ## Optional Integrations
 
 MARS is complete without a remote-code-host integration. Optional integration exists for telemetry and coordination: webhooks, statuses, comments, and check-run style reporting.
+
+GitHub webhooks are authenticated and authorized inputs, not a public command
+surface. `mars start --remote owner/repo --branch <branch>` records the exact
+repository boundary. Trusted actor IDs resolve from repeatable
+`--webhook-actor-id`, `MARS_WEBHOOK_ALLOWED_ACTOR_IDS`, or
+`webhook_allowed_actor_ids` with CLI-over-env-over-YAML precedence. Login names,
+empty remotes, wrong branches, forks, and issue comments cannot dispatch work.
+`MARS_WEBHOOK_SECRET` overrides the owner-only `0600` GitHub App credentials
+fallback created by setup. Neither source is exposed through YAML/CLI, logs,
+traces, HTTP responses, or returned setup results.
 
 The product must never describe optional integration as complete unless credentials, webhook delivery, and status/comment behavior have actually been validated.
 

@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/agent-smoke-validation.md
 - docs/design-docs/cli-tool-skill-sync.md
+- docs/design-docs/github-app-integration.md
 - docs/design-docs/dashboard.md
 - docs/design-docs/local-inference.md
 - docs/design-docs/self-reflective-telemetry.md
@@ -13,6 +14,8 @@ docs:
 - docs/features/F-003-local-inference-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 - docs/features/F-010-dashboard-control-plane.md
 - docs/features/F-012-self-improvement-loop.md
 */
@@ -430,17 +433,18 @@ Global command surface:
 
   start
     Auto-init/register, reconcile existing lifecycle state, and run the autonomous orchestrator for one target repo. It resumes active jobs, stale recoverable jobs, in-progress/rework tickets, or recent deterministic dispositions before seeding CEO.
-    Flags: --repo <path>, --concurrency <n>, --db <path>, --force, --new-lifecycle, --debug, --log-file <path>, --code-intel <true|false>, --model-endpoint <real-url>, --addr <host:port>, --dashboard-addr <host:port>
+    Flags: --repo <path>, --remote <owner/repo>, --branch <branch>, --webhook-actor-id <numeric-id> (repeatable), --concurrency <n>, --db <path>, --force, --new-lifecycle, --debug, --log-file <path>, --code-intel <true|false>, --model-endpoint <real-url>, --addr <host:port>, --dashboard-addr <host:port> (both hosts must be literal loopback)
     Use --new-lifecycle only when intentionally reseeding CEO over existing lifecycle state.
-    --model-endpoint is only for real OpenAI-compatible endpoints; fake or scripted endpoints are test fixtures, not live validation evidence. Default scoped starts fall back to ephemeral local control/dashboard ports on conflict; explicit --addr or --dashboard-addr values are deterministic and fail if occupied.
+    --model-endpoint is only for real OpenAI-compatible endpoints; fake or scripted endpoints are test fixtures, not live validation evidence. Control/dashboard listeners accept only literal loopback addresses. Default scoped starts fall back to ephemeral local control/dashboard ports on conflict; the fallback host remains 127.0.0.1. GitHub webhook dispatch also requires a >=32-byte secret (MARS_WEBHOOK_SECRET first, then owner-only 0600 GitHub App credentials fallback), trusted numeric actor IDs from CLI/env/YAML, and an exact registered remote/branch; absent policy leaves local operation healthy with webhook ingress disabled.
     Long-running; use background:true when starting it from an agent.
     Example: ["start", "--repo", ".", "--concurrency", "1"]
 
   serve
     Run multi-repo orchestrator, dashboard, webhooks, scheduler, and workers.
-    Flags: --addr <host:port>, --concurrency <n>, --db <path>, --debug, --log-file <path>, --code-intel <true|false>
+    Flags: --addr <host:port> (literal loopback), --webhook-actor-id <numeric-id> (repeatable), --concurrency <n>, --db <path>, --debug, --log-file <path>, --code-intel <true|false>
+	Control/dashboard listeners are loopback-only. GitHub webhook policy uses MARS_WEBHOOK_SECRET or the owner-only 0600 setup fallback plus actor IDs from CLI, MARS_WEBHOOK_ALLOWED_ACTOR_IDS, or webhook_allowed_actor_ids YAML; CLI actor policy overrides env, which overrides YAML.
     Long-running; use background:true when starting it from an agent.
-    Example: ["serve", "--addr", ":9091", "--concurrency", "2"]
+    Example: ["serve", "--addr", "127.0.0.1:9091", "--concurrency", "2"]
 
   register
     Register a repository for autonomous management.

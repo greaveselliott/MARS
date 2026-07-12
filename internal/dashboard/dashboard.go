@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/dashboard.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
 */
 package dashboard
 
@@ -18,6 +19,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/greaveselliott/mars/internal/network"
 )
 
 //go:embed templates/*.html static/*
@@ -62,7 +65,7 @@ type RepoInfoDTO struct {
 
 // Config controls the dashboard.
 type Config struct {
-	Addr             string // default ":9090"
+	Addr             string // default "127.0.0.1:9090"
 	EmergencyStop    func() []error
 	ChainProvider    func() []ChainNode // returns the live pipeline chain from manifest
 	PipelineProvider func() PipelineView
@@ -84,7 +87,10 @@ type Dashboard struct {
 // New creates a Dashboard, parses embedded templates, and wires routes.
 func New(cfg Config) (*Dashboard, error) {
 	if cfg.Addr == "" {
-		cfg.Addr = ":9090"
+		cfg.Addr = "127.0.0.1:9090"
+	}
+	if err := network.ValidateLoopbackAddress("dashboard", cfg.Addr); err != nil {
+		return nil, fmt.Errorf("dashboard: %w", err)
 	}
 
 	tmpl, err := template.ParseFS(content, "templates/*.html")

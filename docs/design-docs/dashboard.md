@@ -146,6 +146,13 @@ Operators need to pause, restart, scan, stop, and force-run individual roles wit
 
 **Dashboard (localhost:9090):** Control bar in the sidebar with buttons for pause/resume, restart, stop, scan, and run-role. Repo and role selectors populated from `/api/repos` and `/api/repo-roles`. State updates flow via SSE `status_change` events.
 
+The embedded dashboard and webhook/control server bind explicit loopback
+addresses by default. Direct construction and CLI overrides reject wildcard,
+LAN, DNS hostname, and other non-loopback addresses before bind; operators who
+need remote access must keep MARS on loopback and use a separately authenticated
+gateway or reverse proxy. Browser authentication and request protections remain
+the next F-017 dashboard slice; see AD-309.
+
 **API endpoints:**
 
 | Method | Path | Action |

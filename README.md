@@ -206,7 +206,7 @@ mars mcp serve --repo /path/to/repo --trust observer
 
 # Multi-repo daemon path
 mars register --repo /path/to/repo --remote owner/repo
-mars serve --addr :9091 --concurrency 2
+mars serve --addr 127.0.0.1:9091 --concurrency 2
 ```
 
 Use `--trust contributor` for MCP only when the connected client should be able

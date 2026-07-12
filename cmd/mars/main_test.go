@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/dashboard.md
+- docs/design-docs/github-app-integration.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/harness-operating-model.md
@@ -16,6 +17,8 @@ docs:
 - docs/features/F-004-target-harness-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-012-self-improvement-loop.md
 */
@@ -592,6 +595,30 @@ func TestStartCommandExposesParallelAddressControls(t *testing.T) {
 	cmd := startCmd()
 	require.NotNil(t, cmd.Flags().Lookup("addr"))
 	require.NotNil(t, cmd.Flags().Lookup("dashboard-addr"))
+	require.NotNil(t, cmd.Flags().Lookup("remote"))
+	require.NotNil(t, cmd.Flags().Lookup("branch"))
+	require.NotNil(t, cmd.Flags().Lookup("webhook-actor-id"))
+	require.NotNil(t, serveCmd().Flags().Lookup("webhook-actor-id"))
+}
+
+func TestResolveWebhookActorIDsPrecedenceValidationAndDeduplication(t *testing.T) {
+	t.Setenv("MARS_WEBHOOK_ALLOWED_ACTOR_IDS", "20,30,20")
+	got, err := resolveWebhookActorIDs([]int64{10, 10}, []int64{40})
+	require.NoError(t, err)
+	require.Equal(t, []int64{10}, got)
+	got, err = resolveWebhookActorIDs(nil, []int64{40})
+	require.NoError(t, err)
+	require.Equal(t, []int64{20, 30}, got)
+	t.Setenv("MARS_WEBHOOK_ALLOWED_ACTOR_IDS", "")
+	got, err = resolveWebhookActorIDs(nil, []int64{40, 40})
+	require.NoError(t, err)
+	require.Equal(t, []int64{40}, got)
+	for _, raw := range []string{"not-a-number", "0", "-1"} {
+		t.Setenv("MARS_WEBHOOK_ALLOWED_ACTOR_IDS", raw)
+		_, err := resolveWebhookActorIDs(nil, nil)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "actor")
+	}
 }
 
 func TestScoresExportExposesCreateInterventionDebtFlag(t *testing.T) {
@@ -616,6 +643,8 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	cmd.SetArgs([]string{
 		"--repo", repoDir,
 		"--db", dbPath,
+		"--remote", "Owner/Repo",
+		"--branch", "release/Main",
 		"--log-file", logPath,
 		"--model-endpoint", "http://127.0.0.1:9999/v1",
 		"--exit-after-seed",
@@ -638,6 +667,8 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, repos, 1)
 	require.Equal(t, repoDir, repos[0].Path)
+	require.Equal(t, "owner/repo", repos[0].Remote)
+	require.Equal(t, "release/Main", repos[0].Branch)
 
 	q, err := queue.Open(dbPath)
 	require.NoError(t, err)
@@ -660,6 +691,10 @@ func TestStartCommandInitializesRegistersSeedsAndStops(t *testing.T) {
 		"--exit-after-seed",
 	})
 	require.NoError(t, second.Execute())
+	repos, err = registry.List(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, "owner/repo", repos[0].Remote)
+	require.Equal(t, "release/Main", repos[0].Branch)
 	jobs, err = q.RecentJobs(context.Background(), 10)
 	require.NoError(t, err)
 	require.Len(t, jobs, 1, "restarting bootstrap should reuse the active CEO job")

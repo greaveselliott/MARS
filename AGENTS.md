@@ -227,9 +227,19 @@ Start the autonomous orchestrator (webhooks, cron, queue, workers).
 mars serve
 ```
 
-Flags: `--addr :9091`, `--concurrency 2`, `--db <path>`
+Flags: `--addr 127.0.0.1:9091`, `--webhook-actor-id <numeric-id>`, `--concurrency 2`, `--db <path>`
 
 Health check: `curl http://localhost:9091/healthz` → `{"status":"healthy"}`
+
+Control and dashboard listeners accept only explicit loopback addresses.
+Optional GitHub webhook dispatch additionally requires a webhook secret of at
+least 32 bytes, trusted numeric actor IDs from CLI,
+`MARS_WEBHOOK_ALLOWED_ACTOR_IDS`, or YAML `webhook_allowed_actor_ids`, and an
+exact registered remote/branch. Missing policy leaves health/local operation
+available while `/webhook` returns 503 and dispatches nothing.
+`MARS_WEBHOOK_SECRET` takes precedence; when absent, MARS may use only the
+GitHub-generated secret in the owner-only `0600` local GitHub App credentials
+file. The secret is never a YAML/CLI field and must not enter logs or traces.
 
 ### 3. Register
 

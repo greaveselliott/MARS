@@ -865,7 +865,7 @@ None.
 - F-006-S001: `go test ./internal/serve -run TestRepoRegistry`
 - F-006-S002: `go test ./internal/queue -run TestQueue`
 - F-006-S003: `go test ./internal/queue -run TestWorkerPool`
-- F-006-S004: existing trigger/schedule/chain tests plus current OSS-02 pending evidence for empty-remote rejection, authorized event-specific routing, and durable webhook replay idempotency
+- F-006-S004: T-057 Engineer evidence adds empty-remote rejection, exact branch matching, five event-specific authorization fixtures, and real SQLite delivery/body receipts that remain idempotent after job completion and server restart. Independent QA/Security/Dogfood evidence remains pending.
 - F-006-S005: `go test ./cmd/mars -run 'Test(Start|Init|Run|Register|Scan).*GeneratedHarnessBaseline|TestStartCommandExposesParallelAddressControls'` and `go test ./internal/serve -run TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy`
 - F-006-S006: `go test ./internal/serve -run TestServer`
 - F-006-S007: `go test ./internal/serve -run 'TestHandleJobFailed|TestSelfHealRecoveryQueue'` and `go test ./internal/queue -run TestQueue_repairActiveRecoveryJobs`

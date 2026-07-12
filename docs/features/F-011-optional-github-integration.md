@@ -44,7 +44,7 @@ When the receiver handles disabled, signed, tampered, missing-header,
 oversized, replayed, unknown, unauthorized-actor, wrong-repository,
 wrong-branch, fork-origin, issue-comment, or wrong-method requests
 Then local operation remains healthy when GitHub ingress is disabled
-And enabled ingress requires a secret of sufficient length, valid HMAC over the
+And enabled ingress requires an env-first or owner-only setup-fallback secret of sufficient length, valid HMAC over the
 exact body, a trusted numeric actor ID, an exact registered `owner/repo`, the
 registered branch, and same-repository event provenance
 And fork-derived events and issue comments never dispatch autonomous work
@@ -91,8 +91,9 @@ None.
 
 - F-011-S001: `go test ./internal/github -run TestNewClient`
 - F-011-S002: `go test ./internal/github -run 'TestRunSetup|TestAppManifest|TestExchangeManifestCode'`
-- F-011-S003: current OSS-02 slice; pending HMAC, numeric actor, exact registered repository/branch, fork/comment policy, bounded replay, durable queue idempotency, and installed-binary evidence
+- F-011-S002 secret containment: T-057 Engineer tests prove setup stores the GitHub-generated webhook secret only in regular owner-only 0600 credentials, never returns it after success/write failure, bounds fallback reads, and gives MARS_WEBHOOK_SECRET precedence.
+- F-011-S003: T-057 corrected Engineer evidence implements >=32-byte exact-body HMAC, centrally validated numeric actor authority, hardened exact normalized repository and case-sensitive branch, complete event-specific same-repo/fork metadata (including top-level check-suite repository), disabled issue comments, bounded 10,000-entry/24-hour replay, callback rollback, durable TTL/failed-job behavior, and transactional SQLite delivery/body receipts across completion/restart. Independent QA/Security and installed-binary evidence remain pending.
 - F-011-S004: `go test ./internal/github -run 'TestCreatePR|TestCreateCheckRun|TestUpdateCheckRun|TestPostComment'`
 - F-011-S005: `go test ./internal/github -run 'TestClient_(rateLimit|serverError|context|unexpected)|TestRateLimitWait|TestBackoff'`
-- F-011-S006: existing doctor/local command evidence plus pending OSS-02 proof that health/local operation continue while disabled webhook ingress returns unavailable and dispatches nothing
+- F-011-S006: T-057 Engineer handler/integration tests prove missing secret, actors, or registered remote returns 503 and enqueues zero while GET/HEAD health remains available. Independent review and installed-binary evidence remain pending.
 - F-011-S007: planned orchestration/telemetry E2E evidence for GitHub events around strict-trunk runs

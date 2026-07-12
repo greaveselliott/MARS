@@ -4,6 +4,8 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/pipeline-engine.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 */
 package queue
 
@@ -170,6 +172,84 @@ func TestQueue_idempotency(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.NotEqual(t, id1, id3, "completed job should allow new enqueue with same key")
+}
+
+func TestQueueWebhookIdempotencySurvivesCompletionAndRestart(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "queue.db")
+	q, err := Open(dbPath)
+	require.NoError(t, err)
+	ctx := context.Background()
+	jobs := []Job{{RepoID: "repo-1", Role: "engineer", Trigger: `{"type":"push"}`, IdempotencyKey: "webhook:sha:repo-1:engineer"}}
+
+	ids, duplicate, err := q.EnqueueWebhook(ctx, "delivery-1", "body-sha-1", jobs, 24*time.Hour)
+	require.NoError(t, err)
+	require.False(t, duplicate)
+	require.Len(t, ids, 1)
+	job, err := q.Claim(ctx, "worker")
+	require.NoError(t, err)
+	require.NoError(t, q.MarkRunning(ctx, job.ID))
+	require.NoError(t, q.Complete(ctx, job.ID))
+	require.NoError(t, q.Close())
+
+	q, err = Open(dbPath)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = q.Close() })
+	ids, duplicate, err = q.EnqueueWebhook(ctx, "delivery-1", "body-sha-1", jobs, 24*time.Hour)
+	require.NoError(t, err)
+	require.True(t, duplicate)
+	require.Empty(t, ids)
+	ids, duplicate, err = q.EnqueueWebhook(ctx, "delivery-2", "body-sha-1", jobs, 24*time.Hour)
+	require.NoError(t, err)
+	require.True(t, duplicate, "changed delivery with same body must remain idempotent")
+	require.Empty(t, ids)
+	recent, err := q.RecentJobs(ctx, 10)
+	require.NoError(t, err)
+	require.Len(t, recent, 1)
+}
+
+func TestQueueWebhookFailureRollsBackReceipt(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+	_, duplicate, err := q.EnqueueWebhook(ctx, "delivery-bad", "body-bad", []Job{{RepoID: "", Role: "engineer"}}, 24*time.Hour)
+	require.Error(t, err)
+	require.False(t, duplicate)
+	ids, duplicate, err := q.EnqueueWebhook(ctx, "delivery-bad", "body-bad", []Job{{RepoID: "repo", Role: "engineer"}}, 24*time.Hour)
+	require.NoError(t, err)
+	require.False(t, duplicate)
+	require.Len(t, ids, 1)
+}
+
+func TestQueueWebhookReceiptExpiresAfterTTL(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+	_, duplicate, err := q.EnqueueWebhook(ctx, "delivery-expiring", "body-expiring", nil, time.Hour)
+	require.NoError(t, err)
+	require.False(t, duplicate)
+	_, err = q.db.Exec(`UPDATE webhook_receipts SET created_at = ? WHERE delivery_id = ?`, time.Now().Add(-2*time.Hour).Unix(), "delivery-expiring")
+	require.NoError(t, err)
+	_, duplicate, err = q.EnqueueWebhook(ctx, "delivery-expiring", "body-expiring", nil, time.Hour)
+	require.NoError(t, err)
+	require.False(t, duplicate, "expired durable replay identity should be accepted as a new delivery")
+}
+
+func TestQueueWebhookIdempotencySurvivesFailedJob(t *testing.T) {
+	q := tempQueue(t)
+	ctx := context.Background()
+	jobs := []Job{{RepoID: "repo-failed", Role: "engineer", IdempotencyKey: "webhook:failed"}}
+	_, duplicate, err := q.EnqueueWebhook(ctx, "delivery-failed", "body-failed", jobs, 24*time.Hour)
+	require.NoError(t, err)
+	require.False(t, duplicate)
+	job, err := q.Claim(ctx, "worker")
+	require.NoError(t, err)
+	require.NoError(t, q.MarkRunning(ctx, job.ID))
+	require.NoError(t, q.Fail(ctx, job.ID, "deterministic failure"))
+	_, duplicate, err = q.EnqueueWebhook(ctx, "delivery-failed", "body-failed", jobs, 24*time.Hour)
+	require.NoError(t, err)
+	require.True(t, duplicate)
+	recent, err := q.RecentJobs(ctx, 10)
+	require.NoError(t, err)
+	require.Len(t, recent, 1)
+	require.Equal(t, StatusFailed, recent[0].Status)
 }
 
 func TestQueue_activeJobForRepoRole(t *testing.T) {

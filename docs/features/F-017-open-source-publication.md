@@ -81,7 +81,7 @@ When dashboard, webhook, setup, telemetry, filesystem tools, shell execution,
 cleanup, logs, and traces operate
 Then listeners default to loopback
 And remote control requires explicit authentication and request protections
-And unsigned or untrusted GitHub events cannot enqueue autonomous mutation
+And unsigned or untrusted GitHub events cannot enqueue autonomous mutation, with webhook secrets resolved env-first or from only the owner-only setup fallback
 And repo filesystem operations cannot escape through symlinks
 And observer execution is the new-install default
 And host execution requires explicit acknowledgement
@@ -143,7 +143,7 @@ None.
 ## Evidence
 
 - F-017-S001: T-056 passed Engineer, QA, Security, Dogfood, and Orchestrator review for the read-only local Git and redacted GitHub surface inventory, explicit inaccessible/not-attempted gaps, and isolated owner-controlled offline restricted-evidence contract. The technical history recommendation remains `undecided`. Pinned scans, manual privacy/IP/provenance review, inaccessible-surface collection, publication-authority attestation, and name clearance remain pending, so the scenario does not pass.
-- F-017-S002: T-055 technically completes the vulnerability-baseline enabler. OSS-02 is the current listener/webhook ingress slice: loopback-only defaults, fail-closed HMAC, trusted numeric actor IDs, exact registered repository/branch and same-repo provenance, disabled issue comments/fork events, and bounded durable replay evidence remain pending. The scenario remains incomplete pending OSS-02 and later runtime P0 tickets.
+- F-017-S002: T-055 technically completes the vulnerability-baseline enabler. T-057 completes the bounded OSS-02 loopback and GitHub webhook-ingress slice after Engineer, QA, Security, exact full-race, and installed clean static-browser/API-service evidence. The installed candidate proved fail-closed HMAC and numeric actor policy, exact repository/branch and same-repository provenance, disabled issue-comment/fork dispatch, queue-zero rejection, and durable single-shot replay across completion and restart. Dashboard/browser, filesystem, execution, telemetry, and later runtime P0 tickets remain pending, so the scenario remains incomplete.
 - F-017-S003: Pending deterministic-build, signature, anonymous install/update, negative artifact, bridge, and rollback evidence.
 - F-017-S004: Pending community/CI checks and disposable public hostile-fork rehearsal.
 - F-017-S005: Pending private rehearsal, role sign-offs, logged-out smoke, rollback record, and 48-hour canary report.

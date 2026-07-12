@@ -4,6 +4,8 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/pipeline-engine.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 */
 package queue
 
@@ -106,6 +108,11 @@ CREATE TABLE IF NOT EXISTS jobs (
   completed_at    INTEGER,
   error_msg       TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS webhook_receipts (
+  delivery_id TEXT PRIMARY KEY,
+  body_sha    TEXT NOT NULL UNIQUE,
+  created_at  INTEGER NOT NULL
+);
 `)
 	if err != nil {
 		return fmt.Errorf("queue: init schema: %w", err)
@@ -131,6 +138,73 @@ CREATE INDEX IF NOT EXISTS idx_jobs_concurrency_status ON jobs(concurrency_group
 		return fmt.Errorf("queue: init indexes: %w", err)
 	}
 	return nil
+}
+
+// EnqueueWebhook atomically records a delivery/body replay identity and all
+// jobs derived from it. A receipt survives job completion, failure, and process
+// restart for the replay TTL. Duplicate delivery IDs or body hashes return
+// duplicate=true without creating jobs.
+func (q *Queue) EnqueueWebhook(ctx context.Context, deliveryID, bodySHA string, jobs []Job, replayTTL time.Duration) (jobIDs []string, duplicate bool, err error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	deliveryID = strings.TrimSpace(deliveryID)
+	bodySHA = strings.TrimSpace(bodySHA)
+	if deliveryID == "" || bodySHA == "" {
+		return nil, false, fmt.Errorf("queue: webhook delivery ID and body SHA are required")
+	}
+	if replayTTL <= 0 {
+		replayTTL = 24 * time.Hour
+	}
+	now := time.Now().UTC()
+	tx, err := q.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, false, fmt.Errorf("queue: begin webhook enqueue: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM webhook_receipts WHERE created_at < ?`, now.Add(-replayTTL).Unix()); err != nil {
+		return nil, false, fmt.Errorf("queue: prune webhook receipts: %w", err)
+	}
+	result, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO webhook_receipts(delivery_id, body_sha, created_at) VALUES(?,?,?)`, deliveryID, bodySHA, now.Unix())
+	if err != nil {
+		return nil, false, fmt.Errorf("queue: record webhook receipt: %w", err)
+	}
+	inserted, err := result.RowsAffected()
+	if err != nil {
+		return nil, false, fmt.Errorf("queue: inspect webhook receipt: %w", err)
+	}
+	if inserted == 0 {
+		if err := tx.Commit(); err != nil {
+			return nil, false, fmt.Errorf("queue: commit duplicate webhook receipt: %w", err)
+		}
+		return nil, true, nil
+	}
+
+	jobIDs = make([]string, 0, len(jobs))
+	for i := range jobs {
+		job := jobs[i]
+		if strings.TrimSpace(job.RepoID) == "" || strings.TrimSpace(job.Role) == "" {
+			return nil, false, fmt.Errorf("queue: webhook job %d requires repo and role", i)
+		}
+		if job.ID == "" {
+			job.ID = newUUID()
+		}
+		job.PayloadMode = strings.TrimSpace(job.PayloadMode)
+		job.ConcurrencyGroup = strings.TrimSpace(job.ConcurrencyGroup)
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO jobs(id, repo_id, role, trigger_payload, payload_mode, concurrency_group, daily_cap, idempotency_key, status, claimed_by, created_at, updated_at, error_msg)
+VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			job.ID, job.RepoID, job.Role, job.Trigger, job.PayloadMode, job.ConcurrencyGroup, job.DailyCap,
+			job.IdempotencyKey, string(StatusPending), "", now.Unix(), now.Unix(), ""); err != nil {
+			return nil, false, fmt.Errorf("queue: enqueue webhook job: %w", err)
+		}
+		jobIDs = append(jobIDs, job.ID)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, false, fmt.Errorf("queue: commit webhook enqueue: %w", err)
+	}
+	return jobIDs, false, nil
 }
 
 func (q *Queue) ensureJobsColumn(name, definition string) error {

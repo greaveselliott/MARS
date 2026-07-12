@@ -7,6 +7,8 @@ docs:
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
 - docs/design-docs/dashboard.md
+- docs/design-docs/dogfood-matrix.md
+- docs/design-docs/github-app-integration.md
 - docs/design-docs/harness-glossary.md
 - docs/design-docs/harness-operating-model.md
 - docs/design-docs/local-inference.md
@@ -21,6 +23,8 @@ docs:
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-012-self-improvement-loop.md
 - docs/roles/ROLES.md
@@ -43,6 +47,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -58,6 +63,7 @@ import (
 	"github.com/greaveselliott/mars/internal/docsync"
 	"github.com/greaveselliott/mars/internal/doctor"
 	"github.com/greaveselliott/mars/internal/foundationtelemetry"
+	gh "github.com/greaveselliott/mars/internal/github"
 	"github.com/greaveselliott/mars/internal/githubauth"
 	"github.com/greaveselliott/mars/internal/guardrails"
 	"github.com/greaveselliott/mars/internal/hardware"
@@ -4258,14 +4264,41 @@ func trustSetCmd() *cobra.Command {
 	return cmd
 }
 
+func resolveWebhookActorIDs(cliIDs, yamlIDs []int64) ([]int64, error) {
+	selected := append([]int64(nil), cliIDs...)
+	source := "--webhook-actor-id"
+	if len(selected) == 0 {
+		source = "MARS_WEBHOOK_ALLOWED_ACTOR_IDS"
+		raw := strings.TrimSpace(config.Env(source))
+		if raw != "" {
+			for _, value := range strings.Split(raw, ",") {
+				id, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+				if err != nil {
+					return nil, fmt.Errorf("webhook actor policy: %s contains invalid numeric actor ID %q; use comma-separated positive GitHub actor IDs", source, value)
+				}
+				selected = append(selected, id)
+			}
+		} else {
+			source = "webhook_allowed_actor_ids"
+			selected = append(selected, yamlIDs...)
+		}
+	}
+	result, err := gh.NormalizeWebhookActorIDs(selected)
+	if err != nil {
+		return nil, fmt.Errorf("webhook actor policy from %s: %w", source, err)
+	}
+	return result, nil
+}
+
 func serveCmd() *cobra.Command {
 	var (
-		webhookAddr   string
-		concurrency   int
-		dbPath        string
-		debug         bool
-		logFile       string
-		codeIntelFlag string
+		webhookAddr     string
+		webhookActorIDs []int64
+		concurrency     int
+		dbPath          string
+		debug           bool
+		logFile         string
+		codeIntelFlag   string
 	)
 
 	cmd := &cobra.Command{
@@ -4279,7 +4312,7 @@ func serveCmd() *cobra.Command {
 			}
 
 			if webhookAddr == "" {
-				webhookAddr = fmt.Sprintf(":%d", cfg.WebhookPort)
+				webhookAddr = fmt.Sprintf("127.0.0.1:%d", cfg.WebhookPort)
 			}
 
 			if dbPath == "" {
@@ -4294,12 +4327,19 @@ func serveCmd() *cobra.Command {
 				return err
 			}
 
-			webhookSecret := config.Env("MARS_WEBHOOK_SECRET")
-			dashboardAddr := fmt.Sprintf(":%d", cfg.DashboardPort)
+			webhookSecret, err := gh.ResolveWebhookSecret(config.Env("MARS_WEBHOOK_SECRET"))
+			if err != nil {
+				return err
+			}
+			actors, err := resolveWebhookActorIDs(webhookActorIDs, cfg.WebhookAllowedActorIDs)
+			if err != nil {
+				return err
+			}
+			dashboardAddr := fmt.Sprintf("127.0.0.1:%d", cfg.DashboardPort)
 
 			display, err := newRuntimeDisplay("serve", logFile, debug, cmd.ErrOrStderr(), cmd.ErrOrStderr(), nil, ui.DashboardOptions{
 				Title:        "MARS",
-				DashboardURL: "http://localhost" + dashboardAddr,
+				DashboardURL: "http://" + dashboardAddr,
 				Controls:     "[p] pause  [r] restart  [s] scan  [q] quit  [h] help",
 			})
 			if err != nil {
@@ -4310,19 +4350,20 @@ func serveCmd() *cobra.Command {
 			serve.Cleanup(cfg.WebhookPort, dbPath, cfg.DashboardPort)
 
 			srv, err := serve.New(serve.Config{
-				WebhookAddr:           webhookAddr,
-				WebhookSecret:         webhookSecret,
-				DBPath:                dbPath,
-				Concurrency:           concurrency,
-				ModelsDir:             cfg.ModelsDir,
-				BinDir:                cfg.BinDir,
-				DashboardAddr:         dashboardAddr,
-				PerformanceProfile:    cfg.PerformanceProfile,
-				InferenceTuning:       inferenceTuningFromConfig(cfg),
-				RequireModelPreflight: true,
-				JobViews:              display.jobViews,
-				CodeIntelDisabled:     !codeIntelRuntime.Enabled,
-				CodeIntelSource:       codeIntelRuntime.Source,
+				WebhookAddr:            webhookAddr,
+				WebhookSecret:          webhookSecret,
+				WebhookAllowedActorIDs: actors,
+				DBPath:                 dbPath,
+				Concurrency:            concurrency,
+				ModelsDir:              cfg.ModelsDir,
+				BinDir:                 cfg.BinDir,
+				DashboardAddr:          dashboardAddr,
+				PerformanceProfile:     cfg.PerformanceProfile,
+				InferenceTuning:        inferenceTuningFromConfig(cfg),
+				RequireModelPreflight:  true,
+				JobViews:               display.jobViews,
+				CodeIntelDisabled:      !codeIntelRuntime.Enabled,
+				CodeIntelSource:        codeIntelRuntime.Source,
 			})
 			if err != nil {
 				return err
@@ -4358,7 +4399,8 @@ func serveCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&webhookAddr, "addr", "", "Address to listen on (default from config webhook_port)")
+	cmd.Flags().StringVar(&webhookAddr, "addr", "", "Loopback address to listen on (default 127.0.0.1:<webhook_port>)")
+	cmd.Flags().Int64SliceVar(&webhookActorIDs, "webhook-actor-id", nil, "Trusted numeric GitHub actor ID; repeat for multiple actors (overrides env and YAML)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 2, "Number of concurrent agent workers")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Path to SQLite database (default ~/.mars/db/mars.db)")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
@@ -4630,6 +4672,9 @@ func startCmd() *cobra.Command {
 		modelEndpoint     string
 		webhookAddrFlag   string
 		dashboardAddrFlag string
+		remote            string
+		branch            string
+		webhookActorIDs   []int64
 		yes               bool
 		jsonOut           bool
 		plain             bool
@@ -4730,11 +4775,19 @@ ambiguous handoffs.`,
 
 			webhookAddr := strings.TrimSpace(webhookAddrFlag)
 			if webhookAddr == "" {
-				webhookAddr = fmt.Sprintf(":%d", cfg.WebhookPort)
+				webhookAddr = fmt.Sprintf("127.0.0.1:%d", cfg.WebhookPort)
 			}
 			dashboardAddr := strings.TrimSpace(dashboardAddrFlag)
 			if dashboardAddr == "" {
-				dashboardAddr = fmt.Sprintf(":%d", cfg.DashboardPort)
+				dashboardAddr = fmt.Sprintf("127.0.0.1:%d", cfg.DashboardPort)
+			}
+			actors, err := resolveWebhookActorIDs(webhookActorIDs, cfg.WebhookAllowedActorIDs)
+			if err != nil {
+				return err
+			}
+			webhookSecret, err := gh.ResolveWebhookSecret(config.Env("MARS_WEBHOOK_SECRET"))
+			if err != nil {
+				return err
 			}
 			allowHTTPFallback := strings.TrimSpace(webhookAddrFlag) == "" && strings.TrimSpace(dashboardAddrFlag) == ""
 
@@ -4743,21 +4796,23 @@ ambiguous handoffs.`,
 			}
 
 			srv, err := serve.New(serve.Config{
-				WebhookAddr:           webhookAddr,
-				DBPath:                dbPath,
-				Concurrency:           concurrency,
-				ModelsDir:             cfg.ModelsDir,
-				BinDir:                cfg.BinDir,
-				DashboardAddr:         dashboardAddr,
-				RepoScope:             absPath,
-				PerformanceProfile:    cfg.PerformanceProfile,
-				InferenceTuning:       inferenceTuningFromConfig(cfg),
-				ModelEndpoint:         modelEndpoint,
-				RequireModelPreflight: modelEndpoint == "",
-				EphemeralHTTPFallback: allowHTTPFallback,
-				JobViews:              display.jobViews,
-				CodeIntelDisabled:     !codeIntelRuntime.Enabled,
-				CodeIntelSource:       codeIntelRuntime.Source,
+				WebhookAddr:            webhookAddr,
+				WebhookSecret:          webhookSecret,
+				WebhookAllowedActorIDs: actors,
+				DBPath:                 dbPath,
+				Concurrency:            concurrency,
+				ModelsDir:              cfg.ModelsDir,
+				BinDir:                 cfg.BinDir,
+				DashboardAddr:          dashboardAddr,
+				RepoScope:              absPath,
+				PerformanceProfile:     cfg.PerformanceProfile,
+				InferenceTuning:        inferenceTuningFromConfig(cfg),
+				ModelEndpoint:          modelEndpoint,
+				RequireModelPreflight:  modelEndpoint == "",
+				EphemeralHTTPFallback:  allowHTTPFallback,
+				JobViews:               display.jobViews,
+				CodeIntelDisabled:      !codeIntelRuntime.Enabled,
+				CodeIntelSource:        codeIntelRuntime.Source,
 			})
 			if err != nil {
 				display.Error(fmt.Sprintf("orchestrator init: %v", err))
@@ -4768,7 +4823,7 @@ ambiguous handoffs.`,
 			}
 			display.Start()
 			if display.dashboard != nil && display.dashboard.Active() {
-				display.dashboard.AddEvent("info", "dashboard http://localhost"+dashboardAddr)
+				display.dashboard.AddEvent("info", "dashboard http://"+dashboardAddr)
 			}
 
 			parentCtx := cmd.Context()
@@ -4778,7 +4833,7 @@ ambiguous handoffs.`,
 			sigCtx, stop := signal.NotifyContext(parentCtx, os.Interrupt)
 			defer stop()
 
-			repoID, err := srv.Repos().Register(sigCtx, absPath, "", "main")
+			repoID, err := srv.Repos().Register(sigCtx, absPath, remote, branch)
 			if err != nil {
 				display.Error(fmt.Sprintf("register: %v", err))
 				return err
@@ -4855,8 +4910,11 @@ ambiguous handoffs.`,
 	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars/traces/logs/<timestamp>-start.log)")
 	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
 	cmd.Flags().StringVar(&modelEndpoint, "model-endpoint", "", "Optional real OpenAI-compatible model endpoint override; skips local llama-server startup. Fake or scripted endpoints are not live validation evidence")
-	cmd.Flags().StringVar(&webhookAddrFlag, "addr", "", "Webhook/control listen address (default from config; scoped start falls back to an ephemeral local port on conflict)")
-	cmd.Flags().StringVar(&dashboardAddrFlag, "dashboard-addr", "", "Dashboard listen address (default from config; scoped start falls back to an ephemeral local port on conflict)")
+	cmd.Flags().StringVar(&webhookAddrFlag, "addr", "", "Loopback webhook/control listen address (default 127.0.0.1:<webhook_port>; scoped start falls back to a loopback ephemeral port on conflict)")
+	cmd.Flags().StringVar(&dashboardAddrFlag, "dashboard-addr", "", "Loopback dashboard listen address (default 127.0.0.1:<dashboard_port>; scoped start falls back to a loopback ephemeral port on conflict)")
+	cmd.Flags().StringVar(&remote, "remote", "", "Exact GitHub owner/repo allowed for webhooks; empty preserves an existing registration")
+	cmd.Flags().StringVar(&branch, "branch", "", "Exact case-sensitive branch allowed for webhooks; empty preserves an existing registration or defaults new registrations to main")
+	cmd.Flags().Int64SliceVar(&webhookActorIDs, "webhook-actor-id", nil, "Trusted numeric GitHub actor ID; repeat for multiple actors (overrides env and YAML)")
 	cmd.Flags().BoolVar(&yes, "yes", false, "Do not prompt; fail with remediation when required input is missing")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output for deterministic setup/seed paths")
 	cmd.Flags().BoolVar(&plain, "plain", false, "Disable styling and animation")

@@ -2,13 +2,17 @@
 MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
+- docs/design-docs/github-app-integration.md
+- docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 - docs/product-specs/product-surface.md
 */
 package github
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -18,22 +22,22 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
-const testSecret = "test-webhook-secret-42"
+const testSecret = "0123456789abcdef0123456789abcdef"
 
 func sign(secret string, body []byte) string {
 	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(body)
+	_, _ = mac.Write(body)
 	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
 }
 
-func webhookRequest(t *testing.T, eventType, deliveryID string, payload []byte, secret string) *http.Request {
-	t.Helper()
+func webhookRequest(eventType, deliveryID string, payload []byte, secret string) *http.Request {
 	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(payload))
 	req.Header.Set("X-GitHub-Event", eventType)
 	req.Header.Set("X-GitHub-Delivery", deliveryID)
@@ -43,354 +47,305 @@ func webhookRequest(t *testing.T, eventType, deliveryID string, payload []byte, 
 	return req
 }
 
-func samplePayload(action, repo string) []byte {
-	p := map[string]any{
-		"action": action,
-		"repository": map[string]any{
-			"full_name": repo,
+func enabledConfig() WebhookConfig {
+	return WebhookConfig{
+		Secret:          testSecret,
+		AllowedActorIDs: []int64{42},
+		HasRepositories: func(context.Context) (bool, error) { return true, nil },
+		ResolveRepository: func(_ context.Context, repo string) (RepositoryPolicy, bool, error) {
+			if repo != "owner/repo" {
+				return RepositoryPolicy{}, false, nil
+			}
+			return RepositoryPolicy{Repository: "owner/repo", Branch: "main"}, true, nil
 		},
 	}
-	b, _ := json.Marshal(p)
-	return b
 }
 
-// --- HMAC validation ---
-
-func TestWebhookHandler_validSignature(t *testing.T) {
-	t.Parallel()
-	var received Event
-	handler := WebhookHandler(WebhookConfig{Secret: testSecret}, func(e Event) {
-		received = e
-	})
-
-	body := samplePayload("opened", "org/repo")
-	req := webhookRequest(t, "pull_request", "delivery-1", body, testSecret)
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, "delivery-1", received.ID)
-	require.Equal(t, "pull_request", received.Type)
-	require.Equal(t, "opened", received.Action)
-	require.Equal(t, "org/repo", received.Repo)
-}
-
-func TestWebhookHandler_invalidSignature(t *testing.T) {
-	t.Parallel()
-	handler := WebhookHandler(WebhookConfig{Secret: testSecret}, func(e Event) {
-		t.Fatal("should not be called for invalid signature")
-	})
-
-	body := samplePayload("opened", "org/repo")
-	req := webhookRequest(t, "pull_request", "delivery-2", body, "wrong-secret")
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusBadRequest, rec.Code)
-	require.Contains(t, rec.Body.String(), "invalid webhook signature")
-}
-
-func TestWebhookHandler_tamperedBody(t *testing.T) {
-	t.Parallel()
-	handler := WebhookHandler(WebhookConfig{Secret: testSecret}, func(e Event) {
-		t.Fatal("should not be called for tampered body")
-	})
-
-	original := samplePayload("opened", "org/repo")
-	tampered := append(original, []byte(`,"extra":"data"}`)...)
-
-	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(tampered))
-	req.Header.Set("X-GitHub-Event", "pull_request")
-	req.Header.Set("X-GitHub-Delivery", "delivery-tamper")
-	req.Header.Set("X-Hub-Signature-256", sign(testSecret, original))
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusBadRequest, rec.Code)
-}
-
-func TestWebhookHandler_missingSignatureHeader(t *testing.T) {
-	t.Parallel()
-	handler := WebhookHandler(WebhookConfig{Secret: testSecret}, func(e Event) {
-		t.Fatal("should not be called")
-	})
-
-	body := samplePayload("opened", "org/repo")
-	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
-	req.Header.Set("X-GitHub-Event", "pull_request")
-	req.Header.Set("X-GitHub-Delivery", "delivery-nosig")
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusBadRequest, rec.Code)
-}
-
-func TestWebhookHandler_noSecretConfigured(t *testing.T) {
-	t.Parallel()
-	var called bool
-	handler := WebhookHandler(WebhookConfig{}, func(e Event) {
-		called = true
-	})
-
-	body := samplePayload("opened", "org/repo")
-	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
-	req.Header.Set("X-GitHub-Event", "push")
-	req.Header.Set("X-GitHub-Delivery", "delivery-nosec")
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusOK, rec.Code)
-	require.True(t, called, "handler should process when no secret is configured")
-}
-
-// --- Deduplication ---
-
-func TestWebhookHandler_dedup(t *testing.T) {
-	t.Parallel()
-	var callCount int
-	handler := WebhookHandler(WebhookConfig{Secret: testSecret}, func(e Event) {
-		callCount++
-	})
-
-	body := samplePayload("opened", "org/repo")
-
-	for i := 0; i < 3; i++ {
-		req := webhookRequest(t, "pull_request", "delivery-dup", body, testSecret)
-		rec := httptest.NewRecorder()
-		handler.ServeHTTP(rec, req)
-		if i == 0 {
-			require.Equal(t, http.StatusOK, rec.Code)
-		} else {
-			require.Equal(t, http.StatusConflict, rec.Code)
-		}
+func eventFixtures() map[string][]byte {
+	return map[string][]byte{
+		"push":         []byte(`{"ref":"refs/heads/main","sender":{"id":42,"login":"trusted"},"repository":{"full_name":"Owner/Repo"}}`),
+		"workflow_run": []byte(`{"action":"completed","sender":{"id":999},"repository":{"full_name":"owner/repo"},"workflow_run":{"actor":{"id":42,"login":"trusted"},"head_repository":{"full_name":"owner/repo"},"head_branch":"main","conclusion":"failure"}}`),
+		"pull_request": []byte(`{"action":"opened","sender":{"id":42,"login":"trusted"},"repository":{"full_name":"owner/repo"},"pull_request":{"base":{"ref":"main","repo":{"full_name":"owner/repo"}},"head":{"ref":"feature","repo":{"full_name":"owner/repo","fork":false}}}}`),
+		"check_suite":  []byte(`{"action":"completed","sender":{"id":42,"login":"trusted"},"repository":{"id":1001,"full_name":"owner/repo","private":true},"check_suite":{"id":2002,"head_branch":"main","head_sha":"redacted-sha","conclusion":"failure","latest_check_runs_count":1}}`),
+		"merge_group":  []byte(`{"action":"checks_requested","sender":{"id":42,"login":"trusted"},"repository":{"full_name":"owner/repo"},"merge_group":{"base_ref":"refs/heads/main","head_ref":"refs/heads/gh-readonly-queue/main/pr-1"}}`),
 	}
-	require.Equal(t, 1, callCount, "handler should only be called once for duplicate deliveries")
 }
 
-func TestDedupStore_seenAndSweep(t *testing.T) {
+func TestWebhookHandlerAuthorizedEventFixtures(t *testing.T) {
 	t.Parallel()
-	ds := &dedupStore{entries: make(map[string]time.Time)}
-
-	require.False(t, ds.seen("a"))
-	require.True(t, ds.seen("a"))
-	require.False(t, ds.seen("b"))
-
-	ds.mu.Lock()
-	ds.entries["old"] = time.Now().Add(-2 * dedupTTL)
-	ds.mu.Unlock()
-
-	ds.sweep()
-
-	ds.mu.Lock()
-	_, hasOld := ds.entries["old"]
-	_, hasA := ds.entries["a"]
-	ds.mu.Unlock()
-
-	require.False(t, hasOld, "expired entries should be swept")
-	require.True(t, hasA, "recent entries should survive sweep")
-}
-
-// --- Supported / unsupported events ---
-
-func TestWebhookHandler_allSupportedEvents(t *testing.T) {
-	t.Parallel()
-	events := []string{"push", "pull_request", "check_suite", "workflow_run", "merge_group", "issue_comment"}
-
-	for _, evt := range events {
-		evt := evt
-		t.Run(evt, func(t *testing.T) {
+	for eventType, body := range eventFixtures() {
+		eventType, body := eventType, body
+		t.Run(eventType, func(t *testing.T) {
 			t.Parallel()
-			var received bool
-			handler := WebhookHandler(WebhookConfig{Secret: testSecret}, func(e Event) {
-				received = true
-				require.Equal(t, evt, e.Type)
+			var received Event
+			h := WebhookHandler(enabledConfig(), func(_ context.Context, event Event) error {
+				received = event
+				return nil
 			})
-
-			body := samplePayload("completed", "org/repo")
-			req := webhookRequest(t, evt, fmt.Sprintf("del-%s", evt), body, testSecret)
 			rec := httptest.NewRecorder()
-			handler.ServeHTTP(rec, req)
-
-			require.Equal(t, http.StatusOK, rec.Code)
-			require.True(t, received)
+			h.ServeHTTP(rec, webhookRequest(eventType, "delivery-"+eventType, body, testSecret))
+			require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+			require.Equal(t, int64(42), received.ActorID)
+			require.Equal(t, "owner/repo", received.Repo)
+			require.Equal(t, "main", received.Branch)
+			require.Len(t, received.BodySHA, 64)
 		})
 	}
 }
 
-func TestWebhookHandler_unknownEventReturns202(t *testing.T) {
+func TestWebhookHandlerDisabledPolicyReturns503(t *testing.T) {
 	t.Parallel()
-	handler := WebhookHandler(WebhookConfig{Secret: testSecret}, func(e Event) {
-		t.Fatal("should not be called for unknown events")
-	})
-
-	body := samplePayload("completed", "org/repo")
-	req := webhookRequest(t, "deployment_status", "delivery-unknown", body, testSecret)
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusAccepted, rec.Code)
-	require.Contains(t, rec.Body.String(), "not handled")
+	body := eventFixtures()["push"]
+	for name, cfg := range map[string]WebhookConfig{
+		"missing secret":       {},
+		"short secret":         {Secret: "short", AllowedActorIDs: []int64{42}},
+		"missing actors":       {Secret: testSecret},
+		"missing repositories": {Secret: testSecret, AllowedActorIDs: []int64{42}, HasRepositories: func(context.Context) (bool, error) { return false, nil }, ResolveRepository: enabledConfig().ResolveRepository},
+	} {
+		name, cfg := name, cfg
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			var called atomic.Bool
+			h := WebhookHandler(cfg, func(context.Context, Event) error { called.Store(true); return nil })
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, webhookRequest("push", "disabled", body, testSecret))
+			require.Equal(t, http.StatusServiceUnavailable, rec.Code)
+			require.False(t, called.Load())
+		})
+	}
 }
 
-// --- Oversized body ---
-
-func TestWebhookHandler_oversizedBody(t *testing.T) {
+func TestWebhookHandlerInvalidDirectActorPoliciesFailClosed(t *testing.T) {
 	t.Parallel()
-	handler := WebhookHandler(WebhookConfig{Secret: testSecret, MaxBodySize: 100}, func(e Event) {
-		t.Fatal("should not be called for oversized body")
-	})
+	body := eventFixtures()["push"]
+	overLimit := make([]int64, MaxWebhookActorIDs+1)
+	for i := range overLimit {
+		overLimit[i] = int64(i + 1)
+	}
+	invalid := []WebhookConfig{enabledConfig(), enabledConfig()}
+	invalid[0].AllowedActorIDs = []int64{42, 0}
+	invalid[1].AllowedActorIDs = overLimit
+	for i, cfg := range invalid {
+		rec := httptest.NewRecorder()
+		WebhookHandler(cfg, func(context.Context, Event) error { t.Fatal("unexpected dispatch"); return nil }).ServeHTTP(rec, webhookRequest("push", fmt.Sprintf("invalid-policy-%d", i), body, testSecret))
+		require.Equal(t, http.StatusServiceUnavailable, rec.Code)
+	}
 
-	bigBody := bytes.Repeat([]byte("x"), 200)
-	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(bigBody))
-	req.Header.Set("X-GitHub-Event", "push")
-	req.Header.Set("X-GitHub-Delivery", "delivery-big")
-	req.Header.Set("X-Hub-Signature-256", sign(testSecret, bigBody))
+	cfg := enabledConfig()
+	cfg.AllowedActorIDs = []int64{42, 42}
 	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
+	WebhookHandler(cfg, func(context.Context, Event) error { return nil }).ServeHTTP(rec, webhookRequest("push", "deduped-policy", body, testSecret))
+	require.Equal(t, http.StatusOK, rec.Code)
+}
 
+func TestWebhookHandlerTransportAndMethodFailures(t *testing.T) {
+	t.Parallel()
+	cfg := enabledConfig()
+	body := eventFixtures()["push"]
+	for name, tc := range map[string]struct {
+		req    *http.Request
+		status int
+	}{
+		"invalid signature": {webhookRequest("push", "bad-sig", body, "wrong-secret-that-is-still-long-enough"), http.StatusUnauthorized},
+		"missing signature": {webhookRequest("push", "no-sig", body, ""), http.StatusUnauthorized},
+		"missing delivery":  {webhookRequest("push", "", body, testSecret), http.StatusBadRequest},
+		"missing event":     {webhookRequest("", "no-event", body, testSecret), http.StatusBadRequest},
+		"wrong method":      {httptest.NewRequest(http.MethodGet, "/webhook", nil), http.StatusMethodNotAllowed},
+	} {
+		name, req, status := name, tc.req, tc.status
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			h := WebhookHandler(cfg, func(context.Context, Event) error { t.Fatal("unexpected dispatch"); return nil })
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			require.Equal(t, status, rec.Code)
+		})
+	}
+}
+
+func TestWebhookHandlerOversizedBodyReturns413(t *testing.T) {
+	t.Parallel()
+	cfg := enabledConfig()
+	cfg.MaxBodySize = 32
+	body := bytes.Repeat([]byte("x"), 64)
+	rec := httptest.NewRecorder()
+	WebhookHandler(cfg, func(context.Context, Event) error { t.Fatal("unexpected dispatch"); return nil }).ServeHTTP(rec, webhookRequest("push", "large", body, testSecret))
 	require.Equal(t, http.StatusRequestEntityTooLarge, rec.Code)
 }
 
-// --- Missing headers ---
-
-func TestWebhookHandler_missingDeliveryHeader(t *testing.T) {
+func TestWebhookHandlerUnsupportedAndIssueCommentNeverDispatch(t *testing.T) {
 	t.Parallel()
-	handler := WebhookHandler(WebhookConfig{}, func(e Event) {
-		t.Fatal("should not be called")
-	})
+	cfg := enabledConfig()
+	for _, eventType := range []string{"deployment_status", "issue_comment"} {
+		rec := httptest.NewRecorder()
+		WebhookHandler(cfg, func(context.Context, Event) error { t.Fatal("unexpected dispatch"); return nil }).ServeHTTP(rec, webhookRequest(eventType, eventType, []byte(`{}`), testSecret))
+		require.Equal(t, http.StatusAccepted, rec.Code)
+	}
+}
 
-	req := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader("{}"))
-	req.Header.Set("X-GitHub-Event", "push")
+func TestWebhookHandlerAuthorizationFailuresDoNotPoisonReplay(t *testing.T) {
+	t.Parallel()
+	cfg := enabledConfig()
+	fixtures := map[string][]byte{
+		"actor":  []byte(`{"ref":"refs/heads/main","sender":{"id":7},"repository":{"full_name":"owner/repo"}}`),
+		"repo":   []byte(`{"ref":"refs/heads/main","sender":{"id":42},"repository":{"full_name":"owner/other"}}`),
+		"branch": []byte(`{"ref":"refs/heads/dev","sender":{"id":42},"repository":{"full_name":"owner/repo"}}`),
+		"fork":   []byte(`{"action":"opened","sender":{"id":42},"repository":{"full_name":"owner/repo"},"pull_request":{"base":{"ref":"main","repo":{"full_name":"owner/repo"}},"head":{"ref":"feature","repo":{"full_name":"fork/repo","fork":true}}}}`),
+	}
+	for name, body := range fixtures {
+		name, body := name, body
+		t.Run(name, func(t *testing.T) {
+			var calls int
+			h := WebhookHandler(cfg, func(context.Context, Event) error { calls++; return nil })
+			for i := 0; i < 2; i++ {
+				rec := httptest.NewRecorder()
+				eventType := "push"
+				if name == "fork" {
+					eventType = "pull_request"
+				}
+				h.ServeHTTP(rec, webhookRequest(eventType, "same-rejected-id", body, testSecret))
+				require.Equal(t, http.StatusAccepted, rec.Code)
+			}
+			require.Zero(t, calls)
+		})
+	}
+}
+
+func TestWebhookHandlerMalformedEventMetadataReturns400(t *testing.T) {
+	t.Parallel()
+	for name, tc := range map[string]struct {
+		event string
+		body  []byte
+	}{
+		"push":         {"push", []byte(`{"ref":"main","sender":{"id":42},"repository":{"full_name":"owner/repo"}}`)},
+		"workflow_run": {"workflow_run", []byte(`{"action":"completed","workflow_run":{"actor":{"id":42},"head_repository":{},"head_branch":"main"}}`)},
+		"pull_request": {"pull_request", []byte(`{"action":"opened","sender":{"id":42},"pull_request":{"base":{"ref":"main","repo":{"full_name":"owner/repo"}},"head":{"ref":"","repo":{"full_name":"owner/repo","fork":false}}}}`)},
+		"check_suite":  {"check_suite", []byte(`{"action":"","sender":{"id":42},"repository":{"full_name":"owner/repo"},"check_suite":{"head_branch":"main"}}`)},
+		"merge_group":  {"merge_group", []byte(`{"action":"","sender":{"id":42},"repository":{"full_name":"owner/repo"},"merge_group":{"base_ref":"refs/heads/main"}}`)},
+	} {
+		rec := httptest.NewRecorder()
+		WebhookHandler(enabledConfig(), func(context.Context, Event) error { t.Fatal("unexpected dispatch"); return nil }).ServeHTTP(rec, webhookRequest(tc.event, name, tc.body, testSecret))
+		require.Equal(t, http.StatusBadRequest, rec.Code)
+	}
+}
+
+func TestWebhookHandlerRequiredActionValidationMatrix(t *testing.T) {
+	t.Parallel()
+	for _, eventType := range []string{"workflow_run", "pull_request", "check_suite", "merge_group"} {
+		eventType := eventType
+		for _, action := range []string{"", " ", "bad\naction", strings.Repeat("x", maxEventType+1)} {
+			action := action
+			t.Run(eventType+fmt.Sprintf("_%q", action), func(t *testing.T) {
+				t.Parallel()
+				var payload map[string]any
+				require.NoError(t, json.Unmarshal(eventFixtures()[eventType], &payload))
+				payload["action"] = action
+				body, err := json.Marshal(payload)
+				require.NoError(t, err)
+				rec := httptest.NewRecorder()
+				WebhookHandler(enabledConfig(), func(context.Context, Event) error { t.Fatal("unexpected dispatch"); return nil }).ServeHTTP(rec, webhookRequest(eventType, "action-"+eventType+fmt.Sprint(len(action)), body, testSecret))
+				require.Equal(t, http.StatusBadRequest, rec.Code)
+			})
+		}
+	}
+}
+
+func TestWebhookHandlerBoundedNonCompletedWorkflowActionIsUnauthorized(t *testing.T) {
+	t.Parallel()
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal(eventFixtures()["workflow_run"], &payload))
+	payload["action"] = "requested"
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
 	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusBadRequest, rec.Code)
-	require.Contains(t, rec.Body.String(), "X-GitHub-Delivery")
+	WebhookHandler(enabledConfig(), func(context.Context, Event) error { t.Fatal("unexpected dispatch"); return nil }).ServeHTTP(rec, webhookRequest("workflow_run", "workflow-requested", body, testSecret))
+	require.Equal(t, http.StatusAccepted, rec.Code)
 }
 
-func TestWebhookHandler_missingEventHeader(t *testing.T) {
+func TestWebhookHandlerReplayBindsDeliveryAndBodyAndIsConcurrent(t *testing.T) {
 	t.Parallel()
-	handler := WebhookHandler(WebhookConfig{}, func(e Event) {
-		t.Fatal("should not be called")
+	var calls atomic.Int64
+	h := WebhookHandler(enabledConfig(), func(context.Context, Event) error {
+		calls.Add(1)
+		time.Sleep(10 * time.Millisecond)
+		return nil
 	})
-
-	req := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader("{}"))
-	req.Header.Set("X-GitHub-Delivery", "del-1")
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusBadRequest, rec.Code)
-	require.Contains(t, rec.Body.String(), "X-GitHub-Event")
-}
-
-func TestWebhookHandler_wrongMethod(t *testing.T) {
-	t.Parallel()
-	handler := WebhookHandler(WebhookConfig{}, func(e Event) {
-		t.Fatal("should not be called")
-	})
-
-	req := httptest.NewRequest(http.MethodGet, "/webhook", nil)
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
-}
-
-// --- Health endpoint ---
-
-func TestHealthHandler(t *testing.T) {
-	t.Parallel()
-	handler := HealthHandler()
-
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
-
-	require.Equal(t, http.StatusOK, rec.Code)
-	require.Contains(t, rec.Body.String(), `"status":"ok"`)
-	require.Contains(t, rec.Header().Get("Content-Type"), "application/json")
-}
-
-// --- Payload parsing ---
-
-func TestExtractEventMeta(t *testing.T) {
-	t.Parallel()
-	body := samplePayload("synchronize", "owner/name")
-	action, repo := extractEventMeta(body)
-	require.Equal(t, "synchronize", action)
-	require.Equal(t, "owner/name", repo)
-}
-
-func TestExtractEventMeta_malformedJSON(t *testing.T) {
-	t.Parallel()
-	action, repo := extractEventMeta([]byte("not json"))
-	require.Empty(t, action)
-	require.Empty(t, repo)
-}
-
-// --- Concurrency ---
-
-func TestWebhookHandler_concurrentRequests(t *testing.T) {
-	t.Parallel()
-	var mu sync.Mutex
-	var events []Event
-	handler := WebhookHandler(WebhookConfig{Secret: testSecret}, func(e Event) {
-		mu.Lock()
-		events = append(events, e)
-		mu.Unlock()
-	})
-
-	srv := httptest.NewServer(handler)
-	t.Cleanup(srv.Close)
-
+	body := eventFixtures()["push"]
 	var wg sync.WaitGroup
 	for i := 0; i < 20; i++ {
 		wg.Add(1)
-		go func(i int) {
+		go func() {
 			defer wg.Done()
-			body := samplePayload("opened", "org/repo")
-			deliveryID := fmt.Sprintf("concurrent-%d", i)
-
-			req, _ := http.NewRequest(http.MethodPost, srv.URL+"/webhook", bytes.NewReader(body))
-			req.Header.Set("X-GitHub-Event", "pull_request")
-			req.Header.Set("X-GitHub-Delivery", deliveryID)
-			req.Header.Set("X-Hub-Signature-256", sign(testSecret, body))
-
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return
-			}
-			resp.Body.Close()
-		}(i)
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, webhookRequest("push", "concurrent", body, testSecret))
+			require.Equal(t, http.StatusOK, rec.Code)
+		}()
 	}
 	wg.Wait()
+	require.Equal(t, int64(1), calls.Load())
 
-	mu.Lock()
-	require.Len(t, events, 20, "all unique deliveries should be processed")
-	mu.Unlock()
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, webhookRequest("push", "changed-delivery", body, testSecret))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, int64(1), calls.Load(), "same signed body with changed delivery must not dispatch twice")
 }
 
-// --- Verify signature helper ---
-
-func TestVerifySignature_valid(t *testing.T) {
+func TestWebhookHandlerCallbackFailureReleasesReplay(t *testing.T) {
 	t.Parallel()
-	body := []byte(`{"action":"opened"}`)
-	sig := sign(testSecret, body)
-	require.True(t, verifySignature(testSecret, body, sig))
+	var calls atomic.Int64
+	h := WebhookHandler(enabledConfig(), func(context.Context, Event) error {
+		if calls.Add(1) == 1 {
+			return fmt.Errorf("queue unavailable")
+		}
+		return nil
+	})
+	body := eventFixtures()["push"]
+	first := httptest.NewRecorder()
+	h.ServeHTTP(first, webhookRequest("push", "retryable", body, testSecret))
+	require.Equal(t, http.StatusInternalServerError, first.Code)
+	second := httptest.NewRecorder()
+	h.ServeHTTP(second, webhookRequest("push", "retryable", body, testSecret))
+	require.Equal(t, http.StatusOK, second.Code)
+	require.Equal(t, int64(2), calls.Load())
 }
 
-func TestVerifySignature_invalidHex(t *testing.T) {
+func TestReplayStoreCapAndTTL(t *testing.T) {
 	t.Parallel()
-	require.False(t, verifySignature(testSecret, []byte("x"), "sha256=not-hex!!"))
+	now := time.Now().UTC()
+	store := newReplayStore(2, time.Hour)
+	dup, full := store.claim("a", "sha-a", now)
+	require.False(t, dup)
+	require.False(t, full)
+	store.commit("a")
+	dup, full = store.claim("b", "sha-b", now)
+	require.False(t, dup)
+	require.False(t, full)
+	store.commit("b")
+	dup, full = store.claim("c", "sha-c", now)
+	require.False(t, dup)
+	require.True(t, full)
+	dup, full = store.claim("c", "sha-c", now.Add(2*time.Hour))
+	require.False(t, dup)
+	require.False(t, full)
+	require.Equal(t, 1, store.size())
 }
 
-func TestVerifySignature_noPrefix(t *testing.T) {
+func TestHealthHandlerMethods(t *testing.T) {
 	t.Parallel()
-	require.False(t, verifySignature(testSecret, []byte("x"), "md5=abc"))
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		rec := httptest.NewRecorder()
+		HealthHandler().ServeHTTP(rec, httptest.NewRequest(method, "/healthz", nil))
+		require.Equal(t, http.StatusOK, rec.Code)
+	}
+	rec := httptest.NewRecorder()
+	HealthHandler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/healthz", nil))
+	require.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 }
 
-func TestVerifySignature_wrongSecret(t *testing.T) {
+func TestVerifySignature(t *testing.T) {
 	t.Parallel()
-	body := []byte(`{"test":true}`)
-	sig := sign("correct-secret", body)
-	require.False(t, verifySignature("wrong-secret", body, sig))
+	body := []byte(`{"ok":true}`)
+	require.True(t, verifySignature(testSecret, body, sign(testSecret, body)))
+	require.False(t, verifySignature(testSecret, body, "sha256=not-hex"))
+	require.False(t, verifySignature(testSecret, body, sign("wrong", body)))
 }

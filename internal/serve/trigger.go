@@ -3,8 +3,11 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/pipeline-engine.md
+- docs/design-docs/github-app-integration.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 */
 package serve
 
@@ -36,6 +39,7 @@ type triggerEntry struct {
 	repoID     string
 	repoPath   string
 	repoRemote string
+	repoBranch string
 	role       string
 	trigger    string
 }
@@ -64,6 +68,7 @@ func (tr *TriggerRouter) Rebuild(repos []RepoRecord) error {
 					repoID:     repo.ID,
 					repoPath:   repo.Path,
 					repoRemote: repo.Remote,
+					repoBranch: repo.Branch,
 					role:       roleName,
 					trigger:    trig,
 				})
@@ -87,15 +92,18 @@ func (tr *TriggerRouter) Len() int {
 }
 
 // Match finds all (repo, role) pairs whose triggers match the given GitHub event.
-// Only entries whose repo remote matches event.Repo are considered. If the entry
-// has no remote set, it matches all events regardless of repo.
+// Only entries with an exact registered remote and branch match. Empty remotes
+// are local-only and never become a wildcard GitHub authorization boundary.
 func (tr *TriggerRouter) Match(event gh.Event) []TriggerMatch {
 	tr.mu.RLock()
 	defer tr.mu.RUnlock()
 
 	var matches []TriggerMatch
 	for _, entry := range tr.index {
-		if entry.repoRemote != "" && event.Repo != "" && event.Repo != entry.repoRemote {
+		if entry.repoRemote == "" || event.Repo == "" || !strings.EqualFold(event.Repo, entry.repoRemote) {
+			continue
+		}
+		if entry.repoBranch == "" || event.Branch != entry.repoBranch {
 			continue
 		}
 		if matchesTrigger(entry.trigger, event) {
@@ -183,7 +191,10 @@ func matchConditional(trigger string, event gh.Event) bool {
 	}
 
 	fieldPath := parts[1]
-	return payloadFieldEquals(event.Payload, fieldPath, rhs)
+	// GitHub payloads nest event-specific fields below the event object
+	// (workflow_run.conclusion). Keep the historical top-level fallback for
+	// synthetic/internal Event values used by older integrations.
+	return payloadFieldEquals(event.Payload, lhs, rhs) || payloadFieldEquals(event.Payload, fieldPath, rhs)
 }
 
 // payloadFieldEquals extracts a dotted field path from JSON and compares it to an expected value.

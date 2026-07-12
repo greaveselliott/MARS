@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/dashboard.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
 */
 package dashboard
 
@@ -28,6 +29,20 @@ func newTestDashboard(t *testing.T) *Dashboard {
 		t.Fatalf("New: %v", err)
 	}
 	return d
+}
+
+func TestNewDefaultsToLoopbackAndRejectsRemoteBind(t *testing.T) {
+	t.Parallel()
+	d, err := New(Config{})
+	if err != nil {
+		t.Fatalf("New default: %v", err)
+	}
+	if d.cfg.Addr != "127.0.0.1:9090" {
+		t.Fatalf("default address = %q, want loopback", d.cfg.Addr)
+	}
+	if _, err := New(Config{Addr: "0.0.0.0:9090"}); err == nil || !strings.Contains(err.Error(), "not loopback") {
+		t.Fatalf("New remote bind error = %v, want actionable loopback rejection", err)
+	}
 }
 
 func TestDashboard_allPagesReturn200(t *testing.T) {

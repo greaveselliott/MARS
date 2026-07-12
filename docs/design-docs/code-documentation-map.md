@@ -61,21 +61,21 @@ source file exists in the worktree.
 
 | Source Prefix | Architecture / Product Docs | Feature Contracts |
 | --- | --- | --- |
-| `cmd/mars/` | `docs/product-specs/product-surface.md`, `docs/design-docs/cli-tool-skill-sync.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, `docs/design-docs/release-versioning.md`, `docs/design-docs/self-reflective-telemetry.md`, `docs/design-docs/dashboard.md` | F-001, F-002, F-004, F-005, F-009, F-010, F-012 |
+| `cmd/mars/` | `docs/product-specs/product-surface.md`, `docs/design-docs/cli-tool-skill-sync.md`, `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, `docs/design-docs/release-versioning.md`, `docs/design-docs/self-reflective-telemetry.md`, `docs/design-docs/dashboard.md`, `docs/design-docs/github-app-integration.md` | F-001, F-002, F-004, F-005, F-009, F-010, F-011, F-012, F-017 |
 | `examples/` | `docs/design-docs/role-customization.md` | F-004 |
 | `internal/agent/` | `docs/design-docs/agent-runtime.md`, `docs/design-docs/context-efficiency.md` | F-005 |
 | `internal/buildinfo/` | `docs/design-docs/release-versioning.md` | F-009 |
 | `internal/bundle/` | `docs/design-docs/context-efficiency.md`, `docs/design-docs/role-customization.md` | F-004, F-005 |
-| `internal/config/` | `docs/product-specs/product-surface.md`, `docs/design-docs/release-versioning.md` | F-003, F-009 |
+| `internal/config/` | `docs/product-specs/product-surface.md`, `docs/design-docs/release-versioning.md`, `docs/design-docs/github-app-integration.md` | F-003, F-009, F-011, F-017 |
 | `Makefile` | `docs/design-docs/release-versioning.md`, `docs/design-docs/dogfood-matrix.md` | F-002, F-009 |
 | `internal/context/` | `docs/design-docs/context-efficiency.md` | F-005 |
-| `internal/dashboard/` | `docs/design-docs/dashboard.md` | F-010 |
+| `internal/dashboard/` | `docs/design-docs/dashboard.md`, `docs/design-docs/github-app-integration.md` | F-010, F-017 |
 | `internal/docsconsistency/` | `docs/design-docs/delivery-operating-model.md` | F-001 |
 | `internal/docsync/` | `docs/design-docs/delivery-operating-model.md`, `docs/design-docs/documentation-sync-architecture.md`, this map | F-001 |
 | `internal/doctor/` | `docs/product-specs/product-surface.md`, `docs/design-docs/self-reflective-telemetry.md` | F-004, F-012 |
 | `internal/evolution/` | `docs/design-docs/self-improvement.md` | F-012 |
 | `internal/foundationtelemetry/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
-| `internal/github/` | `docs/product-specs/product-surface.md` | F-011 |
+| `internal/github/` | `docs/product-specs/product-surface.md`, `docs/design-docs/github-app-integration.md` | F-006, F-011, F-017 |
 | `internal/githubauth/` | `docs/design-docs/release-versioning.md`, `docs/product-specs/product-surface.md` | F-009 |
 | `internal/guardrails/` | `docs/design-docs/guardrails.md` | F-007 |
 | `internal/hardware/` | `docs/design-docs/local-inference.md` | F-003 |
@@ -94,7 +94,8 @@ source file exists in the worktree.
 | `internal/planhygiene/` | `docs/design-docs/self-improvement.md` | F-001 |
 | `internal/power/` | `docs/product-specs/product-surface.md` | F-006 |
 | `internal/qualityscore/` | `docs/design-docs/scoring-system.md`, `docs/design-docs/self-reflective-telemetry.md` | F-008, F-012 |
-| `internal/queue/` | `docs/design-docs/pipeline-engine.md` | F-006 |
+| `internal/network/` | `docs/design-docs/dashboard.md`, `docs/design-docs/github-app-integration.md` | F-010, F-017 |
+| `internal/queue/` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/github-app-integration.md` | F-006, F-011, F-017 |
 | `internal/remediation/` | `docs/design-docs/self-reflective-telemetry.md` | F-012 |
 | `internal/release/` | `docs/design-docs/release-versioning.md` | F-009 |
 | `internal/roleregistry/` | `docs/design-docs/harness-operating-model.md` | F-001 |
@@ -104,7 +105,7 @@ source file exists in the worktree.
 | `internal/scheduler/` | `docs/design-docs/pipeline-engine.md` | F-006 |
 | `internal/scoring/` | `docs/design-docs/scoring-system.md` | F-008 |
 | `internal/selfupdate/` | `docs/design-docs/release-versioning.md` | F-009 |
-| `internal/serve/` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/orchestrated-organization-layer.md`, `docs/design-docs/dashboard.md`, `docs/design-docs/self-reflective-telemetry.md` | F-006, F-010, F-012 |
+| `internal/serve/` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/orchestrated-organization-layer.md`, `docs/design-docs/dashboard.md`, `docs/design-docs/github-app-integration.md`, `docs/design-docs/self-reflective-telemetry.md` | F-006, F-010, F-011, F-012, F-017 |
 | `internal/serve/remediation*.go` | `docs/design-docs/pipeline-engine.md`, `docs/design-docs/self-reflective-telemetry.md` | F-006, F-012 |
 | `internal/setup/` | `docs/design-docs/local-inference.md`, `docs/design-docs/release-versioning.md` | F-002, F-003, F-009 |
 | `internal/shellpath/` | `docs/design-docs/release-versioning.md` | F-002 |

@@ -39,7 +39,7 @@ Evidence is stored in three places:
 | setup/path | `mars setup --test-mode`, `mars path setup --install-dir <tmp-bin>`, and source-update script tests for `make update-tool` | Config and shell-path result without duplicate profile snippets; source checkout update refuses unsafe git state before install | Intervention-debt ticket for setup or shellpath |
 | init/upgrade | `mars init --repo <temp repo>` then `mars update harness --repo <temp repo>` | `.harness/`, goals, BDD docs, role registry, quality score, release docs | Target-harness drift ticket |
 | register/start | `mars start --repo <temp repo> --db <temp db outside repo>` with deterministic shutdown | Per-repo DB, registered repo, one idempotent CEO bootstrap job | Queue/orchestrator telemetry |
-| serve/control plane | `mars serve --db <temp db> --addr :0` plus API control calls | Health, pause/resume/restart/scan/run-role endpoints respond | Control-plane ticket |
+| serve/control plane | `mars serve --db <temp db> --addr 127.0.0.1:0` plus API control calls | Health, pause/resume/restart/scan/run-role endpoints respond | Control-plane ticket |
 | run/dry-run | `mars run engineer --repo <temp repo> --dry-run --trace`; for uninitialized observer targets use `--dry-run --no-init` | Assembled prompt includes role, tools, guardrails, tickets, routes, or the command explicitly reports the no-init missing-harness boundary without writing | Context or bundle ticket |
 | scan/tickets | `mars scan --repo <temp repo> --tickets` | Deduped backlog tickets | Scanner ticket |
 | doctor/update | `mars doctor --repo <temp repo> --json` and `mars update check --repo <temp repo> --skip-remote --json` | Actionable OK/warn/fail output | Doctor/update ticket |

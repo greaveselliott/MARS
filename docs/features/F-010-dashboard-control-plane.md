@@ -304,4 +304,4 @@ None.
 - F-010-S020: planned model catalog, health, unavailable-state, override, and proposal tests
 - F-010-S021: planned DORA fixture tests for successful, failed, insufficient-history, missing-auth, no-remote, missing-config, rate-limit, and permission-denied states
 - F-010-S022: planned migration tests for retained, redirected, and removed legacy dashboard routes
-- F-010-S023: current OSS-02 slice; pending default/direct listener, non-loopback rejection, local health, and installed-binary binding evidence
+- F-010-S023: T-057 Engineer tests prove direct/default dashboard and control addresses use explicit loopback, reject wildcard/LAN/hostnames before bind, preserve loopback health without webhook policy, and retain loopback-only ephemeral fallback. Installed-binary and independent review evidence remain pending.

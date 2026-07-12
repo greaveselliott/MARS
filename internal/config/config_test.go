@@ -5,6 +5,9 @@ docs:
 - docs/product-specs/product-surface.md
 - docs/features/F-003-local-inference-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
+- docs/design-docs/github-app-integration.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 */
 package config
 
@@ -27,6 +30,7 @@ func TestDefaultsDefaultPathAndSaveRoundTrip(t *testing.T) {
 		t.Fatalf("unexpected default models dir: %q", cfg.ModelsDir)
 	}
 	cfg.GitHubToken = "local-token"
+	cfg.WebhookAllowedActorIDs = []int64{42, 84}
 	cfg.Telemetry.Endpoint = "http://127.0.0.1:9099/telemetry"
 	path := filepath.Join(t.TempDir(), "nested", "config.yaml")
 	if err := Save(path, cfg); err != nil {
@@ -46,6 +50,9 @@ func TestDefaultsDefaultPathAndSaveRoundTrip(t *testing.T) {
 	}
 	if loaded.GitHubToken != "local-token" || loaded.Telemetry.Endpoint != cfg.Telemetry.Endpoint {
 		t.Fatalf("loaded config did not round-trip: %+v", loaded)
+	}
+	if len(loaded.WebhookAllowedActorIDs) != 2 || loaded.WebhookAllowedActorIDs[0] != 42 {
+		t.Fatalf("webhook actor policy did not round-trip: %+v", loaded.WebhookAllowedActorIDs)
 	}
 }
 

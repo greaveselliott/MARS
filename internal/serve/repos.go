@@ -3,8 +3,11 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/pipeline-engine.md
+- docs/design-docs/github-app-integration.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 */
 package serve
 
@@ -18,6 +21,7 @@ import (
 	"path/filepath"
 	"time"
 
+	gh "github.com/greaveselliott/mars/internal/github"
 	_ "modernc.org/sqlite"
 )
 
@@ -64,6 +68,17 @@ func (r *RepoRegistry) Register(ctx context.Context, path, remote, branch string
 		return "", fmt.Errorf("serve: cannot register repo at %s — missing .harness/manifest.yaml; run `mars init` in the repo first", path)
 	}
 
+	normalizedRemote, err := NormalizeRemote(remote)
+	if err != nil {
+		return "", err
+	}
+	requestedBranch := branch
+	if branch != "" {
+		if err := gh.ValidateBranch(branch); err != nil {
+			return "", fmt.Errorf("serve: %w", err)
+		}
+	}
+
 	id, err := newUUID()
 	if err != nil {
 		return "", fmt.Errorf("serve: failed to generate repo ID: %w", err)
@@ -73,20 +88,23 @@ func (r *RepoRegistry) Register(ctx context.Context, path, remote, branch string
 		INSERT INTO repos (id, path, remote, branch)
 		VALUES (?, ?, ?, ?)
 		ON CONFLICT(path) DO UPDATE SET
-			remote = excluded.remote,
-			branch = excluded.branch`
+			remote = CASE WHEN excluded.remote = '' THEN repos.remote ELSE excluded.remote END,
+			branch = CASE WHEN ? = '' THEN repos.branch ELSE excluded.branch END`
 
-	if _, err := r.db.ExecContext(ctx, query, id, path, remote, branch); err != nil {
+	if branch == "" {
+		branch = "main"
+	}
+	if _, err := r.db.ExecContext(ctx, query, id, path, normalizedRemote, branch, requestedBranch); err != nil {
 		return "", fmt.Errorf("serve: failed to register repo at %s: %w", path, err)
 	}
 
 	// On upsert the original ID is preserved; fetch it back.
-	var actualID string
-	if err := r.db.QueryRowContext(ctx, "SELECT id FROM repos WHERE path = ?", path).Scan(&actualID); err != nil {
+	var actualID, actualRemote, actualBranch string
+	if err := r.db.QueryRowContext(ctx, "SELECT id, remote, branch FROM repos WHERE path = ?", path).Scan(&actualID, &actualRemote, &actualBranch); err != nil {
 		return "", fmt.Errorf("serve: registered repo but failed to read back ID: %w", err)
 	}
 
-	slog.Info("serve: repo registered", "id", actualID, "path", path, "remote", remote, "branch", branch)
+	slog.Info("serve: repo registered", "id", actualID, "path", path, "remote", actualRemote, "branch", actualBranch)
 	return actualID, nil
 }
 
@@ -130,9 +148,13 @@ func (r *RepoRegistry) FindByID(ctx context.Context, id string) (*RepoRecord, er
 
 // FindByRemote finds a repo by its GitHub full_name.
 func (r *RepoRegistry) FindByRemote(ctx context.Context, fullName string) (*RepoRecord, error) {
+	fullName, err := NormalizeRemote(fullName)
+	if err != nil || fullName == "" {
+		return nil, nil
+	}
 	var rec RepoRecord
-	err := r.db.QueryRowContext(ctx,
-		"SELECT id, path, remote, branch, added_at FROM repos WHERE remote = ?", fullName,
+	err = r.db.QueryRowContext(ctx,
+		"SELECT id, path, remote, branch, added_at FROM repos WHERE lower(remote) = ?", fullName,
 	).Scan(&rec.ID, &rec.Path, &rec.Remote, &rec.Branch, &rec.AddedAt)
 
 	if err == sql.ErrNoRows {
@@ -142,6 +164,29 @@ func (r *RepoRegistry) FindByRemote(ctx context.Context, fullName string) (*Repo
 		return nil, fmt.Errorf("serve: failed to find repo by remote %q: %w", fullName, err)
 	}
 	return &rec, nil
+}
+
+// HasWebhookRepositories reports whether at least one exact non-empty remote
+// is registered. Empty remotes never enable GitHub webhook ingress.
+func (r *RepoRegistry) HasWebhookRepositories(ctx context.Context) (bool, error) {
+	var count int
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM repos WHERE remote != '' AND branch != ''`).Scan(&count); err != nil {
+		return false, fmt.Errorf("serve: count webhook repositories: %w", err)
+	}
+	return count > 0, nil
+}
+
+// NormalizeRemote validates and case-normalizes a GitHub owner/repo identity.
+// An empty value is allowed so local-only repositories can remain registered.
+func NormalizeRemote(remote string) (string, error) {
+	if remote == "" {
+		return "", nil
+	}
+	normalized, err := gh.NormalizeRepository(remote)
+	if err != nil {
+		return "", fmt.Errorf("serve: %w; use --remote myorg/myrepo", err)
+	}
+	return normalized, nil
 }
 
 // Remove unregisters a repo by ID.

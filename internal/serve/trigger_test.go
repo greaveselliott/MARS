@@ -3,8 +3,11 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/pipeline-engine.md
+- docs/design-docs/github-app-integration.md
 - docs/design-docs/orchestrated-organization-layer.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 */
 package serve
 
@@ -112,7 +115,7 @@ func TestTriggerRouter_Match(t *testing.T) {
 				Type:    "workflow_run",
 				Action:  "completed",
 				Repo:    "owner/app",
-				Payload: json.RawMessage(`{"conclusion":"failure"}`),
+				Payload: json.RawMessage(`{"workflow_run":{"conclusion":"failure"}}`),
 			},
 			wantRoles: []string{"ci-fixer"},
 		},
@@ -164,6 +167,7 @@ func TestTriggerRouter_Match(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			tt.event.Branch = "main"
 			matches := router.Match(tt.event)
 			var gotRoles []string
 			for _, m := range matches {
@@ -192,12 +196,12 @@ func TestTriggerRouter_Rebuild_skipsBadManifest(t *testing.T) {
 	err := router.Rebuild([]RepoRecord{badRepo, goodRepo})
 	require.NoError(t, err)
 
-	matches := router.Match(gh.Event{Type: "push", Repo: "owner/good"})
+	matches := router.Match(gh.Event{Type: "push", Repo: "owner/good", Branch: "main"})
 	assert.Len(t, matches, 1)
 	assert.Equal(t, "ci-fixer", matches[0].Role)
 }
 
-func TestTriggerRouter_EmptyRemote_matchesAll(t *testing.T) {
+func TestTriggerRouterEmptyRemoteNeverMatches(t *testing.T) {
 	t.Parallel()
 
 	repo := makeTriggerRepo(t, "", map[string][]string{
@@ -207,9 +211,18 @@ func TestTriggerRouter_EmptyRemote_matchesAll(t *testing.T) {
 	router := NewTriggerRouter()
 	require.NoError(t, router.Rebuild([]RepoRecord{repo}))
 
-	matches := router.Match(gh.Event{Type: "push", Repo: "any/repo"})
-	assert.Len(t, matches, 1)
-	assert.Equal(t, "deployer", matches[0].Role)
+	matches := router.Match(gh.Event{Type: "push", Repo: "any/repo", Branch: "main"})
+	assert.Empty(t, matches)
+}
+
+func TestTriggerRouterRequiresExactCaseSensitiveBranch(t *testing.T) {
+	t.Parallel()
+	repo := makeTriggerRepo(t, "Owner/App", map[string][]string{"deployer": {"push"}})
+	repo.Branch = "release/Main"
+	router := NewTriggerRouter()
+	require.NoError(t, router.Rebuild([]RepoRecord{repo}))
+	require.Len(t, router.Match(gh.Event{Type: "push", Repo: "owner/app", Branch: "release/Main"}), 1)
+	require.Empty(t, router.Match(gh.Event{Type: "push", Repo: "owner/app", Branch: "release/main"}))
 }
 
 func TestNewTriggerRouter_empty(t *testing.T) {

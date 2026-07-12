@@ -3,6 +3,8 @@ MarsDocSync:
 docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/dashboard.md
+- docs/design-docs/dogfood-matrix.md
+- docs/design-docs/github-app-integration.md
 - docs/design-docs/local-inference.md
 - docs/design-docs/pipeline-engine.md
 - docs/design-docs/board-driven-integrations.md
@@ -13,6 +15,8 @@ docs:
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-013-board-driven-integrations.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-011-optional-github-integration.md
+- docs/features/F-017-open-source-publication.md
 - docs/features/F-012-self-improvement-loop.md
 */
 package serve
@@ -45,6 +49,7 @@ import (
 	"github.com/greaveselliott/mars/internal/integrations"
 	jiraintegration "github.com/greaveselliott/mars/internal/jira"
 	"github.com/greaveselliott/mars/internal/models"
+	"github.com/greaveselliott/mars/internal/network"
 	"github.com/greaveselliott/mars/internal/orchestration"
 	"github.com/greaveselliott/mars/internal/orgstate"
 	"github.com/greaveselliott/mars/internal/power"
@@ -68,26 +73,27 @@ const (
 
 // Config controls the serve command.
 type Config struct {
-	WebhookAddr           string
-	WebhookSecret         string
-	DBPath                string
-	Concurrency           int
-	ModelsDir             string
-	BinDir                string
-	DashboardAddr         string
-	RepoScope             string // if set, only operate on repos whose path matches this absolute path
-	PerformanceProfile    string
-	InferenceTuning       inference.ServerTuning
-	ModelEndpoint         string
-	ModelProvider         string
-	ModelName             string
-	ModelAPIKey           string
-	LocalBundle           string
-	RequireModelPreflight bool
-	EphemeralHTTPFallback bool
-	JobViews              ui.JobViewFactory
-	CodeIntelDisabled     bool
-	CodeIntelSource       string
+	WebhookAddr            string
+	WebhookSecret          string
+	WebhookAllowedActorIDs []int64
+	DBPath                 string
+	Concurrency            int
+	ModelsDir              string
+	BinDir                 string
+	DashboardAddr          string
+	RepoScope              string // if set, only operate on repos whose path matches this absolute path
+	PerformanceProfile     string
+	InferenceTuning        inference.ServerTuning
+	ModelEndpoint          string
+	ModelProvider          string
+	ModelName              string
+	ModelAPIKey            string
+	LocalBundle            string
+	RequireModelPreflight  bool
+	EphemeralHTTPFallback  bool
+	JobViews               ui.JobViewFactory
+	CodeIntelDisabled      bool
+	CodeIntelSource        string
 }
 
 func (c Config) concurrency() int {
@@ -136,8 +142,22 @@ type Server struct {
 // New creates a Server wired with all subsystems.
 func New(cfg Config) (*Server, error) {
 	if cfg.WebhookAddr == "" {
-		return nil, fmt.Errorf("serve: WebhookAddr is required — set it to e.g. \":9091\"")
+		cfg.WebhookAddr = "127.0.0.1:9091"
 	}
+	if cfg.DashboardAddr == "" {
+		cfg.DashboardAddr = "127.0.0.1:9090"
+	}
+	if err := network.ValidateLoopbackAddress("webhook/control", cfg.WebhookAddr); err != nil {
+		return nil, fmt.Errorf("serve: %w", err)
+	}
+	if err := network.ValidateLoopbackAddress("dashboard", cfg.DashboardAddr); err != nil {
+		return nil, fmt.Errorf("serve: %w", err)
+	}
+	normalizedActors, err := gh.NormalizeWebhookActorIDs(cfg.WebhookAllowedActorIDs)
+	if err != nil {
+		return nil, fmt.Errorf("serve: invalid webhook actor policy: %w", err)
+	}
+	cfg.WebhookAllowedActorIDs = normalizedActors
 	if cfg.DBPath == "" {
 		return nil, fmt.Errorf("serve: DBPath is required — set it to e.g. \"~/.mars/db/mars.db\"")
 	}
@@ -333,9 +353,6 @@ func New(cfg Config) (*Server, error) {
 	})
 
 	dashAddr := cfg.DashboardAddr
-	if dashAddr == "" {
-		dashAddr = ":9090"
-	}
 	dash, err := dashboard.New(dashboard.Config{
 		Addr:             dashAddr,
 		EmergencyStop:    func() []error { return s.estop.Execute(context.Background()) },
@@ -370,7 +387,10 @@ func New(cfg Config) (*Server, error) {
 	s.dashHTTP = &http.Server{
 		Addr:              dashAddr,
 		Handler:           dash.Handler(),
-		ReadHeaderTimeout: 10 * time.Second,
+		ReadHeaderTimeout: 15 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    64 << 10,
 	}
 
 	executor.SetDashboard(dash)
@@ -385,7 +405,18 @@ func New(cfg Config) (*Server, error) {
 	dash.HandleFunc("/api/orchestration/decisions", s.handleOrchestrationDecisionsAPI)
 
 	webhookHandler := gh.WebhookHandler(
-		gh.WebhookConfig{Secret: cfg.WebhookSecret},
+		gh.WebhookConfig{
+			Secret:          cfg.WebhookSecret,
+			AllowedActorIDs: cfg.WebhookAllowedActorIDs,
+			HasRepositories: s.repos.HasWebhookRepositories,
+			ResolveRepository: func(ctx context.Context, remote string) (gh.RepositoryPolicy, bool, error) {
+				repo, err := s.repos.FindByRemote(ctx, remote)
+				if err != nil || repo == nil {
+					return gh.RepositoryPolicy{}, false, err
+				}
+				return gh.RepositoryPolicy{Repository: repo.Remote, Branch: repo.Branch}, true, nil
+			},
+		},
 		s.handleEvent,
 	)
 	s.mux.Handle("/webhook", webhookHandler)
@@ -399,7 +430,10 @@ func New(cfg Config) (*Server, error) {
 	s.http = &http.Server{
 		Addr:              cfg.WebhookAddr,
 		Handler:           s.mux,
-		ReadHeaderTimeout: 10 * time.Second,
+		ReadHeaderTimeout: 15 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    64 << 10,
 	}
 
 	s.estop.Register(func(ctx context.Context) error {
@@ -696,15 +730,24 @@ func (s *Server) Healthy() bool {
 // HealthHandler returns an http.Handler for /healthz.
 func (s *Server) HealthHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			w.Header().Set("Allow", "GET, HEAD")
+			http.Error(w, "health endpoint accepts GET or HEAD only", http.StatusMethodNotAllowed)
+			return
+		}
 		if s.Healthy() {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, `{"status":"healthy"}`)
+			if r.Method == http.MethodGet {
+				fmt.Fprint(w, `{"status":"healthy"}`)
+			}
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
-		fmt.Fprint(w, `{"status":"unhealthy"}`)
+		if r.Method == http.MethodGet {
+			fmt.Fprint(w, `{"status":"unhealthy"}`)
+		}
 	})
 }
 
@@ -1275,7 +1318,7 @@ func (s *Server) seedJob(ctx context.Context, repoID, role, trigger, idempotency
 
 // handleEvent is invoked by the webhook handler for each valid GitHub event.
 // It matches the event against registered triggers and enqueues jobs.
-func (s *Server) handleEvent(event gh.Event) {
+func (s *Server) handleEvent(ctx context.Context, event gh.Event) error {
 	slog.Info("serve: received event",
 		"type", event.Type,
 		"action", event.Action,
@@ -1283,44 +1326,44 @@ func (s *Server) handleEvent(event gh.Event) {
 		"delivery_id", event.ID)
 
 	matches := s.triggers.Match(event)
-	if len(matches) == 0 {
-		slog.Debug("serve: no trigger matches for event", "type", event.Type, "action", event.Action)
-		return
-	}
-
 	triggerJSON, _ := json.Marshal(map[string]string{
 		"event_id": event.ID,
+		"body_sha": event.BodySHA,
 		"type":     event.Type,
 		"action":   event.Action,
 		"repo":     event.Repo,
 	})
 
+	jobs := make([]queue.Job, 0, len(matches))
 	for _, m := range matches {
-		idempotencyKey := fmt.Sprintf("webhook:%s:%s:%s", event.ID, m.RepoID, m.Role)
-		job := queue.Job{
+		jobs = append(jobs, queue.Job{
 			RepoID:         m.RepoID,
 			Role:           m.Role,
 			Trigger:        string(triggerJSON),
-			IdempotencyKey: idempotencyKey,
-		}
-
-		jobID, err := s.queue.Enqueue(context.Background(), job)
-		if err != nil {
-			slog.Error("serve: failed to enqueue job",
-				"role", m.Role,
-				"repo", m.RepoID,
-				"trigger", m.Trigger,
-				"err", err,
-			)
-			continue
-		}
+			IdempotencyKey: fmt.Sprintf("webhook:%s:%s:%s", event.BodySHA, m.RepoID, m.Role),
+		})
+	}
+	jobIDs, duplicate, err := s.queue.EnqueueWebhook(ctx, event.ID, event.BodySHA, jobs, 24*time.Hour)
+	if err != nil {
+		return fmt.Errorf("serve: durably enqueue webhook: %w", err)
+	}
+	if duplicate {
+		slog.Info("serve: durable webhook duplicate ignored", "type", event.Type, "delivery_id", event.ID)
+		return nil
+	}
+	if len(matches) == 0 {
+		slog.Debug("serve: no trigger matches for authorized event", "type", event.Type, "action", event.Action)
+		return nil
+	}
+	for i, m := range matches {
 		slog.Info("serve: job enqueued",
-			"job_id", jobID,
+			"job_id", jobIDs[i],
 			"role", m.Role,
 			"repo_id", m.RepoID,
 			"trigger", m.Trigger,
 		)
 	}
+	return nil
 }
 
 // handleJobComplete is the OnComplete callback for the worker pool.

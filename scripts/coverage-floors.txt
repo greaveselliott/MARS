@@ -36,6 +36,7 @@ github.com/greaveselliott/mars/internal/llm 64
 github.com/greaveselliott/mars/internal/mcpclient 82
 github.com/greaveselliott/mars/internal/mcpstdio 70
 github.com/greaveselliott/mars/internal/models 70
+github.com/greaveselliott/mars/internal/network 100
 github.com/greaveselliott/mars/internal/operatingmodel 70
 github.com/greaveselliott/mars/internal/orchestration 70
 github.com/greaveselliott/mars/internal/orgstate 70
