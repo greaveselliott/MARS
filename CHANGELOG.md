@@ -2,6 +2,27 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.48] - 2026-07-12
+<!-- mars-release: version=0.68.48 commit=0bd72b1332ef -->
+
+### Impact
+- **dashboard:** Operators see improved reliability because harden authenticated browser controls (T-058).
+
+### Why
+- **dashboard:** This matters because harden authenticated browser controls (T-058) closes a failure mode or degraded path.
+
+### What Changed
+- **dashboard:** Changed harden authenticated browser controls (T-058) (0bd72b1).
+
+### Fixes
+- **dashboard:** Harden authenticated browser controls (T-058) (0bd72b1)
+
+### Validation Status
+- This is a private supporting hardening release. T-058 remains in progress,
+  and installed real-browser/offline acceptance is blocked and unconfirmed;
+  F-010-S024, F-017-S002, and the open-source publication outcome are not
+  complete.
+
 ## [0.68.47] - 2026-07-12
 <!-- mars-release: version=0.68.47 commit=ab70dad3e249 -->
 
