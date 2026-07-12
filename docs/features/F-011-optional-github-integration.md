@@ -17,7 +17,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 
 1. F-011-S001 - GitHub client supports PAT and App modes with actionable configuration validation.
 2. F-011-S002 - App setup serves the manifest flow and exchanges setup codes.
-3. F-011-S003 - Webhook receiver verifies signatures, deduplicates deliveries, rejects invalid requests, and accepts supported events.
+3. F-011-S003 - Webhook receiver requires transport authenticity, explicit principal/repository/branch authorization, same-repository provenance, bounded durable replay protection, and supported event policy.
 4. F-011-S004 - GitHub API operations create pull requests, check runs, status updates, and comments when configured.
 5. F-011-S005 - Rate limits, server errors, and context cancellation are handled without corrupting local queue state.
 6. F-011-S006 - Optional integration never blocks local-first operation when credentials are absent.
@@ -40,8 +40,17 @@ Then the app credentials are preserved or populated without timing out silently
 ### F-011-S003: Verified Webhooks
 
 Given GitHub sends webhook deliveries
-When the receiver handles signed, tampered, missing-header, oversized, duplicate, unknown, or wrong-method requests
-Then valid events are accepted, invalid requests are rejected, and duplicate deliveries are ignored
+When the receiver handles disabled, signed, tampered, missing-header,
+oversized, replayed, unknown, unauthorized-actor, wrong-repository,
+wrong-branch, fork-origin, issue-comment, or wrong-method requests
+Then local operation remains healthy when GitHub ingress is disabled
+And enabled ingress requires a secret of sufficient length, valid HMAC over the
+exact body, a trusted numeric actor ID, an exact registered `owner/repo`, the
+registered branch, and same-repository event provenance
+And fork-derived events and issue comments never dispatch autonomous work
+And rejected events cannot poison replay state
+And a delivery/body identity can enqueue at most once across concurrency,
+completion, and restart
 
 ### F-011-S004: Remote Reporting Operations
 
@@ -60,6 +69,7 @@ Then retry and error behavior is bounded and explicit
 Given GitHub credentials are not configured
 When setup, run, start, serve, doctor, or release paths are used
 Then core local harness operation continues and optional integration is reported as unavailable rather than complete
+And process health remains available while `/webhook` reports service unavailable and dispatches nothing
 
 ### F-011-S007: Signals Around Strict Trunk
 
@@ -81,8 +91,8 @@ None.
 
 - F-011-S001: `go test ./internal/github -run TestNewClient`
 - F-011-S002: `go test ./internal/github -run 'TestRunSetup|TestAppManifest|TestExchangeManifestCode'`
-- F-011-S003: `go test ./internal/github -run TestWebhookHandler`
+- F-011-S003: current OSS-02 slice; pending HMAC, numeric actor, exact registered repository/branch, fork/comment policy, bounded replay, durable queue idempotency, and installed-binary evidence
 - F-011-S004: `go test ./internal/github -run 'TestCreatePR|TestCreateCheckRun|TestUpdateCheckRun|TestPostComment'`
 - F-011-S005: `go test ./internal/github -run 'TestClient_(rateLimit|serverError|context|unexpected)|TestRateLimitWait|TestBackoff'`
-- F-011-S006: `go test ./internal/doctor` plus local command tests that do not require GitHub credentials
+- F-011-S006: existing doctor/local command evidence plus pending OSS-02 proof that health/local operation continue while disabled webhook ingress returns unavailable and dispatches nothing
 - F-011-S007: planned orchestration/telemetry E2E evidence for GitHub events around strict-trunk runs

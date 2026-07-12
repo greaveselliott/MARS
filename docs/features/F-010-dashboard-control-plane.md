@@ -37,6 +37,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 20. F-010-S020 - Available Models lists offline and cloud-hosted models and proposes additions or overrides with validation.
 21. F-010-S021 - GitHub-derived DORA metrics are defined from configured deployment workflows and show typed unavailable states.
 22. F-010-S022 - Legacy dashboard migration preserves operator clarity while the TanStack control plane rolls out.
+23. F-010-S023 - Control and dashboard listeners default to loopback and reject non-loopback exposure until the authenticated remote gateway lands.
 
 ## Scenarios
 
@@ -255,6 +256,17 @@ Then the migration state is documented
 And operators receive clear behavior for old URLs
 And tests prove the current dashboard implementation is not falsely described as the new control plane
 
+### F-010-S023: Loopback Listener Boundary
+
+Given `start`, `serve`, or the dashboard is created without an explicit safe
+listener
+When the control and dashboard servers bind
+Then each listener resolves to an IPv4 or IPv6 loopback address
+And wildcard, LAN, or arbitrary-host dashboard/control binds fail with
+actionable authenticated-gateway guidance
+And local health and control operation remain available when optional GitHub
+webhook integration is disabled
+
 ## Out of Scope
 
 - Hosted SaaS dashboard operation.
@@ -292,3 +304,4 @@ None.
 - F-010-S020: planned model catalog, health, unavailable-state, override, and proposal tests
 - F-010-S021: planned DORA fixture tests for successful, failed, insufficient-history, missing-auth, no-remote, missing-config, rate-limit, and permission-denied states
 - F-010-S022: planned migration tests for retained, redirected, and removed legacy dashboard routes
+- F-010-S023: current OSS-02 slice; pending default/direct listener, non-loopback rejection, local health, and installed-binary binding evidence

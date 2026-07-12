@@ -83,6 +83,13 @@ Given manifests define webhook, schedule, or chain triggers
 When events, cron ticks, or completed jobs occur
 Then matching roles are enqueued and invalid manifests do not take down the router
 
+Given a GitHub event reaches trigger routing
+When repository registration, actor identity, branch, fork provenance, event
+policy, or durable replay identity is missing or unauthorized
+Then the event matches no role and enqueues no job
+And an empty registered remote is never treated as a wildcard
+And completed or restarted webhook delivery/body identities remain idempotent
+
 Given a manifest schedule fires for a repo and role
 When that same repo and role already has a pending, claimed, or running job
 Then the scheduler records the skip and does not enqueue another same-role job for that repo, so periodic triggers cannot stack duplicate product workers behind an active lifecycle
@@ -858,7 +865,7 @@ None.
 - F-006-S001: `go test ./internal/serve -run TestRepoRegistry`
 - F-006-S002: `go test ./internal/queue -run TestQueue`
 - F-006-S003: `go test ./internal/queue -run TestWorkerPool`
-- F-006-S004: `go test ./internal/serve -run 'TestTriggerRouter|TestResolveSchedule|TestHandleJobComplete'`
+- F-006-S004: existing trigger/schedule/chain tests plus current OSS-02 pending evidence for empty-remote rejection, authorized event-specific routing, and durable webhook replay idempotency
 - F-006-S005: `go test ./cmd/mars -run 'Test(Start|Init|Run|Register|Scan).*GeneratedHarnessBaseline|TestStartCommandExposesParallelAddressControls'` and `go test ./internal/serve -run TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy`
 - F-006-S006: `go test ./internal/serve -run TestServer`
 - F-006-S007: `go test ./internal/serve -run 'TestHandleJobFailed|TestSelfHealRecoveryQueue'` and `go test ./internal/queue -run TestQueue_repairActiveRecoveryJobs`

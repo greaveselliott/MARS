@@ -4,7 +4,7 @@
 **Priority:** P0
 **Depends On:** Legal ownership and licensing clearance for publication; technical work has no legal dependency
 **Blocks:** Public repository visibility, supported public release, historical asset withdrawal, and public announcement
-**Related Tickets:** T-055, T-056
+**Related Tickets:** T-055, T-056, T-057
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-005, F-007, F-009, F-010, F-011, F-017
@@ -12,9 +12,9 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass with legal attestation, redacted audit evidence, secure runtime defaults, anonymous signed release verification, fork-safe CI/governance, private rehearsal, logged-out cutover smoke, and a clean 48-hour canary.
 **Falsification Evidence:** Any unresolved secret/privacy/IP finding; absent legal authority; open runtime P0s; failed anonymous release access or signature verification; privileged fork CI; unsafe historical binaries; failed logged-out smoke; or visibility changing before all no-go gates pass.
 **Scenario Schedule:** F-017-S001 read-only publication-surface inventory; F-017-S002 runtime hardening; F-017-S003 public release contract; F-017-S004 contribution and governance controls; F-017-S001 final legal disposition; F-017-S005 rehearsal, cutover, and canary
-**Current Failing Scenario:** F-017-S001 technical audit slice; legal clearance remains blocked
-**Walking Skeleton Slice:** Enumerate local Git and GitHub-hosted publication surfaces, record access gaps and pinned offline scan requirements in a redacted durable report, and produce the decision inputs for preserving audited history or publishing a clean snapshot without changing repository or GitHub state.
-**Learning Or MVP Outcome:** The owner can see what may become public, what is not yet inspectable, and which offline scans or legal decisions remain before history preservation can be approved.
+**Current Failing Scenario:** F-017-S002 bounded runtime P0 slice OSS-02: loopback control listeners and authenticated, authorized, replay-safe GitHub webhook ingress
+**Walking Skeleton Slice:** Start the installed MARS server with default configuration, prove every control/dashboard listener binds loopback, prove missing or untrusted webhook policy cannot dispatch, and prove one HMAC-signed delivery from a trusted numeric actor for the exact registered repository and branch enqueues once across redelivery and restart.
+**Learning Or MVP Outcome:** A default installation is not accidentally network-exposed, and optional GitHub events cannot mutate work unless transport authenticity, principal, repository, branch, fork provenance, event policy, and replay identity all pass.
 **Created:** 2026-07-12
 **Owner:** foundation-maintainer as Orchestrator using COO, CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager packets
 **Source:** Operator request to implement the MARS Open-Source Delivery Program.
@@ -25,8 +25,8 @@
 - **Primary Pass Gate:** A logged-out user can clone, build, install, update, report a vulnerability, and submit an externally reviewed contribution through the source-only public contribution path; exposed history is approved; runtime P0 findings are closed; public artifacts are licensed, signed, attributable, and tied to an immutable source commit; cutover smoke and the 48-hour canary pass.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** Publication authority is not established. Owner/legal review must confirm the right to license the source, predecessor material, prompts, docs, and assets, and trademark/name review must have no blocking result.
-- **Next Primary Action:** Close independent review of the bounded F-017-S001 inventory, then have the repository owner provision the isolated restricted audit and appoint its Security operator while publication-authority/name-clearance review proceeds; none of this changes Primary Status until F-017-S001 is fully approved.
-- **Supporting Evidence:** T-055 closed the reachable Go vulnerability and fail-closed scanner baseline. Its semantic and release-note commits were pushed, private tag `v0.68.42` targets `51b9550`, all nine local/remote assets verified with Go 1.26.5, and the ten-release audit passed. On 2026-07-12, T-056 Engineer evidence bound every inaccessible or content-bearing surface to a hardened owner-controlled restricted-audit input and owner without inferring it clean. The operator authorized technical work while reserving irreversible publication actions.
+- **Next Primary Action:** The owner provisions the restricted audit and legal/name-clearance work while the authorized technical lane delivers OSS-02; OSS-02 cannot change Primary Status.
+- **Supporting Evidence:** T-055 closed the vulnerability baseline in private v0.68.42. T-056 recorded the redacted publication-surface inventory and isolated restricted-audit contract; commits `28254c9`/`4eda99c`, private tag `v0.68.44`, all local/remote assets, and the ten-release audit passed. The operator authorized technical work while reserving irreversible publication actions.
 
 ## Publication Authority Boundary
 
@@ -58,8 +58,8 @@ owner/legal decision.
 
 | Order | Scenario | Outcome | Status |
 | ---: | --- | --- | --- |
-| 1 | F-017-S001 initial inventory | Publication surfaces and restricted-audit inputs are enumerated without legal conclusions. | T-056 corrections under independent review |
-| 2 | F-017-S002 | Runtime control, filesystem, execution, secret, and baseline security gates are secure by default or explicitly gated. | Partially passing; T-055 complete, runtime P0 slices pending |
+| 1 | F-017-S001 initial inventory | Publication surfaces and restricted-audit inputs are enumerated without legal conclusions. | T-056 complete in private v0.68.44; restricted audit/final legal disposition blocked |
+| 2 | F-017-S002 | Runtime control, filesystem, execution, secret, and baseline security gates are secure by default or explicitly gated. | Active; T-055 baseline complete, OSS-02 current, later runtime P0 slices pending |
 | 3 | F-017-S003 | Anonymous signed release/install/update contract is verified. | Planned |
 | 4 | F-017-S004 | Fork-safe contribution, CI, rulesets, and governance controls are verified. | Planned |
 | 5 | F-017-S001 final disposition | Restricted scans, privacy/IP/provenance review, authority, name clearance, and history decision are approved. | Owner/Security/legal work blocked or pending |
@@ -73,14 +73,14 @@ not yet ticket IDs.
 | Order | Planned Slice | Scenario | State | Exit Evidence |
 | ---: | --- | --- | --- | --- |
 | 1 | Vulnerability and baseline gate | F-017-S002 | T-055 complete in private v0.68.42 | Non-vulnerable toolchain; fail-closed scan; test/race/vet/fuzz/vuln evidence |
-| 2 | Publication history and GitHub-surface inventory | F-017-S001 | T-056 complete; downstream restricted audit and legal disposition blocked | Redacted inventory/access-gap report and offline scan contract; full scan/disposition remains pending |
-| 3 | Dashboard, webhook, and HTTP security | F-017-S002 | Planned | Auth/origin/CSRF/XSS/HMAC/allowlist/loopback tests |
-| 4 | Filesystem and secret containment | F-017-S002 | Planned | Descriptor-safe hostile-repository and staged-secret tests |
-| 5 | Execution and local-state safety | F-017-S002 | Planned | Execution-profile, environment, PID, permissions, and redaction tests |
-| 6 | Release artifact integrity | F-017-S003 | Planned | Deterministic signed archive and negative verification tests |
-| 7 | Public-native release access | F-017-S003 | Planned | Anonymous setup/update and private fallback evidence |
-| 8 | Threat model, claims, and provenance | F-017-S001, F-017-S002 | Planned | Threat model, corrected claims, immutable dependency/model provenance |
-| 9 | Community and CI | F-017-S004 | Planned | Fork-safe CI, community files, DCO, ruleset rehearsal |
+| 2 | Publication history and GitHub-surface inventory | F-017-S001 | T-056 complete in private v0.68.44; downstream restricted audit/legal disposition blocked | Redacted inventory/access-gap report and offline scan contract; full scan/disposition remains pending |
+| 3 | Loopback and GitHub webhook ingress | F-017-S002 | T-057 created through `ticket_create`; backlog | Loopback, HMAC, numeric actor, exact repo/branch/fork policy, disabled comments, body/replay/idempotency tests |
+| 4 | Dashboard browser and remote-control security | F-017-S002 | Planned | Auth/origin/CSRF/XSS/CSP/offline-asset tests |
+| 5 | Filesystem and secret containment | F-017-S002 | Planned | Descriptor-safe hostile-repository and staged-secret tests |
+| 6 | Execution and local-state safety | F-017-S002 | Planned | Execution-profile, environment, PID, permissions, and redaction tests |
+| 7 | Release artifact integrity | F-017-S003 | Planned | Deterministic signed archive and negative verification tests |
+| 8 | Public-native release access | F-017-S003 | Planned | Anonymous setup/update and private fallback evidence |
+| 9 | Threat model, claims, provenance, community, and CI | F-017-S001, F-017-S002, F-017-S004 | Planned | Threat model, corrected claims, provenance, fork-safe CI, governance |
 | 10 | Private rehearsal and cutover | F-017-S005 | Public actions legally blocked | Matrix report, signed release, logged-out smoke, rollback, canary |
 
 ## Per-Ticket Role Loop
@@ -176,4 +176,6 @@ Primary Status by itself.
 - PASS 2026-07-12: T-055 and private v0.68.42 completed with local/remote asset verification and a clean release audit.
 - PASS 2026-07-12: T-056 was created through `ticket_create` for only the current F-017-S001 research slice.
 - PASS 2026-07-12: T-056 passed QA, Security, Dogfood, full-suite, DocSync, docs-consistency, forbidden-content, and diff validation; F-017-S001 remains blocked by the restricted audit and owner/legal disposition.
+- PASS 2026-07-12: T-056 semantic/release commits `28254c9`/`4eda99c`, private tag `v0.68.44`, local/remote assets, and the rolling release audit passed.
+- PASS 2026-07-12: T-057 was created through `ticket_create` for only the current F-017-S002 OSS-02 ingress slice.
 - EXPECTED WARN 2026-07-12: `mars doctor --repo . --skip-remote --json` reports missing target manifest/role registry because this is the source-only foundation repo; plan hygiene, ticket drain, and workspace hygiene are healthy.
