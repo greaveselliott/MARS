@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.45] - 2026-07-12
+<!-- mars-release: version=0.68.45 commit=d7d8cca8d316 -->
+
+### Impact
+- **plan:** Operators and future agents get clearer guidance because schedule secure webhook ingress (T-057).
+
+### Why
+- **plan:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **plan:** Changed schedule secure webhook ingress (T-057) (d7d8cca).
+
+### Documentation
+- **plan:** Schedule secure webhook ingress (T-057) (d7d8cca)
+
 ## [0.68.44] - 2026-07-12
 <!-- mars-release: version=0.68.44 commit=28254c965685 -->
 
