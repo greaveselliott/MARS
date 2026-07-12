@@ -25,8 +25,8 @@
 - **Primary Pass Gate:** A logged-out user can clone, build, install, update, report a vulnerability, and submit an externally reviewed contribution through the source-only public contribution path; exposed history is approved; runtime P0 findings are closed; public artifacts are licensed, signed, attributable, and tied to an immutable source commit; cutover smoke and the 48-hour canary pass.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** Publication authority is not established. Owner/legal review must confirm the right to license the source, predecessor material, prompts, docs, and assets, and trademark/name review must have no blocking result.
-- **Next Primary Action:** The owner provisions the restricted audit and legal/name-clearance work. The technical lane reruns T-058's exact installed static-browser/browser matrix from its report when loopback approval and an in-app browser are available; technical completion cannot change Primary Status.
-- **Supporting Evidence:** T-055 closed the vulnerability baseline in private v0.68.42. T-056 recorded the redacted publication-surface inventory and isolated restricted-audit contract in private v0.68.44. T-057 semantic/release commits `23efb13`/`f7b9814`, private tag `v0.68.46`, all nine local and remote assets, and the rolling ten-release audit passed. T-058 source implementation, QA, Security, full normal, vet, focused race, fuzz, DocSync, and docs gates pass; installed real-browser evidence is durably blocked. The operator authorized technical work while reserving irreversible publication actions.
+- **Next Primary Action:** The owner provisions the restricted audit and legal/name-clearance work. The technical lane opens an in-app browser and runs T-058's remaining hostile-DOM and outbound-disabled browser-network cases against installed private v0.68.48; technical completion cannot change Primary Status.
+- **Supporting Evidence:** T-055 closed the vulnerability baseline in private v0.68.42. T-056 recorded the redacted publication-surface inventory and isolated restricted-audit contract in private v0.68.44. T-057 semantic/release commits `23efb13`/`f7b9814`, private tag `v0.68.46`, all nine local and remote assets, and the rolling ten-release audit passed. T-058 source implementation, QA, Security, full normal/race/vet/fuzz/vulnerability/DocSync/docs gates, private v0.68.48 publication, and installed clean-target HTTP/SQLite security matrix pass; only real-browser DOM/network evidence remains blocked because the in-app browser inventory is empty. The operator authorized technical work while reserving irreversible publication actions.
 
 ## Publication Authority Boundary
 
@@ -59,7 +59,7 @@ owner/legal decision.
 | Order | Scenario | Outcome | Status |
 | ---: | --- | --- | --- |
 | 1 | F-017-S001 initial inventory | Publication surfaces and restricted-audit inputs are enumerated without legal conclusions. | T-056 complete in private v0.68.44; restricted audit/final legal disposition blocked |
-| 2 | F-017-S002 | Runtime control, filesystem, execution, secret, and baseline security gates are secure by default or explicitly gated. | Active; T-055 baseline and T-057 OSS-02 complete, later runtime P0 slices pending |
+| 2 | F-017-S002 | Runtime control, filesystem, execution, secret, and baseline security gates are secure by default or explicitly gated. | Active; T-055 and T-057 complete; T-058 in progress with installed HTTP/SQLite PASS and mandatory real-browser DOM/network BLOCKED; later filesystem/execution runtime slices pending |
 | 3 | F-017-S003 | Anonymous signed release/install/update contract is verified. | Planned |
 | 4 | F-017-S004 | Fork-safe contribution, CI, rulesets, and governance controls are verified. | Planned |
 | 5 | F-017-S001 final disposition | Restricted scans, privacy/IP/provenance review, authority, name clearance, and history decision are approved. | Owner/Security/legal work blocked or pending |
@@ -75,7 +75,7 @@ not yet ticket IDs.
 | 1 | Vulnerability and baseline gate | F-017-S002 | T-055 complete in private v0.68.42 | Non-vulnerable toolchain; fail-closed scan; test/race/vet/fuzz/vuln evidence |
 | 2 | Publication history and GitHub-surface inventory | F-017-S001 | T-056 complete in private v0.68.44; downstream restricted audit/legal disposition blocked | Redacted inventory/access-gap report and offline scan contract; full scan/disposition remains pending |
 | 3 | Loopback and GitHub webhook ingress | F-017-S002 | T-057 complete in private v0.68.46 | Loopback, HMAC, numeric actor, exact repo/branch/fork policy, disabled comments, body/replay/idempotency tests plus installed two-archetype evidence |
-| 4 | Embedded dashboard browser and control security | F-017-S002, F-010-S024 | T-058 in progress; source/QA/Security pass, installed browser lane environment-blocked | Session/Host/Origin/CSRF/method/body/rate/redaction/XSS/CSP/offline-asset and installed browser tests |
+| 4 | Embedded dashboard browser and control security | F-017-S002, F-010-S024 | T-058 in progress; source/QA/Security and installed HTTP/SQLite lane pass, real-browser DOM/network lane blocked by unavailable browser | Session/Host/Origin/CSRF/method/body/rate/redaction/XSS/CSP/offline-asset and installed browser tests |
 | 5 | Filesystem and secret containment | F-017-S002 | Planned | Descriptor-safe hostile-repository and staged-secret tests |
 | 6 | Execution and local-state safety | F-017-S002 | Planned | Execution-profile, environment, PID, permissions, and redaction tests |
 | 7 | Release artifact integrity | F-017-S003 | Planned | Deterministic signed archive and negative verification tests |
@@ -147,7 +147,7 @@ Primary Status by itself.
   passed. AD-284 clean-project replay is not applicable to this build-gate-only
   ticket. Semantic commit `9c7db7d`, release commit/tag `51b9550`/`v0.68.42`,
   all nine local and remote assets, and the ten-release audit passed.
-- The next bounded research slice is F-017-S001 publication-surface inventory.
+- T-056 was the bounded F-017-S001 publication-surface inventory slice.
   Raw GitHub/scanner evidence must remain outside the repo and agent transcripts;
   only redacted counts, gaps, classifications, and opaque evidence identifiers
   may become durable repository evidence.
@@ -171,7 +171,7 @@ Primary Status by itself.
 - PASS 2026-07-12: `go test ./internal/docsconsistency ./internal/docsync`.
 - PASS 2026-07-12: `go test ./...`.
 - PASS 2026-07-12: `mars run foundation-maintainer --repo . --dry-run --no-init` consumed AD-304 and AD-308.
-- PASS 2026-07-12: active-plan hygiene is clean, exactly one active plan exists, and no eligible in-progress ticket exists.
+- PASS 2026-07-12: at program initialization, active-plan hygiene was clean, exactly one active plan existed, and no eligible in-progress ticket existed.
 - PASS 2026-07-12: T-055 was created through `ticket_create` for only the current F-017-S002 slice.
 - PASS 2026-07-12: T-055 and private v0.68.42 completed with local/remote asset verification and a clean release audit.
 - PASS 2026-07-12: T-056 was created through `ticket_create` for only the current F-017-S001 research slice.
@@ -185,6 +185,8 @@ Primary Status by itself.
 - PLANNED 2026-07-12: COO, CTO-weekly, and Security packets classify the next bounded slice as the shipped embedded dashboard's browser/control boundary under new F-010-S024. GitHub setup callback and remote telemetry intake remain separate later tickets, and F-010-S012/MH-053 remains the future TanStack-specific gateway contract.
 - PASS 2026-07-12: T-058 was created through `ticket_create` with dedupe key `open-source:dashboard-browser-control-security` for F-017-S002/F-010-S024 only; no second implementation ticket is current.
 - PASS 2026-07-12: T-058 planning commit `ab70dad`, release commit/tag `f06fdc9`/`v0.68.47`, all nine local and remote assets, and the rolling ten-release audit passed; T-058 is now the sole in-progress implementation ticket.
-- SUPPORTING 2026-07-12: T-058 source, QA, and Security correction loops pass. Full uncached tests, vet, focused race, fuzz smoke, DocSync 341/0, docs consistency, JavaScript syntax, asset hashes/licenses, forbidden application-owned sink/CDN, and diff gates pass. Exact all-package race escalation is approval-credit blocked; the dependency-unchanged vulnerability gate fails closed because `vuln.go.dev` is unreachable.
-- BLOCKED 2026-07-12: the exact installed candidate passes fail-closed wildcard and malformed-secret startup probes, but the environment denies the required loopback bind, approval credits reject escalation and clean-seed creation, and no in-app browser surface is available. T-058 remains in progress with the exact replay in `docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md`; F-010-S024 is unconfirmed.
+- SUPPORTING 2026-07-12: T-058 source, QA, and Security correction loops pass. Full uncached tests, the exact all-package race suite, vet, fuzz smoke, the pinned fail-closed vulnerability gate with zero called vulnerabilities, DocSync 341/0, docs consistency, JavaScript syntax, asset hashes/licenses, forbidden application-owned sink/CDN, and diff gates pass.
+- PASS 2026-07-12: T-058 semantic/release commits `0bd72b1`/`db35cc7` and private tag `v0.68.48` are pushed; repository visibility remained PRIVATE; all nine local and remote assets verify, and the rolling release audit passed. This is a supporting private release and does not complete T-058 or authorize publication.
+- SUPPORTING 2026-07-12: installed private v0.68.48 passes the clean AD-284 static-browser HTTP/SQLite matrix for loopback sockets, bounded anonymous observation, authenticated reads, Host/Origin/session/CSRF/method/type/body/rate rejection with zero jobs, exactly one authorized mutation, SSE/session invalidation, security headers, and vendored asset hashes. No foundation-owned product failure surfaced.
+- BLOCKED 2026-07-12: the required in-app browser inventory is empty after initialization and troubleshooting, so hostile strings have not been observed as inert text in a real DOM and outbound-disabled rendering has not been observed with zero external requests. T-058 remains the sole current ticket; F-010-S024 and F-017-S002 remain incomplete, and no next implementation ticket may start.
 - EXPECTED WARN 2026-07-12: `mars doctor --repo . --skip-remote --json` reports missing target manifest/role registry because this is the source-only foundation repo; plan hygiene, ticket drain, and workspace hygiene are healthy.

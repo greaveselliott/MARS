@@ -8,13 +8,13 @@ bdd_scenarios: ["F-017-S002", "F-010-S024"]
 end_to_end_evidence: required
 evidence_links:
   - docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md#result
-verified_by: "QA and Security source review PASS; Dogfood installed browser lane BLOCKED"
+verified_by: "QA and Security source review PASS; Dogfood installed HTTP/SQLite lane PASS; real-browser DOM/network lane BLOCKED"
 owner: "engineer"
 last_attempt: "2026-07-12"
-blocker: "Installed real-browser acceptance is blocked because the environment denies loopback bind, approval credits prevent the required escalation, and the in-app browser has no available surface."
+blocker: "Installed v0.68.48 passes the clean-target HTTP/SQLite security matrix, but the mandatory in-app browser inventory is empty, so hostile-string DOM rendering and offline browser-network evidence remain unconfirmed."
 blocked_by: []
 trace_id: "docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md"
-next_action: "From a fresh session with approval credits and an in-app browser, run the exact installed static-browser replay in the linked report; keep T-058 and F-010-S024 incomplete until it passes."
+next_action: "Open an in-app browser surface and run the linked report's exact hostile-DOM and no-external-request replay against installed private v0.68.48; keep T-058 and F-010-S024 incomplete until it passes."
 dedupe_key: "open-source:dashboard-browser-control-security"
 metadata:
   classification: "foundation-owned,mirrored-doctrine"
@@ -29,7 +29,12 @@ depends_on: [T-057]
 
 ## Context
 
-T-057 closed the listener and GitHub webhook ingress boundary in private v0.68.46, but the shipped embedded dashboard still accepts unauthenticated browser mutations, trusts arbitrary Host and cross-origin requests, renders hostile runtime data through HTML sinks, loads htmx and Chart.js from public CDNs, lacks a strict CSP, and exposes insufficiently bounded browser surfaces.
+At ticket creation, T-057 had closed the listener and GitHub webhook ingress
+boundary in private v0.68.46, but the shipped embedded dashboard still accepted
+unauthenticated browser mutations, trusted arbitrary Host and cross-origin
+requests, rendered hostile runtime data through HTML sinks, loaded htmx and
+Chart.js from public CDNs, lacked a strict CSP, and exposed insufficiently
+bounded browser surfaces.
 
 This ticket hardens the current embedded Go dashboard only. It implements F-010-S024 and one bounded F-017-S002 slice. It does not complete the future TanStack-specific F-010-S012/MH-053 contract.
 
@@ -100,7 +105,10 @@ Update dashboard design/API/operations/observability/CLI/quickstart/troubleshoot
 - Vendored assets match pinned hashes/licenses and the dashboard works with outbound networking disabled.
 - Full tests, race, vet, fuzz, vulnerability, DocSync, docs consistency, link/forbidden-content, and diff gates pass.
 - Installed AD-284 static-browser clean target plus real browser negative/positive smoke records docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md.
-- F-017-S002 and F-010-S012 remain incomplete after this slice.
+- F-010-S024 remains incomplete until the real-browser lane passes;
+  F-017-S002 remains independently incomplete because later runtime P0 slices
+  are still scheduled; F-010-S012 remains the separate future TanStack
+  contract.
 
 ## Stop Conditions
 
@@ -145,35 +153,46 @@ Stop if any HTTP mutation is anonymous, any hostile Host/cross-origin request or
   `e209dda5c8235479f3166defc7750e1dbcd5a5c1808b7792fc2e6733768fb447`;
   Chart.js
   `2812cb8825fdc57469eb2f7bb055e9429244e599920511ee477e828499b632cb`.
-- Root supporting gates pass for uncached full tests, vet, fuzz smoke with a
-  writable isolated Go cache, DocSync, docs consistency, JavaScript syntax,
-  forbidden application-owned sinks/CDNs, and diff validation. The exact full
-  race rerun is environment-blocked because required unsandboxed execution was
-  rejected after approval credits were exhausted; the focused dashboard,
-  serve, and CLI race suite passed independently. The fail-closed vulnerability
-  gate cannot resolve `vuln.go.dev`; this ticket changes no dependency or
-  toolchain input from T-055's pinned clean scan.
+- Root supporting gates pass for uncached full tests, the exact all-package
+  race suite, vet, fuzz smoke with a writable isolated Go cache, DocSync,
+  docs consistency, JavaScript syntax, forbidden application-owned sinks/CDNs,
+  and diff validation. The pinned fail-closed vulnerability gate also passes
+  with zero called vulnerabilities; its one reported module vulnerability is
+  not reached by MARS.
 
 ## Dogfood Evidence — 2026-07-12
 
-- **BLOCKED:** installed real-browser acceptance remains unconfirmed; see
+- **BLOCKED only on the mandatory real-browser cases:** the in-app browser
+  backend completed required initialization and troubleshooting but returned an
+  empty inventory. Hostile-string real-DOM rendering and browser network
+  observation with outbound access disabled remain unconfirmed. No unrelated
+  browser backend or source-only simulation was used.
+- PASS installed supporting evidence: `make install` produced exact private
+  `v0.68.48` (`mars 0.68.48 darwin/arm64`, binary SHA-256 recorded in the
+  report), and a fresh AD-284 static-browser target ran on isolated loopback
+  dashboard/control sockets, database, and log.
+- PASS observer/auth boundary: anonymous shells, embedded assets, and the
+  four-field path-free status projection remained available; privileged reads,
+  SSE, and mutations returned `401`. Login, host-only HttpOnly SameSite=Strict
+  cookie, and `/api/session` CSRF bootstrap passed without recording values.
+- PASS zero-mutation matrix: bad Host/Origin/session/CSRF/method/content type,
+  malformed/unknown/oversized bodies, and repeated invalid scan requests were
+  rejected; rate limiting reached `429`, jobs stayed `0 -> 0`, and the single
+  authorized pause was the only observed state change.
+- PASS session lifecycle: HTTP warm restart returned `200`, terminated the
+  active SSE client, and invalidated the old session; logout invalidated a
+  replacement session. Direct non-HTTP restart remains supporting integration
+  evidence because the installed run was non-interactive.
+- PASS response boundary: strict CSP and companion headers were present without
+  `unsafe-inline`/`unsafe-eval`; installed HTTP htmx 2.0.4 and Chart.js 4.4.7
+  hashes matched the pinned values. Real-browser offline rendering and zero
+  external-request observation remain blocked.
+- No model ran, no target product source changed after initialization, no job,
+  trace, telemetry, decision, or intervention debt was created, and no control
+  credential, cookie, CSRF, or hostile payload entered the repo or report.
+- Exact candidate identity, target commits, paths, statuses, aggregate SQLite
+  counts, cleanup state, failure ownership, and remaining browser rerun are in
   `docs/validation/reports/2026-07-12-open-source-dashboard-browser-security.md`.
-- PASS supporting evidence: `make install` produced the exact uncommitted
-  candidate (`mars 0.68.47 darwin/arm64`, installed binary SHA-256 recorded in
-  the report); wildcard control binding and a malformed configured dashboard
-  secret were rejected before bind with actionable remediation.
-- The installed localhost run failed with `bind: operation not permitted`.
-  The required localhost-only escalation, clean-target file creation, and
-  in-app browser availability were blocked by the environment approval-credit
-  limit/no-browser state. No unrelated browser backend or permission workaround
-  was used.
-- No model ran, no target/queue work was created, no secret or hostile payload
-  entered the repo or report, and the ephemeral shell credential was unset on
-  exit.
-- Exact replay command and the still-unconfirmed Host/Origin/CSRF/body/rate,
-  zero-mutation, session invalidation, CSP/offline-asset, and hostile-rendering
-  cases are durable in the report. Keep this ticket in progress until that
-  installed browser rerun passes.
 
 ## QA And Security Evidence — 2026-07-12
 
@@ -192,7 +211,9 @@ Stop if any HTTP mutation is anonymous, any hostile Host/cross-origin request or
 ## Orchestrator Disposition — 2026-07-12
 
 T-058 remains in progress. The source implementation and reviewer gates pass,
-but F-010-S024 cannot pass until installed static-browser, offline network,
-hostile DOM, and zero-mutation evidence is rerun in an environment that permits
-loopback binding and exposes the in-app browser. `primary_blocked` remains
-unchanged, and no next implementation ticket may start while T-058 is current.
+and the installed static-browser HTTP/SQLite security matrix now passes.
+F-010-S024 cannot pass until an available in-app browser confirms hostile
+strings remain inert in the real DOM and the vendored dashboard renders with
+outbound networking disabled and zero external request attempts.
+`primary_blocked` remains unchanged, and no next implementation ticket may
+start while T-058 is current.
