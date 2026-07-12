@@ -107,3 +107,21 @@
 - Last Reviewed: 2026-06-29
 - Review Trigger: AI client adapter changes, foundation feature-planning failures, ticket creation without feature contracts, or user feedback that providers are bypassing MARS foundation doctrine.
 - Owner: foundation-maintainer with COO and CTO-weekly
+
+## G-OSS-001: Publish MARS Safely As Open Source
+
+- ID: G-OSS-001
+- Status: active
+- Category: distribution
+- Priority: P0
+- Confidence: medium
+- Source: user_chat
+- Dedupe Key: distribution:safe-open-source-publication
+- Hypothesis: Separating reversible technical hardening from irreversible publication authority, then requiring audited history, secure defaults, anonymous verified releases, fork-safe contribution controls, and logged-out cutover evidence will let MARS become a supported open-source project without exposing confidential material or weakening runtime safety.
+- Success Evidence: Legal ownership and licensing authority are recorded; full-history and GitHub-surface audits have no unresolved findings; F-017-S001 through F-017-S005 pass; anonymous users can clone, build, install, update, report vulnerabilities, and submit fork PRs; supported artifacts are signed and attributable to an immutable source commit; and the 48-hour public canary remains clean.
+- Falsification Evidence: Publication proceeds without legal clearance; confidential or unlicensed material becomes public; runtime P0 findings remain open; official setup or update requires private credentials; release artifacts cannot be tied to their source; fork CI receives secrets or write authority; protected refs can be casually bypassed; or supporting technical evidence is represented as completion while the publication gate remains blocked.
+- Competes With: immediate visibility conversion, preserving unaudited legacy binaries, broad automation privileges, and announcement-first launch
+- Supports: G-001, G-002, G-003, G-004
+- Last Reviewed: 2026-07-12
+- Review Trigger: Legal-clearance evidence, secret/privacy/IP findings, completion of any F-017 scenario slice, release-contract changes, security review findings, private rehearsal, visibility change, cutover smoke, or canary incident.
+- Owner: foundation-maintainer as Orchestrator with COO, Security, QA, Dogfood, and Release Manager
