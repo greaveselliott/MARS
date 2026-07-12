@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.41] - 2026-07-12
+<!-- mars-release: version=0.68.41 commit=237d8d101d87 -->
+
+### Impact
+- **plan:** Operators and future agents get clearer guidance because start safe open-source delivery program.
+
+### Why
+- **plan:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **plan:** Changed start safe open-source delivery program (237d8d1).
+
+### Documentation
+- **plan:** Start safe open-source delivery program (237d8d1)
+
 ## [0.68.40] - 2026-06-29
 <!-- mars-release: version=0.68.40 commit=f5d81b093bb4 -->
 
