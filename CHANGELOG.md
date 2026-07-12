@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.47] - 2026-07-12
+<!-- mars-release: version=0.68.47 commit=ab70dad3e249 -->
+
+### Impact
+- **plan:** Operators and future agents get clearer guidance because schedule dashboard browser security (T-058).
+
+### Why
+- **plan:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **plan:** Changed schedule dashboard browser security (T-058) (ab70dad).
+
+### Documentation
+- **plan:** Schedule dashboard browser security (T-058) (ab70dad)
+
 ## [0.68.46] - 2026-07-12
 <!-- mars-release: version=0.68.46 commit=23efb1351a5b -->
 
