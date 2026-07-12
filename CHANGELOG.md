@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.42] - 2026-07-12
+<!-- mars-release: version=0.68.42 commit=9c7db7dcc94c -->
+
+### Impact
+- **security:** Operators see improved reliability because enforce vulnerability baseline (T-055).
+
+### Why
+- **security:** This matters because enforce vulnerability baseline (T-055) closes a failure mode or degraded path.
+
+### What Changed
+- **security:** Changed enforce vulnerability baseline (T-055) (9c7db7d).
+
+### Fixes
+- **security:** Enforce vulnerability baseline (T-055) (9c7db7d)
+
+### Delivery Evidence
+- Enabler work: T-055: Upgrade the release toolchain and make vulnerability scanning fail closed
+
 ## [0.68.41] - 2026-07-12
 <!-- mars-release: version=0.68.41 commit=237d8d101d87 -->
 
