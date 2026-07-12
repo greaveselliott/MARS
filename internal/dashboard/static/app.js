@@ -4,33 +4,174 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/dashboard.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
 */
 (function () {
   "use strict";
 
+  var csrfToken = "";
   var eventSource = null;
+  var reconnects = 0;
+  var throughputChart = null;
+  var failureChart = null;
 
-  function connect() {
-    eventSource = new EventSource("/api/events");
+  function byID(id) { return document.getElementById(id); }
+  function clear(node) { if (node) node.replaceChildren(); }
+  function node(tag, className, text) {
+    var result = document.createElement(tag);
+    if (className) result.className = className;
+    if (text !== undefined && text !== null) result.textContent = String(text);
+    return result;
+  }
+  function append(parent) {
+    for (var i = 1; parent && i < arguments.length; i += 1) parent.appendChild(arguments[i]);
+    return parent;
+  }
+  function fixedClass(value, allowed, fallback) {
+    return allowed.indexOf(value) >= 0 ? value : fallback;
+  }
+  function bounded(value, max) {
+    var text = String(value === undefined || value === null ? "" : value).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "");
+    return text.length > max ? text.substring(0, max) + "…" : text;
+  }
+  function emptyMessage(parent, message) {
+    clear(parent);
+    append(parent, node("p", "muted", message));
+  }
+  function themeVar(name, fallback) {
+    var value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+  }
 
-    eventSource.onmessage = function (e) {
-      try {
-        var msg = JSON.parse(e.data);
-        var inner = {};
-        try {
-          inner = JSON.parse(msg.data);
-        } catch (_) {
-          inner = { raw: msg.data };
+  function request(path, options) {
+    var opts = options || {};
+    opts.credentials = "same-origin";
+    opts.headers = opts.headers || {};
+    if (opts.method === "POST") {
+      if (path !== "/api/login") opts.headers["X-MARS-CSRF-Token"] = csrfToken;
+      if (opts.body !== undefined) opts.headers["Content-Type"] = "application/json";
+    }
+    return fetch(path, opts).then(function (response) {
+      if (response.status === 401 || response.status === 403 || response.status === 503) showAuthState(response.status);
+      return response.text().then(function (text) {
+        var parsed = {};
+        if (text) {
+          try { parsed = JSON.parse(text); } catch (_) { parsed = { error: "invalid bounded dashboard response" }; }
         }
-        handleEvent(msg.type, inner);
-      } catch (err) {
-        console.error("SSE parse error:", err);
-      }
-    };
+        if (!response.ok) throw new Error(bounded(parsed.error || ("request failed with status " + response.status), 240));
+        return parsed;
+      });
+    });
+  }
 
+  function installAuthPanel() {
+    var main = document.querySelector("main");
+    if (!main || byID("dashboard-auth")) return;
+    var panel = node("section", "auth-panel", "");
+    panel.id = "dashboard-auth";
+    var label = node("label", "auth-label", "Dashboard control secret");
+    label.htmlFor = "dashboard-secret";
+    var input = node("input", "auth-input", "");
+    input.id = "dashboard-secret";
+    input.type = "password";
+    input.autocomplete = "current-password";
+    input.minLength = 32;
+    input.maxLength = 4096;
+    var login = node("button", "ctrl-btn", "Unlock controls");
+    login.id = "dashboard-login";
+    login.type = "button";
+    var logout = node("button", "ctrl-btn", "Log out");
+    logout.id = "dashboard-logout";
+    logout.type = "button";
+    logout.hidden = true;
+    var status = node("span", "muted", "Observer mode: controls require MARS_DASHBOARD_CONTROL_SECRET.");
+    status.id = "dashboard-auth-status";
+    append(panel, label, input, login, logout, status);
+    main.insertBefore(panel, main.firstChild);
+    login.addEventListener("click", loginDashboard);
+    logout.addEventListener("click", logoutDashboard);
+  }
+
+  function loginDashboard() {
+    var input = byID("dashboard-secret");
+    var secret = input ? input.value : "";
+    request("/api/login", { method: "POST", body: JSON.stringify({ secret: secret }) })
+      .then(function (response) {
+        csrfToken = bounded(response.csrf_token, 128);
+        if (input) input.value = "";
+        showAuthState(200);
+        loadPrivileged();
+      })
+      .catch(function (err) { showAuthError(err); });
+  }
+
+  function logoutDashboard() {
+    request("/api/logout", { method: "POST" })
+      .then(function () { csrfToken = ""; if (eventSource) eventSource.close(); showAuthState(401); })
+      .catch(function (err) { showAuthError(err); });
+  }
+
+  function showAuthState(statusCode) {
+    var status = byID("dashboard-auth-status");
+    var login = byID("dashboard-login");
+    var logout = byID("dashboard-logout");
+    if (!status) return;
+    if (statusCode === 200 && csrfToken) {
+      status.textContent = "Controls unlocked for this browser session.";
+      if (login) login.hidden = true;
+      if (logout) logout.hidden = false;
+    } else if (statusCode === 503) {
+      status.textContent = "Controls disabled. Set MARS_DASHBOARD_CONTROL_SECRET and restart MARS.";
+      if (login) login.hidden = false;
+      if (logout) logout.hidden = true;
+    } else {
+      csrfToken = "";
+      status.textContent = "Observer mode: authenticate to use controls.";
+      if (login) login.hidden = false;
+      if (logout) logout.hidden = true;
+    }
+  }
+
+  function showAuthError(err) {
+    var status = byID("dashboard-auth-status");
+    if (status) status.textContent = bounded(err && err.message ? err.message : "authentication failed", 240);
+  }
+
+  function bootstrapSession() {
+    return request("/api/session").then(function (response) {
+      csrfToken = bounded(response.csrf_token, 128);
+      showAuthState(200);
+      loadPrivileged();
+    }).catch(function () {});
+  }
+
+  function connectEvents() {
+    if (eventSource) eventSource.close();
+    eventSource = new EventSource("/api/events");
+    eventSource.onopen = function () { reconnects = 0; };
+    eventSource.onmessage = function (event) {
+      try {
+        var envelope = JSON.parse(event.data);
+        var data = {};
+        try { data = JSON.parse(envelope.data); } catch (_) { data = { raw: bounded(envelope.data, 2048) }; }
+        handleEvent(bounded(envelope.type, 64), data);
+      } catch (_) { /* malformed events are ignored */ }
+    };
     eventSource.onerror = function () {
       eventSource.close();
-      setTimeout(connect, 3000);
+      fetch("/api/status", { credentials: "same-origin" }).then(function (response) {
+        if (response.status === 401 || response.status === 403) {
+          showAuthState(response.status);
+          return;
+        }
+        if (reconnects >= 8) return;
+        reconnects += 1;
+        window.setTimeout(connectEvents, Math.min(30000, 1000 * Math.pow(2, reconnects)));
+      }).catch(function () {
+        if (reconnects >= 8) return;
+        reconnects += 1;
+        window.setTimeout(connectEvents, Math.min(30000, 1000 * Math.pow(2, reconnects)));
+      });
     };
   }
 
@@ -39,353 +180,267 @@ docs:
     appendDebugLog(type, data);
     updateRoleGrid(type, data);
     updatePipelineChain(type, data);
-    appendEvolutionLog(type, data);
+    appendEvolutionEvent(type, data);
+    if (type === "status_change") updateStatusUI(data.state, data.active_jobs);
   }
 
   function appendEventLog(type, data) {
-    var log = document.getElementById("event-log");
+    var log = byID("event-log");
     if (!log) return;
-
     var placeholder = log.querySelector(".muted");
     if (placeholder) placeholder.remove();
-
-    var entry = document.createElement("div");
-    entry.className = "event-entry " + type;
-    if (data.outcome === "error") entry.className += " error";
-
-    var now = new Date().toLocaleTimeString();
-    var detail = formatDetail(type, data);
-    entry.innerHTML =
-      '<span class="event-time">' + now + "</span>" +
-      '<span class="event-type">' + type + "</span>" +
-      "<span>" + detail + "</span>";
-
+    var entry = node("div", "event-entry " + fixedClass(type, ["job_start", "job_complete", "chain", "dispatch_return", "job_disposition", "orchestration_decision", "dispatch_enqueued", "scan_complete"], "event"));
+    append(entry,
+      node("span", "event-time", new Date().toLocaleTimeString()),
+      node("span", "event-type", bounded(type, 64)),
+      node("span", "", eventDetail(type, data))
+    );
     log.prepend(entry);
+    while (log.children.length > 100) log.lastChild.remove();
+  }
 
-    while (log.children.length > 200) {
-      log.removeChild(log.lastChild);
-    }
+  function eventDetail(type, data) {
+    if (type === "job_start") return bounded(data.role, 128) + " started (job " + bounded(data.job_id, 128) + ")";
+    if (type === "job_complete") return bounded(data.role, 128) + " " + bounded(data.outcome || "done", 64) + " in " + bounded(data.duration || "?", 64);
+    if (type === "chain") return bounded(data.from, 128) + " → " + bounded(data.to, 128);
+    if (type === "job_failed") return bounded(data.role, 128) + " failed";
+    return bounded(JSON.stringify(data), 1024);
   }
 
   function appendDebugLog(type, data) {
-    var log = document.getElementById("debug-log");
+    var log = byID("debug-log");
     if (!log) return;
-    var line = new Date().toISOString() + " [" + type + "] " + JSON.stringify(data) + "\n";
-    log.textContent = line + log.textContent;
-  }
-
-  function formatDetail(type, data) {
-    switch (type) {
-      case "job_start":
-        return '<strong>' + esc(data.role) + '</strong> started (job ' + esc(data.job_id || "") + ')';
-      case "job_complete":
-        return '<strong>' + esc(data.role) + '</strong> ' + esc(data.outcome || "done") + ' in ' + esc(data.duration || "?");
-      case "chain":
-        return esc(data.from) + ' &rarr; ' + esc(data.to);
-      case "dispatch_return":
-        return esc(data.from) + ' returned disposition to <strong>' + esc(data.to || "orchestrator") + '</strong>';
-      case "job_disposition":
-        return '<strong>' + esc(data.role || "") + '</strong> recorded ' + esc(data.status || "");
-      case "orchestration_decision":
-        return '<strong>' + esc(data.source_role || data.from_role || "") + '</strong> &rarr; ' + esc(data.next_role || "stop");
-      case "dispatch_enqueued":
-        return 'enqueued <strong>' + esc(data.role || "") + '</strong> as ' + esc(data.job_id || "");
-      default:
-        return JSON.stringify(data);
-    }
+    var line = new Date().toISOString() + " [" + bounded(type, 64) + "] " + bounded(JSON.stringify(data), 2048) + "\n";
+    log.textContent = bounded(line + log.textContent, 32768);
   }
 
   function updateRoleGrid(type, data) {
-    var grid = document.getElementById("role-grid");
-    if (!grid) return;
-
-    var placeholder = grid.querySelector(".muted");
-    if (placeholder) placeholder.remove();
-
-    var role = data.role || data.from;
-    if (!role) return;
-
-    var cardId = "role-" + role;
-    var card = document.getElementById(cardId);
+    var grid = byID("role-grid");
+    var role = bounded(data.role || data.from, 128);
+    if (!grid || !role) return;
+    var card = Array.prototype.find.call(grid.querySelectorAll(".role-card"), function (candidate) { return candidate.dataset.role === role; });
     if (!card) {
-      card = document.createElement("div");
-      card.id = cardId;
-      card.className = "role-card";
-      card.innerHTML = '<div class="role-name">' + esc(role) + '</div><div class="role-status">idle</div>';
+      card = node("div", "role-card");
+      card.dataset.role = role;
+      append(card, node("div", "role-name", role), node("div", "role-status", "idle"));
       grid.appendChild(card);
     }
-
     var status = card.querySelector(".role-status");
     card.className = "role-card";
-
-    if (type === "job_start") {
-      card.className += " running";
-      status.textContent = "running…";
-    } else if (type === "job_complete") {
-      card.className += " " + (data.outcome === "error" ? "error" : "success");
-      status.textContent = (data.outcome || "done") + " (" + (data.duration || "?") + ")";
+    if (type === "job_start") { card.classList.add("running"); status.textContent = "running…"; }
+    if (type === "job_complete") {
+      card.classList.add(data.outcome === "error" ? "error" : "success");
+      status.textContent = bounded(data.outcome || "done", 64) + " (" + bounded(data.duration || "?", 64) + ")";
     }
   }
 
   function updatePipelineChain(type, data) {
     if (type !== "job_start" && type !== "job_complete") return;
-    var role = data.role;
-    if (!role) return;
-
-    var nodes = document.querySelectorAll(".chain-node");
-    nodes.forEach(function (node) {
-      if (node.textContent.toLowerCase() === role.toLowerCase() ||
-          role.toLowerCase().indexOf(node.textContent.toLowerCase()) === 0) {
-        if (type === "job_start") {
-          node.classList.add("active");
-          node.classList.remove("done");
-        } else if (type === "job_complete" && data.outcome !== "error") {
-          node.classList.remove("active");
-          node.classList.add("done");
-        }
-      }
+    var role = bounded(data.role, 128).toLowerCase();
+    document.querySelectorAll(".chain-node").forEach(function (candidate) {
+      if (candidate.textContent.toLowerCase() !== role) return;
+      candidate.classList.toggle("active", type === "job_start");
+      candidate.classList.toggle("done", type === "job_complete" && data.outcome !== "error");
     });
   }
 
-  function appendEvolutionLog(type, data) {
-    if (type !== "telemetry" && type !== "telemetry_pattern" && type !== "job_failed") return;
-    var log = document.getElementById("evolution-log");
+  function appendEvolutionEvent(type, data) {
+    if (["telemetry", "telemetry_pattern", "job_failed"].indexOf(type) < 0) return;
+    var log = byID("evolution-log");
     if (!log) return;
-
-    var placeholder = log.querySelector(".muted");
-    if (placeholder) placeholder.remove();
-
-    var entry = document.createElement("div");
-    entry.className = "event-entry " + type;
-    var now = new Date().toLocaleTimeString();
-    var detail = "";
-
-    if (type === "telemetry") {
-      detail = '<strong>' + esc(data.role || "") + '</strong> ' +
-        '<span class="badge">' + esc(data.category || "") + '</span> ' +
-        (data.remedied ? '<span class="badge success">remedied</span>' : '');
-    } else if (type === "telemetry_pattern") {
-      detail = 'Recurring: <strong>' + esc(data.role || "") + '</strong> ' +
-        esc(data.category || "") + ' (' + (data.count || 0) + 'x)';
-    } else {
-      detail = '<strong>' + esc(data.role || "") + '</strong> failed: ' + esc(data.error || "");
-    }
-
-    entry.innerHTML =
-      '<span class="event-time">' + now + '</span>' +
-      '<span class="event-type">' + type + '</span>' +
-      '<span>' + detail + '</span>';
-
+    var entry = node("div", "event-entry event");
+    append(entry, node("span", "event-time", new Date().toLocaleTimeString()), node("span", "event-type", type), node("span", "", eventDetail(type, data)));
     log.prepend(entry);
-    while (log.children.length > 100) log.removeChild(log.lastChild);
+    while (log.children.length > 100) log.lastChild.remove();
   }
-
-  function esc(str) {
-    var div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  // --- Control surface ---
 
   var isPaused = false;
-
   function updateStatusUI(state, activeJobs) {
-    var dot = document.getElementById("status-dot");
-    var label = document.getElementById("status-label");
-    var jobsEl = document.getElementById("active-jobs");
-    var pauseLabel = document.getElementById("pause-label");
-
-    if (!dot) return;
-
-    dot.className = "status-dot";
-    if (state === "paused") {
-      dot.classList.add("paused");
-      label.textContent = "Paused";
-      isPaused = true;
-      if (pauseLabel) pauseLabel.textContent = "Resume";
-    } else if (state === "restarting") {
-      dot.classList.add("restarting");
-      label.textContent = "Restarting…";
-    } else if (state === "stopped") {
-      dot.classList.add("stopped");
-      label.textContent = "Stopped";
-    } else {
-      label.textContent = "Running";
-      isPaused = false;
-      if (pauseLabel) pauseLabel.textContent = "Pause";
-    }
-
-    if (jobsEl && activeJobs !== undefined) {
-      jobsEl.textContent = activeJobs > 0 ? activeJobs + " active" : "";
-    }
+    var dot = byID("status-dot");
+    var label = byID("status-label");
+    var jobs = byID("active-jobs");
+    var pauseLabel = byID("pause-label");
+    if (!dot || !label) return;
+    var safeState = fixedClass(state, ["paused", "restarting", "stopped", "running"], "running");
+    dot.className = "status-dot " + safeState;
+    label.textContent = safeState.substring(0, 1).toUpperCase() + safeState.substring(1);
+    isPaused = safeState === "paused";
+    if (pauseLabel) pauseLabel.textContent = isPaused ? "Resume" : "Pause";
+    if (jobs) jobs.textContent = Number(activeJobs) > 0 ? Number(activeJobs) + " active" : "";
   }
 
   function fetchStatus() {
-    fetch("/api/status")
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var state = data.paused ? "paused" : (data.healthy ? "running" : "stopped");
-        updateStatusUI(state, data.active_jobs);
-      })
-      .catch(function () {});
+    request("/api/status").then(function (data) {
+      updateStatusUI(data.paused ? "paused" : (data.healthy ? "running" : "stopped"), data.active_jobs);
+    }).catch(function () {});
   }
 
   function loadRepos() {
-    fetch("/api/repos")
-      .then(function (r) { return r.json(); })
-      .then(function (repos) {
-        var sel = document.getElementById("select-repo");
-        if (!sel) return;
-        sel.innerHTML = '<option value="">Repo...</option>';
-        (repos || []).forEach(function (repo) {
-          var opt = document.createElement("option");
-          opt.value = repo.id;
-          opt.textContent = repo.path.split("/").pop();
-          sel.appendChild(opt);
-        });
-        if (repos && repos.length === 1) {
-          sel.value = repos[0].id;
-          loadRoles();
-        }
-      })
-      .catch(function () {});
+    request("/api/repos").then(function (repos) {
+      var select = byID("select-repo");
+      if (!select) return;
+      clear(select);
+      select.appendChild(new Option("Repo…", ""));
+      (Array.isArray(repos) ? repos.slice(0, 256) : []).forEach(function (repo) {
+        select.appendChild(new Option(bounded(repo.path, 128), bounded(repo.id, 256)));
+      });
+      if (repos.length === 1) { select.value = bounded(repos[0].id, 256); loadRoles(); }
+    }).catch(function () {});
   }
 
-  window.loadRoles = function () {
-    var repoID = (document.getElementById("select-repo") || {}).value;
-    var sel = document.getElementById("select-role");
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Role...</option>';
+  function loadRoles() {
+    var repoID = byID("select-repo") ? byID("select-repo").value : "";
+    var select = byID("select-role");
+    if (!select) return;
+    clear(select);
+    select.appendChild(new Option("Role…", ""));
     if (!repoID) return;
+    request("/api/repo-roles?repo_id=" + encodeURIComponent(repoID)).then(function (roles) {
+      (Array.isArray(roles) ? roles.slice(0, 256) : []).forEach(function (role) { select.appendChild(new Option(bounded(role, 128), bounded(role, 256))); });
+    }).catch(function () {});
+  }
 
-    fetch("/api/repo-roles?repo_id=" + encodeURIComponent(repoID))
-      .then(function (r) { return r.json(); })
-      .then(function (roles) {
-        (roles || []).forEach(function (role) {
-          var opt = document.createElement("option");
-          opt.value = role;
-          opt.textContent = role;
-          sel.appendChild(opt);
-        });
-      })
-      .catch(function () {});
-  };
+  function mutate(path, body) {
+    var options = { method: "POST" };
+    if (body !== undefined) options.body = JSON.stringify(body);
+    return request(path, options);
+  }
 
-  window.togglePause = function () {
-    var endpoint = isPaused ? "/api/resume" : "/api/pause";
-    fetch(endpoint, { method: "POST" })
-      .then(function (r) { return r.json(); })
-      .then(function () { fetchStatus(); })
-      .catch(function (err) { alert("Error: " + err); });
-  };
+  function installControls() {
+    var bindings = [
+      ["btn-pause", function () { mutate(isPaused ? "/api/resume" : "/api/pause").then(fetchStatus).catch(showAuthError); }],
+      ["btn-restart", function () { if (window.confirm("Warm restart workers and reload configuration?")) mutate("/api/restart").then(fetchStatus).catch(showAuthError); }],
+      ["btn-stop", function () { if (window.confirm("Gracefully stop the orchestrator?")) mutate("/api/stop").then(function () { updateStatusUI("stopped"); }).catch(showAuthError); }],
+      ["btn-scan", function () { var repo = byID("select-repo"); if (repo && repo.value) mutate("/api/scan", { repo_id: repo.value }).catch(showAuthError); }],
+      ["btn-run", function () { var repo = byID("select-repo"); var role = byID("select-role"); if (repo && role && repo.value && role.value) mutate("/api/run-role", { repo_id: repo.value, role: role.value }).catch(showAuthError); }],
+      ["estop-btn", function () { if (window.confirm("Stop all running agents?")) mutate("/api/emergency-stop").then(function () { updateStatusUI("stopped"); }).catch(showAuthError); }]
+    ];
+    bindings.forEach(function (binding) { var target = byID(binding[0]); if (target) target.addEventListener("click", binding[1]); });
+    var repoSelect = byID("select-repo");
+    if (repoSelect) repoSelect.addEventListener("change", loadRoles);
+  }
 
-  window.confirmRestart = function () {
-    if (!confirm("Warm restart: workers will stop, config reloads, workers restart. Continue?")) return;
-    var btn = document.getElementById("btn-restart");
-    btn.disabled = true;
-    btn.textContent = "Restarting…";
-    fetch("/api/restart", { method: "POST" })
-      .then(function (r) { return r.json(); })
-      .then(function (resp) {
-        btn.disabled = false;
-        btn.innerHTML = '<span class="key-hint">R</span>Restart';
-        if (!resp.ok && resp.error) alert("Restart failed: " + resp.error);
-        fetchStatus();
-      })
-      .catch(function (err) {
-        btn.disabled = false;
-        btn.innerHTML = '<span class="key-hint">R</span>Restart';
-        alert("Restart failed: " + err);
-      });
-  };
-
-  window.confirmStop = function () {
-    if (!confirm("Gracefully stop the orchestrator?")) return;
-    fetch("/api/stop", { method: "POST" })
-      .then(function (r) { return r.json(); })
-      .then(function () { updateStatusUI("stopped"); })
-      .catch(function (err) { alert("Stop failed: " + err); });
-  };
-
-  window.triggerScan = function () {
-    var repoID = (document.getElementById("select-repo") || {}).value;
-    if (!repoID) { alert("Select a repo first"); return; }
-    var btn = document.getElementById("btn-scan");
-    btn.disabled = true;
-    fetch("/api/scan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ repo_id: repoID })
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (resp) {
-      btn.disabled = false;
-      if (!resp.ok && resp.error) alert("Scan error: " + resp.error);
-    })
-    .catch(function (err) {
-      btn.disabled = false;
-      alert("Scan failed: " + err);
+  function renderRoles(roles) {
+    var grid = byID("role-grid");
+    if (!grid) return;
+    if (!roles.length) { emptyMessage(grid, "No role data yet — run some jobs first"); return; }
+    clear(grid);
+    roles.slice(0, 128).forEach(function (role) {
+      var score = Math.max(0, Math.min(1, Number(role.score) || 0));
+      var pct = Math.round(score * 100);
+      var scoreClass = score >= 0.8 ? "success" : score >= 0.5 ? "warning" : "error";
+      var card = node("div", "role-card " + scoreClass);
+      card.dataset.role = bounded(role.role, 128);
+      var bar = node("div", "score-bar");
+      append(bar, node("div", "score-fill " + scoreClass + " score-width-" + Math.round(pct / 10)));
+      append(card,
+        node("div", "role-name", bounded(role.role, 128)),
+        append(node("div", "role-score"), bar, node("span", "", pct + "%")),
+        append(node("div", "role-stats"), node("span", "stat-success", Number(role.success_count) + " passed"), node("span", "stat-fail", Number(role.fail_count) + " failed"), node("span", "stat-total", Number(role.sample_size) + " total")),
+        node("div", "role-status", "idle")
+      );
+      grid.appendChild(card);
     });
-  };
+  }
 
-  window.triggerRunRole = function () {
-    var repoID = (document.getElementById("select-repo") || {}).value;
-    var role = (document.getElementById("select-role") || {}).value;
-    if (!repoID || !role) { alert("Select both a repo and a role"); return; }
-    fetch("/api/run-role", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ repo_id: repoID, role: role })
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (resp) {
-      if (!resp.ok && resp.error) alert("Run role error: " + resp.error);
-    })
-    .catch(function (err) { alert("Run role failed: " + err); });
-  };
+  function loadRolesData() { if (byID("role-grid")) request("/api/roles").then(function (data) { renderRoles(data.roles || []); }).catch(function () {}); }
 
-  window.emergencyStop = function () {
-    if (!confirm("This will stop ALL running agents. Continue?")) return;
-
-    var btn = document.getElementById("estop-btn");
-    btn.textContent = "Stopping…";
-    btn.disabled = true;
-
-    fetch("/api/emergency-stop", { method: "POST" })
-      .then(function (r) { return r.json(); })
-      .then(function (resp) {
-        if (resp.ok) {
-          btn.textContent = "Stopped";
-          btn.style.background = "var(--success)";
-          updateStatusUI("stopped");
-        } else {
-          btn.textContent = "Failed";
-          alert("Errors: " + (resp.errors || []).join(", "));
-        }
-      })
-      .catch(function (err) {
-        btn.textContent = "Error";
-        alert("Emergency stop request failed: " + err);
+  function renderThroughput(data) {
+    [["summary-total", data.summary.total], ["summary-completed", data.summary.completed], ["summary-failed", data.summary.failed], ["summary-running", data.summary.running]].forEach(function (item) { if (byID(item[0])) byID(item[0]).textContent = Number(item[1]) || 0; });
+    renderThroughputChart(data.hourly || []);
+    var body = byID("job-tbody");
+    if (!body) return;
+    if (!(data.recent_jobs || []).length) { clear(body); var row = node("tr"); var cell = node("td", "muted", "No jobs recorded yet"); cell.colSpan = 6; row.appendChild(cell); body.appendChild(row); return; }
+    clear(body);
+    data.recent_jobs.slice(0, 50).forEach(function (job) {
+      var row = node("tr");
+      var status = fixedClass(job.status, ["completed", "failed", "running", "pending", "claimed"], "pending");
+      [bounded(job.id, 32), bounded(job.role, 128), status, bounded(job.created_at, 64), bounded(job.duration || "—", 64), bounded(job.error || "", 120)].forEach(function (value, index) {
+        var cell = node("td", index === 0 ? "mono" : index === 5 ? "error-cell" : "", value);
+        row.appendChild(cell);
       });
-  };
+      body.appendChild(row);
+    });
+  }
 
-  // Handle status_change SSE events
-  var origHandleEvent = handleEvent;
-  handleEvent = function (type, data) {
-    origHandleEvent(type, data);
-    if (type === "status_change" && data.state) {
-      updateStatusUI(data.state, data.active_jobs);
-    }
-    if (type === "scan_complete") {
-      appendEventLog("scan_complete", data);
-    }
-  };
+  function renderThroughputChart(hourly) {
+    var canvas = byID("throughput-chart");
+    if (!canvas || typeof window.Chart !== "function") return;
+    if (throughputChart) throughputChart.destroy();
+    var wrap = canvas.parentElement;
+    var prior = wrap.querySelector(".chart-empty"); if (prior) prior.remove();
+    if (!hourly.length) { append(wrap, node("p", "muted chart-empty", "No job data yet — run some agents first")); return; }
+    throughputChart = new window.Chart(canvas, { type: "bar", data: { labels: hourly.map(function (h) { return bounded(h.hour, 64); }), datasets: [
+      { label: "Completed", data: hourly.map(function (h) { return Number(h.completed) || 0; }), backgroundColor: "#22c55e" },
+      { label: "Failed", data: hourly.map(function (h) { return Number(h.failed) || 0; }), backgroundColor: "#f43f5e" }
+    ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } } });
+  }
 
-  // Bootstrap
+  function loadThroughput() { if (byID("job-tbody")) request("/api/throughput").then(renderThroughput).catch(function () {}); }
+
+  function renderEvolution(data) {
+    var evolution = byID("evolution-log");
+    if (evolution) {
+      clear(evolution);
+      if (!(data.evolutions || []).length) append(evolution, node("p", "muted", "No evolution events recorded yet…"));
+      (data.evolutions || []).slice(0, 50).forEach(function (item) { append(evolution, append(node("div", "event-entry evolution"), node("span", "event-time", bounded(item.created_at, 32)), node("span", "event-type", bounded(item.classification, 64)), node("span", "", bounded(item.role, 128) + ": " + bounded(item.suggestion, 512)))); });
+    }
+    var patterns = byID("patterns-list");
+    if (patterns) { clear(patterns); if (!(data.patterns || []).length) append(patterns, node("p", "muted", "No recurring patterns detected")); (data.patterns || []).slice(0, 50).forEach(function (item) { append(patterns, node("div", "pattern-item", bounded(item.role, 128) + " — " + bounded(item.category, 128) + " (" + Number(item.count) + ")")); }); }
+    var telemetry = byID("telemetry-log");
+    if (telemetry) { clear(telemetry); if (!(data.telemetry || []).length) append(telemetry, node("p", "muted", "No telemetry events yet…")); (data.telemetry || []).slice(0, 50).forEach(function (item) { append(telemetry, node("div", "event-entry telemetry", bounded(item.role, 128) + " — " + bounded(item.category, 128))); }); }
+    renderFailureChart(data.telemetry || []);
+  }
+
+  function renderFailureChart(events) {
+    var canvas = byID("failure-chart");
+    if (!canvas || typeof window.Chart !== "function") return;
+    var counts = {};
+    events.forEach(function (event) { var category = bounded(event.category || "unknown", 64); counts[category] = (counts[category] || 0) + 1; });
+    if (failureChart) failureChart.destroy();
+    var prior = canvas.parentElement.querySelector(".chart-empty"); if (prior) prior.remove();
+    var labels = Object.keys(counts).slice(0, 32);
+    if (!labels.length) { append(canvas.parentElement, node("p", "muted chart-empty", "No failures yet")); return; }
+    failureChart = new window.Chart(canvas, { type: "doughnut", data: { labels: labels, datasets: [{ data: labels.map(function (label) { return counts[label]; }), backgroundColor: [themeVar("--danger", "#f43f5e"), themeVar("--warning", "#f59e0b"), themeVar("--primary", "#8b5cf6"), themeVar("--success", "#22c55e")] }] }, options: { responsive: true, maintainAspectRatio: false } });
+  }
+
+  function loadEvolution() { if (byID("evolution-log")) request("/api/evolution").then(renderEvolution).catch(function () {}); }
+
+  function renderOrchestration(data) {
+    var repos = byID("orchestration-repos");
+    if (repos) { clear(repos); if (!(data.repos || []).length) append(repos, node("p", "muted", "No repositories registered.")); (data.repos || []).slice(0, 64).forEach(function (repo) { append(repos, node("div", "repo-row", bounded(repo.path, 128) + " — " + bounded(repo.orchestration_mode || "legacy", 32))); }); }
+    var model = byID("dispatch-model");
+    if (model) { clear(model); var first = (data.repos || [])[0]; if (!first) append(model, node("p", "muted", "No repositories registered.")); else { append(model, node("div", "hub-node", "Orchestrator"), node("div", "dispatch-return", bounded(first.orchestration_mode || "legacy", 32))); var row = node("div", "spoke-row"); (first.roles || []).slice(0, 64).forEach(function (role) { append(row, node("span", "spoke-node", bounded(role.name, 128))); }); append(model, row); } }
+    renderDecisionList(byID("disposition-list"), data.dispositions || [], "No dispositions recorded yet…");
+    renderDecisionList(byID("decision-list"), data.decisions || [], "No dispatch decisions recorded yet…");
+  }
+
+  function renderDecisionList(parent, items, fallback) {
+    if (!parent) return;
+    clear(parent);
+    if (!items.length) append(parent, node("p", "muted", fallback));
+    items.slice(0, 50).forEach(function (item) { append(parent, node("div", "decision-item", bounded((item.role || item.source_role || item.from_role || "") + " — " + (item.status || item.next_role || "stop") + " — " + (item.reason || item.next_need || ""), 768))); });
+  }
+
+  function loadOrchestration() { if (byID("orchestration-repos")) request("/api/orchestration").then(renderOrchestration).catch(function () {}); }
+
+  function loadPrivileged() {
+    if (!csrfToken) return;
+    loadRepos();
+    loadRolesData();
+    loadThroughput();
+    loadEvolution();
+    loadOrchestration();
+    connectEvents();
+  }
+
+  installAuthPanel();
+  installControls();
   fetchStatus();
-  loadRepos();
-  setInterval(fetchStatus, 15000);
-
-  connect();
+  bootstrapSession();
+  window.setInterval(fetchStatus, 15000);
+  window.setInterval(function () { if (csrfToken) loadThroughput(); }, 15000);
+  window.setInterval(function () { if (csrfToken) loadOrchestration(); }, 15000);
+  window.setInterval(function () { if (csrfToken) loadRolesData(); }, 30000);
+  window.setInterval(function () { if (csrfToken) loadEvolution(); }, 30000);
 })();

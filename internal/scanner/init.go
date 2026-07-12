@@ -5,6 +5,7 @@ docs:
 - docs/design-docs/cli-tool-skill-sync.md
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/documentation-sync-architecture.md
+- docs/design-docs/dashboard.md
 - docs/design-docs/board-driven-integrations.md
 - docs/design-docs/foundation-deployed-harness-architecture.md
 - docs/design-docs/harness-glossary.md
@@ -18,6 +19,8 @@ docs:
 - docs/features/F-006-queue-and-orchestration.md
 - docs/features/F-013-board-driven-integrations.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
 - docs/runbooks/atlassian-mcp-jira-intake.md
 - docs/roles/ROLES.md
 */
@@ -1179,6 +1182,7 @@ CLI tool/skill sync: ` + "`docs/design-docs/cli-tool-skill-sync.md`" + `
 - No stale documentation: when writing or materially changing code, add or update the top-of-file ` + "`MarsDocSync`" + ` comment block with a ` + "`docs:`" + ` list of associated docs, run or satisfy the docsync audit where applicable, then update those docs in the same commit or record why no doc change was needed.
 - CLI tool/skill sync: when ` + "`mars`" + ` CLI commands, flags, output contracts, repo behavior, or workflows change, update ` + "`mars_cli`" + ` reference and repo-shortcut behavior, generated target doctrine, and affected skills in the same change.
 - MARS control and dashboard listeners are loopback-only. Optional GitHub webhook work dispatch remains disabled unless the process receives a webhook secret of at least 32 bytes (` + "`MARS_WEBHOOK_SECRET`" + ` first, then only the owner-only ` + "`0600`" + ` GitHub App setup fallback), a trusted numeric actor policy from ` + "`--webhook-actor-id`" + `, ` + "`MARS_WEBHOOK_ALLOWED_ACTOR_IDS`" + `, or YAML ` + "`webhook_allowed_actor_ids`" + `, and an exact registered ` + "`owner/repo`" + ` plus case-sensitive branch. CLI actor IDs override env, which overrides YAML; login names, empty remotes, forks, and issue comments never authorize work. Webhook secrets are never YAML/CLI fields and must not enter logs or traces.
+- Anonymous dashboard access is limited to loopback page/login shells, embedded assets, and path-free minimal status. Rich reads, SSE, and mutations require the operator to set environment-only ` + "`MARS_DASHBOARD_CONTROL_SECRET`" + ` to at least 32 bytes and log in; mutations also require the exact Host/Origin plus session CSRF. Optional remote browser access keeps MARS on loopback and requires one exact HTTPS origin from ` + "`--dashboard-trusted-origin`" + ` (CLI over ` + "`MARS_DASHBOARD_TRUSTED_ORIGIN`" + `); forwarded headers and wildcard/suffix origins do not grant authority.
 - The schedule is the ordered list of failing BDD scenarios in the active exec plan. No feature is shipped until its in-scope scenarios pass or the CEO explicitly descopes them.
 - Product lifecycle improvements use a live evidence loop: observe a real product path, review findings, classify every failure as foundation-owned, deployed-owned, or mixed/unclear, make one or two bounded changes at the owning layer, rerun the same path, merge or fast-forward the confirmed fix to trunk, push it to the remote, and claim improvement only from rerun evidence.
 - Do not turn MARS runtime, orchestration, generated-default, tool-policy, model/provider, telemetry, or mirrored-doctrine failures into this target's backlog by default. Record foundation-owned findings as evidence or source follow-up; fix target product behavior, target architecture, local build/test setup, target docs, target skills, and project policy in this repo.

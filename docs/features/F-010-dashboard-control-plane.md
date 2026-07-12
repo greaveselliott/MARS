@@ -271,19 +271,25 @@ webhook integration is disabled
 ### F-010-S024: Embedded Dashboard Browser And Control Security
 
 Given the shipped embedded dashboard listens only on loopback
-When a direct loopback operator opens pages, read APIs, static assets, or the
-bounded redacted event stream without dashboard control credentials
-Then the observer surface remains available offline
+When a direct loopback operator opens dashboard page shells, the login shell,
+embedded static assets, or the minimal redacted status projection without a
+dashboard session
+Then that observer shell remains available offline without repository paths
 And every HTTP mutation is disabled with an actionable response
 And no response exposes raw secret-bearing errors, traces, tool content, or
 unnecessary absolute paths
+And repos, roles, telemetry, evolution, quality, throughput, orchestration,
+decisions, and SSE remain locked until authentication
 
 Given a dashboard control secret of at least 32 bytes is supplied only through
 the supported environment input
 When the operator logs in through an exact allowed Host
 Then constant-time verification creates an opaque bounded in-memory session
+And an authenticated same-origin session bootstrap supplies the session CSRF
+without a second secret entry or URL/browser-storage persistence
 And the session rotates on login, expires on idle and absolute limits, is
-invalidated by logout or restart, and is carried only by a host-only HttpOnly
+invalidated by logout or HTTP/terminal warm restart with active SSE terminated,
+and is carried only by a host-only HttpOnly
 SameSite=Strict cookie
 And no default, shared, CLI, URL, YAML, logged, traced, or rendered secret
 fallback exists
@@ -302,7 +308,8 @@ Given an operator explicitly configures an exact trusted HTTPS reverse-proxy
 origin while the MARS listener remains loopback-only
 When pages, read APIs, assets, SSE, login, or controls are requested through
 that Host
-Then all dashboard data requires a valid session
+Then only the data-free login shell and its minimal assets are anonymous
+And all dashboard pages and data require a valid session
 And browser requests must use the exact configured Origin where applicable
 And wildcard origins, forwarded-header authority, suffix matches, paths,
 queries, fragments, userinfo, CORS fallback, and a remote origin without a
@@ -319,7 +326,8 @@ no referrer leakage, restrictive permissions, and no-store where sensitive
 Given the host has no outbound network access
 When every embedded dashboard page and chart loads
 Then pinned htmx 2.0.4 and Chart.js 4.4.7 assets are served only from the binary
-And their immutable source, hash, version, and MIT license metadata are
+And their immutable source, hash, version, htmx Zero-Clause BSD license, and
+Chart.js MIT license metadata are
 recorded
 And no template, script, style, or runtime path contacts a CDN or requires
 inline script execution.
@@ -362,4 +370,4 @@ None.
 - F-010-S021: planned DORA fixture tests for successful, failed, insufficient-history, missing-auth, no-remote, missing-config, rate-limit, and permission-denied states
 - F-010-S022: planned migration tests for retained, redirected, and removed legacy dashboard routes
 - F-010-S023: T-057/private v0.68.46 passed Engineer, QA, Security, full-race, and installed clean-project evidence proving direct/default dashboard and control addresses use explicit loopback, reject wildcard/LAN/hostnames before bind, preserve loopback health without webhook policy, and retain loopback-only ephemeral fallback.
-- F-010-S024: planned embedded-dashboard gateway, session, Host/Origin/CSRF, method/body/rate, redaction, DOM-XSS, CSP, vendored-asset, offline-browser, and installed clean-project evidence under T-058. This scenario does not complete the future TanStack-specific F-010-S012/MH-053 contract.
+- F-010-S024: T-058 implements the embedded-dashboard gateway, bounded in-memory sessions, Host/Origin/CSRF/method/body/rate controls, bounded redacted browser DTOs/SSE, safe DOM construction, strict CSP, and pinned offline htmx 2.0.4/Chart.js 4.4.7 assets. Focused package and integration tests cover the negative boundary; installed clean-project browser evidence and independent review remain required before the scenario is marked complete. This scenario does not complete the future TanStack-specific F-010-S012/MH-053 contract.

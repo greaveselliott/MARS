@@ -9,6 +9,8 @@ docs:
 - docs/features/F-003-local-inference-lifecycle.md
 - docs/features/F-005-agent-execution-runtime.md
 - docs/features/F-006-queue-and-orchestration.md
+- docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
 - docs/features/F-012-self-improvement-loop.md
 */
 package tools
@@ -45,6 +47,10 @@ func TestMarsCLI_reference(t *testing.T) {
 	}
 	require.Contains(t, res.Output, "--model-endpoint <real-url>")
 	require.Contains(t, res.Output, "--dashboard-addr <host:port>")
+	require.Contains(t, res.Output, "--dashboard-trusted-origin <exact-https-origin>")
+	require.Contains(t, res.Output, "MARS_DASHBOARD_CONTROL_SECRET")
+	require.Contains(t, res.Output, "Anonymous loopback dashboard access is limited")
+	require.Contains(t, res.Output, "rich reads, SSE, and mutation require")
 	require.Contains(t, res.Output, "Default scoped starts fall back to ephemeral local control/dashboard ports")
 }
 

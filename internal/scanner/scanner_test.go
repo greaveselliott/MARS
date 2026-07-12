@@ -712,6 +712,8 @@ func TestInit_success(t *testing.T) {
 	assert.Contains(t, string(roleRegistry), "| `orchestrator` | default | orchestrator | `dispatch-routing` |")
 	assert.Contains(t, string(roleRegistry), "Optional GitHub webhook triggers are explicit repair inputs")
 	assert.Contains(t, string(agentGuide), "MARS control and dashboard listeners are loopback-only")
+	assert.Contains(t, string(agentGuide), "Anonymous dashboard access is limited to loopback page/login shells")
+	assert.Contains(t, string(agentGuide), "Rich reads, SSE, and mutations require")
 	assert.Contains(t, string(agentGuide), "MARS_WEBHOOK_ALLOWED_ACTOR_IDS")
 	assert.Contains(t, string(agentGuide), "login names, empty remotes, forks, and issue comments never authorize work")
 	assert.Contains(t, string(roleRegistry), "`Origin` set to `custom`")

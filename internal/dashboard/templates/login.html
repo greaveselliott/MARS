@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!--
+MarsDocSync:
+docs:
+- docs/design-docs/code-documentation-map.md
+- docs/design-docs/dashboard.md
+- docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard Login — MARS</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/login.js" defer></script>
+</head>
+<body class="login-page">
+  <main class="login-shell">
+    <section class="card login-card" aria-labelledby="login-title">
+      <h1 id="login-title">MARS Dashboard</h1>
+      <p class="muted">Authenticate to open the configured dashboard control surface.</p>
+      <label class="auth-label" for="login-secret">Dashboard control secret</label>
+      <input id="login-secret" class="auth-input" type="password" autocomplete="current-password" minlength="32" maxlength="4096">
+      <button id="login-submit" class="ctrl-btn" type="button">Log in</button>
+      <p id="login-status" class="muted" role="status"></p>
+    </section>
+  </main>
+</body>
+</html>

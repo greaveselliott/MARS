@@ -232,6 +232,18 @@ Flags: `--addr 127.0.0.1:9091`, `--webhook-actor-id <numeric-id>`, `--concurrenc
 Health check: `curl http://localhost:9091/healthz` → `{"status":"healthy"}`
 
 Control and dashboard listeners accept only explicit loopback addresses.
+Direct loopback page/login shells, embedded assets, and a minimal redacted
+status projection are observer surfaces. Repository/role/telemetry/evolution/
+quality/throughput/orchestration/decision data and SSE require a session. Every
+HTTP mutation is disabled unless environment-only
+`MARS_DASHBOARD_CONTROL_SECRET` contains at least 32 bytes and the browser has
+an in-memory authenticated session with the exact Host/Origin and current CSRF
+token. Optional remote browsing keeps MARS on loopback and uses one exact HTTPS
+origin selected by `--dashboard-trusted-origin` over
+`MARS_DASHBOARD_TRUSTED_ORIGIN`; forwarded headers do not grant authority.
+The embedded htmx 2.0.4 and Chart.js 4.4.7 assets run offline under a strict
+CSP. Treat this authentication as a browser/network boundary, not containment
+against arbitrary code already running as the same OS user.
 Optional GitHub webhook dispatch additionally requires a webhook secret of at
 least 32 bytes, trusted numeric actor IDs from CLI,
 `MARS_WEBHOOK_ALLOWED_ACTOR_IDS`, or YAML `webhook_allowed_actor_ids`, and an
@@ -350,7 +362,9 @@ When `serve` or `start` is running, the terminal provides interactive key bindin
 | `q` | Graceful stop (same as Ctrl+C). |
 | `h` | Print key binding help. |
 
-The same controls are available via the web dashboard at `http://localhost:9090` (control bar in the sidebar) and as HTTP API endpoints:
+The same controls and privileged operational views are available after browser login via the loopback web
+dashboard at `http://localhost:9090` (control bar in the sidebar). The HTTP API
+requires the same session, exact Origin, and CSRF policy:
 
 ```
 POST /api/pause          POST /api/resume

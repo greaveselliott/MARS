@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/dashboard.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
 */
 *,
 *::before,
@@ -93,6 +94,42 @@ body {
 .nav-spacer {
   flex: 1;
 }
+
+.active-jobs { margin-left: auto; }
+
+.auth-panel {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.auth-label { font-weight: 600; }
+.auth-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  min-width: 18rem;
+  padding: 0.5rem;
+}
+
+.score-width-0 { width: 0%; }
+.score-width-1 { width: 10%; }
+.score-width-2 { width: 20%; }
+.score-width-3 { width: 30%; }
+.score-width-4 { width: 40%; }
+.score-width-5 { width: 50%; }
+.score-width-6 { width: 60%; }
+.score-width-7 { width: 70%; }
+.score-width-8 { width: 80%; }
+.score-width-9 { width: 90%; }
+.score-width-10 { width: 100%; }
 
 .estop-btn {
   margin: 8px 16px;

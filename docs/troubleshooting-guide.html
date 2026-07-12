@@ -92,7 +92,7 @@ docs:
             <li>
               <h3>Stop making the state worse</h3>
               <p>Pause the worker pool before broad inspection if autonomous work is still running.</p>
-              <pre><code>curl -X POST http://localhost:9090/api/pause</code></pre>
+              <p>Press <kbd>p</kbd> in the terminal or use authenticated dashboard Pause.</p>
             </li>
             <li>
               <h3>Capture the current state</h3>
@@ -193,15 +193,17 @@ mars tools list --json</code></pre>
             <table>
               <thead><tr><th>Symptom</th><th>Check</th><th>Recovery</th></tr></thead>
               <tbody>
-                <tr><td>Dashboard does not open</td><td>Printed dashboard URL and port binding.</td><td>Pass <code>--dashboard-addr :9090</code> or another free port.</td></tr>
+                <tr><td>Dashboard does not open</td><td>Printed dashboard URL and port binding.</td><td>Pass <code>--dashboard-addr 127.0.0.1:9090</code> or another loopback port.</td></tr>
                 <tr><td><code>/healthz</code> works on one port but dashboard does not</td><td>Control/webhook address versus dashboard address.</td><td>Use the dashboard URL printed by <code>start</code> or <code>serve</code>.</td></tr>
-                <tr><td>Pause button appears ineffective</td><td>Running jobs continue after pause.</td><td>Pause stops new claims only. Wait for current jobs or use graceful stop if needed.</td></tr>
+                <tr><td>Control returns <code>503</code></td><td><code>MARS_DASHBOARD_CONTROL_SECRET</code> is missing.</td><td>Set a new random value of at least 32 bytes and restart MARS; do not place it in flags or YAML.</td></tr>
+                <tr><td>Control returns <code>401</code>/<code>403</code></td><td>Session, exact Origin, or CSRF is missing or expired.</td><td>Use the exact printed dashboard URL and log in again.</td></tr>
+                <tr><td>Pause button appears ineffective</td><td>Running jobs continue after authenticated pause.</td><td>Pause stops new claims only. Wait for current jobs or use graceful stop if needed.</td></tr>
                 <tr><td>SSE stream disconnects</td><td>Browser/network interruption or process restart.</td><td>Refresh the dashboard or reconnect <code>curl -N http://localhost:9090/api/events</code>.</td></tr>
                 <tr><td>Dashboard stop times out</td><td>Older or interrupted shutdown path.</td><td>Use terminal <kbd>q</kbd> or Ctrl+C, then inspect the command log.</td></tr>
               </tbody>
             </table>
           </div>
-          <pre><code>mars start --repo /path/to/repo --dashboard-addr :9090 --addr :9091
+          <pre><code>mars start --repo /path/to/repo --dashboard-addr 127.0.0.1:9090 --addr 127.0.0.1:9091
 curl http://localhost:9091/healthz
 curl http://localhost:9090/api/status</code></pre>
         </section>

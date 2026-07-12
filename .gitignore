@@ -19,6 +19,10 @@ go.work.sum
 
 # Dependency directories
 vendor/
+# These pinned browser assets are product source embedded into the single binary,
+# not a Go dependency vendor tree.
+!internal/dashboard/static/vendor/
+!internal/dashboard/static/vendor/**
 
 # IDE
 .idea/

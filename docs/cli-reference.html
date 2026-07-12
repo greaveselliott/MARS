@@ -382,6 +382,12 @@ mars checks run --repo ~/my-project --role qa --name npm-test -- npm test</code>
             TanStack sidecar. For request bodies, response shapes, errors, and
             scripting recipes, use the
             <a href="dashboard-api-reference.html">Dashboard API Reference</a>.
+            Page/login shells, embedded assets, and minimal redacted status are
+            a bounded observer surface. Privileged reads, SSE, and every POST control are
+            disabled until environment-only <code>MARS_DASHBOARD_CONTROL_SECRET</code>
+            is at least 32 bytes and the browser supplies a valid session,
+            exact Host/Origin, and session CSRF. Optional remote browsing uses
+            <code>--dashboard-trusted-origin</code> while MARS stays on loopback.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
@@ -389,7 +395,8 @@ mars checks run --repo ~/my-project --role qa --name npm-test -- npm test</code>
               <tbody>
                 <tr><td><code>GET /healthz</code></td><td>Health check for the control server.</td></tr>
                 <tr><td><code>GET /api/events</code></td><td>SSE stream for live dashboard updates.</td></tr>
-                <tr><td><code>POST /api/pause</code>, <code>/api/resume</code></td><td>Pause or resume worker claims.</td></tr>
+                <tr><td><code>POST /api/login</code>, <code>/api/logout</code></td><td>Create or invalidate the bounded browser-control session.</td></tr>
+                <tr><td><code>POST /api/pause</code>, <code>/api/resume</code></td><td>Authenticated pause or resume of worker claims.</td></tr>
                 <tr><td><code>POST /api/restart</code></td><td>Warm restart manifests and triggers.</td></tr>
                 <tr><td><code>POST /api/stop</code></td><td>Graceful shutdown.</td></tr>
                 <tr><td><code>POST /api/scan</code></td><td>Scan a registered repo.</td></tr>

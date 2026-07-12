@@ -598,7 +598,10 @@ func TestStartCommandExposesParallelAddressControls(t *testing.T) {
 	require.NotNil(t, cmd.Flags().Lookup("remote"))
 	require.NotNil(t, cmd.Flags().Lookup("branch"))
 	require.NotNil(t, cmd.Flags().Lookup("webhook-actor-id"))
-	require.NotNil(t, serveCmd().Flags().Lookup("webhook-actor-id"))
+	require.NotNil(t, cmd.Flags().Lookup("dashboard-trusted-origin"))
+	serve := serveCmd()
+	require.NotNil(t, serve.Flags().Lookup("webhook-actor-id"))
+	require.NotNil(t, serve.Flags().Lookup("dashboard-trusted-origin"))
 }
 
 func TestResolveWebhookActorIDsPrecedenceValidationAndDeduplication(t *testing.T) {

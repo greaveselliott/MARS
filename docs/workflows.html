@@ -228,8 +228,8 @@ mars serve --addr :9091 --concurrency 2</code></pre>
               <pre><code># In the running MARS terminal
 p
 
-# Or through the local dashboard API
-curl -X POST http://localhost:9090/api/pause</code></pre>
+# Or through the authenticated local dashboard
+# Log in, then choose Pause.</code></pre>
               <p>Paused workers finish any running job, then claim no new jobs. Use this before reviewing a busy repo.</p>
             </li>
             <li>

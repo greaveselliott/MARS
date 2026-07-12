@@ -147,7 +147,7 @@ docs:
           <div class="workflow-list">
             <article data-doc-filter>
               <h3>Start with explicit ports</h3>
-              <pre><code>mars start --repo /path/to/repo --dashboard-addr :9090 --addr :9091
+              <pre><code>mars start --repo /path/to/repo --dashboard-addr 127.0.0.1:9090 --addr 127.0.0.1:9091
 open http://localhost:9090</code></pre>
             </article>
             <article data-doc-filter>
@@ -176,7 +176,7 @@ curl http://localhost:9090/api/status</code></pre>
               <tbody>
                 <tr><td><code>waiting for model response</code></td><td>The role is inside a non-streaming model call.</td><td>Wait, inspect model performance, or use <code>--debug</code> if it exceeds expected local latency.</td></tr>
                 <tr><td>Phase age keeps growing during a tool</td><td>A shell command, dependency action, or external call may be slow.</td><td>Check the durable command log path shown in the terminal.</td></tr>
-                <tr><td>Paused</td><td>Workers finish running jobs but claim no new ones.</td><td>Press <kbd>p</kbd> or call <code>POST /api/resume</code>.</td></tr>
+                <tr><td>Paused</td><td>Workers finish running jobs but claim no new ones.</td><td>Press <kbd>p</kbd> or use the authenticated dashboard Resume control.</td></tr>
                 <tr><td>Warm restart requested</td><td>Manifests and triggers reload in the same process.</td><td>Use after manifest or schedule changes.</td></tr>
                 <tr><td>Graceful stop requested</td><td>The runtime is shutting down through the normal cancellation path.</td><td>Let running cleanup finish unless there is a true emergency.</td></tr>
               </tbody>

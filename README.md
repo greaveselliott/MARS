@@ -85,7 +85,12 @@ source checkout install, local setup, and a scoped target run.
   release/update workflows, scoring, trust, telemetry, tools, and MCP.
 - **Optional or planned surfaces**: GitHub release/auth workflows, board-driven
   JIRA intake, and the future TanStack dashboard control plane. The current
-  dashboard is the embedded Go, htmx, Chart.js, and SSE surface.
+  dashboard is the embedded Go, pinned/offline htmx 2.0.4, Chart.js 4.4.7,
+  and bounded SSE surface. It stays on loopback; page/login shells, assets, and
+  minimal redacted status are observer views, while privileged reads, SSE, and
+  mutations require environment-only `MARS_DASHBOARD_CONTROL_SECRET`,
+  browser login, exact Host/Origin, and session CSRF. An exact authenticated
+  HTTPS reverse-proxy origin can be configured without remotely binding MARS.
 
 The active source plan is tracked in
 [docs/exec-plans/active/current-operating-plan.md](docs/exec-plans/active/current-operating-plan.md).
@@ -208,6 +213,11 @@ mars mcp serve --repo /path/to/repo --trust observer
 mars register --repo /path/to/repo --remote owner/repo
 mars serve --addr 127.0.0.1:9091 --concurrency 2
 ```
+
+To enable browser controls, set a new random
+`MARS_DASHBOARD_CONTROL_SECRET` of at least 32 bytes in the process environment
+before `start` or `serve`, then log in through the embedded dashboard. The
+secret is not a CLI/YAML/URL field and must not enter logs or generated files.
 
 Use `--trust contributor` for MCP only when the connected client should be able
 to call mutating tools.

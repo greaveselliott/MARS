@@ -110,13 +110,13 @@ docs:
             <article data-doc-filter>
               <h3>Scoped lifecycle</h3>
               <pre><code>mars start --repo ~/my-project
-mars start --repo ~/my-project --dashboard-addr :9090 --addr :9091</code></pre>
+mars start --repo ~/my-project --dashboard-addr 127.0.0.1:9090 --addr 127.0.0.1:9091</code></pre>
               <p>Use explicit addresses when scripts or users depend on stable ports. With default addresses, scoped start can fall back to ephemeral local ports on conflict.</p>
             </article>
             <article data-doc-filter>
               <h3>Persistent daemon</h3>
               <pre><code>mars register --repo ~/my-project --remote owner/repo
-mars serve --addr :9091 --concurrency 2 --db ~/.mars/db/mars.db</code></pre>
+mars serve --addr 127.0.0.1:9091 --concurrency 2 --db ~/.mars/db/mars.db</code></pre>
               <p>Use this when webhooks, schedules, and multiple registered repos should share one orchestrator.</p>
             </article>
           </div>
@@ -172,7 +172,11 @@ mars serve --addr :9091 --concurrency 2 --db ~/.mars/db/mars.db</code></pre>
             The current dashboard is embedded in the Go binary. It uses
             server-rendered HTML, embedded static assets, Chart.js, htmx-style
             interaction, and server-sent events. It is local by default and
-            requires no frontend build step. For endpoint-level request,
+            requires no frontend build step or outbound CDN. Page/login shells,
+            embedded assets, and minimal status are bounded observer views;
+            privileged reads, SSE, and mutations require environment-only
+            <code>MARS_DASHBOARD_CONTROL_SECRET</code>, login, exact Host/Origin,
+            and session CSRF. For endpoint-level request,
             response, error, and scripting details, use the
             <a href="dashboard-api-reference.html">Dashboard API Reference</a>.
           </p>
@@ -200,14 +204,16 @@ mars serve --addr :9091 --concurrency 2 --db ~/.mars/db/mars.db</code></pre>
           </div>
           <div class="callout">
             <strong>Two local HTTP servers:</strong>
-            the dashboard address serves the pages and dashboard APIs. The
+            the loopback dashboard address serves pages and dashboard APIs. An
+            exact authenticated HTTPS reverse-proxy origin may be configured,
+            but MARS itself remains on loopback. The
             webhook/control address serves webhook traffic and
             <code>GET /healthz</code>.
           </div>
           <div class="workflow-list">
             <article data-doc-filter>
               <h3>Open the dashboard</h3>
-              <pre><code>mars start --repo ~/my-project --dashboard-addr :9090
+              <pre><code>mars start --repo ~/my-project --dashboard-addr 127.0.0.1:9090
 open http://localhost:9090</code></pre>
               <p>The dashboard URL is also printed in the runtime display when the terminal dashboard is active.</p>
             </article>
@@ -222,8 +228,10 @@ open http://localhost:9090</code></pre>
         <section class="doc-section" id="controls">
           <h2>Controls API</h2>
           <p>
-            The dashboard exposes local JSON endpoints for operators and
-            companion UIs. Mutating endpoints require <code>POST</code>. Missing
+            The dashboard exposes bounded local JSON endpoints for operators and
+            companion UIs. Mutating endpoints require authenticated
+            <code>POST</code>, exact same-origin <code>Origin</code>, and the
+            current session CSRF token. Missing
             callbacks return a not-implemented response rather than pretending
             a control succeeded.
           </p>
@@ -257,17 +265,15 @@ open http://localhost:9090</code></pre>
           <div class="workflow-list">
             <article data-doc-filter>
               <h3>Pause and resume</h3>
-              <pre><code>curl -X POST http://localhost:9090/api/pause
-curl http://localhost:9090/api/status
-curl -X POST http://localhost:9090/api/resume</code></pre>
+              <p>Set the environment-only control secret before startup, log
+              in through the embedded browser, then use Pause or Resume.
+              Anonymous mutations fail closed.</p>
             </article>
             <article data-doc-filter>
               <h3>Run a role from an external UI</h3>
-              <pre><code>repo_id=$(curl -s http://localhost:9090/api/repos)
-curl -X POST http://localhost:9090/api/run-role \
-  -H 'Content-Type: application/json' \
-  -d '{"repo_id":"REPO_ID","role":"engineer"}'</code></pre>
-              <p>Resolve the repo ID first; do not guess it from the filesystem path.</p>
+              <p>Resolve the bounded repo/role lists, then implement the
+              documented login-cookie, exact-Origin, and CSRF exchange before
+              POST. Do not guess IDs from filesystem paths.</p>
             </article>
           </div>
         </section>
@@ -414,16 +420,15 @@ mars start --repo ~/my-project --concurrency 1</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Recover from occupied local ports</h3>
-              <pre><code>mars start --repo ~/my-project --dashboard-addr :9190 --addr :9191
+              <pre><code>mars start --repo ~/my-project --dashboard-addr 127.0.0.1:9190 --addr 127.0.0.1:9191
 mars start --repo ~/my-project --model-endpoint http://127.0.0.1:8088/v1</code></pre>
               <p>Use alternate dashboard/control ports, or bypass local llama-server startup with a real OpenAI-compatible endpoint.</p>
             </article>
             <article data-doc-filter>
               <h3>Drain before maintenance</h3>
-              <pre><code>curl -X POST http://localhost:9090/api/pause
-curl http://localhost:9090/api/status
-curl -X POST http://localhost:9090/api/stop</code></pre>
-              <p>Pause first when you want current jobs to finish without new claims before shutdown.</p>
+              <p>Use terminal <kbd>p</kbd> then <kbd>q</kbd>, or authenticated
+              dashboard Pause then Stop. Pause first when current jobs should
+              finish without new claims.</p>
             </article>
           </div>
         </section>
@@ -434,7 +439,7 @@ curl -X POST http://localhost:9090/api/stop</code></pre>
             <table>
               <thead><tr><th>Symptom</th><th>Likely cause</th><th>User action</th></tr></thead>
               <tbody>
-                <tr><td>Dashboard does not open on the expected port.</td><td>Another process owns the address, or scoped start fell back to an ephemeral port.</td><td>Pass <code>--dashboard-addr :PORT</code> explicitly and watch the runtime display for the final URL.</td></tr>
+                <tr><td>Dashboard does not open on the expected port.</td><td>Another process owns the address, or scoped start fell back to an ephemeral port.</td><td>Pass <code>--dashboard-addr 127.0.0.1:PORT</code> explicitly and watch the runtime display for the final URL.</td></tr>
                 <tr><td><code>/api/scan</code> or <code>/api/run-role</code> returns a bad request.</td><td>Missing <code>repo_id</code> or role payload.</td><td>Call <code>GET /api/repos</code> and <code>GET /api/repo-roles?repo_id=...</code> first.</td></tr>
                 <tr><td>Startup refuses ambiguous lifecycle state.</td><td>MARS found state that could be resumed or restarted, but cannot choose safely.</td><td>Inspect tickets, queue, and DB state; rerun with <code>--new-lifecycle</code> only when intentionally starting fresh.</td></tr>
                 <tr><td>Model preflight fails before agents run.</td><td>Required local model file is missing or the active profile changed.</td><td>Run <code>mars setup</code>, or provide a real endpoint on the command that starts agents: <code>mars start --repo /path/to/repo --model-endpoint http://127.0.0.1:8080/v1</code> or <code>mars run engineer --repo /path/to/repo --model-endpoint http://127.0.0.1:8080/v1</code>. See <a href="models-guide.html">Models Guide</a>.</td></tr>

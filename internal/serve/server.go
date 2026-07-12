@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -81,6 +82,8 @@ type Config struct {
 	ModelsDir              string
 	BinDir                 string
 	DashboardAddr          string
+	DashboardControlSecret string
+	DashboardTrustedOrigin string
 	RepoScope              string // if set, only operate on repos whose path matches this absolute path
 	PerformanceProfile     string
 	InferenceTuning        inference.ServerTuning
@@ -355,6 +358,8 @@ func New(cfg Config) (*Server, error) {
 	dashAddr := cfg.DashboardAddr
 	dash, err := dashboard.New(dashboard.Config{
 		Addr:             dashAddr,
+		ControlSecret:    cfg.DashboardControlSecret,
+		TrustedOrigin:    cfg.DashboardTrustedOrigin,
 		EmergencyStop:    func() []error { return s.estop.Execute(context.Background()) },
 		PipelineProvider: s.buildPipelineView,
 		Controls: dashboard.ControlCallbacks{
@@ -372,7 +377,7 @@ func New(cfg Config) (*Server, error) {
 				repos, _ := s.repos.List(ctx)
 				out := make([]dashboard.RepoInfoDTO, len(repos))
 				for i, r := range repos {
-					out[i] = dashboard.RepoInfoDTO{ID: r.ID, Path: r.Path}
+					out[i] = dashboard.RepoInfoDTO{ID: r.ID, Path: filepath.Base(r.Path)}
 				}
 				return out
 			},
@@ -797,6 +802,7 @@ func (s *Server) Restart(ctx context.Context) error {
 	slog.Info("serve: warm restart initiated")
 	if s.dash != nil {
 		s.dash.BroadcastEvent("status_change", `{"state":"restarting"}`)
+		s.dash.InvalidateSessions()
 	}
 
 	s.workers.Stop()
@@ -998,13 +1004,34 @@ func (s *Server) loadManifest(ctx context.Context, repoID string) (*bundle.Manif
 
 // handleTelemetryAPI serves the telemetry event history as JSON.
 func (s *Server) handleTelemetryAPI(w http.ResponseWriter, r *http.Request) {
+	type eventDTO struct {
+		ID        string                    `json:"id"`
+		Timestamp time.Time                 `json:"timestamp"`
+		JobID     string                    `json:"job_id"`
+		RepoID    string                    `json:"repo_id"`
+		Role      string                    `json:"role"`
+		Category  telemetry.FailureCategory `json:"category"`
+		Remedied  bool                      `json:"remedied"`
+		Action    string                    `json:"action,omitempty"`
+	}
 	type apiResponse struct {
-		Events []telemetry.Event                 `json:"events"`
+		Events []eventDTO                        `json:"events"`
 		Stats  map[telemetry.FailureCategory]int `json:"stats"`
 	}
 	resp := apiResponse{
-		Events: s.telemetry.Events(),
-		Stats:  s.telemetry.Stats(),
+		Stats: s.telemetry.Stats(),
+	}
+	events := s.telemetry.Events()
+	if len(events) > 100 {
+		events = events[len(events)-100:]
+	}
+	for _, event := range events {
+		resp.Events = append(resp.Events, eventDTO{
+			ID: dashboard.RedactBrowserText(event.ID, 128), Timestamp: event.Timestamp,
+			JobID: dashboard.RedactBrowserText(event.JobID, 128), RepoID: dashboard.RedactBrowserText(event.RepoID, 256),
+			Role: dashboard.RedactBrowserText(event.Role, 128), Category: event.Category,
+			Remedied: event.Remedied, Action: dashboard.RedactBrowserText(event.Action, 128),
+		})
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -1026,15 +1053,50 @@ func (s *Server) handleEvolutionAPI(w http.ResponseWriter, r *http.Request) {
 		CreatedAt      string  `json:"created_at"`
 	}
 
+	type telemetryEventDTO struct {
+		ID        string                    `json:"id"`
+		Timestamp time.Time                 `json:"timestamp"`
+		JobID     string                    `json:"job_id"`
+		RepoID    string                    `json:"repo_id"`
+		Role      string                    `json:"role"`
+		Category  telemetry.FailureCategory `json:"category"`
+		Remedied  bool                      `json:"remedied"`
+		Action    string                    `json:"action,omitempty"`
+	}
+	type patternDTO struct {
+		RepoID    string                    `json:"repo_id,omitempty"`
+		Role      string                    `json:"role"`
+		Category  telemetry.FailureCategory `json:"category"`
+		Count     int                       `json:"count"`
+		Window    string                    `json:"window"`
+		FirstSeen time.Time                 `json:"first_seen"`
+		LastSeen  time.Time                 `json:"last_seen"`
+	}
 	type apiResponse struct {
 		Evolutions []evoEvent          `json:"evolutions"`
-		Telemetry  []telemetry.Event   `json:"telemetry"`
-		Patterns   []telemetry.Pattern `json:"patterns"`
+		Telemetry  []telemetryEventDTO `json:"telemetry"`
+		Patterns   []patternDTO        `json:"patterns"`
 	}
 
-	resp := apiResponse{
-		Telemetry: s.telemetry.Events(),
-		Patterns:  s.telemetry.DetectPatterns(),
+	resp := apiResponse{}
+	patterns := s.telemetry.DetectPatterns()
+	if len(patterns) > 50 {
+		patterns = patterns[:50]
+	}
+	for _, pattern := range patterns {
+		resp.Patterns = append(resp.Patterns, patternDTO{
+			RepoID: dashboard.RedactBrowserText(pattern.RepoID, 256), Role: dashboard.RedactBrowserText(pattern.Role, 128),
+			Category: pattern.Category, Count: pattern.Count, Window: dashboard.RedactBrowserText(pattern.Window, 64),
+			FirstSeen: pattern.FirstSeen, LastSeen: pattern.LastSeen,
+		})
+	}
+	for _, event := range s.telemetry.Events() {
+		resp.Telemetry = append(resp.Telemetry, telemetryEventDTO{
+			ID: dashboard.RedactBrowserText(event.ID, 128), Timestamp: event.Timestamp,
+			JobID: dashboard.RedactBrowserText(event.JobID, 128), RepoID: dashboard.RedactBrowserText(event.RepoID, 256),
+			Role: dashboard.RedactBrowserText(event.Role, 128), Category: event.Category,
+			Remedied: event.Remedied, Action: dashboard.RedactBrowserText(event.Action, 128),
+		})
 	}
 
 	if s.evoStore != nil {
@@ -1048,11 +1110,11 @@ func (s *Server) handleEvolutionAPI(w http.ResponseWriter, r *http.Request) {
 				var result evolution.ReviewResult
 				_ = json.Unmarshal([]byte(ev.Result), &result)
 				resp.Evolutions = append(resp.Evolutions, evoEvent{
-					ID:             ev.ID,
-					Role:           ev.Role,
-					RepoID:         ev.RepoID,
-					Classification: result.Classification,
-					Suggestion:     result.Suggestion,
+					ID:             dashboard.RedactBrowserText(ev.ID, 128),
+					Role:           dashboard.RedactBrowserText(ev.Role, 128),
+					RepoID:         dashboard.RedactBrowserText(ev.RepoID, 256),
+					Classification: dashboard.RedactBrowserText(result.Classification, 128),
+					Suggestion:     dashboard.RedactBrowserText(result.Suggestion, 512),
 					ScoreBefore:    ev.ScoreBefore,
 					ScoreAfter:     ev.ScoreAfter,
 					CreatedAt:      ev.CreatedAt.Format(time.RFC3339),
@@ -1138,8 +1200,20 @@ func (s *Server) handleQualityScoreAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	scorePath := filepath.Join(repoPath, "docs", "QUALITY_SCORE.md")
+	file, err := os.Open(scorePath)
+	if err != nil {
+		http.Error(w, "quality score unavailable", http.StatusNotFound)
+		return
+	}
+	defer file.Close()
+	const maxQualityScoreBytes = 256 << 10
+	body, err := io.ReadAll(io.LimitReader(file, maxQualityScoreBytes+1))
+	if err != nil || len(body) > maxQualityScoreBytes {
+		http.Error(w, "quality score unavailable: artifact exceeds the 256 KiB dashboard limit", http.StatusRequestEntityTooLarge)
+		return
+	}
 	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
-	http.ServeFile(w, r, scorePath)
+	_, _ = io.WriteString(w, dashboard.RedactBrowserText(string(body), maxQualityScoreBytes))
 }
 
 func (s *Server) handleThroughputAPI(w http.ResponseWriter, r *http.Request) {
@@ -1179,12 +1253,18 @@ func (s *Server) handleThroughputAPI(w http.ResponseWriter, r *http.Request) {
 		slog.Error("serve: throughput recent jobs error", "err", err)
 	}
 	for _, j := range recent {
+		jobID := j.ID
+		if len(jobID) > 8 {
+			jobID = jobID[:8]
+		}
 		entry := jobEntry{
-			ID:        j.ID[:8],
-			Role:      j.Role,
+			ID:        dashboard.RedactBrowserText(jobID, 8),
+			Role:      dashboard.RedactBrowserText(j.Role, 128),
 			Status:    string(j.Status),
 			CreatedAt: j.CreatedAt.Format(time.RFC3339),
-			Error:     j.Error,
+		}
+		if j.Error != "" {
+			entry.Error = "job failed; inspect the owner-only local command log"
 		}
 		if j.CompletedAt != nil {
 			d := j.CompletedAt.Sub(j.CreatedAt).Round(time.Second).String()
@@ -1214,12 +1294,10 @@ func (s *Server) handleThroughputAPI(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleOrchestrationAPI(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	type roleSummary struct {
-		Name     string   `json:"name"`
-		Domain   string   `json:"domain"`
-		Mode     string   `json:"mode"`
-		Model    string   `json:"model"`
-		Schedule string   `json:"schedule"`
-		Tools    []string `json:"tools"`
+		Name   string `json:"name"`
+		Domain string `json:"domain"`
+		Mode   string `json:"mode"`
+		Model  string `json:"model"`
 	}
 	type repoSummary struct {
 		ID                string        `json:"id"`
@@ -1227,10 +1305,26 @@ func (s *Server) handleOrchestrationAPI(w http.ResponseWriter, r *http.Request) 
 		OrchestrationMode string        `json:"orchestration_mode"`
 		Roles             []roleSummary `json:"roles"`
 	}
+	type dispositionDTO struct {
+		JobID    string `json:"job_id"`
+		RepoID   string `json:"repo_id"`
+		Role     string `json:"role"`
+		Status   string `json:"status"`
+		NextNeed string `json:"next_need,omitempty"`
+		Reason   string `json:"reason,omitempty"`
+	}
+	type decisionDTO struct {
+		JobID      string `json:"job_id"`
+		RepoID     string `json:"repo_id"`
+		SourceRole string `json:"source_role"`
+		NextRole   string `json:"next_role,omitempty"`
+		Reason     string `json:"reason,omitempty"`
+		StopReason string `json:"stop_reason,omitempty"`
+	}
 	type apiResponse struct {
-		Repos        []repoSummary          `json:"repos"`
-		Dispositions []orgstate.Disposition `json:"dispositions"`
-		Decisions    []orgstate.Decision    `json:"decisions"`
+		Repos        []repoSummary    `json:"repos"`
+		Dispositions []dispositionDTO `json:"dispositions"`
+		Decisions    []decisionDTO    `json:"decisions"`
 	}
 	var resp apiResponse
 	if s.repos != nil {
@@ -1246,27 +1340,35 @@ func (s *Server) handleOrchestrationAPI(w http.ResponseWriter, r *http.Request) 
 					for _, node := range dashboardRoleNodes(manifest, false) {
 						role := manifest.Roles[node.Name]
 						roles = append(roles, roleSummary{
-							Name:     node.Name,
-							Domain:   role.Domain,
-							Mode:     role.Mode,
-							Model:    role.Model,
-							Schedule: role.Schedule,
-							Tools:    role.Tools,
+							Name:   dashboard.RedactBrowserText(node.Name, 128),
+							Domain: dashboard.RedactBrowserText(role.Domain, 128),
+							Mode:   dashboard.RedactBrowserText(role.Mode, 128),
+							Model:  dashboard.RedactBrowserText(role.Model, 256),
 						})
 					}
 				}
-				resp.Repos = append(resp.Repos, repoSummary{ID: repo.ID, Path: repo.Path, OrchestrationMode: mode, Roles: roles})
+				resp.Repos = append(resp.Repos, repoSummary{ID: dashboard.RedactBrowserText(repo.ID, 256), Path: dashboard.RedactBrowserText(filepath.Base(repo.Path), 128), OrchestrationMode: mode, Roles: roles})
 			}
 		}
 	}
 	if s.orgStore != nil {
 		dispositions, err := s.orgStore.RecentDispositions(ctx, "", 25)
 		if err == nil {
-			resp.Dispositions = dispositions
+			for _, item := range dispositions {
+				resp.Dispositions = append(resp.Dispositions, dispositionDTO{
+					JobID: dashboard.RedactBrowserText(item.JobID, 128), RepoID: dashboard.RedactBrowserText(item.RepoID, 256), Role: dashboard.RedactBrowserText(item.Role, 128),
+					Status: item.Status, NextNeed: dashboard.RedactBrowserText(item.NextNeed, 512), Reason: dashboard.RedactBrowserText(item.Reason, 512),
+				})
+			}
 		}
 		decisions, err := s.orgStore.RecentDecisions(ctx, "", 25)
 		if err == nil {
-			resp.Decisions = decisions
+			for _, item := range decisions {
+				resp.Decisions = append(resp.Decisions, decisionDTO{
+					JobID: dashboard.RedactBrowserText(item.JobID, 128), RepoID: dashboard.RedactBrowserText(item.RepoID, 256), SourceRole: dashboard.RedactBrowserText(item.SourceRole, 128),
+					NextRole: dashboard.RedactBrowserText(item.NextRole, 128), Reason: dashboard.RedactBrowserText(item.Reason, 512), StopReason: dashboard.RedactBrowserText(item.StopReason, 512),
+				})
+			}
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -1277,14 +1379,31 @@ func (s *Server) handleOrchestrationAPI(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleOrchestrationDecisionsAPI(w http.ResponseWriter, r *http.Request) {
 	repoID := strings.TrimSpace(r.URL.Query().Get("repo_id"))
-	var decisions []orgstate.Decision
+	if len(repoID) > 256 {
+		http.Error(w, "repo_id exceeds the 256-byte dashboard limit", http.StatusBadRequest)
+		return
+	}
+	type decisionDTO struct {
+		JobID      string `json:"job_id"`
+		RepoID     string `json:"repo_id"`
+		SourceRole string `json:"source_role"`
+		NextRole   string `json:"next_role,omitempty"`
+		Reason     string `json:"reason,omitempty"`
+		StopReason string `json:"stop_reason,omitempty"`
+	}
+	var decisions []decisionDTO
 	if s.orgStore != nil {
 		if rows, err := s.orgStore.RecentDecisions(r.Context(), repoID, 50); err == nil {
-			decisions = rows
+			for _, item := range rows {
+				decisions = append(decisions, decisionDTO{
+					JobID: dashboard.RedactBrowserText(item.JobID, 128), RepoID: dashboard.RedactBrowserText(item.RepoID, 256), SourceRole: dashboard.RedactBrowserText(item.SourceRole, 128),
+					NextRole: dashboard.RedactBrowserText(item.NextRole, 128), Reason: dashboard.RedactBrowserText(item.Reason, 512), StopReason: dashboard.RedactBrowserText(item.StopReason, 512),
+				})
+			}
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string][]orgstate.Decision{"decisions": decisions}); err != nil {
+	if err := json.NewEncoder(w).Encode(map[string][]decisionDTO{"decisions": decisions}); err != nil {
 		slog.Error("serve: orchestration decisions API encode error", "err", err)
 	}
 }

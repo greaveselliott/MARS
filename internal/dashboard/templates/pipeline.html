@@ -5,14 +5,16 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/dashboard.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false,"defaultSwapStyle":"textContent"}'>
   <title>{{.Title}} — MARS</title>
   <link rel="stylesheet" href="/static/style.css">
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="/static/vendor/htmx-2.0.4.min.js" defer></script>
 </head>
 <body>
   <nav class="sidebar">
@@ -29,22 +31,22 @@ docs:
       <div class="status-indicator">
         <span class="status-dot" id="status-dot"></span>
         <span id="status-label">Running</span>
-        <span id="active-jobs" style="margin-left:auto"></span>
+        <span id="active-jobs" class="active-jobs"></span>
       </div>
 
-      <button class="ctrl-btn" id="btn-pause" onclick="togglePause()">
+      <button class="ctrl-btn" id="btn-pause" type="button">
         <span class="key-hint">P</span><span id="pause-label">Pause</span>
       </button>
 
-      <button class="ctrl-btn warn" id="btn-restart" onclick="confirmRestart()">
+      <button class="ctrl-btn warn" id="btn-restart" type="button">
         <span class="key-hint">R</span>Restart
       </button>
 
       <div class="ctrl-group">
-        <select class="ctrl-select" id="select-repo" onchange="loadRoles()">
+        <select class="ctrl-select" id="select-repo">
           <option value="">Repo...</option>
         </select>
-        <button class="ctrl-btn" id="btn-scan" onclick="triggerScan()">
+        <button class="ctrl-btn" id="btn-scan" type="button">
           <span class="key-hint">S</span>Scan
         </button>
       </div>
@@ -53,15 +55,15 @@ docs:
         <select class="ctrl-select" id="select-role">
           <option value="">Role...</option>
         </select>
-        <button class="ctrl-btn" id="btn-run" onclick="triggerRunRole()">Run</button>
+        <button class="ctrl-btn" id="btn-run" type="button">Run</button>
       </div>
 
-      <button class="ctrl-btn danger" id="btn-stop" onclick="confirmStop()">
+      <button class="ctrl-btn danger" id="btn-stop" type="button">
         <span class="key-hint">Q</span>Stop
       </button>
     </div>
 
-    <button id="estop-btn" class="estop-btn" onclick="emergencyStop()">Emergency Stop</button>
+    <button id="estop-btn" class="estop-btn" type="button">Emergency Stop</button>
   </nav>
 
   <main class="content">
@@ -96,6 +98,6 @@ docs:
     </div>
   </main>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js" defer></script>
 </body>
 </html>

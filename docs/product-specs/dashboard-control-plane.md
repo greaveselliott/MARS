@@ -1,7 +1,7 @@
 # Dashboard Control Plane
 
 **Status:** Planned
-**Updated:** 2026-05-20
+**Updated:** 2026-07-12
 **Owner:** MARS maintainers
 **Sources:** [product surface](product-surface.md), [F-010 dashboard feature contract](../features/F-010-dashboard-control-plane.md), [dashboard design doc](../design-docs/dashboard.md), [Node.js release schedule](https://nodejs.org/en/about/previous-releases), [pnpm releases](https://github.com/pnpm/pnpm/releases)
 
@@ -17,6 +17,17 @@ The existing embedded htmx and Chart.js dashboard remains the legacy/current
 implementation until the TanStack dashboard slices ship. This spec governs the
 planned replacement and supersedes narrow restyle work as the product contract
 for the next dashboard generation.
+
+The legacy/current implementation is nevertheless security-supported under
+F-010-S024 and AD-310: its listener remains loopback-only, local page/login
+shells, assets, and minimal status are bounded redacted observer surfaces,
+privileged reads and SSE require login, and browser mutations require an
+environment-only control secret plus an in-memory session, exact Host/Origin,
+and session CSRF, and any explicitly configured HTTPS reverse-proxy origin
+requires authentication for reads as well. Its htmx 2.0.4 and Chart.js 4.4.7
+files are pinned and embedded for offline use under a strict CSP. This does not
+claim that the future TanStack local-admin persistence or gateway in
+F-010-S012/MH-053 has shipped.
 
 ## Runtime Contract
 

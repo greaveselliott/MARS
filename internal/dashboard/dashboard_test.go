@@ -15,12 +15,59 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 )
+
+const testControlSecret = "0123456789abcdef0123456789abcdef"
+
+func authenticatedControlRequest(t *testing.T, serverURL, path string, body io.Reader) *http.Response {
+	t.Helper()
+	client, csrf := authenticatedClient(t, serverURL)
+	req, _ := http.NewRequest(http.MethodPost, serverURL+path, body)
+	req.Header.Set("Origin", serverURL)
+	req.Header.Set("X-MARS-CSRF-Token", csrf)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("POST %s: %v", path, err)
+	}
+	return resp
+}
+
+func authenticatedClient(t *testing.T, serverURL string) (*http.Client, string) {
+	t.Helper()
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatalf("cookie jar: %v", err)
+	}
+	client := &http.Client{Jar: jar}
+	loginBody := strings.NewReader(`{"secret":"` + testControlSecret + `"}`)
+	loginReq, _ := http.NewRequest(http.MethodPost, serverURL+"/api/login", loginBody)
+	loginReq.Header.Set("Content-Type", "application/json")
+	loginReq.Header.Set("Origin", serverURL)
+	loginResp, err := client.Do(loginReq)
+	if err != nil {
+		t.Fatalf("login: %v", err)
+	}
+	defer loginResp.Body.Close()
+	if loginResp.StatusCode != http.StatusOK {
+		t.Fatalf("login status = %d", loginResp.StatusCode)
+	}
+	var login struct {
+		CSRF string `json:"csrf_token"`
+	}
+	if err := json.NewDecoder(loginResp.Body).Decode(&login); err != nil {
+		t.Fatalf("decode login: %v", err)
+	}
+	return client, login.CSRF
+}
 
 func newTestDashboard(t *testing.T) *Dashboard {
 	t.Helper()
@@ -119,9 +166,13 @@ func TestDashboard_notFound(t *testing.T) {
 }
 
 func TestDashboard_sseConnection(t *testing.T) {
-	d := newTestDashboard(t)
+	d, err := New(Config{ControlSecret: testControlSecret})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
+	client, _ := authenticatedClient(t, srv.URL)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -131,7 +182,7 @@ func TestDashboard_sseConnection(t *testing.T) {
 		t.Fatalf("new request: %v", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("GET /api/events: %v", err)
 	}
@@ -197,6 +248,7 @@ func TestDashboard_sseConnection(t *testing.T) {
 func TestDashboard_emergencyStop(t *testing.T) {
 	var called bool
 	d, err := New(Config{
+		ControlSecret: testControlSecret,
 		EmergencyStop: func() []error {
 			called = true
 			return nil
@@ -209,10 +261,7 @@ func TestDashboard_emergencyStop(t *testing.T) {
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
-	resp, err := http.Post(srv.URL+"/api/emergency-stop", "application/json", nil)
-	if err != nil {
-		t.Fatalf("POST /api/emergency-stop: %v", err)
-	}
+	resp := authenticatedControlRequest(t, srv.URL, "/api/emergency-stop", nil)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -233,6 +282,7 @@ func TestDashboard_emergencyStop(t *testing.T) {
 
 func TestDashboard_emergencyStopWithErrors(t *testing.T) {
 	d, err := New(Config{
+		ControlSecret: testControlSecret,
 		EmergencyStop: func() []error {
 			return []error{fmt.Errorf("agent stuck"), fmt.Errorf("queue locked")}
 		},
@@ -244,10 +294,7 @@ func TestDashboard_emergencyStopWithErrors(t *testing.T) {
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
-	resp, err := http.Post(srv.URL+"/api/emergency-stop", "application/json", nil)
-	if err != nil {
-		t.Fatalf("POST: %v", err)
-	}
+	resp := authenticatedControlRequest(t, srv.URL, "/api/emergency-stop", nil)
 	defer resp.Body.Close()
 
 	var result emergencyStopResponse
@@ -257,8 +304,8 @@ func TestDashboard_emergencyStopWithErrors(t *testing.T) {
 	if result.OK {
 		t.Error("expected ok=false when errors returned")
 	}
-	if len(result.Errors) != 2 {
-		t.Errorf("expected 2 errors, got %d", len(result.Errors))
+	if result.Error == "" || strings.Contains(result.Error, "agent stuck") {
+		t.Errorf("expected one redacted error, got %q", result.Error)
 	}
 }
 
@@ -367,6 +414,7 @@ func newTestDashboardWithControls(t *testing.T) (*Dashboard, *controlState) {
 	t.Helper()
 	state := &controlState{}
 	d, err := New(Config{
+		ControlSecret: testControlSecret,
 		Controls: ControlCallbacks{
 			Pause:   func() { state.paused = true },
 			Resume:  func() { state.paused = false },
@@ -418,10 +466,7 @@ func TestDashboard_pauseEndpoint(t *testing.T) {
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
-	resp, err := http.Post(srv.URL+"/api/pause", "application/json", nil)
-	if err != nil {
-		t.Fatalf("POST /api/pause: %v", err)
-	}
+	resp := authenticatedControlRequest(t, srv.URL, "/api/pause", nil)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -438,10 +483,7 @@ func TestDashboard_resumeEndpoint(t *testing.T) {
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
-	resp, err := http.Post(srv.URL+"/api/resume", "application/json", nil)
-	if err != nil {
-		t.Fatalf("POST /api/resume: %v", err)
-	}
+	resp := authenticatedControlRequest(t, srv.URL, "/api/resume", nil)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -457,10 +499,7 @@ func TestDashboard_restartEndpoint(t *testing.T) {
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
-	resp, err := http.Post(srv.URL+"/api/restart", "application/json", nil)
-	if err != nil {
-		t.Fatalf("POST /api/restart: %v", err)
-	}
+	resp := authenticatedControlRequest(t, srv.URL, "/api/restart", nil)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -476,10 +515,7 @@ func TestDashboard_stopEndpoint(t *testing.T) {
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
-	resp, err := http.Post(srv.URL+"/api/stop", "application/json", nil)
-	if err != nil {
-		t.Fatalf("POST /api/stop: %v", err)
-	}
+	resp := authenticatedControlRequest(t, srv.URL, "/api/stop", nil)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -495,11 +531,7 @@ func TestDashboard_scanEndpoint(t *testing.T) {
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
-	resp, err := http.Post(srv.URL+"/api/scan", "application/json",
-		strings.NewReader(`{"repo_id":"r1"}`))
-	if err != nil {
-		t.Fatalf("POST /api/scan: %v", err)
-	}
+	resp := authenticatedControlRequest(t, srv.URL, "/api/scan", strings.NewReader(`{"repo_id":"r1"}`))
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -515,11 +547,7 @@ func TestDashboard_scanEndpoint_missingRepoID(t *testing.T) {
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
-	resp, err := http.Post(srv.URL+"/api/scan", "application/json",
-		strings.NewReader(`{}`))
-	if err != nil {
-		t.Fatalf("POST /api/scan: %v", err)
-	}
+	resp := authenticatedControlRequest(t, srv.URL, "/api/scan", strings.NewReader(`{}`))
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadRequest {
@@ -532,11 +560,7 @@ func TestDashboard_runRoleEndpoint(t *testing.T) {
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
-	resp, err := http.Post(srv.URL+"/api/run-role", "application/json",
-		strings.NewReader(`{"repo_id":"r1","role":"engineer"}`))
-	if err != nil {
-		t.Fatalf("POST /api/run-role: %v", err)
-	}
+	resp := authenticatedControlRequest(t, srv.URL, "/api/run-role", strings.NewReader(`{"repo_id":"r1","role":"engineer"}`))
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -575,8 +599,9 @@ func TestDashboard_reposEndpoint(t *testing.T) {
 	d, _ := newTestDashboardWithControls(t)
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
+	client, _ := authenticatedClient(t, srv.URL)
 
-	resp, err := http.Get(srv.URL + "/api/repos")
+	resp, err := client.Get(srv.URL + "/api/repos")
 	if err != nil {
 		t.Fatalf("GET /api/repos: %v", err)
 	}
@@ -616,17 +641,17 @@ func TestDashboard_controlEndpoints_methodNotAllowed(t *testing.T) {
 }
 
 func TestDashboard_controlEndpoints_nilCallbacks(t *testing.T) {
-	d := newTestDashboard(t)
+	d, err := New(Config{ControlSecret: testControlSecret})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	srv := httptest.NewServer(d.Handler())
 	defer srv.Close()
 
 	endpoints := []string{"/api/pause", "/api/resume", "/api/stop", "/api/restart"}
 	for _, ep := range endpoints {
 		t.Run(ep, func(t *testing.T) {
-			resp, err := http.Post(srv.URL+ep, "application/json", nil)
-			if err != nil {
-				t.Fatalf("POST %s: %v", ep, err)
-			}
+			resp := authenticatedControlRequest(t, srv.URL, ep, nil)
 			defer resp.Body.Close()
 			if resp.StatusCode != http.StatusNotImplemented {
 				t.Errorf("POST %s: got status %d, want 501", ep, resp.StatusCode)

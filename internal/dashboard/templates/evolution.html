@@ -5,15 +5,18 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/dashboard.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false,"defaultSwapStyle":"textContent"}'>
   <title>{{.Title}} — MARS</title>
   <link rel="stylesheet" href="/static/style.css">
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="/static/vendor/htmx-2.0.4.min.js" defer></script>
+  <script src="/static/vendor/chart-4.4.7.umd.js" defer></script>
+  <script src="/static/app.js" defer></script>
 </head>
 <body>
   <nav class="sidebar">
@@ -25,192 +28,13 @@ docs:
     <a href="/debug" class="nav-item{{if eq .ActiveNav "debug"}} active{{end}}">Debug</a>
     <a href="/evolution" class="nav-item{{if eq .ActiveNav "evolution"}} active{{end}}">Evolution</a>
     <div class="nav-spacer"></div>
-    <button id="estop-btn" class="estop-btn" onclick="emergencyStop()">Emergency Stop</button>
+    <button id="estop-btn" class="estop-btn" type="button">Emergency Stop</button>
   </nav>
-
   <main class="content">
-    <header class="page-header">
-      <h1>Evolution History</h1>
-      <span class="timestamp">{{.Now}}</span>
-    </header>
-
-    <div class="card-row">
-      <div class="card half">
-        <h2>Failure Breakdown</h2>
-        <div class="chart-wrap">
-          <canvas id="failure-chart"></canvas>
-        </div>
-      </div>
-      <div class="card half">
-        <h2>Recurring Patterns</h2>
-        <div id="patterns-list">
-          <p class="muted">Loading&hellip;</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Self-Improvement Log</h2>
-      <div id="evolution-log" class="event-log">
-        <p class="muted">Loading&hellip;</p>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Recent Telemetry</h2>
-      <div id="telemetry-log" class="event-log">
-        <p class="muted">Loading&hellip;</p>
-      </div>
-    </div>
+    <header class="page-header"><h1>Evolution History</h1><span class="timestamp">{{.Now}}</span></header>
+    <div class="card-row"><div class="card half"><h2>Failure Breakdown</h2><div class="chart-wrap"><canvas id="failure-chart"></canvas></div></div><div class="card half"><h2>Recurring Patterns</h2><div id="patterns-list"><p class="muted">Loading…</p></div></div></div>
+    <div class="card"><h2>Self-Improvement Log</h2><div id="evolution-log" class="event-log"><p class="muted">Loading…</p></div></div>
+    <div class="card"><h2>Recent Telemetry</h2><div id="telemetry-log" class="event-log"><p class="muted">Loading…</p></div></div>
   </main>
-
-  <script src="/static/app.js"></script>
-  <script>
-  (function() {
-    var failureChart = null;
-    var rootStyle = getComputedStyle(document.documentElement);
-
-    function themeVar(name, fallback) {
-      return rootStyle.getPropertyValue(name).trim() || fallback;
-    }
-
-    function loadEvolutionData() {
-      fetch("/api/evolution")
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          renderEvolutions(data.evolutions || []);
-          renderPatterns(data.patterns || []);
-          renderTelemetryLog(data.telemetry || []);
-          renderFailureChart(data.telemetry || []);
-        })
-        .catch(function(err) {
-          console.error("Failed to load evolution data:", err);
-        });
-    }
-
-    function renderEvolutions(evolutions) {
-      var log = document.getElementById("evolution-log");
-      if (evolutions.length === 0) {
-        log.innerHTML = '<p class="muted">No evolution events recorded yet&hellip;</p>';
-        return;
-      }
-      log.innerHTML = "";
-      evolutions.forEach(function(ev) {
-        var entry = document.createElement("div");
-        entry.className = "event-entry evolution";
-        entry.innerHTML =
-          '<span class="event-time">' + (ev.created_at || "").substring(0, 19) + '</span>' +
-          '<span class="event-type">' + esc(ev.classification) + '</span>' +
-          '<span><strong>' + esc(ev.role) + '</strong>: ' + esc(ev.suggestion) + '</span>';
-        log.appendChild(entry);
-      });
-    }
-
-    function renderPatterns(patterns) {
-      var list = document.getElementById("patterns-list");
-      if (patterns.length === 0) {
-        list.innerHTML = '<p class="muted">No recurring patterns detected</p>';
-        return;
-      }
-      list.innerHTML = "";
-      patterns.forEach(function(p) {
-        var item = document.createElement("div");
-        item.className = "pattern-item";
-        item.innerHTML =
-          '<strong>' + esc(p.role) + '</strong> &mdash; ' +
-          '<span class="badge">' + esc(p.category) + '</span> ' +
-          p.count + 'x in ' + esc(p.window);
-        list.appendChild(item);
-      });
-    }
-
-    function renderTelemetryLog(events) {
-      var log = document.getElementById("telemetry-log");
-      if (events.length === 0) {
-        log.innerHTML = '<p class="muted">No telemetry events yet&hellip;</p>';
-        return;
-      }
-      log.innerHTML = "";
-      var recent = events.slice(-30).reverse();
-      recent.forEach(function(evt) {
-        var entry = document.createElement("div");
-        entry.className = "event-entry " + (evt.remedied ? "remedied" : "unremedied");
-        entry.innerHTML =
-          '<span class="event-time">' + (evt.timestamp || "").substring(11, 19) + '</span>' +
-          '<span class="badge">' + esc(evt.category) + '</span>' +
-          '<span><strong>' + esc(evt.role) + '</strong>: ' + esc(truncate(evt.message, 120)) + '</span>' +
-          (evt.remedied ? '<span class="badge success">remedied: ' + esc(evt.action) + '</span>' : '');
-        log.appendChild(entry);
-      });
-    }
-
-    function renderFailureChart(events) {
-      var counts = {};
-      events.forEach(function(evt) {
-        counts[evt.category] = (counts[evt.category] || 0) + 1;
-      });
-
-      var labels = Object.keys(counts);
-      var values = labels.map(function(k) { return counts[k]; });
-      var colors = [
-        themeVar("--danger", "#f43f5e"),
-        themeVar("--primary", "#f97316"),
-        themeVar("--warning", "#eab308"),
-        themeVar("--success", "#22c55e"),
-        themeVar("--accent", "#14b8a6"),
-        themeVar("--violet", "#a78bfa"),
-        "#ec4899",
-        "#71717a"
-      ];
-
-      var ctx = document.getElementById("failure-chart");
-      if (!ctx) return;
-
-      if (failureChart) failureChart.destroy();
-
-      if (labels.length === 0) {
-        ctx.parentElement.innerHTML += '<p class="muted" style="text-align:center">No failures yet</p>';
-        return;
-      }
-
-      failureChart = new Chart(ctx, {
-        type: "doughnut",
-        data: {
-          labels: labels,
-          datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length) }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              position: "right",
-              labels: { color: themeVar("--text", "#f4f1e8") }
-            },
-            tooltip: {
-              backgroundColor: themeVar("--surface-raised", "#23241f"),
-              titleColor: themeVar("--text", "#f4f1e8"),
-              bodyColor: themeVar("--text-muted", "#a7a59a"),
-              borderColor: themeVar("--border", "#3b3c34"),
-              borderWidth: 1
-            }
-          }
-        }
-      });
-    }
-
-    function truncate(s, n) {
-      return s.length > n ? s.substring(0, n) + "…" : s;
-    }
-
-    function esc(str) {
-      var div = document.createElement("div");
-      div.textContent = str || "";
-      return div.innerHTML;
-    }
-
-    loadEvolutionData();
-    setInterval(loadEvolutionData, 30000);
-  })();
-  </script>
 </body>
 </html>

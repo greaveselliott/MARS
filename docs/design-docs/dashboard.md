@@ -2,7 +2,7 @@
 
 **Status:** Draft
 **Date:** 2026-04-11
-**Updated:** 2026-05-20
+**Updated:** 2026-07-12
 **Author:** Agent-assisted
 
 ## Context
@@ -147,11 +147,52 @@ Operators need to pause, restart, scan, stop, and force-run individual roles wit
 **Dashboard (localhost:9090):** Control bar in the sidebar with buttons for pause/resume, restart, stop, scan, and run-role. Repo and role selectors populated from `/api/repos` and `/api/repo-roles`. State updates flow via SSE `status_change` events.
 
 The embedded dashboard and webhook/control server bind explicit loopback
-addresses by default. Direct construction and CLI overrides reject wildcard,
-LAN, DNS hostname, and other non-loopback addresses before bind; operators who
-need remote access must keep MARS on loopback and use a separately authenticated
-gateway or reverse proxy. Browser authentication and request protections remain
-the next F-017 dashboard slice; see AD-309.
+addresses. Direct construction and CLI overrides reject wildcard, LAN, DNS
+hostname, and other non-loopback addresses before bind. AD-310 now places the
+entire dashboard mux, including serve-attached routes, behind the browser
+security gateway described below.
+
+### AD-310: Embedded dashboard uses one fail-closed browser gateway
+
+The shipped embedded dashboard remains a legacy/current local observer surface,
+but it is no longer an anonymous control surface.
+
+- Direct loopback GET/HEAD page/login shells, embedded assets, and a minimal
+  status projection remain available to a local browser. Repos, roles,
+  telemetry, evolution, quality, throughput, orchestration, decisions, and SSE
+  require a session. This trusts the local operator/browser; it does not
+  contain arbitrary code already running as the same OS user.
+- Every mutation is disabled until environment-only
+  `MARS_DASHBOARD_CONTROL_SECRET` contains at least 32 bytes and a successful
+  constant-time login creates an opaque in-memory session plus session-bound
+  CSRF token. Sessions have a 30-minute idle limit, eight-hour absolute limit,
+  128-session cap, rotation on login, logout invalidation, and restart
+  invalidation. The login redirect bootstraps CSRF through authenticated
+  same-origin `GET /api/session` without a second secret entry or URL/browser
+  storage persistence. Logout, expiry, and both HTTP/terminal warm restart
+  terminate session event streams.
+- The full mux is wrapped once. Exact loopback Host, exact same-origin Origin,
+  session, CSRF, POST method, content type, body shape/size, value bounds, and
+  rate policy pass before a callback. Missing policy returns an actionable 503;
+  rejected requests do not reach runtime callbacks.
+- Optional remote browsers get only a data-free login shell and its minimal
+  assets anonymously. They keep the MARS listener on loopback and require one
+  exact HTTPS reverse-proxy origin from `--dashboard-trusted-origin` (CLI takes
+  precedence over `MARS_DASHBOARD_TRUSTED_ORIGIN`) plus an authenticated Secure
+  cookie. Forwarded authority, wildcard/suffix matching, and origin URL
+  components are never trusted.
+- Browser data is bounded and redacted. JavaScript builds dynamic content with
+  `createElement`, `textContent`, and `replaceChildren`; templates contain no
+  inline script or event handler and the CSP permits neither `unsafe-inline`
+  nor `unsafe-eval`.
+- htmx 2.0.4 and Chart.js 4.4.7 are embedded. Exact immutable sources,
+  committed-byte SHA-256 hashes, htmx's Zero-Clause BSD license, and Chart.js's
+  MIT license live in
+  `internal/dashboard/static/vendor/ASSETS.md`; runtime CDN access is removed.
+
+This decision implements the embedded-dashboard F-010-S024 slice only. The
+future TanStack gateway/session/storage contract in F-010-S012 and MH-053
+remains planned.
 
 **API endpoints:**
 

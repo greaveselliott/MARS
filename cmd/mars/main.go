@@ -4299,6 +4299,7 @@ func serveCmd() *cobra.Command {
 		debug           bool
 		logFile         string
 		codeIntelFlag   string
+		dashboardOrigin string
 	)
 
 	cmd := &cobra.Command{
@@ -4336,6 +4337,10 @@ func serveCmd() *cobra.Command {
 				return err
 			}
 			dashboardAddr := fmt.Sprintf("127.0.0.1:%d", cfg.DashboardPort)
+			trustedOrigin := strings.TrimSpace(dashboardOrigin)
+			if trustedOrigin == "" {
+				trustedOrigin = strings.TrimSpace(config.Env("MARS_DASHBOARD_TRUSTED_ORIGIN"))
+			}
 
 			display, err := newRuntimeDisplay("serve", logFile, debug, cmd.ErrOrStderr(), cmd.ErrOrStderr(), nil, ui.DashboardOptions{
 				Title:        "MARS",
@@ -4358,6 +4363,8 @@ func serveCmd() *cobra.Command {
 				ModelsDir:              cfg.ModelsDir,
 				BinDir:                 cfg.BinDir,
 				DashboardAddr:          dashboardAddr,
+				DashboardControlSecret: config.Env("MARS_DASHBOARD_CONTROL_SECRET"),
+				DashboardTrustedOrigin: trustedOrigin,
 				PerformanceProfile:     cfg.PerformanceProfile,
 				InferenceTuning:        inferenceTuningFromConfig(cfg),
 				RequireModelPreflight:  true,
@@ -4406,6 +4413,7 @@ func serveCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&debug, "debug", false, "Stream verbose trace and logs inline instead of using the TTY dashboard")
 	cmd.Flags().StringVar(&logFile, "log-file", "", "Write verbose command logs to this file (default ~/.mars/traces/logs/<timestamp>-serve.log)")
 	cmd.Flags().StringVar(&codeIntelFlag, "code-intel", "", "Enable automatic code graph context and loop maintenance: true or false (default from config/env)")
+	cmd.Flags().StringVar(&dashboardOrigin, "dashboard-trusted-origin", "", "Exact HTTPS reverse-proxy origin for authenticated dashboard access (overrides MARS_DASHBOARD_TRUSTED_ORIGIN; listener stays loopback-only)")
 
 	return cmd
 }
@@ -4672,6 +4680,7 @@ func startCmd() *cobra.Command {
 		modelEndpoint     string
 		webhookAddrFlag   string
 		dashboardAddrFlag string
+		dashboardOrigin   string
 		remote            string
 		branch            string
 		webhookActorIDs   []int64
@@ -4781,6 +4790,10 @@ ambiguous handoffs.`,
 			if dashboardAddr == "" {
 				dashboardAddr = fmt.Sprintf("127.0.0.1:%d", cfg.DashboardPort)
 			}
+			trustedOrigin := strings.TrimSpace(dashboardOrigin)
+			if trustedOrigin == "" {
+				trustedOrigin = strings.TrimSpace(config.Env("MARS_DASHBOARD_TRUSTED_ORIGIN"))
+			}
 			actors, err := resolveWebhookActorIDs(webhookActorIDs, cfg.WebhookAllowedActorIDs)
 			if err != nil {
 				return err
@@ -4804,6 +4817,8 @@ ambiguous handoffs.`,
 				ModelsDir:              cfg.ModelsDir,
 				BinDir:                 cfg.BinDir,
 				DashboardAddr:          dashboardAddr,
+				DashboardControlSecret: config.Env("MARS_DASHBOARD_CONTROL_SECRET"),
+				DashboardTrustedOrigin: trustedOrigin,
 				RepoScope:              absPath,
 				PerformanceProfile:     cfg.PerformanceProfile,
 				InferenceTuning:        inferenceTuningFromConfig(cfg),
@@ -4912,6 +4927,7 @@ ambiguous handoffs.`,
 	cmd.Flags().StringVar(&modelEndpoint, "model-endpoint", "", "Optional real OpenAI-compatible model endpoint override; skips local llama-server startup. Fake or scripted endpoints are not live validation evidence")
 	cmd.Flags().StringVar(&webhookAddrFlag, "addr", "", "Loopback webhook/control listen address (default 127.0.0.1:<webhook_port>; scoped start falls back to a loopback ephemeral port on conflict)")
 	cmd.Flags().StringVar(&dashboardAddrFlag, "dashboard-addr", "", "Loopback dashboard listen address (default 127.0.0.1:<dashboard_port>; scoped start falls back to a loopback ephemeral port on conflict)")
+	cmd.Flags().StringVar(&dashboardOrigin, "dashboard-trusted-origin", "", "Exact HTTPS reverse-proxy origin for authenticated dashboard access (overrides MARS_DASHBOARD_TRUSTED_ORIGIN; listener stays loopback-only)")
 	cmd.Flags().StringVar(&remote, "remote", "", "Exact GitHub owner/repo allowed for webhooks; empty preserves an existing registration")
 	cmd.Flags().StringVar(&branch, "branch", "", "Exact case-sensitive branch allowed for webhooks; empty preserves an existing registration or defaults new registrations to main")
 	cmd.Flags().Int64SliceVar(&webhookActorIDs, "webhook-actor-id", nil, "Trusted numeric GitHub actor ID; repeat for multiple actors (overrides env and YAML)")

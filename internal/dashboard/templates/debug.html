@@ -5,14 +5,16 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/dashboard.md
 - docs/features/F-010-dashboard-control-plane.md
+- docs/features/F-017-open-source-publication.md
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false,"defaultSwapStyle":"textContent"}'>
   <title>{{.Title}} — MARS</title>
   <link rel="stylesheet" href="/static/style.css">
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="/static/vendor/htmx-2.0.4.min.js" defer></script>
 </head>
 <body>
   <nav class="sidebar">
@@ -24,7 +26,7 @@ docs:
     <a href="/debug" class="nav-item{{if eq .ActiveNav "debug"}} active{{end}}">Debug</a>
     <a href="/evolution" class="nav-item{{if eq .ActiveNav "evolution"}} active{{end}}">Evolution</a>
     <div class="nav-spacer"></div>
-    <button id="estop-btn" class="estop-btn" onclick="emergencyStop()">Emergency Stop</button>
+    <button id="estop-btn" class="estop-btn" type="button">Emergency Stop</button>
   </nav>
 
   <main class="content">
@@ -39,6 +41,6 @@ docs:
     </div>
   </main>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js" defer></script>
 </body>
 </html>

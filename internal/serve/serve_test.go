@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -36,6 +37,17 @@ import (
 	ticketstate "github.com/greaveselliott/mars/internal/tickets"
 	"github.com/stretchr/testify/require"
 )
+
+type flushSignalWriter struct {
+	header  http.Header
+	flushed chan struct{}
+	once    sync.Once
+}
+
+func (w *flushSignalWriter) Header() http.Header         { return w.header }
+func (w *flushSignalWriter) WriteHeader(int)             {}
+func (w *flushSignalWriter) Write(p []byte) (int, error) { return len(p), nil }
+func (w *flushSignalWriter) Flush()                      { w.once.Do(func() { close(w.flushed) }) }
 
 func testDBPath(t *testing.T) string {
 	t.Helper()
@@ -419,12 +431,14 @@ func TestServer_startUsesEphemeralHTTPFallbackWhenDefaultPortsBusy(t *testing.T)
 }
 
 func TestServer_dashboardStopEndpointStopsStart(t *testing.T) {
+	const controlSecret = "0123456789abcdef0123456789abcdef"
 	webhookAddr := freeTCPAddr(t)
 	dashboardAddr := freeTCPAddr(t)
 	srv, err := New(Config{
-		WebhookAddr:   webhookAddr,
-		DashboardAddr: dashboardAddr,
-		DBPath:        testDBPath(t),
+		WebhookAddr:            webhookAddr,
+		DashboardAddr:          dashboardAddr,
+		DashboardControlSecret: controlSecret,
+		DBPath:                 testDBPath(t),
 	})
 	if err != nil {
 		t.Fatalf("New returned error: %v", err)
@@ -443,7 +457,28 @@ func TestServer_dashboardStopEndpointStopsStart(t *testing.T) {
 
 	waitForHTTPStatus(t, "http://"+dashboardAddr+"/api/status", http.StatusOK)
 
-	resp, err := http.Post("http://"+dashboardAddr+"/api/stop", "application/json", nil)
+	origin := "http://" + dashboardAddr
+	loginReq, _ := http.NewRequest(http.MethodPost, origin+"/api/login", strings.NewReader(`{"secret":"`+controlSecret+`"}`))
+	loginReq.Header.Set("Content-Type", "application/json")
+	loginReq.Header.Set("Origin", origin)
+	loginResp, err := http.DefaultClient.Do(loginReq)
+	if err != nil {
+		t.Fatalf("POST /api/login: %v", err)
+	}
+	var login struct {
+		CSRF string `json:"csrf_token"`
+	}
+	if err := json.NewDecoder(loginResp.Body).Decode(&login); err != nil {
+		t.Fatalf("decode login: %v", err)
+	}
+	_ = loginResp.Body.Close()
+	stopReq, _ := http.NewRequest(http.MethodPost, origin+"/api/stop", nil)
+	stopReq.Header.Set("Origin", origin)
+	stopReq.Header.Set("X-MARS-CSRF-Token", login.CSRF)
+	for _, cookie := range loginResp.Cookies() {
+		stopReq.AddCookie(cookie)
+	}
+	resp, err := http.DefaultClient.Do(stopReq)
 	if err != nil {
 		t.Fatalf("POST /api/stop: %v", err)
 	}
@@ -459,6 +494,57 @@ func TestServer_dashboardStopEndpointStopsStart(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("dashboard stop did not end Start within 5 seconds")
+	}
+}
+
+func TestServerDirectRestartInvalidatesDashboardSessionAndSSE(t *testing.T) {
+	const controlSecret = "0123456789abcdef0123456789abcdef"
+	srv, err := New(Config{
+		WebhookAddr: "127.0.0.1:0", DashboardAddr: "127.0.0.1:0",
+		DashboardControlSecret: controlSecret, DBPath: testDBPath(t),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv.startCtx = context.Background()
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+	handler := srv.dash.Handler()
+	login := httptest.NewRequest(http.MethodPost, "http://127.0.0.1:9090/api/login", strings.NewReader(`{"secret":"`+controlSecret+`"}`))
+	login.Host = "127.0.0.1:9090"
+	login.Header.Set("Origin", "http://127.0.0.1:9090")
+	login.Header.Set("Content-Type", "application/json")
+	loginRec := httptest.NewRecorder()
+	handler.ServeHTTP(loginRec, login)
+	if loginRec.Code != http.StatusOK || len(loginRec.Result().Cookies()) != 1 {
+		t.Fatalf("login status=%d cookies=%d", loginRec.Code, len(loginRec.Result().Cookies()))
+	}
+	cookie := loginRec.Result().Cookies()[0]
+	eventReq := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:9090/api/events", nil)
+	eventReq.Host = "127.0.0.1:9090"
+	eventReq.AddCookie(cookie)
+	w := &flushSignalWriter{header: make(http.Header), flushed: make(chan struct{})}
+	done := make(chan struct{})
+	go func() { handler.ServeHTTP(w, eventReq); close(done) }()
+	select {
+	case <-w.flushed:
+	case <-time.After(time.Second):
+		t.Fatal("SSE did not start")
+	}
+	if err := srv.Restart(context.Background()); err != nil {
+		t.Fatalf("direct Restart: %v", err)
+	}
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("direct Restart did not close SSE")
+	}
+	read := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:9090/api/repos", nil)
+	read.Host = "127.0.0.1:9090"
+	read.AddCookie(cookie)
+	readRec := httptest.NewRecorder()
+	handler.ServeHTTP(readRec, read)
+	if readRec.Code != http.StatusUnauthorized {
+		t.Fatalf("old session after direct Restart status=%d", readRec.Code)
 	}
 }
 

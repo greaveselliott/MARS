@@ -297,6 +297,9 @@ mars serve --addr :9091 --concurrency 2</code></pre>
             <code>mars start</code> and <code>mars serve</code> expose local
             dashboard and control surfaces. The dashboard shows repositories,
             queue state, active jobs, traces, controls, and health information.
+            Observation is available on loopback, but every browser mutation
+            requires a configured <code>MARS_DASHBOARD_CONTROL_SECRET</code> and
+            authenticated session with exact Host/Origin and CSRF.
           </p>
           <div class="callout">
             <strong>Two local URLs:</strong>
@@ -318,9 +321,9 @@ mars serve --addr :9091 --concurrency 2</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Pause or resume</h3>
-              <pre><code>curl -X POST http://localhost:9090/api/pause
-curl -X POST http://localhost:9090/api/resume</code></pre>
-              <p>The <a href="dashboard-api-reference.html">Dashboard API Reference</a> lists all control endpoints.</p>
+              <p>Set the environment-only control secret before startup, log
+              in through the embedded dashboard, then use Pause or Resume.
+              Anonymous curl mutations are rejected.</p>
             </article>
           </div>
         </section>
