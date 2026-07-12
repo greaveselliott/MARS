@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.46] - 2026-07-12
+<!-- mars-release: version=0.68.46 commit=23efb1351a5b -->
+
+### Impact
+- **security:** Operators see improved reliability because harden loopback webhook ingress (T-057).
+
+### Why
+- **security:** This matters because harden loopback webhook ingress (T-057) closes a failure mode or degraded path.
+
+### What Changed
+- **security:** Changed harden loopback webhook ingress (T-057) (23efb13).
+
+### Fixes
+- **security:** Harden loopback webhook ingress (T-057) (23efb13)
+
+### Delivery Evidence
+- Enabler work: T-057: Default control listeners to loopback and fail closed on untrusted GitHub webhooks
+
 ## [0.68.45] - 2026-07-12
 <!-- mars-release: version=0.68.45 commit=d7d8cca8d316 -->
 
