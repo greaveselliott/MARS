@@ -52,11 +52,12 @@ does not restore confidentiality.
 
 ## Scenario Schedule
 
-1. F-017-S002 - Runtime and source operations are secure by default or explicitly gated.
-2. F-017-S003 - Public release/install/update works anonymously with signed provenance.
-3. F-017-S004 - External contributions use fork-safe least-privilege CI and protected refs.
-4. F-017-S001 - Ownership, history, privacy, provenance, and GitHub surfaces are approved.
-5. F-017-S005 - Private rehearsal, logged-out cutover, rollback, and canary pass.
+1. F-017-S001 (initial slice) - Inventory publication surfaces and establish the owner-controlled restricted-audit contract without making legal conclusions.
+2. F-017-S002 - Runtime and source operations are secure by default or explicitly gated.
+3. F-017-S003 - Public release/install/update works anonymously with signed provenance.
+4. F-017-S004 - External contributions use fork-safe least-privilege CI and protected refs.
+5. F-017-S001 (final disposition) - Complete restricted scans, privacy/IP/provenance review, publication authority, name clearance, and the audited-history or clean-snapshot decision.
+6. F-017-S005 - Private rehearsal, logged-out cutover, rollback, and canary pass.
 
 ## Scenarios
 
@@ -141,7 +142,7 @@ None.
 
 ## Evidence
 
-- F-017-S001: OSS-00 is the current read-only inventory slice. It may establish surface completeness, access gaps, and an offline restricted-evidence scan contract, but the scenario remains pending pinned scans, manual privacy/IP review, provenance disposition, publication-authority attestation, and name clearance.
+- F-017-S001: T-056 passed Engineer, QA, Security, Dogfood, and Orchestrator review for the read-only local Git and redacted GitHub surface inventory, explicit inaccessible/not-attempted gaps, and isolated owner-controlled offline restricted-evidence contract. The technical history recommendation remains `undecided`. Pinned scans, manual privacy/IP/provenance review, inaccessible-surface collection, publication-authority attestation, and name clearance remain pending, so the scenario does not pass.
 - F-017-S002: T-055 technically completes the vulnerability-baseline enabler: Go 1.26.5, the Go-1.22-compatible `x/sys` v0.30.0 disposition, fail-closed scanner regressions with pinned v1.6.0 install remediation, and a v1.6.0 scan with zero reachable findings passed Engineer, QA, Security, and Dogfood evidence. The scenario remains incomplete pending the later runtime P0 tickets.
 - F-017-S003: Pending deterministic-build, signature, anonymous install/update, negative artifact, bridge, and rollback evidence.
 - F-017-S004: Pending community/CI checks and disposable public hostile-fork rehearsal.

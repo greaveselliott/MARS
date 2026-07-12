@@ -6,14 +6,19 @@ complexity: medium
 work_type: research
 bdd_scenarios: ["F-017-S001"]
 end_to_end_evidence: not_applicable
-evidence_links: []
-verified_by: "TBD"
+evidence_links:
+  - docs/validation/reports/2026-07-12-open-source-publication-surface-inventory.md
+  - "PASS: QA completeness, schedule, snapshot, gap-binding, and forbidden-content review"
+  - "PASS: Security restricted-environment, provenance, hostile-archive, evidence-boundary, and no-go review"
+  - "PASS: full uncached Go suite, DocSync 332/0, docs consistency, diff check, and leak-pattern sweep"
+  - "PASS: Dogfood classified AD-284 and installed-binary replay not applicable to the docs-only research diff"
+verified_by: "Engineer; QA; Security; Dogfood; foundation-maintainer Orchestrator"
 owner: "engineer"
-last_attempt: "TBD"
+last_attempt: "2026-07-12 bounded inventory and accepted-review corrections passed Engineer, QA, Security, Dogfood, and Orchestrator validation."
 blocker: "none"
 blocked_by: []
 trace_id: "not_applicable"
-next_action: "Collect a read-only inventory, record access gaps and offline scan prerequisites, and commit only a redacted publication-surface report."
+next_action: "Complete; the repository owner must provision the restricted audit and appoint its Security operator while owner/legal review remains the F-017-S001 blocker."
 dedupe_key: "open-source:publication-history-github-inventory"
 metadata:
   classification: "evidence-only,mixed-unclear"
@@ -60,7 +65,7 @@ Raw command output, GitHub bodies, attachment names/content, author/email invent
 
 - Start and end main are clean and equal to freshly fetched origin/main except for the scoped report/plan/feature/ticket edits.
 - Local Git integrity passes; reachable, advertised, local-only, and unreachable object surfaces are distinguished.
-- Every applicable GitHub surface is inventoried, absent, inaccessible with an exact permission blocker, or routed to the later restricted scan.
+- Every applicable GitHub surface is inventoried, absent, or recorded as ambiguous/inaccessible with the exact safe observation and bound to an owner-controlled restricted-audit input, owner, and next action; ambiguity does not block this bounded inventory or imply a clean surface.
 - Tool readiness records exact pins and safe offline flags without using latest, provider verification, or SaaS uploads.
 - The report contains no token values, authorization headers, authenticated URLs, personal email list, raw private content, candidate fragments, or external evidence-root path.
 - The report states that pinned scans, manual privacy/IP/provenance review, legal authority, and name clearance remain pending.
@@ -71,4 +76,21 @@ Raw command output, GitHub bodies, attachment names/content, author/email invent
 
 ## Stop Conditions
 
-Stop and record a partial or blocked report if a candidate credential appears, raw output would enter an agent transcript, a required API surface is inaccessible, a command would mutate Git or GitHub state, a tool is unpinned, ownership or trademark judgment is required, or local main ceases to match origin/main.
+Stop and record a partial or blocked report if a candidate credential appears, raw output would enter an agent transcript, an ambiguous/inaccessible surface cannot be safely bound to the owner-controlled restricted audit, a command would mutate Git or GitHub state, a tool is unpinned, an agent would make an ownership or trademark judgment, or local main ceases to match origin/main. An inaccessible API surface alone may complete this bounded inventory only when the report records it as unknown and assigns its restricted-audit input, owner, and next action.
+
+## Engineer Evidence
+
+- PASS: local `HEAD`, fetched `origin/main`, and advertised `main` matched at collection time.
+- PASS: local Git integrity and ref/object/category counts were projected without paths, bodies, emails, or candidate values.
+- PASS: read-only GitHub queries emitted only aggregate counts and non-sensitive status fields; inaccessible and ambiguous surfaces are recorded as unknown rather than inferred clean.
+- PASS: no scanner, GitHub mutation, ref mutation, release operation, credential operation, or public action ran.
+- PASS: the report defines the restricted evidence boundary and pins Gitleaks v8.30.1 and TruffleHog v3.95.9 without installing or executing them.
+- PASS: every ambiguous/inaccessible outcome is treated as unknown and assigned to the repository owner, appointed Security audit operator, and owner/legal disposition path; T-056 itself has no blocker because its bounded inventory objective is fulfilled, while F-017-S001 remains blocked.
+- PASS: QA and Security independently blocked the first draft, then passed the
+  corrected schedule, snapshot attribution, gap binding, isolated scanner
+  execution, trusted provenance, hostile-archive, and no-go contracts.
+- PASS: the Orchestrator ran the full uncached Go suite, DocSync, docs
+  consistency, forbidden-content pattern checks, and diff checks.
+- PASS: Dogfood classified AD-284 and installed-binary clean-project replay as
+  not applicable to this docs-only research/evidence diff.
+- NOT APPLICABLE: AD-284 live replay because this ticket changes research evidence and planning only.
