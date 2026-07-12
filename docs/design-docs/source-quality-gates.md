@@ -67,10 +67,14 @@ tool calls.
   and is part of `make check`. Full fuzzing stays local and manual
   (`go test <pkg> -fuzz <target> -fuzztime 5m`). Crash corpus entries are
   committed under `testdata/fuzz/` as permanent regression seeds.
-- `make vuln` runs `govulncheck ./...` and is part of `make check`. A missing
-  `govulncheck` binary degrades with the exact install command instead of
-  failing cryptically, so offline or fresh environments still pass the rest of
-  the gate.
+- `make vuln` runs `govulncheck ./...` and is part of `make check`. The scanner
+  path is injectable through `GOVULNCHECK`, while the default resolves to the
+  configured Go install bin (`GOBIN`, or `GOPATH/bin` when unset), matching
+  where `go install` writes the tool. A missing scanner fails closed with the
+  pinned remediation
+  `go install golang.org/x/vuln/cmd/govulncheck@v1.6.0`. Package-load,
+  vulnerability-database, and reachable-vulnerability failures propagate the
+  scanner's non-zero result instead of being treated as optional evidence.
 
 ## Discoveries
 
@@ -84,6 +88,16 @@ tool calls.
   were fixed upstream in go1.26.3/go1.26.4, so the bounded fix was pinning
   `toolchain go1.26.4` in `go.mod`; after the bump the module scans clean (one
   unreachable vulnerability remains in a required module).
+- **2026-07-12 — publication readiness requires a fail-closed scanner:** the
+  release toolchain moved to Go 1.26.5 for GO-2026-5856. `x/sys` v0.44.0
+  requires Go 1.25 and would break MARS's Go 1.22.4 minimum, so the dependency
+  moved to v0.30.0, the newest release whose module still supports Go 1.22.
+  The remaining published `x/sys` finding affects Windows, while MARS supports
+  macOS and Linux; it remains explicitly dispositioned rather than weakening
+  the minimum-version contract. T-055 also made a missing or failing
+  `govulncheck` invocation block `make vuln` with a pinned recovery command.
+  Offline environments must install the pinned scanner before making a passing
+  source-security claim.
 - **2026-06-11 — Seeding floors from one run is boundary-fragile:** two
   coverage runs on the same tree differed by up to 3 points for
   `cmd/mars` (test additions between runs) and packages landing on

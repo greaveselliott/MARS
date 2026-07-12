@@ -5,6 +5,7 @@ docs:
 - docs/design-docs/delivery-operating-model.md
 - docs/design-docs/source-quality-gates.md
 - docs/features/F-001-delivery-operating-model.md
+- docs/features/F-017-open-source-publication.md
 */
 package docsconsistency
 
@@ -122,6 +123,67 @@ example.com/mod/internal/zero 0
 	}
 	if !strings.Contains(out, "reports [no test files] but its floor is 30") {
 		t.Fatalf("missing deleted-tests failure message:\n%s", out)
+	}
+}
+
+func TestMakeVulnFailsClosedWhenScannerIsMissing(t *testing.T) {
+	root := repoRoot(t)
+	missing := filepath.Join(t.TempDir(), "missing-govulncheck")
+	cmd := exec.Command("make", "vuln", "GOVULNCHECK="+missing)
+	cmd.Dir = root
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected missing scanner to fail closed:\n%s", out)
+	}
+	text := string(out)
+	if !strings.Contains(text, "vulnerability scanning is required") {
+		t.Fatalf("missing fail-closed explanation:\n%s", text)
+	}
+	if !strings.Contains(text, "go install golang.org/x/vuln/cmd/govulncheck@v1.6.0") {
+		t.Fatalf("missing pinned remediation command:\n%s", text)
+	}
+}
+
+func TestMakeVulnPropagatesScannerFailure(t *testing.T) {
+	root := repoRoot(t)
+	dir := t.TempDir()
+	scanner := filepath.Join(dir, "govulncheck")
+	const script = "#!/bin/sh\necho scanner-database-failure >&2\nexit 23\n"
+	if err := os.WriteFile(scanner, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command("make", "vuln", "GOVULNCHECK="+scanner)
+	cmd.Dir = root
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected scanner failure to propagate:\n%s", out)
+	}
+	if !strings.Contains(string(out), "scanner-database-failure") {
+		t.Fatalf("scanner failure output was not preserved:\n%s", out)
+	}
+}
+
+func TestMakeVulnUsesConfiguredGoBinByDefault(t *testing.T) {
+	root := repoRoot(t)
+	goBin := t.TempDir()
+	scanner := filepath.Join(goBin, "govulncheck")
+	const script = "#!/bin/sh\necho configured-gobin-scanner\n"
+	if err := os.WriteFile(scanner, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command("make", "vuln", "GOBIN="+goBin)
+	cmd.Dir = root
+	for _, entry := range os.Environ() {
+		if !strings.HasPrefix(entry, "GOVULNCHECK=") {
+			cmd.Env = append(cmd.Env, entry)
+		}
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("expected configured GOBIN scanner to run: %v\n%s", err, out)
+	}
+	if !strings.Contains(string(out), "configured-gobin-scanner") {
+		t.Fatalf("make vuln did not select GOBIN/govulncheck:\n%s", out)
 	}
 }
 

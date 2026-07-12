@@ -142,7 +142,7 @@ None.
 ## Evidence
 
 - F-017-S001: Pending legal attestation, all-ref/GitHub-surface audit report, provenance record, and disposition decision.
-- F-017-S002: T-055 covers the current vulnerability-baseline enabler; runtime ticket tests, Security review, and AD-284 installed-binary validation remain pending.
+- F-017-S002: T-055 technically completes the vulnerability-baseline enabler: Go 1.26.5, the Go-1.22-compatible `x/sys` v0.30.0 disposition, fail-closed scanner regressions with pinned v1.6.0 install remediation, and a v1.6.0 scan with zero reachable findings passed Engineer, QA, Security, and Dogfood evidence. The scenario remains incomplete pending the later runtime P0 tickets.
 - F-017-S003: Pending deterministic-build, signature, anonymous install/update, negative artifact, bridge, and rollback evidence.
 - F-017-S004: Pending community/CI checks and disposable public hostile-fork rehearsal.
 - F-017-S005: Pending private rehearsal, role sign-offs, logged-out smoke, rollback record, and 48-hour canary report.

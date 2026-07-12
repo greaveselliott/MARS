@@ -6,7 +6,9 @@ GOPATH := $(shell $(GO) env GOPATH)
 INSTALL_BIN := $(if $(GOBIN),$(GOBIN),$(GOPATH)/bin)
 
 FUZZTIME ?= 10s
-GOPATH_BIN := $(shell $(GO) env GOPATH)/bin
+GOVULNCHECK_VERSION := v1.6.0
+GOVULNCHECK ?= $(INSTALL_BIN)/govulncheck
+export GOVULNCHECK
 
 .PHONY: build install update-tool test vet lint check coverage-check vuln fuzz-smoke dogfood clean
 
@@ -50,14 +52,12 @@ coverage-check:
 	scripts/check-coverage.sh
 
 vuln:
-	@if command -v govulncheck >/dev/null 2>&1; then \
-		govulncheck ./...; \
-	elif [ -x "$(GOPATH_BIN)/govulncheck" ]; then \
-		"$(GOPATH_BIN)/govulncheck" ./...; \
-	else \
-		echo "govulncheck not found; skipping vulnerability scan."; \
-		echo "Fix: go install golang.org/x/vuln/cmd/govulncheck@latest"; \
-	fi
+	@if ! scanner=$$(command -v "$${GOVULNCHECK}" 2>/dev/null); then \
+		echo "govulncheck not found at '$${GOVULNCHECK}'; vulnerability scanning is required." >&2; \
+		echo "Fix: go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)" >&2; \
+		exit 1; \
+	fi; \
+	"$$scanner" ./...
 
 fuzz-smoke:
 	$(GO) test ./internal/agent -run '^$$' -fuzz FuzzToolCallsFromAssistantMessage -fuzztime $(FUZZTIME)

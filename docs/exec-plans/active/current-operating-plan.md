@@ -71,7 +71,7 @@ not yet ticket IDs.
 
 | Order | Planned Slice | Scenario | State | Exit Evidence |
 | ---: | --- | --- | --- | --- |
-| 1 | Vulnerability and baseline gate | F-017-S002 | T-055 created through `ticket_create`; backlog | Non-vulnerable toolchain; fail-closed scan; test/race/vet/fuzz/vuln evidence |
+| 1 | Vulnerability and baseline gate | F-017-S002 | T-055 technically complete; private release cycle pending | Non-vulnerable toolchain; fail-closed scan; test/race/vet/fuzz/vuln evidence |
 | 2 | Release artifact integrity | F-017-S003 | Planned | Deterministic signed archive and negative verification tests |
 | 3 | Dashboard, webhook, and HTTP security | F-017-S002 | Planned | Auth/origin/CSRF/XSS/HMAC/allowlist/loopback tests |
 | 4 | Filesystem and secret containment | F-017-S002 | Planned | Descriptor-safe hostile-repository and staged-secret tests |
@@ -137,6 +137,15 @@ Primary Status by itself.
 - No eligible ticket was in progress when this plan began.
 - Go 1.26.4 has a reachable GO-2026-5856 finding; Go 1.26.5 is the fixed baseline.
 - On 2026-07-12, `make vuln` skipped when `govulncheck` was missing.
+- On 2026-07-12, T-055 declared Go 1.26.5, updated `x/sys` to the newest release compatible
+  with the Go 1.22.4 minimum, records the unsupported-Windows disposition, and
+  makes the `govulncheck` gate fail closed with pinned v1.6.0 installation
+  remediation. Engineer, QA, and Security recorded a v1.6.0 scan with zero
+  reachable findings; QA and Security passed the corrected diff; full uncached
+  tests, race, vet, focused fuzz/DocSync checks, and Dogfood candidate smoke
+  passed. AD-284 clean-project replay is not applicable to this build-gate-only
+  ticket. The private semantic/version/tag/asset cycle remains before the next
+  implementation ticket.
 - Legal ownership and trademark clearance remain unrecorded.
 - Legal review may require removing material or publishing a clean snapshot.
 - Public cutover is irreversible in confidentiality terms.
