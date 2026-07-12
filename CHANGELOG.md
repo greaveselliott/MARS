@@ -2,6 +2,24 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.44] - 2026-07-12
+<!-- mars-release: version=0.68.44 commit=28254c965685 -->
+
+### Impact
+- **audit:** Operators and future agents get clearer guidance because record publication surface inventory (T-056).
+
+### Why
+- **audit:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **audit:** Changed record publication surface inventory (T-056) (28254c9).
+
+### Documentation
+- **audit:** Record publication surface inventory (T-056) (28254c9)
+
+### Delivery Evidence
+- Enabler work: T-056: Inventory publication history and GitHub surfaces without exposing restricted evidence
+
 ## [0.68.43] - 2026-07-12
 <!-- mars-release: version=0.68.43 commit=fc806705dfe5 -->
 
