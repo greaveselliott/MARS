@@ -2,6 +2,21 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.43] - 2026-07-12
+<!-- mars-release: version=0.68.43 commit=fc806705dfe5 -->
+
+### Impact
+- **plan:** Operators and future agents get clearer guidance because schedule publication surface inventory (T-056).
+
+### Why
+- **plan:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **plan:** Changed schedule publication surface inventory (T-056) (fc80670).
+
+### Documentation
+- **plan:** Schedule publication surface inventory (T-056) (fc80670)
+
 ## [0.68.42] - 2026-07-12
 <!-- mars-release: version=0.68.42 commit=9c7db7dcc94c -->
 
