@@ -2,6 +2,29 @@
 
 Patch notes are generated with `mars release notes` from semantic commits on `main`.
 
+## [0.68.49] - 2026-07-12
+<!-- mars-release: version=0.68.49 commit=ad8d9c158a42 -->
+
+### Impact
+- **validation:** Operators and future agents get clearer guidance because record T-058 installed security evidence.
+
+### Why
+- **validation:** This matters because agents and maintainers depend on repo-owned docs to preserve behavior and intent.
+
+### What Changed
+- **validation:** Changed record T-058 installed security evidence (ad8d9c1).
+
+### Documentation
+- **validation:** Record T-058 installed security evidence (ad8d9c1)
+
+### Validation Status
+- This is a private supporting evidence release. QA, Security, the mechanical
+  gates, private v0.68.48 asset verification, and the installed clean-target
+  HTTP/SQLite dashboard security matrix pass. T-058 and F-010-S024 remain
+  incomplete until a real browser proves hostile strings inert and observes
+  outbound-disabled rendering with zero external requests. F-017-S002 and the
+  primary open-source publication outcome remain independently blocked.
+
 ## [0.68.48] - 2026-07-12
 <!-- mars-release: version=0.68.48 commit=0bd72b1332ef -->
 
