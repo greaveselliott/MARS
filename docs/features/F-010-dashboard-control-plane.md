@@ -38,6 +38,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 21. F-010-S021 - GitHub-derived DORA metrics are defined from configured deployment workflows and show typed unavailable states.
 22. F-010-S022 - Legacy dashboard migration preserves operator clarity while the TanStack control plane rolls out.
 23. F-010-S023 - Control and dashboard listeners default to loopback and reject non-loopback exposure until the authenticated remote gateway lands.
+24. F-010-S024 - The shipped embedded dashboard is offline-capable, injection-safe, and fail-closed for browser control mutations.
 
 ## Scenarios
 
@@ -267,6 +268,62 @@ actionable authenticated-gateway guidance
 And local health and control operation remain available when optional GitHub
 webhook integration is disabled
 
+### F-010-S024: Embedded Dashboard Browser And Control Security
+
+Given the shipped embedded dashboard listens only on loopback
+When a direct loopback operator opens pages, read APIs, static assets, or the
+bounded redacted event stream without dashboard control credentials
+Then the observer surface remains available offline
+And every HTTP mutation is disabled with an actionable response
+And no response exposes raw secret-bearing errors, traces, tool content, or
+unnecessary absolute paths
+
+Given a dashboard control secret of at least 32 bytes is supplied only through
+the supported environment input
+When the operator logs in through an exact allowed Host
+Then constant-time verification creates an opaque bounded in-memory session
+And the session rotates on login, expires on idle and absolute limits, is
+invalidated by logout or restart, and is carried only by a host-only HttpOnly
+SameSite=Strict cookie
+And no default, shared, CLI, URL, YAML, logged, traced, or rendered secret
+fallback exists
+
+Given an authenticated dashboard session
+When pause, resume, restart, stop, scan, run-role, emergency-stop, or logout is
+requested
+Then the method, content type, bounded body, exact Host and same-origin Origin,
+session-bound CSRF token, and rate limit all pass before any callback or queue
+mutation
+And a missing, invalid, expired, cross-session, cross-origin, oversized,
+malformed, unsupported-method, or rate-limited request changes no runtime,
+queue, repository, or filesystem state
+
+Given an operator explicitly configures an exact trusted HTTPS reverse-proxy
+origin while the MARS listener remains loopback-only
+When pages, read APIs, assets, SSE, login, or controls are requested through
+that Host
+Then all dashboard data requires a valid session
+And browser requests must use the exact configured Origin where applicable
+And wildcard origins, forwarded-header authority, suffix matches, paths,
+queries, fragments, userinfo, CORS fallback, and a remote origin without a
+control secret are rejected
+
+Given repo, job, model, telemetry, role, decision, error, or event data contains
+hostile HTML, SVG, script, attribute, Unicode, or control-character content
+When the embedded dashboard renders or replays it
+Then dynamic content is constructed with safe DOM text operations and fixed
+classes rather than HTML parsing sinks
+And response headers enforce a strict self-only CSP, no sniffing, no framing,
+no referrer leakage, restrictive permissions, and no-store where sensitive
+
+Given the host has no outbound network access
+When every embedded dashboard page and chart loads
+Then pinned htmx 2.0.4 and Chart.js 4.4.7 assets are served only from the binary
+And their immutable source, hash, version, and MIT license metadata are
+recorded
+And no template, script, style, or runtime path contacts a CDN or requires
+inline script execution.
+
 ## Out of Scope
 
 - Hosted SaaS dashboard operation.
@@ -304,4 +361,5 @@ None.
 - F-010-S020: planned model catalog, health, unavailable-state, override, and proposal tests
 - F-010-S021: planned DORA fixture tests for successful, failed, insufficient-history, missing-auth, no-remote, missing-config, rate-limit, and permission-denied states
 - F-010-S022: planned migration tests for retained, redirected, and removed legacy dashboard routes
-- F-010-S023: T-057 Engineer tests prove direct/default dashboard and control addresses use explicit loopback, reject wildcard/LAN/hostnames before bind, preserve loopback health without webhook policy, and retain loopback-only ephemeral fallback. Installed-binary and independent review evidence remain pending.
+- F-010-S023: T-057/private v0.68.46 passed Engineer, QA, Security, full-race, and installed clean-project evidence proving direct/default dashboard and control addresses use explicit loopback, reject wildcard/LAN/hostnames before bind, preserve loopback health without webhook policy, and retain loopback-only ephemeral fallback.
+- F-010-S024: planned embedded-dashboard gateway, session, Host/Origin/CSRF, method/body/rate, redaction, DOM-XSS, CSP, vendored-asset, offline-browser, and installed clean-project evidence under T-058. This scenario does not complete the future TanStack-specific F-010-S012/MH-053 contract.

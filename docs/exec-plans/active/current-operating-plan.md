@@ -4,7 +4,7 @@
 **Priority:** P0
 **Depends On:** Legal ownership and licensing clearance for publication; technical work has no legal dependency
 **Blocks:** Public repository visibility, supported public release, historical asset withdrawal, and public announcement
-**Related Tickets:** T-055, T-056, T-057
+**Related Tickets:** T-055, T-056, T-057, T-058
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-017-open-source-publication.md
 **Related Feature Contracts:** F-001, F-005, F-007, F-009, F-010, F-011, F-017
@@ -12,7 +12,7 @@
 **Success Evidence:** F-017-S001 through F-017-S005 pass with legal attestation, redacted audit evidence, secure runtime defaults, anonymous signed release verification, fork-safe CI/governance, private rehearsal, logged-out cutover smoke, and a clean 48-hour canary.
 **Falsification Evidence:** Any unresolved secret/privacy/IP finding; absent legal authority; open runtime P0s; failed anonymous release access or signature verification; privileged fork CI; unsafe historical binaries; failed logged-out smoke; or visibility changing before all no-go gates pass.
 **Scenario Schedule:** F-017-S001 read-only publication-surface inventory; F-017-S002 runtime hardening; F-017-S003 public release contract; F-017-S004 contribution and governance controls; F-017-S001 final legal disposition; F-017-S005 rehearsal, cutover, and canary
-**Current Failing Scenario:** F-017-S002 next bounded runtime P0 slice: dashboard browser and remote-control security; ticket creation follows the T-057 private release gate
+**Current Failing Scenario:** F-017-S002/F-010-S024 bounded runtime P0 slice T-058: embedded dashboard browser and authenticated control security
 **Walking Skeleton Slice:** Require authenticated, origin-bound, CSRF-protected control mutations while keeping a loopback read-only dashboard usable with vendored assets and safe DOM construction when outbound networking is unavailable.
 **Learning Or MVP Outcome:** Browser-delivered content and cross-origin requests cannot drive the local control plane, and the dashboard does not depend on runtime CDNs.
 **Created:** 2026-07-12
@@ -25,8 +25,8 @@
 - **Primary Pass Gate:** A logged-out user can clone, build, install, update, report a vulnerability, and submit an externally reviewed contribution through the source-only public contribution path; exposed history is approved; runtime P0 findings are closed; public artifacts are licensed, signed, attributable, and tied to an immutable source commit; cutover smoke and the 48-hour canary pass.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** Publication authority is not established. Owner/legal review must confirm the right to license the source, predecessor material, prompts, docs, and assets, and trademark/name review must have no blocking result.
-- **Next Primary Action:** The owner provisions the restricted audit and legal/name-clearance work while the technical lane privately releases T-057 and creates the dashboard/browser runtime P0 ticket; technical completion cannot change Primary Status.
-- **Supporting Evidence:** T-055 closed the vulnerability baseline in private v0.68.42. T-056 recorded the redacted publication-surface inventory and isolated restricted-audit contract; commits `28254c9`/`4eda99c`, private tag `v0.68.44`, all local/remote assets, and the ten-release audit passed. The operator authorized technical work while reserving irreversible publication actions.
+- **Next Primary Action:** The owner provisions the restricted audit and legal/name-clearance work while the authorized technical lane delivers T-058 through Engineer, QA, Security, Dogfood, and Release Manager gates; technical completion cannot change Primary Status.
+- **Supporting Evidence:** T-055 closed the vulnerability baseline in private v0.68.42. T-056 recorded the redacted publication-surface inventory and isolated restricted-audit contract in private v0.68.44. T-057 semantic/release commits `23efb13`/`f7b9814`, private tag `v0.68.46`, all nine local and remote assets, and the rolling ten-release audit passed. The operator authorized technical work while reserving irreversible publication actions.
 
 ## Publication Authority Boundary
 
@@ -74,8 +74,8 @@ not yet ticket IDs.
 | ---: | --- | --- | --- | --- |
 | 1 | Vulnerability and baseline gate | F-017-S002 | T-055 complete in private v0.68.42 | Non-vulnerable toolchain; fail-closed scan; test/race/vet/fuzz/vuln evidence |
 | 2 | Publication history and GitHub-surface inventory | F-017-S001 | T-056 complete in private v0.68.44; downstream restricted audit/legal disposition blocked | Redacted inventory/access-gap report and offline scan contract; full scan/disposition remains pending |
-| 3 | Loopback and GitHub webhook ingress | F-017-S002 | T-057 complete; private release pending | Loopback, HMAC, numeric actor, exact repo/branch/fork policy, disabled comments, body/replay/idempotency tests plus installed two-archetype evidence |
-| 4 | Dashboard browser and remote-control security | F-017-S002 | Planned | Auth/origin/CSRF/XSS/CSP/offline-asset tests |
+| 3 | Loopback and GitHub webhook ingress | F-017-S002 | T-057 complete in private v0.68.46 | Loopback, HMAC, numeric actor, exact repo/branch/fork policy, disabled comments, body/replay/idempotency tests plus installed two-archetype evidence |
+| 4 | Embedded dashboard browser and control security | F-017-S002, F-010-S024 | T-058 current in backlog; implementation starts after planning-chain release | Session/Host/Origin/CSRF/method/body/rate/redaction/XSS/CSP/offline-asset and installed browser tests |
 | 5 | Filesystem and secret containment | F-017-S002 | Planned | Descriptor-safe hostile-repository and staged-secret tests |
 | 6 | Execution and local-state safety | F-017-S002 | Planned | Execution-profile, environment, PID, permissions, and redaction tests |
 | 7 | Release artifact integrity | F-017-S003 | Planned | Deterministic signed archive and negative verification tests |
@@ -181,4 +181,7 @@ Primary Status by itself.
 - PASS 2026-07-12: T-057 Engineer, QA, and Security evidence closes the bounded OSS-02 source contract after accepted corrections for authentic check-suite shape, complete event metadata, direct actor-policy validation, hardened branch identifiers, App subscription, and owner-only atomic credential persistence.
 - PASS 2026-07-12: the exact full repository race suite, uncached tests, vet, fuzz smoke, DocSync, docs consistency, and diff gates pass. The dependency-unchanged ticket relies on T-055's pinned clean vulnerability result because the restricted sandbox cannot resolve `vuln.go.dev`; the fail-closed gate correctly reports that network blocker.
 - PASS 2026-07-12: installed clean static-browser and API/service targets prove loopback-only sockets, healthy optional-GitHub operation, zero mutation for rejected traffic, one authorized job, durable single-shot replay across completion/restart, and real local-model worker completion. F-017-S002 remains incomplete and Primary Status remains `primary_blocked`.
+- PASS 2026-07-12: T-057 semantic/release commits `23efb13`/`f7b9814`, private tag `v0.68.46`, all nine local and remote assets, and the rolling ten-release audit passed; repository visibility remained PRIVATE and no publication action occurred.
+- PLANNED 2026-07-12: COO, CTO-weekly, and Security packets classify the next bounded slice as the shipped embedded dashboard's browser/control boundary under new F-010-S024. GitHub setup callback and remote telemetry intake remain separate later tickets, and F-010-S012/MH-053 remains the future TanStack-specific gateway contract.
+- PASS 2026-07-12: T-058 was created through `ticket_create` with dedupe key `open-source:dashboard-browser-control-security` for F-017-S002/F-010-S024 only; no second implementation ticket is current.
 - EXPECTED WARN 2026-07-12: `mars doctor --repo . --skip-remote --json` reports missing target manifest/role registry because this is the source-only foundation repo; plan hygiene, ticket drain, and workspace hygiene are healthy.
