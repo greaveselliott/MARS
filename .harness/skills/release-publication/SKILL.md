@@ -23,7 +23,10 @@ release docs unless they explicitly define their own binary publication flow.
 8. As a harness agent, use `mars_cli` with args
    `["release","publish-assets","--repo",".","--version","vX.Y.Z","--upload","auto"]`;
    from a trusted terminal, run the equivalent `mars release
-   publish-assets --repo . --version vX.Y.Z --upload auto`.
+   publish-assets --repo . --version vX.Y.Z --upload auto`. If an upload is
+   attempted, require `GitHub mirror: verified (9/9)`; a partial, extra,
+   pending, wrong-size, wrong-digest, or unverifiable mirror is a non-zero
+   blocker even when the underlying upload process exited successfully.
 9. Verify local assets with `mars_cli` args
    `["release","verify-assets","--dist","dist/releases","--version","vX.Y.Z"]`
    or `mars release verify-assets --dist dist/releases --version
@@ -54,6 +57,9 @@ release docs unless they explicitly define their own binary publication flow.
 - Stop and record a blocker if `git push`, tag push, local asset publication,
   local asset verification, GitHub release creation, or GitHub mirror
   verification fails.
+- Never treat `gh release upload` exit zero, `uploaded`, or a partial asset list
+  as completion evidence. The publisher must prove the exact unique name,
+  uploaded-state, size, and SHA-256 contract before reporting success.
 - A notes-only GitHub Release satisfies the optional mirror object gate only.
   The local dist remains the source of truth; the mirror stays incomplete until
   GitHub `verify-assets` passes.

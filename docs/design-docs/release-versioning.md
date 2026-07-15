@@ -138,6 +138,36 @@ Release publication has two independent gates:
 
 GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the mirror blocker without treating local asset publication as failed.
 
+### AD-312: Attempted GitHub Mirrors Must Converge Before Success
+
+`release publish-assets --upload github` and an `--upload auto` invocation that
+has begun a GitHub upload may report success only after a fresh remote snapshot
+matches the local release contract. A successful `gh` process exit is transport
+evidence, not the publication postcondition.
+
+The publisher computes the immutable local contract as the nine unique
+basenames, byte sizes, and SHA-256 digests, copies them into an owner-only
+snapshot, and revalidates snapshot identity and bytes around transfer. It
+requires the remote tag to peel to the exact local release-note commit before
+mutation and again before success; a release object is created only after an
+exact not-found response and with `--verify-tag`. GitHub CLI status
+classification trusts only its bounded synthesized stderr status line; the
+server-controlled stdout response body cannot grant release-creation authority.
+It preserves matching remote assets,
+reconciles missing or mismatched assets individually in deterministic order,
+uses `--clobber` only for a mismatched name, and polls with bounded,
+context-aware retries. Completion requires the exact tag and exact unique asset
+set, no extras, every asset state `uploaded`, and exact size and digest equality.
+Missing digests, duplicates, extras, pending states, wrong bytes, permanent
+partial convergence, cancellation, or retry exhaustion return non-zero as a
+mirror-incomplete blocker. The command never deletes unexpected remote assets
+automatically and never moves the tag.
+
+`--upload auto` may still report a pre-attempt skip when `gh` is unavailable.
+After an upload attempt begins, optional infrastructure does not permit a false
+success: the local release can remain valid while the GitHub mirror is recorded
+as blocked.
+
 #### Release Publication Architecture
 
 ```mermaid

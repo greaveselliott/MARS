@@ -138,7 +138,7 @@ Sequence:
 5. Commit generated files as `+"`release: notes X.Y.Z`"+`.
 6. Push main.
 7. Tag the release-note commit as `+"`vX.Y.Z`"+` and push the tag. Do not tag while VERSION/CHANGELOG.md are dirty, and do not target any commit other than the release-note HEAD.
-8. Run `+"`mars_cli`"+` with args ["release", "publish-assets", "--repo", ".", "--version", "vX.Y.Z", "--upload", "auto"].
+8. Run `+"`mars_cli`"+` with args ["release", "publish-assets", "--repo", ".", "--version", "vX.Y.Z", "--upload", "auto"]. If mirroring is attempted, require GitHub mirror: verified (9/9); upload-process success without exact remote name/state/size/SHA-256 convergence is a blocker.
 9. Run `+"`mars_cli`"+` with args ["release", "verify-assets", "--dist", "dist/releases", "--version", "vX.Y.Z"].
 10. If local verification or optional GitHub mirroring fails, record the blocker before treating release work as complete.
 `, strings.TrimSpace(version), nonEmpty(status, "(clean)"), nonEmpty(head, "(no commits)")))
@@ -170,7 +170,7 @@ Remote inspection commands for optional GitHub mirrors:
 
 Interpretation:
 - Tag exists but release is 404: local assets may still be complete; run publish-assets with --upload github or record a mirror blocker.
-- Release exists but assets are missing: rerun local publish-assets with --upload github or record the blocker.
+- Release exists but assets are missing, extra, pending, or do not match local sizes/digests: rerun local publish-assets with --upload github or record mirror_incomplete. Never treat the upload process exit alone as completion.
 - Local tag and remote tag disagree: stop and resolve tag drift before publishing installer guidance.
 `, nonEmpty(head, "(unknown)"), firstLines(tags, 10))
 	return ToolResult{Output: out}, nil

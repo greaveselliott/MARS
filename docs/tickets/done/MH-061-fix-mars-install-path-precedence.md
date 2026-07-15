@@ -25,7 +25,7 @@ depends_on: ["MH-060"]
 
 ## Context
 
-`make install` installed `/Users/elliottgreaves/go/bin/mars`, but a separate
+`make install` installed `$HOME/go/bin/mars`, but a separate
 `/opt/homebrew/bin/mars` symlink still resolved first in a fresh shell. The
 existing managed profile block only checked whether the Go bin directory was
 present anywhere in PATH; it did not move the install directory ahead of
@@ -36,11 +36,11 @@ same-name commands.
 - [x] Legacy `mars-harness` profile markers are repaired into canonical `mars` markers.
 - [x] The generated shell block moves the install directory to the front of PATH.
 - [x] Duplicate install-dir PATH entries are collapsed.
-- [x] `make install` leaves a sourced Zsh profile resolving `mars` to `/Users/elliottgreaves/go/bin/mars`.
+- [x] `make install` leaves a sourced Zsh profile resolving `mars` to `$HOME/go/bin/mars`.
 
 ## Evidence
 
 - `GOCACHE=/private/tmp/mars-go-cache go test ./internal/shellpath`
 - `GOCACHE=/private/tmp/mars-go-cache make install`
-- `zsh -ic 'command -v mars; mars version'` resolved `/Users/elliottgreaves/go/bin/mars` and printed `mars 0.66.1`.
-- `zsh -lc 'source ~/.zshrc; command -v mars; mars version'` resolved `/Users/elliottgreaves/go/bin/mars` and printed `mars 0.66.1`.
+- `zsh -ic 'command -v mars; mars version'` resolved `$HOME/go/bin/mars` and printed `mars 0.66.1`.
+- `zsh -lc 'source ~/.zshrc; command -v mars; mars version'` resolved `$HOME/go/bin/mars` and printed `mars 0.66.1`.

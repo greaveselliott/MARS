@@ -1,7 +1,7 @@
 # Hardware-Gated Model Onboarding Proof
 
 **Date:** 2026-06-28
-**Source Ref:** `9018843` (`v0.68.4`) with installed `/Users/elliottgreaves/go/bin/mars` reporting `0.68.4`
+**Source Ref:** `9018843` (`v0.68.4`) with installed `$HOME/go/bin/mars` reporting `0.68.4`
 **Validation Type:** Focused unit/golden gates, clean target init replays, installed-binary local setup/download, installed-binary runtime preflight, installed-binary cloud route plumbing, installed-binary provider-call proof, and supported cloud-platform validation
 **Model:** Local route passed after downloading the eligible `local-balanced-q4` bundle. Cloud route plumbing passed with secret-safe env-var credential names. OpenAI, Anthropic, Gemini, Mistral, DeepSeek, and xAI are documented as supported cloud routes.
 
@@ -20,14 +20,14 @@
 go test ./internal/hardware ./internal/models ./internal/setup ./internal/inference ./internal/serve ./internal/safety ./internal/guardrails ./internal/scanner ./internal/tools ./cmd/mars
 go test ./internal/tools -run TestMarsCLI
 go test ./cmd/mars -run 'Test.*Command|Test.*CLI|Test.*Setup|Test.*Init'
-/Users/elliottgreaves/go/bin/mars guardrails secret-scan --repo . --json
-/Users/elliottgreaves/go/bin/mars docsync audit --repo . --json
+$HOME/go/bin/mars guardrails secret-scan --repo . --json
+$HOME/go/bin/mars docsync audit --repo . --json
 go test ./...
 make check
 make install
-/Users/elliottgreaves/go/bin/mars version
-/Users/elliottgreaves/go/bin/mars setup --inference local --local-bundle auto --download --yes --json
-/Users/elliottgreaves/go/bin/mars init --repo /private/tmp/mars-custom-endpoint-proof-oMVrjM --model-routing cloud --cloud-provider openai-compatible --cloud-model openai/gpt-4.1-mini --cloud-endpoint https://models.example.test/inference/v1 --api-key-env GITHUB_TOKEN --yes --json
+$HOME/go/bin/mars version
+$HOME/go/bin/mars setup --inference local --local-bundle auto --download --yes --json
+$HOME/go/bin/mars init --repo /private/tmp/mars-custom-endpoint-proof-oMVrjM --model-routing cloud --cloud-provider openai-compatible --cloud-model openai/gpt-4.1-mini --cloud-endpoint https://models.example.test/inference/v1 --api-key-env GITHUB_TOKEN --yes --json
 fish -lc 'mars init --repo /private/tmp/mars-confidence10-openai-vltJMo --model-routing cloud --cloud-provider openai --cloud-model gpt-4.1-mini --api-key-env OPENAI_API_KEY --yes --json'
 fish -lc 'mars models credentials write-local-env --repo /private/tmp/mars-confidence10-openai-vltJMo --api-key-env OPENAI_API_KEY --yes --json'
 fish -lc 'mars start --repo /private/tmp/mars-confidence10-openai-vltJMo --exit-after-seed --yes --json --db /private/tmp/mars-confidence10-openai-vltJMo.mars.db --log-file /private/tmp/mars-confidence10-openai-vltJMo.start.log'
@@ -44,7 +44,7 @@ fish -lc 'mars run orchestrator --repo /private/tmp/mars-openai-ephemeral-UZMsOV
 - DocSync audit: passed with `findings: null`.
 - Full `go test ./...`: passed.
 - `make check`: passed after rerunning with normal Go cache access outside the sandbox; coverage ratchet passed with `internal/serve` at 66.2%, vulnerability scan found no called vulnerabilities, and fuzz smoke passed.
-- `make install`: passed and installed `/Users/elliottgreaves/go/bin/mars`.
+- `make install`: passed and installed `$HOME/go/bin/mars`.
 - Installed binary version: passed with `mars 0.68.3 darwin/arm64`.
 - Local setup/download: passed with `{"status":"ok","steps_run":5,"steps_skipped":2}` after downloading `Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf` and `google_gemma-4-E4B-it-Q5_K_M.gguf`.
 - Custom OpenAI-compatible init endpoint: passed with JSON-only output and generated `.harness/model-overrides.yaml` storing provider, model, endpoint, and `api_key_env: GITHUB_TOKEN` only.
@@ -58,7 +58,7 @@ fish -lc 'mars run orchestrator --repo /private/tmp/mars-openai-ephemeral-UZMsOV
 **Target repo:** `/private/tmp/mars-confidence10-local-2ah3cK`
 
 ```bash
-/Users/elliottgreaves/go/bin/mars init \
+$HOME/go/bin/mars init \
   --repo /private/tmp/mars-confidence10-local-2ah3cK \
   --model-routing local \
   --local-bundle auto \
@@ -69,7 +69,7 @@ fish -lc 'mars run orchestrator --repo /private/tmp/mars-openai-ephemeral-UZMsOV
 **Result:** Passed. Output was JSON only, the generated harness baseline was committed, `.harness/model-overrides.yaml` contained `routing: local` and `local_bundle: auto`, `.gitignore` contained `.harness/.env.local`, and generated `AGENTS.md` contained Fact-Validated Planning.
 
 ```bash
-/Users/elliottgreaves/go/bin/mars start \
+$HOME/go/bin/mars start \
   --repo /private/tmp/mars-confidence10-local-2ah3cK \
   --exit-after-seed \
   --yes \
@@ -93,7 +93,7 @@ fish -lc 'mars run orchestrator --repo /private/tmp/mars-openai-ephemeral-UZMsOV
 **Target repo:** `/private/tmp/mars-confidence10-cloud-iGtSnZ`
 
 ```bash
-/Users/elliottgreaves/go/bin/mars init \
+$HOME/go/bin/mars init \
   --repo /private/tmp/mars-confidence10-cloud-iGtSnZ \
   --model-routing cloud \
   --cloud-provider anthropic \
@@ -106,7 +106,7 @@ fish -lc 'mars run orchestrator --repo /private/tmp/mars-openai-ephemeral-UZMsOV
 **Result:** Passed. Output was JSON only, the generated harness baseline was committed, `.harness/model-overrides.yaml` stored `api_key_env: ANTHROPIC_API_KEY`, `.harness/.env.example` contained only `ANTHROPIC_API_KEY=`, `.gitignore` contained `.harness/.env.local`, and generated `AGENTS.md` contained Fact-Validated Planning.
 
 ```bash
-/Users/elliottgreaves/go/bin/mars models credentials write-local-env \
+$HOME/go/bin/mars models credentials write-local-env \
   --repo /private/tmp/mars-confidence10-cloud-iGtSnZ \
   --api-key-env ANTHROPIC_API_KEY \
   --yes \
@@ -116,7 +116,7 @@ fish -lc 'mars run orchestrator --repo /private/tmp/mars-openai-ephemeral-UZMsOV
 **Result:** `primary_blocked`. `ANTHROPIC_API_KEY` was not present in the process environment, so no `.harness/.env.local` secret file was written.
 
 ```bash
-/Users/elliottgreaves/go/bin/mars start \
+$HOME/go/bin/mars start \
   --repo /private/tmp/mars-confidence10-cloud-iGtSnZ \
   --exit-after-seed \
   --yes \
@@ -311,7 +311,7 @@ agent loop finished ... end_reason="max_turns" llm_calls="1" tool_invocations="2
 **Target repo:** `/private/tmp/mars-custom-endpoint-proof-oMVrjM`
 
 ```bash
-/Users/elliottgreaves/go/bin/mars init \
+$HOME/go/bin/mars init \
   --repo /private/tmp/mars-custom-endpoint-proof-oMVrjM \
   --model-routing cloud \
   --cloud-provider openai-compatible \

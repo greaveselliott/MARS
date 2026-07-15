@@ -1877,7 +1877,8 @@ func releasePublishAssetsCmd() *cobra.Command {
 		Short: "Build and optionally mirror release assets locally",
 		Long: `Build linux/darwin amd64/arm64 release binaries from the release-note
 commit, generate checksums.txt, verify local assets, and optionally mirror the
-assets to GitHub Releases.`,
+assets to GitHub Releases. An attempted mirror succeeds only after the exact
+remote asset names, uploaded states, sizes, and SHA-256 digests are verified.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if repoPath == "" {
 				var err error
@@ -1898,21 +1899,7 @@ assets to GitHub Releases.`,
 			if err != nil {
 				return err
 			}
-			out := cmd.OutOrStdout()
-			fmt.Fprintf(out, "Release assets: %s\n", result.TagName)
-			fmt.Fprintf(out, "Dist: %s\n", result.DistDir)
-			fmt.Fprintf(out, "Assets: %s\n", strings.Join(assetBaseNames(result.Assets), ", "))
-			fmt.Fprintf(out, "Checksums: %s\n", result.ChecksumsPath)
-			switch {
-			case result.Uploaded:
-				fmt.Fprintln(out, "GitHub mirror: uploaded")
-			case result.UploadSkipped:
-				fmt.Fprintln(out, "GitHub mirror: skipped")
-			default:
-				fmt.Fprintln(out, "GitHub mirror: disabled")
-			}
-			fmt.Fprintln(out, "Status: ok")
-			return nil
+			return printReleasePublishAssetsResult(cmd.OutOrStdout(), result)
 		},
 	}
 	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
@@ -1924,24 +1911,130 @@ assets to GitHub Releases.`,
 	return cmd
 }
 
+func printReleasePublishAssetsResult(out io.Writer, result release.PublishAssetsResult) error {
+	if result.Uploaded && (result.RemoteExpectedCount <= 0 || result.RemoteVerifiedCount != result.RemoteExpectedCount) {
+		return fmt.Errorf("release publish-assets: mirror_incomplete: verified %d/%d remote assets; refusing to report success",
+			result.RemoteVerifiedCount, result.RemoteExpectedCount)
+	}
+	fmt.Fprintf(out, "Release assets: %s\n", result.TagName)
+	fmt.Fprintf(out, "Dist: %s\n", result.DistDir)
+	fmt.Fprintf(out, "Assets: %s\n", strings.Join(assetBaseNames(result.Assets), ", "))
+	fmt.Fprintf(out, "Checksums: %s\n", result.ChecksumsPath)
+	switch {
+	case result.Uploaded:
+		fmt.Fprintf(out, "GitHub mirror: verified (%d/%d)\n", result.RemoteVerifiedCount, result.RemoteExpectedCount)
+	case result.UploadSkipped:
+		fmt.Fprintln(out, "GitHub mirror: skipped")
+	default:
+		fmt.Fprintln(out, "GitHub mirror: disabled")
+	}
+	fmt.Fprintln(out, "Status: ok")
+	return nil
+}
+
 func printReleaseAssetReport(out io.Writer, report selfupdate.ReleaseAssetReport, jsonOut bool) error {
+	safeReport := safeReleaseAssetReport(report)
 	if jsonOut {
-		return writeJSON(out, report)
+		if err := writeJSON(out, safeReport); err != nil {
+			return err
+		}
+		if report.OK {
+			return nil
+		}
+		return fmt.Errorf("release verify-assets: release does not satisfy the required asset contract")
 	}
-	fmt.Fprintf(out, "Release assets: %s\n", report.TagName)
-	if report.URL != "" {
-		fmt.Fprintf(out, "URL: %s\n", report.URL)
+	fmt.Fprintf(out, "Release assets: %s\n", safeReport.TagName)
+	if safeReport.URL != "" {
+		fmt.Fprintf(out, "URL: %s\n", safeReport.URL)
 	}
-	fmt.Fprintf(out, "Required: %s\n", strings.Join(report.Required, ", "))
-	if len(report.Found) > 0 {
-		fmt.Fprintf(out, "Found: %s\n", strings.Join(report.Found, ", "))
+	fmt.Fprintf(out, "Required: %s\n", strings.Join(safeReport.Required, ", "))
+	if len(safeReport.Found) > 0 {
+		fmt.Fprintf(out, "Found: %s\n", strings.Join(safeReport.Found, ", "))
 	}
 	if report.OK {
 		fmt.Fprintln(out, "Status: ok")
 		return nil
 	}
-	fmt.Fprintf(out, "Missing: %s\n", strings.Join(report.Missing, ", "))
-	return fmt.Errorf("release verify-assets: release %s is missing required assets", report.TagName)
+	if len(safeReport.Missing) > 0 {
+		fmt.Fprintf(out, "Missing: %s\n", strings.Join(safeReport.Missing, ", "))
+	}
+	if len(report.Extra) > 0 {
+		fmt.Fprintf(out, "Extra: %d unexpected asset(s)\n", len(report.Extra))
+	}
+	if len(report.Duplicate) > 0 {
+		fmt.Fprintf(out, "Duplicate: %d duplicate asset name(s)\n", len(report.Duplicate))
+	}
+	return fmt.Errorf("release verify-assets: release does not satisfy the required asset contract")
+}
+
+func safeReleaseAssetReport(report selfupdate.ReleaseAssetReport) selfupdate.ReleaseAssetReport {
+	safe := report
+	safe.TagName = safeNumericReleaseLabel(report.TagName, true)
+	safe.Version = safeNumericReleaseLabel(report.Version, false)
+	if report.URL != "" {
+		safe.URL = "<redacted>"
+	}
+	safe.Required = safeKnownReleaseAssetLabels(report.Required)
+	safe.Found = safeKnownReleaseAssetLabels(report.Found)
+	safe.Missing = safeKnownReleaseAssetLabels(report.Missing)
+	safe.Extra = fixedReleaseAssetLabels(len(report.Extra))
+	safe.Duplicate = fixedReleaseAssetLabels(len(report.Duplicate))
+	return safe
+}
+
+func safeNumericReleaseLabel(value string, allowV bool) string {
+	value = strings.TrimSpace(value)
+	prefix := ""
+	if allowV && strings.HasPrefix(value, "v") {
+		prefix = "v"
+		value = strings.TrimPrefix(value, "v")
+	}
+	parts := strings.Split(value, ".")
+	if len(parts) != 3 {
+		return "<redacted>"
+	}
+	for _, part := range parts {
+		if part == "" || len(part) > 9 {
+			return "<redacted>"
+		}
+		for _, r := range part {
+			if r < '0' || r > '9' {
+				return "<redacted>"
+			}
+		}
+	}
+	return prefix + strings.Join(parts, ".")
+}
+
+func safeKnownReleaseAssetLabels(values []string) []string {
+	if values == nil {
+		return nil
+	}
+	known := make(map[string]bool, len(selfupdate.ExpectedReleaseAssetNames())+1)
+	for _, name := range selfupdate.ExpectedReleaseAssetNames() {
+		known[name] = true
+	}
+	known["valid checksums.txt"] = true
+	safe := make([]string, 0, len(values))
+	for _, value := range values {
+		if known[value] {
+			safe = append(safe, value)
+		} else {
+			safe = append(safe, "<redacted>")
+		}
+	}
+	return safe
+}
+
+func fixedReleaseAssetLabels(count int) []string {
+	if count == 0 {
+		return nil
+	}
+	labels := make([]string, count)
+	for i := range labels {
+		labels[i] = "<redacted>"
+	}
+	return labels
 }
 
 func assetBaseNames(paths []string) []string {

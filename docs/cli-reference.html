@@ -539,7 +539,10 @@ mars release backfill-notes --repo . --min-version 0.60.0 --max-version 0.68.0 -
               <p>
                 Builds local release binaries for linux/darwin and amd64/arm64,
                 writes checksums, verifies local dist, and optionally mirrors to
-                GitHub Releases.
+                GitHub Releases. Once mirroring starts, success requires the
+                exact nine unique remote assets with uploaded state and local
+                size/SHA-256 equality; partial or unverifiable results fail as
+                <code>mirror_incomplete</code>.
               </p>
               <pre><code>mars release publish-assets --repo . --version vX.Y.Z --upload auto
 mars release verify-assets --dist dist/releases --version vX.Y.Z

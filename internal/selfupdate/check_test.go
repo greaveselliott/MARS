@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/release-versioning.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-017-open-source-publication.md
 */
 package selfupdate
 
@@ -78,6 +79,50 @@ func TestVerifyReleaseAssetsReportsMissingAssets(t *testing.T) {
 		"mars-harness-darwin-amd64",
 		"mars-harness-darwin-arm64",
 	}, report.Missing)
+}
+
+func TestVerifyReleaseAssetInfoRejectsExtraAndDuplicateNames(t *testing.T) {
+	t.Parallel()
+	assets := make([]ReleaseAsset, 0, len(ExpectedReleaseAssetNames())+2)
+	for _, name := range ExpectedReleaseAssetNames() {
+		assets = append(assets, ReleaseAsset{Name: name})
+	}
+	assets = append(assets, ReleaseAsset{Name: ExpectedReleaseAssetNames()[0]}, ReleaseAsset{Name: "unexpected.bin"})
+	report := VerifyReleaseAssetInfo(ReleaseInfo{TagName: "v1.2.3", Assets: assets})
+	require.False(t, report.OK)
+	require.Equal(t, []string{"<redacted-asset-name>"}, report.Extra)
+	require.Equal(t, []string{ExpectedReleaseAssetNames()[0] + " (2 copies)"}, report.Duplicate)
+}
+
+func TestVerifyReleaseAssetInfoNeverTranscribesUnknownAssetNames(t *testing.T) {
+	t.Parallel()
+	const opaqueCredential = "AKIAIOSFODNN7EXAMPLE"
+	report := VerifyReleaseAssetInfo(ReleaseInfo{
+		TagName: "v1.2.3",
+		Assets: []ReleaseAsset{
+			{Name: opaqueCredential},
+			{Name: opaqueCredential},
+		},
+	})
+	diagnostics := strings.Join(append(append([]string{}, report.Extra...), report.Duplicate...), " ")
+	require.NotContains(t, diagnostics, opaqueCredential)
+	require.Contains(t, diagnostics, "<redacted-asset-name>")
+}
+
+func TestVerifyReleaseAssetInfoRedactsHostileExtraAndDuplicateNames(t *testing.T) {
+	t.Parallel()
+	assets := make([]ReleaseAsset, 0, len(ExpectedReleaseAssetNames())+2)
+	for _, name := range ExpectedReleaseAssetNames() {
+		assets = append(assets, ReleaseAsset{Name: name})
+	}
+	const hostile = "ghp_SECRET\nforged"
+	assets = append(assets, ReleaseAsset{Name: hostile}, ReleaseAsset{Name: hostile})
+	report := VerifyReleaseAssetInfo(ReleaseInfo{TagName: "v1.2.3", Assets: assets})
+	require.False(t, report.OK)
+	diagnostics := strings.Join(append(append([]string{}, report.Extra...), report.Duplicate...), " ")
+	require.Contains(t, diagnostics, "<redacted-asset-name>")
+	require.NotContains(t, diagnostics, "ghp_SECRET")
+	require.NotContains(t, diagnostics, "\n")
 }
 
 func TestReleaseAPIURLBuildsLatestAndTaggedURLs(t *testing.T) {

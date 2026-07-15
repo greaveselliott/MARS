@@ -139,7 +139,7 @@ reviewed from the repo and deployed without a frontend build step.
 | `mars models evaluate [--endpoint <url> --model <name>]` | Implemented | Prints the model-refresh plan or runs benchmark probes with tool-call JSON, strict triage JSON, and repo-backed ticket-completion JSON. Live reports include provider, model, endpoint, hardware profile, timing, token counts, failures, promotion status, and are persisted under `docs/generated/model-evaluations/` by default. `--provider ollama --model <name>` targets local Ollama's OpenAI-compatible endpoint. |
 | `mars models override --repo <path> (--tier <tier>\|--role <role>) --provider <provider> --model <name>` | Implemented | Writes `.harness/model-overrides.yaml` so a repo can explicitly route one tier or role to an Ollama or OpenAI-compatible model without changing default registry entries. |
 | `mars release notes --repo <path> --bump auto` | Implemented | Generates semantic-versioned patch notes from commits, updates `VERSION`, prepends `CHANGELOG.md`, and explains impact, why, and what changed before semantic commit buckets. |
-| `mars release publish-assets --repo <path> --version <tag> --upload none\|github\|auto` | Implemented | Builds local source-release binaries for linux/darwin x amd64/arm64, writes `checksums.txt`, verifies the dist, and optionally mirrors the same assets to GitHub Releases. |
+| `mars release publish-assets --repo <path> --version <tag> --upload none\|github\|auto` | Implemented | Builds local source-release binaries for linux/darwin x amd64/arm64, writes `checksums.txt`, verifies the dist, and, when mirroring is attempted, succeeds only after the exact unique remote asset names, uploaded states, sizes, and SHA-256 digests match. |
 | `mars release verify-assets [--dist <path>] [--version <tag>]` | Implemented | Fails a release check unless all four platform binaries and `checksums.txt` exist in the local dist or, without `--dist`, on the GitHub Release mirror. |
 
 ## Optional Board Integrations
@@ -231,7 +231,7 @@ MARS and initialized target repos use the same release contract:
 - release-note commits themselves are ignored in the next generated entry
 - generated entries include a marker so tags are useful but not required for the next diff
 - in the source harness repo and initialized target repos, every non-release semantic commit is immediately followed by the generated version/patch-note commit before the task is done
-- for source releases, the generated version is tagged as `vX.Y.Z`; `mars release publish-assets` builds checksum-verified local assets and may optionally mirror them to GitHub Releases when authenticated GitHub release capability is configured
+- for source releases, the generated version is tagged as `vX.Y.Z`; `mars release publish-assets` builds checksum-verified local assets and may optionally mirror them to GitHub Releases when authenticated GitHub release capability is configured, but an attempted mirror remains `mirror_incomplete` until its exact unique name/state/size/SHA-256 contract converges
 
 ## Generated Source References
 

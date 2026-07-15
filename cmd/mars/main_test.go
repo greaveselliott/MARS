@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -359,6 +360,90 @@ func TestReleaseVerifyAssetsCommandChecksLocalDist(t *testing.T) {
 
 	require.NoError(t, cmd.Execute())
 	require.Contains(t, out.String(), "Status: ok")
+}
+
+func TestPrintReleasePublishAssetsResultClaimsMirrorOnlyAfterExactVerification(t *testing.T) {
+	t.Parallel()
+	var out bytes.Buffer
+	require.NoError(t, printReleasePublishAssetsResult(&out, release.PublishAssetsResult{
+		TagName:             "v1.2.3",
+		Uploaded:            true,
+		RemoteVerifiedCount: 9,
+		RemoteExpectedCount: 9,
+	}))
+	require.Contains(t, out.String(), "GitHub mirror: verified (9/9)")
+	require.NotContains(t, out.String(), "GitHub mirror: uploaded")
+	require.Contains(t, out.String(), "Status: ok")
+}
+
+func TestPrintReleasePublishAssetsResultRejectsIncompleteUploadedState(t *testing.T) {
+	t.Parallel()
+	var out bytes.Buffer
+	err := printReleasePublishAssetsResult(&out, release.PublishAssetsResult{
+		TagName:             "v1.2.3",
+		Uploaded:            true,
+		RemoteVerifiedCount: 4,
+		RemoteExpectedCount: 9,
+	})
+	require.ErrorContains(t, err, "mirror_incomplete")
+	require.NotContains(t, out.String(), "Status: ok")
+}
+
+func TestPrintReleaseAssetReportDoesNotTranscribeHostileRemoteLabels(t *testing.T) {
+	t.Parallel()
+	var out bytes.Buffer
+	err := printReleaseAssetReport(&out, selfupdate.ReleaseAssetReport{
+		TagName:   "v1.2.3\nghp_SECRET",
+		URL:       "https://example.test/ghp_SECRET",
+		Required:  []string{"AKIAIOSFODNN7EXAMPLE"},
+		Found:     []string{"opaque-high-entropy-value"},
+		Missing:   []string{"https://user:password@example.test/path?key=value"},
+		Extra:     []string{"ghp_SECRET\nextra"},
+		Duplicate: []string{"ghp_SECRET (2 copies)"},
+	}, false)
+	require.Error(t, err)
+	require.NotContains(t, out.String(), "ghp_SECRET")
+	require.NotContains(t, out.String(), "AKIAIOSFODNN7EXAMPLE")
+	require.NotContains(t, out.String(), "opaque-high-entropy-value")
+	require.NotContains(t, out.String(), "password")
+	require.NotContains(t, err.Error(), "ghp_SECRET")
+	require.Contains(t, out.String(), "Extra: 1 unexpected asset(s)")
+	require.Contains(t, out.String(), "Duplicate: 1 duplicate asset name(s)")
+}
+
+func TestPrintReleaseAssetReportJSONRejectsIncompleteAndRedactsRemoteLabels(t *testing.T) {
+	t.Parallel()
+	assets := make([]selfupdate.ReleaseAsset, 0, len(selfupdate.ExpectedReleaseAssetNames())+2)
+	for _, name := range selfupdate.ExpectedReleaseAssetNames() {
+		assets = append(assets, selfupdate.ReleaseAsset{Name: name})
+	}
+	assets = append(assets,
+		selfupdate.ReleaseAsset{Name: "AKIAIOSFODNN7EXAMPLE"},
+		selfupdate.ReleaseAsset{Name: "AKIAIOSFODNN7EXAMPLE"},
+	)
+	reportWithHostileRemoteData := selfupdate.VerifyReleaseAssetInfo(selfupdate.ReleaseInfo{
+		TagName: "v1.2.3\nghp_SECRET",
+		HTMLURL: "https://user:password@example.test/github_pat_SECRET?credential=opaque#fragment",
+		Assets:  assets,
+	})
+	var out bytes.Buffer
+	err := printReleaseAssetReport(&out, reportWithHostileRemoteData, true)
+	require.ErrorContains(t, err, "does not satisfy the required asset contract")
+	require.NotContains(t, out.String(), "ghp_SECRET")
+	require.NotContains(t, out.String(), "github_pat_SECRET")
+	require.NotContains(t, out.String(), "AKIAIOSFODNN7EXAMPLE")
+	require.NotContains(t, out.String(), "password")
+	require.NotContains(t, out.String(), "opaque")
+	require.NotContains(t, out.String(), "v1.2.3\\nghp_SECRET")
+
+	var report selfupdate.ReleaseAssetReport
+	require.NoError(t, json.Unmarshal(out.Bytes(), &report))
+	require.False(t, report.OK)
+	require.Equal(t, "<redacted>", report.TagName)
+	require.Equal(t, "<redacted>", report.Version)
+	require.Equal(t, "<redacted>", report.URL)
+	require.Equal(t, []string{"<redacted>", "<redacted>"}, report.Extra)
+	require.Equal(t, []string{"<redacted>"}, report.Duplicate)
 }
 
 func TestPrintReleaseAuditResultReportsFindingsAndSkips(t *testing.T) {

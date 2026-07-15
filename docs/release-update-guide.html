@@ -333,7 +333,7 @@ git -C ~/my-project push origin main</code></pre>
             <table>
               <thead><tr><th>Command</th><th>Gate</th><th>What success proves</th></tr></thead>
               <tbody>
-                <tr><td><code>mars release publish-assets</code></td><td>Build/package</td><td>Platform binaries and <code>checksums.txt</code> were produced in <code>dist/releases</code>.</td></tr>
+                <tr><td><code>mars release publish-assets</code></td><td>Build/package and attempted-mirror convergence</td><td>Platform binaries and <code>checksums.txt</code> were produced locally; when upload begins, success also proves the exact unique remote names, uploaded states, sizes, and SHA-256 digests.</td></tr>
                 <tr><td><code>mars release verify-assets --dist</code></td><td>Local gate</td><td>Required local assets exist for the version.</td></tr>
                 <tr><td><code>gh release view vX.Y.Z</code></td><td>Mirror object</td><td>GitHub Release object exists when mirroring is enabled.</td></tr>
                 <tr><td><code>mars release verify-assets --version</code></td><td>Mirror assets</td><td>GitHub Release contains all required assets and checksums.</td></tr>
@@ -397,6 +397,7 @@ mars release audit --repo .</code></pre>
                 <tr><td>Release notes sound generic.</td><td>The semantic commit lacks explicit Impact, Why, or What details.</td><td>Polish the top changelog entry before committing release notes.</td></tr>
                 <tr><td>Local asset verification fails.</td><td>The dist directory is missing a required platform binary or checksums file.</td><td>Rerun <code>mars release publish-assets</code> and inspect build output.</td></tr>
                 <tr><td>GitHub release is notes-only.</td><td>The tag/release object exists but binary assets were not uploaded.</td><td>Run the exact <code>publish-assets</code> command reported by <code>mars release audit</code>.</td></tr>
+                <tr><td><code>mirror_incomplete</code> after upload.</td><td>The remote release stayed partial, extra, pending, mismatched, or unverifiable after bounded reconciliation.</td><td>Preserve the tag, inspect the named asset classifications, correct remote access/state, and rerun <code>publish-assets --upload github</code>; do not claim the mirror from the upload process exit alone.</td></tr>
               </tbody>
             </table>
           </div>

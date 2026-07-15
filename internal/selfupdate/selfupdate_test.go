@@ -4,12 +4,14 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/release-versioning.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-017-open-source-publication.md
 */
 package selfupdate
 
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -109,21 +111,7 @@ func TestRunLatestReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
 		require.Equal(t, "Bearer ghs_testtoken", r.Header.Get("Authorization"))
 		switch r.URL.Path {
 		case "/repos/example/project/releases/latest":
-			return textResponse(http.StatusOK, fmt.Sprintf(`{
-				"tag_name":"v1.2.4",
-				"assets":[
-					{"name":%q,"url":"https://api.example.test/assets/bin","browser_download_url":"https://github.example.test/download/bin"},
-					{"name":"checksums.txt","url":"https://api.example.test/assets/checksums","browser_download_url":"https://github.example.test/download/checksums.txt"},
-					{"name":"mars-linux-amd64"},
-					{"name":"mars-linux-arm64"},
-					{"name":"mars-darwin-amd64"},
-					{"name":"mars-darwin-arm64"},
-					{"name":"mars-harness-linux-amd64"},
-					{"name":"mars-harness-linux-arm64"},
-					{"name":"mars-harness-darwin-amd64"},
-					{"name":"mars-harness-darwin-arm64"}
-				]
-			}`, asset)), nil
+			return textResponse(http.StatusOK, exactReleaseAssetsJSON(t, "v1.2.4", asset)), nil
 		case "/assets/bin":
 			require.Equal(t, "application/octet-stream", r.Header.Get("Accept"))
 			return textResponse(http.StatusOK, string(payload)), nil
@@ -163,21 +151,7 @@ func TestRunTaggedReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
 		require.Equal(t, "Bearer ghs_testtoken", r.Header.Get("Authorization"))
 		switch r.URL.Path {
 		case "/repos/greaveselliott/MARS/releases/tags/v1.2.5":
-			return textResponse(http.StatusOK, fmt.Sprintf(`{
-				"tag_name":"v1.2.5",
-				"assets":[
-					{"name":%q,"url":"https://api.example.test/assets/bin","browser_download_url":"https://github.example.test/download/bin"},
-					{"name":"checksums.txt","url":"https://api.example.test/assets/checksums","browser_download_url":"https://github.example.test/download/checksums.txt"},
-					{"name":"mars-linux-amd64"},
-					{"name":"mars-linux-arm64"},
-					{"name":"mars-darwin-amd64"},
-					{"name":"mars-darwin-arm64"},
-					{"name":"mars-harness-linux-amd64"},
-					{"name":"mars-harness-linux-arm64"},
-					{"name":"mars-harness-darwin-amd64"},
-					{"name":"mars-harness-darwin-arm64"}
-				]
-			}`, asset)), nil
+			return textResponse(http.StatusOK, exactReleaseAssetsJSON(t, "v1.2.5", asset)), nil
 		case "/assets/bin":
 			require.Equal(t, "application/octet-stream", r.Header.Get("Accept"))
 			return textResponse(http.StatusOK, string(payload)), nil
@@ -203,6 +177,34 @@ func TestRunTaggedReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
 	got, err := os.ReadFile(filepath.Join(installDir, DefaultBinary))
 	require.NoError(t, err)
 	require.Equal(t, payload, got)
+}
+
+func exactReleaseAssetsJSON(t *testing.T, tag, selected string) string {
+	t.Helper()
+	type asset struct {
+		Name               string `json:"name"`
+		APIURL             string `json:"url,omitempty"`
+		BrowserDownloadURL string `json:"browser_download_url,omitempty"`
+	}
+	payload := struct {
+		TagName string  `json:"tag_name"`
+		Assets  []asset `json:"assets"`
+	}{TagName: tag}
+	for _, name := range ExpectedReleaseAssetNames() {
+		item := asset{Name: name}
+		switch name {
+		case selected:
+			item.APIURL = "https://api.example.test/assets/bin"
+			item.BrowserDownloadURL = "https://github.example.test/download/bin"
+		case "checksums.txt":
+			item.APIURL = "https://api.example.test/assets/checksums"
+			item.BrowserDownloadURL = "https://github.example.test/download/checksums.txt"
+		}
+		payload.Assets = append(payload.Assets, item)
+	}
+	data, err := json.Marshal(payload)
+	require.NoError(t, err)
+	return string(data)
 }
 
 func TestRunReleaseAssetsRejectsChecksumMismatchWithoutReplacingBinary(t *testing.T) {

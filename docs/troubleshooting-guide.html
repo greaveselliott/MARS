@@ -233,7 +233,7 @@ curl http://localhost:9090/api/status</code></pre>
                 <tr><td>Update check cannot reach latest release</td><td>Network or remote release lookup.</td><td>Use <code>--skip-remote</code> for local drift checks, then retry remote lookup later.</td></tr>
                 <tr><td>Release notes missing narrative sections</td><td><code>mars release backfill-notes --repo . --check</code></td><td>Run <code>mars release backfill-notes --repo .</code> and commit compliant changelog updates.</td></tr>
                 <tr><td>Release assets missing</td><td><code>mars release verify-assets --dist dist/releases --version vX.Y.Z</code></td><td>Re-run <code>mars release publish-assets --repo . --version vX.Y.Z --upload auto</code>.</td></tr>
-                <tr><td>GitHub mirror missing assets</td><td><code>mars release verify-assets --version vX.Y.Z</code></td><td>Check auth, rerun publish with upload enabled, and verify <code>gh release view</code>.</td></tr>
+                <tr><td>GitHub mirror missing or mismatched assets / <code>mirror_incomplete</code></td><td><code>mars release verify-assets --version vX.Y.Z</code></td><td>Keep the tag fixed, check auth and the reported missing/extra/pending/mismatch classification, then rerun publish with upload enabled. Upload-process exit zero alone is not completion.</td></tr>
               </tbody>
             </table>
           </div>

@@ -7,143 +7,100 @@
 
 ## Business Logic
 
-MARS may become public only when publication authority and technical readiness
-are independently proven. Reversible technical work may proceed while
-ownership/licensing review is pending, but no supporting result authorizes an
-irreversible public action.
+MARS remains private until publication authority and every technical cutover gate are durable. The operator states ownership of the first-party project and name and has authorized a complete private rewrite; that authorization permits the T-063 reconstruction but does not itself complete privacy, IP, runtime, release, contribution, or cutover validation.
 
-Publication authority covers the right to license source, predecessor material,
-prompts, documentation, and assets, plus explicit disposition of historical
-privacy/IP findings and the product name. Agents record evidence but do not make
-legal conclusions.
+The selected history strategy is a clean private reconstruction from `v0.68.49`, retaining only reviewed release-mirror convergence and lean publication planning. Private audit-era refs and releases are retired before publication. The rewrite removes them from accessible repository refs and releases, but does not claim that unreachable hosting-provider storage, external clones, or caches are physically recalled.
 
-Technical readiness covers secure-by-default network, browser, filesystem,
-execution, credential, release/update, contribution, and supply-chain behavior.
-Official public release access must work anonymously. Optional authentication
-may support rate limits or private forks but cannot be required for the official
-public repository.
-
-Visibility conversion is a separately approved manual action after all
-scenarios pass. Historical public tags are immutable. Unsafe assets may be
-withdrawn, but tags are never moved. Returning a public repository to private
-does not restore confidentiality.
+Supporting private evidence cannot authorize visibility conversion. Visibility is a separately approved owner action only after F-017-S001 through F-017-S005 pass.
 
 ## Step-By-Step Behavior
 
-1. The Orchestrator classifies evidence as foundation-owned, mirrored doctrine,
-   evidence-only, deployed-owned, or mixed/unclear.
-2. COO maintains the Primary Outcome Contract and scenario schedule.
-3. CTO creates only the current bounded ticket through `ticket_create`.
-4. Engineer implements it with tests, documentation, and `MarsDocSync`.
-5. QA and Security independently review acceptance and containment.
-6. Dogfood validates affected runtime or release behavior using the installed
-   binary on clean matrix targets and records a report or exact blocker.
-7. Release Manager versions and verifies only legally permitted private artifacts.
-8. Audit evidence committed to the repo is redacted; raw secret candidates
-   remain outside the repository with owner-only protection.
-9. A real secret is rotated before removal or history rewriting.
-10. Legal/owner evidence decides whether audited history is preserved or a
-    clean public snapshot is required.
-11. Visibility stays private until every scenario, no-go gate, and role
-    sign-off passes.
-12. After separately approved cutover, logged-out smoke runs immediately,
-    integrations are re-enabled least-to-most privileged, and announcement
-    waits for a clean 48-hour canary.
+1. Keep the repository private and freeze writes before destructive ref or release operations.
+2. Reconstruct and validate the approved source tree in isolation through T-063.
+3. Use exact leases and an atomic remote ref transaction; unexpected remote drift is a no-go.
+4. Preserve unrelated owner work and retain no rollback ref, tag, branch, or bundle after successful verification.
+5. Run conventional history, secret, privacy, IP, provenance, and name checks against the replacement publication surface; inaccessible evidence remains unresolved rather than clean.
+6. Close reachable runtime and local-state P0 findings without reintroducing an embedded publication-audit runtime.
+7. Make official source and supported release access anonymous, signed, immutable, and attributable.
+8. Require fork-safe contribution controls and private vulnerability reporting.
+9. Rehearse the cutover privately and change visibility only through a separate approved owner action.
+10. Run logged-out smoke immediately after cutover and wait for a clean 48-hour canary before announcement.
 
 ## Scenario Schedule
 
-1. F-017-S001 (initial slice) - Inventory publication surfaces and establish the owner-controlled restricted-audit contract without making legal conclusions.
-2. F-017-S002 - Runtime and source operations are secure by default or explicitly gated.
-3. F-017-S003 - Public release/install/update works anonymously with signed provenance.
-4. F-017-S004 - External contributions use fork-safe least-privilege CI and protected refs.
-5. F-017-S001 (final disposition) - Complete restricted scans, privacy/IP/provenance review, publication authority, name clearance, and the audited-history or clean-snapshot decision.
-6. F-017-S005 - Private rehearsal, logged-out cutover, rollback, and canary pass.
+1. F-017-S001 - Complete T-063 private reconstruction, conventional publication-surface review, and owner disposition.
+2. F-017-S002 - Close secure runtime, filesystem, execution, credential, logging, and update gates.
+3. F-017-S003 - Verify anonymous signed install, update, rollback, and exact release publication.
+4. F-017-S004 - Verify fork-safe contribution, governance, support, and private reporting.
+5. F-017-S005 - Rehearse privately, perform separately approved cutover smoke, and complete the 48-hour canary.
 
 ## Scenarios
 
-### F-017-S001: Publication Authority And Audit Clearance
+### F-017-S001: Publication Surface, Authority, Privacy, And Provenance
 
-Given MARS source, history, releases, GitHub surfaces, predecessor material,
-prompts, documentation, and assets are candidates for publication
-When pinned scans, manual privacy/IP review, provenance review, and owner/legal
-review complete
-Then every finding has a durable redacted disposition
-And real secrets were rotated before removal
-And publication authority and name clearance are explicitly recorded
-And the decision states whether audited history is preserved or a clean
-snapshot is required.
+Given the replacement private history, repository configuration, releases, source, documentation, prompts, dependencies, models, and assets are the proposed publication surface
+When standard pinned secret/history scans, manual privacy/IP/provenance review, name checks, and owner disposition complete
+Then every surface is collected, confirmed empty, not applicable, or explicitly accepted as unrecoverable
+And every finding is resolved without raw candidate values entering repository evidence
+And the owner attestation records authority, third-party obligations, media/model provenance, accepted evidence gaps, and the clean-history strategy
+And the scenario remains blocked if any surface, right, provenance chain, or finding is unresolved.
 
 ### F-017-S002: Secure Runtime Defaults
 
-Given a new user runs supported MARS commands against a hostile or untrusted
-repository
-When dashboard, webhook, setup, telemetry, filesystem tools, shell execution,
-cleanup, logs, and traces operate
-Then listeners default to loopback
-And remote control requires explicit authentication and request protections
-And unsigned or untrusted GitHub events cannot enqueue autonomous mutation, with webhook secrets resolved env-first or from only the owner-only setup fallback
-And repo filesystem operations cannot escape through symlinks
-And observer execution is the new-install default
-And host execution requires explicit acknowledgement
-And child environments, state permissions, logs, and traces contain credentials
-and sensitive data according to documented policy
-And vulnerability gates fail closed.
+Given a new user runs MARS against an untrusted repository
+When network listeners, browser controls, webhooks, filesystem tools, command execution, credentials, logs, traces, and updates operate
+Then control listeners default to loopback and remotely exposed controls require explicit authentication and request protections
+And untrusted events cannot enqueue autonomous mutation
+And repository filesystem operations cannot escape through links or races
+And observer execution is the new-install default while host authority requires explicit acknowledgement
+And child environments, state permissions, logs, traces, and vulnerability gates fail closed without overstating containment.
 
-### F-017-S003: Anonymous Signed Release Lifecycle
+### F-017-S003: Anonymous, Immutable, Verifiable Release Lifecycle
 
-Given a logged-out user has no GitHub token
-When they build, install, set up, update, verify, or roll back MARS
-Then official public repository metadata and assets are available anonymously
-And every supported archive contains the binary, license, notices, third-party
-notices, SBOM, and provenance metadata
-And a pinned public key verifies the release manifest
-And the updater rejects tampered, stale, extra, unsigned, wrong-version,
-wrong-platform, or wrong-commit assets before atomic replacement
-And optional authentication remains available for rate limits and private forks.
+Given a supported release is built from an immutable release-note commit
+When local assets are produced or a GitHub mirror is attempted
+Then the local release contains the exact required platform assets and checksums
+And already-matching remote assets are preserved
+And the remote tag resolves to the exact local release-note commit before mutation and before success
+And success requires the exact unique remote asset names, uploaded states, byte sizes, and SHA-256 digests
+And missing, extra, duplicate, pending, mismatched, unverifiable, canceled, or non-converging state returns non-zero as `mirror_incomplete`
+And upload-process exit zero alone can never become completion evidence
+And the future supported public archive, signature, notices, SBOM, provenance, anonymous download, update, and rollback contract passes independently.
 
 ### F-017-S004: Fork-Safe Contribution And Governance
 
-Given an untrusted external contributor opens a fork pull request
+Given an untrusted contributor opens a fork pull request
 When repository automation runs
-Then it receives no secrets, write token, release key, or self-hosted MARS runner
-And it does not use `pull_request_target`
-And required checks, DCO, review, conversation resolution, and protected
-`main`/`v*` rules apply
-And only narrowly scoped maintainers or the trusted MARS App can bypass
-direct-trunk controls
-And public security reports have a private disclosure path
-And community, support, governance, maintenance, and AI-assisted contribution
-expectations are documented.
+Then it receives no secrets, write token, release key, or self-hosted privileged runner
+And it cannot mutate protected refs or publish releases
+And required CI, DCO, review, governance, support, conduct, and private vulnerability-reporting policies apply.
 
-### F-017-S005: Controlled Cutover And Recovery
+### F-017-S005: Controlled Cutover And Canary
 
-Given F-017-S001 through F-017-S004 pass and all required roles sign off
-When the owner separately approves visibility conversion
-Then a final backup/settings/ref/artifact manifest exists
-And the signed cutover release passes private verification
-And logged-out clone, build, install, update, vulnerability reporting, and fork
-PR smoke pass immediately after conversion
-And integrations are re-enabled from least to most privileged
-And rollback and incident procedures are executable
-And public announcement waits until the 48-hour canary remains clean.
+Given F-017-S001 through F-017-S004 pass with required owner, Security, QA, Dogfood, Release Manager, and Orchestrator sign-offs
+When the owner separately approves public visibility
+Then final refs, settings, artifacts, recovery procedures, and credentials are verified
+And logged-out clone, build, install, update, vulnerability reporting, and fork-PR smoke pass
+And integrations are re-enabled least-to-most privileged
+And announcement waits until the 48-hour canary remains clean.
+
+## Evidence
+
+- **F-017-S001:** T-063 is reconstructing the proposed private publication surface. Conventional scans, manual review, and committed owner disposition remain pending.
+- **F-017-S002:** The retained baseline includes existing vulnerability, loopback, webhook, and dashboard hardening, but the complete runtime/filesystem/execution gate has not passed.
+- **F-017-S003:** T-061 exact GitHub mirror convergence is retained and mechanically testable. Signed public archives, anonymous install/update, negative verification, and rollback remain pending.
+- **F-017-S004:** Pending fork-safe CI, governance, reporting, and disposable hostile-fork rehearsal.
+- **F-017-S005:** Pending private rehearsal, separate visibility approval, logged-out smoke, recovery proof, and 48-hour canary.
+
+No scenario is complete. Primary Status remains `primary_blocked`, repository visibility remains private, and no publication or announcement is authorized.
 
 ## Out of Scope
 
-- Agents providing legal advice or independently declaring ownership.
-- Changing repository visibility before the separately approved cutover.
-- Finalizing ownership-dependent copyright or notice text before clearance.
-- Deleting or publicly republishing historical assets before clearance.
-- Adding cloud runtime dependencies.
-- Guaranteeing support for releases older than the latest supported release.
+- Reintroducing a repository-embedded publication audit laboratory.
+- Treating the private rewrite as secret, privacy, IP, runtime, or cutover clearance.
+- Claiming physical deletion from hosting-provider storage or third-party caches.
+- Changing visibility, announcing the project, or finalizing unsupported historical releases during T-063.
 
 ## Descoped Scenarios
 
 None.
-
-## Evidence
-
-- F-017-S001: T-056 passed Engineer, QA, Security, Dogfood, and Orchestrator review for the read-only local Git and redacted GitHub surface inventory, explicit inaccessible/not-attempted gaps, and isolated owner-controlled offline restricted-evidence contract. The technical history recommendation remains `undecided`. Pinned scans, manual privacy/IP/provenance review, inaccessible-surface collection, publication-authority attestation, and name clearance remain pending, so the scenario does not pass.
-- F-017-S002: T-055 technically completes the vulnerability-baseline enabler. T-057/private v0.68.46 completes the bounded OSS-02 loopback and GitHub webhook-ingress slice after Engineer, QA, Security, exact full-race, installed clean static-browser/API-service evidence, nine-asset local/remote verification, and a clean rolling release audit. T-058/private v0.68.48 implements the embedded-dashboard browser/control boundary under F-010-S024 with QA and Security PASS, full mechanical gates, verified private release assets, and installed clean-target HTTP/SQLite evidence. T-058 remains incomplete only because the unavailable in-app browser prevents real-DOM hostile-string and outbound-disabled zero-external-request observation; it does not claim the future TanStack-specific F-010-S012/MH-053 contract. GitHub setup, telemetry intake, filesystem, execution, and later runtime P0 tickets remain pending, so F-017-S002 remains independently incomplete.
-- F-017-S003: Pending deterministic-build, signature, anonymous install/update, negative artifact, bridge, and rollback evidence.
-- F-017-S004: Pending community/CI checks and disposable public hostile-fork rehearsal.
-- F-017-S005: Pending private rehearsal, role sign-offs, logged-out smoke, rollback record, and 48-hour canary report.

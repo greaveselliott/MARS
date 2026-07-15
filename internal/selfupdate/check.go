@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/release-versioning.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-017-open-source-publication.md
 */
 package selfupdate
 
@@ -45,13 +46,15 @@ type ReleaseInfo struct {
 // ReleaseAssetReport records whether a release satisfies the binary asset
 // contract expected by installers and self-updates.
 type ReleaseAssetReport struct {
-	TagName  string   `json:"tag_name"`
-	Version  string   `json:"version"`
-	URL      string   `json:"url"`
-	Required []string `json:"required"`
-	Found    []string `json:"found"`
-	Missing  []string `json:"missing"`
-	OK       bool     `json:"ok"`
+	TagName   string   `json:"tag_name"`
+	Version   string   `json:"version"`
+	URL       string   `json:"url"`
+	Required  []string `json:"required"`
+	Found     []string `json:"found"`
+	Missing   []string `json:"missing"`
+	Extra     []string `json:"extra,omitempty"`
+	Duplicate []string `json:"duplicate,omitempty"`
+	OK        bool     `json:"ok"`
 }
 
 // VersionRelation describes how two semantic versions compare.
@@ -194,31 +197,58 @@ func VerifyReleaseAssets(ctx context.Context, client *http.Client, releaseURL st
 // contract without making network calls.
 func VerifyReleaseAssetInfo(release ReleaseInfo) ReleaseAssetReport {
 	required := ExpectedReleaseAssetNames()
-	foundSet := make(map[string]bool, len(release.Assets))
+	requiredSet := make(map[string]bool, len(required))
+	for _, name := range required {
+		requiredSet[name] = true
+	}
+	foundCount := make(map[string]int, len(release.Assets))
+	var extra []string
 	for _, asset := range release.Assets {
 		if asset.Name != "" {
-			foundSet[asset.Name] = true
+			foundCount[asset.Name]++
+			if !requiredSet[asset.Name] {
+				extra = append(extra, safeReleaseAssetDiagnosticName(asset.Name))
+			}
 		}
 	}
-	found := make([]string, 0, len(foundSet))
+	found := make([]string, 0, len(foundCount))
 	missing := make([]string, 0)
 	for _, name := range required {
-		if foundSet[name] {
+		if foundCount[name] > 0 {
 			found = append(found, name)
 			continue
 		}
 		missing = append(missing, name)
 	}
-	sort.Strings(found)
-	return ReleaseAssetReport{
-		TagName:  release.TagName,
-		Version:  NormalizeVersion(release.TagName),
-		URL:      release.HTMLURL,
-		Required: required,
-		Found:    found,
-		Missing:  missing,
-		OK:       len(missing) == 0,
+	var duplicate []string
+	for name, count := range foundCount {
+		if count > 1 {
+			duplicate = append(duplicate, fmt.Sprintf("%s (%d copies)", safeReleaseAssetDiagnosticName(name), count))
+		}
 	}
+	sort.Strings(found)
+	sort.Strings(extra)
+	sort.Strings(duplicate)
+	return ReleaseAssetReport{
+		TagName:   release.TagName,
+		Version:   NormalizeVersion(release.TagName),
+		URL:       release.HTMLURL,
+		Required:  required,
+		Found:     found,
+		Missing:   missing,
+		Extra:     extra,
+		Duplicate: duplicate,
+		OK:        len(missing) == 0 && len(extra) == 0 && len(duplicate) == 0,
+	}
+}
+
+func safeReleaseAssetDiagnosticName(value string) string {
+	for _, name := range ExpectedReleaseAssetNames() {
+		if value == name {
+			return name
+		}
+	}
+	return "<redacted-asset-name>"
 }
 
 // CompareVersions compares dotted semantic versions. Unknown/dev values return
