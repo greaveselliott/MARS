@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-066; scheduled T-067
-**Current Ticket:** T-066 in backlog, created through `ticket_create` and ready for Engineer claim
+**Current Ticket:** T-066 in progress; checkpoint A is the only implementation slice
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018

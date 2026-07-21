@@ -9,7 +9,7 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "TBD"
+last_attempt: "2026-07-22: claimed for checkpoint A implementation after the planning handoff was pushed at 1257534"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
