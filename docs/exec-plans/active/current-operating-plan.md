@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063, T-064; scheduled T-065 through T-067
-**Current Ticket:** T-064
+**Current Ticket:** None; T-065 creation through `ticket_create` is the next atomic action after T-064 evidence lands
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-064 through T-067 and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Retire v0.93 with exact leases, then implement and privately rehearse the source-only GoReleaser contract without changing visibility.
+- **Current Primary Blocker:** T-065 through T-067 and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
+- **Next Primary Action:** Create T-065 through `ticket_create`, then replace bespoke release production with the pinned source-only GoReleaser snapshot contract.
 
 ## Locked Decisions
 
@@ -51,7 +51,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 
 | Ticket | Outcome | Entry gate | Exit gate |
 | --- | --- | --- | --- |
-| T-064 | Retire v0.93 and reset the release floor. | Live leases match the captured manifest. | Release/tag/commit are absent, Pages is disabled, protected work is re-anchored, `VERSION` is `0.68.49`, and the source fallback is `0.69.0-dev`. |
+| T-064 | Retire v0.93 and reset the release floor. | Live leases match the captured manifest. | Passed 2026-07-21: Release/tag are absent, Pages is disabled, protected work is re-anchored, `VERSION` is `0.68.49`, and the source fallback is `0.69.0-dev`. |
 | T-065 / F-018-S001 | Replace the bespoke producer with pinned GoReleaser. | T-064 complete. | Four deterministic archives, notices, SPDX SBOMs, checksums, and signing configuration pass snapshot tests. |
 | T-066 / F-018-S002 | Migrate installer, updater, audit, CLI/docs, and generated guidance. | T-065 complete and contract frozen. | Consumers reject tampering and unsafe archives; legacy publish/verify commands and raw aliases are absent. |
 | T-067 / F-018-S003 | Rehearse privately and prepare `0.69.0`. | T-066 complete. | Two-build reproducibility, clean macOS/Linux installs, workflow draft-failure behavior, and release-note preparation pass. |
@@ -68,6 +68,17 @@ This exception cannot authorize a supported-release claim, visibility change, or
 7. Re-anchor both protected stashes on rewritten `main`, preserving messages, file hashes, and staged/unstaged/untracked classifications. Leave the unrelated dashboard worktree untouched.
 8. Replace the installed v0.93 binary with a verified source build before deleting exact local v0.93 artifacts.
 9. Record actual counts and residual SHA-only hosting metadata without claiming physical erasure from caches or backups.
+
+## T-064 Retirement Evidence — 2026-07-21
+
+- Replacement commit `cf62513ea9a2e83e60e3bd74085191a2e977d74f` was built from `6d326ffa82e236570509b3783711b87911e5500d`, passed `make check`, DocSync, release-note dry-run, and four CGO-disabled target builds, then replaced remote `main` with the exact `bf3034863691443962ec251e62c8dec1ee5138fb` branch lease.
+- GitHub remained private with sole branch `main`; Pages configuration changed from public/HTTP 200 to API 404 and logged-out HTTP 404 before the branch rewrite and remained unavailable afterward.
+- Release ID `354800199` had exactly nine uploaded assets before deletion, returned HTTP 204 on deletion, and both numeric-ID and tag lookups returned 404 afterward. The exact `v0.93.0` tag lease at `bf3034863691443962ec251e62c8dec1ee5138fb` was then deleted; final counts are 301 tags and 56 Releases.
+- Retired Pages artifact `8360983372`, run `29460583182`, and deployment `5465865045` were deleted and independently returned 404. Deployment status `15767000543` recorded `inactive` before deletion.
+- Re-anchored stash `1592dd2628c7a7bb62f17be36e43712e0e27c0d0` preserves the T-060 tracked diff hash `a22bb0d367a0dc975a2dbdc101205438997a0f090a2375f037394b19cdab4434` and two untracked file hashes. Re-anchored stash `6ebc8f38320753b00787658c6a41c30bc54e30d4` preserves cognition diff hash `b596088de5d6b9cca5a8c39bf0f915ce3f5b70d24a2e3c712066de0ec4c9ff38`; both use `cf62513` as parent with their original messages and classifications.
+- The unrelated dashboard worktree remains at `404c047e3cdfc39af29c3d630b558ad5f82b8709` with unchanged status fingerprint `96fd2019657d2c7a9e3b50c9f20e526df160c1e95cff1a6161543b5005f381a9`.
+- As of 2026-07-21, installed MARS reports `0.69.0-dev.cf62513` with full commit metadata and matches the reviewed binary SHA-256 `0ae11dc259073c9cab48f5d4b32c0dd7f56c197ada32c0370d633ea3fd9a94e5`. This is a development identity, not a supported release.
+- GitHub may retain provider-side SHA metadata, backups, logs, or caches without a deletion API; this evidence records logical absence and does not claim physical erasure.
 
 ## GoReleaser Contract
 
