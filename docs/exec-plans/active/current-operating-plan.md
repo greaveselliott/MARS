@@ -13,7 +13,7 @@
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; each snapshot's exact archive/SBOM checksum contract passes; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-066 installer/updater migration; T-067 private rehearsal; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S001: the retained private baseline has no pinned, publication-disabled GoReleaser archive producer or verified snapshot contract.
+**Current Failing Scenario:** F-018-S001: the pinned producer and clean-root snapshot contract pass, but the superseded bespoke producer remains reachable and the remaining T-065 gates are incomplete.
 **Walking Skeleton Slice:** Build four private snapshot archives with deterministic binary/archive metadata, exact notices, per-archive SPDX SBOMs, and an exact self-verifying checksum set without creating a tag, Release, signature, or supported-release claim.
 **Learning Or MVP Outcome:** Establish a truthful private release floor and an explicit migration contract before changing release implementation or consumer behavior.
 **Created:** 2026-07-21
@@ -25,7 +25,7 @@
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-065 through T-067 and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Implement T-065 as the pinned source-only GoReleaser snapshot producer without creating a tag, Release, public signature, or supported-release claim.
+- **Next Primary Action:** Complete T-065 checkpoint C by retiring only superseded bespoke producer surfaces, retaining consumer verification for T-066, and running the remaining source gates without creating a tag, Release, signature, or supported-release claim.
 
 ## Locked Decisions
 
@@ -88,6 +88,13 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - Produce one SPDX-JSON SBOM per archive and `checksums.txt` containing exactly four archive and four SBOM entries. T-065 creates no signature bundle.
 - Keep the default producer publication-disabled. Draft creation, fresh-download comparison, signing, attestation, and immutable publication remain later cutover work.
 - Enable GitHub release immutability before the first supported release; never move or clobber a published tag or asset.
+
+## T-065 Checkpoint Evidence — 2026-07-21
+
+- Checkpoint A is pushed at `dc5685be81e49a0506979ac610ef59126e70c1a6`: exact GoReleaser `v2.17.0` and Syft `v1.49.0` source-built with Go `1.26.5`, publication-disabled configuration, provisional notices, and the `0.69.0-dev` release-note compatibility fix.
+- Checkpoint B1 is pushed at `6a68eccf30036ab2fa84474afb85f7ee113c6ed9`: the test/CI-only contract checker requires exactly four archives, four SBOMs, and one checksum file; verifies the exact eight checksum records, bounded archive structure, four-platform build metadata, archive/SBOM binding, and one native runtime identity; and rejects same-root comparison evidence.
+- Two clean clones at `6a68eccf30036ab2fa84474afb85f7ee113c6ed9` independently produced `0.69.0-dev.6a68ecc`. The committed cross-root verifier passed. All four archive hashes and archive checksum records are identical; each run's eight records verify its exact raw artifacts; all four raw SBOMs differ as expected from Syft's timestamp and namespace; and normalized SPDX semantics match after excluding only those fields. Both clones remained clean.
+- QA, Security, Release Manager, and Orchestrator accept this as private producer evidence only. GoReleaser's recorded binary findings, provisional dependency notices, signatures, consumers, clean install/update, and public cutover remain unresolved. No tag, Release, upload, signature, or visibility change occurred.
 
 ## Validation Gates
 

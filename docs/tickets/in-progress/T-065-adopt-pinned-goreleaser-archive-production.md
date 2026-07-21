@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s001-deterministic-release-production"]
 verified_by: "QA, Security, Release Manager, foundation-maintainer"
 owner: "engineer"
-last_attempt: "2026-07-21: checkpoint-A reviews accepted the bounded producer after Syft/config corrections; exact GoReleaser v2.17.0 binary findings remain a public-cutover blocker"
+last_attempt: "2026-07-21: checkpoint-B clean-root proof passed at 6a68ecc; four archives are byte-identical and each exact eight-entry checksum set verifies"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Verify upstream pins, implement the bounded snapshot producer, and remove bespoke publication only after replacement tests pass."
+next_action: "Retire only the bespoke producer surfaces now superseded by the verified GoReleaser snapshot contract; retain consumer verification for T-066."
 dedupe_key: "release:goreleaser-snapshot-producer"
 metadata:
   classification: "foundation-owned"
@@ -45,3 +45,9 @@ Pinned goreleaser check passes; two clean snapshot builds for Darwin/Linux AMD64
 ## Third-party producer security disposition
 
 The SumDB-built GoReleaser `v2.17.0` binary produced with Go `1.26.5` has two exact `govulncheck -mode=binary` findings: GO-2026-5970 through `golang.org/x/text@v0.38.0` (fixed upstream after the tag) and GO-2026-5932 through the compiled `golang.org/x/crypto/openpgp@v0.53.0` dependency chain used by the dormant `ko`/Sigstore/Rekor path (no fixed version). Syft `v1.49.0` has no called-symbol finding. T-065 does not fork, overlay, or silently repack GoReleaser: the exact official module remains restricted to credential-free, publication-disabled private snapshots with `ko`, signing, announcement, and publication explicitly skipped, while Syft update checks, enrichment, and remote license lookup are disabled. No OpenPGP input is parsed by this archive-only path. This expiring, risk-calibrated exception may prove the private archive producer contract, but it cannot satisfy the public cutover vulnerability gate or authorize `ko`. A later ticket must move to an upstream release/removal with an acceptable scan before any supported release or signing workflow is authorized.
+
+## Checkpoint B evidence — immutable clean-root proof
+
+At pushed commit `6a68eccf30036ab2fa84474afb85f7ee113c6ed9`, two independent clean clones produced snapshot `0.69.0-dev.6a68ecc` with Go `1.26.5`. The committed environment verifier passed while comparing the two outputs. Each publishable set contained exactly four archives, four matching SPDX-JSON SBOMs, and `checksums.txt`; each checksum file had exactly eight verified entries. The archive SHA-256 values matched across both roots: Darwin/AMD64 `0583adeb071a167726b17d4edbeaaf26e3e4ac5bb36f6cea09cdc4069594cf71`, Darwin/ARM64 `b417d6e2667698d98a37ea55e8f097c823a2dc1d7dc10b4ab790ccce224f5cec`, Linux/AMD64 `3478e0a1f0c75a76701899eeb27312cadfe348c2445471629cb7232755910853`, and Linux/ARM64 `94c7ab7ba772d73dffb452d56f33eeb7a942063a363cc483dd4177ccbd1e8450`.
+
+The verifier statically inspected build metadata for all four binaries and executed only the native Darwin/ARM64 binary for linked version, full-commit, and commit-date evidence. Raw SBOM and whole-checksum-file hashes differed only as permitted by Syft's generated SPDX timestamp and namespace; normalized SBOM semantics matched, and each run's checksum file bound its exact raw SBOM bytes. QA, Security, and Release Manager reviews are GO for this trusted, publication-disabled producer proof. No tag, Release, signature, upload, visibility change, or supported-release claim occurred. Checkpoint C must still make the bespoke producer unreachable and run the remaining T-065 gates before F-018-S001 can pass.

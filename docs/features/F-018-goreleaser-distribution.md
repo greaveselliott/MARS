@@ -34,7 +34,8 @@ Given an exact clean source commit and explicit non-release snapshot version
 When pinned GoReleaser builds MARS twice with the pinned Go toolchain
 Then Darwin and Linux AMD64 and ARM64 archives are byte-identical between runs
 And each archive contains exactly the MARS binary, license, notice, and third-party notices
-And each binary reports the exact version, full commit, platform, and commit-derived build date
+And all four binaries' build metadata binds the exact platform, Go toolchain, full commit, clean VCS state, and commit-derived build time
+And the host-native binary reports the linked snapshot version, full commit, and commit-derived build date
 And SPDX-JSON SBOMs and an exact SHA-256 checksum set covering all four archives and four SBOMs are produced
 And the four archives and their checksum records are reproducible while each run verifies its own raw SBOM bytes and the two runs have equivalent normalized SPDX semantics
 And the default producer contains no signing or publication authority and creates no public keyless signature
@@ -71,7 +72,7 @@ And logged-out archive download, install, update, rollback, `gh release verify`,
 
 ## Evidence
 
-- **F-018-S001:** Pending T-065; private snapshot notices remain provisional until the complete Go dependency notice review passes before cutover. Exact GoReleaser `v2.17.0` binary findings GO-2026-5970 and GO-2026-5932 are accepted only for credential-free, publication-disabled private snapshot evidence with `ko`, signing, announcement, and publication explicitly skipped; they remain a public-cutover no-go pending an acceptable upstream release/removal.
+- **F-018-S001:** In progress under T-065. Producer/config checkpoint `dc5685b` and checker checkpoint `6a68ecc` are pushed. Two clean clones at `6a68eccf30036ab2fa84474afb85f7ee113c6ed9` passed the exact nine-file, eight-checksum, byte-identical archive, four-platform build-metadata, one-native-runtime, archive/SBOM binding, and normalized-SPDX comparison contract. The bespoke producer retirement and remaining T-065 gates are still pending, so the scenario is not complete. Private snapshot notices remain provisional until the complete Go dependency notice review passes before cutover. Exact GoReleaser `v2.17.0` binary findings GO-2026-5970 and GO-2026-5932 are accepted only for credential-free, publication-disabled private snapshot evidence with `ko`, signing, announcement, and publication explicitly skipped; they remain a public-cutover no-go pending an acceptable upstream release/removal.
 - **F-018-S002:** Pending T-066.
 - **F-018-S003:** Pending T-067.
 - **F-018-S004:** Deferred to the F-017 cutover; no public release is authorized by this feature alone.
