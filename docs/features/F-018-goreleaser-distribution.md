@@ -16,8 +16,9 @@ Private snapshot evidence proves build behavior but is never a supported-release
 1. T-064 removes the unsupported private v0.93 lineage and restores the retained v0.68.49 release floor without publishing a replacement.
 2. T-065 builds pinned GoReleaser and Syft modules with the pinned Go toolchain, defines the four archive targets, and removes the bespoke publication path only after the replacement producer passes.
 3. T-066 migrates installation and updates to fail-closed archive, checksum, signature, identity, metadata, and extraction verification.
-4. T-067 runs reproducible private snapshots and clean installation fixtures without creating a tag, Release, signature, or supported-release claim.
-5. A separately approved F-017 cutover publishes the first immutable supported release only after every independent publication gate passes.
+4. An unnumbered compatibility enabler may raise the MARS source floor only after separate owner approval and re-sequencing of the reserved rehearsal ticket; packaged binaries and generated target harnesses remain Go-free.
+5. T-067 runs reproducible private snapshots and clean installation fixtures without creating a tag, Release, signature, or supported-release claim unless re-sequenced after that approval.
+6. A separately approved F-017 cutover publishes the first immutable supported release only after every independent publication gate passes.
 
 ## Scenario Schedule
 
@@ -73,8 +74,8 @@ And logged-out archive download, install, update, rollback, `gh release verify`,
 ## Evidence
 
 - **F-018-S001:** Passed 2026-07-21 under T-065. Producer/config checkpoint `dc5685b`, checker checkpoint `6a68ecc`, evidence checkpoint `3b4f7c8`, and bespoke-producer retirement checkpoint `bb1b79b` are pushed. Two clean clones at `6a68eccf30036ab2fa84474afb85f7ee113c6ed9` passed the exact nine-file publishable-set, eight-checksum, byte-identical archive, four-platform build-metadata, one-native-runtime, archive/SBOM binding, and normalized-SPDX comparison contract. A separate clean final-commit snapshot `0.69.0-dev.bb1b79b` passed the same committed environment verifier after producer retirement; full source, cross-build, installed-binary, clean-target, DocSync, QA, Security, Dogfood, Release Manager, and Orchestrator gates passed. No tag, Release, signature, upload, visibility change, or supported-release claim occurred. Private snapshot notices remain provisional until the complete Go dependency notice review passes before cutover. Exact GoReleaser `v2.17.0` binary findings GO-2026-5970 and GO-2026-5932 are accepted only for credential-free, publication-disabled private snapshot evidence with `ko`, signing, announcement, and publication explicitly skipped; they remain a public-cutover no-go pending an acceptable upstream release/removal.
-- **F-018-S002:** Blocked at T-066 checkpoint A1 dependency admission. Official `sigstore-go v0.7.0` preserved Go 1.22.4 and exposed every required offline verification and commit-binding API, but two exact called-path probes found 14 called vulnerabilities, including the direct `GO-2026-5952` multi-log verification-threshold bypass fixed only in `v1.2.0`; that fixed release requires Go 1.25.0. T-066 cannot raise the minimum Go version or hand-roll cryptography, so no dependency or verifier implementation landed. Resume only after a separately approved minimum-Go migration or a vulnerability-cleared Go-1.22-compatible upstream release. No real MARS signing or publication evidence exists.
-- **F-018-S003:** Pending T-067.
+- **F-018-S002:** Blocked at T-066 checkpoint A1 pending a separately approved source-compatibility ticket. Official `sigstore-go v0.7.0` was rejected with 14 called findings including `GO-2026-5952`. Newest fixed `v1.2.2` compiles the exact offline wrapper; its declared Go 1.25.8 floor still exposes eight called standard-library findings, while the identical path on Go 1.25.12 reports zero called findings. The bounded recommendation is therefore `go 1.25.12` with release `toolchain go1.26.5`, exact minimum-version CI, and Go-free packaged operation. T-066 cannot authorize that compatibility change or hand-roll cryptography, so no dependency or verifier implementation landed. No real MARS signing or publication evidence exists.
+- **F-018-S003:** Pending T-067 after T-066 completes; re-sequence only if the compatibility enabler is approved.
 - **F-018-S004:** Deferred to the F-017 cutover; no public release is authorized by this feature alone.
 
 ## Out of Scope

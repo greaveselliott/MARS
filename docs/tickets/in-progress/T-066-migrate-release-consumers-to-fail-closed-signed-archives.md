@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: v0.7.0 admission preserved Go 1.22.4 and compiled the required APIs, but exact called-path govulncheck found 14 vulnerabilities including GO-2026-5952"
-blocker: "No admitted sigstore-go release both preserves the approved Go 1.22.4 minimum and clears called verification-path vulnerabilities; GO-2026-5952 is fixed only in v1.2.0, which requires Go 1.25.0"
+last_attempt: "2026-07-22: v1.2.2 probe compiled the exact APIs; Go 1.25.8 retained eight called stdlib findings while Go 1.25.12 produced zero called findings"
+blocker: "Owner approval is required for a separate compatibility ticket raising MARS's exact minimum from Go 1.22.4 to the Go 1.25.12 floor that cleared the exact called-path probe before sigstore-go v1.2.2 can be admitted"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Obtain separate approval and a dedicated ticket for a minimum-Go migration before evaluating sigstore-go v1.2.0+, or wait for a vulnerability-cleared release compatible with Go 1.22.4; then rerun the three-part A1 admission gate."
+next_action: "Obtain owner approval; first re-sequence the reserved T-067 rehearsal across live authority, then create a dedicated minimum-Go compatibility ticket through ticket_create, move the source-only floor to Go 1.25.12 while retaining toolchain Go 1.26.5 and binary-safe doctor behavior, and rerun T-066 A1 admission for sigstore-go v1.2.2."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -51,7 +51,7 @@ C. Migrate scripts/install.sh to the same trusted verifier path. If bootstrap ca
 
 D. Migrate or retire release verify-assets, release audit, CLI/MarsCLI, current docs, DocSync routes, and generated target guidance. Remove legacy raw asset names mars-<os>-<arch> and mars-harness-<os>-<arch> and legacy checksum-only semantics; update binary/cli command aliases are not raw-asset aliases. Commit and push.
 
-E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build gates, an installed commit-bound binary, a fresh target, and an offline synthetic signed update/rollback lifecycle. Close ticket, F-018-S002, and plan evidence in a separate commit. T-067 retains two-build and clean macOS/Linux pipeline rehearsal.
+E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build gates, an installed commit-bound binary, a fresh target, and an offline synthetic signed update/rollback lifecycle. Close ticket, F-018-S002, and plan evidence in a separate commit. T-067 retains two-build and clean macOS/Linux pipeline rehearsal unless the approved compatibility ticket first re-sequences it.
 
 ## Checkpoint A1 dependency admission — blocked 2026-07-22
 
@@ -59,7 +59,10 @@ E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build
 - A disposable module running the exact Go 1.22.4 toolchain retained `go 1.22.4` after `go mod tidy -go=1.22.4`. The exact production wrapper compiled. A valid v0.3 fixture independently passed offline bundle, trusted-root, transparency-log, integrated-timestamp, and identity verification, while a focused extension test rejected a mismatched source digest; the exact-artifact-byte and SCT paths were compile-proven rather than accepted as release evidence.
 - Exact called-path `govulncheck v1.3.0` reported 14 findings: `GO-2025-4192`, `GO-2026-4316`, `GO-2026-4348`, `GO-2026-4349`, `GO-2026-4354`, `GO-2026-4355`, `GO-2026-4377`, `GO-2026-4945`, `GO-2026-5547`, `GO-2026-5763`, `GO-2026-5778`, `GO-2026-5851`, `GO-2026-5932`, and `GO-2026-5952`. The decisive direct trace reaches the `GO-2026-5952` multi-log verification-threshold bypass through `SignedEntityVerifier.Verify`; upstream marks it fixed in `v1.2.0`.
 - `sigstore-go v1.2.0` requires Go 1.25.0, while MARS's approved minimum remains Go 1.22.4. Raising that floor is a separate compatibility decision and is not authorized by T-066. Security and the Orchestrator therefore reject v0.7.0, any custom certificate/crypto parser, and any implicit Go-floor change.
-- The current public-good root candidate was independently identified at `sigstore/root-signing` commit `c9bda74ad2221f938f7d2e0295ca3aad2da710a8`, SHA-256 `6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66`, and parsed fully offline with v0.7.0. It was not added because dependency admission failed first.
+- A second bounded probe evaluated the newest official fixed release, `sigstore-go v1.2.2` at commit `55aa6240784677449a564e66a0fca7a6a3605ecd`, with SumDB hashes `h1:xAJ8hxaoecC0HKBYVbrwUjkeAI+GJYu6vLqbxDlD2Q0=` and `h1:MIFwBxAHJD+/lKgZzt9n/4Zhq/3T2+EuGX8iGrIsZgU=`. Its declared compatibility floor is Go 1.25.8 and the exact T-066 wrapper compiles there.
+- Go 1.25.8 is not an acceptable MARS security floor: exact called-path scanning found eight reachable standard-library findings (`GO-2026-5856`, `GO-2026-5039`, `GO-2026-5037`, `GO-2026-4971`, `GO-2026-4947`, `GO-2026-4946`, `GO-2026-4870`, and `GO-2026-4865`). The identical wrapper built with Go 1.25.12 produced zero called findings. Residual `GO-2026-5970` and `GO-2026-5932` were uncalled or module-only on this path and remain subject to the whole-source gate after dependency admission.
+- The proposed compatibility ticket must set `go 1.25.12`, retain release `toolchain go1.26.5`, add an exact minimum-toolchain lane, reject Go 1.25.11 without auto-download, and make `doctor` patch-aware for explicit MARS source builds while keeping packaged-binary and target users healthy without Go. Generated target repositories do not inherit this source-only floor.
+- The current public-good root candidate was independently identified at `sigstore/root-signing` commit `c9bda74ad2221f938f7d2e0295ca3aad2da710a8`, SHA-256 `6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66`, and parsed fully offline with v0.7.0. It was not added because no verifier dependency or compatibility-floor change is authorized yet.
 - No MARS dependency, verifier source, tag, Release, signature, upload, version, or visibility change occurred. A2 and every later T-066 checkpoint remain unstarted.
 
 ## Interfaces and blast radius
@@ -72,7 +75,7 @@ All authenticity, checksum, canonical-name, tag, commit, platform, toolchain, me
 
 ## Non-goals and authority boundary
 
-Do not modify the GoReleaser producer, create a production signing workflow, fetch credentials/OIDC in tests, change VERSION/CHANGELOG, create or move a tag, create/upload/sign/publish a GitHub Release, enable Pages, change repository visibility, announce support, or claim a real release passed. Keep VERSION 0.68.49, source fallback 0.69.0-dev, repository private, and Primary Status primary_blocked. Two-build private rehearsal and clean macOS/Linux synthetic-fixture lifecycle remain T-067 work. Anonymous release access, actual keyless signing/publication, public canary, and every visibility action remain solely the separately approved F-018-S004/F-017 cutover.
+Do not modify the GoReleaser producer, create a production signing workflow, fetch credentials/OIDC in tests, change VERSION/CHANGELOG, create or move a tag, create/upload/sign/publish a GitHub Release, enable Pages, change repository visibility, announce support, or claim a real release passed. Keep VERSION 0.68.49, source fallback 0.69.0-dev, repository private, and Primary Status primary_blocked. Two-build private rehearsal and clean macOS/Linux synthetic-fixture lifecycle remain T-067 work unless an approved compatibility ticket first re-sequences it. Anonymous release access, actual keyless signing/publication, public canary, and every visibility action remain solely the separately approved F-018-S004/F-017 cutover.
 
 ## Planning tool note
 
