@@ -2,23 +2,23 @@
 id: T-063
 title: Reconstruct private baseline and retire embedded publication audit lab
 priority: high
-complexity: high
+complexity: large
 work_type: enabler
-bdd_scenarios: ["F-017-S001", "F-017-S003"]
+bdd_scenarios: []
 end_to_end_evidence: required
-evidence_links: ["docs/exec-plans/active/current-operating-plan.md#private-rewrite-evidence--2026-07-16"]
-verified_by: "qa, security, dogfood, release-manager, foundation-maintainer (rewrite and retirement); final release verification pending"
-owner: "engineer"
-last_attempt: "2026-07-16: reviewed reconstruction force-leased to private main; 69 Releases, 69 tags, 130 Actions runs, and 129 deployments retired exactly"
-blocker: "none"
+evidence_links: ["git show --stat 6d326ffa82e236570509b3783711b87911e5500d", "docs/tickets/in-progress/T-063-reconstruct-private-baseline-and-retire-embedded-publication.md#evidence"]
+verified_by: "qa, security, dogfood, release-manager, foundation-maintainer (reconstruction and retirement only)"
+owner: "none"
+last_attempt: "2026-07-21: original exact-nine release outcome superseded by owner-approved v0.93 retirement and GoReleaser migration"
+blocker: "superseded_by_T-064"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Commit rewrite evidence, generate explicit 0.93.0 notes, publish and verify exact 9/9 private assets, then re-anchor protected stashes and clean MARS-only local artifacts"
+next_action: "No resume; preserve reconstruction evidence and continue through T-064."
 dedupe_key: "oss:private-rewrite-v06849"
 metadata:
   classification: "foundation-owned"
   primary_status: "primary_blocked"
-  supports: "F-017-S001,F-017-S003"
+  supports: "private-reconstruction-evidence"
 source: Operator-approved private rewrite plan
 created: 2026-07-16
 depends_on: []
@@ -33,8 +33,8 @@ The private audit implementation expanded beyond the publication outcome. Recons
 Use an exact leased private-history rewrite, preserve unrelated user work, keep visibility private, and clean only verified MARS-owned artifacts.
 
 ## Acceptance criteria
-The replacement tree passes the explicit allowlist oracle and full gates; v0.93.0 verifies exact 9/9; 69 retired refs/releases and eligible GitHub artifacts are reconciled; protected work is preserved; Primary Status remains primary_blocked.
+The replacement tree passes the explicit allowlist oracle and full gates; 69 audit-era refs/releases and eligible GitHub artifacts are reconciled; protected work is preserved; Primary Status remains primary_blocked. The proposed v0.93 exact-nine release was explicitly superseded and is not completion evidence.
 
 ## Evidence
 
-The reviewed semantic tree is now private `main`, Pages built from it, all 69 captured Release IDs and tag refs are absent, and the discarded-history Actions/deployment cleanup is reconciled in the active plan. GitHub-only SHA metadata that has no deletion API is classified explicitly instead of being called erased. The ticket remains in progress until the exact-nine `v0.93.0` release and protected-work/local cleanup gates pass.
+The reviewed semantic tree became private `main`, Pages built from it, all 69 captured Release IDs and tag refs were removed, and the discarded-history Actions/deployment cleanup is reconciled in the active plan. GitHub-only SHA metadata that has no deletion API is classified explicitly instead of being called erased. On 2026-07-21 the owner superseded the remaining exact-nine release outcome with T-064 and the GoReleaser transition; this blocked ticket is retained only as historical reconstruction evidence and must not be resumed or counted as release-lifecycle completion.

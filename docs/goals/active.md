@@ -117,13 +117,13 @@
 - Confidence: medium
 - Source: user_chat
 - Dedupe Key: distribution:safe-open-source-publication
-- Hypothesis: Reconstructing private `main` from the reviewed `v0.68.49` baseline, retaining only the fail-closed T-061 release-mirror behavior, and then completing conventional history/privacy/IP, runtime, release, contribution, and cutover gates will produce a smaller and more auditable path to safe publication.
-- Current Evidence: The operator authorized a complete private rewrite and states ownership of the first-party project and name. T-063 is the only current implementation ticket. The candidate baseline and surgical T-061 patch are independently reproducible; no public visibility or acquisition action has occurred.
-- Current Blocker: T-063 has not completed its exact tree, test, leased remote rewrite, retired-release reconciliation, protected-work preservation, and private `v0.93.0` verification gates. Standard secret/history/privacy/IP review and F-017-S002 through F-017-S005 remain pending after reconstruction.
-- Success Evidence: The rewritten private repository exposes only the approved baseline plus reviewed changes; standard scans and owner dispositions have no unresolved findings; secure runtime, anonymous signed release, fork-safe contribution, logged-out cutover, and 48-hour canary gates pass.
-- Falsification Evidence: The rewrite carries audit-lab machinery or unapproved paths; protected work is lost; retired refs/releases remain accessible; a release mirror can claim partial success; unresolved privacy, IP, runtime, release, or contribution risk reaches public visibility; or supporting private evidence is represented as publication completion.
-- Competes With: preserving the abandoned embedded audit lab, retaining private audit-era refs/releases, immediate visibility conversion, and announcement-first launch
+- Hypothesis: Retiring the private v0.93 release experiment, adopting a standard pinned GoReleaser archive pipeline, and completing the independent privacy, runtime, contribution, and cutover gates will produce a smaller and more auditable path to safe publication.
+- Current Evidence: The private history is reconstructed from `v0.68.49`; 69 audit-era tags and Releases are retired; the repository remains private; and the operator selected a clean GoReleaser migration with `v0.69.0` reserved for the future cutover.
+- Current Blocker: T-064 through T-067 and the standard history/privacy/IP, runtime, contribution, rehearsal, cutover, and canary gates remain incomplete. No supported public release exists.
+- Success Evidence: The private repository contains no abandoned audit lab or bespoke publisher; standard scans and owner dispositions have no unresolved findings; secure runtime, anonymous signed immutable release, fork-safe contribution, logged-out cutover, and 48-hour canary gates pass.
+- Falsification Evidence: Protected work is lost; retired refs/releases remain live; a draft or partial release is advertised; an updater accepts tampering or unsafe archives; or unresolved privacy, IP, runtime, release, or contribution risk reaches public visibility.
+- Competes With: retaining the bespoke exact-nine publisher, compatibility aliases, immediate visibility conversion, and announcement-first launch
 - Supports: G-001, G-002, G-003, G-004
-- Last Reviewed: 2026-07-16
-- Review Trigger: T-063 reconstruction evidence, standard scan findings, owner disposition, completion of any F-017 scenario, release-contract changes, private rehearsal, visibility change, cutover smoke, or canary incident.
+- Last Reviewed: 2026-07-21
+- Review Trigger: Any T-064 through T-067 evidence, standard scan finding, owner disposition, F-017 scenario change, private rehearsal, visibility change, cutover smoke, or canary incident.
 - Owner: foundation-maintainer as Orchestrator with COO, Security, QA, Dogfood, and Release Manager

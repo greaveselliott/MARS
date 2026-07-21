@@ -7,9 +7,9 @@
 
 ## Business Logic
 
-MARS remains private until publication authority and every technical cutover gate are durable. The operator states ownership of the first-party project and name and has authorized a complete private rewrite; that authorization permits the T-063 reconstruction but does not itself complete privacy, IP, runtime, release, contribution, or cutover validation.
+MARS remains private until publication authority and every technical cutover gate are durable. The operator states ownership of the first-party project and name and has authorized the private rewrite and GoReleaser transition; that authorization does not itself complete privacy, IP, runtime, release, contribution, or cutover validation.
 
-The selected history strategy is a clean private reconstruction from `v0.68.49`, retaining only reviewed release-mirror convergence and lean publication planning. Private audit-era refs and releases are retired before publication. The rewrite removes them from accessible repository refs and releases, but does not claim that unreachable hosting-provider storage, external clones, or caches are physically recalled.
+The selected history strategy is a clean private reconstruction from `v0.68.49`. The private v0.93 exact-nine experiment is being retired through T-064 and replaced with a source-only GoReleaser archive/checksum/SBOM/signature pipeline. Private audit-era refs and releases are retired before publication, without claiming that hosting-provider storage, external clones, or caches are physically recalled.
 
 Supporting private evidence cannot authorize visibility conversion. Visibility is a separately approved owner action only after F-017-S001 through F-017-S005 pass.
 
@@ -28,7 +28,7 @@ Supporting private evidence cannot authorize visibility conversion. Visibility i
 
 ## Scenario Schedule
 
-1. F-017-S001 - Complete T-063 private reconstruction, conventional publication-surface review, and owner disposition.
+1. F-017-S001 - Complete the private reconstruction, conventional publication-surface review, and owner disposition.
 2. F-017-S002 - Close secure runtime, filesystem, execution, credential, logging, and update gates.
 3. F-017-S003 - Verify anonymous signed install, update, rollback, and exact release publication.
 4. F-017-S004 - Verify fork-safe contribution, governance, support, and private reporting.
@@ -58,14 +58,12 @@ And child environments, state permissions, logs, traces, and vulnerability gates
 ### F-017-S003: Anonymous, Immutable, Verifiable Release Lifecycle
 
 Given a supported release is built from an immutable release-note commit
-When local assets are produced or a GitHub mirror is attempted
-Then the local release contains the exact required platform assets and checksums
-And already-matching remote assets are preserved
-And the remote tag resolves to the exact local release-note commit before mutation and before success
-And success requires the exact unique remote asset names, uploaded states, byte sizes, and SHA-256 digests
-And missing, extra, duplicate, pending, mismatched, unverifiable, canceled, or non-converging state returns non-zero as `mirror_incomplete`
-And upload-process exit zero alone can never become completion evidence
-And the future supported public archive, signature, notices, SBOM, provenance, anonymous download, update, and rollback contract passes independently.
+When pinned GoReleaser builds Darwin/Linux AMD64/ARM64 archives into a fresh output directory
+Then each archive contains the binary, license, notices, third-party notices, and deterministic source metadata
+And SPDX SBOMs, SHA-256 checksums, and a keyless signature bind the published artifacts to the exact tag and commit
+And an unpublished draft is fresh-downloaded and compared before publication
+And missing, extra, duplicate, pending, mismatched, unsigned, unverifiable, canceled, or non-converging state never becomes a supported release
+And anonymous install, update, rollback, immutable-release verification, and provenance verification pass independently.
 
 ### F-017-S004: Fork-Safe Contribution And Governance
 
@@ -86,9 +84,9 @@ And announcement waits until the 48-hour canary remains clean.
 
 ## Evidence
 
-- **F-017-S001:** T-063 is reconstructing the proposed private publication surface. Conventional scans, manual review, and committed owner disposition remain pending.
+- **F-017-S001:** The proposed private publication surface is reconstructed. Conventional scans, manual review, and committed owner disposition remain pending.
 - **F-017-S002:** The retained baseline includes existing vulnerability, loopback, webhook, and dashboard hardening, but the complete runtime/filesystem/execution gate has not passed.
-- **F-017-S003:** T-061 exact GitHub mirror convergence is retained and mechanically testable. Signed public archives, anonymous install/update, negative verification, and rollback remain pending.
+- **F-017-S003:** T-064 through T-067 are retiring v0.93 and preparing the GoReleaser producer/consumer contract. Signed public archives, anonymous install/update, negative verification, and rollback remain pending.
 - **F-017-S004:** Pending fork-safe CI, governance, reporting, and disposable hostile-fork rehearsal.
 - **F-017-S005:** Pending private rehearsal, separate visibility approval, logged-out smoke, recovery proof, and 48-hour canary.
 
@@ -99,7 +97,7 @@ No scenario is complete. Primary Status remains `primary_blocked`, repository vi
 - Reintroducing a repository-embedded publication audit laboratory.
 - Treating the private rewrite as secret, privacy, IP, runtime, or cutover clearance.
 - Claiming physical deletion from hosting-provider storage or third-party caches.
-- Changing visibility, announcing the project, or finalizing unsupported historical releases during T-063.
+- Changing visibility, announcing the project, or publishing `v0.69.0` during T-064 through T-067.
 
 ## Descoped Scenarios
 

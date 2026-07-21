@@ -113,6 +113,7 @@ affected skills synchronized using
 | F-015 | [Documentation Site Information Architecture](F-015-documentation-site-information-architecture.md) | active | Reader-first public docs, trust-building homepage, documentation map, governance guide, adoption lanes, canonical source labels |
 | F-016 | [Foundation Orchestrator Planning Doctrine](F-016-foundation-provider-planning-doctrine.md) | passing | Source-only Orchestrator planning chain consumed by Claude, Codex, Copilot, Cursor, Windsurf, and other AI clients building the foundation harness |
 | F-017 | [Open-Source Publication](F-017-open-source-publication.md) | active | Ownership/audit clearance, secure defaults, signed public releases, fork-safe governance, and controlled cutover |
+| F-018 | [GoReleaser Distribution](F-018-goreleaser-distribution.md) | active | Deterministic archives, SBOMs, signed checksums, safe consumers, private rehearsal, and immutable cutover publication |
 
 ## Historical Feature Audit
 
