@@ -56,3 +56,17 @@ jobs:
         run: |
           set -euo pipefail
           PATH="$RUNNER_TEMP:$PATH" "$RUNNER_TEMP/goreleaser" release --snapshot --clean --skip=ko,sign,announce,publish
+
+      - name: Verify snapshot artifact contract
+        run: |
+          set -euo pipefail
+          snapshot_commit="$(git rev-parse HEAD)"
+          snapshot_version="0.69.0-dev.$(git rev-parse --short HEAD)"
+          snapshot_commit_time="$(git show -s --format=%cI HEAD)"
+          MARS_GORELEASER_VERIFY=1 \
+          MARS_GORELEASER_DIST="$PWD/dist" \
+          MARS_GORELEASER_VERSION="$snapshot_version" \
+          MARS_GORELEASER_COMMIT="$snapshot_commit" \
+          MARS_GORELEASER_COMMIT_TIME="$snapshot_commit_time" \
+          MARS_GORELEASER_GO_VERSION="$(go env GOVERSION)" \
+          go test ./internal/release -run '^TestVerifyGoReleaserSnapshotDistFromEnvironment$' -count=1

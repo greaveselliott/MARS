@@ -254,7 +254,7 @@ func TestSnapshotWorkflowContract(t *testing.T) {
 	job := workflow.Jobs["snapshot"]
 	require.Equal(t, "ubuntu-24.04", job.RunsOn)
 	require.Equal(t, 30, job.TimeoutMinutes)
-	require.Len(t, job.Steps, 5)
+	require.Len(t, job.Steps, 6)
 
 	require.Equal(t, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", job.Steps[0].Uses)
 	require.Equal(t, map[string]any{"fetch-depth": 0, "persist-credentials": false}, job.Steps[0].With)
@@ -281,6 +281,22 @@ func TestSnapshotWorkflowContract(t *testing.T) {
 	}
 	require.Equal(t, "set -euo pipefail\n\"$RUNNER_TEMP/goreleaser\" check", strings.TrimSpace(job.Steps[3].Run))
 	require.Equal(t, "set -euo pipefail\nPATH=\"$RUNNER_TEMP:$PATH\" \"$RUNNER_TEMP/goreleaser\" release --snapshot --clean --skip=ko,sign,announce,publish", strings.TrimSpace(job.Steps[4].Run))
+	verifyStep := job.Steps[5]
+	require.Empty(t, verifyStep.Uses)
+	for _, command := range []string{
+		`snapshot_commit="$(git rev-parse HEAD)"`,
+		`snapshot_version="0.69.0-dev.$(git rev-parse --short HEAD)"`,
+		`snapshot_commit_time="$(git show -s --format=%cI HEAD)"`,
+		`MARS_GORELEASER_VERIFY=1`,
+		`MARS_GORELEASER_DIST="$PWD/dist"`,
+		`MARS_GORELEASER_VERSION="$snapshot_version"`,
+		`MARS_GORELEASER_COMMIT="$snapshot_commit"`,
+		`MARS_GORELEASER_COMMIT_TIME="$snapshot_commit_time"`,
+		`MARS_GORELEASER_GO_VERSION="$(go env GOVERSION)"`,
+		`go test ./internal/release -run '^TestVerifyGoReleaserSnapshotDistFromEnvironment$' -count=1`,
+	} {
+		require.Contains(t, verifyStep.Run, command)
+	}
 
 	fullSHA := regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$`)
 	for _, step := range job.Steps {
