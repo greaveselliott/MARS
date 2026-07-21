@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-066; scheduled T-067
-**Current Ticket:** T-066 in progress; checkpoint A is the only implementation slice
+**Current Ticket:** T-066 in progress; checkpoint A1 is the only implementation slice
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -25,7 +25,7 @@
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-066 through T-067 and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Claim T-066, then deliver checkpoint A's offline signature/checksum/archive verification primitive and hostile synthetic fixtures without creating a tag, Release, MARS signature, or supported-release claim.
+- **Next Primary Action:** Deliver T-066 checkpoint A1's offline Sigstore-bundle and strict checksum verification with synthetic fixtures; archive inspection remains A2 and no tag, Release, MARS signature, or supported-release claim is authorized.
 
 ## Locked Decisions
 
@@ -102,7 +102,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 
 ## T-066 Planning Handoff — 2026-07-22
 
-- `ticket_create` materialized T-066 for F-018-S002 through the primary `foundation-maintainer`/Orchestrator with T-065 as its dependency. COO, CTO-weekly, and Security packets froze five independently bounded planned checkpoints: verifier/extractor, updater transaction, installer boundary, consumer/DocSync retirement, and lifecycle evidence.
+- `ticket_create` materialized T-066 for F-018-S002 through the primary `foundation-maintainer`/Orchestrator with T-065 as its dependency. COO, CTO-weekly, and Security packets froze six independently bounded planned checkpoints: signed-checksum verifier, archive extractor, updater transaction, installer boundary, consumer/DocSync retirement, and lifecycle evidence.
 - The consumer contract adds `checksums.txt.sigstore.json`, an offline Sigstore bundle v0.3 over the exact canonical checksum bytes. Trust is compile-time pinned to the Sigstore root hash, GitHub Actions issuer, exact MARS release workflow/tag identity, and the Fulcio GitHub workflow SHA extension equal to the expected full commit; failure to verify any claim blocks rather than falling back or parsing certificates ad hoc.
 - The first CTO-labelled call exposed a planning-policy limitation: completed-validation detection looks only for literal build-and-smoke tokens in ticket frontmatter. The Orchestrator reran unchanged `ticket_create` under its owning role, preserving feature-contract and scenario-order enforcement. No policy implementation is added to T-066.
 - Repository state remains private and `primary_blocked`; `VERSION` is `0.68.49`; source fallback is `0.69.0-dev`; no tag, Release, MARS signature, upload, announcement, or visibility change is authorized.

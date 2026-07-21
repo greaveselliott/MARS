@@ -13,7 +13,7 @@ last_attempt: "2026-07-22: claimed for checkpoint A implementation after the pla
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Checkpoint A: implement the pure offline signature/checksum/archive verification primitive and hostile synthetic fixtures; commit and push before updater integration."
+next_action: "Checkpoint A1: implement offline Sigstore-bundle and strict checksum verification with synthetic fixtures; commit and push before archive work."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -41,7 +41,9 @@ The selected archive name is exact for the normalized release version and curren
 
 ## Checkpoint sequence
 
-A. Add one production offline verification/extraction primitive plus bounded synthetic positive and hostile table tests. Reject absolute/traversal names, backslashes, links, devices/FIFOs, sparse or duplicate members, missing/extra members, multiple gzip streams or trailing data, and member/file-count/compressed/expanded-size quota violations. The archive contains exactly mars, LICENSE, NOTICE, and THIRD_PARTY_NOTICES with fixed regular-file modes. Commit and push.
+A1. Add the production offline Sigstore-bundle and strict canonical-checksum verification primitive plus bounded synthetic positive and hostile table tests. Commit and push before archive work.
+
+A2. Add bounded gzip/tar inspection and extraction. Reject absolute/traversal names, backslashes, links, devices/FIFOs, sparse or duplicate members, missing/extra members, multiple gzip streams or trailing data, and member/file-count/compressed/expanded-size quota violations. The archive contains exactly mars, LICENSE, NOTICE, and THIRD_PARTY_NOTICES with fixed regular-file modes. Commit and push before updater integration.
 
 B. Integrate mars update tool: fetch bounded metadata, signature bundle, checksums, and only the selected archive; verify completely; stage in a same-filesystem 0700 directory with non-final files 0600; serialize updates; atomically replace only after durability checks; retain/restore the prior binary on every failure and give an actionable recovery command. Source update modes remain unchanged. Commit and push.
 
