@@ -148,10 +148,11 @@ MARS source builds publication-disabled private snapshots with the exact
 GoReleaser, Syft, and Go pins declared by T-065 and `.goreleaser.yaml`. The
 default producer has no tag, upload, signing, announcement, or publication
 authority. T-066 owns archive consumers and signature verification, T-067 owns
-private rehearsal, and F-017/F-018 cutover approval is required before a
-supported release exists. Generated target repositories do not inherit this
-Go-specific producer; each target chooses and documents its own release
-workflow and artifact contract.
+the source-only Go 1.25.12 compatibility floor, T-068 owns private rehearsal,
+and F-017/F-018 cutover approval is required before a supported release exists.
+Generated target repositories do not inherit this Go-specific producer or
+source floor; each target chooses and documents its own release workflow and
+artifact contract.
 
 ### AD-312: Attempted GitHub Mirrors Must Converge Before Success
 

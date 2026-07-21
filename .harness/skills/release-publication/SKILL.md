@@ -7,7 +7,7 @@ workflow.
 
 ## Current transition contract
 
-1. Read the active exec plan, T-065 through T-067, and F-018 before changing
+1. Read the active exec plan, T-065 through T-068, and F-018 before changing
    release state.
 2. Build exact GoReleaser and Syft pins with the required Go toolchain and
    verify their recorded provenance and vulnerability disposition.
@@ -21,8 +21,9 @@ workflow.
 
 The current producer must not create a tag, GitHub Release, upload, signature,
 attestation, visibility change, or supported-release claim. Consumer and
-signature verification belong to T-066; private end-to-end rehearsal belongs to
-T-067; public publication requires the separate F-017 cutover approval.
+signature verification belong to T-066; source compatibility belongs to T-067;
+private end-to-end rehearsal belongs to T-068; public publication requires the
+separate F-017 cutover approval.
 
 ## Safety
 

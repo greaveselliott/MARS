@@ -86,7 +86,7 @@ And announcement waits until the 48-hour canary remains clean.
 
 - **F-017-S001:** The proposed private publication surface is reconstructed. Conventional scans, manual review, and committed owner disposition remain pending.
 - **F-017-S002:** The retained baseline includes existing vulnerability, loopback, webhook, and dashboard hardening, but the complete runtime/filesystem/execution gate has not passed.
-- **F-017-S003:** T-064 through T-067 are retiring v0.93 and preparing the GoReleaser producer/consumer contract. Signed public archives, anonymous install/update, negative verification, and rollback remain pending.
+- **F-017-S003:** T-064 through T-068 are retiring v0.93 and preparing the GoReleaser producer/consumer contract, source compatibility, and private rehearsal. Signed public archives, anonymous install/update, negative verification, and rollback remain pending.
 - **F-017-S004:** Pending fork-safe CI, governance, reporting, and disposable hostile-fork rehearsal.
 - **F-017-S005:** Pending private rehearsal, separate visibility approval, logged-out smoke, recovery proof, and 48-hour canary.
 
@@ -97,7 +97,7 @@ No scenario is complete. Primary Status remains `primary_blocked`, repository vi
 - Reintroducing a repository-embedded publication audit laboratory.
 - Treating the private rewrite as secret, privacy, IP, runtime, or cutover clearance.
 - Claiming physical deletion from hosting-provider storage or third-party caches.
-- Changing visibility, announcing the project, or publishing `v0.69.0` during T-064 through T-067.
+- Changing visibility, announcing the project, or publishing `v0.69.0` during T-064 through T-068.
 
 ## Descoped Scenarios
 

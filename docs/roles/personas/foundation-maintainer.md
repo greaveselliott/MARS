@@ -100,7 +100,7 @@ runtime language.
   and AD-284, or record the exact replay blocker. Stop wedged runs once
   diagnosed.
 - Follow the active F-018 plan before changing source release state. During
-  T-065 through T-067, validate and push bounded semantic checkpoints while
+  T-065 through T-068, validate and push bounded semantic checkpoints while
   retaining the 0.68.49 version floor, run only the exact pinned
   publication-disabled snapshot, and do not tag, upload, sign, announce, or
   publish. Record unresolved producer, consumer, signing, rehearsal, or

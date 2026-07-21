@@ -4,16 +4,16 @@
 **Priority:** P0
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
-**Related Tickets:** T-063 through T-066; scheduled T-067 rehearsal; approval-pending unnumbered compatibility enabler
-**Current Ticket:** T-066 blocked at checkpoint A1 dependency admission
+**Related Tickets:** T-063 through T-067; scheduled T-068 rehearsal
+**Current Ticket:** T-067 source compatibility prerequisite in progress; T-066 paused at checkpoint A1
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
 **Hypothesis:** Retiring the private `v0.93.0` experiment and using a pinned GoReleaser archive pipeline will reduce bespoke release code while retaining fail-closed consumer verification.
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; exact archive/SBOM checksums pass; signed consumers reject hostile input before mutation and preserve the installed binary on failure; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
-**Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-066 installer/updater migration paused; approval-pending minimum-Go compatibility enabler; T-067 private rehearsal unless re-sequenced after approval; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S002: installer and updater consumers have not migrated because the conditionally admissible `sigstore-go v1.2.2` exact path requires an owner-approved source compatibility change from Go 1.22.4 to the proposed Go 1.25.12 floor.
+**Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-066 installer/updater migration paused; owner-approved T-067 minimum-Go compatibility; T-068 private rehearsal; later owner-approved `v0.69.0` cutover
+**Current Failing Scenario:** F-018-S002 remains blocked because T-067 has not yet established the owner-approved Go 1.25.12 source compatibility prerequisite for the conditionally admissible `sigstore-go v1.2.2` exact path.
 **Walking Skeleton Slice:** Verify one offline synthetic Sigstore bundle and canonical checksum set, authenticate and safely extract the current-platform archive, then atomically replace a fixture binary while every hostile lane leaves the prior binary unchanged.
 **Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
 **Created:** 2026-07-21
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-066 A1 has a `sigstore-go v1.2.2` exact-path candidate with zero called findings under Go 1.25.12, but adopting that source floor requires separate owner approval and a dedicated compatibility ticket. T-067 and the independent F-017 audit, runtime, contribution, and cutover gates also remain incomplete.
-- **Next Primary Action:** After owner approval, create and complete a dedicated source-compatibility ticket for `go 1.25.12`, retain release `toolchain go1.26.5`, preserve Go-free packaged operation, and then rerun A1 admission for exact `sigstore-go v1.2.2`. No tag, Release, MARS signature, or supported-release claim is authorized.
+- **Current Primary Blocker:** T-066 A1 has a `sigstore-go v1.2.2` exact-path candidate with zero called findings under Go 1.25.12; owner-approved T-067 must establish that source compatibility floor before T-066 resumes. T-068 and the independent F-017 audit, runtime, contribution, and cutover gates also remain incomplete.
+- **Next Primary Action:** Complete T-067 with release `toolchain go1.26.5`, no externally installed Go requirement for packaged MARS operation, and no inherited source floor for generated targets; validate exact Go 1.25.12 compatibility, then resume A1 admission for exact `sigstore-go v1.2.2`. No tag, Release, MARS signature, or supported-release claim is authorized.
 
 ## Locked Decisions
 
@@ -38,11 +38,11 @@
 
 ## Operator-Authorized Release Transition Exception
 
-As of 2026-07-21, T-065 has retired the bespoke publisher and AGENTS rule 14 now points to the repository-owned producer. The operator-approved transition still defers the next source version, tag, signature, upload, and supported-release claim until the public cutover. Therefore T-064 through T-067 use this bounded source-only exception:
+As of 2026-07-21, T-065 has retired the bespoke publisher and AGENTS rule 14 now points to the repository-owned producer. The operator-approved transition still defers the next source version, tag, signature, upload, and supported-release claim until the public cutover. Therefore T-064 through T-068 use this bounded source-only exception:
 
 - commit and push each validated ticket normally, but do not create a private support release or legacy assets;
-- keep `VERSION` and the changelog at `0.68.49` through T-067 while untagged source builds report `0.69.0-dev`;
-- require T-067 release-note dry-run evidence to select exactly `0.69.0`, but leave the actual release-note commit, tag, and assets to the later cutover ticket;
+- keep `VERSION` and the changelog at `0.68.49` through T-068 while untagged source builds report `0.69.0-dev`;
+- require T-068 release-note dry-run evidence to select exactly `0.69.0`, but leave the actual release-note commit, tag, and assets to the later cutover ticket;
 - restore rules 12 and 14 to the GoReleaser steady-state workflow in the same migration before the exception expires at cutover.
 
 This exception cannot authorize a supported-release claim, visibility change, or unrelated unversioned source work.
@@ -54,8 +54,8 @@ This exception cannot authorize a supported-release claim, visibility change, or
 | T-064 | Retire v0.93 and reset the release floor. | Live leases match the captured manifest. | Passed 2026-07-21: Release/tag are absent, Pages is disabled, protected work is re-anchored, `VERSION` is `0.68.49`, and the source fallback is `0.69.0-dev`. |
 | T-065 / F-018-S001 | Passed 2026-07-21: replaced the bespoke producer with pinned GoReleaser. | T-064 complete. | Two-clean-root reproducibility plus a final `bb1b79b` snapshot, exact publishable-set contract, full source/cross-build gates, installed-binary and fresh-target checks, and persona reviews passed without publication authority. |
 | T-066 / F-018-S002 | Migrate installer, updater, audit, CLI/docs, and generated guidance. | T-065 complete; T-066 created through `ticket_create` with a frozen offline Sigstore trust contract. | Consumers reject tampering and unsafe archives; legacy checksum-only verification and raw `mars-<os>-<arch>` / `mars-harness-<os>-<arch>` asset names are absent. |
-| Approval-pending compatibility enabler | Raise the MARS source minimum to the exact Go 1.25.12 floor without imposing Go on packaged operation or generated targets. | Separate owner approval; re-sequence reserved T-067 before `ticket_create`; T-066 remains paused. | Exact Go 1.25.12 and release Go 1.26.5 lanes pass, Go 1.25.11 fails without auto-download, doctor is patch-aware and binary-safe, and no dependency/publication change occurs. |
-| T-067 / F-018-S003 | Rehearse privately and prepare `0.69.0`; re-sequence only if the compatibility enabler is approved. | T-066 complete. | Two-build reproducibility, clean macOS/Linux installs, workflow draft-failure behavior, and release-note preparation pass. |
+| T-067 | Raise the MARS source minimum to the exact Go 1.25.12 floor without imposing Go on packaged operation or generated targets. | Owner approved 2026-07-22; T-066 remains paused. | Exact Go 1.25.12 and release Go 1.26.5 lanes pass, Go 1.25.11 fails without auto-download, doctor is patch-aware and binary-safe, and no Sigstore dependency/publication change occurs. |
+| T-068 / F-018-S003 | Rehearse privately and prepare `0.69.0`. | T-066 complete after T-067. | Two-build reproducibility, clean macOS/Linux installs, workflow draft-failure behavior, and release-note preparation pass. |
 | Cutover | Publish immutable `v0.69.0`. | Every F-017 prerequisite and separate owner approval pass. | Logged-out verification passes and the 48-hour canary starts. |
 
 ## T-064 Exact Retirement Transaction

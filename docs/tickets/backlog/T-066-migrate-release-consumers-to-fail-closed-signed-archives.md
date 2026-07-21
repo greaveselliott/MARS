@@ -10,10 +10,10 @@ evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe
 verified_by: "TBD"
 owner: "engineer"
 last_attempt: "2026-07-22: v1.2.2 probe compiled the exact APIs; Go 1.25.8 retained eight called stdlib findings while Go 1.25.12 produced zero called findings"
-blocker: "Owner approval is required for a separate compatibility ticket raising MARS's exact minimum from Go 1.22.4 to the Go 1.25.12 floor that cleared the exact called-path probe before sigstore-go v1.2.2 can be admitted"
-blocked_by: []
+blocker: "Owner-approved T-067 must establish the exact Go 1.25.12 source compatibility floor before sigstore-go v1.2.2 can be admitted"
+blocked_by: [T-067]
 trace_id: "TBD"
-next_action: "Obtain owner approval; first re-sequence the reserved T-067 rehearsal across live authority, then create a dedicated minimum-Go compatibility ticket through ticket_create, move the source-only floor to Go 1.25.12 while retaining toolchain Go 1.26.5 and binary-safe doctor behavior, and rerun T-066 A1 admission for sigstore-go v1.2.2."
+next_action: "Wait for T-067 to establish and validate the exact Go 1.25.12 source floor, then restore T-066 to in-progress and rerun A1 admission for sigstore-go v1.2.2."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -51,7 +51,7 @@ C. Migrate scripts/install.sh to the same trusted verifier path. If bootstrap ca
 
 D. Migrate or retire release verify-assets, release audit, CLI/MarsCLI, current docs, DocSync routes, and generated target guidance. Remove legacy raw asset names mars-<os>-<arch> and mars-harness-<os>-<arch> and legacy checksum-only semantics; update binary/cli command aliases are not raw-asset aliases. Commit and push.
 
-E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build gates, an installed commit-bound binary, a fresh target, and an offline synthetic signed update/rollback lifecycle. Close ticket, F-018-S002, and plan evidence in a separate commit. T-067 retains two-build and clean macOS/Linux pipeline rehearsal unless the approved compatibility ticket first re-sequences it.
+E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build gates, an installed commit-bound binary, a fresh target, and an offline synthetic signed update/rollback lifecycle. Close ticket, F-018-S002, and plan evidence in a separate commit. T-068 retains two-build and clean macOS/Linux pipeline rehearsal.
 
 ## Checkpoint A1 dependency admission — blocked 2026-07-22
 
@@ -75,7 +75,7 @@ All authenticity, checksum, canonical-name, tag, commit, platform, toolchain, me
 
 ## Non-goals and authority boundary
 
-Do not modify the GoReleaser producer, create a production signing workflow, fetch credentials/OIDC in tests, change VERSION/CHANGELOG, create or move a tag, create/upload/sign/publish a GitHub Release, enable Pages, change repository visibility, announce support, or claim a real release passed. Keep VERSION 0.68.49, source fallback 0.69.0-dev, repository private, and Primary Status primary_blocked. Two-build private rehearsal and clean macOS/Linux synthetic-fixture lifecycle remain T-067 work unless an approved compatibility ticket first re-sequences it. Anonymous release access, actual keyless signing/publication, public canary, and every visibility action remain solely the separately approved F-018-S004/F-017 cutover.
+Do not modify the GoReleaser producer, create a production signing workflow, fetch credentials/OIDC in tests, change VERSION/CHANGELOG, create or move a tag, create/upload/sign/publish a GitHub Release, enable Pages, change repository visibility, announce support, or claim a real release passed. Keep VERSION 0.68.49, source fallback 0.69.0-dev, repository private, and Primary Status primary_blocked. Two-build private rehearsal and clean macOS/Linux synthetic-fixture lifecycle remain T-068 work. Anonymous release access, actual keyless signing/publication, public canary, and every visibility action remain solely the separately approved F-018-S004/F-017 cutover.
 
 ## Planning tool note
 
