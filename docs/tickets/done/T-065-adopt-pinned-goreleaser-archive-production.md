@@ -6,14 +6,14 @@ complexity: large
 work_type: feature
 bdd_scenarios: ["F-018-S001"]
 end_to_end_evidence: required
-evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s001-deterministic-release-production"]
-verified_by: "QA, Security, Release Manager, foundation-maintainer"
+evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s001-deterministic-release-production", "docs/exec-plans/active/current-operating-plan.md#t-065-checkpoint-evidence--2026-07-21", "git show bb1b79b7aa5787cea3355a2e592d9bfe4a0d2849"]
+verified_by: "QA, Security, Dogfood, Release Manager, foundation-maintainer as Orchestrator"
 owner: "engineer"
-last_attempt: "2026-07-21: checkpoint-B clean-root proof passed at 6a68ecc; four archives are byte-identical and each exact eight-entry checksum set verifies"
+last_attempt: "2026-07-21: final bb1b79b snapshot, source gate, installed-binary, clean-target, and state-guard evidence passed"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Retire only the bespoke producer surfaces now superseded by the verified GoReleaser snapshot contract; retain consumer verification for T-066."
+next_action: "None; T-065 is complete. Create T-066 only through ticket_create."
 dedupe_key: "release:goreleaser-snapshot-producer"
 metadata:
   classification: "foundation-owned"
@@ -51,3 +51,11 @@ The SumDB-built GoReleaser `v2.17.0` binary produced with Go `1.26.5` has two ex
 At pushed commit `6a68eccf30036ab2fa84474afb85f7ee113c6ed9`, two independent clean clones produced snapshot `0.69.0-dev.6a68ecc` with Go `1.26.5`. The committed environment verifier passed while comparing the two outputs. Each publishable set contained exactly four archives, four matching SPDX-JSON SBOMs, and `checksums.txt`; each checksum file had exactly eight verified entries. The archive SHA-256 values matched across both roots: Darwin/AMD64 `0583adeb071a167726b17d4edbeaaf26e3e4ac5bb36f6cea09cdc4069594cf71`, Darwin/ARM64 `b417d6e2667698d98a37ea55e8f097c823a2dc1d7dc10b4ab790ccce224f5cec`, Linux/AMD64 `3478e0a1f0c75a76701899eeb27312cadfe348c2445471629cb7232755910853`, and Linux/ARM64 `94c7ab7ba772d73dffb452d56f33eeb7a942063a363cc483dd4177ccbd1e8450`.
 
 The verifier statically inspected build metadata for all four binaries and executed only the native Darwin/ARM64 binary for linked version, full-commit, and commit-date evidence. Raw SBOM and whole-checksum-file hashes differed only as permitted by Syft's generated SPDX timestamp and namespace; normalized SBOM semantics matched, and each run's checksum file bound its exact raw SBOM bytes. QA, Security, and Release Manager reviews are GO for this trusted, publication-disabled producer proof. No tag, Release, signature, upload, visibility change, or supported-release claim occurred. Checkpoint C must still make the bespoke producer unreachable and run the remaining T-065 gates before F-018-S001 can pass.
+
+## Final checkpoint evidence
+
+Pushed commit `bb1b79b7aa5787cea3355a2e592d9bfe4a0d2849` removes the bespoke producer and GitHub upload/reconciliation implementation while retaining the fail-closed verifier, audit, and updater consumers for T-066. The compiled root CLI rejects `mars release publish-assets` as unknown; source release authority remains publication-disabled; generated targets receive repository-owned producer guidance without MARS GoReleaser configuration. AD-059 and AD-140 remain verbatim historical evidence under dated supersession notes.
+
+The exact final commit passed `make check`: CGO-disabled build, uncached race suite, 73.9% coverage with every ratchet met, fail-closed `govulncheck` with zero called vulnerabilities, four fuzz-smoke lanes, and vet fallback. DocSync checked 345 files with zero findings. Four explicit CGO-disabled Darwin/Linux AMD64/ARM64 builds passed. A distinct clean clone ran exact GoReleaser `v2.17.0` and Syft `v1.49.0` under Go `1.26.5`, produced snapshot `0.69.0-dev.bb1b79b`, and passed `TestVerifyGoReleaserSnapshotDistFromEnvironment`; this final-commit run composes with the accepted two-clean-root reproducibility proof above.
+
+The installed commit-bound Darwin/ARM64 binary reports full commit `bb1b79b7aa5787cea3355a2e592d9bfe4a0d2849`, clean VCS metadata, CGO disabled, and SHA-256 `fd8367e06e84203a7d971b00ef7b6b97fbb486756f85eb9d7d33909a20173fe2`; its release help omits the retired command and direct invocation exits 1 as unknown. A fresh initialized target committed a clean scaffold with producer-neutral guidance and no `publish-assets` or source GoReleaser injection. The source release-note dry run selects exactly `0.69.0` without writing files. Repository state remains private, `VERSION` remains `0.68.49`, the source fallback remains `0.69.0-dev`, and `v0.69.0` has no live tag or Release. QA, Security, Dogfood, Release Manager, and Orchestrator classify F-018-S001 as passed private producer evidence only; provisional dependency notices and GO-2026-5970/GO-2026-5932 remain public-cutover no-go items.

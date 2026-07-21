@@ -4,8 +4,8 @@
 **Priority:** P0
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
-**Related Tickets:** T-063, T-064; scheduled T-065 through T-067
-**Current Ticket:** T-065
+**Related Tickets:** T-063 through T-065; scheduled T-066 through T-067
+**Current Ticket:** None; T-066 is next and must be created through `ticket_create`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -13,7 +13,7 @@
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; each snapshot's exact archive/SBOM checksum contract passes; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-066 installer/updater migration; T-067 private rehearsal; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S001: the pinned producer and clean-root snapshot contract pass, but the superseded bespoke producer remains reachable and the remaining T-065 gates are incomplete.
+**Current Failing Scenario:** F-018-S002: installer and updater consumers have not yet migrated to the signed archive contract.
 **Walking Skeleton Slice:** Build four private snapshot archives with deterministic binary/archive metadata, exact notices, per-archive SPDX SBOMs, and an exact self-verifying checksum set without creating a tag, Release, signature, or supported-release claim.
 **Learning Or MVP Outcome:** Establish a truthful private release floor and an explicit migration contract before changing release implementation or consumer behavior.
 **Created:** 2026-07-21
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-065 through T-067 and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Complete T-065 checkpoint C by retiring only superseded bespoke producer surfaces, retaining consumer verification for T-066, and running the remaining source gates without creating a tag, Release, signature, or supported-release claim.
+- **Current Primary Blocker:** T-066 through T-067 and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
+- **Next Primary Action:** Create T-066 through `ticket_create`, then migrate installer and updater consumers to the signed archive contract without creating a tag, Release, signature, or supported-release claim.
 
 ## Locked Decisions
 
@@ -52,7 +52,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 | Ticket | Outcome | Entry gate | Exit gate |
 | --- | --- | --- | --- |
 | T-064 | Retire v0.93 and reset the release floor. | Live leases match the captured manifest. | Passed 2026-07-21: Release/tag are absent, Pages is disabled, protected work is re-anchored, `VERSION` is `0.68.49`, and the source fallback is `0.69.0-dev`. |
-| T-065 / F-018-S001 | Replace the bespoke producer with pinned GoReleaser. | T-064 complete. | Four deterministic archives, provisional private notices, SPDX SBOMs, exact run-local checksums, and a publication-disabled workflow pass snapshot tests. |
+| T-065 / F-018-S001 | Passed 2026-07-21: replaced the bespoke producer with pinned GoReleaser. | T-064 complete. | Two-clean-root reproducibility plus a final `bb1b79b` snapshot, exact publishable-set contract, full source/cross-build gates, installed-binary and fresh-target checks, and persona reviews passed without publication authority. |
 | T-066 / F-018-S002 | Migrate installer, updater, audit, CLI/docs, and generated guidance. | T-065 complete and contract frozen. | Consumers reject tampering and unsafe archives; legacy publish/verify commands and raw aliases are absent. |
 | T-067 / F-018-S003 | Rehearse privately and prepare `0.69.0`. | T-066 complete. | Two-build reproducibility, clean macOS/Linux installs, workflow draft-failure behavior, and release-note preparation pass. |
 | Cutover | Publish immutable `v0.69.0`. | Every F-017 prerequisite and separate owner approval pass. | Logged-out verification passes and the 48-hour canary starts. |
@@ -95,6 +95,10 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - Checkpoint B1 is pushed at `6a68eccf30036ab2fa84474afb85f7ee113c6ed9`: the test/CI-only contract checker requires exactly four archives, four SBOMs, and one checksum file; verifies the exact eight checksum records, bounded archive structure, four-platform build metadata, archive/SBOM binding, and one native runtime identity; and rejects same-root comparison evidence.
 - Two clean clones at `6a68eccf30036ab2fa84474afb85f7ee113c6ed9` independently produced `0.69.0-dev.6a68ecc`. The committed cross-root verifier passed. All four archive hashes and archive checksum records are identical; each run's eight records verify its exact raw artifacts; all four raw SBOMs differ as expected from Syft's timestamp and namespace; and normalized SPDX semantics match after excluding only those fields. Both clones remained clean.
 - QA, Security, Release Manager, and Orchestrator accept this as private producer evidence only. GoReleaser's recorded binary findings, provisional dependency notices, signatures, consumers, clean install/update, and public cutover remain unresolved. No tag, Release, upload, signature, or visibility change occurred.
+- Checkpoint C is pushed at `bb1b79b7aa5787cea3355a2e592d9bfe4a0d2849`: the bespoke publisher, GitHub creation/upload/reconciliation path, and source command are unreachable; retained verifier/audit/updater consumers are explicitly handed to T-066; source and generated-target authority is synchronized without erasing historical AD-059, AD-140, or AD-312 evidence.
+- The final pushed commit passed `make check` (CGO-disabled build, uncached race/coverage at 73.9% with all ratchets met, zero called source vulnerabilities, fuzz smoke, and vet), DocSync `345/0`, and explicit four-platform CGO-disabled builds. A distinct clean clone produced `0.69.0-dev.bb1b79b` with the exact pinned tools and passed the committed environment verifier.
+- The installed commit-bound binary has SHA-256 `fd8367e06e84203a7d971b00ef7b6b97fbb486756f85eb9d7d33909a20173fe2`, identifies full clean commit `bb1b79b7aa5787cea3355a2e592d9bfe4a0d2849`, omits the retired command from release help, and rejects its direct invocation. A fresh initialized target committed a clean producer-neutral scaffold with no MARS GoReleaser or retired-command injection. Release-note dry-run selects exactly `0.69.0` without writing files.
+- QA, Security, Dogfood, Release Manager, and Orchestrator accept F-018-S001 as passed private producer evidence only. The repository remains private at `VERSION=0.68.49`; `v0.69.0` has no live tag or Release; no signature, upload, announcement, visibility change, or supported-release claim occurred. Provisional notices and the two recorded GoReleaser binary findings remain public-cutover blockers.
 
 ## Validation Gates
 
