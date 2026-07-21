@@ -535,23 +535,20 @@ mars release notes --repo . --bump auto</code></pre>
 mars release backfill-notes --repo . --min-version 0.60.0 --max-version 0.68.0 --dry-run</code></pre>
             </article>
             <article data-doc-filter>
-              <h3><code>mars release publish-assets</code> and <code>verify-assets</code></h3>
+              <h3><code>mars release verify-assets</code></h3>
               <p>
-                Builds local release binaries for linux/darwin and amd64/arm64,
-                writes checksums, verifies local dist, and optionally mirrors to
-                GitHub Releases. Once mirroring starts, success requires the
-                exact nine unique remote assets with uploaded state and local
-                size/SHA-256 equality; partial or unverifiable results fail as
-                <code>mirror_incomplete</code>.
+                Verifies the retained legacy local or GitHub release asset
+                contract while T-066 migrates consumers to the F-018 archive
+                format. The former <code>publish-assets</code> command is retired;
+                MARS source uses pinned, publication-disabled GoReleaser/Syft
+                snapshots and target repositories choose their own producer.
               </p>
-              <pre><code>mars release publish-assets --repo . --version vX.Y.Z --upload auto
-mars release verify-assets --dist dist/releases --version vX.Y.Z
+              <pre><code>mars release verify-assets --dist dist/releases --version vX.Y.Z
 mars release verify-assets --version vX.Y.Z</code></pre>
               <div class="wide-table">
                 <table>
                   <thead><tr><th>Advanced mirror flag</th><th>Use it for</th></tr></thead>
                   <tbody>
-                    <tr><td><code>publish-assets --github-repo owner/name</code></td><td>Upload the release assets to a GitHub repository other than the default MARS mirror.</td></tr>
                     <tr><td><code>verify-assets --repo owner/name</code></td><td>Verify a GitHub Release mirror. On this command, <code>--repo</code> means GitHub <code>owner/name</code>, not a local checkout path.</td></tr>
                     <tr><td><code>verify-assets --release-url URL</code></td><td>Verify against a GitHub-compatible release metadata endpoint when the default GitHub API URL is not the right source.</td></tr>
                     <tr><td><code>audit --github-repo owner/name</code></td><td>Audit recent local tags against a non-default GitHub release mirror.</td></tr>
@@ -602,7 +599,7 @@ mars release audit --repo . --limit 20</code></pre>
             </article>
             <article data-doc-filter>
               <h3>Separate source and target releases</h3>
-              <p>The same release-note command works in source and target repos, but MARS source releases additionally publish and verify binary assets.</p>
+              <p>Source and target repos share release-note concepts but own different producers. MARS source currently creates pinned publication-disabled snapshots under F-018; target repositories choose their own producer and artifact contract.</p>
             </article>
           </div>
         </section>

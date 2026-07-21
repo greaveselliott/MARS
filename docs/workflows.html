@@ -413,17 +413,12 @@ mars release backfill-notes --repo . --check
 git commit -m "release: notes X.Y.Z"</code></pre>
             </article>
             <article data-doc-filter>
-              <h3>MARS source release assets</h3>
-              <pre><code>git tag -f vX.Y.Z
-git push origin vX.Y.Z
-mars release publish-assets --repo . --version vX.Y.Z --upload auto
-mars release verify-assets --dist dist/releases --version vX.Y.Z</code></pre>
+              <h3>MARS source release snapshots</h3>
+              <p>Follow F-018 and the active plan to run the pinned, publication-disabled GoReleaser/Syft snapshot workflow and its clean-root contract. Do not create a tag, upload, signature, or supported-release claim during T-065 through T-067.</p>
             </article>
             <article data-doc-filter>
-              <h3>Optional GitHub mirror</h3>
-              <pre><code>gh release view vX.Y.Z --repo greaveselliott/MARS
-mars release verify-assets --version vX.Y.Z
-mars release audit --repo .</code></pre>
+              <h3>Target repository publication</h3>
+              <p>Each target repository chooses and documents its own producer and artifact contract. MARS does not inject its GoReleaser configuration into targets.</p>
             </article>
           </div>
         </section>

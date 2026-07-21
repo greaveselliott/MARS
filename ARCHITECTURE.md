@@ -36,7 +36,7 @@ flowchart TB
     CLI --> SETUP["setup / path setup"]
     CLI --> UPDATE["update check / tool / harness"]
     CLI --> CHECKS["checks run"]
-    CLI --> RELEASE["release notes / publish-assets / verify-assets"]
+    CLI --> RELEASE["release notes / audit / verify-assets"]
     CLI --> TARGETOPS["init / upgrade / scan / register"]
     CLI --> EXECOPS["start / serve / run"]
     CLI --> TOOLOPS["tools list / run"]
@@ -119,14 +119,15 @@ MARS has six visible layers:
 | Execution | `run`, `start`, `serve`, queue, scheduler, workers, tools, traces | Execute roles against a registered repo with explicit tool allowlists and trust-gated mutation. |
 | Delivery model | goals, BDD feature contracts, one active exec plan, tickets, evidence | Keep work tied to outcomes and prove scenarios before calling feature work done. |
 | Learning loop | scores, trust, telemetry, quality score, skills, guardrails, decisions | Convert outcomes and failures into trust changes, intervention work, and reusable procedure. |
-| Release state | `release notes`, tags, release assets, `CHANGELOG.md`, `VERSION` | Version source and target changes, publish source binaries, and verify release assets. |
+| Release state | `release notes`, release snapshots, future approved tags/assets, `CHANGELOG.md`, `VERSION` | Version source and target changes, produce and verify source snapshots, and gate any publication through the active release plan. |
 
 ## Local Delivery Architecture
 
-MARS treats local execution as the authoritative delivery path. GitHub
-can still receive webhooks or mirror release assets, but the repo-owned gates,
-recorded check outcomes, repair routing, release binaries, and checksum
-verification all run locally through the harness.
+MARS treats local execution as the authoritative delivery path. GitHub can
+still receive webhooks and may host a future approved release, but repo-owned
+gates, recorded check outcomes, repair routing, private snapshot production,
+and artifact verification run locally through the harness. During F-018 the
+source producer has no tag, upload, signing, or publication authority.
 
 ```mermaid
 flowchart LR
@@ -136,11 +137,11 @@ flowchart LR
     CheckGate["make check\nbuild, race tests, coverage, lint or go vet"]
     DogfoodGate["make dogfood\nnon-mutating role dry-runs"]
     ChecksRun["mars checks run\nnamed local command"]
-    ReleaseNotes["release notes\nVERSION, CHANGELOG, buildinfo"]
-    TagGuard["git_release_guard\nclean tree, release-note HEAD, tag at HEAD"]
-    Publish["release publish-assets\nlinux/darwin x amd64/arm64"]
-    LocalDist["dist/releases\nbinaries + checksums.txt"]
-    VerifyLocal["verify-assets --dist\nchecksum and asset gate"]
+    ReleaseNotes["steady-state release notes\nafter transition authorization"]
+    ReleasePlanGate["active F-018 plan\nauthority and cutover gate"]
+    Snapshot["pinned GoReleaser snapshot\nsource-only, publication-disabled"]
+    LocalDist["four archives + SBOMs\nchecksums.txt"]
+    VerifyLocal["T-065 contract checker\nclean-root producer gate"]
   end
 
   subgraph MarsRuntime ["MARS runtime"]
@@ -165,12 +166,15 @@ flowchart LR
   Survey -->|checks_failed| Fixer
   Webhook -. optional signal .-> Fixer
 
-  Intent --> ReleaseNotes --> TagGuard --> Publish --> LocalDist --> VerifyLocal
-  Publish -. upload auto or github .-> GHRelease --> VerifyMirror --> UpdateTool
+  Intent --> ReleasePlanGate
+  ReleasePlanGate -->|T-065 through T-067| Snapshot --> LocalDist --> VerifyLocal
+  ReleasePlanGate -. after transition authorization .-> ReleaseNotes
+  ReleaseNotes -. later approved F-018 cutover .-> GHRelease --> VerifyMirror --> UpdateTool
 ```
 
-The important boundary is that local checks and local release assets are source
-of truth. Optional GitHub signals can add evidence or distribution reach, but
+The important boundary is that local checks and current private snapshot
+evidence are source of truth. Later approved GitHub publication can add
+distribution reach, but
 they do not replace the local gates.
 
 ## CLI Contract
@@ -204,7 +208,7 @@ surface is:
 | `mars trust set <role> <repo> <level> --reason <text>` | Apply an audited trust override. |
 | `mars models evaluate` | Print or run model evaluation probes against an OpenAI-compatible endpoint. |
 | `mars release notes --repo <path> --bump auto` | Generate semantic patch notes, update `VERSION`, `CHANGELOG.md`, and source build info. |
-| `mars release publish-assets --repo <path> --version vX.Y.Z --upload none|github|auto` | Build local source release binaries, write checksums, verify local assets, and optionally mirror them to GitHub Releases. |
+| `mars release publish-assets` | Retired by T-065; source production now uses the pinned publication-disabled GoReleaser/Syft workflow, while targets own their producer. |
 | `mars release verify-assets [--dist <path>] [--version <tag>]` | Check that local dist assets or an optional GitHub Release mirror has the required platform binaries and checksums. |
 
 There is no current top-level `status`, `interventions`, or `stop --now`
@@ -351,12 +355,11 @@ provides the same operational controls during `start` and `serve`: `p`, `r`,
 ### Release (`internal/release/`)
 
 Release notes infer semantic versions from commits, update source build info,
-and prepend generated changelog entries. Source release-note commits are tagged
-as `vX.Y.Z`; `release publish-assets` then cross-compiles local platform
-binaries, writes `checksums.txt`, verifies the local dist, and can optionally
-mirror the same assets to GitHub Releases. `release verify-assets --dist`
-confirms the local asset source of truth, while `release verify-assets` without
-`--dist` verifies the optional GitHub mirror.
+and prepend generated changelog entries. MARS source production uses the pinned,
+publication-disabled GoReleaser/Syft workflow defined by F-018. Generated
+targets choose their own producer. The retained `release verify-assets` and
+updater consumers remain on the legacy asset contract until T-066 migrates
+them; they do not verify the new archives yet.
 
 ## Generated Target Harness Layout
 
@@ -485,17 +488,19 @@ from different projects physically separate by default.
 
 ## Release and Versioning Flow
 
-Every non-release semantic source commit is followed by:
+The active release plan defines source version authority. During T-065 through
+T-067:
 
-1. `mars release notes --repo . --bump auto`
-2. A `release: notes X.Y.Z` commit containing `VERSION`, `CHANGELOG.md`, and
-   source build-info updates.
-3. Push to `main`.
-4. Tag `vX.Y.Z` at the release-note commit.
-5. Push the tag.
-6. `mars release publish-assets --repo . --version vX.Y.Z --upload auto`.
-7. `mars release verify-assets --dist dist/releases --version vX.Y.Z`.
-8. When GitHub mirroring is configured, `mars release verify-assets --version vX.Y.Z`.
+1. Retain the `0.68.49` version floor and do not create a release-note commit.
+2. Validate, commit, and push each bounded semantic checkpoint to `main`.
+3. Run only pinned, publication-disabled GoReleaser snapshots and their
+   clean-root contract.
+4. Defer tags, signing, uploads, and supported-release claims to the separately
+   approved F-018/F-017 cutover.
+
+After that transition is explicitly closed, the steady-state rule may resume:
+`mars release notes --repo . --bump auto`, a `release: notes X.Y.Z` commit, and
+the repository-owned producer under its then-current authority.
 
 Initialized target repos receive the same release-note discipline through
 generated guidance, adjusted to their own release capability.

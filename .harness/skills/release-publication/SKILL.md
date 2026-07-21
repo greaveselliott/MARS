@@ -1,74 +1,44 @@
 # Release Publication
 
-Use this in the foundation harness when a non-release semantic commit has
-landed and Release Manager or Codex must publish the matching source release.
-This is source-only procedural guidance; target repos keep their generated
-release docs unless they explicitly define their own binary publication flow.
+Use this source-only skill when Release Manager or the foundation maintainer
+works on MARS release production. Generated target repositories do not inherit
+this Go-specific producer; each target chooses and documents its own release
+workflow.
 
-## Workflow
+## Current transition contract
 
-1. Confirm the semantic commit is coherent and verified.
-2. When running as a harness agent, use `mars_cli` with args
-   `["release","notes","--repo",".","--bump","auto"]`; when operating from a
-   trusted terminal, run the equivalent `mars release notes --repo .
-   --bump auto`.
-3. Review `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go`.
-4. Run `go test ./internal/docsconsistency ./internal/docsync`, plus any
-   package tests touched by the semantic commit.
-5. Commit the generated files as `release: notes X.Y.Z`.
-6. Push the release-note commit to `origin main` and the active working branch.
-7. Create or update tag `vX.Y.Z` at the release-note commit and push it. Do
-   not tag while `VERSION` or `CHANGELOG.md` are dirty, and do not target a
-   pre-release-note commit.
-8. As a harness agent, use `mars_cli` with args
-   `["release","publish-assets","--repo",".","--version","vX.Y.Z","--upload","auto"]`;
-   from a trusted terminal, run the equivalent `mars release
-   publish-assets --repo . --version vX.Y.Z --upload auto`. If an upload is
-   attempted, require `GitHub mirror: verified (9/9)`; a partial, extra,
-   pending, wrong-size, wrong-digest, or unverifiable mirror is a non-zero
-   blocker even when the underlying upload process exited successfully.
-9. Verify local assets with `mars_cli` args
-   `["release","verify-assets","--dist","dist/releases","--version","vX.Y.Z"]`
-   or `mars release verify-assets --dist dist/releases --version
-   vX.Y.Z`.
-10. If GitHub mirroring was enabled, verify `gh release view vX.Y.Z --repo
-    greaveselliott/MARS` and then run `mars release
-    verify-assets --version vX.Y.Z`.
-11. Audit the mirror for drift across recent versions, not just the one you
-    published: `mars_cli` args `["release","audit","--repo","."]` or
-    `mars release audit --repo .`. Each finding names a notes-only or
-    missing release with the exact `publish-assets` backfill command; run the
-    backfill or record the blocker.
-12. If local assets, the optional mirror, or the audit findings are
-    unresolved, record the blocker in the active plan before moving to
-    unrelated work.
+1. Read the active exec plan, T-065 through T-067, and F-018 before changing
+   release state.
+2. Build exact GoReleaser and Syft pins with the required Go toolchain and
+   verify their recorded provenance and vulnerability disposition.
+3. Run only the publication-disabled snapshot producer defined by
+   `.goreleaser.yaml` and `.github/workflows/release-snapshot.yml`.
+4. Require the committed T-065 contract checker to accept the exact publishable
+   set, archive structure, checksums, binary metadata, and normalized SBOM
+   comparison from distinct clean roots.
+5. Record the immutable source commit, tool versions, artifact hashes, verifier
+   result, and persona sign-offs in the owning ticket and active plan.
 
-## Token Safety
+The current producer must not create a tag, GitHub Release, upload, signature,
+attestation, visibility change, or supported-release claim. Consumer and
+signature verification belong to T-066; private end-to-end rehearsal belongs to
+T-067; public publication requires the separate F-017 cutover approval.
 
-- Use `mars auth github check` or `gh auth status` when optional
-  GitHub mirroring needs credentials.
-- Never paste token values into chat, docs, commits, traces, tickets, logs, or
-  tool output.
-- Prefer GitHub CLI auth, `GH_TOKEN`, or `GITHUB_TOKEN`; local stored tokens
-  stay under `~/.mars/`.
+## Safety
 
-## Stop Conditions
+- Run GoReleaser without credentials and explicitly skip `ko`, signing,
+  announcement, and publication while the recorded producer findings remain.
+- Keep provisional third-party notices and the GoReleaser binary findings as
+  public-cutover blockers; an SBOM does not replace required notice text.
+- Never paste token values, signing material, local evidence paths, or raw
+  scanner output into chat, docs, commits, traces, tickets, logs, or tool output.
+- Never treat a process exit, draft, upload, or partial remote list as release
+  completion. Future publication must independently verify the immutable tag,
+  exact artifacts, signatures, attestations, and fresh downloads.
 
-- Stop and record a blocker if `git push`, tag push, local asset publication,
-  local asset verification, GitHub release creation, or GitHub mirror
-  verification fails.
-- Never treat `gh release upload` exit zero, `uploaded`, or a partial asset list
-  as completion evidence. The publisher must prove the exact unique name,
-  uploaded-state, size, and SHA-256 contract before reporting success.
-- A notes-only GitHub Release satisfies the optional mirror object gate only.
-  The local dist remains the source of truth; the mirror stays incomplete until
-  GitHub `verify-assets` passes.
-- Do not start another semantic change while the release-note commit, pushed
-  tag, release object, or missing-asset blocker is unrecorded.
+## Stop conditions
 
-## Evidence
-
-Record the release version, pushed commit, pushed tag, local dist path, local
-`verify-assets` result, optional `gh release view` result, optional GitHub
-`verify-assets` result, and any local build or GitHub API blocker in the active
-plan or owning ticket.
+Stop and record a blocker if the source commit is dirty, pins or hashes drift,
+the clean-root contract fails, a credential reaches the snapshot producer, a
+tag or remote mutation is attempted, or any required F-017/F-018 gate is
+unresolved. Keep the repository private and `primary_blocked`.

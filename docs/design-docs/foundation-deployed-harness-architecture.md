@@ -79,9 +79,11 @@ flowchart TB
 
 The runtime can execute foundation workflows and deployed workflows, but it does
 not erase the boundary between them. Foundation agents can change this repo and
-then publish a new binary or generated default. Deployed agents work inside a
-target project using the generated harness and tools available for that target.
-The harness is never the target of its own agents during active target runs.
+prepare a new binary or generated default; binary publication remains subject
+to the active source release plan and cutover authority. Deployed agents work
+inside a target project using the generated harness and tools available for
+that target. The harness is never the target of its own agents during active
+target runs.
 
 ## Doctrine Flow
 
@@ -97,7 +99,7 @@ The harness is never the target of its own agents during active target runs.
 
 | Behavior | Foundation-only | Mirrored core | Deployed-only |
 | --- | --- | --- | --- |
-| Publishing `mars` binary assets | Yes. Source local release publication tags `vX.Y.Z`, builds local binary assets, writes checksums, and may optionally mirror to GitHub Releases. | No. | No, unless a target separately chooses an equivalent binary release model. |
+| Producing and publishing `mars` binary assets | Source-only. F-018 currently permits pinned publication-disabled snapshots; tags, signatures, uploads, and supported publication require the later approved cutover. | No. | No, unless a target separately chooses and documents an equivalent binary release model. |
 | Versioned target release notes | No. | Yes. Targets inherit release notes and changelog discipline appropriate to their repo. | Target-specific versioning policy can extend or override locally. |
 | Live `demo-123` replay | Yes as the canonical source first-run lifecycle replay. | The run-review-act-rerun evidence loop mirrors generically. | A target can define its own representative demo or E2E replay. |
 | BDD feature contracts | No. | Yes. Feature contracts define product behavior before or alongside implementation. | Target contracts describe target product behavior. |
@@ -117,7 +119,7 @@ The receiving layer is determined by root cause.
 | Source dogfood run | `demo-123` lifecycle replay, first-run product progress, intervention-debt count, runtime artifact paths. | Dogfood evidence note, active plan evidence, design doc discovery, or source ticket. | Foundation harness unless the finding is clearly target product behavior. |
 | Runtime telemetry | Tool timeout, context overflow, guardrail block, dispatch protocol failure, model/provider error, queue loop. | SQLite telemetry, trace, quality score, source ticket when actionable. | Foundation harness and runtime substrate. |
 | Target product evidence | Broken game behavior, missing UI state, failed product acceptance scenario. | Target feature evidence, target ticket, target design doc. | Deployed harness and target project. |
-| Release evidence | Changelog generation, tag push, GitHub Release object, missing binary assets. | Foundation release docs, active plan blocker, release ticket. | Foundation-only for `mars` binary publication. |
+| Release evidence | Version state, private snapshot contract, and any later authorized tag, signature, or GitHub Release evidence. | Foundation release docs, active plan blocker, release ticket. | Foundation-only for `mars` binary production and approved publication. |
 | Human review | Operator says a loop, term, or workflow is confusing or repeated. | Owning design doc, glossary route, feature contract, or ticket. | Foundation if it changes harness doctrine; deployed if it is target-local. |
 | Quality score | Low score, recurring failure bucket, stale evidence. | `docs/QUALITY_SCORE.md`, score export, source or target ticket only when ownership is clear. | Quarantined to the owning repo; target backlog materialization is explicit or target-owned. |
 
@@ -148,7 +150,7 @@ ticket. These are deliberately different authority levels:
 The meta-tool chain can use the foundational orchestrator to improve the
 orchestrator's own source repo, but only as foundation work with normal repo
 controls: active plan, feature contract, ticket, bounded source change, tests,
-release notes, remote push, release publication, and evidence. It is not
+remote push, active-plan-gated release preparation, and evidence. It is not
 uncontrolled self-modification. During a run against a target project, the
 harness must not treat itself as the target of its own agents.
 
@@ -231,6 +233,10 @@ Existing target repos remain user-owned. `upgrade` should fill missing defaults
 without overwriting deliberate local policy.
 
 ## Drift Review Evidence
+
+> The dated review below is retained as historical evidence. Its former source
+> publication workflow is superseded by AD-313/T-065/F-018; current MARS source
+> production is publication-disabled until the separately approved cutover.
 
 ### 2026-05-19 Doctrine Review
 

@@ -57,7 +57,8 @@ func TestAuditDetectsNotesOnlyRelease(t *testing.T) {
 	assert.Equal(t, "v0.2.0", finding.TagName)
 	assert.Equal(t, AuditNotesOnly, finding.Class)
 	assert.Contains(t, finding.Missing, "checksums.txt")
-	assert.Contains(t, finding.Remediation, "release publish-assets --repo . --version v0.2.0 --upload github")
+	assert.Contains(t, finding.Remediation, "no built-in producer is available for v0.2.0")
+	assert.Contains(t, finding.Remediation, "repository's approved release workflow")
 }
 
 func TestAuditDetectsMissingReleaseObject(t *testing.T) {
@@ -72,7 +73,8 @@ func TestAuditDetectsMissingReleaseObject(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, result.Findings, 1)
 	assert.Equal(t, AuditMissingRelease, result.Findings[0].Class)
-	assert.Contains(t, result.Findings[0].Remediation, "publish-assets --repo . --version v0.3.0")
+	assert.Contains(t, result.Findings[0].Remediation, "no built-in producer is available for v0.3.0")
+	assert.Contains(t, result.Findings[0].Remediation, "repository's approved release workflow")
 }
 
 func TestAuditHonorsLimitNewestFirst(t *testing.T) {

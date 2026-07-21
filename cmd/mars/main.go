@@ -1623,11 +1623,14 @@ func releaseCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "release",
 		Short: "Manage semantic versions and patch notes",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return cmd.Help()
+		},
 	}
 	cmd.AddCommand(releaseAuditCmd())
 	cmd.AddCommand(releaseBackfillNotesCmd())
 	cmd.AddCommand(releaseNotesCmd())
-	cmd.AddCommand(releasePublishAssetsCmd())
 	cmd.AddCommand(releaseVerifyAssetsCmd())
 	return cmd
 }
@@ -1644,8 +1647,8 @@ func releaseAuditCmd() *cobra.Command {
 		Short: "Detect notes-only or missing GitHub releases for recent tags",
 		Long: `Audit the newest local vX.Y.Z tags against GitHub Releases and report
 versions whose release object is missing or has incomplete binary assets
-(notes-only releases). Each finding names the exact publish-assets backfill
-command. When tags or the GitHub API are unavailable the audit reports the
+(notes-only releases). Each finding names a producer-neutral recovery action.
+When tags or the GitHub API are unavailable the audit reports the
 blocker and exits successfully, because the GitHub mirror is optional
 infrastructure.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1864,74 +1867,6 @@ self-update release.`,
 	return cmd
 }
 
-func releasePublishAssetsCmd() *cobra.Command {
-	var (
-		repoPath       string
-		version        string
-		distDir        string
-		upload         string
-		githubRepoFull string
-	)
-	cmd := &cobra.Command{
-		Use:   "publish-assets",
-		Short: "Build and optionally mirror release assets locally",
-		Long: `Build linux/darwin amd64/arm64 release binaries from the release-note
-commit, generate checksums.txt, verify local assets, and optionally mirror the
-assets to GitHub Releases. An attempted mirror succeeds only after the exact
-remote asset names, uploaded states, sizes, and SHA-256 digests are verified.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if repoPath == "" {
-				var err error
-				repoPath, err = os.Getwd()
-				if err != nil {
-					return fmt.Errorf("release publish-assets: cannot determine working directory: %w", err)
-				}
-			}
-			result, err := release.PublishAssets(cmd.Context(), release.PublishAssetsConfig{
-				RepoRoot:   repoPath,
-				Version:    version,
-				DistDir:    distDir,
-				Upload:     upload,
-				GitHubRepo: githubRepoFull,
-				Stdout:     cmd.OutOrStdout(),
-				Stderr:     cmd.ErrOrStderr(),
-			})
-			if err != nil {
-				return err
-			}
-			return printReleasePublishAssetsResult(cmd.OutOrStdout(), result)
-		},
-	}
-	cmd.Flags().StringVar(&repoPath, "repo", "", "Path to the repository (default: current directory)")
-	cmd.Flags().StringVar(&version, "version", "", "Release tag to publish, for example v1.2.3")
-	cmd.Flags().StringVar(&distDir, "dist", filepath.Join("dist", "releases"), "Local release asset directory")
-	cmd.Flags().StringVar(&upload, "upload", "none", "Optional mirror mode: none, github, or auto")
-	cmd.Flags().StringVar(&githubRepoFull, "github-repo", selfupdate.DefaultRepoFullName, "GitHub repository in owner/name form for upload modes")
-	_ = cmd.MarkFlagRequired("version")
-	return cmd
-}
-
-func printReleasePublishAssetsResult(out io.Writer, result release.PublishAssetsResult) error {
-	if result.Uploaded && (result.RemoteExpectedCount <= 0 || result.RemoteVerifiedCount != result.RemoteExpectedCount) {
-		return fmt.Errorf("release publish-assets: mirror_incomplete: verified %d/%d remote assets; refusing to report success",
-			result.RemoteVerifiedCount, result.RemoteExpectedCount)
-	}
-	fmt.Fprintf(out, "Release assets: %s\n", result.TagName)
-	fmt.Fprintf(out, "Dist: %s\n", result.DistDir)
-	fmt.Fprintf(out, "Assets: %s\n", strings.Join(assetBaseNames(result.Assets), ", "))
-	fmt.Fprintf(out, "Checksums: %s\n", result.ChecksumsPath)
-	switch {
-	case result.Uploaded:
-		fmt.Fprintf(out, "GitHub mirror: verified (%d/%d)\n", result.RemoteVerifiedCount, result.RemoteExpectedCount)
-	case result.UploadSkipped:
-		fmt.Fprintln(out, "GitHub mirror: skipped")
-	default:
-		fmt.Fprintln(out, "GitHub mirror: disabled")
-	}
-	fmt.Fprintln(out, "Status: ok")
-	return nil
-}
-
 func printReleaseAssetReport(out io.Writer, report selfupdate.ReleaseAssetReport, jsonOut bool) error {
 	safeReport := safeReleaseAssetReport(report)
 	if jsonOut {
@@ -2035,14 +1970,6 @@ func fixedReleaseAssetLabels(count int) []string {
 		labels[i] = "<redacted>"
 	}
 	return labels
-}
-
-func assetBaseNames(paths []string) []string {
-	names := make([]string, 0, len(paths))
-	for _, path := range paths {
-		names = append(names, filepath.Base(path))
-	}
-	return names
 }
 
 func checksCmd() *cobra.Command {
@@ -2413,7 +2340,7 @@ func sourceFoundationGuardrails() []guardrails.Rule {
 			Name:      "Foundation Release Discipline",
 			Severity:  guardrails.SeverityAdvisory,
 			Scope:     foundationMaintainerRoleName,
-			Message:   "After semantic source changes, keep docs synchronized, generate release notes, push trunk, publish local release assets, optionally mirror them to GitHub, and record any asset blocker.",
+			Message:   "Follow the active F-018 plan before changing source release state. During T-065 through T-067, validate and push bounded semantic checkpoints without release-note commits or version changes, run only the pinned publication-disabled snapshot, and do not tag, upload, sign, announce, or publish.",
 			CreatedAt: now,
 		},
 	}

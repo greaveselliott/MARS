@@ -4,9 +4,9 @@
 
 `foundation-maintainer` is a source-only foundation harness role. It maintains
 the MARS software factory itself: source code, generated target
-defaults, mirrored doctrine, local release publication, docsync discipline, role
-registry health, live validation evidence, and reusable operating-model
-feedback.
+defaults, mirrored doctrine, active-plan-gated release preparation, docsync
+discipline, role registry health, live validation evidence, and reusable
+operating-model feedback.
 
 This role is manual/operator-invoked only. It is not generated into deployed
 harnesses, is not scheduled, and must not treat the source repository as an
@@ -99,9 +99,12 @@ runtime language.
   [foundation-operating-model.md](../../design-docs/foundation-operating-model.md)
   and AD-284, or record the exact replay blocker. Stop wedged runs once
   diagnosed.
-- After semantic source changes, generate release notes, run release backfill
-  checks, push trunk, publish local release assets, optionally mirror them to
-  GitHub when available, and verify assets or record the asset blocker.
+- Follow the active F-018 plan before changing source release state. During
+  T-065 through T-067, validate and push bounded semantic checkpoints while
+  retaining the 0.68.49 version floor, run only the exact pinned
+  publication-disabled snapshot, and do not tag, upload, sign, announce, or
+  publish. Record unresolved producer, consumer, signing, rehearsal, or
+  cutover gates as blockers.
 
 ## Stop Conditions
 

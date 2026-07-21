@@ -178,4 +178,4 @@ Each plan independently requires targeted tests, `go test ./...`, `make check`, 
 
 AD-284 minimum for Plan 1 is orchestration plus generated defaults: static browser plus CLI/tooling or API/service, or an explicit blocker with replay command.
 
-Each semantic commit is followed by `mars release notes --repo . --bump auto`, `mars release backfill-notes --repo . --check`, a `release: notes X.Y.Z` commit, push, tag `vX.Y.Z`, `mars release publish-assets --repo . --version vX.Y.Z --upload auto`, and `mars release verify-assets --dist dist/releases --version vX.Y.Z`. Blockers are recorded explicitly.
+Each semantic commit is followed by `mars release notes --repo . --bump auto`, `mars release backfill-notes --repo . --check`, a `release: notes X.Y.Z` commit, and push. The target repository chooses its own release producer and artifact contract; production and verification blockers are recorded explicitly.

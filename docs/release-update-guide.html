@@ -77,13 +77,13 @@ docs:
         <section class="hero compact-hero" id="overview">
           <div class="hero-copy">
             <p class="eyebrow">Shipping and drift</p>
-            <h1>Update the command, update deployed harnesses, and publish verifiable releases.</h1>
+            <h1>Update the command, update deployed harnesses, and prepare verifiable releases.</h1>
             <p class="lede">
               MARS uses repo-owned semantic versions, generated changelog
               entries, target harness version metadata, checksum-verified CLI
-              updates, local release assets, and optional GitHub Release
-              mirrors. This guide separates day-to-day user updates from source
-              maintainer release publication.
+              updates, local release evidence, and separately gated GitHub
+              Releases. This guide separates day-to-day user updates from
+              source maintainer snapshot preparation and approved cutover.
             </p>
           </div>
         </section>
@@ -91,8 +91,9 @@ docs:
         <section class="doc-section">
           <div class="source-callout">
             <strong>Release evidence:</strong>
-            release notes, tags, local assets, checksums, and verification are
-            part of the audit trail. Use
+            release notes, private snapshots, checksums, and verification are
+            part of the current audit trail; tags and remote assets join it only
+            after publication is authorized. Use
             <a href="documentation-map.html#validation-evidence">validation and evidence</a>
             when you need the canonical proof path.
           </div>
@@ -263,10 +264,11 @@ mars release backfill-notes --repo . --check</code></pre>
         <section class="doc-section" id="source-release">
           <h2>MARS Source Release Flow</h2>
           <p>
-            Source maintainers have an extra binary publication gate. A source
-            release is not complete just because <code>CHANGELOG.md</code> was
-            updated; it needs a pushed release-note commit, a tag at that
-            commit, local assets, verification, and mirror audit.
+            Source maintainers have an extra binary production gate. During
+            T-065 through T-067, MARS retains the 0.68.49 version floor and
+            records validated semantic checkpoints plus publication-disabled
+            snapshot evidence. Tags, signatures, uploads, announcements, and a
+            supported-release claim require the separately approved cutover.
           </p>
           <ol class="step-list" data-doc-filter>
             <li>
@@ -281,16 +283,15 @@ git add VERSION CHANGELOG.md internal/buildinfo/version.go
 git commit -m "release: notes X.Y.Z"</code></pre>
             </li>
             <li>
-              <h3>Push main and tag the release-note commit</h3>
-              <pre><code>git push origin main
-git tag -f vX.Y.Z
-git push origin vX.Y.Z</code></pre>
+              <h3>Push the validated checkpoint</h3>
+              <pre><code>git push origin main</code></pre>
+              <p>Tags and publication remain separately gated by F-017/F-018.</p>
             </li>
             <li>
-              <h3>Publish and verify assets</h3>
-              <pre><code>mars release publish-assets --repo . --version vX.Y.Z --upload auto
-mars release verify-assets --dist dist/releases --version vX.Y.Z
-mars release verify-assets --version vX.Y.Z</code></pre>
+              <h3>Build and verify private snapshot evidence</h3>
+              <pre><code># Run the exact pinned build, check, snapshot, and verification steps in:
+.github/workflows/release-snapshot.yml</code></pre>
+              <p>This MARS source workflow creates local evidence only. It does not tag, upload, sign, announce, or publish.</p>
             </li>
             <li>
               <h3>Audit recent release mirrors</h3>
@@ -325,15 +326,17 @@ git -C ~/my-project push origin main</code></pre>
         <section class="doc-section" id="assets">
           <h2>Assets And Audit</h2>
           <p>
-            Local dist assets are the mandatory source release gate. GitHub
-            Releases are an optional mirror used by packaged installers and
-            self-update workflows when credentials and API access are available.
+            MARS source uses the pinned, publication-disabled F-018
+            GoReleaser/Syft snapshot workflow. Generated target repositories
+            choose and document their own producer. The existing
+            <code>verify-assets</code> and update consumers remain transitional
+            until T-066; they do not make the retired producer reachable.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
               <thead><tr><th>Command</th><th>Gate</th><th>What success proves</th></tr></thead>
               <tbody>
-                <tr><td><code>mars release publish-assets</code></td><td>Build/package and attempted-mirror convergence</td><td>Platform binaries and <code>checksums.txt</code> were produced locally; when upload begins, success also proves the exact unique remote names, uploaded states, sizes, and SHA-256 digests.</td></tr>
+                <tr><td>Repository-approved producer</td><td>Build/package contract</td><td>For MARS source, the pinned snapshot produces four archives, four SBOMs, and <code>checksums.txt</code> without publication authority. Targets define their own equivalent contract.</td></tr>
                 <tr><td><code>mars release verify-assets --dist</code></td><td>Local gate</td><td>Required local assets exist for the version.</td></tr>
                 <tr><td><code>gh release view vX.Y.Z</code></td><td>Mirror object</td><td>GitHub Release object exists when mirroring is enabled.</td></tr>
                 <tr><td><code>mars release verify-assets --version</code></td><td>Mirror assets</td><td>GitHub Release contains all required assets and checksums.</td></tr>
@@ -341,17 +344,16 @@ git -C ~/my-project push origin main</code></pre>
               </tbody>
             </table>
           </div>
-          <h3>Advanced Mirror Targets</h3>
+          <h3>Transitional Mirror Inspection</h3>
           <p>
-            Most users can use the default MARS GitHub release mirror. Use the
-            flags below when publishing or auditing assets for a fork,
-            private mirror, or GitHub-compatible release endpoint.
+            The built-in producer has been retired. These remaining read-only
+            commands inspect legacy or future approved mirrors while T-066
+            migrates release consumers.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
               <thead><tr><th>Need</th><th>Command shape</th><th>Important distinction</th></tr></thead>
               <tbody>
-                <tr><td>Upload assets to a different GitHub repo.</td><td><code>mars release publish-assets --repo . --version vX.Y.Z --upload github --github-repo owner/name</code></td><td><code>--repo .</code> is the local source checkout; <code>--github-repo</code> is the remote mirror.</td></tr>
                 <tr><td>Audit a different GitHub mirror.</td><td><code>mars release audit --repo . --github-repo owner/name</code></td><td>The audit reads local tags from the source checkout and compares them with the named GitHub repository.</td></tr>
                 <tr><td>Verify a GitHub mirror.</td><td><code>mars release verify-assets --repo owner/name --version vX.Y.Z</code></td><td>For <code>verify-assets</code>, <code>--repo</code> means GitHub <code>owner/name</code>, not a local path.</td></tr>
                 <tr><td>Verify a compatible release metadata URL.</td><td><code>mars release verify-assets --release-url https://api.github.com/repos/owner/name/releases/tags/vX.Y.Z --version vX.Y.Z</code></td><td>Use this only when the release metadata API is GitHub-compatible and the default URL is not correct.</td></tr>
@@ -395,9 +397,9 @@ mars release audit --repo .</code></pre>
                 <tr><td><code>update check</code> reports remote unknown.</td><td>Latest-release API could not be reached or auth is missing.</td><td>Use <code>--skip-remote</code> for local drift checks, or run <code>mars auth github check</code>.</td></tr>
                 <tr><td><code>update tool</code> cannot download private assets.</td><td>No valid private release auth source.</td><td>Run <code>gh auth login</code>, then <code>mars auth github setup</code>, or set <code>GH_TOKEN</code>/<code>GITHUB_TOKEN</code>.</td></tr>
                 <tr><td>Release notes sound generic.</td><td>The semantic commit lacks explicit Impact, Why, or What details.</td><td>Polish the top changelog entry before committing release notes.</td></tr>
-                <tr><td>Local asset verification fails.</td><td>The dist directory is missing a required platform binary or checksums file.</td><td>Rerun <code>mars release publish-assets</code> and inspect build output.</td></tr>
-                <tr><td>GitHub release is notes-only.</td><td>The tag/release object exists but binary assets were not uploaded.</td><td>Run the exact <code>publish-assets</code> command reported by <code>mars release audit</code>.</td></tr>
-                <tr><td><code>mirror_incomplete</code> after upload.</td><td>The remote release stayed partial, extra, pending, mismatched, or unverifiable after bounded reconciliation.</td><td>Preserve the tag, inspect the named asset classifications, correct remote access/state, and rerun <code>publish-assets --upload github</code>; do not claim the mirror from the upload process exit alone.</td></tr>
+                <tr><td>Local asset verification fails.</td><td>The producer output is incomplete or does not satisfy the repository artifact contract.</td><td>Rerun the repository-approved producer and its contract check. For MARS source, use the publication-disabled F-018 snapshot workflow.</td></tr>
+                <tr><td>GitHub release is notes-only.</td><td>The tag/release object exists but its artifact set is incomplete.</td><td>Treat publication as blocked and use the separately approved repository release workflow; the retired MARS producer cannot repair it.</td></tr>
+                <tr><td><code>mirror_incomplete</code> is reported.</td><td>The remote release is partial, extra, pending, mismatched, or unverifiable.</td><td>Preserve immutable refs, inspect the reported classifications, and keep publication blocked until an approved workflow proves exact convergence.</td></tr>
               </tbody>
             </table>
           </div>

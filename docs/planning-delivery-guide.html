@@ -357,11 +357,11 @@ mars release backfill-notes --repo /path/to/repo --check</code></pre>
               <p>Patch notes should explain impact, why, and what changed before commit buckets.</p>
             </article>
             <article data-doc-filter>
-              <h3>Keep source releases complete</h3>
-              <pre><code>mars release publish-assets --repo . --version vX.Y.Z --upload auto
-mars release verify-assets --dist dist/releases --version vX.Y.Z
+              <h3>Verify the source snapshot contract</h3>
+              <pre><code># Run the exact pinned build, check, snapshot, and verification steps in:
+.github/workflows/release-snapshot.yml
 mars release audit --repo .</code></pre>
-              <p>Source releases require versioned assets and verification before they are considered complete.</p>
+              <p>MARS source uses its pinned, publication-disabled F-018 snapshot workflow. Target repositories choose their own producer and artifact contract; neither path authorizes publication without the repository's release gates.</p>
             </article>
           </div>
         </section>

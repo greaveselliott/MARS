@@ -226,17 +226,11 @@ mars release notes --repo . --bump auto
 ```
 
 In this source repo and in repos initialized by MARS, run the release command after every non-release semantic commit and commit the generated version files as `release: notes X.Y.Z` before pushing `main`.
-For MARS source releases, push tag `vX.Y.Z` at the release-note commit,
-publish local release assets, and verify the binary asset contract with:
-
-```bash
-mars release publish-assets --repo . --version vX.Y.Z --upload auto
-mars release verify-assets --dist dist/releases --version vX.Y.Z
-```
-
-When GitHub release credentials are configured, `--upload auto` also mirrors the
-local assets to a GitHub Release. A failed mirror is a release blocker to record,
-not hidden CI state.
+Each repository owns its release producer and artifact contract. MARS source
+uses the pinned, publication-disabled GoReleaser/Syft snapshot workflow under
+F-018; generated targets choose their own producer. Do not create a source tag,
+upload, signature, or supported-release claim until the active cutover plan
+explicitly authorizes it.
 
 ## Next Steps
 

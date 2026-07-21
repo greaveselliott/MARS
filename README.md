@@ -255,9 +255,10 @@ mars release notes --repo . --bump auto
 mars release backfill-notes --repo . --check
 ```
 
-Source releases are tagged as `vX.Y.Z`, published locally with
-`mars release publish-assets`, and verified with
-`mars release verify-assets`. See
+Source release archives are defined by the pinned GoReleaser/Syft workflow.
+Publication remains disabled until the active F-018 release migration and
+independent open-source cutover gates pass; generated target repositories choose
+their own producer. See
 [docs/design-docs/release-versioning.md](docs/design-docs/release-versioning.md)
 for the full contract.
 

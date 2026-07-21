@@ -311,33 +311,6 @@ func TestChecksRunRecordsFailedOutcome(t *testing.T) {
 	require.Equal(t, "engineer", counts[0].Role)
 }
 
-func TestReleasePublishAssetsCommandBuildsLocalDist(t *testing.T) {
-	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("git not in PATH")
-	}
-	if _, err := exec.LookPath("go"); err != nil {
-		t.Skip("go not in PATH")
-	}
-	repoDir := initReleaseAssetRepo(t)
-	distDir := filepath.Join(t.TempDir(), "release")
-
-	cmd := releasePublishAssetsCmd()
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{
-		"--repo", repoDir,
-		"--version", "v1.2.3",
-		"--dist", distDir,
-		"--upload", "none",
-	})
-
-	require.NoError(t, cmd.Execute())
-	require.Contains(t, out.String(), "Status: ok")
-	for _, name := range selfupdate.ExpectedReleaseAssetNames() {
-		require.FileExists(t, filepath.Join(distDir, name))
-	}
-}
-
 func TestReleaseVerifyAssetsCommandChecksLocalDist(t *testing.T) {
 	t.Parallel()
 	distDir := t.TempDir()
@@ -362,31 +335,30 @@ func TestReleaseVerifyAssetsCommandChecksLocalDist(t *testing.T) {
 	require.Contains(t, out.String(), "Status: ok")
 }
 
-func TestPrintReleasePublishAssetsResultClaimsMirrorOnlyAfterExactVerification(t *testing.T) {
+func TestReleasePublishAssetsCommandIsRetired(t *testing.T) {
 	t.Parallel()
+	cmd := releaseCmd()
 	var out bytes.Buffer
-	require.NoError(t, printReleasePublishAssetsResult(&out, release.PublishAssetsResult{
-		TagName:             "v1.2.3",
-		Uploaded:            true,
-		RemoteVerifiedCount: 9,
-		RemoteExpectedCount: 9,
-	}))
-	require.Contains(t, out.String(), "GitHub mirror: verified (9/9)")
-	require.NotContains(t, out.String(), "GitHub mirror: uploaded")
-	require.Contains(t, out.String(), "Status: ok")
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"publish-assets"})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "unknown command")
+	require.NotContains(t, out.String(), "Build and optionally mirror release assets")
 }
 
-func TestPrintReleasePublishAssetsResultRejectsIncompleteUploadedState(t *testing.T) {
+func TestRootReleasePublishAssetsCommandIsRetired(t *testing.T) {
 	t.Parallel()
+	cmd := newRootCommand()
 	var out bytes.Buffer
-	err := printReleasePublishAssetsResult(&out, release.PublishAssetsResult{
-		TagName:             "v1.2.3",
-		Uploaded:            true,
-		RemoteVerifiedCount: 4,
-		RemoteExpectedCount: 9,
-	})
-	require.ErrorContains(t, err, "mirror_incomplete")
-	require.NotContains(t, out.String(), "Status: ok")
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"release", "publish-assets"})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "unknown command")
+	require.NotContains(t, out.String(), "Build and optionally mirror release assets")
 }
 
 func TestPrintReleaseAssetReportDoesNotTranscribeHostileRemoteLabels(t *testing.T) {
@@ -464,13 +436,14 @@ func TestPrintReleaseAuditResultReportsFindingsAndSkips(t *testing.T) {
 			TagName:     "v0.2.0",
 			Class:       release.AuditNotesOnly,
 			Missing:     []string{"checksums.txt"},
-			Remediation: "mars release publish-assets --repo . --version v0.2.0 --upload github",
+			Remediation: "use the repository's approved release workflow for v0.2.0",
 		}},
 	}, false)
 	require.Error(t, err)
 	require.Contains(t, findings.String(), "FINDING (notes_only): v0.2.0")
 	require.Contains(t, findings.String(), "checksums.txt")
-	require.Contains(t, findings.String(), "publish-assets --repo . --version v0.2.0")
+	require.Contains(t, findings.String(), "repository's approved release workflow for v0.2.0")
+	require.NotContains(t, findings.String(), "publish-assets")
 
 	var skipped bytes.Buffer
 	require.NoError(t, printReleaseAuditResult(&skipped, release.AuditResult{
@@ -980,16 +953,24 @@ func TestRunCommandFoundationMaintainerDryRunUsesSourceProfileWithoutInit(t *tes
 	root := mainTestSourceRoot(t)
 	require.NoFileExists(t, filepath.Join(root, ".harness", "manifest.yaml"))
 
-	err := executeRun(runOpts{
-		roleName: foundationMaintainerRoleName,
-		repoPath: root,
-		logFile:  filepath.Join(t.TempDir(), "run.log"),
-		dryRun:   true,
-		noInit:   true,
-		budget:   4000,
+	var runErr error
+	out := captureStdout(t, func() {
+		runErr = executeRun(runOpts{
+			roleName: foundationMaintainerRoleName,
+			repoPath: root,
+			logFile:  filepath.Join(t.TempDir(), "run.log"),
+			dryRun:   true,
+			noInit:   true,
+			budget:   4000,
+		})
 	})
 
-	require.NoError(t, err)
+	require.NoError(t, runErr)
+	require.Contains(t, out, "active F-018 plan")
+	require.Contains(t, out, "publication-disabled snapshot")
+	require.Contains(t, out, "do not tag, upload, sign, announce, or publish")
+	require.NotContains(t, out, "publish local release assets")
+	require.NotContains(t, out, "optionally mirror them to GitHub")
 	require.NoFileExists(t, filepath.Join(root, ".harness", "manifest.yaml"))
 }
 
@@ -1295,46 +1276,6 @@ Old narrative.
 - **cli:** Add command backfill (` + short + `)
 `
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte(changelog), 0o644))
-	return dir
-}
-
-func initReleaseAssetRepo(t *testing.T) string {
-	t.Helper()
-	dir := t.TempDir()
-	runMainTestGit(t, dir, "init")
-	runMainTestGit(t, dir, "config", "user.email", "test@example.com")
-	runMainTestGit(t, dir, "config", "user.name", "Test User")
-	writeToolRunRepoFile(t, dir, "go.mod", "module example.com/release-asset-test\n\ngo 1.22\n")
-	writeToolRunRepoFile(t, dir, "cmd/mars/main.go", `package main
-
-import "fmt"
-
-var version = "dev"
-var commit = "unknown"
-var date = "unknown"
-
-func main() {
-	fmt.Println(version, commit, date)
-}
-`)
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("1.2.3\n"), 0o644))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte(`# Changelog
-
-## [1.2.3] - 2026-05-23
-<!-- mars-release: version=1.2.3 commit=test -->
-
-### Impact
-Local release assets can be verified.
-
-### Why
-The release path is tested without GitHub Actions.
-
-### What Changed
-Built local assets.
-`), 0o644))
-	runMainTestGit(t, dir, "add", "-A")
-	runMainTestGit(t, dir, "commit", "-m", "release: notes 1.2.3")
-	runMainTestGit(t, dir, "tag", "v1.2.3")
 	return dir
 }
 

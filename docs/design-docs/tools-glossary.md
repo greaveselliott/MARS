@@ -219,7 +219,7 @@ syntax-only build scripts such as `echo`, `true`, `mkdir dist && cp ...`, or
 defects such as `Phaser.*` usage without importing Phaser in that module. Empty
 placeholders remain writable before validation; concrete proof belongs after
 the behavior has been exercised.
-| `release_orchestrate` | Plan and preflight the full semantic commit, release notes, push, tag, local asset publication, optional GitHub mirror, and asset verification ritual. | Mutating workflow. Use before driving release state with `mars_cli` and git tools. |
+| `release_orchestrate` | Plan and preflight a repository release workflow without exceeding its active version, tag, production, or publication authority. MARS source follows F-018 and is snapshot-only through T-067; targets use their own approved producer. | Planning workflow. It reports the allowed sequence; actual changes still use `mars_cli` and git tools under their own gates. |
 | `github_release_status` | Inspect optional GitHub release mirror status and decide whether to upload, verify, or record a blocker. | Non-mutating. Pairs local tag state with GitHub inspection commands. |
 | `architecture_audit` | Check architecture docs against current CLI, generated harness layout, tool registry, and runtime boundaries. | Non-mutating. Use after architecture-affecting changes and before doc reviews. |
 | `harness_doctrine_sync` | Check mirrored foundation and deployed harness doctrine for glossary, tools, operating-model, and generated-target consistency. | Non-mutating. Use when changing operating doctrine or mirrored definitions. |

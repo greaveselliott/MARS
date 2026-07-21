@@ -15,18 +15,19 @@ go test ./...
 2. Make one coherent change with tests
 3. Run `go test ./...` and `golangci-lint run`
 4. Commit with a semantic message referencing the milestone if applicable
-5. Run `mars release notes --repo . --bump auto`
-6. Verify the generated `VERSION`, `CHANGELOG.md`, and `internal/buildinfo/version.go` changes
-7. Run `mars release backfill-notes --repo . --check`; if it reports legacy entries, run `mars release backfill-notes --repo .` and include those changelog corrections
-8. Commit them as `release: notes X.Y.Z`
-9. Push `main`
-10. Publish or update GitHub Release `vX.Y.Z` with the generated changelog entry when GitHub release credentials are configured
-11. Confirm `gh release view vX.Y.Z` succeeds; if the release object is missing after the tag workflow, create a notes-only release from the generated `CHANGELOG.md` entry for the existing tag
-12. Run any repo-required asset backfill or verification and record missing assets as a blocker
+5. Check the active execution plan before changing version or release state
+6. During T-065 through T-067, retain the `0.68.49` version floor and do not generate a release-note commit
+7. Push the validated semantic checkpoint to `main`
+8. Run only the exact pinned, publication-disabled snapshot and verification steps in `.github/workflows/release-snapshot.yml`
+9. Record unresolved producer, consumer, signing, rehearsal, or cutover gates as blockers
+10. Do not create or move a tag, GitHub Release, upload, signature, announcement, or supported-release claim without the separately approved F-017/F-018 cutover
 
-Every non-release semantic commit must follow this versioning step. Release-note commits are the only exception: do not run the release generator again for a `release: notes X.Y.Z` commit.
-
-If GitHub release publication or asset verification is unavailable, record the blocker explicitly before ending the task.
+Outside an explicitly recorded transition exception, every non-release
+semantic commit follows the versioning rule in `AGENTS.md`; release-note commits
+do not run the generator again. The active F-018 transition exception above is
+authoritative until T-067 closes it. Missing production, verification, or
+publication authority is a blocker, not permission to create a notes-only
+fallback.
 
 ## Commit Messages
 

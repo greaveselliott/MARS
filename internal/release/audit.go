@@ -125,8 +125,8 @@ func Audit(ctx context.Context, cfg AuditConfig) (AuditResult, error) {
 				TagName: tag,
 				Class:   AuditMissingRelease,
 				Remediation: fmt.Sprintf(
-					"checkout the %s release-note commit, then run: mars release publish-assets --repo . --version %s --upload github",
-					tag, tag),
+					"no built-in producer is available for %s; use the repository's approved release workflow, then rerun verification before advertising the release",
+					tag),
 			})
 			continue
 		}
@@ -137,8 +137,8 @@ func Audit(ctx context.Context, cfg AuditConfig) (AuditResult, error) {
 				Class:   AuditNotesOnly,
 				Missing: report.Missing,
 				Remediation: fmt.Sprintf(
-					"checkout the %s release-note commit, then run: mars release publish-assets --repo . --version %s --upload github",
-					tag, tag),
+					"no built-in producer is available for %s; use the repository's approved release workflow, then rerun verification before advertising the release",
+					tag),
 			})
 		}
 	}
@@ -161,6 +161,16 @@ func gitVersionTags(ctx context.Context, runner func(context.Context, string, ..
 		}
 	}
 	return tags, nil
+}
+
+func commandOutputErr(ctx context.Context, runner func(context.Context, string, ...string) *exec.Cmd, dir, name string, args ...string) (string, error) {
+	cmd := runner(ctx, name, args...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return strings.TrimSpace(string(out)), fmt.Errorf("%s %s: %w\n%s", name, strings.Join(args, " "), err, strings.TrimSpace(string(out)))
+	}
+	return strings.TrimSpace(string(out)), nil
 }
 
 // newestVersionTags keeps well-formed vX.Y.Z tags sorted newest-first, bounded

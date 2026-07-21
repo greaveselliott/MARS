@@ -27,12 +27,12 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 10. F-009-S010 - The installed CLI reports its version through the explicit command and root-level version flags.
 11. F-009-S011 - Private release auth is an optional binary-release operating model.
 12. F-009-S012 - Approved product validation enters release review automatically in generated target lifecycles.
-13. F-009-S013 - GitHub Release mirrors are optional and never replace local asset verification.
+13. F-009-S013 - Repositories own their producer and remote publication never replaces artifact verification.
 14. F-009-S014 - Version tags can only be created at the release-note commit.
 15. F-009-S015 - Release Manager uses the structured MARS CLI tool instead of stale PATH binaries.
 16. F-009-S016 - Source checkout onboarding and update are the primary path for repo cloners.
 17. F-009-S017 - `release audit` detects notes-only and missing GitHub releases across recent tags.
-18. F-009-S018 - GitHub mirror publication succeeds only after exact remote convergence is verified.
+18. F-009-S018 - The bespoke GitHub mirror publisher is retired; its fail-closed invariant moves to F-018-S004.
 
 ## Scenarios
 
@@ -141,13 +141,13 @@ And the README describes system requirements, GPU expectations, model downloads,
 And source checkout updates use `make update-tool` as the recommended command for safely fast-forwarding and reinstalling from the clone
 And release review cannot fail solely because a stale installed binary lacks a newer command surface
 
-### F-009-S013: Optional GitHub Release Mirror
+### F-009-S013: Repository-Owned Release Producer
 
-Given local assets for `vX.Y.Z` have passed `mars release verify-assets --dist`
-When GitHub release credentials are configured
-Then `mars release publish-assets --upload github` or `--upload auto` may create or update a GitHub Release mirror using the generated changelog entry
-And the operating record distinguishes local asset success from optional GitHub mirror blockers
-And GitHub installer or self-update claims remain blocked until `mars release verify-assets --version vX.Y.Z` passes
+Given a source or target repository needs release artifacts
+When Release Manager prepares the release
+Then the repository's approved producer and artifact contract are used
+And generated target repositories do not inherit MARS's GoReleaser implementation
+And remote publication never replaces local artifact verification
 
 ### F-009-S014: Release Tag Commit Invariant
 
@@ -164,31 +164,17 @@ When `mars release audit --repo .` runs
 Then the newest tags (default 10, `--limit` configurable) are checked against the GitHub releases list
 And a tag without a release object is reported as `missing_release`
 And a release object missing required platform binaries or `checksums.txt` is reported as `notes_only` with the missing asset names
-And every finding names the exact `release publish-assets --repo . --version vX.Y.Z --upload github` backfill command and the command exits non-zero
+And every finding names a producer-neutral recovery action and the command exits non-zero
 And when local tags or the GitHub API are unavailable the audit reports the skip reason and exits zero so the optional mirror does not fail the pipeline
 
-### F-009-S018: Fail-Closed GitHub Mirror Convergence
+### F-009-S018: Retired Bespoke GitHub Mirror Publisher
 
-Given the nine locally verified release assets have exact names, sizes, and
-SHA-256 digests
-When `mars release publish-assets --upload github` or an attempted `--upload
-auto` mirror runs
-Then already-matching remote assets are preserved
-And the remote tag resolves to the exact local release-note commit before any
-release mutation and again before success
-And the upload reads owner-only snapshotted bytes whose identity, size, and
-digest are revalidated around transfer
-And missing or mismatched assets are reconciled individually in deterministic
-order with `--clobber` limited to mismatches
-And fresh metadata is polled with context-aware bounded retries
-And success requires the exact tag plus exactly nine unique assets with no
-extras, every state `uploaded`, and every remote size and SHA-256 digest equal
-to its local source
-And a permanent partial, duplicate, extra, pending, wrong-size, wrong-digest,
-unverifiable, wrong-tag, or canceled result returns non-zero as
-`mirror_incomplete`
-And `Uploaded`, `GitHub mirror: verified`, and `Status: ok` are emitted only
-after that exact postcondition passes.
+Given T-065 has replaced source production with the F-018 GoReleaser contract
+When the MARS release command tree and source packages are inspected
+Then `release publish-assets` is unknown and no bespoke GitHub create, upload,
+clobber, or convergence implementation is reachable
+And exact remote convergence remains a required future invariant under
+F-018-S004 rather than a current publication capability.
 
 ## Out of Scope
 
@@ -214,8 +200,8 @@ None.
 - F-009-S009: `go test ./internal/release -run TestBackfillNotes` and `go test ./cmd/mars -run TestReleaseBackfillNotesCommandChecksAndWrites`
 - F-009-S010: `go test ./cmd/mars -run TestVersionEntrypointsPrintSameVersionLine`
 - F-009-S012: `go test ./internal/orchestration -run 'TestDecide_(dogfoodApprovalRoutesDirectlyToReleaseManager|releaseManagerReleaseBlockedStopsDispatch|orchestratorCannotRouteReleaseBlockedBackToDogfood)'`, `go test ./internal/serve -run TestHandleJobComplete_releaseBlockedStopsWithoutDogfoodLoop`, and `go test ./internal/scanner -run TestInit_success`
-- F-009-S013: `go test ./cmd/mars -run TestReleasePublishAssetsCommandBuildsLocalDist`, `go test ./internal/docsconsistency -run TestReleasePublicationIsLocalFirst`, and `go test ./internal/scanner -run TestInit_success`
+- F-009-S013: `go test ./internal/scanner -run TestInit_success` and `go test ./internal/tools -run TestReleaseWorkflowsUseRepositoryOwnedProducer`
 - F-009-S014: `go test ./internal/tools -run 'TestShellExecPolicyBlocksReleaseTag|TestGitReleaseGuardReportsStaleReleaseTag'`
 - F-009-S015: `go test ./internal/tools -run TestShellExecPolicyBlocksMarsBinary` and `go test ./internal/scanner -run TestInit_success`
 - F-009-S017: `go test ./internal/release -run TestAudit`
-- F-009-S018: `go test ./internal/release -run 'Test(ReconcileGitHubAssets|LocalReleaseAssetContract|SnapshotReleaseAssetContract|VerifyRemoteTagCommit|EnsureGitHubRelease)'`, `go test ./internal/selfupdate -run TestVerifyReleaseAssetInfo`, and `go test ./cmd/mars -run 'TestPrintRelease(PublishAssetsResult|AssetReport)'`
+- F-009-S018: `go test ./cmd/mars -run TestReleasePublishAssetsCommandIsRetired` plus the source negative-oracle checks recorded by T-065

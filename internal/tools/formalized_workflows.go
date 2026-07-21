@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
@@ -42,7 +43,7 @@ type simpleWorkflowArgs struct {
 func registerReleaseOrchestrate(r *Registry) error {
 	return r.Register(
 		"release_orchestrate",
-		"Plan and preflight the complete MARS release ritual from semantic commit through pushed tag and verified assets.",
+		"Plan and preflight the repository release workflow without exceeding its active tag, production, or publication authority.",
 		json.RawMessage(simpleWorkflowSchema),
 		handleReleaseOrchestrate,
 	)
@@ -119,6 +120,24 @@ func handleReleaseOrchestrate(ctx context.Context, root Root, raw json.RawMessag
 	version := readOptional(root, "VERSION")
 	status := gitOutput(ctx, root, "status", "--short")
 	head := gitOutput(ctx, root, "log", "-3", "--oneline")
+	sequence := `1. Ensure git status is clean except the intended semantic change.
+2. Commit the semantic change with a conventional message.
+3. Run ` + "`mars_cli`" + ` with args ["release", "notes", "--repo", ".", "--bump", "auto"].
+4. Review VERSION, CHANGELOG.md, and buildinfo changes.
+5. Commit generated files as ` + "`release: notes X.Y.Z`" + `.
+6. Push main.
+7. For a target repository, create and push tag ` + "`vX.Y.Z`" + ` only when its approved release workflow authorizes that mutation. Do not tag while VERSION/CHANGELOG.md are dirty, and do not target any commit other than the release-note HEAD.
+8. Run the target repository's approved release producer. MARS does not provide or select a built-in producer for target repositories.
+9. Run ` + "`mars_cli`" + ` with args ["release", "verify-assets", "--dist", "<repository-output>", "--version", "vX.Y.Z"] only while the retained verifier matches that repository's artifact contract.
+10. If production, local verification, or optional remote publication fails, record the blocker before treating release work as complete.`
+	if isMarsFoundationSource(root) {
+		sequence = `1. Read the active F-018 plan and current T-065 through T-067 ticket before changing source release state.
+2. Validate the bounded semantic checkpoint and keep VERSION, CHANGELOG.md, and buildinfo at the retained 0.68.49 floor during this transition.
+3. Commit the checkpoint with its ticket reference and push main after validation.
+4. Run only the exact pinned, publication-disabled snapshot and verification steps authorized by .github/workflows/release-snapshot.yml.
+5. Do not create or move a tag, upload, sign, announce, publish, or claim a supported release.
+6. Record unresolved producer, consumer, signing, rehearsal, or cutover gates as blockers; do not infer publication authority from a successful snapshot.`
+	}
 	out := strings.TrimSpace(fmt.Sprintf(`# release_orchestrate
 
 Purpose: formalize the end-to-end MARS release ritual. Use this tool before mutating release state, then use `+"`mars_cli`"+` and git tools for the actual steps unless this tool has been explicitly extended to execute them.
@@ -131,21 +150,24 @@ Recent commits:
 %s
 
 Sequence:
-1. Ensure git status is clean except the intended semantic change.
-2. Commit the semantic change with a conventional message.
-3. Run `+"`mars_cli`"+` with args ["release", "notes", "--repo", ".", "--bump", "auto"].
-4. Review VERSION, CHANGELOG.md, and buildinfo changes.
-5. Commit generated files as `+"`release: notes X.Y.Z`"+`.
-6. Push main.
-7. Tag the release-note commit as `+"`vX.Y.Z`"+` and push the tag. Do not tag while VERSION/CHANGELOG.md are dirty, and do not target any commit other than the release-note HEAD.
-8. Run `+"`mars_cli`"+` with args ["release", "publish-assets", "--repo", ".", "--version", "vX.Y.Z", "--upload", "auto"]. If mirroring is attempted, require GitHub mirror: verified (9/9); upload-process success without exact remote name/state/size/SHA-256 convergence is a blocker.
-9. Run `+"`mars_cli`"+` with args ["release", "verify-assets", "--dist", "dist/releases", "--version", "vX.Y.Z"].
-10. If local verification or optional GitHub mirroring fails, record the blocker before treating release work as complete.
-`, strings.TrimSpace(version), nonEmpty(status, "(clean)"), nonEmpty(head, "(no commits)")))
+%s
+`, strings.TrimSpace(version), nonEmpty(status, "(clean)"), nonEmpty(head, "(no commits)"), sequence))
 	if strings.TrimSpace(args.Notes) != "" {
 		out += "\nTask notes:\n" + strings.TrimSpace(args.Notes)
 	}
 	return ToolResult{Output: out}, nil
+}
+
+func isMarsFoundationSource(root Root) bool {
+	for _, rel := range []string{
+		"cmd/mars/main.go",
+		"docs/roles/personas/foundation-maintainer.md",
+	} {
+		if _, err := os.Stat(filepath.Join(root.Abs(), filepath.FromSlash(rel))); err != nil {
+			return false
+		}
+	}
+	return true
 }
 
 func handleGithubReleaseStatus(ctx context.Context, root Root, raw json.RawMessage) (ToolResult, error) {
@@ -169,8 +191,8 @@ Remote inspection commands for optional GitHub mirrors:
 - `+"`mars release verify-assets --version vX.Y.Z`"+`
 
 Interpretation:
-- Tag exists but release is 404: local assets may still be complete; run publish-assets with --upload github or record a mirror blocker.
-- Release exists but assets are missing, extra, pending, or do not match local sizes/digests: rerun local publish-assets with --upload github or record mirror_incomplete. Never treat the upload process exit alone as completion.
+- Tag exists but release is 404: local assets may still be complete; run the repository's approved release workflow or record a publication blocker.
+- Release exists but assets are missing, extra, pending, or do not match local sizes/digests: rerun the repository's approved release workflow or record the incomplete remote state. Never treat the upload process exit alone as completion.
 - Local tag and remote tag disagree: stop and resolve tag drift before publishing installer guidance.
 `, nonEmpty(head, "(unknown)"), firstLines(tags, 10))
 	return ToolResult{Output: out}, nil

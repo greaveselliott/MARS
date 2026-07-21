@@ -349,7 +349,7 @@ func marsCommandSupportsRepo(args []string) bool {
 	case "update":
 		return sub == "check" || sub == "harness"
 	case "release":
-		return sub == "notes" || sub == "backfill-notes" || sub == "publish-assets" || sub == "audit"
+		return sub == "notes" || sub == "backfill-notes" || sub == "audit"
 	case "checks":
 		return sub == "run"
 	case "docsync":
@@ -537,6 +537,10 @@ Global command surface:
     Flags: --install-dir <dir>, --shell <name>, --dry-run, --json
     Example: ["path", "setup", "--dry-run", "--json"]
 
+  release
+    Show the release subcommands. Unexpected positional commands fail closed.
+    Example: ["release"]
+
   release notes
     Generate semantic version patch notes, update VERSION, CHANGELOG.md, and buildinfo.
     Flags: --repo <path>, --bump <auto|major|minor|patch>, --dry-run
@@ -547,12 +551,6 @@ Global command surface:
     Flags: --repo <path>, --min-version <X.Y.Z>, --max-version <X.Y.Z>, --dry-run, --check
     Example: ["release", "backfill-notes", "--repo", ".", "--max-version", "0.26.2", "--dry-run"]
 
-  release publish-assets
-    Build linux/darwin amd64/arm64 release binaries locally, write checksums.txt,
-    verify the local dist, and optionally mirror assets to GitHub Releases.
-    Flags: --repo <path>, --version <vX.Y.Z>, --dist <path>, --upload <none|github|auto>, --github-repo <owner/name>
-    Example: ["release", "publish-assets", "--repo", ".", "--version", "v1.2.3", "--upload", "none"]
-
   release verify-assets
     Verify local dist assets or GitHub release metadata/assets for the updater.
     Flags: --repo <owner/name>, --version <latest|tag>, --release-url <url>, --dist <path>, --json
@@ -562,7 +560,7 @@ Global command surface:
   release audit
     Audit the newest local vX.Y.Z tags against GitHub Releases and report
     notes-only releases (missing binary assets) or missing release objects,
-    with the exact publish-assets backfill command per finding. Skips with a
+    with a producer-neutral recovery action per finding. Skips with a
     recorded blocker when tags or the GitHub API are unavailable.
     Flags: --repo <path>, --github-repo <owner/name>, --limit <n>, --json
     Example: ["release", "audit", "--repo", ".", "--limit", "10"]

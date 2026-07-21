@@ -84,6 +84,36 @@ func TestTaskTraceSummarize_suggestsFormalTools(t *testing.T) {
 	require.Contains(t, res.Output, "formal tools")
 }
 
+func TestReleaseWorkflowsUseRepositoryOwnedProducer(t *testing.T) {
+	root := newWorkflowToolRoot(t)
+	result, err := handleReleaseOrchestrate(context.Background(), root, json.RawMessage(`{}`))
+	require.NoError(t, err)
+	require.Contains(t, result.Output, "repository's approved release producer")
+	require.NotContains(t, result.Output, "publish-assets")
+
+	status, err := handleGithubReleaseStatus(context.Background(), root, json.RawMessage(`{}`))
+	require.NoError(t, err)
+	require.Contains(t, status.Output, "repository's approved release workflow")
+	require.NotContains(t, status.Output, "publish-assets")
+}
+
+func TestReleaseWorkflowBlocksFoundationSourcePublication(t *testing.T) {
+	root := newWorkflowToolRoot(t)
+	writeWorkflowFile(t, root.Abs(), "cmd/mars/main.go", "package main\n")
+	writeWorkflowFile(t, root.Abs(), "docs/roles/personas/foundation-maintainer.md", "# Foundation Maintainer\n")
+
+	result, err := handleReleaseOrchestrate(context.Background(), root, json.RawMessage(`{}`))
+	require.NoError(t, err)
+	require.Contains(t, result.Output, "active F-018 plan")
+	require.Contains(t, result.Output, "Do not create or move a tag, upload, sign, announce, publish")
+	require.Contains(t, result.Output, ".github/workflows/release-snapshot.yml")
+	require.NotContains(t, result.Output, "Tag the release-note commit")
+	require.NotContains(t, result.Output, "release notes")
+	require.NotContains(t, result.Output, "release: notes")
+	require.NotContains(t, result.Output, "vX.Y.Z")
+	require.NotContains(t, result.Output, "publish-assets")
+}
+
 func TestToolInventoryAudit_reportsRegistryAndGlossary(t *testing.T) {
 	root := newWorkflowToolRoot(t)
 	res, err := handleToolInventoryAudit(context.Background(), root, json.RawMessage(`{}`))

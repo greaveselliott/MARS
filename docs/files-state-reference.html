@@ -344,8 +344,9 @@ mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENA
           <h2>Release Assets</h2>
           <p>
             Release notes are repo-owned. Binary release assets are generated
-            output. The local dist is the source of truth before any optional
-            GitHub mirror is trusted.
+            output. MARS source currently builds publication-disabled private
+            snapshots with the pinned repository workflow; target repositories
+            choose and document their own producer and artifact contract.
           </p>
           <div class="wide-table" data-doc-filter>
             <table>
@@ -354,15 +355,21 @@ mars models credentials write-local-env --repo /path/to/repo --api-key-env OPENA
                 <tr><td><code>VERSION</code></td><td>Repo root.</td><td>Commit after <code>mars release notes</code>.</td></tr>
                 <tr><td><code>CHANGELOG.md</code></td><td>Repo root.</td><td>Commit after generated notes and any required prose polish.</td></tr>
                 <tr><td><code>internal/buildinfo/version.go</code></td><td>MARS source repo only.</td><td>Commit with source release notes.</td></tr>
-                <tr><td><code>dist/releases/</code></td><td>Local source repo workspace.</td><td>Generated binaries and checksums; verify, do not treat as source docs.</td></tr>
-                <tr><td>GitHub Release assets</td><td>Optional remote mirror.</td><td>Verify after upload when credentials are available.</td></tr>
+                <tr><td><code>dist/</code></td><td>Local source repo workspace.</td><td>Generated archives, SBOMs, checksums, and working metadata; verify the exact publishable set and do not treat it as source documentation.</td></tr>
+                <tr><td>GitHub Release assets</td><td>Future approved publication surface.</td><td>Publication remains blocked until the F-017/F-018 cutover gates authorize it.</td></tr>
               </tbody>
             </table>
           </div>
           <pre><code>mars release notes --repo . --bump auto
-mars release publish-assets --repo . --version vX.Y.Z --upload auto
-mars release verify-assets --dist dist/releases --version vX.Y.Z
-mars release verify-assets --version vX.Y.Z</code></pre>
+# Run the exact pinned build, check, snapshot, and verification steps in:
+.github/workflows/release-snapshot.yml
+mars release audit --repo .</code></pre>
+          <p>
+            The workflow above is the MARS source snapshot workflow,
+            not generated target doctrine and not publication authority. The
+            retained <code>verify-assets</code> consumer remains transitional
+            until T-066 replaces it.
+          </p>
         </section>
 
         <section class="doc-section" id="lifecycle">
@@ -458,7 +465,7 @@ mars release audit --repo .</code></pre>
                 <tr><td>Upgrade did not rewrite a customized role prompt.</td><td>Existing prompts are user-owned and preserved.</td><td>Compare against a fresh temporary init if you want new defaults.</td></tr>
                 <tr><td><code>mars eject</code> did not remove files.</td><td>Default mode is dry-run.</td><td>Rerun with <code>--apply --confirm repo-name</code> only after reviewing the preview.</td></tr>
                 <tr><td>Shared DB remains after eject.</td><td>The legacy shared DB is protected by default.</td><td>Use <code>--delete-shared-db</code> only if deleting shared runtime state is intentional.</td></tr>
-                <tr><td>Release assets are missing or stale.</td><td>Release notes were committed without publish/verify.</td><td>Run <code>mars release publish-assets</code>, verify local dist, then verify the optional GitHub mirror.</td></tr>
+                <tr><td>Release assets are missing or stale.</td><td>The repository-approved producer did not create a complete artifact set.</td><td>Rerun that repository's producer and artifact-contract checks. For MARS source, follow the publication-disabled F-018 snapshot workflow; do not publish while cutover remains blocked.</td></tr>
               </tbody>
             </table>
           </div>

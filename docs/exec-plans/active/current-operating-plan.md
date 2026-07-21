@@ -38,7 +38,7 @@
 
 ## Operator-Authorized Release Transition Exception
 
-As of 2026-07-21, AGENTS rules 12 and 14 describe the steady-state release process that depends on `mars release publish-assets`. The operator has explicitly approved retiring that command and deferring the next tag until the public cutover. Therefore T-064 through T-067 use this bounded source-only exception:
+As of 2026-07-21, T-065 has retired the bespoke publisher and AGENTS rule 14 now points to the repository-owned producer. The operator-approved transition still defers the next source version, tag, signature, upload, and supported-release claim until the public cutover. Therefore T-064 through T-067 use this bounded source-only exception:
 
 - commit and push each validated ticket normally, but do not create a private support release or legacy assets;
 - keep `VERSION` and the changelog at `0.68.49` through T-067 while untagged source builds report `0.69.0-dev`;

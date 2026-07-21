@@ -19,34 +19,55 @@ var changelogHeadingRE = regexp.MustCompile(`(?m)^## \[[^\]]+\] - [^\n]+`)
 
 func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 	root := repoRoot(t)
-	required := []string{
-		"AGENTS.md",
-		"CONTRIBUTING.md",
-		"docs/design-docs/release-versioning.md",
+	required := []struct {
+		rel     string
+		needles []string
+	}{
+		{
+			rel: "AGENTS.md",
+			needles: []string{
+				"mars release notes --repo . --bump auto",
+				"non-release semantic commit",
+				"release: notes X.Y.Z",
+				"repository-owned release producer",
+				"pinned GoReleaser/Syft",
+			},
+		},
+		{
+			rel: "CONTRIBUTING.md",
+			needles: []string{
+				"active execution plan",
+				"T-065 through T-067",
+				"publication-disabled snapshot",
+				"Do not create or move a tag",
+			},
+		},
+		{
+			rel: "docs/design-docs/release-versioning.md",
+			needles: []string{
+				"mars release notes --repo . --bump auto",
+				"non-release semantic commit",
+				"release: notes X.Y.Z",
+				"AD-313: Source MARS Uses Pinned GoReleaser; Targets Own Their Producer",
+			},
+		},
 	}
 
-	for _, rel := range required {
-		data, err := os.ReadFile(filepath.Join(root, rel))
+	for _, item := range required {
+		data, err := os.ReadFile(filepath.Join(root, item.rel))
 		if err != nil {
-			t.Fatalf("read %s: %v", rel, err)
+			t.Fatalf("read %s: %v", item.rel, err)
 		}
 		text := string(data)
-		for _, needle := range []string{
-			"mars release notes --repo . --bump auto",
-			"non-release semantic commit",
-			"release: notes X.Y.Z",
-			"GitHub Release",
-			"vX.Y.Z",
-			"gh release view vX.Y.Z",
-		} {
+		for _, needle := range item.needles {
 			if !strings.Contains(text, needle) {
-				t.Fatalf("%s must document automatic source versioning; missing %q", rel, needle)
+				t.Fatalf("%s must document source versioning authority; missing %q", item.rel, needle)
 			}
 		}
-		if rel == "AGENTS.md" || rel == "docs/design-docs/release-versioning.md" {
+		if item.rel == "AGENTS.md" || item.rel == "docs/design-docs/release-versioning.md" {
 			for _, needle := range []string{"Impact", "Why", "What Changed"} {
 				if !strings.Contains(text, needle) {
-					t.Fatalf("%s must document detailed release note narrative; missing %q", rel, needle)
+					t.Fatalf("%s must document detailed release note narrative; missing %q", item.rel, needle)
 				}
 			}
 		}
@@ -68,22 +89,21 @@ func TestSourceRepoVersioningRuleIsDocumented(t *testing.T) {
 	}
 }
 
-func TestReleasePublicationIsLocalFirst(t *testing.T) {
+func TestReleaseProductionUsesPinnedSourceAndRepositoryOwnedTargetContracts(t *testing.T) {
 	root := repoRoot(t)
 	data, err := os.ReadFile(filepath.Join(root, "docs", "design-docs", "release-versioning.md"))
 	if err != nil {
 		t.Fatalf("read release versioning doc: %v", err)
 	}
-	text := string(data)
+	text := strings.Join(strings.Fields(string(data)), " ")
 	for _, needle := range []string{
-		"mars release publish-assets",
-		"--upload none|github|auto",
-		"local release assets",
-		"Optional GitHub mirror",
-		"mars release verify-assets --dist",
+		"AD-313: Source MARS Uses Pinned GoReleaser; Targets Own Their Producer",
+		"publication-disabled private snapshots",
+		"Generated target repositories do not inherit this Go-specific producer",
+		"Superseded 2026-07-21 by AD-313/T-065/F-018",
 	} {
 		if !strings.Contains(text, needle) {
-			t.Fatalf("release docs must describe local-first asset publication; missing %q", needle)
+			t.Fatalf("release docs must describe the current source/target producer boundary; missing %q", needle)
 		}
 	}
 }

@@ -111,6 +111,10 @@ delivery chain.
 
 ### AD-059: Versioned Releases Are Published From Local Assets
 
+> **Superseded 2026-07-21 by AD-313/T-065/F-018.** The bespoke publisher
+> described below is no longer reachable. The original contract is retained as
+> historical evidence.
+
 A release is not fully complete until local release assets are built and
 verified. GitHub Releases remain an optional mirror when the repository has
 authenticated GitHub release capability.
@@ -138,7 +142,22 @@ Release publication has two independent gates:
 
 GitHub remains optional infrastructure. If the repo has no GitHub remote, no authenticated release credentials, or the GitHub API fails, the release manager records the mirror blocker without treating local asset publication as failed.
 
+### AD-313: Source MARS Uses Pinned GoReleaser; Targets Own Their Producer
+
+MARS source builds publication-disabled private snapshots with the exact
+GoReleaser, Syft, and Go pins declared by T-065 and `.goreleaser.yaml`. The
+default producer has no tag, upload, signing, announcement, or publication
+authority. T-066 owns archive consumers and signature verification, T-067 owns
+private rehearsal, and F-017/F-018 cutover approval is required before a
+supported release exists. Generated target repositories do not inherit this
+Go-specific producer; each target chooses and documents its own release
+workflow and artifact contract.
+
 ### AD-312: Attempted GitHub Mirrors Must Converge Before Success
+
+> **Implementation superseded 2026-07-21 by AD-313/T-065/F-018.** T-065
+> removes the bespoke uploader described below. Exact post-upload convergence
+> remains a required invariant for the future F-018-S004 cutover path.
 
 `release publish-assets --upload github` and an `--upload auto` invocation that
 has begun a GitHub upload may report success only after a fresh remote snapshot
@@ -191,6 +210,10 @@ controls whether installer and self-update claims can rely on GitHub-hosted
 assets.
 
 ### AD-141: Foundation Release Publication Uses A Source-Only Skill
+
+> **Superseded 2026-07-21 by AD-313/T-065/F-018.** The skill remains
+> source-only but now governs publication-disabled GoReleaser/Syft snapshots;
+> the original publisher sequence below is retained as historical evidence.
 
 The source harness release path has a repeated judgment-heavy sequence after
 each non-release semantic commit: generate release notes, commit and push them,
@@ -301,6 +324,9 @@ work without manual profile editing.
 
 ### AD-078: Release Assets Are Built From Tags And Verified
 
+> **Superseded 2026-07-21 by AD-313/T-065/F-018.** The bespoke producer below
+> is no longer reachable. T-066 owns migration of the retained consumers.
+
 For the source harness, `mars release publish-assets --repo . --version
 vX.Y.Z --upload none|github|auto` is the authoritative asset-publication path
 after the release-note commit is on `main` and tag `vX.Y.Z` points at that
@@ -333,6 +359,10 @@ deployed harness from publishing assets, GitHub Releases, or update metadata
 for a commit that does not contain the generated release notes.
 
 ### AD-282: Release Audit Detects Notes-Only And Missing GitHub Releases
+
+> **Partially superseded 2026-07-21 by AD-313/T-065.** The read-only audit is
+> retained, but its exact bespoke-publisher remediation is replaced by a
+> producer-neutral blocker. The original rationale remains historical evidence.
 
 `verify-assets` checks one version at a time, so a notes-only release (tag and
 changelog published, binary assets never mirrored) stays invisible once
@@ -378,9 +408,12 @@ retired GitHub Actions workflows would have hosted.
 - Generate the same VERSION/CHANGELOG/release guidance in target repos.
 - Treat source-repo versioning as part of done for every non-release semantic commit.
 - Treat target-repo versioning as part of done for every non-release semantic commit after `mars init`.
-- Publish local release assets with `mars release publish-assets`.
-- Mirror matching GitHub Releases when authenticated GitHub release capability is configured.
-- Verify `gh release view vX.Y.Z` after GitHub mirroring.
+- Build MARS source snapshots with the pinned, publication-disabled
+  GoReleaser/Syft workflow defined by F-018.
+- Let generated target repositories choose and document their own producer and
+  artifact contract.
+- Defer source tags, signing, GitHub publication, and fresh-download checks to
+  the separately approved F-017/F-018 cutover.
 - Audit recent tags for notes-only or missing GitHub releases with `mars release audit` after each publication.
 - Block release tag creation unless the tag matches `VERSION`, the worktree is
   clean, `HEAD` is the release-note commit, and the tag target is that `HEAD`.

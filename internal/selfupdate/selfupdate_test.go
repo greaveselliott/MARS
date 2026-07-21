@@ -179,6 +179,26 @@ func TestRunTaggedReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
 	require.Equal(t, payload, got)
 }
 
+func TestRunReleaseAssetsMissingContractUsesProducerNeutralRemediation(t *testing.T) {
+	installDir := t.TempDir()
+	client := fakeHTTPClient(func(*http.Request) (*http.Response, error) {
+		return textResponse(http.StatusOK, `{"tag_name":"v1.2.6","assets":[]}`), nil
+	})
+
+	_, err := Run(context.Background(), Config{
+		Version:          DefaultVersion,
+		InstallDir:       installDir,
+		SkipShellPath:    true,
+		LatestReleaseURL: "https://api.example.test/repos/example/project/releases/latest",
+		HTTPClient:       client,
+	})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "repository's approved release workflow for v1.2.6")
+	require.ErrorContains(t, err, "mars release verify-assets --version v1.2.6")
+	require.NotContains(t, err.Error(), "publish-assets")
+	require.NoFileExists(t, filepath.Join(installDir, DefaultBinary))
+}
+
 func exactReleaseAssetsJSON(t *testing.T, tag, selected string) string {
 	t.Helper()
 	type asset struct {
