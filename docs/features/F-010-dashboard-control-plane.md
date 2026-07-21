@@ -343,7 +343,7 @@ inline script execution.
 
 ## Descoped Scenarios
 
-None.
+- Hosted SaaS dashboard operation is descoped because MARS provides local dashboards; the local dashboard remains in scope through F-010-S001 through F-010-S025.
 
 ## Evidence
 

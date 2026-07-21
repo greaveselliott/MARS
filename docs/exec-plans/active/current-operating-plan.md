@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063, T-064; scheduled T-065 through T-067
-**Current Ticket:** None; T-065 creation through `ticket_create` is the next atomic action after T-064 evidence lands
+**Current Ticket:** T-065
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -25,7 +25,7 @@
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-065 through T-067 and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Create T-065 through `ticket_create`, then replace bespoke release production with the pinned source-only GoReleaser snapshot contract.
+- **Next Primary Action:** Implement T-065 as the pinned source-only GoReleaser snapshot producer without creating a tag, Release, public signature, or supported-release claim.
 
 ## Locked Decisions
 

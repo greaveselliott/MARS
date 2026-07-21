@@ -15,7 +15,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 
 ## Scenario Schedule
 
-1. F-008-S001 - Role outcomes are recorded and rolled into accuracy/value scores.
+1. F-008-S001 - Recorded role-outcome history is rolled into current accuracy/value scores.
 2. F-008-S002 - Trust levels change capabilities according to observed scores and manual overrides.
 3. F-008-S003 - `scores` and `trust` commands expose repo and role state to operators.
 4. F-008-S004 - `scores export` refreshes `docs/QUALITY_SCORE.md` from database evidence while preserving manual notes.
@@ -27,7 +27,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 
 ## Scenarios
 
-### F-008-S001: Outcome-Based Scores
+### F-008-S001: Outcome History Behind Rolling Scores
 
 Given role outcomes such as merged work, failed checks, timeouts, noops, or reverts are recorded
 When score computation runs

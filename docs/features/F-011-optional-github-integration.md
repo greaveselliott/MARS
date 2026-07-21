@@ -21,7 +21,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 4. F-011-S004 - GitHub API operations create pull requests, check runs, status updates, and comments when configured.
 5. F-011-S005 - Rate limits, server errors, and context cancellation are handled without corrupting local queue state.
 6. F-011-S006 - Optional integration never blocks local-first operation when credentials are absent.
-7. F-011-S007 - Remote-code-host signals feed telemetry and orchestration without replacing strict trunk commits.
+7. F-011-S007 - Teams that want remote code host telemetry can feed it into orchestration without replacing strict trunk commits.
 
 ## Scenarios
 
@@ -71,7 +71,7 @@ When setup, run, start, serve, doctor, or release paths are used
 Then core local harness operation continues and optional integration is reported as unavailable rather than complete
 And process health remains available while `/webhook` reports service unavailable and dispatches nothing
 
-### F-011-S007: Signals Around Strict Trunk
+### F-011-S007: Teams That Want Remote Code Host Telemetry Around Strict Trunk
 
 Given GitHub events, statuses, or comments are available
 When they feed orchestration or telemetry

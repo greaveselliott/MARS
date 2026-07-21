@@ -22,7 +22,7 @@ Private snapshot evidence proves build behavior but is never a supported-release
 ## Scenario Schedule
 
 1. F-018-S001 - Produce deterministic GoReleaser snapshot archives and validate the signing configuration.
-2. F-018-S002 - Install and update safely from the archive contract.
+2. F-018-S002 - Install safely and migrate the binary updater to the archive contract.
 3. F-018-S003 - Rehearse the complete pipeline privately without publishing.
 4. F-018-S004 - Publish and verify an immutable public release after F-017 approval.
 
@@ -39,10 +39,10 @@ And SPDX-JSON SBOMs and SHA-256 checksums are produced
 And the checksum-signing configuration passes structural and synthetic-fixture tests without creating a public keyless signature
 And raw binaries, legacy `mars-harness-*` aliases, stale files, and extra assets are absent.
 
-### F-018-S002: Safe Archive Installation And Update
+### F-018-S002: Safe Archive Installation And Binary Updater
 
 Given a supported release archive, checksum file, and signature bundle
-When the installer or `mars update tool` selects the current platform
+When the installer or binary updater `mars update tool` selects the current platform
 Then the expected workflow identity, signature, checksum, tag, commit, and platform are verified before replacement
 And extraction rejects absolute or traversal paths, links, devices, duplicates, missing entries, unexpected entries, and quota violations
 And the installed binary is replaced atomically only after every verification passes

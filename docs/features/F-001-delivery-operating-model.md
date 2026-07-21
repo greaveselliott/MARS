@@ -16,7 +16,7 @@ The scenarios below are the step-by-step BDD contract for this feature. Each sce
 ## Scenario Schedule
 
 1. F-001-S001 - Goal, BDD feature, and active plan are linked.
-2. F-001-S002 - Feature ticket completion requires BDD scenario evidence.
+2. F-001-S002 - Feature ticket completion requires BDD-style or E2E test evidence for its scenario.
 3. F-001-S003 - Generated target harness mirrors goals, BDD, plan, ticket, role, and knowledge guidance.
 4. F-001-S004 - Existing target drift is reported without overwriting user-owned files.
 5. F-001-S005 - Release notes and quality score distinguish shipped scenarios from enabler work.
@@ -39,11 +39,12 @@ Given at least one active goal exists
 When the COO updates the single active exec plan from the CEO goal decision
 Then the plan references an active goal, a BDD feature contract, a hypothesis, success evidence, falsification evidence, scenario schedule, current failing scenario, walking skeleton slice, and learning or MVP outcome
 
-### F-001-S002: Feature Ticket Evidence Gate
+### F-001-S002: BDD-Style Or E2E Test Evidence Gate
 
 Given a feature ticket maps to a BDD scenario
 When the engineer attempts to move it to done
 Then the ticket must include non-empty `bdd_scenarios`, `end_to_end_evidence: required`, non-empty `evidence_links`, and `verified_by`
+And user-visible scenario boundaries identify the BDD-style or E2E tests that prove the behavior
 
 ### F-001-S003: Generated Target Mirror
 

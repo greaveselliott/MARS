@@ -78,7 +78,7 @@ When they read the first viewport
 Then they understand product team scope, local control, guardrails, and
 evidence.
 
-### F-015-S003: Documentation Map
+### F-015-S003: Documentation Map And Safe Inspection
 
 Given a reader needs a canonical doc
 When they open the documentation map
@@ -93,12 +93,12 @@ When they scan the page
 Then they can find data locality, credentials, guardrails, trust levels, audit
 evidence, ownership, rollback or eject, and DocSync.
 
-### F-015-S005: Adoption Guide
+### F-015-S005: Adoption And Run Troubleshooting Guides
 
-Given a reader opens the adoption guide
-When they choose what they need to prove
+Given a reader opens the adoption or run troubleshooting guide
+When they choose what they need to prove or diagnose
 Then they see safe trial steps, control questions, pilot guidance, proof paths,
-and rollout decision criteria.
+rollout decision criteria, and actionable troubleshooting routes.
 
 ### F-015-S006: Canonical Crosslinks
 
@@ -122,7 +122,7 @@ Then link sweep, DocSync audit, docs consistency, and full tests pass.
 
 ## Descoped Scenarios
 
-None.
+- CLI or runtime behavior changes are descoped from this documentation-only feature because their owning runtime feature contracts and implementation tickets govern those changes.
 
 ## Evidence
 
