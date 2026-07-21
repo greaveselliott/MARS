@@ -1,0 +1,109 @@
+# MarsDocSync:
+# docs:
+# - docs/design-docs/code-documentation-map.md
+# - docs/design-docs/release-versioning.md
+# - docs/features/F-018-goreleaser-distribution.md
+# - docs/product-specs/product-surface.md
+version: 2
+
+project_name: mars
+dist: dist
+
+builds:
+  - id: mars
+    main: ./cmd/mars
+    binary: mars
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - >-
+        -s -w
+        -X main.version={{ .Version }}
+        -X main.commit={{ .FullCommit }}
+        -X main.date={{ .CommitDate }}
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    goamd64:
+      - v1
+    goarm64:
+      - v8.0
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: mars-archives
+    ids:
+      - mars
+    formats:
+      - tar.gz
+    name_template: "mars_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    wrap_in_directory: false
+    strip_binary_directory: true
+    builds_info:
+      owner: root
+      group: root
+      mode: 0755
+      mtime: "{{ .CommitDate }}"
+    files:
+      - src: LICENSE
+        dst: LICENSE
+        info:
+          owner: root
+          group: root
+          mode: 0644
+          mtime: "{{ .CommitDate }}"
+      - src: NOTICE
+        dst: NOTICE
+        info:
+          owner: root
+          group: root
+          mode: 0644
+          mtime: "{{ .CommitDate }}"
+      - src: THIRD_PARTY_NOTICES
+        dst: THIRD_PARTY_NOTICES
+        info:
+          owner: root
+          group: root
+          mode: 0644
+          mtime: "{{ .CommitDate }}"
+
+snapshot:
+  version_template: "0.69.0-dev.{{ .ShortCommit }}"
+
+sboms:
+  - id: mars-sboms
+    artifacts: archive
+    ids:
+      - mars-archives
+    documents:
+      - "${artifact}.sbom.json"
+    cmd: syft
+    args:
+      - "file:${artifact}"
+      - --config
+      - ../.syft.yaml
+      - --quiet
+      - --output
+      - "spdx-json=${document}"
+    env:
+      - SYFT_CHECK_FOR_APP_UPDATE=false
+      - SYFT_ENRICH=
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+  ids:
+    - mars-archives
+  extra_files:
+    - glob: ./dist/*.sbom.json
+
+changelog:
+  disable: true
+
+release:
+  disable: true

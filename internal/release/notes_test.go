@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/release-versioning.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-018-goreleaser-distribution.md
 */
 package release
 
@@ -65,6 +66,73 @@ func TestPrepareGeneratesVersionAndChangelog(t *testing.T) {
 	require.Contains(t, string(changelog), "**api:** Add search endpoint")
 	require.Contains(t, string(changelog), "### Fixes")
 	require.Contains(t, string(changelog), "Handle empty results")
+}
+
+func TestUpdateBuildInfoVersionReplacesDevelopmentPrerelease(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "internal", "buildinfo", "version.go")
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte("package buildinfo\n\nconst DefaultVersion = \"0.69.0-dev.cf62513\"\n"), 0o644))
+
+	require.NoError(t, updateBuildInfoVersion(dir, SemVer{Major: 0, Minor: 69, Patch: 0}))
+	content, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, "package buildinfo\n\nconst DefaultVersion = \"0.69.0\"\n", string(content))
+}
+
+func TestPrepareReleasesDevelopmentFallback(t *testing.T) {
+	t.Parallel()
+	dir := initGitRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("0.68.49\n"), 0o644))
+	path := filepath.Join(dir, "internal", "buildinfo", "version.go")
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte("package buildinfo\n\nconst DefaultVersion = \"0.69.0-dev\"\n"), 0o644))
+	gitCommit(t, dir, "chore: seed retained release floor")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "feature.txt"), []byte("feature"), 0o644))
+	gitCommit(t, dir, "feat(release): adopt archive producer")
+
+	result, err := Prepare(context.Background(), Config{
+		RepoRoot: dir,
+		Bump:     BumpMinor,
+		Now:      time.Date(2026, 7, 21, 22, 0, 0, 0, time.UTC),
+	})
+	require.NoError(t, err)
+	require.Equal(t, "0.69.0", result.NextVersion.String())
+	version, err := os.ReadFile(filepath.Join(dir, "VERSION"))
+	require.NoError(t, err)
+	require.Equal(t, "0.69.0\n", string(version))
+	buildInfo, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Contains(t, string(buildInfo), `const DefaultVersion = "0.69.0"`)
+}
+
+func TestUpdateBuildInfoVersionRejectsMalformedDefault(t *testing.T) {
+	t.Parallel()
+	cases := map[string]string{
+		"build metadata":          `const DefaultVersion = "0.69.0-dev+local"`,
+		"trailing punctuation":    `const DefaultVersion = "0.69.0-dev."`,
+		"consecutive punctuation": `const DefaultVersion = "0.69.0-dev..local"`,
+		"commented declaration":   `// const DefaultVersion = "0.69.0-dev"`,
+		"multiple declarations":   "const DefaultVersion = \"0.69.0-dev\"\nconst DefaultVersion = \"0.69.0-local\"",
+	}
+	for name, declaration := range cases {
+		name, declaration := name, declaration
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			path := filepath.Join(dir, "internal", "buildinfo", "version.go")
+			require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+			original := []byte("package buildinfo\n\n" + declaration + "\n")
+			require.NoError(t, os.WriteFile(path, original, 0o644))
+
+			err := updateBuildInfoVersion(dir, SemVer{Major: 0, Minor: 69, Patch: 0})
+			require.ErrorContains(t, err, "does not contain a DefaultVersion semantic version")
+			content, readErr := os.ReadFile(path)
+			require.NoError(t, readErr)
+			require.Equal(t, original, content)
+		})
+	}
 }
 
 func TestRenderReleaseNarrativeUsesImpactWhyAndWhat(t *testing.T) {

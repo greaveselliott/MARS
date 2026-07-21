@@ -14,14 +14,14 @@ Private snapshot evidence proves build behavior but is never a supported-release
 ## Step-By-Step Behavior
 
 1. T-064 removes the unsupported private v0.93 lineage and restores the retained v0.68.49 release floor without publishing a replacement.
-2. T-065 pins GoReleaser and the supporting supply-chain tools, defines the four archive targets, and removes the bespoke publication path.
+2. T-065 builds pinned GoReleaser and Syft modules with the pinned Go toolchain, defines the four archive targets, and removes the bespoke publication path only after the replacement producer passes.
 3. T-066 migrates installation and updates to fail-closed archive, checksum, signature, identity, metadata, and extraction verification.
 4. T-067 runs reproducible private snapshots and clean installation fixtures without creating a tag, Release, signature, or supported-release claim.
 5. A separately approved F-017 cutover publishes the first immutable supported release only after every independent publication gate passes.
 
 ## Scenario Schedule
 
-1. F-018-S001 - Produce deterministic GoReleaser snapshot archives and validate the signing configuration.
+1. F-018-S001 - Produce deterministic, publication-disabled GoReleaser snapshot archives.
 2. F-018-S002 - Install safely and migrate the binary updater to the archive contract.
 3. F-018-S003 - Rehearse the complete pipeline privately without publishing.
 4. F-018-S004 - Publish and verify an immutable public release after F-017 approval.
@@ -35,8 +35,9 @@ When pinned GoReleaser builds MARS twice with the pinned Go toolchain
 Then Darwin and Linux AMD64 and ARM64 archives are byte-identical between runs
 And each archive contains exactly the MARS binary, license, notice, and third-party notices
 And each binary reports the exact version, full commit, platform, and commit-derived build date
-And SPDX-JSON SBOMs and SHA-256 checksums are produced
-And the checksum-signing configuration passes structural and synthetic-fixture tests without creating a public keyless signature
+And SPDX-JSON SBOMs and an exact SHA-256 checksum set covering all four archives and four SBOMs are produced
+And the four archives and their checksum records are reproducible while each run verifies its own raw SBOM bytes and the two runs have equivalent normalized SPDX semantics
+And the default producer contains no signing or publication authority and creates no public keyless signature
 And raw binaries, legacy `mars-harness-*` aliases, stale files, and extra assets are absent.
 
 ### F-018-S002: Safe Archive Installation And Binary Updater
@@ -70,7 +71,7 @@ And logged-out archive download, install, update, rollback, `gh release verify`,
 
 ## Evidence
 
-- **F-018-S001:** Pending T-065.
+- **F-018-S001:** Pending T-065; private snapshot notices remain provisional until the complete Go dependency notice review passes before cutover. Exact GoReleaser `v2.17.0` binary findings GO-2026-5970 and GO-2026-5932 are accepted only for credential-free, publication-disabled private snapshot evidence with `ko`, signing, announcement, and publication explicitly skipped; they remain a public-cutover no-go pending an acceptable upstream release/removal.
 - **F-018-S002:** Pending T-066.
 - **F-018-S003:** Pending T-067.
 - **F-018-S004:** Deferred to the F-017 cutover; no public release is authorized by this feature alone.

@@ -4,6 +4,7 @@ docs:
 - docs/design-docs/code-documentation-map.md
 - docs/design-docs/release-versioning.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-018-goreleaser-distribution.md
 */
 package release
 
@@ -688,13 +689,14 @@ func updateBuildInfoVersion(repoRoot string, next SemVer) error {
 	if err != nil {
 		return fmt.Errorf("release: read internal/buildinfo/version.go: %w", err)
 	}
-	old := regexp.MustCompile(`DefaultVersion = "[0-9]+\.[0-9]+\.[0-9]+"`)
+	old := regexp.MustCompile(`(?m)^const DefaultVersion = "[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?"$`)
 	replacement := fmt.Sprintf(`DefaultVersion = "%s"`, next.String())
 	content := string(data)
-	if !old.MatchString(content) {
+	matches := old.FindAllStringIndex(content, -1)
+	if len(matches) != 1 {
 		return fmt.Errorf("release: internal/buildinfo/version.go does not contain a DefaultVersion semantic version")
 	}
-	content = old.ReplaceAllString(content, replacement)
+	content = old.ReplaceAllString(content, "const "+replacement)
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("release: write internal/buildinfo/version.go: %w", err)
 	}

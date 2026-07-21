@@ -10,11 +10,11 @@
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
 **Hypothesis:** Retiring the private `v0.93.0` experiment and using a pinned GoReleaser archive pipeline will reduce bespoke release code while retaining fail-closed consumer verification.
-**Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser snapshots are reproducible; the archive/checksum/SBOM/signature contract passes; and no unsupported release is advertised.
+**Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; each snapshot's exact archive/SBOM checksum contract passes; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-066 installer/updater migration; T-067 private rehearsal; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-017-S003: v0.93 is still the live private release and the supported archive/signature lifecycle is not implemented
-**Walking Skeleton Slice:** Retire the unsupported private v0.93 lineage with exact leases and preserve a private, fail-closed v0.68.49 baseline before replacing release production or consumption.
+**Current Failing Scenario:** F-018-S001: the retained private baseline has no pinned, publication-disabled GoReleaser archive producer or verified snapshot contract.
+**Walking Skeleton Slice:** Build four private snapshot archives with deterministic binary/archive metadata, exact notices, per-archive SPDX SBOMs, and an exact self-verifying checksum set without creating a tag, Release, signature, or supported-release claim.
 **Learning Or MVP Outcome:** Establish a truthful private release floor and an explicit migration contract before changing release implementation or consumer behavior.
 **Created:** 2026-07-21
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager packets
@@ -52,7 +52,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 | Ticket | Outcome | Entry gate | Exit gate |
 | --- | --- | --- | --- |
 | T-064 | Retire v0.93 and reset the release floor. | Live leases match the captured manifest. | Passed 2026-07-21: Release/tag are absent, Pages is disabled, protected work is re-anchored, `VERSION` is `0.68.49`, and the source fallback is `0.69.0-dev`. |
-| T-065 / F-018-S001 | Replace the bespoke producer with pinned GoReleaser. | T-064 complete. | Four deterministic archives, notices, SPDX SBOMs, checksums, and signing configuration pass snapshot tests. |
+| T-065 / F-018-S001 | Replace the bespoke producer with pinned GoReleaser. | T-064 complete. | Four deterministic archives, provisional private notices, SPDX SBOMs, exact run-local checksums, and a publication-disabled workflow pass snapshot tests. |
 | T-066 / F-018-S002 | Migrate installer, updater, audit, CLI/docs, and generated guidance. | T-065 complete and contract frozen. | Consumers reject tampering and unsafe archives; legacy publish/verify commands and raw aliases are absent. |
 | T-067 / F-018-S003 | Rehearse privately and prepare `0.69.0`. | T-066 complete. | Two-build reproducibility, clean macOS/Linux installs, workflow draft-failure behavior, and release-note preparation pass. |
 | Cutover | Publish immutable `v0.69.0`. | Every F-017 prerequisite and separate owner approval pass. | Logged-out verification passes and the 48-hour canary starts. |
@@ -82,18 +82,18 @@ This exception cannot authorize a supported-release claim, visibility change, or
 
 ## GoReleaser Contract
 
-- Pin GoReleaser OSS `v2.17.0`, Go `1.26.5`, Syft `v1.44.0`, Cosign `v3.0.6`, and every GitHub Action by full commit SHA.
+- Build GoReleaser OSS `v2.17.0` and Syft `v1.49.0` from exact SumDB-verified modules with Go `1.26.5`; pin every GitHub Action by full commit SHA. Exact binary scanning records GO-2026-5970 and no-fix GO-2026-5932 through GoReleaser's dormant `ko`/Sigstore/Rekor dependency chain, while Syft has no called-symbol finding. The exact, unmodified GoReleaser module may run only credential-free, publication-disabled private snapshots with `ko`, signing, announcement, and publication explicitly skipped; it is not cleared for public cutover, and T-065 must not hide the findings through an unpublished dependency overlay. Cosign `v3.1.2` is reserved for the later approved signing/cutover work and is not executed by the default snapshot producer.
 - Build `./cmd/mars` with `CGO_ENABLED=0`, `-trimpath`, full commit, tag version, commit date, and commit-derived archive timestamps for Darwin/Linux AMD64/ARM64.
 - Produce four `mars_<version>_<os>_<arch>.tar.gz` archives. Each contains exactly `mars`, `LICENSE`, `NOTICE`, and `THIRD_PARTY_NOTICES`.
-- Produce one SPDX-JSON SBOM per archive, `checksums.txt`, and a keyless `checksums.txt.sigstore.json` bundle.
-- Release into a draft, fresh-download and compare every asset, then publish only after checksum/signature/attestation verification. A failure remains an unpublished draft.
+- Produce one SPDX-JSON SBOM per archive and `checksums.txt` containing exactly four archive and four SBOM entries. T-065 creates no signature bundle.
+- Keep the default producer publication-disabled. Draft creation, fresh-download comparison, signing, attestation, and immutable publication remain later cutover work.
 - Enable GitHub release immutability before the first supported release; never move or clobber a published tag or asset.
 
 ## Validation Gates
 
-- `git diff --check`, uncached tests, race, vet, coverage ratchets, fuzz smoke, fail-closed `govulncheck`, DocSync, docs/link checks, and four-platform CGO-disabled builds.
-- `goreleaser check` and two clean snapshot builds with identical archive and checksum hashes.
-- Positive and negative checksum, signature, identity, tag, commit, platform, archive traversal/link/device/duplicate/extra/missing/size tests.
+- `git diff --check`, uncached tests, race, vet, coverage ratchets, fuzz smoke, fail-closed MARS-source `govulncheck`, DocSync, docs/link checks, and four-platform CGO-disabled builds. Third-party producer binary findings must be recorded and remain a public-cutover no-go until an acceptable upstream tool release/removal exists.
+- `goreleaser check` and two clean snapshot builds with identical archive hashes, identical archive checksum records, exact eight-entry run-local checksum verification, and normalized SPDX semantic equality. Raw SPDX creation time and document namespace are explicitly volatile and are not claimed byte-reproducible.
+- Positive and negative checksum, identity, commit, platform, archive traversal/link/device/duplicate/extra/missing/size tests. Signature and tag verification belong to T-066 and the cutover gate.
 - Fork-safe snapshot workflow with read-only token and no secrets; release workflow limited to contents, OIDC, and attestation permissions.
 - Installed clean-project macOS and Linux lifecycle; v0.93 manual-reinstall path; no reachable custom publisher or legacy raw asset alias.
 - Security, QA, Dogfood, Release Manager, and Orchestrator sign-off before advancing each ticket.

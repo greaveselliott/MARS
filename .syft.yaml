@@ -1,0 +1,31 @@
+# MarsDocSync:
+# docs:
+# - docs/design-docs/code-documentation-map.md
+# - docs/design-docs/release-versioning.md
+# - docs/features/F-018-goreleaser-distribution.md
+# - docs/product-specs/product-surface.md
+
+check-for-app-update: false
+enrich: []
+
+cache:
+  dir: ""
+  ttl: 0s
+
+cpp:
+  vcpkg-allow-git-clone: false
+
+golang:
+  search-local-mod-cache-licenses: false
+  search-local-vendor-licenses: false
+  search-remote-licenses: false
+  use-packages-lib: false
+
+java:
+  use-network: false
+
+javascript:
+  search-remote-licenses: false
+
+python:
+  search-remote-licenses: false

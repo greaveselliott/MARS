@@ -1,0 +1,58 @@
+# MarsDocSync:
+# docs:
+# - docs/design-docs/release-versioning.md
+# - docs/features/F-018-goreleaser-distribution.md
+name: release-snapshot
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out source without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.26.5
+          cache: false
+
+      - name: Build pinned release tools from verified modules
+        env:
+          GOBIN: ${{ runner.temp }}
+          GONOSUMDB: ""
+          GOPRIVATE: ""
+          GOPROXY: https://proxy.golang.org
+          GOSUMDB: sum.golang.org
+          GOTOOLCHAIN: local
+        run: |
+          set -euo pipefail
+          go install github.com/goreleaser/goreleaser/v2@v2.17.0
+          go install github.com/anchore/syft/cmd/syft@v1.49.0
+          "$RUNNER_TEMP/goreleaser" --version
+          "$RUNNER_TEMP/syft" version
+          go version -m "$RUNNER_TEMP/goreleaser" | grep -F $'\tmod\tgithub.com/goreleaser/goreleaser/v2\tv2.17.0\t'
+          go version -m "$RUNNER_TEMP/goreleaser" | grep -F ': go1.26.5'
+          go version -m "$RUNNER_TEMP/syft" | grep -F $'\tmod\tgithub.com/anchore/syft\tv1.49.0\t'
+          go version -m "$RUNNER_TEMP/syft" | grep -F ': go1.26.5'
+
+      - name: Check GoReleaser configuration
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/goreleaser" check
+
+      - name: Build non-publishing snapshot
+        run: |
+          set -euo pipefail
+          PATH="$RUNNER_TEMP:$PATH" "$RUNNER_TEMP/goreleaser" release --snapshot --clean --skip=ko,sign,announce,publish
