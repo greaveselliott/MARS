@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-066; scheduled T-067
-**Current Ticket:** T-066 in progress; checkpoint A1 is the only implementation slice
+**Current Ticket:** T-066 blocked at checkpoint A1 dependency admission
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -13,7 +13,7 @@
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; exact archive/SBOM checksums pass; signed consumers reject hostile input before mutation and preserve the installed binary on failure; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-066 installer/updater migration; T-067 private rehearsal; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S002: installer and updater consumers have not yet migrated to the signed archive contract.
+**Current Failing Scenario:** F-018-S002: installer and updater consumers have not migrated because no admitted Sigstore verifier both preserves the approved Go 1.22.4 floor and clears called verification-path vulnerabilities.
 **Walking Skeleton Slice:** Verify one offline synthetic Sigstore bundle and canonical checksum set, authenticate and safely extract the current-platform archive, then atomically replace a fixture binary while every hostile lane leaves the prior binary unchanged.
 **Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
 **Created:** 2026-07-21
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-066 through T-067 and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Deliver T-066 checkpoint A1's offline Sigstore-bundle and strict checksum verification with synthetic fixtures; archive inspection remains A2 and no tag, Release, MARS signature, or supported-release claim is authorized.
+- **Current Primary Blocker:** T-066 A1 dependency admission failed on called `GO-2026-5952` and 13 additional called findings in the newest Go-1.22-compatible `sigstore-go`; T-067 and the independent F-017 audit, runtime, contribution, and cutover gates also remain incomplete.
+- **Next Primary Action:** Separately approve and ticket a minimum-Go compatibility migration before evaluating fixed `sigstore-go v1.2.0+`, or wait for a vulnerability-cleared release compatible with Go 1.22.4; then rerun A1's exact floor/API/called-vulnerability gate. No tag, Release, MARS signature, or supported-release claim is authorized.
 
 ## Locked Decisions
 
@@ -106,6 +106,12 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - The consumer contract adds `checksums.txt.sigstore.json`, an offline Sigstore bundle v0.3 over the exact canonical checksum bytes. Trust is compile-time pinned to the Sigstore root hash, GitHub Actions issuer, exact MARS release workflow/tag identity, and the Fulcio GitHub workflow SHA extension equal to the expected full commit; failure to verify any claim blocks rather than falling back or parsing certificates ad hoc.
 - The first CTO-labelled call exposed a planning-policy limitation: completed-validation detection looks only for literal build-and-smoke tokens in ticket frontmatter. The Orchestrator reran unchanged `ticket_create` under its owning role, preserving feature-contract and scenario-order enforcement. No policy implementation is added to T-066.
 - Repository state remains private and `primary_blocked`; `VERSION` is `0.68.49`; source fallback is `0.69.0-dev`; no tag, Release, MARS signature, upload, announcement, or visibility change is authorized.
+
+## T-066 A1 Dependency Admission — 2026-07-22
+
+- The newest admissible-floor candidate, official `sigstore-go v0.7.0` at `9c466a8b8df6a1886292e0a82023bc217968da9e`, retained the main module's Go 1.22.4 directive after exact-toolchain tidy and compiled every required offline bundle, identity, commit-extension, log, timestamp, SCT, and artifact-byte API.
+- Independent Engineer and Security probes both rejected it: exact called-path `govulncheck v1.3.0` found 14 called findings, decisively including the `GO-2026-5952` multi-log verification-threshold bypass in the verification path. Its upstream fix is `sigstore-go v1.2.0`, which requires Go 1.25.0.
+- T-066 cannot authorize a minimum-Go compatibility migration or custom cryptography. No dependency or source change landed, the repository remains private at `VERSION=0.68.49`, and checkpoints A2 through E remain unstarted until the blocker is resolved through a separately approved ticket or a secure Go-1.22-compatible upstream release.
 
 ## Validation Gates
 

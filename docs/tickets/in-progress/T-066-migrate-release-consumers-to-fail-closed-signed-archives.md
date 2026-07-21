@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: claimed for checkpoint A implementation after the planning handoff was pushed at 1257534"
-blocker: "none"
+last_attempt: "2026-07-22: v0.7.0 admission preserved Go 1.22.4 and compiled the required APIs, but exact called-path govulncheck found 14 vulnerabilities including GO-2026-5952"
+blocker: "No admitted sigstore-go release both preserves the approved Go 1.22.4 minimum and clears called verification-path vulnerabilities; GO-2026-5952 is fixed only in v1.2.0, which requires Go 1.25.0"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Checkpoint A1: implement offline Sigstore-bundle and strict checksum verification with synthetic fixtures; commit and push before archive work."
+next_action: "Obtain separate approval and a dedicated ticket for a minimum-Go migration before evaluating sigstore-go v1.2.0+, or wait for a vulnerability-cleared release compatible with Go 1.22.4; then rerun the three-part A1 admission gate."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -52,6 +52,15 @@ C. Migrate scripts/install.sh to the same trusted verifier path. If bootstrap ca
 D. Migrate or retire release verify-assets, release audit, CLI/MarsCLI, current docs, DocSync routes, and generated target guidance. Remove legacy raw asset names mars-<os>-<arch> and mars-harness-<os>-<arch> and legacy checksum-only semantics; update binary/cli command aliases are not raw-asset aliases. Commit and push.
 
 E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build gates, an installed commit-bound binary, a fresh target, and an offline synthetic signed update/rollback lifecycle. Close ticket, F-018-S002, and plan evidence in a separate commit. T-067 retains two-build and clean macOS/Linux pipeline rehearsal.
+
+## Checkpoint A1 dependency admission — blocked 2026-07-22
+
+- Official `sigstore-go v0.7.0` resolves to commit `9c466a8b8df6a1886292e0a82023bc217968da9e` with SumDB hashes `h1:bIGPc2IbnbxnzlqQcKlh1o96bxVJ4yRElpP1gHrOH48=` and `h1:4RrCK+i+jhx7lyOG2Vgef0/kFLbKlDI1hrioUYvkxxA=` for its module and go.mod.
+- A disposable module running the exact Go 1.22.4 toolchain retained `go 1.22.4` after `go mod tidy -go=1.22.4`. The exact production wrapper compiled. A valid v0.3 fixture independently passed offline bundle, trusted-root, transparency-log, integrated-timestamp, and identity verification, while a focused extension test rejected a mismatched source digest; the exact-artifact-byte and SCT paths were compile-proven rather than accepted as release evidence.
+- Exact called-path `govulncheck v1.3.0` reported 14 findings: `GO-2025-4192`, `GO-2026-4316`, `GO-2026-4348`, `GO-2026-4349`, `GO-2026-4354`, `GO-2026-4355`, `GO-2026-4377`, `GO-2026-4945`, `GO-2026-5547`, `GO-2026-5763`, `GO-2026-5778`, `GO-2026-5851`, `GO-2026-5932`, and `GO-2026-5952`. The decisive direct trace reaches the `GO-2026-5952` multi-log verification-threshold bypass through `SignedEntityVerifier.Verify`; upstream marks it fixed in `v1.2.0`.
+- `sigstore-go v1.2.0` requires Go 1.25.0, while MARS's approved minimum remains Go 1.22.4. Raising that floor is a separate compatibility decision and is not authorized by T-066. Security and the Orchestrator therefore reject v0.7.0, any custom certificate/crypto parser, and any implicit Go-floor change.
+- The current public-good root candidate was independently identified at `sigstore/root-signing` commit `c9bda74ad2221f938f7d2e0295ca3aad2da710a8`, SHA-256 `6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66`, and parsed fully offline with v0.7.0. It was not added because dependency admission failed first.
+- No MARS dependency, verifier source, tag, Release, signature, upload, version, or visibility change occurred. A2 and every later T-066 checkpoint remain unstarted.
 
 ## Interfaces and blast radius
 
