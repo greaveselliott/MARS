@@ -4,18 +4,18 @@
 **Priority:** P0
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
-**Related Tickets:** T-063 through T-065; scheduled T-066 through T-067
-**Current Ticket:** None; T-066 is next and must be created through `ticket_create`
+**Related Tickets:** T-063 through T-066; scheduled T-067
+**Current Ticket:** T-066 in backlog, created through `ticket_create` and ready for Engineer claim
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
 **Hypothesis:** Retiring the private `v0.93.0` experiment and using a pinned GoReleaser archive pipeline will reduce bespoke release code while retaining fail-closed consumer verification.
-**Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; each snapshot's exact archive/SBOM checksum contract passes; and no unsupported release is advertised.
+**Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; exact archive/SBOM checksums pass; signed consumers reject hostile input before mutation and preserve the installed binary on failure; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-066 installer/updater migration; T-067 private rehearsal; later owner-approved `v0.69.0` cutover
 **Current Failing Scenario:** F-018-S002: installer and updater consumers have not yet migrated to the signed archive contract.
-**Walking Skeleton Slice:** Build four private snapshot archives with deterministic binary/archive metadata, exact notices, per-archive SPDX SBOMs, and an exact self-verifying checksum set without creating a tag, Release, signature, or supported-release claim.
-**Learning Or MVP Outcome:** Establish a truthful private release floor and an explicit migration contract before changing release implementation or consumer behavior.
+**Walking Skeleton Slice:** Verify one offline synthetic Sigstore bundle and canonical checksum set, authenticate and safely extract the current-platform archive, then atomically replace a fixture binary while every hostile lane leaves the prior binary unchanged.
+**Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
 **Created:** 2026-07-21
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager packets
 
@@ -25,7 +25,7 @@
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
 - **Current Primary Blocker:** T-066 through T-067 and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Create T-066 through `ticket_create`, then migrate installer and updater consumers to the signed archive contract without creating a tag, Release, signature, or supported-release claim.
+- **Next Primary Action:** Claim T-066, then deliver checkpoint A's offline signature/checksum/archive verification primitive and hostile synthetic fixtures without creating a tag, Release, MARS signature, or supported-release claim.
 
 ## Locked Decisions
 
@@ -53,7 +53,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 | --- | --- | --- | --- |
 | T-064 | Retire v0.93 and reset the release floor. | Live leases match the captured manifest. | Passed 2026-07-21: Release/tag are absent, Pages is disabled, protected work is re-anchored, `VERSION` is `0.68.49`, and the source fallback is `0.69.0-dev`. |
 | T-065 / F-018-S001 | Passed 2026-07-21: replaced the bespoke producer with pinned GoReleaser. | T-064 complete. | Two-clean-root reproducibility plus a final `bb1b79b` snapshot, exact publishable-set contract, full source/cross-build gates, installed-binary and fresh-target checks, and persona reviews passed without publication authority. |
-| T-066 / F-018-S002 | Migrate installer, updater, audit, CLI/docs, and generated guidance. | T-065 complete and contract frozen. | Consumers reject tampering and unsafe archives; legacy publish/verify commands and raw aliases are absent. |
+| T-066 / F-018-S002 | Migrate installer, updater, audit, CLI/docs, and generated guidance. | T-065 complete; T-066 created through `ticket_create` with a frozen offline Sigstore trust contract. | Consumers reject tampering and unsafe archives; legacy checksum-only verification and raw `mars-<os>-<arch>` / `mars-harness-<os>-<arch>` asset names are absent. |
 | T-067 / F-018-S003 | Rehearse privately and prepare `0.69.0`. | T-066 complete. | Two-build reproducibility, clean macOS/Linux installs, workflow draft-failure behavior, and release-note preparation pass. |
 | Cutover | Publish immutable `v0.69.0`. | Every F-017 prerequisite and separate owner approval pass. | Logged-out verification passes and the 48-hour canary starts. |
 
@@ -99,6 +99,13 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - The final pushed commit passed `make check` (CGO-disabled build, uncached race/coverage at 73.9% with all ratchets met, zero called source vulnerabilities, fuzz smoke, and vet), DocSync `345/0`, and explicit four-platform CGO-disabled builds. A distinct clean clone produced `0.69.0-dev.bb1b79b` with the exact pinned tools and passed the committed environment verifier.
 - The installed commit-bound binary has SHA-256 `fd8367e06e84203a7d971b00ef7b6b97fbb486756f85eb9d7d33909a20173fe2`, identifies full clean commit `bb1b79b7aa5787cea3355a2e592d9bfe4a0d2849`, omits the retired command from release help, and rejects its direct invocation. A fresh initialized target committed a clean producer-neutral scaffold with no MARS GoReleaser or retired-command injection. Release-note dry-run selects exactly `0.69.0` without writing files.
 - QA, Security, Dogfood, Release Manager, and Orchestrator accept F-018-S001 as passed private producer evidence only. The repository remains private at `VERSION=0.68.49`; `v0.69.0` has no live tag or Release; no signature, upload, announcement, visibility change, or supported-release claim occurred. Provisional notices and the two recorded GoReleaser binary findings remain public-cutover blockers.
+
+## T-066 Planning Handoff — 2026-07-22
+
+- `ticket_create` materialized T-066 for F-018-S002 through the primary `foundation-maintainer`/Orchestrator with T-065 as its dependency. COO, CTO-weekly, and Security packets froze five independently bounded planned checkpoints: verifier/extractor, updater transaction, installer boundary, consumer/DocSync retirement, and lifecycle evidence.
+- The consumer contract adds `checksums.txt.sigstore.json`, an offline Sigstore bundle v0.3 over the exact canonical checksum bytes. Trust is compile-time pinned to the Sigstore root hash, GitHub Actions issuer, exact MARS release workflow/tag identity, and the Fulcio GitHub workflow SHA extension equal to the expected full commit; failure to verify any claim blocks rather than falling back or parsing certificates ad hoc.
+- The first CTO-labelled call exposed a planning-policy limitation: completed-validation detection looks only for literal build-and-smoke tokens in ticket frontmatter. The Orchestrator reran unchanged `ticket_create` under its owning role, preserving feature-contract and scenario-order enforcement. No policy implementation is added to T-066.
+- Repository state remains private and `primary_blocked`; `VERSION` is `0.68.49`; source fallback is `0.69.0-dev`; no tag, Release, MARS signature, upload, announcement, or visibility change is authorized.
 
 ## Validation Gates
 
