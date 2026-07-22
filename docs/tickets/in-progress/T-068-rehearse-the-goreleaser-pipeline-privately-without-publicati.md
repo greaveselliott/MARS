@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s003-private-rehearsal-without-publication", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: checkpoint A passed at aa4a16b in GitHub Actions run 29894376197 after three fail-closed fixture corrections"
+last_attempt: "2026-07-22: checkpoint B passed on Darwin/arm64 at immutable aa4a16b; the aggregate wrapper's cleanup-status false negative is classified below"
 blocker: "none"
 blocked_by: []
-trace_id: "github-actions:29894376197"
-next_action: "Run checkpoint B only against immutable aa4a16b on the owner Darwin/arm64 host, then commit its evidence before checkpoint C."
+trace_id: "local:t068-darwin-aa4a16b"
+next_action: "Run checkpoint C only: require the 0.69.0 release-note dry-run, reconcile frozen repository state, remove manifest-listed T-068 storage, collect final persona sign-offs, and close T-068/F-018-S003 without publication."
 dedupe_key: "release:goreleaser-private-rehearsal"
 metadata:
   classification: "foundation-owned"
@@ -56,12 +56,20 @@ Each checkpoint is independently green, committed, and pushed before the next. N
 - Exact Go `1.26.5`, GoReleaser `v2.17.0`, and Syft `v1.49.0` produced two clean snapshot roots. The committed verifier accepted the archive/checksum/SBOM reproducibility contract; supported source installation and direct execution of the contract-verified unsigned native Linux snapshot each initialized a clean equivalent target and passed DocSync; the authority-free update dry-run and five focused offline consumer/install/update/rollback tests passed.
 - Earlier runs were rejected diagnostic evidence only: `29891275429`/`7904b43` failed closed on missing clone identity plus read-only-cache cleanup; `29892244613`/`6437f81` failed closed on target HOME/TMP fixture collision; and `29893274768`/`b8be85f` failed closed because different fixture leaf names produced repository-bound metadata differences. Commits `6437f81`, `b8be85f`, and `aa4a16b` corrected those harness defects without accepting a partial run. Each rejected run uploaded zero Actions artifacts.
 - The accepted run uploaded zero Actions artifacts. Reconciliation found `origin/main` exactly at `aa4a16b`, repository visibility `PRIVATE`, and no `v0.69.0` tag or Release. `VERSION` remains `0.68.49` and the source fallback remains `0.69.0-dev`.
-- This accepts checkpoint A only. Native Darwin/arm64 checkpoint B, release-note/state/cleanup checkpoint C, final persona sign-offs, F-018-S003, and every public-cutover gate remain pending.
+- This accepts checkpoint A only at this evidence boundary. Checkpoint B is accepted separately below; release-note/state/cleanup checkpoint C, final persona sign-offs, F-018-S003, and every public-cutover gate remain pending.
+
+## Checkpoint B Evidence — 2026-07-22
+
+- A fresh owner-host rehearsal at immutable commit `aa4a16bb5d26bcb766851dec375149b906fa6ce8` passed on macOS `26.3.1` (Darwin `25.3.0`)/arm64 with exact Go `1.26.5` and snapshot version `0.69.0-dev.aa4a16b`. The pinned producer, committed artifact verifier, supported source install, direct unsigned native archive execution, separate equivalent source/archive targets, authority-free update dry-run, and the exact five offline consumer/install/update/rollback tests all passed.
+- The accepted artifact identities were archive SHA-256 `b9f73f666d66ed7100a6c126b677541f5fea33ac8e7ffa36edcfe2b42a9ad460`, native binary SHA-256 `8530158a8f9df3799627efee3df51dafb3e71c578737cef13f24f572ada34bf9`, source binary SHA-256 `ba227b4d4eb98d6e190ab43fb57b1a42f3b8380db065d5a8762bc6714ce054e7`, and equivalent target tree `e3f3e0ee21b751bfa7a183717be48a76a9134a4b`.
+- Two earlier owner-host attempts remained rejected harness evidence: the first compared the verifier's UTC build time with a local-offset timestamp, and the second placed replacement fixtures beneath a world-writable temporary ancestor that production correctly rejected. Neither produced accepted evidence or repository mutation.
+- The final functional run reached and emitted `checkpoint_b=pass`, then its aggregate shell exited `1` because a best-effort recursive `chmod` warned on read-only module-cache entries during cleanup. An independent postcondition proved the exact rehearsal root absent and the host repository clean. Engineer, QA, and Security classify this as a cleanup-status false negative rather than a product or residue failure and require no producer rerun; this record does not claim that the aggregate wrapper exited zero.
+- Checkpoint B is accepted only as private source and unsigned-snapshot fixture evidence. Checkpoint C, fresh packaged bootstrap, final sign-offs, F-018-S003, and all public-cutover gates remain pending; no version, tag, Release, signature, upload, visibility, or support claim changed.
 
 ## Acceptance criteria
 
 - [x] Two independent clean builds pass the exact producer contract and archive reproducibility standard.
-- [ ] Isolated supported source setup and separate unsigned native snapshot execution pass on macOS; the exact-SHA ephemeral Ubuntu run passes the same source/native-target split plus focused offline consumer/update/rollback fixtures. These are distinct from packaged bootstrap and a real signed update.
+- [x] Isolated supported source setup and separate unsigned native snapshot execution pass on macOS; the exact-SHA ephemeral Ubuntu run passes the same source/native-target split plus focused offline consumer/update/rollback fixtures. These are distinct from packaged bootstrap and a real signed update.
 - [x] The snapshot workflow succeeds with `contents: read`, non-persisted checkout authority, exact skip flags, and no later build/test credentials, signing/OIDC, upload, draft, tag, or Release authority.
 - [ ] Release-note dry-run selects exactly 0.69.0 and leaves the repository byte-identical.
 - [ ] Temporary roots, ticket-specific caches, generated artifacts, and credentials are reconciled or removed without touching shared caches or unrelated user work.
