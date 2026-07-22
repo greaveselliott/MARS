@@ -190,8 +190,8 @@ jobs:
           exercise_target() {
             label="$1"
             binary="$2"
-            home="$rehearsal_root/$label-home"
-            tmp="$rehearsal_root/$label-tmp"
+            home="$rehearsal_root/$label-target-home"
+            tmp="$rehearsal_root/$label-target-tmp"
             target="$rehearsal_root/$label-target"
             mkdir -m 700 "$home" "$tmp"
             git init --quiet --initial-branch=main "$target"

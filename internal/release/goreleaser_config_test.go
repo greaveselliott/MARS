@@ -358,6 +358,8 @@ func TestSnapshotWorkflowContract(t *testing.T) {
 		`"$go_bin" version -m "$source_bin/mars" | grep -F $'\tbuild\tvcs.modified=false'`,
 		`if /usr/bin/env -i PATH="$runtime_bin" /bin/sh -c 'command -v go' >/dev/null 2>&1; then exit 1; fi`,
 		`tar --extract --gzip --file="$native_archive" --directory="$archive_dir" --no-same-owner mars`,
+		`home="$rehearsal_root/$label-target-home"`,
+		`tmp="$rehearsal_root/$label-target-tmp"`,
 		`exercise_target source "$source_bin/mars"`,
 		`exercise_target archive "$archive_dir/mars"`,
 		`rev-parse 'HEAD^{tree}'`,
