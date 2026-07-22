@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s003-private-rehearsal-without-publication", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "TBD"
+last_attempt: "2026-07-22: COO, CTO-weekly, and Security froze checkpoints A/B/C; the four-surface planning handoff is pushed at 90c4217"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Freeze the COO/CTO/Security rehearsal matrix, then run the first clean two-root producer proof without creating a tag, signature, upload, or Release."
+next_action: "Implement only checkpoint A in release-snapshot.yml and its existing contract test, push the bounded seam, then dispatch that exact SHA with no publication or upload authority."
 dedupe_key: "release:goreleaser-private-rehearsal"
 metadata:
   classification: "foundation-owned"
