@@ -18,13 +18,14 @@ import (
 )
 
 var (
-	ErrSignedReplaceAdmission = errors.New("signed release replacement: verified candidate admission failed; reacquire the release before retrying")
-	ErrSignedReplaceUnsafe    = errors.New("signed release replacement: the install directory or current binary is unsafe; repair its ownership, permissions, or file type before retrying")
-	ErrSignedReplaceBusy      = errors.New("signed release replacement: another update transaction is active; wait for it to finish before retrying")
-	ErrSignedReplaceCancelled = errors.New("signed release replacement: cancelled before commit; the current binary was not replaced")
-	ErrSignedReplaceFailed    = errors.New("signed release replacement: the transaction failed and the prior binary state was preserved; retry the update")
-	ErrSignedReplaceRecovery  = errors.New("signed release replacement: local recovery is required; do not run mars, preserve .mars-update.transaction, and run make install from a trusted source checkout before retrying")
-	ErrSignedReplacePlatform  = errors.New("signed release replacement: durable replacement is unsupported on this platform; install from a supported Darwin or Linux host")
+	ErrSignedReplaceAdmission  = errors.New("signed release replacement: verified candidate admission failed; reacquire the release before retrying")
+	ErrSignedReplaceUnsafe     = errors.New("signed release replacement: the install directory or current binary is unsafe; repair its ownership, permissions, or file type before retrying")
+	ErrSignedReplaceBusy       = errors.New("signed release replacement: another update transaction is active; wait for it to finish before retrying")
+	ErrSignedReplaceCancelled  = errors.New("signed release replacement: cancelled before commit; the current binary was not replaced")
+	ErrSignedReplaceFailed     = errors.New("signed release replacement: the transaction failed and the prior binary state was preserved; retry the update")
+	ErrSignedReplacePriorDrift = errors.New("signed release replacement: the installed binary changed during release verification; rerun the update against the current installed version")
+	ErrSignedReplaceRecovery   = errors.New("signed release replacement: local recovery is required; do not run mars, preserve .mars-update.transaction, and run make install from a trusted source checkout before retrying")
+	ErrSignedReplacePlatform   = errors.New("signed release replacement: durable replacement is unsupported on this platform; install from a supported Darwin or Linux host")
 )
 
 type signedReplaceCheckpoint uint8
@@ -57,6 +58,11 @@ type signedReplacementCandidate struct {
 	binary     []byte
 }
 
+type signedPriorExpectation struct {
+	required bool
+	digest   [32]byte
+}
+
 type signedReplaceResult struct {
 	releaseID        int64
 	tag              string
@@ -65,10 +71,18 @@ type signedReplaceResult struct {
 }
 
 func replaceVerifiedMARSRelease(ctx context.Context, installDir string, download verifiedMARSReleaseDownload) (signedReplaceResult, error) {
-	return replaceVerifiedMARSReleaseWithDependencies(ctx, installDir, download, signedReplaceDependencies{readBuildInfo: buildinfo.Read})
+	return replaceVerifiedMARSReleaseExpected(ctx, installDir, download, signedPriorExpectation{})
+}
+
+func replaceVerifiedMARSReleaseExpected(ctx context.Context, installDir string, download verifiedMARSReleaseDownload, prior signedPriorExpectation) (signedReplaceResult, error) {
+	return replaceVerifiedMARSReleaseExpectedWithDependencies(ctx, installDir, download, prior, signedReplaceDependencies{readBuildInfo: buildinfo.Read})
 }
 
 func replaceVerifiedMARSReleaseWithDependencies(ctx context.Context, installDir string, download verifiedMARSReleaseDownload, deps signedReplaceDependencies) (signedReplaceResult, error) {
+	return replaceVerifiedMARSReleaseExpectedWithDependencies(ctx, installDir, download, signedPriorExpectation{}, deps)
+}
+
+func replaceVerifiedMARSReleaseExpectedWithDependencies(ctx context.Context, installDir string, download verifiedMARSReleaseDownload, prior signedPriorExpectation, deps signedReplaceDependencies) (signedReplaceResult, error) {
 	if ctx == nil || deps.readBuildInfo == nil {
 		return signedReplaceResult{}, ErrSignedReplaceAdmission
 	}
@@ -76,7 +90,7 @@ func replaceVerifiedMARSReleaseWithDependencies(ctx context.Context, installDir 
 	if err != nil {
 		return signedReplaceResult{}, err
 	}
-	result, err := replaceVerifiedMARSReleasePlatform(ctx, installDir, candidate, deps)
+	result, err := replaceVerifiedMARSReleasePlatform(ctx, installDir, candidate, prior, deps)
 	if err != nil {
 		return signedReplaceResult{}, err
 	}

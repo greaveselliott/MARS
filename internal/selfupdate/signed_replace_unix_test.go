@@ -12,6 +12,7 @@ package selfupdate
 
 import (
 	"context"
+	"crypto/sha256"
 	"debug/buildinfo"
 	"errors"
 	"io"
@@ -101,6 +102,24 @@ func TestReplaceVerifiedMARSReleaseRejectsConcurrentUpdateBeforeMutation(t *test
 	require.ErrorIs(t, err, ErrSignedReplaceBusy)
 	require.Zero(t, result)
 	require.Equal(t, prior, mustReadSignedReplaceFile(t, filepath.Join(installDir, DefaultBinary)))
+	require.NoDirExists(t, filepath.Join(installDir, signedReplaceTransactionName))
+}
+
+func TestReplaceVerifiedMARSReleaseRejectsPriorDriftBeforeTransaction(t *testing.T) {
+	installDir := signedReplaceTestDir(t)
+	priorA := []byte("canonical-prior-a")
+	priorB := []byte("canonical-prior-b")
+	binaryPath := filepath.Join(installDir, DefaultBinary)
+	require.NoError(t, os.WriteFile(binaryPath, priorA, 0o755))
+	expected := signedPriorExpectation{required: true, digest: sha256.Sum256(priorA)}
+	require.NoError(t, os.WriteFile(binaryPath, priorB, 0o755), "simulate a canonical binary change during acquisition")
+
+	_, err := replaceVerifiedMARSReleaseExpectedWithDependencies(
+		context.Background(), installDir, signedReplaceTestDownload(t, []byte("candidate")), expected, signedReplaceTestDependencies(),
+	)
+	require.ErrorIs(t, err, ErrSignedReplacePriorDrift)
+	require.Equal(t, priorB, mustReadSignedReplaceFile(t, binaryPath))
+	assertSignedReplacePathMode(t, filepath.Join(installDir, signedReplaceLockName), 0o600)
 	require.NoDirExists(t, filepath.Join(installDir, signedReplaceTransactionName))
 }
 

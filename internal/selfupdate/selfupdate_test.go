@@ -5,39 +5,47 @@ docs:
 - docs/design-docs/release-versioning.md
 - docs/features/F-009-release-update-lifecycle.md
 - docs/features/F-017-open-source-publication.md
+- docs/features/F-018-goreleaser-distribution.md
 */
 package selfupdate
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
+	"github.com/greaveselliott/mars/internal/githubauth"
+	"github.com/greaveselliott/mars/internal/shellpath"
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolvePlan_defaultsToReleaseAssetInCurrentExecutableDir(t *testing.T) {
+const (
+	testRunCurrentCommit = "abcdef0123456789abcdef0123456789abcdef01"
+	testRunReleaseCommit = "0123456789abcdef0123456789abcdef01234567"
+)
+
+func TestResolvePlanDefaultsToSignedReleaseInCurrentExecutableDir(t *testing.T) {
 	plan, err := ResolvePlan(Config{DryRun: true})
 	require.NoError(t, err)
 
 	require.Equal(t, MethodReleaseAssets, plan.Method)
 	require.Equal(t, DefaultVersion, plan.Version)
+	require.Equal(t, DefaultVersion, plan.ReleaseTag)
 	require.Empty(t, plan.Command)
-	require.Equal(t, "mars-"+runtime.GOOS+"-"+runtime.GOARCH, plan.AssetName)
-	require.Contains(t, plan.DownloadURL, "/latest/"+plan.AssetName)
-	require.Contains(t, plan.ChecksumsURL, "/latest/checksums.txt")
+	require.Empty(t, plan.AssetName, "planning must not invent a resolved archive")
+	require.Empty(t, plan.AuthSource)
 	require.True(t, filepath.IsAbs(plan.InstallDir))
 	require.Equal(t, filepath.Join(plan.InstallDir, DefaultBinary), plan.BinaryPath)
 	require.True(t, plan.DryRun)
 }
 
-func TestResolvePlan_acceptsSourceMethodVersionAndInstallDir(t *testing.T) {
+func TestResolvePlanAcceptsSourceMethodVersionAndInstallDir(t *testing.T) {
 	installDir := t.TempDir()
 	plan, err := ResolvePlan(Config{
 		Version:    "@main",
@@ -54,7 +62,7 @@ func TestResolvePlan_acceptsSourceMethodVersionAndInstallDir(t *testing.T) {
 	require.Equal(t, filepath.Join(installDir, "mars-dev"), plan.BinaryPath)
 }
 
-func TestResolvePlan_selectsSourceForMain(t *testing.T) {
+func TestResolvePlanSelectsSourceForMain(t *testing.T) {
 	plan, err := ResolvePlan(Config{Version: "main"})
 	require.NoError(t, err)
 
@@ -62,199 +70,329 @@ func TestResolvePlan_selectsSourceForMain(t *testing.T) {
 	require.Equal(t, []string{"go", "install", DefaultPackage + "@main"}, plan.Command)
 }
 
-func TestRunReleaseAssetsVerifiesChecksumAndInstalls(t *testing.T) {
-	t.Parallel()
+func TestRunReleaseWiresAcquisitionReplacementAndShellPath(t *testing.T) {
 	installDir := t.TempDir()
-	asset := "mars-" + runtime.GOOS + "-" + runtime.GOARCH
-	payload := []byte("#!/bin/sh\necho updated\n")
-	sum := sha256.Sum256(payload)
+	client := &http.Client{}
+	download := testRunVerifiedDownload(t, "v0.69.0")
+	events := make([]string, 0, 4)
+	wantRequestedTag := DefaultVersion
+	wantPrior := testRunPriorExpectation()
+	deps := runReleaseDependencies{
+		captureCurrent: func(path, commit string) (signedPriorExpectation, error) {
+			events = append(events, "destination")
+			require.Equal(t, filepath.Join(installDir, DefaultBinary), path)
+			require.Equal(t, testRunCurrentCommit, commit)
+			return wantPrior, nil
+		},
+		acquire: func(_ context.Context, gotClient *http.Client, requestedTag, currentVersion, currentCommit, goos, goarch string) (verifiedMARSReleaseDownload, error) {
+			events = append(events, "acquire")
+			require.Same(t, client, gotClient)
+			require.Equal(t, wantRequestedTag, requestedTag)
+			require.Equal(t, "0.68.49", currentVersion)
+			require.Equal(t, testRunCurrentCommit, currentCommit)
+			require.Equal(t, runtime.GOOS, goos)
+			require.Equal(t, runtime.GOARCH, goarch)
+			return download, nil
+		},
+		replace: func(_ context.Context, gotDir string, got verifiedMARSReleaseDownload, prior signedPriorExpectation) (signedReplaceResult, error) {
+			events = append(events, "replace")
+			require.Equal(t, installDir, gotDir)
+			require.Equal(t, download, got)
+			require.Equal(t, wantPrior, prior)
+			return testRunReplaceResult(download), nil
+		},
+		ensurePath: func(cfg shellpath.Config) (shellpath.Result, error) {
+			events = append(events, "path")
+			require.Equal(t, installDir, cfg.InstallDir)
+			require.False(t, cfg.DryRun)
+			return shellpath.Result{InstallDir: installDir, Message: "configured shell PATH"}, nil
+		},
+	}
 
-	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
-		switch r.URL.Path {
-		case "/download/v1.2.3/" + asset:
-			return textResponse(http.StatusOK, string(payload)), nil
-		case "/download/v1.2.3/checksums.txt":
-			return textResponse(http.StatusOK, fmt.Sprintf("%x  %s\n", sum, asset)), nil
-		default:
-			return textResponse(http.StatusNotFound, "not found"), nil
-		}
-	})
-
-	plan, err := Run(context.Background(), Config{
-		Version:        "v1.2.3",
-		InstallDir:     installDir,
-		SkipShellPath:  true,
-		ReleaseBaseURL: "https://example.test/download",
-		HTTPClient:     client,
-	})
-	require.NoError(t, err)
-
-	require.Equal(t, MethodReleaseAssets, plan.Method)
-	require.Equal(t, "1.2.3", plan.Version)
-	require.Equal(t, "v1.2.3", plan.ReleaseTag)
-	got, err := os.ReadFile(filepath.Join(installDir, DefaultBinary))
-	require.NoError(t, err)
-	require.Equal(t, payload, got)
-	info, err := os.Stat(filepath.Join(installDir, DefaultBinary))
-	require.NoError(t, err)
-	require.NotZero(t, info.Mode()&0o111)
-}
-
-func TestRunLatestReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
-	t.Setenv("GH_TOKEN", "ghs_testtoken")
-	installDir := t.TempDir()
-	asset := "mars-" + runtime.GOOS + "-" + runtime.GOARCH
-	payload := []byte("#!/bin/sh\necho private-release\n")
-	sum := sha256.Sum256(payload)
-
-	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
-		require.Equal(t, "Bearer ghs_testtoken", r.Header.Get("Authorization"))
-		switch r.URL.Path {
-		case "/repos/example/project/releases/latest":
-			return textResponse(http.StatusOK, exactReleaseAssetsJSON(t, "v1.2.4", asset)), nil
-		case "/assets/bin":
-			require.Equal(t, "application/octet-stream", r.Header.Get("Accept"))
-			return textResponse(http.StatusOK, string(payload)), nil
-		case "/assets/checksums":
-			require.Equal(t, "application/octet-stream", r.Header.Get("Accept"))
-			return textResponse(http.StatusOK, fmt.Sprintf("%x  %s\n", sum, asset)), nil
-		default:
-			return textResponse(http.StatusNotFound, "not found"), nil
-		}
-	})
-
-	plan, err := Run(context.Background(), Config{
+	plan, err := runWithReleaseDependencies(context.Background(), Config{
 		Version:          DefaultVersion,
+		CurrentVersion:   "0.68.49",
+		CurrentCommit:    testRunCurrentCommit,
 		InstallDir:       installDir,
-		SkipShellPath:    true,
-		LatestReleaseURL: "https://api.example.test/repos/example/project/releases/latest",
 		HTTPClient:       client,
-	})
+		LatestReleaseURL: "https://attacker.invalid/latest",
+		ReleaseBaseURL:   "https://attacker.invalid/download",
+	}, deps)
 	require.NoError(t, err)
+	require.Equal(t, []string{"destination", "acquire", "replace", "path"}, events)
+	require.Equal(t, "0.69.0", plan.Version)
+	require.Equal(t, download.tag, plan.ReleaseTag)
+	require.Equal(t, download.fullCommit, plan.ReleaseCommit)
+	require.Equal(t, download.archiveName, plan.AssetName)
+	require.Equal(t, githubauth.SourceGHCLI, plan.AuthSource)
+	require.Equal(t, filepath.Join(installDir, DefaultBinary), plan.BinaryPath)
+	encoded, marshalErr := json.Marshal(plan)
+	require.NoError(t, marshalErr)
+	require.NotContains(t, strings.ToLower(string(encoded)), "http")
+	require.NotContains(t, string(encoded), "download_url")
+	require.NotContains(t, string(encoded), "checksums_url")
+	require.NotContains(t, string(encoded), "requires_github_auth")
 
-	require.Equal(t, "1.2.4", plan.Version)
-	require.Equal(t, "https://api.example.test/assets/bin", plan.DownloadURL)
-	require.Equal(t, "https://api.example.test/assets/checksums", plan.ChecksumsURL)
-	got, err := os.ReadFile(filepath.Join(installDir, DefaultBinary))
+	events = events[:0]
+	wantRequestedTag = "v0.69.0"
+	wantPrior = signedPriorExpectation{}
+	deps.captureCurrent = func(string, string) (signedPriorExpectation, error) {
+		t.Fatal("exact versions must not borrow the running binary's identity")
+		return signedPriorExpectation{}, nil
+	}
+	plan, err = runWithReleaseDependencies(context.Background(), Config{
+		Version: "v0.69.0", CurrentVersion: "0.68.49", CurrentCommit: testRunCurrentCommit,
+		InstallDir: installDir, HTTPClient: client, SkipShellPath: true,
+	}, deps)
 	require.NoError(t, err)
-	require.Equal(t, payload, got)
+	require.Equal(t, []string{"acquire", "replace"}, events)
+	require.Empty(t, plan.ShellPath.InstallDir)
 }
 
-func TestRunTaggedReleaseAssetsUsesAuthenticatedAssetAPIURLs(t *testing.T) {
-	t.Setenv("GH_TOKEN", "ghs_testtoken")
+func TestRunReleaseStopsAtFailedStage(t *testing.T) {
 	installDir := t.TempDir()
-	asset := "mars-" + runtime.GOOS + "-" + runtime.GOARCH
-	payload := []byte("#!/bin/sh\necho tagged-private-release\n")
-	sum := sha256.Sum256(payload)
+	download := testRunVerifiedDownload(t, "v0.69.0")
+	baseConfig := Config{
+		Version: DefaultVersion, CurrentVersion: "0.68.49", CurrentCommit: testRunCurrentCommit,
+		InstallDir: installDir,
+	}
 
-	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
-		require.Equal(t, "Bearer ghs_testtoken", r.Header.Get("Authorization"))
-		switch r.URL.Path {
-		case "/repos/greaveselliott/MARS/releases/tags/v1.2.5":
-			return textResponse(http.StatusOK, exactReleaseAssetsJSON(t, "v1.2.5", asset)), nil
-		case "/assets/bin":
-			require.Equal(t, "application/octet-stream", r.Header.Get("Accept"))
-			return textResponse(http.StatusOK, string(payload)), nil
-		case "/assets/checksums":
-			require.Equal(t, "application/octet-stream", r.Header.Get("Accept"))
-			return textResponse(http.StatusOK, fmt.Sprintf("%x  %s\n", sum, asset)), nil
-		default:
-			return textResponse(http.StatusNotFound, "not found"), nil
+	t.Run("acquisition", func(t *testing.T) {
+		events := make([]string, 0, 2)
+		deps := testRunReleaseDependencies(t, &events, download)
+		deps.acquire = func(context.Context, *http.Client, string, string, string, string, string) (verifiedMARSReleaseDownload, error) {
+			events = append(events, "acquire")
+			return verifiedMARSReleaseDownload{}, ErrSignedReleaseDownloadEvidence
 		}
+		_, err := runWithReleaseDependencies(context.Background(), baseConfig, deps)
+		require.ErrorIs(t, err, ErrSignedReleaseDownloadEvidence)
+		require.Equal(t, []string{"destination", "acquire"}, events)
 	})
 
-	plan, err := Run(context.Background(), Config{
-		Version:       "v1.2.5",
-		InstallDir:    installDir,
-		SkipShellPath: true,
-		HTTPClient:    client,
+	t.Run("replacement", func(t *testing.T) {
+		events := make([]string, 0, 3)
+		deps := testRunReleaseDependencies(t, &events, download)
+		deps.replace = func(context.Context, string, verifiedMARSReleaseDownload, signedPriorExpectation) (signedReplaceResult, error) {
+			events = append(events, "replace")
+			return signedReplaceResult{}, ErrSignedReplaceFailed
+		}
+		_, err := runWithReleaseDependencies(context.Background(), baseConfig, deps)
+		require.ErrorIs(t, err, ErrSignedReplaceFailed)
+		require.Equal(t, []string{"destination", "acquire", "replace"}, events)
 	})
-	require.NoError(t, err)
 
-	require.Equal(t, "1.2.5", plan.Version)
-	require.Equal(t, "https://api.example.test/assets/bin", plan.DownloadURL)
-	require.Equal(t, "https://api.example.test/assets/checksums", plan.ChecksumsURL)
-	got, err := os.ReadFile(filepath.Join(installDir, DefaultBinary))
-	require.NoError(t, err)
-	require.Equal(t, payload, got)
+	t.Run("replacement identity mismatch", func(t *testing.T) {
+		events := make([]string, 0, 3)
+		deps := testRunReleaseDependencies(t, &events, download)
+		deps.replace = func(context.Context, string, verifiedMARSReleaseDownload, signedPriorExpectation) (signedReplaceResult, error) {
+			events = append(events, "replace")
+			mismatched := testRunReplaceResult(download)
+			mismatched.fullCommit = testRunCurrentCommit
+			return mismatched, nil
+		}
+		plan, err := runWithReleaseDependencies(context.Background(), baseConfig, deps)
+		require.ErrorIs(t, err, ErrSignedReplaceRecovery)
+		require.Equal(t, download.tag, plan.ReleaseTag)
+		require.Equal(t, download.fullCommit, plan.ReleaseCommit)
+		require.Equal(t, download.archiveName, plan.AssetName)
+		require.Equal(t, []string{"destination", "acquire", "replace"}, events)
+	})
+
+	t.Run("shell path after commit", func(t *testing.T) {
+		events := make([]string, 0, 4)
+		deps := testRunReleaseDependencies(t, &events, download)
+		deps.ensurePath = func(shellpath.Config) (shellpath.Result, error) {
+			events = append(events, "path")
+			return shellpath.Result{}, errors.New("injected profile failure")
+		}
+		plan, err := runWithReleaseDependencies(context.Background(), baseConfig, deps)
+		require.ErrorIs(t, err, ErrSignedUpdateShellPath)
+		require.Contains(t, err.Error(), "replacement committed")
+		require.Contains(t, err.Error(), "mars path setup --install-dir")
+		require.Equal(t, download.tag, plan.ReleaseTag, "the committed replacement must remain visible in the returned plan")
+		require.Equal(t, []string{"destination", "acquire", "replace", "path"}, events)
+	})
 }
 
-func TestRunReleaseAssetsMissingContractUsesProducerNeutralRemediation(t *testing.T) {
+func TestRunReleaseDryRunHasNoAuthority(t *testing.T) {
+	for _, version := range []string{DefaultVersion, "v0.69.0"} {
+		t.Run(version, func(t *testing.T) {
+			installDir := t.TempDir()
+			events := make([]string, 0, 1)
+			deps := runReleaseDependencies{
+				acquire: func(context.Context, *http.Client, string, string, string, string, string) (verifiedMARSReleaseDownload, error) {
+					t.Fatal("dry-run must not acquire a release")
+					return verifiedMARSReleaseDownload{}, nil
+				},
+				replace: func(context.Context, string, verifiedMARSReleaseDownload, signedPriorExpectation) (signedReplaceResult, error) {
+					t.Fatal("dry-run must not replace a binary")
+					return signedReplaceResult{}, nil
+				},
+				captureCurrent: func(string, string) (signedPriorExpectation, error) {
+					t.Fatal("dry-run must not inspect the current executable")
+					return signedPriorExpectation{}, nil
+				},
+				ensurePath: func(cfg shellpath.Config) (shellpath.Result, error) {
+					events = append(events, "path-plan")
+					require.True(t, cfg.DryRun)
+					return shellpath.Result{InstallDir: installDir, DryRun: true}, nil
+				},
+			}
+			plan, err := runWithReleaseDependencies(context.Background(), Config{
+				Version: version, InstallDir: installDir, DryRun: true,
+				HTTPClient: &http.Client{Transport: failRoundTripper{t: t}},
+			}, deps)
+			require.NoError(t, err)
+			require.Equal(t, []string{"path-plan"}, events)
+			require.Empty(t, plan.AssetName)
+			require.Empty(t, plan.ReleaseCommit)
+			require.Empty(t, plan.AuthSource)
+			require.NoFileExists(t, filepath.Join(installDir, ".mars-update.lock"))
+			require.NoDirExists(t, filepath.Join(installDir, ".mars-update.transaction"))
+			encoded, marshalErr := json.Marshal(plan)
+			require.NoError(t, marshalErr)
+			require.NotContains(t, strings.ToLower(string(encoded)), "http")
+		})
+	}
+}
+
+func TestRunSourceAndMainBypassSignedPipeline(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/zsh")
+	for _, cfg := range []Config{
+		{Version: "main", InstallDir: t.TempDir(), BinaryName: "mars-main", DryRun: true},
+		{Version: "v0.69.0", InstallDir: t.TempDir(), BinaryName: "mars-source", Method: MethodSource, DryRun: true},
+	} {
+		plan, err := runWithReleaseDependencies(context.Background(), cfg, runReleaseDependencies{
+			acquire: func(context.Context, *http.Client, string, string, string, string, string) (verifiedMARSReleaseDownload, error) {
+				t.Fatal("source mode must not acquire a release")
+				return verifiedMARSReleaseDownload{}, nil
+			},
+			replace: func(context.Context, string, verifiedMARSReleaseDownload, signedPriorExpectation) (signedReplaceResult, error) {
+				t.Fatal("source mode must not replace through the signed release path")
+				return signedReplaceResult{}, nil
+			},
+		})
+		require.NoError(t, err)
+		require.Equal(t, MethodSource, plan.Method)
+		require.Equal(t, []string{"go", "install", DefaultPackage + "@" + strings.TrimPrefix(cfg.Version, "@")}, plan.Command)
+		require.Empty(t, plan.AssetName)
+		require.Empty(t, plan.AuthSource)
+	}
+}
+
+func TestRunReleaseIdentityAndDestinationAdmission(t *testing.T) {
 	installDir := t.TempDir()
-	client := fakeHTTPClient(func(*http.Request) (*http.Response, error) {
-		return textResponse(http.StatusOK, `{"tag_name":"v1.2.6","assets":[]}`), nil
-	})
-
-	_, err := Run(context.Background(), Config{
-		Version:          DefaultVersion,
-		InstallDir:       installDir,
-		SkipShellPath:    true,
-		LatestReleaseURL: "https://api.example.test/repos/example/project/releases/latest",
-		HTTPClient:       client,
-	})
-	require.Error(t, err)
-	require.ErrorContains(t, err, "repository's approved release workflow for v1.2.6")
-	require.ErrorContains(t, err, "mars release verify-assets --version v1.2.6")
-	require.NotContains(t, err.Error(), "publish-assets")
-	require.NoFileExists(t, filepath.Join(installDir, DefaultBinary))
+	for _, test := range []struct {
+		name        string
+		cfg         Config
+		self        bool
+		wantErr     error
+		wantAcquire bool
+	}{
+		{name: "latest dev identity", cfg: Config{Version: DefaultVersion, CurrentVersion: "0.69.0-dev", CurrentCommit: "unknown"}, self: true, wantErr: ErrSignedUpdateIdentity},
+		{name: "latest malformed commit", cfg: Config{Version: DefaultVersion, CurrentVersion: "0.68.49", CurrentCommit: "unknown"}, self: true, wantErr: ErrSignedUpdateIdentity},
+		{name: "latest foreign destination", cfg: Config{Version: DefaultVersion, CurrentVersion: "0.68.49", CurrentCommit: testRunCurrentCommit}, wantErr: ErrSignedUpdateDestination},
+		{name: "exact stable malformed commit", cfg: Config{Version: "v0.69.0", CurrentVersion: "0.68.49", CurrentCommit: "unknown"}, self: true, wantErr: ErrSignedUpdateIdentity},
+		{name: "exact tag from dev build", cfg: Config{Version: "v0.69.0", CurrentVersion: "0.69.0-dev", CurrentCommit: "unknown"}, wantAcquire: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			events := make([]string, 0, 3)
+			download := testRunVerifiedDownload(t, "v0.69.0")
+			deps := testRunReleaseDependencies(t, &events, download)
+			deps.captureCurrent = func(string, string) (signedPriorExpectation, error) {
+				events = append(events, "destination")
+				if !test.self {
+					return signedPriorExpectation{}, ErrSignedUpdateDestination
+				}
+				return testRunPriorExpectation(), nil
+			}
+			test.cfg.InstallDir = installDir
+			test.cfg.SkipShellPath = true
+			_, err := runWithReleaseDependencies(context.Background(), test.cfg, deps)
+			if test.wantErr != nil {
+				require.ErrorIs(t, err, test.wantErr)
+				require.NotContains(t, events, "replace")
+				require.NotContains(t, events, "acquire")
+				return
+			}
+			require.NoError(t, err)
+			require.True(t, test.wantAcquire)
+			require.Equal(t, []string{"acquire", "replace"}, events)
+		})
+	}
 }
 
-func exactReleaseAssetsJSON(t *testing.T, tag, selected string) string {
+func TestRunReleaseRejectsCustomBinaryBeforeAcquisition(t *testing.T) {
+	called := false
+	_, err := runWithReleaseDependencies(context.Background(), Config{
+		Version: "v0.69.0", CurrentVersion: "0.68.49", CurrentCommit: testRunCurrentCommit,
+		InstallDir: t.TempDir(), BinaryName: "mars-dev",
+	}, runReleaseDependencies{acquire: func(context.Context, *http.Client, string, string, string, string, string) (verifiedMARSReleaseDownload, error) {
+		called = true
+		return verifiedMARSReleaseDownload{}, nil
+	}})
+	require.ErrorIs(t, err, ErrSignedUpdateConfig)
+	require.False(t, called)
+}
+
+func testRunReleaseDependencies(t *testing.T, events *[]string, download verifiedMARSReleaseDownload) runReleaseDependencies {
 	t.Helper()
-	type asset struct {
-		Name               string `json:"name"`
-		APIURL             string `json:"url,omitempty"`
-		BrowserDownloadURL string `json:"browser_download_url,omitempty"`
+	return runReleaseDependencies{
+		captureCurrent: func(string, string) (signedPriorExpectation, error) {
+			*events = append(*events, "destination")
+			return testRunPriorExpectation(), nil
+		},
+		acquire: func(context.Context, *http.Client, string, string, string, string, string) (verifiedMARSReleaseDownload, error) {
+			*events = append(*events, "acquire")
+			return download, nil
+		},
+		replace: func(_ context.Context, _ string, got verifiedMARSReleaseDownload, prior signedPriorExpectation) (signedReplaceResult, error) {
+			*events = append(*events, "replace")
+			require.Equal(t, download, got)
+			if prior.required {
+				require.Equal(t, testRunPriorExpectation(), prior)
+			}
+			return testRunReplaceResult(download), nil
+		},
+		ensurePath: func(shellpath.Config) (shellpath.Result, error) {
+			*events = append(*events, "path")
+			return shellpath.Result{}, nil
+		},
 	}
-	payload := struct {
-		TagName string  `json:"tag_name"`
-		Assets  []asset `json:"assets"`
-	}{TagName: tag}
-	for _, name := range ExpectedReleaseAssetNames() {
-		item := asset{Name: name}
-		switch name {
-		case selected:
-			item.APIURL = "https://api.example.test/assets/bin"
-			item.BrowserDownloadURL = "https://github.example.test/download/bin"
-		case "checksums.txt":
-			item.APIURL = "https://api.example.test/assets/checksums"
-			item.BrowserDownloadURL = "https://github.example.test/download/checksums.txt"
-		}
-		payload.Assets = append(payload.Assets, item)
-	}
-	data, err := json.Marshal(payload)
-	require.NoError(t, err)
-	return string(data)
 }
 
-func TestRunReleaseAssetsRejectsChecksumMismatchWithoutReplacingBinary(t *testing.T) {
-	t.Parallel()
-	installDir := t.TempDir()
-	asset := "mars-" + runtime.GOOS + "-" + runtime.GOARCH
-	existing := []byte("existing")
-	require.NoError(t, os.WriteFile(filepath.Join(installDir, DefaultBinary), existing, 0o755))
+func testRunVerifiedDownload(t *testing.T, tag string) verifiedMARSReleaseDownload {
+	t.Helper()
+	archiveName, _, _, ok := marsReleaseArchiveIdentity(tag, testRunReleaseCommit, runtime.GOOS, runtime.GOARCH)
+	require.True(t, ok)
+	return verifiedMARSReleaseDownload{
+		releaseID: 690, tag: tag, fullCommit: testRunReleaseCommit, archiveName: archiveName,
+		authSource: githubauth.SourceGHCLI, candidate: []byte("opaque-verified-candidate"),
+	}
+}
 
-	client := fakeHTTPClient(func(r *http.Request) (*http.Response, error) {
-		switch r.URL.Path {
-		case "/download/v1.2.3/" + asset:
-			return textResponse(http.StatusOK, "new"), nil
-		case "/download/v1.2.3/checksums.txt":
-			return textResponse(http.StatusOK, fmt.Sprintf("%064x  %s\n", 0, asset)), nil
-		default:
-			return textResponse(http.StatusNotFound, "not found"), nil
-		}
-	})
+func testRunReplaceResult(download verifiedMARSReleaseDownload) signedReplaceResult {
+	return signedReplaceResult{releaseID: download.releaseID, tag: download.tag, fullCommit: download.fullCommit, replacedExisting: true}
+}
 
-	_, err := Run(context.Background(), Config{
-		Version:        "v1.2.3",
-		InstallDir:     installDir,
-		SkipShellPath:  true,
-		ReleaseBaseURL: "https://example.test/download",
-		HTTPClient:     client,
-	})
-	require.ErrorContains(t, err, "checksum mismatch")
+func testRunPriorExpectation() signedPriorExpectation {
+	return signedPriorExpectation{required: true, digest: [32]byte{1}}
+}
 
-	got, readErr := os.ReadFile(filepath.Join(installDir, DefaultBinary))
-	require.NoError(t, readErr)
-	require.Equal(t, existing, got)
+type failRoundTripper struct{ t *testing.T }
+
+func (f failRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	f.t.Fatal("dry-run must not perform HTTP")
+	return nil, errors.New("unexpected HTTP")
+}
+
+func TestCaptureCurrentMARSExecutableDestinationRejectsAliases(t *testing.T) {
+	executable, err := os.Executable()
+	require.NoError(t, err)
+	aliasDir := t.TempDir()
+	alias := filepath.Join(aliasDir, DefaultBinary)
+	require.NoError(t, os.Link(executable, alias))
+	_, captureErr := captureCurrentMARSExecutableDestination(alias, testRunCurrentCommit)
+	require.ErrorIs(t, captureErr, ErrSignedUpdateDestination, "a sibling hard link must not borrow the running path's identity")
 }

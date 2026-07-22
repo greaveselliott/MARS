@@ -20,6 +20,7 @@ docs:
 - docs/features/F-011-optional-github-integration.md
 - docs/features/F-017-open-source-publication.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-018-goreleaser-distribution.md
 - docs/features/F-012-self-improvement-loop.md
 */
 package main
@@ -359,6 +360,45 @@ func TestRootReleasePublishAssetsCommandIsRetired(t *testing.T) {
 	err := cmd.Execute()
 	require.ErrorContains(t, err, "unknown command")
 	require.NotContains(t, out.String(), "Build and optionally mirror release assets")
+}
+
+func TestUpdateToolDryRunDoesNotExposeOrResolveReleaseURLs(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/zsh")
+	for _, test := range []struct {
+		name string
+		json bool
+	}{
+		{name: "text"},
+		{name: "json", json: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			installDir := t.TempDir()
+			args := []string{"--dry-run", "--version", "v0.69.0", "--install-dir", installDir}
+			if test.json {
+				args = append(args, "--json")
+			}
+			cmd := updateToolCmd()
+			cmd.SetArgs(args)
+			var runErr error
+			out := captureStdout(t, func() { runErr = cmd.Execute() })
+			require.NoError(t, runErr)
+			lower := strings.ToLower(out)
+			require.NotContains(t, lower, "http")
+			require.NotContains(t, out, "Download:")
+			require.NotContains(t, out, "Checksums:")
+			require.NotContains(t, out, "download_url")
+			require.NotContains(t, out, "checksums_url")
+			require.NotContains(t, out, "requires_github_auth")
+			require.NoFileExists(t, filepath.Join(installDir, ".mars-update.lock"))
+			require.NoDirExists(t, filepath.Join(installDir, ".mars-update.transaction"))
+			if test.json {
+				require.Contains(t, out, `"release_tag": "v0.69.0"`)
+			} else {
+				require.Contains(t, out, "Dry run: no changes made")
+			}
+		})
+	}
 }
 
 func TestPrintReleaseAssetReportDoesNotTranscribeHostileRemoteLabels(t *testing.T) {

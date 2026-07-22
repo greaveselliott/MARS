@@ -26,6 +26,7 @@ docs:
 - docs/features/F-011-optional-github-integration.md
 - docs/features/F-017-open-source-publication.md
 - docs/features/F-009-release-update-lifecycle.md
+- docs/features/F-018-goreleaser-distribution.md
 - docs/features/F-012-self-improvement-loop.md
 - docs/roles/ROLES.md
 */
@@ -1337,20 +1338,23 @@ func updateToolCmd() *cobra.Command {
 		Short:   "Reinstall or upgrade the mars command",
 		Long: `Reinstall the mars command without changing directories.
 
-By default this downloads the platform release asset, verifies checksums.txt,
-and atomically replaces the binary in the directory that contains the currently
-running mars binary. Use --source for source-development updates through
-go install, or pass --version main which selects the source path automatically.`,
+By default this acquires the canonical platform archive, verifies its signed
+checksum, workflow identity, commit, metadata, and structure, then durably
+replaces the currently running mars binary. Use --source for source-development
+updates through go install, or pass --version main which selects the source path
+automatically.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			method := selfupdate.UpdateMethod("")
 			if sourceUpdate {
 				method = selfupdate.MethodSource
 			}
 			cfg := selfupdate.Config{
-				Version:    updateVersion,
-				InstallDir: installDir,
-				Method:     method,
-				DryRun:     dryRun,
+				Version:        updateVersion,
+				CurrentVersion: version,
+				CurrentCommit:  commit,
+				InstallDir:     installDir,
+				Method:         method,
+				DryRun:         dryRun,
 			}
 			plan, err := selfupdate.Run(cmd.Context(), cfg)
 			if err != nil {
@@ -1367,13 +1371,7 @@ go install, or pass --version main which selects the source path automatically.`
 				fmt.Printf("Command: GOBIN=%s %s\n", plan.InstallDir, strings.Join(plan.Command, " "))
 			}
 			if plan.AssetName != "" {
-				fmt.Printf("Asset: %s\n", plan.AssetName)
-				if plan.ReleaseTag == selfupdate.DefaultVersion {
-					fmt.Printf("Release metadata: %s\n", selfupdate.DefaultLatestReleaseURL)
-				} else {
-					fmt.Printf("Download: %s\n", plan.DownloadURL)
-					fmt.Printf("Checksums: %s\n", plan.ChecksumsURL)
-				}
+				fmt.Printf("Archive: %s\n", plan.AssetName)
 			}
 			if plan.ShellPath.InstallDir != "" {
 				fmt.Printf("Shell PATH: %s\n", plan.ShellPath.Message)
@@ -1395,7 +1393,7 @@ go install, or pass --version main which selects the source path automatically.`
 	}
 	cmd.Flags().StringVar(&updateVersion, "version", selfupdate.DefaultVersion, "Release or source version to install, e.g. latest, v0.5.3, or main")
 	cmd.Flags().StringVar(&installDir, "install-dir", "", "Install directory; default is the current mars binary directory")
-	cmd.Flags().BoolVar(&sourceUpdate, "source", false, "Use go install instead of checksum-verified release assets")
+	cmd.Flags().BoolVar(&sourceUpdate, "source", false, "Use go install instead of signed release archives")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print the update plan without downloading or replacing the binary")
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Write JSON output")
 	return cmd

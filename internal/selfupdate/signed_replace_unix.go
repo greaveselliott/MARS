@@ -13,6 +13,7 @@ package selfupdate
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"path/filepath"
 	"runtime"
@@ -55,7 +56,7 @@ type signedUnixTransaction struct {
 	deps            signedReplaceDependencies
 }
 
-func replaceVerifiedMARSReleasePlatform(ctx context.Context, installDir string, candidate signedReplacementCandidate, deps signedReplaceDependencies) (signedReplaceResult, error) {
+func replaceVerifiedMARSReleasePlatform(ctx context.Context, installDir string, candidate signedReplacementCandidate, expectedPrior signedPriorExpectation, deps signedReplaceDependencies) (signedReplaceResult, error) {
 	deps = completeSignedReplaceDependencies(deps)
 	if ctx.Err() != nil {
 		return signedReplaceResult{}, ErrSignedReplaceCancelled
@@ -82,6 +83,9 @@ func replaceVerifiedMARSReleasePlatform(ctx context.Context, installDir string, 
 	prior, err := readSignedExistingBinary(installFD, deps)
 	if err != nil {
 		return signedReplaceResult{}, ErrSignedReplaceUnsafe
+	}
+	if !signedPriorMatchesExpectation(prior, expectedPrior) {
+		return signedReplaceResult{}, ErrSignedReplacePriorDrift
 	}
 	txFD, txIdentity, err := createSignedTransactionDirectory(installFD, installIdentity, deps)
 	if err != nil {
@@ -182,6 +186,10 @@ func replaceVerifiedMARSReleasePlatform(ctx context.Context, installDir string, 
 		return signedReplaceResult{}, ErrSignedReplaceRecovery
 	}
 	return signedReplaceResult{tag: candidate.tag, fullCommit: candidate.fullCommit, replacedExisting: prior.exists}, nil
+}
+
+func signedPriorMatchesExpectation(prior signedExistingBinary, expected signedPriorExpectation) bool {
+	return !expected.required || (prior.exists && sha256.Sum256(prior.bytes) == expected.digest)
 }
 
 var errSignedReplaceResidue = errors.New("signed replacement residue")

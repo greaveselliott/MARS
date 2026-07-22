@@ -12,6 +12,6 @@ package selfupdate
 
 import "context"
 
-func replaceVerifiedMARSReleasePlatform(context.Context, string, signedReplacementCandidate, signedReplaceDependencies) (signedReplaceResult, error) {
+func replaceVerifiedMARSReleasePlatform(context.Context, string, signedReplacementCandidate, signedPriorExpectation, signedReplaceDependencies) (signedReplaceResult, error) {
 	return signedReplaceResult{}, ErrSignedReplacePlatform
 }
