@@ -7,13 +7,13 @@ work_type: feature
 bdd_scenarios: ["F-018-S002"]
 end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
-verified_by: "TBD"
+verified_by: "Engineer, QA, Security, Dogfood, Release Manager, and Orchestrator on 2026-07-22"
 owner: "engineer"
-last_attempt: "2026-07-22: D completed through 64c7d3b; legacy verifier/audit code and commands are retired, generated and live guidance is synchronized, and Engineer/QA/Security/CTO reviews are GO"
+last_attempt: "2026-07-22: checkpoint E passed at 7fe152c with focused normal/race, exact vulnerability/fuzz/lint/DocSync/cross-build, isolated-prefix source, clean-target, and preverified update/rollback evidence"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Run only checkpoint E: focused hostile/race tests, the preserved full source/vulnerability/fuzz/lint/DocSync/cross-build tail, install a commit-bound source binary into an isolated prefix, initialize a fresh target, and exercise one offline synthetic signed update plus explicit rollback before closing T-066/F-018-S002."
+next_action: "T-066 and F-018-S002 are complete; create T-068 through ticket_create for the separately bounded private rehearsal."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -55,7 +55,7 @@ C. Passed at `f45d5d2`: because shell bootstrap cannot invoke an independently t
 
 D. Passed through `64c7d3b`: retired release verify-assets, release audit, CLI/MarsCLI entries, legacy raw/checksum-only helpers, and stale current guidance; synchronized generated targets, BDD, design, product, and operator docs without rewriting historical evidence. Committed and pushed.
 
-E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build gates, an installed commit-bound binary, a fresh target, and an offline synthetic signed update/rollback lifecycle. Close ticket, F-018-S002, and plan evidence in a separate commit. T-068 retains two-build and clean macOS/Linux pipeline rehearsal.
+E. Passed at `7fe152c`: focused hostile/race tests, the preserved full source gate plus exact vulnerability/fuzz/lint/DocSync/cross-build tail, an isolated-prefix commit-bound source candidate, a fresh target, and an offline preverified-candidate update/rollback lifecycle passed. T-068 retains two-build and clean macOS/Linux pipeline rehearsal.
 
 ## Checkpoint A1 dependency admission — blocked 2026-07-22
 
@@ -120,6 +120,15 @@ E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build
 - Pushed `bb4b620` removes both retired commands from MarsCLI and formalized/generated target workflows. Generated repositories now own both producer and verifier, while exact remote name/state/size/digest convergence remains required when they use GitHub Releases.
 - Pushed `527646b` synchronizes current architecture, product, F-009, release-versioning, source/target boundary, dogfood, README, and quickstart truth. Pushed `64c7d3b` synchronizes six operator HTML guides and adds an executable-surface regression guard; source checkout is the supported route, packaged availability remains blocked pending approved signed cutover, and historical AD bodies remain intact under dated supersession notes.
 - Focused Go 1.26.5 release/selfupdate/CLI, tools/scanner, signed archive/Sigstore/acquisition/replacement, docsconsistency, and DocSync gates passed. CTO-weekly, QA, Security, and Orchestrator are GO. Checkpoint E remains incomplete; no live update, version, tag, Release, signature, upload, visibility, or publication authority changed.
+
+## Checkpoint E completion — 2026-07-22
+
+- Pushed `7fe152c` adds one bounded production-B2 lifecycle test. A candidate whose reread build identity conflicts with its advertised commit fails admission before a lock or transaction exists. A valid newer preverified candidate then replaces the exact prior digest, and an explicitly selected older preverified candidate restores the original bytes from the newer digest in the same `0700` directory. The final binary is `0755` with one link, the persistent lock is `0600`, and transaction residue is absent.
+- The focused 46-test T-066 contract passed normally and under the race detector with exact Go 1.26.5 and offline dependency resolution. This evidence combines the new B2 lifecycle with the existing authenticated explicit-older-version acquisition policy and the immutable upstream offline Sigstore vector; it is not a real MARS signature, GitHub download, or supported-release rehearsal.
+- The previously green uncached full-source, race, and coverage evidence was preserved. The remaining exact tail passed: SumDB-backed `govulncheck v1.6.0` built with Go 1.26.5 reported zero called vulnerabilities; all four default ten-second fuzz targets passed; `make lint` used and passed its documented whole-source `go vet` fallback; docsconsistency and DocSync passed; and Darwin/Linux AMD64/ARM64 `CGO_ENABLED=0` trimpath builds reported the exact clean `7fe152c3f28af252d1eb11436298617e0cfad9de` revision, Go 1.26.5, and requested platform/architecture levels.
+- An isolated-prefix, commit-bound native source candidate reported `0.69.0-dev.7fe152c`, the full commit and commit time, retained SHA-256 `9e4e419d4b65bacd907b3841646025c053fd4dd1c5dac4af55495cfa5459e96a`, and passed source DocSync under an isolated HOME/PATH without Go. Its release help omitted the retired commands; its authority-free update dry run exposed no release URL and left the profile and binary unchanged.
+- The same source candidate initialized and committed a fresh target under the scrubbed environment, passed target DocSync, emitted repository-owned producer/artifact-contract guidance without retired commands or raw aliases, assembled the Engineer dry-run prompt, and left both source and target worktrees clean. This is prompt assembly, not a model-backed autonomous lifecycle. Engineer, QA, Security, Dogfood, Release Manager, and Orchestrator are GO.
+- T-066 and F-018-S002 are complete. Fresh packaged bootstrap, real MARS signing/download/update, two-build and clean macOS/Linux rehearsal, version/tag/Release creation, publication, visibility, and support claims remain outside this ticket. The repository remains private at `VERSION=0.68.49` and Primary Status remains `primary_blocked`.
 
 ## Interfaces and blast radius
 

@@ -5,7 +5,7 @@
 **Depends On:** Exact live `main`/tag/Release leases and operator-approved private rewrite authority
 **Blocks:** F-017-S003 public release readiness and every later cutover claim
 **Related Tickets:** T-063 through T-067; scheduled T-068 rehearsal
-**Current Ticket:** T-066 checkpoint E after D passed through `64c7d3b`
+**Current Ticket:** T-068 planning handoff pending creation through `ticket_create`
 **Goals:** G-OSS-001, G-001, G-002, G-003, G-004
 **BDD Feature:** F-018-goreleaser-distribution.md
 **Related Feature Contracts:** F-001, F-009, F-017, F-018
@@ -13,8 +13,8 @@
 **Success Evidence:** `v0.93.0` is absent; protected work survives; GoReleaser archives are reproducible; exact archive/SBOM checksums pass; signed consumers reject hostile input before mutation and preserve the installed binary on failure; and no unsupported release is advertised.
 **Falsification Evidence:** A lease drifts, protected work changes, v0.93 remains reachable through live refs/releases, legacy publisher behavior remains required, or a partial/tampered release can be accepted.
 **Scenario Schedule:** T-064 retirement; T-065 GoReleaser producer; T-067 minimum-Go compatibility passed; T-066 installer/updater migration resumed; T-068 private rehearsal; later owner-approved `v0.69.0` cutover
-**Current Failing Scenario:** F-018-S002 remains incomplete only pending checkpoint E's installed commit-bound source lifecycle and offline synthetic signed update/rollback evidence; fresh packaged bootstrap remains deliberately unavailable until a non-circular trusted bootstrap exists and is a later cutover blocker.
-**Walking Skeleton Slice:** As of 2026-07-22, A1 and A2 authenticate the signed checksum and selected archive contracts, B1 acquires one verified candidate through a bounded credential-safe remote session, B2 durably replaces or provably restores the fixed local binary without network access, B3 routes release-mode `Run` through those fail-closed stages before PATH repair, C retires checksum-only shell bootstrap to a non-mutating reviewed-source route, and D retires weaker parallel consumers while synchronizing generated and live guidance. Checkpoint E now owns final installed lifecycle evidence.
+**Current Failing Scenario:** F-018-S003 remains pending creation and delivery of T-068's bounded private two-build and clean macOS/Linux rehearsal; fresh packaged bootstrap remains deliberately unavailable until a non-circular trusted bootstrap exists and is a later cutover blocker.
+**Walking Skeleton Slice:** As of 2026-07-22, F-018-S002 is complete: A1 and A2 authenticate signed checksums and archives, B1 acquires a bounded verified candidate, B2 durably replaces or provably restores the fixed binary, B3 wires the fail-closed updater before PATH repair, C retires checksum-only shell bootstrap, D retires weaker parallel consumers, and E proves the isolated-prefix source plus preverified update/rollback lifecycle. T-068 now owns private cross-environment rehearsal.
 **Learning Or MVP Outcome:** Prove fail-closed signed archive consumption and recovery locally before any real signing, publication, or clean-platform rehearsal.
 **Created:** 2026-07-21
 **Owner:** foundation-maintainer as Orchestrator with COO, CTO-weekly, Engineer, QA, Security, Dogfood, and Release Manager packets
@@ -24,8 +24,8 @@
 - **Primary Outcome:** Publish MARS as a supported open-source project without exposing confidential material, weakening controls, or distributing unsafe or unverifiable binaries.
 - **Primary Pass Gate:** F-017-S001 through F-017-S005 pass, including anonymous signed install/update, fork-safe contribution, logged-out cutover smoke, and a clean 48-hour canary.
 - **Primary Status:** `primary_blocked`
-- **Current Primary Blocker:** T-066 checkpoint E, the unavailable fresh packaged bootstrap, T-068, and the independent F-017 audit, runtime, contribution, and cutover gates remain incomplete.
-- **Next Primary Action:** Run only T-066 checkpoint E: preserve the already-green source gate, execute focused hostile/race plus remaining vulnerability/fuzz/lint/DocSync/cross-build checks, install a commit-bound source binary into an isolated prefix, initialize a fresh target, and prove one offline synthetic signed update and explicit rollback lifecycle.
+- **Current Primary Blocker:** The unavailable fresh packaged bootstrap, T-068 private rehearsal, and the independent F-017 audit, runtime, contribution, cutover, and canary gates remain incomplete.
+- **Next Primary Action:** Create T-068 through `ticket_create`, freeze its bounded F-018-S003 private-rehearsal contract, and run no publication, signing, tagging, or visibility action.
 
 ## Locked Decisions
 
@@ -53,7 +53,7 @@ This exception cannot authorize a supported-release claim, visibility change, or
 | --- | --- | --- | --- |
 | T-064 | Retire v0.93 and reset the release floor. | Live leases match the captured manifest. | Passed 2026-07-21: Release/tag are absent, Pages is disabled, protected work is re-anchored, `VERSION` is `0.68.49`, and the source fallback is `0.69.0-dev`. |
 | T-065 / F-018-S001 | Passed 2026-07-21: replaced the bespoke producer with pinned GoReleaser. | T-064 complete. | Two-clean-root reproducibility plus a final `bb1b79b` snapshot, exact publishable-set contract, full source/cross-build gates, installed-binary and fresh-target checks, and persona reviews passed without publication authority. |
-| T-066 / F-018-S002 | A1 through D passed; run the final installed/offline lifecycle evidence. | T-065 and T-067 complete; T-066 created through `ticket_create` with a frozen offline Sigstore trust contract. | Consumers reject tampering and unsafe archives; legacy checksum-only verification and raw `mars-<os>-<arch>` / `mars-harness-<os>-<arch>` asset names are absent; installed source and synthetic signed update/rollback evidence passes. |
+| T-066 / F-018-S002 | Passed 2026-07-22 through `7fe152c`: fail-closed signed archive consumers, retired legacy paths, isolated-prefix source, fresh-target, and preverified update/rollback evidence passed. | T-065 and T-067 complete; T-066 created through `ticket_create` with a frozen offline Sigstore trust contract. | Consumers reject tampering and unsafe archives; legacy checksum-only verification and raw aliases are absent; exact validation and persona gates passed without a real MARS signature or release. |
 | T-067 | Passed 2026-07-22: raised the MARS source minimum to exact Go 1.25.12 without imposing an external Go requirement on packaged operation or generated targets. | Owner approved 2026-07-22. | Exact Go 1.25.12 and release Go 1.26.5 gates, real Go 1.25.11 rejection, patch-aware source doctor tests, four cross-builds, installed/fresh-target smoke, and QA/Security review passed without Sigstore or publication changes. |
 | T-068 / F-018-S003 | Rehearse privately and prepare `0.69.0`. | T-066 complete after T-067. | Two-build reproducibility, clean macOS/Linux installs, workflow draft-failure behavior, and release-note preparation pass. |
 | Cutover | Publish immutable `v0.69.0`. | Every F-017 prerequisite and separate owner approval pass. | Logged-out verification passes and the 48-hour canary starts. |
@@ -167,6 +167,14 @@ This exception cannot authorize a supported-release claim, visibility change, or
 - `9d2d8c9` retires the standalone verifier/audit commands and implementations plus dead legacy raw/checksum-only updater helpers; the retained version-only remote lookup is bounded, credential-scoped, redirect-closed, and redacted. `bb4b620` removes the retired commands from MarsCLI, formal workflows, and generated target doctrine while preserving repository-owned producer/verifier responsibility and exact remote convergence.
 - `527646b` synchronizes current architecture, product, BDD, release-versioning, source/target, dogfood, README, and quickstart contracts. `64c7d3b` synchronizes the six live operator guides and adds a guard that rejects either retired command in executable HTML recipes or command-only cells. Original superseded AD bodies, tickets, reports, changelog, and dated review evidence remain unchanged.
 - Focused Go 1.26.5 release/selfupdate/CLI, tools/scanner, positive Sigstore/archive/acquisition/replacement, docsconsistency, and DocSync gates passed. CTO-weekly, QA, Security, and Orchestrator are GO. Checkpoint E alone remains; the repository stays private and `primary_blocked`, packaged bootstrap remains unavailable, and no live update, version, tag, Release, signature, upload, visibility, or support claim changed.
+
+## T-066 Checkpoint E Evidence — 2026-07-22
+
+- Pushed `7fe152c` proves a mismatched candidate commit fails B2 admission before lock or transaction creation, then proves a newer preverified candidate and explicit older preverified rollback use the production durable replacement transaction in one `0700` directory with exact digest transitions, final bytes/mode/link count, persistent `0600` lock, and no transaction residue.
+- The focused 46-test T-066 normal/race set passed with exact Go 1.26.5 and offline dependency resolution. It composes the B2 lifecycle with the existing explicit authenticated older-version acquisition test and immutable upstream offline Sigstore vector; no real MARS signature, download, or update was claimed.
+- Preserving the already-green uncached full-source/race/coverage evidence, the outstanding tail passed: exact SumDB-backed `govulncheck v1.6.0` found zero called vulnerabilities; four default ten-second fuzz targets passed; the documented whole-source vet lint fallback passed; docsconsistency and DocSync passed; and all four Go 1.26.5 CGO-disabled trimpath builds bound the exact clean `7fe152c3f28af252d1eb11436298617e0cfad9de` revision and platform metadata.
+- The isolated-prefix native source candidate reported `0.69.0-dev.7fe152c`, exact full commit/date and SHA-256 `9e4e419d4b65bacd907b3841646025c053fd4dd1c5dac4af55495cfa5459e96a`. With Go absent from its scrubbed runtime PATH it passed source DocSync, exposed no retired release commands or release URL in authority-free update dry run, initialized and committed a clean fresh target, passed target DocSync, emitted producer-neutral release doctrine without raw aliases, and assembled the Engineer dry-run prompt without changing either worktree or the binary. Only native Darwin/arm64 was executed; foreign cross builds were metadata-inspected.
+- Engineer, QA, Security, Dogfood, Release Manager, and Orchestrator are GO. F-018-S002 and T-066 are complete. T-068, fresh packaged bootstrap, actual MARS signing/publication, notices, and all independent F-017 gates remain blocked; the repository stays private and `primary_blocked` at `VERSION=0.68.49`.
 
 ## Validation Gates
 
