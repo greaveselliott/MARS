@@ -9,11 +9,11 @@ end_to_end_evidence: required
 evidence_links: ["docs/features/F-018-goreleaser-distribution.md#f-018-s002-safe-archive-installation-and-binary-updater", "docs/exec-plans/active/current-operating-plan.md"]
 verified_by: "TBD"
 owner: "engineer"
-last_attempt: "2026-07-22: B3 pushed at 683daf8 with release-mode Run wired through B1/B2, exact running-binary drift binding, redacted plans/output, full focused gates, and Engineer/QA/Security GO"
+last_attempt: "2026-07-22: C pushed at f45d5d2; unsafe shell binary bootstrap now fails closed to an independently reviewed source checkout, with hostile-environment tests and Engineer/QA/Security GO"
 blocker: "none"
 blocked_by: []
 trace_id: "TBD"
-next_action: "Implement only checkpoint C: migrate scripts/install.sh to the trusted verifier path, or fail closed with a source-installation route if bootstrap cannot reuse that verifier without weakening trust; validate and push before broader consumer/DocSync work."
+next_action: "Implement only checkpoint D: migrate or retire retained release verification/audit, CLI/MarsCLI, live docs, DocSync routes, and generated target guidance; remove legacy raw asset names and checksum-only semantics without adding a publisher or installer."
 dedupe_key: "release:signed-archive-consumers"
 metadata:
   classification: "foundation-owned"
@@ -51,7 +51,7 @@ B2. Passed at `92d7ddd`: the network-free local transaction enforces descriptor-
 
 B3. Passed at `683daf8`: release-mode `Run` now binds implicit latest to the exact running executable and digest, invokes B1 then B2 before PATH repair, preserves source/main and authority-free dry-run behavior, and removes download URLs from live plans/output. Committed and pushed before installer work.
 
-C. Migrate scripts/install.sh to the same trusted verifier path. If bootstrap cannot invoke the same verifier without weakening trust, make binary installation explicitly unavailable and direct users to source installation; checksum-only compatibility is forbidden. Commit and push.
+C. Passed at `f45d5d2`: because shell bootstrap cannot invoke an independently trusted verifier without circular trust, binary installation is explicitly unavailable and `scripts/install.sh` fails closed to an independently reviewed exact source checkout. Checksum-only compatibility is absent. Committed and pushed before broader consumer migration.
 
 D. Migrate or retire release verify-assets, release audit, CLI/MarsCLI, current docs, DocSync routes, and generated target guidance. Remove legacy raw asset names mars-<os>-<arch> and mars-harness-<os>-<arch> and legacy checksum-only semantics; update binary/cli command aliases are not raw-asset aliases. Commit and push.
 
@@ -106,6 +106,13 @@ E. Run focused hostile/race tests, full source/vulnerability/DocSync/cross-build
 - The returned plan is populated only from authenticated B1 evidence and exposes no raw download/checksum URLs. A post-commit replacement-identity mismatch returns that plan with recovery-required truth and does not invoke PATH repair.
 - Full `internal/selfupdate` and isolated-home `cmd/mars` tests, focused race tests, vet, docsconsistency, DocSync, Darwin/Linux AMD64/ARM64 Go 1.26.5 CGO-disabled compile-only tests, `make vuln` with zero called vulnerabilities, fuzz smoke, and the lint fallback to whole-source vet passed. Engineer, QA, Security, and Orchestrator are GO.
 - Legacy raw/checksum helpers remain dead and unreachable from `Run` for checkpoint D removal. Checkpoints C through E remain incomplete. No live update was run, and no version, tag, Release, signature, upload, visibility, or publication authority changed.
+
+## Checkpoint C completion — 2026-07-22
+
+- Pushed commit `f45d5d2` retires the legacy shell binary bootstrap. A shell cannot authenticate the first downloaded MARS verifier without circular trust, so the executable script now uses Bash builtins only, exits nonzero, and points to an independently reviewed exact source checkout with Go 1.25.12 or newer and `make install`.
+- Latest and explicit-version hostile-environment tests prove the script invokes no network, credential resolver, external command, temporary file, privilege escalation, PATH mutation, or destination mutation. An existing `mars` canary remains byte-identical and the only destination entry; caller-controlled version, path, and token canaries remain absent from output.
+- Focused and race installer/source-update tests, full `internal/selfupdate` tests, vet, Bash syntax, docsconsistency, DocSync, and diff checks passed. Engineer, QA, Security, and Orchestrator are GO.
+- Fresh binary bootstrap remains unavailable and blocks public cutover until a non-circular trusted bootstrap is designed and validated. Checkpoints D and E remain incomplete. No live install was run, and no version, tag, Release, signature, upload, visibility, or publication authority changed.
 
 ## Interfaces and blast radius
 
